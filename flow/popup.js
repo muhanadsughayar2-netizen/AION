@@ -607,7 +607,7 @@ async function handleExportPDF() {
       if (!jsPDFLoadPromise) {
         jsPDFLoadPromise = new Promise((resolve, reject) => {
           const script = document.createElement('script');
-          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+          script.src = 'jspdf.min.js';
           script.onload = () => {
             console.log('jsPDF loaded successfully');
             jsPDFLoaded = true;
