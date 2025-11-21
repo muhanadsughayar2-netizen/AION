@@ -1,0 +1,289 @@
+🚀 FLOW — Replit-Ready Nuclear Prompt (Final Version)
+
+COPY THIS EXACTLY. DO NOT ADD ANY EXTRA WORDS. DO NOT CHANGE FORMAT.
+
+Create a complete, production-ready Chrome Extension named “Flow” — the premium multi-screenshot capture + batch uploader for AI chat platforms (Grok, ChatGPT, Claude). Manifest V3, no backend, no external APIs, privacy-safe, premium UI identical to my previous Flow design (dark glass + glowing cyan orb).
+
+Flow has TWO modes depending on which site is active:
+
+Normal pages (Google Docs, Replit, Notion, etc.)
+
+When user clicks the glowing orb or presses Ctrl+Shift+S →
+capture visible tab screenshot via chrome.tabs.captureVisibleTab.
+
+Convert screenshot (dataURL) to Blob → store in chrome.storage.session as Snap 1, Snap 2, Snap 3…
+
+Enforce FIFO limit: max 10 snapshots stored.
+
+Copy screenshot to clipboard automatically using navigator.clipboard.write() (must run inside popup or content script from user gesture).
+
+Show floating toast in the page: “Snap X ✓” near cursor.
+
+Update extension badge with number of snaps.
+
+Popup shows thumbnails (scrollable), counter "3 / 10", Clear All button, and target AI dropdown.
+
+AI pages (grok.com, chatgpt.com, chat.openai.com, claude.ai)
+
+When user clicks the orb while snaps exist → auto-upload all saved snapshots to the AI’s file input uploader.
+
+Convert each dataURL → Blob → File("snap_1.png").
+
+Use DataTransfer to populate input.files.
+
+1.4 second delay between uploads so each platform processes them cleanly.
+
+After final upload: floating toast “All snaps uploaded ✓” and auto-clear session storage + badge reset.
+
+Privacy: No external server. No upload except user-initiated to AI platform’s file input. Images remain only in chrome.storage.session and clipboard.
+
+REQUIRED FILES (GENERATE ALL OF THEM FULLY):
+manifest.json
+
+Manifest V3
+
+name: “Flow — Multi-Screenshot to AI”
+
+version: 1.0.0
+
+permissions: ["tabs", "activeTab", "storage", "scripting", "clipboardWrite"]
+
+host_permissions: ["https://grok.com/
+", "https://chat.openai.com/
+", "https://chatgpt.com/
+", "https://claude.ai/
+"]
+
+background.service_worker: "background.js"
+
+action.default_popup: "popup.html"
+
+commands:
+
+"capture": Ctrl+Shift+S (capture screenshot)
+
+background.js
+
+Handles:
+
+capture logic
+
+convert dataURL → Blob
+
+manage queue (max 10 snaps, FIFO) using chrome.storage.session
+
+setBadgeText with snap count
+
+messaging between popup and content scripts
+
+determining if current tab is AI site
+
+triggering upload via content.js injection
+
+sending toasts (“snap”, “uploaded”) to content.js
+
+clipboard write request (forward to content script)
+
+content.js
+
+Injected into ALL pages. Handles:
+
+Floating toast UI (“Snap 1 ✓”, “All snaps uploaded ✓”)
+
+On AI pages:
+
+locate file input for ChatGPT, Claude, Grok using robust selectors
+
+create DataTransfer, attach File objects, trigger upload
+
+wait 1400ms between files
+
+Assist popup with clipboard write request (user gesture required)
+
+popup.html
+
+Dark glassmorphism 260×220px
+Contains:
+
+100px glowing cyan orb button in center (“Capture / Upload”)
+
+status line (“Flow: Ready”, “Snapping…”, “Uploading 3 snaps…”)
+
+dropdown (Grok, ChatGPT, Claude) → saved in chrome.storage.sync
+
+scrollable thumbnail grid of stored snaps
+
+red “Clear All” button
+
+include popup.css + popup.js
+
+popup.css
+
+Exact premium aesthetic:
+
+black + glass blur backdrop
+
+neon-pulse glow for the orb
+
+modern UI
+
+grid thumbnail styling
+
+fade transitions
+
+cyan highlight palette
+
+popup.js
+
+Handles:
+
+click orb → send capture or upload command to background
+
+load thumbnails
+
+clear all
+
+dropdown target selection
+
+status text updates
+
+badge sync
+
+utils/capture.js
+
+(Optional) helpers for:
+
+dataURL → Blob
+
+FIFO queue enforcement
+
+saving thumbnails
+
+utils/upload.js
+
+(Optional) helpers for:
+
+upload pipeline
+
+delays
+
+DataTransfer construction
+
+AI input selectors
+
+icons/
+
+Include placeholder files:
+
+icon16.png
+
+icon48.png
+
+icon128.png
+User will replace with final glowing cyan orb icons.
+
+CORE FUNCTIONAL BEHAVIOR (MANDATORY):
+A. CAPTURE FLOW
+
+chrome.tabs.captureVisibleTab({format:"png"})
+
+Convert to Blob + File
+
+Write to clipboard inside content script
+
+Save in chrome.storage.session under keys “snap_1”, “snap_2”…
+
+Limit to 10: remove oldest automatically
+
+Update badge to “●3” (just number, cyan background)
+
+Send “showToast” with snap number to content.js
+
+Popup immediately refreshes thumbnails list
+
+B. AI UPLOAD FLOW
+
+Detected AI platform:
+
+Grok: grok.com
+
+ChatGPT: chatgpt.com or chat.openai.com
+
+Claude: claude.ai
+Flow:
+
+background.js sends "beginUpload" to content.js
+
+content.js pulls snaps via chrome.storage.session
+
+For each snap:
+
+dataURL → Blob → File
+
+Find file input (selectors for each AI platform)
+
+Create DataTransfer and assign input.files
+
+Dispatch input change
+
+Wait 1400ms
+
+After last:
+
+show floating toast
+
+background clears snaps
+
+badge resets
+
+popup updates
+
+C. UI & FEEDBACK
+
+neon-pulse orb identical to original Flow
+
+status text changes dynamically
+
+thumbnails refresh after each capture
+
+floating toasts fade after 1s
+
+badge only shows count if > 0
+
+clear-all wipes thumbnails + badge + storage
+
+DO NOT DO THESE:
+
+Do NOT use deprecated chrome.clipboard APIs
+
+Do NOT use offscreen documents
+
+Do NOT rely on textareas for ChatGPT (they block automation)
+
+Do NOT store anything in chrome.storage.local (use session)
+
+DELIVERABLE:
+
+Generate all files, complete, commented, runnable, production-grade, ready to download as a full Chrome extension directory.
+
+Folder structure:
+
+flow/
+   manifest.json
+   background.js
+   content.js
+   popup.html
+   popup.css
+   popup.js
+   utils/
+      capture.js
+      upload.js
+   icons/
+      icon16.png
+      icon48.png
+      icon128.png
+
+
+No placeholder text. No TODOs. Everything must be implemented fully.
+
+This is the premium $29 version of Flow. Build it beautifully.
