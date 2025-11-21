@@ -11,58 +11,54 @@
     <!-- Toolbar -->
     <div class="toolbar">
       <div class="toolbar-section">
-        <button id="arrowBtn" class="tool-btn active" data-tool="arrow" title="Draw Arrow">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-            <polyline points="12 5 19 12 12 19"></polyline>
-          </svg>
+        <div class="section-label">Drawing Tools</div>
+        <button class="tool-btn active" data-tool="highlight" title="Smart Highlight - Draw glowing strokes to spotlight areas">
+          ✨
         </button>
-        <button id="textBtn" class="tool-btn" data-tool="text" title="Add Text">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="4 7 4 4 20 4 20 7"></polyline>
-            <line x1="9" y1="20" x2="15" y2="20"></line>
-            <line x1="12" y1="4" x2="12" y2="20"></line>
-          </svg>
+        <button class="tool-btn" data-tool="spotlight" title="Spotlight Mode - Brighten one area, dim everything else">
+          🎯
         </button>
-        <button id="rectBtn" class="tool-btn" data-tool="rectangle" title="Draw Rectangle">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          </svg>
+        <button class="tool-btn" data-tool="redact" title="Redact - Pixelate sensitive information">
+          🔒
         </button>
-        <button id="blurBtn" class="tool-btn" data-tool="blur" title="Blur Area">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M12 1v6m0 6v6m9.22-15.22l-4.24 4.24m-5.96 5.96l-4.24 4.24M23 12h-6m-6 0H1m20.22 9.22l-4.24-4.24m-5.96-5.96l-4.24-4.24"></path>
-          </svg>
+        <button class="tool-btn" data-tool="callout" title="Numbered Callouts - Add step-by-step markers">
+          🔢
         </button>
+        <button class="tool-btn" data-tool="text" title="Add Text">
+          ✏️
+        </button>
+      </div>
+      
+      <div class="toolbar-section">
+        <div class="section-label">Quick Labels</div>
+        <button class="sticker-btn" data-text="🐛 BUG" title="Mark as bug">BUG</button>
+        <button class="sticker-btn" data-text="⚠️ IMPORTANT" title="Mark as important">IMPORTANT</button>
+        <button class="sticker-btn" data-text="👉 FOCUS HERE" title="Focus attention">FOCUS</button>
+        <button class="sticker-btn" data-text="✅ GOOD" title="Mark as good">GOOD</button>
+        <button class="sticker-btn" data-text="❌ WRONG" title="Mark as wrong">WRONG</button>
       </div>
       
       <div class="toolbar-section">
         <input type="color" id="colorPicker" value="#00d9ff" title="Color">
-        <button id="undoBtn" class="tool-btn" title="Undo">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 7v6h6"></path>
-            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
-          </svg>
-        </button>
-        <button id="clearBtn" class="tool-btn" title="Clear All">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
-        </button>
+        <button id="undoBtn" class="tool-btn" title="Undo">↩️</button>
+        <button id="clearBtn" class="tool-btn" title="Clear All">🗑️</button>
       </div>
       
       <div class="toolbar-section">
-        <button id="saveBtn" class="save-btn">Save</button>
-        <button id="cancelBtn" class="cancel-btn">Cancel</button>
+        <button id="saveBtn" class="save-btn">💾 Save</button>
+        <button id="cancelBtn" class="cancel-btn">✖ Cancel</button>
       </div>
     </div>
 
     <!-- Canvas Area -->
     <div class="canvas-container">
       <canvas id="canvas"></canvas>
-      <input type="text" id="textInput" class="text-input" style="display: none;">
+      <input type="text" id="textInput" class="text-input" style="display: none;" placeholder="Type text...">
+    </div>
+    
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span id="status">Select a tool and draw on the screenshot</span>
     </div>
   </div>
 

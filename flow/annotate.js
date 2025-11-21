@@ -1,13 +1,16 @@
-// Flow Annotation Tool
-// Allows users to annotate screenshots with arrows, text, rectangles, and blur
+// Flow Annotation Tool - Professional Edition
+// AI-focused highlighting with wow-factor features
 
 let canvas, ctx;
-let currentTool = 'arrow';
+let currentTool = 'highlight';
 let currentColor = '#00d9ff';
 let isDrawing = false;
 let startX, startY;
 let annotations = [];
 let imageData;
+let calloutNumber = 1;
+let spotlightArea = null;
+let highlightPoints = [];
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
@@ -21,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Setup canvas
 function setupCanvas() {
-  // Set canvas to match image size (will be set when image loads)
   canvas.style.cursor = 'crosshair';
 }
 
@@ -39,6 +41,25 @@ function setupEventListeners() {
   // Color picker
   document.getElementById('colorPicker').addEventListener('change', (e) => {
     currentColor = e.target.value;
+  });
+  
+  // Sticker buttons
+  document.querySelectorAll('.sticker-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const text = btn.dataset.text;
+      const x = canvas.width / 2;
+      const y = 80 + (annotations.filter(a => a.tool === 'sticker').length * 70);
+      
+      annotations.push({
+        tool: 'sticker',
+        text: text,
+        color: currentColor,
+        startX: x,
+        startY: y
+      });
+      
+      redrawCanvas();
+    });
   });
   
   // Undo
@@ -60,20 +81,21 @@ function setupEventListeners() {
   
   // Text input
   const textInput = document.getElementById('textInput');
-  textInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      finalizeText();
-    } else if (e.key === 'Escape') {
-      textInput.style.display = 'none';
-    }
-  });
+  if (textInput) {
+    textInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        finalizeText();
+      } else if (e.key === 'Escape') {
+        textInput.style.display = 'none';
+      }
+    });
+  }
 }
 
 // Load image from URL parameter
 function loadImage() {
   const urlParams = new URLSearchParams(window.location.search);
   const imageUrl = urlParams.get('img');
-  const index = urlParams.get('index');
   
   if (imageUrl) {
     const img = new Image();
@@ -95,8 +117,13 @@ function handleMouseDown(e) {
   
   if (currentTool === 'text') {
     showTextInput(e.clientX, e.clientY);
+  } else if (currentTool === 'callout') {
+    addCallout(startX, startY);
   } else {
     isDrawing = true;
+    if (currentTool === 'highlight') {
+      highlightPoints = [{x: startX, y: startY}];
+    }
   }
 }
 
@@ -107,9 +134,15 @@ function handleMouseMove(e) {
   const currentX = (e.clientX - rect.left) * (canvas.width / rect.width);
   const currentY = (e.clientY - rect.top) * (canvas.height / rect.height);
   
-  // Redraw canvas with preview
-  redrawCanvas();
-  drawPreview(startX, startY, currentX, currentY);
+  if (currentTool === 'highlight') {
+    highlightPoints.push({x: currentX, y: currentY});
+    redrawCanvas();
+    drawHighlightPreview();
+  } else {
+    // For other tools, show preview
+    redrawCanvas();
+    drawPreview(startX, startY, currentX, currentY);
+  }
 }
 
 function handleMouseUp(e) {
@@ -119,12 +152,28 @@ function handleMouseUp(e) {
   const endX = (e.clientX - rect.left) * (canvas.width / rect.width);
   const endY = (e.clientY - rect.top) * (canvas.height / rect.height);
   
-  // Save annotation
-  annotations.push({
-    tool: currentTool,
-    color: currentColor,
-    startX, startY, endX, endY
-  });
+  if (currentTool === 'highlight' && highlightPoints.length > 1) {
+    annotations.push({
+      tool: 'highlight',
+      color: currentColor,
+      points: [...highlightPoints]
+    });
+    highlightPoints = [];
+  } else if (currentTool === 'spotlight') {
+    spotlightArea = {
+      startX, startY, endX, endY
+    };
+    annotations.push({
+      tool: 'spotlight',
+      startX, startY, endX, endY
+    });
+  } else if (currentTool === 'redact') {
+    annotations.push({
+      tool: 'redact',
+      color: currentColor,
+      startX, startY, endX, endY
+    });
+  }
   
   isDrawing = false;
   redrawCanvas();
@@ -132,91 +181,80 @@ function handleMouseUp(e) {
 
 // Draw preview while dragging
 function drawPreview(x1, y1, x2, y2) {
+  ctx.setLineDash([5, 5]);
   ctx.strokeStyle = currentColor;
-  ctx.fillStyle = currentColor;
   ctx.lineWidth = 3;
   
-  if (currentTool === 'arrow') {
-    drawArrow(x1, y1, x2, y2);
-  } else if (currentTool === 'rectangle') {
+  if (currentTool === 'spotlight') {
+    ctx.strokeStyle = '#00d9ff';
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-  } else if (currentTool === 'blur') {
-    ctx.filter = 'blur(20px)';
-    ctx.drawImage(canvas, x1, y1, x2 - x1, y2 - y1, x1, y1, x2 - x1, y2 - y1);
-    ctx.filter = 'none';
+  } else if (currentTool === 'redact') {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+    ctx.strokeStyle = '#ff3b30';
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
   }
+  
+  ctx.setLineDash([]);
 }
 
-// Draw arrow
-function drawArrow(x1, y1, x2, y2) {
-  const headLength = 20;
-  const angle = Math.atan2(y2 - y1, x2 - x1);
+// Draw highlight preview while drawing
+function drawHighlightPreview() {
+  if (highlightPoints.length < 2) return;
   
-  // Draw line
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.stroke();
+  ctx.strokeStyle = currentColor;
+  ctx.lineWidth = 12;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.globalAlpha = 0.5;
+  ctx.shadowColor = currentColor;
+  ctx.shadowBlur = 20;
   
-  // Draw arrowhead
   ctx.beginPath();
-  ctx.moveTo(x2, y2);
-  ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
-  ctx.moveTo(x2, y2);
-  ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
-  ctx.stroke();
-}
-
-// Redraw canvas
-function redrawCanvas() {
-  // Clear and redraw original image
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (imageData) {
-    ctx.putImageData(imageData, 0, 0);
+  ctx.moveTo(highlightPoints[0].x, highlightPoints[0].y);
+  for (let i = 1; i < highlightPoints.length; i++) {
+    ctx.lineTo(highlightPoints[i].x, highlightPoints[i].y);
   }
+  ctx.stroke();
   
-  // Redraw all annotations
-  annotations.forEach(ann => {
-    ctx.strokeStyle = ann.color;
-    ctx.fillStyle = ann.color;
-    ctx.lineWidth = 3;
-    
-    if (ann.tool === 'arrow') {
-      drawArrow(ann.startX, ann.startY, ann.endX, ann.endY);
-    } else if (ann.tool === 'rectangle') {
-      ctx.strokeRect(ann.startX, ann.startY, ann.endX - ann.startX, ann.endY - ann.startY);
-    } else if (ann.tool === 'blur') {
-      ctx.filter = 'blur(20px)';
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height;
-      const tempCtx = tempCanvas.getContext('2d');
-      tempCtx.putImageData(imageData, 0, 0);
-      ctx.drawImage(tempCanvas, ann.startX, ann.startY, ann.endX - ann.startX, ann.endY - ann.startY,
-                    ann.startX, ann.startY, ann.endX - ann.startX, ann.endY - ann.startY);
-      ctx.filter = 'none';
-      ctx.strokeRect(ann.startX, ann.startY, ann.endX - ann.startX, ann.endY - ann.startY);
-    } else if (ann.tool === 'text') {
-      ctx.font = '24px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.fillText(ann.text, ann.startX, ann.startY);
-    }
-  });
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
+}
+
+// Add numbered callout
+function addCallout(x, y) {
+  const label = prompt(`Label for marker #${calloutNumber}:`, `Step ${calloutNumber}`);
+  if (label) {
+    annotations.push({
+      tool: 'callout',
+      number: calloutNumber,
+      text: label,
+      color: currentColor,
+      startX: x,
+      startY: y
+    });
+    calloutNumber++;
+    redrawCanvas();
+  }
 }
 
 // Show text input
 function showTextInput(x, y) {
   const textInput = document.getElementById('textInput');
-  textInput.style.display = 'block';
-  textInput.style.left = x + 'px';
-  textInput.style.top = y + 'px';
-  textInput.value = '';
-  textInput.focus();
+  if (textInput) {
+    textInput.style.display = 'block';
+    textInput.style.left = x + 'px';
+    textInput.style.top = y + 'px';
+    textInput.value = '';
+    textInput.focus();
+  }
 }
 
 // Finalize text annotation
 function finalizeText() {
   const textInput = document.getElementById('textInput');
+  if (!textInput) return;
+  
   const text = textInput.value.trim();
   
   if (text) {
@@ -233,15 +271,217 @@ function finalizeText() {
   textInput.style.display = 'none';
 }
 
+// Redraw canvas with all annotations
+function redrawCanvas() {
+  // Clear and redraw original image
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (imageData) {
+    ctx.putImageData(imageData, 0, 0);
+  }
+  
+  // Apply spotlight dimming effect first (if exists)
+  const spotlights = annotations.filter(a => a.tool === 'spotlight');
+  if (spotlights.length > 0) {
+    // Dim entire canvas
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Clear spotlight areas
+    spotlights.forEach(spot => {
+      const x = Math.min(spot.startX, spot.endX);
+      const y = Math.min(spot.startY, spot.endY);
+      const w = Math.abs(spot.endX - spot.startX);
+      const h = Math.abs(spot.endY - spot.startY);
+      
+      ctx.clearRect(x, y, w, h);
+      if (imageData) {
+        const spotData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        ctx.putImageData(imageData, 0, 0);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, w, h);
+        ctx.clip();
+        ctx.drawImage(canvas, 0, 0);
+        ctx.restore();
+        ctx.putImageData(spotData, 0, 0);
+      }
+      
+      // Add glowing border
+      ctx.strokeStyle = '#00d9ff';
+      ctx.lineWidth = 4;
+      ctx.shadowColor = '#00d9ff';
+      ctx.shadowBlur = 25;
+      ctx.strokeRect(x, y, w, h);
+      ctx.shadowBlur = 0;
+    });
+  }
+  
+  // Draw all other annotations
+  annotations.forEach(ann => {
+    if (ann.tool === 'highlight') {
+      drawHighlight(ann);
+    } else if (ann.tool === 'redact') {
+      drawRedaction(ann);
+    } else if (ann.tool === 'callout') {
+      drawCallout(ann);
+    } else if (ann.tool === 'sticker') {
+      drawSticker(ann);
+    } else if (ann.tool === 'text') {
+      drawText(ann);
+    }
+  });
+}
+
+// Draw highlight brush stroke
+function drawHighlight(ann) {
+  if (ann.points.length < 2) return;
+  
+  ctx.strokeStyle = ann.color;
+  ctx.lineWidth = 12;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.globalAlpha = 0.5;
+  ctx.shadowColor = ann.color;
+  ctx.shadowBlur = 20;
+  
+  ctx.beginPath();
+  ctx.moveTo(ann.points[0].x, ann.points[0].y);
+  for (let i = 1; i < ann.points.length; i++) {
+    ctx.lineTo(ann.points[i].x, ann.points[i].y);
+  }
+  ctx.stroke();
+  
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
+}
+
+// Draw redaction (pixelated)
+function drawRedaction(ann) {
+  const x = Math.min(ann.startX, ann.endX);
+  const y = Math.min(ann.startY, ann.endY);
+  const w = Math.abs(ann.endX - ann.startX);
+  const h = Math.abs(ann.endY - ann.startY);
+  
+  // Pixelate effect
+  const blockSize = 15;
+  const imgData = ctx.getImageData(x, y, w, h);
+  
+  for (let py = 0; py < h; py += blockSize) {
+    for (let px = 0; px < w; px += blockSize) {
+      const pixelIndex = (py * w + px) * 4;
+      const r = imgData.data[pixelIndex] || 0;
+      const g = imgData.data[pixelIndex + 1] || 0;
+      const b = imgData.data[pixelIndex + 2] || 0;
+      
+      ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+      ctx.fillRect(x + px, y + py, blockSize, blockSize);
+    }
+  }
+  
+  // Red border
+  ctx.strokeStyle = '#ff3b30';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(x, y, w, h);
+}
+
+// Draw numbered callout
+function drawCallout(ann) {
+  const radius = 30;
+  
+  // Circle with glow
+  ctx.fillStyle = ann.color;
+  ctx.shadowColor = ann.color;
+  ctx.shadowBlur = 20;
+  ctx.beginPath();
+  ctx.arc(ann.startX, ann.startY, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  
+  // White border
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+  
+  // Number
+  ctx.fillStyle = '#000';
+  ctx.font = 'bold 28px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(ann.number, ann.startX, ann.startY);
+  
+  // Label below
+  if (ann.text) {
+    const textY = ann.startY + radius + 30;
+    ctx.font = 'bold 18px Arial';
+    const textWidth = ctx.measureText(ann.text).width;
+    
+    // Background
+    ctx.fillStyle = ann.color;
+    ctx.shadowColor = ann.color;
+    ctx.shadowBlur = 10;
+    ctx.fillRect(ann.startX - textWidth/2 - 10, textY - 14, textWidth + 20, 32);
+    ctx.shadowBlur = 0;
+    
+    // Text
+    ctx.fillStyle = '#000';
+    ctx.fillText(ann.text, ann.startX, textY);
+  }
+}
+
+// Draw sticker label
+function drawSticker(ann) {
+  ctx.font = 'bold 22px Arial';
+  const textWidth = ctx.measureText(ann.text).width;
+  const padding = 16;
+  const height = 40;
+  
+  // Background with glow
+  ctx.fillStyle = ann.color;
+  ctx.shadowColor = ann.color;
+  ctx.shadowBlur = 15;
+  ctx.fillRect(ann.startX - textWidth/2 - padding, ann.startY - height/2, textWidth + padding * 2, height);
+  ctx.shadowBlur = 0;
+  
+  // Border
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(ann.startX - textWidth/2 - padding, ann.startY - height/2, textWidth + padding * 2, height);
+  
+  // Text
+  ctx.fillStyle = '#000';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(ann.text, ann.startX, ann.startY);
+}
+
+// Draw text annotation
+function drawText(ann) {
+  ctx.font = '28px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillStyle = ann.color;
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 3;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  
+  // Outline for readability
+  ctx.strokeText(ann.text, ann.startX, ann.startY);
+  ctx.fillText(ann.text, ann.startX, ann.startY);
+}
+
 // Undo last annotation
 function undo() {
-  annotations.pop();
+  const lastAnn = annotations.pop();
+  if (lastAnn && lastAnn.tool === 'callout') {
+    calloutNumber--;
+  }
   redrawCanvas();
 }
 
 // Clear all annotations
 function clearAll() {
   annotations = [];
+  calloutNumber = 1;
+  spotlightArea = null;
   redrawCanvas();
 }
 
