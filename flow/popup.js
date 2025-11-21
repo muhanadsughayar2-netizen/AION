@@ -2,6 +2,7 @@
 // Handles UI interactions, thumbnail display, and communication with background
 
 let currentSnaps = [];
+let selectedSnapIds = new Set();
 
 // Initialize popup on load
 document.addEventListener('DOMContentLoaded', async () => {
@@ -21,6 +22,11 @@ function setupEventListeners() {
   
   // Platform selector
   document.getElementById('aiPlatform').addEventListener('change', handlePlatformChange);
+  
+  // Selection controls
+  document.getElementById('selectAllBtn').addEventListener('click', handleSelectAll);
+  document.getElementById('copySelectedBtn').addEventListener('click', handleCopySelected);
+  document.getElementById('downloadSelectedBtn').addEventListener('click', handleDownloadSelected);
 }
 
 // Handle orb button click
@@ -190,6 +196,7 @@ function updateCounter() {
 // Update thumbnails grid
 function updateThumbnails() {
   const container = document.getElementById('thumbnails');
+  const selectionBar = document.getElementById('selectionBar');
   container.innerHTML = '';
   
   if (currentSnaps.length === 0) {
@@ -197,12 +204,35 @@ function updateThumbnails() {
     emptyState.className = 'empty-state';
     emptyState.textContent = 'No snapshots yet. Press Ctrl+Shift+S to capture.';
     container.appendChild(emptyState);
+    selectionBar.style.display = 'none';
     return;
   }
+  
+  // Show selection bar when snaps exist
+  selectionBar.style.display = 'flex';
   
   currentSnaps.forEach((dataUrl, index) => {
     const thumbnail = document.createElement('div');
     thumbnail.className = 'thumbnail fade-in';
+    thumbnail.dataset.index = index;
+    
+    // Add selected class if this snap is selected
+    if (selectedSnapIds.has(index)) {
+      thumbnail.classList.add('selected');
+    }
+    
+    // Create checkbox
+    const checkbox = document.createElement('div');
+    checkbox.className = 'thumbnail-checkbox';
+    if (selectedSnapIds.has(index)) {
+      checkbox.classList.add('checked');
+    }
+    
+    // Checkbox click handler
+    checkbox.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleSelection(index);
+    });
     
     const img = document.createElement('img');
     img.src = dataUrl;
@@ -212,10 +242,157 @@ function updateThumbnails() {
     number.className = 'thumbnail-number';
     number.textContent = index + 1;
     
+    thumbnail.appendChild(checkbox);
     thumbnail.appendChild(img);
     thumbnail.appendChild(number);
     container.appendChild(thumbnail);
   });
+  
+  updateSelectAllButton();
+}
+
+// Toggle selection for a snap
+function toggleSelection(index) {
+  if (selectedSnapIds.has(index)) {
+    selectedSnapIds.delete(index);
+  } else {
+    selectedSnapIds.add(index);
+  }
+  updateThumbnails();
+}
+
+// Handle Select All / Deselect All
+function handleSelectAll() {
+  const allSelected = selectedSnapIds.size === currentSnaps.length;
+  
+  if (allSelected) {
+    // Deselect all
+    selectedSnapIds.clear();
+  } else {
+    // Select all
+    selectedSnapIds.clear();
+    currentSnaps.forEach((_, index) => {
+      selectedSnapIds.add(index);
+    });
+  }
+  
+  updateThumbnails();
+}
+
+// Update Select All button text
+function updateSelectAllButton() {
+  const btn = document.getElementById('selectAllBtn');
+  const allSelected = selectedSnapIds.size === currentSnaps.length;
+  btn.textContent = allSelected ? 'Deselect All' : 'Select All';
+}
+
+// Handle Copy Selected
+async function handleCopySelected() {
+  const status = document.getElementById('status');
+  
+  if (selectedSnapIds.size === 0) {
+    status.textContent = 'No snaps selected';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 1500);
+    return;
+  }
+  
+  try {
+    const selectedSnaps = Array.from(selectedSnapIds)
+      .sort((a, b) => a - b)
+      .map(index => currentSnaps[index]);
+    
+    status.textContent = `Copying ${selectedSnaps.length} snaps...`;
+    status.className = 'status active';
+    
+    // Copy snaps sequentially (clipboard can only hold one at a time)
+    for (let i = 0; i < selectedSnaps.length; i++) {
+      const dataUrl = selectedSnaps[i];
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      await navigator.clipboard.write([
+        new ClipboardItem({ [blob.type]: blob })
+      ]);
+      
+      // Brief status update
+      status.textContent = `Copied ${i + 1}/${selectedSnaps.length}`;
+      
+      // Small delay between copies
+      if (i < selectedSnaps.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+    
+    status.textContent = `${selectedSnaps.length} snaps copied ✓`;
+    status.className = 'status active';
+    
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 2000);
+  } catch (error) {
+    console.error('Copy selected error:', error);
+    status.textContent = 'Copy failed';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 2000);
+  }
+}
+
+// Handle Download Selected
+async function handleDownloadSelected() {
+  const status = document.getElementById('status');
+  
+  if (selectedSnapIds.size === 0) {
+    status.textContent = 'No snaps selected';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 1500);
+    return;
+  }
+  
+  try {
+    const selectedSnaps = Array.from(selectedSnapIds)
+      .sort((a, b) => a - b)
+      .map(index => ({ index, dataUrl: currentSnaps[index] }));
+    
+    status.textContent = `Downloading ${selectedSnaps.length} snaps...`;
+    status.className = 'status active';
+    
+    // Download each snap
+    for (const { index, dataUrl } of selectedSnaps) {
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `flow_snap_${index + 1}.png`;
+      link.click();
+      
+      // Small delay between downloads
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    status.textContent = `${selectedSnaps.length} snaps downloaded ✓`;
+    status.className = 'status active';
+    
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 2000);
+  } catch (error) {
+    console.error('Download selected error:', error);
+    status.textContent = 'Download failed';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 2000);
+  }
 }
 
 // Update clear button state

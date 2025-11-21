@@ -44,7 +44,8 @@
 1. Capture 3-5 screenshots using the popup
 2. Open the popup to verify:
    - Counter shows "5 / 10"
-   - All 5 thumbnails visible
+   - All 5 thumbnails visible with checkboxes in top-left
+   - Selection bar appears with "Select All", "Copy Selected", "Download Selected" buttons
    - Scrollable grid if needed
 
 ### Test 3: FIFO Queue (Max 10)
@@ -78,7 +79,18 @@
 1. Navigate to `https://grok.com`
 2. Repeat same steps as ChatGPT
 
-### Test 5: Platform Selector
+### Test 5: Multi-Select & Batch Operations
+
+1. Capture 5 screenshots
+2. Open the Flow popup
+3. Verify you see the selection bar with 3 buttons
+4. Click checkboxes on 3 thumbnails (they should glow cyan)
+5. Click "Copy Selected" - all 3 images copied sequentially
+6. Click "Select All" - all thumbnails selected
+7. Click "Download Selected" - all 5 images download to your computer
+8. Click "Deselect All" - all checkboxes cleared
+
+### Test 6: Platform Selector
 
 1. Navigate to ChatGPT
 2. Capture some screenshots
@@ -86,7 +98,7 @@
 4. Click orb to upload
 5. Verify it attempts to use Claude's selectors (may fail if not on Claude.ai)
 
-### Test 6: Clear All
+### Test 7: Clear All
 
 1. Capture 5 screenshots
 2. Open popup

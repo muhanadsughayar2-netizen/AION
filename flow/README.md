@@ -9,6 +9,9 @@ Flow is a powerful, privacy-safe Chrome extension that lets you capture multiple
 - **Quick Capture**: Press `Ctrl+Shift+S` (or `Cmd+Shift+S` on Mac) to instantly capture screenshots
 - **Smart Storage**: Automatically manages up to 10 snapshots with FIFO queue
 - **Auto Clipboard**: Every screenshot is automatically copied to your clipboard
+- **Multi-Select**: Check boxes to select specific images for batch operations
+- **Batch Copy**: Copy multiple selected screenshots sequentially to clipboard
+- **Batch Download**: Download selected screenshots as individual PNG files
 - **Batch Upload**: One-click upload of all snapshots to AI platforms
 - **Premium UI**: Beautiful dark glassmorphism interface with glowing cyan orb
 - **Privacy First**: No external servers, no tracking, all data stays local
@@ -75,6 +78,10 @@ Flow is a powerful, privacy-safe Chrome extension that lets you capture multiple
 
 ### Managing Snapshots
 
+- **Select Snaps**: Click checkboxes on thumbnails to select specific images
+- **Select All / Deselect All**: Toggle to quickly select or deselect all snapshots
+- **Copy Selected**: Copy selected screenshots to clipboard (sequentially)
+- **Download Selected**: Download selected screenshots as PNG files to your computer
 - **Clear All**: Click the red "Clear All" button to remove all snapshots
 - **Auto FIFO**: When you reach 10 snapshots, oldest ones are automatically removed
 - **Platform Selector**: Choose your preferred AI platform (or leave on Auto-detect)
