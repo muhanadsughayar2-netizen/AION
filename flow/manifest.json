@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Flow — Multi-Screenshot to AI",
+  "name": "Flow Premium — Multi-Screenshot to AI",
   "version": "1.0.0",
-  "description": "Premium multi-screenshot capture and batch uploader for AI chat platforms (Grok, ChatGPT, Claude). Privacy-safe, no backend required.",
+  "description": "PREMIUM: Multi-screenshot capture + batch upload to AI with multi-select, delete, preview, and batch operations. Privacy-safe, no backend required.",
   "permissions": [
     "tabs",
     "activeTab",
@@ -16,6 +16,9 @@
     "https://chatgpt.com/*",
     "https://claude.ai/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline';"
+  },
   "background": {
     "service_worker": "background.js"
   },

@@ -16,6 +16,9 @@
     "https://chatgpt.com/*",
     "https://claude.ai/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline';"
+  },
   "background": {
     "service_worker": "background.js"
   },
