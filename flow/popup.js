@@ -162,10 +162,18 @@ async function handlePlatformChange(e) {
 async function loadSnaps() {
   try {
     const response = await chrome.runtime.sendMessage({ action: 'getSnaps' });
-    currentSnaps = response || [];
+    const newSnaps = response || [];
+    
+    // Clear selection if snap count changed (FIFO or clear happened)
+    if (newSnaps.length !== currentSnaps.length) {
+      selectedSnapIds.clear();
+    }
+    
+    currentSnaps = newSnaps;
   } catch (error) {
     console.error('Load snaps error:', error);
     currentSnaps = [];
+    selectedSnapIds.clear();
   }
 }
 
