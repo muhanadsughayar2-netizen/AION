@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flow</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">Flow</div>
+      <div class="counter">
+        <span id="snapCount">0</span> / <span>10</span>
+      </div>
+    </div>
+
+    <!-- Status Line -->
+    <div class="status" id="status">Flow: Ready</div>
+
+    <!-- Main Orb Button -->
+    <div class="orb-container">
+      <button id="orbButton" class="orb" title="Capture screenshot or upload to AI">
+        <div class="orb-glow"></div>
+        <div class="orb-inner">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </button>
+    </div>
+
+    <!-- AI Platform Selector -->
+    <div class="platform-selector">
+      <label for="aiPlatform">Target AI:</label>
+      <select id="aiPlatform">
+        <option value="auto">Auto-detect</option>
+        <option value="chatgpt.com">ChatGPT</option>
+        <option value="claude.ai">Claude</option>
+        <option value="grok.com">Grok</option>
+      </select>
+    </div>
+
+    <!-- Thumbnails Grid -->
+    <div class="thumbnails-container">
+      <div id="thumbnails" class="thumbnails"></div>
+    </div>
+
+    <!-- Clear All Button -->
+    <button id="clearButton" class="clear-button">Clear All</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
