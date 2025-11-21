@@ -288,7 +288,9 @@ function updateThumbnails() {
     // Drag and drop support
     thumbnail.draggable = true;
     thumbnail.addEventListener('dragstart', (e) => handleDragStart(e, index));
-    thumbnail.addEventListener('dragover', handleDragOver);
+    thumbnail.addEventListener('dragover', (e) => handleDragOver(e));
+    thumbnail.addEventListener('dragenter', (e) => handleDragEnter(e));
+    thumbnail.addEventListener('dragleave', (e) => handleDragLeave(e));
     thumbnail.addEventListener('drop', (e) => handleDrop(e, index));
     thumbnail.addEventListener('dragend', handleDragEnd);
     
@@ -532,6 +534,7 @@ async function handleAnnotationMessage(request) {
 
 // Track if jsPDF is loaded
 let jsPDFLoaded = false;
+let jsPDFLoadPromise = null;
 
 // Handle Export as PDF
 async function handleExportPDF() {
@@ -548,28 +551,37 @@ async function handleExportPDF() {
   }
   
   try {
-    status.textContent = 'Generating PDF...';
+    status.textContent = 'Loading PDF library...';
     status.className = 'status active';
     
-    // Load jsPDF once
+    // Load jsPDF once (or wait if already loading)
     if (!jsPDFLoaded) {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-      await new Promise((resolve, reject) => {
-        script.onload = () => {
-          jsPDFLoaded = true;
-          resolve();
-        };
-        script.onerror = () => reject(new Error('Failed to load jsPDF'));
-        document.head.appendChild(script);
-      });
-      // Wait a bit for library to initialize
-      await new Promise(resolve => setTimeout(resolve, 100));
+      if (!jsPDFLoadPromise) {
+        jsPDFLoadPromise = new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+          script.onload = () => {
+            console.log('jsPDF loaded successfully');
+            jsPDFLoaded = true;
+            // Wait for library to be available on window
+            setTimeout(() => resolve(), 200);
+          };
+          script.onerror = (err) => {
+            console.error('jsPDF load error:', err);
+            reject(new Error('Failed to load jsPDF library'));
+          };
+          document.head.appendChild(script);
+        });
+      }
+      await jsPDFLoadPromise;
     }
     
-    if (typeof window.jspdf === 'undefined') {
-      throw new Error('jsPDF library failed to load');
+    // Verify library is available
+    if (!window.jspdf || typeof window.jspdf.jsPDF === 'undefined') {
+      throw new Error('jsPDF library not available after loading');
     }
+    
+    status.textContent = 'Generating PDF...';
     
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p', 'mm', 'a4');
@@ -645,33 +657,46 @@ function handleDragStart(e, index) {
 function handleDragOver(e) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
+}
+
+// Handle drag enter
+function handleDragEnter(e) {
+  e.preventDefault();
   e.currentTarget.classList.add('drag-over');
+}
+
+// Handle drag leave
+function handleDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
 }
 
 // Handle drop
 async function handleDrop(e, dropIndex) {
   e.preventDefault();
+  e.stopPropagation();
   e.currentTarget.classList.remove('drag-over');
   
-  if (draggedIndex === null) return;
+  if (draggedIndex === null || draggedIndex === dropIndex) return;
   
-  // Only reorder if actually moving to different index
-  if (draggedIndex !== dropIndex) {
+  try {
     // Reorder the array
     const temp = currentSnaps[draggedIndex];
     currentSnaps.splice(draggedIndex, 1);
     currentSnaps.splice(dropIndex, 0, temp);
     
     // Update storage
-    await chrome.runtime.sendMessage({ 
+    const response = await chrome.runtime.sendMessage({ 
       action: 'setSnaps', 
       snaps: currentSnaps 
     });
     
-    // Clear selections only when order changed
-    selectedSnapIds.clear();
-    
-    updateUI();
+    if (response && response.success) {
+      // Clear selections only when order changed
+      selectedSnapIds.clear();
+      updateUI();
+    }
+  } catch (error) {
+    console.error('Drag drop error:', error);
   }
 }
 
