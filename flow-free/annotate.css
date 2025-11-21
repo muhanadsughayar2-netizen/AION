@@ -27,8 +27,10 @@ body {
   justify-content: space-between;
   align-items: center;
   border-bottom: 2px solid rgba(0, 217, 255, 0.3);
-  gap: 24px;
+  gap: 20px;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 100;
 }
 
 .toolbar-section {
@@ -44,7 +46,7 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-right: 8px;
+  margin-right: 6px;
 }
 
 .tool-btn {
@@ -76,19 +78,6 @@ body {
   transform: scale(1.05);
 }
 
-.tool-btn.active::after {
-  content: '';
-  position: absolute;
-  bottom: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-bottom: 6px solid #00d9ff;
-}
-
 .sticker-btn {
   padding: 8px 16px;
   background: rgba(0, 217, 255, 0.1);
@@ -101,6 +90,7 @@ body {
   transition: all 0.2s ease;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  position: relative;
 }
 
 .sticker-btn:hover {
@@ -110,6 +100,28 @@ body {
   box-shadow: 0 4px 12px rgba(0, 217, 255, 0.4);
 }
 
+/* Tooltips - BELOW buttons to prevent cutoff */
+.tool-btn[title]:hover::after,
+.sticker-btn[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.95);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  margin-top: 8px;
+  z-index: 1000;
+  border: 1px solid #00d9ff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+/* Color picker */
 #colorPicker {
   width: 44px;
   height: 44px;
@@ -135,6 +147,62 @@ body {
   border-radius: 6px;
 }
 
+/* Brush size control */
+.size-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 217, 255, 0.2);
+}
+
+.size-control label {
+  font-size: 12px;
+  color: #aaa;
+  font-weight: 600;
+}
+
+#brushSize {
+  width: 80px;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(0, 217, 255, 0.2);
+  border-radius: 3px;
+  outline: none;
+}
+
+#brushSize::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #00d9ff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+}
+
+#brushSize::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #00d9ff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+}
+
+#sizeValue {
+  font-size: 12px;
+  color: #00d9ff;
+  font-weight: 700;
+  min-width: 35px;
+}
+
+/* Action buttons */
 .save-btn, .cancel-btn {
   padding: 12px 28px;
   border-radius: 10px;
@@ -177,6 +245,7 @@ body {
   padding: 24px;
   position: relative;
   overflow: auto;
+  background: rgba(0, 0, 0, 0.3);
 }
 
 #canvas {
@@ -186,6 +255,10 @@ body {
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   cursor: crosshair;
+}
+
+#canvas:active {
+  cursor: grabbing;
 }
 
 /* Text Input */
@@ -201,6 +274,7 @@ body {
   outline: none;
   min-width: 200px;
   box-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+  z-index: 1000;
 }
 
 .text-input::placeholder {
@@ -220,32 +294,14 @@ body {
 
 #status {
   font-weight: 500;
+  color: #00d9ff;
 }
 
-/* Tooltips - enhanced for better UX */
-.tool-btn[title]:hover::before,
-.sticker-btn[title]:hover::before {
-  content: attr(title);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.95);
-  color: #fff;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 11px;
-  white-space: nowrap;
-  margin-bottom: 8px;
-  z-index: 1000;
-  border: 1px solid #00d9ff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-}
-
-/* Responsive adjustments */
+/* Responsive */
 @media (max-width: 1200px) {
   .toolbar {
     gap: 12px;
+    padding: 12px 16px;
   }
   
   .toolbar-section {
@@ -260,5 +316,13 @@ body {
   
   .section-label {
     display: none;
+  }
+  
+  .size-control label {
+    display: none;
+  }
+  
+  #brushSize {
+    width: 60px;
   }
 }
