@@ -7,7 +7,6 @@ let selectedSnapIds = new Set();
 // Initialize popup on load
 document.addEventListener('DOMContentLoaded', async () => {
   await loadSnaps();
-  await loadPlatformPreference();
   setupEventListeners();
   updateUI();
 });
@@ -19,9 +18,6 @@ function setupEventListeners() {
   
   // Clear button
   document.getElementById('clearButton').addEventListener('click', handleClear);
-  
-  // Platform selector
-  document.getElementById('aiPlatform').addEventListener('change', handlePlatformChange);
   
   // Selection controls
   document.getElementById('selectAllBtn').addEventListener('click', handleSelectAll);
@@ -65,15 +61,12 @@ async function handleOrbClick() {
                      hostname.includes('claude.ai');
     
     if (isAISite && currentSnaps.length > 0) {
-      // Upload mode - get preferred platform
-      const preferredPlatform = document.getElementById('aiPlatform').value;
-      
+      // Upload mode
       status.textContent = `Uploading ${currentSnaps.length} snaps...`;
       status.className = 'status uploading';
       
       const response = await chrome.runtime.sendMessage({ 
-        action: 'upload',
-        preferredPlatform
+        action: 'upload'
       });
       
       if (response.success) {
@@ -170,11 +163,6 @@ async function handleClear() {
 }
 
 // Handle platform change
-async function handlePlatformChange(e) {
-  const platform = e.target.value;
-  await chrome.storage.sync.set({ preferredPlatform: platform });
-}
-
 // Load snaps from storage
 async function loadSnaps() {
   try {
@@ -195,16 +183,6 @@ async function loadSnaps() {
 }
 
 // Load platform preference
-async function loadPlatformPreference() {
-  try {
-    const result = await chrome.storage.sync.get('preferredPlatform');
-    if (result.preferredPlatform) {
-      document.getElementById('aiPlatform').value = result.preferredPlatform;
-    }
-  } catch (error) {
-    console.error('Load platform preference error:', error);
-  }
-}
 
 // Update UI based on current state
 function updateUI() {
@@ -281,16 +259,28 @@ function updateThumbnails() {
       handleAnnotate(index);
     });
     
+    // Create copy button
+    const copyBtn = document.createElement('div');
+    copyBtn.className = 'thumbnail-copy';
+    copyBtn.title = 'Copy this snap';
+    
+    // Copy button click handler
+    copyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleCopySingle(index);
+    });
+    
     const img = document.createElement('img');
     img.src = dataUrl;
     img.alt = `Snap ${index + 1}`;
     
     // Thumbnail click to preview
     thumbnail.addEventListener('click', (e) => {
-      // Don't open preview if clicking checkbox, delete, or annotate button
+      // Don't open preview if clicking checkbox, delete, annotate, or copy button
       if (!e.target.classList.contains('thumbnail-checkbox') && 
           !e.target.classList.contains('thumbnail-delete') &&
-          !e.target.classList.contains('thumbnail-annotate')) {
+          !e.target.classList.contains('thumbnail-annotate') &&
+          !e.target.classList.contains('thumbnail-copy')) {
         showPreview(index);
       }
     });
@@ -309,6 +299,7 @@ function updateThumbnails() {
     thumbnail.appendChild(checkbox);
     thumbnail.appendChild(deleteBtn);
     thumbnail.appendChild(annotateBtn);
+    thumbnail.appendChild(copyBtn);
     thumbnail.appendChild(img);
     thumbnail.appendChild(number);
     container.appendChild(thumbnail);
@@ -407,6 +398,37 @@ async function handleCopySelected() {
       status.textContent = 'Flow: Ready';
       status.className = 'status';
     }, 2000);
+  }
+}
+
+// Handle Copy Single (individual snap)
+async function handleCopySingle(index) {
+  const status = document.getElementById('status');
+  
+  try {
+    const dataUrl = currentSnaps[index];
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    
+    await navigator.clipboard.write([
+      new ClipboardItem({ [blob.type]: blob })
+    ]);
+    
+    status.textContent = `Snap ${index + 1} copied ✓`;
+    status.className = 'status active';
+    
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 1500);
+  } catch (error) {
+    console.error('Copy single error:', error);
+    status.textContent = 'Copy failed';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 1500);
   }
 }
 
