@@ -27,6 +27,7 @@ function setupEventListeners() {
   document.getElementById('selectAllBtn').addEventListener('click', handleSelectAll);
   document.getElementById('copySelectedBtn').addEventListener('click', handleCopySelected);
   document.getElementById('downloadSelectedBtn').addEventListener('click', handleDownloadSelected);
+  document.getElementById('exportPdfBtn').addEventListener('click', handleExportPDF);
   
   // Preview modal
   document.getElementById('previewClose').addEventListener('click', closePreview);
@@ -35,6 +36,13 @@ function setupEventListeners() {
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closePreview();
+  });
+  
+  // Listen for annotation completion via Chrome runtime messaging
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'annotationComplete') {
+      handleAnnotationMessage(request);
+    }
   });
 }
 
@@ -262,18 +270,37 @@ function updateThumbnails() {
       handleDeleteSnap(index);
     });
     
+    // Create annotate button
+    const annotateBtn = document.createElement('div');
+    annotateBtn.className = 'thumbnail-annotate';
+    annotateBtn.title = 'Annotate this snap';
+    
+    // Annotate button click handler
+    annotateBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleAnnotate(index);
+    });
+    
     const img = document.createElement('img');
     img.src = dataUrl;
     img.alt = `Snap ${index + 1}`;
     
     // Thumbnail click to preview
     thumbnail.addEventListener('click', (e) => {
-      // Don't open preview if clicking checkbox or delete button
+      // Don't open preview if clicking checkbox, delete, or annotate button
       if (!e.target.classList.contains('thumbnail-checkbox') && 
-          !e.target.classList.contains('thumbnail-delete')) {
+          !e.target.classList.contains('thumbnail-delete') &&
+          !e.target.classList.contains('thumbnail-annotate')) {
         showPreview(index);
       }
     });
+    
+    // Drag and drop support
+    thumbnail.draggable = true;
+    thumbnail.addEventListener('dragstart', (e) => handleDragStart(e, index));
+    thumbnail.addEventListener('dragover', handleDragOver);
+    thumbnail.addEventListener('drop', (e) => handleDrop(e, index));
+    thumbnail.addEventListener('dragend', handleDragEnd);
     
     const number = document.createElement('div');
     number.className = 'thumbnail-number';
@@ -281,6 +308,7 @@ function updateThumbnails() {
     
     thumbnail.appendChild(checkbox);
     thumbnail.appendChild(deleteBtn);
+    thumbnail.appendChild(annotateBtn);
     thumbnail.appendChild(img);
     thumbnail.appendChild(number);
     container.appendChild(thumbnail);
@@ -437,6 +465,199 @@ async function handleDownloadSelected() {
 function updateClearButton() {
   const clearButton = document.getElementById('clearButton');
   clearButton.disabled = currentSnaps.length === 0;
+}
+
+// Handle annotation
+function handleAnnotate(index) {
+  const dataUrl = currentSnaps[index];
+  // Open annotation window with image data
+  const width = 1200;
+  const height = 800;
+  const left = (screen.width - width) / 2;
+  const top = (screen.height - height) / 2;
+  
+  window.open(
+    `annotate.html?index=${index}&img=${encodeURIComponent(dataUrl)}`,
+    'Annotate',
+    `width=${width},height=${height},left=${left},top=${top}`
+  );
+}
+
+// Handle annotation message from annotation window
+async function handleAnnotationMessage(request) {
+  const { dataUrl, index } = request;
+  
+  // Replace the snap with annotated version
+  currentSnaps[parseInt(index)] = dataUrl;
+  
+  // Update storage
+  await chrome.runtime.sendMessage({ 
+    action: 'setSnaps', 
+    snaps: currentSnaps 
+  });
+  
+  updateUI();
+  
+  // Show success message
+  const status = document.getElementById('status');
+  status.textContent = 'Annotation saved ✓';
+  status.className = 'status active';
+  setTimeout(() => {
+    status.textContent = 'Flow: Ready';
+    status.className = 'status';
+  }, 1500);
+}
+
+// Track if jsPDF is loaded
+let jsPDFLoaded = false;
+
+// Handle Export as PDF
+async function handleExportPDF() {
+  const status = document.getElementById('status');
+  
+  if (currentSnaps.length === 0) {
+    status.textContent = 'No snaps to export';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 1500);
+    return;
+  }
+  
+  try {
+    status.textContent = 'Generating PDF...';
+    status.className = 'status active';
+    
+    // Load jsPDF once
+    if (!jsPDFLoaded) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      await new Promise((resolve, reject) => {
+        script.onload = () => {
+          jsPDFLoaded = true;
+          resolve();
+        };
+        script.onerror = () => reject(new Error('Failed to load jsPDF'));
+        document.head.appendChild(script);
+      });
+      // Wait a bit for library to initialize
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    if (typeof window.jspdf === 'undefined') {
+      throw new Error('jsPDF library failed to load');
+    }
+    
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = 210; // A4 width in mm
+    const pageHeight = 297; // A4 height in mm
+    const margin = 10;
+    const maxWidth = pageWidth - (2 * margin);
+    const maxHeight = pageHeight - (2 * margin);
+    
+    for (let i = 0; i < currentSnaps.length; i++) {
+      if (i > 0) {
+        pdf.addPage();
+      }
+      
+      // Add image to PDF
+      const img = await createImageBitmap(await (await fetch(currentSnaps[i])).blob());
+      const aspectRatio = img.width / img.height;
+      
+      let imgWidth = maxWidth;
+      let imgHeight = imgWidth / aspectRatio;
+      
+      // If image is too tall, scale by height instead
+      if (imgHeight > maxHeight) {
+        imgHeight = maxHeight;
+        imgWidth = imgHeight * aspectRatio;
+      }
+      
+      // Center the image
+      const x = (pageWidth - imgWidth) / 2;
+      const y = margin;
+      
+      pdf.addImage(currentSnaps[i], 'PNG', x, y, imgWidth, imgHeight);
+      
+      // Add page number at bottom
+      pdf.setFontSize(10);
+      pdf.setTextColor(150);
+      pdf.text(`Snap ${i + 1} of ${currentSnaps.length}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+    }
+    
+    // Save PDF
+    const timestamp = new Date().toISOString().slice(0, 10);
+    pdf.save(`flow-screenshots-${timestamp}.pdf`);
+    
+    status.textContent = 'PDF exported ✓';
+    status.className = 'status active';
+    
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 2000);
+  } catch (error) {
+    console.error('PDF export error:', error);
+    status.textContent = 'PDF export failed';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 2000);
+  }
+}
+
+// Drag and drop variables
+let draggedIndex = null;
+
+// Handle drag start
+function handleDragStart(e, index) {
+  draggedIndex = index;
+  e.target.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+// Handle drag over
+function handleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+
+// Handle drop
+async function handleDrop(e, dropIndex) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  
+  if (draggedIndex === null) return;
+  
+  // Only reorder if actually moving to different index
+  if (draggedIndex !== dropIndex) {
+    // Reorder the array
+    const temp = currentSnaps[draggedIndex];
+    currentSnaps.splice(draggedIndex, 1);
+    currentSnaps.splice(dropIndex, 0, temp);
+    
+    // Update storage
+    await chrome.runtime.sendMessage({ 
+      action: 'setSnaps', 
+      snaps: currentSnaps 
+    });
+    
+    // Clear selections only when order changed
+    selectedSnapIds.clear();
+    
+    updateUI();
+  }
+}
+
+// Handle drag end
+function handleDragEnd(e) {
+  e.target.classList.remove('dragging');
+  document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('drag-over'));
+  draggedIndex = null;
 }
 
 // Show preview modal
