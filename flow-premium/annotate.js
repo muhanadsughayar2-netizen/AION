@@ -114,12 +114,27 @@ function loadImage() {
   if (imageUrl) {
     const img = new Image();
     img.onload = () => {
+      // Validate image dimensions
+      if (img.width < 1 || img.height < 1) {
+        console.error('Invalid image dimensions');
+        return;
+      }
+      
       canvas.width = img.width;
       canvas.height = img.height;
       ctx.drawImage(img, 0, 0);
       
-      // Save original image
-      originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      // Save original image (with validation)
+      try {
+        if (canvas.width > 0 && canvas.height > 0) {
+          originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
+      } catch (error) {
+        console.error('Failed to save original image:', error);
+      }
+    };
+    img.onerror = (error) => {
+      console.error('Failed to load image:', error);
     };
     img.src = imageUrl;
   }
@@ -243,9 +258,10 @@ function handleMouseUp(e) {
       startY: centerY
     });
     highlightPoints = [];
-  } else if (currentTool === 'spotlight') {
+  } else if (currentTool === 'rectangle') {
     annotations.push({
-      tool: 'spotlight',
+      tool: 'rectangle',
+      color: currentColor,
       startX, startY, endX, endY
     });
   } else if (currentTool === 'redact') {
@@ -264,7 +280,7 @@ function findAnnotationAt(x, y) {
   for (let i = annotations.length - 1; i >= 0; i--) {
     const ann = annotations[i];
     
-    if (ann.tool === 'spotlight' || ann.tool === 'redact') {
+    if (ann.tool === 'rectangle' || ann.tool === 'redact') {
       const minX = Math.min(ann.startX, ann.endX);
       const maxX = Math.max(ann.startX, ann.endX);
       const minY = Math.min(ann.startY, ann.endY);
@@ -296,8 +312,9 @@ function drawPreview(x1, y1, x2, y2) {
   ctx.setLineDash([5, 5]);
   ctx.lineWidth = 3;
   
-  if (currentTool === 'spotlight') {
-    ctx.strokeStyle = '#00d9ff';
+  if (currentTool === 'rectangle') {
+    ctx.strokeStyle = currentColor;
+    ctx.lineWidth = 4;
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
   } else if (currentTool === 'redact') {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
@@ -392,10 +409,12 @@ function redrawCanvas() {
     ctx.putImageData(originalImage, 0, 0);
   }
   
-  // Step 2: Draw non-spotlight annotations FIRST (on bright base)
+  // Draw all annotations
   annotations.forEach(ann => {
     if (ann.tool === 'highlight') {
       drawHighlight(ann);
+    } else if (ann.tool === 'rectangle') {
+      drawRectangle(ann);
     } else if (ann.tool === 'redact') {
       drawRedaction(ann);
     } else if (ann.tool === 'callout') {
@@ -406,51 +425,6 @@ function redrawCanvas() {
       drawText(ann);
     }
   });
-  
-  // Step 3: Apply spotlight dimming LAST (proper compositing!)
-  const spotlights = annotations.filter(a => a.tool === 'spotlight');
-  if (spotlights.length > 0) {
-    // Create dimming mask
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Cut out spotlight areas and add glow
-    ctx.globalCompositeOperation = 'destination-out';
-    spotlights.forEach(spot => {
-      const x = Math.min(spot.startX, spot.endX);
-      const y = Math.min(spot.startY, spot.endY);
-      const w = Math.abs(spot.endX - spot.startX);
-      const h = Math.abs(spot.endY - spot.startY);
-      
-      // Clear the dim layer in spotlight area
-      ctx.fillStyle = 'rgba(0, 0, 0, 1)';
-      ctx.fillRect(x, y, w, h);
-    });
-    
-    // Reset composite mode
-    ctx.globalCompositeOperation = 'source-over';
-    
-    // Add glowing borders AFTER dimming
-    spotlights.forEach(spot => {
-      const x = Math.min(spot.startX, spot.endX);
-      const y = Math.min(spot.startY, spot.endY);
-      const w = Math.abs(spot.endX - spot.startX);
-      const h = Math.abs(spot.endY - spot.startY);
-      
-      ctx.strokeStyle = '#00d9ff';
-      ctx.lineWidth = 4;
-      ctx.shadowColor = '#00d9ff';
-      ctx.shadowBlur = 25;
-      ctx.strokeRect(x, y, w, h);
-      ctx.shadowBlur = 0;
-      
-      // Add "FOCUS" label
-      ctx.fillStyle = '#00d9ff';
-      ctx.font = 'bold 14px Arial';
-      ctx.fillText('FOCUS', x + 10, y + 25);
-    });
-  }
   
   // Highlight hovered annotation
   if (hoveredAnnotation) {
@@ -468,6 +442,22 @@ function redrawCanvas() {
     
     ctx.setLineDash([]);
   }
+}
+
+// Draw rectangle
+function drawRectangle(ann) {
+  const x = Math.min(ann.startX, ann.endX);
+  const y = Math.min(ann.startY, ann.endY);
+  const w = Math.abs(ann.endX - ann.startX);
+  const h = Math.abs(ann.endY - ann.startY);
+  
+  // Draw colored rectangle
+  ctx.strokeStyle = ann.color;
+  ctx.lineWidth = 4;
+  ctx.shadowColor = ann.color;
+  ctx.shadowBlur = 15;
+  ctx.strokeRect(x, y, w, h);
+  ctx.shadowBlur = 0;
 }
 
 // Draw highlight
@@ -500,20 +490,33 @@ function drawRedaction(ann) {
   const w = Math.abs(ann.endX - ann.startX);
   const h = Math.abs(ann.endY - ann.startY);
   
+  // Validate dimensions before getImageData
+  if (w < 1 || h < 1 || x < 0 || y < 0 || x + w > canvas.width || y + h > canvas.height) {
+    console.warn('Invalid redaction dimensions, skipping');
+    return;
+  }
+  
   // Pixelate effect
   const blockSize = 12;
-  const imgData = ctx.getImageData(x, y, w, h);
-  
-  for (let py = 0; py < h; py += blockSize) {
-    for (let px = 0; px < w; px += blockSize) {
-      const pixelIndex = (py * w + px) * 4;
-      const r = imgData.data[pixelIndex] || 0;
-      const g = imgData.data[pixelIndex + 1] || 0;
-      const b = imgData.data[pixelIndex + 2] || 0;
-      
-      ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-      ctx.fillRect(x + px, y + py, blockSize, blockSize);
+  try {
+    const imgData = ctx.getImageData(x, y, w, h);
+    
+    for (let py = 0; py < h; py += blockSize) {
+      for (let px = 0; px < w; px += blockSize) {
+        const pixelIndex = (py * w + px) * 4;
+        const r = imgData.data[pixelIndex] || 0;
+        const g = imgData.data[pixelIndex + 1] || 0;
+        const b = imgData.data[pixelIndex + 2] || 0;
+        
+        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+        ctx.fillRect(x + px, y + py, blockSize, blockSize);
+      }
     }
+  } catch (error) {
+    console.error('Pixelation failed:', error);
+    // Fallback: just draw black rectangle
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    ctx.fillRect(x, y, w, h);
   }
   
   // Red border
@@ -618,7 +621,7 @@ function clearAll() {
 function updateStatus() {
   const statusMap = {
     'highlight': 'Draw glowing highlights - drag to reposition',
-    'spotlight': 'Drag to spotlight area (dims rest) - drag to reposition',
+    'rectangle': 'Drag to draw colored boxes - drag to reposition',
     'redact': 'Drag to pixelate sensitive info - drag to reposition',
     'callout': 'Click to add numbered markers - drag to move',
     'text': 'Click to add custom text - drag to move'
