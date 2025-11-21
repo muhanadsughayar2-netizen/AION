@@ -11,43 +11,28 @@
     <!-- Toolbar -->
     <div class="toolbar">
       <div class="toolbar-section">
-        <span class="section-label">Tools</span>
-        <button class="tool-btn active" data-tool="highlight" title="Highlight: Draw glowing strokes">
-          ✨
-        </button>
-        <button class="tool-btn" data-tool="rectangle" title="Rectangle: Draw colored boxes">
-          📦
-        </button>
-        <button class="tool-btn" data-tool="redact" title="Redact: Pixelate sensitive info">
-          🔒
-        </button>
-        <button class="tool-btn" data-tool="callout" title="Callout: Click to add numbered marker">
-          🔢
-        </button>
-        <button class="tool-btn" data-tool="text" title="Text: Click to add custom text">
-          ✏️
-        </button>
+        <button class="tool-btn active" data-tool="highlight" title="Draw highlights">✨</button>
+        <button class="tool-btn" data-tool="callout" title="Add numbers">🔢</button>
+        <button class="tool-btn" data-tool="text" title="Add text">✏️</button>
       </div>
       
       <div class="toolbar-section">
-        <span class="section-label">Quick Labels</span>
-        <button class="sticker-btn" data-text="🐛 BUG" title="Add BUG sticker (drag to move)">BUG</button>
-        <button class="sticker-btn" data-text="⚠️ IMPORTANT" title="Add IMPORTANT sticker (drag to move)">IMPORTANT</button>
-        <button class="sticker-btn" data-text="👉 FOCUS HERE" title="Add FOCUS sticker (drag to move)">FOCUS</button>
+        <button class="sticker-btn" data-text="🐛 BUG">BUG</button>
+        <button class="sticker-btn" data-text="⚠️ IMPORTANT">IMPORTANT</button>
+        <button class="sticker-btn" data-text="👉 FOCUS">FOCUS</button>
       </div>
       
       <div class="toolbar-section">
-        <input type="color" id="colorPicker" value="#00d9ff" title="Choose color">
+        <input type="color" id="colorPicker" value="#00d9ff" title="Color">
         <div class="size-control">
-          <label for="brushSize">Size:</label>
           <input type="range" id="brushSize" min="4" max="40" value="12">
           <span id="sizeValue">12px</span>
         </div>
-        <button id="undoBtn" class="tool-btn" title="Undo last annotation">↩️</button>
-        <button id="clearBtn" class="tool-btn" title="Clear all annotations">🗑️</button>
       </div>
       
       <div class="toolbar-section">
+        <button id="undoBtn" class="tool-btn" title="Undo">↩️</button>
+        <button id="clearBtn" class="tool-btn" title="Clear all">🗑️</button>
         <button id="saveBtn" class="save-btn">💾 Save</button>
         <button id="cancelBtn" class="cancel-btn">✖ Cancel</button>
       </div>
@@ -61,7 +46,7 @@
     
     <!-- Status Bar -->
     <div class="status-bar">
-      <span id="status">ALL annotations are draggable! Hover and drag to reposition. Press DELETE to remove. Change color and size anytime.</span>
+      <span id="status">Draw highlights, add numbers, or add text. All draggable!</span>
     </div>
   </div>
 
