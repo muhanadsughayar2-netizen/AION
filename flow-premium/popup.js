@@ -364,28 +364,21 @@ async function handleCopySelected() {
       .sort((a, b) => a - b)
       .map(index => currentSnaps[index]);
     
-    status.textContent = `Copying ${selectedSnaps.length} snaps...`;
+    status.textContent = `Creating composite image...`;
     status.className = 'status active';
     
-    // Copy snaps sequentially (clipboard can only hold one at a time)
-    for (let i = 0; i < selectedSnaps.length; i++) {
-      const dataUrl = selectedSnaps[i];
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-      await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type]: blob })
-      ]);
-      
-      // Brief status update
-      status.textContent = `Copied ${i + 1}/${selectedSnaps.length}`;
-      
-      // Small delay between copies
-      if (i < selectedSnaps.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
-    }
+    // Clipboard can only hold ONE image at a time!
+    // Solution: Combine all selected images into a single composite image
+    const compositeDataUrl = await createCompositeImage(selectedSnaps);
     
-    status.textContent = `${selectedSnaps.length} snaps copied ✓`;
+    // Copy the single composite image
+    const res = await fetch(compositeDataUrl);
+    const blob = await res.blob();
+    await navigator.clipboard.write([
+      new ClipboardItem({ [blob.type]: blob })
+    ]);
+    
+    status.textContent = `${selectedSnaps.length} snaps copied as collage ✓`;
     status.className = 'status active';
     
     setTimeout(() => {
@@ -394,13 +387,68 @@ async function handleCopySelected() {
     }, 2000);
   } catch (error) {
     console.error('Copy selected error:', error);
-    status.textContent = 'Copy failed';
+    status.textContent = 'Copy failed - try Upload instead';
     status.className = 'status error';
     setTimeout(() => {
       status.textContent = 'Flow: Ready';
       status.className = 'status';
     }, 2000);
   }
+}
+
+// Create composite image from multiple snapshots
+async function createCompositeImage(dataUrls) {
+  // Load all images first
+  const images = await Promise.all(dataUrls.map(url => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+  }));
+  
+  // Calculate composite dimensions
+  const padding = 20;
+  const maxWidth = Math.max(...images.map(img => img.width));
+  const totalHeight = images.reduce((sum, img) => sum + img.height + padding, padding);
+  
+  // Create canvas for composite
+  const canvas = document.createElement('canvas');
+  canvas.width = maxWidth + (padding * 2);
+  canvas.height = totalHeight;
+  const ctx = canvas.getContext('2d');
+  
+  // Fill background
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw each image vertically stacked
+  let currentY = padding;
+  images.forEach((img, index) => {
+    const x = (canvas.width - img.width) / 2; // Center horizontally
+    
+    // Add subtle border and shadow
+    ctx.shadowColor = 'rgba(0, 217, 255, 0.3)';
+    ctx.shadowBlur = 10;
+    ctx.strokeStyle = 'rgba(0, 217, 255, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x - 1, currentY - 1, img.width + 2, img.height + 2);
+    ctx.shadowBlur = 0;
+    
+    // Draw image
+    ctx.drawImage(img, x, currentY);
+    
+    // Add snap number label
+    ctx.fillStyle = 'rgba(0, 217, 255, 0.9)';
+    ctx.font = 'bold 16px Arial';
+    ctx.fillText(`Snap ${index + 1}`, x + 10, currentY + 25);
+    
+    currentY += img.height + padding;
+  });
+  
+  // Convert to dataURL
+  return canvas.toDataURL('image/png');
 }
 
 // Handle Copy Single (individual snap)
