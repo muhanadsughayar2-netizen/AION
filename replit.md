@@ -8,6 +8,14 @@ The extension provides two operational modes:
 1. **Capture Mode** (on regular websites): Captures screenshots via keyboard shortcut or popup button, auto-copies to clipboard, and stores in session
 2. **Upload Mode** (on AI platforms): Auto-detects AI chat sites and batch-uploads all stored screenshots directly to the platform's file input
 
+**New Premium Features (November 2025):**
+- **Quick Annotation Tools**: Full-featured canvas editor with arrows, text, rectangles, and blur capabilities
+- **Export as PDF**: Combine all screenshots into a single professional PDF document
+- **Drag & Drop Reordering**: Rearrange thumbnails to control upload sequence
+- **Multi-Select Operations**: Select All, Copy Selected, Download Selected batch actions
+- **Delete Individual Snaps**: Remove unwanted screenshots with hover delete button
+- **Full-Size Preview**: Click thumbnails to zoom and inspect screenshots
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
