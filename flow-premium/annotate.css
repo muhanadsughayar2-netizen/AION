@@ -67,11 +67,76 @@ body {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
+  position: relative;
 }
 
 .sticker-btn:hover {
   background: rgba(0, 217, 255, 0.2);
   border-color: #00d9ff;
+}
+
+.create-sticker-btn {
+  padding: 8px 14px;
+  background: rgba(255, 215, 0, 0.1);
+  border: 2px dashed rgba(255, 215, 0, 0.4);
+  border-radius: 6px;
+  color: #ffd700;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.create-sticker-btn:hover {
+  background: rgba(255, 215, 0, 0.2);
+  border-color: #ffd700;
+}
+
+.custom-sticker-btn {
+  padding: 8px 14px;
+  background: rgba(147, 51, 234, 0.1);
+  border: 2px solid rgba(147, 51, 234, 0.3);
+  border-radius: 6px;
+  color: #9333ea;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  padding-right: 28px;
+}
+
+.custom-sticker-btn:hover {
+  background: rgba(147, 51, 234, 0.2);
+  border-color: #9333ea;
+}
+
+.delete-sticker {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  background: #ff3b30;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 10px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.custom-sticker-btn:hover .delete-sticker {
+  display: flex;
+}
+
+#customStickers {
+  display: flex;
+  gap: 8px;
 }
 
 #colorPicker {
@@ -151,6 +216,7 @@ body {
   justify-content: center;
   padding: 20px;
   overflow: auto;
+  position: relative;
 }
 
 #canvas {

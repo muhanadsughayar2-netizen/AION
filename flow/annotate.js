@@ -13,12 +13,14 @@ let highlightPoints = [];
 let draggingAnnotation = null;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
+let pendingStickerText = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   canvas = document.getElementById('canvas');
   ctx = canvas.getContext('2d');
   
   setupEventListeners();
+  loadCustomStickers();
   loadImage();
 });
 
@@ -29,6 +31,8 @@ function setupEventListeners() {
       document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentTool = btn.dataset.tool;
+      pendingStickerText = null; // Clear pending sticker when switching tools
+      updateStatus('Draw highlights, add numbers, or add text. All draggable!');
     });
   });
   
@@ -42,19 +46,11 @@ function setupEventListeners() {
     document.getElementById('sizeValue').textContent = brushSize + 'px';
   });
   
-  // Stickers
-  document.querySelectorAll('.sticker-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      annotations.push({
-        tool: 'sticker',
-        text: btn.dataset.text,
-        color: currentColor,
-        x: canvas.width / 2,
-        y: 80 + (annotations.filter(a => a.tool === 'sticker').length * 60)
-      });
-      redraw();
-    });
-  });
+  // Stickers - click to place at cursor position
+  setupStickerListeners();
+  
+  // Create custom sticker
+  document.getElementById('createStickerBtn').addEventListener('click', createCustomSticker);
   
   // Controls
   document.getElementById('undoBtn').addEventListener('click', () => {
@@ -132,11 +128,35 @@ function handleMouseDown(e) {
   
   if (currentTool === 'text') {
     const textInput = document.getElementById('textInput');
+    const canvasRect = canvas.getBoundingClientRect();
+    const container = document.querySelector('.canvas-container');
+    const containerRect = container.getBoundingClientRect();
+    
+    // Convert canvas coordinates to container-relative coordinates
+    const canvasLeft = canvasRect.left - containerRect.left;
+    const canvasTop = canvasRect.top - containerRect.top;
+    const scaleX = canvasRect.width / canvas.width;
+    const scaleY = canvasRect.height / canvas.height;
+    
+    const inputX = canvasLeft + (startX * scaleX);
+    const inputY = canvasTop + (startY * scaleY);
+    
     textInput.style.display = 'block';
-    textInput.style.left = startX + 'px';
-    textInput.style.top = startY + 'px';
+    textInput.style.left = inputX + 'px';
+    textInput.style.top = inputY + 'px';
     textInput.value = '';
     textInput.focus();
+  } else if (currentTool === 'sticker' && pendingStickerText) {
+    annotations.push({
+      tool: 'sticker',
+      text: pendingStickerText,
+      color: currentColor,
+      x: startX,
+      y: startY
+    });
+    pendingStickerText = null;
+    redraw();
+    updateStatus('Draw highlights, add numbers, or add text. All draggable!');
   } else if (currentTool === 'callout') {
     const label = prompt('Label:', 'Step ' + calloutNumber);
     if (label) {
@@ -350,6 +370,93 @@ function redraw() {
       ctx.fillText(ann.text, ann.x, ann.y);
     }
   });
+}
+
+function updateStatus(message) {
+  const statusEl = document.getElementById('status');
+  if (statusEl) {
+    statusEl.textContent = message;
+  }
+}
+
+function setupStickerListeners() {
+  document.querySelectorAll('.sticker-btn, .custom-sticker-btn').forEach(btn => {
+    const deleteBtn = btn.querySelector('.delete-sticker');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteCustomSticker(btn.dataset.text);
+      });
+    }
+    
+    btn.addEventListener('click', () => {
+      pendingStickerText = btn.dataset.text;
+      currentTool = 'sticker';
+      document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+      canvas.style.cursor = 'crosshair';
+      updateStatus('Click on the image to place sticker');
+    });
+  });
+}
+
+async function loadCustomStickers() {
+  try {
+    const result = await chrome.storage.local.get('customStickers');
+    const customStickers = result.customStickers || [];
+    const container = document.getElementById('customStickers');
+    container.innerHTML = '';
+    
+    customStickers.forEach(text => {
+      const btn = document.createElement('button');
+      btn.className = 'custom-sticker-btn';
+      btn.dataset.text = text;
+      btn.innerHTML = `${text}<span class="delete-sticker">×</span>`;
+      container.appendChild(btn);
+    });
+    
+    setupStickerListeners();
+  } catch (error) {
+    console.error('Failed to load custom stickers:', error);
+  }
+}
+
+async function createCustomSticker() {
+  try {
+    const result = await chrome.storage.local.get('customStickers');
+    const customStickers = result.customStickers || [];
+    
+    if (customStickers.length >= 5) {
+      alert('Maximum 5 custom stickers allowed. Delete one to create a new one.');
+      return;
+    }
+    
+    const text = prompt('Enter your custom sticker text (e.g., "TODO", "CHECK THIS", "URGENT"):');
+    if (text && text.trim()) {
+      const trimmed = text.trim().toUpperCase();
+      if (customStickers.includes(trimmed)) {
+        alert('This sticker already exists!');
+        return;
+      }
+      
+      customStickers.push(trimmed);
+      await chrome.storage.local.set({ customStickers });
+      loadCustomStickers();
+    }
+  } catch (error) {
+    console.error('Failed to create custom sticker:', error);
+  }
+}
+
+async function deleteCustomSticker(text) {
+  try {
+    const result = await chrome.storage.local.get('customStickers');
+    const customStickers = result.customStickers || [];
+    const filtered = customStickers.filter(s => s !== text);
+    await chrome.storage.local.set({ customStickers: filtered });
+    loadCustomStickers();
+  } catch (error) {
+    console.error('Failed to delete custom sticker:', error);
+  }
 }
 
 async function save() {
