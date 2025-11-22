@@ -465,17 +465,26 @@ body {
   grid-column: 1 / -1;
   text-align: center;
   padding: 20px;
-  color: #666;
-  font-size: 11px;
+  color: #00d9ff;
+  font-size: 12px;
+  line-height: 1.6;
+  background: rgba(0, 217, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 217, 255, 0.2);
+}
+
+.empty-state strong {
+  color: #00d9ff;
+  font-size: 13px;
 }
 
 /* Clear Button */
 .clear-button {
   width: 100%;
   padding: 10px;
-  background: rgba(255, 59, 48, 0.1);
-  border: 1px solid rgba(255, 59, 48, 0.3);
-  color: #ff3b30;
+  background: rgba(0, 217, 255, 0.1);
+  border: 1px solid rgba(0, 217, 255, 0.3);
+  color: #00d9ff;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
@@ -486,10 +495,10 @@ body {
 }
 
 .clear-button:hover {
-  background: rgba(255, 59, 48, 0.2);
-  border-color: rgba(255, 59, 48, 0.5);
+  background: rgba(0, 217, 255, 0.2);
+  border-color: rgba(0, 217, 255, 0.5);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
 }
 
 .clear-button:active {

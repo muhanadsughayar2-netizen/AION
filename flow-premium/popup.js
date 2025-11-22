@@ -206,7 +206,7 @@ function updateThumbnails() {
   if (currentSnaps.length === 0) {
     const emptyState = document.createElement('div');
     emptyState.className = 'empty-state';
-    emptyState.textContent = 'No snapshots yet. Press Ctrl+Shift+S to capture.';
+    emptyState.innerHTML = '⚡ <strong>Lightning-fast screenshots!</strong><br>Click the glowing camera button above to capture instantly';
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';
     return;
