@@ -864,3 +864,14 @@ body {
   transform: scale(1.1);
   box-shadow: 0 4px 12px rgba(155, 89, 182, 0.6);
 }
+
+/* Disabled OCR button */
+.thumbnail-ocr.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.thumbnail-ocr.disabled:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(155, 89, 182, 0.4);
+}

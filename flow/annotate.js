@@ -121,8 +121,16 @@ function handleMouseDown(e) {
   const clicked = findAnnotation(startX, startY);
   if (clicked) {
     draggingAnnotation = clicked;
-    dragOffsetX = startX - clicked.x;
-    dragOffsetY = startY - clicked.y;
+    // For arrows, store the offset for both start and end points
+    if (clicked.tool === 'arrow') {
+      dragOffsetX = startX - clicked.x;
+      dragOffsetY = startY - clicked.y;
+      draggingAnnotation.endOffsetX = startX - clicked.endX;
+      draggingAnnotation.endOffsetY = startY - clicked.endY;
+    } else {
+      dragOffsetX = startX - clicked.x;
+      dragOffsetY = startY - clicked.y;
+    }
     canvas.style.cursor = 'grabbing';
     return;
   }
@@ -190,16 +198,11 @@ function handleMouseMove(e) {
       draggingAnnotation.x = x - dragOffsetX;
       draggingAnnotation.y = y - dragOffsetY;
     } else if (draggingAnnotation.tool === 'arrow') {
-      // Move both endpoints of arrow by same delta
-      const newX = x - dragOffsetX;
-      const newY = y - dragOffsetY;
-      const deltaX = newX - draggingAnnotation.x;
-      const deltaY = newY - draggingAnnotation.y;
-      
-      draggingAnnotation.x = newX;
-      draggingAnnotation.y = newY;
-      draggingAnnotation.endX += deltaX;
-      draggingAnnotation.endY += deltaY;
+      // Move arrow - update both endpoints based on their original offsets
+      draggingAnnotation.x = x - dragOffsetX;
+      draggingAnnotation.y = y - dragOffsetY;
+      draggingAnnotation.endX = x - (draggingAnnotation.endOffsetX || dragOffsetX);
+      draggingAnnotation.endY = y - (draggingAnnotation.endOffsetY || dragOffsetY);
     } else {
       draggingAnnotation.x = x - dragOffsetX;
       draggingAnnotation.y = y - dragOffsetY;

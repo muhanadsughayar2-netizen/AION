@@ -275,10 +275,18 @@ function updateThumbnails() {
     ocrBtn.className = 'thumbnail-ocr';
     ocrBtn.title = 'Extract text (OCR)';
     
+    // Disable OCR button if already busy
+    if (ocrBusy) {
+      ocrBtn.classList.add('disabled');
+      ocrBtn.title = 'OCR in progress...';
+    }
+    
     // OCR button click handler
     ocrBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      handleOCR(index);
+      if (!ocrBusy) {
+        handleOCR(index);
+      }
     });
     
     const img = document.createElement('img');
@@ -1078,29 +1086,55 @@ async function handleOCR(index) {
   ocrText.value = '';
   ocrBusy = true;
   
+  // Update all OCR buttons to show busy state
+  updateThumbnails();
+  
   try {
     const imageUrl = currentSnaps[index];
     
     // Create or reuse worker
     if (!ocrWorker) {
-      ocrStatus.textContent = 'Loading OCR engine...';
+      ocrStatus.textContent = 'Loading OCR engine... (first time only)';
       ocrWorker = await Tesseract.createWorker('eng', 1, {
         logger: (m) => {
           if (m.status === 'recognizing text') {
             const progress = Math.round(m.progress * 100);
             ocrStatus.textContent = `Extracting text... ${progress}%`;
+          } else if (m.status === 'loading tesseract core') {
+            ocrStatus.textContent = 'Loading OCR engine...';
+          } else if (m.status === 'initializing tesseract') {
+            ocrStatus.textContent = 'Initializing...';
           }
         }
       });
     }
     
-    ocrStatus.textContent = 'Extracting text...';
-    const { data: { text } } = await ocrWorker.recognize(imageUrl);
+    ocrStatus.textContent = 'Extracting text from screenshot...';
+    
+    // Use Promise.race to add timeout warning for very large images
+    const recognizePromise = ocrWorker.recognize(imageUrl);
+    const timeoutWarning = new Promise((resolve) => {
+      setTimeout(() => {
+        if (ocrBusy) {
+          ocrStatus.textContent = 'Processing large image... Please wait...';
+        }
+        resolve(null);
+      }, 5000);
+    });
+    
+    await Promise.race([timeoutWarning, Promise.resolve()]);
+    const { data: { text } } = await recognizePromise;
     
     // Show extracted text
     ocrStatus.style.display = 'none';
     if (text.trim()) {
       ocrText.value = text.trim();
+      status.textContent = 'Text extracted successfully ✓';
+      status.className = 'status active';
+      setTimeout(() => {
+        status.textContent = 'Flow: Ready';
+        status.className = 'status';
+      }, 2000);
     } else {
       ocrText.value = 'No text detected in this screenshot.';
     }
@@ -1119,6 +1153,8 @@ async function handleOCR(index) {
     }
   } finally {
     ocrBusy = false;
+    // Update UI to remove busy state
+    updateThumbnails();
   }
 }
 
