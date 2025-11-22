@@ -63,21 +63,23 @@ body {
 }
 
 .logo::before {
-  content: '✦';
+  content: '⭐';
   position: absolute;
-  left: -20px;
-  color: #00d9ff;
+  left: -25px;
+  color: #00ffff;
   animation: sparkle 2s ease-in-out infinite;
-  font-size: 16px;
+  font-size: 20px;
+  filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.8));
 }
 
 .logo::after {
-  content: '✦';
+  content: '⭐';
   position: absolute;
-  right: -20px;
-  color: #00d9ff;
+  right: -25px;
+  color: #00ffff;
   animation: sparkle 2s ease-in-out infinite 0.5s;
-  font-size: 16px;
+  font-size: 20px;
+  filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.8));
 }
 
 @keyframes sparkle {
@@ -516,9 +518,9 @@ body {
 .empty-state {
   grid-column: 1 / -1;
   text-align: center;
-  padding: 20px;
+  padding: 24px;
   color: #00d9ff;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.8;
   background: linear-gradient(135deg, 
     rgba(0, 217, 255, 0.1) 0%, 
@@ -548,11 +550,13 @@ body {
 
 .empty-state strong {
   color: #00ffff;
-  font-size: 14px;
-  font-weight: 700;
-  text-shadow: 0 0 10px rgba(0, 217, 255, 0.8);
+  font-size: 16px;
+  font-weight: 800;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.9);
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+  line-height: 1.4;
+  letter-spacing: 0.5px;
 }
 
 /* Clear Button */
