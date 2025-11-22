@@ -55,7 +55,8 @@ function setupEventListeners() {
   // Controls
   document.getElementById('undoBtn').addEventListener('click', () => {
     const removed = annotations.pop();
-    if (removed && removed.tool === 'callout') {
+    // Only decrement callout number if we removed a callout
+    if (removed && removed.tool === 'callout' && removed.number === calloutNumber - 1) {
       calloutNumber--;
     }
     redraw();
@@ -170,7 +171,7 @@ function handleMouseDown(e) {
       });
       redraw();
     }
-  } else if (currentTool === 'blur') {
+  } else if (currentTool === 'blur' || currentTool === 'arrow') {
     isDrawing = true;
   } else if (currentTool === 'highlight') {
     isDrawing = true;
@@ -188,6 +189,17 @@ function handleMouseMove(e) {
       // Just move x and y for blur rectangles
       draggingAnnotation.x = x - dragOffsetX;
       draggingAnnotation.y = y - dragOffsetY;
+    } else if (draggingAnnotation.tool === 'arrow') {
+      // Move both endpoints of arrow by same delta
+      const newX = x - dragOffsetX;
+      const newY = y - dragOffsetY;
+      const deltaX = newX - draggingAnnotation.x;
+      const deltaY = newY - draggingAnnotation.y;
+      
+      draggingAnnotation.x = newX;
+      draggingAnnotation.y = newY;
+      draggingAnnotation.endX += deltaX;
+      draggingAnnotation.endY += deltaY;
     } else {
       draggingAnnotation.x = x - dragOffsetX;
       draggingAnnotation.y = y - dragOffsetY;
@@ -224,6 +236,10 @@ function handleMouseMove(e) {
     ctx.setLineDash([5, 5]);
     ctx.strokeRect(startX, startY, width, height);
     ctx.setLineDash([]);
+  } else if (currentTool === 'arrow') {
+    redraw();
+    // Draw preview arrow
+    drawArrow(ctx, startX, startY, x, y, currentColor, brushSize);
   } else if (currentTool === 'highlight') {
     highlightPoints.push({x, y});
     redraw();
@@ -274,6 +290,26 @@ function handleMouseUp() {
       });
       redraw();
     }
+  } else if (currentTool === 'arrow') {
+    const rect = canvas.getBoundingClientRect();
+    const endX = ((event.clientX - rect.left) * (canvas.width / rect.width));
+    const endY = ((event.clientY - rect.top) * (canvas.height / rect.height));
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    
+    if (length > 20) {
+      annotations.push({
+        tool: 'arrow',
+        x: startX,
+        y: startY,
+        endX: endX,
+        endY: endY,
+        color: currentColor,
+        size: brushSize
+      });
+      redraw();
+    }
   } else if (currentTool === 'highlight' && highlightPoints.length > 1) {
     const xs = highlightPoints.map(p => p.x);
     const ys = highlightPoints.map(p => p.y);
@@ -313,11 +349,34 @@ function findAnnotation(x, y) {
       if (x >= ann.x && x <= ann.x + ann.width && y >= ann.y && y <= ann.y + ann.height) {
         return ann;
       }
+    } else if (ann.tool === 'arrow') {
+      // Check if click is near arrow line
+      const distToLine = distanceToLineSegment(x, y, ann.x, ann.y, ann.endX, ann.endY);
+      if (distToLine < 15) {
+        return ann;
+      }
     } else if (Math.abs(x - ann.x) < tolerance && Math.abs(y - ann.y) < tolerance) {
       return ann;
     }
   }
   return null;
+}
+
+// Helper: distance from point to line segment
+function distanceToLineSegment(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const lengthSq = dx * dx + dy * dy;
+  
+  if (lengthSq === 0) return Math.sqrt((px - x1) ** 2 + (py - y1) ** 2);
+  
+  let t = ((px - x1) * dx + (py - y1) * dy) / lengthSq;
+  t = Math.max(0, Math.min(1, t));
+  
+  const projX = x1 + t * dx;
+  const projY = y1 + t * dy;
+  
+  return Math.sqrt((px - projX) ** 2 + (py - projY) ** 2);
 }
 
 function redraw() {
@@ -408,6 +467,8 @@ function redraw() {
       
       ctx.strokeText(ann.text, ann.x, ann.y);
       ctx.fillText(ann.text, ann.x, ann.y);
+    } else if (ann.tool === 'arrow') {
+      drawArrow(ctx, ann.x, ann.y, ann.endX, ann.endY, ann.color, ann.size);
     } else if (ann.tool === 'blur') {
       // Pixelate effect for blur
       const pixelSize = 10;
@@ -441,6 +502,45 @@ function redraw() {
       ctx.strokeRect(ann.x, ann.y, ann.width, ann.height);
     }
   });
+}
+
+// Draw arrow with arrowhead
+function drawArrow(ctx, fromX, fromY, toX, toY, color, lineWidth = 4) {
+  const headLength = 20 + lineWidth;
+  const dx = toX - fromX;
+  const dy = toY - fromY;
+  const angle = Math.atan2(dy, dx);
+  
+  // Draw line with glow
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 15;
+  ctx.globalAlpha = 0.9;
+  
+  ctx.beginPath();
+  ctx.moveTo(fromX, fromY);
+  ctx.lineTo(toX, toY);
+  ctx.stroke();
+  
+  // Draw arrowhead
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(toX, toY);
+  ctx.lineTo(
+    toX - headLength * Math.cos(angle - Math.PI / 6),
+    toY - headLength * Math.sin(angle - Math.PI / 6)
+  );
+  ctx.lineTo(
+    toX - headLength * Math.cos(angle + Math.PI / 6),
+    toY - headLength * Math.sin(angle + Math.PI / 6)
+  );
+  ctx.closePath();
+  ctx.fill();
+  
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
 }
 
 function updateStatus(message) {

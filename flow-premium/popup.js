@@ -270,17 +270,29 @@ function updateThumbnails() {
       handleCopySingle(index);
     });
     
+    // Create OCR button
+    const ocrBtn = document.createElement('div');
+    ocrBtn.className = 'thumbnail-ocr';
+    ocrBtn.title = 'Extract text (OCR)';
+    
+    // OCR button click handler
+    ocrBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleOCR(index);
+    });
+    
     const img = document.createElement('img');
     img.src = dataUrl;
     img.alt = `Snap ${index + 1}`;
     
     // Thumbnail click to preview
     thumbnail.addEventListener('click', (e) => {
-      // Don't open preview if clicking checkbox, delete, annotate, or copy button
+      // Don't open preview if clicking checkbox, delete, annotate, copy, or OCR button
       if (!e.target.classList.contains('thumbnail-checkbox') && 
           !e.target.classList.contains('thumbnail-delete') &&
           !e.target.classList.contains('thumbnail-annotate') &&
-          !e.target.classList.contains('thumbnail-copy')) {
+          !e.target.classList.contains('thumbnail-copy') &&
+          !e.target.classList.contains('thumbnail-ocr')) {
         showPreview(index);
       }
     });
@@ -302,6 +314,7 @@ function updateThumbnails() {
     thumbnail.appendChild(deleteBtn);
     thumbnail.appendChild(annotateBtn);
     thumbnail.appendChild(copyBtn);
+    thumbnail.appendChild(ocrBtn);
     thumbnail.appendChild(img);
     thumbnail.appendChild(number);
     container.appendChild(thumbnail);
@@ -1021,3 +1034,123 @@ async function handleDeleteSnap(index) {
     }, 2000);
   }
 }
+
+// OCR worker (reused to avoid memory issues)
+let ocrWorker = null;
+let ocrBusy = false;
+
+// OCR functionality
+async function handleOCR(index) {
+  // Validation: Check if index exists
+  if (!currentSnaps[index]) {
+    const status = document.getElementById('status');
+    status.textContent = 'Screenshot not found';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 1500);
+    return;
+  }
+  
+  // Prevent concurrent OCR requests
+  if (ocrBusy) {
+    const status = document.getElementById('status');
+    status.textContent = 'OCR already in progress';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 1500);
+    return;
+  }
+  
+  const status = document.getElementById('status');
+  const modal = document.getElementById('ocrModal');
+  const ocrStatus = document.getElementById('ocrStatus');
+  const ocrText = document.getElementById('ocrText');
+  
+  // Show modal
+  modal.style.display = 'flex';
+  ocrStatus.textContent = 'Initializing OCR...';
+  ocrStatus.style.display = 'block';
+  ocrStatus.style.color = '#00d9ff';
+  ocrText.value = '';
+  ocrBusy = true;
+  
+  try {
+    const imageUrl = currentSnaps[index];
+    
+    // Create or reuse worker
+    if (!ocrWorker) {
+      ocrStatus.textContent = 'Loading OCR engine...';
+      ocrWorker = await Tesseract.createWorker('eng', 1, {
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            const progress = Math.round(m.progress * 100);
+            ocrStatus.textContent = `Extracting text... ${progress}%`;
+          }
+        }
+      });
+    }
+    
+    ocrStatus.textContent = 'Extracting text...';
+    const { data: { text } } = await ocrWorker.recognize(imageUrl);
+    
+    // Show extracted text
+    ocrStatus.style.display = 'none';
+    if (text.trim()) {
+      ocrText.value = text.trim();
+    } else {
+      ocrText.value = 'No text detected in this screenshot.';
+    }
+    
+  } catch (error) {
+    console.error('OCR error:', error);
+    ocrStatus.textContent = 'Error: Could not extract text';
+    ocrStatus.style.color = '#ff3b30';
+    
+    // Terminate broken worker
+    if (ocrWorker) {
+      try {
+        await ocrWorker.terminate();
+      } catch (e) {}
+      ocrWorker = null;
+    }
+  } finally {
+    ocrBusy = false;
+  }
+}
+
+// OCR Modal controls
+document.getElementById('ocrModalClose').addEventListener('click', () => {
+  document.getElementById('ocrModal').style.display = 'none';
+});
+
+document.getElementById('closeOcrBtn').addEventListener('click', () => {
+  document.getElementById('ocrModal').style.display = 'none';
+});
+
+document.getElementById('copyOcrBtn').addEventListener('click', async () => {
+  const ocrText = document.getElementById('ocrText').value;
+  const status = document.getElementById('status');
+  
+  if (ocrText && ocrText !== 'No text detected in this screenshot.') {
+    try {
+      await navigator.clipboard.writeText(ocrText);
+      status.textContent = 'Text copied to clipboard ✓';
+      status.className = 'status active';
+      setTimeout(() => {
+        status.textContent = 'Flow: Ready';
+        status.className = 'status';
+      }, 1500);
+    } catch (error) {
+      status.textContent = 'Failed to copy text';
+      status.className = 'status error';
+      setTimeout(() => {
+        status.textContent = 'Flow: Ready';
+        status.className = 'status';
+      }, 1500);
+    }
+  }
+});
