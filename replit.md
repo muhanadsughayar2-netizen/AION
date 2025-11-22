@@ -79,11 +79,12 @@ Preferred communication style: Simple, everyday language.
 
 **Screenshot Capture Flow**:
 1. User triggers capture via keyboard shortcut (`Ctrl+Shift+S`) or popup button click
-2. Background service worker calls `chrome.tabs.captureVisibleTab()` to get dataURL
-3. Converts dataURL to Blob for storage efficiency
-4. Enforces FIFO queue (max 10 snapshots)
-5. Updates badge counter and sends message to content script for toast notification
-6. Popup handles clipboard write using `navigator.clipboard.write()` (requires user gesture context)
+2. Background service worker checks 500ms cooldown to prevent Chrome API rate limiting
+3. Background service worker calls `chrome.tabs.captureVisibleTab()` to get dataURL
+4. Converts dataURL to Blob for storage efficiency
+5. Enforces FIFO queue (max 10 snapshots)
+6. Updates badge counter and sends message to content script for toast notification
+7. Popup handles clipboard write using `navigator.clipboard.write()` (requires user gesture context)
 
 **AI Platform Upload Flow**:
 1. Detects AI platform by checking active tab hostname

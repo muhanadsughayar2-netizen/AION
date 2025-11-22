@@ -119,7 +119,8 @@ async function handleOrbClick() {
           status.className = 'status';
         }, 1500);
       } else {
-        status.textContent = 'Capture failed';
+        // Show specific error message or generic failure
+        status.textContent = response.error || 'Capture failed';
         status.className = 'status error';
         setTimeout(() => {
           status.textContent = 'Flow: Ready';

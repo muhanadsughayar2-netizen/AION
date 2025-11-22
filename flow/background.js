@@ -3,6 +3,10 @@
 
 const MAX_SNAPS = 10;
 const AI_SITES = ['grok.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai'];
+const CAPTURE_COOLDOWN = 500; // Minimum 500ms between captures to avoid Chrome rate limit
+
+// Track last capture time to prevent rate limiting
+let lastCaptureTime = 0;
 
 // Listen for keyboard command (Ctrl+Shift+S)
 chrome.commands.onCommand.addListener((command) => {
@@ -40,7 +44,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // Capture screenshot of active tab
 async function captureScreenshot() {
   try {
+    // Check cooldown to prevent Chrome rate limit
+    const now = Date.now();
+    const timeSinceLastCapture = now - lastCaptureTime;
+    
+    if (timeSinceLastCapture < CAPTURE_COOLDOWN) {
+      const remainingTime = Math.ceil((CAPTURE_COOLDOWN - timeSinceLastCapture) / 1000);
+      console.log(`Capture on cooldown. Wait ${remainingTime}s`);
+      return { 
+        success: false, 
+        error: `Please wait ${remainingTime} second${remainingTime > 1 ? 's' : ''} before capturing again` 
+      };
+    }
+    
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    // Update last capture time
+    lastCaptureTime = now;
     
     // Capture visible tab as PNG
     const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
