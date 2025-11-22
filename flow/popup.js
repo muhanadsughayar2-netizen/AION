@@ -602,6 +602,21 @@ async function handleExportPDF() {
   showPDFExportModal();
 }
 
+// Get indexes of selected thumbnails
+function getSelectedIndexes() {
+  const thumbnails = document.querySelectorAll('.thumbnail');
+  const selectedIndexes = [];
+  
+  thumbnails.forEach((thumbnail, index) => {
+    const checkbox = thumbnail.querySelector('.thumbnail-checkbox');
+    if (checkbox && checkbox.classList.contains('checked')) {
+      selectedIndexes.push(index);
+    }
+  });
+  
+  return selectedIndexes;
+}
+
 // Show PDF Export Modal
 function showPDFExportModal() {
   const modal = document.getElementById('pdfExportModal');
