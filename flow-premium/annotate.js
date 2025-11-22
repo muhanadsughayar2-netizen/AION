@@ -55,8 +55,7 @@ function setupEventListeners() {
   // Controls
   document.getElementById('undoBtn').addEventListener('click', () => {
     const removed = annotations.pop();
-    // Only decrement callout number if we removed a callout
-    if (removed && removed.tool === 'callout' && removed.number === calloutNumber - 1) {
+    if (removed && removed.tool === 'callout') {
       calloutNumber--;
     }
     redraw();
@@ -171,8 +170,6 @@ function handleMouseDown(e) {
       });
       redraw();
     }
-  } else if (currentTool === 'blur') {
-    isDrawing = true;
   } else if (currentTool === 'highlight') {
     isDrawing = true;
     highlightPoints = [{x: startX, y: startY}];
@@ -185,25 +182,19 @@ function handleMouseMove(e) {
   const y = (e.clientY - rect.top) * (canvas.height / rect.height);
   
   if (draggingAnnotation) {
-    if (draggingAnnotation.tool === 'blur') {
-      // Just move x and y for blur rectangles
-      draggingAnnotation.x = x - dragOffsetX;
-      draggingAnnotation.y = y - dragOffsetY;
-    } else {
-      draggingAnnotation.x = x - dragOffsetX;
-      draggingAnnotation.y = y - dragOffsetY;
-      
-      // Move highlight points
-      if (draggingAnnotation.tool === 'highlight' && draggingAnnotation.points) {
-        const deltaX = (x - dragOffsetX) - draggingAnnotation.centerX;
-        const deltaY = (y - dragOffsetY) - draggingAnnotation.centerY;
-        draggingAnnotation.points.forEach(p => {
-          p.x += deltaX;
-          p.y += deltaY;
-        });
-        draggingAnnotation.centerX = x - dragOffsetX;
-        draggingAnnotation.centerY = y - dragOffsetY;
-      }
+    draggingAnnotation.x = x - dragOffsetX;
+    draggingAnnotation.y = y - dragOffsetY;
+    
+    // Move highlight points
+    if (draggingAnnotation.tool === 'highlight' && draggingAnnotation.points) {
+      const deltaX = (x - dragOffsetX) - draggingAnnotation.centerX;
+      const deltaY = (y - dragOffsetY) - draggingAnnotation.centerY;
+      draggingAnnotation.points.forEach(p => {
+        p.x += deltaX;
+        p.y += deltaY;
+      });
+      draggingAnnotation.centerX = x - dragOffsetX;
+      draggingAnnotation.centerY = y - dragOffsetY;
     }
     
     redraw();
@@ -215,17 +206,7 @@ function handleMouseMove(e) {
     return;
   }
   
-  if (currentTool === 'blur') {
-    redraw();
-    // Draw preview rectangle
-    const width = x - startX;
-    const height = y - startY;
-    ctx.strokeStyle = '#ff0000';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    ctx.strokeRect(startX, startY, width, height);
-    ctx.setLineDash([]);
-  } else if (currentTool === 'highlight') {
+  if (currentTool === 'highlight') {
     highlightPoints.push({x, y});
     redraw();
     
@@ -258,24 +239,7 @@ function handleMouseUp() {
   
   if (!isDrawing) return;
   
-  if (currentTool === 'blur') {
-    const rect = canvas.getBoundingClientRect();
-    const endX = ((event.clientX - rect.left) * (canvas.width / rect.width));
-    const endY = ((event.clientY - rect.top) * (canvas.height / rect.height));
-    const width = endX - startX;
-    const height = endY - startY;
-    
-    if (Math.abs(width) > 10 && Math.abs(height) > 10) {
-      annotations.push({
-        tool: 'blur',
-        x: Math.min(startX, endX),
-        y: Math.min(startY, endY),
-        width: Math.abs(width),
-        height: Math.abs(height)
-      });
-      redraw();
-    }
-  } else if (currentTool === 'highlight' && highlightPoints.length > 1) {
+  if (currentTool === 'highlight' && highlightPoints.length > 1) {
     const xs = highlightPoints.map(p => p.x);
     const ys = highlightPoints.map(p => p.y);
     const centerX = (Math.min(...xs) + Math.max(...xs)) / 2;
@@ -308,11 +272,6 @@ function findAnnotation(x, y) {
         if (Math.sqrt((x - p.x) ** 2 + (y - p.y) ** 2) < (ann.size || 12)) {
           return ann;
         }
-      }
-    } else if (ann.tool === 'blur') {
-      // Check if click is inside blur rectangle
-      if (x >= ann.x && x <= ann.x + ann.width && y >= ann.y && y <= ann.y + ann.height) {
-        return ann;
       }
     } else if (Math.abs(x - ann.x) < tolerance && Math.abs(y - ann.y) < tolerance) {
       return ann;
@@ -409,37 +368,6 @@ function redraw() {
       
       ctx.strokeText(ann.text, ann.x, ann.y);
       ctx.fillText(ann.text, ann.x, ann.y);
-    } else if (ann.tool === 'blur') {
-      // Pixelate effect for blur
-      const pixelSize = 10;
-      const imageData = ctx.getImageData(ann.x, ann.y, ann.width, ann.height);
-      
-      // Pixelate the image data
-      for (let y = 0; y < ann.height; y += pixelSize) {
-        for (let x = 0; x < ann.width; x += pixelSize) {
-          const pixelIndexPosition = (Math.floor(y) * ann.width + Math.floor(x)) * 4;
-          const r = imageData.data[pixelIndexPosition];
-          const g = imageData.data[pixelIndexPosition + 1];
-          const b = imageData.data[pixelIndexPosition + 2];
-          
-          // Fill pixelated block
-          for (let dy = 0; dy < pixelSize && y + dy < ann.height; dy++) {
-            for (let dx = 0; dx < pixelSize && x + dx < ann.width; dx++) {
-              const index = ((y + dy) * ann.width + (x + dx)) * 4;
-              imageData.data[index] = r;
-              imageData.data[index + 1] = g;
-              imageData.data[index + 2] = b;
-            }
-          }
-        }
-      }
-      
-      ctx.putImageData(imageData, ann.x, ann.y);
-      
-      // Draw border around blur
-      ctx.strokeStyle = '#ff0000';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(ann.x, ann.y, ann.width, ann.height);
     }
   });
 }

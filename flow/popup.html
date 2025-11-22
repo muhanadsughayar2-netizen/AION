@@ -19,16 +19,6 @@
     <!-- Status Line -->
     <div class="status" id="status">Flow: Ready</div>
 
-    <!-- Capture Mode Selector -->
-    <div class="capture-mode-selector">
-      <select id="captureMode" class="capture-mode-dropdown">
-        <option value="visible">📸 Visible Area</option>
-        <option value="fullpage">📜 Full Page</option>
-        <option value="area">⬜ Select Area</option>
-        <option value="element">🎯 Select Element</option>
-      </select>
-    </div>
-
     <!-- Main Orb Button -->
     <div class="orb-container">
       <button id="orbButton" class="orb" title="Capture screenshot or upload to AI">
@@ -64,24 +54,6 @@
     <div class="preview-close" id="previewClose">✕</div>
     <img id="previewImage" class="preview-image" alt="Preview">
     <div class="preview-number" id="previewNumber"></div>
-  </div>
-
-  <!-- OCR Text Extraction Modal -->
-  <div id="ocrModal" class="ocr-modal" style="display: none;">
-    <div class="ocr-modal-content">
-      <div class="ocr-modal-header">
-        <h3>📝 Extracted Text</h3>
-        <div class="ocr-modal-close" id="ocrModalClose">✕</div>
-      </div>
-      
-      <div class="ocr-status" id="ocrStatus">Extracting text...</div>
-      <textarea id="ocrText" class="ocr-text" readonly placeholder="Extracted text will appear here..."></textarea>
-      
-      <div class="ocr-actions">
-        <button id="copyOcrBtn" class="ocr-copy-btn">📋 Copy Text</button>
-        <button id="closeOcrBtn" class="ocr-close-btn">Close</button>
-      </div>
-    </div>
   </div>
 
   <!-- PDF Export Options Modal -->
@@ -130,7 +102,6 @@
     </div>
   </div>
 
-  <script src="tesseract.min.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
