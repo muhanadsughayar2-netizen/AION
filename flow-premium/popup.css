@@ -555,8 +555,27 @@ body {
   text-shadow: 0 0 15px rgba(0, 255, 255, 0.9);
   display: block;
   margin-bottom: 8px;
+  margin-top: 8px;
   line-height: 1.4;
   letter-spacing: 0.5px;
+}
+
+.sparkle-stars {
+  display: block;
+  font-size: 18px;
+  background: linear-gradient(90deg, 
+    #00ffff 0%, 
+    #00d9ff 25%, 
+    #0099ff 50%, 
+    #00d9ff 75%, 
+    #00ffff 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: flow-gradient 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 15px rgba(0, 217, 255, 0.9));
+  margin-bottom: 4px;
 }
 
 /* Clear Button */
