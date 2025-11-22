@@ -584,7 +584,7 @@ async function handleAnnotationMessage(request) {
 let jsPDFLoaded = false;
 let jsPDFLoadPromise = null;
 
-// Handle Export as PDF
+// Handle Export as PDF - Show modal with options
 async function handleExportPDF() {
   const status = document.getElementById('status');
   
@@ -597,6 +597,85 @@ async function handleExportPDF() {
     }, 1500);
     return;
   }
+  
+  // Show PDF export modal
+  showPDFExportModal();
+}
+
+// Show PDF Export Modal
+function showPDFExportModal() {
+  const modal = document.getElementById('pdfExportModal');
+  const selectedCount = getSelectedIndexes().length;
+  
+  // Disable/enable selected options based on selection
+  const selectedCombinedBtn = document.getElementById('selectedCombinedBtn');
+  const selectedSeparateBtn = document.getElementById('selectedSeparateBtn');
+  
+  if (selectedCount === 0) {
+    selectedCombinedBtn.classList.add('disabled');
+    selectedSeparateBtn.classList.add('disabled');
+  } else {
+    selectedCombinedBtn.classList.remove('disabled');
+    selectedSeparateBtn.classList.remove('disabled');
+  }
+  
+  modal.style.display = 'flex';
+}
+
+// Hide PDF Export Modal
+function hidePDFExportModal() {
+  const modal = document.getElementById('pdfExportModal');
+  modal.style.display = 'none';
+}
+
+// Setup PDF modal listeners
+document.getElementById('pdfModalClose').addEventListener('click', hidePDFExportModal);
+document.getElementById('pdfCancelBtn').addEventListener('click', hidePDFExportModal);
+
+// Handle PDF option selection
+document.querySelectorAll('.pdf-option-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    if (btn.classList.contains('disabled')) return;
+    
+    const mode = btn.dataset.mode;
+    let snaps = [];
+    
+    if (mode.startsWith('all-')) {
+      snaps = [...currentSnaps];
+    } else {
+      const selectedIndexes = getSelectedIndexes();
+      if (selectedIndexes.length === 0) {
+        const status = document.getElementById('status');
+        status.textContent = 'No screenshots selected';
+        status.className = 'status error';
+        setTimeout(() => {
+          status.textContent = 'Flow: Ready';
+          status.className = 'status';
+        }, 1500);
+        hidePDFExportModal();
+        return;
+      }
+      snaps = selectedIndexes.map(i => currentSnaps[i]);
+    }
+    
+    hidePDFExportModal();
+    
+    switch(mode) {
+      case 'all-combined':
+      case 'selected-combined':
+        await exportPDFCombined(snaps, mode.includes('selected') ? 'selected' : 'all');
+        break;
+      case 'all-separate':
+      case 'selected-separate':
+        await exportPDFSeparate(snaps, mode.includes('selected') ? 'selected' : 'all');
+        break;
+    }
+  });
+});
+
+// Export Combined PDF (original function refactored)
+async function exportPDFCombined(snaps, mode) {
+  const status = document.getElementById('status');
   
   try {
     status.textContent = 'Loading PDF library...';
@@ -639,13 +718,13 @@ async function handleExportPDF() {
     const maxWidth = pageWidth - (2 * margin);
     const maxHeight = pageHeight - (2 * margin);
     
-    for (let i = 0; i < currentSnaps.length; i++) {
+    for (let i = 0; i < snaps.length; i++) {
       if (i > 0) {
         pdf.addPage();
       }
       
       // Add image to PDF
-      const img = await createImageBitmap(await (await fetch(currentSnaps[i])).blob());
+      const img = await createImageBitmap(await (await fetch(snaps[i])).blob());
       const aspectRatio = img.width / img.height;
       
       let imgWidth = maxWidth;
@@ -661,19 +740,125 @@ async function handleExportPDF() {
       const x = (pageWidth - imgWidth) / 2;
       const y = margin;
       
-      pdf.addImage(currentSnaps[i], 'PNG', x, y, imgWidth, imgHeight);
+      pdf.addImage(snaps[i], 'PNG', x, y, imgWidth, imgHeight);
       
       // Add page number at bottom
       pdf.setFontSize(10);
       pdf.setTextColor(150);
-      pdf.text(`Snap ${i + 1} of ${currentSnaps.length}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+      pdf.text(`Snap ${i + 1} of ${snaps.length}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
     }
     
     // Save PDF
     const timestamp = new Date().toISOString().slice(0, 10);
-    pdf.save(`flow-screenshots-${timestamp}.pdf`);
+    const filename = mode === 'selected' ? `flow-selected-${timestamp}.pdf` : `flow-screenshots-${timestamp}.pdf`;
+    pdf.save(filename);
     
     status.textContent = 'PDF exported ✓';
+    status.className = 'status active';
+    
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 2000);
+  } catch (error) {
+    console.error('PDF export error:', error);
+    status.textContent = 'PDF export failed';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 2000);
+  }
+}
+
+// Export Separate PDFs (one file per screenshot)
+async function exportPDFSeparate(snaps, mode) {
+  const status = document.getElementById('status');
+  
+  if (snaps.length === 0) {
+    status.textContent = 'No screenshots to export';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 1500);
+    return;
+  }
+  
+  try {
+    status.textContent = 'Loading PDF library...';
+    status.className = 'status active';
+    
+    // Load jsPDF once (or wait if already loading)
+    if (!jsPDFLoaded) {
+      if (!jsPDFLoadPromise) {
+        jsPDFLoadPromise = new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'jspdf.min.js';
+          script.onload = () => {
+            console.log('jsPDF loaded successfully');
+            jsPDFLoaded = true;
+            setTimeout(() => resolve(), 200);
+          };
+          script.onerror = (err) => {
+            console.error('jsPDF load error:', err);
+            reject(new Error('Failed to load jsPDF library'));
+          };
+          document.head.appendChild(script);
+        });
+      }
+      await jsPDFLoadPromise;
+    }
+    
+    // Verify library is available
+    if (!window.jspdf || typeof window.jspdf.jsPDF === 'undefined') {
+      throw new Error('jsPDF library not available after loading');
+    }
+    
+    const { jsPDF } = window.jspdf;
+    const pageWidth = 210; // A4 width in mm
+    const pageHeight = 297; // A4 height in mm
+    const margin = 10;
+    const maxWidth = pageWidth - (2 * margin);
+    const maxHeight = pageHeight - (2 * margin);
+    const timestamp = new Date().toISOString().slice(0, 10);
+    
+    // Generate and download each PDF
+    for (let i = 0; i < snaps.length; i++) {
+      status.textContent = `Generating PDF ${i + 1} of ${snaps.length}...`;
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      // Add image to PDF
+      const img = await createImageBitmap(await (await fetch(snaps[i])).blob());
+      const aspectRatio = img.width / img.height;
+      
+      let imgWidth = maxWidth;
+      let imgHeight = imgWidth / aspectRatio;
+      
+      // If image is too tall, scale by height instead
+      if (imgHeight > maxHeight) {
+        imgHeight = maxHeight;
+        imgWidth = imgHeight * aspectRatio;
+      }
+      
+      // Center the image
+      const x = (pageWidth - imgWidth) / 2;
+      const y = margin;
+      
+      pdf.addImage(snaps[i], 'PNG', x, y, imgWidth, imgHeight);
+      
+      // Save individual PDF
+      const filename = `flow-screenshot-${i + 1}-${timestamp}.pdf`;
+      pdf.save(filename);
+      
+      // Small delay between downloads to prevent browser blocking
+      if (i < snaps.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+    
+    status.textContent = `${snaps.length} PDFs exported ✓`;
     status.className = 'status active';
     
     setTimeout(() => {

@@ -56,6 +56,52 @@
     <div class="preview-number" id="previewNumber"></div>
   </div>
 
+  <!-- PDF Export Options Modal -->
+  <div id="pdfExportModal" class="pdf-export-modal" style="display: none;">
+    <div class="pdf-modal-content">
+      <div class="pdf-modal-header">
+        <h3>📄 Export PDF Options</h3>
+        <div class="pdf-modal-close" id="pdfModalClose">✕</div>
+      </div>
+      
+      <div class="pdf-options">
+        <button class="pdf-option-btn" data-mode="all-combined">
+          <div class="pdf-option-icon">📚</div>
+          <div class="pdf-option-text">
+            <strong>All as One PDF</strong>
+            <span>Combine all screenshots into one PDF file</span>
+          </div>
+        </button>
+        
+        <button class="pdf-option-btn" data-mode="all-separate">
+          <div class="pdf-option-icon">📑</div>
+          <div class="pdf-option-text">
+            <strong>All as Separate PDFs</strong>
+            <span>Download each screenshot as individual PDF</span>
+          </div>
+        </button>
+        
+        <button class="pdf-option-btn" data-mode="selected-combined" id="selectedCombinedBtn">
+          <div class="pdf-option-icon">✅</div>
+          <div class="pdf-option-text">
+            <strong>Selected as One PDF</strong>
+            <span>Combine selected screenshots into one PDF</span>
+          </div>
+        </button>
+        
+        <button class="pdf-option-btn" data-mode="selected-separate" id="selectedSeparateBtn">
+          <div class="pdf-option-icon">📋</div>
+          <div class="pdf-option-text">
+            <strong>Selected as Separate PDFs</strong>
+            <span>Download each selected screenshot as PDF</span>
+          </div>
+        </button>
+      </div>
+      
+      <button class="pdf-cancel-btn" id="pdfCancelBtn">Cancel</button>
+    </div>
+  </div>
+
   <script src="popup.js"></script>
 </body>
 </html>
