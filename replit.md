@@ -16,7 +16,13 @@ The extension provides two operational modes:
   - 🏷️ Quick Stickers: Pre-made labels (BUG, IMPORTANT, FOCUS) + create your own custom stickers (max 5)
   - All annotations are fully draggable and can be deleted with the undo button
 - **Custom Sticker Templates**: Users can create personalized sticker buttons with custom text (stored in chrome.storage.local)
-- **Export as PDF**: Combine all screenshots into a single professional PDF document
+- **Advanced PDF Export** (November 22): Full control over PDF generation with 4 export modes:
+  - 📚 All as One PDF: Combine all screenshots into single combined PDF (original behavior)
+  - 📑 All as Separate PDFs: Download each screenshot as individual PDF file
+  - ✅ Selected as One PDF: Combine only selected screenshots into one PDF
+  - 📋 Selected as Separate PDFs: Download each selected screenshot as individual PDF
+  - Smart modal interface with disabled states when no selection exists
+  - Clear file naming: `flow-screenshots-{date}.pdf`, `flow-screenshot-1-{date}.pdf`, etc.
 - **Drag & Drop Reordering**: Rearrange thumbnails to control upload sequence
 - **Multi-Select Operations**: Select All, Copy Selected, Download Selected batch actions
 - **Delete Individual Snaps**: Remove unwanted screenshots with hover delete button
