@@ -13,8 +13,14 @@ The extension provides two operational modes:
   - ✨ Highlight Brush: Glowing strokes with color picker and adjustable brush size (4-40px)
   - 🔢 Numbered Callouts: Add numbered markers (1, 2, 3...) with custom labels
   - ✏️ Text: Add custom text annotations that appear exactly where you click
+  - 🔒 Blur Tool: Draw rectangles to pixelate sensitive data (10px pixelation effect)
   - 🏷️ Quick Stickers: Pre-made labels (BUG, IMPORTANT, FOCUS) + create your own custom stickers (max 5)
   - All annotations are fully draggable and can be deleted with the undo button
+- **OCR Text Extraction with Area Selection** (November 22): Extract text from screenshots using Tesseract.js
+  - Click OCR button to enter selection mode
+  - Draw rectangle around specific text you want to extract (like blur tool)
+  - Processes only selected region for faster, more accurate results
+  - Worker reuse prevents memory issues and improves performance
 - **Custom Sticker Templates**: Users can create personalized sticker buttons with custom text (stored in chrome.storage.local)
 - **Advanced PDF Export** (November 22): Full control over PDF generation with 4 export modes:
   - 📚 All as One PDF: Combine all screenshots into single combined PDF (original behavior)
