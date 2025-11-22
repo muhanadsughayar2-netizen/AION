@@ -30,13 +30,65 @@ body {
 }
 
 .logo {
-  font-size: 18px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #00d9ff 0%, #00a8cc 100%);
+  font-size: 24px;
+  font-weight: 900;
+  background: linear-gradient(90deg, 
+    #00ffff 0%, 
+    #00d9ff 25%, 
+    #0099ff 50%, 
+    #00d9ff 75%, 
+    #00ffff 100%);
+  background-size: 200% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: 0.5px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  animation: flow-gradient 3s ease-in-out infinite;
+  position: relative;
+  filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.8));
+  text-shadow: 0 0 30px rgba(0, 217, 255, 0.5);
+}
+
+@keyframes flow-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.logo::before {
+  content: '✦';
+  position: absolute;
+  left: -20px;
+  color: #00d9ff;
+  animation: sparkle 2s ease-in-out infinite;
+  font-size: 16px;
+}
+
+.logo::after {
+  content: '✦';
+  position: absolute;
+  right: -20px;
+  color: #00d9ff;
+  animation: sparkle 2s ease-in-out infinite 0.5s;
+  font-size: 16px;
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2) rotate(180deg);
+  }
 }
 
 .counter {
@@ -467,15 +519,40 @@ body {
   padding: 20px;
   color: #00d9ff;
   font-size: 12px;
-  line-height: 1.6;
-  background: rgba(0, 217, 255, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(0, 217, 255, 0.2);
+  line-height: 1.8;
+  background: linear-gradient(135deg, 
+    rgba(0, 217, 255, 0.1) 0%, 
+    rgba(0, 217, 255, 0.05) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 217, 255, 0.3);
+  box-shadow: 
+    0 0 20px rgba(0, 217, 255, 0.1),
+    inset 0 0 20px rgba(0, 217, 255, 0.05);
+  animation: pulse-border 3s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: rgba(0, 217, 255, 0.3);
+    box-shadow: 
+      0 0 20px rgba(0, 217, 255, 0.1),
+      inset 0 0 20px rgba(0, 217, 255, 0.05);
+  }
+  50% {
+    border-color: rgba(0, 217, 255, 0.5);
+    box-shadow: 
+      0 0 30px rgba(0, 217, 255, 0.2),
+      inset 0 0 30px rgba(0, 217, 255, 0.1);
+  }
 }
 
 .empty-state strong {
-  color: #00d9ff;
-  font-size: 13px;
+  color: #00ffff;
+  font-size: 14px;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(0, 217, 255, 0.8);
+  display: block;
+  margin-bottom: 4px;
 }
 
 /* Clear Button */
