@@ -9,7 +9,13 @@ The extension provides two operational modes:
 2. **Upload Mode** (on AI platforms): Auto-detects AI chat sites and batch-uploads all stored screenshots directly to the platform's file input
 
 **New Premium Features (November 2025):**
-- **Quick Annotation Tools**: Full-featured canvas editor with arrows, text, rectangles, and blur capabilities
+- **Simplified Annotation Tools** (November 22): Streamlined to 4 reliable tools with click-to-place UX
+  - ✨ Highlight Brush: Glowing strokes with color picker and adjustable brush size (4-40px)
+  - 🔢 Numbered Callouts: Add numbered markers (1, 2, 3...) with custom labels
+  - ✏️ Text: Add custom text annotations that appear exactly where you click
+  - 🏷️ Quick Stickers: Pre-made labels (BUG, IMPORTANT, FOCUS) + create your own custom stickers (max 5)
+  - All annotations are fully draggable and can be deleted with the undo button
+- **Custom Sticker Templates**: Users can create personalized sticker buttons with custom text (stored in chrome.storage.local)
 - **Export as PDF**: Combine all screenshots into a single professional PDF document
 - **Drag & Drop Reordering**: Rearrange thumbnails to control upload sequence
 - **Multi-Select Operations**: Select All, Copy Selected, Download Selected batch actions
