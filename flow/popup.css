@@ -30,67 +30,13 @@ body {
 }
 
 .logo {
-  font-size: 24px;
-  font-weight: 900;
-  background: linear-gradient(90deg, 
-    #00ffff 0%, 
-    #00d9ff 25%, 
-    #0099ff 50%, 
-    #00d9ff 75%, 
-    #00ffff 100%);
-  background-size: 200% 100%;
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #00d9ff 0%, #00a8cc 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  animation: flow-gradient 3s ease-in-out infinite;
-  position: relative;
-  filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.8));
-  text-shadow: 0 0 30px rgba(0, 217, 255, 0.5);
-}
-
-@keyframes flow-gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.logo::before {
-  content: '⭐';
-  position: absolute;
-  left: -25px;
-  color: #00ffff;
-  animation: sparkle 2s ease-in-out infinite;
-  font-size: 20px;
-  filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.8));
-}
-
-.logo::after {
-  content: '⭐';
-  position: absolute;
-  right: -25px;
-  color: #00ffff;
-  animation: sparkle 2s ease-in-out infinite 0.5s;
-  font-size: 20px;
-  filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.8));
-}
-
-@keyframes sparkle {
-  0%, 100% {
-    opacity: 0.3;
-    transform: scale(0.8) rotate(0deg);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.2) rotate(180deg);
-  }
+  letter-spacing: 0.5px;
 }
 
 .counter {
@@ -560,23 +506,6 @@ body {
   letter-spacing: 0.5px;
 }
 
-.sparkle-stars {
-  display: block;
-  font-size: 18px;
-  background: linear-gradient(90deg, 
-    #00ffff 0%, 
-    #00d9ff 25%, 
-    #0099ff 50%, 
-    #00d9ff 75%, 
-    #00ffff 100%);
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: flow-gradient 3s ease-in-out infinite;
-  filter: drop-shadow(0 0 15px rgba(0, 217, 255, 0.9));
-  margin-bottom: 4px;
-}
 
 /* Clear Button */
 .clear-button {

@@ -206,7 +206,7 @@ function updateThumbnails() {
   if (currentSnaps.length === 0) {
     const emptyState = document.createElement('div');
     emptyState.className = 'empty-state';
-    emptyState.innerHTML = '<span class="sparkle-stars">✨</span><strong>From Screen to AI in a Snap!</strong>Click the glowing camera button above to capture instantly';
+    emptyState.innerHTML = '✨ <strong>From Screen to AI in a Snap!</strong>Click the glowing camera button above to capture instantly';
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';
     return;
