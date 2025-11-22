@@ -1047,7 +1047,7 @@ async function handleDeleteSnap(index) {
 let ocrWorker = null;
 let ocrBusy = false;
 
-// OCR functionality
+// OCR functionality - with area selection
 async function handleOCR(index) {
   // Validation: Check if index exists
   if (!currentSnaps[index]) {
@@ -1074,6 +1074,134 @@ async function handleOCR(index) {
   }
   
   const status = document.getElementById('status');
+  
+  // Open OCR area selection overlay
+  status.textContent = 'Draw rectangle around text to extract';
+  status.className = 'status active';
+  
+  // Create selection overlay
+  showOCRAreaSelection(index);
+}
+
+// Show OCR area selection overlay
+function showOCRAreaSelection(index) {
+  const imageUrl = currentSnaps[index];
+  const overlay = document.createElement('div');
+  overlay.id = 'ocrOverlay';
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  `;
+  
+  const canvas = document.createElement('canvas');
+  canvas.id = 'ocrCanvas';
+  canvas.style.cssText = 'cursor: crosshair; max-width: 90%; max-height: 80%;';
+  
+  const hint = document.createElement('div');
+  hint.style.cssText = `
+    color: #00d9ff;
+    font-size: 14px;
+    margin-bottom: 10px;
+    text-align: center;
+  `;
+  hint.textContent = 'Draw a rectangle around the text you want to extract';
+  
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = '✕ Cancel';
+  cancelBtn.style.cssText = `
+    margin-top: 10px;
+    padding: 10px 20px;
+    background: rgba(255, 59, 48, 0.8);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  `;
+  cancelBtn.onclick = () => {
+    document.body.removeChild(overlay);
+    const status = document.getElementById('status');
+    status.textContent = 'Flow: Ready';
+    status.className = 'status';
+  };
+  
+  overlay.appendChild(hint);
+  overlay.appendChild(canvas);
+  overlay.appendChild(cancelBtn);
+  document.body.appendChild(overlay);
+  
+  // Load image and setup drawing
+  const img = new Image();
+  img.onload = () => {
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    
+    let startX, startY, isDrawing = false;
+    
+    canvas.onmousedown = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      startX = (e.clientX - rect.left) * (canvas.width / rect.width);
+      startY = (e.clientY - rect.top) * (canvas.height / rect.height);
+      isDrawing = true;
+    };
+    
+    canvas.onmousemove = (e) => {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+      
+      // Redraw
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      
+      // Draw selection rectangle
+      ctx.strokeStyle = '#00d9ff';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([5, 5]);
+      ctx.strokeRect(startX, startY, x - startX, y - startY);
+      ctx.setLineDash([]);
+    };
+    
+    canvas.onmouseup = async (e) => {
+      if (!isDrawing) return;
+      isDrawing = false;
+      
+      const rect = canvas.getBoundingClientRect();
+      const endX = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const endY = (e.clientY - rect.top) * (canvas.height / rect.height);
+      
+      const x = Math.min(startX, endX);
+      const y = Math.min(startY, endY);
+      const width = Math.abs(endX - startX);
+      const height = Math.abs(endY - startY);
+      
+      if (width > 20 && height > 20) {
+        // Remove overlay
+        document.body.removeChild(overlay);
+        
+        // Extract text from selected region
+        await extractTextFromRegion(imageUrl, x, y, width, height);
+      }
+    };
+  };
+  img.src = imageUrl;
+}
+
+// Extract text from specific region
+async function extractTextFromRegion(imageUrl, x, y, width, height) {
+  const status = document.getElementById('status');
   const modal = document.getElementById('ocrModal');
   const ocrStatus = document.getElementById('ocrStatus');
   const ocrText = document.getElementById('ocrText');
@@ -1086,44 +1214,39 @@ async function handleOCR(index) {
   ocrText.value = '';
   ocrBusy = true;
   
-  // Update all OCR buttons to show busy state
   updateThumbnails();
   
   try {
-    const imageUrl = currentSnaps[index];
+    // Crop image to selected region
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    
+    const img = new Image();
+    await new Promise((resolve) => {
+      img.onload = resolve;
+      img.src = imageUrl;
+    });
+    
+    ctx.drawImage(img, x, y, width, height, 0, 0, width, height);
+    const croppedImageUrl = canvas.toDataURL('image/png');
     
     // Create or reuse worker
     if (!ocrWorker) {
-      ocrStatus.textContent = 'Loading OCR engine... (first time only)';
+      ocrStatus.textContent = 'Loading OCR engine...';
       ocrWorker = await Tesseract.createWorker('eng', 1, {
         logger: (m) => {
           if (m.status === 'recognizing text') {
             const progress = Math.round(m.progress * 100);
             ocrStatus.textContent = `Extracting text... ${progress}%`;
-          } else if (m.status === 'loading tesseract core') {
-            ocrStatus.textContent = 'Loading OCR engine...';
-          } else if (m.status === 'initializing tesseract') {
-            ocrStatus.textContent = 'Initializing...';
           }
         }
       });
     }
     
-    ocrStatus.textContent = 'Extracting text from screenshot...';
-    
-    // Use Promise.race to add timeout warning for very large images
-    const recognizePromise = ocrWorker.recognize(imageUrl);
-    const timeoutWarning = new Promise((resolve) => {
-      setTimeout(() => {
-        if (ocrBusy) {
-          ocrStatus.textContent = 'Processing large image... Please wait...';
-        }
-        resolve(null);
-      }, 5000);
-    });
-    
-    await Promise.race([timeoutWarning, Promise.resolve()]);
-    const { data: { text } } = await recognizePromise;
+    ocrStatus.textContent = 'Extracting text from selected area...';
+    const { data: { text } } = await ocrWorker.recognize(croppedImageUrl);
     
     // Show extracted text
     ocrStatus.style.display = 'none';
@@ -1136,7 +1259,7 @@ async function handleOCR(index) {
         status.className = 'status';
       }, 2000);
     } else {
-      ocrText.value = 'No text detected in this screenshot.';
+      ocrText.value = 'No text detected in selected area.';
     }
     
   } catch (error) {
@@ -1144,7 +1267,6 @@ async function handleOCR(index) {
     ocrStatus.textContent = 'Error: Could not extract text';
     ocrStatus.style.color = '#ff3b30';
     
-    // Terminate broken worker
     if (ocrWorker) {
       try {
         await ocrWorker.terminate();
@@ -1153,7 +1275,6 @@ async function handleOCR(index) {
     }
   } finally {
     ocrBusy = false;
-    // Update UI to remove busy state
     updateThumbnails();
   }
 }
