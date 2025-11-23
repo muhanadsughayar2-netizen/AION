@@ -283,11 +283,18 @@ function updateThumbnails() {
   if (currentSnaps.length === 0) {
     const emptyState = document.createElement('div');
     emptyState.className = 'empty-state';
+    
+    // Get translated messages
+    const getMessage = (key, fallback) => {
+      const msg = chrome.i18n.getMessage(key);
+      return msg || fallback;
+    };
+    
     emptyState.innerHTML = `
       <div class="empty-sparkle">✦</div>
-      <div class="empty-heading">One click. One flow.</div>
-      <div class="empty-subheading">Your pages, ready for AI in seconds.</div>
-      <div class="empty-instruction">Click the glowing camera button above to capture instantly</div>
+      <div class="empty-heading">${getMessage('oneClickOneFlow', 'One click. One flow.')}</div>
+      <div class="empty-subheading">${getMessage('pagesReadyForAI', 'Your pages, ready for AI in seconds.')}</div>
+      <div class="empty-instruction">${getMessage('clickCameraButton', 'Click the glowing camera button above to capture instantly')}</div>
     `;
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';
