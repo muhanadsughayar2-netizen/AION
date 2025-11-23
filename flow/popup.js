@@ -197,11 +197,37 @@ function updateCounter() {
   document.getElementById('snapCount').textContent = currentSnaps.length;
 }
 
+// Dynamically adjust popup height based on number of screenshots
+function adjustPopupHeight(snapCount) {
+  // Base height for empty state
+  let height = 380;
+  
+  if (snapCount === 0) {
+    // Empty state: small and compact
+    height = 380;
+  } else if (snapCount <= 4) {
+    // 1 row of screenshots
+    height = 420;
+  } else if (snapCount <= 8) {
+    // 2 rows of screenshots
+    height = 480;
+  } else {
+    // 3 rows for 9-10 screenshots
+    height = 540;
+  }
+  
+  // Apply the height to the body
+  document.body.style.height = height + 'px';
+}
+
 // Update thumbnails grid
 function updateThumbnails() {
   const container = document.getElementById('thumbnails');
   const selectionBar = document.getElementById('selectionBar');
   container.innerHTML = '';
+  
+  // Dynamically adjust popup height based on number of screenshots
+  adjustPopupHeight(currentSnaps.length);
   
   if (currentSnaps.length === 0) {
     const emptyState = document.createElement('div');
