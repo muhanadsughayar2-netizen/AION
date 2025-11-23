@@ -712,6 +712,9 @@ function showPDFExportModal() {
   const modal = document.getElementById('pdfExportModal');
   const selectedCount = getSelectedIndexes().length;
   
+  // Translate PDF modal every time it opens
+  translatePDFModal();
+  
   // Disable/enable selected options based on selection
   const selectedCombinedBtn = document.getElementById('selectedCombinedBtn');
   const selectedSeparateBtn = document.getElementById('selectedSeparateBtn');
@@ -725,6 +728,44 @@ function showPDFExportModal() {
   }
   
   modal.style.display = 'flex';
+}
+
+// Translate PDF modal texts
+function translatePDFModal() {
+  const getMessage = (key, fallback) => {
+    const msg = chrome.i18n.getMessage(key);
+    return msg || fallback;
+  };
+  
+  // Translate header
+  const modalHeader = document.querySelector('.pdf-modal-header h3');
+  if (modalHeader) {
+    modalHeader.textContent = '📄 ' + getMessage('exportPDFOptions', 'Export PDF Options');
+  }
+  
+  // Translate all option buttons
+  const pdfOptions = document.querySelectorAll('.pdf-option-text strong');
+  if (pdfOptions.length >= 4) {
+    pdfOptions[0].textContent = getMessage('allAsOnePDF', 'All as One PDF');
+    pdfOptions[1].textContent = getMessage('allAsSeparatePDFs', 'All as Separate PDFs');
+    pdfOptions[2].textContent = getMessage('selectedAsOnePDF', 'Selected as One PDF');
+    pdfOptions[3].textContent = getMessage('selectedAsSeparatePDFs', 'Selected as Separate PDFs');
+  }
+  
+  // Translate descriptions
+  const pdfDescriptions = document.querySelectorAll('.pdf-option-text span');
+  if (pdfDescriptions.length >= 4) {
+    pdfDescriptions[0].textContent = getMessage('allAsOnePDFDesc', 'Combine all screenshots into one PDF file');
+    pdfDescriptions[1].textContent = getMessage('allAsSeparatePDFsDesc', 'Download each screenshot as individual PDF');
+    pdfDescriptions[2].textContent = getMessage('selectedAsOnePDFDesc', 'Combine selected screenshots into one PDF');
+    pdfDescriptions[3].textContent = getMessage('selectedAsSeparatePDFsDesc', 'Download each selected screenshot as PDF');
+  }
+  
+  // Translate cancel button
+  const cancelBtn = document.getElementById('pdfCancelBtn');
+  if (cancelBtn) {
+    cancelBtn.textContent = getMessage('cancel', 'Cancel');
+  }
 }
 
 // Hide PDF Export Modal

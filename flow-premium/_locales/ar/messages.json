@@ -29,8 +29,35 @@
   "exportPDF": {
     "message": "تصدير PDF"
   },
+  "exportPDFOptions": {
+    "message": "خيارات تصدير PDF"
+  },
   "clearAll": {
     "message": "مسح الكل"
+  },
+  "allAsOnePDF": {
+    "message": "الكل في PDF واحد"
+  },
+  "allAsOnePDFDesc": {
+    "message": "دمج جميع اللقطات في ملف PDF واحد"
+  },
+  "allAsSeparatePDFs": {
+    "message": "الكل في ملفات PDF منفصلة"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "تحميل كل لقطة كملف PDF منفصل"
+  },
+  "selectedAsOnePDF": {
+    "message": "المحدد في PDF واحد"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "دمج اللقطات المحددة في ملف PDF واحد"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "المحدد في ملفات PDF منفصلة"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "تحميل كل لقطة محددة كملف PDF منفصل"
   },
   "cancel": {
     "message": "إلغاء"
