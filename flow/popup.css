@@ -45,44 +45,13 @@ body {
 }
 
 .logo-word {
-  background: linear-gradient(135deg, #00ffff, #0099ff, #00ffff);
-  background-size: 300% 300%;
+  background: linear-gradient(90deg, #00ffff, #0099ff, #00ffff);
+  background-size: 100% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: word-shimmer 3s ease-in-out infinite;
-  filter: drop-shadow(0 0 6px rgba(0, 217, 255, 0.5)) drop-shadow(0 0 12px rgba(0, 255, 255, 0.3));
+  filter: drop-shadow(0 0 8px rgba(0, 217, 255, 0.6)) drop-shadow(0 0 16px rgba(0, 255, 255, 0.4));
   position: relative;
-}
-
-.logo-word:nth-child(1) {
-  animation: word-shimmer 3s ease-in-out infinite 0s;
-}
-
-.logo-word:nth-child(2) {
-  animation: word-shimmer 3s ease-in-out infinite 0.3s;
-}
-
-.logo-word:nth-child(3) {
-  animation: word-shimmer 3s ease-in-out infinite 0.6s;
-}
-
-@keyframes word-shimmer {
-  0% {
-    background-position: 0% 50%;
-    filter: drop-shadow(0 0 6px rgba(0, 217, 255, 0.5)) drop-shadow(0 0 12px rgba(0, 255, 255, 0.3));
-    transform: translateY(0);
-  }
-  50% {
-    background-position: 100% 50%;
-    filter: drop-shadow(0 0 12px rgba(0, 217, 255, 0.8)) drop-shadow(0 0 20px rgba(0, 255, 255, 0.6));
-    transform: translateY(-2px);
-  }
-  100% {
-    background-position: 0% 50%;
-    filter: drop-shadow(0 0 6px rgba(0, 217, 255, 0.5)) drop-shadow(0 0 12px rgba(0, 255, 255, 0.3));
-    transform: translateY(0);
-  }
 }
 
 @keyframes sparkle {
