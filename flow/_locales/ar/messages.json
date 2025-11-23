@@ -1,0 +1,52 @@
+{
+  "extensionName": {
+    "message": "Flow - لقطات للذكاء الاصطناعي"
+  },
+  "extensionDescription": {
+    "message": "التقط لقطات الشاشة وارفعها للذكاء الاصطناعي"
+  },
+  "flowReady": {
+    "message": "Flow: جاهز"
+  },
+  "oneClickOneFlow": {
+    "message": "نقرة واحدة. تدفق واحد."
+  },
+  "pagesReadyForAI": {
+    "message": "صفحاتك، جاهزة للذكاء الاصطناعي في ثوان."
+  },
+  "clickCameraButton": {
+    "message": "انقر على زر الكاميرا المضيء للالتقاط"
+  },
+  "selectAll": {
+    "message": "تحديد الكل"
+  },
+  "copySelected": {
+    "message": "نسخ المحدد"
+  },
+  "downloadSelected": {
+    "message": "تحميل المحدد"
+  },
+  "exportPDF": {
+    "message": "تصدير PDF"
+  },
+  "clearAll": {
+    "message": "مسح الكل"
+  },
+  "cancel": {
+    "message": "إلغاء"
+  },
+  "trialEnded": {
+    "message": "انتهت الفترة التجريبية"
+  },
+  "upgradeNow": {
+    "message": "الترقية الآن - 39 ريال/سنة"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ يوم متبقي",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  }
+}

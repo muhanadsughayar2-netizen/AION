@@ -1,0 +1,83 @@
+{
+  "extensionName": {
+    "message": "Flow - Screenshot to AI",
+    "description": "Extension name"
+  },
+  "extensionDescription": {
+    "message": "Capture screenshots and batch upload to AI platforms",
+    "description": "Extension description"
+  },
+  "flowReady": {
+    "message": "Flow: Ready",
+    "description": "Status message"
+  },
+  "oneClickOneFlow": {
+    "message": "One click. One flow.",
+    "description": "Tagline"
+  },
+  "pagesReadyForAI": {
+    "message": "Your pages, ready for AI in seconds.",
+    "description": "Subheading"
+  },
+  "clickCameraButton": {
+    "message": "Click the glowing camera button above to capture instantly",
+    "description": "Instructions"
+  },
+  "selectAll": {
+    "message": "Select All",
+    "description": "Select all button"
+  },
+  "copySelected": {
+    "message": "Copy Selected",
+    "description": "Copy selected button"
+  },
+  "downloadSelected": {
+    "message": "Download Selected",
+    "description": "Download selected button"
+  },
+  "exportPDF": {
+    "message": "Export PDF",
+    "description": "Export PDF button"
+  },
+  "clearAll": {
+    "message": "Clear All",
+    "description": "Clear all button"
+  },
+  "allAsOnePDF": {
+    "message": "All as One PDF",
+    "description": "PDF export option"
+  },
+  "allAsSeparatePDFs": {
+    "message": "All as Separate PDFs",
+    "description": "PDF export option"
+  },
+  "selectedAsOnePDF": {
+    "message": "Selected as One PDF",
+    "description": "PDF export option"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Selected as Separate PDFs",
+    "description": "PDF export option"
+  },
+  "cancel": {
+    "message": "Cancel",
+    "description": "Cancel button"
+  },
+  "trialEnded": {
+    "message": "Trial Ended",
+    "description": "Trial ended message"
+  },
+  "upgradeNow": {
+    "message": "Upgrade Now - $9.90/year",
+    "description": "Upgrade button"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ days remaining",
+    "description": "Days remaining in trial",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  }
+}

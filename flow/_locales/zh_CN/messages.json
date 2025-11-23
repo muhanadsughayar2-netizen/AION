@@ -1,0 +1,52 @@
+{
+  "extensionName": {
+    "message": "Flow - 截图到AI"
+  },
+  "extensionDescription": {
+    "message": "捕获屏幕截图并批量上传到AI平台"
+  },
+  "flowReady": {
+    "message": "Flow: 就绪"
+  },
+  "oneClickOneFlow": {
+    "message": "一键。一流。"
+  },
+  "pagesReadyForAI": {
+    "message": "您的页面，几秒内为AI准备就绪。"
+  },
+  "clickCameraButton": {
+    "message": "点击上方发光的相机按钮进行捕获"
+  },
+  "selectAll": {
+    "message": "全选"
+  },
+  "copySelected": {
+    "message": "复制选中"
+  },
+  "downloadSelected": {
+    "message": "下载选中"
+  },
+  "exportPDF": {
+    "message": "导出PDF"
+  },
+  "clearAll": {
+    "message": "全部清除"
+  },
+  "cancel": {
+    "message": "取消"
+  },
+  "trialEnded": {
+    "message": "试用结束"
+  },
+  "upgradeNow": {
+    "message": "立即升级 - ¥69/年"
+  },
+  "daysRemaining": {
+    "message": "剩余$DAYS$天",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  }
+}

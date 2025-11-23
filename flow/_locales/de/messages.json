@@ -1,0 +1,64 @@
+{
+  "extensionName": {
+    "message": "Flow - Screenshot zu KI"
+  },
+  "extensionDescription": {
+    "message": "Screenshots aufnehmen und an KI-Plattformen senden"
+  },
+  "flowReady": {
+    "message": "Flow: Bereit"
+  },
+  "oneClickOneFlow": {
+    "message": "Ein Klick. Ein Flow."
+  },
+  "pagesReadyForAI": {
+    "message": "Ihre Seiten, in Sekunden bereit für KI."
+  },
+  "clickCameraButton": {
+    "message": "Klicken Sie auf die leuchtende Kamera-Taste zum Aufnehmen"
+  },
+  "selectAll": {
+    "message": "Alle Auswählen"
+  },
+  "copySelected": {
+    "message": "Auswahl Kopieren"
+  },
+  "downloadSelected": {
+    "message": "Auswahl Herunterladen"
+  },
+  "exportPDF": {
+    "message": "PDF Exportieren"
+  },
+  "clearAll": {
+    "message": "Alles Löschen"
+  },
+  "allAsOnePDF": {
+    "message": "Alles als Ein PDF"
+  },
+  "allAsSeparatePDFs": {
+    "message": "Alles als Separate PDFs"
+  },
+  "selectedAsOnePDF": {
+    "message": "Auswahl als Ein PDF"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Auswahl als Separate PDFs"
+  },
+  "cancel": {
+    "message": "Abbrechen"
+  },
+  "trialEnded": {
+    "message": "Testversion Beendet"
+  },
+  "upgradeNow": {
+    "message": "Jetzt Upgraden - 9,90€/Jahr"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ Tage verbleibend",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  }
+}

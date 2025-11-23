@@ -1,0 +1,52 @@
+{
+  "extensionName": {
+    "message": "Flow - スクリーンショットをAIへ"
+  },
+  "extensionDescription": {
+    "message": "スクリーンショットを撮影し、AIプラットフォームに一括アップロード"
+  },
+  "flowReady": {
+    "message": "Flow: 準備完了"
+  },
+  "oneClickOneFlow": {
+    "message": "ワンクリック。ワンフロー。"
+  },
+  "pagesReadyForAI": {
+    "message": "あなたのページ、数秒でAIの準備が整います。"
+  },
+  "clickCameraButton": {
+    "message": "上の光るカメラボタンをクリックして撮影"
+  },
+  "selectAll": {
+    "message": "すべて選択"
+  },
+  "copySelected": {
+    "message": "選択をコピー"
+  },
+  "downloadSelected": {
+    "message": "選択をダウンロード"
+  },
+  "exportPDF": {
+    "message": "PDFエクスポート"
+  },
+  "clearAll": {
+    "message": "すべてクリア"
+  },
+  "cancel": {
+    "message": "キャンセル"
+  },
+  "trialEnded": {
+    "message": "試用期間終了"
+  },
+  "upgradeNow": {
+    "message": "今すぐアップグレード - ¥1,490/年"
+  },
+  "daysRemaining": {
+    "message": "残り$DAYS$日",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  }
+}

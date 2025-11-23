@@ -1,0 +1,64 @@
+{
+  "extensionName": {
+    "message": "Flow - Capture vers IA"
+  },
+  "extensionDescription": {
+    "message": "Capturez des écrans et téléchargez vers les plateformes IA"
+  },
+  "flowReady": {
+    "message": "Flow: Prêt"
+  },
+  "oneClickOneFlow": {
+    "message": "Un clic. Un flux."
+  },
+  "pagesReadyForAI": {
+    "message": "Vos pages, prêtes pour l'IA en secondes."
+  },
+  "clickCameraButton": {
+    "message": "Cliquez sur le bouton caméra lumineux pour capturer"
+  },
+  "selectAll": {
+    "message": "Tout Sélectionner"
+  },
+  "copySelected": {
+    "message": "Copier Sélection"
+  },
+  "downloadSelected": {
+    "message": "Télécharger Sélection"
+  },
+  "exportPDF": {
+    "message": "Exporter PDF"
+  },
+  "clearAll": {
+    "message": "Tout Effacer"
+  },
+  "allAsOnePDF": {
+    "message": "Tout en Un PDF"
+  },
+  "allAsSeparatePDFs": {
+    "message": "Tout en PDFs Séparés"
+  },
+  "selectedAsOnePDF": {
+    "message": "Sélection en Un PDF"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Sélection en PDFs Séparés"
+  },
+  "cancel": {
+    "message": "Annuler"
+  },
+  "trialEnded": {
+    "message": "Essai Terminé"
+  },
+  "upgradeNow": {
+    "message": "Mettre à Niveau - 9,90$/an"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ jours restants",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  }
+}
