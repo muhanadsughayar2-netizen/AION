@@ -5,19 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Flow</title>
   <link rel="stylesheet" href="popup.css">
+  <style>
+    /* RTL support for Arabic */
+    html[dir="rtl"] .container {
+      direction: rtl;
+    }
+    html[dir="rtl"] .selection-bar {
+      direction: rtl;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <div class="logo">Flow</div>
+      <div class="logo">FLOW</div>
       <div class="counter">
         <span id="snapCount">0</span> / <span>9</span>
       </div>
     </div>
 
     <!-- Status Line -->
-    <div class="status" id="status">Flow: Ready</div>
+    <div class="status" id="status" data-i18n="flowReady">Flow: Ready</div>
 
     <!-- Main Orb Button -->
     <div class="orb-container">

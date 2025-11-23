@@ -6,10 +6,47 @@ let selectedSnapIds = new Set();
 
 // Initialize popup on load
 document.addEventListener('DOMContentLoaded', async () => {
+  translateUI(); // Add translation support
   await loadSnaps();
   setupEventListeners();
   updateUI();
 });
+
+// Translate all UI elements
+function translateUI() {
+  // Check if language is RTL (Arabic)
+  const uiLang = chrome.i18n.getUILanguage();
+  if (uiLang.startsWith('ar')) {
+    document.documentElement.setAttribute('dir', 'rtl');
+  }
+  
+  // Translate text content with fallbacks
+  const getMessage = (key, fallback) => {
+    const msg = chrome.i18n.getMessage(key);
+    return msg || fallback;
+  };
+  
+  document.querySelector('.status').textContent = getMessage('flowReady', 'Flow: Ready');
+  document.getElementById('selectAllBtn').textContent = getMessage('selectAll', 'Select All');
+  document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Copy Selected');
+  document.getElementById('downloadSelectedBtn').textContent = getMessage('downloadSelected', 'Download Selected');
+  document.getElementById('exportPdfBtn').textContent = '📄 ' + getMessage('exportPDF', 'Export PDF');
+  document.getElementById('clearButton').textContent = getMessage('clearAll', 'Clear All');
+  
+  // Translate PDF modal
+  const pdfOptions = document.querySelectorAll('.pdf-option-text strong');
+  if (pdfOptions.length >= 4) {
+    pdfOptions[0].textContent = getMessage('allAsOnePDF', 'All as One PDF');
+    pdfOptions[1].textContent = getMessage('allAsSeparatePDFs', 'All as Separate PDFs');
+    pdfOptions[2].textContent = getMessage('selectedAsOnePDF', 'Selected as One PDF');
+    pdfOptions[3].textContent = getMessage('selectedAsSeparatePDFs', 'Selected as Separate PDFs');
+  }
+  
+  const cancelBtn = document.getElementById('pdfCancelBtn');
+  if (cancelBtn) {
+    cancelBtn.textContent = getMessage('cancel', 'Cancel');
+  }
+}
 
 // Setup event listeners
 function setupEventListeners() {
