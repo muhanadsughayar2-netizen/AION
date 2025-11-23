@@ -1,102 +1,102 @@
 {
   "extensionName": {
-    "message": "Flow - Screenshot to AI",
+    "message": "Flow - AI க்கான திரை ஸ்னாப்ஷாட்",
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "Capture screenshots and batch upload to AI platforms",
+    "message": "திரை ஸ்நாப்ஷாட்களை பிடிக்கவும் மற்றும் AI தளங்களில் தொகுதியாக பதிவேற்றவும்",
     "description": "Extension description"
   },
   "flowReady": {
-    "message": "Flow: Ready",
+    "message": "Flow: தயாரம்",
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "One click. One flow.",
+    "message": "ஒரு கிளிக். ஒரு பாய்வு.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Your pages, ready for AI in seconds.",
+    "message": "உங்கள் பக்கங்கள், வினாடிகளில் AI க்கு தயாரம்",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "Click the glowing camera button above to capture instantly",
+    "message": "உடனடியாக பிடிக்க மேலே உள்ள பிரகாசிக்கும் கேமரா பொத்தானைக் கிளிக் செய்யவும்",
     "description": "Instructions"
   },
   "selectAll": {
-    "message": "Select All",
+    "message": "அனைத்தையும் தேர்ந்தெடுக்கவும்",
     "description": "Select all button"
   },
   "deselectAll": {
-    "message": "Deselect All",
+    "message": "அனைத்தையும் நீக்கவும்",
     "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "Copy Selected",
+    "message": "தேர்ந்தெடுத்தவற்றை நকல் செய்யவும்",
     "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "Download Selected",
+    "message": "தேர்ந்தெடுத்தவற்றை பதிவிறக்கவும்",
     "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "Export PDF",
+    "message": "PDF ஆக ஏற்றுமதி செய்யவும்",
     "description": "Export PDF button"
   },
   "exportPDFOptions": {
-    "message": "Export PDF Options",
+    "message": "PDF ஏற்றுமதி விருப்பங்கள்",
     "description": "PDF modal header"
   },
   "allAsOnePDF": {
-    "message": "All as One PDF",
+    "message": "அனைத்தும் ஒரு PDF-ல்",
     "description": "PDF export option title"
   },
   "allAsOnePDFDesc": {
-    "message": "Combine all screenshots into one PDF file",
+    "message": "அனைத்து திரை ஸ்நாப்ஷாட்களையும் ஒரு PDF கோப்பில் இணைக்கவும்",
     "description": "PDF export option description"
   },
   "allAsSeparatePDFs": {
-    "message": "All as Separate PDFs",
+    "message": "அனைத்தும் தனிப்பட்ட PDFக்களாக",
     "description": "PDF export option title"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "Download each screenshot as individual PDF",
+    "message": "ஒவ்வொரு திரை ஸ்நாப்ஷாட்டையும் தனிப்பட்ட PDF ஆக பதிவிறக்கவும்",
     "description": "PDF export option description"
   },
   "selectedAsOnePDF": {
-    "message": "Selected as One PDF",
+    "message": "தேர்ந்தெடுத்தவை ஒரு PDF-ல்",
     "description": "PDF export option title"
   },
   "selectedAsOnePDFDesc": {
-    "message": "Combine selected screenshots into one PDF",
+    "message": "தேர்ந்தெடுத்த திரை ஸ்நாப்ஷாட்களை ஒரு PDF கோப்பில் இணைக்கவும்",
     "description": "PDF export option description"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Selected as Separate PDFs",
+    "message": "தேர்ந்தெடுத்தவை தனிப்பட்ட PDFக்களாக",
     "description": "PDF export option title"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "Download each selected screenshot as PDF",
+    "message": "ஒவ்வொரு தேர்ந்தெடுத்த திரை ஸ்நாப்ஷாட்டையும் தனிப்பட்ட PDF ஆக பதிவிறக்கவும்",
     "description": "PDF export option description"
   },
   "clearAll": {
-    "message": "Clear All",
+    "message": "அனைத்தையும் அழிக்கவும்",
     "description": "Clear all button"
   },
   "cancel": {
-    "message": "Cancel",
+    "message": "ரத்துசெய்யவும்",
     "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "Trial Ended",
+    "message": "சோதனை காலம் முடிந்துவிட்டது",
     "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "Upgrade Now - $9.90/year",
+    "message": "இப்போது மேம்படுத்தவும் - $9.90/வருடம்",
     "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "$DAYS$ days remaining",
+    "message": "$DAYS$ நாட்கள் இருக்கிறது",
     "description": "Days remaining in trial",
     "placeholders": {
       "days": {

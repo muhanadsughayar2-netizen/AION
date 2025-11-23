@@ -1,102 +1,102 @@
 {
   "extensionName": {
-    "message": "Flow - لقطات الشاشة للذكاء الاصطناعي",
+    "message": "Flow - Screenshot to AI",
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "التقط لقطات الشاشة وحملها إلى منصات الذكاء الاصطناعي",
+    "message": "Capture screenshots and batch upload to AI platforms",
     "description": "Extension description"
   },
   "flowReady": {
-    "message": "Flow: جاهز",
+    "message": "Flow: Ready",
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "نقرة واحدة. تدفق واحد.",
+    "message": "One click. One flow.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "صفحاتك جاهزة للذكاء الاصطناعي في ثوانٍ",
+    "message": "Your pages, ready for AI in seconds.",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "انقر على زر الكاميرا المضيء أعلاه للالتقاط الفوري",
+    "message": "Click the glowing camera button above to capture instantly",
     "description": "Instructions"
   },
   "selectAll": {
-    "message": "تحديد الكل",
+    "message": "Select All",
     "description": "Select all button"
   },
   "deselectAll": {
-    "message": "إلغاء تحديد الكل",
+    "message": "Deselect All",
     "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "نسخ المحدد",
+    "message": "Copy Selected",
     "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "تحميل المحدد",
+    "message": "Download Selected",
     "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "تصدير PDF",
+    "message": "Export PDF",
     "description": "Export PDF button"
   },
   "exportPDFOptions": {
-    "message": "خيارات تصدير PDF",
+    "message": "Export PDF Options",
     "description": "PDF modal header"
   },
   "allAsOnePDF": {
-    "message": "الكل في PDF واحد",
+    "message": "All as One PDF",
     "description": "PDF export option title"
   },
   "allAsOnePDFDesc": {
-    "message": "دمج جميع لقطات الشاشة في ملف PDF واحد",
+    "message": "Combine all screenshots into one PDF file",
     "description": "PDF export option description"
   },
   "allAsSeparatePDFs": {
-    "message": "الكل في ملفات PDF منفصلة",
+    "message": "All as Separate PDFs",
     "description": "PDF export option title"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "تحميل كل لقطة شاشة كملف PDF منفصل",
+    "message": "Download each screenshot as individual PDF",
     "description": "PDF export option description"
   },
   "selectedAsOnePDF": {
-    "message": "المحدد في PDF واحد",
+    "message": "Selected as One PDF",
     "description": "PDF export option title"
   },
   "selectedAsOnePDFDesc": {
-    "message": "دمج لقطات الشاشة المحددة في ملف PDF واحد",
+    "message": "Combine selected screenshots into one PDF",
     "description": "PDF export option description"
   },
   "selectedAsSeparatePDFs": {
-    "message": "المحدد في ملفات PDF منفصلة",
+    "message": "Selected as Separate PDFs",
     "description": "PDF export option title"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "تحميل كل لقطة شاشة محددة كملف PDF منفصل",
+    "message": "Download each selected screenshot as PDF",
     "description": "PDF export option description"
   },
   "clearAll": {
-    "message": "مسح الكل",
+    "message": "Clear All",
     "description": "Clear all button"
   },
   "cancel": {
-    "message": "إلغاء",
+    "message": "Cancel",
     "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "انتهت الفترة التجريبية",
+    "message": "Trial Ended",
     "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "الترقية الآن - 39 ريال/سنة",
+    "message": "Upgrade Now - $9.90/year",
     "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "$DAYS$ يوم متبقي",
+    "message": "$DAYS$ days remaining",
     "description": "Days remaining in trial",
     "placeholders": {
       "days": {

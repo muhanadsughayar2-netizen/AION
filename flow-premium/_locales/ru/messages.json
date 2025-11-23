@@ -1,102 +1,102 @@
 {
   "extensionName": {
-    "message": "Flow - Снимок экрана для ИИ",
+    "message": "Flow - Screenshot to AI",
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "Захватывайте скриншоты и массово загружайте на платформы ИИ",
+    "message": "Capture screenshots and batch upload to AI platforms",
     "description": "Extension description"
   },
   "flowReady": {
-    "message": "Flow: Готово",
+    "message": "Flow: Ready",
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "Один клик. Один поток",
+    "message": "One click. One flow.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Ваши страницы готовы для ИИ за секунды",
+    "message": "Your pages, ready for AI in seconds.",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "Нажмите на светящуюся кнопку камеры выше, чтобы захватить мгновенно",
+    "message": "Click the glowing camera button above to capture instantly",
     "description": "Instructions"
   },
   "selectAll": {
-    "message": "Выбрать Все",
+    "message": "Select All",
     "description": "Select all button"
   },
   "deselectAll": {
-    "message": "Отменить Выделение",
+    "message": "Deselect All",
     "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "Копировать Выбранное",
+    "message": "Copy Selected",
     "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "Скачать Выбранное",
+    "message": "Download Selected",
     "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "Экспортировать в PDF",
+    "message": "Export PDF",
     "description": "Export PDF button"
   },
   "exportPDFOptions": {
-    "message": "Параметры Экспорта PDF",
+    "message": "Export PDF Options",
     "description": "PDF modal header"
   },
   "allAsOnePDF": {
-    "message": "Все в один PDF",
+    "message": "All as One PDF",
     "description": "PDF export option title"
   },
   "allAsOnePDFDesc": {
-    "message": "Объедините все снимки экрана в один PDF-файл",
+    "message": "Combine all screenshots into one PDF file",
     "description": "PDF export option description"
   },
   "allAsSeparatePDFs": {
-    "message": "Все как Отдельные PDF",
+    "message": "All as Separate PDFs",
     "description": "PDF export option title"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "Загрузите каждый снимок экрана как отдельный PDF",
+    "message": "Download each screenshot as individual PDF",
     "description": "PDF export option description"
   },
   "selectedAsOnePDF": {
-    "message": "Выбранное в один PDF",
+    "message": "Selected as One PDF",
     "description": "PDF export option title"
   },
   "selectedAsOnePDFDesc": {
-    "message": "Объедините выбранные снимки экрана в один PDF-файл",
+    "message": "Combine selected screenshots into one PDF",
     "description": "PDF export option description"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Выбранное как Отдельные PDF",
+    "message": "Selected as Separate PDFs",
     "description": "PDF export option title"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "Загрузите каждый выбранный снимок экрана как отдельный PDF",
+    "message": "Download each selected screenshot as PDF",
     "description": "PDF export option description"
   },
   "clearAll": {
-    "message": "Очистить Все",
+    "message": "Clear All",
     "description": "Clear all button"
   },
   "cancel": {
-    "message": "Отмена",
+    "message": "Cancel",
     "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "Пробный период Завершен",
+    "message": "Trial Ended",
     "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "Обновить Сейчас - $9.90/год",
+    "message": "Upgrade Now - $9.90/year",
     "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "осталось $DAYS$ дней",
+    "message": "$DAYS$ days remaining",
     "description": "Days remaining in trial",
     "placeholders": {
       "days": {

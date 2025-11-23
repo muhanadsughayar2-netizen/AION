@@ -1,102 +1,102 @@
 {
   "extensionName": {
-    "message": "Flow - Screenshot to AI",
+    "message": "Flow - AI ପାଇଁ ସ୍କ୍ରୀନଶଟ",
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "Capture screenshots and batch upload to AI platforms",
+    "message": "ସ୍କ୍ରୀନଶଟ ଧରି ରାଖନ୍ତୁ ଏବଂ AI ପ୍ଲାଟଫର୍ମକୁ ବ୍ୟାଚ ଅପଲୋଡ୍ କରନ୍ତୁ",
     "description": "Extension description"
   },
   "flowReady": {
-    "message": "Flow: Ready",
+    "message": "Flow: ପ୍ରସ୍ତୁତ",
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "One click. One flow.",
+    "message": "ଗୋଟିଏ କ୍ଲିକ୍। ଗୋଟିଏ ପ୍ରବାହ।",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Your pages, ready for AI in seconds.",
+    "message": "ଆପଣଙ୍କ ପୃଷ୍ଠାଗୁଡ଼ିକ, ସେକଣ୍ଡରେ AI ପାଇଁ ପ୍ରସ୍ତୁତ",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "Click the glowing camera button above to capture instantly",
+    "message": "ତାତ୍ କ୍ଷଣିକ ଧରି ରଖିବାକୁ ଉପରେ ଜ୍ଞାନୀ କ୍ୟାମେରା ବଟନ୍ କ୍ଲିକ୍ କରନ୍ତୁ",
     "description": "Instructions"
   },
   "selectAll": {
-    "message": "Select All",
+    "message": "ସବୁ ଚୟନ କରନ୍ତୁ",
     "description": "Select all button"
   },
   "deselectAll": {
-    "message": "Deselect All",
+    "message": "ସବୁ ଚୟନ ହଟାନ୍ତୁ",
     "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "Copy Selected",
+    "message": "ଚୟନ ନକଲ କରନ୍ତୁ",
     "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "Download Selected",
+    "message": "ଚୟନ ଡାଉନଲୋଡ୍ କରନ୍ତୁ",
     "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "Export PDF",
+    "message": "PDF ଭାବରେ ରପ୍ତାନି କରନ୍ତୁ",
     "description": "Export PDF button"
   },
   "exportPDFOptions": {
-    "message": "Export PDF Options",
+    "message": "PDF ରପ୍ତାନି ବିକଳ୍ପଗୁଡ଼ିକ",
     "description": "PDF modal header"
   },
   "allAsOnePDF": {
-    "message": "All as One PDF",
+    "message": "ସବୁ ଗୋଟିଏ PDF ରେ",
     "description": "PDF export option title"
   },
   "allAsOnePDFDesc": {
-    "message": "Combine all screenshots into one PDF file",
+    "message": "ସମସ୍ତ ସ୍କ୍ରୀନଶଟକୁ ଗୋଟିଏ PDF ଫାଇଲରେ ମିଶ୍ରିତ କରନ୍ତୁ",
     "description": "PDF export option description"
   },
   "allAsSeparatePDFs": {
-    "message": "All as Separate PDFs",
+    "message": "ସବୁ ଅଲଗା PDF ଭାବରେ",
     "description": "PDF export option title"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "Download each screenshot as individual PDF",
+    "message": "ଗୋଟିଏ ଗୋଟିଏ ସ୍କ୍ରୀନଶଟକୁ ଅଲଗା PDF ଭାବରେ ଡାଉନଲୋଡ୍ କରନ୍ତୁ",
     "description": "PDF export option description"
   },
   "selectedAsOnePDF": {
-    "message": "Selected as One PDF",
+    "message": "ଚୟନ ଗୋଟିଏ PDF ରେ",
     "description": "PDF export option title"
   },
   "selectedAsOnePDFDesc": {
-    "message": "Combine selected screenshots into one PDF",
+    "message": "ଚୟନ ସ୍କ୍ରୀନଶଟଗୁଡ଼ିକୁ ଗୋଟିଏ PDF ଫାଇଲରେ ମିଶ୍ରିତ କରନ୍ତୁ",
     "description": "PDF export option description"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Selected as Separate PDFs",
+    "message": "ଚୟନ ଅଲଗା PDF ଭାବରେ",
     "description": "PDF export option title"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "Download each selected screenshot as PDF",
+    "message": "ପ୍ରତିଟି ଚୟନ ସ୍କ୍ରୀନଶଟକୁ ଅଲଗା PDF ଭାବରେ ଡାଉନଲୋଡ୍ କରନ୍ତୁ",
     "description": "PDF export option description"
   },
   "clearAll": {
-    "message": "Clear All",
+    "message": "ସବୁ ଭଙ୍ଗାଇ ଦିନ୍ତୁ",
     "description": "Clear all button"
   },
   "cancel": {
-    "message": "Cancel",
+    "message": "ବାତିଲ୍ କରନ୍ତୁ",
     "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "Trial Ended",
+    "message": "ପରୀକ୍ଷାମୂଳକ ଅବଧି ଶେଷ",
     "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "Upgrade Now - $9.90/year",
+    "message": "ବର୍ତ୍ତମାନ ଅପଗ୍ରେଡ୍ କରନ୍ତୁ - $9.90/ବର୍ଷ",
     "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "$DAYS$ days remaining",
+    "message": "$DAYS$ ଦିନ ଅବଶେଷ",
     "description": "Days remaining in trial",
     "placeholders": {
       "days": {

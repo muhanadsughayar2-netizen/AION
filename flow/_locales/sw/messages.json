@@ -1,102 +1,102 @@
 {
   "extensionName": {
-    "message": "Flow - Screenshot to AI",
+    "message": "Flow - Picha ya Skrini kwa AI",
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "Capture screenshots and batch upload to AI platforms",
+    "message": "Kunweka picha za skrini na kupakilisha kwa kundi kwenye jukwaa la AI",
     "description": "Extension description"
   },
   "flowReady": {
-    "message": "Flow: Ready",
+    "message": "Flow: Tayari",
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "One click. One flow.",
+    "message": "Kila moja kwa kila moja.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Your pages, ready for AI in seconds.",
+    "message": "Kurasa zako, ziko tayari kwa AI kwa sekunde",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "Click the glowing camera button above to capture instantly",
+    "message": "Bonyeza kitufe cha kamera kinachomng'ara hapo juu ili kunweka mapema",
     "description": "Instructions"
   },
   "selectAll": {
-    "message": "Select All",
+    "message": "Chagua Zote",
     "description": "Select all button"
   },
   "deselectAll": {
-    "message": "Deselect All",
+    "message": "Ondoa Chaguo la Zote",
     "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "Copy Selected",
+    "message": "Nakili Zilizochaguliwa",
     "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "Download Selected",
+    "message": "Pakua Zilizochaguliwa",
     "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "Export PDF",
+    "message": "Hamisha kama PDF",
     "description": "Export PDF button"
   },
   "exportPDFOptions": {
-    "message": "Export PDF Options",
+    "message": "Chaguo za Hamishaji ya PDF",
     "description": "PDF modal header"
   },
   "allAsOnePDF": {
-    "message": "All as One PDF",
+    "message": "Zote katika PDF Moja",
     "description": "PDF export option title"
   },
   "allAsOnePDFDesc": {
-    "message": "Combine all screenshots into one PDF file",
+    "message": "Unganisha picha zote za skrini ndani ya faili moja ya PDF",
     "description": "PDF export option description"
   },
   "allAsSeparatePDFs": {
-    "message": "All as Separate PDFs",
+    "message": "Zote kama PDF Tofauti",
     "description": "PDF export option title"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "Download each screenshot as individual PDF",
+    "message": "Pakua kila picha ya skrini kama PDF tofauti",
     "description": "PDF export option description"
   },
   "selectedAsOnePDF": {
-    "message": "Selected as One PDF",
+    "message": "Zilizochaguliwa katika PDF Moja",
     "description": "PDF export option title"
   },
   "selectedAsOnePDFDesc": {
-    "message": "Combine selected screenshots into one PDF",
+    "message": "Unganisha picha zilizochaguliwa ndani ya faili moja ya PDF",
     "description": "PDF export option description"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Selected as Separate PDFs",
+    "message": "Zilizochaguliwa kama PDF Tofauti",
     "description": "PDF export option title"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "Download each selected screenshot as PDF",
+    "message": "Pakua kila picha iliyochaguliwa kama PDF tofauti",
     "description": "PDF export option description"
   },
   "clearAll": {
-    "message": "Clear All",
+    "message": "Futa Zote",
     "description": "Clear all button"
   },
   "cancel": {
-    "message": "Cancel",
+    "message": "Ghairi",
     "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "Trial Ended",
+    "message": "Kipindi cha Mtihani Kimeishia",
     "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "Upgrade Now - $9.90/year",
+    "message": "Panda Sasa - $9.90/mwaka",
     "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "$DAYS$ days remaining",
+    "message": "$DAYS$ siku Zilizobaki",
     "description": "Days remaining in trial",
     "placeholders": {
       "days": {

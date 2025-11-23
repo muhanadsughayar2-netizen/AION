@@ -1,102 +1,102 @@
 {
   "extensionName": {
-    "message": "Flow - Screenshot to AI",
+    "message": "Flow - Snímek obrazovky pro AI",
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "Capture screenshots and batch upload to AI platforms",
+    "message": "Zachytávejte snímky obrazovky a hromadně je nahrávejte na platformy AI",
     "description": "Extension description"
   },
   "flowReady": {
-    "message": "Flow: Ready",
+    "message": "Flow: Připraveno",
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "One click. One flow.",
+    "message": "Jeden klik. Jeden tok.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Your pages, ready for AI in seconds.",
+    "message": "Vaše stránky připraveny pro AI za sekundy",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "Click the glowing camera button above to capture instantly",
+    "message": "Klikněte na svítící tlačítko fotoaparátu výše pro okamžité zachycení",
     "description": "Instructions"
   },
   "selectAll": {
-    "message": "Select All",
+    "message": "Vybrat vše",
     "description": "Select all button"
   },
   "deselectAll": {
-    "message": "Deselect All",
+    "message": "Zrušit výběr všech",
     "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "Copy Selected",
+    "message": "Kopírovat vybrané",
     "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "Download Selected",
+    "message": "Stáhnout vybrané",
     "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "Export PDF",
+    "message": "Exportovat jako PDF",
     "description": "Export PDF button"
   },
   "exportPDFOptions": {
-    "message": "Export PDF Options",
+    "message": "Možnosti exportu PDF",
     "description": "PDF modal header"
   },
   "allAsOnePDF": {
-    "message": "All as One PDF",
+    "message": "Vše v jednom PDF",
     "description": "PDF export option title"
   },
   "allAsOnePDFDesc": {
-    "message": "Combine all screenshots into one PDF file",
+    "message": "Kombinujte všechny snímky obrazovky do jednoho souboru PDF",
     "description": "PDF export option description"
   },
   "allAsSeparatePDFs": {
-    "message": "All as Separate PDFs",
+    "message": "Vše jako samostatné PDF",
     "description": "PDF export option title"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "Download each screenshot as individual PDF",
+    "message": "Stáhněte každý snímek obrazovky jako samostatný PDF",
     "description": "PDF export option description"
   },
   "selectedAsOnePDF": {
-    "message": "Selected as One PDF",
+    "message": "Vybrané v jednom PDF",
     "description": "PDF export option title"
   },
   "selectedAsOnePDFDesc": {
-    "message": "Combine selected screenshots into one PDF",
+    "message": "Kombinujte vybrané snímky do jednoho souboru PDF",
     "description": "PDF export option description"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Selected as Separate PDFs",
+    "message": "Vybrané jako samostatné PDF",
     "description": "PDF export option title"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "Download each selected screenshot as PDF",
+    "message": "Stáhněte každý vybraný snímek jako samostatný PDF",
     "description": "PDF export option description"
   },
   "clearAll": {
-    "message": "Clear All",
+    "message": "Vymazat vše",
     "description": "Clear all button"
   },
   "cancel": {
-    "message": "Cancel",
+    "message": "Zrušit",
     "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "Trial Ended",
+    "message": "Zkušební období skončilo",
     "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "Upgrade Now - $9.90/year",
+    "message": "Upgradovat nyní - $9.90/rok",
     "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "$DAYS$ days remaining",
+    "message": "$DAYS$ dní zbývá",
     "description": "Days remaining in trial",
     "placeholders": {
       "days": {

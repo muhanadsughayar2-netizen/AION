@@ -1,102 +1,102 @@
 {
   "extensionName": {
-    "message": "Flow - Screenshot to AI",
+    "message": "Flow - AI కోసం స్క్రీన్‌షాట్",
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "Capture screenshots and batch upload to AI platforms",
+    "message": "స్క్రీన్‌షాట్‌లను సంగ్రహించండి మరియు AI ప్లాట్‌ఫార్‌మ్‌లకు బ్యాచ్ అప్‌లోడ్ చేయండి",
     "description": "Extension description"
   },
   "flowReady": {
-    "message": "Flow: Ready",
+    "message": "Flow: సిద్ధం",
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "One click. One flow.",
+    "message": "ఒక క్లిక్. ఒక ప్రవాహం.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Your pages, ready for AI in seconds.",
+    "message": "మీ పేజీలు, సెకన్లలో AI కోసం సిద్ధమైనవి",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "Click the glowing camera button above to capture instantly",
+    "message": "తక్షణమే సంగ్రహించడానికి పైన ఉన్న గ్లోయింగ్ క్యామెరా బటన్‌ను క్లిక్ చేయండి",
     "description": "Instructions"
   },
   "selectAll": {
-    "message": "Select All",
+    "message": "అన్నింటినీ ఎంచుకోండి",
     "description": "Select all button"
   },
   "deselectAll": {
-    "message": "Deselect All",
+    "message": "అన్నింటినీ విపర్లీ చేయండి",
     "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "Copy Selected",
+    "message": "ఎంచుకున్నవాటిని కాపీ చేయండి",
     "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "Download Selected",
+    "message": "ఎంచుకున్నవాటిని డౌన్‌లోడ్ చేయండి",
     "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "Export PDF",
+    "message": "PDFగా ఎగుమతి చేయండి",
     "description": "Export PDF button"
   },
   "exportPDFOptions": {
-    "message": "Export PDF Options",
+    "message": "PDF ఎగుమతి ఎంపికలు",
     "description": "PDF modal header"
   },
   "allAsOnePDF": {
-    "message": "All as One PDF",
+    "message": "అన్నీ ఒక PDFలో",
     "description": "PDF export option title"
   },
   "allAsOnePDFDesc": {
-    "message": "Combine all screenshots into one PDF file",
+    "message": "అన్ని స్క్రీన్‌షాట్‌లను ఒక PDF ఫైలుగా కలపండి",
     "description": "PDF export option description"
   },
   "allAsSeparatePDFs": {
-    "message": "All as Separate PDFs",
+    "message": "అన్నీ ప్రత్యేక PDFలుగా",
     "description": "PDF export option title"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "Download each screenshot as individual PDF",
+    "message": "ప్రతిটి స్క్రీన్‌షాట్‌ను ప్రత్యేక PDFగా డౌన్‌లోడ్ చేయండి",
     "description": "PDF export option description"
   },
   "selectedAsOnePDF": {
-    "message": "Selected as One PDF",
+    "message": "ఎంచుకున్నవి ఒక PDFలో",
     "description": "PDF export option title"
   },
   "selectedAsOnePDFDesc": {
-    "message": "Combine selected screenshots into one PDF",
+    "message": "ఎంచుకున్న స్క్రీన్‌షాట్‌లను ఒక PDF ఫైలుగా కలపండి",
     "description": "PDF export option description"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Selected as Separate PDFs",
+    "message": "ఎంచుకున్నవి ప్రత్యేక PDFలుగా",
     "description": "PDF export option title"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "Download each selected screenshot as PDF",
+    "message": "ప్రతిటి ఎంచుకున్న స్క్రీన్‌షాట్‌ను ప్రత్యేక PDFగా డౌన్‌లోడ్ చేయండి",
     "description": "PDF export option description"
   },
   "clearAll": {
-    "message": "Clear All",
+    "message": "అన్నీ క్లియర్ చేయండి",
     "description": "Clear all button"
   },
   "cancel": {
-    "message": "Cancel",
+    "message": "రద్దు చేయండి",
     "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "Trial Ended",
+    "message": "ట్రయల్ కాలం ముగిసింది",
     "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "Upgrade Now - $9.90/year",
+    "message": "ఇప్పుడు అప్‌గ్రేడ్ చేయండి - $9.90/సంవత్సరం",
     "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "$DAYS$ days remaining",
+    "message": "$DAYS$ రోజులు మిగిలి ఉన్నాయి",
     "description": "Days remaining in trial",
     "placeholders": {
       "days": {

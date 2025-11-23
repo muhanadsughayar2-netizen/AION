@@ -1,82 +1,82 @@
 {
   "extensionName": {
-    "message": "Flow - 屏幕截图到AI",
+    "message": "Flow - 螢幕截圖到AI",
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "捕获屏幕截图并批量上传到AI平台",
+    "message": "捕獲螢幕截圖並批量上傳到AI平台",
     "description": "Extension description"
   },
   "flowReady": {
-    "message": "Flow: 就绪",
+    "message": "Flow: 就緒",
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "一次点击。一个流程",
+    "message": "一次點擊。一個流程。",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "您的页面在几秒内为AI做好准备",
+    "message": "您的頁面在幾秒內為AI做好準備",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "点击上面发光的相机按钮立即捕获",
+    "message": "點擊上面發光的相機按鈕立即捕獲",
     "description": "Instructions"
   },
   "selectAll": {
-    "message": "全选",
+    "message": "全選",
     "description": "Select all button"
   },
   "deselectAll": {
-    "message": "取消全选",
+    "message": "取消全選",
     "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "复制选中项",
+    "message": "複製選中項",
     "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "下载选中项",
+    "message": "下載選中項",
     "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "导出为PDF",
+    "message": "匯出為PDF",
     "description": "Export PDF button"
   },
   "exportPDFOptions": {
-    "message": "PDF导出选项",
+    "message": "PDF匯出選項",
     "description": "PDF modal header"
   },
   "allAsOnePDF": {
-    "message": "全部为一个PDF",
+    "message": "全部為一個PDF",
     "description": "PDF export option title"
   },
   "allAsOnePDFDesc": {
-    "message": "将所有屏幕截图合并为一个PDF文件",
+    "message": "將所有螢幕截圖合併為一個PDF文件",
     "description": "PDF export option description"
   },
   "allAsSeparatePDFs": {
-    "message": "全部为单独PDF",
+    "message": "全部為單獨PDF",
     "description": "PDF export option title"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "将每个屏幕截图作为单个PDF下载",
+    "message": "將每個螢幕截圖作為單個PDF下載",
     "description": "PDF export option description"
   },
   "selectedAsOnePDF": {
-    "message": "选中项为一个PDF",
+    "message": "選中項為一個PDF",
     "description": "PDF export option title"
   },
   "selectedAsOnePDFDesc": {
-    "message": "将选中的屏幕截图合并为一个PDF文件",
+    "message": "將選中的螢幕截圖合併為一個PDF文件",
     "description": "PDF export option description"
   },
   "selectedAsSeparatePDFs": {
-    "message": "选中项为单独PDF",
+    "message": "選中項為單獨PDF",
     "description": "PDF export option title"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "将每个选中的屏幕截图作为单个PDF下载",
+    "message": "將每個選中的螢幕截圖作為單個PDF下載",
     "description": "PDF export option description"
   },
   "clearAll": {
@@ -88,15 +88,15 @@
     "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "试用期已结束",
+    "message": "試用期已結束",
     "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "立即升级 - $9.90/年",
+    "message": "立即升級 - $9.90/年",
     "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "剩余$DAYS$天",
+    "message": "剩餘$DAYS$天",
     "description": "Days remaining in trial",
     "placeholders": {
       "days": {

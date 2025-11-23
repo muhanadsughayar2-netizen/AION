@@ -1,102 +1,102 @@
 {
   "extensionName": {
-    "message": "Flow - Screenshot to AI",
+    "message": "Flow - AI-ന് സ്ക്രീൻഷോട്ട്",
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "Capture screenshots and batch upload to AI platforms",
+    "message": "സ്ക്രീൻഷോട്ടുകൾ ക്യാപ്ചർ ചെയ്ത് AI പ്ലാറ്റ്‌ഫോമുകളിലേക്ക് ബാച്ച് അപ്‌ലോഡ് ചെയ്യുക",
     "description": "Extension description"
   },
   "flowReady": {
-    "message": "Flow: Ready",
+    "message": "Flow: തയ്യാറ്",
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "One click. One flow.",
+    "message": "ഒരു ക്ലിക്കും ഒരു ഗതിയും",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Your pages, ready for AI in seconds.",
+    "message": "നിങ്ങളുടെ പേജുകൾ സെക്കന്ടുകളിൽ AI-ക്ക് തയ്യാറ്",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "Click the glowing camera button above to capture instantly",
+    "message": "തൽക്ഷണം ക്യാപ്ചർ ചെയ്യാൻ മുകളിലെ തിളങ്ങുന്ന ക്യാമറ ബട്ടൻ ക്ലിക്കുചെയ്യുക",
     "description": "Instructions"
   },
   "selectAll": {
-    "message": "Select All",
+    "message": "എല്ലാം തിരഞ്ഞെടുക്കുക",
     "description": "Select all button"
   },
   "deselectAll": {
-    "message": "Deselect All",
+    "message": "എല്ലാം നീക്കം ചെയ്യുക",
     "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "Copy Selected",
+    "message": "തിരഞ്ഞെടുത്തത് പകർത്തുക",
     "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "Download Selected",
+    "message": "തിരഞ്ഞെടുത്തത് ഡൗൺലോഡുചെയ്യുക",
     "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "Export PDF",
+    "message": "PDF ആയി നിർയാതം ചെയ്യുക",
     "description": "Export PDF button"
   },
   "exportPDFOptions": {
-    "message": "Export PDF Options",
+    "message": "PDF നിർയാത ഓപ്ഷനുകൾ",
     "description": "PDF modal header"
   },
   "allAsOnePDF": {
-    "message": "All as One PDF",
+    "message": "എല്ലാം ഒരു PDF-ൽ",
     "description": "PDF export option title"
   },
   "allAsOnePDFDesc": {
-    "message": "Combine all screenshots into one PDF file",
+    "message": "എല്ലാ സ്ക്രീൻഷോട്ടുകളും ഒരു PDF ഫയലിലേക്ക് സംയോജിപ്പിക്കുക",
     "description": "PDF export option description"
   },
   "allAsSeparatePDFs": {
-    "message": "All as Separate PDFs",
+    "message": "എല്ലാം പ്രത്യേക PDFകൾ ആയി",
     "description": "PDF export option title"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "Download each screenshot as individual PDF",
+    "message": "ഓരോ സ്ക്രീൻഷോട്ടും പ്രത്യേക PDF ആയി ഡൗൺലോഡുചെയ്യുക",
     "description": "PDF export option description"
   },
   "selectedAsOnePDF": {
-    "message": "Selected as One PDF",
+    "message": "തിരഞ്ഞെടുത്തത് ഒരു PDF-ൽ",
     "description": "PDF export option title"
   },
   "selectedAsOnePDFDesc": {
-    "message": "Combine selected screenshots into one PDF",
+    "message": "തിരഞ്ഞെടുത്ത സ്ക്രീൻഷോട്ടുകൾ ഒരു PDF ഫയലിലേക്ക് സംയോജിപ്പിക്കുക",
     "description": "PDF export option description"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Selected as Separate PDFs",
+    "message": "തിരഞ്ഞെടുത്തത് പ്രത്യേക PDFകൾ ആയി",
     "description": "PDF export option title"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "Download each selected screenshot as PDF",
+    "message": "ഓരോ തിരഞ്ഞെടുത്ത സ്ക്രീൻഷോട്ടും പ്രത്യേക PDF ആയി ഡൗൺലോഡുചെയ്യുക",
     "description": "PDF export option description"
   },
   "clearAll": {
-    "message": "Clear All",
+    "message": "എല്ലാം ക്ലിയർ ചെയ്യുക",
     "description": "Clear all button"
   },
   "cancel": {
-    "message": "Cancel",
+    "message": "റദ്ദാക്കുക",
     "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "Trial Ended",
+    "message": "ട്രയൽ കാലാവധി അവസാനിച്ചു",
     "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "Upgrade Now - $9.90/year",
+    "message": "ഇപ്പോൾ അപ്‌ഗ്രേഡുചെയ്യുക - $9.90/വർഷം",
     "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "$DAYS$ days remaining",
+    "message": "$DAYS$ ദിവസം ശേഷിച്ചുണ്ട്",
     "description": "Days remaining in trial",
     "placeholders": {
       "days": {

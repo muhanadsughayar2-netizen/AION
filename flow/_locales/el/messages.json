@@ -1,102 +1,102 @@
 {
   "extensionName": {
-    "message": "Flow - Screenshot to AI",
+    "message": "Flow - Στιγμιότυπο Οθόνης για AI",
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "Capture screenshots and batch upload to AI platforms",
+    "message": "Καταγράψτε στιγμιότυπα οθόνης και αποστολή μαζικής μεταφόρτωσης σε πλατφόρμες AI",
     "description": "Extension description"
   },
   "flowReady": {
-    "message": "Flow: Ready",
+    "message": "Flow: Έτοιμο",
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "One click. One flow.",
+    "message": "Ένα κλικ. Μια ροή.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Your pages, ready for AI in seconds.",
+    "message": "Οι σελίδες σας, έτοιμες για AI σε δευτερόλεπτα",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "Click the glowing camera button above to capture instantly",
+    "message": "Κάντε κλικ στο λαμπερό κουμπί κάμερας παραπάνω για άμεση καταγραφή",
     "description": "Instructions"
   },
   "selectAll": {
-    "message": "Select All",
+    "message": "Επιλογή όλων",
     "description": "Select all button"
   },
   "deselectAll": {
-    "message": "Deselect All",
+    "message": "Αποεπιλογή όλων",
     "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "Copy Selected",
+    "message": "Αντιγραφή Επιλεγμένου",
     "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "Download Selected",
+    "message": "Λήψη Επιλεγμένου",
     "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "Export PDF",
+    "message": "Εξαγωγή ως PDF",
     "description": "Export PDF button"
   },
   "exportPDFOptions": {
-    "message": "Export PDF Options",
+    "message": "Επιλογές Εξαγωγής PDF",
     "description": "PDF modal header"
   },
   "allAsOnePDF": {
-    "message": "All as One PDF",
+    "message": "Όλα σε ένα PDF",
     "description": "PDF export option title"
   },
   "allAsOnePDFDesc": {
-    "message": "Combine all screenshots into one PDF file",
+    "message": "Συνδυάστε όλα τα στιγμιότυπα οθόνης σε ένα αρχείο PDF",
     "description": "PDF export option description"
   },
   "allAsSeparatePDFs": {
-    "message": "All as Separate PDFs",
+    "message": "Όλα ως ξεχωριστά PDF",
     "description": "PDF export option title"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "Download each screenshot as individual PDF",
+    "message": "Κάντε λήψη κάθε στιγμιότυπου οθόνης ως ξεχωριστό PDF",
     "description": "PDF export option description"
   },
   "selectedAsOnePDF": {
-    "message": "Selected as One PDF",
+    "message": "Επιλεγμένο σε ένα PDF",
     "description": "PDF export option title"
   },
   "selectedAsOnePDFDesc": {
-    "message": "Combine selected screenshots into one PDF",
+    "message": "Συνδυάστε τα επιλεγμένα στιγμιότυπα σε ένα αρχείο PDF",
     "description": "PDF export option description"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Selected as Separate PDFs",
+    "message": "Επιλεγμένο ως ξεχωριστά PDF",
     "description": "PDF export option title"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "Download each selected screenshot as PDF",
+    "message": "Κάντε λήψη κάθε επιλεγμένου στιγμιότυπου ως ξεχωριστό PDF",
     "description": "PDF export option description"
   },
   "clearAll": {
-    "message": "Clear All",
+    "message": "Διαγραφή όλων",
     "description": "Clear all button"
   },
   "cancel": {
-    "message": "Cancel",
+    "message": "Ακύρωση",
     "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "Trial Ended",
+    "message": "Η Δοκιμαστική Περίοδος Έληξε",
     "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "Upgrade Now - $9.90/year",
+    "message": "Αναβαθμίστε Τώρα - $9.90/χρόνο",
     "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "$DAYS$ days remaining",
+    "message": "$DAYS$ ημέρες απομένουν",
     "description": "Days remaining in trial",
     "placeholders": {
       "days": {

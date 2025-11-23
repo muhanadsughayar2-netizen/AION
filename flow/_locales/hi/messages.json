@@ -1,102 +1,102 @@
 {
   "extensionName": {
-    "message": "Flow - Screenshot to AI",
+    "message": "Flow - स्क्रीनशॉट से AI",
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "Capture screenshots and batch upload to AI platforms",
+    "message": "स्क्रीनशॉट कैप्चर करें और AI प्लेटफॉर्म पर बैच अपलोड करें",
     "description": "Extension description"
   },
   "flowReady": {
-    "message": "Flow: Ready",
+    "message": "Flow: तैयार",
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "One click. One flow.",
+    "message": "एक क्लिक। एक प्रवाह।",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Your pages, ready for AI in seconds.",
+    "message": "आपके पृष्ठ, सेकंड में AI के लिए तैयार",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "Click the glowing camera button above to capture instantly",
+    "message": "तुरंत कैप्चर करने के लिए ऊपर दीप्तिमान कैमरा बटन पर क्लिक करें",
     "description": "Instructions"
   },
   "selectAll": {
-    "message": "Select All",
+    "message": "सभी का चयन करें",
     "description": "Select all button"
   },
   "deselectAll": {
-    "message": "Deselect All",
+    "message": "सभी को अचयनित करें",
     "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "Copy Selected",
+    "message": "चयनित को कॉपी करें",
     "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "Download Selected",
+    "message": "चयनित को डाउनलोड करें",
     "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "Export PDF",
+    "message": "PDF के रूप में निर्यात करें",
     "description": "Export PDF button"
   },
   "exportPDFOptions": {
-    "message": "Export PDF Options",
+    "message": "PDF निर्यात विकल्प",
     "description": "PDF modal header"
   },
   "allAsOnePDF": {
-    "message": "All as One PDF",
+    "message": "सब एक PDF में",
     "description": "PDF export option title"
   },
   "allAsOnePDFDesc": {
-    "message": "Combine all screenshots into one PDF file",
+    "message": "सभी स्क्रीनशॉट को एक PDF फ़ाइल में संयोजित करें",
     "description": "PDF export option description"
   },
   "allAsSeparatePDFs": {
-    "message": "All as Separate PDFs",
+    "message": "सब अलग PDF के रूप में",
     "description": "PDF export option title"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "Download each screenshot as individual PDF",
+    "message": "प्रत्येक स्क्रीनशॉट को अलग PDF के रूप में डाउनलोड करें",
     "description": "PDF export option description"
   },
   "selectedAsOnePDF": {
-    "message": "Selected as One PDF",
+    "message": "चयनित एक PDF में",
     "description": "PDF export option title"
   },
   "selectedAsOnePDFDesc": {
-    "message": "Combine selected screenshots into one PDF",
+    "message": "चयनित स्क्रीनशॉट को एक PDF फ़ाइल में संयोजित करें",
     "description": "PDF export option description"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Selected as Separate PDFs",
+    "message": "चयनित अलग PDF के रूप में",
     "description": "PDF export option title"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "Download each selected screenshot as PDF",
+    "message": "प्रत्येक चयनित स्क्रीनशॉट को अलग PDF के रूप में डाउनलोड करें",
     "description": "PDF export option description"
   },
   "clearAll": {
-    "message": "Clear All",
+    "message": "सब स्पष्ट करें",
     "description": "Clear all button"
   },
   "cancel": {
-    "message": "Cancel",
+    "message": "रद्द",
     "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "Trial Ended",
+    "message": "परीक्षण समाप्त",
     "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "Upgrade Now - $9.90/year",
+    "message": "अभी अपग्रेड करें - $9.90/वर्ष",
     "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "$DAYS$ days remaining",
+    "message": "$DAYS$ दिन शेष",
     "description": "Days remaining in trial",
     "placeholders": {
       "days": {
