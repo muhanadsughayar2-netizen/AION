@@ -1,0 +1,64 @@
+{
+  "extensionName": {
+    "message": "Flow - Screenshot verso IA"
+  },
+  "extensionDescription": {
+    "message": "Cattura screenshot e carica in batch su piattaforme IA"
+  },
+  "flowReady": {
+    "message": "Flow: Pronto"
+  },
+  "oneClickOneFlow": {
+    "message": "Un clic. Un flusso."
+  },
+  "pagesReadyForAI": {
+    "message": "Le tue pagine, pronte per l'IA in secondi."
+  },
+  "clickCameraButton": {
+    "message": "Clicca il pulsante fotocamera luminoso per catturare"
+  },
+  "selectAll": {
+    "message": "Seleziona Tutto"
+  },
+  "copySelected": {
+    "message": "Copia Selezione"
+  },
+  "downloadSelected": {
+    "message": "Scarica Selezione"
+  },
+  "exportPDF": {
+    "message": "Esporta PDF"
+  },
+  "clearAll": {
+    "message": "Cancella Tutto"
+  },
+  "allAsOnePDF": {
+    "message": "Tutto in Un PDF"
+  },
+  "allAsSeparatePDFs": {
+    "message": "Tutto in PDF Separati"
+  },
+  "selectedAsOnePDF": {
+    "message": "Selezione in Un PDF"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Selezione in PDF Separati"
+  },
+  "cancel": {
+    "message": "Annulla"
+  },
+  "trialEnded": {
+    "message": "Prova Terminata"
+  },
+  "upgradeNow": {
+    "message": "Aggiorna Ora - €9,90/anno"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ giorni rimanenti",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  }
+}

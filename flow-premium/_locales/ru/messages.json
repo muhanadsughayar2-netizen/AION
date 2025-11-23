@@ -1,0 +1,64 @@
+{
+  "extensionName": {
+    "message": "Flow - Скриншоты в ИИ"
+  },
+  "extensionDescription": {
+    "message": "Делайте скриншоты и загружайте в ИИ платформы"
+  },
+  "flowReady": {
+    "message": "Flow: Готов"
+  },
+  "oneClickOneFlow": {
+    "message": "Один клик. Один поток."
+  },
+  "pagesReadyForAI": {
+    "message": "Ваши страницы готовы для ИИ за секунды."
+  },
+  "clickCameraButton": {
+    "message": "Нажмите светящуюся кнопку камеры для захвата"
+  },
+  "selectAll": {
+    "message": "Выбрать Все"
+  },
+  "copySelected": {
+    "message": "Копировать Выбранное"
+  },
+  "downloadSelected": {
+    "message": "Скачать Выбранное"
+  },
+  "exportPDF": {
+    "message": "Экспорт PDF"
+  },
+  "clearAll": {
+    "message": "Очистить Все"
+  },
+  "allAsOnePDF": {
+    "message": "Все в Один PDF"
+  },
+  "allAsSeparatePDFs": {
+    "message": "Все в Отдельные PDF"
+  },
+  "selectedAsOnePDF": {
+    "message": "Выбранное в Один PDF"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Выбранное в Отдельные PDF"
+  },
+  "cancel": {
+    "message": "Отмена"
+  },
+  "trialEnded": {
+    "message": "Пробный Период Завершен"
+  },
+  "upgradeNow": {
+    "message": "Обновить Сейчас - ₽990/год"
+  },
+  "daysRemaining": {
+    "message": "Осталось дней: $DAYS$",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  }
+}
