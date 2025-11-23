@@ -4,20 +4,20 @@
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "Capture screenshots and upload to AI platforms",
+    "message": "Capture screenshots and batch upload to AI platforms",
     "description": "Extension description"
   },
   "flowReady": {
     "message": "Flow: Ready",
-    "description": "Status ready message"
+    "description": "Status message"
   },
   "oneClickOneFlow": {
     "message": "One click. One flow.",
-    "description": "Main tagline"
+    "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Your pages ready for AI in seconds.",
-    "description": "Sub tagline"
+    "message": "Your pages, ready for AI in seconds.",
+    "description": "Subheading"
   },
   "clickCameraButton": {
     "message": "Click the glowing camera button above to capture instantly",
@@ -26,10 +26,6 @@
   "selectAll": {
     "message": "Select All",
     "description": "Select all button"
-  },
-  "deselectAll": {
-    "message": "Deselect All",
-    "description": "Deselect all button"
   },
   "copySelected": {
     "message": "Copy Selected",
@@ -47,33 +43,17 @@
     "message": "Export PDF Options",
     "description": "PDF modal header"
   },
-  "allAsOnePDF": {
-    "message": "All as One PDF",
-    "description": "PDF option"
-  },
   "allAsOnePDFDesc": {
     "message": "Combine all screenshots into one PDF file",
     "description": "PDF option description"
-  },
-  "allAsSeparatePDFs": {
-    "message": "All as Separate PDFs",
-    "description": "PDF option"
   },
   "allAsSeparatePDFsDesc": {
     "message": "Download each screenshot as individual PDF",
     "description": "PDF option description"
   },
-  "selectedAsOnePDF": {
-    "message": "Selected as One PDF",
-    "description": "PDF option"
-  },
   "selectedAsOnePDFDesc": {
     "message": "Combine selected screenshots into one PDF",
     "description": "PDF option description"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "Selected as Separate PDFs",
-    "description": "PDF option"
   },
   "selectedAsSeparatePDFsDesc": {
     "message": "Download each selected screenshot as PDF",
@@ -83,12 +63,28 @@
     "message": "Clear All",
     "description": "Clear all button"
   },
+  "allAsOnePDF": {
+    "message": "All as One PDF",
+    "description": "PDF export option"
+  },
+  "allAsSeparatePDFs": {
+    "message": "All as Separate PDFs",
+    "description": "PDF export option"
+  },
+  "selectedAsOnePDF": {
+    "message": "Selected as One PDF",
+    "description": "PDF export option"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Selected as Separate PDFs",
+    "description": "PDF export option"
+  },
   "cancel": {
     "message": "Cancel",
     "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "Trial ended",
+    "message": "Trial Ended",
     "description": "Trial ended message"
   },
   "upgradeNow": {
@@ -96,140 +92,12 @@
     "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "{days} days remaining",
-    "description": "Days remaining",
+    "message": "$DAYS$ days remaining",
+    "description": "Days remaining in trial",
     "placeholders": {
       "days": {
         "content": "$1"
       }
     }
-  },
-  "noSnapsToUpload": {
-    "message": "No snaps to upload",
-    "description": "No snaps to upload error"
-  },
-  "uploadingSnaps": {
-    "message": "Uploading snaps...",
-    "description": "Uploading status"
-  },
-  "capturingSnap": {
-    "message": "Capturing...",
-    "description": "Capturing status"
-  },
-  "tooFastError": {
-    "message": "Too fast! Wait a moment",
-    "description": "Too fast error"
-  },
-  "errorOccurred": {
-    "message": "Error occurred",
-    "description": "Generic error"
-  },
-  "allSnapsCleared": {
-    "message": "All snaps cleared",
-    "description": "All snaps cleared message"
-  },
-  "capturedAndCopied": {
-    "message": "Captured & copied!",
-    "description": "Capture success with copy"
-  },
-  "capturedOnly": {
-    "message": "Captured!",
-    "description": "Capture success without copy"
-  },
-  "uploadSelectedCount": {
-    "message": "Upload {count} selected",
-    "description": "Upload selected count",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "uploadAllCount": {
-    "message": "Upload all {count}",
-    "description": "Upload all count",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "capturedCount": {
-    "message": "Captured: {count}",
-    "description": "Captured count",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "deleteSnap": {
-    "message": "Delete",
-    "description": "Delete button tooltip"
-  },
-  "noSnapsSelected": {
-    "message": "No snaps selected",
-    "description": "No snaps selected error"
-  },
-  "copiedToClipboard": {
-    "message": "Copied to clipboard!",
-    "description": "Copy success"
-  },
-  "copyFailed": {
-    "message": "Copy failed",
-    "description": "Copy failed error"
-  },
-  "snapDeleted": {
-    "message": "Snap deleted",
-    "description": "Snap deleted message"
-  },
-  "downloadingSnaps": {
-    "message": "Downloading snaps...",
-    "description": "Downloading status"
-  },
-  "downloadFailed": {
-    "message": "Download failed",
-    "description": "Download failed error"
-  },
-  "annotationSaved": {
-    "message": "Annotation saved ✓",
-    "description": "Annotation saved message"
-  },
-  "noSnapsToExport": {
-    "message": "No snaps to export",
-    "description": "No snaps to export error"
-  },
-  "loadingPDFLibrary": {
-    "message": "Loading PDF library...",
-    "description": "Loading PDF library status"
-  },
-  "generatingPDF": {
-    "message": "Generating PDF...",
-    "description": "Generating PDF status"
-  },
-  "pdfExported": {
-    "message": "PDF exported successfully!",
-    "description": "PDF export success"
-  },
-  "pdfExportFailed": {
-    "message": "PDF export failed",
-    "description": "PDF export failed error"
-  },
-  "generatingSeparatePDFs": {
-    "message": "Generating PDFs...",
-    "description": "Generating separate PDFs status"
-  },
-  "pdfsSaved": {
-    "message": "{count} PDFs saved!",
-    "description": "Multiple PDFs saved",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "redirectingToUpgrade": {
-    "message": "Redirecting to upgrade...",
-    "description": "Redirecting to upgrade status"
   }
 }

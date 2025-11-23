@@ -1,9 +1,9 @@
 {
   "extensionName": {
-    "message": "Flow - Capturas para IA"
+    "message": "Flow - Captura para IA"
   },
   "extensionDescription": {
-    "message": "Capture telas e envie para IA"
+    "message": "Capture telas e envie para plataformas de IA"
   },
   "flowReady": {
     "message": "Flow: Pronto"
@@ -12,28 +12,22 @@
     "message": "Um clique. Um fluxo."
   },
   "pagesReadyForAI": {
-    "message": "Suas páginas prontas para IA em segundos."
+    "message": "Suas páginas, prontas para IA em segundos."
   },
   "clickCameraButton": {
-    "message": "Clique no botão de câmera brilhante acima para capturar instantaneamente"
+    "message": "Clique no botão de câmera brilhante para capturar"
   },
   "selectAll": {
     "message": "Selecionar Tudo"
   },
-  "deselectAll": {
-    "message": "Desmarcar Tudo"
-  },
   "copySelected": {
-    "message": "Copiar Selecionados"
+    "message": "Copiar Seleção"
   },
   "downloadSelected": {
-    "message": "Baixar Selecionados"
+    "message": "Baixar Seleção"
   },
   "exportPDF": {
     "message": "Exportar PDF"
-  },
-  "exportPDFOptions": {
-    "message": "Opções de Exportação PDF"
   },
   "clearAll": {
     "message": "Limpar Tudo"
@@ -41,32 +35,20 @@
   "allAsOnePDF": {
     "message": "Tudo em Um PDF"
   },
-  "allAsOnePDFDesc": {
-    "message": "Combinar todas as capturas em um arquivo PDF"
-  },
   "allAsSeparatePDFs": {
     "message": "Tudo em PDFs Separados"
   },
-  "allAsSeparatePDFsDesc": {
-    "message": "Baixar cada captura como PDF individual"
-  },
   "selectedAsOnePDF": {
-    "message": "Selecionados em Um PDF"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "Combinar capturas selecionadas em um PDF"
+    "message": "Seleção em Um PDF"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Selecionados em PDFs Separados"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "Baixar cada captura selecionada como PDF"
+    "message": "Seleção em PDFs Separados"
   },
   "cancel": {
     "message": "Cancelar"
   },
   "trialEnded": {
-    "message": "Teste encerrado"
+    "message": "Teste Encerrado"
   },
   "upgradeNow": {
     "message": "Atualizar Agora - R$49,90/ano"
@@ -78,106 +60,5 @@
         "content": "$1"
       }
     }
-  },
-  "noSnapsToUpload": {
-    "message": "Nenhuma captura para enviar"
-  },
-  "uploadingSnaps": {
-    "message": "Enviando capturas..."
-  },
-  "capturingSnap": {
-    "message": "Capturando..."
-  },
-  "tooFastError": {
-    "message": "Muito rápido! Aguarde um momento"
-  },
-  "errorOccurred": {
-    "message": "Ocorreu um erro"
-  },
-  "allSnapsCleared": {
-    "message": "Todas as capturas limpas"
-  },
-  "capturedAndCopied": {
-    "message": "Capturado e copiado!"
-  },
-  "capturedOnly": {
-    "message": "Capturado!"
-  },
-  "uploadSelectedCount": {
-    "message": "Enviar $COUNT$ selecionados",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "uploadAllCount": {
-    "message": "Enviar todas $COUNT$",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "capturedCount": {
-    "message": "Capturadas: $COUNT$",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "deleteSnap": {
-    "message": "Excluir"
-  },
-  "noSnapsSelected": {
-    "message": "Nenhuma captura selecionada"
-  },
-  "copiedToClipboard": {
-    "message": "Copiado para área de transferência!"
-  },
-  "copyFailed": {
-    "message": "Falha ao copiar"
-  },
-  "snapDeleted": {
-    "message": "Captura excluída"
-  },
-  "downloadingSnaps": {
-    "message": "Baixando capturas..."
-  },
-  "downloadFailed": {
-    "message": "Falha no download"
-  },
-  "annotationSaved": {
-    "message": "Anotação salva ✓"
-  },
-  "noSnapsToExport": {
-    "message": "Nenhuma captura para exportar"
-  },
-  "loadingPDFLibrary": {
-    "message": "Carregando biblioteca PDF..."
-  },
-  "generatingPDF": {
-    "message": "Gerando PDF..."
-  },
-  "pdfExported": {
-    "message": "PDF exportado com sucesso!"
-  },
-  "pdfExportFailed": {
-    "message": "Falha na exportação do PDF"
-  },
-  "generatingSeparatePDFs": {
-    "message": "Gerando PDFs..."
-  },
-  "pdfsSaved": {
-    "message": "$COUNT$ PDFs salvos!",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "redirectingToUpgrade": {
-    "message": "Redirecionando para atualização..."
   }
 }

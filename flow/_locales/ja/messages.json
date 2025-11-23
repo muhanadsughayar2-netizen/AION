@@ -1,9 +1,9 @@
 {
   "extensionName": {
-    "message": "Flow - AIへのスクリーンショット"
+    "message": "Flow - スクリーンショットをAIへ"
   },
   "extensionDescription": {
-    "message": "スクリーンショットをキャプチャしてAIにアップロード"
+    "message": "スクリーンショットを撮影し、AIプラットフォームに一括アップロード"
   },
   "flowReady": {
     "message": "Flow: 準備完了"
@@ -12,16 +12,13 @@
     "message": "ワンクリック。ワンフロー。"
   },
   "pagesReadyForAI": {
-    "message": "ページが数秒でAI対応に。"
+    "message": "あなたのページ、数秒でAIの準備が整います。"
   },
   "clickCameraButton": {
-    "message": "上の光るカメラボタンをクリックして即座にキャプチャ"
+    "message": "上の光るカメラボタンをクリックして撮影"
   },
   "selectAll": {
     "message": "すべて選択"
-  },
-  "deselectAll": {
-    "message": "すべて選択解除"
   },
   "copySelected": {
     "message": "選択をコピー"
@@ -32,35 +29,8 @@
   "exportPDF": {
     "message": "PDFエクスポート"
   },
-  "exportPDFOptions": {
-    "message": "PDFエクスポートオプション"
-  },
   "clearAll": {
     "message": "すべてクリア"
-  },
-  "allAsOnePDF": {
-    "message": "すべて1つのPDFに"
-  },
-  "allAsOnePDFDesc": {
-    "message": "すべてのスクリーンショットを1つのPDFファイルに結合"
-  },
-  "allAsSeparatePDFs": {
-    "message": "すべて個別のPDFに"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "各スクリーンショットを個別のPDFとしてダウンロード"
-  },
-  "selectedAsOnePDF": {
-    "message": "選択を1つのPDFに"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "選択したスクリーンショットを1つのPDFに結合"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "選択を個別のPDFに"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "選択した各スクリーンショットをPDFとしてダウンロード"
   },
   "cancel": {
     "message": "キャンセル"
@@ -78,106 +48,5 @@
         "content": "$1"
       }
     }
-  },
-  "noSnapsToUpload": {
-    "message": "アップロードする画像がありません"
-  },
-  "uploadingSnaps": {
-    "message": "画像をアップロード中..."
-  },
-  "capturingSnap": {
-    "message": "キャプチャ中..."
-  },
-  "tooFastError": {
-    "message": "速すぎます！少しお待ちください"
-  },
-  "errorOccurred": {
-    "message": "エラーが発生しました"
-  },
-  "allSnapsCleared": {
-    "message": "すべての画像をクリア"
-  },
-  "capturedAndCopied": {
-    "message": "キャプチャしてコピーしました！"
-  },
-  "capturedOnly": {
-    "message": "キャプチャしました！"
-  },
-  "uploadSelectedCount": {
-    "message": "$COUNT$個の選択をアップロード",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "uploadAllCount": {
-    "message": "すべて$COUNT$個をアップロード",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "capturedCount": {
-    "message": "キャプチャ済み: $COUNT$",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "deleteSnap": {
-    "message": "削除"
-  },
-  "noSnapsSelected": {
-    "message": "画像が選択されていません"
-  },
-  "copiedToClipboard": {
-    "message": "クリップボードにコピーしました！"
-  },
-  "copyFailed": {
-    "message": "コピーに失敗しました"
-  },
-  "snapDeleted": {
-    "message": "画像を削除しました"
-  },
-  "downloadingSnaps": {
-    "message": "画像をダウンロード中..."
-  },
-  "downloadFailed": {
-    "message": "ダウンロードに失敗しました"
-  },
-  "annotationSaved": {
-    "message": "注釈を保存しました ✓"
-  },
-  "noSnapsToExport": {
-    "message": "エクスポートする画像がありません"
-  },
-  "loadingPDFLibrary": {
-    "message": "PDFライブラリを読み込み中..."
-  },
-  "generatingPDF": {
-    "message": "PDFを生成中..."
-  },
-  "pdfExported": {
-    "message": "PDFのエクスポートに成功しました！"
-  },
-  "pdfExportFailed": {
-    "message": "PDFエクスポートに失敗しました"
-  },
-  "generatingSeparatePDFs": {
-    "message": "PDFを生成中..."
-  },
-  "pdfsSaved": {
-    "message": "$COUNT$個のPDFを保存しました！",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "redirectingToUpgrade": {
-    "message": "アップグレードへリダイレクト中..."
   }
 }

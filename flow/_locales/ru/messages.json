@@ -1,9 +1,9 @@
 {
   "extensionName": {
-    "message": "Flow - Скриншоты для ИИ"
+    "message": "Flow - Скриншоты в ИИ"
   },
   "extensionDescription": {
-    "message": "Делайте скриншоты и загружайте в ИИ-платформы"
+    "message": "Делайте скриншоты и загружайте в ИИ платформы"
   },
   "flowReady": {
     "message": "Flow: Готов"
@@ -15,13 +15,10 @@
     "message": "Ваши страницы готовы для ИИ за секунды."
   },
   "clickCameraButton": {
-    "message": "Нажмите на светящуюся кнопку камеры выше для мгновенного захвата"
+    "message": "Нажмите светящуюся кнопку камеры для захвата"
   },
   "selectAll": {
-    "message": "Выбрать Всё"
-  },
-  "deselectAll": {
-    "message": "Снять Выделение"
+    "message": "Выбрать Все"
   },
   "copySelected": {
     "message": "Копировать Выбранное"
@@ -32,152 +29,36 @@
   "exportPDF": {
     "message": "Экспорт PDF"
   },
-  "exportPDFOptions": {
-    "message": "Опции Экспорта PDF"
-  },
   "clearAll": {
-    "message": "Очистить Всё"
+    "message": "Очистить Все"
   },
   "allAsOnePDF": {
-    "message": "Всё в Один PDF"
-  },
-  "allAsOnePDFDesc": {
-    "message": "Объединить все скриншоты в один PDF-файл"
+    "message": "Все в Один PDF"
   },
   "allAsSeparatePDFs": {
-    "message": "Всё в Отдельные PDF"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "Скачать каждый скриншот как отдельный PDF"
+    "message": "Все в Отдельные PDF"
   },
   "selectedAsOnePDF": {
     "message": "Выбранное в Один PDF"
   },
-  "selectedAsOnePDFDesc": {
-    "message": "Объединить выбранные скриншоты в один PDF"
-  },
   "selectedAsSeparatePDFs": {
     "message": "Выбранное в Отдельные PDF"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "Скачать каждый выбранный скриншот как PDF"
   },
   "cancel": {
     "message": "Отмена"
   },
   "trialEnded": {
-    "message": "Пробная версия закончилась"
+    "message": "Пробный Период Завершен"
   },
   "upgradeNow": {
     "message": "Обновить Сейчас - ₽990/год"
   },
   "daysRemaining": {
-    "message": "Осталось $DAYS$ дней",
+    "message": "Осталось дней: $DAYS$",
     "placeholders": {
       "days": {
         "content": "$1"
       }
     }
-  },
-  "noSnapsToUpload": {
-    "message": "Нет снимков для загрузки"
-  },
-  "uploadingSnaps": {
-    "message": "Загрузка снимков..."
-  },
-  "capturingSnap": {
-    "message": "Захват..."
-  },
-  "tooFastError": {
-    "message": "Слишком быстро! Подождите момент"
-  },
-  "errorOccurred": {
-    "message": "Произошла ошибка"
-  },
-  "allSnapsCleared": {
-    "message": "Все снимки очищены"
-  },
-  "capturedAndCopied": {
-    "message": "Захвачено и скопировано!"
-  },
-  "capturedOnly": {
-    "message": "Захвачено!"
-  },
-  "uploadSelectedCount": {
-    "message": "Загрузить $COUNT$ выбранных",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "uploadAllCount": {
-    "message": "Загрузить все $COUNT$",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "capturedCount": {
-    "message": "Захвачено: $COUNT$",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "deleteSnap": {
-    "message": "Удалить"
-  },
-  "noSnapsSelected": {
-    "message": "Снимки не выбраны"
-  },
-  "copiedToClipboard": {
-    "message": "Скопировано в буфер обмена!"
-  },
-  "copyFailed": {
-    "message": "Ошибка копирования"
-  },
-  "snapDeleted": {
-    "message": "Снимок удален"
-  },
-  "downloadingSnaps": {
-    "message": "Скачивание снимков..."
-  },
-  "downloadFailed": {
-    "message": "Ошибка загрузки"
-  },
-  "annotationSaved": {
-    "message": "Аннотация сохранена ✓"
-  },
-  "noSnapsToExport": {
-    "message": "Нет снимков для экспорта"
-  },
-  "loadingPDFLibrary": {
-    "message": "Загрузка библиотеки PDF..."
-  },
-  "generatingPDF": {
-    "message": "Создание PDF..."
-  },
-  "pdfExported": {
-    "message": "PDF успешно экспортирован!"
-  },
-  "pdfExportFailed": {
-    "message": "Ошибка экспорта PDF"
-  },
-  "generatingSeparatePDFs": {
-    "message": "Создание PDF-файлов..."
-  },
-  "pdfsSaved": {
-    "message": "Сохранено $COUNT$ PDF!",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "redirectingToUpgrade": {
-    "message": "Перенаправление на обновление..."
   }
 }
