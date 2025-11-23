@@ -33,8 +33,10 @@ The extension provides two operational modes:
 
 Preferred communication style: Simple, everyday language.
 Branding: Changed from "Flow" to "SnapToAI" (November 2025)
+Logo Display: "Snap To AI" (with spaces for premium look)
 Tagline: "One click. One snap."
 Subline: "Your pages, ready for AI in seconds."
+Logo Animation: Each word animates independently with staggered timing, float effect, and glowing dual drop-shadow (WOW factor)
 
 ## System Architecture
 
