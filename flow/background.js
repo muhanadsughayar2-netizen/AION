@@ -21,7 +21,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     captureScreenshot().then(sendResponse);
     return true;
   } else if (request.action === 'upload') {
-    handleUpload(request.preferredPlatform).then(sendResponse);
+    handleUpload(request.preferredPlatform, request.selectedSnaps).then(sendResponse);
     return true;
   } else if (request.action === 'getSnaps') {
     getSnaps().then(sendResponse);
@@ -101,7 +101,7 @@ async function captureScreenshot() {
 }
 
 // Handle upload to AI platform
-async function handleUpload(preferredPlatform = 'auto') {
+async function handleUpload(preferredPlatform = 'auto', selectedSnaps = null) {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const url = new URL(tab.url);
@@ -114,11 +114,20 @@ async function handleUpload(preferredPlatform = 'auto') {
       return { success: false, error: 'Not on an AI platform' };
     }
     
-    // Get snap count (content script will pull from storage)
-    const count = await getSnapCount();
-    
-    if (count === 0) {
-      return { success: false, error: 'No snaps to upload' };
+    // If selectedSnaps provided, use those; otherwise get all snaps
+    let snapsToUpload;
+    if (selectedSnaps && selectedSnaps.length > 0) {
+      // Use provided selected snaps
+      snapsToUpload = selectedSnaps;
+      // Temporarily store selected snaps for content script
+      await chrome.storage.session.set({ selectedSnapsForUpload: snapsToUpload });
+    } else {
+      // Get all snaps from storage
+      const allSnaps = await getSnaps();
+      if (allSnaps.length === 0) {
+        return { success: false, error: 'No snaps to upload' };
+      }
+      snapsToUpload = allSnaps;
     }
     
     // Determine target platform: use preferred if set, otherwise current hostname
@@ -134,13 +143,14 @@ async function handleUpload(preferredPlatform = 'auto') {
       }
     }
     
-    // Send upload command to content script (it will pull snaps from storage)
+    // Send upload command to content script with snap count
     await chrome.tabs.sendMessage(tab.id, {
       action: 'beginUpload',
-      platform: targetPlatform
+      platform: targetPlatform,
+      useSelectedOnly: selectedSnaps !== null
     });
     
-    return { success: true, count };
+    return { success: true, count: snapsToUpload.length };
   } catch (error) {
     console.error('Upload failed:', error);
     return { success: false, error: error.message };

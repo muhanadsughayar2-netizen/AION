@@ -98,12 +98,26 @@ async function handleOrbClick() {
                      hostname.includes('claude.ai');
     
     if (isAISite && currentSnaps.length > 0) {
-      // Upload mode
-      status.textContent = `Uploading ${currentSnaps.length} snaps...`;
+      // Upload mode - check if we have selected items
+      let snapsToUpload = [];
+      let uploadMessage = '';
+      
+      if (selectedSnapIds.size > 0) {
+        // Upload only selected snaps
+        snapsToUpload = currentSnaps.filter(snap => selectedSnapIds.has(snap.id));
+        uploadMessage = `Uploading ${snapsToUpload.length} selected snap${snapsToUpload.length > 1 ? 's' : ''}...`;
+      } else {
+        // Upload all snaps if nothing selected
+        snapsToUpload = currentSnaps;
+        uploadMessage = `Uploading all ${snapsToUpload.length} snap${snapsToUpload.length > 1 ? 's' : ''}...`;
+      }
+      
+      status.textContent = uploadMessage;
       status.className = 'status uploading';
       
       const response = await chrome.runtime.sendMessage({ 
-        action: 'upload'
+        action: 'upload',
+        selectedSnaps: snapsToUpload.map(s => s.dataUrl)
       });
       
       if (response.success) {

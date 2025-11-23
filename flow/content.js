@@ -20,8 +20,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     showToast(request.message, 'success');
     sendResponse({ success: true });
   } else if (request.action === 'beginUpload') {
-    // Pull snaps from storage and upload
-    uploadToAI(request.platform).then(sendResponse);
+    // Pull snaps from storage and upload (selected or all)
+    uploadToAI(request.platform, request.useSelectedOnly).then(sendResponse);
     return true;
   }
 });
@@ -141,11 +141,21 @@ async function writeToClipboard(dataUrl) {
 }
 
 // Upload snaps to AI platform (pulls from storage)
-async function uploadToAI(platform) {
+async function uploadToAI(platform, useSelectedOnly = false) {
   try {
-    // Pull snaps from chrome.storage.session
-    const result = await chrome.storage.session.get('snaps');
-    const snaps = result.snaps || [];
+    // Check if we should use selected snaps or all snaps
+    let snaps;
+    if (useSelectedOnly) {
+      // Get selected snaps that were stored by background
+      const selectedResult = await chrome.storage.session.get('selectedSnapsForUpload');
+      snaps = selectedResult.selectedSnapsForUpload || [];
+      // Clean up after retrieving
+      await chrome.storage.session.remove('selectedSnapsForUpload');
+    } else {
+      // Get all snaps from storage
+      const result = await chrome.storage.session.get('snaps');
+      snaps = result.snaps || [];
+    }
     
     if (snaps.length === 0) {
       showToast('No snaps to upload', 'error');
