@@ -130,13 +130,13 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 16px 0;
+  margin: 8px 0;
 }
 
 /* Main Orb Button */
 .orb {
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   border: none;
   background: rgba(0, 217, 255, 0.1);
@@ -294,9 +294,8 @@ body {
 /* Thumbnails Container */
 .thumbnails-container {
   flex: 1;
-  min-height: 120px;
-  max-height: 180px;
-  overflow-y: auto;
+  min-height: 240px;
+  overflow-y: hidden;
   margin: 8px 0;
   padding: 4px;
   border-radius: 8px;
@@ -324,17 +323,17 @@ body {
 /* Thumbnails Grid */
 .thumbnails {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
   min-height: 40px;
   align-content: start;
 }
 
 .thumbnail {
   aspect-ratio: 16 / 9;
-  border-radius: 6px;
+  border-radius: 4px;
   overflow: hidden;
-  border: 2px solid rgba(0, 217, 255, 0.2);
+  border: 1px solid rgba(0, 217, 255, 0.2);
   transition: all 0.3s ease;
   cursor: pointer;
   position: relative;
@@ -520,7 +519,7 @@ body {
 .empty-state {
   grid-column: 1 / -1;
   text-align: center;
-  padding: 20px;
+  padding: 16px;
   color: #00d9ff;
   font-size: 12px;
   line-height: 1.4;
@@ -533,7 +532,7 @@ body {
     0 0 20px rgba(0, 217, 255, 0.1),
     inset 0 0 20px rgba(0, 217, 255, 0.05);
   animation: pulse-border 3s ease-in-out infinite;
-  height: 140px;
+  height: 130px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
