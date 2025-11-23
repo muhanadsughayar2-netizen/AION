@@ -205,15 +205,15 @@ function adjustPopupHeight(snapCount) {
   if (snapCount === 0) {
     // Empty state: small and compact
     height = 380;
-  } else if (snapCount <= 4) {
+  } else if (snapCount <= 3) {
     // 1 row of screenshots
-    height = 420;
-  } else if (snapCount <= 8) {
+    height = 430;
+  } else if (snapCount <= 6) {
     // 2 rows of screenshots
-    height = 480;
+    height = 490;
   } else {
-    // 3 rows for 9-10 screenshots
-    height = 540;
+    // 3 rows for 7-9 screenshots
+    height = 550;
   }
   
   // Apply the height to the body

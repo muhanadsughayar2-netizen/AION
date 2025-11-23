@@ -1,7 +1,7 @@
 // Flow Background Service Worker
 // Handles screenshot capture, storage management, and messaging
 
-const MAX_SNAPS = 10;
+const MAX_SNAPS = 9;
 const AI_SITES = ['grok.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai'];
 const CAPTURE_COOLDOWN = 500; // Minimum 500ms between captures to avoid Chrome rate limit
 
