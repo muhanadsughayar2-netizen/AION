@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - Képernyőkép az AI-hoz",
+    "message": "SnapToAI - Képernyőkép az AI-hoz",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,11 +12,11 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "Egy kattintás. Egy folyam.",
+    "message": "Egy kattintás. Egy kép.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Az Ön oldalai másodpercek alatt AI-ra готовы",
+    "message": "Az Ön oldalai másodpercek alatt AI-ra készek",
     "description": "Subheading"
   },
   "clickCameraButton": {

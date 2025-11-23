@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - AI용 스크린샷",
+    "message": "SnapToAI - AI용 스크린샷",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "한 번의 클릭. 하나의 흐름.",
+    "message": "한 번의 클릭. 한 번의 스냅.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

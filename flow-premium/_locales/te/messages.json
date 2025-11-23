@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - AI కోసం స్క్రీన్‌షాట్",
+    "message": "SnapToAI - AI కోసం స్క్రీన్ స్నాప్",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "ఒక క్లిక్. ఒక ప్రవాహం.",
+    "message": "ఒక క్లిక్. ఒక స్నాప్.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

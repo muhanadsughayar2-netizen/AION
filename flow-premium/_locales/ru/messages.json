@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - Screenshot to AI",
+    "message": "SnapToAI - Снимок экрана для ИИ",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,15 +12,15 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "One click. One flow.",
+    "message": "Один клик. Один снимок.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Your pages, ready for AI in seconds.",
+    "message": "Ваши страницы готовы для ИИ за секунды",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "Click the glowing camera button above to capture instantly",
+    "message": "Нажмите на светящуюся кнопку камеры выше, чтобы захватить мгновенно",
     "description": "Instructions"
   },
   "selectAll": {

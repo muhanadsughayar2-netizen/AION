@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - AI için Ekran Görüntüsü",
+    "message": "SnapToAI - AI için Ekran Görüntüsü",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "Bir tıklama. Bir akış.",
+    "message": "Bir tıklama. Bir fotoğraf.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

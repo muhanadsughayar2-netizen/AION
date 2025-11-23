@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - AI க்கான திரை ஸ்னாப்ஷாட்",
+    "message": "SnapToAI - AI க்கான திரை ஸ்நாப்ஷாட்",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "ஒரு கிளிக். ஒரு பாய்வு.",
+    "message": "ஒரு கிளிக். ஒரு ஸ்ன்னாப்.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

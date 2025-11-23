@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - AI ପାଇଁ ସ୍କ୍ରୀନଶଟ",
+    "message": "SnapToAI - AI ପାଇଁ ସ୍କ୍ରୀନ ସ୍ନାପ୍",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "ଗୋଟିଏ କ୍ଲିକ୍। ଗୋଟିଏ ପ୍ରବାହ।",
+    "message": "ଗୋଟିଏ କ୍ଲିକ୍। ଗୋଟିଏ ସ୍ନାପ୍।",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
@@ -20,7 +20,7 @@
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "ତାତ୍ କ୍ଷଣିକ ଧରି ରଖିବାକୁ ଉପରେ ଜ୍ଞାନୀ କ୍ୟାମେରା ବଟନ୍ କ୍ଲିକ୍ କରନ୍ତୁ",
+    "message": "ତାତ୍ କ୍ଷଣିକ ଧରି ରଖିବାକୁ ଉପରେ ଜ୍ଞାନୀ ଲେନ୍ସ ବଟନ୍ କ୍ଲିକ୍ କରନ୍ତୁ",
     "description": "Instructions"
   },
   "selectAll": {

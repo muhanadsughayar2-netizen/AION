@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - Posnetek zaslona za AI",
+    "message": "SnapToAI - Posnetek zaslona za AI",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "En klik. En tok.",
+    "message": "En klik. En posnetek.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

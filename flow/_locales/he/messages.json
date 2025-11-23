@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - צילום מסך ל-AI",
+    "message": "SnapToAI - צילום מסך ל-AI",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "לחיצה אחת. זרימה אחת.",
+    "message": "לחיצה אחת. תמונה אחת.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

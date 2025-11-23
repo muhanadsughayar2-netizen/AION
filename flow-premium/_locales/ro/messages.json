@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - Screenshot to AI",
+    "message": "SnapToAI - Captură de ecran pentru IA",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,15 +12,15 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "One click. One flow.",
+    "message": "Un clic. O poză.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Your pages, ready for AI in seconds.",
+    "message": "Paginile dvs., gata pentru IA în secunde",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "Click the glowing camera button above to capture instantly",
+    "message": "Faceți clic pe butonul camerei strălucitor de mai sus pentru a captura imediat",
     "description": "Instructions"
   },
   "selectAll": {

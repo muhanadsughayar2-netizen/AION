@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - AI साठी स्क्रीनशॉट",
+    "message": "SnapToAI - AI साठी स्क्रीनशॉट",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "एक क्लिक. एक प्रवाह.",
+    "message": "एक क्लिक. एक स्न्यैप.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

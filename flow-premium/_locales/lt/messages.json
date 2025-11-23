@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - Ekrano kopija AI",
+    "message": "SnapToAI - Ekrano kopija AI",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "Vienas spustelėjimas. Vienas srautas.",
+    "message": "Vienas spustelėjimas. Vienas nuotrauka.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

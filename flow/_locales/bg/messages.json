@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - Екранна снимка за AI",
+    "message": "SnapToAI - Екранна снимка за AI",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "Един щракване. Един поток.",
+    "message": "Един щракване. Един щракване.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

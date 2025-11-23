@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - Ekraanipilt AI jaoks",
+    "message": "SnapToAI - Ekraanipilt AI jaoks",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "Üks klikk. Üks voog.",
+    "message": "Üks klikk. Üks pilt.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

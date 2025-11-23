@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - 屏幕截图到AI",
+    "message": "SnapToAI - 屏幕截图到AI",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "一次点击。一个流程。",
+    "message": "一次点击。一个快照。",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

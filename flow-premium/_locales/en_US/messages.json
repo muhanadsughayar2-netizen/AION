@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - Screenshot to AI",
+    "message": "SnapToAI - Screenshot to AI",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "One click. One flow.",
+    "message": "One click. One snap.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

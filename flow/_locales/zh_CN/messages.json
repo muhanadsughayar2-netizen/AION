@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - Screenshot to AI",
+    "message": "SnapToAI - 屏幕截图到AI",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,15 +12,15 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "One click. One flow.",
+    "message": "一次点击。一个快照。",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Your pages, ready for AI in seconds.",
+    "message": "您的页面在几秒内为AI做好准备",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "Click the glowing camera button above to capture instantly",
+    "message": "点击上面发光的相机按钮立即捕获",
     "description": "Instructions"
   },
   "selectAll": {

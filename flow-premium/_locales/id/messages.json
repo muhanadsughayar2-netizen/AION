@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - Tangkapan Layar untuk AI",
+    "message": "SnapToAI - Tangkapan Layar untuk AI",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "Satu klik. Satu aliran.",
+    "message": "Satu klik. Satu jepretan.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - ስክሪን ሾት ወደ AI",
+    "message": "SnapToAI - የ AI ስክሪን ሾት",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "አንድ ጠቅ። አንድ ፍሰት።",
+    "message": "አንድ ጠቅ. አንድ ተግባር",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

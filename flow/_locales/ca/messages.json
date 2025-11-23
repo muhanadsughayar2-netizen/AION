@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - Captura de pantalla per a IA",
+    "message": "SnapToAI - Captura de pantalla per a IA",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "Un clic. Un flux.",
+    "message": "Un clic. Una captura.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

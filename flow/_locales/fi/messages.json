@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - Kuvakaappaus AI:lle",
+    "message": "SnapToAI - Kuvakaappaus AI:lle",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "Yksi napsautus. Yksi virta.",
+    "message": "Yksi napsautus. Yksi kuva.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {

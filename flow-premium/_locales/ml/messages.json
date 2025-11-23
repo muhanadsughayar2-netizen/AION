@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - AI-ന് സ്ക്രീൻഷോട്ട്",
+    "message": "SnapToAI - AI-ന് സ്ക്രീൻ സ്നാപ്പ്",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,11 +12,11 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "ഒരു ക്ലിക്കും ഒരു ഗതിയും",
+    "message": "ഒരു ക്ലിക്കും ഒരു സ്ന്യാപ്പും",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "നിങ്ങളുടെ പേജുകൾ സെക്കന്ടുകളിൽ AI-ക്ക് തയ്യാറ്",
+    "message": "നിങ്ങളുടെ പേജുകൾ സെക്കന്ദുകളിൽ AI-ക്ക് തയ്യാറ്",
     "description": "Subheading"
   },
   "clickCameraButton": {

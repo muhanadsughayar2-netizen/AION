@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Flow - Знімок екрана для AI",
+    "message": "SnapToAI - Знімок екрана для ШІ",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -12,11 +12,11 @@
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "Один клік. Один потік.",
+    "message": "Один клік. Один знімок.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Ваші сторінки готові для AI за секунди",
+    "message": "Ваші сторінки готові для ШІ за секунди",
     "description": "Subheading"
   },
   "clickCameraButton": {
