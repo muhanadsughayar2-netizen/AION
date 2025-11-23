@@ -4,6 +4,12 @@
 let currentSnaps = [];
 let selectedSnapIds = new Set();
 
+// Global translation function
+function getMessage(key, fallback) {
+  const msg = chrome.i18n.getMessage(key);
+  return msg || fallback;
+}
+
 // Initialize popup on load
 document.addEventListener('DOMContentLoaded', async () => {
   translateUI(); // Add translation support
@@ -19,12 +25,6 @@ function translateUI() {
   if (uiLang.startsWith('ar')) {
     document.documentElement.setAttribute('dir', 'rtl');
   }
-  
-  // Translate text content with fallbacks
-  const getMessage = (key, fallback) => {
-    const msg = chrome.i18n.getMessage(key);
-    return msg || fallback;
-  };
   
   document.querySelector('.status').textContent = getMessage('flowReady', 'Flow: Ready');
   document.getElementById('selectAllBtn').textContent = getMessage('selectAll', 'Select All');
@@ -72,357 +72,335 @@ function setupEventListeners() {
   });
   
   // Listen for annotation completion via Chrome runtime messaging
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener(async (request) => {
     if (request.action === 'annotationComplete') {
-      handleAnnotationMessage(request);
+      const { dataUrl, index } = request;
+      
+      // Update the snap in currentSnaps array
+      currentSnaps[index] = dataUrl;
+      
+      // Send to background to save
+      await chrome.runtime.sendMessage({ 
+        action: 'setSnaps', 
+        snaps: currentSnaps 
+      });
+      
+      // Update UI
+      await loadSnaps();
+      updateUI();
     }
   });
 }
 
-// Handle orb button click
+// Handle orb button click (Capture or Upload)
 async function handleOrbClick() {
   const orbButton = document.getElementById('orbButton');
   const status = document.getElementById('status');
   
-  // Disable button during operation
-  orbButton.disabled = true;
-  
   try {
-    // Check if we're on an AI site and have snaps
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const url = new URL(tab.url);
-    const hostname = url.hostname;
-    const isAISite = hostname.includes('grok.com') || 
-                     hostname.includes('chatgpt.com') || 
-                     hostname.includes('chat.openai.com') || 
-                     hostname.includes('claude.ai');
+    // Check if on AI platform
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const currentTab = tabs[0];
+    const isAIPlatform = ['chat.openai.com', 'chatgpt.com', 'claude.ai', 'grok.com']
+      .some(domain => currentTab.url?.includes(domain));
     
-    if (isAISite && currentSnaps.length > 0) {
-      // Upload mode - check if we have selected items
-      let snapsToUpload = [];
-      let uploadMessage = '';
+    if (isAIPlatform) {
+      // Upload mode - send selected snaps or all if none selected
+      const selectedIndexes = Array.from(selectedSnapIds).map(id => {
+        return currentSnaps.findIndex(snap => snap === id);
+      }).filter(idx => idx !== -1);
       
-      if (selectedSnapIds.size > 0) {
-        // Upload only selected snaps
-        snapsToUpload = currentSnaps.filter(snap => selectedSnapIds.has(snap.id));
-        uploadMessage = `Uploading ${snapsToUpload.length} selected snap${snapsToUpload.length > 1 ? 's' : ''}...`;
-      } else {
-        // Upload all snaps if nothing selected
-        snapsToUpload = currentSnaps;
-        uploadMessage = `Uploading all ${snapsToUpload.length} snap${snapsToUpload.length > 1 ? 's' : ''}...`;
-      }
+      const snapsToUpload = selectedIndexes.length > 0 
+        ? selectedIndexes.map(idx => currentSnaps[idx])
+        : currentSnaps;
       
-      status.textContent = uploadMessage;
-      status.className = 'status uploading';
-      
-      const response = await chrome.runtime.sendMessage({ 
-        action: 'upload',
-        selectedSnaps: snapsToUpload.map(s => s.dataUrl)
-      });
-      
-      if (response.success) {
-        status.textContent = 'Upload complete ✓';
-        status.className = 'status active';
-        
-        // Reload snaps after upload
-        setTimeout(async () => {
-          await loadSnaps();
-          updateUI();
-          status.textContent = 'Flow: Ready';
-          status.className = 'status';
-        }, 1500);
-      } else {
-        status.textContent = 'Upload failed';
+      if (snapsToUpload.length === 0) {
+        status.textContent = getMessage('noSnapsToUpload', 'No snaps to upload');
         status.className = 'status error';
         setTimeout(() => {
-          status.textContent = 'Flow: Ready';
+          status.textContent = getMessage('flowReady', 'Flow: Ready');
           status.className = 'status';
-        }, 2000);
+        }, 1500);
+        return;
+      }
+      
+      // Start upload
+      orbButton.style.pointerEvents = 'none';
+      status.textContent = getMessage('uploadingSnaps', 'Uploading snaps...');
+      status.className = 'status active';
+      
+      // Send upload message
+      await chrome.runtime.sendMessage({ 
+        action: 'upload', 
+        snaps: snapsToUpload 
+      });
+      
+      // Clear selection and update
+      if (selectedIndexes.length > 0) {
+        selectedSnapIds.clear();
+        await loadSnaps();
+        updateUI();
+        status.textContent = getMessage('flowReady', 'Flow: Ready');
+        status.className = 'status';
       }
     } else {
       // Capture mode
-      status.textContent = 'Snapping...';
+      orbButton.style.pointerEvents = 'none';
+      status.textContent = getMessage('capturingSnap', 'Capturing...');
       status.className = 'status active';
       
       const response = await chrome.runtime.sendMessage({ action: 'capture' });
       
-      if (response.success && response.dataUrl) {
-        // Write to clipboard immediately (user gesture context)
-        try {
-          const res = await fetch(response.dataUrl);
-          const blob = await res.blob();
-          await navigator.clipboard.write([
-            new ClipboardItem({ [blob.type]: blob })
-          ]);
-        } catch (clipError) {
-          console.error('Clipboard write failed:', clipError);
-        }
-        
-        status.textContent = `Snap ${response.count} captured ✓`;
-        status.className = 'status active';
-        
-        // Reload snaps
-        await loadSnaps();
-        updateUI();
-        
+      if (response?.success) {
+        await handleCaptureSuccess(response);
         setTimeout(() => {
-          status.textContent = 'Flow: Ready';
+          status.textContent = getMessage('flowReady', 'Flow: Ready');
           status.className = 'status';
         }, 1500);
       } else {
-        // Show specific error message or generic failure
-        status.textContent = response.error || 'Capture failed';
-        status.className = 'status error';
-        setTimeout(() => {
-          status.textContent = 'Flow: Ready';
-          status.className = 'status';
-        }, 2000);
+        throw new Error(response?.error || 'Capture failed');
       }
     }
   } catch (error) {
     console.error('Orb click error:', error);
-    status.textContent = 'Error occurred';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 2000);
+    if (error.message?.includes('500ms')) {
+      status.textContent = getMessage('tooFastError', 'Too fast! Wait a moment');
+      status.className = 'status error';
+      setTimeout(() => {
+        status.textContent = getMessage('flowReady', 'Flow: Ready');
+        status.className = 'status';
+      }, 1500);
+    } else {
+      status.textContent = getMessage('errorOccurred', 'Error occurred');
+      status.className = 'status error';
+      setTimeout(() => {
+        status.textContent = getMessage('flowReady', 'Flow: Ready');
+        status.className = 'status';
+      }, 2000);
+    }
   } finally {
-    orbButton.disabled = false;
+    orbButton.style.pointerEvents = 'auto';
   }
 }
 
-// Handle clear all
+// Handle clear button click
 async function handleClear() {
   const status = document.getElementById('status');
   
-  try {
-    await chrome.runtime.sendMessage({ action: 'clearSnaps' });
-    
-    status.textContent = 'Cleared ✓';
-    status.className = 'status active';
-    
-    await loadSnaps();
-    updateUI();
-    
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 1500);
-  } catch (error) {
-    console.error('Clear error:', error);
-  }
+  if (currentSnaps.length === 0) return;
+  
+  // Clear all snaps
+  await chrome.runtime.sendMessage({ action: 'clearSnaps' });
+  currentSnaps = [];
+  selectedSnapIds.clear();
+  
+  // Update UI
+  updateUI();
+  status.textContent = getMessage('allSnapsCleared', 'All snaps cleared');
+  status.className = 'status active';
+  
+  setTimeout(() => {
+    status.textContent = getMessage('flowReady', 'Flow: Ready');
+    status.className = 'status';
+  }, 1500);
 }
 
-// Handle platform change
-// Load snaps from storage
+// Handle successful capture
+async function handleCaptureSuccess(response) {
+  const status = document.getElementById('status');
+  
+  // Copy to clipboard
+  try {
+    const blob = await fetch(response.dataUrl).then(r => r.blob());
+    await navigator.clipboard.write([
+      new ClipboardItem({ 'image/png': blob })
+    ]);
+    
+    status.textContent = getMessage('capturedAndCopied', 'Captured & copied!');
+    status.className = 'status success';
+  } catch (clipError) {
+    console.error('Clipboard error:', clipError);
+    status.textContent = getMessage('capturedOnly', 'Captured!');
+    status.className = 'status success';
+  }
+  
+  // Reload snaps and update UI
+  await loadSnaps();
+  updateUI();
+}
+
+// Load snapshots from storage
 async function loadSnaps() {
   try {
     const response = await chrome.runtime.sendMessage({ action: 'getSnaps' });
-    const newSnaps = response || [];
-    
-    // Clear selection if snap count changed (FIFO or clear happened)
-    if (newSnaps.length !== currentSnaps.length) {
-      selectedSnapIds.clear();
+    if (response?.snaps) {
+      currentSnaps = response.snaps;
     }
-    
-    currentSnaps = newSnaps;
   } catch (error) {
-    console.error('Load snaps error:', error);
+    console.error('Error loading snaps:', error);
     currentSnaps = [];
-    selectedSnapIds.clear();
   }
 }
 
-// Load platform preference
-
-// Update UI based on current state
+// Update UI elements
 function updateUI() {
-  updateCounter();
+  updateOrbButton();
   updateThumbnails();
+  updateSelectionBar();
   updateClearButton();
-}
-
-// Update snap counter
-function updateCounter() {
-  document.getElementById('snapCount').textContent = currentSnaps.length;
-}
-
-// Dynamically adjust popup height based on number of screenshots
-function adjustPopupHeight(snapCount) {
-  // Base height for empty state
-  let height = 380;
   
-  if (snapCount === 0) {
-    // Empty state: small and compact
-    height = 380;
-  } else if (snapCount <= 3) {
-    // 1 row of screenshots
-    height = 430;
-  } else if (snapCount <= 6) {
-    // 2 rows of screenshots
-    height = 490;
-  } else {
-    // 3 rows for 7-9 screenshots
-    height = 550;
-  }
-  
-  // Apply the height to the body
-  document.body.style.height = height + 'px';
-}
-
-// Update thumbnails grid
-function updateThumbnails() {
-  const container = document.getElementById('thumbnails');
-  const selectionBar = document.getElementById('selectionBar');
-  container.innerHTML = '';
-  
-  // Dynamically adjust popup height based on number of screenshots
-  adjustPopupHeight(currentSnaps.length);
-  
-  if (currentSnaps.length === 0) {
-    const emptyState = document.createElement('div');
-    emptyState.className = 'empty-state';
-    
-    // Get translated messages
-    const getMessage = (key, fallback) => {
-      const msg = chrome.i18n.getMessage(key);
-      return msg || fallback;
-    };
-    
-    emptyState.innerHTML = `
-      <div class="empty-sparkle">✦</div>
-      <div class="empty-heading">${getMessage('oneClickOneFlow', 'One click. One flow.')}</div>
-      <div class="empty-subheading">${getMessage('pagesReadyForAI', 'Your pages, ready for AI in seconds.')}</div>
-      <div class="empty-instruction">${getMessage('clickCameraButton', 'Click the glowing camera button above to capture instantly')}</div>
-    `;
-    container.appendChild(emptyState);
-    selectionBar.style.display = 'none';
-    return;
-  }
-  
-  // Show selection bar when snaps exist
-  selectionBar.style.display = 'flex';
-  
-  currentSnaps.forEach((dataUrl, index) => {
-    const thumbnail = document.createElement('div');
-    thumbnail.className = 'thumbnail fade-in';
-    thumbnail.dataset.index = index;
-    
-    // Add selected class if this snap is selected
-    if (selectedSnapIds.has(index)) {
-      thumbnail.classList.add('selected');
-    }
-    
-    // Create checkbox
-    const checkbox = document.createElement('div');
-    checkbox.className = 'thumbnail-checkbox';
-    if (selectedSnapIds.has(index)) {
-      checkbox.classList.add('checked');
-    }
-    
-    // Checkbox click handler
-    checkbox.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleSelection(index);
-    });
-    
-    // Create delete button
-    const deleteBtn = document.createElement('div');
-    deleteBtn.className = 'thumbnail-delete';
-    deleteBtn.title = 'Delete this snap';
-    
-    // Delete button click handler
-    deleteBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      handleDeleteSnap(index);
-    });
-    
-    // Create annotate button
-    const annotateBtn = document.createElement('div');
-    annotateBtn.className = 'thumbnail-annotate';
-    annotateBtn.title = 'Annotate this snap';
-    
-    // Annotate button click handler
-    annotateBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      handleAnnotate(index);
-    });
-    
-    // Create copy button
-    const copyBtn = document.createElement('div');
-    copyBtn.className = 'thumbnail-copy';
-    copyBtn.title = 'Copy this snap';
-    
-    // Copy button click handler
-    copyBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      handleCopySingle(index);
-    });
-    
-    const img = document.createElement('img');
-    img.src = dataUrl;
-    img.alt = `Snap ${index + 1}`;
-    
-    // Thumbnail click to preview
-    thumbnail.addEventListener('click', (e) => {
-      // Don't open preview if clicking checkbox, delete, annotate, or copy button
-      if (!e.target.classList.contains('thumbnail-checkbox') && 
-          !e.target.classList.contains('thumbnail-delete') &&
-          !e.target.classList.contains('thumbnail-annotate') &&
-          !e.target.classList.contains('thumbnail-copy')) {
-        showPreview(index);
-      }
-    });
-    
-    // Drag and drop support
-    thumbnail.draggable = true;
-    thumbnail.addEventListener('dragstart', (e) => handleDragStart(e, index));
-    thumbnail.addEventListener('dragover', (e) => handleDragOver(e));
-    thumbnail.addEventListener('dragenter', (e) => handleDragEnter(e));
-    thumbnail.addEventListener('dragleave', (e) => handleDragLeave(e));
-    thumbnail.addEventListener('drop', (e) => handleDrop(e, index));
-    thumbnail.addEventListener('dragend', handleDragEnd);
-    
-    const number = document.createElement('div');
-    number.className = 'thumbnail-number';
-    number.textContent = index + 1;
-    
-    thumbnail.appendChild(checkbox);
-    thumbnail.appendChild(deleteBtn);
-    thumbnail.appendChild(annotateBtn);
-    thumbnail.appendChild(copyBtn);
-    thumbnail.appendChild(img);
-    thumbnail.appendChild(number);
-    container.appendChild(thumbnail);
+  // Update badge
+  chrome.action.setBadgeText({
+    text: currentSnaps.length > 0 ? currentSnaps.length.toString() : ''
   });
   
-  updateSelectAllButton();
+  // Update popup size based on content
+  updatePopupSize();
 }
 
-// Toggle selection for a snap
-function toggleSelection(index) {
-  if (selectedSnapIds.has(index)) {
-    selectedSnapIds.delete(index);
-  } else {
-    selectedSnapIds.add(index);
+// Update orb button appearance and functionality
+async function updateOrbButton() {
+  const orbButton = document.getElementById('orbButton');
+  const orbIcon = document.getElementById('orbIcon');
+  const orbSubtext = document.getElementById('orbSubtext');
+  
+  try {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const currentTab = tabs[0];
+    
+    // Check if on AI platform
+    const isAIPlatform = ['chat.openai.com', 'chatgpt.com', 'claude.ai', 'grok.com']
+      .some(domain => currentTab.url?.includes(domain));
+    
+    if (isAIPlatform) {
+      // Upload mode
+      orbButton.className = 'orb-button upload-mode';
+      orbIcon.textContent = '⬆';
+      
+      const selectedCount = selectedSnapIds.size;
+      if (selectedCount > 0) {
+        orbSubtext.textContent = getMessage('uploadSelectedCount', `Upload ${selectedCount} selected`).replace('{count}', selectedCount);
+      } else {
+        orbSubtext.textContent = getMessage('uploadAllCount', `Upload all ${currentSnaps.length}`).replace('{count}', currentSnaps.length);
+      }
+    } else {
+      // Capture mode
+      orbButton.className = 'orb-button capture-mode';
+      orbIcon.textContent = '📸';
+      const capturedCount = `${currentSnaps.length}/9`;
+      orbSubtext.textContent = getMessage('capturedCount', `Captured: ${capturedCount}`).replace('{count}', capturedCount);
+    }
+  } catch (error) {
+    console.error('Error updating orb button:', error);
   }
-  updateThumbnails();
+}
+
+// Update thumbnails display
+function updateThumbnails() {
+  const container = document.getElementById('thumbnailsContainer');
+  const noSnapsMessage = document.getElementById('noSnapsMessage');
+  
+  if (currentSnaps.length === 0) {
+    container.innerHTML = '';
+    noSnapsMessage.style.display = 'block';
+    
+    // Update no snaps message with translated text
+    noSnapsMessage.innerHTML = `
+      <h3>${getMessage('oneClickOneFlow', 'One click. One flow.')}</h3>
+      <p>${getMessage('pagesReadyForAI', 'Your pages ready for AI in seconds.')}</p>
+      <p>${getMessage('clickCameraButton', 'Click the glowing camera button above to capture instantly')}</p>
+    `;
+  } else {
+    noSnapsMessage.style.display = 'none';
+    container.innerHTML = '';
+    
+    currentSnaps.forEach((snap, index) => {
+      const thumbnail = createThumbnail(snap, index);
+      container.appendChild(thumbnail);
+    });
+  }
+}
+
+// Create thumbnail element
+function createThumbnail(snap, index) {
+  const div = document.createElement('div');
+  div.className = 'thumbnail';
+  
+  // Check if this snap is selected
+  if (selectedSnapIds.has(snap)) {
+    div.classList.add('selected');
+  }
+  
+  // Checkbox
+  const checkbox = document.createElement('div');
+  checkbox.className = 'thumbnail-checkbox';
+  if (selectedSnapIds.has(snap)) {
+    checkbox.classList.add('checked');
+    checkbox.textContent = '✓';
+  }
+  checkbox.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleSelection(snap);
+  });
+  
+  // Thumbnail image
+  const img = document.createElement('img');
+  img.src = snap;
+  img.alt = `Snap ${index + 1}`;
+  img.addEventListener('click', () => openPreview(snap));
+  
+  // Delete button
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'thumbnail-delete';
+  deleteBtn.innerHTML = '×';
+  deleteBtn.title = getMessage('deleteSnap', 'Delete');
+  deleteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    deleteSnap(index);
+  });
+  
+  div.appendChild(checkbox);
+  div.appendChild(img);
+  div.appendChild(deleteBtn);
+  
+  return div;
+}
+
+// Toggle selection of a snap
+function toggleSelection(snapId) {
+  if (selectedSnapIds.has(snapId)) {
+    selectedSnapIds.delete(snapId);
+  } else {
+    selectedSnapIds.add(snapId);
+  }
+  
+  updateUI();
 }
 
 // Handle Select All / Deselect All
 function handleSelectAll() {
-  const allSelected = selectedSnapIds.size === currentSnaps.length;
-  
-  if (allSelected) {
+  if (selectedSnapIds.size === currentSnaps.length) {
     // Deselect all
     selectedSnapIds.clear();
   } else {
     // Select all
-    selectedSnapIds.clear();
-    currentSnaps.forEach((_, index) => {
-      selectedSnapIds.add(index);
-    });
+    currentSnaps.forEach(snap => selectedSnapIds.add(snap));
+  }
+  
+  updateThumbnails();
+  updateSelectionBar();
+  updateOrbButton();
+}
+
+// Update selection bar visibility and button states
+function updateSelectionBar() {
+  const selectionBar = document.getElementById('selectionBar');
+  
+  if (currentSnaps.length > 0) {
+    selectionBar.style.display = 'flex';
+    updateSelectAllButton();
+  } else {
+    selectionBar.style.display = 'none';
   }
   
   updateThumbnails();
@@ -432,7 +410,10 @@ function handleSelectAll() {
 function updateSelectAllButton() {
   const btn = document.getElementById('selectAllBtn');
   const allSelected = selectedSnapIds.size === currentSnaps.length;
-  btn.textContent = allSelected ? 'Deselect All' : 'Select All';
+  
+  btn.textContent = allSelected ? 
+    getMessage('deselectAll', 'Deselect All') : 
+    getMessage('selectAll', 'Select All');
 }
 
 // Handle Copy Selected
@@ -440,135 +421,108 @@ async function handleCopySelected() {
   const status = document.getElementById('status');
   
   if (selectedSnapIds.size === 0) {
-    status.textContent = 'No snaps selected';
+    status.textContent = getMessage('noSnapsSelected', 'No snaps selected');
     status.className = 'status error';
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = getMessage('flowReady', 'Flow: Ready');
       status.className = 'status';
     }, 1500);
     return;
   }
   
   try {
-    const selectedSnaps = Array.from(selectedSnapIds)
-      .sort((a, b) => a - b)
-      .map(index => currentSnaps[index]);
+    // Convert selected snaps to blobs
+    const selectedSnaps = Array.from(selectedSnapIds);
+    const items = {};
     
-    status.textContent = `Creating composite image...`;
-    status.className = 'status active';
+    for (let i = 0; i < selectedSnaps.length; i++) {
+      const response = await fetch(selectedSnaps[i]);
+      const blob = await response.blob();
+      items[`image/png`] = blob; // Clipboard can only handle one image
+      break; // Only copy first selected image
+    }
     
-    // Clipboard can only hold ONE image at a time!
-    // Solution: Combine all selected images into a single composite image
-    const compositeDataUrl = await createCompositeImage(selectedSnaps);
+    await navigator.clipboard.write([new ClipboardItem(items)]);
     
-    // Copy the single composite image
-    const res = await fetch(compositeDataUrl);
-    const blob = await res.blob();
-    await navigator.clipboard.write([
-      new ClipboardItem({ [blob.type]: blob })
-    ]);
-    
-    status.textContent = `${selectedSnaps.length} snaps copied as collage ✓`;
-    status.className = 'status active';
+    status.textContent = getMessage('copiedToClipboard', 'Copied to clipboard!');
+    status.className = 'status success';
     
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = getMessage('flowReady', 'Flow: Ready');
       status.className = 'status';
-    }, 2000);
+    }, 1500);
   } catch (error) {
-    console.error('Copy selected error:', error);
-    status.textContent = 'Copy failed - try Upload instead';
+    console.error('Copy error:', error);
+    status.textContent = getMessage('copyFailed', 'Copy failed');
     status.className = 'status error';
+    
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = getMessage('flowReady', 'Flow: Ready');
       status.className = 'status';
-    }, 2000);
+    }, 1500);
   }
 }
 
-// Create composite image from multiple snapshots
-async function createCompositeImage(dataUrls) {
-  // Load all images first
-  const images = await Promise.all(dataUrls.map(url => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = url;
-    });
-  }));
+// Delete a specific snap
+async function deleteSnap(index) {
+  const snapToDelete = currentSnaps[index];
   
-  // Calculate composite dimensions
-  const padding = 20;
-  const maxWidth = Math.max(...images.map(img => img.width));
-  const totalHeight = images.reduce((sum, img) => sum + img.height + padding, padding);
+  // Remove from selected if it was selected
+  selectedSnapIds.delete(snapToDelete);
   
-  // Create canvas for composite
-  const canvas = document.createElement('canvas');
-  canvas.width = maxWidth + (padding * 2);
-  canvas.height = totalHeight;
-  const ctx = canvas.getContext('2d');
+  // Remove from array
+  currentSnaps.splice(index, 1);
   
-  // Fill background
-  ctx.fillStyle = '#1a1a2e';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-  // Draw each image vertically stacked
-  let currentY = padding;
-  images.forEach((img, index) => {
-    const x = (canvas.width - img.width) / 2; // Center horizontally
-    
-    // Add subtle border and shadow
-    ctx.shadowColor = 'rgba(0, 217, 255, 0.3)';
-    ctx.shadowBlur = 10;
-    ctx.strokeStyle = 'rgba(0, 217, 255, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x - 1, currentY - 1, img.width + 2, img.height + 2);
-    ctx.shadowBlur = 0;
-    
-    // Draw image
-    ctx.drawImage(img, x, currentY);
-    
-    // Add snap number label
-    ctx.fillStyle = 'rgba(0, 217, 255, 0.9)';
-    ctx.font = 'bold 16px Arial';
-    ctx.fillText(`Snap ${index + 1}`, x + 10, currentY + 25);
-    
-    currentY += img.height + padding;
+  // Update storage
+  await chrome.runtime.sendMessage({ 
+    action: 'setSnaps', 
+    snaps: currentSnaps 
   });
   
-  // Convert to dataURL
-  return canvas.toDataURL('image/png');
+  // Update UI
+  updateUI();
+  
+  // Show status
+  const status = document.getElementById('status');
+  status.textContent = getMessage('snapDeleted', 'Snap deleted');
+  status.className = 'status active';
+  
+  setTimeout(() => {
+    status.textContent = getMessage('flowReady', 'Flow: Ready');
+    status.className = 'status';
+  }, 1000);
 }
 
-// Handle Copy Single (individual snap)
-async function handleCopySingle(index) {
-  const status = document.getElementById('status');
+// Update Clear button visibility
+function updateClearButton() {
+  const clearButton = document.getElementById('clearButton');
+  clearButton.style.display = currentSnaps.length > 0 ? 'block' : 'none';
+}
+
+// Update popup size based on content
+function updatePopupSize() {
+  const thumbnailsContainer = document.getElementById('thumbnailsContainer');
+  const snapCount = currentSnaps.length;
   
-  try {
-    const dataUrl = currentSnaps[index];
-    const res = await fetch(dataUrl);
-    const blob = await res.blob();
-    
-    await navigator.clipboard.write([
-      new ClipboardItem({ [blob.type]: blob })
-    ]);
-    
-    status.textContent = `Snap ${index + 1} copied ✓`;
-    status.className = 'status active';
-    
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 1500);
-  } catch (error) {
-    console.error('Copy single error:', error);
-    status.textContent = 'Copy failed';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 1500);
+  // Calculate rows needed (3 thumbnails per row)
+  const rows = Math.ceil(snapCount / 3);
+  
+  if (snapCount === 0) {
+    // No snaps - minimum height
+    document.body.style.minHeight = '380px';
+    thumbnailsContainer.style.height = 'auto';
+  } else if (snapCount <= 3) {
+    // 1 row
+    document.body.style.minHeight = '420px';
+    thumbnailsContainer.style.height = '120px';
+  } else if (snapCount <= 6) {
+    // 2 rows
+    document.body.style.minHeight = '480px';
+    thumbnailsContainer.style.height = '240px';
+  } else {
+    // 3 rows (max)
+    document.body.style.minHeight = '550px';
+    thumbnailsContainer.style.height = '360px';
   }
 }
 
@@ -577,79 +531,89 @@ async function handleDownloadSelected() {
   const status = document.getElementById('status');
   
   if (selectedSnapIds.size === 0) {
-    status.textContent = 'No snaps selected';
+    status.textContent = getMessage('noSnapsSelected', 'No snaps selected');
     status.className = 'status error';
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = getMessage('flowReady', 'Flow: Ready');
       status.className = 'status';
     }, 1500);
     return;
   }
   
   try {
-    const selectedSnaps = Array.from(selectedSnapIds)
-      .sort((a, b) => a - b)
-      .map(index => ({ index, dataUrl: currentSnaps[index] }));
+    const selectedSnaps = Array.from(selectedSnapIds);
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:]/g, '-');
     
-    status.textContent = `Downloading ${selectedSnaps.length} snaps...`;
-    status.className = 'status active';
-    
-    // Download each snap
-    for (const { index, dataUrl } of selectedSnaps) {
+    for (let i = 0; i < selectedSnaps.length; i++) {
+      const dataUrl = selectedSnaps[i];
       const link = document.createElement('a');
+      link.download = `flow-snap-${i + 1}-${timestamp}.png`;
       link.href = dataUrl;
-      link.download = `flow_snap_${index + 1}.png`;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
       
       // Small delay between downloads
-      await new Promise(resolve => setTimeout(resolve, 200));
+      if (i < selectedSnaps.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
     
-    status.textContent = `${selectedSnaps.length} snaps downloaded ✓`;
-    status.className = 'status active';
+    status.textContent = getMessage('downloadingSnaps', 'Downloading snaps...');
+    status.className = 'status success';
     
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = getMessage('flowReady', 'Flow: Ready');
       status.className = 'status';
-    }, 2000);
+    }, 1500);
   } catch (error) {
-    console.error('Download selected error:', error);
-    status.textContent = 'Download failed';
+    console.error('Download error:', error);
+    status.textContent = getMessage('downloadFailed', 'Download failed');
     status.className = 'status error';
+    
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = getMessage('flowReady', 'Flow: Ready');
       status.className = 'status';
-    }, 2000);
+    }, 1500);
   }
 }
 
-// Update clear button state
-function updateClearButton() {
-  const clearButton = document.getElementById('clearButton');
-  clearButton.disabled = currentSnaps.length === 0;
+// Open preview modal
+function openPreview(dataUrl) {
+  const modal = document.getElementById('previewModal');
+  const img = document.getElementById('previewImage');
+  const editBtn = document.getElementById('previewEditBtn');
+  
+  img.src = dataUrl;
+  modal.style.display = 'flex';
+  
+  // Set up edit button
+  editBtn.onclick = () => {
+    const index = currentSnaps.indexOf(dataUrl);
+    if (index !== -1) {
+      openAnnotationEditor(dataUrl, index);
+      closePreview();
+    }
+  };
 }
 
-// Handle annotation
-function handleAnnotate(index) {
-  const dataUrl = currentSnaps[index];
-  // Open annotation window with image data
-  const width = 1200;
-  const height = 800;
-  const left = (screen.width - width) / 2;
-  const top = (screen.height - height) / 2;
-  
-  window.open(
-    `annotate.html?index=${index}&img=${encodeURIComponent(dataUrl)}`,
-    'Annotate',
-    `width=${width},height=${height},left=${left},top=${top}`
-  );
+// Close preview modal
+function closePreview() {
+  const modal = document.getElementById('previewModal');
+  modal.style.display = 'none';
 }
 
-// Handle annotation message from annotation window
-async function handleAnnotationMessage(request) {
-  const { dataUrl, index } = request;
-  
-  // Replace the snap with annotated version
+// Open annotation editor (simplified)
+function openAnnotationEditor(dataUrl, index) {
+  // Send message to open annotation editor
+  chrome.tabs.create({
+    url: chrome.runtime.getURL(`annotate.html?index=${index}`)
+  });
+}
+
+// Save annotated image
+async function saveAnnotatedImage(dataUrl, index) {
+  // Update the snap at the given index
   currentSnaps[parseInt(index)] = dataUrl;
   
   // Update storage
@@ -662,10 +626,10 @@ async function handleAnnotationMessage(request) {
   
   // Show success message
   const status = document.getElementById('status');
-  status.textContent = 'Annotation saved ✓';
+  status.textContent = getMessage('annotationSaved', 'Annotation saved ✓');
   status.className = 'status active';
   setTimeout(() => {
-    status.textContent = 'Flow: Ready';
+    status.textContent = getMessage('flowReady', 'Flow: Ready');
     status.className = 'status';
   }, 1500);
 }
@@ -679,10 +643,10 @@ async function handleExportPDF() {
   const status = document.getElementById('status');
   
   if (currentSnaps.length === 0) {
-    status.textContent = 'No snaps to export';
+    status.textContent = getMessage('noSnapsToExport', 'No snaps to export');
     status.className = 'status error';
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = getMessage('flowReady', 'Flow: Ready');
       status.className = 'status';
     }, 1500);
     return;
@@ -732,11 +696,6 @@ function showPDFExportModal() {
 
 // Translate PDF modal texts
 function translatePDFModal() {
-  const getMessage = (key, fallback) => {
-    const msg = chrome.i18n.getMessage(key);
-    return msg || fallback;
-  };
-  
   // Translate header
   const modalHeader = document.querySelector('.pdf-modal-header h3');
   if (modalHeader) {
@@ -791,13 +750,6 @@ document.querySelectorAll('.pdf-option-btn').forEach(btn => {
     } else {
       const selectedIndexes = getSelectedIndexes();
       if (selectedIndexes.length === 0) {
-        const status = document.getElementById('status');
-        status.textContent = 'No screenshots selected';
-        status.className = 'status error';
-        setTimeout(() => {
-          status.textContent = 'Flow: Ready';
-          status.className = 'status';
-        }, 1500);
         hidePDFExportModal();
         return;
       }
@@ -806,349 +758,287 @@ document.querySelectorAll('.pdf-option-btn').forEach(btn => {
     
     hidePDFExportModal();
     
-    switch(mode) {
-      case 'all-combined':
-      case 'selected-combined':
-        await exportPDFCombined(snaps, mode.includes('selected') ? 'selected' : 'all');
-        break;
-      case 'all-separate':
-      case 'selected-separate':
-        await exportPDFSeparate(snaps, mode.includes('selected') ? 'selected' : 'all');
-        break;
+    if (mode.endsWith('-combined')) {
+      await exportAsCombinedPDF(snaps);
+    } else {
+      await exportAsSeparatePDFs(snaps);
     }
   });
 });
 
-// Export Combined PDF (original function refactored)
-async function exportPDFCombined(snaps, mode) {
+// Load jsPDF library dynamically
+async function loadJsPDF() {
+  const status = document.getElementById('status');
+  
+  if (jsPDFLoaded) return;
+  
+  if (jsPDFLoadPromise) {
+    await jsPDFLoadPromise;
+    return;
+  }
+  
+  jsPDFLoadPromise = new Promise((resolve, reject) => {
+    status.textContent = getMessage('loadingPDFLibrary', 'Loading PDF library...');
+    status.className = 'status active';
+    
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('libs/jspdf.umd.min.js');
+    script.onload = () => {
+      jsPDFLoaded = true;
+      resolve();
+    };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+  
+  await jsPDFLoadPromise;
+}
+
+// Export as Combined PDF
+async function exportAsCombinedPDF(snaps) {
   const status = document.getElementById('status');
   
   try {
-    status.textContent = 'Loading PDF library...';
+    status.textContent = getMessage('loadingPDFLibrary', 'Loading PDF library...');
     status.className = 'status active';
     
-    // Load jsPDF once (or wait if already loading)
-    if (!jsPDFLoaded) {
-      if (!jsPDFLoadPromise) {
-        jsPDFLoadPromise = new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'jspdf.min.js';
-          script.onload = () => {
-            console.log('jsPDF loaded successfully');
-            jsPDFLoaded = true;
-            // Wait for library to be available on window
-            setTimeout(() => resolve(), 200);
-          };
-          script.onerror = (err) => {
-            console.error('jsPDF load error:', err);
-            reject(new Error('Failed to load jsPDF library'));
-          };
-          document.head.appendChild(script);
-        });
-      }
-      await jsPDFLoadPromise;
-    }
+    // Load jsPDF if not already loaded
+    await loadJsPDF();
     
-    // Verify library is available
-    if (!window.jspdf || typeof window.jspdf.jsPDF === 'undefined') {
-      throw new Error('jsPDF library not available after loading');
-    }
+    status.textContent = getMessage('generatingPDF', 'Generating PDF...');
     
-    status.textContent = 'Generating PDF...';
-    
+    // Create PDF with A4 dimensions
     const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = 210; // A4 width in mm
-    const pageHeight = 297; // A4 height in mm
-    const margin = 10;
-    const maxWidth = pageWidth - (2 * margin);
-    const maxHeight = pageHeight - (2 * margin);
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
     
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 10;
+    const contentWidth = pageWidth - (2 * margin);
+    const contentHeight = pageHeight - (2 * margin);
+    
+    // Process each snap
     for (let i = 0; i < snaps.length; i++) {
       if (i > 0) {
         pdf.addPage();
       }
       
-      // Add image to PDF
-      const img = await createImageBitmap(await (await fetch(snaps[i])).blob());
-      const aspectRatio = img.width / img.height;
+      // Convert dataURL to image
+      const img = new Image();
+      img.src = snaps[i];
+      await new Promise(resolve => {
+        img.onload = resolve;
+      });
       
-      let imgWidth = maxWidth;
-      let imgHeight = imgWidth / aspectRatio;
+      // Calculate dimensions to fit page
+      const imgRatio = img.width / img.height;
+      const pageRatio = contentWidth / contentHeight;
       
-      // If image is too tall, scale by height instead
-      if (imgHeight > maxHeight) {
-        imgHeight = maxHeight;
-        imgWidth = imgHeight * aspectRatio;
+      let finalWidth, finalHeight, offsetX, offsetY;
+      
+      if (imgRatio > pageRatio) {
+        // Image is wider than page ratio
+        finalWidth = contentWidth;
+        finalHeight = contentWidth / imgRatio;
+        offsetX = margin;
+        offsetY = margin + (contentHeight - finalHeight) / 2;
+      } else {
+        // Image is taller than page ratio
+        finalHeight = contentHeight;
+        finalWidth = contentHeight * imgRatio;
+        offsetX = margin + (contentWidth - finalWidth) / 2;
+        offsetY = margin;
       }
       
-      // Center the image
-      const x = (pageWidth - imgWidth) / 2;
-      const y = margin;
+      // Add image to PDF
+      pdf.addImage(snaps[i], 'PNG', offsetX, offsetY, finalWidth, finalHeight);
       
-      pdf.addImage(snaps[i], 'PNG', x, y, imgWidth, imgHeight);
-      
-      // Add page number at bottom
+      // Add page number
       pdf.setFontSize(10);
-      pdf.setTextColor(150);
-      pdf.text(`Snap ${i + 1} of ${snaps.length}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+      pdf.setTextColor(128);
+      pdf.text(`${i + 1} / ${snaps.length}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
     }
     
-    // Save PDF
-    const timestamp = new Date().toISOString().slice(0, 10);
-    const filename = mode === 'selected' ? `flow-selected-${timestamp}.pdf` : `flow-screenshots-${timestamp}.pdf`;
-    pdf.save(filename);
+    // Generate timestamp for filename
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:]/g, '-');
     
-    status.textContent = 'PDF exported ✓';
-    status.className = 'status active';
+    // Save the PDF
+    pdf.save(`flow-screenshots-${timestamp}.pdf`);
+    
+    status.textContent = getMessage('pdfExported', 'PDF exported successfully!');
+    status.className = 'status success';
     
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = getMessage('flowReady', 'Flow: Ready');
       status.className = 'status';
     }, 2000);
   } catch (error) {
     console.error('PDF export error:', error);
-    status.textContent = 'PDF export failed';
+    status.textContent = getMessage('pdfExportFailed', 'PDF export failed');
     status.className = 'status error';
+    
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = getMessage('flowReady', 'Flow: Ready');
       status.className = 'status';
     }, 2000);
   }
 }
 
-// Export Separate PDFs (one file per screenshot)
-async function exportPDFSeparate(snaps, mode) {
+// Export as Separate PDFs
+async function exportAsSeparatePDFs(snaps) {
   const status = document.getElementById('status');
   
-  if (snaps.length === 0) {
-    status.textContent = 'No screenshots to export';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 1500);
-    return;
-  }
-  
   try {
-    status.textContent = 'Loading PDF library...';
+    // Same PDF generation logic but save each snap as separate PDF
+    status.textContent = getMessage('generatingSeparatePDFs', 'Generating PDFs...');
     status.className = 'status active';
     
-    // Load jsPDF once (or wait if already loading)
-    if (!jsPDFLoaded) {
-      if (!jsPDFLoadPromise) {
-        jsPDFLoadPromise = new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'jspdf.min.js';
-          script.onload = () => {
-            console.log('jsPDF loaded successfully');
-            jsPDFLoaded = true;
-            setTimeout(() => resolve(), 200);
-          };
-          script.onerror = (err) => {
-            console.error('jsPDF load error:', err);
-            reject(new Error('Failed to load jsPDF library'));
-          };
-          document.head.appendChild(script);
-        });
-      }
-      await jsPDFLoadPromise;
-    }
-    
-    // Verify library is available
-    if (!window.jspdf || typeof window.jspdf.jsPDF === 'undefined') {
-      throw new Error('jsPDF library not available after loading');
-    }
+    await loadJsPDF();
+    status.textContent = getMessage('generatingSeparatePDFs', 'Generating PDFs...');
     
     const { jsPDF } = window.jspdf;
-    const pageWidth = 210; // A4 width in mm
-    const pageHeight = 297; // A4 height in mm
-    const margin = 10;
-    const maxWidth = pageWidth - (2 * margin);
-    const maxHeight = pageHeight - (2 * margin);
-    const timestamp = new Date().toISOString().slice(0, 10);
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:]/g, '-');
     
-    // Generate and download each PDF
     for (let i = 0; i < snaps.length; i++) {
-      status.textContent = `Generating PDF ${i + 1} of ${snaps.length}...`;
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
       
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const contentWidth = pageWidth - (2 * margin);
+      const contentHeight = pageHeight - (2 * margin);
       
-      // Add image to PDF
-      const img = await createImageBitmap(await (await fetch(snaps[i])).blob());
-      const aspectRatio = img.width / img.height;
+      // Convert dataURL to image
+      const img = new Image();
+      img.src = snaps[i];
+      await new Promise(resolve => {
+        img.onload = resolve;
+      });
       
-      let imgWidth = maxWidth;
-      let imgHeight = imgWidth / aspectRatio;
+      // Calculate dimensions to fit page
+      const imgRatio = img.width / img.height;
+      const pageRatio = contentWidth / contentHeight;
       
-      // If image is too tall, scale by height instead
-      if (imgHeight > maxHeight) {
-        imgHeight = maxHeight;
-        imgWidth = imgHeight * aspectRatio;
+      let finalWidth, finalHeight, offsetX, offsetY;
+      
+      if (imgRatio > pageRatio) {
+        finalWidth = contentWidth;
+        finalHeight = contentWidth / imgRatio;
+        offsetX = margin;
+        offsetY = margin + (contentHeight - finalHeight) / 2;
+      } else {
+        finalHeight = contentHeight;
+        finalWidth = contentHeight * imgRatio;
+        offsetX = margin + (contentWidth - finalWidth) / 2;
+        offsetY = margin;
       }
       
-      // Center the image
-      const x = (pageWidth - imgWidth) / 2;
-      const y = margin;
-      
-      pdf.addImage(snaps[i], 'PNG', x, y, imgWidth, imgHeight);
+      // Add image to PDF
+      pdf.addImage(snaps[i], 'PNG', offsetX, offsetY, finalWidth, finalHeight);
       
       // Save individual PDF
-      const filename = `flow-screenshot-${i + 1}-${timestamp}.pdf`;
-      pdf.save(filename);
+      pdf.save(`flow-screenshot-${i + 1}-${timestamp}.pdf`);
       
-      // Small delay between downloads to prevent browser blocking
+      // Small delay between downloads
       if (i < snaps.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
     }
     
-    status.textContent = `${snaps.length} PDFs exported ✓`;
-    status.className = 'status active';
+    status.textContent = getMessage('pdfsSaved', `${snaps.length} PDFs saved!`).replace('{count}', snaps.length);
+    status.className = 'status success';
     
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = getMessage('flowReady', 'Flow: Ready');
       status.className = 'status';
     }, 2000);
   } catch (error) {
     console.error('PDF export error:', error);
-    status.textContent = 'PDF export failed';
+    status.textContent = getMessage('pdfExportFailed', 'PDF export failed');
     status.className = 'status error';
+    
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = getMessage('flowReady', 'Flow: Ready');
       status.className = 'status';
     }, 2000);
   }
 }
 
-// Drag and drop variables
-let draggedIndex = null;
-
-// Handle drag start
-function handleDragStart(e, index) {
-  draggedIndex = index;
-  e.target.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-}
-
-// Handle drag over
-function handleDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-}
-
-// Handle drag enter
-function handleDragEnter(e) {
-  e.preventDefault();
-  e.currentTarget.classList.add('drag-over');
-}
-
-// Handle drag leave
-function handleDragLeave(e) {
-  e.currentTarget.classList.remove('drag-over');
-}
-
-// Handle drop
-async function handleDrop(e, dropIndex) {
-  e.preventDefault();
-  e.stopPropagation();
-  e.currentTarget.classList.remove('drag-over');
-  
-  if (draggedIndex === null || draggedIndex === dropIndex) return;
-  
+// Initialize subscription UI
+async function initSubscriptionUI() {
   try {
-    // Reorder the array
-    const temp = currentSnaps[draggedIndex];
-    currentSnaps.splice(draggedIndex, 1);
-    currentSnaps.splice(dropIndex, 0, temp);
-    
-    // Update storage
-    const response = await chrome.runtime.sendMessage({ 
-      action: 'setSnaps', 
-      snaps: currentSnaps 
+    const { daysRemaining, isExpired } = await chrome.runtime.sendMessage({ 
+      action: 'getTrialStatus' 
     });
     
-    if (response && response.success) {
-      // Clear selections only when order changed
-      selectedSnapIds.clear();
-      updateUI();
+    if (isExpired) {
+      showTrialExpired();
+    } else if (daysRemaining <= 7) {
+      showTrialWarning(daysRemaining);
     }
   } catch (error) {
-    console.error('Drag drop error:', error);
+    console.error('Error checking trial status:', error);
   }
 }
 
-// Handle drag end
-function handleDragEnd(e) {
-  e.target.classList.remove('dragging');
-  document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('drag-over'));
-  draggedIndex = null;
-}
-
-// Show preview modal
-function showPreview(index) {
-  const modal = document.getElementById('previewModal');
-  const image = document.getElementById('previewImage');
-  const number = document.getElementById('previewNumber');
+// Show trial warning
+function showTrialWarning(daysRemaining) {
+  const banner = document.createElement('div');
+  banner.className = 'trial-banner warning';
+  banner.innerHTML = `
+    <span>${getMessage('daysRemaining', `${daysRemaining} days remaining`).replace('{days}', daysRemaining)}</span>
+    <button class="upgrade-btn">${getMessage('upgradeNow', 'Upgrade Now - $9.90/year')}</button>
+  `;
   
-  image.src = currentSnaps[index];
-  number.textContent = `Snap ${index + 1} of ${currentSnaps.length}`;
-  modal.style.display = 'flex';
+  document.body.insertBefore(banner, document.body.firstChild);
+  
+  banner.querySelector('.upgrade-btn').addEventListener('click', handleUpgrade);
 }
 
-// Close preview modal
-function closePreview() {
-  const modal = document.getElementById('previewModal');
-  modal.style.display = 'none';
+// Show trial expired
+function showTrialExpired() {
+  const banner = document.createElement('div');
+  banner.className = 'trial-banner expired';
+  banner.innerHTML = `
+    <span>${getMessage('trialEnded', 'Trial ended')}</span>
+    <button class="upgrade-btn pulse">${getMessage('upgradeNow', 'Upgrade Now - $9.90/year')}</button>
+  `;
+  
+  document.body.insertBefore(banner, document.body.firstChild);
+  
+  banner.querySelector('.upgrade-btn').addEventListener('click', handleUpgrade);
+  
+  // Disable functionality
+  document.getElementById('orbButton').style.pointerEvents = 'none';
+  document.getElementById('orbButton').style.opacity = '0.5';
 }
 
-// Delete individual snap
-async function handleDeleteSnap(index) {
+// Handle upgrade click
+async function handleUpgrade() {
   const status = document.getElementById('status');
+  status.textContent = getMessage('redirectingToUpgrade', 'Redirecting to upgrade...');
+  status.className = 'status active';
   
-  try {
-    // Remove snap from array
-    currentSnaps.splice(index, 1);
-    
-    // Update storage via background
-    await chrome.runtime.sendMessage({ 
-      action: 'setSnaps', 
-      snaps: currentSnaps 
-    });
-    
-    // Clear selection if this snap was selected
-    if (selectedSnapIds.has(index)) {
-      selectedSnapIds.delete(index);
-    }
-    
-    // Adjust other selections (indices have shifted)
-    const newSelection = new Set();
-    selectedSnapIds.forEach(id => {
-      if (id > index) {
-        newSelection.add(id - 1);
-      } else if (id < index) {
-        newSelection.add(id);
-      }
-    });
-    selectedSnapIds = newSelection;
-    
-    status.textContent = 'Snap deleted ✓';
-    status.className = 'status active';
-    
-    updateUI();
-    
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 1500);
-  } catch (error) {
-    console.error('Delete snap error:', error);
-    status.textContent = 'Delete failed';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 2000);
-  }
+  // Open Stripe Checkout
+  chrome.tabs.create({
+    url: 'https://buy.stripe.com/test_28o5md4Qy4Ni5EI7ss' // Test mode URL
+  });
+  
+  setTimeout(() => {
+    status.textContent = getMessage('flowReady', 'Flow: Ready');
+    status.className = 'status';
+  }, 1500);
 }
+
+// Initialize subscription check on popup load
+document.addEventListener('DOMContentLoaded', async () => {
+  await initSubscriptionUI();
+});

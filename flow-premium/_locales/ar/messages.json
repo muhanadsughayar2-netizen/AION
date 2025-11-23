@@ -20,6 +20,9 @@
   "selectAll": {
     "message": "تحديد الكل"
   },
+  "deselectAll": {
+    "message": "إلغاء تحديد الكل"
+  },
   "copySelected": {
     "message": "نسخ المحدد"
   },
@@ -75,5 +78,106 @@
         "content": "$1"
       }
     }
+  },
+  "noSnapsToUpload": {
+    "message": "لا توجد لقطات للرفع"
+  },
+  "uploadingSnaps": {
+    "message": "جاري رفع اللقطات..."
+  },
+  "capturingSnap": {
+    "message": "جاري الالتقاط..."
+  },
+  "tooFastError": {
+    "message": "سريع جداً! انتظر لحظة"
+  },
+  "errorOccurred": {
+    "message": "حدث خطأ"
+  },
+  "allSnapsCleared": {
+    "message": "تم مسح جميع اللقطات"
+  },
+  "capturedAndCopied": {
+    "message": "تم الالتقاط والنسخ!"
+  },
+  "capturedOnly": {
+    "message": "تم الالتقاط!"
+  },
+  "uploadSelectedCount": {
+    "message": "رفع $COUNT$ محدد",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "uploadAllCount": {
+    "message": "رفع الكل $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturedCount": {
+    "message": "ملتقط: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "deleteSnap": {
+    "message": "حذف"
+  },
+  "noSnapsSelected": {
+    "message": "لم يتم تحديد أي لقطات"
+  },
+  "copiedToClipboard": {
+    "message": "تم النسخ إلى الحافظة!"
+  },
+  "copyFailed": {
+    "message": "فشل النسخ"
+  },
+  "snapDeleted": {
+    "message": "تم حذف اللقطة"
+  },
+  "downloadingSnaps": {
+    "message": "جاري تحميل اللقطات..."
+  },
+  "downloadFailed": {
+    "message": "فشل التحميل"
+  },
+  "annotationSaved": {
+    "message": "تم حفظ التعليق التوضيحي ✓"
+  },
+  "noSnapsToExport": {
+    "message": "لا توجد لقطات للتصدير"
+  },
+  "loadingPDFLibrary": {
+    "message": "جاري تحميل مكتبة PDF..."
+  },
+  "generatingPDF": {
+    "message": "جاري إنشاء PDF..."
+  },
+  "pdfExported": {
+    "message": "تم تصدير PDF بنجاح!"
+  },
+  "pdfExportFailed": {
+    "message": "فشل تصدير PDF"
+  },
+  "generatingSeparatePDFs": {
+    "message": "جاري إنشاء ملفات PDF..."
+  },
+  "pdfsSaved": {
+    "message": "تم حفظ $COUNT$ ملفات PDF!",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "redirectingToUpgrade": {
+    "message": "جاري التوجيه للترقية..."
   }
 }
