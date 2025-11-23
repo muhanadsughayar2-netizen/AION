@@ -34,27 +34,26 @@ body {
 }
 
 .logo {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 900;
-  background: linear-gradient(90deg, 
-    #00ffff 0%, 
-    #00d9ff 25%, 
-    #0099ff 50%, 
-    #00d9ff 75%, 
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  position: relative;
+  background: linear-gradient(135deg, 
+    #00ffff 0%,
+    #00d9ff 25%,
+    #0099ff 50%,
+    #00d9ff 75%,
     #00ffff 100%);
-  background-size: 200% 100%;
+  background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  animation: flow-gradient 3s ease-in-out infinite;
-  position: relative;
-  filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.8));
-  text-shadow: 0 0 30px rgba(0, 217, 255, 0.5);
+  animation: logo-shimmer 4s ease-in-out infinite, logo-glow 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(0, 217, 255, 0.6)) drop-shadow(0 0 16px rgba(0, 255, 255, 0.4));
 }
 
-@keyframes flow-gradient {
+@keyframes logo-shimmer {
   0% {
     background-position: 0% 50%;
   }
@@ -66,22 +65,46 @@ body {
   }
 }
 
+@keyframes logo-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(0, 217, 255, 0.6)) drop-shadow(0 0 16px rgba(0, 255, 255, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(0, 217, 255, 0.8)) drop-shadow(0 0 24px rgba(0, 255, 255, 0.6));
+  }
+}
+
 .logo::before {
-  content: '✦';
+  content: '▪';
   position: absolute;
-  left: -20px;
-  color: #00d9ff;
-  animation: sparkle 2s ease-in-out infinite;
-  font-size: 16px;
+  left: -18px;
+  color: #00ffff;
+  animation: dot-pulse 2s ease-in-out infinite;
+  font-size: 8px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .logo::after {
-  content: '✦';
+  content: '▪';
   position: absolute;
-  right: -20px;
-  color: #00d9ff;
-  animation: sparkle 2s ease-in-out infinite 0.5s;
-  font-size: 16px;
+  right: -18px;
+  color: #00ffff;
+  animation: dot-pulse 2s ease-in-out infinite 0.3s;
+  font-size: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+@keyframes dot-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translateY(-50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.2);
+  }
 }
 
 @keyframes sparkle {
