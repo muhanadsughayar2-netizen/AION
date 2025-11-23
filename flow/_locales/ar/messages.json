@@ -1,14 +1,14 @@
 {
   "extensionName": {
-    "message": "التدفق - لقطة شاشة للذكاء الاصطناعي",
+    "message": "Flow - لقطات الشاشة للذكاء الاصطناعي",
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "التقط لقطات شاشة وتحميل الدفعة إلى منصات الذكاء الاصطناعي",
+    "message": "التقط لقطات الشاشة وحملها إلى منصات الذكاء الاصطناعي",
     "description": "Extension description"
   },
   "flowReady": {
-    "message": "التدفق: جاهز",
+    "message": "Flow: جاهز",
     "description": "Status message"
   },
   "oneClickOneFlow": {
@@ -16,19 +16,19 @@
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "صفحاتك جاهزة للذكاء الاصطناعي في ثوانٍ.",
+    "message": "صفحاتك جاهزة للذكاء الاصطناعي في ثوانٍ",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "انقر على زر الكاميرا المتوهج أعلاه لالتقاط الصورة على الفور",
+    "message": "انقر على زر الكاميرا المضيء أعلاه للالتقاط الفوري",
     "description": "Instructions"
   },
   "selectAll": {
-    "message": "حدد الكل",
+    "message": "تحديد الكل",
     "description": "Select all button"
   },
   "deselectAll": {
-    "message": "قم بإلغاء تحديد الكل",
+    "message": "إلغاء تحديد الكل",
     "description": "Deselect all button"
   },
   "copySelected": {
@@ -40,63 +40,63 @@
     "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "تصدير قوات الدفاع الشعبي",
+    "message": "تصدير PDF",
     "description": "Export PDF button"
   },
   "exportPDFOptions": {
     "message": "خيارات تصدير PDF",
     "description": "PDF modal header"
   },
+  "allAsOnePDF": {
+    "message": "الكل في PDF واحد",
+    "description": "PDF export option title"
+  },
   "allAsOnePDFDesc": {
-    "message": "اجمع كل لقطات الشاشة في ملف PDF واحد",
-    "description": "PDF option description"
+    "message": "دمج جميع لقطات الشاشة في ملف PDF واحد",
+    "description": "PDF export option description"
+  },
+  "allAsSeparatePDFs": {
+    "message": "الكل في ملفات PDF منفصلة",
+    "description": "PDF export option title"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "قم بتنزيل كل لقطة شاشة بصيغة PDF فردية",
-    "description": "PDF option description"
+    "message": "تحميل كل لقطة شاشة كملف PDF منفصل",
+    "description": "PDF export option description"
+  },
+  "selectedAsOnePDF": {
+    "message": "المحدد في PDF واحد",
+    "description": "PDF export option title"
   },
   "selectedAsOnePDFDesc": {
     "message": "دمج لقطات الشاشة المحددة في ملف PDF واحد",
-    "description": "PDF option description"
+    "description": "PDF export option description"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "المحدد في ملفات PDF منفصلة",
+    "description": "PDF export option title"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "قم بتنزيل كل لقطة شاشة محددة بصيغة PDF",
-    "description": "PDF option description"
+    "message": "تحميل كل لقطة شاشة محددة كملف PDF منفصل",
+    "description": "PDF export option description"
   },
   "clearAll": {
     "message": "مسح الكل",
     "description": "Clear all button"
   },
-  "allAsOnePDF": {
-    "message": "الكل في ملف PDF واحد",
-    "description": "PDF export option"
-  },
-  "allAsSeparatePDFs": {
-    "message": "كل ذلك كملفات PDF منفصلة",
-    "description": "PDF export option"
-  },
-  "selectedAsOnePDF": {
-    "message": "تم تحديده كملف PDF واحد",
-    "description": "PDF export option"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "تم تحديدها كملفات PDF منفصلة",
-    "description": "PDF export option"
-  },
   "cancel": {
-    "message": "يلغي",
+    "message": "إلغاء",
     "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "انتهت المحاكمة",
+    "message": "انتهت الفترة التجريبية",
     "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "قم بالترقية الآن – 9.90 دولارًا سنويًا",
+    "message": "الترقية الآن - 39 ريال/سنة",
     "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "$DAYS$ من الأيام المتبقية",
+    "message": "$DAYS$ يوم متبقي",
     "description": "Days remaining in trial",
     "placeholders": {
       "days": {

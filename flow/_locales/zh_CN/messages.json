@@ -1,48 +1,103 @@
 {
   "extensionName": {
-    "message": "Flow - 截图到AI"
+    "message": "Flow - 屏幕截图到AI",
+    "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "捕获屏幕截图并批量上传到AI平台"
+    "message": "捕获屏幕截图并批量上传到AI平台",
+    "description": "Extension description"
   },
   "flowReady": {
-    "message": "Flow: 就绪"
+    "message": "Flow: 就绪",
+    "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "一键。一流。"
+    "message": "一次点击。一个流程",
+    "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "您的页面，几秒内为AI准备就绪。"
+    "message": "您的页面在几秒内为AI做好准备",
+    "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "点击上方发光的相机按钮进行捕获"
+    "message": "点击上面发光的相机按钮立即捕获",
+    "description": "Instructions"
   },
   "selectAll": {
-    "message": "全选"
+    "message": "全选",
+    "description": "Select all button"
+  },
+  "deselectAll": {
+    "message": "取消全选",
+    "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "复制选中"
+    "message": "复制选中项",
+    "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "下载选中"
+    "message": "下载选中项",
+    "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "导出PDF"
+    "message": "导出为PDF",
+    "description": "Export PDF button"
+  },
+  "exportPDFOptions": {
+    "message": "PDF导出选项",
+    "description": "PDF modal header"
+  },
+  "allAsOnePDF": {
+    "message": "全部为一个PDF",
+    "description": "PDF export option title"
+  },
+  "allAsOnePDFDesc": {
+    "message": "将所有屏幕截图合并为一个PDF文件",
+    "description": "PDF export option description"
+  },
+  "allAsSeparatePDFs": {
+    "message": "全部为单独PDF",
+    "description": "PDF export option title"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "将每个屏幕截图作为单个PDF下载",
+    "description": "PDF export option description"
+  },
+  "selectedAsOnePDF": {
+    "message": "选中项为一个PDF",
+    "description": "PDF export option title"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "将选中的屏幕截图合并为一个PDF文件",
+    "description": "PDF export option description"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "选中项为单独PDF",
+    "description": "PDF export option title"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "将每个选中的屏幕截图作为单个PDF下载",
+    "description": "PDF export option description"
   },
   "clearAll": {
-    "message": "全部清除"
+    "message": "清空全部",
+    "description": "Clear all button"
   },
   "cancel": {
-    "message": "取消"
+    "message": "取消",
+    "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "试用结束"
+    "message": "试用期已结束",
+    "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "立即升级 - ¥69/年"
+    "message": "立即升级 - $9.90/年",
+    "description": "Upgrade button"
   },
   "daysRemaining": {
     "message": "剩余$DAYS$天",
+    "description": "Days remaining in trial",
     "placeholders": {
       "days": {
         "content": "$1"

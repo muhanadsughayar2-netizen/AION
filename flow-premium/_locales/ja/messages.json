@@ -1,48 +1,103 @@
 {
   "extensionName": {
-    "message": "Flow - スクリーンショットをAIへ"
+    "message": "Flow - スクリーンショットからAI",
+    "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "スクリーンショットを撮影し、AIプラットフォームに一括アップロード"
+    "message": "スクリーンショットをキャプチャしてAIプラットフォームにバッチアップロード",
+    "description": "Extension description"
   },
   "flowReady": {
-    "message": "Flow: 準備完了"
+    "message": "Flow: 準備完了",
+    "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "ワンクリック。ワンフロー。"
+    "message": "ワンクリック。ワンフロー",
+    "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "あなたのページ、数秒でAIの準備が整います。"
+    "message": "あなたのページは数秒でAI対応です",
+    "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "上の光るカメラボタンをクリックして撮影"
+    "message": "上の輝くカメラボタンをクリックして即座にキャプチャ",
+    "description": "Instructions"
   },
   "selectAll": {
-    "message": "すべて選択"
+    "message": "すべて選択",
+    "description": "Select all button"
+  },
+  "deselectAll": {
+    "message": "すべて選択解除",
+    "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "選択をコピー"
+    "message": "選択をコピー",
+    "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "選択をダウンロード"
+    "message": "選択をダウンロード",
+    "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "PDFエクスポート"
+    "message": "PDFにエクスポート",
+    "description": "Export PDF button"
+  },
+  "exportPDFOptions": {
+    "message": "PDFエクスポートオプション",
+    "description": "PDF modal header"
+  },
+  "allAsOnePDF": {
+    "message": "すべて1つのPDF",
+    "description": "PDF export option title"
+  },
+  "allAsOnePDFDesc": {
+    "message": "すべてのスクリーンショットを1つのPDFファイルに結合",
+    "description": "PDF export option description"
+  },
+  "allAsSeparatePDFs": {
+    "message": "すべて別のPDFとして",
+    "description": "PDF export option title"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "各スクリーンショットを個別のPDFとしてダウンロード",
+    "description": "PDF export option description"
+  },
+  "selectedAsOnePDF": {
+    "message": "選択を1つのPDF",
+    "description": "PDF export option title"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "選択したスクリーンショットを1つのPDFファイルに結合",
+    "description": "PDF export option description"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "選択を別のPDFとして",
+    "description": "PDF export option title"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "各選択したスクリーンショットを個別のPDFとしてダウンロード",
+    "description": "PDF export option description"
   },
   "clearAll": {
-    "message": "すべてクリア"
+    "message": "すべてクリア",
+    "description": "Clear all button"
   },
   "cancel": {
-    "message": "キャンセル"
+    "message": "キャンセル",
+    "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "試用期間終了"
+    "message": "試用期間が終了しました",
+    "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "今すぐアップグレード - ¥1,490/年"
+    "message": "今すぐアップグレード - $9.90/年",
+    "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "残り$DAYS$日",
+    "message": "$DAYS$日残り",
+    "description": "Days remaining in trial",
     "placeholders": {
       "days": {
         "content": "$1"

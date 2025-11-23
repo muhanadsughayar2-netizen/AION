@@ -1,102 +1,102 @@
 {
   "extensionName": {
-    "message": "Поток - Екранна снимка към AI",
+    "message": "Flow - Screenshot to AI",
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "Заснемане на екранни снимки и групово качване на AI платформи",
+    "message": "Capture screenshots and batch upload to AI platforms",
     "description": "Extension description"
   },
   "flowReady": {
-    "message": "Поток: Готов",
+    "message": "Flow: Ready",
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "Едно кликване. Един поток.",
+    "message": "One click. One flow.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Вашите страници, готови за AI за секунди.",
+    "message": "Your pages, ready for AI in seconds.",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "Щракнете върху светещия бутон на камерата по-горе, за да заснемете незабавно",
+    "message": "Click the glowing camera button above to capture instantly",
     "description": "Instructions"
   },
   "selectAll": {
-    "message": "Изберете Всички",
+    "message": "Select All",
     "description": "Select all button"
   },
   "deselectAll": {
-    "message": "Демаркирайте всички",
+    "message": "Deselect All",
     "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "Копиране на избраното",
+    "message": "Copy Selected",
     "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "Изтегляне на избрани",
+    "message": "Download Selected",
     "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "Експортиране на PDF",
+    "message": "Export PDF",
     "description": "Export PDF button"
   },
   "exportPDFOptions": {
-    "message": "Опции за експортиране на PDF",
+    "message": "Export PDF Options",
     "description": "PDF modal header"
   },
-  "allAsOnePDFDesc": {
-    "message": "Комбинирайте всички екранни снимки в един PDF файл",
-    "description": "PDF option description"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "Изтеглете всяка екранна снимка като отделен PDF файл",
-    "description": "PDF option description"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "Комбинирайте избрани екранни снимки в един PDF",
-    "description": "PDF option description"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "Изтеглете всяка избрана екранна снимка като PDF",
-    "description": "PDF option description"
-  },
-  "clearAll": {
-    "message": "Изчистване на всички",
-    "description": "Clear all button"
-  },
   "allAsOnePDF": {
-    "message": "Всичко като един PDF",
-    "description": "PDF export option"
+    "message": "All as One PDF",
+    "description": "PDF export option title"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Combine all screenshots into one PDF file",
+    "description": "PDF export option description"
   },
   "allAsSeparatePDFs": {
-    "message": "Всички като отделни PDF файлове",
-    "description": "PDF export option"
+    "message": "All as Separate PDFs",
+    "description": "PDF export option title"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Download each screenshot as individual PDF",
+    "description": "PDF export option description"
   },
   "selectedAsOnePDF": {
-    "message": "Избрано като един PDF файл",
-    "description": "PDF export option"
+    "message": "Selected as One PDF",
+    "description": "PDF export option title"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Combine selected screenshots into one PDF",
+    "description": "PDF export option description"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Избрани като отделни PDF файлове",
-    "description": "PDF export option"
+    "message": "Selected as Separate PDFs",
+    "description": "PDF export option title"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Download each selected screenshot as PDF",
+    "description": "PDF export option description"
+  },
+  "clearAll": {
+    "message": "Clear All",
+    "description": "Clear all button"
   },
   "cancel": {
-    "message": "Отказ",
+    "message": "Cancel",
     "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "Пробният период приключи",
+    "message": "Trial Ended",
     "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "Надстройте сега - $9,90/година",
+    "message": "Upgrade Now - $9.90/year",
     "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "Остават $DAYS$ дни",
+    "message": "$DAYS$ days remaining",
     "description": "Days remaining in trial",
     "placeholders": {
       "days": {

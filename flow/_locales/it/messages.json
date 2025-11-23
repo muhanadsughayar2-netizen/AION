@@ -1,60 +1,103 @@
 {
   "extensionName": {
-    "message": "Flow - Screenshot verso IA"
+    "message": "Flow - Screenshot per IA",
+    "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "Cattura screenshot e carica in batch su piattaforme IA"
+    "message": "Cattura screenshot e carica in batch su piattaforme IA",
+    "description": "Extension description"
   },
   "flowReady": {
-    "message": "Flow: Pronto"
+    "message": "Flow: Pronto",
+    "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "Un clic. Un flusso."
+    "message": "Un clic. Un flusso.",
+    "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "Le tue pagine, pronte per l'IA in secondi."
+    "message": "Le tue pagine pronte per l'IA in secondi",
+    "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "Clicca il pulsante fotocamera luminoso per catturare"
+    "message": "Fai clic sul pulsante della fotocamera luminosa sopra per acquisire istantaneamente",
+    "description": "Instructions"
   },
   "selectAll": {
-    "message": "Seleziona Tutto"
+    "message": "Seleziona Tutto",
+    "description": "Select all button"
+  },
+  "deselectAll": {
+    "message": "Deseleziona Tutto",
+    "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "Copia Selezione"
+    "message": "Copia Selezionato",
+    "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "Scarica Selezione"
+    "message": "Scarica Selezionato",
+    "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "Esporta PDF"
+    "message": "Esporta in PDF",
+    "description": "Export PDF button"
   },
-  "clearAll": {
-    "message": "Cancella Tutto"
+  "exportPDFOptions": {
+    "message": "Opzioni di Esportazione PDF",
+    "description": "PDF modal header"
   },
   "allAsOnePDF": {
-    "message": "Tutto in Un PDF"
+    "message": "Tutto in un PDF",
+    "description": "PDF export option title"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Combina tutti gli screenshot in un unico file PDF",
+    "description": "PDF export option description"
   },
   "allAsSeparatePDFs": {
-    "message": "Tutto in PDF Separati"
+    "message": "Tutto come PDF Separati",
+    "description": "PDF export option title"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Scarica ogni screenshot come PDF individuale",
+    "description": "PDF export option description"
   },
   "selectedAsOnePDF": {
-    "message": "Selezione in Un PDF"
+    "message": "Selezionato in un PDF",
+    "description": "PDF export option title"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Combina gli screenshot selezionati in un unico file PDF",
+    "description": "PDF export option description"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Selezione in PDF Separati"
+    "message": "Selezionato come PDF Separati",
+    "description": "PDF export option title"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Scarica ogni screenshot selezionato come PDF individuale",
+    "description": "PDF export option description"
+  },
+  "clearAll": {
+    "message": "Cancella Tutto",
+    "description": "Clear all button"
   },
   "cancel": {
-    "message": "Annulla"
+    "message": "Annulla",
+    "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "Prova Terminata"
+    "message": "Periodo di Prova Terminato",
+    "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "Aggiorna Ora - €9,90/anno"
+    "message": "Aggiorna Ora - $9.90/anno",
+    "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "$DAYS$ giorni rimanenti",
+    "message": "$DAYS$ giorni rimasti",
+    "description": "Days remaining in trial",
     "placeholders": {
       "days": {
         "content": "$1"
