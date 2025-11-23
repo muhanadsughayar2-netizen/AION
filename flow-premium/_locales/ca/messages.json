@@ -1,103 +1,103 @@
 {
   "extensionName": {
-    "message": "SnapToAI - Captura de pantalla per a IA",
-    "description": "Extension name"
+    "message": "SnapToAI - Screenshot to AI",
+    "description": "extensionName"
   },
   "extensionDescription": {
-    "message": "Captura captures de pantalla i carrega en lot a plataformes IA",
-    "description": "Extension description"
+    "message": "Capture screenshots and batch upload to AI platforms",
+    "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Flow: Llest",
-    "description": "Status message"
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
   },
   "oneClickOneFlow": {
-    "message": "Un clic. Una captura.",
-    "description": "Tagline"
+    "message": "One click. One snap.",
+    "description": "oneClickOneFlow"
   },
   "pagesReadyForAI": {
-    "message": "Les vostres pàgines, llestes per a IA en segons",
-    "description": "Subheading"
+    "message": "Your pages, ready for AI in seconds.",
+    "description": "pagesReadyForAI"
   },
   "clickCameraButton": {
-    "message": "Feu clic al botó de càmera brillant més amunt per capturar instantàniament",
-    "description": "Instructions"
+    "message": "Click the glowing camera button above to capture instantly",
+    "description": "clickCameraButton"
   },
   "selectAll": {
-    "message": "Selecciona tot",
-    "description": "Select all button"
+    "message": "Select All",
+    "description": "selectAll"
   },
   "deselectAll": {
-    "message": "Desselecciona tot",
-    "description": "Deselect all button"
+    "message": "Deselect All",
+    "description": "deselectAll"
   },
   "copySelected": {
-    "message": "Copia seleccionat",
-    "description": "Copy selected button"
+    "message": "Copy Selected",
+    "description": "copySelected"
   },
   "downloadSelected": {
-    "message": "Baixa seleccionat",
-    "description": "Download selected button"
+    "message": "Download Selected",
+    "description": "downloadSelected"
   },
   "exportPDF": {
-    "message": "Exporta com a PDF",
-    "description": "Export PDF button"
+    "message": "Export PDF",
+    "description": "exportPDF"
   },
   "exportPDFOptions": {
-    "message": "Opcions d'exportació de PDF",
-    "description": "PDF modal header"
+    "message": "Export PDF Options",
+    "description": "exportPDFOptions"
   },
   "allAsOnePDF": {
-    "message": "Tot en un PDF",
-    "description": "PDF export option title"
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
-    "message": "Combina totes les captures de pantalla en un únic fitxer PDF",
-    "description": "PDF export option description"
+    "message": "Combine all screenshots into one PDF file",
+    "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
-    "message": "Tot com PDFs separats",
-    "description": "PDF export option title"
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "Baixa cada captura de pantalla com un PDF individual",
-    "description": "PDF export option description"
+    "message": "Download each screenshot as individual PDF",
+    "description": "allAsSeparatePDFsDesc"
   },
   "selectedAsOnePDF": {
-    "message": "Seleccionat en un PDF",
-    "description": "PDF export option title"
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
-    "message": "Combina les captures seleccionades en un únic fitxer PDF",
-    "description": "PDF export option description"
+    "message": "Combine selected screenshots into one PDF",
+    "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Seleccionat com PDFs separats",
-    "description": "PDF export option title"
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "Baixa cada captura seleccionada com un PDF individual",
-    "description": "PDF export option description"
+    "message": "Download each selected screenshot as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
   },
   "clearAll": {
-    "message": "Esborra tot",
-    "description": "Clear all button"
+    "message": "Clear All",
+    "description": "clearAll"
   },
   "cancel": {
-    "message": "Cancel·la",
-    "description": "Cancel button"
+    "message": "Cancel",
+    "description": "cancel"
   },
   "trialEnded": {
-    "message": "Període de prova finalitzat",
-    "description": "Trial ended message"
+    "message": "Trial Ended",
+    "description": "trialEnded"
   },
   "upgradeNow": {
-    "message": "Actualitza ara - $9.90/any",
-    "description": "Upgrade button"
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
   },
   "daysRemaining": {
-    "message": "$DAYS$ dies restants",
-    "description": "Days remaining in trial",
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
     "placeholders": {
       "days": {
         "content": "$1"

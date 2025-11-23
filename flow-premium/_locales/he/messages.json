@@ -1,103 +1,103 @@
 {
   "extensionName": {
-    "message": "SnapToAI - צילום מסך ל-AI",
-    "description": "Extension name"
+    "message": "SnapToAI - Screenshot to AI",
+    "description": "extensionName"
   },
   "extensionDescription": {
-    "message": "צלם צילומי מסך והעלה בכמות ל-AI",
-    "description": "Extension description"
+    "message": "Capture screenshots and batch upload to AI platforms",
+    "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Flow: מוכן",
-    "description": "Status message"
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
   },
   "oneClickOneFlow": {
-    "message": "לחיצה אחת. תמונה אחת.",
-    "description": "Tagline"
+    "message": "One click. One snap.",
+    "description": "oneClickOneFlow"
   },
   "pagesReadyForAI": {
-    "message": "הדפים שלך, מוכנים ל-AI בשניות",
-    "description": "Subheading"
+    "message": "Your pages, ready for AI in seconds.",
+    "description": "pagesReadyForAI"
   },
   "clickCameraButton": {
-    "message": "לחץ על כפתור המצלמה הזוהר למעלה כדי ללכוד באופן מיידי",
-    "description": "Instructions"
+    "message": "Click the glowing camera button above to capture instantly",
+    "description": "clickCameraButton"
   },
   "selectAll": {
-    "message": "בחר הכל",
-    "description": "Select all button"
+    "message": "Select All",
+    "description": "selectAll"
   },
   "deselectAll": {
-    "message": "בטל בחירה הכל",
-    "description": "Deselect all button"
+    "message": "Deselect All",
+    "description": "deselectAll"
   },
   "copySelected": {
-    "message": "העתק בחור",
-    "description": "Copy selected button"
+    "message": "Copy Selected",
+    "description": "copySelected"
   },
   "downloadSelected": {
-    "message": "הורד בחור",
-    "description": "Download selected button"
+    "message": "Download Selected",
+    "description": "downloadSelected"
   },
   "exportPDF": {
-    "message": "ייצא כ-PDF",
-    "description": "Export PDF button"
+    "message": "Export PDF",
+    "description": "exportPDF"
   },
   "exportPDFOptions": {
-    "message": "אפשרויות ייצוא PDF",
-    "description": "PDF modal header"
+    "message": "Export PDF Options",
+    "description": "exportPDFOptions"
   },
   "allAsOnePDF": {
-    "message": "הכל ב-PDF אחד",
-    "description": "PDF export option title"
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
-    "message": "שלב את כל צילומי המסך לקובץ PDF אחד",
-    "description": "PDF export option description"
+    "message": "Combine all screenshots into one PDF file",
+    "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
-    "message": "הכל כ-PDFs נפרדים",
-    "description": "PDF export option title"
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "הורד כל צילום מסך כ-PDF נפרד",
-    "description": "PDF export option description"
+    "message": "Download each screenshot as individual PDF",
+    "description": "allAsSeparatePDFsDesc"
   },
   "selectedAsOnePDF": {
-    "message": "בחור ב-PDF אחד",
-    "description": "PDF export option title"
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
-    "message": "שלב את צילומי המסך הנבחרים לקובץ PDF אחד",
-    "description": "PDF export option description"
+    "message": "Combine selected screenshots into one PDF",
+    "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
-    "message": "בחור כ-PDFs נפרדים",
-    "description": "PDF export option title"
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "הורד כל צילום מסך שנבחר כ-PDF נפרד",
-    "description": "PDF export option description"
+    "message": "Download each selected screenshot as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
   },
   "clearAll": {
-    "message": "נקה הכל",
-    "description": "Clear all button"
+    "message": "Clear All",
+    "description": "clearAll"
   },
   "cancel": {
-    "message": "ביטול",
-    "description": "Cancel button"
+    "message": "Cancel",
+    "description": "cancel"
   },
   "trialEnded": {
-    "message": "הנסיון הסתיים",
-    "description": "Trial ended message"
+    "message": "Trial Ended",
+    "description": "trialEnded"
   },
   "upgradeNow": {
-    "message": "שדרג עכשיו - $9.90/שנה",
-    "description": "Upgrade button"
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
   },
   "daysRemaining": {
-    "message": "$DAYS$ ימים נותרו",
-    "description": "Days remaining in trial",
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
     "placeholders": {
       "days": {
         "content": "$1"

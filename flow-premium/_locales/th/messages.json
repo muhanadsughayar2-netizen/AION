@@ -1,103 +1,103 @@
 {
   "extensionName": {
-    "message": "SnapToAI - ภาพหน้าจอสำหรับ AI",
-    "description": "Extension name"
+    "message": "SnapToAI - Screenshot to AI",
+    "description": "extensionName"
   },
   "extensionDescription": {
-    "message": "จับภาพหน้าจอและอัปโหลดเป็นชุดไปยังแพลตฟอร์ม AI",
-    "description": "Extension description"
+    "message": "Capture screenshots and batch upload to AI platforms",
+    "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Flow: พร้อม",
-    "description": "Status message"
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
   },
   "oneClickOneFlow": {
-    "message": "คลิกเดียว. ภาพเดียว.",
-    "description": "Tagline"
+    "message": "One click. One snap.",
+    "description": "oneClickOneFlow"
   },
   "pagesReadyForAI": {
-    "message": "หน้าของคุณพร้อมสำหรับ AI ในเวลาไม่กี่วินาที",
-    "description": "Subheading"
+    "message": "Your pages, ready for AI in seconds.",
+    "description": "pagesReadyForAI"
   },
   "clickCameraButton": {
-    "message": "คลิกปุ่มกล้องที่ส่องแสงด้านบนเพื่อจับภาพในทันที",
-    "description": "Instructions"
+    "message": "Click the glowing camera button above to capture instantly",
+    "description": "clickCameraButton"
   },
   "selectAll": {
-    "message": "เลือกทั้งหมด",
-    "description": "Select all button"
+    "message": "Select All",
+    "description": "selectAll"
   },
   "deselectAll": {
-    "message": "ยกเลิกการเลือกทั้งหมด",
-    "description": "Deselect all button"
+    "message": "Deselect All",
+    "description": "deselectAll"
   },
   "copySelected": {
-    "message": "คัดลอกที่เลือก",
-    "description": "Copy selected button"
+    "message": "Copy Selected",
+    "description": "copySelected"
   },
   "downloadSelected": {
-    "message": "ดาวน์โหลดที่เลือก",
-    "description": "Download selected button"
+    "message": "Download Selected",
+    "description": "downloadSelected"
   },
   "exportPDF": {
-    "message": "ส่งออกเป็น PDF",
-    "description": "Export PDF button"
+    "message": "Export PDF",
+    "description": "exportPDF"
   },
   "exportPDFOptions": {
-    "message": "ตัวเลือกการส่งออก PDF",
-    "description": "PDF modal header"
+    "message": "Export PDF Options",
+    "description": "exportPDFOptions"
   },
   "allAsOnePDF": {
-    "message": "ทั้งหมดในไฟล์ PDF เดียว",
-    "description": "PDF export option title"
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
-    "message": "รวมภาพหน้าจอทั้งหมดเป็นไฟล์ PDF เดียว",
-    "description": "PDF export option description"
+    "message": "Combine all screenshots into one PDF file",
+    "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
-    "message": "ทั้งหมดเป็นไฟล์ PDF แยกต่างหาก",
-    "description": "PDF export option title"
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "ดาวน์โหลดภาพหน้าจอแต่ละภาพเป็นไฟล์ PDF แยกต่างหาก",
-    "description": "PDF export option description"
+    "message": "Download each screenshot as individual PDF",
+    "description": "allAsSeparatePDFsDesc"
   },
   "selectedAsOnePDF": {
-    "message": "ที่เลือกไว้ในไฟล์ PDF เดียว",
-    "description": "PDF export option title"
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
-    "message": "รวมภาพหน้าจอที่เลือกเป็นไฟล์ PDF เดียว",
-    "description": "PDF export option description"
+    "message": "Combine selected screenshots into one PDF",
+    "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
-    "message": "ที่เลือกไว้เป็นไฟล์ PDF แยกต่างหาก",
-    "description": "PDF export option title"
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "ดาวน์โหลดภาพหน้าจอที่เลือกแต่ละภาพเป็นไฟล์ PDF แยกต่างหาก",
-    "description": "PDF export option description"
+    "message": "Download each selected screenshot as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
   },
   "clearAll": {
-    "message": "ล้างทั้งหมด",
-    "description": "Clear all button"
+    "message": "Clear All",
+    "description": "clearAll"
   },
   "cancel": {
-    "message": "ยกเลิก",
-    "description": "Cancel button"
+    "message": "Cancel",
+    "description": "cancel"
   },
   "trialEnded": {
-    "message": "ระยะเวลาทดลองสิ้นสุดลงแล้ว",
-    "description": "Trial ended message"
+    "message": "Trial Ended",
+    "description": "trialEnded"
   },
   "upgradeNow": {
-    "message": "อัปเกรดเดี๋ยวนี้ - $9.90/ปี",
-    "description": "Upgrade button"
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
   },
   "daysRemaining": {
-    "message": "เหลือ $DAYS$ วัน",
-    "description": "Days remaining in trial",
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
     "placeholders": {
       "days": {
         "content": "$1"

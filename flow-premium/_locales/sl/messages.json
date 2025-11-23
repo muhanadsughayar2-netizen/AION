@@ -1,103 +1,103 @@
 {
   "extensionName": {
-    "message": "SnapToAI - Posnetek zaslona za AI",
-    "description": "Extension name"
+    "message": "SnapToAI - Screenshot to AI",
+    "description": "extensionName"
   },
   "extensionDescription": {
-    "message": "Zajemite posnetke zaslona in jih grupno naložite na platforme AI",
-    "description": "Extension description"
+    "message": "Capture screenshots and batch upload to AI platforms",
+    "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Flow: Pripravljeno",
-    "description": "Status message"
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
   },
   "oneClickOneFlow": {
-    "message": "En klik. En posnetek.",
-    "description": "Tagline"
+    "message": "One click. One snap.",
+    "description": "oneClickOneFlow"
   },
   "pagesReadyForAI": {
-    "message": "Vaše strani so v sekundah pripravljene za AI",
-    "description": "Subheading"
+    "message": "Your pages, ready for AI in seconds.",
+    "description": "pagesReadyForAI"
   },
   "clickCameraButton": {
-    "message": "Klikni na sjajno tipko fotoaparata zgoraj, da takoj zajameš",
-    "description": "Instructions"
+    "message": "Click the glowing camera button above to capture instantly",
+    "description": "clickCameraButton"
   },
   "selectAll": {
-    "message": "Izberi vse",
-    "description": "Select all button"
+    "message": "Select All",
+    "description": "selectAll"
   },
   "deselectAll": {
-    "message": "Odznači vse",
-    "description": "Deselect all button"
+    "message": "Deselect All",
+    "description": "deselectAll"
   },
   "copySelected": {
-    "message": "Kopiraj izbrano",
-    "description": "Copy selected button"
+    "message": "Copy Selected",
+    "description": "copySelected"
   },
   "downloadSelected": {
-    "message": "Prenesi izbrano",
-    "description": "Download selected button"
+    "message": "Download Selected",
+    "description": "downloadSelected"
   },
   "exportPDF": {
-    "message": "Izvezi kot PDF",
-    "description": "Export PDF button"
+    "message": "Export PDF",
+    "description": "exportPDF"
   },
   "exportPDFOptions": {
-    "message": "Možnosti izvoza PDF",
-    "description": "PDF modal header"
+    "message": "Export PDF Options",
+    "description": "exportPDFOptions"
   },
   "allAsOnePDF": {
-    "message": "Vse v enem PDF",
-    "description": "PDF export option title"
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
-    "message": "Združi vse posnetke zaslona v eno datoteko PDF",
-    "description": "PDF export option description"
+    "message": "Combine all screenshots into one PDF file",
+    "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
-    "message": "Vse kot ločene PDF",
-    "description": "PDF export option title"
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "Prenesi vsak posnetek zaslona kot ločen PDF",
-    "description": "PDF export option description"
+    "message": "Download each screenshot as individual PDF",
+    "description": "allAsSeparatePDFsDesc"
   },
   "selectedAsOnePDF": {
-    "message": "Izbrano v enem PDF",
-    "description": "PDF export option title"
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
-    "message": "Združi izbrane posnetke v eno datoteko PDF",
-    "description": "PDF export option description"
+    "message": "Combine selected screenshots into one PDF",
+    "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Izbrano kot ločene PDF",
-    "description": "PDF export option title"
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "Prenesi vsak izbran posnetek kot ločen PDF",
-    "description": "PDF export option description"
+    "message": "Download each selected screenshot as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
   },
   "clearAll": {
-    "message": "Počisti vse",
-    "description": "Clear all button"
+    "message": "Clear All",
+    "description": "clearAll"
   },
   "cancel": {
-    "message": "Prekliči",
-    "description": "Cancel button"
+    "message": "Cancel",
+    "description": "cancel"
   },
   "trialEnded": {
-    "message": "Preskusno obdobje se je končalo",
-    "description": "Trial ended message"
+    "message": "Trial Ended",
+    "description": "trialEnded"
   },
   "upgradeNow": {
-    "message": "Nadgradi zdaj - $9.90/leto",
-    "description": "Upgrade button"
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
   },
   "daysRemaining": {
-    "message": "$DAYS$ dni so ostali",
-    "description": "Days remaining in trial",
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
     "placeholders": {
       "days": {
         "content": "$1"

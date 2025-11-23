@@ -1,103 +1,103 @@
 {
   "extensionName": {
-    "message": "SnapToAI - AI साठी स्क्रीनशॉट",
-    "description": "Extension name"
+    "message": "SnapToAI - Screenshot to AI",
+    "description": "extensionName"
   },
   "extensionDescription": {
-    "message": "स्क्रीनशॉट कॅप्चर करा आणि AI प्लॅटफॉर्मवर बॅच अपलोड करा",
-    "description": "Extension description"
+    "message": "Capture screenshots and batch upload to AI platforms",
+    "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Flow: तयार",
-    "description": "Status message"
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
   },
   "oneClickOneFlow": {
-    "message": "एक क्लिक. एक स्न्यैप.",
-    "description": "Tagline"
+    "message": "One click. One snap.",
+    "description": "oneClickOneFlow"
   },
   "pagesReadyForAI": {
-    "message": "आपले पृष्ठ, सेकंदांत AI साठी तयार",
-    "description": "Subheading"
+    "message": "Your pages, ready for AI in seconds.",
+    "description": "pagesReadyForAI"
   },
   "clickCameraButton": {
-    "message": "तात्काळिक कॅप्चर करण्यासाठी वरील चमकणारे कॅमेरा बटण क्लिक करा",
-    "description": "Instructions"
+    "message": "Click the glowing camera button above to capture instantly",
+    "description": "clickCameraButton"
   },
   "selectAll": {
-    "message": "सर्व निवडा",
-    "description": "Select all button"
+    "message": "Select All",
+    "description": "selectAll"
   },
   "deselectAll": {
-    "message": "सर्व निवडा हटवा",
-    "description": "Deselect all button"
+    "message": "Deselect All",
+    "description": "deselectAll"
   },
   "copySelected": {
-    "message": "निवडलेले कॉपी करा",
-    "description": "Copy selected button"
+    "message": "Copy Selected",
+    "description": "copySelected"
   },
   "downloadSelected": {
-    "message": "निवडलेले डाउनलोड करा",
-    "description": "Download selected button"
+    "message": "Download Selected",
+    "description": "downloadSelected"
   },
   "exportPDF": {
-    "message": "PDF म्हणून निर्यात करा",
-    "description": "Export PDF button"
+    "message": "Export PDF",
+    "description": "exportPDF"
   },
   "exportPDFOptions": {
-    "message": "PDF निर्यात पर्याय",
-    "description": "PDF modal header"
+    "message": "Export PDF Options",
+    "description": "exportPDFOptions"
   },
   "allAsOnePDF": {
-    "message": "सर्व एक PDF मध्ये",
-    "description": "PDF export option title"
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
-    "message": "सर्व स्क्रीनशॉट एक PDF फाइलमध्ये एकत्र करा",
-    "description": "PDF export option description"
+    "message": "Combine all screenshots into one PDF file",
+    "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
-    "message": "सर्व स्वतंत्र PDF म्हणून",
-    "description": "PDF export option title"
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "प्रत्येक स्क्रीनशॉट स्वतंत्र PDF म्हणून डाउनलोड करा",
-    "description": "PDF export option description"
+    "message": "Download each screenshot as individual PDF",
+    "description": "allAsSeparatePDFsDesc"
   },
   "selectedAsOnePDF": {
-    "message": "निवडलेले एक PDF मध्ये",
-    "description": "PDF export option title"
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
-    "message": "निवडलेले स्क्रीनशॉट एक PDF फाइलमध्ये एकत्र करा",
-    "description": "PDF export option description"
+    "message": "Combine selected screenshots into one PDF",
+    "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
-    "message": "निवडलेले स्वतंत्र PDF म्हणून",
-    "description": "PDF export option title"
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "प्रत्येक निवडलेले स्क्रीनशॉट स्वतंत्र PDF म्हणून डाउनलोड करा",
-    "description": "PDF export option description"
+    "message": "Download each selected screenshot as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
   },
   "clearAll": {
-    "message": "सर्व साफ करा",
-    "description": "Clear all button"
+    "message": "Clear All",
+    "description": "clearAll"
   },
   "cancel": {
-    "message": "रद्द करा",
-    "description": "Cancel button"
+    "message": "Cancel",
+    "description": "cancel"
   },
   "trialEnded": {
-    "message": "चाचणी मुदत समाप्त",
-    "description": "Trial ended message"
+    "message": "Trial Ended",
+    "description": "trialEnded"
   },
   "upgradeNow": {
-    "message": "आता अपग्रेड करा - $9.90/वर्ष",
-    "description": "Upgrade button"
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
   },
   "daysRemaining": {
-    "message": "$DAYS$ दिवस शिल्लक",
-    "description": "Days remaining in trial",
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
     "placeholders": {
       "days": {
         "content": "$1"

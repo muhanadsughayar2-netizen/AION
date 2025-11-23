@@ -1,103 +1,103 @@
 {
   "extensionName": {
     "message": "SnapToAI - Schermafbeelding voor AI",
-    "description": "Extension name"
+    "description": "extensionName"
   },
   "extensionDescription": {
     "message": "Maak schermafbeeldingen en upload in batch naar AI-platforms",
-    "description": "Extension description"
+    "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Flow: Gereed",
-    "description": "Status message"
+    "message": "SnapToAI: Gereed",
+    "description": "flowReady"
   },
   "oneClickOneFlow": {
     "message": "Eén klik. Eén afbeelding.",
-    "description": "Tagline"
+    "description": "oneClickOneFlow"
   },
   "pagesReadyForAI": {
     "message": "Uw pagina's, in seconden klaar voor AI",
-    "description": "Subheading"
+    "description": "pagesReadyForAI"
   },
   "clickCameraButton": {
     "message": "Klik op de glanzende cameraknop hierboven om meteen een schermafbeelding te maken",
-    "description": "Instructions"
+    "description": "clickCameraButton"
   },
   "selectAll": {
     "message": "Alles selecteren",
-    "description": "Select all button"
+    "description": "selectAll"
   },
   "deselectAll": {
     "message": "Alles deselecteren",
-    "description": "Deselect all button"
+    "description": "deselectAll"
   },
   "copySelected": {
     "message": "Geselecteerde kopieëren",
-    "description": "Copy selected button"
+    "description": "copySelected"
   },
   "downloadSelected": {
     "message": "Geselecteerde downloaden",
-    "description": "Download selected button"
+    "description": "downloadSelected"
   },
   "exportPDF": {
     "message": "Exporteren als PDF",
-    "description": "Export PDF button"
+    "description": "exportPDF"
   },
   "exportPDFOptions": {
     "message": "PDF-exportopties",
-    "description": "PDF modal header"
+    "description": "exportPDFOptions"
   },
   "allAsOnePDF": {
     "message": "Alles in één PDF",
-    "description": "PDF export option title"
+    "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
     "message": "Combineer alle schermafbeeldingen in één PDF-bestand",
-    "description": "PDF export option description"
+    "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
     "message": "Alles als afzonderlijke PDF's",
-    "description": "PDF export option title"
+    "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
     "message": "Download elke schermafbeelding als afzonderlijke PDF",
-    "description": "PDF export option description"
+    "description": "allAsSeparatePDFsDesc"
   },
   "selectedAsOnePDF": {
     "message": "Geselecteerde in één PDF",
-    "description": "PDF export option title"
+    "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
     "message": "Combineer geselecteerde schermafbeeldingen in één PDF-bestand",
-    "description": "PDF export option description"
+    "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
     "message": "Geselecteerde als afzonderlijke PDF's",
-    "description": "PDF export option title"
+    "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
     "message": "Download elke geselecteerde schermafbeelding als afzonderlijke PDF",
-    "description": "PDF export option description"
+    "description": "selectedAsSeparatePDFsDesc"
   },
   "clearAll": {
     "message": "Alles wissen",
-    "description": "Clear all button"
+    "description": "clearAll"
   },
   "cancel": {
     "message": "Annuleren",
-    "description": "Cancel button"
+    "description": "cancel"
   },
   "trialEnded": {
     "message": "Proefperiode beëindigd",
-    "description": "Trial ended message"
+    "description": "trialEnded"
   },
   "upgradeNow": {
     "message": "Nu upgraden - $9.90/jaar",
-    "description": "Upgrade button"
+    "description": "upgradeNow"
   },
   "daysRemaining": {
-    "message": "$DAYS$ dagen resterend",
-    "description": "Days remaining in trial",
+    "message": "Nog $DAYS$ dagen",
+    "description": "daysRemaining",
     "placeholders": {
       "days": {
         "content": "$1"

@@ -1,36 +1,40 @@
-# Flow - Multi-Screenshot to AI Chrome Extension
+# SnapToAI - Multi-Screenshot to AI Chrome Extension
 
 ## Overview
 
-Flow is a privacy-first Chrome Extension (Manifest V3) that enables users to capture multiple screenshots and batch upload them to AI chat platforms (ChatGPT, Claude, Grok). The extension operates entirely client-side with no backend server, storing screenshots temporarily in browser session storage and automatically managing a FIFO queue of up to 10 snapshots.
+SnapToAI is a privacy-first Chrome Extension (Manifest V3) that enables users to capture multiple screenshots and batch upload them to AI chat platforms (ChatGPT, Claude, Grok). The extension operates entirely client-side with no backend server, storing screenshots temporarily in browser session storage and automatically managing a FIFO queue of up to 10 snapshots.
 
 The extension provides two operational modes:
 1. **Capture Mode** (on regular websites): Captures screenshots via keyboard shortcut or popup button, auto-copies to clipboard, and stores in session
 2. **Upload Mode** (on AI platforms): Auto-detects AI chat sites and batch-uploads all stored screenshots directly to the platform's file input
 
-**New Premium Features (November 2025):**
-- **Simplified Annotation Tools** (November 22): Streamlined to 4 reliable tools with click-to-place UX
+**Premium Features:**
+- **Simplified Annotation Tools**: Streamlined to 4 reliable tools with click-to-place UX
   - ✨ Highlight Brush: Glowing strokes with color picker and adjustable brush size (4-40px)
   - 🔢 Numbered Callouts: Add numbered markers (1, 2, 3...) with custom labels
   - ✏️ Text: Add custom text annotations that appear exactly where you click
   - 🏷️ Quick Stickers: Pre-made labels (BUG, IMPORTANT, FOCUS) + create your own custom stickers (max 5)
   - All annotations are fully draggable and can be deleted with the undo button
 - **Custom Sticker Templates**: Users can create personalized sticker buttons with custom text (stored in chrome.storage.local)
-- **Advanced PDF Export** (November 22): Full control over PDF generation with 4 export modes:
-  - 📚 All as One PDF: Combine all screenshots into single combined PDF (original behavior)
+- **Advanced PDF Export**: Full control over PDF generation with 4 export modes:
+  - 📚 All as One PDF: Combine all screenshots into single combined PDF
   - 📑 All as Separate PDFs: Download each screenshot as individual PDF file
   - ✅ Selected as One PDF: Combine only selected screenshots into one PDF
   - 📋 Selected as Separate PDFs: Download each selected screenshot as individual PDF
   - Smart modal interface with disabled states when no selection exists
-  - Clear file naming: `flow-screenshots-{date}.pdf`, `flow-screenshot-1-{date}.pdf`, etc.
+  - Clear file naming: `snaptoai-screenshots-{date}.pdf`, `snaptoai-screenshot-1-{date}.pdf`, etc.
 - **Drag & Drop Reordering**: Rearrange thumbnails to control upload sequence
 - **Multi-Select Operations**: Select All, Copy Selected, Download Selected batch actions
 - **Delete Individual Snaps**: Remove unwanted screenshots with hover delete button
 - **Full-Size Preview**: Click thumbnails to zoom and inspect screenshots
+- **Complete Multi-Language Support**: All 55 Chrome-supported languages with full translations
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Branding: Changed from "Flow" to "SnapToAI" (November 2025)
+Tagline: "One click. One snap."
+Subline: "Your pages, ready for AI in seconds."
 
 ## System Architecture
 

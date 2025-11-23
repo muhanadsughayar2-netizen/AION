@@ -1,103 +1,103 @@
 {
   "extensionName": {
-    "message": "SnapToAI - AI ପାଇଁ ସ୍କ୍ରୀନ ସ୍ନାପ୍",
-    "description": "Extension name"
+    "message": "SnapToAI - Screenshot to AI",
+    "description": "extensionName"
   },
   "extensionDescription": {
-    "message": "ସ୍କ୍ରୀନଶଟ ଧରି ରାଖନ୍ତୁ ଏବଂ AI ପ୍ଲାଟଫର୍ମକୁ ବ୍ୟାଚ ଅପଲୋଡ୍ କରନ୍ତୁ",
-    "description": "Extension description"
+    "message": "Capture screenshots and batch upload to AI platforms",
+    "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Flow: ପ୍ରସ୍ତୁତ",
-    "description": "Status message"
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
   },
   "oneClickOneFlow": {
-    "message": "ଗୋଟିଏ କ୍ଲିକ୍। ଗୋଟିଏ ସ୍ନାପ୍।",
-    "description": "Tagline"
+    "message": "One click. One snap.",
+    "description": "oneClickOneFlow"
   },
   "pagesReadyForAI": {
-    "message": "ଆପଣଙ୍କ ପୃଷ୍ଠାଗୁଡ଼ିକ, ସେକଣ୍ଡରେ AI ପାଇଁ ପ୍ରସ୍ତୁତ",
-    "description": "Subheading"
+    "message": "Your pages, ready for AI in seconds.",
+    "description": "pagesReadyForAI"
   },
   "clickCameraButton": {
-    "message": "ତାତ୍ କ୍ଷଣିକ ଧରି ରଖିବାକୁ ଉପରେ ଜ୍ଞାନୀ ଲେନ୍ସ ବଟନ୍ କ୍ଲିକ୍ କରନ୍ତୁ",
-    "description": "Instructions"
+    "message": "Click the glowing camera button above to capture instantly",
+    "description": "clickCameraButton"
   },
   "selectAll": {
-    "message": "ସବୁ ଚୟନ କରନ୍ତୁ",
-    "description": "Select all button"
+    "message": "Select All",
+    "description": "selectAll"
   },
   "deselectAll": {
-    "message": "ସବୁ ଚୟନ ହଟାନ୍ତୁ",
-    "description": "Deselect all button"
+    "message": "Deselect All",
+    "description": "deselectAll"
   },
   "copySelected": {
-    "message": "ଚୟନ ନକଲ କରନ୍ତୁ",
-    "description": "Copy selected button"
+    "message": "Copy Selected",
+    "description": "copySelected"
   },
   "downloadSelected": {
-    "message": "ଚୟନ ଡାଉନଲୋଡ୍ କରନ୍ତୁ",
-    "description": "Download selected button"
+    "message": "Download Selected",
+    "description": "downloadSelected"
   },
   "exportPDF": {
-    "message": "PDF ଭାବରେ ରପ୍ତାନି କରନ୍ତୁ",
-    "description": "Export PDF button"
+    "message": "Export PDF",
+    "description": "exportPDF"
   },
   "exportPDFOptions": {
-    "message": "PDF ରପ୍ତାନି ବିକଳ୍ପଗୁଡ଼ିକ",
-    "description": "PDF modal header"
+    "message": "Export PDF Options",
+    "description": "exportPDFOptions"
   },
   "allAsOnePDF": {
-    "message": "ସବୁ ଗୋଟିଏ PDF ରେ",
-    "description": "PDF export option title"
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
-    "message": "ସମସ୍ତ ସ୍କ୍ରୀନଶଟକୁ ଗୋଟିଏ PDF ଫାଇଲରେ ମିଶ୍ରିତ କରନ୍ତୁ",
-    "description": "PDF export option description"
+    "message": "Combine all screenshots into one PDF file",
+    "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
-    "message": "ସବୁ ଅଲଗା PDF ଭାବରେ",
-    "description": "PDF export option title"
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "ଗୋଟିଏ ଗୋଟିଏ ସ୍କ୍ରୀନଶଟକୁ ଅଲଗା PDF ଭାବରେ ଡାଉନଲୋଡ୍ କରନ୍ତୁ",
-    "description": "PDF export option description"
+    "message": "Download each screenshot as individual PDF",
+    "description": "allAsSeparatePDFsDesc"
   },
   "selectedAsOnePDF": {
-    "message": "ଚୟନ ଗୋଟିଏ PDF ରେ",
-    "description": "PDF export option title"
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
-    "message": "ଚୟନ ସ୍କ୍ରୀନଶଟଗୁଡ଼ିକୁ ଗୋଟିଏ PDF ଫାଇଲରେ ମିଶ୍ରିତ କରନ୍ତୁ",
-    "description": "PDF export option description"
+    "message": "Combine selected screenshots into one PDF",
+    "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
-    "message": "ଚୟନ ଅଲଗା PDF ଭାବରେ",
-    "description": "PDF export option title"
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "ପ୍ରତିଟି ଚୟନ ସ୍କ୍ରୀନଶଟକୁ ଅଲଗା PDF ଭାବରେ ଡାଉନଲୋଡ୍ କରନ୍ତୁ",
-    "description": "PDF export option description"
+    "message": "Download each selected screenshot as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
   },
   "clearAll": {
-    "message": "ସବୁ ଭଙ୍ଗାଇ ଦିନ୍ତୁ",
-    "description": "Clear all button"
+    "message": "Clear All",
+    "description": "clearAll"
   },
   "cancel": {
-    "message": "ବାତିଲ୍ କରନ୍ତୁ",
-    "description": "Cancel button"
+    "message": "Cancel",
+    "description": "cancel"
   },
   "trialEnded": {
-    "message": "ପରୀକ୍ଷାମୂଳକ ଅବଧି ଶେଷ",
-    "description": "Trial ended message"
+    "message": "Trial Ended",
+    "description": "trialEnded"
   },
   "upgradeNow": {
-    "message": "ବର୍ତ୍ତମାନ ଅପଗ୍ରେଡ୍ କରନ୍ତୁ - $9.90/ବର୍ଷ",
-    "description": "Upgrade button"
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
   },
   "daysRemaining": {
-    "message": "$DAYS$ ଦିନ ଅବଶେଷ",
-    "description": "Days remaining in trial",
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
     "placeholders": {
       "days": {
         "content": "$1"

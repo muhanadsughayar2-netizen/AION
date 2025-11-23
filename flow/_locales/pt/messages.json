@@ -1,103 +1,103 @@
 {
   "extensionName": {
     "message": "SnapToAI - Captura de Tela para IA",
-    "description": "Extension name"
+    "description": "extensionName"
   },
   "extensionDescription": {
-    "message": "Capture screenshots and batch upload to AI platforms",
-    "description": "Extension description"
+    "message": "Capture telas e faça upload em lote para plataformas de IA",
+    "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Flow: Ready",
-    "description": "Status message"
+    "message": "SnapToAI: Pronto",
+    "description": "flowReady"
   },
   "oneClickOneFlow": {
     "message": "Um clique. Uma captura.",
-    "description": "Tagline"
+    "description": "oneClickOneFlow"
   },
   "pagesReadyForAI": {
     "message": "Suas páginas prontas para IA em segundos",
-    "description": "Subheading"
+    "description": "pagesReadyForAI"
   },
   "clickCameraButton": {
     "message": "Clique no botão de câmera brilhante acima para capturar instantaneamente",
-    "description": "Instructions"
+    "description": "clickCameraButton"
   },
   "selectAll": {
-    "message": "Select All",
-    "description": "Select all button"
+    "message": "Selecionar Tudo",
+    "description": "selectAll"
   },
   "deselectAll": {
-    "message": "Deselect All",
-    "description": "Deselect all button"
+    "message": "Desselecionar Tudo",
+    "description": "deselectAll"
   },
   "copySelected": {
-    "message": "Copy Selected",
-    "description": "Copy selected button"
+    "message": "Copiar Seleção",
+    "description": "copySelected"
   },
   "downloadSelected": {
-    "message": "Download Selected",
-    "description": "Download selected button"
+    "message": "Baixar Seleção",
+    "description": "downloadSelected"
   },
   "exportPDF": {
-    "message": "Export PDF",
-    "description": "Export PDF button"
+    "message": "Exportar PDF",
+    "description": "exportPDF"
   },
   "exportPDFOptions": {
-    "message": "Export PDF Options",
-    "description": "PDF modal header"
+    "message": "Opções de Exportação PDF",
+    "description": "exportPDFOptions"
   },
   "allAsOnePDF": {
-    "message": "All as One PDF",
-    "description": "PDF export option title"
+    "message": "Tudo em um PDF",
+    "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
-    "message": "Combine all screenshots into one PDF file",
-    "description": "PDF export option description"
+    "message": "Combine todas as capturas de tela em um arquivo PDF",
+    "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
-    "message": "All as Separate PDFs",
-    "description": "PDF export option title"
+    "message": "Tudo como PDFs Separados",
+    "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "Download each screenshot as individual PDF",
-    "description": "PDF export option description"
+    "message": "Baixe cada captura de tela como PDF individual",
+    "description": "allAsSeparatePDFsDesc"
   },
   "selectedAsOnePDF": {
-    "message": "Selected as One PDF",
-    "description": "PDF export option title"
+    "message": "Seleção em um PDF",
+    "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
-    "message": "Combine selected screenshots into one PDF",
-    "description": "PDF export option description"
+    "message": "Combine as capturas selecionadas em um arquivo PDF",
+    "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Selected as Separate PDFs",
-    "description": "PDF export option title"
+    "message": "Seleção como PDFs Separados",
+    "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "Download each selected screenshot as PDF",
-    "description": "PDF export option description"
+    "message": "Baixe cada captura selecionada como PDF individual",
+    "description": "selectedAsSeparatePDFsDesc"
   },
   "clearAll": {
-    "message": "Clear All",
-    "description": "Clear all button"
+    "message": "Limpar Tudo",
+    "description": "clearAll"
   },
   "cancel": {
-    "message": "Cancel",
-    "description": "Cancel button"
+    "message": "Cancelar",
+    "description": "cancel"
   },
   "trialEnded": {
-    "message": "Trial Ended",
-    "description": "Trial ended message"
+    "message": "Período de Teste Encerrado",
+    "description": "trialEnded"
   },
   "upgradeNow": {
-    "message": "Upgrade Now - $9.90/year",
-    "description": "Upgrade button"
+    "message": "Atualizar Agora - $9.90/ano",
+    "description": "upgradeNow"
   },
   "daysRemaining": {
-    "message": "$DAYS$ days remaining",
-    "description": "Days remaining in trial",
+    "message": "Dias restantes: $DAYS$",
+    "description": "daysRemaining",
     "placeholders": {
       "days": {
         "content": "$1"

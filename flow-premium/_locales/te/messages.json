@@ -1,103 +1,103 @@
 {
   "extensionName": {
-    "message": "SnapToAI - AI కోసం స్క్రీన్ స్నాప్",
-    "description": "Extension name"
+    "message": "SnapToAI - Screenshot to AI",
+    "description": "extensionName"
   },
   "extensionDescription": {
-    "message": "స్క్రీన్‌షాట్‌లను సంగ్రహించండి మరియు AI ప్లాట్‌ఫార్‌మ్‌లకు బ్యాచ్ అప్‌లోడ్ చేయండి",
-    "description": "Extension description"
+    "message": "Capture screenshots and batch upload to AI platforms",
+    "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Flow: సిద్ధం",
-    "description": "Status message"
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
   },
   "oneClickOneFlow": {
-    "message": "ఒక క్లిక్. ఒక స్నాప్.",
-    "description": "Tagline"
+    "message": "One click. One snap.",
+    "description": "oneClickOneFlow"
   },
   "pagesReadyForAI": {
-    "message": "మీ పేజీలు, సెకన్లలో AI కోసం సిద్ధమైనవి",
-    "description": "Subheading"
+    "message": "Your pages, ready for AI in seconds.",
+    "description": "pagesReadyForAI"
   },
   "clickCameraButton": {
-    "message": "తక్షణమే సంగ్రహించడానికి పైన ఉన్న గ్లోయింగ్ క్యామెరా బటన్‌ను క్లిక్ చేయండి",
-    "description": "Instructions"
+    "message": "Click the glowing camera button above to capture instantly",
+    "description": "clickCameraButton"
   },
   "selectAll": {
-    "message": "అన్నింటినీ ఎంచుకోండి",
-    "description": "Select all button"
+    "message": "Select All",
+    "description": "selectAll"
   },
   "deselectAll": {
-    "message": "అన్నింటినీ విపర్లీ చేయండి",
-    "description": "Deselect all button"
+    "message": "Deselect All",
+    "description": "deselectAll"
   },
   "copySelected": {
-    "message": "ఎంచుకున్నవాటిని కాపీ చేయండి",
-    "description": "Copy selected button"
+    "message": "Copy Selected",
+    "description": "copySelected"
   },
   "downloadSelected": {
-    "message": "ఎంచుకున్నవాటిని డౌన్‌లోడ్ చేయండి",
-    "description": "Download selected button"
+    "message": "Download Selected",
+    "description": "downloadSelected"
   },
   "exportPDF": {
-    "message": "PDFగా ఎగుమతి చేయండి",
-    "description": "Export PDF button"
+    "message": "Export PDF",
+    "description": "exportPDF"
   },
   "exportPDFOptions": {
-    "message": "PDF ఎగుమతి ఎంపికలు",
-    "description": "PDF modal header"
+    "message": "Export PDF Options",
+    "description": "exportPDFOptions"
   },
   "allAsOnePDF": {
-    "message": "అన్నీ ఒక PDFలో",
-    "description": "PDF export option title"
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
-    "message": "అన్ని స్క్రీన్‌షాట్‌లను ఒక PDF ఫైలుగా కలపండి",
-    "description": "PDF export option description"
+    "message": "Combine all screenshots into one PDF file",
+    "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
-    "message": "అన్నీ ప్రత్యేక PDFలుగా",
-    "description": "PDF export option title"
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "ప్రతిটి స్క్రీన్‌షాట్‌ను ప్రత్యేక PDFగా డౌన్‌లోడ్ చేయండి",
-    "description": "PDF export option description"
+    "message": "Download each screenshot as individual PDF",
+    "description": "allAsSeparatePDFsDesc"
   },
   "selectedAsOnePDF": {
-    "message": "ఎంచుకున్నవి ఒక PDFలో",
-    "description": "PDF export option title"
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
-    "message": "ఎంచుకున్న స్క్రీన్‌షాట్‌లను ఒక PDF ఫైలుగా కలపండి",
-    "description": "PDF export option description"
+    "message": "Combine selected screenshots into one PDF",
+    "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
-    "message": "ఎంచుకున్నవి ప్రత్యేక PDFలుగా",
-    "description": "PDF export option title"
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "ప్రతిటి ఎంచుకున్న స్క్రీన్‌షాట్‌ను ప్రత్యేక PDFగా డౌన్‌లోడ్ చేయండి",
-    "description": "PDF export option description"
+    "message": "Download each selected screenshot as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
   },
   "clearAll": {
-    "message": "అన్నీ క్లియర్ చేయండి",
-    "description": "Clear all button"
+    "message": "Clear All",
+    "description": "clearAll"
   },
   "cancel": {
-    "message": "రద్దు చేయండి",
-    "description": "Cancel button"
+    "message": "Cancel",
+    "description": "cancel"
   },
   "trialEnded": {
-    "message": "ట్రయల్ కాలం ముగిసింది",
-    "description": "Trial ended message"
+    "message": "Trial Ended",
+    "description": "trialEnded"
   },
   "upgradeNow": {
-    "message": "ఇప్పుడు అప్‌గ్రేడ్ చేయండి - $9.90/సంవత్సరం",
-    "description": "Upgrade button"
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
   },
   "daysRemaining": {
-    "message": "$DAYS$ రోజులు మిగిలి ఉన్నాయి",
-    "description": "Days remaining in trial",
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
     "placeholders": {
       "days": {
         "content": "$1"

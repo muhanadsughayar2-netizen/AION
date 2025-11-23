@@ -1,103 +1,103 @@
 {
   "extensionName": {
     "message": "SnapToAI - Zrzut ekranu dla AI",
-    "description": "Extension name"
+    "description": "extensionName"
   },
   "extensionDescription": {
     "message": "Przechwycaj zrzuty ekranu i wgrywaj je zbiorczo do platform AI",
-    "description": "Extension description"
+    "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Flow: Gotowy",
-    "description": "Status message"
+    "message": "SnapToAI: Gotowy",
+    "description": "flowReady"
   },
   "oneClickOneFlow": {
     "message": "Jedno kliknięcie. Jeden zrzut.",
-    "description": "Tagline"
+    "description": "oneClickOneFlow"
   },
   "pagesReadyForAI": {
     "message": "Twoje strony, gotowe dla AI w kilka sekund",
-    "description": "Subheading"
+    "description": "pagesReadyForAI"
   },
   "clickCameraButton": {
     "message": "Kliknij powyżej na błyszczący przycisk aparatu, aby natychmiast przechwycić",
-    "description": "Instructions"
+    "description": "clickCameraButton"
   },
   "selectAll": {
     "message": "Zaznacz wszystkie",
-    "description": "Select all button"
+    "description": "selectAll"
   },
   "deselectAll": {
     "message": "Odznacz wszystkie",
-    "description": "Deselect all button"
+    "description": "deselectAll"
   },
   "copySelected": {
     "message": "Skopiuj zaznaczone",
-    "description": "Copy selected button"
+    "description": "copySelected"
   },
   "downloadSelected": {
     "message": "Pobierz zaznaczone",
-    "description": "Download selected button"
+    "description": "downloadSelected"
   },
   "exportPDF": {
     "message": "Eksportuj jako PDF",
-    "description": "Export PDF button"
+    "description": "exportPDF"
   },
   "exportPDFOptions": {
     "message": "Opcje eksportu PDF",
-    "description": "PDF modal header"
+    "description": "exportPDFOptions"
   },
   "allAsOnePDF": {
     "message": "Wszystko w jednym PDF",
-    "description": "PDF export option title"
+    "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
     "message": "Połącz wszystkie zrzuty ekranu w jeden plik PDF",
-    "description": "PDF export option description"
+    "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
     "message": "Wszystko jako osobne pliki PDF",
-    "description": "PDF export option title"
+    "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
     "message": "Pobierz każdy zrzut ekranu jako oddzielny plik PDF",
-    "description": "PDF export option description"
+    "description": "allAsSeparatePDFsDesc"
   },
   "selectedAsOnePDF": {
     "message": "Zaznaczone w jednym PDF",
-    "description": "PDF export option title"
+    "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
     "message": "Połącz zaznaczone zrzuty ekranu w jeden plik PDF",
-    "description": "PDF export option description"
+    "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
     "message": "Zaznaczone jako osobne pliki PDF",
-    "description": "PDF export option title"
+    "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
     "message": "Pobierz każdy zaznaczony zrzut ekranu jako oddzielny plik PDF",
-    "description": "PDF export option description"
+    "description": "selectedAsSeparatePDFsDesc"
   },
   "clearAll": {
     "message": "Wyczyść wszystko",
-    "description": "Clear all button"
+    "description": "clearAll"
   },
   "cancel": {
     "message": "Anuluj",
-    "description": "Cancel button"
+    "description": "cancel"
   },
   "trialEnded": {
     "message": "Okres próbny zakończył się",
-    "description": "Trial ended message"
+    "description": "trialEnded"
   },
   "upgradeNow": {
     "message": "Uaktualnij teraz - $9.90/rok",
-    "description": "Upgrade button"
+    "description": "upgradeNow"
   },
   "daysRemaining": {
-    "message": "$DAYS$ dni pozostało",
-    "description": "Days remaining in trial",
+    "message": "Pozostało $DAYS$ dni",
+    "description": "daysRemaining",
     "placeholders": {
       "days": {
         "content": "$1"

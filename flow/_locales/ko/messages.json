@@ -1,103 +1,103 @@
 {
   "extensionName": {
     "message": "SnapToAI - AI용 스크린샷",
-    "description": "Extension name"
+    "description": "extensionName"
   },
   "extensionDescription": {
     "message": "AI 플랫폼으로 스크린샷을 캡처하고 배치 업로드",
-    "description": "Extension description"
+    "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Flow: 준비 완료",
-    "description": "Status message"
+    "message": "SnapToAI: 준비 완료",
+    "description": "flowReady"
   },
   "oneClickOneFlow": {
     "message": "한 번의 클릭. 한 번의 스냅.",
-    "description": "Tagline"
+    "description": "oneClickOneFlow"
   },
   "pagesReadyForAI": {
     "message": "귀하의 페이지는 몇 초 내에 AI 준비 완료",
-    "description": "Subheading"
+    "description": "pagesReadyForAI"
   },
   "clickCameraButton": {
     "message": "위의 빛나는 카메라 버튼을 클릭하여 즉시 캡처",
-    "description": "Instructions"
+    "description": "clickCameraButton"
   },
   "selectAll": {
     "message": "모두 선택",
-    "description": "Select all button"
+    "description": "selectAll"
   },
   "deselectAll": {
     "message": "모두 선택 해제",
-    "description": "Deselect all button"
+    "description": "deselectAll"
   },
   "copySelected": {
     "message": "선택 항목 복사",
-    "description": "Copy selected button"
+    "description": "copySelected"
   },
   "downloadSelected": {
     "message": "선택 항목 다운로드",
-    "description": "Download selected button"
+    "description": "downloadSelected"
   },
   "exportPDF": {
     "message": "PDF로 내보내기",
-    "description": "Export PDF button"
+    "description": "exportPDF"
   },
   "exportPDFOptions": {
     "message": "PDF 내보내기 옵션",
-    "description": "PDF modal header"
+    "description": "exportPDFOptions"
   },
   "allAsOnePDF": {
     "message": "모두 하나의 PDF로",
-    "description": "PDF export option title"
+    "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
     "message": "모든 스크린샷을 하나의 PDF 파일로 결합",
-    "description": "PDF export option description"
+    "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
     "message": "모두 별도의 PDF로",
-    "description": "PDF export option title"
+    "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
     "message": "각 스크린샷을 별도의 PDF로 다운로드",
-    "description": "PDF export option description"
+    "description": "allAsSeparatePDFsDesc"
   },
   "selectedAsOnePDF": {
     "message": "선택 항목을 하나의 PDF로",
-    "description": "PDF export option title"
+    "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
     "message": "선택한 스크린샷을 하나의 PDF 파일로 결합",
-    "description": "PDF export option description"
+    "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
     "message": "선택 항목을 별도의 PDF로",
-    "description": "PDF export option title"
+    "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
     "message": "각 선택한 스크린샷을 별도의 PDF로 다운로드",
-    "description": "PDF export option description"
+    "description": "selectedAsSeparatePDFsDesc"
   },
   "clearAll": {
     "message": "모두 지우기",
-    "description": "Clear all button"
+    "description": "clearAll"
   },
   "cancel": {
     "message": "취소",
-    "description": "Cancel button"
+    "description": "cancel"
   },
   "trialEnded": {
     "message": "시험판 종료",
-    "description": "Trial ended message"
+    "description": "trialEnded"
   },
   "upgradeNow": {
     "message": "지금 업그레이드 - $9.90/년",
-    "description": "Upgrade button"
+    "description": "upgradeNow"
   },
   "daysRemaining": {
     "message": "$DAYS$일 남음",
-    "description": "Days remaining in trial",
+    "description": "daysRemaining",
     "placeholders": {
       "days": {
         "content": "$1"

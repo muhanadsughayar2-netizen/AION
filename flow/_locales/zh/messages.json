@@ -1,103 +1,103 @@
 {
   "extensionName": {
     "message": "SnapToAI - 屏幕截图到AI",
-    "description": "Extension name"
+    "description": "extensionName"
   },
   "extensionDescription": {
     "message": "捕获屏幕截图并批量上传到AI平台",
-    "description": "Extension description"
+    "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Flow: 就绪",
-    "description": "Status message"
+    "message": "SnapToAI: 就绪",
+    "description": "flowReady"
   },
   "oneClickOneFlow": {
     "message": "一次点击。一个快照。",
-    "description": "Tagline"
+    "description": "oneClickOneFlow"
   },
   "pagesReadyForAI": {
     "message": "您的页面在几秒内为AI做好准备",
-    "description": "Subheading"
+    "description": "pagesReadyForAI"
   },
   "clickCameraButton": {
     "message": "点击上面发光的相机按钮立即捕获",
-    "description": "Instructions"
+    "description": "clickCameraButton"
   },
   "selectAll": {
     "message": "全选",
-    "description": "Select all button"
+    "description": "selectAll"
   },
   "deselectAll": {
     "message": "取消全选",
-    "description": "Deselect all button"
+    "description": "deselectAll"
   },
   "copySelected": {
     "message": "复制选中项",
-    "description": "Copy selected button"
+    "description": "copySelected"
   },
   "downloadSelected": {
     "message": "下载选中项",
-    "description": "Download selected button"
+    "description": "downloadSelected"
   },
   "exportPDF": {
     "message": "导出为PDF",
-    "description": "Export PDF button"
+    "description": "exportPDF"
   },
   "exportPDFOptions": {
     "message": "PDF导出选项",
-    "description": "PDF modal header"
+    "description": "exportPDFOptions"
   },
   "allAsOnePDF": {
     "message": "全部为一个PDF",
-    "description": "PDF export option title"
+    "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
     "message": "将所有屏幕截图合并为一个PDF文件",
-    "description": "PDF export option description"
+    "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
     "message": "全部为单独PDF",
-    "description": "PDF export option title"
+    "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
     "message": "将每个屏幕截图作为单个PDF下载",
-    "description": "PDF export option description"
+    "description": "allAsSeparatePDFsDesc"
   },
   "selectedAsOnePDF": {
     "message": "选中项为一个PDF",
-    "description": "PDF export option title"
+    "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
     "message": "将选中的屏幕截图合并为一个PDF文件",
-    "description": "PDF export option description"
+    "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
     "message": "选中项为单独PDF",
-    "description": "PDF export option title"
+    "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
     "message": "将每个选中的屏幕截图作为单个PDF下载",
-    "description": "PDF export option description"
+    "description": "selectedAsSeparatePDFsDesc"
   },
   "clearAll": {
     "message": "清空全部",
-    "description": "Clear all button"
+    "description": "clearAll"
   },
   "cancel": {
     "message": "取消",
-    "description": "Cancel button"
+    "description": "cancel"
   },
   "trialEnded": {
     "message": "试用期已结束",
-    "description": "Trial ended message"
+    "description": "trialEnded"
   },
   "upgradeNow": {
     "message": "立即升级 - $9.90/年",
-    "description": "Upgrade button"
+    "description": "upgradeNow"
   },
   "daysRemaining": {
     "message": "剩余$DAYS$天",
-    "description": "Days remaining in trial",
+    "description": "daysRemaining",
     "placeholders": {
       "days": {
         "content": "$1"
