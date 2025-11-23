@@ -432,7 +432,11 @@ function handleSelectAll() {
 function updateSelectAllButton() {
   const btn = document.getElementById('selectAllBtn');
   const allSelected = selectedSnapIds.size === currentSnaps.length;
-  btn.textContent = allSelected ? 'Deselect All' : 'Select All';
+  const getMessage = (key, fallback) => {
+    const msg = chrome.i18n.getMessage(key);
+    return msg || fallback;
+  };
+  btn.textContent = allSelected ? getMessage('deselectAll', 'Deselect All') : getMessage('selectAll', 'Select All');
 }
 
 // Handle Copy Selected

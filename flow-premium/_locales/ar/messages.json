@@ -20,6 +20,9 @@
   "selectAll": {
     "message": "تحديد الكل"
   },
+  "deselectAll": {
+    "message": "إلغاء تحديد الكل"
+  },
   "copySelected": {
     "message": "نسخ المحدد"
   },

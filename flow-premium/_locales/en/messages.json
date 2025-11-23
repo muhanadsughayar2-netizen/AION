@@ -27,6 +27,10 @@
     "message": "Select All",
     "description": "Select all button"
   },
+  "deselectAll": {
+    "message": "Deselect All",
+    "description": "Deselect all button"
+  },
   "copySelected": {
     "message": "Copy Selected",
     "description": "Copy selected button"
