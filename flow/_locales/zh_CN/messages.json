@@ -1,24 +1,27 @@
 {
   "extensionName": {
-    "message": "Flow - 截图到AI"
+    "message": "Flow - AI截图工具"
   },
   "extensionDescription": {
-    "message": "捕获屏幕截图并批量上传到AI平台"
+    "message": "捕获屏幕截图并上传至AI平台"
   },
   "flowReady": {
     "message": "Flow: 就绪"
   },
   "oneClickOneFlow": {
-    "message": "一键。一流。"
+    "message": "一键操作。一个流程。"
   },
   "pagesReadyForAI": {
-    "message": "您的页面，几秒内为AI准备就绪。"
+    "message": "您的页面在几秒内准备好供AI使用。"
   },
   "clickCameraButton": {
-    "message": "点击上方发光的相机按钮进行捕获"
+    "message": "点击上方发光的相机按钮即可立即捕获"
   },
   "selectAll": {
     "message": "全选"
+  },
+  "deselectAll": {
+    "message": "取消全选"
   },
   "copySelected": {
     "message": "复制选中"
@@ -29,17 +32,44 @@
   "exportPDF": {
     "message": "导出PDF"
   },
+  "exportPDFOptions": {
+    "message": "PDF导出选项"
+  },
   "clearAll": {
-    "message": "全部清除"
+    "message": "清除全部"
+  },
+  "allAsOnePDF": {
+    "message": "全部合并为一个PDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "将所有截图合并为一个PDF文件"
+  },
+  "allAsSeparatePDFs": {
+    "message": "全部导出为单独PDF"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "将每个截图下载为单独的PDF"
+  },
+  "selectedAsOnePDF": {
+    "message": "选中合并为一个PDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "将选中的截图合并为一个PDF"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "选中导出为单独PDF"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "将每个选中的截图下载为PDF"
   },
   "cancel": {
     "message": "取消"
   },
   "trialEnded": {
-    "message": "试用结束"
+    "message": "试用已结束"
   },
   "upgradeNow": {
-    "message": "立即升级 - ¥69/年"
+    "message": "立即升级 - ¥68/年"
   },
   "daysRemaining": {
     "message": "剩余$DAYS$天",
@@ -48,5 +78,106 @@
         "content": "$1"
       }
     }
+  },
+  "noSnapsToUpload": {
+    "message": "没有截图可上传"
+  },
+  "uploadingSnaps": {
+    "message": "正在上传截图..."
+  },
+  "capturingSnap": {
+    "message": "正在捕获..."
+  },
+  "tooFastError": {
+    "message": "太快了！请稍等片刻"
+  },
+  "errorOccurred": {
+    "message": "发生错误"
+  },
+  "allSnapsCleared": {
+    "message": "已清除所有截图"
+  },
+  "capturedAndCopied": {
+    "message": "已捕获并复制！"
+  },
+  "capturedOnly": {
+    "message": "已捕获！"
+  },
+  "uploadSelectedCount": {
+    "message": "上传$COUNT$个选中",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "uploadAllCount": {
+    "message": "上传全部$COUNT$个",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturedCount": {
+    "message": "已捕获: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "deleteSnap": {
+    "message": "删除"
+  },
+  "noSnapsSelected": {
+    "message": "未选择任何截图"
+  },
+  "copiedToClipboard": {
+    "message": "已复制到剪贴板！"
+  },
+  "copyFailed": {
+    "message": "复制失败"
+  },
+  "snapDeleted": {
+    "message": "截图已删除"
+  },
+  "downloadingSnaps": {
+    "message": "正在下载截图..."
+  },
+  "downloadFailed": {
+    "message": "下载失败"
+  },
+  "annotationSaved": {
+    "message": "注释已保存 ✓"
+  },
+  "noSnapsToExport": {
+    "message": "没有截图可导出"
+  },
+  "loadingPDFLibrary": {
+    "message": "正在加载PDF库..."
+  },
+  "generatingPDF": {
+    "message": "正在生成PDF..."
+  },
+  "pdfExported": {
+    "message": "PDF导出成功！"
+  },
+  "pdfExportFailed": {
+    "message": "PDF导出失败"
+  },
+  "generatingSeparatePDFs": {
+    "message": "正在生成PDF..."
+  },
+  "pdfsSaved": {
+    "message": "已保存$COUNT$个PDF！",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "redirectingToUpgrade": {
+    "message": "正在重定向到升级..."
   }
 }

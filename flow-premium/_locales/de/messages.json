@@ -1,24 +1,27 @@
 {
   "extensionName": {
-    "message": "Flow - Screenshot zu KI"
+    "message": "Flow - Screenshots für KI"
   },
   "extensionDescription": {
-    "message": "Screenshots aufnehmen und an KI-Plattformen senden"
+    "message": "Erfassen Sie Screenshots und laden Sie sie auf KI hoch"
   },
   "flowReady": {
     "message": "Flow: Bereit"
   },
   "oneClickOneFlow": {
-    "message": "Ein Klick. Ein Flow."
+    "message": "Ein Klick. Ein Fluss."
   },
   "pagesReadyForAI": {
-    "message": "Ihre Seiten, in Sekunden bereit für KI."
+    "message": "Ihre Seiten in Sekunden bereit für KI."
   },
   "clickCameraButton": {
-    "message": "Klicken Sie auf die leuchtende Kamera-Taste zum Aufnehmen"
+    "message": "Klicken Sie oben auf die leuchtende Kamera-Taste für sofortige Aufnahme"
   },
   "selectAll": {
-    "message": "Alle Auswählen"
+    "message": "Alles Auswählen"
+  },
+  "deselectAll": {
+    "message": "Alles Abwählen"
   },
   "copySelected": {
     "message": "Auswahl Kopieren"
@@ -29,29 +32,44 @@
   "exportPDF": {
     "message": "PDF Exportieren"
   },
+  "exportPDFOptions": {
+    "message": "PDF-Export Optionen"
+  },
   "clearAll": {
     "message": "Alles Löschen"
   },
   "allAsOnePDF": {
-    "message": "Alles als Ein PDF"
+    "message": "Alles in Eine PDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Alle Screenshots in eine PDF-Datei kombinieren"
   },
   "allAsSeparatePDFs": {
-    "message": "Alles als Separate PDFs"
+    "message": "Alles in Separate PDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Jeden Screenshot als einzelne PDF herunterladen"
   },
   "selectedAsOnePDF": {
-    "message": "Auswahl als Ein PDF"
+    "message": "Auswahl in Eine PDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Ausgewählte Screenshots in eine PDF kombinieren"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Auswahl als Separate PDFs"
+    "message": "Auswahl in Separate PDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Jeden ausgewählten Screenshot als PDF herunterladen"
   },
   "cancel": {
     "message": "Abbrechen"
   },
   "trialEnded": {
-    "message": "Testversion Beendet"
+    "message": "Testversion beendet"
   },
   "upgradeNow": {
-    "message": "Jetzt Upgraden - 9,90€/Jahr"
+    "message": "Jetzt Upgraden - 9,90$/Jahr"
   },
   "daysRemaining": {
     "message": "$DAYS$ Tage verbleibend",
@@ -60,5 +78,106 @@
         "content": "$1"
       }
     }
+  },
+  "noSnapsToUpload": {
+    "message": "Keine Aufnahmen zum Hochladen"
+  },
+  "uploadingSnaps": {
+    "message": "Lade Aufnahmen hoch..."
+  },
+  "capturingSnap": {
+    "message": "Erfasse..."
+  },
+  "tooFastError": {
+    "message": "Zu schnell! Warten Sie einen Moment"
+  },
+  "errorOccurred": {
+    "message": "Ein Fehler ist aufgetreten"
+  },
+  "allSnapsCleared": {
+    "message": "Alle Aufnahmen gelöscht"
+  },
+  "capturedAndCopied": {
+    "message": "Erfasst und kopiert!"
+  },
+  "capturedOnly": {
+    "message": "Erfasst!"
+  },
+  "uploadSelectedCount": {
+    "message": "$COUNT$ ausgewählte hochladen",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "uploadAllCount": {
+    "message": "Alle $COUNT$ hochladen",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturedCount": {
+    "message": "Erfasst: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "deleteSnap": {
+    "message": "Löschen"
+  },
+  "noSnapsSelected": {
+    "message": "Keine Aufnahmen ausgewählt"
+  },
+  "copiedToClipboard": {
+    "message": "In Zwischenablage kopiert!"
+  },
+  "copyFailed": {
+    "message": "Kopieren fehlgeschlagen"
+  },
+  "snapDeleted": {
+    "message": "Aufnahme gelöscht"
+  },
+  "downloadingSnaps": {
+    "message": "Lade Aufnahmen herunter..."
+  },
+  "downloadFailed": {
+    "message": "Download fehlgeschlagen"
+  },
+  "annotationSaved": {
+    "message": "Anmerkung gespeichert ✓"
+  },
+  "noSnapsToExport": {
+    "message": "Keine Aufnahmen zum Exportieren"
+  },
+  "loadingPDFLibrary": {
+    "message": "Lade PDF-Bibliothek..."
+  },
+  "generatingPDF": {
+    "message": "Generiere PDF..."
+  },
+  "pdfExported": {
+    "message": "PDF erfolgreich exportiert!"
+  },
+  "pdfExportFailed": {
+    "message": "PDF-Export fehlgeschlagen"
+  },
+  "generatingSeparatePDFs": {
+    "message": "Generiere PDFs..."
+  },
+  "pdfsSaved": {
+    "message": "$COUNT$ PDFs gespeichert!",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "redirectingToUpgrade": {
+    "message": "Weiterleitung zum Upgrade..."
   }
 }
