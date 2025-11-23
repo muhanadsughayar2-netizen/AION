@@ -1,0 +1,64 @@
+{
+  "extensionName": {
+    "message": "Flow - Captura para IA"
+  },
+  "extensionDescription": {
+    "message": "Capture telas e envie para plataformas de IA"
+  },
+  "flowReady": {
+    "message": "Flow: Pronto"
+  },
+  "oneClickOneFlow": {
+    "message": "Um clique. Um fluxo."
+  },
+  "pagesReadyForAI": {
+    "message": "Suas páginas, prontas para IA em segundos."
+  },
+  "clickCameraButton": {
+    "message": "Clique no botão de câmera brilhante para capturar"
+  },
+  "selectAll": {
+    "message": "Selecionar Tudo"
+  },
+  "copySelected": {
+    "message": "Copiar Seleção"
+  },
+  "downloadSelected": {
+    "message": "Baixar Seleção"
+  },
+  "exportPDF": {
+    "message": "Exportar PDF"
+  },
+  "clearAll": {
+    "message": "Limpar Tudo"
+  },
+  "allAsOnePDF": {
+    "message": "Tudo em Um PDF"
+  },
+  "allAsSeparatePDFs": {
+    "message": "Tudo em PDFs Separados"
+  },
+  "selectedAsOnePDF": {
+    "message": "Seleção em Um PDF"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Seleção em PDFs Separados"
+  },
+  "cancel": {
+    "message": "Cancelar"
+  },
+  "trialEnded": {
+    "message": "Teste Encerrado"
+  },
+  "upgradeNow": {
+    "message": "Atualizar Agora - R$49,90/ano"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ dias restantes",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  }
+}

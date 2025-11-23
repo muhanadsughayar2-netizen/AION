@@ -1,78 +1,103 @@
 {
   "extensionName": {
-    "message": "Flow - لقطات للذكاء الاصطناعي"
+    "message": "التدفق - لقطة شاشة للذكاء الاصطناعي",
+    "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "التقط لقطات الشاشة وارفعها للذكاء الاصطناعي"
+    "message": "التقط لقطات شاشة وتحميل الدفعة إلى منصات الذكاء الاصطناعي",
+    "description": "Extension description"
   },
   "flowReady": {
-    "message": "Flow: جاهز"
+    "message": "التدفق: جاهز",
+    "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "نقرة واحدة. تدفق واحد."
+    "message": "نقرة واحدة. تدفق واحد.",
+    "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "صفحاتك جاهزة للذكاء الاصطناعي في ثوانٍ."
+    "message": "صفحاتك جاهزة للذكاء الاصطناعي في ثوانٍ.",
+    "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "انقر على زر الكاميرا المضيء أعلاه للالتقاط الفوري"
+    "message": "انقر على زر الكاميرا المتوهج أعلاه لالتقاط الصورة على الفور",
+    "description": "Instructions"
   },
   "selectAll": {
-    "message": "تحديد الكل"
+    "message": "حدد الكل",
+    "description": "Select all button"
   },
   "deselectAll": {
-    "message": "إلغاء تحديد الكل"
+    "message": "قم بإلغاء تحديد الكل",
+    "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "نسخ المحدد"
+    "message": "نسخ المحدد",
+    "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "تحميل المحدد"
+    "message": "تحميل المحدد",
+    "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "تصدير PDF"
+    "message": "تصدير قوات الدفاع الشعبي",
+    "description": "Export PDF button"
   },
   "exportPDFOptions": {
-    "message": "خيارات تصدير PDF"
-  },
-  "clearAll": {
-    "message": "مسح الكل"
-  },
-  "allAsOnePDF": {
-    "message": "الكل في PDF واحد"
+    "message": "خيارات تصدير PDF",
+    "description": "PDF modal header"
   },
   "allAsOnePDFDesc": {
-    "message": "دمج جميع اللقطات في ملف PDF واحد"
-  },
-  "allAsSeparatePDFs": {
-    "message": "الكل في ملفات PDF منفصلة"
+    "message": "اجمع كل لقطات الشاشة في ملف PDF واحد",
+    "description": "PDF option description"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "تحميل كل لقطة كملف PDF منفصل"
-  },
-  "selectedAsOnePDF": {
-    "message": "المحدد في PDF واحد"
+    "message": "قم بتنزيل كل لقطة شاشة بصيغة PDF فردية",
+    "description": "PDF option description"
   },
   "selectedAsOnePDFDesc": {
-    "message": "دمج اللقطات المحددة في ملف PDF واحد"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "المحدد في ملفات PDF منفصلة"
+    "message": "دمج لقطات الشاشة المحددة في ملف PDF واحد",
+    "description": "PDF option description"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "تحميل كل لقطة محددة كملف PDF منفصل"
+    "message": "قم بتنزيل كل لقطة شاشة محددة بصيغة PDF",
+    "description": "PDF option description"
+  },
+  "clearAll": {
+    "message": "مسح الكل",
+    "description": "Clear all button"
+  },
+  "allAsOnePDF": {
+    "message": "الكل في ملف PDF واحد",
+    "description": "PDF export option"
+  },
+  "allAsSeparatePDFs": {
+    "message": "كل ذلك كملفات PDF منفصلة",
+    "description": "PDF export option"
+  },
+  "selectedAsOnePDF": {
+    "message": "تم تحديده كملف PDF واحد",
+    "description": "PDF export option"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "تم تحديدها كملفات PDF منفصلة",
+    "description": "PDF export option"
   },
   "cancel": {
-    "message": "إلغاء"
+    "message": "يلغي",
+    "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "انتهت الفترة التجريبية"
+    "message": "انتهت المحاكمة",
+    "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "الترقية الآن - 39 ريال/سنة"
+    "message": "قم بالترقية الآن – 9.90 دولارًا سنويًا",
+    "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "$DAYS$ يوم متبقي",
+    "message": "$DAYS$ من الأيام المتبقية",
+    "description": "Days remaining in trial",
     "placeholders": {
       "days": {
         "content": "$1"

@@ -1,0 +1,107 @@
+{
+  "extensionName": {
+    "message": "Поток - Екранна снимка към AI",
+    "description": "Extension name"
+  },
+  "extensionDescription": {
+    "message": "Заснемане на екранни снимки и групово качване на AI платформи",
+    "description": "Extension description"
+  },
+  "flowReady": {
+    "message": "Поток: Готов",
+    "description": "Status message"
+  },
+  "oneClickOneFlow": {
+    "message": "Едно кликване. Един поток.",
+    "description": "Tagline"
+  },
+  "pagesReadyForAI": {
+    "message": "Вашите страници, готови за AI за секунди.",
+    "description": "Subheading"
+  },
+  "clickCameraButton": {
+    "message": "Щракнете върху светещия бутон на камерата по-горе, за да заснемете незабавно",
+    "description": "Instructions"
+  },
+  "selectAll": {
+    "message": "Изберете Всички",
+    "description": "Select all button"
+  },
+  "deselectAll": {
+    "message": "Демаркирайте всички",
+    "description": "Deselect all button"
+  },
+  "copySelected": {
+    "message": "Копиране на избраното",
+    "description": "Copy selected button"
+  },
+  "downloadSelected": {
+    "message": "Изтегляне на избрани",
+    "description": "Download selected button"
+  },
+  "exportPDF": {
+    "message": "Експортиране на PDF",
+    "description": "Export PDF button"
+  },
+  "exportPDFOptions": {
+    "message": "Опции за експортиране на PDF",
+    "description": "PDF modal header"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Комбинирайте всички екранни снимки в един PDF файл",
+    "description": "PDF option description"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Изтеглете всяка екранна снимка като отделен PDF файл",
+    "description": "PDF option description"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Комбинирайте избрани екранни снимки в един PDF",
+    "description": "PDF option description"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Изтеглете всяка избрана екранна снимка като PDF",
+    "description": "PDF option description"
+  },
+  "clearAll": {
+    "message": "Изчистване на всички",
+    "description": "Clear all button"
+  },
+  "allAsOnePDF": {
+    "message": "Всичко като един PDF",
+    "description": "PDF export option"
+  },
+  "allAsSeparatePDFs": {
+    "message": "Всички като отделни PDF файлове",
+    "description": "PDF export option"
+  },
+  "selectedAsOnePDF": {
+    "message": "Избрано като един PDF файл",
+    "description": "PDF export option"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Избрани като отделни PDF файлове",
+    "description": "PDF export option"
+  },
+  "cancel": {
+    "message": "Отказ",
+    "description": "Cancel button"
+  },
+  "trialEnded": {
+    "message": "Пробният период приключи",
+    "description": "Trial ended message"
+  },
+  "upgradeNow": {
+    "message": "Надстройте сега - $9,90/година",
+    "description": "Upgrade button"
+  },
+  "daysRemaining": {
+    "message": "Остават $DAYS$ дни",
+    "description": "Days remaining in trial",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "extensionName": {
+    "message": "ফ্লো - এআই-এর স্ক্রিনশট",
+    "description": "Extension name"
+  },
+  "extensionDescription": {
+    "message": "স্ক্রিনশট ক্যাপচার করুন এবং এআই প্ল্যাটফর্মে ব্যাচ আপলোড করুন",
+    "description": "Extension description"
+  },
+  "flowReady": {
+    "message": "প্রবাহ: প্রস্তুত",
+    "description": "Status message"
+  },
+  "oneClickOneFlow": {
+    "message": "এক ক্লিক. এক প্রবাহ।",
+    "description": "Tagline"
+  },
+  "pagesReadyForAI": {
+    "message": "আপনার পৃষ্ঠাগুলি, সেকেন্ডের মধ্যে AI এর জন্য প্রস্তুত৷",
+    "description": "Subheading"
+  },
+  "clickCameraButton": {
+    "message": "ঝটপট ক্যাপচার করতে উপরের উজ্জ্বল ক্যামেরা বোতামে ক্লিক করুন",
+    "description": "Instructions"
+  },
+  "selectAll": {
+    "message": "সব নির্বাচন করুন",
+    "description": "Select all button"
+  },
+  "deselectAll": {
+    "message": "সকলকে অনির্বাচন করুন",
+    "description": "Deselect all button"
+  },
+  "copySelected": {
+    "message": "কপি নির্বাচিত",
+    "description": "Copy selected button"
+  },
+  "downloadSelected": {
+    "message": "ডাউনলোড নির্বাচিত",
+    "description": "Download selected button"
+  },
+  "exportPDF": {
+    "message": "পিডিএফ রপ্তানি করুন",
+    "description": "Export PDF button"
+  },
+  "exportPDFOptions": {
+    "message": "পিডিএফ বিকল্পগুলি রপ্তানি করুন",
+    "description": "PDF modal header"
+  },
+  "allAsOnePDFDesc": {
+    "message": "একটি পিডিএফ ফাইলে সমস্ত স্ক্রিনশট একত্রিত করুন",
+    "description": "PDF option description"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "প্রতিটি স্ক্রিনশট পৃথক পিডিএফ হিসাবে ডাউনলোড করুন",
+    "description": "PDF option description"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "একটি পিডিএফে নির্বাচিত স্ক্রিনশটগুলি একত্রিত করুন",
+    "description": "PDF option description"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "প্রতিটি নির্বাচিত স্ক্রিনশট PDF হিসাবে ডাউনলোড করুন",
+    "description": "PDF option description"
+  },
+  "clearAll": {
+    "message": "সব সাফ করুন",
+    "description": "Clear all button"
+  },
+  "allAsOnePDF": {
+    "message": "সমস্ত একটি পিডিএফ হিসাবে",
+    "description": "PDF export option"
+  },
+  "allAsSeparatePDFs": {
+    "message": "সমস্ত আলাদা পিডিএফ হিসাবে",
+    "description": "PDF export option"
+  },
+  "selectedAsOnePDF": {
+    "message": "এক পিডিএফ হিসাবে নির্বাচিত",
+    "description": "PDF export option"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "পৃথক পিডিএফ হিসাবে নির্বাচিত",
+    "description": "PDF export option"
+  },
+  "cancel": {
+    "message": "বাতিল করুন",
+    "description": "Cancel button"
+  },
+  "trialEnded": {
+    "message": "বিচার শেষ হয়েছে",
+    "description": "Trial ended message"
+  },
+  "upgradeNow": {
+    "message": "এখনই আপগ্রেড করুন - $9.90/বছর",
+    "description": "Upgrade button"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ দিন বাকি",
+    "description": "Days remaining in trial",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  }
+}

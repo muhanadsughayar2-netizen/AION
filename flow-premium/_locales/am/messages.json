@@ -1,0 +1,107 @@
+{
+  "extensionName": {
+    "message": "ፍሰት - ቅጽበታዊ ገጽ እይታ እስከ አይ",
+    "description": "Extension name"
+  },
+  "extensionDescription": {
+    "message": "ቅጽበታዊ ገጽ እይታዎችን እና የ Batch ወደ AI የመሣሪያ ስርዓቶች ይቅረጹ",
+    "description": "Extension description"
+  },
+  "flowReady": {
+    "message": "ፍሰት: ዝግጁ",
+    "description": "Status message"
+  },
+  "oneClickOneFlow": {
+    "message": "አንድ ጠቅ ማድረግ. አንድ ፍሰት.",
+    "description": "Tagline"
+  },
+  "pagesReadyForAI": {
+    "message": "ገጾችዎ, ለ AI ሰከንዶች ውስጥ ዝግጁ ናቸው.",
+    "description": "Subheading"
+  },
+  "clickCameraButton": {
+    "message": "በቅጽበት ለመያዝ ከዚህ በላይ ያለውን የሚያብረቀርቅ ካሜራ ቁልፍን ጠቅ ያድርጉ",
+    "description": "Instructions"
+  },
+  "selectAll": {
+    "message": "ሁሉንም ይምረጡ",
+    "description": "Select all button"
+  },
+  "deselectAll": {
+    "message": "ሁሉንም አይምረጡ",
+    "description": "Deselect all button"
+  },
+  "copySelected": {
+    "message": "የተመረጠ ቅጅ",
+    "description": "Copy selected button"
+  },
+  "downloadSelected": {
+    "message": "መርጠዋል",
+    "description": "Download selected button"
+  },
+  "exportPDF": {
+    "message": "PDF ወደ ውጭ ይላኩ",
+    "description": "Export PDF button"
+  },
+  "exportPDFOptions": {
+    "message": "PDF አማራጮችን ወደ ውጭ ይላኩ",
+    "description": "PDF modal header"
+  },
+  "allAsOnePDFDesc": {
+    "message": "ሁሉንም ቅጽበታዊ ገጽ እይታዎችን ወደ አንድ የ PDF ፋይል ያጣምሩ",
+    "description": "PDF option description"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "እያንዳንዱን ቅጽበታዊ ገጽ እይታ እንደ ግለሰብ PDF ያውርዱ",
+    "description": "PDF option description"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "የተመረጡ ቅጽበታዊ ገጽ እይታዎችን ወደ አንድ ፒዲኤፍ ያጣምሩ",
+    "description": "PDF option description"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "እያንዳንዱን የተመረጡ ቅጽበታዊ ገጽ እይታን እንደ PDF ያውርዱ",
+    "description": "PDF option description"
+  },
+  "clearAll": {
+    "message": "ሁሉንም አጥራ",
+    "description": "Clear all button"
+  },
+  "allAsOnePDF": {
+    "message": "ሁሉም እንደ አንድ ፒዲኤፍ",
+    "description": "PDF export option"
+  },
+  "allAsSeparatePDFs": {
+    "message": "ሁሉም እንደ ተለያይ ፒዲኤፎች",
+    "description": "PDF export option"
+  },
+  "selectedAsOnePDF": {
+    "message": "እንደ አንድ ፒዲኤፍ የተመረጠ",
+    "description": "PDF export option"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "እንደ የተለየ ፒዲኤፎች ተመርጠዋል",
+    "description": "PDF export option"
+  },
+  "cancel": {
+    "message": "ይቅር",
+    "description": "Cancel button"
+  },
+  "trialEnded": {
+    "message": "ሙከራ አብቅቷል",
+    "description": "Trial ended message"
+  },
+  "upgradeNow": {
+    "message": "አሁን ማሻሻል - $ 9.90 / ዓመት",
+    "description": "Upgrade button"
+  },
+  "daysRemaining": {
+    "message": "$ ቀናት $ ቀናት ይቀራሉ",
+    "description": "Days remaining in trial",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  }
+}

@@ -1,102 +1,102 @@
 {
   "extensionName": {
-    "message": "التدفق - لقطة شاشة للذكاء الاصطناعي",
+    "message": "Flow: captura de pantalla a AI",
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "التقط لقطات شاشة وتحميل الدفعة إلى منصات الذكاء الاصطناعي",
+    "message": "Captura captures de pantalla i puja per lots a plataformes d'IA",
     "description": "Extension description"
   },
   "flowReady": {
-    "message": "التدفق: جاهز",
+    "message": "Flux: llest",
     "description": "Status message"
   },
   "oneClickOneFlow": {
-    "message": "نقرة واحدة. تدفق واحد.",
+    "message": "Un clic. Un sol flux.",
     "description": "Tagline"
   },
   "pagesReadyForAI": {
-    "message": "صفحاتك جاهزة للذكاء الاصطناعي في ثوانٍ.",
+    "message": "Les teves pàgines, a punt per a la IA en qüestió de segons.",
     "description": "Subheading"
   },
   "clickCameraButton": {
-    "message": "انقر على زر الكاميرا المتوهج أعلاه لالتقاط الصورة على الفور",
+    "message": "Feu clic al botó de la càmera brillant de dalt per capturar a l'instant",
     "description": "Instructions"
   },
   "selectAll": {
-    "message": "حدد الكل",
+    "message": "Seleccioneu Tot",
     "description": "Select all button"
   },
   "deselectAll": {
-    "message": "قم بإلغاء تحديد الكل",
+    "message": "Desseleccioneu-ho tot",
     "description": "Deselect all button"
   },
   "copySelected": {
-    "message": "نسخ المحدد",
+    "message": "Còpia seleccionada",
     "description": "Copy selected button"
   },
   "downloadSelected": {
-    "message": "تحميل المحدد",
+    "message": "Descarrega el seleccionat",
     "description": "Download selected button"
   },
   "exportPDF": {
-    "message": "تصدير قوات الدفاع الشعبي",
+    "message": "Exporta PDF",
     "description": "Export PDF button"
   },
   "exportPDFOptions": {
-    "message": "خيارات تصدير PDF",
+    "message": "Opcions d'exportació PDF",
     "description": "PDF modal header"
   },
   "allAsOnePDFDesc": {
-    "message": "اجمع كل لقطات الشاشة في ملف PDF واحد",
+    "message": "Combina totes les captures de pantalla en un sol fitxer PDF",
     "description": "PDF option description"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "قم بتنزيل كل لقطة شاشة بصيغة PDF فردية",
+    "message": "Baixeu cada captura de pantalla com a PDF individual",
     "description": "PDF option description"
   },
   "selectedAsOnePDFDesc": {
-    "message": "دمج لقطات الشاشة المحددة في ملف PDF واحد",
+    "message": "Combina les captures de pantalla seleccionades en un sol PDF",
     "description": "PDF option description"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "قم بتنزيل كل لقطة شاشة محددة بصيغة PDF",
+    "message": "Baixeu cada captura de pantalla seleccionada com a PDF",
     "description": "PDF option description"
   },
   "clearAll": {
-    "message": "مسح الكل",
+    "message": "Esborra-ho tot",
     "description": "Clear all button"
   },
   "allAsOnePDF": {
-    "message": "الكل في ملف PDF واحد",
+    "message": "Tot com un PDF",
     "description": "PDF export option"
   },
   "allAsSeparatePDFs": {
-    "message": "كل ذلك كملفات PDF منفصلة",
+    "message": "Tot com a PDF separats",
     "description": "PDF export option"
   },
   "selectedAsOnePDF": {
-    "message": "تم تحديده كملف PDF واحد",
+    "message": "Seleccionat com un PDF",
     "description": "PDF export option"
   },
   "selectedAsSeparatePDFs": {
-    "message": "تم تحديدها كملفات PDF منفصلة",
+    "message": "Seleccionat com a PDF separats",
     "description": "PDF export option"
   },
   "cancel": {
-    "message": "يلغي",
+    "message": "Cancel·la",
     "description": "Cancel button"
   },
   "trialEnded": {
-    "message": "انتهت المحاكمة",
+    "message": "El judici ha finalitzat",
     "description": "Trial ended message"
   },
   "upgradeNow": {
-    "message": "قم بالترقية الآن – 9.90 دولارًا سنويًا",
+    "message": "Actualitza ara: 9,90 $/any",
     "description": "Upgrade button"
   },
   "daysRemaining": {
-    "message": "$DAYS$ من الأيام المتبقية",
+    "message": "Queden $DAYS$ dies",
     "description": "Days remaining in trial",
     "placeholders": {
       "days": {
