@@ -10,6 +10,7 @@ const translations = {
         card1: "Capture",
         card2: "Batch Upload",
         card3: "AI Ready",
+        alsoAvailable: "Also available on:",
         browserTitle: "Works On All Major Browsers",
         compatibilityDesc: "SnapToAI runs seamlessly on any Chromium-based browser",
         browserChrome: "Chrome",
