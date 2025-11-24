@@ -239,12 +239,21 @@ body {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(0, 217, 255, 0.2);
   color: #00d9ff;
-  padding: 6px 10px;
+  padding: 8px 10px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  /* Multi-language multi-word support */
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.3;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .select-all-btn:hover {
@@ -257,12 +266,21 @@ body {
   background: rgba(0, 217, 255, 0.1);
   border: 1px solid rgba(0, 217, 255, 0.3);
   color: #00d9ff;
-  padding: 6px 10px;
+  padding: 8px 10px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  /* Multi-language multi-word support */
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.3;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .action-btn:hover {
@@ -843,21 +861,6 @@ html[dir="rtl"] .logo {
 html[dir="rtl"] .logo-word {
   direction: ltr;
   unicode-bidi: bidi-override;
-}
-
-/* Stack multi-word Arabic text vertically in buttons */
-html[dir="rtl"] .select-all-btn,
-html[dir="rtl"] .action-btn {
-  font-size: 12px;
-  white-space: normal;
-  word-break: break-word;
-  line-height: 1.3;
-  min-height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 8px 10px;
 }
 
 /* Status text - increase font size for Arabic */
