@@ -457,7 +457,14 @@ function setupTasteDemo() {
     });
 
     tasteBuyBtn.addEventListener('click', () => {
-        alert('Lifetime deal purchase coming soon! Thanks for your interest.');
+        // Scroll to pricing section (find it in the page)
+        const pricingSection = document.querySelector('.pricing');
+        if (pricingSection) {
+            tasteModal.classList.remove('active');
+            pricingSection.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            alert('Lifetime deal: $99 (launches in 48h, then $499) - Get it now!');
+        }
     });
 
     function startCountdown(sample) {
@@ -465,7 +472,7 @@ function setupTasteDemo() {
         tasteStep2.classList.remove('hidden');
         tasteStep3.classList.add('hidden');
 
-        let count = 5;
+        let count = 6;
         const countdownEl = document.getElementById('tasteCountdown');
         countdownEl.textContent = count;
 

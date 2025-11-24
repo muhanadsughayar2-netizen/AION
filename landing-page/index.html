@@ -113,8 +113,8 @@
             <div class="taste-modal-body">
                 <!-- Screenshot Selection -->
                 <div class="taste-step-1" id="tasteStep1">
-                    <h2>Choose a Screenshot</h2>
-                    <p>Or upload your own</p>
+                    <h2>Pick any design → watch SnapToAI build it in 6 seconds</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Select one of these stunning UI designs or upload your own screenshot</p>
                     <div class="taste-sample-grid">
                         <div class="taste-sample-card" data-sample="dashboard">
                             <div class="taste-sample-preview dashboard-preview"></div>
@@ -137,9 +137,9 @@
 
                 <!-- Countdown -->
                 <div class="taste-step-2 hidden" id="tasteStep2">
-                    <h2>Generating Code...</h2>
-                    <div class="taste-countdown" id="tasteCountdown">5</div>
-                    <p>SnapToAI is analyzing your screenshot</p>
+                    <h2 style="text-align: center;">Generating Code...</h2>
+                    <div class="taste-countdown" id="tasteCountdown">6</div>
+                    <p style="text-align: center; color: var(--text-secondary);">SnapToAI is analyzing your screenshot</p>
                 </div>
 
                 <!-- Code Display -->
@@ -150,10 +150,13 @@
                     </div>
                     <pre id="tasteCodeBlock" class="taste-code-preview"><code></code></pre>
                     <div class="taste-cta-section">
-                        <p>This was 100% automatic. No prompts written.</p>
-                        <p style="margin-top: 1rem; font-weight: bold;">Want unlimited + your own screenshots?</p>
-                        <p style="margin-top: 0.5rem;">→ Lifetime deal <span style="color: #00f5ff;">$99</span> (ends in 7 days)</p>
-                        <button class="taste-buy-btn" id="tasteBuyBtn">Get Lifetime Deal</button>
+                        <div style="text-align: center; padding: 2rem; border-top: 1px solid rgba(6, 182, 212, 0.2); border-bottom: 1px solid rgba(6, 182, 212, 0.2); margin: 2rem 0;">
+                            <p style="color: #00f5ff; font-weight: 600; font-size: 0.9rem; letter-spacing: 1px;">✓ This was 100% automatic · Zero prompts · Built in 6 seconds</p>
+                        </div>
+                        <div style="margin-top: 2rem; text-align: center;">
+                            <p style="color: var(--text-secondary); margin-bottom: 1rem;">Want unlimited + your own screenshots?</p>
+                            <button class="taste-buy-btn" id="tasteBuyBtn">Get Lifetime Access – $99 (launches in 48h, then $499)</button>
+                        </div>
                     </div>
                 </div>
             </div>
