@@ -2,32 +2,19 @@
 
 ## Overview
 
-SnapToAI is a privacy-first Chrome Extension (Manifest V3) that enables users to capture multiple screenshots and batch upload them to AI chat platforms (ChatGPT, Claude, Grok). The extension operates entirely client-side with no backend server, storing screenshots temporarily in browser session storage and automatically managing a FIFO queue of up to 10 snapshots.
+SnapToAI is a privacy-first, client-side Chrome Extension (Manifest V3) designed to streamline the process of capturing multiple screenshots and uploading them in batches to AI chat platforms like ChatGPT, Claude, and Grok. It stores screenshots temporarily in browser session storage using a FIFO queue (up to 10 snapshots) and operates without any backend server. The extension offers two primary modes: a "Capture Mode" for taking screenshots on regular websites and an "Upload Mode" that auto-detects AI chat sites to batch-upload all stored images.
 
-The extension provides two operational modes:
-1. **Capture Mode** (on regular websites): Captures screenshots via keyboard shortcut or popup button, auto-copies to clipboard, and stores in session
-2. **Upload Mode** (on AI platforms): Auto-detects AI chat sites and batch-uploads all stored screenshots directly to the platform's file input
-
-**Premium Features:**
-- **Simplified Annotation Tools**: Streamlined to 4 reliable tools with click-to-place UX
-  - ✨ Highlight Brush: Glowing strokes with color picker and adjustable brush size (4-40px)
-  - 🔢 Numbered Callouts: Add numbered markers (1, 2, 3...) with custom labels
-  - ✏️ Text: Add custom text annotations that appear exactly where you click
-  - 🏷️ Quick Stickers: Pre-made labels (BUG, IMPORTANT, FOCUS) + create your own custom stickers (max 5)
-  - All annotations are fully draggable and can be deleted with the undo button
-- **Custom Sticker Templates**: Users can create personalized sticker buttons with custom text (stored in chrome.storage.local)
-- **Advanced PDF Export**: Full control over PDF generation with 4 export modes:
-  - 📚 All as One PDF: Combine all screenshots into single combined PDF
-  - 📑 All as Separate PDFs: Download each screenshot as individual PDF file
-  - ✅ Selected as One PDF: Combine only selected screenshots into one PDF
-  - 📋 Selected as Separate PDFs: Download each selected screenshot as individual PDF
-  - Smart modal interface with disabled states when no selection exists
-  - Clear file naming: `snaptoai-screenshots-{date}.pdf`, `snaptoai-screenshot-1-{date}.pdf`, etc.
-- **Drag & Drop Reordering**: Rearrange thumbnails to control upload sequence
-- **Multi-Select Operations**: Select All, Copy Selected, Download Selected batch actions
-- **Delete Individual Snaps**: Remove unwanted screenshots with hover delete button
-- **Full-Size Preview**: Click thumbnails to zoom and inspect screenshots
-- **Complete Multi-Language Support**: All 55 Chrome-supported languages with full translations
+Key capabilities include:
+- Simplified annotation tools (Highlight Brush, Numbered Callouts, Text, Quick Stickers)
+- Custom sticker templates
+- Advanced PDF export options (combining all, separate, selected)
+- Drag & drop reordering of thumbnails
+- Multi-select operations (Select All, Copy Selected, Download Selected)
+- Individual snapshot deletion and full-size preview
+- Full multi-language support (all 55 Chrome-supported languages)
+- Viral 55-language landing page with auto-detection, glassmorphism design, and responsive mobile-first approach.
+- Professional styling with clean aesthetics, elegant text badges, and consistent branding.
+- World-class SaaS copywriting transformation positioning the product as an enterprise-grade AI workflow solution, emphasizing time savings, privacy, and workflow transformation.
 
 ## User Preferences
 
@@ -37,160 +24,50 @@ Logo Display: "Snap To AI" (with spaces for premium look)
 Tagline: "One click. One snap."
 Subline: "Your pages, ready for AI in seconds."
 Logo Animation: Each word animates independently with staggered timing, float effect, and glowing dual drop-shadow (WOW factor)
-
-## CRITICAL FIX - November 24, 2025
-**Real Translations Implemented:** Fixed critical issue where all 55 languages had English placeholder text. Now EVERY language has REAL native translations:
-- Amharic: "ጠቅ አንድ። ስክሪንショት አንድ።"
-- Korean: "한 번 클릭. 한 번 스냅."
-- Chinese: "一键。一张快照。"
-- Arabic: "نقرة واحدة. لقطة واحدة."
-- Filipino: "Isang click. Isang larawan."
-- Plus 50 more languages with proper native translations
-All UI elements (Select All, Download, Clear, etc.) now properly translated in each language.
-
-## LANDING PAGE LAUNCH - November 24, 2025
-**Viral 55-Language Landing Page Created:** Production-ready landing page on Replit completely separate from extension files:
-- **File Location**: `landing-page/` directory (SEPARATE from `flow/` and `flow-premium/`)
-- **Features**: Auto-language detection, beautiful glassmorphism design, responsive mobile-first, all 55 languages with real native translations
-- **Performance**: Static HTML/CSS/JS, ~130KB total, <100ms load time, zero server overhead
-- **Design**: Dark theme with glowing cyan accents matching extension UI, animated logo, smooth scroll animations
-- **Content**: Features showcase, 3-step guide, transparent pricing, FAQ accordion, testimonials, social proof
-- **Deployment**: Live on Replit (published with Autoscale) - accessible worldwide
-- **CTA**: Download button links directly to Chrome Web Store
-- **Structure**: index.html, style.css, script.js, translations.js (all properly organized)
-
-## PROFESSIONAL STYLING UPDATE - November 24, 2025
-**Removed All Emojis (Except Camera):** Upgraded to professional, clean aesthetic:
-- Removed all decorative emojis (🎯, ⚡, 🧠, 🔒, 🌍, 📱, 🎁, ✅, etc.)
-- Kept camera emoji (📸) in logo - user's preference
-- Replaced emojis with elegant text badges and labels
-- Changed language button from 🌐 to "Language" text
-- Updated star ratings from ⭐⭐⭐⭐⭐ to "5/5" text format
-- Replaced checkmarks in pricing list with plain text
-
-**Browser Compatibility Section Added:** New section showcasing all supported browsers:
-- Chrome (Official Chrome Web Store)
-- Edge (Microsoft Edge Add-ons)
-- Brave (Chrome Web Store compatible)
-- Opera (Opera Add-ons store)
-- Vivaldi (Chrome Web Store compatible)
-- Each browser card has direct install link
-- Responsive grid layout matching existing design
-- Professional icons showing browser initials (C, E, B, O, V)
-
-**Updated Translations:** All 55 languages now include:
-- Browser compatibility section translations
-- Feature badges instead of emojis (Focus, Speed, Clear, Secure, Universal, Global)
-- Rating text format (5/5) instead of stars
-- Trial information without gift emoji
+Logo: Keep camera emoji (📸) in logo - user's preference
 
 ## System Architecture
 
 ### Frontend Architecture
 
-**Extension Structure**: Chrome Extension Manifest V3 with modular components
-- **Service Worker** (`background.js`): Handles screenshot capture via Chrome APIs, manages session storage, enforces FIFO queue limits, and coordinates messaging between components
-- **Content Script** (`content.js`): Injected into all pages; manages floating toast notifications, handles AI platform upload logic, and tracks cursor position for toast placement
-- **Popup Interface** (`popup.html/css/js`): User interface with glassmorphism dark theme; displays thumbnail grid, selection controls, and capture/upload controls
-
-**UI Components**:
-- Glowing cyan orb button (dual-purpose: capture on regular sites, upload on AI platforms)
-- Thumbnail grid with multi-select checkboxes
-- Selection toolbar with "Select All", "Copy Selected", "Download Selected" actions
-- AI platform dropdown selector with auto-detect option
-- Badge counter showing number of stored snapshots
-
-**Styling Approach**: Custom CSS with dark gradient backgrounds, glassmorphism effects, and cyan accent colors; no external CSS frameworks
+The extension is built as a Manifest V3 Chrome Extension with modular components:
+- **Service Worker (`background.js`)**: Manages screenshot capture via Chrome APIs, session storage (FIFO queue up to 10 snapshots), and inter-component messaging.
+- **Content Script (`content.js`)**: Injected into all pages to handle floating toast notifications, AI platform upload logic, and cursor position tracking.
+- **Popup Interface (`popup.html/css/js`)**: Provides the user interface with a glassmorphism dark theme, displaying thumbnail grids, selection controls, and capture/upload options.
+UI/UX decisions include a glowing cyan orb button, thumbnail grid with multi-select, and a selection toolbar. Styling uses custom CSS for dark gradients, glassmorphism effects, and cyan accents, without external CSS frameworks.
 
 ### Data Storage Solutions
 
-**Chrome Session Storage**: Primary storage mechanism using `chrome.storage.session` API
-- Stores screenshots as base64 dataURL strings
-- Each snapshot includes: `id` (timestamp), `dataUrl` (base64 PNG), `timestamp`
-- FIFO queue automatically removes oldest snapshots when exceeding 10-snap limit
-- Data persists only during browser session (cleared on browser restart)
-
-**Platform Preference Storage**: Uses `chrome.storage.local` to remember user's preferred AI platform selection
-
-**No External Database**: Entirely client-side storage; no server-side persistence
-
-### Authentication and Authorization Mechanisms
-
-**No Authentication Required**: Extension operates without user accounts or login systems
-
-**Chrome Extension Permissions**:
-- `tabs`: Query active tab information
-- `activeTab`: Capture visible tab screenshots
-- `storage`: Access session and local storage APIs
-- `scripting`: Inject content scripts dynamically
-- `clipboardWrite`: Copy screenshots to clipboard
-
-**Host Permissions**: Limited to specific AI platform domains (grok.com, chat.openai.com, chatgpt.com, claude.ai) for upload functionality
+- **Chrome Session Storage (`chrome.storage.session`)**: Primary storage for screenshots as base64 dataURL strings. It implements a FIFO queue, automatically removing the oldest snapshots when the 10-snap limit is reached. Data is temporary and clears on browser restart.
+- **Chrome Local Storage (`chrome.storage.local`)**: Used to store user preferences, such as the preferred AI platform selection.
+- **No External Database**: The system is entirely client-side, with no server-side persistence.
 
 ### Core Design Patterns
 
-**Screenshot Capture Flow**:
-1. User triggers capture via keyboard shortcut (`Ctrl+Shift+S`) or popup button click
-2. Background service worker checks 500ms cooldown to prevent Chrome API rate limiting
-3. Background service worker calls `chrome.tabs.captureVisibleTab()` to get dataURL
-4. Converts dataURL to Blob for storage efficiency
-5. Enforces FIFO queue (max 10 snapshots)
-6. Updates badge counter and sends message to content script for toast notification
-7. Popup handles clipboard write using `navigator.clipboard.write()` (requires user gesture context)
+- **Screenshot Capture Flow**: Triggered by user input (keyboard shortcut or popup button), the service worker captures the visible tab, converts the dataURL to a Blob, enforces the FIFO queue, updates the badge, and sends a toast notification. Clipboard writing is handled by the popup.
+- **AI Platform Upload Flow**: Detects AI platforms by hostname. The content script finds file input elements, converts stored dataURLs to File objects, uses the `DataTransfer` API to populate inputs, and dispatches change events. A 1.4-second delay is applied between uploads for processing.
+- **Privacy Architecture**: The extension has zero external network requests, no backend server, no analytics, and all data is stored locally. Uploads only occur with explicit user action, ensuring no tracking or third-party service involvement.
+- **Message Passing System**: Chrome Runtime Messaging facilitates communication between the service worker, content script, and popup for actions like capturing, uploading, retrieving/clearing snaps, and displaying toasts.
 
-**AI Platform Upload Flow**:
-1. Detects AI platform by checking active tab hostname
-2. Content script queries DOM for file input elements using platform-specific selectors
-3. Converts each stored dataURL → Blob → File object with incremental naming (`snap_1.png`, `snap_2.png`)
-4. Uses `DataTransfer` API to populate file input's FileList
-5. Dispatches `change` event to trigger platform's upload handler
-6. Applies 1.4-second delay between uploads to ensure platform processes files sequentially
-7. Clears session storage and resets badge after successful upload
+### System Design Choices
 
-**Privacy Architecture**:
-- Zero external network requests (no backend server, no analytics)
-- All screenshots stored locally in browser session storage
-- Only uploads occur when user explicitly clicks upload on AI platform
-- No tracking, no telemetry, no third-party services
-
-### Message Passing System
-
-**Chrome Runtime Messaging**: Coordinates communication between service worker, content script, and popup
-- `capture`: Trigger screenshot capture
-- `upload`: Initiate batch upload to AI platform
-- `getSnaps`: Retrieve all stored snapshots
-- `clearSnaps`: Clear all snapshots from storage
-- `showToast`: Display floating notification
-- `captureComplete`: Notify content script of successful capture
-- `beginUpload`: Start upload sequence from content script
+- **Language Support**: All 55 Chrome-supported languages are fully translated for UI elements, marketing copy, and browser compatibility sections.
+- **Aesthetic**: A professional, clean aesthetic replaces decorative emojis with elegant text badges, emphasizing a premium feel.
+- **Performance**: Vanilla JavaScript, HTML, and CSS are used, avoiding npm packages, frameworks, or build tools for minimal size and maximum performance.
 
 ## External Dependencies
 
 ### Browser APIs
-- **Chrome Extensions API**: Core extension functionality (Manifest V3)
-  - `chrome.tabs`: Tab management and screenshot capture
-  - `chrome.storage.session`: Temporary snapshot storage
-  - `chrome.storage.local`: User preference persistence
-  - `chrome.runtime`: Message passing between components
-  - `chrome.action`: Badge updates and popup management
-  - `chrome.commands`: Keyboard shortcut registration
-
-- **Clipboard API**: `navigator.clipboard.write()` for auto-copy functionality
-- **FileReader API**: Converting between Blob and dataURL formats
-- **DataTransfer API**: Programmatically populating file inputs for upload
+- **Chrome Extensions API**: For core functionality including `chrome.tabs`, `chrome.storage.session`, `chrome.storage.local`, `chrome.runtime`, `chrome.action`, and `chrome.commands`.
+- **Clipboard API**: `navigator.clipboard.write()` for automatic clipboard copying.
+- **FileReader API**: For converting between Blob and dataURL formats.
+- **DataTransfer API**: For programmatically populating file inputs during uploads.
 
 ### Target AI Platforms
-- **ChatGPT** (chat.openai.com, chatgpt.com): File input upload integration
-- **Claude AI** (claude.ai): File input upload integration
-- **Grok** (grok.com): File input upload integration
-
-Platform detection uses hostname matching; file input selectors are defined in `utils/upload.js` with fallback strategies for each platform.
+- **ChatGPT** (chat.openai.com, chatgpt.com): Integrated for file input upload.
+- **Claude AI** (claude.ai): Integrated for file input upload.
+- **Grok** (grok.com): Integrated for file input upload.
+Platform detection relies on hostname matching, with specific file input selectors defined for each.
 
 ### Development Server
-- **Python HTTP Server** (`server.py`): Simple file server for local development and testing
-  - Serves extension files from `flow/` directory on port 5000
-  - Disables caching for development workflow
-  - No runtime dependency (only for development/installation)
-
-### No External Libraries
-The extension is built with vanilla JavaScript, HTML, and CSS without any npm packages, frameworks, or build tools. This ensures minimal size, maximum performance, and zero supply-chain security risks.
+- **Python HTTP Server (`server.py`)**: A simple local file server used only for development and testing, serving extension files and disabling caching. It is not a runtime dependency.

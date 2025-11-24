@@ -1,0 +1,93 @@
+HE MAGNIFICENT LANDING-PAGE TRANSFORMATION PROMPT
+(Copy/Paste directly into Replit AI)
+
+Rewrite and enhance my entire landing page using the following positioning and messaging. Keep my current design style, theme, animations, brand colors, and visual identity, but dramatically upgrade the hero text, value proposition, section headlines, descriptions, and benefit messaging.
+
+Use premium SaaS product language.
+Make the message bold, clear, and powerful.
+
+Below is the strategic explanation of my product.
+Transform this into world-class website copy:
+
+CORE STRATEGIC VALUE OF SNAPTOAI
+
+SnapToAI is not just a screenshot tool.
+It is the fastest way to convert any webpage into AI-ready context with zero friction.
+
+The real bottleneck today is not AI — it’s the human workflow needed to feed AI the right information. People waste time capturing screenshots, locating files, renaming them, uploading one-by-one, and explaining context manually. This slows down developers, researchers, analysts, creators, and power users.
+
+SnapToAI removes this bottleneck completely.
+
+With one click, users can instantly capture, organize, batch, and send context directly to ChatGPT, Claude, Gemini, and other AI tools. Everything is structured for the AI automatically — no mess, no manual steps, no friction.
+
+This makes SnapToAI an AI-native workflow accelerator, not a utility.
+It is a new category of tool.
+
+SnapToAI saves time, reduces cognitive load, eliminates repetitive tasks, and gives users a sense of speed and flow. Once they use it once, they immediately realize this workflow should have always existed.
+
+It turns screenshots → AI → answers into a single seamless pipeline.
+
+This is why it has viral potential, especially among developers, designers, researchers, founders, and AI power-users. These are the people who share the tools that make them faster.
+
+SnapToAI is lightweight, addictive, instant, and solves an invisible pain point people didn’t even realize they had — until the moment it is gone.
+
+Rewrite my entire landing page using this positioning.
+Apply these upgrades:
+
+Rewrite the HERO section:
+
+Clear, bold headline capturing SnapToAI’s workflow revolution
+
+Strong subheadline expressing friction removal and instant AI context
+
+Update button text and microcopy
+
+Add a supporting one-sentence proof statement
+
+Rewrite the “Why SnapToAI” feature cards:
+
+Use benefits based on workflow speed, clarity, organization, efficiency
+
+Make them feel like enterprise-grade, AI-native features
+
+Add a new section:
+
+“The Problem You Don’t Notice”
+
+Explain the hidden bottleneck SnapToAI solves with simple, sharp language
+
+Add a new section:
+
+“How SnapToAI Works”
+
+Clear 3-step pipeline: Capture → Organize → Send to AI
+
+Refine the pricing section:
+
+Make it simpler, stronger, and more direct
+
+Emphasize high daily utility and ROI
+
+Improve testimonials section:
+
+Add punchier quotes
+
+Highlight workflow transformation impact
+
+Improve FAQ:
+
+Include questions about privacy, speed, AI compatibility, and workflow
+
+Do NOT change:
+
+Theme
+
+Colors
+
+Animations
+
+Overall section layout hierarchy
+
+Just improve all copywriting and positioning across the entire site using world-class SaaS marketing standards.
+
+Return only the improved copy and the updated HTML/CSS fragments needed to integrate it.
