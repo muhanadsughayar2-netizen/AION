@@ -7,6 +7,12 @@
   box-sizing: border-box;
 }
 
+/* Global text wrapping for all languages */
+* {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
 body {
   width: 380px;
   height: 380px; /* Default height, will be adjusted dynamically by JavaScript */
@@ -202,6 +208,10 @@ body {
 .platform-selector label {
   color: #aaa;
   font-weight: 600;
+  /* Multi-language support */
+  white-space: normal;
+  overflow-wrap: break-word;
+  font-size: 13px;
 }
 
 .platform-selector select {
@@ -591,6 +601,10 @@ body {
   font-weight: 900;
   margin-bottom: 4px;
   text-shadow: 0 0 10px rgba(0, 217, 255, 0.8);
+  /* Multi-language support */
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.2;
 }
 
 .empty-subheading {
@@ -598,12 +612,20 @@ body {
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 10px;
+  /* Multi-language support */
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.3;
 }
 
 .empty-instruction {
   color: rgba(0, 217, 255, 0.7);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
+  /* Multi-language support */
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.4;
 }
 
 /* Clear Button */
@@ -620,6 +642,13 @@ body {
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
   margin-top: 8px;
+  /* Multi-language support */
+  white-space: normal;
+  overflow-wrap: break-word;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .clear-button:hover {
@@ -794,6 +823,9 @@ body {
   cursor: pointer;
   transition: all 0.3s;
   text-align: left;
+  /* Multi-language support */
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 .pdf-option-btn:hover {
@@ -856,6 +888,13 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  /* Multi-language support */
+  white-space: normal;
+  overflow-wrap: break-word;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pdf-cancel-btn:hover {
