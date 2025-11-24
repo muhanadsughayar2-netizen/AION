@@ -97,7 +97,7 @@ body {
   transition: all 0.3s ease;
   /* Multi-language support */
   white-space: normal;
-  word-break: break-word;
+  overflow-wrap: break-word;
   line-height: 1.3;
 }
 
@@ -251,7 +251,8 @@ body {
   transition: all 0.3s ease;
   /* Multi-language multi-word support */
   white-space: normal;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-spacing: 0;
   line-height: 1.3;
   min-height: 32px;
   display: flex;
@@ -278,7 +279,8 @@ body {
   transition: all 0.3s ease;
   /* Multi-language multi-word support */
   white-space: normal;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-spacing: 0;
   line-height: 1.3;
   min-height: 32px;
   display: flex;
@@ -546,7 +548,7 @@ body {
   flex-direction: column;
   /* Multi-language support */
   white-space: normal;
-  word-break: break-word;
+  overflow-wrap: break-word;
   justify-content: center;
   align-items: center;
 }
@@ -829,7 +831,7 @@ body {
   margin-bottom: 4px;
   /* Multi-language support */
   white-space: normal;
-  word-break: break-word;
+  overflow-wrap: break-word;
   line-height: 1.3;
 }
 
@@ -839,7 +841,7 @@ body {
   font-size: 12px;
   /* Multi-language support */
   white-space: normal;
-  word-break: break-word;
+  overflow-wrap: break-word;
   line-height: 1.4;
 }
 
@@ -882,5 +884,5 @@ html[dir="rtl"] .logo-word {
 .counter {
   font-size: 13px;
   white-space: normal;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
