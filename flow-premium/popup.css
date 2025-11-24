@@ -52,18 +52,18 @@ body {
   background-clip: text;
   animation: glow-pulse 2s ease-in-out infinite;
   position: relative;
-  text-shadow: 0 0 10px rgba(0, 217, 255, 0.6), 0 0 20px rgba(0, 255, 255, 0.4);
-  filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.5)) drop-shadow(0 0 20px rgba(0, 255, 255, 0.3));
+  text-shadow: 0 0 5px rgba(0, 217, 255, 0.3), 0 0 10px rgba(0, 255, 255, 0.2);
+  filter: drop-shadow(0 0 5px rgba(0, 217, 255, 0.25)) drop-shadow(0 0 10px rgba(0, 255, 255, 0.15));
 }
 
 @keyframes glow-pulse {
   0%, 100% {
-    text-shadow: 0 0 10px rgba(0, 217, 255, 0.6), 0 0 20px rgba(0, 255, 255, 0.4);
-    filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.5)) drop-shadow(0 0 20px rgba(0, 255, 255, 0.3));
+    text-shadow: 0 0 5px rgba(0, 217, 255, 0.3), 0 0 10px rgba(0, 255, 255, 0.2);
+    filter: drop-shadow(0 0 5px rgba(0, 217, 255, 0.25)) drop-shadow(0 0 10px rgba(0, 255, 255, 0.15));
   }
   50% {
-    text-shadow: 0 0 20px rgba(0, 217, 255, 0.9), 0 0 40px rgba(0, 255, 255, 0.7);
-    filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.8)) drop-shadow(0 0 40px rgba(0, 255, 255, 0.6));
+    text-shadow: 0 0 10px rgba(0, 217, 255, 0.45), 0 0 20px rgba(0, 255, 255, 0.35);
+    filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.4)) drop-shadow(0 0 20px rgba(0, 255, 255, 0.3));
   }
 }
 
