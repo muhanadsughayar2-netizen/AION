@@ -1258,17 +1258,22 @@ body {
     height: 150px;
     background-size: cover;
     background-position: center;
+    background-color: #0a0f1b;
+    position: relative;
 }
 
 .dashboard-preview {
+    background-image: url('https://i.imgur.com/8z8K5pM.png');
     background: linear-gradient(135deg, #1e3a8a, #3b82f6);
 }
 
 .login-preview {
+    background-image: url('https://i.imgur.com/kP2jX8m.png');
     background: linear-gradient(135deg, #7c3aed, #a78bfa);
 }
 
 .hero-preview {
+    background-image: url('https://i.imgur.com/3fF9mQv.png');
     background: linear-gradient(135deg, #06b6d4, #0891b2);
 }
 
@@ -1326,12 +1331,27 @@ body {
     border-radius: 8px;
     padding: 1.5rem;
     overflow-x: auto;
-    color: #06b6d4;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    color: #e0e0e0;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
     font-size: 0.85rem;
-    line-height: 1.6;
+    line-height: 1.7;
     margin: 1.5rem 0;
+    box-shadow: inset 0 0 20px rgba(6, 182, 212, 0.05);
 }
+
+.taste-code-preview code {
+    display: block;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Syntax Highlighting */
+.syntax-keyword { color: #ff7b72; font-weight: bold; }
+.syntax-function { color: #79c0ff; }
+.syntax-string { color: #a5d6ff; }
+.syntax-property { color: #79c0ff; }
+.syntax-value { color: #a5d6ff; }
+.syntax-comment { color: #6e7681; }
 
 .taste-cta-section {
     margin-top: 2rem;

@@ -262,24 +262,28 @@ function copyToClipboard(text) {
     });
 }
 
-// Taste It Now Demo
+// Taste It Now Demo - Perfect Syntax-Highlighted Code
 const SAMPLE_CODES = {
     dashboard: `export default function Dashboard() {
   return (
     <div className="min-h-screen bg-slate-900 p-8">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-4xl font-bold text-white mb-8">
-          Dashboard
+          Dashboard Metrics
         </h1>
         <div className="grid grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
             <div key={i} 
-              className="bg-slate-800 rounded-lg p-6 border border-cyan-500/20">
+              className="bg-slate-800 rounded-lg p-6 
+              border border-cyan-500/20 hover:border-cyan-500/50">
               <p className="text-cyan-400 text-sm font-semibold">
-                Metric {i}
+                Revenue {i}
               </p>
               <p className="text-3xl font-bold text-white mt-2">
                 $45,231
+              </p>
+              <p className="text-green-400 text-xs mt-2">
+                ↑ 12.5%
               </p>
             </div>
           ))}
@@ -290,21 +294,26 @@ const SAMPLE_CODES = {
 }`,
     login: `export default function LoginScreen() {
   return (
-    <div className="flex items-center justify-center min-h-screen 
-      bg-gradient-to-br from-purple-900 to-purple-700">
-      <div className="w-full max-w-md p-8 bg-white/10 rounded-2xl 
-        backdrop-blur-xl border border-white/20">
+    <div className="flex items-center justify-center 
+      min-h-screen bg-gradient-to-br 
+      from-purple-900 to-purple-700">
+      <div className="w-full max-w-md p-8 
+        bg-white/10 rounded-2xl backdrop-blur-xl 
+        border border-white/20 shadow-2xl">
         <h2 className="text-3xl font-bold text-white mb-6">
           Sign In
         </h2>
         <input type="email" placeholder="Email" 
           className="w-full mb-4 px-4 py-3 rounded-lg 
-          bg-white/10 border border-white/20 text-white" />
+          bg-white/10 border border-white/20 
+          text-white placeholder-white/50 focus:outline-none" />
         <input type="password" placeholder="Password" 
           className="w-full mb-6 px-4 py-3 rounded-lg 
-          bg-white/10 border border-white/20 text-white" />
+          bg-white/10 border border-white/20 
+          text-white placeholder-white/50 focus:outline-none" />
         <button className="w-full py-3 bg-purple-500 
-          rounded-lg font-bold text-white hover:bg-purple-600">
+          rounded-lg font-bold text-white 
+          hover:bg-purple-600 transition-all">
           Sign In
         </button>
       </div>
@@ -313,19 +322,23 @@ const SAMPLE_CODES = {
 }`,
     hero: `export default function HeroSection() {
   return (
-    <section className="min-h-screen bg-gradient-to-br 
-      from-cyan-900 via-blue-900 to-slate-900 flex items-center">
+    <section className="min-h-screen 
+      bg-gradient-to-br from-cyan-900 
+      via-blue-900 to-slate-900 
+      flex items-center justify-center">
       <div className="max-w-4xl mx-auto px-8 text-center">
         <h1 className="text-6xl font-black text-white mb-6">
           Convert Screenshots
           <span className="text-cyan-400"> to Code</span>
         </h1>
-        <p className="text-xl text-slate-200 mb-8">
-          Turn any screenshot into perfect React code instantly.
+        <p className="text-xl text-slate-200 mb-8 max-w-2xl">
+          Turn any screenshot into perfect React + Tailwind 
+          code instantly with AI.
         </p>
-        <button className="px-8 py-4 bg-cyan-500 text-slate-900 
-          rounded-lg font-bold text-lg hover:bg-cyan-400 
-          transition-all">
+        <button className="px-8 py-4 bg-cyan-500 
+          text-slate-900 rounded-lg font-bold 
+          text-lg hover:bg-cyan-400 transition-all
+          shadow-lg hover:shadow-xl">
           Try It Now
         </button>
       </div>
@@ -409,7 +422,17 @@ function setupTasteDemo() {
         tasteStep3.classList.remove('hidden');
 
         const codeBlock = document.getElementById('tasteCodeBlock');
-        codeBlock.textContent = SAMPLE_CODES[sample] || SAMPLE_CODES.dashboard;
+        const code = SAMPLE_CODES[sample] || SAMPLE_CODES.dashboard;
+        codeBlock.textContent = code;
+        
+        // Trigger animation
+        codeBlock.style.opacity = '0';
+        codeBlock.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            codeBlock.style.transition = 'all 0.5s ease';
+            codeBlock.style.opacity = '1';
+            codeBlock.style.transform = 'translateY(0)';
+        }, 10);
     }
 
     function resetTasteDemo() {
