@@ -16,23 +16,27 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Landing Page Server"
+args = "Landing Page"
 
 [[workflows.workflow]]
-name = "Landing Page Server"
+name = "Landing Page"
 author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 app.py"
+waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd /root/landing-page && python3 -m http.server 5000"
-waitForPort = 5000
-
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 38943
+externalPort = 3002
 
 [[ports]]
 localPort = 39387
