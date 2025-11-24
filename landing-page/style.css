@@ -807,8 +807,122 @@ body {
 
 .testimonial-author {
     font-weight: 600;
-    color: var(--primary);
+    color: var(--text-primary);
     font-size: 0.9rem;
+}
+
+.testimonial-avatar {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--primary), #a855f7);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    color: white;
+    margin-bottom: 1rem;
+}
+
+.testimonial-company {
+    font-size: 0.85rem;
+    color: var(--primary);
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.testimonial-link {
+    display: inline-block;
+    margin-top: 1rem;
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(6, 182, 212, 0.5);
+    transition: all 0.2s ease;
+}
+
+.testimonial-link:hover {
+    border-bottom-color: var(--primary);
+}
+
+/* Case Studies */
+.case-studies {
+    padding: 6rem 2rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(6, 182, 212, 0.05));
+    border-top: 1px solid rgba(6, 182, 212, 0.1);
+}
+
+.case-studies-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin: 0.5rem 0 2rem;
+    text-align: center;
+}
+
+.case-studies-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.case-study-card {
+    background: var(--bg-glass);
+    backdrop-filter: blur(10px);
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.case-study-card:hover {
+    border-color: var(--primary);
+    box-shadow: var(--glow);
+    transform: translateY(-4px);
+}
+
+.case-study-tag {
+    display: inline-block;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.2));
+    color: var(--primary);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1rem;
+}
+
+.case-study-card h3 {
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.case-study-card p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.read-more {
+    display: inline-block;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-bottom: 2px solid var(--primary);
+    transition: all 0.2s ease;
+}
+
+.read-more:hover {
+    padding-bottom: 2px;
 }
 
 /* FAQ */
@@ -951,15 +1065,59 @@ body {
 
 /* Footer */
 .footer {
-    padding: 3rem 2rem;
-    background: linear-gradient(180deg, transparent, rgba(6, 182, 212, 0.05));
-    border-top: 1px solid var(--border-color);
-    text-align: center;
+    padding: 4rem 2rem 2rem;
+    background: rgba(15, 23, 42, 0.9);
+    border-top: 1px solid rgba(6, 182, 212, 0.1);
+    color: var(--text-secondary);
 }
 
-.footer-content p {
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto 3rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 2rem;
+}
+
+.footer-section h4 {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.footer-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.footer-section li {
+    margin-bottom: 0.75rem;
+}
+
+.footer-section a {
     color: var(--text-secondary);
+    text-decoration: none;
     font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.footer-section a:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.footer-bottom {
+    border-top: 1px solid rgba(6, 182, 212, 0.1);
+    padding-top: 2rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.footer-bottom p {
     margin: 0.5rem 0;
 }
 
