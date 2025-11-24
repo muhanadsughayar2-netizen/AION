@@ -1,0 +1,137 @@
+const translations = {
+    en: {
+        tagline: "One click. One snap.",
+        subtitle: "Your pages, ready for AI in seconds.",
+        downloadBtn: "Download for Chrome",
+        trialBadge: "FREE • 30 Days",
+        statLanguages: "Languages",
+        statScreenshots: "Screenshots",
+        statSpeed: "Lightning Fast",
+        card1: "Capture",
+        card2: "Batch Upload",
+        card3: "AI Ready",
+        featuresTitle: "Why SnapToAI?",
+        feature1Title: "Precision Focus",
+        feature1Desc: "Clean organized screenshots = Better AI responses",
+        feature2Title: "Speed Matters",
+        feature2Desc: "One-click batch upload 10x faster than manual",
+        feature3Title: "No Confusion",
+        feature3Desc: "Structured data your AI can actually understand",
+        feature4Title: "Private & Secure",
+        feature4Desc: "100% client-side, nothing leaves your browser",
+        feature5Title: "All Platforms",
+        feature5Desc: "ChatGPT, Claude, Grok - works everywhere",
+        feature6Title: "Your Language",
+        feature6Desc: "Available in 55 languages, auto-detected",
+        howTitle: "How It Works",
+        step1: "Download & Install",
+        step1Desc: "Add SnapToAI to Chrome in one click",
+        step2: "Capture Screenshots",
+        step2Desc: "Press Ctrl+Shift+S on any website",
+        step3: "Auto Upload",
+        step3Desc: "Visit ChatGPT/Claude - batch upload instantly",
+        pricingTitle: "Simple Pricing",
+        pricingPlan: "SnapToAI Premium",
+        trialInfo: "🎁 30-day free trial - No credit card needed",
+        priceFeature1: "✅ Unlimited screenshots per day",
+        priceFeature2: "✅ All AI platforms supported",
+        priceFeature3: "✅ Lifetime updates & support",
+        priceFeature4: "✅ Priority feature requests",
+        priceFeature5: "✅ Cancel anytime (no lock-in)",
+        pricingCTA: "Start Your Free Trial",
+        testimonialsTitle: "Why Users Love It",
+        testimonial1: "Literally the fastest way to share screenshots with AI. Game changer!",
+        author1: "Sarah, Product Designer",
+        testimonial2: "Works perfectly with Claude. My productivity just skyrocketed.",
+        author2: "Marcus, Developer",
+        testimonial3: "Finally, an extension that just works. No bloat, just pure speed.",
+        author3: "Elena, Researcher",
+        faqTitle: "Common Questions",
+        faqQ1: "Is it really free?",
+        faqA1: "Yes! First 30 days completely free, no credit card needed. Then $9.90/year. Cancel anytime.",
+        faqQ2: "Is my data private?",
+        faqA2: "100% client-side. Your screenshots never leave your browser. We don't store anything.",
+        faqQ3: "Works with all AI platforms?",
+        faqA3: "Yes: ChatGPT, Claude, Grok, and more. If it has a file upload, SnapToAI works with it.",
+        faqQ4: "How many screenshots can I store?",
+        faqA4: "Unlimited! Store as many as you want during your session.",
+        selectLanguageTitle: "Select Your Language",
+        footerText: "© 2025 SnapToAI. Built with precision for speed.",
+        footerLanguages: "Available in 55 languages • Made on Replit",
+    },
+    am: { tagline: "ጠቅ አንድ። ስክሪንショት አንድ።", subtitle: "ገጾችህ AI ዋጋ ያላቸው።", downloadBtn: "ለ Chrome ያውርዱ", trialBadge: "ነጻ • 30 ቀናት", statLanguages: "ቋንቋዎች", statScreenshots: "ስክሪንshots", statSpeed: "ብልጥ ፍጥነት", card1: "ይያዙ", card2: "በቅጠላ ስቅልፍ", card3: "AI ዝግጁ", featuresTitle: "ለምን SnapToAI?", feature1Title: "ትክክለኛ ትኩረት", feature1Desc: "ንጹህ ስክሪንshots = ተሻጋሪ AI ምላሾች", feature2Title: "ፍጥነት ወሳኝ ነው", feature2Desc: "ቅዳ ውድቅ አርሶአ ደርሶ ፋይ 10 ጊዜ ፍጥነት", feature3Title: "ምንም ግራ መጋባት", feature3Desc: "ያልተለመደ ውሂብ AI ሊገነዘብ ይችላል", feature4Title: "ግላዊ እና ደህንነታዊ", feature4Desc: "100% ክライент-ጎን, ምንም ነገር ሉክ ወደ ውጪ አይወጣም", feature5Title: "ሁሉም ሌላ", feature5Desc: "ChatGPT, Claude, Grok - በሁሉም ቦታ ይሰራል", feature6Title: "የእርስዎ ቋንቋ", feature6Desc: "በ 55 ቋንቋ ይገኛል ፣ አውቶ-ተገኘ", howTitle: "እንዴት ይሰራል", step1: "ያውርድ እና ይጫኑ", step1Desc: "SnapToAI ን ወደ Chrome በአንድ ጠቅ ጨምሩ", step2: "ስክሪንshots ይያዙ", step2Desc: "ለ Ctrl+Shift+S ማንኛውም ድር ጣቢያ", step3: "Auto አቅምጡ", step3Desc: "ChatGPT / Claude ን ይጎበኙ - ባች ከወደ ወደ ወደ", pricingTitle: "ቀላል ዋጋ", pricingPlan: "SnapToAI ፕሪሚየም", trialInfo: "🎁 30 ቀናት ነጻ ሙከራ - ምንም ክሬዲት ካርድ አያስፈልግም", priceFeature1: "✅ ሪስተር ፍ ሊሎ screenshot በቀን", priceFeature2: "✅ ሁሉም AI ሌላ ደግግወተ", priceFeature3: "✅ ህይወት ማሻሻያ & ድጋፍ", priceFeature4: "✅ ቅድሚያ ባህሪ ጥያቄዎች", priceFeature5: "✅ ማንም ጊዜ ያቆሙ (ምንም ሎክ-ውስጥ)", pricingCTA: "ነጻ ሙከራ ይጀምሩ", testimonialsTitle: "ለምን ተጠቃሚዎች ወደ እሱ ይወዳደሩ", testimonial1: "ሙሉ በሙሉ ፈጣን ውስጥ ስክሪንshots ከAI ጋር ተግባር። ጌም ሞገር!", author1: "ሳራ ፣ ምርት ስሪቅ", testimonial2: "ከ Claude ጋር ፍጹም ይሰራል። ጉልበቴ በዛፍ ወድቅ።", author2: "ማርከስ ፣ ውጤሻር", testimonial3: "በመጨረሻ ፣ ኤክስተንሽን 딕 ይሰራል። ምንም የብዓት ፣ ሙሉ ፍጥነት።", author3: "ኤለና ፣ ተመራማሪ", faqTitle: "የተለመዱ ጥያቄዎች", faqQ1: "ሙሉ በሙሉ ነጻ ነው?", faqA1: "አዎ! ለመጀመሪያ 30 ቀናት ሙሉ በሙሉ ነጻ ፣ ምንም ክሬዲት ካርድ አያስፈልግም። ከዚያ $9.90/አመት። ማንም ጊዜ ያቆሙ።", faqQ2: "ውሂቤ ግላዊ ነው?", faqA2: "100% ክライент-ጎን። ትንታንህ ስክሪንshots ሉክ ወደ ውጪ አይወጣም። ምንም ነገር ስቁጠር አናደርገም።", faqQ3: "ሁሉም AI ሌላ ጋር ይሰራል?", faqA3: "አዎ: ChatGPT ፣ Claude ፣ Grok ፣ ወዘተ። ፋይል ማቅርብ ካለ ፣ SnapToAI ከእሱ ጋር ይሰራል።", faqQ4: "ስንት ስክሪንshots ሊያከማች?", faqA4: "ወሰን የለሽ! በክርክር ወቅት እንደሚጠይቁ ብዙ ሊያከማች።", selectLanguageTitle: "ቋንቋህን ምረጥ", footerText: "© 2025 SnapToAI። በትክክለኛነት ለፍጥነት የተገነባ።", footerLanguages: "በ 55 ቋንቋ ይገኛል • በ Replit ላይ ተሠርተዋል", },
+    ar: { tagline: "نقرة واحدة. لقطة واحدة.", subtitle: "صفحاتك جاهزة للذكاء الاصطناعي.", downloadBtn: "تحميل لـ Chrome", trialBadge: "مجاني • 30 يومًا", statLanguages: "اللغات", statScreenshots: "لقطات الشاشة", statSpeed: "سريع جدًا", card1: "التقط", card2: "الرفع بالجملة", card3: "جاهز للذكاء الاصطناعي", featuresTitle: "لماذا SnapToAI؟", feature1Title: "التركيز الدقيق", feature1Desc: "لقطات الشاشة النظيفة = استجابات ذكاء اصطناعي أفضل", feature2Title: "السرعة مهمة", feature2Desc: "رفع بالجملة بنقرة واحدة أسرع 10 مرات من الرفع اليدوي", feature3Title: "لا التباس", feature3Desc: "البيانات المنظمة التي يمكن للذكاء الاصطناعي أن يفهمها بالفعل", feature4Title: "خاص وآمن", feature4Desc: "100% من جانب العميل ، لا شيء يترك متصفحك", feature5Title: "جميع المنصات", feature5Desc: "ChatGPT و Claude و Grok - يعمل في كل مكان", feature6Title: "لغتك", feature6Desc: "متاح في 55 لغة مع الكشف التلقائي", howTitle: "كيفية العمل", step1: "التحميل والتثبيت", step1Desc: "أضف SnapToAI إلى Chrome بنقرة واحدة", step2: "التقط لقطات الشاشة", step2Desc: "اضغط على Ctrl+Shift+S على أي موقع ويب", step3: "الرفع التلقائي", step3Desc: "زيارة ChatGPT / Claude - الرفع الفوري بالجملة", pricingTitle: "تسعير بسيط", pricingPlan: "SnapToAI Premium", trialInfo: "🎁 تجربة مجانية لمدة 30 يومًا - لا توجد بطاقة ائتمان مطلوبة", priceFeature1: "✅ لقطات شاشة غير محدودة يوميًا", priceFeature2: "✅ جميع منصات الذكاء الاصطناعي المدعومة", priceFeature3: "✅ تحديثات مدى الحياة والدعم", priceFeature4: "✅ طلبات الميزات ذات الأولوية", priceFeature5: "✅ إلغاء في أي وقت (بدون قفل)", pricingCTA: "ابدأ تجربتك المجانية", testimonialsTitle: "لماذا يحب المستخدمون ذلك", testimonial1: "أسرع طريقة حرفيًا لمشاركة لقطات الشاشة مع الذكاء الاصطناعي. غيّر قواعد اللعبة!", author1: "سارة ، مصممة المنتج", testimonial2: "يعمل بشكل مثالي مع Claude. ارتفعت إنتاجيتي بشكل كبير.", author2: "ماركوس ، مطور", testimonial3: "أخيرًا ، ملحق يعمل ببساطة. بدون تضخيم ، فقط السرعة البحتة.", author3: "إيلينا ، الباحثة", faqTitle: "أسئلة شائعة", faqQ1: "هل هو مجاني حقًا؟", faqA1: "نعم! أول 30 يومًا مجانية تمامًا ، بدون بطاقة ائتمان. ثم $9.90/سنة. إلغاء في أي وقت.", faqQ2: "هل بياناتي خاصة؟", faqA2: "100% من جانب العميل. لا تترك لقطات الشاشة الخاصة بك المتصفح. نحن لا نخزن أي شيء.", faqQ3: "يعمل مع جميع منصات الذكاء الاصطناعي؟", faqA3: "نعم: ChatGPT و Claude و Grok وغيرها. إذا كان لديها تحميل ملف ، فإن SnapToAI تعمل معها.", faqQ4: "كم عدد لقطات الشاشة التي يمكنني تخزينها؟", faqA4: "غير محدود! قم بتخزين أي عدد تريده أثناء الجلسة.", selectLanguageTitle: "اختر لغتك", footerText: "© 2025 SnapToAI. مبني بدقة للسرعة.", footerLanguages: "متاح في 55 لغة • مصنوع على Replit", },
+    ko: { tagline: "한 번 클릭. 한 번 스냅.", subtitle: "당신의 페이지는 AI를 위해 준비되었습니다.", downloadBtn: "Chrome용 다운로드", trialBadge: "무료 • 30일", statLanguages: "언어", statScreenshots: "스크린샷", statSpeed: "번개 빠름", card1: "캡처", card2: "배치 업로드", card3: "AI 준비됨", featuresTitle: "왜 SnapToAI?", feature1Title: "정밀 포커스", feature1Desc: "깔끔한 정렬 스크린샷 = 더 나은 AI 응답", feature2Title: "속도 중요", feature2Desc: "한 번 클릭 배치 업로드, 수동보다 10배 빠름", feature3Title: "혼동 없음", feature3Desc: "AI가 실제로 이해할 수 있는 구조화된 데이터", feature4Title: "비공개 및 보안", feature4Desc: "100% 클라이언트 측, 브라우저를 떠나지 않음", feature5Title: "모든 플랫폼", feature5Desc: "ChatGPT, Claude, Grok - 모든 곳에서 작동", feature6Title: "당신의 언어", feature6Desc: "55개 언어로 제공, 자동 감지", howTitle: "작동 방식", step1: "다운로드 및 설치", step1Desc: "한 번의 클릭으로 SnapToAI를 Chrome에 추가", step2: "스크린샷 캡처", step2Desc: "모든 웹사이트에서 Ctrl+Shift+S 누르기", step3: "자동 업로드", step3Desc: "ChatGPT/Claude 방문 - 즉시 배치 업로드", pricingTitle: "간단한 가격", pricingPlan: "SnapToAI 프리미엄", trialInfo: "🎁 30일 무료 체험 - 신용카드 필요 없음", priceFeature1: "✅ 하루 무제한 스크린샷", priceFeature2: "✅ 모든 AI 플랫폼 지원", priceFeature3: "✅ 평생 업데이트 및 지원", priceFeature4: "✅ 우선 기능 요청", priceFeature5: "✅ 언제든지 취소 (잠금 없음)", pricingCTA: "무료 체험 시작", testimonialsTitle: "사용자들이 사랑하는 이유", testimonial1: "정말 AI와 스크린샷을 공유하는 가장 빠른 방법입니다. 게임 체인저!", author1: "Sarah, 제품 디자이너", testimonial2: "Claude와 완벽하게 작동합니다. 생산성이 급증했습니다.", author2: "Marcus, 개발자", testimonial3: "마침내 그냥 작동하는 확장입니다. 블로트 없음, 순수 속도만.", author3: "Elena, 연구원", faqTitle: "일반적인 질문", faqQ1: "정말 무료입니까?", faqA1: "그렇습니다! 처음 30일은 완전히 무료, 신용카드 필요 없음. 그 후 연 $9.90. 언제든지 취소할 수 있습니다.", faqQ2: "내 데이터는 비공개입니까?", faqA2: "100% 클라이언트 측. 스크린샷이 브라우저를 떠나지 않습니다. 아무것도 저장하지 않습니다.", faqQ3: "모든 AI 플랫폼에서 작동합니까?", faqA3: "네: ChatGPT, Claude, Grok 등. 파일 업로드가 있으면 SnapToAI가 작동합니다.", faqQ4: "몇 개의 스크린샷을 저장할 수 있습니까?", faqA4: "무제한! 세션 중에 원하는 만큼 저장할 수 있습니다.", selectLanguageTitle: "언어 선택", footerText: "© 2025 SnapToAI. 속도를 위해 정밀하게 만들어졌습니다.", footerLanguages: "55개 언어로 제공 • Replit에서 제작", },
+    zh: { tagline: "一键。一张快照。", subtitle: "您的页面已准备好用于AI。", downloadBtn: "下载Chrome版", trialBadge: "免费 • 30天", statLanguages: "语言", statScreenshots: "截图", statSpeed: "闪电般快速", card1: "捕获", card2: "批量上传", card3: "AI就绪", featuresTitle: "为什么选择SnapToAI?", feature1Title: "精确焦点", feature1Desc: "干净整洁的截图 = 更好的AI回复", feature2Title: "速度至关重要", feature2Desc: "一键批量上传，比手动快10倍", feature3Title: "没有混淆", feature3Desc: "AI可以实际理解的结构化数据", feature4Title: "私密且安全", feature4Desc: "100%客户端，不会离开您的浏览器", feature5Title: "所有平台", feature5Desc: "ChatGPT、Claude、Grok - 无处不在", feature6Title: "您的语言", feature6Desc: "支持55种语言，自动检测", howTitle: "工作原理", step1: "下载并安装", step1Desc: "一键将SnapToAI添加到Chrome", step2: "捕获截图", step2Desc: "在任何网站上按Ctrl+Shift+S", step3: "自动上传", step3Desc: "访问ChatGPT/Claude - 即时批量上传", pricingTitle: "简单定价", pricingPlan: "SnapToAI高级版", trialInfo: "🎁 30天免费试用 - 无需信用卡", priceFeature1: "✅ 每天无限截图", priceFeature2: "✅ 支持所有AI平台", priceFeature3: "✅ 终身更新和支持", priceFeature4: "✅ 优先级功能请求", priceFeature5: "✅ 随时取消（无锁定）", pricingCTA: "开始免费试用", testimonialsTitle: "用户为什么喜爱它", testimonial1: "绝对是与AI共享截图的最快方法。改变规则的东西!", author1: "Sarah，产品设计师", testimonial2: "与Claude完美配合。我的生产力飙升。", author2: "Marcus，开发者", testimonial3: "终于，一个开箱即用的扩展程序。没有膨胀，只有纯粹的速度。", author3: "Elena，研究员", faqTitle: "常见问题", faqQ1: "真的免费吗?", faqA1: "是的!前30天完全免费，无需信用卡。之后$9.90/年。随时取消。", faqQ2: "我的数据是私密的吗?", faqA2: "100%客户端。您的截图不会离开浏览器。我们不存储任何内容。", faqQ3: "适用于所有AI平台吗?", faqA3: "是的：ChatGPT、Claude、Grok等。如果它有文件上传，SnapToAI就可以使用。", faqQ4: "我能存储多少个截图?", faqA4: "无限!在会话期间存储任意数量。", selectLanguageTitle: "选择您的语言", footerText: "© 2025 SnapToAI。为速度而精心打造。", footerLanguages: "支持55种语言 • 在Replit上制作", },
+};
+
+// Add more languages programmatically
+const moreLanguages = [
+    'fr', 'de', 'es', 'it', 'pt_PT', 'pt_BR', 'nl', 'pl', 'ru', 'tr', 'vi', 'th', 
+    'ja', 'hi', 'bn', 'gu', 'ta', 'te', 'kn', 'ml', 'mr', 'or',
+    'bg', 'cs', 'da', 'el', 'et', 'fi', 'hu', 'id', 'lt', 'lv',
+    'nb', 'ro', 'sk', 'sl', 'sr', 'sv', 'uk', 'he', 'hr', 'ca',
+    'sw', 'fil', 'en_GB', 'en_US', 'es_419', 'zh_TW'
+];
+
+// Fill remaining languages with English + native tagline
+moreLanguages.forEach(lang => {
+    if (!translations[lang]) {
+        translations[lang] = JSON.parse(JSON.stringify(translations.en));
+    }
+});
+
+// Native taglines for key languages
+const nativeTaglines = {
+    fr: "Un clic. Une capture.",
+    de: "Ein Klick. Ein Screenshot.",
+    es: "Un clic. Una captura.",
+    it: "Un clic. Uno scatto.",
+    pt_PT: "Um clique. Uma captura.",
+    pt_BR: "Um clique. Uma captura.",
+    nl: "Eén klik. Eén afbeelding.",
+    pl: "Jeden klik. Jeden zrzut.",
+    ru: "Один клик. Один снимок.",
+    tr: "Bir tık. Bir anlık.",
+    vi: "Một cú nhấp. Một ảnh chụp.",
+    th: "คลิกเดียว แตะเดียว",
+    ja: "ワンクリック。ワンスナップ。",
+    hi: "एक क्लिक। एक स्नैपशॉट।",
+    bn: "এক ক্লিক। এক স্ন্যাপ।",
+    gu: "એક ક્લિક. એક સ્નેપ.",
+    ta: "ஒரு கிளிக். ஒரு ஸ்ந்யாப்.",
+    te: "ఒక క్లిక్. ఒక స్నాప్.",
+    kn: "ಒಂದು ಕ್ಲಿಕ್. ಒಂದು ಸ್ನ್ಯಾಪ್.",
+    ml: "ഒരു ക്ലിക്കിൽ. ഒരു സ്ന്യാപ്പ്.",
+    mr: "एक क्लिक. एक स्नॅप.",
+    or: "ଗୋଟିଏ କ୍ଲିକ୍। ଗୋଟିଏ ସ୍ନ୍ୟାପ୍।",
+    bg: "Един клик. Една снимка.",
+    cs: "Jeden klik. Jeden snímek.",
+    da: "Et klik. Et snapshot.",
+    el: "Ένα κλικ. Ένα στιγμιότυπο.",
+    et: "Üks klõps. Üks hetktõmmis.",
+    fi: "Yksi napsautus. Yksi kuva.",
+    hu: "Egy kattintás. Egy pillanatkép.",
+    id: "Satu klik. Satu tangkapan.",
+    lt: "Vienas spustelėjimas. Vienas kadrą.",
+    lv: "Viena klikšķi. Viens attēls.",
+    nb: "Ett klikk. Ett øyeblikk.",
+    ro: "Un clic. O captură.",
+    sk: "Jeden klik. Jeden záber.",
+    sl: "En klik. En posnetek.",
+    sr: "Један клик. Једна слика.",
+    sv: "Ett klick. En bild.",
+    uk: "Один клік. Один знімок.",
+    he: "לחיצה אחת. תמונה אחת.",
+    hr: "Jedan klik. Jedan snimak.",
+    ca: "Un clic. Una captura.",
+    sw: "Bofya moja. Picha moja.",
+    fil: "Isang click. Isang larawan.",
+};
+
+// Update taglines
+Object.keys(nativeTaglines).forEach(lang => {
+    if (translations[lang]) {
+        translations[lang].tagline = nativeTaglines[lang];
+    }
+});

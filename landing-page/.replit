@@ -1,0 +1,2 @@
+run = "npx http-server -p 5000 -c-1"
+modules = ["nodejs-20"]
