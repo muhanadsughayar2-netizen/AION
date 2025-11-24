@@ -17,7 +17,7 @@
                 <span class="logo-text">Snap<span class="logo-highlight">ToAI</span></span>
             </div>
             <div class="nav-links">
-                <button class="lang-switch" id="langSwitch" title="Change Language">🌐</button>
+                <button class="lang-switch" id="langSwitch" title="Change Language">Language</button>
             </div>
         </div>
     </nav>
@@ -38,7 +38,6 @@
 
             <!-- CTA Button -->
             <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button">
-                <span class="cta-icon">⬇️</span>
                 <span class="cta-text" id="downloadBtn">Download for Chrome</span>
                 <span class="cta-badge" id="trialBadge">FREE • 30 Days</span>
             </a>
@@ -54,8 +53,8 @@
                     <span class="stat-label" id="statScreenshots">Screenshots</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-number">⚡</span>
-                    <span class="stat-label" id="statSpeed">Lightning Fast</span>
+                    <span class="stat-number">Fast</span>
+                    <span class="stat-label" id="statSpeed">Lightning Speed</span>
                 </div>
             </div>
         </div>
@@ -67,12 +66,53 @@
                 <div class="card-text" id="card1">Capture</div>
             </div>
             <div class="floating-card card-2">
-                <div class="card-icon">⚡</div>
-                <div class="card-text" id="card2">Batch Upload</div>
+                <div class="card-label" id="card2">Batch Upload</div>
             </div>
             <div class="floating-card card-3">
-                <div class="card-icon">🤖</div>
-                <div class="card-text" id="card3">AI Ready</div>
+                <div class="card-label" id="card3">AI Ready</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Browser Compatibility Section -->
+    <section class="browser-compatibility">
+        <h2 class="section-title" id="browserTitle">Works On All Major Browsers</h2>
+        <p class="compatibility-subtitle" id="compatibilityDesc">SnapToAI runs seamlessly on any Chromium-based browser</p>
+        
+        <div class="browsers-grid">
+            <div class="browser-card">
+                <div class="browser-icon chrome">C</div>
+                <h3 id="browserChrome">Chrome</h3>
+                <p id="browserChromeDesc">Official Chrome Web Store</p>
+                <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="browser-link" id="browserChromeLink">Install</a>
+            </div>
+
+            <div class="browser-card">
+                <div class="browser-icon edge">E</div>
+                <h3 id="browserEdge">Edge</h3>
+                <p id="browserEdgeDesc">Microsoft Edge Add-ons</p>
+                <a href="https://microsoftedge.microsoft.com/addons" target="_blank" class="browser-link" id="browserEdgeLink">Install</a>
+            </div>
+
+            <div class="browser-card">
+                <div class="browser-icon brave">B</div>
+                <h3 id="browserBrave">Brave</h3>
+                <p id="browserBraveDesc">Chrome Web Store compatible</p>
+                <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="browser-link" id="browserBraveLink">Install</a>
+            </div>
+
+            <div class="browser-card">
+                <div class="browser-icon opera">O</div>
+                <h3 id="browserOpera">Opera</h3>
+                <p id="browserOperaDesc">Opera Add-ons store</p>
+                <a href="https://addons.opera.com" target="_blank" class="browser-link" id="browserOperaLink">Install</a>
+            </div>
+
+            <div class="browser-card">
+                <div class="browser-icon vivaldi">V</div>
+                <h3 id="browserVivaldi">Vivaldi</h3>
+                <p id="browserVivaldiDesc">Chrome Web Store compatible</p>
+                <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="browser-link" id="browserVivaldiLink">Install</a>
             </div>
         </div>
     </section>
@@ -83,37 +123,37 @@
         
         <div class="features-grid">
             <div class="feature-card">
-                <div class="feature-icon">🎯</div>
+                <div class="feature-badge" id="feature1Badge">Focus</div>
                 <h3 id="feature1Title">Precision Focus</h3>
                 <p id="feature1Desc">Clean organized screenshots = Better AI responses</p>
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">⚡</div>
+                <div class="feature-badge" id="feature2Badge">Speed</div>
                 <h3 id="feature2Title">Speed Matters</h3>
                 <p id="feature2Desc">One-click batch upload 10x faster than manual</p>
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">🧠</div>
+                <div class="feature-badge" id="feature3Badge">Clear</div>
                 <h3 id="feature3Title">No Confusion</h3>
                 <p id="feature3Desc">Structured data your AI can actually understand</p>
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">🔒</div>
+                <div class="feature-badge" id="feature4Badge">Secure</div>
                 <h3 id="feature4Title">Private & Secure</h3>
                 <p id="feature4Desc">100% client-side, nothing leaves your browser</p>
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">🌍</div>
+                <div class="feature-badge" id="feature5Badge">Universal</div>
                 <h3 id="feature5Title">All Platforms</h3>
                 <p id="feature5Desc">ChatGPT, Claude, Grok - works everywhere</p>
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">📱</div>
+                <div class="feature-badge" id="feature6Badge">Global</div>
                 <h3 id="feature6Title">Your Language</h3>
                 <p id="feature6Desc">Available in 55 languages, auto-detected</p>
             </div>
@@ -127,8 +167,7 @@
         <div class="steps-container">
             <div class="step">
                 <div class="step-number">1</div>
-                <div class="step-icon">📥</div>
-                <h3 id="step1">Download & Install</h3>
+                <div class="step-label" id="step1">Download & Install</div>
                 <p id="step1Desc">Add SnapToAI to Chrome in one click</p>
             </div>
 
@@ -136,8 +175,7 @@
 
             <div class="step">
                 <div class="step-number">2</div>
-                <div class="step-icon">📸</div>
-                <h3 id="step2">Capture Screenshots</h3>
+                <div class="step-label" id="step2">Capture Screenshots</div>
                 <p id="step2Desc">Press Ctrl+Shift+S on any website</p>
             </div>
 
@@ -145,8 +183,7 @@
 
             <div class="step">
                 <div class="step-number">3</div>
-                <div class="step-icon">🚀</div>
-                <h3 id="step3">Auto Upload</h3>
+                <div class="step-label" id="step3">Auto Upload</div>
                 <p id="step3Desc">Visit ChatGPT/Claude - batch upload instantly</p>
             </div>
         </div>
@@ -166,15 +203,15 @@
             </div>
 
             <div class="trial-info" id="trialInfo">
-                🎁 <strong>30-day free trial</strong> - No credit card needed
+                <strong id="trialText">30-day free trial</strong> - No credit card needed
             </div>
 
             <ul class="feature-list">
-                <li id="priceFeature1">✅ Unlimited screenshots per day</li>
-                <li id="priceFeature2">✅ All AI platforms supported</li>
-                <li id="priceFeature3">✅ Lifetime updates & support</li>
-                <li id="priceFeature4">✅ Priority feature requests</li>
-                <li id="priceFeature5">✅ Cancel anytime (no lock-in)</li>
+                <li id="priceFeature1">Unlimited screenshots per day</li>
+                <li id="priceFeature2">All AI platforms supported</li>
+                <li id="priceFeature3">Lifetime updates & support</li>
+                <li id="priceFeature4">Priority feature requests</li>
+                <li id="priceFeature5">Cancel anytime (no lock-in)</li>
             </ul>
 
             <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button" style="width: 100%; text-align: center;">
@@ -189,19 +226,19 @@
         
         <div class="testimonials-grid">
             <div class="testimonial-card">
-                <div class="stars">⭐⭐⭐⭐⭐</div>
+                <div class="rating" id="rating1">5/5</div>
                 <p id="testimonial1">"Literally the fastest way to share screenshots with AI. Game changer!"</p>
                 <div class="testimonial-author" id="author1">Sarah, Product Designer</div>
             </div>
 
             <div class="testimonial-card">
-                <div class="stars">⭐⭐⭐⭐⭐</div>
+                <div class="rating" id="rating2">5/5</div>
                 <p id="testimonial2">"Works perfectly with Claude. My productivity just skyrocketed."</p>
                 <div class="testimonial-author" id="author2">Marcus, Developer</div>
             </div>
 
             <div class="testimonial-card">
-                <div class="stars">⭐⭐⭐⭐⭐</div>
+                <div class="rating" id="rating3">5/5</div>
                 <p id="testimonial3">"Finally, an extension that just works. No bloat, just pure speed."</p>
                 <div class="testimonial-author" id="author3">Elena, Researcher</div>
             </div>

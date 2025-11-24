@@ -278,10 +278,89 @@ body {
     font-size: 2rem;
 }
 
-.card-text {
+.card-text,
+.card-label {
     font-weight: 600;
     text-align: center;
     color: var(--text-secondary);
+}
+
+/* Browser Compatibility */
+.browser-compatibility {
+    padding: 6rem 2rem;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.05), rgba(8, 145, 178, 0.05));
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.compatibility-subtitle {
+    text-align: center;
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 3rem;
+}
+
+.browsers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+}
+
+.browser-card {
+    padding: 2rem;
+    background: var(--bg-glass);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.browser-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary);
+    box-shadow: var(--glow);
+}
+
+.browser-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    color: #0f172a;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.browser-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.browser-card p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.browser-link {
+    display: inline-block;
+    padding: 0.5rem 1.5rem;
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    color: #0f172a;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.browser-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(6, 182, 212, 0.3);
 }
 
 /* Features Section */
@@ -323,10 +402,18 @@ body {
     box-shadow: var(--glow);
 }
 
-.feature-icon {
-    font-size: 2.5rem;
+.feature-icon,
+.feature-badge {
+    font-size: 1rem;
     margin-bottom: 1rem;
-    display: block;
+    display: inline-block;
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    color: #0f172a;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .feature-card h3 {
@@ -388,9 +475,11 @@ body {
     margin: 0 auto 1rem;
 }
 
-.step-icon {
-    font-size: 2.5rem;
+.step-icon,
+.step-label {
+    font-size: 1rem;
     margin: 1rem 0;
+    font-weight: 600;
 }
 
 .step h3 {
@@ -523,6 +612,13 @@ body {
     color: var(--text-secondary);
     margin-bottom: 1rem;
     font-style: italic;
+}
+
+.rating {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 0.75rem;
 }
 
 .testimonial-author {
