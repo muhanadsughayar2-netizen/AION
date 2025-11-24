@@ -98,6 +98,63 @@
         </div>
     </section>
 
+    <!-- Taste It Now Demo Button -->
+    <div class="taste-demo-container">
+        <button class="taste-button" id="tasteButton">
+            ⚡ TASTE IT NOW – See How It Works (No signup)
+        </button>
+    </div>
+
+    <!-- Taste It Now Modal -->
+    <div class="taste-modal" id="tasteModal">
+        <div class="taste-modal-content">
+            <button class="taste-modal-close" id="tasteModalClose">&times;</button>
+            
+            <div class="taste-modal-body">
+                <!-- Screenshot Selection -->
+                <div class="taste-step-1" id="tasteStep1">
+                    <h2>Choose a Screenshot</h2>
+                    <p>Select any to see SnapToAI in action</p>
+                    <div class="taste-sample-grid">
+                        <div class="taste-sample-card" data-sample="dashboard">
+                            <div class="taste-sample-preview dashboard-preview"></div>
+                            <p>Dashboard UI</p>
+                        </div>
+                        <div class="taste-sample-card" data-sample="login">
+                            <div class="taste-sample-preview login-preview"></div>
+                            <p>Login Screen</p>
+                        </div>
+                        <div class="taste-sample-card" data-sample="hero">
+                            <div class="taste-sample-preview hero-preview"></div>
+                            <p>Hero Section</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Countdown -->
+                <div class="taste-step-2 hidden" id="tasteStep2">
+                    <h2>Generating Code...</h2>
+                    <div class="taste-countdown" id="tasteCountdown">5</div>
+                    <p>SnapToAI is analyzing your screenshot</p>
+                </div>
+
+                <!-- Code Display -->
+                <div class="taste-step-3 hidden" id="tasteStep3">
+                    <div class="taste-code-header">
+                        <h2>Perfect React + Tailwind Code</h2>
+                        <button class="taste-copy-btn" id="tasteCopyBtn">Copy Code</button>
+                    </div>
+                    <pre id="tasteCodeBlock" class="taste-code-preview"><code></code></pre>
+                    <div class="taste-cta-section">
+                        <p>This was 100% automatic. No prompts written.</p>
+                        <p style="margin-top: 1rem; font-weight: bold;">Want unlimited + your own screenshots?</p>
+                        <p style="margin-top: 0.5rem;">→ Lifetime deal <span style="color: #00f5ff;">$99</span> (ends in 7 days)</p>
+                        <button class="taste-buy-btn" id="tasteBuyBtn">Get Lifetime Deal</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- The Problem Section -->
     <section class="problem-section">

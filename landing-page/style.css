@@ -1121,6 +1121,267 @@ body {
     margin: 0.5rem 0;
 }
 
+/* Taste Demo Button */
+.taste-demo-container {
+    display: flex;
+    justify-content: center;
+    padding: 3rem 2rem;
+    background: rgba(6, 182, 212, 0.05);
+}
+
+.taste-button {
+    padding: 20px 48px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+    background: linear-gradient(135deg, #00f5ff, #06b6d4);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.4);
+    transition: all 0.3s ease;
+    animation: pulse-glow 2s ease-in-out infinite;
+    letter-spacing: 0.5px;
+}
+
+.taste-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 50px rgba(0, 245, 255, 0.6);
+}
+
+.taste-button:active {
+    transform: scale(0.98);
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 30px rgba(0, 245, 255, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 60px rgba(0, 245, 255, 0.7);
+    }
+}
+
+/* Taste Modal */
+.taste-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    z-index: 3000;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.taste-modal.active {
+    display: flex;
+}
+
+.taste-modal-content {
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 700px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    animation: slideUp 0.3s ease;
+}
+
+.taste-modal-close {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 2rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.taste-modal-close:hover {
+    color: var(--primary);
+}
+
+.taste-modal-body h2 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.taste-modal-body > div > p {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+/* Step 1: Screenshot Selection */
+.taste-sample-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.taste-sample-card {
+    cursor: pointer;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.taste-sample-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(6, 182, 212, 0.2);
+}
+
+.taste-sample-card p {
+    padding: 1rem;
+    text-align: center;
+    background: rgba(6, 182, 212, 0.05);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.taste-sample-preview {
+    height: 150px;
+    background-size: cover;
+    background-position: center;
+}
+
+.dashboard-preview {
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+}
+
+.login-preview {
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+}
+
+.hero-preview {
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+}
+
+/* Step 2: Countdown */
+.taste-step-2 {
+    text-align: center;
+    padding: 2rem;
+}
+
+.taste-countdown {
+    font-size: 4rem;
+    font-weight: 900;
+    color: var(--primary);
+    margin: 2rem 0;
+    animation: countdownPulse 1s ease-in-out;
+}
+
+@keyframes countdownPulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Step 3: Code Display */
+.taste-code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.taste-code-header h2 {
+    margin: 0;
+}
+
+.taste-copy-btn {
+    padding: 10px 20px;
+    background: var(--primary);
+    color: #0f172a;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+
+.taste-copy-btn:hover {
+    background: #0891b2;
+    transform: scale(1.05);
+}
+
+.taste-code-preview {
+    background: #0a0f1b;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    overflow-x: auto;
+    color: #06b6d4;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin: 1.5rem 0;
+}
+
+.taste-cta-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.taste-buy-btn {
+    margin-top: 1rem;
+    padding: 12px 32px;
+    background: linear-gradient(135deg, #00f5ff, #06b6d4);
+    color: #0f172a;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+}
+
+.taste-buy-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 40px rgba(0, 245, 255, 0.6);
+}
+
+.hidden {
+    display: none !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* Animations */
 @keyframes slideInUp {
     from {
