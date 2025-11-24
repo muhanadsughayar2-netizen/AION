@@ -1,15 +1,20 @@
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from flask import Flask, send_from_directory
 import os
 
-os.chdir('landing-page')
+app = Flask(__name__, static_folder='landing-page', static_url_path='')
 
-class Handler(SimpleHTTPRequestHandler):
-    def do_GET(self):
-        if self.path == '/' or self.path == '':
-            self.path = '/index.html'
-        return SimpleHTTPRequestHandler.do_GET(self)
+@app.route('/')
+def index():
+    return send_from_directory('landing-page', 'index.html')
+
+@app.route('/<path:path>')
+def serve_file(path):
+    return send_from_directory('landing-page', path)
+
+@app.errorhandler(404)
+def not_found(e):
+    return send_from_directory('landing-page', 'index.html')
 
 if __name__ == '__main__':
-    server = HTTPServer(('0.0.0.0', 5000), Handler)
     print('✅ Landing page live at: 0.0.0.0:5000')
-    server.serve_forever()
+    app.run(host='0.0.0.0', port=5000, debug=False)
