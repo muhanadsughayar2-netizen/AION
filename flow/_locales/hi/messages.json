@@ -1,107 +1,27 @@
 {
-  "extensionName": {
-    "message": "SnapToAI - Screenshot to AI",
-    "description": "extensionName"
-  },
-  "extensionDescription": {
-    "message": "Capture screenshots and batch upload to AI platforms",
-    "description": "extensionDescription"
-  },
-  "flowReady": {
-    "message": "SnapToAI: Ready",
-    "description": "flowReady"
-  },
-  "oneClickOneFlow": {
-    "message": "One click. One snap.",
-    "description": "oneClickOneFlow"
-  },
-  "pagesReadyForAI": {
-    "message": "Your pages, ready for AI in seconds.",
-    "description": "pagesReadyForAI"
-  },
-  "clickCameraButton": {
-    "message": "Click the glowing camera button above to capture instantly",
-    "description": "clickCameraButton"
-  },
-  "selectAll": {
-    "message": "Select All",
-    "description": "selectAll"
-  },
-  "deselectAll": {
-    "message": "Deselect All",
-    "description": "deselectAll"
-  },
-  "copySelected": {
-    "message": "Copy Selected",
-    "description": "copySelected"
-  },
-  "downloadSelected": {
-    "message": "Download Selected",
-    "description": "downloadSelected"
-  },
-  "exportPDF": {
-    "message": "Export PDF",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "Export PDF Options",
-    "description": "exportPDFOptions"
-  },
-  "allAsOnePDF": {
-    "message": "All as One PDF",
-    "description": "allAsOnePDF"
-  },
-  "allAsOnePDFDesc": {
-    "message": "Combine all screenshots into one PDF file",
-    "description": "allAsOnePDFDesc"
-  },
-  "allAsSeparatePDFs": {
-    "message": "All as Separate PDFs",
-    "description": "allAsSeparatePDFs"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "Download each screenshot as individual PDF",
-    "description": "allAsSeparatePDFsDesc"
-  },
-  "selectedAsOnePDF": {
-    "message": "Selected as One PDF",
-    "description": "selectedAsOnePDF"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "Combine selected screenshots into one PDF",
-    "description": "selectedAsOnePDFDesc"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "Selected as Separate PDFs",
-    "description": "selectedAsSeparatePDFs"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "Download each selected screenshot as PDF",
-    "description": "selectedAsSeparatePDFsDesc"
-  },
-  "clearAll": {
-    "message": "Clear All",
-    "description": "clearAll"
-  },
-  "cancel": {
-    "message": "Cancel",
-    "description": "cancel"
-  },
-  "trialEnded": {
-    "message": "Trial Ended",
-    "description": "trialEnded"
-  },
-  "upgradeNow": {
-    "message": "Upgrade Now - $9.90/year",
-    "description": "upgradeNow"
-  },
-  "daysRemaining": {
-    "message": "$DAYS$ days remaining",
-    "description": "daysRemaining",
-    "placeholders": {
-      "days": {
-        "content": "$1"
-      }
-    }
-  }
+  "extensionName": {"message": "SnapToAI - स्क्रीनशॉट से AI", "description": "extensionName"},
+  "extensionDescription": {"message": "स्क्रीनशॉट लें और AI प्लेटफॉर्म पर अपलोड करें", "description": "extensionDescription"},
+  "flowReady": {"message": "SnapToAI: तैयार", "description": "flowReady"},
+  "oneClickOneFlow": {"message": "एक क्लिक। एक स्नैपशॉट।", "description": "oneClickOneFlow"},
+  "pagesReadyForAI": {"message": "आपके पेज AI के लिए तैयार हैं", "description": "pagesReadyForAI"},
+  "clickCameraButton": {"message": "स्क्रीनशॉट लेने के लिए कैमरा पर क्लिक करें", "description": "clickCameraButton"},
+  "selectAll": {"message": "सभी का चयन करें", "description": "selectAll"},
+  "deselectAll": {"message": "सभी को अचयनित करें", "description": "deselectAll"},
+  "copySelected": {"message": "चयनित की नकल करें", "description": "copySelected"},
+  "downloadSelected": {"message": "चयनित डाउनलोड करें", "description": "downloadSelected"},
+  "exportPDF": {"message": "PDF निर्यात करें", "description": "exportPDF"},
+  "exportPDFOptions": {"message": "PDF विकल्प", "description": "exportPDFOptions"},
+  "allAsOnePDF": {"message": "सभी एक PDF के रूप में", "description": "allAsOnePDF"},
+  "allAsOnePDFDesc": {"message": "सभी स्क्रीनशॉट को एक PDF में संयोजित करें", "description": "allAsOnePDFDesc"},
+  "allAsSeparatePDFs": {"message": "सभी अलग-अलग PDFs के रूप में", "description": "allAsSeparatePDFs"},
+  "allAsSeparatePDFsDesc": {"message": "प्रत्येक स्क्रीनशॉट को अलग PDF के रूप में डाउनलोड करें", "description": "allAsSeparatePDFsDesc"},
+  "selectedAsOnePDF": {"message": "चयनित एक PDF के रूप में", "description": "selectedAsOnePDF"},
+  "selectedAsOnePDFDesc": {"message": "चयनित को एक PDF में संयोजित करें", "description": "selectedAsOnePDFDesc"},
+  "selectedAsSeparatePDFs": {"message": "चयनित अलग-अलग PDFs के रूप में", "description": "selectedAsSeparatePDFs"},
+  "selectedAsSeparatePDFsDesc": {"message": "प्रत्येक चयनित को अलग PDF के रूप में डाउनलोड करें", "description": "selectedAsSeparatePDFsDesc"},
+  "clearAll": {"message": "सब कुछ साफ करें", "description": "clearAll"},
+  "cancel": {"message": "रद्द करें", "description": "cancel"},
+  "trialEnded": {"message": "परीक्षण समाप्त", "description": "trialEnded"},
+  "upgradeNow": {"message": "अभी अपग्रेड करें - $9.90/वर्ष", "description": "upgradeNow"},
+  "daysRemaining": {"message": "$DAYS$ दिन शेष हैं", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
 }

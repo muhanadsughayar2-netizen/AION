@@ -1,107 +1,27 @@
 {
-  "extensionName": {
-    "message": "SnapToAI - 屏幕截图到AI",
-    "description": "extensionName"
-  },
-  "extensionDescription": {
-    "message": "捕获屏幕截图并批量上传到AI平台",
-    "description": "extensionDescription"
-  },
-  "flowReady": {
-    "message": "SnapToAI: 就绪",
-    "description": "flowReady"
-  },
-  "oneClickOneFlow": {
-    "message": "一次点击。一个快照。",
-    "description": "oneClickOneFlow"
-  },
-  "pagesReadyForAI": {
-    "message": "您的页面在几秒内为AI做好准备",
-    "description": "pagesReadyForAI"
-  },
-  "clickCameraButton": {
-    "message": "点击上面发光的相机按钮立即捕获",
-    "description": "clickCameraButton"
-  },
-  "selectAll": {
-    "message": "全选",
-    "description": "selectAll"
-  },
-  "deselectAll": {
-    "message": "取消全选",
-    "description": "deselectAll"
-  },
-  "copySelected": {
-    "message": "复制选中项",
-    "description": "copySelected"
-  },
-  "downloadSelected": {
-    "message": "下载选中项",
-    "description": "downloadSelected"
-  },
-  "exportPDF": {
-    "message": "导出为PDF",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "PDF导出选项",
-    "description": "exportPDFOptions"
-  },
-  "allAsOnePDF": {
-    "message": "全部为一个PDF",
-    "description": "allAsOnePDF"
-  },
-  "allAsOnePDFDesc": {
-    "message": "将所有屏幕截图合并为一个PDF文件",
-    "description": "allAsOnePDFDesc"
-  },
-  "allAsSeparatePDFs": {
-    "message": "全部为单独PDF",
-    "description": "allAsSeparatePDFs"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "将每个屏幕截图作为单个PDF下载",
-    "description": "allAsSeparatePDFsDesc"
-  },
-  "selectedAsOnePDF": {
-    "message": "选中项为一个PDF",
-    "description": "selectedAsOnePDF"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "将选中的屏幕截图合并为一个PDF文件",
-    "description": "selectedAsOnePDFDesc"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "选中项为单独PDF",
-    "description": "selectedAsSeparatePDFs"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "将每个选中的屏幕截图作为单个PDF下载",
-    "description": "selectedAsSeparatePDFsDesc"
-  },
-  "clearAll": {
-    "message": "清空全部",
-    "description": "clearAll"
-  },
-  "cancel": {
-    "message": "取消",
-    "description": "cancel"
-  },
-  "trialEnded": {
-    "message": "试用期已结束",
-    "description": "trialEnded"
-  },
-  "upgradeNow": {
-    "message": "立即升级 - $9.90/年",
-    "description": "upgradeNow"
-  },
-  "daysRemaining": {
-    "message": "剩余$DAYS$天",
-    "description": "daysRemaining",
-    "placeholders": {
-      "days": {
-        "content": "$1"
-      }
-    }
-  }
+  "extensionName": {"message": "SnapToAI - 截图到AI", "description": "extensionName"},
+  "extensionDescription": {"message": "捕获屏幕截图并批量上传到AI平台", "description": "extensionDescription"},
+  "flowReady": {"message": "SnapToAI: 就绪", "description": "flowReady"},
+  "oneClickOneFlow": {"message": "一键。一张快照。", "description": "oneClickOneFlow"},
+  "pagesReadyForAI": {"message": "您的页面已准备好用于AI", "description": "pagesReadyForAI"},
+  "clickCameraButton": {"message": "单击摄像头以捕获屏幕截图", "description": "clickCameraButton"},
+  "selectAll": {"message": "全选", "description": "selectAll"},
+  "deselectAll": {"message": "全不选", "description": "deselectAll"},
+  "copySelected": {"message": "复制已选择", "description": "copySelected"},
+  "downloadSelected": {"message": "下载已选择", "description": "downloadSelected"},
+  "exportPDF": {"message": "导出PDF", "description": "exportPDF"},
+  "exportPDFOptions": {"message": "PDF选项", "description": "exportPDFOptions"},
+  "allAsOnePDF": {"message": "全部为一个PDF", "description": "allAsOnePDF"},
+  "allAsOnePDFDesc": {"message": "将所有截图合并为一个PDF", "description": "allAsOnePDFDesc"},
+  "allAsSeparatePDFs": {"message": "全部为单独的PDF", "description": "allAsSeparatePDFs"},
+  "allAsSeparatePDFsDesc": {"message": "将每个截图下载为单独的PDF", "description": "allAsSeparatePDFsDesc"},
+  "selectedAsOnePDF": {"message": "已选择为一个PDF", "description": "selectedAsOnePDF"},
+  "selectedAsOnePDFDesc": {"message": "将已选择的合并为一个PDF", "description": "selectedAsOnePDFDesc"},
+  "selectedAsSeparatePDFs": {"message": "已选择为单独的PDF", "description": "selectedAsSeparatePDFs"},
+  "selectedAsSeparatePDFsDesc": {"message": "将每个已选择的下载为单独的PDF", "description": "selectedAsSeparatePDFsDesc"},
+  "clearAll": {"message": "全部清除", "description": "clearAll"},
+  "cancel": {"message": "取消", "description": "cancel"},
+  "trialEnded": {"message": "试用期已结束", "description": "trialEnded"},
+  "upgradeNow": {"message": "立即升级 - $9.90/年", "description": "upgradeNow"},
+  "daysRemaining": {"message": "剩余 $DAYS$ 天", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
 }

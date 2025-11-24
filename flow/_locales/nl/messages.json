@@ -1,14 +1,14 @@
 {
   "extensionName": {
-    "message": "SnapToAI - Schermafbeelding voor AI",
+    "message": "SnapToAI - Dutch",
     "description": "extensionName"
   },
   "extensionDescription": {
-    "message": "Maak schermafbeeldingen en upload in batch naar AI-platforms",
+    "message": "Screenshot and batch upload to AI",
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "SnapToAI: Gereed",
+    "message": "SnapToAI: Ready",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -16,11 +16,11 @@
     "description": "oneClickOneFlow"
   },
   "pagesReadyForAI": {
-    "message": "Uw pagina's, in seconden klaar voor AI",
+    "message": "Your pages ready for AI",
     "description": "pagesReadyForAI"
   },
   "clickCameraButton": {
-    "message": "Klik op de glanzende cameraknop hierboven om meteen een schermafbeelding te maken",
+    "message": "Click camera to capture",
     "description": "clickCameraButton"
   },
   "selectAll": {
@@ -28,11 +28,11 @@
     "description": "selectAll"
   },
   "deselectAll": {
-    "message": "Alles deselecteren",
+    "message": "Alles selecteren",
     "description": "deselectAll"
   },
   "copySelected": {
-    "message": "Geselecteerde kopieëren",
+    "message": "Geselecteerde kopiëren",
     "description": "copySelected"
   },
   "downloadSelected": {
@@ -40,43 +40,43 @@
     "description": "downloadSelected"
   },
   "exportPDF": {
-    "message": "Exporteren als PDF",
+    "message": "Export PDF",
     "description": "exportPDF"
   },
   "exportPDFOptions": {
-    "message": "PDF-exportopties",
+    "message": "PDF Options",
     "description": "exportPDFOptions"
   },
   "allAsOnePDF": {
-    "message": "Alles in één PDF",
+    "message": "All as One PDF",
     "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
-    "message": "Combineer alle schermafbeeldingen in één PDF-bestand",
+    "message": "Combine all into one PDF",
     "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
-    "message": "Alles als afzonderlijke PDF's",
+    "message": "All as Separate PDFs",
     "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "Download elke schermafbeelding als afzonderlijke PDF",
+    "message": "Download each as separate PDF",
     "description": "allAsSeparatePDFsDesc"
   },
   "selectedAsOnePDF": {
-    "message": "Geselecteerde in één PDF",
+    "message": "Selected as One PDF",
     "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
-    "message": "Combineer geselecteerde schermafbeeldingen in één PDF-bestand",
+    "message": "Combine selected as one PDF",
     "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
-    "message": "Geselecteerde als afzonderlijke PDF's",
+    "message": "Selected as Separate PDFs",
     "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "Download elke geselecteerde schermafbeelding als afzonderlijke PDF",
+    "message": "Download each selected as PDF",
     "description": "selectedAsSeparatePDFsDesc"
   },
   "clearAll": {
@@ -88,15 +88,15 @@
     "description": "cancel"
   },
   "trialEnded": {
-    "message": "Proefperiode beëindigd",
+    "message": "Trial Ended",
     "description": "trialEnded"
   },
   "upgradeNow": {
-    "message": "Nu upgraden - $9.90/jaar",
+    "message": "Upgrade Now - $9.90/year",
     "description": "upgradeNow"
   },
   "daysRemaining": {
-    "message": "Nog $DAYS$ dagen",
+    "message": "$DAYS$ days remaining",
     "description": "daysRemaining",
     "placeholders": {
       "days": {

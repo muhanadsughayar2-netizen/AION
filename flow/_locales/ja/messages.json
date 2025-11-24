@@ -1,107 +1,27 @@
 {
-  "extensionName": {
-    "message": "SnapToAI - スクリーンショットからAI",
-    "description": "extensionName"
-  },
-  "extensionDescription": {
-    "message": "スクリーンショットをキャプチャしてAIプラットフォームにバッチアップロード",
-    "description": "extensionDescription"
-  },
-  "flowReady": {
-    "message": "SnapToAI: 準備完了",
-    "description": "flowReady"
-  },
-  "oneClickOneFlow": {
-    "message": "ワンクリック。ワンスナップ。",
-    "description": "oneClickOneFlow"
-  },
-  "pagesReadyForAI": {
-    "message": "あなたのページは数秒でAI対応です",
-    "description": "pagesReadyForAI"
-  },
-  "clickCameraButton": {
-    "message": "上の輝くカメラボタンをクリックして即座にキャプチャ",
-    "description": "clickCameraButton"
-  },
-  "selectAll": {
-    "message": "すべて選択",
-    "description": "selectAll"
-  },
-  "deselectAll": {
-    "message": "すべて選択解除",
-    "description": "deselectAll"
-  },
-  "copySelected": {
-    "message": "選択をコピー",
-    "description": "copySelected"
-  },
-  "downloadSelected": {
-    "message": "選択をダウンロード",
-    "description": "downloadSelected"
-  },
-  "exportPDF": {
-    "message": "PDFにエクスポート",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "PDFエクスポートオプション",
-    "description": "exportPDFOptions"
-  },
-  "allAsOnePDF": {
-    "message": "すべて1つのPDF",
-    "description": "allAsOnePDF"
-  },
-  "allAsOnePDFDesc": {
-    "message": "すべてのスクリーンショットを1つのPDFファイルに結合",
-    "description": "allAsOnePDFDesc"
-  },
-  "allAsSeparatePDFs": {
-    "message": "すべて別のPDFとして",
-    "description": "allAsSeparatePDFs"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "各スクリーンショットを個別のPDFとしてダウンロード",
-    "description": "allAsSeparatePDFsDesc"
-  },
-  "selectedAsOnePDF": {
-    "message": "選択を1つのPDF",
-    "description": "selectedAsOnePDF"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "選択したスクリーンショットを1つのPDFファイルに結合",
-    "description": "selectedAsOnePDFDesc"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "選択を別のPDFとして",
-    "description": "selectedAsSeparatePDFs"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "各選択したスクリーンショットを個別のPDFとしてダウンロード",
-    "description": "selectedAsSeparatePDFsDesc"
-  },
-  "clearAll": {
-    "message": "すべてクリア",
-    "description": "clearAll"
-  },
-  "cancel": {
-    "message": "キャンセル",
-    "description": "cancel"
-  },
-  "trialEnded": {
-    "message": "試用期間が終了しました",
-    "description": "trialEnded"
-  },
-  "upgradeNow": {
-    "message": "今すぐアップグレード - $9.90/年",
-    "description": "upgradeNow"
-  },
-  "daysRemaining": {
-    "message": "残り$DAYS$日",
-    "description": "daysRemaining",
-    "placeholders": {
-      "days": {
-        "content": "$1"
-      }
-    }
-  }
+  "extensionName": {"message": "SnapToAI - スクリーンショットからAI", "description": "extensionName"},
+  "extensionDescription": {"message": "スクリーンショットをキャプチャしてAIプラットフォームにアップロード", "description": "extensionDescription"},
+  "flowReady": {"message": "SnapToAI: 準備完了", "description": "flowReady"},
+  "oneClickOneFlow": {"message": "ワンクリック。ワンスナップ。", "description": "oneClickOneFlow"},
+  "pagesReadyForAI": {"message": "あなたのページはAIの準備ができています", "description": "pagesReadyForAI"},
+  "clickCameraButton": {"message": "スクリーンショットを撮るにはカメラをクリック", "description": "clickCameraButton"},
+  "selectAll": {"message": "すべて選択", "description": "selectAll"},
+  "deselectAll": {"message": "すべて選択解除", "description": "deselectAll"},
+  "copySelected": {"message": "選択したコピー", "description": "copySelected"},
+  "downloadSelected": {"message": "選択したダウンロード", "description": "downloadSelected"},
+  "exportPDF": {"message": "PDFエクスポート", "description": "exportPDF"},
+  "exportPDFOptions": {"message": "PDFオプション", "description": "exportPDFOptions"},
+  "allAsOnePDF": {"message": "すべて1つのPDFとして", "description": "allAsOnePDF"},
+  "allAsOnePDFDesc": {"message": "すべてのスクリーンショットを1つのPDFに結合", "description": "allAsOnePDFDesc"},
+  "allAsSeparatePDFs": {"message": "すべて別々のPDFとして", "description": "allAsSeparatePDFs"},
+  "allAsSeparatePDFsDesc": {"message": "各スクリーンショットを別々のPDFとしてダウンロード", "description": "allAsSeparatePDFsDesc"},
+  "selectedAsOnePDF": {"message": "選択したものを1つのPDFとして", "description": "selectedAsOnePDF"},
+  "selectedAsOnePDFDesc": {"message": "選択したものを1つのPDFに結合", "description": "selectedAsOnePDFDesc"},
+  "selectedAsSeparatePDFs": {"message": "選択したものを別々のPDFとして", "description": "selectedAsSeparatePDFs"},
+  "selectedAsSeparatePDFsDesc": {"message": "各選択したものを別々のPDFとしてダウンロード", "description": "selectedAsSeparatePDFsDesc"},
+  "clearAll": {"message": "すべてクリア", "description": "clearAll"},
+  "cancel": {"message": "キャンセル", "description": "cancel"},
+  "trialEnded": {"message": "試用期間終了", "description": "trialEnded"},
+  "upgradeNow": {"message": "今すぐアップグレード - $9.90/年", "description": "upgradeNow"},
+  "daysRemaining": {"message": "$DAYS$日間残っています", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
 }

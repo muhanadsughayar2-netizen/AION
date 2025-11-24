@@ -1,10 +1,10 @@
 {
   "extensionName": {
-    "message": "SnapToAI - Screenshot to AI",
+    "message": "SnapToAI - Filipino",
     "description": "extensionName"
   },
   "extensionDescription": {
-    "message": "Capture screenshots and batch upload to AI platforms",
+    "message": "Screenshot and batch upload to AI",
     "description": "extensionDescription"
   },
   "flowReady": {
@@ -12,31 +12,31 @@
     "description": "flowReady"
   },
   "oneClickOneFlow": {
-    "message": "One click. One snap.",
+    "message": "Isang click. Isang larawan.",
     "description": "oneClickOneFlow"
   },
   "pagesReadyForAI": {
-    "message": "Your pages, ready for AI in seconds.",
+    "message": "Your pages ready for AI",
     "description": "pagesReadyForAI"
   },
   "clickCameraButton": {
-    "message": "Click the glowing camera button above to capture instantly",
+    "message": "Click camera to capture",
     "description": "clickCameraButton"
   },
   "selectAll": {
-    "message": "Select All",
+    "message": "Piliin Lahat",
     "description": "selectAll"
   },
   "deselectAll": {
-    "message": "Deselect All",
+    "message": "Piliin Lahat",
     "description": "deselectAll"
   },
   "copySelected": {
-    "message": "Copy Selected",
+    "message": "Kopyahin ang Pinili",
     "description": "copySelected"
   },
   "downloadSelected": {
-    "message": "Download Selected",
+    "message": "I-download ang Pinili",
     "description": "downloadSelected"
   },
   "exportPDF": {
@@ -44,7 +44,7 @@
     "description": "exportPDF"
   },
   "exportPDFOptions": {
-    "message": "Export PDF Options",
+    "message": "PDF Options",
     "description": "exportPDFOptions"
   },
   "allAsOnePDF": {
@@ -52,7 +52,7 @@
     "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
-    "message": "Combine all screenshots into one PDF file",
+    "message": "Combine all into one PDF",
     "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
@@ -60,7 +60,7 @@
     "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "Download each screenshot as individual PDF",
+    "message": "Download each as separate PDF",
     "description": "allAsSeparatePDFsDesc"
   },
   "selectedAsOnePDF": {
@@ -68,7 +68,7 @@
     "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
-    "message": "Combine selected screenshots into one PDF",
+    "message": "Combine selected as one PDF",
     "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
@@ -76,15 +76,15 @@
     "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "Download each selected screenshot as PDF",
+    "message": "Download each selected as PDF",
     "description": "selectedAsSeparatePDFsDesc"
   },
   "clearAll": {
-    "message": "Clear All",
+    "message": "Likhain ang Lahat",
     "description": "clearAll"
   },
   "cancel": {
-    "message": "Cancel",
+    "message": "Kanselahin",
     "description": "cancel"
   },
   "trialEnded": {

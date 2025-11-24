@@ -1,107 +1,27 @@
 {
-  "extensionName": {
-    "message": "SnapToAI - Captura de Tela para IA",
-    "description": "extensionName"
-  },
-  "extensionDescription": {
-    "message": "Capture telas e faça upload em lote para plataformas de IA",
-    "description": "extensionDescription"
-  },
-  "flowReady": {
-    "message": "SnapToAI: Pronto",
-    "description": "flowReady"
-  },
-  "oneClickOneFlow": {
-    "message": "Um clique. Uma captura.",
-    "description": "oneClickOneFlow"
-  },
-  "pagesReadyForAI": {
-    "message": "Suas páginas prontas para IA em segundos",
-    "description": "pagesReadyForAI"
-  },
-  "clickCameraButton": {
-    "message": "Clique no botão de câmera brilhante acima para capturar instantaneamente",
-    "description": "clickCameraButton"
-  },
-  "selectAll": {
-    "message": "Selecionar Tudo",
-    "description": "selectAll"
-  },
-  "deselectAll": {
-    "message": "Desselecionar Tudo",
-    "description": "deselectAll"
-  },
-  "copySelected": {
-    "message": "Copiar Seleção",
-    "description": "copySelected"
-  },
-  "downloadSelected": {
-    "message": "Baixar Seleção",
-    "description": "downloadSelected"
-  },
-  "exportPDF": {
-    "message": "Exportar PDF",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "Opções de Exportação PDF",
-    "description": "exportPDFOptions"
-  },
-  "allAsOnePDF": {
-    "message": "Tudo em um PDF",
-    "description": "allAsOnePDF"
-  },
-  "allAsOnePDFDesc": {
-    "message": "Combine todas as capturas de tela em um arquivo PDF",
-    "description": "allAsOnePDFDesc"
-  },
-  "allAsSeparatePDFs": {
-    "message": "Tudo como PDFs Separados",
-    "description": "allAsSeparatePDFs"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "Baixe cada captura de tela como PDF individual",
-    "description": "allAsSeparatePDFsDesc"
-  },
-  "selectedAsOnePDF": {
-    "message": "Seleção em um PDF",
-    "description": "selectedAsOnePDF"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "Combine as capturas selecionadas em um arquivo PDF",
-    "description": "selectedAsOnePDFDesc"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "Seleção como PDFs Separados",
-    "description": "selectedAsSeparatePDFs"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "Baixe cada captura selecionada como PDF individual",
-    "description": "selectedAsSeparatePDFsDesc"
-  },
-  "clearAll": {
-    "message": "Limpar Tudo",
-    "description": "clearAll"
-  },
-  "cancel": {
-    "message": "Cancelar",
-    "description": "cancel"
-  },
-  "trialEnded": {
-    "message": "Período de Teste Encerrado",
-    "description": "trialEnded"
-  },
-  "upgradeNow": {
-    "message": "Atualizar Agora - $9.90/ano",
-    "description": "upgradeNow"
-  },
-  "daysRemaining": {
-    "message": "Dias restantes: $DAYS$",
-    "description": "daysRemaining",
-    "placeholders": {
-      "days": {
-        "content": "$1"
-      }
-    }
-  }
+  "extensionName": {"message": "SnapToAI - Captura de ecrã para IA", "description": "extensionName"},
+  "extensionDescription": {"message": "Capture capturas de ecrã e carregue em lote para plataformas de IA", "description": "extensionDescription"},
+  "flowReady": {"message": "SnapToAI: Pronto", "description": "flowReady"},
+  "oneClickOneFlow": {"message": "Um clique. Uma captura.", "description": "oneClickOneFlow"},
+  "pagesReadyForAI": {"message": "Suas páginas prontas para IA", "description": "pagesReadyForAI"},
+  "clickCameraButton": {"message": "Clique na câmera para capturar", "description": "clickCameraButton"},
+  "selectAll": {"message": "Selecionar tudo", "description": "selectAll"},
+  "deselectAll": {"message": "Desselecionar tudo", "description": "deselectAll"},
+  "copySelected": {"message": "Copiar selecionados", "description": "copySelected"},
+  "downloadSelected": {"message": "Descarregar selecionados", "description": "downloadSelected"},
+  "exportPDF": {"message": "Exportar PDF", "description": "exportPDF"},
+  "exportPDFOptions": {"message": "Opções de PDF", "description": "exportPDFOptions"},
+  "allAsOnePDF": {"message": "Tudo como um PDF", "description": "allAsOnePDF"},
+  "allAsOnePDFDesc": {"message": "Combine todas as capturas em um PDF", "description": "allAsOnePDFDesc"},
+  "allAsSeparatePDFs": {"message": "Tudo como PDFs separados", "description": "allAsSeparatePDFs"},
+  "allAsSeparatePDFsDesc": {"message": "Descarregue cada captura como PDF separado", "description": "allAsSeparatePDFsDesc"},
+  "selectedAsOnePDF": {"message": "Selecionados como um PDF", "description": "selectedAsOnePDF"},
+  "selectedAsOnePDFDesc": {"message": "Combine selecionados em um PDF", "description": "selectedAsOnePDFDesc"},
+  "selectedAsSeparatePDFs": {"message": "Selecionados como PDFs separados", "description": "selectedAsSeparatePDFs"},
+  "selectedAsSeparatePDFsDesc": {"message": "Descarregue cada selecionado como PDF separado", "description": "selectedAsSeparatePDFsDesc"},
+  "clearAll": {"message": "Limpar tudo", "description": "clearAll"},
+  "cancel": {"message": "Cancelar", "description": "cancel"},
+  "trialEnded": {"message": "Período de teste encerrado", "description": "trialEnded"},
+  "upgradeNow": {"message": "Atualizar agora - $9.90/ano", "description": "upgradeNow"},
+  "daysRemaining": {"message": "$DAYS$ dias restantes", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
 }

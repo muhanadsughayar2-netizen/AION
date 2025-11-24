@@ -1,107 +1,27 @@
 {
-  "extensionName": {
-    "message": "SnapToAI - Screenshot to AI",
-    "description": "extensionName"
-  },
-  "extensionDescription": {
-    "message": "Capture screenshots and batch upload to AI platforms",
-    "description": "extensionDescription"
-  },
-  "flowReady": {
-    "message": "SnapToAI: Ready",
-    "description": "flowReady"
-  },
-  "oneClickOneFlow": {
-    "message": "One click. One snap.",
-    "description": "oneClickOneFlow"
-  },
-  "pagesReadyForAI": {
-    "message": "Your pages, ready for AI in seconds.",
-    "description": "pagesReadyForAI"
-  },
-  "clickCameraButton": {
-    "message": "Click the glowing camera button above to capture instantly",
-    "description": "clickCameraButton"
-  },
-  "selectAll": {
-    "message": "Select All",
-    "description": "selectAll"
-  },
-  "deselectAll": {
-    "message": "Deselect All",
-    "description": "deselectAll"
-  },
-  "copySelected": {
-    "message": "Copy Selected",
-    "description": "copySelected"
-  },
-  "downloadSelected": {
-    "message": "Download Selected",
-    "description": "downloadSelected"
-  },
-  "exportPDF": {
-    "message": "Export PDF",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "Export PDF Options",
-    "description": "exportPDFOptions"
-  },
-  "allAsOnePDF": {
-    "message": "All as One PDF",
-    "description": "allAsOnePDF"
-  },
-  "allAsOnePDFDesc": {
-    "message": "Combine all screenshots into one PDF file",
-    "description": "allAsOnePDFDesc"
-  },
-  "allAsSeparatePDFs": {
-    "message": "All as Separate PDFs",
-    "description": "allAsSeparatePDFs"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "Download each screenshot as individual PDF",
-    "description": "allAsSeparatePDFsDesc"
-  },
-  "selectedAsOnePDF": {
-    "message": "Selected as One PDF",
-    "description": "selectedAsOnePDF"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "Combine selected screenshots into one PDF",
-    "description": "selectedAsOnePDFDesc"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "Selected as Separate PDFs",
-    "description": "selectedAsSeparatePDFs"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "Download each selected screenshot as PDF",
-    "description": "selectedAsSeparatePDFsDesc"
-  },
-  "clearAll": {
-    "message": "Clear All",
-    "description": "clearAll"
-  },
-  "cancel": {
-    "message": "Cancel",
-    "description": "cancel"
-  },
-  "trialEnded": {
-    "message": "Trial Ended",
-    "description": "trialEnded"
-  },
-  "upgradeNow": {
-    "message": "Upgrade Now - $9.90/year",
-    "description": "upgradeNow"
-  },
-  "daysRemaining": {
-    "message": "$DAYS$ days remaining",
-    "description": "daysRemaining",
-    "placeholders": {
-      "days": {
-        "content": "$1"
-      }
-    }
-  }
+  "extensionName": {"message": "SnapToAI - Στιγμιότυπο οθόνης σε ΤΝ", "description": "extensionName"},
+  "extensionDescription": {"message": "Λάβετε στιγμιότυπα οθόνης και ανεβάστε ομαδικά σε πλατφόρμες ΤΝ", "description": "extensionDescription"},
+  "flowReady": {"message": "SnapToAI: Έτοιμο", "description": "flowReady"},
+  "oneClickOneFlow": {"message": "Ένα κλικ. Ένα στιγμιότυπο.", "description": "oneClickOneFlow"},
+  "pagesReadyForAI": {"message": "Οι σελίδες σας είναι έτοιμες για ΤΝ", "description": "pagesReadyForAI"},
+  "clickCameraButton": {"message": "Κάντε κλικ στη κάμερα για λήψη στιγμιότυπου", "description": "clickCameraButton"},
+  "selectAll": {"message": "Επιλογή όλων", "description": "selectAll"},
+  "deselectAll": {"message": "Αποεπιλογή όλων", "description": "deselectAll"},
+  "copySelected": {"message": "Αντιγραφή επιλεγμένων", "description": "copySelected"},
+  "downloadSelected": {"message": "Λήψη επιλεγμένων", "description": "downloadSelected"},
+  "exportPDF": {"message": "Εξαγωγή PDF", "description": "exportPDF"},
+  "exportPDFOptions": {"message": "Επιλογές PDF", "description": "exportPDFOptions"},
+  "allAsOnePDF": {"message": "Όλα ως ένα PDF", "description": "allAsOnePDF"},
+  "allAsOnePDFDesc": {"message": "Συνδυάστε όλα τα στιγμιότυπα σε ένα PDF", "description": "allAsOnePDFDesc"},
+  "allAsSeparatePDFs": {"message": "Όλα ως ξεχωριστά PDF", "description": "allAsSeparatePDFs"},
+  "allAsSeparatePDFsDesc": {"message": "Λήψη κάθε στιγμιότυπου ως ξεχωριστό PDF", "description": "allAsSeparatePDFsDesc"},
+  "selectedAsOnePDF": {"message": "Επιλεγμένα ως ένα PDF", "description": "selectedAsOnePDF"},
+  "selectedAsOnePDFDesc": {"message": "Συνδυάστε τα επιλεγμένα σε ένα PDF", "description": "selectedAsOnePDFDesc"},
+  "selectedAsSeparatePDFs": {"message": "Επιλεγμένα ως ξεχωριστά PDF", "description": "selectedAsSeparatePDFs"},
+  "selectedAsSeparatePDFsDesc": {"message": "Λήψη κάθε επιλεγμένου ως ξεχωριστό PDF", "description": "selectedAsSeparatePDFsDesc"},
+  "clearAll": {"message": "Διαγραφή όλων", "description": "clearAll"},
+  "cancel": {"message": "Ακύρωση", "description": "cancel"},
+  "trialEnded": {"message": "Η δοκιμαστική περίοδος έληξε", "description": "trialEnded"},
+  "upgradeNow": {"message": "Αναβάθμιση τώρα - $9.90/έτος", "description": "upgradeNow"},
+  "daysRemaining": {"message": "$DAYS$ ημέρες απομένουν", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
 }
