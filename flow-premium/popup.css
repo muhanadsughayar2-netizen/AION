@@ -15,7 +15,8 @@
 
 body {
   width: 380px;
-  height: 380px; /* Default height, will be adjusted dynamically by JavaScript */
+  min-height: 400px; /* Dynamic expansion based on content */
+  height: auto;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
   color: #ffffff;
@@ -552,8 +553,9 @@ body {
     0 0 20px rgba(0, 217, 255, 0.1),
     inset 0 0 20px rgba(0, 217, 255, 0.05);
   animation: pulse-border 3s ease-in-out infinite;
-  height: 140px;
-  overflow: hidden;
+  min-height: 140px;
+  height: auto;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   /* Multi-language support */
@@ -561,6 +563,7 @@ body {
   overflow-wrap: break-word;
   justify-content: center;
   align-items: center;
+  padding-bottom: 20px;
 }
 
 @keyframes pulse-border {
