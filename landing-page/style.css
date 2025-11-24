@@ -1263,18 +1263,21 @@ body {
 }
 
 .dashboard-preview {
-    background-image: url('https://i.imgur.com/8z8K5pM.png');
-    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+    background-image: url('https://i.imgur.com/X5eK9pN.png');
+    background-size: cover;
+    background-position: center;
 }
 
 .login-preview {
-    background-image: url('https://i.imgur.com/kP2jX8m.png');
-    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+    background-image: url('https://i.imgur.com/7pRfG2d.png');
+    background-size: cover;
+    background-position: center;
 }
 
 .hero-preview {
-    background-image: url('https://i.imgur.com/3fF9mQv.png');
-    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    background-image: url('https://i.imgur.com/r3mXv8c.png');
+    background-size: cover;
+    background-position: center;
 }
 
 /* Step 2: Countdown */
@@ -1384,6 +1387,24 @@ body {
 
 .hidden {
     display: none !important;
+}
+
+/* File Upload */
+.taste-file-input {
+    width: 100%;
+    padding: 1rem;
+    background: rgba(6, 182, 212, 0.05);
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    color: var(--primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.taste-file-input:hover {
+    border-color: var(--primary);
+    background: rgba(6, 182, 212, 0.1);
 }
 
 @keyframes fadeIn {

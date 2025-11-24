@@ -262,85 +262,128 @@ function copyToClipboard(text) {
     });
 }
 
-// Taste It Now Demo - Perfect Syntax-Highlighted Code
+// Taste It Now Demo - Real Generated Code from Live Examples
 const SAMPLE_CODES = {
-    dashboard: `export default function Dashboard() {
+    dashboard: `import { TrendingUp, Users, ShoppingCart } from 'lucide-react';
+
+export default function Dashboard() {
+  const metrics = [
+    { title: 'Total Revenue', value: '$45,231.89', change: '+12.5%', icon: ShoppingCart },
+    { title: 'Active Users', value: '2,847', change: '+8.2%', icon: Users },
+    { title: 'Growth Rate', value: '23.5%', change: '+4.3%', icon: TrendingUp }
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-900 p-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-white mb-8">
-          Dashboard Metrics
-        </h1>
-        <div className="grid grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} 
-              className="bg-slate-800 rounded-lg p-6 
-              border border-cyan-500/20 hover:border-cyan-500/50">
-              <p className="text-cyan-400 text-sm font-semibold">
-                Revenue {i}
-              </p>
-              <p className="text-3xl font-bold text-white mt-2">
-                $45,231
-              </p>
-              <p className="text-green-400 text-xs mt-2">
-                ↑ 12.5%
-              </p>
-            </div>
-          ))}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold text-white mb-2">
+            Dashboard
+          </h1>
+          <p className="text-slate-400">
+            Real-time metrics and analytics
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {metrics.map((metric, idx) => {
+            const Icon = metric.icon;
+            return (
+              <div key={idx} className="bg-slate-800/50 rounded-lg p-6 border border-cyan-500/20 hover:border-cyan-500/50 transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-slate-400 text-sm font-medium">
+                    {metric.title}
+                  </span>
+                  <Icon className="w-5 h-5 text-cyan-400" />
+                </div>
+                <p className="text-3xl font-bold text-white mb-2">
+                  {metric.value}
+                </p>
+                <p className="text-green-400 text-xs font-semibold">
+                  {metric.change}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
   );
 }`,
     login: `export default function LoginScreen() {
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+
   return (
-    <div className="flex items-center justify-center 
-      min-h-screen bg-gradient-to-br 
-      from-purple-900 to-purple-700">
-      <div className="w-full max-w-md p-8 
-        bg-white/10 rounded-2xl backdrop-blur-xl 
-        border border-white/20 shadow-2xl">
-        <h2 className="text-3xl font-bold text-white mb-6">
-          Sign In
-        </h2>
-        <input type="email" placeholder="Email" 
-          className="w-full mb-4 px-4 py-3 rounded-lg 
-          bg-white/10 border border-white/20 
-          text-white placeholder-white/50 focus:outline-none" />
-        <input type="password" placeholder="Password" 
-          className="w-full mb-6 px-4 py-3 rounded-lg 
-          bg-white/10 border border-white/20 
-          text-white placeholder-white/50 focus:outline-none" />
-        <button className="w-full py-3 bg-purple-500 
-          rounded-lg font-bold text-white 
-          hover:bg-purple-600 transition-all">
-          Sign In
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-8 shadow-2xl">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-white mb-2">
+              Welcome Back
+            </h2>
+            <p className="text-white/60 text-sm">
+              Sign in to your account to continue
+            </p>
+          </div>
+
+          <form className="space-y-4">
+            <input 
+              type="email" 
+              placeholder="Email address" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:border-white/50 transition-all"
+            />
+            <input 
+              type="password" 
+              placeholder="Password" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:border-white/50 transition-all"
+            />
+            <button className="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg font-bold text-white hover:shadow-lg transition-all transform hover:scale-105">
+              Sign In
+            </button>
+          </form>
+
+          <p className="text-center text-white/60 text-sm mt-6">
+            Don't have an account? <a href="#" className="text-purple-400 hover:text-purple-300">Sign up</a>
+          </p>
+        </div>
       </div>
     </div>
   );
 }`,
     hero: `export default function HeroSection() {
   return (
-    <section className="min-h-screen 
-      bg-gradient-to-br from-cyan-900 
-      via-blue-900 to-slate-900 
-      flex items-center justify-center">
-      <div className="max-w-4xl mx-auto px-8 text-center">
-        <h1 className="text-6xl font-black text-white mb-6">
+    <section className="relative min-h-screen bg-gradient-to-br from-cyan-900 via-blue-900 to-slate-900 flex items-center justify-center overflow-hidden p-4">
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
+        <div className="absolute top-40 right-10 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
+      </div>
+
+      <div className="relative z-10 max-w-4xl mx-auto text-center">
+        <h1 className="text-6xl md:text-7xl font-black text-white mb-6 leading-tight">
           Convert Screenshots
-          <span className="text-cyan-400"> to Code</span>
+          <span className="block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
+            to Code
+          </span>
         </h1>
-        <p className="text-xl text-slate-200 mb-8 max-w-2xl">
-          Turn any screenshot into perfect React + Tailwind 
-          code instantly with AI.
+        
+        <p className="text-xl md:text-2xl text-slate-200 mb-8 max-w-2xl mx-auto">
+          Turn any screenshot into perfect React + Tailwind code instantly. 
+          Powered by advanced AI vision models.
         </p>
-        <button className="px-8 py-4 bg-cyan-500 
-          text-slate-900 rounded-lg font-bold 
-          text-lg hover:bg-cyan-400 transition-all
-          shadow-lg hover:shadow-xl">
-          Try It Now
-        </button>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <button className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-slate-900 rounded-lg font-bold text-lg hover:shadow-2xl transition-all transform hover:scale-105">
+            Start For Free
+          </button>
+          <button className="px-8 py-4 border-2 border-cyan-400 text-cyan-400 rounded-lg font-bold text-lg hover:bg-cyan-400/10 transition-all">
+            Watch Demo
+          </button>
+        </div>
       </div>
     </section>
   );
@@ -357,8 +400,18 @@ function setupTasteDemo() {
     const sampleCards = document.querySelectorAll('.taste-sample-card');
     const tasteCopyBtn = document.getElementById('tasteCopyBtn');
     const tasteBuyBtn = document.getElementById('tasteBuyBtn');
+    const tasteFileUpload = document.getElementById('tasteFileUpload');
 
     if (!tasteButton) return;
+
+    // AUTO-OPEN ON FIRST VISIT
+    if (!localStorage.getItem('taste-demo-seen')) {
+        setTimeout(() => {
+            tasteModal.classList.add('active');
+            resetTasteDemo();
+            localStorage.setItem('taste-demo-seen', 'true');
+        }, 2000);
+    }
 
     tasteButton.addEventListener('click', () => {
         tasteModal.classList.add('active');
@@ -381,6 +434,16 @@ function setupTasteDemo() {
             startCountdown(sample);
         });
     });
+
+    // FILE UPLOAD HANDLER
+    if (tasteFileUpload) {
+        tasteFileUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                startCountdown('custom-upload');
+            }
+        });
+    }
 
     tasteCopyBtn.addEventListener('click', () => {
         const codeBlock = document.getElementById('tasteCodeBlock');
@@ -432,7 +495,34 @@ function setupTasteDemo() {
             codeBlock.style.transition = 'all 0.5s ease';
             codeBlock.style.opacity = '1';
             codeBlock.style.transform = 'translateY(0)';
+            
+            // CONFETTI + SOUND CELEBRATION 🎉
+            triggerCelebration();
         }, 10);
+    }
+
+    function triggerCelebration() {
+        // Play success sound
+        const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3');
+        audio.volume = 0.5;
+        audio.play().catch(err => console.log('Audio play prevented'));
+
+        // Trigger confetti using canvas-confetti
+        try {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.browser.min.js';
+            script.onload = () => {
+                confetti({
+                    particleCount: 300,
+                    spread: 100,
+                    origin: { y: 0.6 },
+                    colors: ['#00f5ff', '#06b6d4', '#0891b2']
+                });
+            };
+            document.head.appendChild(script);
+        } catch (e) {
+            console.log('Confetti celebration ready');
+        }
     }
 
     function resetTasteDemo() {

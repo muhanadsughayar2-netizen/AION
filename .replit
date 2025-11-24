@@ -1,4 +1,4 @@
-modules = ["python-3.11"]
+modules = ["python-3.11", "nodejs-20"]
 [agent]
 expertMode = true
 
@@ -35,10 +35,6 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 32937
-externalPort = 3002
-
-[[ports]]
 localPort = 39387
 externalPort = 3003
 
@@ -49,6 +45,10 @@ externalPort = 3000
 [[ports]]
 localPort = 42033
 externalPort = 3001
+
+[[ports]]
+localPort = 46295
+externalPort = 3002
 
 [deployment]
 deploymentTarget = "autoscale"
