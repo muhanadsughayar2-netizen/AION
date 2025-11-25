@@ -539,6 +539,31 @@ function setupTasteDemo() {
     }
 }
 
+// Rotating Taglines
+function setupRotatingTaglines() {
+    const taglines = [
+        "Screenshots a mess? Fix it in one click — free.",
+        "Give AI the full picture in seconds — free.",
+        "One click. All screenshots handled. Free.",
+        "AI missing things? Fix it instantly — free."
+    ];
+    
+    const taglineEl = document.getElementById('rotatingTagline');
+    let currentIndex = 0;
+    
+    if (!taglineEl) return;
+    
+    setInterval(() => {
+        currentIndex = (currentIndex + 1) % taglines.length;
+        taglineEl.style.opacity = '0';
+        
+        setTimeout(() => {
+            taglineEl.textContent = taglines[currentIndex];
+            taglineEl.style.opacity = '1';
+        }, 400);
+    }, 8000);
+}
+
 // Initialize everything on page load
 document.addEventListener('DOMContentLoaded', () => {
     initLanguage();
@@ -548,6 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupScrollAnimations();
     setupCTAButtons();
     setupTasteDemo();
+    setupRotatingTaglines();
     
     // Add smooth page load
     document.body.style.opacity = '0';

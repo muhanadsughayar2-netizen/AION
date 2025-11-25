@@ -1,7 +1,15 @@
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, make_response
 import os
+from datetime import datetime
 
 app = Flask(__name__, static_folder='landing-page', static_url_path='')
+
+@app.after_request
+def add_cache_headers(response):
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, public, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @app.route('/')
 def index():
