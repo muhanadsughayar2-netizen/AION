@@ -1,41 +1,45 @@
-// ====== FLOATING CARDS RANDOM POSITIONING ======
+// ====== FLOATING CARDS - CIRCULAR HARMONIC POSITIONING ======
 function initializeFloatingCards() {
-    // 3x3 grid system - 9 slots for 9 cards
-    // Container is relative, distribute evenly without overlap
-    const gridSlots = [
-        { x: '5%', y: '5%' },      // Top Left
-        { x: '50%', y: '0%' },     // Top Center
-        { x: '82%', y: '8%' },     // Top Right
-        
-        { x: '2%', y: '40%' },     // Middle Left
-        { x: '48%', y: '38%' },    // Middle Center
-        { x: '85%', y: '42%' },    // Middle Right
-        
-        { x: '8%', y: '75%' },     // Bottom Left
-        { x: '45%', y: '78%' },    // Bottom Center
-        { x: '80%', y: '72%' },    // Bottom Right
+    // Circular arrangement with golden spiral harmony
+    // Center of circle + radius positioning
+    const centerX = 50; // percentage
+    const centerY = 50; // percentage
+    const radius = 35; // radius in percentage
+    
+    // 9 cards arranged in circular pattern with uneven distribution for WOW factor
+    const positions = [
+        { angle: 0, radiusOffset: 1 },      // Right
+        { angle: 45, radiusOffset: 0.85 },  // Top-Right
+        { angle: 90, radiusOffset: 1 },     // Top
+        { angle: 135, radiusOffset: 0.9 },  // Top-Left
+        { angle: 180, radiusOffset: 1 },    // Left
+        { angle: 225, radiusOffset: 0.88 }, // Bottom-Left
+        { angle: 270, radiusOffset: 1 },    // Bottom
+        { angle: 315, radiusOffset: 0.92 }, // Bottom-Right
+        { angle: 60, radiusOffset: 0.5 },   // Inner-Top-Right (focal point)
     ];
     
-    // Shuffle grid slots randomly
-    const shuffled = [...gridSlots].sort(() => Math.random() - 0.5);
+    // Shuffle for randomness while keeping structure
+    const shuffledPositions = positions.sort(() => Math.random() - 0.5);
     
-    // Get all cards and apply shuffled positions with jitter
     const cards = document.querySelectorAll('.floating-card');
     cards.forEach((card, index) => {
-        if (shuffled[index]) {
-            const slot = shuffled[index];
+        if (shuffledPositions[index]) {
+            const pos = shuffledPositions[index];
             
-            // Add small random jitter (±15px) for natural look
-            const jitterX = (Math.random() - 0.5) * 30;
-            const jitterY = (Math.random() - 0.5) * 30;
+            // Convert angle to radians
+            const angleRad = (pos.angle * Math.PI) / 180;
             
-            // Parse percentage values and apply jitter
-            const xVal = parseFloat(slot.x);
-            const yVal = parseFloat(slot.y);
+            // Calculate position on circle
+            const x = centerX + (radius * pos.radiusOffset * Math.cos(angleRad));
+            const y = centerY + (radius * pos.radiusOffset * Math.sin(angleRad));
             
-            // Use calc() for dynamic positioning
-            card.style.left = `calc(${slot.x} + ${jitterX}px)`;
-            card.style.top = `calc(${slot.y} + ${jitterY}px)`;
+            // Add randomness for organic feel
+            const jitterX = (Math.random() - 0.5) * 20;
+            const jitterY = (Math.random() - 0.5) * 20;
+            
+            card.style.left = `calc(${x}% + ${jitterX}px)`;
+            card.style.top = `calc(${y}% + ${jitterY}px)`;
             card.style.transform = 'translate(-50%, -50%)';
         }
     });
