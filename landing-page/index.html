@@ -22,39 +22,73 @@
         </div>
     </nav>
 
-    <!-- Hero Section - MASONRY CAROUSEL -->
+    <!-- Hero Section - CAROUSEL WITH CHANGING IMAGES -->
     <section class="hero">
         <div class="hero-wrapper">
-            <!-- Left Masonry Grid -->
-            <div class="masonry-grid left-grid">
-                <div class="masonry-item" style="--order: 0; --delay: 0s;">📸</div>
-                <div class="masonry-item" style="--order: 1; --delay: 0.15s;">🎯</div>
-                <div class="masonry-item" style="--order: 2; --delay: 0.3s;">⚡</div>
-                <div class="masonry-item" style="--order: 3; --delay: 0.45s;">🔒</div>
-                <div class="masonry-item" style="--order: 4; --delay: 0.6s;">🌍</div>
-                <div class="masonry-item" style="--order: 5; --delay: 0.75s;">📈</div>
+            <!-- Left Images Grid -->
+            <div class="images-container left-images">
+                <!-- Message 1: Fast -->
+                <div class="images-set active" data-message="0">
+                    <div class="image-cell">📸</div>
+                    <div class="image-cell">🎯</div>
+                    <div class="image-cell">⚡</div>
+                    <div class="image-cell">🔒</div>
+                    <div class="image-cell">📈</div>
+                    <div class="image-cell">🚀</div>
+                </div>
+                <!-- Message 2: Secure -->
+                <div class="images-set" data-message="1">
+                    <div class="image-cell">🔐</div>
+                    <div class="image-cell">🛡️</div>
+                    <div class="image-cell">✓</div>
+                    <div class="image-cell">💻</div>
+                    <div class="image-cell">🔒</div>
+                    <div class="image-cell">⚠️</div>
+                </div>
+                <!-- Message 3: Productivity -->
+                <div class="images-set" data-message="2">
+                    <div class="image-cell">💰</div>
+                    <div class="image-cell">⏱️</div>
+                    <div class="image-cell">📊</div>
+                    <div class="image-cell">🎯</div>
+                    <div class="image-cell">📈</div>
+                    <div class="image-cell">✅</div>
+                </div>
+                <!-- Message 4: AI -->
+                <div class="images-set" data-message="3">
+                    <div class="image-cell">🤖</div>
+                    <div class="image-cell">💬</div>
+                    <div class="image-cell">🧠</div>
+                    <div class="image-cell">⚙️</div>
+                    <div class="image-cell">🌐</div>
+                    <div class="image-cell">✨</div>
+                </div>
             </div>
 
-            <!-- Center Content (Focus) -->
+            <!-- Center Message -->
             <div class="hero-center">
-                <div class="message-container">
-                    <div class="message-item active">
-                        <div class="message-label">⚡ Fast</div>
+                <div class="message-carousel">
+                    <!-- Message 1: Fast -->
+                    <div class="carousel-message active">
+                        <h2 class="message-label">⚡ Fast</h2>
                         <h1>Convert any webpage to AI context in seconds</h1>
                         <p>One click. Everything ready. No friction.</p>
                     </div>
-                    <div class="message-item">
-                        <div class="message-label">🔒 Secure</div>
+                    <!-- Message 2: Secure -->
+                    <div class="carousel-message">
+                        <h2 class="message-label">🔒 Secure</h2>
                         <h1>Your screenshots stay on your computer</h1>
                         <p>Zero servers. Zero tracking. Ever.</p>
                     </div>
-                    <div class="message-item">
-                        <div class="message-label">📈 Productivity</div>
+                    <!-- Message 3: Productivity -->
+                    <div class="carousel-message">
+                        <h2 class="message-label">📈 Productivity</h2>
                         <h1>Save 5-10 minutes per session</h1>
                         <p>That's 40+ hours per year.</p>
                     </div>
-                    <div class="message-item">
-                        <div class="message-label">🤖 Better for AI</div>
+                    <!-- Message 4: AI -->
+                    <div class="carousel-message">
+                        <h2 class="message-label">🤖 Better for AI</h2>
                         <h1>ChatGPT, Claude, Grok - one click</h1>
                         <p>Upload to everything instantly.</p>
                     </div>
@@ -74,67 +108,58 @@
                 </div>
             </div>
 
-            <!-- Right Masonry Grid -->
-            <div class="masonry-grid right-grid">
-                <div class="masonry-item" style="--order: 0; --delay: 0.1s;">🚀</div>
-                <div class="masonry-item" style="--order: 1; --delay: 0.25s;">💬</div>
-                <div class="masonry-item" style="--order: 2; --delay: 0.4s;">✨</div>
-                <div class="masonry-item" style="--order: 3; --delay: 0.55s;">🤖</div>
-                <div class="masonry-item" style="--order: 4; --delay: 0.7s;">🎨</div>
-                <div class="masonry-item" style="--order: 5; --delay: 0.85s;">⚙️</div>
+            <!-- Right Images Grid -->
+            <div class="images-container right-images">
+                <!-- Message 1: Fast -->
+                <div class="images-set active" data-message="0">
+                    <div class="image-cell">🎨</div>
+                    <div class="image-cell">⚙️</div>
+                    <div class="image-cell">💡</div>
+                    <div class="image-cell">🔧</div>
+                    <div class="image-cell">🎯</div>
+                    <div class="image-cell">⭐</div>
+                </div>
+                <!-- Message 2: Secure -->
+                <div class="images-set" data-message="1">
+                    <div class="image-cell">🚨</div>
+                    <div class="image-cell">🔑</div>
+                    <div class="image-cell">🛡️</div>
+                    <div class="image-cell">🔐</div>
+                    <div class="image-cell">✅</div>
+                    <div class="image-cell">🔒</div>
+                </div>
+                <!-- Message 3: Productivity -->
+                <div class="images-set" data-message="2">
+                    <div class="image-cell">🚀</div>
+                    <div class="image-cell">📊</div>
+                    <div class="image-cell">💼</div>
+                    <div class="image-cell">🎁</div>
+                    <div class="image-cell">🏆</div>
+                    <div class="image-cell">⭐</div>
+                </div>
+                <!-- Message 4: AI -->
+                <div class="images-set" data-message="3">
+                    <div class="image-cell">💬</div>
+                    <div class="image-cell">🤖</div>
+                    <div class="image-cell">✨</div>
+                    <div class="image-cell">🧠</div>
+                    <div class="image-cell">🎨</div>
+                    <div class="image-cell">⚡</div>
+                </div>
             </div>
-
-            <!-- Blue Accent Pin -->
-            <div class="accent-pin"></div>
         </div>
 
         <!-- Feature Cards Below -->
         <div class="feature-cards-section">
-            <div class="feature-card">
-                <div class="feature-icon">📸</div>
-                <h3>Capture</h3>
-                <p>From any webpage</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🎯</div>
-                <h3>Batch</h3>
-                <p>Up to 10 at once</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🤖</div>
-                <h3>AI Ready</h3>
-                <p>Auto-formatted</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">💬</div>
-                <h3>ChatGPT</h3>
-                <p>Instant upload</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">✨</div>
-                <h3>Claude</h3>
-                <p>Batch ready</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🚀</div>
-                <h3>Grok</h3>
-                <p>One-click</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🌍</div>
-                <h3>55 Languages</h3>
-                <p>Global support</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🔒</div>
-                <h3>Privacy First</h3>
-                <p>Client-side only</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">⚡</div>
-                <h3>Lightning Fast</h3>
-                <p>Zero friction</p>
-            </div>
+            <div class="feature-card"><div class="feature-icon">📸</div><h3>Capture</h3><p>From any webpage</p></div>
+            <div class="feature-card"><div class="feature-icon">🎯</div><h3>Batch</h3><p>Up to 10 at once</p></div>
+            <div class="feature-card"><div class="feature-icon">🤖</div><h3>AI Ready</h3><p>Auto-formatted</p></div>
+            <div class="feature-card"><div class="feature-icon">💬</div><h3>ChatGPT</h3><p>Instant upload</p></div>
+            <div class="feature-card"><div class="feature-icon">✨</div><h3>Claude</h3><p>Batch ready</p></div>
+            <div class="feature-card"><div class="feature-icon">🚀</div><h3>Grok</h3><p>One-click</p></div>
+            <div class="feature-card"><div class="feature-icon">🌍</div><h3>55 Languages</h3><p>Global support</p></div>
+            <div class="feature-card"><div class="feature-icon">🔒</div><h3>Privacy First</h3><p>Client-side only</p></div>
+            <div class="feature-card"><div class="feature-icon">⚡</div><h3>Lightning Fast</h3><p>Zero friction</p></div>
         </div>
     </section>
 
@@ -143,27 +168,17 @@
         <button class="taste-button" id="tasteButtonBottom">⚡ TASTE IT NOW – See How It Works (No signup)</button>
     </div>
 
-    <!-- Taste Modal -->
+    <!-- Modal -->
     <div class="taste-modal" id="tasteModal">
         <div class="taste-modal-content">
             <button class="taste-modal-close" id="tasteModalClose">&times;</button>
             <div class="taste-modal-body">
                 <div class="taste-step-1" id="tasteStep1">
-                    <h2>Pick any design → watch SnapToAI build it in 6 seconds</h2>
-                    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Select one of these stunning UI designs</p>
+                    <h2>Pick any design</h2>
                     <div class="taste-sample-grid">
-                        <div class="taste-sample-card" data-sample="dashboard">
-                            <div class="taste-sample-preview"></div>
-                            <p>Dashboard UI</p>
-                        </div>
-                        <div class="taste-sample-card" data-sample="login">
-                            <div class="taste-sample-preview"></div>
-                            <p>Mobile App</p>
-                        </div>
-                        <div class="taste-sample-card" data-sample="hero">
-                            <div class="taste-sample-preview"></div>
-                            <p>Landing Page</p>
-                        </div>
+                        <div class="taste-sample-card" data-sample="dashboard"><div class="taste-sample-preview"></div><p>Dashboard UI</p></div>
+                        <div class="taste-sample-card" data-sample="login"><div class="taste-sample-preview"></div><p>Mobile App</p></div>
+                        <div class="taste-sample-card" data-sample="hero"><div class="taste-sample-preview"></div><p>Landing Page</p></div>
                     </div>
                 </div>
                 <div class="taste-step-2 hidden" id="tasteStep2">
