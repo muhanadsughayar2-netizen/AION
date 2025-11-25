@@ -17,7 +17,7 @@ const translations = {
         card7: "Privacy First",
         card8: "55 Languages",
         card9: "One-Click Share",
-        alsoAvailable: "Also available on:",
+        alsoAvailable: "Also available for free on",
         problemTitle: "The Bottleneck You Don't Notice",
         problemIntro: "AI isn't your bottleneck. Your workflow is.",
         problemItem1: "You spend 5 minutes capturing screenshots",
