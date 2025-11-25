@@ -17,29 +17,47 @@
                 <span class="logo-text">Snap<span class="logo-highlight">ToAI</span></span>
             </div>
             <div class="nav-links">
-                <button class="lang-switch" id="langSwitch" title="Change Language">Language</button>
+                <button class="lang-switch" id="langSwitch">Language</button>
             </div>
         </div>
     </nav>
 
-    <!-- Hero Section - MASONRY LAYOUT -->
+    <!-- Hero Section - MASONRY CAROUSEL -->
     <section class="hero">
         <div class="hero-wrapper">
-            <!-- Left Image Grid -->
-            <div class="hero-images left-grid">
-                <div class="image-item img-1">📸</div>
-                <div class="image-item img-2">🎯</div>
-                <div class="image-item img-3">⚡</div>
-                <div class="image-item img-4">🔒</div>
-                <div class="image-item img-5">🌍</div>
+            <!-- Left Masonry Grid -->
+            <div class="masonry-grid left-grid">
+                <div class="masonry-item" style="--order: 0; --delay: 0s;">📸</div>
+                <div class="masonry-item" style="--order: 1; --delay: 0.15s;">🎯</div>
+                <div class="masonry-item" style="--order: 2; --delay: 0.3s;">⚡</div>
+                <div class="masonry-item" style="--order: 3; --delay: 0.45s;">🔒</div>
+                <div class="masonry-item" style="--order: 4; --delay: 0.6s;">🌍</div>
+                <div class="masonry-item" style="--order: 5; --delay: 0.75s;">📈</div>
             </div>
 
-            <!-- Center Content -->
+            <!-- Center Content (Focus) -->
             <div class="hero-center">
-                <div class="hero-tagline-wrapper">
-                    <span class="hero-label">⚡ Fast</span>
-                    <h1 class="hero-tagline">Convert any webpage to AI context in seconds</h1>
-                    <p class="hero-subtitle">One click. Everything ready. No friction.</p>
+                <div class="message-container">
+                    <div class="message-item active">
+                        <div class="message-label">⚡ Fast</div>
+                        <h1>Convert any webpage to AI context in seconds</h1>
+                        <p>One click. Everything ready. No friction.</p>
+                    </div>
+                    <div class="message-item">
+                        <div class="message-label">🔒 Secure</div>
+                        <h1>Your screenshots stay on your computer</h1>
+                        <p>Zero servers. Zero tracking. Ever.</p>
+                    </div>
+                    <div class="message-item">
+                        <div class="message-label">📈 Productivity</div>
+                        <h1>Save 5-10 minutes per session</h1>
+                        <p>That's 40+ hours per year.</p>
+                    </div>
+                    <div class="message-item">
+                        <div class="message-label">🤖 Better for AI</div>
+                        <h1>ChatGPT, Claude, Grok - one click</h1>
+                        <p>Upload to everything instantly.</p>
+                    </div>
                 </div>
 
                 <!-- CTA Buttons -->
@@ -48,30 +66,22 @@
                     <button class="cta-button secondary" id="tasteButton">Try Demo</button>
                 </div>
 
-                <!-- Quick Stats -->
+                <!-- Stats -->
                 <div class="hero-stats">
-                    <div class="stat-item">
-                        <span class="stat-value">55</span>
-                        <span class="stat-name">Languages</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value">∞</span>
-                        <span class="stat-name">Screenshots</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value">0ms</span>
-                        <span class="stat-name">Server Upload</span>
-                    </div>
+                    <div class="stat">55 <span>Languages</span></div>
+                    <div class="stat">∞ <span>Screenshots</span></div>
+                    <div class="stat">0ms <span>Server Upload</span></div>
                 </div>
             </div>
 
-            <!-- Right Image Grid -->
-            <div class="hero-images right-grid">
-                <div class="image-item img-6">🚀</div>
-                <div class="image-item img-7">💬</div>
-                <div class="image-item img-8">✨</div>
-                <div class="image-item img-9">🤖</div>
-                <div class="image-item img-10">📈</div>
+            <!-- Right Masonry Grid -->
+            <div class="masonry-grid right-grid">
+                <div class="masonry-item" style="--order: 0; --delay: 0.1s;">🚀</div>
+                <div class="masonry-item" style="--order: 1; --delay: 0.25s;">💬</div>
+                <div class="masonry-item" style="--order: 2; --delay: 0.4s;">✨</div>
+                <div class="masonry-item" style="--order: 3; --delay: 0.55s;">🤖</div>
+                <div class="masonry-item" style="--order: 4; --delay: 0.7s;">🎨</div>
+                <div class="masonry-item" style="--order: 5; --delay: 0.85s;">⚙️</div>
             </div>
 
             <!-- Blue Accent Pin -->
@@ -128,68 +138,54 @@
         </div>
     </section>
 
-    <!-- Taste It Now Demo Button -->
+    <!-- Demo Button -->
     <div class="taste-demo-container">
-        <button class="taste-button" id="tasteButtonBottom">
-            ⚡ TASTE IT NOW – See How It Works (No signup)
-        </button>
+        <button class="taste-button" id="tasteButtonBottom">⚡ TASTE IT NOW – See How It Works (No signup)</button>
     </div>
 
-    <!-- Taste It Now Modal -->
+    <!-- Taste Modal -->
     <div class="taste-modal" id="tasteModal">
         <div class="taste-modal-content">
             <button class="taste-modal-close" id="tasteModalClose">&times;</button>
-            
             <div class="taste-modal-body">
-                <!-- Screenshot Selection -->
                 <div class="taste-step-1" id="tasteStep1">
                     <h2>Pick any design → watch SnapToAI build it in 6 seconds</h2>
-                    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Select one of these stunning UI designs or upload your own screenshot</p>
+                    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Select one of these stunning UI designs</p>
                     <div class="taste-sample-grid">
                         <div class="taste-sample-card" data-sample="dashboard">
-                            <div class="taste-sample-preview dashboard-preview"></div>
+                            <div class="taste-sample-preview"></div>
                             <p>Dashboard UI</p>
                         </div>
                         <div class="taste-sample-card" data-sample="login">
-                            <div class="taste-sample-preview login-preview"></div>
+                            <div class="taste-sample-preview"></div>
                             <p>Mobile App</p>
                         </div>
                         <div class="taste-sample-card" data-sample="hero">
-                            <div class="taste-sample-preview hero-preview"></div>
+                            <div class="taste-sample-preview"></div>
                             <p>Landing Page</p>
                         </div>
                     </div>
                 </div>
-
-                <!-- Countdown -->
                 <div class="taste-step-2 hidden" id="tasteStep2">
                     <h2 style="text-align: center;">Generating Code...</h2>
                     <div class="taste-countdown" id="tasteCountdown">6</div>
-                    <p style="text-align: center; color: var(--text-secondary);">SnapToAI is analyzing your screenshot</p>
                 </div>
-
-                <!-- Code Display -->
                 <div class="taste-step-3 hidden" id="tasteStep3">
-                    <div class="taste-code-header">
-                        <h2>Perfect React + Tailwind Code</h2>
-                        <button class="taste-copy-btn" id="tasteCopyBtn">Copy Code</button>
-                    </div>
+                    <h2>Perfect React + Tailwind Code</h2>
+                    <button class="taste-copy-btn" id="tasteCopyBtn">Copy Code</button>
                     <pre id="tasteCodeBlock" class="taste-code-preview"><code></code></pre>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Pricing Section -->
+    <!-- Pricing -->
     <section class="pricing">
         <h2 class="section-title">Simple Pricing</h2>
         <div class="pricing-card">
             <div class="pricing-badge">LIFETIME</div>
             <h3>SnapToAI Premium</h3>
-            <div class="price-display">
-                <span class="price-amount">$9.90</span>
-                <span class="price-period">/year</span>
-            </div>
+            <div class="price-display"><span class="price-amount">$9.90</span><span class="price-period">/year</span></div>
             <p>Less than a coffee. Infinite AI workflows.</p>
             <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button" style="width: 100%; text-align: center; margin-top: 2rem;">Start Free Trial</a>
         </div>
