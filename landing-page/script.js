@@ -1,4 +1,47 @@
-// Language detection and management
+// ====== FLOATING CARDS RANDOM POSITIONING ======
+function initializeFloatingCards() {
+    // 3x3 grid system - 9 slots for 9 cards
+    // Container is relative, distribute evenly without overlap
+    const gridSlots = [
+        { x: '5%', y: '5%' },      // Top Left
+        { x: '50%', y: '0%' },     // Top Center
+        { x: '82%', y: '8%' },     // Top Right
+        
+        { x: '2%', y: '40%' },     // Middle Left
+        { x: '48%', y: '38%' },    // Middle Center
+        { x: '85%', y: '42%' },    // Middle Right
+        
+        { x: '8%', y: '75%' },     // Bottom Left
+        { x: '45%', y: '78%' },    // Bottom Center
+        { x: '80%', y: '72%' },    // Bottom Right
+    ];
+    
+    // Shuffle grid slots randomly
+    const shuffled = [...gridSlots].sort(() => Math.random() - 0.5);
+    
+    // Get all cards and apply shuffled positions with jitter
+    const cards = document.querySelectorAll('.floating-card');
+    cards.forEach((card, index) => {
+        if (shuffled[index]) {
+            const slot = shuffled[index];
+            
+            // Add small random jitter (±15px) for natural look
+            const jitterX = (Math.random() - 0.5) * 30;
+            const jitterY = (Math.random() - 0.5) * 30;
+            
+            // Parse percentage values and apply jitter
+            const xVal = parseFloat(slot.x);
+            const yVal = parseFloat(slot.y);
+            
+            // Use calc() for dynamic positioning
+            card.style.left = `calc(${slot.x} + ${jitterX}px)`;
+            card.style.top = `calc(${slot.y} + ${jitterY}px)`;
+            card.style.transform = 'translate(-50%, -50%)';
+        }
+    });
+}
+
+// ====== LANGUAGE DETECTION ======
 const DEFAULT_LANG = 'en';
 let currentLang = DEFAULT_LANG;
 
@@ -25,6 +68,9 @@ function initLanguage() {
     const savedLang = localStorage.getItem('snaptoai-lang');
     currentLang = savedLang || detectBrowserLanguage();
     updatePageLanguage();
+    
+    // Initialize floating cards on page load
+    initializeFloatingCards();
 }
 
 // Update all text on page

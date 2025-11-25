@@ -438,61 +438,20 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 12px;
     animation: float 6s ease-in-out infinite;
+    width: 130px;
+    min-height: 130px;
 }
 
-.card-1 {
-    top: 0;
-    left: 0;
-    animation-delay: 0s;
-}
-
-.card-2 {
-    top: 50%;
-    right: 0;
-    animation-delay: -2s;
-}
-
-.card-3 {
-    bottom: 0;
-    left: 30%;
-    animation-delay: -4s;
-}
-
-.card-4 {
-    top: 15%;
-    right: 5%;
-    animation-delay: -1s;
-}
-
-.card-5 {
-    top: 55%;
-    right: 8%;
-    animation-delay: -2.5s;
-}
-
-.card-6 {
-    bottom: 10%;
-    right: 15%;
-    animation-delay: -3.5s;
-}
-
-.card-7 {
-    top: 35%;
-    left: 45%;
-    animation-delay: -1.5s;
-}
-
-.card-8 {
-    top: 70%;
-    left: 35%;
-    animation-delay: -2s;
-}
-
-.card-9 {
-    bottom: 5%;
-    left: 50%;
-    animation-delay: -1.2s;
-}
+/* Grid-based positioning - will be randomized by JS */
+.card-1 { animation-delay: 0s; }
+.card-2 { animation-delay: -1.2s; }
+.card-3 { animation-delay: -2.4s; }
+.card-4 { animation-delay: -0.6s; }
+.card-5 { animation-delay: -1.8s; }
+.card-6 { animation-delay: -3s; }
+.card-7 { animation-delay: -1.5s; }
+.card-8 { animation-delay: -2.1s; }
+.card-9 { animation-delay: -0.9s; }
 
 .card-icon {
     font-size: 2rem;
