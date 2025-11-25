@@ -444,9 +444,9 @@ body {
 }
 
 .floating-card:hover {
-    transform: scale(1.15) !important;
+    transform: translate(-50%, -50%) scale(1.12) !important;
     border-color: var(--primary);
-    box-shadow: 0 0 30px rgba(6, 182, 212, 0.5);
+    box-shadow: 0 0 40px rgba(6, 182, 212, 0.6);
 }
 
 /* Varied card sizes and styles */

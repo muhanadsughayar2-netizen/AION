@@ -1,44 +1,34 @@
-// ====== FLOATING CARDS - ANTI-OVERLAP CIRCULAR POSITIONING ======
+// ====== FLOATING CARDS - ARTISTIC STAGGERED WATERFALL LAYOUT ======
 function initializeFloatingCards() {
-    // Optimized circular arrangement - NO overlaps, maximum visual impact
-    // Dynamic radius and positioning based on card dimensions
-    const centerX = 50;
-    const centerY = 48;
-    
-    // 9 cards with specific angles for maximum spread + WOW visual balance
-    // Angle-based distribution with calculated radius to prevent overlap
+    // Beautiful asymmetrical staggered layout - flowing, organic, professional
+    // Cards arranged like an art installation with varied depths and tilts
     const positions = [
-        { angle: 0, radius: 40, name: 'Right' },           // Right edge
-        { angle: 40, radius: 35, name: 'TopRight' },       // Top-Right
-        { angle: 80, radius: 38, name: 'Top' },            // Top
-        { angle: 140, radius: 35, name: 'TopLeft' },       // Top-Left
-        { angle: 180, radius: 40, name: 'Left' },          // Left edge
-        { angle: 220, radius: 35, name: 'BottomLeft' },    // Bottom-Left
-        { angle: 270, radius: 38, name: 'Bottom' },        // Bottom
-        { angle: 315, radius: 37, name: 'BottomRight' },   // Bottom-Right
-        { angle: 120, radius: 22, name: 'Center' },        // Center focal point (inner)
+        { x: 8, y: 10, rotation: -3 },      // Top-left
+        { x: 32, y: 5, rotation: 2 },       // Top-middle-left
+        { x: 58, y: 8, rotation: -1.5 },    // Top-middle-right
+        { x: 82, y: 12, rotation: 3 },      // Top-right
+        
+        { x: 18, y: 45, rotation: 1.5 },    // Mid-left
+        { x: 50, y: 48, rotation: -2 },     // Mid-center (focal)
+        { x: 78, y: 50, rotation: 2.5 },    // Mid-right
+        
+        { x: 12, y: 82, rotation: -2.5 },   // Bottom-left
+        { x: 68, y: 85, rotation: 1 },      // Bottom-right
     ];
     
-    // NO shuffle - use fixed positioning to avoid overlaps
     const cards = document.querySelectorAll('.floating-card');
     cards.forEach((card, index) => {
         if (positions[index]) {
             const pos = positions[index];
             
-            // Convert angle to radians
-            const angleRad = (pos.angle * Math.PI) / 180;
+            // Minimal jitter for organic feel
+            const jitterX = (Math.random() - 0.5) * 12;
+            const jitterY = (Math.random() - 0.5) * 12;
+            const jitterRotation = (Math.random() - 0.5) * 0.8;
             
-            // Calculate position on circle with dedicated radius per card
-            const x = centerX + (pos.radius * Math.cos(angleRad));
-            const y = centerY + (pos.radius * Math.sin(angleRad));
-            
-            // Minimal jitter for natural feel (±8px only)
-            const jitterX = (Math.random() - 0.5) * 16;
-            const jitterY = (Math.random() - 0.5) * 16;
-            
-            card.style.left = `calc(${x}% + ${jitterX}px)`;
-            card.style.top = `calc(${y}% + ${jitterY}px)`;
-            card.style.transform = 'translate(-50%, -50%)';
+            card.style.left = `calc(${pos.x}% + ${jitterX}px)`;
+            card.style.top = `calc(${pos.y}% + ${jitterY}px)`;
+            card.style.transform = `translate(-50%, -50%) rotate(${pos.rotation + jitterRotation}deg)`;
         }
     });
 }
