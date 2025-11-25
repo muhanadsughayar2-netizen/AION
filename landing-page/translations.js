@@ -1,9 +1,13 @@
 const translations = {
     en: {
-        tagline: "Screenshots to AI in One Click",
-        subtitle: "The fastest workflow to convert any webpage into AI-ready context. No friction. No manual steps.",
+        tagline: "Capture Any Webpage as AI-Ready Context in Seconds",
+        subtitle: "No more manual screenshots or clunky exports. SnapToAI turns webpages into annotated images, PDFs, or batches you can feed straight to ChatGPT, Claude, or Grok.",
         heroProof: "Trusted by 10,000+ developers, designers, and researchers worldwide.",
-        downloadBtn: "Download for Chrome",
+        downloadBtn: "Get Started Free – Install in Seconds",
+        explainerCapture: "Capture: Full-page screenshots instantly",
+        explainerAnnotate: "Annotate: Highlight, draw, add notes",
+        explainerExport: "Export: PDFs, images, or batches",
+        explainerReady: "AI Ready: Plug directly into your AI",
         trialBadge: "Free",
         statLanguages: "Languages",
         statScreenshots: "Screenshots",
