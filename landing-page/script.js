@@ -1,19 +1,22 @@
-// ====== FLOATING CARDS - ARTISTIC STAGGERED WATERFALL LAYOUT ======
+// ====== FLOATING CARDS - PERFECTLY BALANCED ARTISTIC LAYOUT ======
 function initializeFloatingCards() {
-    // Beautiful asymmetrical staggered layout - flowing, organic, professional
-    // Cards arranged like an art installation with varied depths and tilts
+    // Well-distributed asymmetrical layout with perfect balance
+    // Cards spread evenly across entire space with artistic tilts
     const positions = [
-        { x: 8, y: 10, rotation: -3 },      // Top-left
-        { x: 32, y: 5, rotation: 2 },       // Top-middle-left
-        { x: 58, y: 8, rotation: -1.5 },    // Top-middle-right
-        { x: 82, y: 12, rotation: 3 },      // Top-right
+        // Top row - well spaced
+        { x: 10, y: 8, rotation: -2.5 },     // Top-far-left
+        { x: 32, y: 12, rotation: 1.8 },     // Top-left-center
+        { x: 60, y: 6, rotation: -1.2 },     // Top-right-center
+        { x: 88, y: 10, rotation: 2.2 },     // Top-far-right
         
-        { x: 18, y: 45, rotation: 1.5 },    // Mid-left
-        { x: 50, y: 48, rotation: -2 },     // Mid-center (focal)
-        { x: 78, y: 50, rotation: 2.5 },    // Mid-right
+        // Middle row - balanced spread
+        { x: 22, y: 45, rotation: 1.5 },     // Mid-left
+        { x: 50, y: 50, rotation: -2 },      // Mid-center (focal)
+        { x: 76, y: 48, rotation: 2.5 },     // Mid-right
         
-        { x: 12, y: 82, rotation: -2.5 },   // Bottom-left
-        { x: 68, y: 85, rotation: 1 },      // Bottom-right
+        // Bottom row - strategic placement
+        { x: 28, y: 82, rotation: -1.8 },    // Bottom-left
+        { x: 72, y: 80, rotation: 1.2 },     // Bottom-right
     ];
     
     const cards = document.querySelectorAll('.floating-card');
@@ -21,10 +24,10 @@ function initializeFloatingCards() {
         if (positions[index]) {
             const pos = positions[index];
             
-            // Minimal jitter for organic feel
+            // Minimal jitter for organic feel (±6px only)
             const jitterX = (Math.random() - 0.5) * 12;
             const jitterY = (Math.random() - 0.5) * 12;
-            const jitterRotation = (Math.random() - 0.5) * 0.8;
+            const jitterRotation = (Math.random() - 0.5) * 0.5;
             
             card.style.left = `calc(${pos.x}% + ${jitterX}px)`;
             card.style.top = `calc(${pos.y}% + ${jitterY}px)`;
