@@ -418,6 +418,10 @@ body {
     letter-spacing: 2px;
 }
 
+.infinity-symbol {
+    margin-left: 0.3rem;
+}
+
 .stat-label {
     font-size: 0.875rem;
     color: var(--text-secondary);
