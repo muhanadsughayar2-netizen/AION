@@ -422,7 +422,7 @@ body {
 /* Hero Visual */
 .hero-visual {
     position: relative;
-    height: 500px;
+    height: 650px;
     perspective: 1000px;
 }
 
@@ -441,7 +441,7 @@ body {
 }
 
 .card-1 {
-    top: -10px;
+    top: 5%;
     left: 50%;
     transform: translateX(-50%);
     animation-delay: 0s;
@@ -449,26 +449,26 @@ body {
 
 .card-2 {
     top: 35%;
-    left: -5px;
+    left: 2%;
     animation-delay: -1.5s;
 }
 
 .card-3 {
-    bottom: -10px;
+    bottom: 5%;
     left: 50%;
     transform: translateX(-50%);
     animation-delay: -3s;
 }
 
 .card-4 {
-    top: 35%;
-    right: -5px;
+    top: 38%;
+    right: 2%;
     animation-delay: -2s;
 }
 
 .card-5 {
-    bottom: 15%;
-    right: 18%;
+    bottom: 12%;
+    right: 15%;
     animation-delay: -2.5s;
 }
 
