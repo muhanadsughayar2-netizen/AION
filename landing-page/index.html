@@ -4,33 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SnapToAI - Convert Screenshots to AI Context in One Click</title>
-    <meta name="description" content="The fastest workflow to convert any webpage into AI-ready context. Batch upload screenshots to ChatGPT, Claude, Grok instantly. 55 languages. 100% Free Forever. 10,000+ developers trust SnapToAI.">
+    <meta name="description" content="The fastest workflow to convert any webpage into AI-ready context. Batch upload screenshots to ChatGPT, Claude, Grok instantly. 55 languages. 30-day free trial. 10,000+ developers trust SnapToAI.">
     <meta name="theme-color" content="#0f172a">
     <link rel="stylesheet" href="style.css">
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'GA_MEASUREMENT_ID');
-    </script>
-    <!-- Google Translate -->
-    <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </head>
 <body>
-    <!-- Google Translate Widget -->
-    <div id="google_translate_element" style="position: absolute; top: 70px; right: 20px; z-index: 100;"></div>
-    <script>
-        function googleTranslateElementInit() {
-            new google.translate.TranslateElement({
-                pageLanguage: 'en',
-                includedLanguages: 'en,ar,bg,bn,ca,cs,cy,da,de,el,es,et,fa,fi,fr,gu,he,hi,hr,hu,id,it,ja,kn,ko,lt,lv,mk,ml,mr,ne,nl,or,pa,pl,pt,ro,ru,sk,sl,so,sq,sv,ta,te,th,tr,uk,ur,vi,zh-CN,zh-TW',
-                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-                autoDisplay: false
-            }, 'google_translate_element');
-        }
-    </script>
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
@@ -60,9 +38,9 @@
             <p class="hero-proof" id="heroProof">Trusted by 10,000+ developers, designers, and researchers worldwide.</p>
 
             <!-- CTA Button -->
-            <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button" onclick="gtag('event', 'install_click', {'button': 'hero'});">
-                <span class="cta-text" id="downloadBtn">Install Free Now</span>
-                <span class="cta-badge" id="trialBadge">FREE • Forever</span>
+            <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button">
+                <span class="cta-text" id="downloadBtn">Download for Chrome</span>
+                <span class="cta-badge" id="trialBadge">FREE • 30 Days</span>
             </a>
 
             <!-- Browser Bar -->
@@ -177,7 +155,7 @@
                         </div>
                         <div style="margin-top: 2rem; text-align: center;">
                             <p style="color: var(--text-secondary); margin-bottom: 1rem;">Want unlimited + your own screenshots?</p>
-                            <button class="taste-buy-btn" id="tasteBuyBtn" onclick="gtag('event', 'install_click', {'button': 'demo'});">Install Free Now – Forever</button>
+                            <button class="taste-buy-btn" id="tasteBuyBtn">Get Lifetime Access – $99 (launches in 48h, then $499)</button>
                         </div>
                     </div>
                 </div>
@@ -287,34 +265,34 @@
 
     <!-- Pricing Section -->
     <section class="pricing">
-        <h2 class="section-title" id="pricingTitle">Free Forever</h2>
-        <p class="pricing-subtitle" id="pricingSubtitle">No costs. No limits. No ads. No credit card needed.</p>
+        <h2 class="section-title" id="pricingTitle">Pricing That Makes Sense</h2>
+        <p class="pricing-subtitle" id="pricingSubtitle">One simple plan. Everything included.</p>
         
         <div class="pricing-card">
-            <div class="pricing-badge" id="pricingBadge" style="background: #10b981;">FREE FOREVER</div>
-            <h3 id="pricingPlan">SnapToAI</h3>
+            <div class="pricing-badge" id="pricingBadge">LIFETIME VALUE</div>
+            <h3 id="pricingPlan">SnapToAI Premium</h3>
             
             <div class="price-display">
-                <span class="price-amount" style="color: #10b981; font-size: 3.5rem;">$0</span>
-                <span class="price-period">/forever</span>
+                <span class="price-amount">$9.90</span>
+                <span class="price-period">/year</span>
             </div>
 
-            <p id="pricingDescription">Everything included. No paywalls. No surprises.</p>
+            <p id="pricingDescription">Less than a coffee. Infinite AI workflows.</p>
 
-            <div class="trial-info" id="trialInfo" style="background: #10b981; border: none;">
-                <strong id="trialText" style="color: white;">100% Free • No Credit Card • Unlimited Everything</strong>
+            <div class="trial-info" id="trialInfo">
+                <strong id="trialText">30-day free trial</strong> - No credit card. Cancel anytime.
             </div>
 
             <ul class="feature-list">
-                <li id="priceFeature1">✓ Unlimited screenshots per day</li>
-                <li id="priceFeature2">✓ All AI platforms (ChatGPT, Claude, Grok, etc.)</li>
-                <li id="priceFeature3">✓ Lifetime updates & support</li>
-                <li id="priceFeature4">✓ 100% client-side privacy</li>
-                <li id="priceFeature5">✓ No lock-in. Always yours.</li>
+                <li id="priceFeature1">Unlimited screenshots per day</li>
+                <li id="priceFeature2">All AI platforms (ChatGPT, Claude, Grok, etc.)</li>
+                <li id="priceFeature3">Lifetime updates & priority support</li>
+                <li id="priceFeature4">100% client-side privacy</li>
+                <li id="priceFeature5">No lock-in. Cancel anytime.</li>
             </ul>
 
-            <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button" style="width: 100%; text-align: center;" onclick="gtag('event', 'install_click', {'button': 'pricing'});">
-                <span id="pricingCTA">Install Free Now</span>
+            <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button" style="width: 100%; text-align: center;">
+                <span id="pricingCTA">Start Free Trial - No Card Required</span>
             </a>
         </div>
     </section>
@@ -545,10 +523,8 @@
         </div>
 
         <div class="footer-bottom">
-            <p id="footerText">© 2025 SnapToAI – Free Forever • Free in 55 Languages • 100% Open Source</p>
-            <p id="footerShare">
-                <a href="https://twitter.com/intent/tweet?text=I%20just%20discovered%20SnapToAI%20-%20the%20fastest%20way%20to%20batch%20upload%20screenshots%20to%20AI.%20It%27s%20completely%20free%2C%20100%25%20private%2C%20and%20works%20in%2055%20languages.%20Install%20now:%20https://snaptoai.com&hashtags=AI,ProductHunt,Chrome" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 600;">Share on X</a>
-            </p>
+            <p id="footerText">© 2025 SnapToAI. Built with precision for speed. Made on Replit.</p>
+            <p id="footerLanguages">Available in 55 languages</p>
         </div>
     </footer>
 
