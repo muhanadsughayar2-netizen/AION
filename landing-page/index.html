@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SnapToAI - Convert Screenshots to AI Context in One Click</title>
-    <meta name="description" content="The fastest workflow to convert any webpage into AI-ready context. Batch upload screenshots to ChatGPT, Claude, Grok instantly. 55 languages. 30-day free trial. 10,000+ developers trust SnapToAI.">
+    <meta name="description" content="Get your next AI automation idea. Multi-screenshot batch upload to ChatGPT, Claude, Grok instantly.">
     <meta name="theme-color" content="#0f172a">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -12,199 +12,133 @@
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
-            <div class="logo-wrapper">
-                <div class="logo-icon">📸</div>
-                <span class="logo-text">Snap<span class="logo-highlight">ToAI</span></span>
-            </div>
+            <div class="logo">📸 SnapToAI</div>
             <div class="nav-links">
                 <button class="lang-switch" id="langSwitch">Language</button>
             </div>
         </div>
     </nav>
 
-    <!-- Hero Section - CAROUSEL WITH CHANGING IMAGES -->
-    <section class="hero">
-        <div class="hero-wrapper">
-            <!-- Left Images Grid -->
-            <div class="images-container left-images">
-                <!-- Message 1: Fast -->
-                <div class="images-set active" data-message="0">
-                    <div class="image-cell">📸</div>
-                    <div class="image-cell">🎯</div>
-                    <div class="image-cell">⚡</div>
-                    <div class="image-cell">🔒</div>
-                    <div class="image-cell">📈</div>
-                    <div class="image-cell">🚀</div>
-                </div>
-                <!-- Message 2: Secure -->
-                <div class="images-set" data-message="1">
-                    <div class="image-cell">🔐</div>
-                    <div class="image-cell">🛡️</div>
-                    <div class="image-cell">✓</div>
-                    <div class="image-cell">💻</div>
-                    <div class="image-cell">🔒</div>
-                    <div class="image-cell">⚠️</div>
-                </div>
-                <!-- Message 3: Productivity -->
-                <div class="images-set" data-message="2">
-                    <div class="image-cell">💰</div>
-                    <div class="image-cell">⏱️</div>
-                    <div class="image-cell">📊</div>
-                    <div class="image-cell">🎯</div>
-                    <div class="image-cell">📈</div>
-                    <div class="image-cell">✅</div>
-                </div>
-                <!-- Message 4: AI -->
-                <div class="images-set" data-message="3">
-                    <div class="image-cell">🤖</div>
-                    <div class="image-cell">💬</div>
-                    <div class="image-cell">🧠</div>
-                    <div class="image-cell">⚙️</div>
-                    <div class="image-cell">🌐</div>
-                    <div class="image-cell">✨</div>
-                </div>
-            </div>
-
-            <!-- Center Message -->
-            <div class="hero-center">
-                <div class="message-carousel">
-                    <!-- Message 1: Fast -->
-                    <div class="carousel-message active">
-                        <h2 class="message-label">⚡ Fast</h2>
-                        <h1>Convert any webpage to AI context in seconds</h1>
-                        <p>One click. Everything ready. No friction.</p>
-                    </div>
-                    <!-- Message 2: Secure -->
-                    <div class="carousel-message">
-                        <h2 class="message-label">🔒 Secure</h2>
-                        <h1>Your screenshots stay on your computer</h1>
-                        <p>Zero servers. Zero tracking. Ever.</p>
-                    </div>
-                    <!-- Message 3: Productivity -->
-                    <div class="carousel-message">
-                        <h2 class="message-label">📈 Productivity</h2>
-                        <h1>Save 5-10 minutes per session</h1>
-                        <p>That's 40+ hours per year.</p>
-                    </div>
-                    <!-- Message 4: AI -->
-                    <div class="carousel-message">
-                        <h2 class="message-label">🤖 Better for AI</h2>
-                        <h1>ChatGPT, Claude, Grok - one click</h1>
-                        <p>Upload to everything instantly.</p>
-                    </div>
-                </div>
-
-                <!-- CTA Buttons -->
-                <div class="hero-cta">
-                    <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button primary">Download for Chrome</a>
-                    <button class="cta-button secondary" id="tasteButton">Try Demo</button>
-                </div>
-
-                <!-- Stats -->
-                <div class="hero-stats">
-                    <div class="stat">55 <span>Languages</span></div>
-                    <div class="stat">∞ <span>Screenshots</span></div>
-                    <div class="stat">0ms <span>Server Upload</span></div>
-                </div>
-            </div>
-
-            <!-- Right Images Grid -->
-            <div class="images-container right-images">
-                <!-- Message 1: Fast -->
-                <div class="images-set active" data-message="0">
-                    <div class="image-cell">🎨</div>
-                    <div class="image-cell">⚙️</div>
-                    <div class="image-cell">💡</div>
-                    <div class="image-cell">🔧</div>
-                    <div class="image-cell">🎯</div>
-                    <div class="image-cell">⭐</div>
-                </div>
-                <!-- Message 2: Secure -->
-                <div class="images-set" data-message="1">
-                    <div class="image-cell">🚨</div>
-                    <div class="image-cell">🔑</div>
-                    <div class="image-cell">🛡️</div>
-                    <div class="image-cell">🔐</div>
-                    <div class="image-cell">✅</div>
-                    <div class="image-cell">🔒</div>
-                </div>
-                <!-- Message 3: Productivity -->
-                <div class="images-set" data-message="2">
-                    <div class="image-cell">🚀</div>
-                    <div class="image-cell">📊</div>
-                    <div class="image-cell">💼</div>
-                    <div class="image-cell">🎁</div>
-                    <div class="image-cell">🏆</div>
-                    <div class="image-cell">⭐</div>
-                </div>
-                <!-- Message 4: AI -->
-                <div class="images-set" data-message="3">
-                    <div class="image-cell">💬</div>
-                    <div class="image-cell">🤖</div>
-                    <div class="image-cell">✨</div>
-                    <div class="image-cell">🧠</div>
-                    <div class="image-cell">🎨</div>
-                    <div class="image-cell">⚡</div>
+    <!-- Hero Carousel - Pinterest Style -->
+    <section class="hero-carousel">
+        <!-- Message 1: Fast -->
+        <div class="carousel-slide active" data-theme="fast">
+            <div class="carousel-content">
+                <h1 class="headline" style="--color: #FFB81C;">Get your next <span class="highlight">fast automation</span> idea</h1>
+                <div class="carousel-dots">●●●●</div>
+                <div class="pins-row">
+                    <div class="pin">⚡</div>
+                    <div class="pin">📸</div>
+                    <div class="pin">🚀</div>
+                    <div class="pin">✅</div>
+                    <div class="pin">⏱️</div>
+                    <div class="pin">💨</div>
                 </div>
             </div>
         </div>
 
-        <!-- Feature Cards Below -->
-        <div class="feature-cards-section">
-            <div class="feature-card"><div class="feature-icon">📸</div><h3>Capture</h3><p>From any webpage</p></div>
-            <div class="feature-card"><div class="feature-icon">🎯</div><h3>Batch</h3><p>Up to 10 at once</p></div>
-            <div class="feature-card"><div class="feature-icon">🤖</div><h3>AI Ready</h3><p>Auto-formatted</p></div>
-            <div class="feature-card"><div class="feature-icon">💬</div><h3>ChatGPT</h3><p>Instant upload</p></div>
-            <div class="feature-card"><div class="feature-icon">✨</div><h3>Claude</h3><p>Batch ready</p></div>
-            <div class="feature-card"><div class="feature-icon">🚀</div><h3>Grok</h3><p>One-click</p></div>
-            <div class="feature-card"><div class="feature-icon">🌍</div><h3>55 Languages</h3><p>Global support</p></div>
-            <div class="feature-card"><div class="feature-icon">🔒</div><h3>Privacy First</h3><p>Client-side only</p></div>
-            <div class="feature-card"><div class="feature-icon">⚡</div><h3>Lightning Fast</h3><p>Zero friction</p></div>
+        <!-- Message 2: Secure -->
+        <div class="carousel-slide" data-theme="secure">
+            <div class="carousel-content">
+                <h1 class="headline" style="--color: #2ECC71;">Get your next <span class="highlight">secure workflow</span> idea</h1>
+                <div class="carousel-dots">●●●●</div>
+                <div class="pins-row">
+                    <div class="pin">🔒</div>
+                    <div class="pin">🛡️</div>
+                    <div class="pin">🔐</div>
+                    <div class="pin">✓</div>
+                    <div class="pin">💻</div>
+                    <div class="pin">🔑</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message 3: Productivity -->
+        <div class="carousel-slide" data-theme="productivity">
+            <div class="carousel-content">
+                <h1 class="headline" style="--color: #3498DB;">Get your next <span class="highlight">productivity boost</span> idea</h1>
+                <div class="carousel-dots">●●●●</div>
+                <div class="pins-row">
+                    <div class="pin">📈</div>
+                    <div class="pin">⏰</div>
+                    <div class="pin">💰</div>
+                    <div class="pin">🎯</div>
+                    <div class="pin">📊</div>
+                    <div class="pin">🏆</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message 4: AI -->
+        <div class="carousel-slide" data-theme="ai">
+            <div class="carousel-content">
+                <h1 class="headline" style="--color: #9B59B6;">Get your next <span class="highlight">AI integration</span> idea</h1>
+                <div class="carousel-dots">●●●●</div>
+                <div class="pins-row">
+                    <div class="pin">🤖</div>
+                    <div class="pin">💬</div>
+                    <div class="pin">🧠</div>
+                    <div class="pin">⚙️</div>
+                    <div class="pin">✨</div>
+                    <div class="pin">🌐</div>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- Demo Button -->
-    <div class="taste-demo-container">
-        <button class="taste-button" id="tasteButtonBottom">⚡ TASTE IT NOW – See How It Works (No signup)</button>
-    </div>
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <button class="cta-primary" id="tasteButton">Try Demo Now</button>
+        <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-secondary">Download for Chrome</a>
+    </section>
 
-    <!-- Modal -->
-    <div class="taste-modal" id="tasteModal">
-        <div class="taste-modal-content">
-            <button class="taste-modal-close" id="tasteModalClose">&times;</button>
-            <div class="taste-modal-body">
-                <div class="taste-step-1" id="tasteStep1">
-                    <h2>Pick any design</h2>
-                    <div class="taste-sample-grid">
-                        <div class="taste-sample-card" data-sample="dashboard"><div class="taste-sample-preview"></div><p>Dashboard UI</p></div>
-                        <div class="taste-sample-card" data-sample="login"><div class="taste-sample-preview"></div><p>Mobile App</p></div>
-                        <div class="taste-sample-card" data-sample="hero"><div class="taste-sample-preview"></div><p>Landing Page</p></div>
-                    </div>
-                </div>
-                <div class="taste-step-2 hidden" id="tasteStep2">
-                    <h2 style="text-align: center;">Generating Code...</h2>
-                    <div class="taste-countdown" id="tasteCountdown">6</div>
-                </div>
-                <div class="taste-step-3 hidden" id="tasteStep3">
-                    <h2>Perfect React + Tailwind Code</h2>
-                    <button class="taste-copy-btn" id="tasteCopyBtn">Copy Code</button>
-                    <pre id="tasteCodeBlock" class="taste-code-preview"><code></code></pre>
-                </div>
-            </div>
+    <!-- Feature Showcase -->
+    <section class="features">
+        <h2>Why SnapToAI?</h2>
+        <div class="features-grid">
+            <div class="feature">📸 <span>Instant Capture</span></div>
+            <div class="feature">🎯 <span>Batch Upload</span></div>
+            <div class="feature">🤖 <span>AI Ready</span></div>
+            <div class="feature">🔒 <span>Private</span></div>
+            <div class="feature">🌍 <span>55 Languages</span></div>
+            <div class="feature">⚡ <span>Lightning Fast</span></div>
         </div>
-    </div>
+    </section>
 
     <!-- Pricing -->
     <section class="pricing">
-        <h2 class="section-title">Simple Pricing</h2>
-        <div class="pricing-card">
-            <div class="pricing-badge">LIFETIME</div>
+        <h2>Simple Pricing</h2>
+        <div class="price-card">
             <h3>SnapToAI Premium</h3>
-            <div class="price-display"><span class="price-amount">$9.90</span><span class="price-period">/year</span></div>
-            <p>Less than a coffee. Infinite AI workflows.</p>
-            <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button" style="width: 100%; text-align: center; margin-top: 2rem;">Start Free Trial</a>
+            <p class="price">$9.90 <span>/year</span></p>
+            <p class="desc">Unlimited screenshots. All platforms.</p>
+            <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-primary">Start Free Trial</a>
         </div>
     </section>
+
+    <!-- Demo Modal -->
+    <div class="modal" id="tasteModal">
+        <div class="modal-content">
+            <button class="modal-close" id="tasteModalClose">&times;</button>
+            <div class="demo-step" id="demoStep1">
+                <h2>Select a Screenshot</h2>
+                <div class="demo-options">
+                    <button class="demo-option" data-sample="dashboard">Dashboard UI</button>
+                    <button class="demo-option" data-sample="login">Login Screen</button>
+                    <button class="demo-option" data-sample="hero">Hero Section</button>
+                </div>
+            </div>
+            <div class="demo-step hidden" id="demoStep2">
+                <h2>Generating Code...</h2>
+                <div class="countdown" id="countdown">6</div>
+            </div>
+            <div class="demo-step hidden" id="demoStep3">
+                <h2>Perfect React Code</h2>
+                <button class="copy-btn" id="copyBtn">Copy Code</button>
+                <pre id="codeBlock"><code></code></pre>
+            </div>
+        </div>
+    </div>
 
     <script src="translations.js"></script>
     <script src="script.js"></script>

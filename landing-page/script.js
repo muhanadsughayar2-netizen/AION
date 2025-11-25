@@ -1,152 +1,91 @@
-// ===== CAROUSEL SYSTEM =====
-let currentMessageIndex = 0;
-const MESSAGE_INTERVAL = 5000;
-let carouselTimer;
+// ===== CAROUSEL ROTATION =====
+let currentSlide = 0;
+const slides = document.querySelectorAll('.carousel-slide');
+const ROTATE_INTERVAL = 6000;
+let rotationTimer;
 
-function rotateCarousel() {
-    // Hide all messages and image sets
-    document.querySelectorAll('.carousel-message').forEach(msg => msg.classList.remove('active'));
-    document.querySelectorAll('.left-images .images-set').forEach(set => set.classList.remove('active'));
-    document.querySelectorAll('.right-images .images-set').forEach(set => set.classList.remove('active'));
-    
-    // Show current message and images
-    document.querySelectorAll('.carousel-message')[currentMessageIndex].classList.add('active');
-    document.querySelectorAll('.left-images .images-set')[currentMessageIndex].classList.add('active');
-    document.querySelectorAll('.right-images .images-set')[currentMessageIndex].classList.add('active');
-    
-    // Move to next
-    currentMessageIndex = (currentMessageIndex + 1) % 4;
-    
-    // Schedule next rotation
-    carouselTimer = setTimeout(rotateCarousel, MESSAGE_INTERVAL);
+function rotateSlide() {
+    slides.forEach(s => s.classList.remove('active'));
+    currentSlide = (currentSlide + 1) % slides.length;
+    slides[currentSlide].classList.add('active');
 }
 
-function initializeCarousel() {
-    // Show first message and images
-    document.querySelectorAll('.carousel-message')[0].classList.add('active');
-    document.querySelectorAll('.left-images .images-set')[0].classList.add('active');
-    document.querySelectorAll('.right-images .images-set')[0].classList.add('active');
-    
-    // Start rotation
-    carouselTimer = setTimeout(rotateCarousel, MESSAGE_INTERVAL);
-}
-
-// ===== LANGUAGE SYSTEM =====
-const DEFAULT_LANG = 'en';
-let currentLang = DEFAULT_LANG;
-
-function detectLanguage() {
-    if (typeof supportedLanguages === 'undefined') return DEFAULT_LANG;
-    const browserLang = navigator.language || navigator.userLanguage;
-    const langCode = browserLang.split('-')[0];
-    return supportedLanguages[langCode] ? langCode : DEFAULT_LANG;
-}
-
-function updateLanguage(lang) {
-    currentLang = lang;
-    localStorage.setItem('selectedLanguage', lang);
-    document.querySelectorAll('[id]').forEach(element => {
-        const key = element.id;
-        if (translations[lang] && translations[lang][key]) {
-            element.textContent = translations[lang][key];
-        }
-    });
-    document.documentElement.lang = lang;
-}
-
-function initializeLanguage() {
-    const savedLang = localStorage.getItem('selectedLanguage');
-    const lang = savedLang || detectLanguage();
-    updateLanguage(lang);
-}
-
-function initializeLanguageSwitcher() {
-    const langSwitch = document.getElementById('langSwitch');
-    if (!langSwitch || typeof supportedLanguages === 'undefined') return;
-    
-    langSwitch.addEventListener('click', () => {
-        const langs = Object.keys(supportedLanguages);
-        const currentIndex = langs.indexOf(currentLang);
-        const nextIndex = (currentIndex + 1) % langs.length;
-        updateLanguage(langs[nextIndex]);
-    });
+function startRotation() {
+    slides[0].classList.add('active');
+    rotationTimer = setInterval(rotateSlide, ROTATE_INTERVAL);
 }
 
 // ===== DEMO MODAL =====
-function initializeTasteDemo() {
-    const tasteButton = document.getElementById('tasteButton');
-    const tasteButtonBottom = document.getElementById('tasteButtonBottom');
-    const tasteModal = document.getElementById('tasteModal');
-    const tasteModalClose = document.getElementById('tasteModalClose');
-    const step1 = document.getElementById('tasteStep1');
-    const step2 = document.getElementById('tasteStep2');
-    const step3 = document.getElementById('tasteStep3');
-    const tasteCountdown = document.getElementById('tasteCountdown');
-    const tasteCopyBtn = document.getElementById('tasteCopyBtn');
-    const tasteCodeBlock = document.getElementById('tasteCodeBlock').querySelector('code');
+function initDemo() {
+    const tasteBtn = document.getElementById('tasteButton');
+    const modal = document.getElementById('tasteModal');
+    const closeBtn = document.getElementById('tasteModalClose');
+    const copyBtn = document.getElementById('copyBtn');
+    const codeBlock = document.getElementById('codeBlock').querySelector('code');
     
     const sampleCodes = {
         dashboard: `export default function Dashboard() {
   return (
-    <div className="grid grid-cols-3 gap-4 p-8">
+    <div className="grid grid-cols-3 gap-4">
       <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-white">Revenue</h2>
-        <p className="text-4xl font-black text-white mt-2">$45,230</p>
+        <h2 className="text-white font-bold">Revenue</h2>
+        <p className="text-4xl text-white font-black">$45,230</p>
       </div>
     </div>
   );
 }`,
         login: `export default function LoginForm() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900">
-      <div className="bg-white/10 rounded-2xl p-8 w-96">
-        <h1 className="text-3xl font-bold text-white mb-6">Welcome</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+      <form className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 w-96">
+        <h1 className="text-white text-3xl font-bold mb-6">Welcome</h1>
         <button className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold py-2 rounded-lg">Sign In</button>
-      </div>
+      </form>
     </div>
   );
 }`,
         hero: `export default function Hero() {
   return (
-    <section className="min-h-screen bg-gradient-to-r from-purple-900 to-cyan-900 flex items-center justify-center">
+    <section className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-900 via-black to-cyan-900">
       <h1 className="text-6xl font-black text-white">Build the Future</h1>
     </section>
   );
 }`
     };
-    
-    function openModal() {
-        tasteModal.classList.add('open');
-        step1.classList.remove('hidden');
-        step2.classList.add('hidden');
-        step3.classList.add('hidden');
-    }
-    
-    function closeModal() {
-        tasteModal.classList.remove('open');
-    }
-    
-    tasteButton?.addEventListener('click', openModal);
-    tasteButtonBottom?.addEventListener('click', openModal);
-    tasteModalClose?.addEventListener('click', closeModal);
-    
-    document.querySelectorAll('.taste-sample-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const sample = card.dataset.sample;
-            step1.classList.add('hidden');
-            step2.classList.remove('hidden');
-            
+
+    tasteBtn?.addEventListener('click', () => {
+        modal.classList.add('open');
+        document.getElementById('demoStep1').classList.remove('hidden');
+        document.getElementById('demoStep2').classList.add('hidden');
+        document.getElementById('demoStep3').classList.add('hidden');
+    });
+
+    closeBtn?.addEventListener('click', () => {
+        modal.classList.remove('open');
+    });
+
+    document.querySelectorAll('.demo-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const sample = btn.textContent.toLowerCase();
+            document.getElementById('demoStep1').classList.add('hidden');
+            document.getElementById('demoStep2').classList.remove('hidden');
+
             let count = 6;
-            tasteCountdown.textContent = count;
-            
-            const interval = setInterval(() => {
+            const countdown = document.getElementById('countdown');
+            countdown.textContent = count;
+
+            const timer = setInterval(() => {
                 count--;
-                tasteCountdown.textContent = count;
+                countdown.textContent = count;
                 if (count <= 0) {
-                    clearInterval(interval);
-                    step2.classList.add('hidden');
-                    step3.classList.remove('hidden');
-                    tasteCodeBlock.textContent = sampleCodes[sample] || sampleCodes.dashboard;
+                    clearInterval(timer);
+                    document.getElementById('demoStep2').classList.add('hidden');
+                    document.getElementById('demoStep3').classList.remove('hidden');
+                    
+                    const sampleKey = sample.includes('dashboard') ? 'dashboard' : 
+                                     sample.includes('login') ? 'login' : 'hero';
+                    codeBlock.textContent = sampleCodes[sampleKey];
+                    
                     if (typeof confetti !== 'undefined') {
                         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
                     }
@@ -154,23 +93,54 @@ function initializeTasteDemo() {
             }, 1000);
         });
     });
-    
-    tasteCopyBtn?.addEventListener('click', () => {
-        navigator.clipboard.writeText(tasteCodeBlock.textContent).then(() => {
-            tasteCopyBtn.textContent = '✓ Copied!';
-            setTimeout(() => { tasteCopyBtn.textContent = 'Copy Code'; }, 2000);
+
+    copyBtn?.addEventListener('click', () => {
+        navigator.clipboard.writeText(codeBlock.textContent).then(() => {
+            copyBtn.textContent = '✓ Copied!';
+            setTimeout(() => { copyBtn.textContent = 'Copy Code'; }, 2000);
         });
     });
-    
-    tasteModal?.addEventListener('click', (e) => {
-        if (e.target === tasteModal) closeModal();
+
+    modal?.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('open');
+    });
+}
+
+// ===== LANGUAGE =====
+const DEFAULT_LANG = 'en';
+let currentLang = DEFAULT_LANG;
+
+function updateLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem('selectedLanguage', lang);
+    document.querySelectorAll('[id]').forEach(el => {
+        if (translations[lang] && translations[lang][el.id]) {
+            el.textContent = translations[lang][el.id];
+        }
+    });
+}
+
+function initLanguage() {
+    const saved = localStorage.getItem('selectedLanguage');
+    const lang = saved || navigator.language.split('-')[0];
+    updateLanguage(lang || DEFAULT_LANG);
+}
+
+function initLangSwitch() {
+    const btn = document.getElementById('langSwitch');
+    if (!btn || typeof supportedLanguages === 'undefined') return;
+    btn.addEventListener('click', () => {
+        const langs = Object.keys(supportedLanguages);
+        const idx = langs.indexOf(currentLang);
+        const next = langs[(idx + 1) % langs.length];
+        updateLanguage(next);
     });
 }
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
-    initializeLanguage();
-    initializeLanguageSwitcher();
-    initializeCarousel();
-    initializeTasteDemo();
+    initLanguage();
+    initLangSwitch();
+    startRotation();
+    initDemo();
 });
