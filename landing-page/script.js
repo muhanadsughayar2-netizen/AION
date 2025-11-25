@@ -1,42 +1,40 @@
-// ====== FLOATING CARDS - CIRCULAR HARMONIC POSITIONING ======
+// ====== FLOATING CARDS - ANTI-OVERLAP CIRCULAR POSITIONING ======
 function initializeFloatingCards() {
-    // Circular arrangement with golden spiral harmony
-    // Center of circle + radius positioning
-    const centerX = 50; // percentage
-    const centerY = 50; // percentage
-    const radius = 35; // radius in percentage
+    // Optimized circular arrangement - NO overlaps, maximum visual impact
+    // Dynamic radius and positioning based on card dimensions
+    const centerX = 50;
+    const centerY = 48;
     
-    // 9 cards arranged in circular pattern with uneven distribution for WOW factor
+    // 9 cards with specific angles for maximum spread + WOW visual balance
+    // Angle-based distribution with calculated radius to prevent overlap
     const positions = [
-        { angle: 0, radiusOffset: 1 },      // Right
-        { angle: 45, radiusOffset: 0.85 },  // Top-Right
-        { angle: 90, radiusOffset: 1 },     // Top
-        { angle: 135, radiusOffset: 0.9 },  // Top-Left
-        { angle: 180, radiusOffset: 1 },    // Left
-        { angle: 225, radiusOffset: 0.88 }, // Bottom-Left
-        { angle: 270, radiusOffset: 1 },    // Bottom
-        { angle: 315, radiusOffset: 0.92 }, // Bottom-Right
-        { angle: 60, radiusOffset: 0.5 },   // Inner-Top-Right (focal point)
+        { angle: 0, radius: 40, name: 'Right' },           // Right edge
+        { angle: 40, radius: 35, name: 'TopRight' },       // Top-Right
+        { angle: 80, radius: 38, name: 'Top' },            // Top
+        { angle: 140, radius: 35, name: 'TopLeft' },       // Top-Left
+        { angle: 180, radius: 40, name: 'Left' },          // Left edge
+        { angle: 220, radius: 35, name: 'BottomLeft' },    // Bottom-Left
+        { angle: 270, radius: 38, name: 'Bottom' },        // Bottom
+        { angle: 315, radius: 37, name: 'BottomRight' },   // Bottom-Right
+        { angle: 120, radius: 22, name: 'Center' },        // Center focal point (inner)
     ];
     
-    // Shuffle for randomness while keeping structure
-    const shuffledPositions = positions.sort(() => Math.random() - 0.5);
-    
+    // NO shuffle - use fixed positioning to avoid overlaps
     const cards = document.querySelectorAll('.floating-card');
     cards.forEach((card, index) => {
-        if (shuffledPositions[index]) {
-            const pos = shuffledPositions[index];
+        if (positions[index]) {
+            const pos = positions[index];
             
             // Convert angle to radians
             const angleRad = (pos.angle * Math.PI) / 180;
             
-            // Calculate position on circle
-            const x = centerX + (radius * pos.radiusOffset * Math.cos(angleRad));
-            const y = centerY + (radius * pos.radiusOffset * Math.sin(angleRad));
+            // Calculate position on circle with dedicated radius per card
+            const x = centerX + (pos.radius * Math.cos(angleRad));
+            const y = centerY + (pos.radius * Math.sin(angleRad));
             
-            // Add randomness for organic feel
-            const jitterX = (Math.random() - 0.5) * 20;
-            const jitterY = (Math.random() - 0.5) * 20;
+            // Minimal jitter for natural feel (±8px only)
+            const jitterX = (Math.random() - 0.5) * 16;
+            const jitterY = (Math.random() - 0.5) * 16;
             
             card.style.left = `calc(${x}% + ${jitterX}px)`;
             card.style.top = `calc(${y}% + ${jitterY}px)`;

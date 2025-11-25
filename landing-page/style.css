@@ -422,7 +422,7 @@ body {
 /* Hero Visual */
 .hero-visual {
     position: relative;
-    height: 750px;
+    height: 800px;
     perspective: 1000px;
 }
 
