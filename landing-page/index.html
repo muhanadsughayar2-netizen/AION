@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SnapToAI - Convert Screenshots to AI Context in One Click</title>
-    <meta name="description" content="The fastest workflow to convert any webpage into AI-ready context. Batch upload screenshots to ChatGPT, Claude, Grok instantly. 55 languages. 30-day free trial. 10,000+ developers trust SnapToAI.">
+    <meta name="description" content="The fastest workflow to convert any webpage into AI-ready context. Batch upload screenshots to ChatGPT, Claude, Grok instantly. 55 languages. Free forever. 10,000+ developers trust SnapToAI.">
     <meta name="theme-color" content="#0f172a">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -13,7 +13,7 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="logo-wrapper">
-                <div class="logo-icon">📸</div>
+                <div class="logo-icon" title="SnapToAI Logo"></div>
                 <span class="logo-text">Snap<span class="logo-highlight">ToAI</span></span>
             </div>
             <div class="nav-links">
@@ -40,29 +40,18 @@
             <!-- CTA Button -->
             <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button">
                 <span class="cta-text" id="downloadBtn">Download for Chrome</span>
-                <span class="cta-badge" id="trialBadge">FREE • 30 Days</span>
+                <span class="cta-badge" id="trialBadge">FREE FOREVER</span>
             </a>
 
             <!-- Browser Bar -->
             <div class="browser-bar">
-                <span class="browser-bar-label" id="alsoAvailable">Also available on:</span>
-                <div class="browser-buttons">
-                    <a href="https://microsoftedge.microsoft.com/addons" target="_blank" class="browser-btn" title="Edge">
-                        <span class="browser-btn-icon edge-icon">E</span>
-                        <span class="browser-btn-name">Edge</span>
-                    </a>
-                    <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="browser-btn" title="Brave">
-                        <span class="browser-btn-icon brave-icon">B</span>
-                        <span class="browser-btn-name">Brave</span>
-                    </a>
-                    <a href="https://addons.opera.com" target="_blank" class="browser-btn" title="Opera">
-                        <span class="browser-btn-icon opera-icon">O</span>
-                        <span class="browser-btn-name">Opera</span>
-                    </a>
-                    <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="browser-btn" title="Vivaldi">
-                        <span class="browser-btn-icon vivaldi-icon">V</span>
-                        <span class="browser-btn-name">Vivaldi</span>
-                    </a>
+                <span class="browser-bar-label" id="alsoAvailable">Works on:</span>
+                <div class="browser-buttons compact">
+                    <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="browser-btn-compact" title="Chrome">Chrome</a>
+                    <a href="https://microsoftedge.microsoft.com/addons" target="_blank" class="browser-btn-compact" title="Edge">Edge</a>
+                    <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="browser-btn-compact" title="Brave">Brave</a>
+                    <a href="https://addons.opera.com" target="_blank" class="browser-btn-compact" title="Opera">Opera</a>
+                    <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="browser-btn-compact" title="Vivaldi">Vivaldi</a>
                 </div>
             </div>
 
@@ -86,7 +75,7 @@
         <!-- Hero Visual -->
         <div class="hero-visual">
             <div class="floating-card card-1">
-                <div class="card-icon">📸</div>
+                <div class="card-icon icon-capture" title="Capture Icon"></div>
                 <div class="card-text" id="card1">Capture</div>
             </div>
             <div class="floating-card card-2">
@@ -101,7 +90,7 @@
     <!-- Taste It Now Demo Button -->
     <div class="taste-demo-container">
         <button class="taste-button" id="tasteButton">
-            ⚡ TASTE IT NOW – See How It Works (No signup)
+            TASTE IT NOW – See How It Works (No signup)
         </button>
     </div>
 
@@ -163,6 +152,37 @@
         </div>
     </div>
 
+    <!-- Why It's FREE Section -->
+    <section class="free-section">
+        <div class="free-content">
+            <h2 class="section-title" id="freeTitle">Why SnapToAI is FREE</h2>
+            <p class="free-intro" id="freeIntro">It's a win-win: You get more done, AI gets smarter results.</p>
+            
+            <div class="advantages-grid">
+                <div class="advantage-card">
+                    <div class="advantage-icon icon-advantage-1"></div>
+                    <h3 id="adv1Title">Increases AI Productivity</h3>
+                    <p id="adv1Desc">Better organized inputs = faster, smarter AI responses</p>
+                </div>
+                <div class="advantage-card">
+                    <div class="advantage-icon icon-advantage-2"></div>
+                    <h3 id="adv2Title">Reduces Human Clutter</h3>
+                    <p id="adv2Desc">Batch upload instead of clicking 10 times</p>
+                </div>
+                <div class="advantage-card">
+                    <div class="advantage-icon icon-advantage-3"></div>
+                    <h3 id="adv3Title">Organizes Your Workflow</h3>
+                    <p id="adv3Desc">Drag, drop, organize, send – all in seconds</p>
+                </div>
+                <div class="advantage-card">
+                    <div class="advantage-icon icon-advantage-4"></div>
+                    <h3 id="adv4Title">Better Results Faster</h3>
+                    <p id="adv4Desc">AI understands context better with organized images</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- The Problem Section -->
     <section class="problem-section">
         <div class="problem-content">
@@ -170,19 +190,19 @@
             <p class="problem-intro" id="problemIntro">AI isn't your bottleneck. Your workflow is.</p>
             <div class="problem-grid">
                 <div class="problem-item">
-                    <div class="problem-icon">📸</div>
+                    <div class="problem-icon icon-problem-1"></div>
                     <p id="problemItem1">You spend 5 minutes capturing screenshots</p>
                 </div>
                 <div class="problem-item">
-                    <div class="problem-icon">📁</div>
+                    <div class="problem-icon icon-problem-2"></div>
                     <p id="problemItem2">Then searching for files in folders</p>
                 </div>
                 <div class="problem-item">
-                    <div class="problem-icon">⏱️</div>
+                    <div class="problem-icon icon-problem-3"></div>
                     <p id="problemItem3">Uploading them one-by-one to ChatGPT</p>
                 </div>
                 <div class="problem-item">
-                    <div class="problem-icon">✍️</div>
+                    <div class="problem-icon icon-problem-4"></div>
                     <p id="problemItem4">Manually explaining context to the AI</p>
                 </div>
             </div>
