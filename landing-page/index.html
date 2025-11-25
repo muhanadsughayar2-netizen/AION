@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SnapToAI - Convert Screenshots to AI Context in One Click</title>
     <meta name="description" content="Get your next AI automation idea. Multi-screenshot batch upload to ChatGPT, Claude, Grok instantly.">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#ffffff">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,128 +14,120 @@
         <div class="nav-container">
             <div class="logo">📸 SnapToAI</div>
             <div class="nav-links">
-                <button class="lang-switch" id="langSwitch">Language</button>
+                <button class="lang-switch" id="langSwitch">EN</button>
             </div>
         </div>
     </nav>
 
-    <!-- Hero Carousel - Pinterest Style -->
-    <section class="hero-carousel">
-        <!-- Message 1: Fast -->
-        <div class="carousel-slide active" data-theme="fast">
-            <div class="carousel-content">
-                <h1 class="headline" style="--color: #FFB81C;">Get your next <span class="highlight">fast automation</span> idea</h1>
-                <div class="carousel-dots">●●●●</div>
-                <div class="pins-row">
-                    <div class="pin">⚡</div>
-                    <div class="pin">📸</div>
-                    <div class="pin">🚀</div>
-                    <div class="pin">✅</div>
-                    <div class="pin">⏱️</div>
-                    <div class="pin">💨</div>
-                </div>
+    <!-- Pinterest Carousel Hero -->
+    <section class="pinterest-hero">
+        <!-- Slide 1: Fast -->
+        <div class="carousel-slide active" data-slide="0">
+            <h1 class="headline"><span style="--color: #FFB81C;">Get your next</span> <span class="theme-word" style="color: #FFB81C;">fast automation</span> <span style="--color: #FFB81C;">idea</span></h1>
+            <div class="carousel-nav">●●●●</div>
+            <div class="pins-masonry">
+                <div class="pin pin-1">⚡</div>
+                <div class="pin pin-2">📸</div>
+                <div class="pin pin-3">🚀</div>
+                <div class="pin pin-4">✅</div>
+                <div class="pin pin-5">⏱️</div>
+                <div class="pin pin-6">💨</div>
             </div>
         </div>
 
-        <!-- Message 2: Secure -->
-        <div class="carousel-slide" data-theme="secure">
-            <div class="carousel-content">
-                <h1 class="headline" style="--color: #2ECC71;">Get your next <span class="highlight">secure workflow</span> idea</h1>
-                <div class="carousel-dots">●●●●</div>
-                <div class="pins-row">
-                    <div class="pin">🔒</div>
-                    <div class="pin">🛡️</div>
-                    <div class="pin">🔐</div>
-                    <div class="pin">✓</div>
-                    <div class="pin">💻</div>
-                    <div class="pin">🔑</div>
-                </div>
+        <!-- Slide 2: Secure -->
+        <div class="carousel-slide" data-slide="1">
+            <h1 class="headline"><span style="--color: #2ECC71;">Get your next</span> <span class="theme-word" style="color: #2ECC71;">secure workflow</span> <span style="--color: #2ECC71;">idea</span></h1>
+            <div class="carousel-nav">●●●●</div>
+            <div class="pins-masonry">
+                <div class="pin pin-1">🔒</div>
+                <div class="pin pin-2">🛡️</div>
+                <div class="pin pin-3">🔐</div>
+                <div class="pin pin-4">✓</div>
+                <div class="pin pin-5">💻</div>
+                <div class="pin pin-6">🔑</div>
             </div>
         </div>
 
-        <!-- Message 3: Productivity -->
-        <div class="carousel-slide" data-theme="productivity">
-            <div class="carousel-content">
-                <h1 class="headline" style="--color: #3498DB;">Get your next <span class="highlight">productivity boost</span> idea</h1>
-                <div class="carousel-dots">●●●●</div>
-                <div class="pins-row">
-                    <div class="pin">📈</div>
-                    <div class="pin">⏰</div>
-                    <div class="pin">💰</div>
-                    <div class="pin">🎯</div>
-                    <div class="pin">📊</div>
-                    <div class="pin">🏆</div>
-                </div>
+        <!-- Slide 3: Productivity -->
+        <div class="carousel-slide" data-slide="2">
+            <h1 class="headline"><span style="--color: #3498DB;">Get your next</span> <span class="theme-word" style="color: #3498DB;">productivity boost</span> <span style="--color: #3498DB;">idea</span></h1>
+            <div class="carousel-nav">●●●●</div>
+            <div class="pins-masonry">
+                <div class="pin pin-1">📈</div>
+                <div class="pin pin-2">⏰</div>
+                <div class="pin pin-3">💰</div>
+                <div class="pin pin-4">🎯</div>
+                <div class="pin pin-5">📊</div>
+                <div class="pin pin-6">🏆</div>
             </div>
         </div>
 
-        <!-- Message 4: AI -->
-        <div class="carousel-slide" data-theme="ai">
-            <div class="carousel-content">
-                <h1 class="headline" style="--color: #9B59B6;">Get your next <span class="highlight">AI integration</span> idea</h1>
-                <div class="carousel-dots">●●●●</div>
-                <div class="pins-row">
-                    <div class="pin">🤖</div>
-                    <div class="pin">💬</div>
-                    <div class="pin">🧠</div>
-                    <div class="pin">⚙️</div>
-                    <div class="pin">✨</div>
-                    <div class="pin">🌐</div>
-                </div>
+        <!-- Slide 4: AI -->
+        <div class="carousel-slide" data-slide="3">
+            <h1 class="headline"><span style="--color: #9B59B6;">Get your next</span> <span class="theme-word" style="color: #9B59B6;">AI integration</span> <span style="--color: #9B59B6;">idea</span></h1>
+            <div class="carousel-nav">●●●●</div>
+            <div class="pins-masonry">
+                <div class="pin pin-1">🤖</div>
+                <div class="pin pin-2">💬</div>
+                <div class="pin pin-3">🧠</div>
+                <div class="pin pin-4">⚙️</div>
+                <div class="pin pin-5">✨</div>
+                <div class="pin pin-6">🌐</div>
             </div>
         </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="cta-section">
-        <button class="cta-primary" id="tasteButton">Try Demo Now</button>
-        <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-secondary">Download for Chrome</a>
+    <!-- CTA -->
+    <section class="cta-bar">
+        <button class="btn-primary" id="demoBtn">Try Demo</button>
+        <a href="https://chrome.google.com/webstore" target="_blank" class="btn-secondary">Download for Chrome</a>
     </section>
 
-    <!-- Feature Showcase -->
+    <!-- Features -->
     <section class="features">
         <h2>Why SnapToAI?</h2>
-        <div class="features-grid">
-            <div class="feature">📸 <span>Instant Capture</span></div>
-            <div class="feature">🎯 <span>Batch Upload</span></div>
-            <div class="feature">🤖 <span>AI Ready</span></div>
-            <div class="feature">🔒 <span>Private</span></div>
-            <div class="feature">🌍 <span>55 Languages</span></div>
-            <div class="feature">⚡ <span>Lightning Fast</span></div>
+        <div class="features-row">
+            <div class="feat">📸 Capture</div>
+            <div class="feat">🎯 Batch</div>
+            <div class="feat">🤖 AI Ready</div>
+            <div class="feat">💬 ChatGPT</div>
+            <div class="feat">✨ Claude</div>
+            <div class="feat">🌍 Global</div>
         </div>
     </section>
 
     <!-- Pricing -->
-    <section class="pricing">
-        <h2>Simple Pricing</h2>
-        <div class="price-card">
-            <h3>SnapToAI Premium</h3>
-            <p class="price">$9.90 <span>/year</span></p>
+    <section class="pricing-section">
+        <h2>Pricing</h2>
+        <div class="price-box">
+            <h3>SnapToAI Pro</h3>
+            <p class="price">$9.90<span>/year</span></p>
             <p class="desc">Unlimited screenshots. All platforms.</p>
-            <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-primary">Start Free Trial</a>
+            <a href="https://chrome.google.com/webstore" target="_blank" class="btn-primary">Get Started</a>
         </div>
     </section>
 
     <!-- Demo Modal -->
-    <div class="modal" id="tasteModal">
-        <div class="modal-content">
-            <button class="modal-close" id="tasteModalClose">&times;</button>
-            <div class="demo-step" id="demoStep1">
-                <h2>Select a Screenshot</h2>
-                <div class="demo-options">
-                    <button class="demo-option" data-sample="dashboard">Dashboard UI</button>
-                    <button class="demo-option" data-sample="login">Login Screen</button>
-                    <button class="demo-option" data-sample="hero">Hero Section</button>
+    <div class="modal" id="demoModal">
+        <div class="modal-box">
+            <button class="close-btn" id="closeModal">&times;</button>
+            <div class="step active" id="step1">
+                <h2>Pick a design</h2>
+                <div class="options">
+                    <button class="opt" data-type="dashboard">Dashboard</button>
+                    <button class="opt" data-type="login">Login</button>
+                    <button class="opt" data-type="hero">Hero</button>
                 </div>
             </div>
-            <div class="demo-step hidden" id="demoStep2">
-                <h2>Generating Code...</h2>
-                <div class="countdown" id="countdown">6</div>
+            <div class="step" id="step2">
+                <h2>Generating...</h2>
+                <div class="count" id="countDown">6</div>
             </div>
-            <div class="demo-step hidden" id="demoStep3">
-                <h2>Perfect React Code</h2>
-                <button class="copy-btn" id="copyBtn">Copy Code</button>
-                <pre id="codeBlock"><code></code></pre>
+            <div class="step" id="step3">
+                <h2>Your Code</h2>
+                <button class="copy-btn" id="copyBtn">Copy</button>
+                <pre id="codeBox"><code></code></pre>
             </div>
         </div>
     </div>

@@ -1,35 +1,34 @@
-// ===== CAROUSEL ROTATION =====
+// Carousel rotation
 let currentSlide = 0;
 const slides = document.querySelectorAll('.carousel-slide');
-const ROTATE_INTERVAL = 6000;
-let rotationTimer;
+const INTERVAL = 6000;
+let timer;
 
-function rotateSlide() {
-    slides.forEach(s => s.classList.remove('active'));
+function nextSlide() {
+    slides[currentSlide].classList.remove('active');
     currentSlide = (currentSlide + 1) % slides.length;
     slides[currentSlide].classList.add('active');
 }
 
-function startRotation() {
-    slides[0].classList.add('active');
-    rotationTimer = setInterval(rotateSlide, ROTATE_INTERVAL);
+function startCarousel() {
+    timer = setInterval(nextSlide, INTERVAL);
 }
 
-// ===== DEMO MODAL =====
+// Demo modal
 function initDemo() {
-    const tasteBtn = document.getElementById('tasteButton');
-    const modal = document.getElementById('tasteModal');
-    const closeBtn = document.getElementById('tasteModalClose');
+    const demoBtn = document.getElementById('demoBtn');
+    const modal = document.getElementById('demoModal');
+    const closeModal = document.getElementById('closeModal');
     const copyBtn = document.getElementById('copyBtn');
-    const codeBlock = document.getElementById('codeBlock').querySelector('code');
-    
-    const sampleCodes = {
+    const code = document.querySelector('#codeBox code');
+
+    const codes = {
         dashboard: `export default function Dashboard() {
   return (
-    <div className="grid grid-cols-3 gap-4">
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6">
-        <h2 className="text-white font-bold">Revenue</h2>
-        <p className="text-4xl text-white font-black">$45,230</p>
+    <div className="grid grid-cols-3 gap-4 p-6">
+      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white">
+        <p className="text-sm">Revenue</p>
+        <p className="text-3xl font-bold">$45,230</p>
       </div>
     </div>
   );
@@ -53,41 +52,30 @@ function initDemo() {
 }`
     };
 
-    tasteBtn?.addEventListener('click', () => {
+    demoBtn?.addEventListener('click', () => {
         modal.classList.add('open');
-        document.getElementById('demoStep1').classList.remove('hidden');
-        document.getElementById('demoStep2').classList.add('hidden');
-        document.getElementById('demoStep3').classList.add('hidden');
+        showStep('step1');
     });
 
-    closeBtn?.addEventListener('click', () => {
-        modal.classList.remove('open');
-    });
+    closeModal?.addEventListener('click', () => modal.classList.remove('open'));
 
-    document.querySelectorAll('.demo-option').forEach(btn => {
+    document.querySelectorAll('.opt').forEach(btn => {
         btn.addEventListener('click', () => {
-            const sample = btn.textContent.toLowerCase();
-            document.getElementById('demoStep1').classList.add('hidden');
-            document.getElementById('demoStep2').classList.remove('hidden');
-
+            showStep('step2');
             let count = 6;
-            const countdown = document.getElementById('countdown');
-            countdown.textContent = count;
+            const countDown = document.getElementById('countDown');
+            countDown.textContent = count;
 
             const timer = setInterval(() => {
                 count--;
-                countdown.textContent = count;
+                countDown.textContent = count;
                 if (count <= 0) {
                     clearInterval(timer);
-                    document.getElementById('demoStep2').classList.add('hidden');
-                    document.getElementById('demoStep3').classList.remove('hidden');
-                    
-                    const sampleKey = sample.includes('dashboard') ? 'dashboard' : 
-                                     sample.includes('login') ? 'login' : 'hero';
-                    codeBlock.textContent = sampleCodes[sampleKey];
-                    
+                    const type = btn.dataset.type || 'dashboard';
+                    code.textContent = codes[type] || codes.dashboard;
+                    showStep('step3');
                     if (typeof confetti !== 'undefined') {
-                        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                        confetti({ particleCount: 100, spread: 70 });
                     }
                 }
             }, 1000);
@@ -95,9 +83,9 @@ function initDemo() {
     });
 
     copyBtn?.addEventListener('click', () => {
-        navigator.clipboard.writeText(codeBlock.textContent).then(() => {
+        navigator.clipboard.writeText(code.textContent).then(() => {
             copyBtn.textContent = '✓ Copied!';
-            setTimeout(() => { copyBtn.textContent = 'Copy Code'; }, 2000);
+            setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
         });
     });
 
@@ -106,13 +94,17 @@ function initDemo() {
     });
 }
 
-// ===== LANGUAGE =====
-const DEFAULT_LANG = 'en';
-let currentLang = DEFAULT_LANG;
+function showStep(stepId) {
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    document.getElementById(stepId)?.classList.add('active');
+}
 
-function updateLanguage(lang) {
+// Language
+let currentLang = 'en';
+
+function updateLang(lang) {
     currentLang = lang;
-    localStorage.setItem('selectedLanguage', lang);
+    localStorage.setItem('lang', lang);
     document.querySelectorAll('[id]').forEach(el => {
         if (translations[lang] && translations[lang][el.id]) {
             el.textContent = translations[lang][el.id];
@@ -120,27 +112,27 @@ function updateLanguage(lang) {
     });
 }
 
-function initLanguage() {
-    const saved = localStorage.getItem('selectedLanguage');
+function initLang() {
+    const saved = localStorage.getItem('lang');
     const lang = saved || navigator.language.split('-')[0];
-    updateLanguage(lang || DEFAULT_LANG);
+    updateLang(lang || 'en');
 }
 
 function initLangSwitch() {
     const btn = document.getElementById('langSwitch');
     if (!btn || typeof supportedLanguages === 'undefined') return;
+    
     btn.addEventListener('click', () => {
         const langs = Object.keys(supportedLanguages);
         const idx = langs.indexOf(currentLang);
-        const next = langs[(idx + 1) % langs.length];
-        updateLanguage(next);
+        updateLang(langs[(idx + 1) % langs.length]);
     });
 }
 
-// ===== INIT =====
+// Init
 document.addEventListener('DOMContentLoaded', () => {
-    initLanguage();
-    initLangSwitch();
-    startRotation();
+    startCarousel();
     initDemo();
+    initLang();
+    initLangSwitch();
 });
