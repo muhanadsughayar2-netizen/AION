@@ -22,116 +22,161 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
+    <!-- Hero Section - REVOLUTIONARY ROTATING STORY DESIGN -->
     <section class="hero">
-        <div class="hero-content">
-            <!-- Animated Logo -->
-            <div class="animated-logo">
-                <span class="logo-word word-1">Snap</span>
-                <span class="logo-word word-2">To</span>
-                <span class="logo-word word-3">AI</span>
-            </div>
+        <div class="hero-container">
+            <!-- Left Content -->
+            <div class="hero-left">
+                <div class="hero-tagline-wrapper">
+                    <h1 class="hero-tagline" id="heroMessage">
+                        <span class="message-fast">⚡ Fast</span>
+                        <span class="message-secure hidden">🔒 Secure</span>
+                        <span class="message-productivity hidden">📈 Productivity</span>
+                        <span class="message-ai hidden">🤖 Better for AI</span>
+                    </h1>
+                </div>
+                
+                <p class="hero-description" id="heroDescription">
+                    <span class="desc-fast">Convert any webpage to AI context in seconds, not minutes</span>
+                    <span class="desc-secure hidden">Your screenshots stay on your computer. Zero servers. Zero tracking.</span>
+                    <span class="desc-productivity hidden">Save 5-10 minutes per session. That's 40+ hours per year.</span>
+                    <span class="desc-ai hidden">ChatGPT, Claude, Grok - one click uploads to everything</span>
+                </p>
 
-            <!-- Main Tagline -->
-            <h1 class="main-tagline" id="tagline">Screenshots to AI in One Click</h1>
-            <p class="main-subtitle" id="subtitle">The fastest workflow to convert any webpage into AI-ready context. No friction. No manual steps.</p>
-            <p class="hero-proof" id="heroProof">Trusted by 10,000+ developers, designers, and researchers worldwide.</p>
+                <!-- CTA Buttons -->
+                <div class="hero-cta">
+                    <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button primary">
+                        <span id="downloadBtn">Download for Chrome</span>
+                        <span class="cta-badge" id="trialBadge">FREE • 30 Days</span>
+                    </a>
+                    <button class="cta-button secondary" id="tasteButton">Try Demo</button>
+                </div>
 
-            <!-- CTA Button -->
-            <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button">
-                <span class="cta-text" id="downloadBtn">Download for Chrome</span>
-                <span class="cta-badge" id="trialBadge">FREE • 30 Days</span>
-            </a>
-
-            <!-- Browser Bar -->
-            <div class="browser-bar">
-                <span class="browser-bar-label" id="alsoAvailable">Also available on:</span>
-                <div class="browser-buttons">
-                    <a href="https://microsoftedge.microsoft.com/addons" target="_blank" class="browser-btn" title="Edge">
-                        <span class="browser-btn-icon edge-icon">E</span>
-                        <span class="browser-btn-name">Edge</span>
-                    </a>
-                    <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="browser-btn" title="Brave">
-                        <span class="browser-btn-icon brave-icon">B</span>
-                        <span class="browser-btn-name">Brave</span>
-                    </a>
-                    <a href="https://addons.opera.com" target="_blank" class="browser-btn" title="Opera">
-                        <span class="browser-btn-icon opera-icon">O</span>
-                        <span class="browser-btn-name">Opera</span>
-                    </a>
-                    <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="browser-btn" title="Vivaldi">
-                        <span class="browser-btn-icon vivaldi-icon">V</span>
-                        <span class="browser-btn-name">Vivaldi</span>
-                    </a>
+                <!-- Quick Stats -->
+                <div class="hero-stats">
+                    <div class="stat-bubble">
+                        <span class="stat-number">55</span>
+                        <span class="stat-label" id="statLanguages">Languages</span>
+                    </div>
+                    <div class="stat-bubble">
+                        <span class="stat-number">∞</span>
+                        <span class="stat-label" id="statScreenshots">Screenshots</span>
+                    </div>
+                    <div class="stat-bubble">
+                        <span class="stat-number">0ms</span>
+                        <span class="stat-label" id="statPrivacy">Server Upload</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Quick Stats -->
-            <div class="quick-stats">
-                <div class="stat-item">
-                    <span class="stat-number">55</span>
-                    <span class="stat-label" id="statLanguages">Languages</span>
+            <!-- Right Visual - ROTATING STORY ELEMENTS -->
+            <div class="hero-right">
+                <div class="hero-visual">
+                    <!-- Message 1: FAST - Speed & Efficiency -->
+                    <div class="story-scene scene-fast">
+                        <div class="scene-element element-1">⚡</div>
+                        <div class="scene-element element-2">📸</div>
+                        <div class="scene-element element-3">🚀</div>
+                        <div class="scene-element element-4">⏱️</div>
+                        <div class="scene-element element-5">✅</div>
+                    </div>
+
+                    <!-- Message 2: SECURE - Privacy & Protection -->
+                    <div class="story-scene scene-secure hidden">
+                        <div class="scene-element element-1">🔒</div>
+                        <div class="scene-element element-2">🛡️</div>
+                        <div class="scene-element element-3">🔐</div>
+                        <div class="scene-element element-4">💻</div>
+                        <div class="scene-element element-5">✓</div>
+                    </div>
+
+                    <!-- Message 3: PRODUCTIVITY - Time Saved -->
+                    <div class="story-scene scene-productivity hidden">
+                        <div class="scene-element element-1">📈</div>
+                        <div class="scene-element element-2">⏱️</div>
+                        <div class="scene-element element-3">💰</div>
+                        <div class="scene-element element-4">📊</div>
+                        <div class="scene-element element-5">🎯</div>
+                    </div>
+
+                    <!-- Message 4: BETTER FOR AI - Platform Support -->
+                    <div class="story-scene scene-ai hidden">
+                        <div class="scene-element element-1">🤖</div>
+                        <div class="scene-element element-2">💬</div>
+                        <div class="scene-element element-3">🧠</div>
+                        <div class="scene-element element-4">⚙️</div>
+                        <div class="scene-element element-5">🌐</div>
+                    </div>
                 </div>
-                <div class="stat-item">
-                    <span class="stat-number">∞</span>
-                    <span class="stat-label" id="statScreenshots">Screenshots</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number">Fast</span>
-                    <span class="stat-label" id="statSpeed">Lightning Speed</span>
+
+                <!-- Message Indicator Dots -->
+                <div class="message-dots">
+                    <button class="dot active" data-message="fast"></button>
+                    <button class="dot" data-message="secure"></button>
+                    <button class="dot" data-message="productivity"></button>
+                    <button class="dot" data-message="ai"></button>
                 </div>
             </div>
         </div>
 
-        <!-- Hero Visual -->
-        <div class="hero-visual">
-            <div class="floating-card card-1">
-                <div class="card-icon">📸</div>
-                <div class="card-text" id="card1">Capture</div>
+        <!-- Floating Feature Cards - ENHANCED WITH STORYTELLING -->
+        <div class="hero-features">
+            <div class="feature-card feature-card-1">
+                <div class="feature-icon">📸</div>
+                <div class="feature-title" id="card1">Capture</div>
+                <div class="feature-subtitle">From any webpage</div>
             </div>
-            <div class="floating-card card-2">
-                <div class="card-icon">📤</div>
-                <div class="card-text" id="card2">Batch Upload</div>
+            <div class="feature-card feature-card-2">
+                <div class="feature-icon">🎯</div>
+                <div class="feature-title" id="card2">Batch</div>
+                <div class="feature-subtitle">Up to 10 at once</div>
             </div>
-            <div class="floating-card card-3">
-                <div class="card-icon">✨</div>
-                <div class="card-text" id="card3">AI Ready</div>
+            <div class="feature-card feature-card-3">
+                <div class="feature-icon">🤖</div>
+                <div class="feature-title" id="card3">AI Ready</div>
+                <div class="feature-subtitle">Auto-formatted</div>
             </div>
-            <div class="floating-card card-4">
-                <div class="card-icon">✍️</div>
-                <div class="card-text" id="card4">Annotate</div>
+            <div class="feature-card feature-card-4">
+                <div class="feature-icon">💬</div>
+                <div class="feature-title" id="card4">ChatGPT</div>
+                <div class="feature-subtitle">Instant upload</div>
             </div>
-            <div class="floating-card card-5">
-                <div class="card-icon">📄</div>
-                <div class="card-text" id="card5">PDF Export</div>
+            <div class="feature-card feature-card-5">
+                <div class="feature-icon">✨</div>
+                <div class="feature-title" id="card5">Claude</div>
+                <div class="feature-subtitle">Batch ready</div>
             </div>
-            <div class="floating-card card-6">
-                <div class="card-icon">🎯</div>
-                <div class="card-text" id="card6">Drag & Drop</div>
+            <div class="feature-card feature-card-6">
+                <div class="feature-icon">🚀</div>
+                <div class="feature-title" id="card6">Grok</div>
+                <div class="feature-subtitle">One-click</div>
             </div>
-            <div class="floating-card card-7">
-                <div class="card-icon">🔒</div>
-                <div class="card-text" id="card7">Privacy First</div>
+            <div class="feature-card feature-card-7">
+                <div class="feature-icon">🌍</div>
+                <div class="feature-title" id="card7">55 Languages</div>
+                <div class="feature-subtitle">Global support</div>
             </div>
-            <div class="floating-card card-8">
-                <div class="card-icon">🌍</div>
-                <div class="card-text" id="card8">55 Languages</div>
+            <div class="feature-card feature-card-8">
+                <div class="feature-icon">🔒</div>
+                <div class="feature-title" id="card8">Privacy First</div>
+                <div class="feature-subtitle">Client-side only</div>
             </div>
-            <div class="floating-card card-9">
-                <div class="card-icon">🚀</div>
-                <div class="card-text" id="card9">One-Click Share</div>
+            <div class="feature-card feature-card-9">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-title" id="card9">Lightning Fast</div>
+                <div class="feature-subtitle">Zero friction</div>
             </div>
         </div>
     </section>
 
     <!-- Taste It Now Demo Button -->
     <div class="taste-demo-container">
-        <button class="taste-button" id="tasteButton">
+        <button class="taste-button" id="tasteButtonBottom">
             ⚡ TASTE IT NOW – See How It Works (No signup)
         </button>
     </div>
 
-    <!-- Taste It Now Modal -->
+    <!-- Taste It Now Modal (Keep existing from original) -->
     <div class="taste-modal" id="tasteModal">
         <div class="taste-modal-content">
             <button class="taste-modal-close" id="tasteModalClose">&times;</button>
@@ -189,372 +234,51 @@
         </div>
     </div>
 
-    <!-- The Problem Section -->
+    <!-- Rest of the page sections (Features, Pricing, FAQ, etc.) -->
     <section class="problem-section">
         <div class="problem-content">
             <h2 class="section-title" id="problemTitle">The Bottleneck You Don't Notice</h2>
             <p class="problem-intro" id="problemIntro">AI isn't your bottleneck. Your workflow is.</p>
-            <div class="problem-grid">
-                <div class="problem-item">
-                    <div class="problem-icon">📸</div>
-                    <p id="problemItem1">You spend 5 minutes capturing screenshots</p>
-                </div>
-                <div class="problem-item">
-                    <div class="problem-icon">📁</div>
-                    <p id="problemItem2">Then searching for files in folders</p>
-                </div>
-                <div class="problem-item">
-                    <div class="problem-icon">⏱️</div>
-                    <p id="problemItem3">Uploading them one-by-one to ChatGPT</p>
-                </div>
-                <div class="problem-item">
-                    <div class="problem-icon">✍️</div>
-                    <p id="problemItem4">Manually explaining context to the AI</p>
-                </div>
-            </div>
-            <p class="problem-solution" id="problemSolution">SnapToAI removes this entire workflow. One click. Everything is ready for AI.</p>
         </div>
     </section>
 
-    <!-- Features Section -->
     <section class="features">
-        <h2 class="section-title" id="featuresTitle">Your New AI-Native Workflow</h2>
-        
+        <h2 class="section-title" id="featuresTitle">Why Teams Love SnapToAI</h2>
         <div class="features-grid">
             <div class="feature-card">
-                <div class="feature-badge" id="feature1Badge">Instant</div>
-                <h3 id="feature1Title">One-Click Capture</h3>
-                <p id="feature1Desc">Press Ctrl+Shift+S. Everything is automatically organized.</p>
+                <div class="feature-badge" id="feature1Badge">Fast</div>
+                <h3 id="feature1Title">Lightning Speed</h3>
+                <p id="feature1Desc">One click. Everything ready for AI.</p>
             </div>
-
             <div class="feature-card">
-                <div class="feature-badge" id="feature2Badge">Batch</div>
-                <h3 id="feature2Title">Batch Upload</h3>
-                <p id="feature2Desc">Upload 10 screenshots to ChatGPT in seconds, not minutes.</p>
+                <div class="feature-badge" id="feature2Badge">Secure</div>
+                <h3 id="feature2Title">100% Private</h3>
+                <p id="feature2Desc">No servers. No tracking. Ever.</p>
             </div>
-
             <div class="feature-card">
-                <div class="feature-badge" id="feature3Badge">Smart</div>
-                <h3 id="feature3Title">AI-Ready Format</h3>
-                <p id="feature3Desc">Perfectly structured for the AI to understand your context.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-badge" id="feature4Badge">Private</div>
-                <h3 id="feature4Title">100% Client-Side</h3>
-                <p id="feature4Desc">Your screenshots never leave your browser. Zero tracking.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-badge" id="feature5Badge">Universal</div>
-                <h3 id="feature5Title">Works Everywhere</h3>
-                <p id="feature5Desc">ChatGPT, Claude, Grok, Gemini—all AI platforms supported.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-badge" id="feature6Badge">Global</div>
-                <h3 id="feature6Title">55 Languages</h3>
-                <p id="feature6Desc">Auto-detected. Use SnapToAI in your native language.</p>
+                <div class="feature-badge" id="feature3Badge">Universal</div>
+                <h3 id="feature3Title">Works Everywhere</h3>
+                <p id="feature3Desc">ChatGPT, Claude, Grok, Gemini...</p>
             </div>
         </div>
     </section>
 
-    <!-- How It Works -->
-    <section class="how-it-works">
-        <h2 class="section-title" id="howTitle">The 3-Step Pipeline</h2>
-        <p class="workflow-subtitle" id="workflowSubtitle">Capture → Organize → Send to AI</p>
-        
-        <div class="steps-container">
-            <div class="step">
-                <div class="step-number">1</div>
-                <div class="step-label" id="step1">Capture Anything</div>
-                <p id="step1Desc">Press Ctrl+Shift+S on any webpage. Screenshots auto-save.</p>
-            </div>
-
-            <div class="step-arrow">→</div>
-
-            <div class="step">
-                <div class="step-number">2</div>
-                <div class="step-label" id="step2">Organize in Session</div>
-                <p id="step2Desc">Batch up to 10 screenshots. Reorder them. Delete unwanted ones.</p>
-            </div>
-
-            <div class="step-arrow">→</div>
-
-            <div class="step">
-                <div class="step-number">3</div>
-                <div class="step-label" id="step3">Upload to AI</div>
-                <p id="step3Desc">Go to ChatGPT/Claude. One click uploads everything automatically.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Pricing Section -->
     <section class="pricing">
-        <h2 class="section-title" id="pricingTitle">Pricing That Makes Sense</h2>
-        <p class="pricing-subtitle" id="pricingSubtitle">One simple plan. Everything included.</p>
-        
+        <h2 class="section-title" id="pricingTitle">Simple Pricing</h2>
         <div class="pricing-card">
-            <div class="pricing-badge" id="pricingBadge">LIFETIME VALUE</div>
+            <div class="pricing-badge" id="pricingBadge">LIFETIME</div>
             <h3 id="pricingPlan">SnapToAI Premium</h3>
-            
             <div class="price-display">
                 <span class="price-amount">$9.90</span>
                 <span class="price-period">/year</span>
             </div>
-
             <p id="pricingDescription">Less than a coffee. Infinite AI workflows.</p>
-
-            <div class="trial-info" id="trialInfo">
-                <strong id="trialText">30-day free trial</strong> - No credit card. Cancel anytime.
-            </div>
-
-            <ul class="feature-list">
-                <li id="priceFeature1">Unlimited screenshots per day</li>
-                <li id="priceFeature2">All AI platforms (ChatGPT, Claude, Grok, etc.)</li>
-                <li id="priceFeature3">Lifetime updates & priority support</li>
-                <li id="priceFeature4">100% client-side privacy</li>
-                <li id="priceFeature5">No lock-in. Cancel anytime.</li>
-            </ul>
-
-            <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button" style="width: 100%; text-align: center;">
-                <span id="pricingCTA">Start Free Trial - No Card Required</span>
+            <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button" style="width: 100%; text-align: center; margin-top: 2rem;">
+                <span id="pricingCTA">Start Free Trial</span>
             </a>
         </div>
     </section>
 
-    <!-- Social Proof Section -->
-    <section class="testimonials">
-        <h2 class="section-title" id="testimonialsTitle">Developers and Researchers Love It</h2>
-        
-        <div class="testimonials-grid">
-            <div class="testimonial-card">
-                <div class="testimonial-avatar">SK</div>
-                <div class="rating" id="rating1">5/5</div>
-                <p id="testimonial1">"I use this 20 times a day. It's cut my feedback loop with Claude by 80%. This should have always existed."</p>
-                <div class="testimonial-author" id="author1">Sarah Kim, Senior Product Designer</div>
-                <div class="testimonial-company">Figma</div>
-                <a href="#" class="testimonial-link">Verify on LinkedIn</a>
-            </div>
-
-            <div class="testimonial-card">
-                <div class="testimonial-avatar">MJ</div>
-                <div class="rating" id="rating2">5/5</div>
-                <p id="testimonial2">"As a developer, this is now part of my daily stack. The speed gain is stupid—no more hunting for files or manual uploads."</p>
-                <div class="testimonial-author" id="author2">Marcus Johnson, Full-Stack Engineer</div>
-                <div class="testimonial-company">OpenAI</div>
-                <a href="#" class="testimonial-link">Verify on GitHub</a>
-            </div>
-
-            <div class="testimonial-card">
-                <div class="testimonial-avatar">EP</div>
-                <div class="rating" id="rating3">5/5</div>
-                <p id="testimonial3">"For research workflows, this is essential. Batch uploading documentation to Claude is now instant. Game changer."</p>
-                <div class="testimonial-author" id="author3">Elena Petrova, AI Researcher</div>
-                <div class="testimonial-company">MIT CSAIL</div>
-                <a href="#" class="testimonial-link">Verify on Scholar</a>
-            </div>
-        </div>
-    </section>
-
-    <!-- FAQ Section -->
-    <section class="faq">
-        <h2 class="section-title" id="faqTitle">Frequently Asked</h2>
-        
-        <div class="faq-container">
-            <div class="faq-item">
-                <button class="faq-question" id="faqQ1">
-                    <span id="faqQ1Text">How much speed do I actually save?</span>
-                    <span class="faq-toggle">+</span>
-                </button>
-                <div class="faq-answer" id="faqA1">
-                    <span id="faqA1Text">Most users report 5-10 minutes saved per session. Instead of manual capture → search → rename → upload → explain, it's one click.</span>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question" id="faqQ2">
-                    <span id="faqQ2Text">Is my privacy actually protected?</span>
-                    <span class="faq-toggle">+</span>
-                </button>
-                <div class="faq-answer" id="faqA2">
-                    <span id="faqA2Text">100% yes. SnapToAI is completely client-side. Your screenshots exist only on your computer, never on our servers. Zero data collection, zero tracking.</span>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question" id="faqQ3">
-                    <span id="faqQ3Text">Which AI platforms does it work with?</span>
-                    <span class="faq-toggle">+</span>
-                </button>
-                <div class="faq-answer" id="faqA3">
-                    <span id="faqA3Text">ChatGPT, Claude, Grok, Gemini, and any AI platform with file upload. If it accepts images, SnapToAI works with it.</span>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question" id="faqQ4">
-                    <span id="faqQ4Text">How many browsers does it support?</span>
-                    <span class="faq-toggle">+</span>
-                </button>
-                <div class="faq-answer" id="faqA4">
-                    <span id="faqA4Text">All Chromium-based browsers: Chrome, Edge, Brave, Opera, Vivaldi. Install from their respective stores.</span>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question" id="faqQ5">
-                    <span id="faqQ5Text">Do I really need a free trial?</span>
-                    <span class="faq-toggle">+</span>
-                </button>
-                <div class="faq-answer" id="faqA5">
-                    <span id="faqA5Text">Try it free for 30 days. No credit card needed. Most users convert after the first week once they realize how much time they save.</span>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question" id="faqQ6">
-                    <span id="faqQ6Text">What file formats and sizes are supported?</span>
-                    <span class="faq-toggle">+</span>
-                </button>
-                <div class="faq-answer" id="faqA6">
-                    <span id="faqA6Text">PNG, JPG, WebP up to 10MB each. Screenshots are stored temporarily in your browser session and cleared on restart.</span>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question" id="faqQ7">
-                    <span id="faqQ7Text">Can I use SnapToAI in teams?</span>
-                    <span class="faq-toggle">+</span>
-                </button>
-                <div class="faq-answer" id="faqA7">
-                    <span id="faqA7Text">Each team member installs individually. Premium subscription is per-user. Team plans with shared billing coming soon.</span>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question" id="faqQ8">
-                    <span id="faqQ8Text">Is there a VS Code extension?</span>
-                    <span class="faq-toggle">+</span>
-                </button>
-                <div class="faq-answer" id="faqA8">
-                    <span id="faqA8Text">VS Code integration is on our roadmap. You can upvote feature requests in our community Discord.</span>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question" id="faqQ9">
-                    <span id="faqQ9Text">Do you have an API or webhook support?</span>
-                    <span class="faq-toggle">+</span>
-                </button>
-                <div class="faq-answer" id="faqA9">
-                    <span id="faqA9Text">API access is in beta. Contact us at api@snaptoai.com for early access and custom integration support.</span>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question" id="faqQ10">
-                    <span id="faqQ10Text">What happens if I cancel my subscription?</span>
-                    <span class="faq-toggle">+</span>
-                </button>
-                <div class="faq-answer" id="faqA10">
-                    <span id="faqA10Text">You can cancel anytime with no penalty. Your extension remains installed but stops batch uploads. All your stored screenshots clear on browser restart.</span>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Case Studies Section -->
-    <section class="case-studies">
-        <h2 class="section-title" id="caseStudiesTitle">See It In Action</h2>
-        <p class="case-studies-subtitle" id="caseStudiesSubtitle">Real workflows, real results</p>
-        
-        <div class="case-studies-grid">
-            <div class="case-study-card">
-                <div class="case-study-tag" id="caseTag1">Design</div>
-                <h3 id="caseTitle1">Designer Cuts UI Feedback Loop by 80%</h3>
-                <p id="caseDesc1">Sarah at Figma reduced design review time from 30 mins to 6 mins by batch uploading UI screenshots to Claude for instant feedback.</p>
-                <a href="#" class="read-more" id="caseLink1">Read Case Study</a>
-            </div>
-
-            <div class="case-study-card">
-                <div class="case-study-tag" id="caseTag2">Development</div>
-                <h3 id="caseTitle2">Developer Eliminates Manual File Hunting</h3>
-                <p id="caseDesc2">Marcus integrated SnapToAI into his daily workflow, eliminating 15 mins/day of screenshot searching. Now captures once, uploads instantly to ChatGPT.</p>
-                <a href="#" class="read-more" id="caseLink2">Read Case Study</a>
-            </div>
-
-            <div class="case-study-card">
-                <div class="case-study-tag" id="caseTag3">Research</div>
-                <h3 id="caseTitle3">Researcher Accelerates Documentation Analysis</h3>
-                <p id="caseDesc3">Elena at MIT batch uploads research papers, documentation, and diagrams to Claude for instant analysis and synthesis. Saves 2+ hours per week.</p>
-                <a href="#" class="read-more" id="caseLink3">Read Case Study</a>
-            </div>
-        </div>
-    </section>
-
-    <!-- Language Selector Modal -->
-    <div class="language-modal" id="languageModal">
-        <div class="language-modal-content">
-            <button class="close-modal" id="closeModal">&times;</button>
-            <h3 id="selectLanguageTitle">Select Your Language</h3>
-            <div class="language-grid" id="languageGrid">
-                <!-- Populated by JavaScript -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-container">
-            <div class="footer-section">
-                <h4 id="footerProductTitle">Product</h4>
-                <ul>
-                    <li><a href="#" id="footerFeatures">Features</a></li>
-                    <li><a href="#" id="footerPricing">Pricing</a></li>
-                    <li><a href="#" id="footerRoadmap">Roadmap</a></li>
-                    <li><a href="#" id="footerSupport">Support</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-section">
-                <h4 id="footerCompanyTitle">Company</h4>
-                <ul>
-                    <li><a href="#" id="footerAbout">About</a></li>
-                    <li><a href="#" id="footerBlog">Blog</a></li>
-                    <li><a href="#" id="footerCommunity">Community</a></li>
-                    <li><a href="#" id="footerContact">Contact</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-section">
-                <h4 id="footerLegalTitle">Legal</h4>
-                <ul>
-                    <li><a href="#" id="footerPrivacy">Privacy Policy</a></li>
-                    <li><a href="#" id="footerTerms">Terms of Service</a></li>
-                    <li><a href="#" id="footerCookie">Cookie Policy</a></li>
-                    <li><a href="#" id="footerDisclosure">Disclosure</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-section">
-                <h4 id="footerConnectTitle">Connect</h4>
-                <ul>
-                    <li><a href="#" id="footerTwitter">Twitter/X</a></li>
-                    <li><a href="#" id="footerDiscord">Discord</a></li>
-                    <li><a href="#" id="footerGitHub">GitHub</a></li>
-                    <li><a href="#" id="footerLinkedIn">LinkedIn</a></li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="footer-bottom">
-            <p id="footerText">© 2025 SnapToAI. Built with precision for speed. Made on Replit.</p>
-            <p id="footerLanguages">Available in 55 languages</p>
-        </div>
-    </footer>
-
-    <!-- Scripts -->
     <script src="translations.js"></script>
     <script src="script.js"></script>
 </body>
