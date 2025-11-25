@@ -22,149 +22,108 @@
         </div>
     </nav>
 
-    <!-- Hero Section - REVOLUTIONARY ROTATING STORY DESIGN -->
+    <!-- Hero Section - MASONRY LAYOUT -->
     <section class="hero">
-        <div class="hero-container">
-            <!-- Left Content -->
-            <div class="hero-left">
+        <div class="hero-wrapper">
+            <!-- Left Image Grid -->
+            <div class="hero-images left-grid">
+                <div class="image-item img-1">📸</div>
+                <div class="image-item img-2">🎯</div>
+                <div class="image-item img-3">⚡</div>
+                <div class="image-item img-4">🔒</div>
+                <div class="image-item img-5">🌍</div>
+            </div>
+
+            <!-- Center Content -->
+            <div class="hero-center">
                 <div class="hero-tagline-wrapper">
-                    <h1 class="hero-tagline" id="heroMessage">
-                        <span class="message-fast">⚡ Fast</span>
-                        <span class="message-secure hidden">🔒 Secure</span>
-                        <span class="message-productivity hidden">📈 Productivity</span>
-                        <span class="message-ai hidden">🤖 Better for AI</span>
-                    </h1>
+                    <span class="hero-label">⚡ Fast</span>
+                    <h1 class="hero-tagline">Convert any webpage to AI context in seconds</h1>
+                    <p class="hero-subtitle">One click. Everything ready. No friction.</p>
                 </div>
-                
-                <p class="hero-description" id="heroDescription">
-                    <span class="desc-fast">Convert any webpage to AI context in seconds, not minutes</span>
-                    <span class="desc-secure hidden">Your screenshots stay on your computer. Zero servers. Zero tracking.</span>
-                    <span class="desc-productivity hidden">Save 5-10 minutes per session. That's 40+ hours per year.</span>
-                    <span class="desc-ai hidden">ChatGPT, Claude, Grok - one click uploads to everything</span>
-                </p>
 
                 <!-- CTA Buttons -->
                 <div class="hero-cta">
-                    <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button primary">
-                        <span id="downloadBtn">Download for Chrome</span>
-                        <span class="cta-badge" id="trialBadge">FREE • 30 Days</span>
-                    </a>
+                    <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button primary">Download for Chrome</a>
                     <button class="cta-button secondary" id="tasteButton">Try Demo</button>
                 </div>
 
                 <!-- Quick Stats -->
                 <div class="hero-stats">
-                    <div class="stat-bubble">
-                        <span class="stat-number">55</span>
-                        <span class="stat-label" id="statLanguages">Languages</span>
+                    <div class="stat-item">
+                        <span class="stat-value">55</span>
+                        <span class="stat-name">Languages</span>
                     </div>
-                    <div class="stat-bubble">
-                        <span class="stat-number">∞</span>
-                        <span class="stat-label" id="statScreenshots">Screenshots</span>
+                    <div class="stat-item">
+                        <span class="stat-value">∞</span>
+                        <span class="stat-name">Screenshots</span>
                     </div>
-                    <div class="stat-bubble">
-                        <span class="stat-number">0ms</span>
-                        <span class="stat-label" id="statPrivacy">Server Upload</span>
+                    <div class="stat-item">
+                        <span class="stat-value">0ms</span>
+                        <span class="stat-name">Server Upload</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Visual - ROTATING STORY ELEMENTS -->
-            <div class="hero-right">
-                <div class="hero-visual">
-                    <!-- Message 1: FAST - Speed & Efficiency -->
-                    <div class="story-scene scene-fast">
-                        <div class="scene-element element-1">⚡</div>
-                        <div class="scene-element element-2">📸</div>
-                        <div class="scene-element element-3">🚀</div>
-                        <div class="scene-element element-4">⏱️</div>
-                        <div class="scene-element element-5">✅</div>
-                    </div>
-
-                    <!-- Message 2: SECURE - Privacy & Protection -->
-                    <div class="story-scene scene-secure hidden">
-                        <div class="scene-element element-1">🔒</div>
-                        <div class="scene-element element-2">🛡️</div>
-                        <div class="scene-element element-3">🔐</div>
-                        <div class="scene-element element-4">💻</div>
-                        <div class="scene-element element-5">✓</div>
-                    </div>
-
-                    <!-- Message 3: PRODUCTIVITY - Time Saved -->
-                    <div class="story-scene scene-productivity hidden">
-                        <div class="scene-element element-1">📈</div>
-                        <div class="scene-element element-2">⏱️</div>
-                        <div class="scene-element element-3">💰</div>
-                        <div class="scene-element element-4">📊</div>
-                        <div class="scene-element element-5">🎯</div>
-                    </div>
-
-                    <!-- Message 4: BETTER FOR AI - Platform Support -->
-                    <div class="story-scene scene-ai hidden">
-                        <div class="scene-element element-1">🤖</div>
-                        <div class="scene-element element-2">💬</div>
-                        <div class="scene-element element-3">🧠</div>
-                        <div class="scene-element element-4">⚙️</div>
-                        <div class="scene-element element-5">🌐</div>
-                    </div>
-                </div>
-
-                <!-- Message Indicator Dots -->
-                <div class="message-dots">
-                    <button class="dot active" data-message="fast"></button>
-                    <button class="dot" data-message="secure"></button>
-                    <button class="dot" data-message="productivity"></button>
-                    <button class="dot" data-message="ai"></button>
-                </div>
+            <!-- Right Image Grid -->
+            <div class="hero-images right-grid">
+                <div class="image-item img-6">🚀</div>
+                <div class="image-item img-7">💬</div>
+                <div class="image-item img-8">✨</div>
+                <div class="image-item img-9">🤖</div>
+                <div class="image-item img-10">📈</div>
             </div>
+
+            <!-- Blue Accent Pin -->
+            <div class="accent-pin"></div>
         </div>
 
-        <!-- Floating Feature Cards - ENHANCED WITH STORYTELLING -->
-        <div class="hero-features">
-            <div class="feature-card feature-card-1">
+        <!-- Feature Cards Below -->
+        <div class="feature-cards-section">
+            <div class="feature-card">
                 <div class="feature-icon">📸</div>
-                <div class="feature-title" id="card1">Capture</div>
-                <div class="feature-subtitle">From any webpage</div>
+                <h3>Capture</h3>
+                <p>From any webpage</p>
             </div>
-            <div class="feature-card feature-card-2">
+            <div class="feature-card">
                 <div class="feature-icon">🎯</div>
-                <div class="feature-title" id="card2">Batch</div>
-                <div class="feature-subtitle">Up to 10 at once</div>
+                <h3>Batch</h3>
+                <p>Up to 10 at once</p>
             </div>
-            <div class="feature-card feature-card-3">
+            <div class="feature-card">
                 <div class="feature-icon">🤖</div>
-                <div class="feature-title" id="card3">AI Ready</div>
-                <div class="feature-subtitle">Auto-formatted</div>
+                <h3>AI Ready</h3>
+                <p>Auto-formatted</p>
             </div>
-            <div class="feature-card feature-card-4">
+            <div class="feature-card">
                 <div class="feature-icon">💬</div>
-                <div class="feature-title" id="card4">ChatGPT</div>
-                <div class="feature-subtitle">Instant upload</div>
+                <h3>ChatGPT</h3>
+                <p>Instant upload</p>
             </div>
-            <div class="feature-card feature-card-5">
+            <div class="feature-card">
                 <div class="feature-icon">✨</div>
-                <div class="feature-title" id="card5">Claude</div>
-                <div class="feature-subtitle">Batch ready</div>
+                <h3>Claude</h3>
+                <p>Batch ready</p>
             </div>
-            <div class="feature-card feature-card-6">
+            <div class="feature-card">
                 <div class="feature-icon">🚀</div>
-                <div class="feature-title" id="card6">Grok</div>
-                <div class="feature-subtitle">One-click</div>
+                <h3>Grok</h3>
+                <p>One-click</p>
             </div>
-            <div class="feature-card feature-card-7">
+            <div class="feature-card">
                 <div class="feature-icon">🌍</div>
-                <div class="feature-title" id="card7">55 Languages</div>
-                <div class="feature-subtitle">Global support</div>
+                <h3>55 Languages</h3>
+                <p>Global support</p>
             </div>
-            <div class="feature-card feature-card-8">
+            <div class="feature-card">
                 <div class="feature-icon">🔒</div>
-                <div class="feature-title" id="card8">Privacy First</div>
-                <div class="feature-subtitle">Client-side only</div>
+                <h3>Privacy First</h3>
+                <p>Client-side only</p>
             </div>
-            <div class="feature-card feature-card-9">
+            <div class="feature-card">
                 <div class="feature-icon">⚡</div>
-                <div class="feature-title" id="card9">Lightning Fast</div>
-                <div class="feature-subtitle">Zero friction</div>
+                <h3>Lightning Fast</h3>
+                <p>Zero friction</p>
             </div>
         </div>
     </section>
@@ -176,7 +135,7 @@
         </button>
     </div>
 
-    <!-- Taste It Now Modal (Keep existing from original) -->
+    <!-- Taste It Now Modal -->
     <div class="taste-modal" id="tasteModal">
         <div class="taste-modal-content">
             <button class="taste-modal-close" id="tasteModalClose">&times;</button>
@@ -200,10 +159,6 @@
                             <p>Landing Page</p>
                         </div>
                     </div>
-                    <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(6, 182, 212, 0.2);">
-                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">Or drag & drop your screenshot here:</p>
-                        <input type="file" id="tasteFileUpload" accept="image/*" class="taste-file-input" style="color: var(--primary); cursor: pointer;">
-                    </div>
                 </div>
 
                 <!-- Countdown -->
@@ -220,62 +175,23 @@
                         <button class="taste-copy-btn" id="tasteCopyBtn">Copy Code</button>
                     </div>
                     <pre id="tasteCodeBlock" class="taste-code-preview"><code></code></pre>
-                    <div class="taste-cta-section">
-                        <div style="text-align: center; padding: 2rem; border-top: 1px solid rgba(6, 182, 212, 0.2); border-bottom: 1px solid rgba(6, 182, 212, 0.2); margin: 2rem 0;">
-                            <p style="color: #00f5ff; font-weight: 600; font-size: 0.9rem; letter-spacing: 1px;">✓ This was 100% automatic · Zero prompts · Built in 6 seconds</p>
-                        </div>
-                        <div style="margin-top: 2rem; text-align: center;">
-                            <p style="color: var(--text-secondary); margin-bottom: 1rem;">Want unlimited + your own screenshots?</p>
-                            <button class="taste-buy-btn" id="tasteBuyBtn">Get Lifetime Access – $99 (launches in 48h, then $499)</button>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Rest of the page sections (Features, Pricing, FAQ, etc.) -->
-    <section class="problem-section">
-        <div class="problem-content">
-            <h2 class="section-title" id="problemTitle">The Bottleneck You Don't Notice</h2>
-            <p class="problem-intro" id="problemIntro">AI isn't your bottleneck. Your workflow is.</p>
-        </div>
-    </section>
-
-    <section class="features">
-        <h2 class="section-title" id="featuresTitle">Why Teams Love SnapToAI</h2>
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-badge" id="feature1Badge">Fast</div>
-                <h3 id="feature1Title">Lightning Speed</h3>
-                <p id="feature1Desc">One click. Everything ready for AI.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-badge" id="feature2Badge">Secure</div>
-                <h3 id="feature2Title">100% Private</h3>
-                <p id="feature2Desc">No servers. No tracking. Ever.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-badge" id="feature3Badge">Universal</div>
-                <h3 id="feature3Title">Works Everywhere</h3>
-                <p id="feature3Desc">ChatGPT, Claude, Grok, Gemini...</p>
-            </div>
-        </div>
-    </section>
-
+    <!-- Pricing Section -->
     <section class="pricing">
-        <h2 class="section-title" id="pricingTitle">Simple Pricing</h2>
+        <h2 class="section-title">Simple Pricing</h2>
         <div class="pricing-card">
-            <div class="pricing-badge" id="pricingBadge">LIFETIME</div>
-            <h3 id="pricingPlan">SnapToAI Premium</h3>
+            <div class="pricing-badge">LIFETIME</div>
+            <h3>SnapToAI Premium</h3>
             <div class="price-display">
                 <span class="price-amount">$9.90</span>
                 <span class="price-period">/year</span>
             </div>
-            <p id="pricingDescription">Less than a coffee. Infinite AI workflows.</p>
-            <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button" style="width: 100%; text-align: center; margin-top: 2rem;">
-                <span id="pricingCTA">Start Free Trial</span>
-            </a>
+            <p>Less than a coffee. Infinite AI workflows.</p>
+            <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button" style="width: 100%; text-align: center; margin-top: 2rem;">Start Free Trial</a>
         </div>
     </section>
 

@@ -1,50 +1,3 @@
-// ====== ROTATING MESSAGE SYSTEM ======
-let currentMessageIndex = 0;
-const messages = ['fast', 'secure', 'productivity', 'ai'];
-const messageRotationInterval = 4000; // 4 seconds per message
-let autoRotateTimer;
-
-function showMessage(index) {
-    currentMessageIndex = index;
-    const message = messages[index];
-    
-    // Hide all messages
-    document.querySelectorAll('.hero-tagline span').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.hero-description span').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.story-scene').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.dot').forEach(el => el.classList.remove('active'));
-    
-    // Show current message
-    document.querySelector(`.message-${message}`).classList.remove('hidden');
-    document.querySelector(`.desc-${message}`).classList.remove('hidden');
-    document.querySelector(`.scene-${message}`).classList.add('active');
-    document.querySelector(`[data-message="${message}"]`).classList.add('active');
-    
-    // Reset auto-rotate timer
-    clearInterval(autoRotateTimer);
-    autoRotateTimer = setInterval(() => {
-        const nextIndex = (currentMessageIndex + 1) % messages.length;
-        showMessage(nextIndex);
-    }, messageRotationInterval);
-}
-
-// ====== INITIALIZE MESSAGE SYSTEM ======
-function initializeMessageSystem() {
-    // Set initial message
-    showMessage(0);
-    
-    // Add click handlers to dots
-    document.querySelectorAll('.message-dots .dot').forEach((dot, index) => {
-        dot.addEventListener('click', () => showMessage(index));
-    });
-    
-    // Auto-rotate messages
-    autoRotateTimer = setInterval(() => {
-        const nextIndex = (currentMessageIndex + 1) % messages.length;
-        showMessage(nextIndex);
-    }, messageRotationInterval);
-}
-
 // ====== LANGUAGE DETECTION & TRANSLATION ======
 const DEFAULT_LANG = 'en';
 let currentLang = DEFAULT_LANG;
@@ -137,24 +90,20 @@ function initializeTasteDemo() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
       <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-8 w-96 shadow-2xl">
         <h1 className="text-3xl font-bold text-white mb-6">Welcome Back</h1>
-        <input type="email" placeholder="Email" className="w-full px-4 py-2 rounded-lg mb-4 bg-white/20 text-white placeholder-white/60 border border-white/30" />
-        <input type="password" placeholder="Password" className="w-full px-4 py-2 rounded-lg mb-6 bg-white/20 text-white placeholder-white/60 border border-white/30" />
-        <button className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold py-2 rounded-lg hover:shadow-lg transition">Sign In</button>
+        <input type="email" placeholder="Email" className="w-full px-4 py-2 rounded-lg mb-4 bg-white/20 text-white placeholder-white/60" />
+        <input type="password" placeholder="Password" className="w-full px-4 py-2 rounded-lg mb-6 bg-white/20 text-white placeholder-white/60" />
+        <button className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold py-2 rounded-lg hover:shadow-lg">Sign In</button>
       </div>
     </div>
   );
 }`,
         hero: `export default function Hero() {
   return (
-    <section className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-900 via-black to-cyan-900 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-screen filter blur-3xl"></div>
-        <div className="absolute bottom-10 right-10 w-72 h-72 bg-cyan-500 rounded-full mix-blend-screen filter blur-3xl"></div>
-      </div>
-      <div className="relative z-10 text-center max-w-2xl px-6">
+    <section className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-900 via-black to-cyan-900">
+      <div className="text-center max-w-2xl px-6">
         <h1 className="text-6xl font-black text-white mb-4">Build the Future</h1>
-        <p className="text-xl text-gray-300 mb-8">Ship faster with AI-powered development tools</p>
-        <button className="bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-bold px-8 py-4 rounded-lg text-lg hover:shadow-2xl transition">Get Started Free</button>
+        <p className="text-xl text-gray-300 mb-8">Ship faster with AI-powered development</p>
+        <button className="bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-bold px-8 py-4 rounded-lg text-lg">Get Started</button>
       </div>
     </section>
   );
@@ -235,6 +184,5 @@ function initializeTasteDemo() {
 document.addEventListener('DOMContentLoaded', () => {
     initializeLanguage();
     initializeLanguageSwitcher();
-    initializeMessageSystem();
     initializeTasteDemo();
 });
