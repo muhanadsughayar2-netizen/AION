@@ -441,34 +441,34 @@ body {
 }
 
 .card-1 {
-    top: 5%;
+    top: -10px;
     left: 50%;
     transform: translateX(-50%);
     animation-delay: 0s;
 }
 
 .card-2 {
-    top: 40%;
-    left: 2%;
+    top: 35%;
+    left: -5px;
     animation-delay: -1.5s;
 }
 
 .card-3 {
-    bottom: 8%;
+    bottom: -10px;
     left: 50%;
     transform: translateX(-50%);
     animation-delay: -3s;
 }
 
 .card-4 {
-    top: 40%;
-    right: 2%;
+    top: 35%;
+    right: -5px;
     animation-delay: -2s;
 }
 
 .card-5 {
-    bottom: 20%;
-    left: 15%;
+    bottom: 15%;
+    right: 18%;
     animation-delay: -2.5s;
 }
 
