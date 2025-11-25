@@ -1408,6 +1408,21 @@ body {
     display: none !important;
 }
 
+/* Free Forever Badges */
+.free-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
 /* File Upload */
 .taste-file-input {
     width: 100%;
