@@ -72,6 +72,27 @@ body {
     background-clip: text;
 }
 
+.logo-free {
+    font-size: 0.75rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #00f5ff, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-left: 0.5rem;
+    animation: floatUpDown 2s ease-in-out infinite;
+    letter-spacing: 1px;
+}
+
+@keyframes floatUpDown {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
 .logo-highlight {
     color: #06b6d4;
 }
