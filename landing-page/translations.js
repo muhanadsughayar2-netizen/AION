@@ -19,7 +19,7 @@ const translations = {
         problemItem3: "Uploading them one-by-one to ChatGPT",
         problemItem4: "Manually explaining context to the AI",
         problemSolution: "SnapToAI removes this entire workflow. One click. Everything is ready for AI.",
-        aiTestimonialsTitle: "This is what the AIs actually say when you give them the full page",
+        aiTestimonialsTitle: "This is what the AIs actually say when you give them the full context",
         aiQuote1: "Thanks for the complete, well-structured screenshots — I can now answer accurately on the first try.",
         aiQuote2: "Perfect! Having all 9 screenshots in one clean file removes any ambiguity.",
         aiQuote3: "Finally someone who knows how to feed me context properly. Zero hallucination risk.",
