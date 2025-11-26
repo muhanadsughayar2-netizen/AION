@@ -24,7 +24,7 @@ const translations = {
         aiQuote2: "Perfect! Having all 9 screenshots in one clean file removes any ambiguity.",
         aiQuote3: "Finally someone who knows how to feed me context properly. Zero hallucination risk.",
         aiQuote4: "Excellent structured input. I can now analyze the full page with 100% confidence.",
-        aiCTA: "Install SnapToAI → give them what they're begging for.",
+        aiCTA: "Install SnapToAI → Stop wasting time uploading. Get AI answers that actually matter.",
         featuresTitle: "Your New AI-Native Workflow",
         feature1Title: "One-Click Capture",
         feature1Badge: "Instant",
