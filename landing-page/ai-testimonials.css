@@ -54,6 +54,21 @@
     opacity: 0.9;
 }
 
+.ai-logo-text {
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #00f5ff, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 1px;
+}
+
 .ai-quote {
     font-size: 1.05rem;
     color: var(--text-secondary);
