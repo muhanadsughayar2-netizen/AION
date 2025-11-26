@@ -48,25 +48,11 @@
 }
 
 .ai-logo {
-    height: 50px;
+    height: 60px;
+    width: 60px;
     object-fit: contain;
     margin-bottom: 20px;
-    opacity: 0.9;
-}
-
-.ai-logo-text {
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-    font-size: 1.8rem;
-    font-weight: 900;
-    background: linear-gradient(135deg, #00f5ff, #06b6d4);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    letter-spacing: 1px;
+    opacity: 0.95;
 }
 
 .ai-quote {
