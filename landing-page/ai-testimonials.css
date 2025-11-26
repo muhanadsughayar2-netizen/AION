@@ -57,7 +57,7 @@
 
 /* Background for Grok logo (3rd card) */
 .ai-card:nth-child(3) .ai-logo {
-    background: rgba(255, 255, 255, 0.1);
+    background: white;
     padding: 12px;
     border-radius: 12px;
     height: 60px;
