@@ -422,8 +422,11 @@ body {
 /* Hero Visual */
 .hero-visual {
     position: relative;
-    height: 500px;
+    height: 550px;
     perspective: 1000px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .floating-card {
@@ -431,31 +434,65 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
-    padding: 1.5rem;
-    background: var(--bg-glass);
+    gap: 0.8rem;
+    padding: 1.5rem 1.2rem;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(6, 182, 212, 0.05));
     backdrop-filter: blur(10px);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    border-radius: 16px;
     animation: float 6s ease-in-out infinite;
+    transition: all 0.3s ease;
 }
 
+.floating-card:hover {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(6, 182, 212, 0.1));
+    box-shadow: 0 10px 30px rgba(6, 182, 212, 0.2);
+}
+
+/* Position 5 cards in circle around center camera */
 .card-1 {
     top: 0;
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
     animation-delay: 0s;
 }
 
 .card-2 {
     top: 50%;
     right: 0;
-    animation-delay: -2s;
+    transform: translateY(-50%);
+    animation-delay: -1.5s;
 }
 
-.card-3 {
+.card-center {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 2rem 2.5rem;
+    background: linear-gradient(135deg, rgba(0, 245, 255, 0.15), rgba(6, 182, 212, 0.1));
+    border: 2px solid rgba(0, 245, 255, 0.5);
+    box-shadow: 0 0 40px rgba(0, 245, 255, 0.2);
+    z-index: 10;
+    animation: pulse-float 6s ease-in-out infinite;
+}
+
+.card-center-icon {
+    font-size: 3.5rem;
+}
+
+.card-4 {
     bottom: 0;
-    left: 30%;
-    animation-delay: -4s;
+    left: 50%;
+    transform: translateX(-50%);
+    animation-delay: -3s;
+}
+
+.card-5 {
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    animation-delay: -4.5s;
 }
 
 .card-icon {
@@ -1451,6 +1488,17 @@ body {
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+@keyframes pulse-float {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 0 40px rgba(0, 245, 255, 0.2);
+    }
+    50% {
+        transform: translate(-50%, -55%) scale(1.05);
+        box-shadow: 0 0 60px rgba(0, 245, 255, 0.4);
     }
 }
 
