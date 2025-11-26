@@ -1,6 +1,6 @@
 const translations = {
     en: {
-        tagline: "Better screenshots = smarter AI.",
+        tagline: "Better Screenshots, Smarter AI",
         subtitle: "One click → 9 perfect shots → edit → one file → drop into ChatGPT, Claude, Grok, Gemini.",
         heroProof: "Trusted by designers, operators, analysts, and researchers across 50+ countries.",
         downloadBtn: "Add to Chrome – Free Forever",
