@@ -13,7 +13,7 @@ const translations = {
         card3: "AI Ready",
         alsoAvailable: "Also available on:",
         problemTitle: "Your Competitive Edge",
-        problemIntro: "Sees data clearly. Save 10+ mins per session. 100% efficiency improvement. Faster results. Clean outcomes.<br>9x faster. 10x more accurate. 100% game-changing.",
+        problemIntro: "9x faster. 10x more accurate. 100% game-changing.",
         problemItem1: "9x Faster Results",
         problemItem2: "100% Accuracy",
         problemItem3: "10x Preparation Speed",
