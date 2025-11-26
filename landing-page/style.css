@@ -270,7 +270,7 @@ body {
 
 .advantage-item {
     position: relative;
-    padding: 2.5rem;
+    padding: 1.5rem;
     background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(8, 145, 178, 0.05));
     backdrop-filter: blur(20px);
     border: 2px solid rgba(6, 182, 212, 0.3);
@@ -281,7 +281,7 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 450px;
+    min-height: 280px;
 }
 
 .advantage-glow {
@@ -309,9 +309,9 @@ body {
 .advantage-icon {
     position: relative;
     z-index: 1;
-    font-size: 3.5rem;
+    font-size: 2.5rem;
     display: inline-block;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.8rem;
     animation: float 3s ease-in-out infinite;
     filter: drop-shadow(0 0 20px rgba(0, 245, 255, 0.4));
 }
@@ -319,8 +319,8 @@ body {
 .advantage-item h3 {
     position: relative;
     z-index: 1;
-    font-size: 1.4rem;
-    margin: 1rem 0;
+    font-size: 1.05rem;
+    margin: 0.5rem 0;
     font-weight: 800;
     background: linear-gradient(135deg, #00f5ff, #06b6d4);
     -webkit-background-clip: text;
@@ -332,9 +332,9 @@ body {
     position: relative;
     z-index: 1;
     color: var(--text-secondary);
-    font-size: 0.95rem;
-    line-height: 1.7;
-    margin: 1.5rem 0;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    margin: 0.8rem 0;
 }
 
 .advantage-badge {
@@ -343,12 +343,12 @@ body {
     display: inline-block;
     background: linear-gradient(135deg, #06b6d4, #0891b2);
     color: #0f172a;
-    padding: 1rem 2rem;
+    padding: 0.7rem 1.3rem;
     border-radius: 25px;
     font-weight: 900;
-    font-size: 1.1rem;
-    letter-spacing: 1px;
-    margin-top: 2rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    margin-top: 1rem;
     box-shadow: 0 12px 30px rgba(6, 182, 212, 0.4);
     transition: all 0.3s ease;
     text-transform: uppercase;
