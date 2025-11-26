@@ -1,9 +1,9 @@
 const translations = {
     en: {
-        tagline: "Screenshots to AI in One Click",
-        subtitle: "The fastest workflow to convert any webpage into AI-ready context. No friction. No manual steps.",
-        heroProof: "Trusted by 10,000+ developers, designers, and researchers worldwide.",
-        downloadBtn: "Download for Chrome",
+        tagline: "Turn any webpage into structured AI input in seconds",
+        subtitle: "Capture what you see, send it to AI, and get answers with full context — no copy-paste, no explaining, no missing details.",
+        heroProof: "Trusted by designers, operators, analysts, and researchers across 50+ countries.",
+        downloadBtn: "Add to Chrome – Free Forever",
         trialBadge: "FREE • 30 Days",
         statLanguages: "Languages",
         statScreenshots: "Screenshots",
