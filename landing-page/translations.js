@@ -1,7 +1,7 @@
 const translations = {
     en: {
-        tagline: "Turn any webpage into structured AI input in seconds",
-        subtitle: "Capture what you see, send it to AI, and get answers with full context — no copy-paste, no explaining, no missing details.",
+        tagline: "Better screenshots = smarter AI.",
+        subtitle: "One click → 9 perfect shots → edit → one file → drop into ChatGPT, Claude, Grok, Gemini.",
         heroProof: "Trusted by designers, operators, analysts, and researchers across 50+ countries.",
         downloadBtn: "Add to Chrome – Free Forever",
         trialBadge: "FREE • 30 Days",
