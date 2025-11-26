@@ -390,113 +390,6 @@ export default function Dashboard() {
 }`
 };
 
-function setupTasteDemo() {
-    const tasteButton = document.getElementById('tasteButton');
-    const tasteModal = document.getElementById('tasteModal');
-    const tasteModalClose = document.getElementById('tasteModalClose');
-    const tasteStep1 = document.getElementById('tasteStep1');
-    const tasteStep2 = document.getElementById('tasteStep2');
-    const tasteStep3 = document.getElementById('tasteStep3');
-    const sampleCards = document.querySelectorAll('.taste-sample-card');
-    const tasteCopyBtn = document.getElementById('tasteCopyBtn');
-    const tasteBuyBtn = document.getElementById('tasteBuyBtn');
-    const tasteFileUpload = document.getElementById('tasteFileUpload');
-
-        }, 2000);
-    }
-
-
-
-
-    sampleCards.forEach(card => {
-        card.addEventListener('click', () => {
-            const sample = card.dataset.sample;
-            startCountdown(sample);
-        });
-    });
-
-    // FILE UPLOAD HANDLER
-    }
-
-    });
-
-        } else {
-            alert('Lifetime deal: $99 (launches in 48h, then $499) - Get it now!');
-        }
-    });
-
-    function startCountdown(sample) {
-        tasteStep1.classList.add('hidden');
-        tasteStep2.classList.remove('hidden');
-        tasteStep3.classList.add('hidden');
-
-        let count = 6;
-        const countdownEl = document.getElementById('tasteCountdown');
-        countdownEl.textContent = count;
-
-        const interval = setInterval(() => {
-            count--;
-            if (count > 0) {
-                countdownEl.textContent = count;
-            } else {
-                clearInterval(interval);
-                showCode(sample);
-            }
-        }, 1000);
-    }
-
-    function showCode(sample) {
-        tasteStep2.classList.add('hidden');
-        tasteStep3.classList.remove('hidden');
-
-        const codeBlock = document.getElementById('tasteCodeBlock');
-        const code = SAMPLE_CODES[sample] || SAMPLE_CODES.dashboard;
-        codeBlock.textContent = code;
-        
-        // Trigger animation
-        codeBlock.style.opacity = '0';
-        codeBlock.style.transform = 'translateY(20px)';
-        setTimeout(() => {
-            codeBlock.style.transition = 'all 0.5s ease';
-            codeBlock.style.opacity = '1';
-            codeBlock.style.transform = 'translateY(0)';
-            
-            // CONFETTI + SOUND CELEBRATION 🎉
-            triggerCelebration();
-        }, 10);
-    }
-
-    function triggerCelebration() {
-        // Play success sound
-        const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3');
-        audio.volume = 0.5;
-        audio.play().catch(err => console.log('Audio play prevented'));
-
-        // Trigger confetti using canvas-confetti
-        try {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.browser.min.js';
-            script.onload = () => {
-                confetti({
-                    particleCount: 300,
-                    spread: 100,
-                    origin: { y: 0.6 },
-                    colors: ['#00f5ff', '#06b6d4', '#0891b2']
-                });
-            };
-            document.head.appendChild(script);
-        } catch (e) {
-            console.log('Confetti celebration ready');
-        }
-    }
-
-    function resetTasteDemo() {
-        tasteStep1.classList.remove('hidden');
-        tasteStep2.classList.add('hidden');
-        tasteStep3.classList.add('hidden');
-    }
-}
-
 // Initialize everything on page load
 document.addEventListener('DOMContentLoaded', () => {
     initLanguage();
@@ -505,7 +398,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSmoothScroll();
     setupScrollAnimations();
     setupCTAButtons();
-    setupTasteDemo();
     
     // Add smooth page load
     document.body.style.opacity = '0';
