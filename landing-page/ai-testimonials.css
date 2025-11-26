@@ -72,12 +72,6 @@
     background: white;
 }
 
-/* ChatGPT logo slightly larger */
-.ai-card:nth-child(1) .ai-logo {
-    height: 110px;
-    width: 110px;
-}
-
 .ai-quote {
     font-size: 1.05rem;
     color: var(--text-secondary);
