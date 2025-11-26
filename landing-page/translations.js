@@ -85,7 +85,7 @@ const translations = {
         step1: "Snap Everything",
         step1Desc: "Click the button. Capture anything. Auto-collected in real-time.",
         step2: "Pack Into ONE",
-        step2Desc: "9 perfect screenshots → 1 powerful file. Your context, crystal clear.",
+        step2Desc: "Select All → Copy → Paste into ChatGPT/Claude as ONE file. Done.",
         step3: "Feed ANY AI",
         step3Desc: "ChatGPT, Claude, Grok, Gemini—one click uploads to whatever AI you use.",
         pricingTitle: "Pricing That Makes Sense",
