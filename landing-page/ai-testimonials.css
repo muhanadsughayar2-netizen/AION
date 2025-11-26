@@ -55,6 +55,24 @@
     opacity: 0.95;
 }
 
+/* Background for Grok logo (3rd card) */
+.ai-card:nth-child(3) .ai-logo {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 12px;
+    border-radius: 12px;
+    height: 60px;
+    width: 60px;
+}
+
+/* Background for Gemini logo (4th card) */
+.ai-card:nth-child(4) .ai-logo {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px;
+    border-radius: 12px;
+    height: 60px;
+    width: 60px;
+}
+
 .ai-quote {
     font-size: 1.05rem;
     color: var(--text-secondary);
