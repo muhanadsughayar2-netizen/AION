@@ -1,7 +1,7 @@
 const translations = {
     en: {
         tagline: "Better Screenshots, Smarter AI",
-        subtitle: "One click → 9 perfect shots → edit → one file → drop into ChatGPT, Claude, Grok, Gemini.",
+        subtitle: "Select All → Copy → Paste. All 9 screenshots drop as ONE stacked image. No friction.",
         heroProof: "Trusted by designers, operators, analysts, and researchers across 50+ countries.",
         downloadBtn: "Add to Chrome – Free Forever",
         trialBadge: "FREE • 30 Days",
