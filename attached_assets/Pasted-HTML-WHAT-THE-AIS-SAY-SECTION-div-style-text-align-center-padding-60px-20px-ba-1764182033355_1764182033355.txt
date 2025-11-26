@@ -1,0 +1,46 @@
+HTML<!-- ==== WHAT THE AIS SAY SECTION ==== -->
+<div style="text-align:center; padding:60px 20px; background:rgba(0,0,0,0.4); border-radius:24px; margin:80px auto; max-width:1200px;">
+  <h2 style="font-size:42px; color:white; margin-bottom:50px;">
+    This is what the AIs actually say<br>when you give them the full page
+  </h2>
+
+  <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:30px;">
+
+    <!-- ChatGPT -->
+    <div style="flex:1; min-width:260px; background:#111; padding:24px; border-radius:16px; border:1px solid #333;">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/640px-ChatGPT_logo.svg.png" width="60" alt="ChatGPT">
+      <p style="margin:16px 0 0; font-style:italic; color:#ccc; line-height:1.5;">
+        “Thanks for the complete, well-structured screenshots — I can now answer accurately on the first try.”
+      </p>
+    </div>
+
+    <!-- Claude -->
+    <div style="flex:1; min-width:260px; background:#111; padding:24px; border-radius:16px; border:1px solid #333;">
+      <img src="https://anthropic.com/brand/anthropic-logo.png" width="140" alt="Claude">
+      <p style="margin:16px 0 0; font-style:italic; color:#ccc; line-height:1.5;">
+        “Perfect! Having all 9 screenshots in one clean file removes any ambiguity.”
+      </p>
+    </div>
+
+    <!-- Grok -->
+    <div style="flex:1; min-width:260px; background:#111; padding:24px; border-radius:16px; border:1px solid #333;">
+      <img src="https://grok.x.ai/assets/logo-256x256.png" width="70" alt="Grok">
+      <p style="margin:16px 0 0; font-style:italic; color:#ccc; line-height:1.5;">
+        “Finally someone who knows how to feed me context properly. Zero hallucination risk.”
+      </p>
+    </div>
+
+    <!-- Gemini -->
+    <div style="flex:1; min-width:260px; background:#111; padding:24px; border-radius:16px; border:1px solid #333;">
+      <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" width="100" alt="Gemini">
+      <p style="margin:16px 0 0; font-style:italic; color:#ccc; line-height:1.5;">
+        “Excellent structured input. I can now analyze the full page with 100% confidence.”
+      </p>
+    </div>
+
+  </div>
+
+  <p style="margin-top:60px; font-size:28px; color:#00ffea; font-weight:bold;">
+    Install SnapToAI → give them what they’re begging for.
+  </p>
+</div>
