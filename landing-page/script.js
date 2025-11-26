@@ -402,31 +402,11 @@ function setupTasteDemo() {
     const tasteBuyBtn = document.getElementById('tasteBuyBtn');
     const tasteFileUpload = document.getElementById('tasteFileUpload');
 
-    if (!tasteButton) return;
-
-    // AUTO-OPEN ON FIRST VISIT
-    if (!localStorage.getItem('taste-demo-seen')) {
-        setTimeout(() => {
-            tasteModal.classList.add('active');
-            resetTasteDemo();
-            localStorage.setItem('taste-demo-seen', 'true');
         }, 2000);
     }
 
-    tasteButton.addEventListener('click', () => {
-        tasteModal.classList.add('active');
-        resetTasteDemo();
-    });
 
-    tasteModalClose.addEventListener('click', () => {
-        tasteModal.classList.remove('active');
-    });
 
-    tasteModal.addEventListener('click', (e) => {
-        if (e.target === tasteModal) {
-            tasteModal.classList.remove('active');
-        }
-    });
 
     sampleCards.forEach(card => {
         card.addEventListener('click', () => {
@@ -436,32 +416,10 @@ function setupTasteDemo() {
     });
 
     // FILE UPLOAD HANDLER
-    if (tasteFileUpload) {
-        tasteFileUpload.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                startCountdown('custom-upload');
-            }
-        });
     }
 
-    tasteCopyBtn.addEventListener('click', () => {
-        const codeBlock = document.getElementById('tasteCodeBlock');
-        navigator.clipboard.writeText(codeBlock.textContent).then(() => {
-            const original = tasteCopyBtn.textContent;
-            tasteCopyBtn.textContent = '✓ Copied!';
-            setTimeout(() => {
-                tasteCopyBtn.textContent = original;
-            }, 2000);
-        });
     });
 
-    tasteBuyBtn.addEventListener('click', () => {
-        // Scroll to pricing section (find it in the page)
-        const pricingSection = document.querySelector('.pricing');
-        if (pricingSection) {
-            tasteModal.classList.remove('active');
-            pricingSection.scrollIntoView({ behavior: 'smooth' });
         } else {
             alert('Lifetime deal: $99 (launches in 48h, then $499) - Get it now!');
         }
