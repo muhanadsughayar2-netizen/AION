@@ -475,69 +475,6 @@ body {
     letter-spacing: 1px;
 }
 
-/* Hero Visual */
-.hero-visual {
-    position: relative;
-    height: 650px;
-    perspective: 1000px;
-}
-
-.floating-card {
-    position: absolute;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    padding: 1.5rem;
-    background: var(--bg-glass);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    animation: float 6s ease-in-out infinite;
-}
-
-.card-1 {
-    top: 50%;
-    left: 47%;
-    transform: translate(-50%, -50%);
-    animation-delay: 0s;
-}
-
-.card-2 {
-    top: 28%;
-    left: 6%;
-    animation-delay: -1.5s;
-}
-
-.card-3 {
-    bottom: 15%;
-    right: 6%;
-    animation-delay: -3s;
-}
-
-.card-4 {
-    top: 28%;
-    right: 6%;
-    animation-delay: -2s;
-}
-
-.card-5 {
-    bottom: 15%;
-    left: 6%;
-    animation-delay: -2.5s;
-}
-
-.card-icon {
-    font-size: 2rem;
-}
-
-.card-text,
-.card-label {
-    font-weight: 600;
-    text-align: center;
-    color: var(--text-secondary);
-}
-
 /* Video Section */
 .video-section {
     padding: 6rem 2rem;
@@ -1629,11 +1566,6 @@ body {
     }
 }
 
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-
 @keyframes bounce {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-10px); }
@@ -1650,10 +1582,6 @@ body {
         grid-template-columns: 1fr;
         padding: 6rem 1.5rem 3rem;
         gap: 2rem;
-    }
-
-    .hero-visual {
-        height: 300px;
     }
 
     .animated-logo {
