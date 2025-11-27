@@ -61,6 +61,20 @@ def language_assets(lang_code, subpath):
     # Fallback to root static folder
     return send_from_directory(BASE_DIR, subpath)
 
+@app.route('/sitemap.xml')
+def sitemap():
+    """Serve XML sitemap for SEO"""
+    response = send_from_directory(BASE_DIR, 'sitemap.xml')
+    response.headers['Content-Type'] = 'application/xml'
+    return response
+
+@app.route('/robots.txt')
+def robots():
+    """Serve robots.txt for search engine crawling"""
+    response = send_from_directory(BASE_DIR, 'robots.txt')
+    response.headers['Content-Type'] = 'text/plain'
+    return response
+
 @app.errorhandler(404)
 def not_found(e):
     return send_from_directory(BASE_DIR, 'index.html')
