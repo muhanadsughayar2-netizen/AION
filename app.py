@@ -1,5 +1,6 @@
-from flask import Flask, send_from_directory, request, redirect
+from flask import Flask, send_from_directory, request, redirect, Response
 import os
+import mimetypes
 
 # Disable automatic static folder - we'll handle all routing manually
 app = Flask(__name__, static_folder=None)
@@ -24,6 +25,20 @@ SUPPORTED_LANGUAGES = {
 
 BASE_DIR = 'landing-page'
 
+def serve_file(filepath):
+    """Read file from disk and serve directly to bypass caching"""
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+        mime_type, _ = mimetypes.guess_type(filepath)
+        response = Response(content, mimetype=mime_type or 'text/html')
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
+    except FileNotFoundError:
+        return serve_file(os.path.join(BASE_DIR, 'index.html'))
+
 @app.after_request
 def add_headers(response):
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
@@ -33,8 +48,8 @@ def add_headers(response):
 
 @app.route('/')
 def index():
-    """Serve English landing page (default)"""
-    return send_from_directory(BASE_DIR, 'index.html')
+    """Serve English landing page (default) - read directly from disk"""
+    return serve_file(os.path.join(BASE_DIR, 'index.html'))
 
 @app.route('/<lang_code>')
 def language_page(lang_code):
@@ -42,42 +57,54 @@ def language_page(lang_code):
     if lang_code in SUPPORTED_LANGUAGES:
         lang_file = os.path.join(BASE_DIR, lang_code, 'index.html')
         if os.path.exists(lang_file):
-            return send_from_directory(os.path.join(BASE_DIR, lang_code), 'index.html')
+            return serve_file(lang_file)
     # Check if it's a static file
     file_path = os.path.join(BASE_DIR, lang_code)
     if os.path.exists(file_path) and os.path.isfile(file_path):
-        return send_from_directory(BASE_DIR, lang_code)
+        return serve_file(file_path)
     # Fallback to English
-    return send_from_directory(BASE_DIR, 'index.html')
+    return serve_file(os.path.join(BASE_DIR, 'index.html'))
 
 @app.route('/<lang_code>/<path:subpath>')
 def language_assets(lang_code, subpath):
     """Serve static assets for language pages"""
     if lang_code in SUPPORTED_LANGUAGES:
-        # Try language folder first
         lang_file = os.path.join(BASE_DIR, lang_code, subpath)
         if os.path.exists(lang_file):
-            return send_from_directory(os.path.join(BASE_DIR, lang_code), subpath)
+            return serve_file(lang_file)
     # Fallback to root static folder
-    return send_from_directory(BASE_DIR, subpath)
+    root_file = os.path.join(BASE_DIR, subpath)
+    if os.path.exists(root_file):
+        return serve_file(root_file)
+    return Response("Not found", status=404)
 
 @app.route('/sitemap.xml')
 def sitemap():
     """Serve XML sitemap for SEO"""
-    response = send_from_directory(BASE_DIR, 'sitemap.xml')
-    response.headers['Content-Type'] = 'application/xml'
+    filepath = os.path.join(BASE_DIR, 'sitemap.xml')
+    with open(filepath, 'r', encoding='utf-8') as f:
+        content = f.read()
+    response = Response(content, mimetype='application/xml')
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
     return response
 
 @app.route('/robots.txt')
 def robots():
     """Serve robots.txt for search engine crawling"""
-    response = send_from_directory(BASE_DIR, 'robots.txt')
-    response.headers['Content-Type'] = 'text/plain'
+    filepath = os.path.join(BASE_DIR, 'robots.txt')
+    with open(filepath, 'r', encoding='utf-8') as f:
+        content = f.read()
+    response = Response(content, mimetype='text/plain')
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
     return response
 
 @app.errorhandler(404)
 def not_found(e):
-    return send_from_directory(BASE_DIR, 'index.html')
+    return serve_file(os.path.join(BASE_DIR, 'index.html'))
 
 if __name__ == '__main__':
     print('✅ Landing page live at: 0.0.0.0:5000')
