@@ -16,6 +16,7 @@ LANGUAGES = {
     "fr": {"name": "Français", "rtl": False},
     "de": {"name": "Deutsch", "rtl": False},
     "es": {"name": "Español", "rtl": False},
+    "es_419": {"name": "Español (Latinoamérica)", "rtl": False},
     "it": {"name": "Italiano", "rtl": False},
     "pt": {"name": "Português", "rtl": False},
     "pt_BR": {"name": "Português (Brasil)", "rtl": False},

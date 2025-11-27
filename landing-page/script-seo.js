@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
         "fr": "Français",
         "de": "Deutsch",
         "es": "Español",
+        "es_419": "Español (Latinoamérica)",
         "it": "Italiano",
         "pt": "Português",
         "pt_BR": "Português (Brasil)",
