@@ -491,15 +491,20 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 
 .stat-number {
-    font-size: 2rem;
+    font-size: 2.5rem;
     font-weight: 900;
     background: linear-gradient(135deg, #06b6d4, #0891b2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    display: block;
+    line-height: 1;
 }
 
 .stat-label {
@@ -507,6 +512,7 @@ body {
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 1px;
+    font-weight: 600;
 }
 
 /* Hero Visual - BOLD & CLEAR */
