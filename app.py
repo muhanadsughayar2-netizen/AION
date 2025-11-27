@@ -1,9 +1,16 @@
-from flask import Flask, send_from_directory, request
+from flask import Flask, send_from_directory, request, redirect
 import os
 
 # Disable automatic static folder - we'll handle all routing manually
 app = Flask(__name__, static_folder=None)
 app.url_map.strict_slashes = False
+
+# Handle www redirect
+@app.before_request
+def redirect_www():
+    """Redirect www.snaptoai.com to snaptoai.com"""
+    if request.host.startswith('www.'):
+        return redirect(request.url.replace('www.', '', 1), code=301)
 
 # Supported languages
 SUPPORTED_LANGUAGES = {
