@@ -1425,6 +1425,18 @@ html[lang="he"] .hero-proof {
         padding: 2rem 1.5rem;
     }
 
+    /* Hide 2nd and 3rd workflow cards on mobile (only show "Snap" card) */
+    .workflow-card:nth-of-type(2),
+    .workflow-card:nth-of-type(3),
+    .workflow-container .big-arrow {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
     .big-number {
         display: none !important;
     }
