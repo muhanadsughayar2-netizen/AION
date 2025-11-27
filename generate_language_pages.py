@@ -231,6 +231,8 @@ def generate_html_for_language(lang_code, translations, hreflang_tags):
     # Generate Schema markup
     schema_markup = generate_schema_markup(lang_code)
     
+    current_url = "https://snaptoai.com/" if lang_code == "en" else f"https://snaptoai.com/{lang_code}/"
+    
     html = f'''<!DOCTYPE html>
 <html lang="{lang_code.replace('_', '-')}" {dir_attr}>
 <head>
@@ -242,6 +244,15 @@ def generate_html_for_language(lang_code, translations, hreflang_tags):
     <link rel="icon" type="image/x-icon" href="{asset_prefix}favicon.ico">
     <link rel="canonical" href="https://snaptoai.com{'/' + lang_code + '/' if lang_code != 'en' else '/'}">
 {hreflang_tags}
+    <meta property="og:title" content="SnapToAI – Screenshots to AI in One Click" />
+    <meta property="og:description" content="9 screenshots → 1 file for ChatGPT, Claude, Grok. Free forever." />
+    <meta property="og:image" content="https://snaptoai.com/og-image.jpg" />
+    <meta property="og:url" content="{current_url}" />
+    <meta property="og:type" content="website" />
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="SnapToAI – Screenshots to AI in One Click" />
+    <meta property="twitter:description" content="9 screenshots → 1 file for ChatGPT, Claude, Grok. Free forever." />
+    <meta property="twitter:image" content="https://snaptoai.com/og-image.jpg" />
     <script type="application/ld+json">
 {schema_markup}
     </script>
