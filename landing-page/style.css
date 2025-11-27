@@ -1345,154 +1345,161 @@ html[lang="he"] .hero-proof {
 
     /* Hero Section */
     .hero {
-        padding: 5.5rem 1rem 2rem;
-        gap: 1.5rem;
+        padding: 5.5rem 1rem 1rem;
+        gap: 1rem;
+        min-height: auto;
     }
 
     .hero-content {
-        gap: 1.5rem;
+        gap: 1.2rem;
     }
 
     .animated-logo {
         font-size: 2rem;
         gap: 0.25rem;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0;
     }
 
     .main-tagline {
-        font-size: 1.5rem;
-        line-height: 1.2;
+        font-size: 1.6rem;
+        line-height: 1.1;
+        margin: 0;
     }
 
     .main-subtitle {
         font-size: 0.95rem;
-        line-height: 1.5;
+        line-height: 1.4;
+        margin: 0;
     }
 
     .cta-button {
-        padding: 0.85rem 1.5rem;
+        padding: 1rem 1.5rem;
         font-size: 1rem;
         min-height: 48px;
         width: 100%;
         justify-content: center;
+        margin: 0.5rem 0;
     }
 
     .hero-proof {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
+        margin: 0.3rem 0;
     }
 
+    /* Hide browser bar on mobile - too crowded */
     .browser-bar {
-        flex-direction: column;
-        align-items: center;
-        gap: 0.75rem;
+        display: none !important;
     }
 
     .browser-bar-label {
-        font-size: 0.8rem;
-        width: 100%;
-        text-align: center;
+        display: none !important;
     }
 
     .browser-buttons {
-        width: 100%;
-        justify-content: center;
-        gap: 0.5rem;
+        display: none !important;
     }
 
     .browser-btn {
-        padding: 0.6rem 1rem;
-        font-size: 0.9rem;
-        min-height: 44px;
-        gap: 0.5rem;
+        display: none !important;
     }
 
     .browser-btn-name {
-        display: inline;
+        display: none !important;
     }
 
+    /* Hide quick stats on mobile - too crowded */
     .quick-stats {
-        gap: 1rem;
-        flex-direction: column;
+        display: none !important;
     }
 
     .stat-item {
-        padding: 1rem 0.5rem;
+        display: none !important;
     }
 
     .stat-number {
-        font-size: 1.8rem;
+        display: none !important;
     }
 
     .stat-label {
-        font-size: 0.9rem;
+        display: none !important;
     }
 
     /* Hero Visual */
     .hero-visual {
         height: auto;
         width: 100%;
+        margin-top: 1rem;
     }
 
     .workflow-container {
         width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
     }
 
     .workflow-card {
-        padding: 1.5rem 1rem;
+        padding: 1.8rem 1.2rem;
     }
 
     .big-icon {
-        font-size: 2.5rem;
+        font-size: 2.8rem;
+        margin-bottom: 0.8rem;
     }
 
     .big-title {
-        font-size: 1.1rem;
+        font-size: 1.15rem;
+        margin-bottom: 0.5rem;
     }
 
     .big-description {
-        font-size: 1rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
     }
 
     .big-arrow {
-        font-size: 0.7rem;
+        font-size: 0.6rem;
+        margin: 0.8rem 0;
     }
 
     /* Sections */
     .advantage-section {
-        padding: 3rem 1rem;
+        padding: 4rem 1rem;
+        margin-top: 2rem;
     }
 
     .advantage-grid {
         grid-template-columns: 1fr;
-        gap: 1.5rem;
+        gap: 2rem;
     }
 
     .advantage-item {
-        min-height: 140px;
-        padding: 1.2rem;
+        min-height: 120px;
+        padding: 1.5rem;
     }
 
     .advantage-icon {
-        font-size: 2rem;
+        font-size: 2.2rem;
     }
 
     .advantage-item h3 {
-        font-size: 0.95rem;
+        font-size: 1rem;
     }
 
     .advantage-badge {
-        padding: 0.5rem 1rem;
-        font-size: 0.7rem;
+        padding: 0.6rem 1.2rem;
+        font-size: 0.75rem;
     }
 
     .advantage-intro {
-        font-size: 1.1rem;
-        margin-bottom: 2rem;
+        font-size: 1.2rem;
+        margin-bottom: 2.5rem;
     }
 
     /* How it Works */
     .how-it-works {
-        padding: 3rem 1rem;
+        padding: 4rem 1rem;
+        margin-top: 2rem;
     }
 
     .steps-container {
@@ -1566,45 +1573,48 @@ html[lang="he"] .hero-proof {
 
     /* Testimonials */
     .ai-testimonials-section {
-        padding: 3rem 1rem;
+        padding: 4rem 1rem;
+        margin-top: 2rem;
     }
 
     .ai-testimonials-title {
         font-size: 1.8rem;
-        margin-bottom: 2rem;
+        margin-bottom: 2.5rem;
     }
 
     .ai-testimonials-grid {
         grid-template-columns: 1fr;
-        gap: 1.5rem;
+        gap: 2rem;
     }
 
     .ai-card {
-        padding: 1.5rem 1rem;
+        padding: 1.8rem 1.2rem;
     }
 
     .ai-logo {
-        height: 70px;
-        width: 70px;
+        height: 75px;
+        width: 75px;
     }
 
     .ai-quote {
         font-size: 0.95rem;
-        line-height: 1.6;
+        line-height: 1.7;
     }
 
     /* FAQ */
     .faq-section {
-        padding: 3rem 1rem;
+        padding: 4rem 1rem;
+        margin-top: 2rem;
     }
 
     .faq-title {
         font-size: 1.8rem;
-        margin-bottom: 2rem;
+        margin-bottom: 2.5rem;
     }
 
     .faq-item {
-        padding: 1.2rem 1rem;
+        padding: 1.5rem 1.2rem;
+        margin-bottom: 1rem;
     }
 
     .faq-question {
@@ -1618,21 +1628,22 @@ html[lang="he"] .hero-proof {
     /* Case Studies */
     .case-studies-container {
         grid-template-columns: 1fr;
-        gap: 1.5rem;
+        gap: 2rem;
     }
 
     .case-study-card {
-        padding: 1.5rem 1rem;
+        padding: 1.8rem 1.2rem;
     }
 
     /* Footer */
     .footer {
-        padding: 2rem 1rem;
+        padding: 3rem 1rem;
+        margin-top: 2rem;
     }
 
     .footer-content {
         grid-template-columns: 1fr;
-        gap: 2rem;
+        gap: 2.5rem;
     }
 
     .footer-section h4 {
@@ -1644,7 +1655,7 @@ html[lang="he"] .hero-proof {
     }
 
     .section-title {
-        font-size: 1.5rem;
+        font-size: 1.6rem;
     }
 }
 
