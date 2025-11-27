@@ -111,6 +111,50 @@ def generate_hreflang_tags(base_url="https://snaptoai.com"):
             tags.append(f'    <link rel="alternate" hreflang="{hreflang}" href="{url}">')
     return '\n'.join(tags)
 
+def generate_schema_markup(lang_code):
+    """Generate JSON-LD Schema markup for rich snippets"""
+    current_url = "https://snaptoai.com/" if lang_code == "en" else f"https://snaptoai.com/{lang_code}/"
+    
+    schema = {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "Organization",
+                "name": "SnapToAI",
+                "url": "https://snaptoai.com",
+                "logo": "https://snaptoai.com/favicon.ico",
+                "description": "Free Chrome extension for batch screenshot uploads to AI platforms",
+                "sameAs": [
+                    "https://chrome.google.com/webstore/detail/snaptoai"
+                ]
+            },
+            {
+                "@type": "SoftwareApplication",
+                "name": "SnapToAI",
+                "description": "Screenshots to AI in One Click - Unlimited screenshots, 55+ languages, 100% free",
+                "url": "https://snaptoai.com",
+                "applicationCategory": "UtilitiesApplication",
+                "operatingSystem": "Web",
+                "offers": {
+                    "@type": "Offer",
+                    "price": "0",
+                    "priceCurrency": "USD"
+                }
+            },
+            {
+                "@type": "WebPage",
+                "url": current_url,
+                "name": "SnapToAI - Screenshots to AI in One Click",
+                "description": "Convert screenshots to AI context instantly. Free forever. 55+ languages.",
+                "isPartOf": {
+                    "@id": "https://snaptoai.com"
+                }
+            }
+        ]
+    }
+    
+    return json.dumps(schema, ensure_ascii=False, indent=2)
+
 def generate_html_for_language(lang_code, translations, hreflang_tags):
     """Generate HTML file for a specific language"""
     
@@ -131,6 +175,9 @@ def generate_html_for_language(lang_code, translations, hreflang_tags):
     # Generate meta description in the language
     meta_desc = t("subtitle", "Convert screenshots to AI context in one click")
     
+    # Generate Schema markup
+    schema_markup = generate_schema_markup(lang_code)
+    
     html = f'''<!DOCTYPE html>
 <html lang="{lang_code.replace('_', '-')}" {dir_attr}>
 <head>
@@ -142,6 +189,9 @@ def generate_html_for_language(lang_code, translations, hreflang_tags):
     <link rel="icon" type="image/x-icon" href="{asset_prefix}favicon.ico">
     <link rel="canonical" href="https://snaptoai.com{'/' + lang_code + '/' if lang_code != 'en' else '/'}">
 {hreflang_tags}
+    <script type="application/ld+json">
+{schema_markup}
+    </script>
     <link rel="stylesheet" href="{asset_prefix}style.css">
     <link rel="stylesheet" href="{asset_prefix}ai-testimonials.css">
 </head>
