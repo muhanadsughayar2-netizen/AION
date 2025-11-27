@@ -120,7 +120,7 @@ const translations = {
     "faqQ6": "ما تنسيقات الملفات والأحجام المدعومة؟",
     "faqA6": "PNG و JPG و WebP حتى 10 ميجابايت لكل منهما. يتم تخزين لقطات الشاشة مؤقتاً في جلسة المتصفح وحذفها عند إعادة التشغيل.",
     "footerProductTitle": "المنتج",
-    "footerFeatures": "المميزات",
+    "footerFeatures": "الميزات",
     "footerPricing": "التسعير",
     "footerRoadmap": "خريطة الطريق",
     "footerSupport": "الدعم",
