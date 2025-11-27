@@ -120,6 +120,7 @@ function buildLanguageSwitcher() {
             updatePageLanguage();
             document.querySelectorAll('.language-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            document.getElementById('languageModal').classList.remove('active');
         };
         languageGrid.appendChild(btn);
     });
