@@ -68,33 +68,41 @@
   "@context": "https://schema.org",
   "@graph": [
     {
-      "@type": "Organization",
-      "name": "SnapToAI",
-      "url": "https://snaptoai.com",
-      "logo": "https://snaptoai.com/favicon.ico",
-      "description": "Free Chrome extension for batch screenshot uploads to AI platforms",
-      "sameAs": [
-        "https://chrome.google.com/webstore/detail/snaptoai"
-      ]
-    },
-    {
       "@type": "SoftwareApplication",
+      "@id": "https://snaptoai.com",
       "name": "SnapToAI",
-      "description": "Screenshots to AI in One Click - Unlimited screenshots, 55+ languages, 100% free",
+      "alternateName": "Snap To AI",
+      "description": "Free Chrome extension - Convert screenshots to AI context instantly. Unlimited screenshots, 55+ languages, batch upload to ChatGPT, Claude, Grok",
       "url": "https://snaptoai.com",
-      "applicationCategory": "UtilitiesApplication",
-      "operatingSystem": "Web",
+      "applicationCategory": "Utility",
+      "operatingSystem": "Web, Chrome, Chromium",
+      "image": "https://snaptoai.com/favicon.ico",
+      "author": {
+        "@type": "Organization",
+        "name": "SnapToAI",
+        "url": "https://snaptoai.com"
+      },
       "offers": {
         "@type": "Offer",
         "price": "0",
-        "priceCurrency": "USD"
-      }
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "downloadUrl": "https://chrome.google.com/webstore/detail/snaptoai",
+      "featureList": [
+        "Unlimited screenshots",
+        "55+ languages",
+        "Batch export",
+        "AI integration",
+        "Privacy-first"
+      ]
     },
     {
       "@type": "WebPage",
+      "@id": "https://snaptoai.com/ca/",
       "url": "https://snaptoai.com/ca/",
       "name": "SnapToAI - Screenshots to AI in One Click",
-      "description": "Convert screenshots to AI context instantly. Free forever. 55+ languages.",
+      "description": "Convert screenshots to AI context instantly. Free forever. 55+ languages. Privacy-first Chrome extension.",
       "isPartOf": {
         "@id": "https://snaptoai.com"
       }
