@@ -143,11 +143,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function detectLanguageAndSuggest() {
         // Don't show if user already dismissed or chose a language
         if (localStorage.getItem('snaptoai_lang_preference')) {
+            console.log('[SnapToAI] Language preference already set:', localStorage.getItem('snaptoai_lang_preference'));
             return;
         }
 
         // Get browser language
         const browserLang = navigator.language || navigator.userLanguage;
+        console.log('[SnapToAI] Browser language detected:', browserLang);
         
         // Map browser language to our supported languages
         let detectedLang = null;
@@ -175,10 +177,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Get current page language
         const currentPageLang = document.documentElement.lang || 'en';
         const normalizedCurrentLang = currentPageLang.replace('-', '_');
+        
+        console.log('[SnapToAI] Detected lang:', detectedLang, '| Current page:', normalizedCurrentLang);
 
         // If detected language is different from current page and we support it
-        if (detectedLang && detectedLang !== normalizedCurrentLang && detectedLang !== 'en' && languages[detectedLang]) {
+        if (detectedLang && detectedLang !== normalizedCurrentLang && languages[detectedLang]) {
+            // Don't show banner if user is on their preferred language page already
+            // But DO show if they're on a different language page
+            console.log('[SnapToAI] Showing language suggestion banner for:', detectedLang);
             showLanguageSuggestionBanner(detectedLang);
+        } else {
+            console.log('[SnapToAI] No banner needed - already on correct language or English browser on English page');
         }
     }
 
