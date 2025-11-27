@@ -2,6 +2,64 @@
 const DEFAULT_LANG = 'en';
 let currentLang = DEFAULT_LANG;
 
+// Language names mapping
+const LANGUAGE_NAMES = {
+    en: 'English',
+    am: 'አማርኛ',
+    ar: 'العربية',
+    bg: 'Български',
+    bn: 'বাংলা',
+    ca: 'Català',
+    cs: 'Čeština',
+    da: 'Dansk',
+    de: 'Deutsch',
+    el: 'Ελληνικά',
+    es: 'Español',
+    et: 'Eesti',
+    fi: 'Suomi',
+    fil: 'Filipino',
+    fr: 'Français',
+    gu: 'ગુજરાતી',
+    he: 'עברית',
+    hi: 'हिन्दी',
+    hr: 'Hrvatski',
+    hu: 'Magyar',
+    id: 'Bahasa Indonesia',
+    it: 'Italiano',
+    ja: '日本語',
+    kn: 'ಕನ್ನಡ',
+    ko: '한국어',
+    lt: 'Lietuvių',
+    lv: 'Latviešu',
+    ml: 'മലയാളം',
+    mr: 'मराठी',
+    nb: 'Norsk',
+    nl: 'Nederlands',
+    or: 'ଓଡିଆ',
+    pl: 'Polski',
+    pt: 'Português',
+    pt_BR: 'Português (BR)',
+    pt_PT: 'Português (PT)',
+    ro: 'Română',
+    ru: 'Русский',
+    sk: 'Slovenčina',
+    sl: 'Slovenščina',
+    sr: 'Српски',
+    sv: 'Svenska',
+    sw: 'Kiswahili',
+    ta: 'தமிழ்',
+    te: 'తెలుగు',
+    th: 'ไทย',
+    tr: 'Türkçe',
+    uk: 'Українська',
+    vi: 'Tiếng Việt',
+    zh: '中文',
+    zh_TW: '繁體中文',
+    en_GB: 'English (UK)',
+    en_US: 'English (US)',
+    es_419: 'Español (LatAm)',
+};
+
 // Get user's browser language
 function detectBrowserLanguage() {
     const browserLang = navigator.language.split('-')[0];
@@ -27,6 +85,13 @@ function initLanguage() {
     updatePageLanguage();
 }
 
+// Update Language button display
+function updateLanguageButtonDisplay() {
+    const langSwitch = document.getElementById('langSwitch');
+    const langName = LANGUAGE_NAMES[currentLang] || LANGUAGE_NAMES[DEFAULT_LANG];
+    langSwitch.textContent = `Language - ${langName}`;
+}
+
 // Update all text on page
 function updatePageLanguage() {
     const lang = translations[currentLang] || translations[DEFAULT_LANG];
@@ -44,77 +109,24 @@ function updatePageLanguage() {
     
     // Update HTML lang attribute
     document.documentElement.lang = currentLang;
+    
+    // Update Language button display
+    updateLanguageButtonDisplay();
 }
 
 // Build language switcher
 function buildLanguageSwitcher() {
     const languageGrid = document.getElementById('languageGrid');
-    const languages = {
-        en: 'English',
-        am: 'አማርኛ',
-        ar: 'العربية',
-        bg: 'Български',
-        bn: 'বাংলা',
-        ca: 'Català',
-        cs: 'Čeština',
-        da: 'Dansk',
-        de: 'Deutsch',
-        el: 'Ελληνικά',
-        es: 'Español',
-        et: 'Eesti',
-        fi: 'Suomi',
-        fil: 'Filipino',
-        fr: 'Français',
-        gu: 'ગુજરાતી',
-        he: 'עברית',
-        hi: 'हिन्दी',
-        hr: 'Hrvatski',
-        hu: 'Magyar',
-        id: 'Bahasa Indonesia',
-        it: 'Italiano',
-        ja: '日本語',
-        kn: 'ಕನ್ನಡ',
-        ko: '한국어',
-        lt: 'Lietuvių',
-        lv: 'Latviešu',
-        ml: 'മലയാളം',
-        mr: 'मराठी',
-        nb: 'Norsk',
-        nl: 'Nederlands',
-        or: 'ଓଡିଆ',
-        pl: 'Polski',
-        pt: 'Português',
-        pt_BR: 'Português (BR)',
-        pt_PT: 'Português (PT)',
-        ro: 'Română',
-        ru: 'Русский',
-        sk: 'Slovenčina',
-        sl: 'Slovenščina',
-        sr: 'Српски',
-        sv: 'Svenska',
-        sw: 'Kiswahili',
-        ta: 'தமிழ்',
-        te: 'తెలుగు',
-        th: 'ไทย',
-        tr: 'Türkçe',
-        uk: 'Українська',
-        vi: 'Tiếng Việt',
-        zh: '中文',
-        zh_TW: '繁體中文',
-        en_GB: 'English (UK)',
-        en_US: 'English (US)',
-        es_419: 'Español (LatAm)',
-    };
     
     languageGrid.innerHTML = '';
     
-    Object.keys(languages).forEach(langCode => {
+    Object.keys(LANGUAGE_NAMES).forEach(langCode => {
         const btn = document.createElement('button');
         btn.className = 'language-btn';
         if (langCode === currentLang) {
             btn.classList.add('active');
         }
-        btn.textContent = languages[langCode];
+        btn.textContent = LANGUAGE_NAMES[langCode];
         btn.onclick = () => {
             currentLang = langCode;
             updatePageLanguage();
