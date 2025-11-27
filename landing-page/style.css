@@ -1406,35 +1406,26 @@ html[lang="he"] .hero-proof {
         padding: 0 !important;
     }
 
-    /* Hero Visual - PRIMARY FOCUS */
+    /* Hero Visual - HIDE COMPLETELY ON MOBILE */
     .hero-visual {
-        height: auto;
-        width: 100%;
-        order: 2;
-        margin-top: 1rem;
-    }
-
-    .workflow-container {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        gap: 1.8rem;
-    }
-
-    .workflow-card {
-        padding: 2rem 1.5rem;
-    }
-
-    /* Hide 2nd and 3rd workflow cards on mobile (only show "Snap" card) */
-    .workflow-card:nth-of-type(2),
-    .workflow-card:nth-of-type(3),
-    .workflow-container .big-arrow {
         display: none !important;
         visibility: hidden !important;
         width: 0 !important;
         height: 0 !important;
         margin: 0 !important;
         padding: 0 !important;
+    }
+
+    .workflow-container {
+        display: none !important;
+    }
+
+    .workflow-card {
+        display: none !important;
+    }
+
+    .big-arrow {
+        display: none !important;
     }
 
     .big-number {
