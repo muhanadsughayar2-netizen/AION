@@ -460,13 +460,70 @@ body {
   box-shadow: 0 0 20px rgba(0, 217, 255, 0.6);
 }
 
-/* Empty State */
+/* Empty State - Clean, comfortable style like button area */
 .empty-state {
   grid-column: 1 / -1;
   text-align: center;
-  padding: 20px;
-  color: #666;
-  font-size: 11px;
+  padding: 18px;
+  color: #00d9ff;
+  font-size: 13px;
+  line-height: 1.5;
+  background: rgba(0, 217, 255, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(0, 217, 255, 0.3);
+  min-height: 140px;
+  height: auto;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  white-space: normal;
+  overflow-wrap: break-word;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.empty-state:hover {
+  background: rgba(0, 217, 255, 0.15);
+  border-color: rgba(0, 217, 255, 0.5);
+}
+
+.empty-sparkle {
+  color: #00d9ff;
+  font-size: 20px;
+  margin-bottom: 6px;
+  display: inline-block;
+  opacity: 0.8;
+}
+
+.empty-heading {
+  color: #00d9ff;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.2;
+}
+
+.empty-subheading {
+  color: rgba(0, 217, 255, 0.9);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+}
+
+.empty-instruction {
+  color: rgba(0, 217, 255, 0.6);
+  font-size: 12px;
+  font-weight: 400;
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.45;
 }
 
 /* Clear Button */
