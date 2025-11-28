@@ -20,6 +20,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'capture') {
     captureScreenshot().then(sendResponse);
     return true;
+  } else if (request.action === 'startSnip') {
+    startSnipMode().then(sendResponse);
+    return true;
+  } else if (request.action === 'snipCapture') {
+    captureSnipRegion(request.bounds).then(sendResponse);
+    return true;
   } else if (request.action === 'upload') {
     handleUpload(request.preferredPlatform, request.selectedSnaps).then(sendResponse);
     return true;
@@ -204,3 +210,256 @@ chrome.action.onClicked.addListener(async () => {
   const count = await getSnapCount();
   await updateBadge(count);
 });
+
+// Start snip mode - inject snipping overlay into active tab
+async function startSnipMode() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    // Check if we can inject into this tab
+    if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('edge://')) {
+      return { success: false, error: 'Cannot snip browser pages' };
+    }
+    
+    // Inject the snipping overlay script
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: injectSnippingOverlay
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Start snip mode failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Injected function that creates the snipping overlay
+function injectSnippingOverlay() {
+  // Remove any existing overlay
+  const existing = document.getElementById('snaptoai-snip-overlay');
+  if (existing) existing.remove();
+  
+  // Create overlay container
+  const overlay = document.createElement('div');
+  overlay.id = 'snaptoai-snip-overlay';
+  
+  // Styling for the overlay
+  Object.assign(overlay.style, {
+    position: 'fixed',
+    top: '0',
+    left: '0',
+    width: '100vw',
+    height: '100vh',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    cursor: 'crosshair',
+    zIndex: '2147483647',
+    userSelect: 'none'
+  });
+  
+  // Create selection rectangle
+  const selection = document.createElement('div');
+  selection.id = 'snaptoai-snip-selection';
+  Object.assign(selection.style, {
+    position: 'absolute',
+    border: '2px solid #00d9ff',
+    backgroundColor: 'rgba(0, 217, 255, 0.1)',
+    boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
+    display: 'none',
+    pointerEvents: 'none'
+  });
+  overlay.appendChild(selection);
+  
+  // Create instruction text
+  const instruction = document.createElement('div');
+  Object.assign(instruction.style, {
+    position: 'absolute',
+    top: '20px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    backgroundColor: 'rgba(0, 217, 255, 0.95)',
+    color: '#000',
+    padding: '12px 24px',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: '600',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    boxShadow: '0 4px 20px rgba(0, 217, 255, 0.4)',
+    zIndex: '2147483648'
+  });
+  instruction.textContent = 'Drag to select area • ESC to cancel';
+  overlay.appendChild(instruction);
+  
+  // Tracking variables
+  let isDrawing = false;
+  let startX = 0;
+  let startY = 0;
+  
+  // Mouse down - start selection
+  overlay.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return; // Only left click
+    isDrawing = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    selection.style.display = 'block';
+    selection.style.left = startX + 'px';
+    selection.style.top = startY + 'px';
+    selection.style.width = '0';
+    selection.style.height = '0';
+  });
+  
+  // Mouse move - update selection rectangle
+  overlay.addEventListener('mousemove', (e) => {
+    if (!isDrawing) return;
+    
+    const currentX = e.clientX;
+    const currentY = e.clientY;
+    
+    const left = Math.min(startX, currentX);
+    const top = Math.min(startY, currentY);
+    const width = Math.abs(currentX - startX);
+    const height = Math.abs(currentY - startY);
+    
+    selection.style.left = left + 'px';
+    selection.style.top = top + 'px';
+    selection.style.width = width + 'px';
+    selection.style.height = height + 'px';
+  });
+  
+  // Mouse up - complete selection
+  overlay.addEventListener('mouseup', async (e) => {
+    if (!isDrawing) return;
+    isDrawing = false;
+    
+    const currentX = e.clientX;
+    const currentY = e.clientY;
+    
+    const left = Math.min(startX, currentX);
+    const top = Math.min(startY, currentY);
+    const width = Math.abs(currentX - startX);
+    const height = Math.abs(currentY - startY);
+    
+    // Minimum selection size
+    if (width < 10 || height < 10) {
+      overlay.remove();
+      return;
+    }
+    
+    // Get device pixel ratio for retina displays
+    const dpr = window.devicePixelRatio || 1;
+    
+    // Calculate bounds for capture (multiply by DPR for retina)
+    const bounds = {
+      x: left * dpr,
+      y: top * dpr,
+      width: width * dpr,
+      height: height * dpr,
+      dpr: dpr
+    };
+    
+    // Remove overlay before capture
+    overlay.remove();
+    
+    // Small delay to ensure overlay is gone from the screenshot
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    // Send bounds to background for capture
+    chrome.runtime.sendMessage({ action: 'snipCapture', bounds });
+  });
+  
+  // ESC key to cancel
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      overlay.remove();
+      document.removeEventListener('keydown', handleKeyDown);
+    }
+  };
+  document.addEventListener('keydown', handleKeyDown);
+  
+  // Append overlay to document
+  document.body.appendChild(overlay);
+}
+
+// Capture and crop the selected region
+async function captureSnipRegion(bounds) {
+  try {
+    // Check cooldown
+    const now = Date.now();
+    const timeSinceLastCapture = now - lastCaptureTime;
+    
+    if (timeSinceLastCapture < CAPTURE_COOLDOWN) {
+      return { success: false, error: 'Please wait before capturing again' };
+    }
+    
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    // Update last capture time
+    lastCaptureTime = now;
+    
+    // Capture full visible tab
+    const fullDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    
+    // Crop the image to the selected region using OffscreenCanvas
+    const croppedDataUrl = await cropImage(fullDataUrl, bounds);
+    
+    // Get current snaps and add the cropped image
+    const snaps = await getSnaps();
+    
+    // Enforce FIFO: if at max, remove oldest
+    if (snaps.length >= MAX_SNAPS) {
+      snaps.shift();
+    }
+    
+    // Add new snap
+    snaps.push(croppedDataUrl);
+    
+    // Save to session storage
+    await chrome.storage.session.set({ snaps });
+    
+    // Update badge
+    await updateBadge(snaps.length);
+    
+    // Show toast on the page
+    const newSnapNumber = snaps.length;
+    chrome.tabs.sendMessage(tab.id, {
+      action: 'captureComplete',
+      message: `Snip ${newSnapNumber} ✓`,
+      snapNumber: newSnapNumber
+    }).catch(() => {});
+    
+    return { success: true, count: snaps.length, dataUrl: croppedDataUrl };
+  } catch (error) {
+    console.error('Snip capture failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Crop image using OffscreenCanvas (works in service worker)
+async function cropImage(dataUrl, bounds) {
+  // Fetch the image data
+  const response = await fetch(dataUrl);
+  const blob = await response.blob();
+  const imageBitmap = await createImageBitmap(blob);
+  
+  // Create OffscreenCanvas for cropping
+  const canvas = new OffscreenCanvas(bounds.width, bounds.height);
+  const ctx = canvas.getContext('2d');
+  
+  // Draw the cropped region
+  ctx.drawImage(
+    imageBitmap,
+    bounds.x, bounds.y, bounds.width, bounds.height,  // Source rectangle
+    0, 0, bounds.width, bounds.height                   // Destination rectangle
+  );
+  
+  // Convert to blob and then to data URL
+  const croppedBlob = await canvas.convertToBlob({ type: 'image/png' });
+  
+  // Convert blob to base64 data URL
+  const reader = new FileReader();
+  return new Promise((resolve, reject) => {
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(croppedBlob);
+  });
+}

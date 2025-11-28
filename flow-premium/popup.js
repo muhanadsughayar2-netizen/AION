@@ -50,8 +50,11 @@ function translateUI() {
 
 // Setup event listeners
 function setupEventListeners() {
-  // Orb button click
+  // Snap button click (full page)
   document.getElementById('orbButton').addEventListener('click', handleOrbClick);
+  
+  // Snip button click (region selection)
+  document.getElementById('snipButton').addEventListener('click', handleSnipClick);
   
   // Clear button
   document.getElementById('clearButton').addEventListener('click', handleClear);
@@ -189,6 +192,45 @@ async function handleOrbClick() {
     }, 2000);
   } finally {
     orbButton.disabled = false;
+  }
+}
+
+// Handle snip button click - region selection mode
+async function handleSnipClick() {
+  const snipButton = document.getElementById('snipButton');
+  const status = document.getElementById('status');
+  
+  // Disable button during operation
+  snipButton.disabled = true;
+  
+  try {
+    status.textContent = 'Starting snip mode...';
+    status.className = 'status active';
+    
+    // Send message to background to start snip mode
+    const response = await chrome.runtime.sendMessage({ action: 'startSnip' });
+    
+    if (response.success) {
+      // Close popup to show the snipping overlay
+      window.close();
+    } else {
+      status.textContent = response.error || 'Snip failed';
+      status.className = 'status error';
+      setTimeout(() => {
+        status.textContent = 'SnapToAI: Ready';
+        status.className = 'status';
+      }, 2000);
+    }
+  } catch (error) {
+    console.error('Snip click error:', error);
+    status.textContent = 'Error occurred';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 2000);
+  } finally {
+    snipButton.disabled = false;
   }
 }
 

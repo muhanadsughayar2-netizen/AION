@@ -3,32 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flow</title>
+  <title>SnapToAI</title>
   <link rel="stylesheet" href="popup.css">
+  <style>
+    /* RTL support for Arabic */
+    html[dir="rtl"] .container {
+      direction: rtl;
+    }
+    html[dir="rtl"] .selection-bar {
+      direction: rtl;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <div class="logo">Flow</div>
+      <div class="logo"><span class="logo-word">Snap</span> <span class="logo-word">To</span> <span class="logo-word">AI</span></div>
       <div class="counter">
-        <span id="snapCount">0</span> / <span>10</span>
+        <span id="snapCount">0</span> / <span>9</span>
       </div>
     </div>
 
     <!-- Status Line -->
-    <div class="status" id="status">Flow: Ready</div>
+    <div class="status" id="status" data-i18n="flowReady">SnapToAI: Ready</div>
 
-    <!-- Main Orb Button -->
-    <div class="orb-container">
-      <button id="orbButton" class="orb" title="Capture screenshot or upload to AI">
+    <!-- Main Capture Buttons -->
+    <div class="capture-buttons">
+      <button id="orbButton" class="orb" title="Snap full page">
         <div class="orb-glow"></div>
         <div class="orb-inner">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
+        <span class="orb-label" data-i18n="snap">Snap</span>
+      </button>
+      
+      <button id="snipButton" class="orb" title="Snip selected area">
+        <div class="orb-glow"></div>
+        <div class="orb-inner">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="6" cy="6" r="3" stroke="currentColor" stroke-width="2"/>
+            <circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="2"/>
+            <line x1="20" y1="4" x2="8.5" y2="15.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="20" y1="20" x2="8.5" y2="8.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="orb-label" data-i18n="snip">Snip</span>
       </button>
     </div>
 
@@ -54,6 +77,52 @@
     <div class="preview-close" id="previewClose">✕</div>
     <img id="previewImage" class="preview-image" alt="Preview">
     <div class="preview-number" id="previewNumber"></div>
+  </div>
+
+  <!-- PDF Export Options Modal -->
+  <div id="pdfExportModal" class="pdf-export-modal" style="display: none;">
+    <div class="pdf-modal-content">
+      <div class="pdf-modal-header">
+        <h3>📄 Export PDF Options</h3>
+        <div class="pdf-modal-close" id="pdfModalClose">✕</div>
+      </div>
+      
+      <div class="pdf-options">
+        <button class="pdf-option-btn" data-mode="all-combined">
+          <div class="pdf-option-icon">📚</div>
+          <div class="pdf-option-text">
+            <strong>All as One PDF</strong>
+            <span>Combine all screenshots into one PDF file</span>
+          </div>
+        </button>
+        
+        <button class="pdf-option-btn" data-mode="all-separate">
+          <div class="pdf-option-icon">📑</div>
+          <div class="pdf-option-text">
+            <strong>All as Separate PDFs</strong>
+            <span>Download each screenshot as individual PDF</span>
+          </div>
+        </button>
+        
+        <button class="pdf-option-btn" data-mode="selected-combined" id="selectedCombinedBtn">
+          <div class="pdf-option-icon">✅</div>
+          <div class="pdf-option-text">
+            <strong>Selected as One PDF</strong>
+            <span>Combine selected screenshots into one PDF</span>
+          </div>
+        </button>
+        
+        <button class="pdf-option-btn" data-mode="selected-separate" id="selectedSeparateBtn">
+          <div class="pdf-option-icon">📋</div>
+          <div class="pdf-option-text">
+            <strong>Selected as Separate PDFs</strong>
+            <span>Download each selected screenshot as PDF</span>
+          </div>
+        </button>
+      </div>
+      
+      <button class="pdf-cancel-btn" id="pdfCancelBtn">Cancel</button>
+    </div>
   </div>
 
   <script src="popup.js"></script>
