@@ -375,11 +375,10 @@ function updateThumbnails() {
     };
     
     emptyState.innerHTML = `
-      <div class="empty-sparkle">✦</div>
-      <div class="empty-heading">Snap = full page  Snip = any area</div>
-      <div class="empty-subheading">Add up to 9 shots (mix freely)</div>
-      <div class="empty-instruction">Select All → Copy Selected<br>One paste = all 9 in one file</div>
-      <div class="empty-footer">Free forever</div>
+      <div class="empty-heading">Snap. Snip. Stack. Win. 🔥</div>
+      <div class="empty-subheading">Up to 9 shots</div>
+      <div class="empty-instruction">Select All → Copy<br>One paste → pure magic ✨</div>
+      <div class="empty-footer">Free forever 🏆</div>
     `;
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';
