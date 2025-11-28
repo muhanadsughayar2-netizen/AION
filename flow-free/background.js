@@ -231,7 +231,7 @@ function isRestrictedUrl(url) {
   return restrictedPrefixes.some(prefix => url.startsWith(prefix));
 }
 
-// Start snip mode - inject snipping overlay into active tab
+// Start snip mode - tell content script to show overlay
 async function startSnipMode() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -251,20 +251,29 @@ async function startSnipMode() {
       return { success: false, error: 'Open a regular website first (not browser settings)' };
     }
     
-    // Inject the snipping overlay script file (more reliable than func injection)
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      files: ['snip-overlay.js']
-    });
+    // Send message to content script to show snip overlay
+    await chrome.tabs.sendMessage(tab.id, { action: 'startSnipOverlay' });
     
     return { success: true };
   } catch (error) {
     console.error('Start snip mode failed:', error);
-    // Provide user-friendly error messages
-    if (error.message.includes('Cannot access')) {
-      return { success: false, error: 'Cannot snip this page. Try a regular website.' };
+    // Content script might not be loaded yet, try injecting it
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['content.js']
+      });
+      // Try again
+      await chrome.tabs.sendMessage(tab.id, { action: 'startSnipOverlay' });
+      return { success: true };
+    } catch (retryError) {
+      console.error('Retry failed:', retryError);
+      if (retryError.message.includes('Cannot access')) {
+        return { success: false, error: 'Cannot snip this page. Try a regular website.' };
+      }
+      return { success: false, error: 'Snip failed. Please refresh the page and try again.' };
     }
-    return { success: false, error: 'Snip failed. Please try on a different page.' };
   }
 }
 
