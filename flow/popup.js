@@ -50,8 +50,11 @@ function translateUI() {
 
 // Setup event listeners
 function setupEventListeners() {
-  // Orb button click
+  // Orb button click (Snap - full screenshot)
   document.getElementById('orbButton').addEventListener('click', handleOrbClick);
+  
+  // Snip button click (Snip - open cropping tool)
+  document.getElementById('snipButton').addEventListener('click', handleSnipClick);
   
   // Clear button
   document.getElementById('clearButton').addEventListener('click', handleClear);
@@ -189,6 +192,65 @@ async function handleOrbClick() {
     }, 2000);
   } finally {
     orbButton.disabled = false;
+  }
+}
+
+// Handle snip button click - capture and open in crop mode
+async function handleSnipClick() {
+  const snipButton = document.getElementById('snipButton');
+  const status = document.getElementById('status');
+  
+  // Disable button during operation
+  snipButton.disabled = true;
+  
+  try {
+    status.textContent = 'Capturing for snip...';
+    status.className = 'status active';
+    
+    // Capture screenshot WITHOUT saving to queue (just get the dataUrl)
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    
+    if (dataUrl) {
+      status.textContent = 'Opening snip editor...';
+      
+      // Open annotation window in SNIP MODE (crop mode)
+      const width = 1200;
+      const height = 800;
+      const left = (screen.width - width) / 2;
+      const top = (screen.height - height) / 2;
+      
+      window.open(
+        `annotate.html?mode=snip&img=${encodeURIComponent(dataUrl)}`,
+        'Snip',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+      
+      status.textContent = 'Snip mode opened ✓';
+      status.className = 'status active';
+      
+      setTimeout(() => {
+        status.textContent = 'SnapToAI: Ready';
+        status.className = 'status';
+      }, 1500);
+    } else {
+      status.textContent = 'Capture failed';
+      status.className = 'status error';
+      setTimeout(() => {
+        status.textContent = 'SnapToAI: Ready';
+        status.className = 'status';
+      }, 2000);
+    }
+  } catch (error) {
+    console.error('Snip click error:', error);
+    status.textContent = 'Error occurred';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 2000);
+  } finally {
+    snipButton.disabled = false;
   }
 }
 

@@ -38,6 +38,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === 'uploadComplete') {
     clearSnaps().then(sendResponse);
     return true;
+  } else if (request.action === 'snipComplete') {
+    // Handle snip (cropped image) - add as new snap
+    addSnip(request.dataUrl).then(sendResponse);
+    return true;
   }
 });
 
@@ -181,6 +185,33 @@ async function setSnaps(snaps) {
   await chrome.storage.session.set({ snaps });
   await updateBadge(snaps.length);
   return { success: true };
+}
+
+// Add snip (cropped image) as new snap
+async function addSnip(dataUrl) {
+  try {
+    // Get current snaps
+    const snaps = await getSnaps();
+    
+    // Enforce FIFO: if at max, remove oldest
+    if (snaps.length >= MAX_SNAPS) {
+      snaps.shift(); // Remove first (oldest)
+    }
+    
+    // Add new snip
+    snaps.push(dataUrl);
+    
+    // Save to session storage
+    await chrome.storage.session.set({ snaps });
+    
+    // Update badge
+    await updateBadge(snaps.length);
+    
+    return { success: true, count: snaps.length };
+  } catch (error) {
+    console.error('Add snip failed:', error);
+    return { success: false, error: error.message };
+  }
 }
 
 // Update extension badge

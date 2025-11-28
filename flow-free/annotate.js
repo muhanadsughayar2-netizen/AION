@@ -15,13 +15,41 @@ let dragOffsetX = 0;
 let dragOffsetY = 0;
 let pendingStickerText = null;
 
+// Crop/Snip mode variables
+let isSnipMode = false;
+let cropRect = null;
+let isCropping = false;
+let cropStartX, cropStartY, cropEndX, cropEndY;
+
 document.addEventListener('DOMContentLoaded', () => {
   canvas = document.getElementById('canvas');
   ctx = canvas.getContext('2d');
   
+  // Check if we're in snip mode
+  const urlParams = new URLSearchParams(window.location.search);
+  isSnipMode = urlParams.get('mode') === 'snip';
+  
+  if (isSnipMode) {
+    // Auto-select crop tool in snip mode
+    currentTool = 'crop';
+    document.title = 'Snip Mode - SnapToAI';
+    updateStatus('Draw a rectangle to snip. Click Save Snip when done.');
+    
+    // Update save button text
+    const saveBtn = document.getElementById('saveBtn');
+    if (saveBtn) saveBtn.innerHTML = '✂️ Save Snip';
+  }
+  
   setupEventListeners();
   loadCustomStickers();
   loadImage();
+  
+  // Highlight crop tool if in snip mode
+  if (isSnipMode) {
+    document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+    const cropBtn = document.querySelector('.tool-btn[data-tool="crop"]');
+    if (cropBtn) cropBtn.classList.add('active');
+  }
 });
 
 function setupEventListeners() {
@@ -116,6 +144,17 @@ function handleMouseDown(e) {
   startX = (e.clientX - rect.left) * (canvas.width / rect.width);
   startY = (e.clientY - rect.top) * (canvas.height / rect.height);
   
+  // Handle crop tool
+  if (currentTool === 'crop') {
+    isCropping = true;
+    cropStartX = startX;
+    cropStartY = startY;
+    cropEndX = startX;
+    cropEndY = startY;
+    cropRect = null;
+    return;
+  }
+  
   // Check for drag
   const clicked = findAnnotation(startX, startY);
   if (clicked) {
@@ -181,6 +220,15 @@ function handleMouseMove(e) {
   const x = (e.clientX - rect.left) * (canvas.width / rect.width);
   const y = (e.clientY - rect.top) * (canvas.height / rect.height);
   
+  // Handle crop drawing
+  if (isCropping && currentTool === 'crop') {
+    cropEndX = x;
+    cropEndY = y;
+    redraw();
+    drawCropPreview();
+    return;
+  }
+  
   if (draggingAnnotation) {
     draggingAnnotation.x = x - dragOffsetX;
     draggingAnnotation.y = y - dragOffsetY;
@@ -202,7 +250,7 @@ function handleMouseMove(e) {
   }
   
   if (!isDrawing) {
-    canvas.style.cursor = findAnnotation(x, y) ? 'grab' : 'crosshair';
+    canvas.style.cursor = currentTool === 'crop' ? 'crosshair' : (findAnnotation(x, y) ? 'grab' : 'crosshair');
     return;
   }
   
@@ -231,6 +279,32 @@ function handleMouseMove(e) {
 }
 
 function handleMouseUp() {
+  // Handle crop completion
+  if (isCropping && currentTool === 'crop') {
+    isCropping = false;
+    
+    // Calculate crop rectangle (normalize coordinates)
+    const x1 = Math.min(cropStartX, cropEndX);
+    const y1 = Math.min(cropStartY, cropEndY);
+    const x2 = Math.max(cropStartX, cropEndX);
+    const y2 = Math.max(cropStartY, cropEndY);
+    const width = x2 - x1;
+    const height = y2 - y1;
+    
+    // Only create crop if it's a valid size
+    if (width > 10 && height > 10) {
+      cropRect = { x: x1, y: y1, width, height };
+      redraw();
+      drawCropRect();
+      updateStatus(`Snip area selected (${Math.round(width)}x${Math.round(height)}). Click Save Snip to add to your snaps.`);
+    } else {
+      cropRect = null;
+      redraw();
+      updateStatus('Draw a larger rectangle to snip.');
+    }
+    return;
+  }
+  
   if (draggingAnnotation) {
     draggingAnnotation = null;
     canvas.style.cursor = 'crosshair';
@@ -260,6 +334,79 @@ function handleMouseUp() {
   }
   
   isDrawing = false;
+}
+
+// Draw crop preview while dragging
+function drawCropPreview() {
+  const x1 = Math.min(cropStartX, cropEndX);
+  const y1 = Math.min(cropStartY, cropEndY);
+  const width = Math.abs(cropEndX - cropStartX);
+  const height = Math.abs(cropEndY - cropStartY);
+  
+  // Draw semi-transparent overlay outside crop area
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  ctx.fillRect(0, 0, canvas.width, y1); // Top
+  ctx.fillRect(0, y1 + height, canvas.width, canvas.height - y1 - height); // Bottom
+  ctx.fillRect(0, y1, x1, height); // Left
+  ctx.fillRect(x1 + width, y1, canvas.width - x1 - width, height); // Right
+  
+  // Draw crop border
+  ctx.strokeStyle = '#00d9ff';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]);
+  ctx.strokeRect(x1, y1, width, height);
+  ctx.setLineDash([]);
+  
+  // Draw corner handles
+  const handleSize = 8;
+  ctx.fillStyle = '#00d9ff';
+  ctx.fillRect(x1 - handleSize/2, y1 - handleSize/2, handleSize, handleSize);
+  ctx.fillRect(x1 + width - handleSize/2, y1 - handleSize/2, handleSize, handleSize);
+  ctx.fillRect(x1 - handleSize/2, y1 + height - handleSize/2, handleSize, handleSize);
+  ctx.fillRect(x1 + width - handleSize/2, y1 + height - handleSize/2, handleSize, handleSize);
+  
+  // Draw dimensions label
+  ctx.fillStyle = 'rgba(0, 217, 255, 0.9)';
+  ctx.font = 'bold 14px Arial';
+  ctx.fillText(`${Math.round(width)} x ${Math.round(height)}`, x1 + 5, y1 - 8);
+}
+
+// Draw final crop rectangle
+function drawCropRect() {
+  if (!cropRect) return;
+  
+  const { x, y, width, height } = cropRect;
+  
+  // Draw semi-transparent overlay outside crop area
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  ctx.fillRect(0, 0, canvas.width, y); // Top
+  ctx.fillRect(0, y + height, canvas.width, canvas.height - y - height); // Bottom
+  ctx.fillRect(0, y, x, height); // Left
+  ctx.fillRect(x + width, y, canvas.width - x - width, height); // Right
+  
+  // Draw crop border
+  ctx.strokeStyle = '#00d9ff';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x, y, width, height);
+  
+  // Draw corner handles
+  const handleSize = 10;
+  ctx.fillStyle = '#00d9ff';
+  ctx.fillRect(x - handleSize/2, y - handleSize/2, handleSize, handleSize);
+  ctx.fillRect(x + width - handleSize/2, y - handleSize/2, handleSize, handleSize);
+  ctx.fillRect(x - handleSize/2, y + height - handleSize/2, handleSize, handleSize);
+  ctx.fillRect(x + width - handleSize/2, y + height - handleSize/2, handleSize, handleSize);
+  
+  // Draw "✂️ SNIP" label
+  ctx.fillStyle = 'rgba(0, 217, 255, 0.95)';
+  const labelWidth = 80;
+  const labelHeight = 28;
+  ctx.fillRect(x + width/2 - labelWidth/2, y + height/2 - labelHeight/2, labelWidth, labelHeight);
+  ctx.fillStyle = '#000';
+  ctx.font = 'bold 14px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('✂️ SNIP', x + width/2, y + height/2);
 }
 
 function findAnnotation(x, y) {
@@ -370,6 +517,11 @@ function redraw() {
       ctx.fillText(ann.text, ann.x, ann.y);
     }
   });
+  
+  // Draw crop rectangle if exists (for snip mode)
+  if (cropRect && currentTool === 'crop') {
+    drawCropRect();
+  }
 }
 
 function updateStatus(message) {
@@ -460,10 +612,55 @@ async function deleteCustomSticker(text) {
 }
 
 async function save() {
-  const dataUrl = canvas.toDataURL('image/png');
-  const index = new URLSearchParams(window.location.search).get('index');
+  const urlParams = new URLSearchParams(window.location.search);
+  const mode = urlParams.get('mode');
+  const index = urlParams.get('index');
   
   try {
+    // SNIP MODE: Save cropped region as new snap
+    if (mode === 'snip' && cropRect) {
+      // Extract the cropped region from original image
+      const { x, y, width, height } = cropRect;
+      
+      // Create temporary canvas for crop
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      // Draw the cropped region from original image
+      tempCtx.putImageData(
+        originalImage,
+        -x, -y,
+        x, y, width, height
+      );
+      
+      // Alternative: Use drawImage for better quality
+      const cropDataUrl = tempCanvas.toDataURL('image/png');
+      
+      // Send as new snap (add to queue)
+      await chrome.runtime.sendMessage({
+        action: 'snipComplete',
+        dataUrl: cropDataUrl
+      });
+      
+      updateStatus('Snip saved! You can snip more or close.');
+      cropRect = null;
+      redraw();
+      
+      // Optionally close after save, or allow multiple snips
+      // window.close();
+      return;
+    }
+    
+    // SNIP MODE without crop: just save the current selection
+    if (mode === 'snip' && !cropRect) {
+      updateStatus('Draw a rectangle first to snip an area.');
+      return;
+    }
+    
+    // ANNOTATION MODE: Replace existing snap with annotated version
+    const dataUrl = canvas.toDataURL('image/png');
     await chrome.runtime.sendMessage({
       action: 'annotationComplete',
       dataUrl,
@@ -472,5 +669,6 @@ async function save() {
     window.close();
   } catch (error) {
     console.error('Save error:', error);
+    updateStatus('Save failed. Try again.');
   }
 }

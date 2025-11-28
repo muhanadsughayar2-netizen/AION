@@ -1,8 +1,12 @@
 // Flow Background Service Worker
 // Handles screenshot capture, storage management, and messaging
 
-const MAX_SNAPS = 10;
+const MAX_SNAPS = 9;
 const AI_SITES = ['grok.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai'];
+const CAPTURE_COOLDOWN = 500; // Minimum 500ms between captures to avoid Chrome rate limit
+
+// Track last capture time to prevent rate limiting
+let lastCaptureTime = 0;
 
 // Listen for keyboard command (Ctrl+Shift+S)
 chrome.commands.onCommand.addListener((command) => {
@@ -17,7 +21,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     captureScreenshot().then(sendResponse);
     return true;
   } else if (request.action === 'upload') {
-    handleUpload(request.preferredPlatform).then(sendResponse);
+    handleUpload(request.preferredPlatform, request.selectedSnaps).then(sendResponse);
     return true;
   } else if (request.action === 'getSnaps') {
     getSnaps().then(sendResponse);
@@ -34,13 +38,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === 'uploadComplete') {
     clearSnaps().then(sendResponse);
     return true;
+  } else if (request.action === 'snipComplete') {
+    // Handle snip (cropped image) - add as new snap
+    addSnip(request.dataUrl).then(sendResponse);
+    return true;
   }
 });
 
 // Capture screenshot of active tab
 async function captureScreenshot() {
   try {
+    // Check cooldown to prevent Chrome rate limit
+    const now = Date.now();
+    const timeSinceLastCapture = now - lastCaptureTime;
+    
+    if (timeSinceLastCapture < CAPTURE_COOLDOWN) {
+      const remainingTime = Math.ceil((CAPTURE_COOLDOWN - timeSinceLastCapture) / 1000);
+      console.log(`Capture on cooldown. Wait ${remainingTime}s`);
+      return { 
+        success: false, 
+        error: `Please wait ${remainingTime} second${remainingTime > 1 ? 's' : ''} before capturing again` 
+      };
+    }
+    
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    // Update last capture time
+    lastCaptureTime = now;
     
     // Capture visible tab as PNG
     const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
@@ -81,7 +105,7 @@ async function captureScreenshot() {
 }
 
 // Handle upload to AI platform
-async function handleUpload(preferredPlatform = 'auto') {
+async function handleUpload(preferredPlatform = 'auto', selectedSnaps = null) {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const url = new URL(tab.url);
@@ -94,11 +118,20 @@ async function handleUpload(preferredPlatform = 'auto') {
       return { success: false, error: 'Not on an AI platform' };
     }
     
-    // Get snap count (content script will pull from storage)
-    const count = await getSnapCount();
-    
-    if (count === 0) {
-      return { success: false, error: 'No snaps to upload' };
+    // If selectedSnaps provided, use those; otherwise get all snaps
+    let snapsToUpload;
+    if (selectedSnaps && selectedSnaps.length > 0) {
+      // Use provided selected snaps
+      snapsToUpload = selectedSnaps;
+      // Temporarily store selected snaps for content script
+      await chrome.storage.session.set({ selectedSnapsForUpload: snapsToUpload });
+    } else {
+      // Get all snaps from storage
+      const allSnaps = await getSnaps();
+      if (allSnaps.length === 0) {
+        return { success: false, error: 'No snaps to upload' };
+      }
+      snapsToUpload = allSnaps;
     }
     
     // Determine target platform: use preferred if set, otherwise current hostname
@@ -114,13 +147,14 @@ async function handleUpload(preferredPlatform = 'auto') {
       }
     }
     
-    // Send upload command to content script (it will pull snaps from storage)
+    // Send upload command to content script with snap count
     await chrome.tabs.sendMessage(tab.id, {
       action: 'beginUpload',
-      platform: targetPlatform
+      platform: targetPlatform,
+      useSelectedOnly: selectedSnaps !== null
     });
     
-    return { success: true, count };
+    return { success: true, count: snapsToUpload.length };
   } catch (error) {
     console.error('Upload failed:', error);
     return { success: false, error: error.message };
@@ -151,6 +185,33 @@ async function setSnaps(snaps) {
   await chrome.storage.session.set({ snaps });
   await updateBadge(snaps.length);
   return { success: true };
+}
+
+// Add snip (cropped image) as new snap
+async function addSnip(dataUrl) {
+  try {
+    // Get current snaps
+    const snaps = await getSnaps();
+    
+    // Enforce FIFO: if at max, remove oldest
+    if (snaps.length >= MAX_SNAPS) {
+      snaps.shift(); // Remove first (oldest)
+    }
+    
+    // Add new snip
+    snaps.push(dataUrl);
+    
+    // Save to session storage
+    await chrome.storage.session.set({ snaps });
+    
+    // Update badge
+    await updateBadge(snaps.length);
+    
+    return { success: true, count: snaps.length };
+  } catch (error) {
+    console.error('Add snip failed:', error);
+    return { success: false, error: error.message };
+  }
 }
 
 // Update extension badge

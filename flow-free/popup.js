@@ -6,15 +6,55 @@ let selectedSnapIds = new Set();
 
 // Initialize popup on load
 document.addEventListener('DOMContentLoaded', async () => {
+  translateUI(); // Add translation support
   await loadSnaps();
   setupEventListeners();
   updateUI();
 });
 
+// Translate all UI elements
+function translateUI() {
+  // Check if language is RTL (Arabic)
+  const uiLang = chrome.i18n.getUILanguage();
+  if (uiLang.startsWith('ar')) {
+    document.documentElement.setAttribute('dir', 'rtl');
+  }
+  
+  // Translate text content with fallbacks
+  const getMessage = (key, fallback) => {
+    const msg = chrome.i18n.getMessage(key);
+    return msg || fallback;
+  };
+  
+  document.querySelector('.status').textContent = getMessage('flowReady', 'Flow: Ready');
+  document.getElementById('selectAllBtn').textContent = getMessage('selectAll', 'Select All');
+  document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Copy Selected');
+  document.getElementById('downloadSelectedBtn').textContent = getMessage('downloadSelected', 'Download Selected');
+  document.getElementById('exportPdfBtn').textContent = '📄 ' + getMessage('exportPDF', 'Export PDF');
+  document.getElementById('clearButton').textContent = getMessage('clearAll', 'Clear All');
+  
+  // Translate PDF modal
+  const pdfOptions = document.querySelectorAll('.pdf-option-text strong');
+  if (pdfOptions.length >= 4) {
+    pdfOptions[0].textContent = getMessage('allAsOnePDF', 'All as One PDF');
+    pdfOptions[1].textContent = getMessage('allAsSeparatePDFs', 'All as Separate PDFs');
+    pdfOptions[2].textContent = getMessage('selectedAsOnePDF', 'Selected as One PDF');
+    pdfOptions[3].textContent = getMessage('selectedAsSeparatePDFs', 'Selected as Separate PDFs');
+  }
+  
+  const cancelBtn = document.getElementById('pdfCancelBtn');
+  if (cancelBtn) {
+    cancelBtn.textContent = getMessage('cancel', 'Cancel');
+  }
+}
+
 // Setup event listeners
 function setupEventListeners() {
-  // Orb button click
+  // Orb button click (Snap - full screenshot)
   document.getElementById('orbButton').addEventListener('click', handleOrbClick);
+  
+  // Snip button click (Snip - open cropping tool)
+  document.getElementById('snipButton').addEventListener('click', handleSnipClick);
   
   // Clear button
   document.getElementById('clearButton').addEventListener('click', handleClear);
@@ -61,12 +101,26 @@ async function handleOrbClick() {
                      hostname.includes('claude.ai');
     
     if (isAISite && currentSnaps.length > 0) {
-      // Upload mode
-      status.textContent = `Uploading ${currentSnaps.length} snaps...`;
+      // Upload mode - check if we have selected items
+      let snapsToUpload = [];
+      let uploadMessage = '';
+      
+      if (selectedSnapIds.size > 0) {
+        // Upload only selected snaps
+        snapsToUpload = currentSnaps.filter(snap => selectedSnapIds.has(snap.id));
+        uploadMessage = `Uploading ${snapsToUpload.length} selected snap${snapsToUpload.length > 1 ? 's' : ''}...`;
+      } else {
+        // Upload all snaps if nothing selected
+        snapsToUpload = currentSnaps;
+        uploadMessage = `Uploading all ${snapsToUpload.length} snap${snapsToUpload.length > 1 ? 's' : ''}...`;
+      }
+      
+      status.textContent = uploadMessage;
       status.className = 'status uploading';
       
       const response = await chrome.runtime.sendMessage({ 
-        action: 'upload'
+        action: 'upload',
+        selectedSnaps: snapsToUpload.map(s => s.dataUrl)
       });
       
       if (response.success) {
@@ -119,7 +173,8 @@ async function handleOrbClick() {
           status.className = 'status';
         }, 1500);
       } else {
-        status.textContent = 'Capture failed';
+        // Show specific error message or generic failure
+        status.textContent = response.error || 'Capture failed';
         status.className = 'status error';
         setTimeout(() => {
           status.textContent = 'Flow: Ready';
@@ -137,6 +192,65 @@ async function handleOrbClick() {
     }, 2000);
   } finally {
     orbButton.disabled = false;
+  }
+}
+
+// Handle snip button click - capture and open in crop mode
+async function handleSnipClick() {
+  const snipButton = document.getElementById('snipButton');
+  const status = document.getElementById('status');
+  
+  // Disable button during operation
+  snipButton.disabled = true;
+  
+  try {
+    status.textContent = 'Capturing for snip...';
+    status.className = 'status active';
+    
+    // Capture screenshot WITHOUT saving to queue (just get the dataUrl)
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    
+    if (dataUrl) {
+      status.textContent = 'Opening snip editor...';
+      
+      // Open annotation window in SNIP MODE (crop mode)
+      const width = 1200;
+      const height = 800;
+      const left = (screen.width - width) / 2;
+      const top = (screen.height - height) / 2;
+      
+      window.open(
+        `annotate.html?mode=snip&img=${encodeURIComponent(dataUrl)}`,
+        'Snip',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+      
+      status.textContent = 'Snip mode opened ✓';
+      status.className = 'status active';
+      
+      setTimeout(() => {
+        status.textContent = 'SnapToAI: Ready';
+        status.className = 'status';
+      }, 1500);
+    } else {
+      status.textContent = 'Capture failed';
+      status.className = 'status error';
+      setTimeout(() => {
+        status.textContent = 'SnapToAI: Ready';
+        status.className = 'status';
+      }, 2000);
+    }
+  } catch (error) {
+    console.error('Snip click error:', error);
+    status.textContent = 'Error occurred';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 2000);
+  } finally {
+    snipButton.disabled = false;
   }
 }
 
@@ -196,16 +310,54 @@ function updateCounter() {
   document.getElementById('snapCount').textContent = currentSnaps.length;
 }
 
+// Dynamically adjust popup height based on number of screenshots
+function adjustPopupHeight(snapCount) {
+  // Base height for empty state
+  let height = 380;
+  
+  if (snapCount === 0) {
+    // Empty state: small and compact
+    height = 380;
+  } else if (snapCount <= 3) {
+    // 1 row of screenshots
+    height = 430;
+  } else if (snapCount <= 6) {
+    // 2 rows of screenshots
+    height = 490;
+  } else {
+    // 3 rows for 7-9 screenshots
+    height = 550;
+  }
+  
+  // Apply the height to the body
+  document.body.style.height = height + 'px';
+}
+
 // Update thumbnails grid
 function updateThumbnails() {
   const container = document.getElementById('thumbnails');
   const selectionBar = document.getElementById('selectionBar');
   container.innerHTML = '';
   
+  // Dynamically adjust popup height based on number of screenshots
+  adjustPopupHeight(currentSnaps.length);
+  
   if (currentSnaps.length === 0) {
     const emptyState = document.createElement('div');
     emptyState.className = 'empty-state';
-    emptyState.textContent = 'No snapshots yet. Press Ctrl+Shift+S to capture.';
+    
+    // Get translated messages
+    const getMessage = (key, fallback) => {
+      const msg = chrome.i18n.getMessage(key);
+      return msg || fallback;
+    };
+    
+    emptyState.innerHTML = `
+      <div class="empty-sparkle">✦</div>
+      <div class="empty-heading">${getMessage('oneClickOneFlow', 'One click. One flow.')}</div>
+      <div class="empty-subheading">${getMessage('pagesReadyForAI', 'Your pages, ready for AI in seconds.')}</div>
+      <div class="empty-instruction">${getMessage('clickCameraButton', 'Click the glowing camera button above to capture instantly')}</div>
+    `;
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';
     return;
@@ -342,7 +494,11 @@ function handleSelectAll() {
 function updateSelectAllButton() {
   const btn = document.getElementById('selectAllBtn');
   const allSelected = selectedSnapIds.size === currentSnaps.length;
-  btn.textContent = allSelected ? 'Deselect All' : 'Select All';
+  const getMessage = (key, fallback) => {
+    const msg = chrome.i18n.getMessage(key);
+    return msg || fallback;
+  };
+  btn.textContent = allSelected ? getMessage('deselectAll', 'Deselect All') : getMessage('selectAll', 'Select All');
 }
 
 // Handle Copy Selected
@@ -584,7 +740,7 @@ async function handleAnnotationMessage(request) {
 let jsPDFLoaded = false;
 let jsPDFLoadPromise = null;
 
-// Handle Export as PDF
+// Handle Export as PDF - Show modal with options
 async function handleExportPDF() {
   const status = document.getElementById('status');
   
@@ -597,6 +753,141 @@ async function handleExportPDF() {
     }, 1500);
     return;
   }
+  
+  // Show PDF export modal
+  showPDFExportModal();
+}
+
+// Get indexes of selected thumbnails
+function getSelectedIndexes() {
+  const thumbnails = document.querySelectorAll('.thumbnail');
+  const selectedIndexes = [];
+  
+  thumbnails.forEach((thumbnail, index) => {
+    const checkbox = thumbnail.querySelector('.thumbnail-checkbox');
+    if (checkbox && checkbox.classList.contains('checked')) {
+      selectedIndexes.push(index);
+    }
+  });
+  
+  return selectedIndexes;
+}
+
+// Show PDF Export Modal
+function showPDFExportModal() {
+  const modal = document.getElementById('pdfExportModal');
+  const selectedCount = getSelectedIndexes().length;
+  
+  // Translate PDF modal every time it opens
+  translatePDFModal();
+  
+  // Disable/enable selected options based on selection
+  const selectedCombinedBtn = document.getElementById('selectedCombinedBtn');
+  const selectedSeparateBtn = document.getElementById('selectedSeparateBtn');
+  
+  if (selectedCount === 0) {
+    selectedCombinedBtn.classList.add('disabled');
+    selectedSeparateBtn.classList.add('disabled');
+  } else {
+    selectedCombinedBtn.classList.remove('disabled');
+    selectedSeparateBtn.classList.remove('disabled');
+  }
+  
+  modal.style.display = 'flex';
+}
+
+// Translate PDF modal texts
+function translatePDFModal() {
+  const getMessage = (key, fallback) => {
+    const msg = chrome.i18n.getMessage(key);
+    return msg || fallback;
+  };
+  
+  // Translate header
+  const modalHeader = document.querySelector('.pdf-modal-header h3');
+  if (modalHeader) {
+    modalHeader.textContent = '📄 ' + getMessage('exportPDFOptions', 'Export PDF Options');
+  }
+  
+  // Translate all option buttons
+  const pdfOptions = document.querySelectorAll('.pdf-option-text strong');
+  if (pdfOptions.length >= 4) {
+    pdfOptions[0].textContent = getMessage('allAsOnePDF', 'All as One PDF');
+    pdfOptions[1].textContent = getMessage('allAsSeparatePDFs', 'All as Separate PDFs');
+    pdfOptions[2].textContent = getMessage('selectedAsOnePDF', 'Selected as One PDF');
+    pdfOptions[3].textContent = getMessage('selectedAsSeparatePDFs', 'Selected as Separate PDFs');
+  }
+  
+  // Translate descriptions
+  const pdfDescriptions = document.querySelectorAll('.pdf-option-text span');
+  if (pdfDescriptions.length >= 4) {
+    pdfDescriptions[0].textContent = getMessage('allAsOnePDFDesc', 'Combine all screenshots into one PDF file');
+    pdfDescriptions[1].textContent = getMessage('allAsSeparatePDFsDesc', 'Download each screenshot as individual PDF');
+    pdfDescriptions[2].textContent = getMessage('selectedAsOnePDFDesc', 'Combine selected screenshots into one PDF');
+    pdfDescriptions[3].textContent = getMessage('selectedAsSeparatePDFsDesc', 'Download each selected screenshot as PDF');
+  }
+  
+  // Translate cancel button
+  const cancelBtn = document.getElementById('pdfCancelBtn');
+  if (cancelBtn) {
+    cancelBtn.textContent = getMessage('cancel', 'Cancel');
+  }
+}
+
+// Hide PDF Export Modal
+function hidePDFExportModal() {
+  const modal = document.getElementById('pdfExportModal');
+  modal.style.display = 'none';
+}
+
+// Setup PDF modal listeners
+document.getElementById('pdfModalClose').addEventListener('click', hidePDFExportModal);
+document.getElementById('pdfCancelBtn').addEventListener('click', hidePDFExportModal);
+
+// Handle PDF option selection
+document.querySelectorAll('.pdf-option-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    if (btn.classList.contains('disabled')) return;
+    
+    const mode = btn.dataset.mode;
+    let snaps = [];
+    
+    if (mode.startsWith('all-')) {
+      snaps = [...currentSnaps];
+    } else {
+      const selectedIndexes = getSelectedIndexes();
+      if (selectedIndexes.length === 0) {
+        const status = document.getElementById('status');
+        status.textContent = 'No screenshots selected';
+        status.className = 'status error';
+        setTimeout(() => {
+          status.textContent = 'Flow: Ready';
+          status.className = 'status';
+        }, 1500);
+        hidePDFExportModal();
+        return;
+      }
+      snaps = selectedIndexes.map(i => currentSnaps[i]);
+    }
+    
+    hidePDFExportModal();
+    
+    switch(mode) {
+      case 'all-combined':
+      case 'selected-combined':
+        await exportPDFCombined(snaps, mode.includes('selected') ? 'selected' : 'all');
+        break;
+      case 'all-separate':
+      case 'selected-separate':
+        await exportPDFSeparate(snaps, mode.includes('selected') ? 'selected' : 'all');
+        break;
+    }
+  });
+});
+
+// Export Combined PDF (original function refactored)
+async function exportPDFCombined(snaps, mode) {
+  const status = document.getElementById('status');
   
   try {
     status.textContent = 'Loading PDF library...';
@@ -639,13 +930,13 @@ async function handleExportPDF() {
     const maxWidth = pageWidth - (2 * margin);
     const maxHeight = pageHeight - (2 * margin);
     
-    for (let i = 0; i < currentSnaps.length; i++) {
+    for (let i = 0; i < snaps.length; i++) {
       if (i > 0) {
         pdf.addPage();
       }
       
       // Add image to PDF
-      const img = await createImageBitmap(await (await fetch(currentSnaps[i])).blob());
+      const img = await createImageBitmap(await (await fetch(snaps[i])).blob());
       const aspectRatio = img.width / img.height;
       
       let imgWidth = maxWidth;
@@ -661,19 +952,125 @@ async function handleExportPDF() {
       const x = (pageWidth - imgWidth) / 2;
       const y = margin;
       
-      pdf.addImage(currentSnaps[i], 'PNG', x, y, imgWidth, imgHeight);
+      pdf.addImage(snaps[i], 'PNG', x, y, imgWidth, imgHeight);
       
       // Add page number at bottom
       pdf.setFontSize(10);
       pdf.setTextColor(150);
-      pdf.text(`Snap ${i + 1} of ${currentSnaps.length}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+      pdf.text(`Snap ${i + 1} of ${snaps.length}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
     }
     
     // Save PDF
     const timestamp = new Date().toISOString().slice(0, 10);
-    pdf.save(`flow-screenshots-${timestamp}.pdf`);
+    const filename = mode === 'selected' ? `flow-selected-${timestamp}.pdf` : `flow-screenshots-${timestamp}.pdf`;
+    pdf.save(filename);
     
     status.textContent = 'PDF exported ✓';
+    status.className = 'status active';
+    
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 2000);
+  } catch (error) {
+    console.error('PDF export error:', error);
+    status.textContent = 'PDF export failed';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 2000);
+  }
+}
+
+// Export Separate PDFs (one file per screenshot)
+async function exportPDFSeparate(snaps, mode) {
+  const status = document.getElementById('status');
+  
+  if (snaps.length === 0) {
+    status.textContent = 'No screenshots to export';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'Flow: Ready';
+      status.className = 'status';
+    }, 1500);
+    return;
+  }
+  
+  try {
+    status.textContent = 'Loading PDF library...';
+    status.className = 'status active';
+    
+    // Load jsPDF once (or wait if already loading)
+    if (!jsPDFLoaded) {
+      if (!jsPDFLoadPromise) {
+        jsPDFLoadPromise = new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'jspdf.min.js';
+          script.onload = () => {
+            console.log('jsPDF loaded successfully');
+            jsPDFLoaded = true;
+            setTimeout(() => resolve(), 200);
+          };
+          script.onerror = (err) => {
+            console.error('jsPDF load error:', err);
+            reject(new Error('Failed to load jsPDF library'));
+          };
+          document.head.appendChild(script);
+        });
+      }
+      await jsPDFLoadPromise;
+    }
+    
+    // Verify library is available
+    if (!window.jspdf || typeof window.jspdf.jsPDF === 'undefined') {
+      throw new Error('jsPDF library not available after loading');
+    }
+    
+    const { jsPDF } = window.jspdf;
+    const pageWidth = 210; // A4 width in mm
+    const pageHeight = 297; // A4 height in mm
+    const margin = 10;
+    const maxWidth = pageWidth - (2 * margin);
+    const maxHeight = pageHeight - (2 * margin);
+    const timestamp = new Date().toISOString().slice(0, 10);
+    
+    // Generate and download each PDF
+    for (let i = 0; i < snaps.length; i++) {
+      status.textContent = `Generating PDF ${i + 1} of ${snaps.length}...`;
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      // Add image to PDF
+      const img = await createImageBitmap(await (await fetch(snaps[i])).blob());
+      const aspectRatio = img.width / img.height;
+      
+      let imgWidth = maxWidth;
+      let imgHeight = imgWidth / aspectRatio;
+      
+      // If image is too tall, scale by height instead
+      if (imgHeight > maxHeight) {
+        imgHeight = maxHeight;
+        imgWidth = imgHeight * aspectRatio;
+      }
+      
+      // Center the image
+      const x = (pageWidth - imgWidth) / 2;
+      const y = margin;
+      
+      pdf.addImage(snaps[i], 'PNG', x, y, imgWidth, imgHeight);
+      
+      // Save individual PDF
+      const filename = `flow-screenshot-${i + 1}-${timestamp}.pdf`;
+      pdf.save(filename);
+      
+      // Small delay between downloads to prevent browser blocking
+      if (i < snaps.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+    
+    status.textContent = `${snaps.length} PDFs exported ✓`;
     status.className = 'status active';
     
     setTimeout(() => {
