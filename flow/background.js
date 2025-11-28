@@ -452,14 +452,16 @@ async function cropImage(dataUrl, bounds) {
     0, 0, bounds.width, bounds.height                   // Destination rectangle
   );
   
-  // Convert to blob and then to data URL
+  // Convert to blob and then to data URL (service worker compatible)
   const croppedBlob = await canvas.convertToBlob({ type: 'image/png' });
   
-  // Convert blob to base64 data URL
-  const reader = new FileReader();
-  return new Promise((resolve, reject) => {
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(croppedBlob);
-  });
+  // Convert blob to base64 using ArrayBuffer (FileReader not available in service workers)
+  const arrayBuffer = await croppedBlob.arrayBuffer();
+  const uint8Array = new Uint8Array(arrayBuffer);
+  let binaryString = '';
+  for (let i = 0; i < uint8Array.length; i++) {
+    binaryString += String.fromCharCode(uint8Array[i]);
+  }
+  const base64 = btoa(binaryString);
+  return `data:image/png;base64,${base64}`;
 }

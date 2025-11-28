@@ -127,14 +127,32 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  gap: 24px;
-  margin: 8px 0;
+  gap: 32px;
+  margin: 8px 0 16px 0;
+}
+
+/* Wrapper for label + button */
+.capture-btn-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Label above the orb */
+.orb-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #00d9ff;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Main Orb Button */
 .orb {
-  width: 70px;
-  height: 70px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   border: none;
   background: rgba(0, 217, 255, 0.1);
@@ -147,20 +165,8 @@ body {
     0 0 40px rgba(0, 217, 255, 0.2),
     inset 0 0 20px rgba(0, 217, 255, 0.1);
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  padding-bottom: 22px;
-}
-
-.orb-label {
-  position: absolute;
-  bottom: -20px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 11px;
-  font-weight: 600;
-  color: #00d9ff;
-  white-space: nowrap;
 }
 
 .orb:hover {
