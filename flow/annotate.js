@@ -48,6 +48,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
     const cropBtn = document.querySelector('.tool-btn[data-tool="crop"]');
     if (cropBtn) cropBtn.classList.add('active');
+  } else {
+    // Hide scissors in regular edit mode - scissors is only for snip mode
+    const cropBtn = document.querySelector('.tool-btn[data-tool="crop"]');
+    if (cropBtn) cropBtn.style.display = 'none';
   }
 });
 
