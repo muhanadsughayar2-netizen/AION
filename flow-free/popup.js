@@ -376,9 +376,10 @@ function updateThumbnails() {
     
     emptyState.innerHTML = `
       <div class="empty-sparkle">✦</div>
-      <div class="empty-heading">${getMessage('oneClickOneFlow', 'One click. One flow.')}</div>
-      <div class="empty-subheading">${getMessage('pagesReadyForAI', 'Your pages, ready for AI in seconds.')}</div>
-      <div class="empty-instruction">${getMessage('clickCameraButton', 'Click the glowing camera button above to capture instantly')}</div>
+      <div class="empty-heading">One click. One snap.</div>
+      <div class="empty-subheading">Snap pages — Snip anything</div>
+      <div class="empty-instruction">Stack up to 9 → one paste to AI</div>
+      <div class="empty-footer">Free forever</div>
     `;
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';
