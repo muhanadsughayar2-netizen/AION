@@ -207,6 +207,9 @@ async function addSnip(dataUrl) {
     // Update badge
     await updateBadge(snaps.length);
     
+    // Notify popup about saved snip (for preview)
+    chrome.runtime.sendMessage({ action: 'snipSaved', dataUrl: dataUrl }).catch(() => {});
+    
     return { success: true, count: snaps.length };
   } catch (error) {
     console.error('Add snip failed:', error);

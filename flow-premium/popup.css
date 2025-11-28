@@ -190,6 +190,23 @@ body {
   /* No glow effect, just clean icon */
 }
 
+/* Last Capture Preview - Shared for Snap and Snip */
+.last-capture-preview {
+  margin: 12px 0;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  text-align: center;
+}
+
+.last-capture-image {
+  max-width: 100%;
+  max-height: 120px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
 /* Platform Selector */
 .platform-selector {
   display: flex;

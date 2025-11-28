@@ -79,7 +79,22 @@ function setupEventListeners() {
     if (request.action === 'annotationComplete') {
       handleAnnotationMessage(request);
     }
+    // Listen for snip completion to show in preview
+    if (request.action === 'snipSaved') {
+      showLastCapturePreview(request.dataUrl);
+      loadSnaps().then(updateUI);
+    }
   });
+}
+
+// Show last capture preview (shared for Snap and Snip)
+function showLastCapturePreview(dataUrl) {
+  const preview = document.getElementById('lastCapturePreview');
+  const img = document.getElementById('lastCaptureImage');
+  if (preview && img && dataUrl) {
+    img.src = dataUrl;
+    preview.style.display = 'block';
+  }
 }
 
 // Handle orb button click
@@ -160,6 +175,9 @@ async function handleOrbClick() {
         } catch (clipError) {
           console.error('Clipboard write failed:', clipError);
         }
+        
+        // Show last capture preview
+        showLastCapturePreview(response.dataUrl);
         
         status.textContent = `Snap ${response.count} captured ✓`;
         status.className = 'status active';
