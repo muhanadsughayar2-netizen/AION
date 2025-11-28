@@ -279,6 +279,10 @@ async function handleClear() {
   try {
     await chrome.runtime.sendMessage({ action: 'clearSnaps' });
     
+    // Hide the last capture preview
+    const preview = document.getElementById('lastCapturePreview');
+    if (preview) preview.style.display = 'none';
+    
     status.textContent = 'Cleared ✓';
     status.className = 'status active';
     
