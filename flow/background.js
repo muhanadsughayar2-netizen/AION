@@ -212,6 +212,8 @@ chrome.action.onClicked.addListener(async () => {
 });
 
 // Check if URL is restricted (cannot be captured)
+// Note: chromewebstore.google.com IS allowed - it's a regular HTTPS site
+// Only chrome:// internal pages are truly blocked
 function isRestrictedUrl(url) {
   if (!url) return true;
   
@@ -223,12 +225,10 @@ function isRestrictedUrl(url) {
     'edge://',
     'about:',
     'devtools://',
-    'view-source:',
-    'data:',
-    'chrome.google.com/webstore'  // Chrome Web Store
+    'view-source:'
   ];
   
-  return restrictedPrefixes.some(prefix => url.startsWith(prefix) || url.includes(prefix));
+  return restrictedPrefixes.some(prefix => url.startsWith(prefix));
 }
 
 // Start snip mode - inject snipping overlay into active tab
