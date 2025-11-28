@@ -28,9 +28,19 @@ BASE_DIR = 'landing-page'
 def serve_file(filepath):
     """Read file from disk and serve directly to bypass caching"""
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
-            content = f.read()
         mime_type, _ = mimetypes.guess_type(filepath)
+        
+        # Binary files (images, etc.) need binary mode
+        binary_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp', '.svg', '.woff', '.woff2', '.ttf', '.eot'}
+        is_binary = any(filepath.lower().endswith(ext) for ext in binary_extensions)
+        
+        if is_binary:
+            with open(filepath, 'rb') as f:
+                content = f.read()
+        else:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                content = f.read()
+        
         response = Response(content, mimetype=mime_type or 'text/html')
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
         response.headers['Pragma'] = 'no-cache'
