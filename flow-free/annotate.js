@@ -38,6 +38,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update save button text
     const saveBtn = document.getElementById('saveBtn');
     if (saveBtn) saveBtn.innerHTML = '✂️ Save Snip';
+    
+    // SNIP MODE: Hide all tools except scissors, save, cancel
+    // Hide annotation tools (highlight, numbers, text)
+    document.querySelectorAll('#toolSection .tool-btn:not(#cropToolBtn)').forEach(btn => {
+      btn.style.display = 'none';
+    });
+    
+    // Hide stickers section entirely
+    const stickerSection = document.getElementById('stickerSection');
+    if (stickerSection) stickerSection.style.display = 'none';
+    
+    // Hide color/brush section entirely
+    const colorSection = document.getElementById('colorSection');
+    if (colorSection) colorSection.style.display = 'none';
+    
+    // Hide undo and clear buttons (keep only save and cancel)
+    const undoBtn = document.getElementById('undoBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    if (undoBtn) undoBtn.style.display = 'none';
+    if (clearBtn) clearBtn.style.display = 'none';
   } else {
     // Hide scissors/crop button in regular annotate mode (Snap)
     const cropBtn = document.getElementById('cropToolBtn');
