@@ -251,10 +251,10 @@ async function startSnipMode() {
       return { success: false, error: 'Open a regular website first (not browser settings)' };
     }
     
-    // Inject the snipping overlay script
+    // Inject the snipping overlay script file (more reliable than func injection)
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: injectSnippingOverlay
+      files: ['snip-overlay.js']
     });
     
     return { success: true };
