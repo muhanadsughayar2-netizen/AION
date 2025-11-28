@@ -211,14 +211,44 @@ chrome.action.onClicked.addListener(async () => {
   await updateBadge(count);
 });
 
+// Check if URL is restricted (cannot be captured)
+function isRestrictedUrl(url) {
+  if (!url) return true;
+  
+  const restrictedPrefixes = [
+    'chrome://',
+    'chrome-extension://',
+    'chrome-untrusted://',
+    'chrome-search://',
+    'edge://',
+    'about:',
+    'devtools://',
+    'view-source:',
+    'data:',
+    'chrome.google.com/webstore'  // Chrome Web Store
+  ];
+  
+  return restrictedPrefixes.some(prefix => url.startsWith(prefix) || url.includes(prefix));
+}
+
 // Start snip mode - inject snipping overlay into active tab
 async function startSnipMode() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
-    // Check if we can inject into this tab
-    if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('edge://')) {
-      return { success: false, error: 'Cannot snip browser pages' };
+    // Check if tab is accessible
+    if (!tab || !tab.id) {
+      return { success: false, error: 'No active tab found. Please open a webpage first.' };
+    }
+    
+    // Check if URL is accessible
+    if (!tab.url) {
+      return { success: false, error: 'Cannot access this page. Try a regular website.' };
+    }
+    
+    // Check if URL is restricted
+    if (isRestrictedUrl(tab.url)) {
+      return { success: false, error: 'Open a regular website first (not browser settings)' };
     }
     
     // Inject the snipping overlay script
@@ -230,7 +260,11 @@ async function startSnipMode() {
     return { success: true };
   } catch (error) {
     console.error('Start snip mode failed:', error);
-    return { success: false, error: error.message };
+    // Provide user-friendly error messages
+    if (error.message.includes('Cannot access')) {
+      return { success: false, error: 'Cannot snip this page. Try a regular website.' };
+    }
+    return { success: false, error: 'Snip failed. Please try on a different page.' };
   }
 }
 
