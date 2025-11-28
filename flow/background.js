@@ -73,9 +73,13 @@ async function captureScreenshot() {
     const snaps = await getSnaps();
     const snapCount = snaps.length;
     
-    // Enforce FIFO: if at max, remove oldest
+    // Block capture if queue is full - user must delete to make room
     if (snapCount >= MAX_SNAPS) {
-      snaps.shift(); // Remove first (oldest)
+      return { 
+        success: false, 
+        error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.`,
+        queueFull: true
+      };
     }
     
     // Add new snap
@@ -193,9 +197,13 @@ async function addSnip(dataUrl) {
     // Get current snaps
     const snaps = await getSnaps();
     
-    // Enforce FIFO: if at max, remove oldest
+    // Block snip if queue is full - user must delete to make room
     if (snaps.length >= MAX_SNAPS) {
-      snaps.shift(); // Remove first (oldest)
+      return { 
+        success: false, 
+        error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.`,
+        queueFull: true
+      };
     }
     
     // Add new snip
