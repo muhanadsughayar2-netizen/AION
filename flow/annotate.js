@@ -644,12 +644,8 @@ async function save() {
         dataUrl: cropDataUrl
       });
       
-      updateStatus('Snip saved! You can snip more or close.');
-      cropRect = null;
-      redraw();
-      
-      // Optionally close after save, or allow multiple snips
-      // window.close();
+      // Redirect to popup to show the queue (same behavior as Snap)
+      window.location.href = 'popup.html';
       return;
     }
     
