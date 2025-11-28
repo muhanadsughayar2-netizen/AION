@@ -38,6 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update save button text
     const saveBtn = document.getElementById('saveBtn');
     if (saveBtn) saveBtn.innerHTML = '✂️ Save Snip';
+  } else {
+    // Hide scissors/crop button in regular annotate mode (Snap)
+    const cropBtn = document.getElementById('cropToolBtn');
+    if (cropBtn) cropBtn.style.display = 'none';
   }
   
   setupEventListeners();
