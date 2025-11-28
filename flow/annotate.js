@@ -35,9 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.title = 'Snip Mode - SnapToAI';
     updateStatus('Draw a rectangle to snip. Click Save Snip when done.');
     
-    // Update save button text
-    const saveBtn = document.getElementById('saveBtn');
-    if (saveBtn) saveBtn.innerHTML = '✂️ Save Snip';
+    // Simplify toolbar for snip mode - hide all except scissors, save, exit
+    simplifyToolbarForSnipMode();
   }
   
   setupEventListeners();
@@ -51,6 +50,50 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cropBtn) cropBtn.classList.add('active');
   }
 });
+
+// Simplify toolbar for snip mode - only scissors, save snip, exit
+function simplifyToolbarForSnipMode() {
+  // Hide all tool buttons except scissors (crop)
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+    if (btn.dataset.tool !== 'crop') {
+      btn.style.display = 'none';
+    }
+  });
+  
+  // Hide all sticker buttons
+  document.querySelectorAll('.sticker-btn').forEach(btn => {
+    btn.style.display = 'none';
+  });
+  
+  // Hide custom stickers area and create button
+  const customStickers = document.getElementById('customStickers');
+  if (customStickers) customStickers.style.display = 'none';
+  
+  const createStickerBtn = document.getElementById('createStickerBtn');
+  if (createStickerBtn) createStickerBtn.style.display = 'none';
+  
+  // Hide color picker and brush size
+  const colorPicker = document.getElementById('colorPicker');
+  if (colorPicker) colorPicker.style.display = 'none';
+  
+  const sizeControl = document.querySelector('.size-control');
+  if (sizeControl) sizeControl.style.display = 'none';
+  
+  // Hide undo and clear buttons
+  const undoBtn = document.getElementById('undoBtn');
+  if (undoBtn) undoBtn.style.display = 'none';
+  
+  const clearBtn = document.getElementById('clearBtn');
+  if (clearBtn) clearBtn.style.display = 'none';
+  
+  // Update save button text
+  const saveBtn = document.getElementById('saveBtn');
+  if (saveBtn) saveBtn.innerHTML = '✂️ Save Snip';
+  
+  // Change cancel button to "Exit Snip Mode"
+  const cancelBtn = document.getElementById('cancelBtn');
+  if (cancelBtn) cancelBtn.innerHTML = '✖ Exit Snip Mode';
+}
 
 function setupEventListeners() {
   // Tools
