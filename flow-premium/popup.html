@@ -28,35 +28,17 @@
     <!-- Status Line -->
     <div class="status" id="status" data-i18n="flowReady">SnapToAI: Ready</div>
 
-    <!-- Main Capture Buttons -->
-    <div class="capture-buttons">
-      <div class="capture-btn-wrapper">
-        <span class="orb-label" data-i18n="snap">Snap</span>
-        <button id="orbButton" class="orb" title="Snap full page">
-          <div class="orb-glow"></div>
-          <div class="orb-inner">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-        </button>
-      </div>
-      
-      <div class="capture-btn-wrapper">
-        <span class="orb-label" data-i18n="snip">Snip</span>
-        <button id="snipButton" class="orb" title="Snip selected area">
-          <div class="orb-glow"></div>
-          <div class="orb-inner">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="6" cy="6" r="3" stroke="currentColor" stroke-width="2"/>
-              <circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="2"/>
-              <line x1="20" y1="4" x2="8.5" y2="15.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="20" y1="20" x2="8.5" y2="8.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </div>
-        </button>
-      </div>
+    <!-- Main Orb Button -->
+    <div class="orb-container">
+      <button id="orbButton" class="orb" title="Capture screenshot or upload to AI">
+        <div class="orb-glow"></div>
+        <div class="orb-inner">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </button>
     </div>
 
     <!-- Selection Controls -->
