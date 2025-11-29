@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Один клік. Один знімок.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Вибрати все → Копіювати → Вставити.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Усі 9 знімків екрана стають ОДНИМ накладеним зображенням",
+    "description": "Empty state subheading 2"
   }
 }

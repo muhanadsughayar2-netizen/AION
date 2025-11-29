@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Egy kattintás. Egy képernyőkép.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Mindent kijelöl → Másolás → Beillesztés.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Mind a 9 képernyőkép EGY halmozott képpé válik",
+    "description": "Empty state subheading 2"
   }
 }

@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Jedan klik. Jedan snimak.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Odaberi sve → Kopiraj → Zalijepi.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Svih 9 snimaka zaslona postaje JEDNA složena slika",
+    "description": "Empty state subheading 2"
   }
 }

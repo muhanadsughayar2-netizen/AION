@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "एक क्लिक. एक स्क्रीनशॉट.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "सर्व निवडा → कॉपी करा → पेस्ट करा.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "सर्व 9 स्क्रीनशॉट एक स्टॅक्ड इमेज बनतात",
+    "description": "Empty state subheading 2"
   }
 }

@@ -1,27 +1,119 @@
 {
-  "extensionName": {"message": "SnapToAI - Screenshot zu KI", "description": "extensionName"},
-  "extensionDescription": {"message": "Screenshots erfassen und in Mengen zu KI-Plattformen hochladen", "description": "extensionDescription"},
-  "flowReady": {"message": "SnapToAI: Bereit", "description": "flowReady"},
-  "oneClickOneFlow": {"message": "Ein Klick. Ein Screenshot.", "description": "oneClickOneFlow"},
-  "pagesReadyForAI": {"message": "Ihre Seiten für KI bereit", "description": "pagesReadyForAI"},
-  "clickCameraButton": {"message": "Klicken Sie auf die Kamera, um einen Screenshot aufzunehmen", "description": "clickCameraButton"},
-  "selectAll": {"message": "Alles auswählen", "description": "selectAll"},
-  "deselectAll": {"message": "Alle abwählen", "description": "deselectAll"},
-  "copySelected": {"message": "Ausgewählte kopieren", "description": "copySelected"},
-  "downloadSelected": {"message": "Ausgewählte herunterladen", "description": "downloadSelected"},
-  "exportPDF": {"message": "PDF exportieren", "description": "exportPDF"},
-  "exportPDFOptions": {"message": "PDF-Optionen", "description": "exportPDFOptions"},
-  "allAsOnePDF": {"message": "Alles als eine PDF", "description": "allAsOnePDF"},
-  "allAsOnePDFDesc": {"message": "Alle Screenshots in einer PDF kombinieren", "description": "allAsOnePDFDesc"},
-  "allAsSeparatePDFs": {"message": "Alles als separate PDFs", "description": "allAsSeparatePDFs"},
-  "allAsSeparatePDFsDesc": {"message": "Jeden Screenshot als einzelne PDF herunterladen", "description": "allAsSeparatePDFsDesc"},
-  "selectedAsOnePDF": {"message": "Ausgewählte als eine PDF", "description": "selectedAsOnePDF"},
-  "selectedAsOnePDFDesc": {"message": "Ausgewählte Screenshots in einer PDF kombinieren", "description": "selectedAsOnePDFDesc"},
-  "selectedAsSeparatePDFs": {"message": "Ausgewählte als separate PDFs", "description": "selectedAsSeparatePDFs"},
-  "selectedAsSeparatePDFsDesc": {"message": "Jeden ausgewählten Screenshot als separate PDF herunterladen", "description": "selectedAsSeparatePDFsDesc"},
-  "clearAll": {"message": "Alles löschen", "description": "clearAll"},
-  "cancel": {"message": "Abbrechen", "description": "cancel"},
-  "trialEnded": {"message": "Testversion abgelaufen", "description": "trialEnded"},
-  "upgradeNow": {"message": "Jetzt upgraden - $9.90/Jahr", "description": "upgradeNow"},
-  "daysRemaining": {"message": "$DAYS$ Tage verbleibend", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
+  "extensionName": {
+    "message": "SnapToAI - Screenshot zu KI",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Screenshots erfassen und in Mengen zu KI-Plattformen hochladen",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Bereit",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "Ein Klick. Ein Screenshot.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Ihre Seiten für KI bereit",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Klicken Sie auf die Kamera, um einen Screenshot aufzunehmen",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "Alles auswählen",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "Alle abwählen",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "Ausgewählte kopieren",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "Ausgewählte herunterladen",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "PDF exportieren",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF-Optionen",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "Alles als eine PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Alle Screenshots in einer PDF kombinieren",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "Alles als separate PDFs",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Jeden Screenshot als einzelne PDF herunterladen",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Ausgewählte als eine PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Ausgewählte Screenshots in einer PDF kombinieren",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Ausgewählte als separate PDFs",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Jeden ausgewählten Screenshot als separate PDF herunterladen",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "Alles löschen",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "Abbrechen",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Testversion abgelaufen",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Jetzt upgraden - $9.90/Jahr",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ Tage verbleibend",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "Screenshots zu KI in einem Klick",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Alle auswählen → Kopieren → Einfügen.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Alle 9 Screenshots werden zu EINEM gestapelten Bild",
+    "description": "Empty state subheading 2"
+  }
 }

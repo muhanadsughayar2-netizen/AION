@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Један клик. Једна слика.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Изабери све → Копирај → Налепи.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Свих 9 снимака екрана постаје ЈЕДНА наслагана слика",
+    "description": "Empty state subheading 2"
   }
 }

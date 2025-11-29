@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Eén klik. Eén schermafbeelding.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Alles selecteren → Kopiëren → Plakken.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Alle 9 screenshots worden ÉÉN gestapelde afbeelding",
+    "description": "Empty state subheading 2"
   }
 }

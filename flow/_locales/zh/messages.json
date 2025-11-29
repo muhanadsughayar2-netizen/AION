@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "屏幕截图到AI，一键操作",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "全选 → 复制 → 粘贴。9张截图合成为一张堆叠图片。",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "",
+    "description": "Empty state subheading 2"
   }
 }

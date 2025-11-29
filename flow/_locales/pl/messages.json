@@ -1,27 +1,119 @@
 {
-  "extensionName": {"message": "SnapToAI - Zrzut ekranu do AI", "description": "extensionName"},
-  "extensionDescription": {"message": "Przechwyć zrzuty ekranu i przesyłaj zbiorczą do platform AI", "description": "extensionDescription"},
-  "flowReady": {"message": "SnapToAI: Gotowy", "description": "flowReady"},
-  "oneClickOneFlow": {"message": "Jeden klik. Jeden zrzut.", "description": "oneClickOneFlow"},
-  "pagesReadyForAI": {"message": "Twoje strony gotowe do AI", "description": "pagesReadyForAI"},
-  "clickCameraButton": {"message": "Kliknij kamerę, aby przechwycić zrzut", "description": "clickCameraButton"},
-  "selectAll": {"message": "Zaznacz wszystko", "description": "selectAll"},
-  "deselectAll": {"message": "Odznacz wszystko", "description": "deselectAll"},
-  "copySelected": {"message": "Skopiuj zaznaczone", "description": "copySelected"},
-  "downloadSelected": {"message": "Pobierz zaznaczone", "description": "downloadSelected"},
-  "exportPDF": {"message": "Eksportuj PDF", "description": "exportPDF"},
-  "exportPDFOptions": {"message": "Opcje PDF", "description": "exportPDFOptions"},
-  "allAsOnePDF": {"message": "Wszystkie jako jeden PDF", "description": "allAsOnePDF"},
-  "allAsOnePDFDesc": {"message": "Połącz wszystkie zrzuty w jeden PDF", "description": "allAsOnePDFDesc"},
-  "allAsSeparatePDFs": {"message": "Wszystkie jako osobne pliki PDF", "description": "allAsSeparatePDFs"},
-  "allAsSeparatePDFsDesc": {"message": "Pobierz każdy zrzut jako osobny plik PDF", "description": "allAsSeparatePDFsDesc"},
-  "selectedAsOnePDF": {"message": "Zaznaczone jako jeden PDF", "description": "selectedAsOnePDF"},
-  "selectedAsOnePDFDesc": {"message": "Połącz zaznaczone w jeden PDF", "description": "selectedAsOnePDFDesc"},
-  "selectedAsSeparatePDFs": {"message": "Zaznaczone jako osobne pliki PDF", "description": "selectedAsSeparatePDFs"},
-  "selectedAsSeparatePDFsDesc": {"message": "Pobierz każde zaznaczone jako osobny plik PDF", "description": "selectedAsSeparatePDFsDesc"},
-  "clearAll": {"message": "Wyczyść wszystko", "description": "clearAll"},
-  "cancel": {"message": "Anuluj", "description": "cancel"},
-  "trialEnded": {"message": "Wersja próbna zakończyła się", "description": "trialEnded"},
-  "upgradeNow": {"message": "Uaktualnij teraz - $9.90/rok", "description": "upgradeNow"},
-  "daysRemaining": {"message": "$DAYS$ dni pozostało", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
+  "extensionName": {
+    "message": "SnapToAI - Zrzut ekranu do AI",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Przechwyć zrzuty ekranu i przesyłaj zbiorczą do platform AI",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Gotowy",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "Jeden klik. Jeden zrzut.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Twoje strony gotowe do AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Kliknij kamerę, aby przechwycić zrzut",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "Zaznacz wszystko",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "Odznacz wszystko",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "Skopiuj zaznaczone",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "Pobierz zaznaczone",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Eksportuj PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "Opcje PDF",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "Wszystkie jako jeden PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Połącz wszystkie zrzuty w jeden PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "Wszystkie jako osobne pliki PDF",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Pobierz każdy zrzut jako osobny plik PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Zaznaczone jako jeden PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Połącz zaznaczone w jeden PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Zaznaczone jako osobne pliki PDF",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Pobierz każde zaznaczone jako osobny plik PDF",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "Wyczyść wszystko",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "Anuluj",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Wersja próbna zakończyła się",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Uaktualnij teraz - $9.90/rok",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ dni pozostało",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "Jeden klik. Jeden zrzut ekranu.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Zaznacz wszystko → Kopiuj → Wklej.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Wszystkie 9 zrzutów ekranu staje się JEDNYM obrazem",
+    "description": "Empty state subheading 2"
+  }
 }

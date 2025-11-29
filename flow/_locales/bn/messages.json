@@ -1,27 +1,119 @@
 {
-  "extensionName": {"message": "SnapToAI - স্ক্রিনশট থেকে AI", "description": "extensionName"},
-  "extensionDescription": {"message": "স্ক্রিনশট নিন এবং AI প্ল্যাটফর্মে আপলোড করুন", "description": "extensionDescription"},
-  "flowReady": {"message": "SnapToAI: প্রস্তুত", "description": "flowReady"},
-  "oneClickOneFlow": {"message": "এক ক্লিক। এক স্ন্যাপ।", "description": "oneClickOneFlow"},
-  "pagesReadyForAI": {"message": "আপনার পৃষ্ঠা AI এর জন্য প্রস্তুত", "description": "pagesReadyForAI"},
-  "clickCameraButton": {"message": "স্ক্রিনশট নিতে ক্যামেরা চিহ্ন ক্লিক করুন", "description": "clickCameraButton"},
-  "selectAll": {"message": "সবাই নির্বাচন করুন", "description": "selectAll"},
-  "deselectAll": {"message": "সব নির্বাচন বাতিল করুন", "description": "deselectAll"},
-  "copySelected": {"message": "নির্বাচিত অনুলিপি করুন", "description": "copySelected"},
-  "downloadSelected": {"message": "নির্বাচিত ডাউনলোড করুন", "description": "downloadSelected"},
-  "exportPDF": {"message": "PDF রপ্তানি করুন", "description": "exportPDF"},
-  "exportPDFOptions": {"message": "PDF বিকল্পগুলি", "description": "exportPDFOptions"},
-  "allAsOnePDF": {"message": "সব এক PDF হিসাবে", "description": "allAsOnePDF"},
-  "allAsOnePDFDesc": {"message": "সমস্ত স্ক্রিনশট এক PDF এ একত্রিত করুন", "description": "allAsOnePDFDesc"},
-  "allAsSeparatePDFs": {"message": "সব আলাদা PDF হিসাবে", "description": "allAsSeparatePDFs"},
-  "allAsSeparatePDFsDesc": {"message": "প্রতিটি স্ক্রিনশট আলাদা PDF হিসাবে ডাউনলোড করুন", "description": "allAsSeparatePDFsDesc"},
-  "selectedAsOnePDF": {"message": "নির্বাচিত এক PDF হিসাবে", "description": "selectedAsOnePDF"},
-  "selectedAsOnePDFDesc": {"message": "নির্বাচিত স্ক্রিনশট এক PDF তে একত্রিত করুন", "description": "selectedAsOnePDFDesc"},
-  "selectedAsSeparatePDFs": {"message": "নির্বাচিত আলাদা PDF হিসাবে", "description": "selectedAsSeparatePDFs"},
-  "selectedAsSeparatePDFsDesc": {"message": "প্রতিটি নির্বাচিত স্ক্রিনশট আলাদা PDF হিসাবে ডাউনলোড করুন", "description": "selectedAsSeparatePDFsDesc"},
-  "clearAll": {"message": "সব সাফ করুন", "description": "clearAll"},
-  "cancel": {"message": "বাতিল করুন", "description": "cancel"},
-  "trialEnded": {"message": "ট্রায়াল শেষ", "description": "trialEnded"},
-  "upgradeNow": {"message": "এখনই আপগ্রেড করুন - $9.90/বছর", "description": "upgradeNow"},
-  "daysRemaining": {"message": "$DAYS$ দিন বাকি আছে", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
+  "extensionName": {
+    "message": "SnapToAI - স্ক্রিনশট থেকে AI",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "স্ক্রিনশট নিন এবং AI প্ল্যাটফর্মে আপলোড করুন",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: প্রস্তুত",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "এক ক্লিক। এক স্ন্যাপ।",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "আপনার পৃষ্ঠা AI এর জন্য প্রস্তুত",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "স্ক্রিনশট নিতে ক্যামেরা চিহ্ন ক্লিক করুন",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "সবাই নির্বাচন করুন",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "সব নির্বাচন বাতিল করুন",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "নির্বাচিত অনুলিপি করুন",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "নির্বাচিত ডাউনলোড করুন",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "PDF রপ্তানি করুন",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF বিকল্পগুলি",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "সব এক PDF হিসাবে",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "সমস্ত স্ক্রিনশট এক PDF এ একত্রিত করুন",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "সব আলাদা PDF হিসাবে",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "প্রতিটি স্ক্রিনশট আলাদা PDF হিসাবে ডাউনলোড করুন",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "নির্বাচিত এক PDF হিসাবে",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "নির্বাচিত স্ক্রিনশট এক PDF তে একত্রিত করুন",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "নির্বাচিত আলাদা PDF হিসাবে",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "প্রতিটি নির্বাচিত স্ক্রিনশট আলাদা PDF হিসাবে ডাউনলোড করুন",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "সব সাফ করুন",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "বাতিল করুন",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "ট্রায়াল শেষ",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "এখনই আপগ্রেড করুন - $9.90/বছর",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ দিন বাকি আছে",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "এক ক্লিক। এক স্ক্রিনশট।",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "সব নির্বাচন করুন → কপি → পেস্ট। সব ৯টি স্ক্রিনশট একটি স্ট্যাক করা ছবিতে পরিণত হয়।",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "",
+    "description": "Empty state subheading 2"
+  }
 }

@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Un clic. O captură de ecran.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Selectați tot → Copiați → Lipiți.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Toate cele 9 capturi de ecran devin O imagine stivuită",
+    "description": "Empty state subheading 2"
   }
 }

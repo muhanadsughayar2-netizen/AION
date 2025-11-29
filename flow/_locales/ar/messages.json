@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "لقطات الشاشة إلى الذكاء الاصطناعي بنقرة واحدة",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "تحديد الكل ← نسخ ← لصق.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "كل 9 لقطات شاشة تصبح صورة واحدة مكدسة",
+    "description": "Empty state subheading 2"
   }
 }

@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Ett klick. En bild.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Markera allt → Kopiera → Klistra in.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Alla 9 skärmdumpar blir EN staplad bild",
+    "description": "Empty state subheading 2"
   }
 }

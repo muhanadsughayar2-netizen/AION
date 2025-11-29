@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Jeden klik. Jeden záber.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Vybrať všetko → Kopírovať → Vložiť.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Všetkých 9 snímok sa stane JEDNÝM vrstveným obrázkom",
+    "description": "Empty state subheading 2"
   }
 }

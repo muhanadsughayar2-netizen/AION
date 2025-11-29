@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Isang click. Isang screenshot.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Piliin Lahat → Kopyahin → I-paste.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Ang lahat ng 9 na screenshot ay nagiging ISANG nakasalansan na larawan",
+    "description": "Empty state subheading 2"
   }
 }

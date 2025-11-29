@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "ഒരു ക്ലിക്കിൽ. ഒരു സ്ക്രീൻഷോട്ട്.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "എല്ലാം തിരഞ്ഞെടുക്കുക → പകർത്തുക → ഒട്ടിക്കുക.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "എല്ലാ 9 സ്ക്രീൻഷോട്ടുകളും ഒരു സ്റ്റാക്ക്ഡ് ഇമേജായി മാറുന്നു",
+    "description": "Empty state subheading 2"
   }
 }

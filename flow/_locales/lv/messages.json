@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Viena klikšķi. Viens attēls.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Atlasīt visu → Kopēt → Ielīmēt.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Visi 9 ekrānuzņēmumi kļūst par VIENU sakrautu attēlu",
+    "description": "Empty state subheading 2"
   }
 }

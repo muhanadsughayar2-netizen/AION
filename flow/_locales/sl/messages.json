@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "En klik. En posnetek.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Izberi vse → Kopiraj → Prilepi.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Vseh 9 posnetkov zaslona postane ENA naložena slika",
+    "description": "Empty state subheading 2"
   }
 }

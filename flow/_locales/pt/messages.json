@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Capturas de Ecrã para IA num Clique",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Selecionar Tudo → Copiar → Colar.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Todas as 9 capturas de ecrã caem como UMA imagem empilhada",
+    "description": "Empty state subheading 2"
   }
 }

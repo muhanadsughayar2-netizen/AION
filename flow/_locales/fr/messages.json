@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Les captures d'écran vers l'IA en un clic",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Tout sélectionner → Copier → Coller.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Les 9 captures deviennent UNE image empilée",
+    "description": "Empty state subheading 2"
   }
 }

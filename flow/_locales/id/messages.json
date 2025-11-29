@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Satu klik. Satu tangkapan layar.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Pilih Semua → Salin → Tempel.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Semua 9 tangkapan layar menjadi SATU gambar bertumpuk",
+    "description": "Empty state subheading 2"
   }
 }

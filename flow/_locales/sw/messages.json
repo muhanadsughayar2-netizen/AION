@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Bofya moja. Picha moja.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Chagua Zote → Nakili → Bandika.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Picha za skrini 9 zote zinakuwa picha MOJA iliyorundikwa",
+    "description": "Empty state subheading 2"
   }
 }

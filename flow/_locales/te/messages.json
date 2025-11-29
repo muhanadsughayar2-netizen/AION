@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "ఒక క్లిక్. ఒక స్క్రీన్‌షాట్.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "అన్నీ ఎంచుకోండి → కాపీ → పేస్ట్.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "అన్ని 9 స్క్రీన్‌షాట్‌లు ఒక స్టాక్డ్ ఇమేజ్ అవుతాయి",
+    "description": "Empty state subheading 2"
   }
 }

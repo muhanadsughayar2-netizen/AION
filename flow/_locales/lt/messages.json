@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Vienas spustelėjimas. Vienas kadrą.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Pasirinkti viską → Kopijuoti → Įklijuoti.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Visos 9 ekrano nuotraukos tampa VIENU sukrautu atvaizdu",
+    "description": "Empty state subheading 2"
   }
 }

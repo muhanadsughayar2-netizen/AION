@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Ett klikk. Ett øyeblikk.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Velg alt → Kopier → Lim inn.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Alle 9 skjermbilder blir til ETT stablet bilde",
+    "description": "Empty state subheading 2"
   }
 }

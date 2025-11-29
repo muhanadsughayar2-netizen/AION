@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Screenshot verso l'IA in un clic",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Seleziona tutto → Copia → Incolla.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Tutte le 9 schermate diventano UN'immagine impilata",
+    "description": "Empty state subheading 2"
   }
 }

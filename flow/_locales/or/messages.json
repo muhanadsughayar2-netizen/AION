@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "ଗୋଟିଏ କ୍ଲିକ୍। ଗୋଟିଏ ସ୍କ୍ରିନ୍‌ଶଟ୍।",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "ସମସ୍ତ ଚୟନ କରନ୍ତୁ → କପି → ପେଷ୍ଟ। ସମସ୍ତ 9 ଟି ସ୍କ୍ରିନସଟ୍ ଗୋଟିଏ ଷ୍ଟାକ୍ଡ ଇମେଜ ହୁଏ।",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "",
+    "description": "Empty state subheading 2"
   }
 }

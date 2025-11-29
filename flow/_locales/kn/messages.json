@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "ಒಂದು ಕ್ಲಿಕ್. ಒಂದು ಸ್ಕ್ರೀನ್‌ಶಾಟ್.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "ಎಲ್ಲಾ ಆಯ್ಕೆಮಾಡಿ → ನಕಲಿಸಿ → ಅಂಟಿಸಿ.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "ಎಲ್ಲಾ 9 ಸ್ಕ್ರೀನ್‌ಶಾಟ್‌ಗಳು ಒಂದು ಸ್ಟಾಕ್ಡ್ ಇಮೇಜ್ ಆಗುತ್ತವೆ",
+    "description": "Empty state subheading 2"
   }
 }

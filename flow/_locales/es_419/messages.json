@@ -103,5 +103,17 @@
         "content": "$1"
       }
     }
+  },
+  "emptyHeading": {
+    "message": "Un clic. Una captura de pantalla.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Select All → Copy → Paste.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "All 9 screenshots drop as ONE stacked image",
+    "description": "Empty state subheading 2"
   }
 }
