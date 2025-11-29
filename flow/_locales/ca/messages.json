@@ -1,127 +1,27 @@
 {
-  "extensionName": {
-    "message": "SnapToAI - Captura a IA",
-    "description": "extensionName"
-  },
-  "extensionDescription": {
-    "message": "Capturi pantalla i pujada massiva a plataformes d'IA",
-    "description": "extensionDescription"
-  },
-  "flowReady": {
-    "message": "SnapToAI: Llest",
-    "description": "flowReady"
-  },
-  "oneClickOneFlow": {
-    "message": "Un clic. Una captura.",
-    "description": "oneClickOneFlow"
-  },
-  "pagesReadyForAI": {
-    "message": "Les teves pàgines llestes per a IA",
-    "description": "pagesReadyForAI"
-  },
-  "clickCameraButton": {
-    "message": "Feu clic a la càmera per capturar",
-    "description": "clickCameraButton"
-  },
-  "selectAll": {
-    "message": "Seleccionar tots",
-    "description": "selectAll"
-  },
-  "deselectAll": {
-    "message": "Desseleccionar tots",
-    "description": "deselectAll"
-  },
-  "copySelected": {
-    "message": "Copiar seleccionat",
-    "description": "copySelected"
-  },
-  "downloadSelected": {
-    "message": "Descarregar seleccionat",
-    "description": "downloadSelected"
-  },
-  "exportPDF": {
-    "message": "Exportar PDF",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "Opcions PDF",
-    "description": "exportPDFOptions"
-  },
-  "allAsOnePDF": {
-    "message": "Tot com un PDF",
-    "description": "allAsOnePDF"
-  },
-  "allAsOnePDFDesc": {
-    "message": "Combinar totes les captures en un PDF",
-    "description": "allAsOnePDFDesc"
-  },
-  "allAsSeparatePDFs": {
-    "message": "Tot com PDFs separats",
-    "description": "allAsSeparatePDFs"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "Descarregar cada captura com PDF separat",
-    "description": "allAsSeparatePDFsDesc"
-  },
-  "selectedAsOnePDF": {
-    "message": "Seleccionat com un PDF",
-    "description": "selectedAsOnePDF"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "Combinar seleccionat en un PDF",
-    "description": "selectedAsOnePDFDesc"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "Seleccionat com PDFs separats",
-    "description": "selectedAsSeparatePDFs"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "Descarregar cada seleccionat com PDF separat",
-    "description": "selectedAsSeparatePDFsDesc"
-  },
-  "clearAll": {
-    "message": "Esborrar tot",
-    "description": "clearAll"
-  },
-  "cancel": {
-    "message": "Cancelar",
-    "description": "cancel"
-  },
-  "trialEnded": {
-    "message": "Prova finalitzada",
-    "description": "trialEnded"
-  },
-  "upgradeNow": {
-    "message": "Actualitzar ara - $9.90/any",
-    "description": "upgradeNow"
-  },
-  "daysRemaining": {
-    "message": "$DAYS$ dies restants",
-    "description": "daysRemaining",
-    "placeholders": {
-      "days": {
-        "content": "$1"
-      }
-    }
-  },
-  "snapSnipStackWin": {
-    "message": "Captura. Retalla. Apila. Guanya. 🔥",
-    "description": "snapSnipStackWin"
-  },
-  "upTo9Shots": {
-    "message": "Fins a 9 captures",
-    "description": "upTo9Shots"
-  },
-  "selectAllCopy": {
-    "message": "Selecciona-ho tot → Copia",
-    "description": "selectAllCopy"
-  },
-  "onePasteMagic": {
-    "message": "Un enganxat → màgia pura ✨",
-    "description": "onePasteMagic"
-  },
-  "freeForever": {
-    "message": "Gratuït per sempre 🏆",
-    "description": "freeForever"
-  }
+  "extensionName": {"message": "SnapToAI - Captura a IA", "description": "extensionName"},
+  "extensionDescription": {"message": "Capturi pantalla i pujada massiva a plataformes d'IA", "description": "extensionDescription"},
+  "flowReady": {"message": "SnapToAI: Llest", "description": "flowReady"},
+  "oneClickOneFlow": {"message": "Un clic. Una captura.", "description": "oneClickOneFlow"},
+  "pagesReadyForAI": {"message": "Les teves pàgines llestes per a IA", "description": "pagesReadyForAI"},
+  "clickCameraButton": {"message": "Feu clic a la càmera per capturar", "description": "clickCameraButton"},
+  "selectAll": {"message": "Seleccionar tots", "description": "selectAll"},
+  "deselectAll": {"message": "Desseleccionar tots", "description": "deselectAll"},
+  "copySelected": {"message": "Copiar seleccionat", "description": "copySelected"},
+  "downloadSelected": {"message": "Descarregar seleccionat", "description": "downloadSelected"},
+  "exportPDF": {"message": "Exportar PDF", "description": "exportPDF"},
+  "exportPDFOptions": {"message": "Opcions PDF", "description": "exportPDFOptions"},
+  "allAsOnePDF": {"message": "Tot com un PDF", "description": "allAsOnePDF"},
+  "allAsOnePDFDesc": {"message": "Combinar totes les captures en un PDF", "description": "allAsOnePDFDesc"},
+  "allAsSeparatePDFs": {"message": "Tot com PDFs separats", "description": "allAsSeparatePDFs"},
+  "allAsSeparatePDFsDesc": {"message": "Descarregar cada captura com PDF separat", "description": "allAsSeparatePDFsDesc"},
+  "selectedAsOnePDF": {"message": "Seleccionat com un PDF", "description": "selectedAsOnePDF"},
+  "selectedAsOnePDFDesc": {"message": "Combinar seleccionat en un PDF", "description": "selectedAsOnePDFDesc"},
+  "selectedAsSeparatePDFs": {"message": "Seleccionat com PDFs separats", "description": "selectedAsSeparatePDFs"},
+  "selectedAsSeparatePDFsDesc": {"message": "Descarregar cada seleccionat com PDF separat", "description": "selectedAsSeparatePDFsDesc"},
+  "clearAll": {"message": "Esborrar tot", "description": "clearAll"},
+  "cancel": {"message": "Cancelar", "description": "cancel"},
+  "trialEnded": {"message": "Prova finalitzada", "description": "trialEnded"},
+  "upgradeNow": {"message": "Actualitzar ara - $9.90/any", "description": "upgradeNow"},
+  "daysRemaining": {"message": "$DAYS$ dies restants", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
 }

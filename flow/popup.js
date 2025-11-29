@@ -375,11 +375,10 @@ function updateThumbnails() {
     };
     
     emptyState.innerHTML = `
-      <div class="empty-heading">${getMessage('screenshotsToAI', 'Screenshots to AI')} 🚀</div>
-      <div class="empty-subheading">${getMessage('inOneClick', 'in One Click')}</div>
-      <div class="empty-instruction">${getMessage('selectCopyPaste', 'Select All → Copy → Paste')}</div>
-      <div class="empty-instruction">${getMessage('nineToOne', '9 shots → ONE image')} ✨</div>
-      <div class="empty-footer">${getMessage('freeForever', 'Free forever')} 🏆</div>
+      <div class="empty-heading">Snap. Snip. Stack. Win. 🔥</div>
+      <div class="empty-subheading">Up to 9 shots</div>
+      <div class="empty-instruction">Select All → Copy<br>One paste → pure magic ✨</div>
+      <div class="empty-footer">Free forever 🏆</div>
     `;
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';

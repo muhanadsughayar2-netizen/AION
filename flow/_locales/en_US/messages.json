@@ -103,25 +103,5 @@
         "content": "$1"
       }
     }
-  },
-  "snapSnipStackWin": {
-    "message": "Snap. Snip. Stack. Win. 🔥",
-    "description": "snapSnipStackWin"
-  },
-  "upTo9Shots": {
-    "message": "Up to 9 shots",
-    "description": "upTo9Shots"
-  },
-  "selectAllCopy": {
-    "message": "Select All → Copy",
-    "description": "selectAllCopy"
-  },
-  "onePasteMagic": {
-    "message": "One paste → pure magic ✨",
-    "description": "onePasteMagic"
-  },
-  "freeForever": {
-    "message": "Free forever 🏆",
-    "description": "freeForever"
   }
 }

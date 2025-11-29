@@ -103,25 +103,5 @@
         "content": "$1"
       }
     }
-  },
-  "snapSnipStackWin": {
-    "message": "Знімок. Обрізати. Стос. Переможи. 🔥",
-    "description": "snapSnipStackWin"
-  },
-  "upTo9Shots": {
-    "message": "До 9 знімків",
-    "description": "upTo9Shots"
-  },
-  "selectAllCopy": {
-    "message": "Вибрати все → Копіювати",
-    "description": "selectAllCopy"
-  },
-  "onePasteMagic": {
-    "message": "Одна вставка → чиста магія ✨",
-    "description": "onePasteMagic"
-  },
-  "freeForever": {
-    "message": "Завжди безплатно 🏆",
-    "description": "freeForever"
   }
 }

@@ -103,25 +103,5 @@
         "content": "$1"
       }
     }
-  },
-  "snapSnipStackWin": {
-    "message": "Nufotografuok. Nupjovk. Sukrauk. Laimėk. 🔥",
-    "description": "snapSnipStackWin"
-  },
-  "upTo9Shots": {
-    "message": "Iki 9 nuotraukų",
-    "description": "upTo9Shots"
-  },
-  "selectAllCopy": {
-    "message": "Pasirinkti viską → Kopijuoti",
-    "description": "selectAllCopy"
-  },
-  "onePasteMagic": {
-    "message": "Vienas įklijavimas → gryna magija ✨",
-    "description": "onePasteMagic"
-  },
-  "freeForever": {
-    "message": "Amžinai nemokamai 🏆",
-    "description": "freeForever"
   }
 }

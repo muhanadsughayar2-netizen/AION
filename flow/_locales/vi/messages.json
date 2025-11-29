@@ -1,127 +1,27 @@
 {
-  "extensionName": {
-    "message": "SnapToAI - Chụp Ảnh Màn Hình sang AI",
-    "description": "extensionName"
-  },
-  "extensionDescription": {
-    "message": "Chụp ảnh màn hình và tải hàng loạt lên các nền tảng AI",
-    "description": "extensionDescription"
-  },
-  "flowReady": {
-    "message": "SnapToAI: Sẵn sàng",
-    "description": "flowReady"
-  },
-  "oneClickOneFlow": {
-    "message": "Một cú nhấp. Một ảnh chụp.",
-    "description": "oneClickOneFlow"
-  },
-  "pagesReadyForAI": {
-    "message": "Các trang của bạn đã sẵn sàng cho AI",
-    "description": "pagesReadyForAI"
-  },
-  "clickCameraButton": {
-    "message": "Nhấp vào máy ảnh để chụp ảnh màn hình",
-    "description": "clickCameraButton"
-  },
-  "selectAll": {
-    "message": "Chọn tất cả",
-    "description": "selectAll"
-  },
-  "deselectAll": {
-    "message": "Bỏ chọn tất cả",
-    "description": "deselectAll"
-  },
-  "copySelected": {
-    "message": "Sao chép đã chọn",
-    "description": "copySelected"
-  },
-  "downloadSelected": {
-    "message": "Tải xuống đã chọn",
-    "description": "downloadSelected"
-  },
-  "exportPDF": {
-    "message": "Xuất PDF",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "Tùy chọn PDF",
-    "description": "exportPDFOptions"
-  },
-  "allAsOnePDF": {
-    "message": "Tất cả dưới dạng một PDF",
-    "description": "allAsOnePDF"
-  },
-  "allAsOnePDFDesc": {
-    "message": "Kết hợp tất cả ảnh chụp thành một PDF",
-    "description": "allAsOnePDFDesc"
-  },
-  "allAsSeparatePDFs": {
-    "message": "Tất cả dưới dạng các PDF riêng biệt",
-    "description": "allAsSeparatePDFs"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "Tải xuống từng ảnh chụp dưới dạng PDF riêng biệt",
-    "description": "allAsSeparatePDFsDesc"
-  },
-  "selectedAsOnePDF": {
-    "message": "Đã chọn dưới dạng một PDF",
-    "description": "selectedAsOnePDF"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "Kết hợp đã chọn thành một PDF",
-    "description": "selectedAsOnePDFDesc"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "Đã chọn dưới dạng các PDF riêng biệt",
-    "description": "selectedAsSeparatePDFs"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "Tải xuống từng mục đã chọn dưới dạng PDF riêng biệt",
-    "description": "selectedAsSeparatePDFsDesc"
-  },
-  "clearAll": {
-    "message": "Xóa tất cả",
-    "description": "clearAll"
-  },
-  "cancel": {
-    "message": "Hủy bỏ",
-    "description": "cancel"
-  },
-  "trialEnded": {
-    "message": "Dùng thử kết thúc",
-    "description": "trialEnded"
-  },
-  "upgradeNow": {
-    "message": "Nâng cấp ngay - $9.90/năm",
-    "description": "upgradeNow"
-  },
-  "daysRemaining": {
-    "message": "$DAYS$ ngày còn lại",
-    "description": "daysRemaining",
-    "placeholders": {
-      "days": {
-        "content": "$1"
-      }
-    }
-  },
-  "snapSnipStackWin": {
-    "message": "Chụp. Cắt. Xếp. Thắng. 🔥",
-    "description": "snapSnipStackWin"
-  },
-  "upTo9Shots": {
-    "message": "Tới 9 ảnh",
-    "description": "upTo9Shots"
-  },
-  "selectAllCopy": {
-    "message": "Chọn tất cả → Sao chép",
-    "description": "selectAllCopy"
-  },
-  "onePasteMagic": {
-    "message": "Một dán → phép thuật thuần khiết ✨",
-    "description": "onePasteMagic"
-  },
-  "freeForever": {
-    "message": "Miễn phí mãi mãi 🏆",
-    "description": "freeForever"
-  }
+  "extensionName": {"message": "SnapToAI - Chụp Ảnh Màn Hình sang AI", "description": "extensionName"},
+  "extensionDescription": {"message": "Chụp ảnh màn hình và tải hàng loạt lên các nền tảng AI", "description": "extensionDescription"},
+  "flowReady": {"message": "SnapToAI: Sẵn sàng", "description": "flowReady"},
+  "oneClickOneFlow": {"message": "Một cú nhấp. Một ảnh chụp.", "description": "oneClickOneFlow"},
+  "pagesReadyForAI": {"message": "Các trang của bạn đã sẵn sàng cho AI", "description": "pagesReadyForAI"},
+  "clickCameraButton": {"message": "Nhấp vào máy ảnh để chụp ảnh màn hình", "description": "clickCameraButton"},
+  "selectAll": {"message": "Chọn tất cả", "description": "selectAll"},
+  "deselectAll": {"message": "Bỏ chọn tất cả", "description": "deselectAll"},
+  "copySelected": {"message": "Sao chép đã chọn", "description": "copySelected"},
+  "downloadSelected": {"message": "Tải xuống đã chọn", "description": "downloadSelected"},
+  "exportPDF": {"message": "Xuất PDF", "description": "exportPDF"},
+  "exportPDFOptions": {"message": "Tùy chọn PDF", "description": "exportPDFOptions"},
+  "allAsOnePDF": {"message": "Tất cả dưới dạng một PDF", "description": "allAsOnePDF"},
+  "allAsOnePDFDesc": {"message": "Kết hợp tất cả ảnh chụp thành một PDF", "description": "allAsOnePDFDesc"},
+  "allAsSeparatePDFs": {"message": "Tất cả dưới dạng các PDF riêng biệt", "description": "allAsSeparatePDFs"},
+  "allAsSeparatePDFsDesc": {"message": "Tải xuống từng ảnh chụp dưới dạng PDF riêng biệt", "description": "allAsSeparatePDFsDesc"},
+  "selectedAsOnePDF": {"message": "Đã chọn dưới dạng một PDF", "description": "selectedAsOnePDF"},
+  "selectedAsOnePDFDesc": {"message": "Kết hợp đã chọn thành một PDF", "description": "selectedAsOnePDFDesc"},
+  "selectedAsSeparatePDFs": {"message": "Đã chọn dưới dạng các PDF riêng biệt", "description": "selectedAsSeparatePDFs"},
+  "selectedAsSeparatePDFsDesc": {"message": "Tải xuống từng mục đã chọn dưới dạng PDF riêng biệt", "description": "selectedAsSeparatePDFsDesc"},
+  "clearAll": {"message": "Xóa tất cả", "description": "clearAll"},
+  "cancel": {"message": "Hủy bỏ", "description": "cancel"},
+  "trialEnded": {"message": "Dùng thử kết thúc", "description": "trialEnded"},
+  "upgradeNow": {"message": "Nâng cấp ngay - $9.90/năm", "description": "upgradeNow"},
+  "daysRemaining": {"message": "$DAYS$ ngày còn lại", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
 }

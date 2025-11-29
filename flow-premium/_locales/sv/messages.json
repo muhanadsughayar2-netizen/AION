@@ -103,25 +103,5 @@
         "content": "$1"
       }
     }
-  },
-  "snapSnipStackWin": {
-    "message": "Fånga. Klipp. Stapla. Vinn. 🔥",
-    "description": "snapSnipStackWin"
-  },
-  "upTo9Shots": {
-    "message": "Upp till 9 skärmdumpar",
-    "description": "upTo9Shots"
-  },
-  "selectAllCopy": {
-    "message": "Välj alla → Kopiera",
-    "description": "selectAllCopy"
-  },
-  "onePasteMagic": {
-    "message": "En klistring → ren magi ✨",
-    "description": "onePasteMagic"
-  },
-  "freeForever": {
-    "message": "Gratis för alltid 🏆",
-    "description": "freeForever"
   }
 }

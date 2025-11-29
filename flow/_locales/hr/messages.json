@@ -103,25 +103,5 @@
         "content": "$1"
       }
     }
-  },
-  "snapSnipStackWin": {
-    "message": "Snimi. Izreži. Posloži. Pobijedi. 🔥",
-    "description": "snapSnipStackWin"
-  },
-  "upTo9Shots": {
-    "message": "Do 9 snimki",
-    "description": "upTo9Shots"
-  },
-  "selectAllCopy": {
-    "message": "Odaberi sve → Kopiraj",
-    "description": "selectAllCopy"
-  },
-  "onePasteMagic": {
-    "message": "Jedna lijepljenja → čista magija ✨",
-    "description": "onePasteMagic"
-  },
-  "freeForever": {
-    "message": "Zauvijek besplatno 🏆",
-    "description": "freeForever"
   }
 }

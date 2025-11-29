@@ -103,25 +103,5 @@
         "content": "$1"
       }
     }
-  },
-  "snapSnipStackWin": {
-    "message": "截图。剪辑。堆栈。赢。🔥",
-    "description": "snapSnipStackWin"
-  },
-  "upTo9Shots": {
-    "message": "最多9张图片",
-    "description": "upTo9Shots"
-  },
-  "selectAllCopy": {
-    "message": "全选 → 复制",
-    "description": "selectAllCopy"
-  },
-  "onePasteMagic": {
-    "message": "一次粘贴 → 纯粹的魔法 ✨",
-    "description": "onePasteMagic"
-  },
-  "freeForever": {
-    "message": "永远免费 🏆",
-    "description": "freeForever"
   }
 }

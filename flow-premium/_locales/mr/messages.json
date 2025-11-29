@@ -103,25 +103,5 @@
         "content": "$1"
       }
     }
-  },
-  "snapSnipStackWin": {
-    "message": "टिपा. कापा. रचा. जिंका. 🔥",
-    "description": "snapSnipStackWin"
-  },
-  "upTo9Shots": {
-    "message": "9 शॉट्स पर्यंत",
-    "description": "upTo9Shots"
-  },
-  "selectAllCopy": {
-    "message": "सर्व निवडा → कॉपी करा",
-    "description": "selectAllCopy"
-  },
-  "onePasteMagic": {
-    "message": "एक पेस्ट → शुद्ध जादू ✨",
-    "description": "onePasteMagic"
-  },
-  "freeForever": {
-    "message": "कायमस्वरूप विनामूल्य 🏆",
-    "description": "freeForever"
   }
 }

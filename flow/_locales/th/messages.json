@@ -1,127 +1,27 @@
 {
-  "extensionName": {
-    "message": "SnapToAI - ภาพหน้าจอ ต่อ AI",
-    "description": "extensionName"
-  },
-  "extensionDescription": {
-    "message": "จับภาพหน้าจออพลوดเป็นกลุ่มไปยังแพลตฟอร์ม AI",
-    "description": "extensionDescription"
-  },
-  "flowReady": {
-    "message": "SnapToAI: พร้อม",
-    "description": "flowReady"
-  },
-  "oneClickOneFlow": {
-    "message": "คลิกเดียว แตะเดียว",
-    "description": "oneClickOneFlow"
-  },
-  "pagesReadyForAI": {
-    "message": "หน้าของคุณพร้อมสำหรับ AI",
-    "description": "pagesReadyForAI"
-  },
-  "clickCameraButton": {
-    "message": "คลิกกล้องเพื่อจับภาพหน้าจอ",
-    "description": "clickCameraButton"
-  },
-  "selectAll": {
-    "message": "เลือกทั้งหมด",
-    "description": "selectAll"
-  },
-  "deselectAll": {
-    "message": "ยกเลิกการเลือกทั้งหมด",
-    "description": "deselectAll"
-  },
-  "copySelected": {
-    "message": "คัดลอกที่เลือก",
-    "description": "copySelected"
-  },
-  "downloadSelected": {
-    "message": "ดาวน์โหลดที่เลือก",
-    "description": "downloadSelected"
-  },
-  "exportPDF": {
-    "message": "ส่งออก PDF",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "ตัวเลือก PDF",
-    "description": "exportPDFOptions"
-  },
-  "allAsOnePDF": {
-    "message": "ทั้งหมดเป็นหนึ่งไฟล์ PDF",
-    "description": "allAsOnePDF"
-  },
-  "allAsOnePDFDesc": {
-    "message": "รวมภาพหน้าจอทั้งหมดเป็นไฟล์ PDF เดียว",
-    "description": "allAsOnePDFDesc"
-  },
-  "allAsSeparatePDFs": {
-    "message": "ทั้งหมดเป็นไฟล์ PDF แยกต่างหาก",
-    "description": "allAsSeparatePDFs"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "ดาวน์โหลดแต่ละภาพหน้าจอเป็นไฟล์ PDF แยกต่างหาก",
-    "description": "allAsSeparatePDFsDesc"
-  },
-  "selectedAsOnePDF": {
-    "message": "ที่เลือกเป็นหนึ่งไฟล์ PDF",
-    "description": "selectedAsOnePDF"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "รวมที่เลือกเป็นไฟล์ PDF เดียว",
-    "description": "selectedAsOnePDFDesc"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "ที่เลือกเป็นไฟล์ PDF แยกต่างหาก",
-    "description": "selectedAsSeparatePDFs"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "ดาวน์โหลดแต่ละที่เลือกเป็นไฟล์ PDF แยกต่างหาก",
-    "description": "selectedAsSeparatePDFsDesc"
-  },
-  "clearAll": {
-    "message": "ล้างทั้งหมด",
-    "description": "clearAll"
-  },
-  "cancel": {
-    "message": "ยกเลิก",
-    "description": "cancel"
-  },
-  "trialEnded": {
-    "message": "ทดลองสิ้นสุดแล้ว",
-    "description": "trialEnded"
-  },
-  "upgradeNow": {
-    "message": "อัปเกรดเดี๋ยวนี้ - $9.90/ปี",
-    "description": "upgradeNow"
-  },
-  "daysRemaining": {
-    "message": "เหลือ $DAYS$ วัน",
-    "description": "daysRemaining",
-    "placeholders": {
-      "days": {
-        "content": "$1"
-      }
-    }
-  },
-  "snapSnipStackWin": {
-    "message": "สแน็บ ตัด เรียง ชนะ 🔥",
-    "description": "snapSnipStackWin"
-  },
-  "upTo9Shots": {
-    "message": "ถึง 9 ภาพ",
-    "description": "upTo9Shots"
-  },
-  "selectAllCopy": {
-    "message": "เลือกทั้งหมด → คัดลอก",
-    "description": "selectAllCopy"
-  },
-  "onePasteMagic": {
-    "message": "วางหนึ่ง → เวทมนตร์บริสุทธิ์ ✨",
-    "description": "onePasteMagic"
-  },
-  "freeForever": {
-    "message": "ฟรีตลอดไป 🏆",
-    "description": "freeForever"
-  }
+  "extensionName": {"message": "SnapToAI - ภาพหน้าจอ ต่อ AI", "description": "extensionName"},
+  "extensionDescription": {"message": "จับภาพหน้าจออพลوดเป็นกลุ่มไปยังแพลตฟอร์ม AI", "description": "extensionDescription"},
+  "flowReady": {"message": "SnapToAI: พร้อม", "description": "flowReady"},
+  "oneClickOneFlow": {"message": "คลิกเดียว แตะเดียว", "description": "oneClickOneFlow"},
+  "pagesReadyForAI": {"message": "หน้าของคุณพร้อมสำหรับ AI", "description": "pagesReadyForAI"},
+  "clickCameraButton": {"message": "คลิกกล้องเพื่อจับภาพหน้าจอ", "description": "clickCameraButton"},
+  "selectAll": {"message": "เลือกทั้งหมด", "description": "selectAll"},
+  "deselectAll": {"message": "ยกเลิกการเลือกทั้งหมด", "description": "deselectAll"},
+  "copySelected": {"message": "คัดลอกที่เลือก", "description": "copySelected"},
+  "downloadSelected": {"message": "ดาวน์โหลดที่เลือก", "description": "downloadSelected"},
+  "exportPDF": {"message": "ส่งออก PDF", "description": "exportPDF"},
+  "exportPDFOptions": {"message": "ตัวเลือก PDF", "description": "exportPDFOptions"},
+  "allAsOnePDF": {"message": "ทั้งหมดเป็นหนึ่งไฟล์ PDF", "description": "allAsOnePDF"},
+  "allAsOnePDFDesc": {"message": "รวมภาพหน้าจอทั้งหมดเป็นไฟล์ PDF เดียว", "description": "allAsOnePDFDesc"},
+  "allAsSeparatePDFs": {"message": "ทั้งหมดเป็นไฟล์ PDF แยกต่างหาก", "description": "allAsSeparatePDFs"},
+  "allAsSeparatePDFsDesc": {"message": "ดาวน์โหลดแต่ละภาพหน้าจอเป็นไฟล์ PDF แยกต่างหาก", "description": "allAsSeparatePDFsDesc"},
+  "selectedAsOnePDF": {"message": "ที่เลือกเป็นหนึ่งไฟล์ PDF", "description": "selectedAsOnePDF"},
+  "selectedAsOnePDFDesc": {"message": "รวมที่เลือกเป็นไฟล์ PDF เดียว", "description": "selectedAsOnePDFDesc"},
+  "selectedAsSeparatePDFs": {"message": "ที่เลือกเป็นไฟล์ PDF แยกต่างหาก", "description": "selectedAsSeparatePDFs"},
+  "selectedAsSeparatePDFsDesc": {"message": "ดาวน์โหลดแต่ละที่เลือกเป็นไฟล์ PDF แยกต่างหาก", "description": "selectedAsSeparatePDFsDesc"},
+  "clearAll": {"message": "ล้างทั้งหมด", "description": "clearAll"},
+  "cancel": {"message": "ยกเลิก", "description": "cancel"},
+  "trialEnded": {"message": "ทดลองสิ้นสุดแล้ว", "description": "trialEnded"},
+  "upgradeNow": {"message": "อัปเกรดเดี๋ยวนี้ - $9.90/ปี", "description": "upgradeNow"},
+  "daysRemaining": {"message": "เหลือ $DAYS$ วัน", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
 }

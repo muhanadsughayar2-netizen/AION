@@ -1,127 +1,27 @@
 {
-  "extensionName": {
-    "message": "SnapToAI - צילום מסך ל-AI",
-    "description": "extensionName"
-  },
-  "extensionDescription": {
-    "message": "צילום צפוי באמצעות פתקים ובהעלאה במצבה פעולה של AI",
-    "description": "extensionDescription"
-  },
-  "flowReady": {
-    "message": "SnapToAI: מוכן",
-    "description": "flowReady"
-  },
-  "oneClickOneFlow": {
-    "message": "לחיצה אחת. תמונה אחת.",
-    "description": "oneClickOneFlow"
-  },
-  "pagesReadyForAI": {
-    "message": "הדפים שלך מוכנים ל-AI",
-    "description": "pagesReadyForAI"
-  },
-  "clickCameraButton": {
-    "message": "לחץ על המצלמה כדי ללכוד צילום מסך",
-    "description": "clickCameraButton"
-  },
-  "selectAll": {
-    "message": "בחר הכל",
-    "description": "selectAll"
-  },
-  "deselectAll": {
-    "message": "בטל בחירת הכל",
-    "description": "deselectAll"
-  },
-  "copySelected": {
-    "message": "העתק בחור",
-    "description": "copySelected"
-  },
-  "downloadSelected": {
-    "message": "הורד בחור",
-    "description": "downloadSelected"
-  },
-  "exportPDF": {
-    "message": "ייצוא PDF",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "אפשרויות PDF",
-    "description": "exportPDFOptions"
-  },
-  "allAsOnePDF": {
-    "message": "הכל כ-PDF אחד",
-    "description": "allAsOnePDF"
-  },
-  "allAsOnePDFDesc": {
-    "message": "שלב את כל צילומי המסך ל-PDF אחד",
-    "description": "allAsOnePDFDesc"
-  },
-  "allAsSeparatePDFs": {
-    "message": "הכל כ-PDF נפרדים",
-    "description": "allAsSeparatePDFs"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "הורד כל צילום מסך כ-PDF נפרד",
-    "description": "allAsSeparatePDFsDesc"
-  },
-  "selectedAsOnePDF": {
-    "message": "בחור כ-PDF אחד",
-    "description": "selectedAsOnePDF"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "שלב בחור ל-PDF אחד",
-    "description": "selectedAsOnePDFDesc"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "בחור כ-PDF נפרדים",
-    "description": "selectedAsSeparatePDFs"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "הורד כל בחור כ-PDF נפרד",
-    "description": "selectedAsSeparatePDFsDesc"
-  },
-  "clearAll": {
-    "message": "נקה הכל",
-    "description": "clearAll"
-  },
-  "cancel": {
-    "message": "ביטול",
-    "description": "cancel"
-  },
-  "trialEnded": {
-    "message": "תקופת הניסיון הסתיימה",
-    "description": "trialEnded"
-  },
-  "upgradeNow": {
-    "message": "שדרג עכשיו - $9.90/שנה",
-    "description": "upgradeNow"
-  },
-  "daysRemaining": {
-    "message": "$DAYS$ ימים נותרו",
-    "description": "daysRemaining",
-    "placeholders": {
-      "days": {
-        "content": "$1"
-      }
-    }
-  },
-  "snapSnipStackWin": {
-    "message": "צלם. חתוך. ערום. ניצח. 🔥",
-    "description": "snapSnipStackWin"
-  },
-  "upTo9Shots": {
-    "message": "עד 9 צילומים",
-    "description": "upTo9Shots"
-  },
-  "selectAllCopy": {
-    "message": "בחר הכל → העתק",
-    "description": "selectAllCopy"
-  },
-  "onePasteMagic": {
-    "message": "הדבק אחד → קסם טהור ✨",
-    "description": "onePasteMagic"
-  },
-  "freeForever": {
-    "message": "חינם לחמי 🏆",
-    "description": "freeForever"
-  }
+  "extensionName": {"message": "SnapToAI - צילום מסך ל-AI", "description": "extensionName"},
+  "extensionDescription": {"message": "צילום צפוי באמצעות פתקים ובהעלאה במצבה פעולה של AI", "description": "extensionDescription"},
+  "flowReady": {"message": "SnapToAI: מוכן", "description": "flowReady"},
+  "oneClickOneFlow": {"message": "לחיצה אחת. תמונה אחת.", "description": "oneClickOneFlow"},
+  "pagesReadyForAI": {"message": "הדפים שלך מוכנים ל-AI", "description": "pagesReadyForAI"},
+  "clickCameraButton": {"message": "לחץ על המצלמה כדי ללכוד צילום מסך", "description": "clickCameraButton"},
+  "selectAll": {"message": "בחר הכל", "description": "selectAll"},
+  "deselectAll": {"message": "בטל בחירת הכל", "description": "deselectAll"},
+  "copySelected": {"message": "העתק בחור", "description": "copySelected"},
+  "downloadSelected": {"message": "הורד בחור", "description": "downloadSelected"},
+  "exportPDF": {"message": "ייצוא PDF", "description": "exportPDF"},
+  "exportPDFOptions": {"message": "אפשרויות PDF", "description": "exportPDFOptions"},
+  "allAsOnePDF": {"message": "הכל כ-PDF אחד", "description": "allAsOnePDF"},
+  "allAsOnePDFDesc": {"message": "שלב את כל צילומי המסך ל-PDF אחד", "description": "allAsOnePDFDesc"},
+  "allAsSeparatePDFs": {"message": "הכל כ-PDF נפרדים", "description": "allAsSeparatePDFs"},
+  "allAsSeparatePDFsDesc": {"message": "הורד כל צילום מסך כ-PDF נפרד", "description": "allAsSeparatePDFsDesc"},
+  "selectedAsOnePDF": {"message": "בחור כ-PDF אחד", "description": "selectedAsOnePDF"},
+  "selectedAsOnePDFDesc": {"message": "שלב בחור ל-PDF אחד", "description": "selectedAsOnePDFDesc"},
+  "selectedAsSeparatePDFs": {"message": "בחור כ-PDF נפרדים", "description": "selectedAsSeparatePDFs"},
+  "selectedAsSeparatePDFsDesc": {"message": "הורד כל בחור כ-PDF נפרד", "description": "selectedAsSeparatePDFsDesc"},
+  "clearAll": {"message": "נקה הכל", "description": "clearAll"},
+  "cancel": {"message": "ביטול", "description": "cancel"},
+  "trialEnded": {"message": "תקופת הניסיון הסתיימה", "description": "trialEnded"},
+  "upgradeNow": {"message": "שדרג עכשיו - $9.90/שנה", "description": "upgradeNow"},
+  "daysRemaining": {"message": "$DAYS$ ימים נותרו", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
 }

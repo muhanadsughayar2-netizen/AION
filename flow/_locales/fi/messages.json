@@ -1,127 +1,27 @@
 {
-  "extensionName": {
-    "message": "SnapToAI - Kuvakaappaus tekoälylle",
-    "description": "extensionName"
-  },
-  "extensionDescription": {
-    "message": "Tee kuvakaappauksia ja lataa ne joukkoina tekoälyalustoille",
-    "description": "extensionDescription"
-  },
-  "flowReady": {
-    "message": "SnapToAI: Valmis",
-    "description": "flowReady"
-  },
-  "oneClickOneFlow": {
-    "message": "Yksi napsautus. Yksi kuva.",
-    "description": "oneClickOneFlow"
-  },
-  "pagesReadyForAI": {
-    "message": "Sivusi ovat valmiita tekoälylle",
-    "description": "pagesReadyForAI"
-  },
-  "clickCameraButton": {
-    "message": "Napsauta kameraa kuvakaappauksen ottamiseksi",
-    "description": "clickCameraButton"
-  },
-  "selectAll": {
-    "message": "Valitse kaikki",
-    "description": "selectAll"
-  },
-  "deselectAll": {
-    "message": "Poista kaikki valinnat",
-    "description": "deselectAll"
-  },
-  "copySelected": {
-    "message": "Kopioi valitut",
-    "description": "copySelected"
-  },
-  "downloadSelected": {
-    "message": "Lataa valitut",
-    "description": "downloadSelected"
-  },
-  "exportPDF": {
-    "message": "Vie PDF",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "PDF-asetukset",
-    "description": "exportPDFOptions"
-  },
-  "allAsOnePDF": {
-    "message": "Kaikki yhdeksi PDF:ksi",
-    "description": "allAsOnePDF"
-  },
-  "allAsOnePDFDesc": {
-    "message": "Yhdistä kaikki kuvakaappaukset yhdeksi PDF:ksi",
-    "description": "allAsOnePDFDesc"
-  },
-  "allAsSeparatePDFs": {
-    "message": "Kaikki erillisinä PDF-tiedostoina",
-    "description": "allAsSeparatePDFs"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "Lataa jokainen kuvakaappaus erillisenä PDF-tiedostona",
-    "description": "allAsSeparatePDFsDesc"
-  },
-  "selectedAsOnePDF": {
-    "message": "Valitut yhdeksi PDF:ksi",
-    "description": "selectedAsOnePDF"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "Yhdistä valitut yhdeksi PDF:ksi",
-    "description": "selectedAsOnePDFDesc"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "Valitut erillisinä PDF-tiedostoina",
-    "description": "selectedAsSeparatePDFs"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "Lataa jokainen valittu erillisenä PDF-tiedostona",
-    "description": "selectedAsSeparatePDFsDesc"
-  },
-  "clearAll": {
-    "message": "Tyhjennä kaikki",
-    "description": "clearAll"
-  },
-  "cancel": {
-    "message": "Peruuta",
-    "description": "cancel"
-  },
-  "trialEnded": {
-    "message": "Kokeiluversio päättyi",
-    "description": "trialEnded"
-  },
-  "upgradeNow": {
-    "message": "Päivitä nyt - $9.90/vuosi",
-    "description": "upgradeNow"
-  },
-  "daysRemaining": {
-    "message": "$DAYS$ päivää jäljellä",
-    "description": "daysRemaining",
-    "placeholders": {
-      "days": {
-        "content": "$1"
-      }
-    }
-  },
-  "snapSnipStackWin": {
-    "message": "Nappaa. Leikkaa. Pino. Voita. 🔥",
-    "description": "snapSnipStackWin"
-  },
-  "upTo9Shots": {
-    "message": "Jopa 9 kuvaa",
-    "description": "upTo9Shots"
-  },
-  "selectAllCopy": {
-    "message": "Valitse kaikki → Kopioi",
-    "description": "selectAllCopy"
-  },
-  "onePasteMagic": {
-    "message": "Yksi liitos → puhdas taikuri ✨",
-    "description": "onePasteMagic"
-  },
-  "freeForever": {
-    "message": "Ilmainen ikuisesti 🏆",
-    "description": "freeForever"
-  }
+  "extensionName": {"message": "SnapToAI - Kuvakaappaus tekoälylle", "description": "extensionName"},
+  "extensionDescription": {"message": "Tee kuvakaappauksia ja lataa ne joukkoina tekoälyalustoille", "description": "extensionDescription"},
+  "flowReady": {"message": "SnapToAI: Valmis", "description": "flowReady"},
+  "oneClickOneFlow": {"message": "Yksi napsautus. Yksi kuva.", "description": "oneClickOneFlow"},
+  "pagesReadyForAI": {"message": "Sivusi ovat valmiita tekoälylle", "description": "pagesReadyForAI"},
+  "clickCameraButton": {"message": "Napsauta kameraa kuvakaappauksen ottamiseksi", "description": "clickCameraButton"},
+  "selectAll": {"message": "Valitse kaikki", "description": "selectAll"},
+  "deselectAll": {"message": "Poista kaikki valinnat", "description": "deselectAll"},
+  "copySelected": {"message": "Kopioi valitut", "description": "copySelected"},
+  "downloadSelected": {"message": "Lataa valitut", "description": "downloadSelected"},
+  "exportPDF": {"message": "Vie PDF", "description": "exportPDF"},
+  "exportPDFOptions": {"message": "PDF-asetukset", "description": "exportPDFOptions"},
+  "allAsOnePDF": {"message": "Kaikki yhdeksi PDF:ksi", "description": "allAsOnePDF"},
+  "allAsOnePDFDesc": {"message": "Yhdistä kaikki kuvakaappaukset yhdeksi PDF:ksi", "description": "allAsOnePDFDesc"},
+  "allAsSeparatePDFs": {"message": "Kaikki erillisinä PDF-tiedostoina", "description": "allAsSeparatePDFs"},
+  "allAsSeparatePDFsDesc": {"message": "Lataa jokainen kuvakaappaus erillisenä PDF-tiedostona", "description": "allAsSeparatePDFsDesc"},
+  "selectedAsOnePDF": {"message": "Valitut yhdeksi PDF:ksi", "description": "selectedAsOnePDF"},
+  "selectedAsOnePDFDesc": {"message": "Yhdistä valitut yhdeksi PDF:ksi", "description": "selectedAsOnePDFDesc"},
+  "selectedAsSeparatePDFs": {"message": "Valitut erillisinä PDF-tiedostoina", "description": "selectedAsSeparatePDFs"},
+  "selectedAsSeparatePDFsDesc": {"message": "Lataa jokainen valittu erillisenä PDF-tiedostona", "description": "selectedAsSeparatePDFsDesc"},
+  "clearAll": {"message": "Tyhjennä kaikki", "description": "clearAll"},
+  "cancel": {"message": "Peruuta", "description": "cancel"},
+  "trialEnded": {"message": "Kokeiluversio päättyi", "description": "trialEnded"},
+  "upgradeNow": {"message": "Päivitä nyt - $9.90/vuosi", "description": "upgradeNow"},
+  "daysRemaining": {"message": "$DAYS$ päivää jäljellä", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
 }
