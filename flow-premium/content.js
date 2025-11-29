@@ -1,14 +1,33 @@
 // Flow Content Script
 // Handles floating toasts, clipboard writes, and AI platform uploads
 
-// Track last mouse position for toast placement
-let lastMouseX = window.innerWidth - 20;
-let lastMouseY = 20;
+// Guard against multiple injections (for iframe-heavy sites like Grok)
+if (window.__snaptoai_loaded) {
+  // Already loaded, just ensure listener is ready
+} else {
+  window.__snaptoai_loaded = true;
+  
+  // Track last mouse position for toast placement
+  window.__snaptoai_mouseX = window.innerWidth - 20;
+  window.__snaptoai_mouseY = 20;
+  
+  document.addEventListener('mousemove', (e) => {
+    window.__snaptoai_mouseX = e.clientX;
+    window.__snaptoai_mouseY = e.clientY;
+  }, { passive: true });
+}
 
-document.addEventListener('mousemove', (e) => {
-  lastMouseX = e.clientX;
-  lastMouseY = e.clientY;
-}, { passive: true });
+// Use window-scoped variables for mouse position (survives re-injection)
+let lastMouseX = window.__snaptoai_mouseX || window.innerWidth - 20;
+let lastMouseY = window.__snaptoai_mouseY || 20;
+
+// Update local vars from window on each use
+function getMousePos() {
+  return {
+    x: window.__snaptoai_mouseX || window.innerWidth - 20,
+    y: window.__snaptoai_mouseY || 20
+  };
+}
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -39,21 +58,24 @@ function showToast(message, type = 'success') {
   toast.id = 'flow-toast';
   toast.textContent = message;
   
+  // Get current mouse position (use window-scoped vars for iframe compatibility)
+  const mousePos = getMousePos();
+  
   // Calculate position near cursor (offset to avoid covering cursor)
   const offsetX = 20;
   const offsetY = -40;
-  let posX = lastMouseX + offsetX;
-  let posY = lastMouseY + offsetY;
+  let posX = mousePos.x + offsetX;
+  let posY = mousePos.y + offsetY;
   
   // For keyboard captures (no recent mouse movement), use top-center
-  if (lastMouseX === window.innerWidth - 20 && lastMouseY === 20) {
+  if (mousePos.x === window.innerWidth - 20 && mousePos.y === 20) {
     posX = (window.innerWidth / 2) - 100;
     posY = 20;
   }
   
   // Keep toast on screen
   if (posX + 200 > window.innerWidth) {
-    posX = lastMouseX - 220;
+    posX = mousePos.x - 220;
   }
   if (posY < 10) {
     posY = 10;

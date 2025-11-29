@@ -2,7 +2,7 @@
 // Handles screenshot capture, storage management, and messaging
 
 const MAX_SNAPS = 9;
-const AI_SITES = ['grok.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai'];
+const AI_SITES = ['grok.com', 'grok.x.ai', 'chat.openai.com', 'chatgpt.com', 'claude.ai'];
 const CAPTURE_COOLDOWN = 500; // Minimum 500ms between captures to avoid Chrome rate limit
 
 // Track last capture time to prevent rate limiting
@@ -65,6 +65,21 @@ async function captureScreenshot() {
     
     // Update last capture time
     lastCaptureTime = now;
+    
+    // Re-inject content script to handle iframe-heavy sites like Grok
+    // This ensures the content script is fresh and ready for toast display
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id, allFrames: true },
+        files: ['content.js']
+      });
+    } catch (injectError) {
+      // Ignore injection errors (e.g., chrome:// pages)
+      console.log('Content script injection skipped:', injectError.message);
+    }
+    
+    // Small delay to let DOM be ready after injection
+    await new Promise(resolve => setTimeout(resolve, 50));
     
     // Capture visible tab as PNG
     const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
