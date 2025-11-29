@@ -20,8 +20,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     showToast(request.message, 'success');
     sendResponse({ success: true });
   } else if (request.action === 'beginUpload') {
-    // Pull snaps from storage and upload
-    uploadToAI(request.platform).then(sendResponse);
+    // Pull snaps from storage and upload (selected or all)
+    uploadToAI(request.platform, request.useSelectedOnly).then(sendResponse);
     return true;
   }
 });
@@ -141,11 +141,25 @@ async function writeToClipboard(dataUrl) {
 }
 
 // Upload snaps to AI platform (pulls from storage)
-async function uploadToAI(platform) {
+async function uploadToAI(platform, useSelectedOnly = false) {
   try {
-    // Pull snaps from chrome.storage.session
-    const result = await chrome.storage.session.get('snaps');
-    const snaps = result.snaps || [];
+    console.log(`[SnapToAI] Starting upload to platform: ${platform}`);
+    
+    // Check if we should use selected snaps or all snaps
+    let snaps;
+    if (useSelectedOnly) {
+      // Get selected snaps that were stored by background
+      const selectedResult = await chrome.storage.session.get('selectedSnapsForUpload');
+      snaps = selectedResult.selectedSnapsForUpload || [];
+      // Clean up after retrieving
+      await chrome.storage.session.remove('selectedSnapsForUpload');
+    } else {
+      // Get all snaps from storage
+      const result = await chrome.storage.session.get('snaps');
+      snaps = result.snaps || [];
+    }
+    
+    console.log(`[SnapToAI] Found ${snaps.length} snaps to upload`);
     
     if (snaps.length === 0) {
       showToast('No snaps to upload', 'error');
@@ -156,33 +170,50 @@ async function uploadToAI(platform) {
     const fileInput = await findFileInput(platform);
     
     if (!fileInput) {
-      showToast('Could not find file input', 'error');
-      return { success: false, error: 'File input not found' };
+      console.error('[SnapToAI] Could not find file input on this page');
+      showToast('Upload button not found. Try clicking the paperclip/attach icon first.', 'error');
+      return { success: false, error: 'File input not found. Make sure the chat input area is visible.' };
     }
     
+    console.log(`[SnapToAI] File input found, uploading ${snaps.length} snaps...`);
+    
     // Upload each snap with delay
+    let uploadedCount = 0;
     for (let i = 0; i < snaps.length; i++) {
-      const dataUrl = snaps[i];
-      
-      // Convert dataURL to File
-      const file = await dataUrlToFile(dataUrl, `snap_${i + 1}.png`);
-      
-      // Create DataTransfer and assign to input
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(file);
-      fileInput.files = dataTransfer.files;
-      
-      // Dispatch change event
-      fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-      
-      // Wait before next upload
-      if (i < snaps.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1400));
+      try {
+        const dataUrl = snaps[i];
+        
+        // Convert dataURL to File
+        const file = await dataUrlToFile(dataUrl, `snap_${i + 1}.png`);
+        
+        // Create DataTransfer and assign to input
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInput.files = dataTransfer.files;
+        
+        // Dispatch multiple events for better compatibility
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+        fileInput.dispatchEvent(new Event('input', { bubbles: true }));
+        
+        uploadedCount++;
+        console.log(`[SnapToAI] Uploaded snap ${i + 1}/${snaps.length}`);
+        
+        // Wait before next upload (AI platforms need time to process)
+        if (i < snaps.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1400));
+        }
+      } catch (snapError) {
+        console.error(`[SnapToAI] Failed to upload snap ${i + 1}:`, snapError);
       }
     }
     
+    if (uploadedCount === 0) {
+      showToast('Upload failed - no images processed', 'error');
+      return { success: false, error: 'Failed to process images' };
+    }
+    
     // Show success toast
-    showToast('All snaps uploaded ✓', 'success');
+    showToast(`${uploadedCount} snap${uploadedCount > 1 ? 's' : ''} uploaded ✓`, 'success');
     
     // Clear snaps from storage after successful upload
     await chrome.storage.session.remove('snaps');
@@ -190,41 +221,72 @@ async function uploadToAI(platform) {
     // Notify background to update badge
     chrome.runtime.sendMessage({ action: 'uploadComplete' });
     
-    return { success: true };
+    return { success: true, count: uploadedCount };
   } catch (error) {
-    console.error('Upload failed:', error);
-    showToast('Upload failed', 'error');
+    console.error('[SnapToAI] Upload failed:', error);
+    showToast('Upload failed: ' + (error.message || 'Unknown error'), 'error');
     return { success: false, error: error.message };
   }
 }
 
 // Find file input for AI platform
 async function findFileInput(platform) {
-  let selector = null;
+  // Platform-specific selectors in order of preference
+  let selectors = [];
   
   if (platform.includes('chatgpt.com') || platform.includes('chat.openai.com')) {
-    // ChatGPT file input selectors
-    selector = 'input[type="file"][accept*="image"]';
+    // ChatGPT file input selectors (2024/2025)
+    selectors = [
+      'input[type="file"][accept*="image"]',
+      'input[type="file"][multiple]',
+      'input[type="file"][data-testid]',
+      'input[type="file"]'
+    ];
   } else if (platform.includes('claude.ai')) {
     // Claude file input selectors
-    selector = 'input[type="file"]';
+    selectors = [
+      'input[type="file"][accept*="image"]',
+      'input[type="file"][multiple]',
+      'input[type="file"]'
+    ];
   } else if (platform.includes('grok.com')) {
-    // Grok file input selectors
-    selector = 'input[type="file"]';
+    // Grok file input selectors  
+    selectors = [
+      'input[type="file"][accept*="image"]',
+      'input[type="file"]'
+    ];
+  } else {
+    // Fallback for any AI site
+    selectors = ['input[type="file"]'];
   }
   
-  if (!selector) return null;
+  // Try each selector with retries
+  const maxRetries = 3;
+  const retryDelay = 500;
   
-  // Try to find the input
-  let input = document.querySelector(selector);
-  
-  // If not found, wait a bit and try again
-  if (!input) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    input = document.querySelector(selector);
+  for (let retry = 0; retry < maxRetries; retry++) {
+    for (const selector of selectors) {
+      // Get all matching inputs (including hidden ones)
+      const inputs = document.querySelectorAll(selector);
+      
+      for (const input of inputs) {
+        // Verify it's actually usable (even if hidden)
+        if (input && !input.disabled) {
+          console.log(`[SnapToAI] Found file input with selector: ${selector}`);
+          return input;
+        }
+      }
+    }
+    
+    // Wait before retry
+    if (retry < maxRetries - 1) {
+      console.log(`[SnapToAI] File input not found, retry ${retry + 1}/${maxRetries}...`);
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
   }
   
-  return input;
+  console.error('[SnapToAI] No file input found after all retries');
+  return null;
 }
 
 // Convert dataURL to File object

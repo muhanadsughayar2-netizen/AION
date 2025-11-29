@@ -1,0 +1,414 @@
+ce
+background.js:163 (anonymous function)
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+// Flow Background Service Worker
+// Handles screenshot capture, storage management, and messaging
+
+const MAX_SNAPS = 9;
+const AI_SITES = ['grok.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai'];
+const CAPTURE_COOLDOWN = 500; // Minimum 500ms between captures to avoid Chrome rate limit
+
+// Track last capture time to prevent rate limiting
+let lastCaptureTime = 0;
+
+// Listen for keyboard command (Ctrl+Shift+S)
+chrome.commands.onCommand.addListener((command) => {
+  if (command === 'capture') {
+    captureScreenshot();
+  }
+});
+
+// Listen for messages from popup and content scripts
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'capture') {
+    captureScreenshot().then(sendResponse);
+    return true;
+  } else if (request.action === 'upload') {
+    handleUpload(request.preferredPlatform, request.selectedSnaps).then(sendResponse);
+    return true;
+  } else if (request.action === 'getSnaps') {
+    getSnaps().then(sendResponse);
+    return true;
+  } else if (request.action === 'clearSnaps') {
+    clearSnaps().then(sendResponse);
+    return true;
+  } else if (request.action === 'setSnaps') {
+    setSnaps(request.snaps).then(sendResponse);
+    return true;
+  } else if (request.action === 'getSnapCount') {
+    getSnapCount().then(sendResponse);
+    return true;
+  } else if (request.action === 'uploadComplete') {
+    clearSnaps().then(sendResponse);
+    return true;
+  } else if (request.action === 'snipComplete') {
+    // Handle snip (cropped image) - add as new snap
+    addSnip(request.dataUrl).then(sendResponse);
+    return true;
+  }
+});
+
+// Capture screenshot of active tab
+async function captureScreenshot() {
+  try {
+    // Check cooldown to prevent Chrome rate limit
+    const now = Date.now();
+    const timeSinceLastCapture = now - lastCaptureTime;
+    
+    if (timeSinceLastCapture < CAPTURE_COOLDOWN) {
+      const remainingTime = Math.ceil((CAPTURE_COOLDOWN - timeSinceLastCapture) / 1000);
+      console.log(`Capture on cooldown. Wait ${remainingTime}s`);
+      return { 
+        success: false, 
+        error: `Please wait ${remainingTime} second${remainingTime > 1 ? 's' : ''} before capturing again` 
+      };
+    }
+    
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    // Update last capture time
+    lastCaptureTime = now;
+    
+    // Capture visible tab as PNG
+    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    
+    // Get current snaps
+    const snaps = await getSnaps();
+    const snapCount = snaps.length;
+    
+    // Block capture if queue is full - user must delete to make room
+    if (snapCount >= MAX_SNAPS) {
+      return { 
+        success: false, 
+        error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.`,
+        queueFull: true
+      };
+    }
+    
+    // Add new snap
+    snaps.push(dataUrl);
+    
+    // Save to session storage
+    await chrome.storage.session.set({ snaps });
+    
+    // Update badge
+    await updateBadge(snaps.length);
+    
+    // Show toast on the page and provide dataUrl for clipboard
+    const newSnapNumber = snaps.length;
+    chrome.tabs.sendMessage(tab.id, {
+      action: 'captureComplete',
+      message: `Snap ${newSnapNumber} ✓`,
+      snapNumber: newSnapNumber
+    }).catch(() => {
+      // Content script might not be ready, ignore
+    });
+    
+    return { success: true, count: snaps.length, dataUrl };
+  } catch (error) {
+    console.error('Capture failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Handle upload to AI platform
+async function handleUpload(preferredPlatform = 'auto', selectedSnaps = null) {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const url = new URL(tab.url);
+    const hostname = url.hostname;
+    
+    // Check if current tab is an AI site
+    const isAISite = AI_SITES.some(site => hostname.includes(site));
+    
+    if (!isAISite) {
+      return { success: false, error: 'Not on an AI platform' };
+    }
+    
+    // If selectedSnaps provided, use those; otherwise get all snaps
+    let snapsToUpload;
+    if (selectedSnaps && selectedSnaps.length > 0) {
+      // Use provided selected snaps
+      snapsToUpload = selectedSnaps;
+      // Temporarily store selected snaps for content script
+      await chrome.storage.session.set({ selectedSnapsForUpload: snapsToUpload });
+    } else {
+      // Get all snaps from storage
+      const allSnaps = await getSnaps();
+      if (allSnaps.length === 0) {
+        return { success: false, error: 'No snaps to upload' };
+      }
+      snapsToUpload = allSnaps;
+    }
+    
+    // Determine target platform: use preferred if set, otherwise current hostname
+    let targetPlatform = hostname;
+    if (preferredPlatform && preferredPlatform !== 'auto') {
+      // Map selection to hostname for content script selectors
+      if (preferredPlatform === 'chatgpt.com') {
+        targetPlatform = 'chatgpt.com';
+      } else if (preferredPlatform === 'claude.ai') {
+        targetPlatform = 'claude.ai';
+      } else if (preferredPlatform === 'grok.com') {
+        targetPlatform = 'grok.com';
+      }
+    }
+    
+    // Send upload command to content script with snap count
+    await chrome.tabs.sendMessage(tab.id, {
+      action: 'beginUpload',
+      platform: targetPlatform,
+      useSelectedOnly: selectedSnaps !== null
+    });
+    
+    return { success: true, count: snapsToUpload.length };
+  } catch (error) {
+    console.error('Upload failed:', error);
