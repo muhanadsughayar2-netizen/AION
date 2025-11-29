@@ -1,27 +1,127 @@
 {
-  "extensionName": {"message": "SnapToAI - Ekran Görüntüsünden AI", "description": "extensionName"},
-  "extensionDescription": {"message": "Ekran görüntüleri alın ve AI platformlarına toplu yükleyin", "description": "extensionDescription"},
-  "flowReady": {"message": "SnapToAI: Hazır", "description": "flowReady"},
-  "oneClickOneFlow": {"message": "Bir tık. Bir anlık.", "description": "oneClickOneFlow"},
-  "pagesReadyForAI": {"message": "Sayfalarınız AI için hazır", "description": "pagesReadyForAI"},
-  "clickCameraButton": {"message": "Ekran görüntüsü almak için kameraya tıklayın", "description": "clickCameraButton"},
-  "selectAll": {"message": "Tümünü seç", "description": "selectAll"},
-  "deselectAll": {"message": "Seçimi kaldır", "description": "deselectAll"},
-  "copySelected": {"message": "Seçilenleri kopyala", "description": "copySelected"},
-  "downloadSelected": {"message": "Seçilenleri indir", "description": "downloadSelected"},
-  "exportPDF": {"message": "PDF'ye aktar", "description": "exportPDF"},
-  "exportPDFOptions": {"message": "PDF seçenekleri", "description": "exportPDFOptions"},
-  "allAsOnePDF": {"message": "Tümü tek PDF olarak", "description": "allAsOnePDF"},
-  "allAsOnePDFDesc": {"message": "Tüm ekran görüntülerini tek bir PDF'ye birleştir", "description": "allAsOnePDFDesc"},
-  "allAsSeparatePDFs": {"message": "Tümü ayrı PDF'ler olarak", "description": "allAsSeparatePDFs"},
-  "allAsSeparatePDFsDesc": {"message": "Her ekran görüntüsünü ayrı PDF olarak indir", "description": "allAsSeparatePDFsDesc"},
-  "selectedAsOnePDF": {"message": "Seçilenleri tek PDF olarak", "description": "selectedAsOnePDF"},
-  "selectedAsOnePDFDesc": {"message": "Seçilenleri tek bir PDF'ye birleştir", "description": "selectedAsOnePDFDesc"},
-  "selectedAsSeparatePDFs": {"message": "Seçilenleri ayrı PDF'ler olarak", "description": "selectedAsSeparatePDFs"},
-  "selectedAsSeparatePDFsDesc": {"message": "Her seçileni ayrı PDF olarak indir", "description": "selectedAsSeparatePDFsDesc"},
-  "clearAll": {"message": "Tümünü temizle", "description": "clearAll"},
-  "cancel": {"message": "İptal", "description": "cancel"},
-  "trialEnded": {"message": "Deneme süresi bitti", "description": "trialEnded"},
-  "upgradeNow": {"message": "Şimdi yükselt - $9.90/yıl", "description": "upgradeNow"},
-  "daysRemaining": {"message": "$DAYS$ gün kaldı", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
+  "extensionName": {
+    "message": "SnapToAI - Ekran Görüntüsünden AI",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Ekran görüntüleri alın ve AI platformlarına toplu yükleyin",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Hazır",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "Bir tık. Bir anlık.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Sayfalarınız AI için hazır",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Ekran görüntüsü almak için kameraya tıklayın",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "Tümünü seç",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "Seçimi kaldır",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "Seçilenleri kopyala",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "Seçilenleri indir",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "PDF'ye aktar",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF seçenekleri",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "Tümü tek PDF olarak",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Tüm ekran görüntülerini tek bir PDF'ye birleştir",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "Tümü ayrı PDF'ler olarak",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Her ekran görüntüsünü ayrı PDF olarak indir",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Seçilenleri tek PDF olarak",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Seçilenleri tek bir PDF'ye birleştir",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Seçilenleri ayrı PDF'ler olarak",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Her seçileni ayrı PDF olarak indir",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "Tümünü temizle",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "İptal",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Deneme süresi bitti",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Şimdi yükselt - $9.90/yıl",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ gün kaldı",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "snapSnipStackWin": {
+    "message": "Çeken. Kes. Yığın. Kazan. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "9 kadar ekran görüntüsü",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "Tümünü Seç → Kopyala",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "Bir yapıştırma → saf büyü ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "Sonsuza kadar ücretsiz 🏆",
+    "description": "freeForever"
+  }
 }

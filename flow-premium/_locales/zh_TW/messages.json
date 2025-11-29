@@ -1,27 +1,127 @@
 {
-  "extensionName": {"message": "SnapToAI - 螢幕截圖到AI", "description": "extensionName"},
-  "extensionDescription": {"message": "捕獲螢幕截圖並批量上傳到AI平台", "description": "extensionDescription"},
-  "flowReady": {"message": "SnapToAI: 就緒", "description": "flowReady"},
-  "oneClickOneFlow": {"message": "一鍵。一張快照。", "description": "oneClickOneFlow"},
-  "pagesReadyForAI": {"message": "您的頁面已準備好用於AI", "description": "pagesReadyForAI"},
-  "clickCameraButton": {"message": "點擊攝像頭以捕獲螢幕截圖", "description": "clickCameraButton"},
-  "selectAll": {"message": "全選", "description": "selectAll"},
-  "deselectAll": {"message": "全不選", "description": "deselectAll"},
-  "copySelected": {"message": "複製已選擇", "description": "copySelected"},
-  "downloadSelected": {"message": "下載已選擇", "description": "downloadSelected"},
-  "exportPDF": {"message": "匯出PDF", "description": "exportPDF"},
-  "exportPDFOptions": {"message": "PDF選項", "description": "exportPDFOptions"},
-  "allAsOnePDF": {"message": "全部為一個PDF", "description": "allAsOnePDF"},
-  "allAsOnePDFDesc": {"message": "將所有截圖合併為一個PDF", "description": "allAsOnePDFDesc"},
-  "allAsSeparatePDFs": {"message": "全部為單獨的PDF", "description": "allAsSeparatePDFs"},
-  "allAsSeparatePDFsDesc": {"message": "將每個截圖下載為單獨的PDF", "description": "allAsSeparatePDFsDesc"},
-  "selectedAsOnePDF": {"message": "已選擇為一個PDF", "description": "selectedAsOnePDF"},
-  "selectedAsOnePDFDesc": {"message": "將已選擇的合併為一個PDF", "description": "selectedAsOnePDFDesc"},
-  "selectedAsSeparatePDFs": {"message": "已選擇為單獨的PDF", "description": "selectedAsSeparatePDFs"},
-  "selectedAsSeparatePDFsDesc": {"message": "將每個已選擇的下載為單獨的PDF", "description": "selectedAsSeparatePDFsDesc"},
-  "clearAll": {"message": "全部清除", "description": "clearAll"},
-  "cancel": {"message": "取消", "description": "cancel"},
-  "trialEnded": {"message": "試用期已結束", "description": "trialEnded"},
-  "upgradeNow": {"message": "立即升級 - $9.90/年", "description": "upgradeNow"},
-  "daysRemaining": {"message": "剩餘 $DAYS$ 天", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
+  "extensionName": {
+    "message": "SnapToAI - 螢幕截圖到AI",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "捕獲螢幕截圖並批量上傳到AI平台",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: 就緒",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "一鍵。一張快照。",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "您的頁面已準備好用於AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "點擊攝像頭以捕獲螢幕截圖",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "全選",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "全不選",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "複製已選擇",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "下載已選擇",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "匯出PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF選項",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "全部為一個PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "將所有截圖合併為一個PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "全部為單獨的PDF",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "將每個截圖下載為單獨的PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "已選擇為一個PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "將已選擇的合併為一個PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "已選擇為單獨的PDF",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "將每個已選擇的下載為單獨的PDF",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "全部清除",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "取消",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "試用期已結束",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "立即升級 - $9.90/年",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "剩餘 $DAYS$ 天",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "snapSnipStackWin": {
+    "message": "截圖。剪輯。堆棧。贏。🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "最多9張圖片",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "全選 → 複製",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "一次粘貼 → 純粹的魔法 ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "永遠免費 🏆",
+    "description": "freeForever"
+  }
 }

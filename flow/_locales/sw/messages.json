@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "Kamata. Kata. Kutana. Shinda. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "Hadi picha 9",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "Chagua Zote → Nakili",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "Uzamili mmoja → uchawi safi ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "Bure milele 🏆",
+    "description": "freeForever"
   }
 }

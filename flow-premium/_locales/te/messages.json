@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "స్నాప్. స్నిప్. స్టాక్. గెలవండి. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "9 షాట్‌ల వరకు",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "అన్నింటినీ ఎంచుకోండి → కాపీ చేయండి",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "ఒక పేస్ట్ → స్వచ్ఛ మంత్రం ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "ఎల్లప్పుడూ ఉచితం 🏆",
+    "description": "freeForever"
   }
 }

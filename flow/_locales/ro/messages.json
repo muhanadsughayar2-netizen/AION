@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "Captură. Tăiere. Stivă. Câștig. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "Până la 9 capturi",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "Selectați tot → Copiați",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "O lipire → magie pură ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "Gratuit pentru totdeauna 🏆",
+    "description": "freeForever"
   }
 }

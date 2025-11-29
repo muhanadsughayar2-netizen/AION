@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "Posnemi. Izrežem. Zložim. Zmagam. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "Do 9 zaslonskih posnetkov",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "Izberi vse → Kopiraj",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "Ena lepljenja → čista magija ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "Brezplačno za vedno 🏆",
+    "description": "freeForever"
   }
 }

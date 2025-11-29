@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "Prichyť. Strihnúť. Zásobník. Vyhraj. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "Až 9 snímok",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "Vybrať všetko → Kopírovať",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "Jedno vloženie → čistá magia ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "Zadarmo navždy 🏆",
+    "description": "freeForever"
   }
 }

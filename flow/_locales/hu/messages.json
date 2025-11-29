@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "Fotó. Vágás. Verem. Nyerj. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "Akár 9 felvétel",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "Összes kiválasztása → Másolás",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "Egy beillesztés → tiszta varázslat ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "Örökké ingyenes 🏆",
+    "description": "freeForever"
   }
 }

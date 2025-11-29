@@ -1,27 +1,127 @@
 {
-  "extensionName": {"message": "SnapToAI - Snímek obrazovky do AI", "description": "extensionName"},
-  "extensionDescription": {"message": "Pořízejte snímky obrazovky a hromadně je nahrávejte na platformy AI", "description": "extensionDescription"},
-  "flowReady": {"message": "SnapToAI: Připraveno", "description": "flowReady"},
-  "oneClickOneFlow": {"message": "Jeden klik. Jeden snímek.", "description": "oneClickOneFlow"},
-  "pagesReadyForAI": {"message": "Vaše stránky jsou připraveny pro AI", "description": "pagesReadyForAI"},
-  "clickCameraButton": {"message": "Klepnutím na fotoaparát pořídíte snímek", "description": "clickCameraButton"},
-  "selectAll": {"message": "Vybrat vše", "description": "selectAll"},
-  "deselectAll": {"message": "Zrušit výběr", "description": "deselectAll"},
-  "copySelected": {"message": "Kopírovat vybraný", "description": "copySelected"},
-  "downloadSelected": {"message": "Stáhnout vybraný", "description": "downloadSelected"},
-  "exportPDF": {"message": "Exportovat PDF", "description": "exportPDF"},
-  "exportPDFOptions": {"message": "Volby PDF", "description": "exportPDFOptions"},
-  "allAsOnePDF": {"message": "Vše jako jeden PDF", "description": "allAsOnePDF"},
-  "allAsOnePDFDesc": {"message": "Zkombinujte všechny snímky v jeden PDF", "description": "allAsOnePDFDesc"},
-  "allAsSeparatePDFs": {"message": "Vše jako samostatné soubory PDF", "description": "allAsSeparatePDFs"},
-  "allAsSeparatePDFsDesc": {"message": "Stáhněte si každý snímek jako samostatný soubor PDF", "description": "allAsSeparatePDFsDesc"},
-  "selectedAsOnePDF": {"message": "Vybrané jako jeden PDF", "description": "selectedAsOnePDF"},
-  "selectedAsOnePDFDesc": {"message": "Zkombinujte vybraný v jeden PDF", "description": "selectedAsOnePDFDesc"},
-  "selectedAsSeparatePDFs": {"message": "Vybrané jako samostatné soubory PDF", "description": "selectedAsSeparatePDFs"},
-  "selectedAsSeparatePDFsDesc": {"message": "Stáhněte si každý vybraný jako samostatný soubor PDF", "description": "selectedAsSeparatePDFsDesc"},
-  "clearAll": {"message": "Vymazat vše", "description": "clearAll"},
-  "cancel": {"message": "Zrušit", "description": "cancel"},
-  "trialEnded": {"message": "Zkušební verze skončila", "description": "trialEnded"},
-  "upgradeNow": {"message": "Upgradovat nyní - $9.90/rok", "description": "upgradeNow"},
-  "daysRemaining": {"message": "Zbývá $DAYS$ dní", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
+  "extensionName": {
+    "message": "SnapToAI - Snímek obrazovky do AI",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Pořízejte snímky obrazovky a hromadně je nahrávejte na platformy AI",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Připraveno",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "Jeden klik. Jeden snímek.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Vaše stránky jsou připraveny pro AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Klepnutím na fotoaparát pořídíte snímek",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "Vybrat vše",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "Zrušit výběr",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "Kopírovat vybraný",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "Stáhnout vybraný",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Exportovat PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "Volby PDF",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "Vše jako jeden PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Zkombinujte všechny snímky v jeden PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "Vše jako samostatné soubory PDF",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Stáhněte si každý snímek jako samostatný soubor PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Vybrané jako jeden PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Zkombinujte vybraný v jeden PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Vybrané jako samostatné soubory PDF",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Stáhněte si každý vybraný jako samostatný soubor PDF",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "Vymazat vše",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "Zrušit",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Zkušební verze skončila",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Upgradovat nyní - $9.90/rok",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "Zbývá $DAYS$ dní",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "snapSnipStackWin": {
+    "message": "Fotit. Střihat. Skládat. Vyhrát. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "Až 9 snímků",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "Vybrat vše → Kopírovat",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "Jeden vložit → čistá magie ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "Zdarma navždy 🏆",
+    "description": "freeForever"
+  }
 }

@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "Captura. Recorta. Apila. Gana. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "Hasta 9 capturas",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "Seleccionar todo → Copiar",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "Un pegado → pura magia ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "Gratis para siempre 🏆",
+    "description": "freeForever"
   }
 }

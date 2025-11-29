@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "Snap. Klipp. Stabel. Vinn. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "Opptil 9 bilder",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "Velg alt → Kopier",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "En liming → ren magi ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "Gratis for alltid 🏆",
+    "description": "freeForever"
   }
 }

@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "ସ୍ନାପ୍। କାଟିଦେବେ। ଷ୍ଟାକ କରିବେ। ଜିତିବେ। 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "9 ଟି ଶଟ୍ ପର୍ଯ୍ୟନ୍ତ",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "ସବୁ ଚୟନ କରନ୍ତୁ → ନକଲ କରନ୍ତୁ",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "ଏକ ଲେପନ → ବିଶୁଦ୍ଧ ଯାଦୁ ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "ଚିରନ୍ତନ ମୁକ୍ତ 🏆",
+    "description": "freeForever"
   }
 }

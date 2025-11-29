@@ -375,10 +375,10 @@ function updateThumbnails() {
     };
     
     emptyState.innerHTML = `
-      <div class="empty-heading">Snap. Snip. Stack. Win. 🔥</div>
-      <div class="empty-subheading">Up to 9 shots</div>
-      <div class="empty-instruction">Select All → Copy<br>One paste → pure magic ✨</div>
-      <div class="empty-footer">Free forever 🏆</div>
+      <div class="empty-heading">${getMessage('snapSnipStackWin', 'Snap. Snip. Stack. Win. 🔥')}</div>
+      <div class="empty-subheading">${getMessage('upTo9Shots', 'Up to 9 shots')}</div>
+      <div class="empty-instruction">${getMessage('selectAllCopy', 'Select All → Copy')}<br>${getMessage('onePasteMagic', 'One paste → pure magic ✨')}</div>
+      <div class="empty-footer">${getMessage('freeForever', 'Free forever 🏆')}</div>
     `;
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';

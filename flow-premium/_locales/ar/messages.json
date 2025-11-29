@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "اغتنم. قص. مكدس. فوز. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "حتى 9 لقطات",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "حدد الكل → انسخ",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "لصق واحد → سحر خالص ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "مجاني إلى الأبد 🏆",
+    "description": "freeForever"
   }
 }

@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "സ്നാപ്പ്. സ്നിപ്പ്. സ്റ്റാക്ക്. വിജയിക്കുക. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "9 ഷോട്ടുകൾ വരെ",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "എല്ലാം തിരഞ്ഞെടുക്കുക → പകർത്തുക",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "ഒരു പേസ്റ്റ് → ശുദ്ധ മാജിക് ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "എന്നെന്നും വിനামൂല്യം 🏆",
+    "description": "freeForever"
   }
 }

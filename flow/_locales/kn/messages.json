@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "ಸ್ನ್ಯಾಪ್. ಸ್ನಿಪ್. ಸ್ಟ್ಯಾಕ್. ಗೆಲ್ಲಿ. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "9 ಶಾಟ್‌ಗಳವರೆಗೆ",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "ಎಲ್ಲವನ್ನು ಆಯ್ಕೆ ಮಾಡಿ → ನಕಲಿಸಿ",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "ಒಂದು ಅಂಟಿಸುವಿಕೆ → ಶುದ್ಧ ಜಾದೂ ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "ಎಂದೆಂದೂ ಉಚಿತ 🏆",
+    "description": "freeForever"
   }
 }

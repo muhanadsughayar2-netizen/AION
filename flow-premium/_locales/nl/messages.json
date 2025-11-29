@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "Snap. Knip. Stapel. Win. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "Tot 9 schermafbeeldingen",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "Alles selecteren → Kopiëren",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "Eén plakken → pure magie ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "Altijd gratis 🏆",
+    "description": "freeForever"
   }
 }

@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "Снимак. Сецај. Граду. Победи. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "До 9 снимака",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "Изабери све → Копирај",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "Једно налепљивање → чиста магија ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "Заувек бесплатно 🏆",
+    "description": "freeForever"
   }
 }

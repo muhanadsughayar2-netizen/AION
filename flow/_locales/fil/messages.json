@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "Kumuha. Gupitin. Istaka. Manalo. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "Hanggang 9 na larawan",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "Piliin lahat → Kopyahin",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "Isang paste → dalisay na mahika ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "Libre magpakailanman 🏆",
+    "description": "freeForever"
   }
 }

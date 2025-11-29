@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "Ambil. Potong. Tumpuk. Menang. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "Hingga 9 tangkapan",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "Pilih Semua → Salin",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "Satu pasta → murni sihir ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "Gratis selamanya 🏆",
+    "description": "freeForever"
   }
 }

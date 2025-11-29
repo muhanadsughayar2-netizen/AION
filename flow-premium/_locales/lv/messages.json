@@ -103,5 +103,25 @@
         "content": "$1"
       }
     }
+  },
+  "snapSnipStackWin": {
+    "message": "Uzņem. Iegriezt. Sakraujiet. Uzvar. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "Līdz 9 attēliem",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "Atlasīt visu → Kopēt",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "Viens ielīmējums → tīra maģija ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "Bezmaksas mūžīgi 🏆",
+    "description": "freeForever"
   }
 }

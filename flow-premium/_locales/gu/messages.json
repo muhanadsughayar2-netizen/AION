@@ -1,27 +1,127 @@
 {
-  "extensionName": {"message": "SnapToAI - સ્ક્રીનશૉટ થી AI", "description": "extensionName"},
-  "extensionDescription": {"message": "સ્ક્રીનશૉટ કેપ્ચર કરો અને AI પ્લેટફોર્ફમ્સ પર બલ્ક અપલોડ કરો", "description": "extensionDescription"},
-  "flowReady": {"message": "SnapToAI: તૈયાર", "description": "flowReady"},
-  "oneClickOneFlow": {"message": "એક ક્લિક. એક સ્નેપ.", "description": "oneClickOneFlow"},
-  "pagesReadyForAI": {"message": "તમારા પૃષ્ઠો AI માટે તૈયાર છે", "description": "pagesReadyForAI"},
-  "clickCameraButton": {"message": "સ્ક્રીનશૉટ કેપ્ચર કરવા માટે કેમેરા પર ક્લિક કરો", "description": "clickCameraButton"},
-  "selectAll": {"message": "બધું પસંદ કરો", "description": "selectAll"},
-  "deselectAll": {"message": "બધુ અપસંદ કરો", "description": "deselectAll"},
-  "copySelected": {"message": "પસંદ કરેલ કૉપી કરો", "description": "copySelected"},
-  "downloadSelected": {"message": "પસંદ કરેલ ડાઉનલોડ કરો", "description": "downloadSelected"},
-  "exportPDF": {"message": "PDF નિકાસ કરો", "description": "exportPDF"},
-  "exportPDFOptions": {"message": "PDF વિકલ્પો", "description": "exportPDFOptions"},
-  "allAsOnePDF": {"message": "બધું એક PDF તરીકે", "description": "allAsOnePDF"},
-  "allAsOnePDFDesc": {"message": "બધી સ્ક્રીનશૉટને એક PDF માં જોડો", "description": "allAsOnePDFDesc"},
-  "allAsSeparatePDFs": {"message": "બધું અલગ PDF તરીકે", "description": "allAsSeparatePDFs"},
-  "allAsSeparatePDFsDesc": {"message": "દરેક સ્ક્રીનશૉટ અલગ PDF તરીકે ડાઉનલોડ કરો", "description": "allAsSeparatePDFsDesc"},
-  "selectedAsOnePDF": {"message": "પસંદ કરેલ એક PDF તરીકે", "description": "selectedAsOnePDF"},
-  "selectedAsOnePDFDesc": {"message": "પસંદ કરેલને એક PDF માં જોડો", "description": "selectedAsOnePDFDesc"},
-  "selectedAsSeparatePDFs": {"message": "પસંદ કરેલ અલગ PDF તરીકે", "description": "selectedAsSeparatePDFs"},
-  "selectedAsSeparatePDFsDesc": {"message": "દરેક પસંદ કરેલ અલગ PDF તરીકે ડાઉનલોડ કરો", "description": "selectedAsSeparatePDFsDesc"},
-  "clearAll": {"message": "બધું સાફ કરો", "description": "clearAll"},
-  "cancel": {"message": "રદ કરો", "description": "cancel"},
-  "trialEnded": {"message": "ટ્રાયલ સમાપ્ત થયું", "description": "trialEnded"},
-  "upgradeNow": {"message": "હવે અપગ્રેડ કરો - $9.90/વર્ષ", "description": "upgradeNow"},
-  "daysRemaining": {"message": "$DAYS$ દિવસ બાકી છે", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
+  "extensionName": {
+    "message": "SnapToAI - સ્ક્રીનશૉટ થી AI",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "સ્ક્રીનશૉટ કેપ્ચર કરો અને AI પ્લેટફોર્ફમ્સ પર બલ્ક અપલોડ કરો",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: તૈયાર",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "એક ક્લિક. એક સ્નેપ.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "તમારા પૃષ્ઠો AI માટે તૈયાર છે",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "સ્ક્રીનશૉટ કેપ્ચર કરવા માટે કેમેરા પર ક્લિક કરો",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "બધું પસંદ કરો",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "બધુ અપસંદ કરો",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "પસંદ કરેલ કૉપી કરો",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "પસંદ કરેલ ડાઉનલોડ કરો",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "PDF નિકાસ કરો",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF વિકલ્પો",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "બધું એક PDF તરીકે",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "બધી સ્ક્રીનશૉટને એક PDF માં જોડો",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "બધું અલગ PDF તરીકે",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "દરેક સ્ક્રીનશૉટ અલગ PDF તરીકે ડાઉનલોડ કરો",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "પસંદ કરેલ એક PDF તરીકે",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "પસંદ કરેલને એક PDF માં જોડો",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "પસંદ કરેલ અલગ PDF તરીકે",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "દરેક પસંદ કરેલ અલગ PDF તરીકે ડાઉનલોડ કરો",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "બધું સાફ કરો",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "રદ કરો",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "ટ્રાયલ સમાપ્ત થયું",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "હવે અપગ્રેડ કરો - $9.90/વર્ષ",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ દિવસ બાકી છે",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "snapSnipStackWin": {
+    "message": "સ્ન્યાપ. સ્નિપ. સ્ટેક. જીતો. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "9 શૉટ સુધી",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "બધું પસંદ કરો → કૉપી કરો",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "એક પેસ્ટ → શુદ્ધ જાદુ ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "હંમેશા માટે મફત 🏆",
+    "description": "freeForever"
+  }
 }

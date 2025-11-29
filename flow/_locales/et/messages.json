@@ -1,27 +1,127 @@
 {
-  "extensionName": {"message": "SnapToAI - Kuvatõmmis AI-le", "description": "extensionName"},
-  "extensionDescription": {"message": "Võtke kuvatõmmiseid ja laadige AI-platvormidele massina", "description": "extensionDescription"},
-  "flowReady": {"message": "SnapToAI: Valmis", "description": "flowReady"},
-  "oneClickOneFlow": {"message": "Üks klõps. Üks hetktõmmis.", "description": "oneClickOneFlow"},
-  "pagesReadyForAI": {"message": "Teie lehed on AI jaoks valmis", "description": "pagesReadyForAI"},
-  "clickCameraButton": {"message": "Kuvatõmmise tegemiseks klõpsake kaameral", "description": "clickCameraButton"},
-  "selectAll": {"message": "Vali kõik", "description": "selectAll"},
-  "deselectAll": {"message": "Tühista valik", "description": "deselectAll"},
-  "copySelected": {"message": "Kopeeri valitud", "description": "copySelected"},
-  "downloadSelected": {"message": "Laadi valitud", "description": "downloadSelected"},
-  "exportPDF": {"message": "Ekspordi PDF", "description": "exportPDF"},
-  "exportPDFOptions": {"message": "PDF-i valikud", "description": "exportPDFOptions"},
-  "allAsOnePDF": {"message": "Kõik üheks PDF-iks", "description": "allAsOnePDF"},
-  "allAsOnePDFDesc": {"message": "Kombineerige kõik kuvatõmmised üheks PDF-iks", "description": "allAsOnePDFDesc"},
-  "allAsSeparatePDFs": {"message": "Kõik eraldi PDF-idena", "description": "allAsSeparatePDFs"},
-  "allAsSeparatePDFsDesc": {"message": "Laadige iga kuvatõmmis eraldi PDF-ina", "description": "allAsSeparatePDFsDesc"},
-  "selectedAsOnePDF": {"message": "Valitud üheks PDF-iks", "description": "selectedAsOnePDF"},
-  "selectedAsOnePDFDesc": {"message": "Kombineerige valitud üheks PDF-iks", "description": "selectedAsOnePDFDesc"},
-  "selectedAsSeparatePDFs": {"message": "Valitud eraldi PDF-idena", "description": "selectedAsSeparatePDFs"},
-  "selectedAsSeparatePDFsDesc": {"message": "Laadige iga valitud eraldi PDF-ina", "description": "selectedAsSeparatePDFsDesc"},
-  "clearAll": {"message": "Kustuta kõik", "description": "clearAll"},
-  "cancel": {"message": "Tühista", "description": "cancel"},
-  "trialEnded": {"message": "Prooviteenus lõppes", "description": "trialEnded"},
-  "upgradeNow": {"message": "Täiusta kohe - $9.90/aasta", "description": "upgradeNow"},
-  "daysRemaining": {"message": "Jäänud $DAYS$ päeva", "description": "daysRemaining", "placeholders": {"days": {"content": "$1"}}}
+  "extensionName": {
+    "message": "SnapToAI - Kuvatõmmis AI-le",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Võtke kuvatõmmiseid ja laadige AI-platvormidele massina",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Valmis",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "Üks klõps. Üks hetktõmmis.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Teie lehed on AI jaoks valmis",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Kuvatõmmise tegemiseks klõpsake kaameral",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "Vali kõik",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "Tühista valik",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "Kopeeri valitud",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "Laadi valitud",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Ekspordi PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF-i valikud",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "Kõik üheks PDF-iks",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Kombineerige kõik kuvatõmmised üheks PDF-iks",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "Kõik eraldi PDF-idena",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Laadige iga kuvatõmmis eraldi PDF-ina",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Valitud üheks PDF-iks",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Kombineerige valitud üheks PDF-iks",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Valitud eraldi PDF-idena",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Laadige iga valitud eraldi PDF-ina",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "Kustuta kõik",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "Tühista",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Prooviteenus lõppes",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Täiusta kohe - $9.90/aasta",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "Jäänud $DAYS$ päeva",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "snapSnipStackWin": {
+    "message": "Haarav. Lõika. Virna. Võida. 🔥",
+    "description": "snapSnipStackWin"
+  },
+  "upTo9Shots": {
+    "message": "Kuni 9 kaadrit",
+    "description": "upTo9Shots"
+  },
+  "selectAllCopy": {
+    "message": "Vali kõik → Kopeeri",
+    "description": "selectAllCopy"
+  },
+  "onePasteMagic": {
+    "message": "Üks kleepimine → puhas maagia ✨",
+    "description": "onePasteMagic"
+  },
+  "freeForever": {
+    "message": "Igaveselt tasuta 🏆",
+    "description": "freeForever"
+  }
 }
