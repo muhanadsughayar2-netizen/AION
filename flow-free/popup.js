@@ -642,7 +642,7 @@ async function handleDownloadSelected() {
     for (const { index, dataUrl } of selectedSnaps) {
       const link = document.createElement('a');
       link.href = dataUrl;
-      link.download = `flow_snap_${index + 1}.png`;
+      link.download = `snaptoai_snap_${index + 1}.png`;
       link.click();
       
       // Small delay between downloads
