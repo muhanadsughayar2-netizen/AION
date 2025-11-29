@@ -940,7 +940,7 @@ async function exportPDFCombined(snaps, mode) {
     
     // Save PDF
     const timestamp = new Date().toISOString().slice(0, 10);
-    const filename = mode === 'selected' ? `flow-selected-${timestamp}.pdf` : `flow-screenshots-${timestamp}.pdf`;
+    const filename = mode === 'selected' ? `snaptoai-selected-${timestamp}.pdf` : `snaptoai-screenshots-${timestamp}.pdf`;
     pdf.save(filename);
     
     status.textContent = 'PDF exported ✓';
@@ -1039,7 +1039,7 @@ async function exportPDFSeparate(snaps, mode) {
       pdf.addImage(snaps[i], 'PNG', x, y, imgWidth, imgHeight);
       
       // Save individual PDF
-      const filename = `flow-screenshot-${i + 1}-${timestamp}.pdf`;
+      const filename = `snaptoai-screenshot-${i + 1}-${timestamp}.pdf`;
       pdf.save(filename);
       
       // Small delay between downloads to prevent browser blocking
