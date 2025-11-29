@@ -2,6 +2,9 @@
 // Each language has its own URL: /en/, /ar/, /es/, etc.
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Clear old localStorage entries (migration to sessionStorage)
+    localStorage.removeItem('snaptoai_lang_preference');
+    
     // Language modal handling
     const langSwitch = document.getElementById('langSwitch');
     const languageModal = document.getElementById('languageModal');
@@ -141,15 +144,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Detect browser language and show suggestion banner
     function detectLanguageAndSuggest() {
-        // Don't show if user already dismissed or chose a language
-        if (localStorage.getItem('snaptoai_lang_preference')) {
-            console.log('[SnapToAI] Language preference already set:', localStorage.getItem('snaptoai_lang_preference'));
-            return;
-        }
-
-        // Get browser language
+        // Get browser language first
         const browserLang = navigator.language || navigator.userLanguage;
         console.log('[SnapToAI] Browser language detected:', browserLang);
+        
+        // Check if user already made a choice THIS SESSION for THIS browser language
+        const storedPref = sessionStorage.getItem('snaptoai_lang_banner_dismissed');
+        const storedBrowserLang = sessionStorage.getItem('snaptoai_browser_lang');
+        
+        // If browser language changed, reset the dismissal
+        if (storedBrowserLang && storedBrowserLang !== browserLang) {
+            console.log('[SnapToAI] Browser language changed from', storedBrowserLang, 'to', browserLang);
+            sessionStorage.removeItem('snaptoai_lang_banner_dismissed');
+        }
+        
+        // Store current browser language
+        sessionStorage.setItem('snaptoai_browser_lang', browserLang);
+        
+        // Don't show if user already dismissed THIS session
+        if (storedPref === 'true') {
+            console.log('[SnapToAI] Banner already dismissed this session');
+            return;
+        }
         
         // Map browser language to our supported languages
         let detectedLang = null;
@@ -316,17 +332,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Event listeners
         banner.querySelector('.banner-btn-yes').addEventListener('click', function() {
             const lang = this.dataset.lang;
-            localStorage.setItem('snaptoai_lang_preference', lang);
+            sessionStorage.setItem('snaptoai_lang_banner_dismissed', 'true');
             window.location.href = `/${lang}/`;
         });
 
         banner.querySelector('.banner-btn-no').addEventListener('click', function() {
-            localStorage.setItem('snaptoai_lang_preference', 'dismissed');
+            sessionStorage.setItem('snaptoai_lang_banner_dismissed', 'true');
             closeBanner();
         });
 
         banner.querySelector('.banner-close').addEventListener('click', function() {
-            localStorage.setItem('snaptoai_lang_preference', 'dismissed');
+            sessionStorage.setItem('snaptoai_lang_banner_dismissed', 'true');
             closeBanner();
         });
 
@@ -360,8 +376,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             button.addEventListener('click', function() {
-                // Save preference
-                localStorage.setItem('snaptoai_lang_preference', code);
+                // Mark banner as dismissed for this session
+                sessionStorage.setItem('snaptoai_lang_banner_dismissed', 'true');
                 // Navigate to the language-specific URL
                 const url = code === 'en' ? '/' : `/${code}/`;
                 window.location.href = url;
