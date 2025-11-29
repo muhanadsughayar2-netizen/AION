@@ -377,7 +377,7 @@ function updateThumbnails() {
     emptyState.innerHTML = `
       <div class="empty-heading">Screenshots to AI in One Click</div>
       <div class="empty-subheading">Select All → Copy → Paste.</div>
-      <div class="empty-instruction">All 9 screenshots drop as ONE stacked image.</div>
+      <div class="empty-subheading">All 9 screenshots drop as ONE stacked image.</div>
     `;
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';
