@@ -375,10 +375,9 @@ function updateThumbnails() {
     };
     
     emptyState.innerHTML = `
-      <div class="empty-heading">Snap. Snip. Stack. Win. 🔥</div>
-      <div class="empty-subheading">Up to 9 shots</div>
-      <div class="empty-instruction">Select All → Copy<br>One paste → pure magic ✨</div>
-      <div class="empty-footer">Free forever 🏆</div>
+      <div class="empty-heading">Screenshots to AI in One Click</div>
+      <div class="empty-subheading">Select All → Copy → Paste.</div>
+      <div class="empty-instruction">All 9 screenshots drop as ONE stacked image.</div>
     `;
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';
