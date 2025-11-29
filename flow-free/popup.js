@@ -191,6 +191,11 @@ async function handleOrbClick() {
           status.className = 'status';
         }, 1500);
       } else {
+        // Check if queue is full - show alert for this specific error
+        if (response.queueFull) {
+          alert(response.error || 'Queue full (9/9). Delete some images first.');
+        }
+        
         // Show specific error message or generic failure
         status.textContent = response.error || 'Capture failed';
         status.className = 'status error';

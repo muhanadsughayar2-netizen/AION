@@ -686,10 +686,21 @@ async function save() {
       const cropDataUrl = tempCanvas.toDataURL('image/png');
       
       // Send as new snap (add to queue)
-      await chrome.runtime.sendMessage({
+      const response = await chrome.runtime.sendMessage({
         action: 'snipComplete',
         dataUrl: cropDataUrl
       });
+      
+      // Check if queue is full
+      if (response && response.queueFull) {
+        alert(response.error || 'Queue full (9/9). Delete some images first.');
+        return;
+      }
+      
+      if (response && !response.success) {
+        updateStatus(response.error || 'Failed to save snip.');
+        return;
+      }
       
       updateStatus('Snip saved! You can snip more or close.');
       cropRect = null;
