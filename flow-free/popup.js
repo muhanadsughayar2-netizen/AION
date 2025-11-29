@@ -106,104 +106,52 @@ async function handleOrbClick() {
   orbButton.disabled = true;
   
   try {
-    // Check if we're on an AI site and have snaps
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const url = new URL(tab.url);
-    const hostname = url.hostname;
-    const isAISite = hostname.includes('grok.com') || 
-                     hostname.includes('chatgpt.com') || 
-                     hostname.includes('chat.openai.com') || 
-                     hostname.includes('claude.ai');
+    // Snap button ALWAYS captures - never auto-uploads
+    // Upload only happens via explicit Upload button click
+    status.textContent = 'Snapping...';
+    status.className = 'status active';
     
-    if (isAISite && currentSnaps.length > 0) {
-      // Upload mode - check if we have selected items
-      let snapsToUpload = [];
-      let uploadMessage = '';
-      
-      if (selectedSnapIds.size > 0) {
-        // Upload only selected snaps
-        snapsToUpload = currentSnaps.filter(snap => selectedSnapIds.has(snap.id));
-        uploadMessage = `Uploading ${snapsToUpload.length} selected snap${snapsToUpload.length > 1 ? 's' : ''}...`;
-      } else {
-        // Upload all snaps if nothing selected
-        snapsToUpload = currentSnaps;
-        uploadMessage = `Uploading all ${snapsToUpload.length} snap${snapsToUpload.length > 1 ? 's' : ''}...`;
+    const response = await chrome.runtime.sendMessage({ action: 'capture' });
+    
+    if (response.success && response.dataUrl) {
+      // Write to clipboard immediately (user gesture context)
+      try {
+        const res = await fetch(response.dataUrl);
+        const blob = await res.blob();
+        await navigator.clipboard.write([
+          new ClipboardItem({ [blob.type]: blob })
+        ]);
+      } catch (clipError) {
+        console.error('Clipboard write failed:', clipError);
       }
       
-      status.textContent = uploadMessage;
-      status.className = 'status uploading';
+      // Show last capture preview
+      showLastCapturePreview(response.dataUrl);
       
-      const response = await chrome.runtime.sendMessage({ 
-        action: 'upload',
-        selectedSnaps: snapsToUpload.map(s => s.dataUrl)
-      });
-      
-      if (response.success) {
-        status.textContent = 'Upload complete ✓';
-        status.className = 'status active';
-        
-        // Reload snaps after upload
-        setTimeout(async () => {
-          await loadSnaps();
-          updateUI();
-          status.textContent = 'Flow: Ready';
-          status.className = 'status';
-        }, 1500);
-      } else {
-        status.textContent = 'Upload failed';
-        status.className = 'status error';
-        setTimeout(() => {
-          status.textContent = 'Flow: Ready';
-          status.className = 'status';
-        }, 2000);
-      }
-    } else {
-      // Capture mode
-      status.textContent = 'Snapping...';
+      status.textContent = `Snap ${response.count} captured ✓`;
       status.className = 'status active';
       
-      const response = await chrome.runtime.sendMessage({ action: 'capture' });
+      // Reload snaps
+      await loadSnaps();
+      updateUI();
       
-      if (response.success && response.dataUrl) {
-        // Write to clipboard immediately (user gesture context)
-        try {
-          const res = await fetch(response.dataUrl);
-          const blob = await res.blob();
-          await navigator.clipboard.write([
-            new ClipboardItem({ [blob.type]: blob })
-          ]);
-        } catch (clipError) {
-          console.error('Clipboard write failed:', clipError);
-        }
-        
-        // Show last capture preview
-        showLastCapturePreview(response.dataUrl);
-        
-        status.textContent = `Snap ${response.count} captured ✓`;
-        status.className = 'status active';
-        
-        // Reload snaps
-        await loadSnaps();
-        updateUI();
-        
-        setTimeout(() => {
-          status.textContent = 'Flow: Ready';
-          status.className = 'status';
-        }, 1500);
-      } else {
-        // Check if queue is full - show alert for this specific error
-        if (response.queueFull) {
-          alert(response.error || 'Queue full (9/9). Delete some images first.');
-        }
-        
-        // Show specific error message or generic failure
-        status.textContent = response.error || 'Capture failed';
-        status.className = 'status error';
-        setTimeout(() => {
-          status.textContent = 'Flow: Ready';
-          status.className = 'status';
-        }, 2000);
+      setTimeout(() => {
+        status.textContent = 'SnapToAI: Ready';
+        status.className = 'status';
+      }, 1500);
+    } else {
+      // Check if queue is full - show alert for this specific error
+      if (response.queueFull) {
+        alert(response.error || 'Queue full (9/9). Delete some images first.');
       }
+      
+      // Show specific error message or generic failure
+      status.textContent = response.error || 'Capture failed';
+      status.className = 'status error';
+      setTimeout(() => {
+        status.textContent = 'SnapToAI: Ready';
+        status.className = 'status';
+      }, 2000);
     }
   } catch (error) {
     console.error('Orb click error:', error);
