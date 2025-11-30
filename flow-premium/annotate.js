@@ -260,17 +260,50 @@ function setupEventListeners() {
   });
 }
 
-function loadImage() {
+async function loadImage() {
   const urlParams = new URLSearchParams(window.location.search);
-  const imageUrl = urlParams.get('img');
+  const mode = urlParams.get('mode');
   
-  // Full Page Mode - load pages from session storage
+  // Full Page Mode - load pages from local storage
   if (isFullPageMode) {
     loadFullPageImages();
     return;
   }
   
-  // Regular mode - load single image
+  // Edit Mode - load image from local storage (handles large images)
+  if (mode === 'edit') {
+    try {
+      const result = await chrome.storage.local.get(['editImage', 'editIndex']);
+      const imageUrl = result.editImage;
+      
+      if (!imageUrl) {
+        updateStatus('Image not found. Please try again.');
+        return;
+      }
+      
+      const img = new Image();
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        
+        // Clear storage after loading
+        chrome.storage.local.remove(['editImage']);
+      };
+      img.onerror = () => {
+        updateStatus('Failed to load image.');
+      };
+      img.src = imageUrl;
+    } catch (error) {
+      console.log('Load edit image error:', error);
+      updateStatus('Failed to load image.');
+    }
+    return;
+  }
+  
+  // Legacy mode - load from URL param (for small images/snip mode)
+  const imageUrl = urlParams.get('img');
   if (imageUrl) {
     const img = new Image();
     img.onload = () => {

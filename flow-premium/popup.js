@@ -1154,16 +1154,23 @@ function updateClearButton() {
 }
 
 // Handle annotation
-function handleAnnotate(index) {
+async function handleAnnotate(index) {
   const dataUrl = currentSnaps[index];
-  // Open annotation window with image data
+  
+  // Store image in local storage (handles large images that exceed URL limits)
+  await chrome.storage.local.set({ 
+    editImage: dataUrl,
+    editIndex: index 
+  });
+  
+  // Open annotation window
   const width = 1200;
   const height = 800;
   const left = (screen.width - width) / 2;
   const top = (screen.height - height) / 2;
   
   window.open(
-    `annotate.html?index=${index}&img=${encodeURIComponent(dataUrl)}`,
+    `annotate.html?mode=edit&index=${index}`,
     'Annotate',
     `width=${width},height=${height},left=${left},top=${top}`
   );
