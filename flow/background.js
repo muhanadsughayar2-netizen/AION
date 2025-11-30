@@ -157,7 +157,17 @@ async function captureScreenshot() {
     
     return { success: true, count: snaps.length, dataUrl };
   } catch (error) {
-    console.error('Capture failed:', error);
+    console.log('Capture failed:', error.message);
+    
+    // Check for storage quota exceeded error
+    if (error.message && (error.message.includes('QUOTA') || error.message.includes('quota') || error.message.includes('exceeded'))) {
+      return { 
+        success: false, 
+        error: 'Storage full! Delete some images first.',
+        storageFull: true
+      };
+    }
+    
     return { success: false, error: error.message };
   }
 }

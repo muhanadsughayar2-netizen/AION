@@ -1055,28 +1055,44 @@ async function handleCopySingle(index) {
   
   try {
     const dataUrl = currentSnaps[index];
+    if (!dataUrl) {
+      throw new Error('Image not found');
+    }
+    
     const res = await fetch(dataUrl);
     const blob = await res.blob();
     
-    await navigator.clipboard.write([
-      new ClipboardItem({ [blob.type]: blob })
-    ]);
+    // Try clipboard API
+    if (navigator.clipboard && navigator.clipboard.write) {
+      await navigator.clipboard.write([
+        new ClipboardItem({ [blob.type]: blob })
+      ]);
+    } else {
+      throw new Error('Clipboard not available');
+    }
     
-    status.textContent = `Snap ${index + 1} copied ✓`;
+    status.textContent = `Snap ${index + 1} copied`;
     status.className = 'status active';
     
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
     }, 1500);
   } catch (error) {
-    console.error('Copy single error:', error);
-    status.textContent = 'Copy failed';
+    console.log('Copy failed:', error.message || error.name);
+    
+    // User-friendly error
+    let errorMsg = 'Copy failed';
+    if (error.name === 'NotAllowedError') {
+      errorMsg = 'Click page first';
+    }
+    
+    status.textContent = errorMsg;
     status.className = 'status error';
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
-    }, 1500);
+    }, 2000);
   }
 }
 
