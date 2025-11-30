@@ -81,6 +81,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     resetFullPageCapture('Cancelled by user');
     sendResponse({ success: true });
     return true;
+  } else if (request.action === 'forceResetFullPageCapture') {
+    // Force reset - for when capture gets stuck
+    console.log('[SnapToAI] Force reset requested');
+    isFullPageCaptureInProgress = false;
+    fullPageCaptureData = { tabId: null, tiles: [], viewportWidth: 0, viewportHeight: 0, overlap: 50 };
+    sendResponse({ success: true });
+    return true;
   }
 });
 
@@ -430,13 +437,29 @@ async function startFullPageCapture() {
     
     // Tell content script to start scrolling
     // Content script will call back with fullPageTileReady for each tile
-    chrome.tabs.sendMessage(tab.id, {
-      action: 'startFullPageScroll',
-      tabId: tab.id
-    });
-    
-    console.log('[SnapToAI] Full page capture started for tab', tab.id);
-    return { success: true };
+    try {
+      const scrollResponse = await chrome.tabs.sendMessage(tab.id, {
+        action: 'startFullPageScroll',
+        tabId: tab.id
+      });
+      
+      console.log('[SnapToAI] Full page capture started for tab', tab.id, scrollResponse);
+      
+      // Set a timeout to reset the flag if no tiles are received
+      // This prevents the flag from getting stuck if content script fails silently
+      setTimeout(() => {
+        if (isFullPageCaptureInProgress && fullPageCaptureData.tiles.length === 0) {
+          console.log('[SnapToAI] Timeout: No tiles received, resetting capture state');
+          resetFullPageCapture('No response from page. Try refreshing and try again.');
+        }
+      }, 10000); // 10 second timeout
+      
+      return { success: true };
+    } catch (sendError) {
+      console.error('[SnapToAI] Failed to send message to content script:', sendError);
+      resetFullPageCapture('Could not connect to page. Try refreshing the page.');
+      return { success: false, error: 'Could not connect to page. Try refreshing the page.' };
+    }
   } catch (error) {
     console.error('Start full page capture failed:', error);
     resetFullPageCapture(error.message);
