@@ -25,14 +25,19 @@ async function stitchImages(screenshots, viewportWidth, viewportHeight, totalHei
     ctx.drawImage(img, 0, y);
   }
   
-  return canvas.toDataURL('image/jpeg', 0.9);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+  
+  canvas.width = 0;
+  canvas.height = 0;
+  
+  return dataUrl;
 }
 
 function loadImage(dataUrl) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = reject;
+    img.onerror = () => reject(new Error('Failed to load image'));
     img.src = dataUrl;
   });
 }
