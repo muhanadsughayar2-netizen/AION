@@ -984,11 +984,11 @@ function yieldToUI() {
 }
 
 // Save full page with all annotations - CHUNKED for AI readability
-// Splits into 10-page chunks so AI platforms can process each piece
+// Splits into 5-page chunks so AI platforms can process each piece
 async function saveFullPageWithAnnotations() {
   try {
     const totalPages = pages.length;
-    const PAGES_PER_CHUNK = 10; // AI platforms work best with ~10 pages per image
+    const PAGES_PER_CHUNK = 5; // Smaller chunks for AI compatibility (5 pages max)
     const overlap = 50;
     
     // Calculate how many chunks we need
@@ -999,12 +999,20 @@ async function saveFullPageWithAnnotations() {
     const currentQueueSize = queueStatus?.count || 0;
     const availableSlots = 9 - currentQueueSize;
     
-    if (totalChunks > availableSlots) {
-      updateStatus(`Need ${totalChunks} slots but only ${availableSlots} available. Clear queue first.`);
+    // If we need more chunks than available slots, save what we can
+    const chunksToSave = Math.min(totalChunks, availableSlots);
+    
+    if (chunksToSave === 0) {
+      updateStatus('Queue full! Clear some images first.');
       return;
     }
     
-    updateStatus(`Splitting ${totalPages} pages into ${totalChunks} chunks for AI...`);
+    if (chunksToSave < totalChunks) {
+      updateStatus(`Will save ${chunksToSave} of ${totalChunks} chunks. Upload these, clear queue, capture again for rest.`);
+      await new Promise(r => setTimeout(r, 2000)); // Let user read the message
+    } else {
+      updateStatus(`Splitting ${totalPages} pages into ${totalChunks} chunks for AI...`);
+    }
     await yieldToUI();
     
     // Save current page annotations first
@@ -1028,10 +1036,10 @@ async function saveFullPageWithAnnotations() {
       }
     }
     
-    // STEP 2: Process each chunk
+    // STEP 2: Process each chunk (only save up to chunksToSave)
     const savedChunks = [];
     
-    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+    for (let chunkIndex = 0; chunkIndex < chunksToSave; chunkIndex++) {
       const startPage = chunkIndex * PAGES_PER_CHUNK;
       const endPage = Math.min(startPage + PAGES_PER_CHUNK, totalPages);
       const pagesInChunk = endPage - startPage;
