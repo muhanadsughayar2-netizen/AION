@@ -472,34 +472,17 @@
     console.log(`[SnapToAI] Restored ${originalStyles.size} element styles`);
   }
 
-  // Perform full page scroll and capture - captures in chunks of 7, each chunk becomes a queue entry
+  // Perform full page scroll and capture
   async function performFullPageCapture(tabId) {
     // Set guard flag immediately
     isFullPageCaptureRunning = true;
     console.log('[SnapToAI] Full page capture started');
     
     const overlay = createFullPageOverlay();
+    const screenshots = [];
     let originalStyles = null;
     
-    // Constants
-    const MAX_QUEUE_SIZE = 9;  // Total queue capacity  
-    const MAX_CHUNK_SIZE = 7;  // Max viewports per chunk (each chunk = 1 queue entry)
-    
     try {
-      // Check current queue capacity
-      const queueResult = await chrome.storage.session.get('snaps');
-      const currentSnaps = queueResult.snaps || [];
-      let remainingQueueSlots = MAX_QUEUE_SIZE - currentSnaps.length;
-      
-      console.log(`[SnapToAI] Queue: ${currentSnaps.length}/${MAX_QUEUE_SIZE}, can add ${remainingQueueSlots} more chunks`);
-      
-      // If queue is already full, show message and exit
-      if (remainingQueueSlots <= 0) {
-        removeFullPageOverlay();
-        showToast('Queue full (9/9) - clear some snaps first', 'error');
-        return { success: false, error: 'Queue full' };
-      }
-      
       // Get page dimensions
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
@@ -543,99 +526,49 @@
       totalHeight = await waitForScrollSettled(totalHeight, 300);
       
       const numCaptures = Math.ceil(totalHeight / stepHeight);
-      let currentViewport = 0;
-      let totalChunks = 0;
-      let totalViewportsCaptured = 0;
-      let stopReason = '';
+      let currentScroll = 0;
       
-      console.log(`[SnapToAI] Full page: ${numCaptures} viewports needed, queue can hold ${remainingQueueSlots} more chunks`);
+      console.log(`[SnapToAI] Full page: ${numCaptures} captures needed, total height: ${totalHeight}px`);
       
-      // Capture in chunks until page ends or queue is full
-      while (currentViewport < numCaptures && remainingQueueSlots > 0) {
-        const chunkScreenshots = [];
-        const chunkStartViewport = currentViewport;
+      for (let i = 0; i < numCaptures; i++) {
+        // Calculate scroll position
+        const targetScroll = Math.min(i * stepHeight, totalHeight - viewportHeight);
         
-        // Capture up to MAX_CHUNK_SIZE viewports for this chunk
-        for (let i = 0; i < MAX_CHUNK_SIZE && currentViewport < numCaptures; i++) {
-          // Calculate scroll position
-          const targetScroll = Math.min(currentViewport * stepHeight, totalHeight - viewportHeight);
-          
-          // Smooth scroll to position (visible to user!)
-          window.scrollTo({
-            top: targetScroll,
-            behavior: 'smooth'
+        // Smooth scroll to position (visible to user!)
+        window.scrollTo({
+          top: targetScroll,
+          behavior: 'smooth'
+        });
+        
+        // Wait for scroll animation + page settle
+        await new Promise(resolve => setTimeout(resolve, 400));
+        
+        // Update progress
+        const progress = Math.round(((i + 1) / numCaptures) * 100);
+        updateOverlayProgress(progress);
+        
+        // Request capture from background script
+        const response = await chrome.runtime.sendMessage({ 
+          action: 'fullPageCaptureStep',
+          tabId: tabId
+        });
+        
+        if (response.success && response.dataUrl) {
+          screenshots.push({
+            dataUrl: response.dataUrl,
+            scrollY: targetScroll,
+            index: i
           });
-          
-          // Wait for scroll animation + page settle
-          await new Promise(resolve => setTimeout(resolve, 400));
-          
-          // Update progress
-          const overallProgress = Math.min(Math.round((currentViewport / numCaptures) * 100), 99);
-          updateOverlayProgress(overallProgress);
-          
-          // Request capture from background script
-          const response = await chrome.runtime.sendMessage({ 
-            action: 'fullPageCaptureStep',
-            tabId: tabId
-          });
-          
-          if (response.success && response.dataUrl) {
-            chunkScreenshots.push(response.dataUrl);
-            currentViewport++;
-            totalViewportsCaptured++;
-            console.log(`[SnapToAI] Captured viewport ${currentViewport}/${numCaptures}`);
-          } else {
-            console.error(`[SnapToAI] Capture step failed:`, response.error);
-          }
-          
-          // Check if we've reached the bottom of the page
-          if (targetScroll >= totalHeight - viewportHeight) {
-            break;
-          }
+          console.log(`[SnapToAI] Captured step ${i + 1}/${numCaptures}`);
+        } else {
+          console.error(`[SnapToAI] Capture step ${i + 1} failed:`, response.error);
         }
         
-        // If we captured any screenshots in this chunk, save them
-        if (chunkScreenshots.length > 0) {
-          totalChunks++;
-          console.log(`[SnapToAI] Sending chunk ${totalChunks} (${chunkScreenshots.length} viewports) for stitching`);
-          
-          // Send chunk to background for stitching and saving
-          const chunkResult = await chrome.runtime.sendMessage({
-            action: 'fullPageCaptureChunk',
-            screenshots: chunkScreenshots,
-            viewportWidth,
-            viewportHeight,
-            chunkNumber: totalChunks
-          });
-          
-          if (chunkResult.success) {
-            remainingQueueSlots = chunkResult.remainingCapacity;
-            console.log(`[SnapToAI] Chunk ${totalChunks} saved. Remaining queue slots: ${remainingQueueSlots}`);
-            
-            // Show progress toast
-            showToast(`Chunk ${totalChunks} saved (${chunkScreenshots.length} pages)`, 'success');
-            
-            if (chunkResult.queueFull) {
-              stopReason = 'queue_full';
-              break;
-            }
-          } else {
-            console.error(`[SnapToAI] Chunk ${totalChunks} save failed:`, chunkResult.error);
-            if (chunkResult.queueFull) {
-              stopReason = 'queue_full';
-              break;
-            }
-          }
-        }
-        
-        // Check if we've captured all viewports
-        if (currentViewport >= numCaptures) {
-          stopReason = 'page_complete';
+        // Check if we've reached the bottom
+        if (targetScroll >= totalHeight - viewportHeight) {
+          break;
         }
       }
-      
-      // Update progress to 100%
-      updateOverlayProgress(100);
       
       // Restore element styles before removing overlay
       if (originalStyles && originalStyles.size > 0) {
@@ -649,27 +582,22 @@
       // Scroll back to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
       
-      // Show final message
-      if (totalChunks === 0) {
-        showToast('No pages captured', 'error');
-        return { success: false, error: 'No screenshots captured' };
+      if (screenshots.length === 0) {
+        throw new Error('No screenshots captured');
       }
       
-      // Determine final message
-      let finalMessage;
-      if (stopReason === 'queue_full') {
-        finalMessage = `Queue full: ${totalChunks} files saved (${totalViewportsCaptured} pages)`;
-      } else {
-        finalMessage = `Complete: ${totalChunks} files saved (${totalViewportsCaptured} pages)`;
-      }
+      // Send screenshots to background for stitching
+      console.log(`[SnapToAI] Sending ${screenshots.length} screenshots for stitching`);
       
-      showToast(finalMessage, 'success');
-      console.log(`[SnapToAI] Full page capture complete: ${finalMessage}`);
+      // Only send if we have screenshots - background will handle completion messaging
+      chrome.runtime.sendMessage({
+        action: 'fullPageCaptureComplete',
+        screenshots: screenshots.map(s => s.dataUrl),
+        viewportWidth,
+        viewportHeight
+      });
       
-      // Notify background that full page capture is done
-      chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
-      
-      return { success: true, chunks: totalChunks, viewports: totalViewportsCaptured, stopReason };
+      return { success: true, count: screenshots.length };
     } catch (error) {
       console.error('[SnapToAI] Full page capture failed:', error);
       
