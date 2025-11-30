@@ -153,7 +153,22 @@ function setupEventListeners() {
   });
 }
 
-// Stitch full page images into one long image
+// Constants for smart chunking
+const CHUNK_SIZE_TARGET = 1.8 * 1024 * 1024; // 1.8 MB target per chunk
+const CHUNK_SIZE_HARD_LIMIT = 2.1 * 1024 * 1024; // 2.1 MB hard stop
+const CHUNK_HEIGHT_TARGET = 10500; // 10,500 px target height
+const CHUNK_HEIGHT_HARD_LIMIT = 12000; // 12,000 px hard stop
+const JPEG_QUALITY = 0.90; // High quality - never compress!
+
+// Estimate base64 data URL size in bytes
+function estimateDataUrlBytes(dataUrl) {
+  // Data URL format: data:image/jpeg;base64,<base64data>
+  // Base64 is ~4/3 the size of binary, but we get the string length
+  const base64Part = dataUrl.split(',')[1] || dataUrl;
+  return Math.ceil((base64Part.length * 3) / 4);
+}
+
+// Stitch full page images into chunks (splits large pages into multiple high-quality files)
 async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) {
   const overlay = document.getElementById('fullPageOverlay');
   const overlayStatus = document.getElementById('fullPageStatus');
@@ -165,9 +180,9 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) 
       throw new Error('No screenshots to stitch');
     }
     
-    overlayStatus.textContent = 'Stitching images...';
+    overlayStatus.textContent = 'Loading images...';
     
-    // Load all images
+    // Load all images first
     const images = await Promise.all(screenshots.map(dataUrl => {
       return new Promise((resolve, reject) => {
         const img = new Image();
@@ -177,85 +192,194 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) 
       });
     }));
     
-    // Calculate canvas dimensions
-    // First image gives us the width, total height is sum of all (minus overlaps)
     const overlap = 50;
     const width = images[0].width;
     
-    // For the last image, we might not use the full height
-    // Calculate total height: first image full + subsequent images minus overlap
-    let totalHeight = images[0].height;
+    // Calculate total height to estimate chunks needed
+    let estimatedTotalHeight = images[0].height;
     for (let i = 1; i < images.length; i++) {
-      totalHeight += images[i].height - overlap;
+      estimatedTotalHeight += images[i].height - overlap;
     }
     
-    // Create canvas
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = totalHeight;
-    const ctx = canvas.getContext('2d');
+    // Estimate how many chunks we'll need
+    const estimatedChunks = Math.ceil(estimatedTotalHeight / CHUNK_HEIGHT_TARGET);
+    console.log(`[SnapToAI] Estimated ${estimatedChunks} chunk(s) for ${estimatedTotalHeight}px height`);
     
-    // Draw images
+    // Check queue capacity
+    const currentSnaps = await chrome.runtime.sendMessage({ action: 'getSnaps' });
+    const availableSlots = 9 - (currentSnaps?.length || 0);
+    
+    if (estimatedChunks > availableSlots) {
+      throw new Error(`Need ${estimatedChunks} slots but only ${availableSlots} available. Delete some images first.`);
+    }
+    
+    // Chunked stitching
+    const chunks = [];
+    let canvas = document.createElement('canvas');
+    canvas.width = width;
+    let ctx = canvas.getContext('2d');
+    let canvasHeight = 0;
     let currentY = 0;
+    let chunkStartIdx = 0;
+    
     for (let i = 0; i < images.length; i++) {
       const img = images[i];
+      let heightToAdd;
       
-      if (i === 0) {
-        // First image - draw full
-        ctx.drawImage(img, 0, 0);
+      if (i === chunkStartIdx) {
+        // First image of this chunk - draw full
+        heightToAdd = img.height;
+      } else {
+        // Subsequent images - account for overlap
+        heightToAdd = img.height - overlap;
+      }
+      
+      // Check if adding this image would exceed limits
+      const newHeight = canvasHeight + heightToAdd;
+      
+      // Resize canvas to accommodate new image
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = width;
+      tempCanvas.height = newHeight;
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      // Copy existing content
+      if (canvasHeight > 0) {
+        tempCtx.drawImage(canvas, 0, 0);
+      }
+      
+      // Draw new image
+      if (i === chunkStartIdx) {
+        tempCtx.drawImage(img, 0, currentY);
         currentY = img.height;
       } else {
-        // Subsequent images - draw with overlap offset
-        const sourceY = overlap; // Start from overlap offset in source
+        const sourceY = overlap;
         const sourceHeight = img.height - overlap;
-        ctx.drawImage(
-          img, 
-          0, sourceY, img.width, sourceHeight, // Source rect
-          0, currentY - overlap, img.width, sourceHeight // Dest rect
+        tempCtx.drawImage(
+          img,
+          0, sourceY, img.width, sourceHeight,
+          0, currentY - overlap, img.width, sourceHeight
         );
         currentY += img.height - overlap;
       }
       
+      canvas = tempCanvas;
+      ctx = tempCtx;
+      canvasHeight = newHeight;
+      
       overlayStatus.textContent = `Stitching ${i + 1}/${images.length}...`;
+      
+      // Check if we should finalize this chunk
+      const isLastImage = (i === images.length - 1);
+      let shouldFinalize = isLastImage;
+      
+      if (!isLastImage) {
+        // Check height threshold
+        if (canvasHeight >= CHUNK_HEIGHT_TARGET) {
+          shouldFinalize = true;
+          console.log(`[SnapToAI] Chunk finalized at height ${canvasHeight}px (target: ${CHUNK_HEIGHT_TARGET}px)`);
+        }
+        
+        // Also check estimated file size (without adding watermark - use temporary canvas)
+        if (!shouldFinalize) {
+          // Clone canvas for size estimation to avoid mutating working surface
+          const testCanvas = document.createElement('canvas');
+          testCanvas.width = canvas.width;
+          testCanvas.height = canvas.height;
+          const testCtx = testCanvas.getContext('2d');
+          testCtx.drawImage(canvas, 0, 0);
+          addInvisibleWatermark(testCanvas);
+          const testDataUrl = testCanvas.toDataURL('image/jpeg', JPEG_QUALITY);
+          const estimatedBytes = estimateDataUrlBytes(testDataUrl);
+          
+          if (estimatedBytes >= CHUNK_SIZE_TARGET) {
+            shouldFinalize = true;
+            console.log(`[SnapToAI] Chunk finalized at ${(estimatedBytes / 1024 / 1024).toFixed(2)}MB (target: 1.8MB)`);
+          }
+        }
+      }
+      
+      if (shouldFinalize) {
+        // Clone canvas for final encoding (preserve working canvas for next chunk start)
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = canvas.width;
+        finalCanvas.height = canvas.height;
+        const finalCtx = finalCanvas.getContext('2d');
+        finalCtx.drawImage(canvas, 0, 0);
+        
+        // Add watermark only once to final chunk
+        addInvisibleWatermark(finalCanvas);
+        const chunkDataUrl = finalCanvas.toDataURL('image/jpeg', JPEG_QUALITY);
+        chunks.push(chunkDataUrl);
+        
+        console.log(`[SnapToAI] Chunk ${chunks.length} created: ${canvasHeight}px, ${(estimateDataUrlBytes(chunkDataUrl) / 1024 / 1024).toFixed(2)}MB`);
+        
+        // Reset for next chunk (if not last image)
+        if (!isLastImage) {
+          canvas = document.createElement('canvas');
+          canvas.width = width;
+          ctx = canvas.getContext('2d');
+          canvasHeight = 0;
+          currentY = 0;
+          chunkStartIdx = i + 1;
+        }
+      }
     }
     
-    // Add invisible watermark
-    addInvisibleWatermark(canvas);
+    // Save all chunks to queue with capacity checks
+    const totalChunks = chunks.length;
+    overlayStatus.textContent = `Saving ${totalChunks} part${totalChunks > 1 ? 's' : ''}...`;
     
-    // Adaptive JPEG compression based on image height
-    // Tall pages need more aggressive compression to fit in session storage
-    let jpegQuality = 0.85;
-    if (canvas.height > 10000) {
-      jpegQuality = 0.55; // Very tall pages: aggressive compression
-    } else if (canvas.height > 6000) {
-      jpegQuality = 0.65; // Tall pages: moderate compression
-    } else if (canvas.height > 3000) {
-      jpegQuality = 0.75; // Medium pages: light compression
+    // Re-check queue capacity before saving
+    const currentSnapsBeforeSave = await chrome.runtime.sendMessage({ action: 'getSnaps' });
+    const availableSlotsNow = 9 - (currentSnapsBeforeSave?.length || 0);
+    
+    if (totalChunks > availableSlotsNow) {
+      throw new Error(`Need ${totalChunks} slots but only ${availableSlotsNow} available. Delete some images first.`);
     }
     
-    console.log(`[SnapToAI] Full page height: ${canvas.height}px, using JPEG quality: ${jpegQuality}`);
-    const stitchedDataUrl = canvas.toDataURL('image/jpeg', jpegQuality);
+    let savedCount = 0;
+    let lastDataUrl = null;
     
-    overlayStatus.textContent = 'Saving to queue...';
-    
-    // Save to snaps queue
-    const response = await chrome.runtime.sendMessage({
-      action: 'snipComplete',
-      dataUrl: stitchedDataUrl
-    });
+    for (let c = 0; c < chunks.length; c++) {
+      const chunkDataUrl = chunks[c];
+      const partLabel = totalChunks > 1 ? ` (Part ${c + 1}/${totalChunks})` : '';
+      
+      overlayStatus.textContent = `Saving${partLabel}...`;
+      
+      const response = await chrome.runtime.sendMessage({
+        action: 'snipComplete',
+        dataUrl: chunkDataUrl,
+        label: totalChunks > 1 ? `FullPage – Part ${c + 1}/${totalChunks}` : null
+      });
+      
+      if (response.success) {
+        savedCount++;
+        lastDataUrl = chunkDataUrl;
+      } else {
+        // Abort on first failure - don't continue with partial save
+        const savedInfo = savedCount > 0 ? ` (${savedCount} parts already saved)` : '';
+        throw new Error(`Failed to save part ${c + 1}/${totalChunks}${savedInfo}: ${response.error || 'Storage error'}`);
+      }
+    }
     
     // Hide overlay and update UI
     overlay.style.display = 'none';
     fullPageButton.disabled = false;
     
-    if (response.success) {
-      showLastCapturePreview(stitchedDataUrl);
+    if (savedCount > 0) {
+      showLastCapturePreview(lastDataUrl);
       await loadSnaps();
       updateUI();
-      status.textContent = 'Full page captured! ✓';
+      
+      if (totalChunks > 1) {
+        status.textContent = `Full page saved as ${savedCount} parts! ✓`;
+      } else {
+        status.textContent = 'Full page captured! ✓';
+      }
       status.className = 'status active';
     } else {
-      throw new Error(response.error || 'Failed to save full page capture');
+      throw new Error('Failed to save full page capture');
     }
     
     setTimeout(() => {
