@@ -364,9 +364,10 @@
   }
   
   // Perform full page scroll and capture
+  // NEW: Background-orchestrated - content script only scrolls and requests captures
+  // Background stores tiles and stitches via offscreen document
   async function performFullPageCapture(tabId) {
     const overlay = createFullPageOverlay();
-    const screenshots = [];
     
     try {
       // Get page dimensions
@@ -386,7 +387,7 @@
       totalHeight = await waitForScrollSettled(totalHeight, 300);
       
       const numCaptures = Math.ceil(totalHeight / stepHeight);
-      let currentScroll = 0;
+      let capturedCount = 0;
       
       console.log(`[SnapToAI] Full page: ${numCaptures} captures needed, total height: ${totalHeight}px`);
       
@@ -407,21 +408,22 @@
         const progress = Math.round(((i + 1) / numCaptures) * 100);
         updateOverlayProgress(progress);
         
-        // Request capture from background script
+        // Tell background to capture this tile
+        // Background captures and stores it directly
         const response = await chrome.runtime.sendMessage({ 
-          action: 'fullPageCaptureStep',
-          tabId: tabId
+          action: 'fullPageTileReady',
+          tabId: tabId,
+          viewportWidth,
+          viewportHeight,
+          totalTiles: numCaptures,
+          percent: progress
         });
         
-        if (response.success && response.dataUrl) {
-          screenshots.push({
-            dataUrl: response.dataUrl,
-            scrollY: targetScroll,
-            index: i
-          });
-          console.log(`[SnapToAI] Captured step ${i + 1}/${numCaptures}`);
+        if (response && response.success) {
+          capturedCount++;
+          console.log(`[SnapToAI] Tile ${capturedCount}/${numCaptures} captured by background`);
         } else {
-          console.error(`[SnapToAI] Capture step ${i + 1} failed:`, response.error);
+          console.error(`[SnapToAI] Tile ${i + 1} capture failed:`, response?.error);
         }
         
         // Check if we've reached the bottom
@@ -436,29 +438,26 @@
       // Scroll back to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
       
-      if (screenshots.length === 0) {
-        throw new Error('No screenshots captured');
+      if (capturedCount === 0) {
+        throw new Error('No tiles captured');
       }
       
-      // Send screenshots to background for stitching
-      console.log(`[SnapToAI] Sending ${screenshots.length} screenshots for stitching`);
+      // Tell background scrolling is complete - it will stitch via offscreen document
+      console.log(`[SnapToAI] Scrolling complete, ${capturedCount} tiles. Telling background to stitch.`);
       
-      // Only send if we have screenshots - background will handle completion messaging
       chrome.runtime.sendMessage({
-        action: 'fullPageCaptureComplete',
-        screenshots: screenshots.map(s => s.dataUrl),
-        viewportWidth,
-        viewportHeight
+        action: 'fullPageScrollComplete'
       });
       
-      return { success: true, count: screenshots.length };
+      return { success: true, count: capturedCount };
     } catch (error) {
       console.error('[SnapToAI] Full page capture failed:', error);
       removeFullPageOverlay();
       
       // Notify background of failure so it can reset state
       chrome.runtime.sendMessage({
-        action: 'fullPageStitchFailed'
+        action: 'fullPageScrollFailed',
+        error: error.message
       }).catch(() => {});
       
       return { success: false, error: error.message };

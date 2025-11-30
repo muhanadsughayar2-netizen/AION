@@ -146,135 +146,63 @@ function setupEventListeners() {
       }, 2000);
     }
     
-    // Listen for stitch request from background
-    if (request.action === 'stitchFullPage') {
-      stitchFullPageImages(request.screenshots, request.viewportWidth, request.viewportHeight);
+    // NEW: Listen for progress updates from background (background-orchestrated capture)
+    if (request.action === 'fullPageProgress') {
+      const overlayStatus = document.getElementById('fullPageStatus');
+      if (overlayStatus) {
+        overlayStatus.textContent = `Capturing... ${request.percent}%`;
+      }
+    }
+    
+    // Background is stitching via offscreen document
+    if (request.action === 'fullPageStitching') {
+      const overlayStatus = document.getElementById('fullPageStatus');
+      if (overlayStatus) {
+        overlayStatus.textContent = 'Stitching images...';
+      }
+    }
+    
+    // Background completed capture successfully
+    if (request.action === 'fullPageCaptureComplete') {
+      const overlay = document.getElementById('fullPageOverlay');
+      const status = document.getElementById('status');
+      const fullPageButton = document.getElementById('fullPageButton');
+      
+      overlay.style.display = 'none';
+      fullPageButton.disabled = false;
+      
+      // Refresh snaps and update UI
+      loadSnaps().then(() => {
+        updateUI();
+        status.textContent = 'Full page captured! ✓';
+        status.className = 'status active';
+        
+        setTimeout(() => {
+          status.textContent = 'SnapToAI: Ready';
+          status.className = 'status';
+        }, 2000);
+      });
+    }
+    
+    // Background reset capture (cancelled or error)
+    if (request.action === 'fullPageCaptureReset') {
+      const overlay = document.getElementById('fullPageOverlay');
+      const status = document.getElementById('status');
+      const fullPageButton = document.getElementById('fullPageButton');
+      
+      overlay.style.display = 'none';
+      fullPageButton.disabled = false;
+      
+      if (request.error) {
+        status.textContent = request.error;
+        status.className = 'status error';
+        setTimeout(() => {
+          status.textContent = 'SnapToAI: Ready';
+          status.className = 'status';
+        }, 2000);
+      }
     }
   });
-}
-
-// Stitch full page images into one long image
-async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) {
-  const overlay = document.getElementById('fullPageOverlay');
-  const overlayStatus = document.getElementById('fullPageStatus');
-  const status = document.getElementById('status');
-  const fullPageButton = document.getElementById('fullPageButton');
-  
-  try {
-    if (!screenshots || screenshots.length === 0) {
-      throw new Error('No screenshots to stitch');
-    }
-    
-    overlayStatus.textContent = 'Stitching images...';
-    
-    // Load all images
-    const images = await Promise.all(screenshots.map(dataUrl => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = dataUrl;
-      });
-    }));
-    
-    // Calculate canvas dimensions
-    // First image gives us the width, total height is sum of all (minus overlaps)
-    const overlap = 50;
-    const width = images[0].width;
-    
-    // For the last image, we might not use the full height
-    // Calculate total height: first image full + subsequent images minus overlap
-    let totalHeight = images[0].height;
-    for (let i = 1; i < images.length; i++) {
-      totalHeight += images[i].height - overlap;
-    }
-    
-    // Create canvas
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = totalHeight;
-    const ctx = canvas.getContext('2d');
-    
-    // Draw images
-    let currentY = 0;
-    for (let i = 0; i < images.length; i++) {
-      const img = images[i];
-      
-      if (i === 0) {
-        // First image - draw full
-        ctx.drawImage(img, 0, 0);
-        currentY = img.height;
-      } else {
-        // Subsequent images - draw with overlap offset
-        const sourceY = overlap; // Start from overlap offset in source
-        const sourceHeight = img.height - overlap;
-        ctx.drawImage(
-          img, 
-          0, sourceY, img.width, sourceHeight, // Source rect
-          0, currentY - overlap, img.width, sourceHeight // Dest rect
-        );
-        currentY += img.height - overlap;
-      }
-      
-      overlayStatus.textContent = `Stitching ${i + 1}/${images.length}...`;
-    }
-    
-    // Add invisible watermark
-    addInvisibleWatermark(canvas);
-    
-    // Convert to dataURL
-    const stitchedDataUrl = canvas.toDataURL('image/png');
-    
-    overlayStatus.textContent = 'Saving to queue...';
-    
-    // Save to snaps queue
-    const response = await chrome.runtime.sendMessage({
-      action: 'snipComplete',
-      dataUrl: stitchedDataUrl
-    });
-    
-    // Hide overlay and update UI
-    overlay.style.display = 'none';
-    fullPageButton.disabled = false;
-    
-    if (response.success) {
-      showLastCapturePreview(stitchedDataUrl);
-      await loadSnaps();
-      updateUI();
-      status.textContent = 'Full page captured! ✓';
-      status.className = 'status active';
-    } else {
-      throw new Error(response.error || 'Failed to save full page capture');
-    }
-    
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 2000);
-    
-  } catch (error) {
-    console.error('Stitch error:', error);
-    status.textContent = error.message || 'Stitching failed';
-    status.className = 'status error';
-    
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 2000);
-  } finally {
-    // ALWAYS notify background to reset the capture flag, regardless of success/failure
-    chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
-    
-    // Disconnect the port
-    if (fullPageCapturePort) {
-      fullPageCapturePort.disconnect();
-      fullPageCapturePort = null;
-    }
-    
-    // ALWAYS reset UI state
-    overlay.style.display = 'none';
-    fullPageButton.disabled = false;
-  }
 }
 
 // Show last capture preview (shared for Snap and Snip)
@@ -416,8 +344,7 @@ async function handleSnipClick() {
 }
 
 // Handle full page button click - scroll and capture entire page
-let fullPageCapturePort = null; // Port to maintain connection with background
-
+// NEW: Background-orchestrated - popup just shows progress, stitching happens in background via offscreen
 async function handleFullPageClick() {
   const fullPageButton = document.getElementById('fullPageButton');
   const status = document.getElementById('status');
@@ -440,9 +367,6 @@ async function handleFullPageClick() {
   }
   
   try {
-    // Establish port connection so background can detect if popup closes
-    fullPageCapturePort = chrome.runtime.connect({ name: 'fullPageCapture' });
-    
     // Show overlay in popup
     overlay.style.display = 'flex';
     overlayStatus.textContent = 'Starting full page capture...';
@@ -450,21 +374,19 @@ async function handleFullPageClick() {
     status.className = 'status active';
     
     // Send message to background to start full page capture
+    // Background orchestrates everything and sends progress updates via messages
     const response = await chrome.runtime.sendMessage({ action: 'startFullPageCapture' });
     
     if (response.success) {
-      // Full page capture initiated - we'll receive progress updates via messages
+      // Full page capture initiated - we'll receive progress updates via fullPageProgress messages
       overlayStatus.textContent = 'Scrolling page... 0%';
+      // Button stays disabled, overlay stays visible
+      // Background will send fullPageCaptureComplete or fullPageCaptureReset when done
     } else {
       throw new Error(response.error || 'Failed to start full page capture');
     }
   } catch (error) {
     console.error('Full page capture error:', error);
-    // Disconnect port on error
-    if (fullPageCapturePort) {
-      fullPageCapturePort.disconnect();
-      fullPageCapturePort = null;
-    }
     overlay.style.display = 'none';
     status.textContent = error.message || 'Full page capture failed';
     status.className = 'status error';
