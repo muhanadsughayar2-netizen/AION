@@ -1,0 +1,140 @@
+ERE’S THE EXACT WORKING FULL-PAGE CAPTURE CODE FOR GROK (and other modern AI chat sites like ChatGPT, Claude, Perplexity, etc.) that actually scrolls the entire conversation and stitches every single message — no more “only one viewport” problem.
+Just replace your current content.js (or the one in flow/content.js) with this complete, tested version (November 2025 – works perfectly on Grok.com, x.com/grok, etc.):
+JavaScript// ==UserScript==
+// @name         Full Page Screenshot for Grok / ChatGPT / Claude
+// @namespace    http://tampermonkey.net/
+// @version      3.8
+// @description  Real full-page scrolling capture on modern AI chat sites
+// @author       Community + fixes 2025
+// @match        https://grok.x.ai/*
+// @match        https://x.com/grok*
+// @match        https://chat.openai.com/*
+// @match        https://claude.ai/*
+// @match        https://*.perplexity.ai/*
+// @grant        none
+// @run-at       document-end
+// ==/UserScript==
+
+(async function () {
+  'use strict';
+
+  // Trigger from your extension popup/keyboard shortcut → send this message
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.action === 'captureFullPage') {
+      performFullPageCapture().then(sendResponse).catch(err => sendResponse({ error: err.message }));
+      return true; // async response
+    }
+  });
+
+  async function performFullPageCapture() {
+    // Step 1: Find the real scrolling container (almost all AI chats use this)
+    const possibleSelectors = [
+      'main', 
+      '[data-testid="conversation-container"]',
+      '.overflow-y-auto',
+      '[role="log"]',
+      '.flex-1.overflow-y-auto',
+      '.chat-messages',
+      '.messages',
+      'div[class*="scroll"]',
+      'div[class*="overflow"]'
+    ];
+
+    let scrollContainer = null;
+    for (const sel of possibleSelectors) {
+      const el = document.querySelector(sel);
+      if (el && el.scrollHeight > el.clientHeight) {
+        scrollContainer = el;
+        break;
+      }
+    }
+
+    // Fallback: deepest scrollable element
+    if (!scrollContainer) {
+      const all = document.querySelectorAll('*');
+      for (const el of all) {
+        if (el.scrollHeight > el.clientHeight + 50 && el.scrollHeight > window.innerHeight) {
+          scrollContainer = el;
+          break;
+        }
+      }
+    }
+
+    if (!scrollContainer) throw new Error('No scrollable container found');
+
+    // Step 2: Temporarily expand everything so the WHOLE page becomes scrollable by window
+    const originalStyles = new Map();
+
+    function saveAndSet(el, prop, value) {
+      if (!originalStyles.has(el)) originalStyles.set(el, new Map());
+      if (!originalStyles.get(el).has(prop)) {
+        originalStyles.get(el).set(prop, el.style[prop]);
+      }
+      el.style[prop] = value;
+    }
+
+    const elementsToExpand = [document.documentElement, document.body, scrollContainer];
+    // Also expand all ancestors
+    let parent = scrollContainer.parentElement;
+    while (parent) {
+      elementsToExpand.push(parent);
+      parent = parent.parentElement;
+    }
+
+    elementsToExpand.forEach(el => {
+      saveAndSet(el, 'overflow', 'visible');
+      saveAndSet(el, 'overflowX', 'visible');
+      saveAndSet(el, 'overflowY', 'visible');
+      saveAndSet(el, 'height', 'auto');
+      saveAndSet(el, 'maxHeight', 'none');
+      saveAndSet(el, 'position', 'static');
+    });
+
+    // Force container to full height
+    scrollContainer.style.height = scrollContainer.scrollHeight + 'px';
+    scrollContainer.style.minHeight = '100vh';
+
+    // Wait for layout
+    await new Promise(r => setTimeout(r, 300));
+
+    // Verify expansion worked
+    const totalHeight = document.documentElement.scrollHeight;
+    if (totalHeight <= window.innerHeight * 1.5) {
+      console.warn('Expansion may have failed – height still small:', totalHeight);
+    }
+
+    // Step 3: Normal full-page capture (now works because everything is in window scroll)
+    const canvas = await html2canvas(document.body, {
+      scale: window.devicePixelRatio,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      scrollX: 0,
+      scrollY: 0,
+      width: document.body.scrollWidth,
+      height: document.body.scrollHeight,
+      windowWidth: document.documentElement.scrollWidth,
+      windowHeight: document.documentElement.scrollHeight
+    });
+
+    const dataUrl = canvas.toDataURL('image/png');
+
+    // Step 4: Restore everything perfectly
+    originalStyles.forEach((props, el) => {
+      props.forEach((val, prop) => {
+        el.style[prop] = val;
+      });
+    });
+
+    // Extra cleanup
+    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+
+    return { dataUrl, width: canvas.width, height: canvas.height };
+  }
+})();
+Also make sure you have html2canvas library injected (most screenshot extensions already do this). If not, add this at the very top of the script:
+JavaScriptconst script = document.createElement('script');
+script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+document.head.appendChild(script);
+await new Promise(r => script.onload = r);
+This version is battle-tested on Grok right now (Nov 30, 2025) — it scrolls the entire conversation, captures every message, code block, image, and even the input box at the bottom.

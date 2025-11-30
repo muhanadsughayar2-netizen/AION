@@ -378,6 +378,140 @@
     return document.documentElement.scrollHeight;
   }
   
+  // Find ALL elements that need to be expanded for full page capture
+  // Including html, body, and ancestor elements with overflow hidden
+  function findElementsToExpand() {
+    const elements = new Set();
+    
+    // Always include html and body if they have restricted overflow
+    const html = document.documentElement;
+    const body = document.body;
+    
+    const htmlStyle = window.getComputedStyle(html);
+    const bodyStyle = window.getComputedStyle(body);
+    
+    if (htmlStyle.overflow !== 'visible' || htmlStyle.overflowY !== 'visible' ||
+        htmlStyle.height === '100%' || htmlStyle.height === '100vh') {
+      elements.add(html);
+    }
+    
+    if (bodyStyle.overflow !== 'visible' || bodyStyle.overflowY !== 'visible' ||
+        bodyStyle.height === '100%' || bodyStyle.height === '100vh') {
+      elements.add(body);
+    }
+    
+    // Common layout wrappers that restrict height
+    const wrapperSelectors = [
+      '#__next', // Next.js
+      '#root', // React
+      '#app', // Vue
+      '[class*="layout"]',
+      '[class*="wrapper"]',
+      '[class*="container"]'
+    ];
+    
+    for (const selector of wrapperSelectors) {
+      const wrappers = document.querySelectorAll(selector);
+      for (const el of wrappers) {
+        const style = window.getComputedStyle(el);
+        if (style.overflow !== 'visible' || style.overflowY !== 'visible' ||
+            style.height === '100%' || style.height === '100vh') {
+          elements.add(el);
+        }
+      }
+    }
+    
+    // Find scrollable containers (chat areas, etc)
+    const scrollSelectors = [
+      'main[class*="scroll"]',
+      'div[class*="conversation"]',
+      'div[class*="chat-content"]',
+      'div[class*="messages"]',
+      '[role="main"]',
+      '.overflow-y-auto',
+      '[class*="overflow-auto"]',
+      '[class*="overflow-y-scroll"]'
+    ];
+    
+    for (const selector of scrollSelectors) {
+      const scrollables = document.querySelectorAll(selector);
+      for (const el of scrollables) {
+        const style = window.getComputedStyle(el);
+        const overflowY = style.overflowY;
+        if ((overflowY === 'auto' || overflowY === 'scroll') && 
+            el.scrollHeight > el.clientHeight + 100) {
+          elements.add(el);
+        }
+      }
+    }
+    
+    // Fallback: find any element with significant scrollable content
+    const allElements = document.querySelectorAll('div, main, section');
+    for (const el of allElements) {
+      const style = window.getComputedStyle(el);
+      if ((style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+          el.scrollHeight > el.clientHeight + 200 &&
+          el.clientHeight > 200) {
+        elements.add(el);
+        
+        // Also add all ancestors with overflow restrictions
+        let parent = el.parentElement;
+        while (parent && parent !== document.documentElement) {
+          const parentStyle = window.getComputedStyle(parent);
+          if (parentStyle.overflow !== 'visible' || 
+              parentStyle.overflowY !== 'visible' ||
+              parentStyle.height === '100%' || 
+              parentStyle.height === '100vh') {
+            elements.add(parent);
+          }
+          parent = parent.parentElement;
+        }
+      }
+    }
+    
+    return Array.from(elements);
+  }
+  
+  // Expand all elements so content is in document flow
+  function expandElements(elements) {
+    const originalStyles = [];
+    
+    for (const el of elements) {
+      // Save original styles
+      originalStyles.push({
+        element: el,
+        overflow: el.style.overflow,
+        overflowY: el.style.overflowY,
+        overflowX: el.style.overflowX,
+        height: el.style.height,
+        maxHeight: el.style.maxHeight,
+        position: el.style.position
+      });
+      
+      // Expand the element
+      el.style.overflow = 'visible';
+      el.style.overflowY = 'visible';
+      el.style.height = 'auto';
+      el.style.maxHeight = 'none';
+    }
+    
+    console.log(`[SnapToAI] Expanded ${elements.length} elements for full page capture`);
+    return originalStyles;
+  }
+  
+  // Restore original styles to all expanded elements
+  function restoreExpandedElements(originalStyles) {
+    for (const item of originalStyles) {
+      item.element.style.overflow = item.overflow;
+      item.element.style.overflowY = item.overflowY;
+      item.element.style.overflowX = item.overflowX;
+      item.element.style.height = item.height;
+      item.element.style.maxHeight = item.maxHeight;
+      item.element.style.position = item.position;
+    }
+    console.log(`[SnapToAI] Restored ${originalStyles.length} element styles`);
+  }
+
   // Perform full page scroll and capture
   async function performFullPageCapture(tabId) {
     // Set guard flag immediately
@@ -386,12 +520,43 @@
     
     const overlay = createFullPageOverlay();
     const screenshots = [];
+    let originalStyles = [];
     
     try {
       // Get page dimensions
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
+      
+      // Measure initial document height
+      const initialHeight = document.documentElement.scrollHeight;
+      console.log(`[SnapToAI] Initial document height: ${initialHeight}px`);
+      
+      // Find and expand any elements restricting scroll (for AI chat sites like Grok, ChatGPT, Claude)
+      const elementsToExpand = findElementsToExpand();
+      if (elementsToExpand.length > 0) {
+        originalStyles = expandElements(elementsToExpand);
+        // Wait for reflow
+        await new Promise(resolve => requestAnimationFrame(() => {
+          requestAnimationFrame(() => resolve());
+        }));
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      
+      // Now use document scroll (containers are expanded)
       let totalHeight = document.documentElement.scrollHeight;
+      console.log(`[SnapToAI] Document height after expansion: ${totalHeight}px`);
+      
+      // Check if expansion worked - if height didn't increase significantly, 
+      // just capture current viewport and notify user
+      let limitedCapture = false;
+      if (elementsToExpand.length > 0 && totalHeight <= initialHeight + 100) {
+        console.log('[SnapToAI] Expansion did not increase document height. Capturing visible area only.');
+        limitedCapture = true;
+        // Restore styles immediately since expansion didn't help
+        restoreExpandedElements(originalStyles);
+        originalStyles = [];
+        totalHeight = viewportHeight; // Just capture one viewport
+      }
       
       // Calculate number of captures needed
       const overlap = 50; // Pixels of overlap between captures
@@ -449,6 +614,12 @@
         }
       }
       
+      // Restore element styles before removing overlay
+      if (originalStyles.length > 0) {
+        restoreExpandedElements(originalStyles);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
       // Remove overlay
       removeFullPageOverlay();
       
@@ -473,6 +644,12 @@
       return { success: true, count: screenshots.length };
     } catch (error) {
       console.error('[SnapToAI] Full page capture failed:', error);
+      
+      // Restore element styles on error
+      if (originalStyles.length > 0) {
+        restoreExpandedElements(originalStyles);
+      }
+      
       removeFullPageOverlay();
       
       // Notify background of failure so it can reset state
