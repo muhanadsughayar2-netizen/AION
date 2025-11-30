@@ -26,6 +26,15 @@ The extension supports capturing, annotating, organizing (reordering, multi-sele
 
 **Snip Feature (November 2025):** Dual circular buttons (Snap + Snip) in popup interface. Snip captures a screenshot, opens the annotate screen with crop tool active, allows user to draw a rectangular selection, and saves only the cropped region to the queue. This enables precise region capture without external tools.
 
+**Full Page Capture Feature (November 2025):** New "FULL PAGE" button alongside SNAP and SNIP. When clicked:
+1. Shows progress overlay on the page with glassmorphism styling
+2. Visibly scrolls the page from top to bottom (user can see it happening)
+3. Captures screenshots at each viewport position with 50px overlap
+4. Stitches all captures into one long continuous image
+5. Applies invisible watermark (SnapToAI marketing)
+6. Saves the stitched image to the queue
+Handles infinite-scroll sites with scroll settlement detection. Works on any web page regardless of length.
+
 ### System Design Choices
 The extension is built as a Manifest V3 Chrome Extension. It employs a Service Worker for background processes, a Content Script for in-page interactions and AI platform detection, and a Popup Interface for user interaction. Data is stored entirely client-side using Chrome's session and local storage APIs, ensuring privacy and eliminating the need for an external backend database. Screenshots are stored as base64 dataURL strings in a FIFO queue within session storage.
 
