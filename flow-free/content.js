@@ -35,6 +35,10 @@
     } else if (request.action === 'beginUpload') {
       uploadToAI(request.platform, request.useSelectedOnly).then(sendResponse);
       return true;
+    } else if (request.action === 'startFullPageScroll') {
+      // Start full page capture with visible scrolling
+      performFullPageCapture(request.tabId).then(sendResponse);
+      return true;
     }
   });
 
@@ -260,6 +264,205 @@
     const response = await fetch(dataUrl);
     const blob = await response.blob();
     return new File([blob], filename, { type: 'image/png' });
+  }
+
+  // ============================================
+  // FULL PAGE CAPTURE FUNCTIONS
+  // ============================================
+  
+  // Create full page capture overlay
+  function createFullPageOverlay() {
+    // Remove existing overlay if any
+    const existing = document.getElementById('snaptoai-fullpage-overlay');
+    if (existing) existing.remove();
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'snaptoai-fullpage-overlay';
+    overlay.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.9);
+        border: 2px solid rgba(0, 217, 255, 0.7);
+        border-radius: 12px;
+        padding: 20px 30px;
+        z-index: 2147483647;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: white;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 30px rgba(0, 217, 255, 0.3);
+      ">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <div style="
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(0, 217, 255, 0.3);
+            border-top-color: rgba(0, 217, 255, 0.9);
+            border-radius: 50%;
+            animation: snaptoai-spin 0.8s linear infinite;
+          "></div>
+          <div>
+            <div style="font-weight: 600; font-size: 14px; color: #00d9ff;">SnapToAI Full Page</div>
+            <div id="snaptoai-progress-text" style="font-size: 12px; color: #aaa; margin-top: 4px;">Capturing... 0%</div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Add animation style
+    const style = document.createElement('style');
+    style.id = 'snaptoai-fullpage-styles';
+    style.textContent = `
+      @keyframes snaptoai-spin {
+        to { transform: rotate(360deg); }
+      }
+    `;
+    if (!document.getElementById('snaptoai-fullpage-styles')) {
+      document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+  
+  // Update overlay progress
+  function updateOverlayProgress(percent) {
+    const progressText = document.getElementById('snaptoai-progress-text');
+    if (progressText) {
+      progressText.textContent = `Capturing... ${percent}%`;
+    }
+    
+    // Also notify popup
+    chrome.runtime.sendMessage({ 
+      action: 'fullPageProgress', 
+      progress: percent 
+    }).catch(() => {});
+  }
+  
+  // Remove overlay
+  function removeFullPageOverlay() {
+    const overlay = document.getElementById('snaptoai-fullpage-overlay');
+    if (overlay) overlay.remove();
+  }
+  
+  // Wait for scroll to settle (for infinite scroll sites)
+  async function waitForScrollSettled(previousHeight, timeout = 500) {
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < timeout) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const currentHeight = document.documentElement.scrollHeight;
+      if (currentHeight !== previousHeight) {
+        // Height changed, reset wait
+        previousHeight = currentHeight;
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+    
+    return document.documentElement.scrollHeight;
+  }
+  
+  // Perform full page scroll and capture
+  async function performFullPageCapture(tabId) {
+    const overlay = createFullPageOverlay();
+    const screenshots = [];
+    
+    try {
+      // Get page dimensions
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+      let totalHeight = document.documentElement.scrollHeight;
+      
+      // Calculate number of captures needed
+      const overlap = 50; // Pixels of overlap between captures
+      const stepHeight = viewportHeight - overlap;
+      
+      // Scroll to top first
+      window.scrollTo(0, 0);
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Recalculate after scroll (some pages load content)
+      totalHeight = await waitForScrollSettled(totalHeight, 300);
+      
+      const numCaptures = Math.ceil(totalHeight / stepHeight);
+      let currentScroll = 0;
+      
+      console.log(`[SnapToAI] Full page: ${numCaptures} captures needed, total height: ${totalHeight}px`);
+      
+      for (let i = 0; i < numCaptures; i++) {
+        // Calculate scroll position
+        const targetScroll = Math.min(i * stepHeight, totalHeight - viewportHeight);
+        
+        // Smooth scroll to position (visible to user!)
+        window.scrollTo({
+          top: targetScroll,
+          behavior: 'smooth'
+        });
+        
+        // Wait for scroll animation + page settle
+        await new Promise(resolve => setTimeout(resolve, 400));
+        
+        // Update progress
+        const progress = Math.round(((i + 1) / numCaptures) * 100);
+        updateOverlayProgress(progress);
+        
+        // Request capture from background script
+        const response = await chrome.runtime.sendMessage({ 
+          action: 'fullPageCaptureStep',
+          tabId: tabId
+        });
+        
+        if (response.success && response.dataUrl) {
+          screenshots.push({
+            dataUrl: response.dataUrl,
+            scrollY: targetScroll,
+            index: i
+          });
+          console.log(`[SnapToAI] Captured step ${i + 1}/${numCaptures}`);
+        } else {
+          console.error(`[SnapToAI] Capture step ${i + 1} failed:`, response.error);
+        }
+        
+        // Check if we've reached the bottom
+        if (targetScroll >= totalHeight - viewportHeight) {
+          break;
+        }
+      }
+      
+      // Remove overlay
+      removeFullPageOverlay();
+      
+      // Scroll back to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      if (screenshots.length === 0) {
+        throw new Error('No screenshots captured');
+      }
+      
+      // Send screenshots to background for stitching
+      console.log(`[SnapToAI] Sending ${screenshots.length} screenshots for stitching`);
+      
+      chrome.runtime.sendMessage({
+        action: 'fullPageCaptureComplete',
+        screenshots: screenshots.map(s => s.dataUrl),
+        viewportWidth,
+        viewportHeight
+      });
+      
+      return { success: true, count: screenshots.length };
+    } catch (error) {
+      console.error('[SnapToAI] Full page capture failed:', error);
+      removeFullPageOverlay();
+      
+      chrome.runtime.sendMessage({
+        action: 'fullPageComplete',
+        success: false,
+        error: error.message
+      }).catch(() => {});
+      
+      return { success: false, error: error.message };
+    }
   }
 
 })();

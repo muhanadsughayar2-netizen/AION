@@ -83,6 +83,9 @@ function setupEventListeners() {
   // Snip button click (Snip - open cropping tool)
   document.getElementById('snipButton').addEventListener('click', handleSnipClick);
   
+  // Full Page button click (Full Page - scroll and capture entire page)
+  document.getElementById('fullPageButton').addEventListener('click', handleFullPageClick);
+  
   // Clear button
   document.getElementById('clearButton').addEventListener('click', handleClear);
   
@@ -111,7 +114,156 @@ function setupEventListeners() {
       showLastCapturePreview(request.dataUrl);
       loadSnaps().then(updateUI);
     }
+    // Listen for full page capture progress updates
+    if (request.action === 'fullPageProgress') {
+      const overlayStatus = document.getElementById('fullPageStatus');
+      if (overlayStatus) {
+        overlayStatus.textContent = `Capturing full page... ${request.progress}%`;
+      }
+    }
+    // Listen for full page capture completion
+    if (request.action === 'fullPageComplete') {
+      const overlay = document.getElementById('fullPageOverlay');
+      const status = document.getElementById('status');
+      const fullPageButton = document.getElementById('fullPageButton');
+      
+      overlay.style.display = 'none';
+      fullPageButton.disabled = false;
+      
+      if (request.success) {
+        showLastCapturePreview(request.dataUrl);
+        loadSnaps().then(updateUI);
+        status.textContent = 'Full page captured! ✓';
+        status.className = 'status active';
+      } else {
+        status.textContent = request.error || 'Full page capture failed';
+        status.className = 'status error';
+      }
+      
+      setTimeout(() => {
+        status.textContent = 'SnapToAI: Ready';
+        status.className = 'status';
+      }, 2000);
+    }
+    
+    // Listen for stitch request from background
+    if (request.action === 'stitchFullPage') {
+      stitchFullPageImages(request.screenshots, request.viewportWidth, request.viewportHeight);
+    }
   });
+}
+
+// Stitch full page images into one long image
+async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) {
+  const overlay = document.getElementById('fullPageOverlay');
+  const overlayStatus = document.getElementById('fullPageStatus');
+  const status = document.getElementById('status');
+  const fullPageButton = document.getElementById('fullPageButton');
+  
+  try {
+    if (!screenshots || screenshots.length === 0) {
+      throw new Error('No screenshots to stitch');
+    }
+    
+    overlayStatus.textContent = 'Stitching images...';
+    
+    // Load all images
+    const images = await Promise.all(screenshots.map(dataUrl => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+    }));
+    
+    // Calculate canvas dimensions
+    // First image gives us the width, total height is sum of all (minus overlaps)
+    const overlap = 50;
+    const width = images[0].width;
+    
+    // For the last image, we might not use the full height
+    // Calculate total height: first image full + subsequent images minus overlap
+    let totalHeight = images[0].height;
+    for (let i = 1; i < images.length; i++) {
+      totalHeight += images[i].height - overlap;
+    }
+    
+    // Create canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = totalHeight;
+    const ctx = canvas.getContext('2d');
+    
+    // Draw images
+    let currentY = 0;
+    for (let i = 0; i < images.length; i++) {
+      const img = images[i];
+      
+      if (i === 0) {
+        // First image - draw full
+        ctx.drawImage(img, 0, 0);
+        currentY = img.height;
+      } else {
+        // Subsequent images - draw with overlap offset
+        const sourceY = overlap; // Start from overlap offset in source
+        const sourceHeight = img.height - overlap;
+        ctx.drawImage(
+          img, 
+          0, sourceY, img.width, sourceHeight, // Source rect
+          0, currentY - overlap, img.width, sourceHeight // Dest rect
+        );
+        currentY += img.height - overlap;
+      }
+      
+      overlayStatus.textContent = `Stitching ${i + 1}/${images.length}...`;
+    }
+    
+    // Add invisible watermark
+    addInvisibleWatermark(canvas);
+    
+    // Convert to dataURL
+    const stitchedDataUrl = canvas.toDataURL('image/png');
+    
+    overlayStatus.textContent = 'Saving to queue...';
+    
+    // Save to snaps queue
+    const response = await chrome.runtime.sendMessage({
+      action: 'snipComplete',
+      dataUrl: stitchedDataUrl
+    });
+    
+    // Hide overlay and update UI
+    overlay.style.display = 'none';
+    fullPageButton.disabled = false;
+    
+    if (response.success) {
+      showLastCapturePreview(stitchedDataUrl);
+      await loadSnaps();
+      updateUI();
+      status.textContent = 'Full page captured! ✓';
+      status.className = 'status active';
+    } else {
+      throw new Error(response.error || 'Failed to save full page capture');
+    }
+    
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Stitch error:', error);
+    overlay.style.display = 'none';
+    fullPageButton.disabled = false;
+    status.textContent = error.message || 'Stitching failed';
+    status.className = 'status error';
+    
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 2000);
+  }
 }
 
 // Show last capture preview (shared for Snap and Snip)
@@ -249,6 +401,57 @@ async function handleSnipClick() {
     }, 2000);
   } finally {
     snipButton.disabled = false;
+  }
+}
+
+// Handle full page button click - scroll and capture entire page
+async function handleFullPageClick() {
+  const fullPageButton = document.getElementById('fullPageButton');
+  const status = document.getElementById('status');
+  const overlay = document.getElementById('fullPageOverlay');
+  const overlayStatus = document.getElementById('fullPageStatus');
+  
+  // Disable button during operation
+  fullPageButton.disabled = true;
+  
+  // Check if queue has space
+  if (currentSnaps.length >= 9) {
+    status.textContent = 'Queue full (9/9). Delete some images first.';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 2000);
+    fullPageButton.disabled = false;
+    return;
+  }
+  
+  try {
+    // Show overlay in popup
+    overlay.style.display = 'flex';
+    overlayStatus.textContent = 'Starting full page capture...';
+    status.textContent = 'Capturing full page...';
+    status.className = 'status active';
+    
+    // Send message to background to start full page capture
+    const response = await chrome.runtime.sendMessage({ action: 'startFullPageCapture' });
+    
+    if (response.success) {
+      // Full page capture initiated - we'll receive progress updates via messages
+      overlayStatus.textContent = 'Scrolling page... 0%';
+    } else {
+      throw new Error(response.error || 'Failed to start full page capture');
+    }
+  } catch (error) {
+    console.error('Full page capture error:', error);
+    overlay.style.display = 'none';
+    status.textContent = error.message || 'Full page capture failed';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 2000);
+    fullPageButton.disabled = false;
   }
 }
 

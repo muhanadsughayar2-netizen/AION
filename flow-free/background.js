@@ -42,6 +42,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Handle snip (cropped image) - add as new snap
     addSnip(request.dataUrl).then(sendResponse);
     return true;
+  } else if (request.action === 'startFullPageCapture') {
+    // Start full page capture process
+    startFullPageCapture().then(sendResponse);
+    return true;
+  } else if (request.action === 'fullPageCaptureStep') {
+    // Capture a single step during full page capture
+    captureFullPageStep(request.tabId).then(sendResponse);
+    return true;
+  } else if (request.action === 'fullPageCaptureComplete') {
+    // Stitch and save full page capture
+    finalizeFullPageCapture(request.screenshots, request.viewportWidth, request.viewportHeight).then(sendResponse);
+    return true;
   }
 });
 
@@ -261,3 +273,108 @@ chrome.action.onClicked.addListener(async () => {
   const count = await getSnapCount();
   await updateBadge(count);
 });
+
+// ============================================
+// FULL PAGE CAPTURE FUNCTIONS
+// ============================================
+
+// Start full page capture process
+async function startFullPageCapture() {
+  try {
+    // Check if queue has space
+    const snaps = await getSnaps();
+    if (snaps.length >= MAX_SNAPS) {
+      return { 
+        success: false, 
+        error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.` 
+      };
+    }
+    
+    // Get active tab
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    // Inject content script if needed
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['content.js']
+      });
+    } catch (e) {
+      console.log('Content script already injected or injection failed:', e.message);
+    }
+    
+    // Small delay to ensure content script is ready
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Send message to content script to start scrolling and capturing
+    chrome.tabs.sendMessage(tab.id, {
+      action: 'startFullPageScroll',
+      tabId: tab.id
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Start full page capture failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Capture a single viewport during full page capture
+async function captureFullPageStep(tabId) {
+  try {
+    // Small delay to ensure page has settled after scroll
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    
+    return { success: true, dataUrl };
+  } catch (error) {
+    console.error('Capture step failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Finalize full page capture - stitch images and save to queue
+async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeight) {
+  try {
+    if (!screenshots || screenshots.length === 0) {
+      return { success: false, error: 'No screenshots to stitch' };
+    }
+    
+    // Create offscreen document for canvas operations
+    // Note: For simplicity, we'll send the stitching to the popup
+    // which already has canvas capabilities
+    
+    // Get current snaps
+    const snaps = await getSnaps();
+    
+    // Block if queue is full
+    if (snaps.length >= MAX_SNAPS) {
+      return { 
+        success: false, 
+        error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.` 
+      };
+    }
+    
+    // For now, we'll do simple stitching using createImageBitmap in a more complex way
+    // But since background.js doesn't have canvas, we need to use offscreen document
+    // Let's create a simple approach - send to popup for stitching
+    
+    // Actually, let's use OffscreenCanvas if available, or send back to content script
+    // For Chrome MV3, we can use offscreen document
+    
+    // Simpler approach: Send back to popup for final stitching
+    chrome.runtime.sendMessage({
+      action: 'stitchFullPage',
+      screenshots,
+      viewportWidth,
+      viewportHeight
+    }).catch(() => {});
+    
+    return { success: true, pending: true };
+  } catch (error) {
+    console.error('Finalize full page capture failed:', error);
+    return { success: false, error: error.message };
+  }
+}
