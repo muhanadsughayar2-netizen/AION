@@ -384,10 +384,16 @@ async function startFullPageCapture() {
     await new Promise(resolve => setTimeout(resolve, 100));
     
     // Send message to content script to start scrolling and capturing
-    chrome.tabs.sendMessage(tab.id, {
-      action: 'startFullPageScroll',
-      tabId: tab.id
-    });
+    try {
+      await chrome.tabs.sendMessage(tab.id, {
+        action: 'startFullPageScroll',
+        tabId: tab.id
+      });
+    } catch (msgError) {
+      console.log('[SnapToAI] Content script not ready:', msgError.message);
+      isFullPageCaptureInProgress = false;
+      return { success: false, error: 'Page not ready. Please try again.' };
+    }
     
     return { success: true };
   } catch (error) {
