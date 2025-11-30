@@ -303,6 +303,16 @@ async function addSnip(dataUrl) {
     return { success: true, count: snaps.length };
   } catch (error) {
     console.error('Add snip failed:', error);
+    
+    // Check for storage quota exceeded error
+    if (error.message && (error.message.includes('QUOTA') || error.message.includes('quota') || error.message.includes('storage'))) {
+      return { 
+        success: false, 
+        error: 'Storage full! Delete some images to make room for new captures.',
+        storageFull: true
+      };
+    }
+    
     return { success: false, error: error.message };
   }
 }

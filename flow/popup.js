@@ -222,8 +222,19 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) 
     // Add invisible watermark
     addInvisibleWatermark(canvas);
     
-    // Convert to dataURL with JPEG compression (reduces file size by ~75%)
-    const stitchedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    // Adaptive JPEG compression based on image height
+    // Tall pages need more aggressive compression to fit in session storage
+    let jpegQuality = 0.85;
+    if (canvas.height > 10000) {
+      jpegQuality = 0.55; // Very tall pages: aggressive compression
+    } else if (canvas.height > 6000) {
+      jpegQuality = 0.65; // Tall pages: moderate compression
+    } else if (canvas.height > 3000) {
+      jpegQuality = 0.75; // Medium pages: light compression
+    }
+    
+    console.log(`[SnapToAI] Full page height: ${canvas.height}px, using JPEG quality: ${jpegQuality}`);
+    const stitchedDataUrl = canvas.toDataURL('image/jpeg', jpegQuality);
     
     overlayStatus.textContent = 'Saving to queue...';
     
