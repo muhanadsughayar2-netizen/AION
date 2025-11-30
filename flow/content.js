@@ -13,6 +13,9 @@
   // Track last mouse position for toast placement
   let lastMouseX = window.innerWidth - 20;
   let lastMouseY = 20;
+  
+  // Guard against concurrent full page captures in this content script instance
+  let isFullPageCaptureRunning = false;
 
   document.addEventListener('mousemove', (e) => {
     lastMouseX = e.clientX;
@@ -36,6 +39,18 @@
       uploadToAI(request.platform, request.useSelectedOnly).then(sendResponse);
       return true;
     } else if (request.action === 'startFullPageScroll') {
+      // Only run full page capture in main frame, not iframes
+      if (window.self !== window.top) {
+        console.log('[SnapToAI] Ignoring full page capture in iframe');
+        sendResponse({ success: false, error: 'iframe' });
+        return;
+      }
+      // Prevent concurrent captures in same content script
+      if (isFullPageCaptureRunning) {
+        console.log('[SnapToAI] Full page capture already running, ignoring duplicate request');
+        sendResponse({ success: false, error: 'already_running' });
+        return;
+      }
       // Start full page capture with visible scrolling
       performFullPageCapture(request.tabId).then(sendResponse);
       return true;
@@ -365,6 +380,10 @@
   
   // Perform full page scroll and capture
   async function performFullPageCapture(tabId) {
+    // Set guard flag immediately
+    isFullPageCaptureRunning = true;
+    console.log('[SnapToAI] Full page capture started');
+    
     const overlay = createFullPageOverlay();
     const screenshots = [];
     
@@ -462,6 +481,10 @@
       }).catch(() => {});
       
       return { success: false, error: error.message };
+    } finally {
+      // Always reset guard flag
+      isFullPageCaptureRunning = false;
+      console.log('[SnapToAI] Full page capture ended');
     }
   }
 
