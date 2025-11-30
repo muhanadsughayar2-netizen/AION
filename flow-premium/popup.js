@@ -183,8 +183,8 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) 
     
     overlayStatus.textContent = 'Opening editor...';
     
-    // Store screenshots in session storage for the annotation page
-    await chrome.storage.session.set({ fullPageScreenshots: screenshots });
+    // Store screenshots in local storage for the annotation page (unlimited size)
+    await chrome.storage.local.set({ fullPageScreenshots: screenshots });
     
     // Open annotation screen in full page mode
     const width = Math.min(1200, screen.width - 100);

@@ -140,7 +140,7 @@ async function captureScreenshot() {
     snaps.push(dataUrl);
     
     // Save to session storage
-    await chrome.storage.session.set({ snaps });
+    await chrome.storage.local.set({ snaps });
     
     // Update badge
     await updateBadge(snaps.length);
@@ -192,7 +192,7 @@ async function handleUpload(preferredPlatform = 'auto', selectedSnaps = null) {
       // Use provided selected snaps
       snapsToUpload = selectedSnaps;
       // Temporarily store selected snaps for content script
-      await chrome.storage.session.set({ selectedSnapsForUpload: snapsToUpload });
+      await chrome.storage.local.set({ selectedSnapsForUpload: snapsToUpload });
     } else {
       // Get all snaps from storage
       const allSnaps = await getSnaps();
@@ -231,7 +231,7 @@ async function handleUpload(preferredPlatform = 'auto', selectedSnaps = null) {
 
 // Get all snaps from session storage
 async function getSnaps() {
-  const result = await chrome.storage.session.get('snaps');
+  const result = await chrome.storage.local.get('snaps');
   return result.snaps || [];
 }
 
@@ -243,14 +243,14 @@ async function getSnapCount() {
 
 // Clear all snaps
 async function clearSnaps() {
-  await chrome.storage.session.remove('snaps');
+  await chrome.storage.local.remove('snaps');
   await updateBadge(0);
   return { success: true };
 }
 
 // Set snaps (for individual delete)
 async function setSnaps(snaps) {
-  await chrome.storage.session.set({ snaps });
+  await chrome.storage.local.set({ snaps });
   await updateBadge(snaps.length);
   return { success: true };
 }
@@ -302,7 +302,7 @@ async function addSnip(dataUrl) {
     snaps.push(dataUrl);
     
     // Save to session storage
-    await chrome.storage.session.set({ snaps });
+    await chrome.storage.local.set({ snaps });
     
     // Update badge
     await updateBadge(snaps.length);

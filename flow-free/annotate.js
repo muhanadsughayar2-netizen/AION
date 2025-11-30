@@ -286,8 +286,8 @@ function loadImage() {
 // Load all pages for full page mode
 async function loadFullPageImages() {
   try {
-    // Get pages from session storage
-    const result = await chrome.storage.session.get('fullPageScreenshots');
+    // Get pages from local storage (unlimited size)
+    const result = await chrome.storage.local.get('fullPageScreenshots');
     pages = result.fullPageScreenshots || [];
     
     if (pages.length === 0) {
@@ -983,8 +983,8 @@ async function saveFullPageWithAnnotations() {
       return;
     }
     
-    // Clear session storage
-    await chrome.storage.session.remove('fullPageScreenshots');
+    // Clear local storage
+    await chrome.storage.local.remove('fullPageScreenshots');
     
     updateStatus('Full page saved with annotations! ✓');
     

@@ -157,11 +157,11 @@
       
       let snaps;
       if (useSelectedOnly) {
-        const selectedResult = await chrome.storage.session.get('selectedSnapsForUpload');
+        const selectedResult = await chrome.storage.local.get('selectedSnapsForUpload');
         snaps = selectedResult.selectedSnapsForUpload || [];
-        await chrome.storage.session.remove('selectedSnapsForUpload');
+        await chrome.storage.local.remove('selectedSnapsForUpload');
       } else {
-        const result = await chrome.storage.session.get('snaps');
+        const result = await chrome.storage.local.get('snaps');
         snaps = result.snaps || [];
       }
       
@@ -212,7 +212,7 @@
       }
       
       showToast(`${uploadedCount} snap${uploadedCount > 1 ? 's' : ''} uploaded ✓`, 'success');
-      await chrome.storage.session.remove('snaps');
+      await chrome.storage.local.remove('snaps');
       chrome.runtime.sendMessage({ action: 'uploadComplete' });
       
       return { success: true, count: uploadedCount };
