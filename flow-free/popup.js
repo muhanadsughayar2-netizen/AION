@@ -2,6 +2,7 @@
 // Handles UI interactions, thumbnail display, and communication with background
 
 let currentSnaps = [];
+let currentSnapMetadata = []; // Stores chunk metadata (Part 1/7, etc.)
 let selectedSnapIds = new Set();
 
 // Add invisible watermark for AI detection
@@ -719,6 +720,10 @@ async function loadSnaps() {
     const response = await chrome.runtime.sendMessage({ action: 'getSnaps' });
     const newSnaps = response || [];
     
+    // Also load metadata for chunk badges
+    const result = await chrome.storage.local.get({ snapMetadata: [] });
+    currentSnapMetadata = result.snapMetadata || [];
+    
     // Clear selection if snap count changed (FIFO or clear happened)
     if (newSnaps.length !== currentSnaps.length) {
       selectedSnapIds.clear();
@@ -728,6 +733,7 @@ async function loadSnaps() {
   } catch (error) {
     console.error('Load snaps error:', error);
     currentSnaps = [];
+    currentSnapMetadata = [];
     selectedSnapIds.clear();
   }
 }
@@ -888,6 +894,16 @@ function updateThumbnails() {
     const number = document.createElement('div');
     number.className = 'thumbnail-number';
     number.textContent = index + 1;
+    
+    // Check if this is a chunked capture and add badge
+    const meta = currentSnapMetadata[index];
+    if (meta && meta.isChunk) {
+      const chunkBadge = document.createElement('div');
+      chunkBadge.className = 'chunk-badge';
+      chunkBadge.textContent = `${meta.part}/${meta.totalParts}`;
+      chunkBadge.title = `Part ${meta.part} of ${meta.totalParts} (pages ${meta.startPage}-${meta.endPage})`;
+      thumbnail.appendChild(chunkBadge);
+    }
     
     thumbnail.appendChild(checkbox);
     thumbnail.appendChild(deleteBtn);
@@ -1589,15 +1605,21 @@ async function handleDrop(e, dropIndex) {
   if (draggedIndex === null || draggedIndex === dropIndex) return;
   
   try {
-    // Reorder the array
+    // Reorder the snaps array
     const temp = currentSnaps[draggedIndex];
     currentSnaps.splice(draggedIndex, 1);
     currentSnaps.splice(dropIndex, 0, temp);
     
-    // Update storage
+    // Also reorder the metadata array to keep them in sync
+    const tempMeta = currentSnapMetadata[draggedIndex];
+    currentSnapMetadata.splice(draggedIndex, 1);
+    currentSnapMetadata.splice(dropIndex, 0, tempMeta);
+    
+    // Update storage (with metadata)
     const response = await chrome.runtime.sendMessage({ 
       action: 'setSnaps', 
-      snaps: currentSnaps 
+      snaps: currentSnaps,
+      metadata: currentSnapMetadata
     });
     
     if (response && response.success) {
@@ -1642,10 +1664,14 @@ async function handleDeleteSnap(index) {
     // Remove snap from array
     currentSnaps.splice(index, 1);
     
-    // Update storage via background
+    // Also remove metadata at same index
+    currentSnapMetadata.splice(index, 1);
+    
+    // Update storage via background (with metadata)
     await chrome.runtime.sendMessage({ 
       action: 'setSnaps', 
-      snaps: currentSnaps 
+      snaps: currentSnaps,
+      metadata: currentSnapMetadata
     });
     
     // Clear selection if this snap was selected

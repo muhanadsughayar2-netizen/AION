@@ -34,7 +34,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     clearSnaps().then(sendResponse);
     return true;
   } else if (request.action === 'setSnaps') {
-    setSnaps(request.snaps).then(sendResponse);
+    setSnaps(request.snaps, request.metadata || null).then(sendResponse);
     return true;
   } else if (request.action === 'getSnapCount') {
     getSnapCount().then(sendResponse);
@@ -43,8 +43,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     clearSnaps().then(sendResponse);
     return true;
   } else if (request.action === 'snipComplete') {
-    // Handle snip (cropped image) - add as new snap
-    addSnip(request.dataUrl).then(sendResponse);
+    // Handle snip (cropped image) - add as new snap with optional metadata
+    addSnip(request.dataUrl, request.metadata).then(sendResponse);
+    return true;
+  } else if (request.action === 'getQueueStatus') {
+    // Return current queue size for capacity checking
+    getSnaps().then(snaps => {
+      sendResponse({ count: snaps.length, max: MAX_SNAPS, available: MAX_SNAPS - snaps.length });
+    });
     return true;
   } else if (request.action === 'startFullPageCapture') {
     // Start full page capture process
@@ -243,14 +249,18 @@ async function getSnapCount() {
 
 // Clear all snaps
 async function clearSnaps() {
-  await chrome.storage.local.remove('snaps');
+  await chrome.storage.local.remove(['snaps', 'snapMetadata']);
   await updateBadge(0);
   return { success: true };
 }
 
-// Set snaps (for individual delete)
-async function setSnaps(snaps) {
-  await chrome.storage.local.set({ snaps });
+// Set snaps (for individual delete) - also update metadata
+async function setSnaps(snaps, metadata = null) {
+  if (metadata !== null) {
+    await chrome.storage.local.set({ snaps, snapMetadata: metadata });
+  } else {
+    await chrome.storage.local.set({ snaps });
+  }
   await updateBadge(snaps.length);
   return { success: true };
 }
@@ -271,11 +281,13 @@ function simpleHash(str) {
   return hash;
 }
 
-// Add snip (cropped image) as new snap
-async function addSnip(dataUrl) {
+// Add snip (cropped image) as new snap with optional chunk metadata
+async function addSnip(dataUrl, metadata = null) {
   try {
-    // Get current snaps
+    // Get current snaps and metadata
     const snaps = await getSnaps();
+    const result = await chrome.storage.local.get({ snapMetadata: [] });
+    const snapMetadata = result.snapMetadata || [];
     
     // Block snip if queue is full - user must delete to make room
     if (snaps.length >= MAX_SNAPS) {
@@ -286,29 +298,38 @@ async function addSnip(dataUrl) {
       };
     }
     
-    // Check for duplicate save within time window
-    const now = Date.now();
-    const imageHash = simpleHash(dataUrl);
-    if (imageHash === lastSavedImageHash && (now - lastSaveTime) < DUPLICATE_WINDOW) {
-      console.log('[SnapToAI] Duplicate image detected, skipping save');
-      return { success: true, count: snaps.length, duplicate: true };
+    // Check for duplicate save within time window (skip for chunked saves)
+    if (!metadata?.isChunk) {
+      const now = Date.now();
+      const imageHash = simpleHash(dataUrl);
+      if (imageHash === lastSavedImageHash && (now - lastSaveTime) < DUPLICATE_WINDOW) {
+        console.log('[SnapToAI] Duplicate image detected, skipping save');
+        return { success: true, count: snaps.length, duplicate: true };
+      }
+      
+      // Update duplicate detection state
+      lastSavedImageHash = imageHash;
+      lastSaveTime = now;
     }
-    
-    // Update duplicate detection state
-    lastSavedImageHash = imageHash;
-    lastSaveTime = now;
     
     // Add new snip
     snaps.push(dataUrl);
     
-    // Save to session storage
-    await chrome.storage.local.set({ snaps });
+    // Add metadata (null for regular snaps, chunk info for chunked captures)
+    snapMetadata.push(metadata);
+    
+    // Save to local storage
+    await chrome.storage.local.set({ snaps, snapMetadata });
     
     // Update badge
     await updateBadge(snaps.length);
     
     // Notify popup about saved snip (for preview)
-    chrome.runtime.sendMessage({ action: 'snipSaved', dataUrl: dataUrl }).catch(() => {});
+    chrome.runtime.sendMessage({ 
+      action: 'snipSaved', 
+      dataUrl: dataUrl,
+      metadata: metadata
+    }).catch(() => {});
     
     return { success: true, count: snaps.length };
   } catch (error) {

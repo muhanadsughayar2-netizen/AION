@@ -983,161 +983,173 @@ function yieldToUI() {
   return new Promise(resolve => setTimeout(resolve, 0));
 }
 
-// Save full page with all annotations - optimized for large captures
+// Save full page with all annotations - CHUNKED for AI readability
+// Splits into 10-page chunks so AI platforms can process each piece
 async function saveFullPageWithAnnotations() {
   try {
     const totalPages = pages.length;
+    const PAGES_PER_CHUNK = 10; // AI platforms work best with ~10 pages per image
+    const overlap = 50;
     
-    // Warning for very large captures
-    if (totalPages > 50) {
-      updateStatus(`Processing ${totalPages} pages - this may take a moment...`);
-      await yieldToUI();
-    } else {
-      updateStatus('Saving all pages with annotations...');
+    // Calculate how many chunks we need
+    const totalChunks = Math.ceil(totalPages / PAGES_PER_CHUNK);
+    
+    // Check queue capacity first
+    const queueStatus = await chrome.runtime.sendMessage({ action: 'getQueueStatus' });
+    const currentQueueSize = queueStatus?.count || 0;
+    const availableSlots = 9 - currentQueueSize;
+    
+    if (totalChunks > availableSlots) {
+      updateStatus(`Need ${totalChunks} slots but only ${availableSlots} available. Clear queue first.`);
+      return;
     }
     
-    // Save current page annotations first (deep copy)
-    pageAnnotations[currentPageIndex] = JSON.parse(JSON.stringify(annotations));
-    
-    const overlap = 50; // Same overlap as capture
-    
-    // STEP 1: Load ALL page dimensions first (needed for accurate height)
-    updateStatus('Calculating dimensions...');
+    updateStatus(`Splitting ${totalPages} pages into ${totalChunks} chunks for AI...`);
     await yieldToUI();
     
-    let totalHeight = 0;
-    let pageWidth = 0;
-    const pageHeights = [];
+    // Save current page annotations first
+    pageAnnotations[currentPageIndex] = JSON.parse(JSON.stringify(annotations));
     
+    // STEP 1: Load all page images and get dimensions
+    updateStatus('Loading all pages...');
+    await yieldToUI();
+    
+    let pageWidth = 0;
     for (let i = 0; i < totalPages; i++) {
-      // Load page if needed
       if (!pageImages[i]) {
         if (i % 10 === 0) {
-          updateStatus(`Loading page ${i + 1}/${totalPages} for dimensions...`);
+          updateStatus(`Loading page ${i + 1}/${totalPages}...`);
           await yieldToUI();
         }
         await loadPageImage(i);
       }
+      if (i === 0 && pageImages[0]) {
+        pageWidth = pageImages[0].width;
+      }
+    }
+    
+    // STEP 2: Process each chunk
+    const savedChunks = [];
+    
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const startPage = chunkIndex * PAGES_PER_CHUNK;
+      const endPage = Math.min(startPage + PAGES_PER_CHUNK, totalPages);
+      const pagesInChunk = endPage - startPage;
       
-      const img = pageImages[i];
-      if (img) {
-        if (i === 0) {
-          pageWidth = img.width;
-          totalHeight = img.height;
-        } else {
-          totalHeight += img.height - overlap;
+      updateStatus(`Creating chunk ${chunkIndex + 1}/${totalChunks} (pages ${startPage + 1}-${endPage})...`);
+      await yieldToUI();
+      
+      // Calculate chunk height
+      let chunkHeight = 0;
+      for (let i = startPage; i < endPage; i++) {
+        const img = pageImages[i];
+        if (img) {
+          if (i === startPage) {
+            chunkHeight = img.height;
+          } else {
+            chunkHeight += img.height - overlap;
+          }
         }
-        pageHeights[i] = img.height;
-      }
-    }
-    
-    // STEP 2: Create final canvas with accurate dimensions
-    updateStatus(`Creating canvas (${totalPages} pages, ${Math.round(totalHeight/1000)}k px)...`);
-    await yieldToUI();
-    
-    const finalCanvas = document.createElement('canvas');
-    finalCanvas.width = pageWidth;
-    finalCanvas.height = totalHeight;
-    const finalCtx = finalCanvas.getContext('2d');
-    
-    // STEP 3: Process pages one at a time to save memory
-    let currentY = 0;
-    const batchSize = 5; // Process in batches of 5
-    
-    for (let i = 0; i < totalPages; i++) {
-      // Update progress
-      const percent = Math.round((i / totalPages) * 100);
-      updateStatus(`Processing page ${i + 1}/${totalPages} (${percent}%)...`);
-      
-      // Yield every batch to keep UI responsive
-      if (i % batchSize === 0) {
-        await yieldToUI();
       }
       
-      // Load page if needed (lazy loading)
-      if (!pageImages[i]) {
-        await loadPageImage(i);
+      // Create chunk canvas
+      const chunkCanvas = document.createElement('canvas');
+      chunkCanvas.width = pageWidth;
+      chunkCanvas.height = chunkHeight;
+      const chunkCtx = chunkCanvas.getContext('2d');
+      
+      // Render pages to chunk
+      let currentY = 0;
+      for (let i = startPage; i < endPage; i++) {
+        const img = pageImages[i];
+        if (!img) continue;
+        
+        // Create temp canvas with annotations
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = img.width;
+        pageCanvas.height = img.height;
+        const pageCtx = pageCanvas.getContext('2d');
+        pageCtx.drawImage(img, 0, 0);
+        
+        const pageAnns = pageAnnotations[i] || [];
+        drawAnnotationsToContext(pageCtx, pageAnns);
+        
+        // Stitch to chunk
+        if (i === startPage) {
+          chunkCtx.drawImage(pageCanvas, 0, 0);
+          currentY = pageCanvas.height;
+        } else {
+          const sourceY = overlap;
+          const sourceHeight = pageCanvas.height - overlap;
+          chunkCtx.drawImage(
+            pageCanvas,
+            0, sourceY, pageCanvas.width, sourceHeight,
+            0, currentY - overlap, pageCanvas.width, sourceHeight
+          );
+          currentY += pageCanvas.height - overlap;
+        }
+        
+        // Release temp canvas
+        pageCanvas.width = 0;
+        pageCanvas.height = 0;
       }
       
-      const img = pageImages[i];
-      if (!img) {
-        console.log(`Skipping page ${i + 1} - failed to load`);
-        continue;
+      // Add watermark to chunk
+      addInvisibleWatermarkToCanvas(chunkCanvas);
+      
+      // Add visible part label at top
+      chunkCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      chunkCtx.fillRect(0, 0, 200, 40);
+      chunkCtx.fillStyle = '#00ff88';
+      chunkCtx.font = 'bold 20px Arial';
+      chunkCtx.textAlign = 'left';
+      chunkCtx.textBaseline = 'middle';
+      chunkCtx.fillText(`Part ${chunkIndex + 1} of ${totalChunks}`, 15, 22);
+      
+      // Export chunk
+      updateStatus(`Exporting chunk ${chunkIndex + 1}/${totalChunks}...`);
+      await yieldToUI();
+      
+      const chunkDataUrl = chunkCanvas.toDataURL('image/jpeg', 0.90);
+      
+      // Release chunk canvas
+      chunkCanvas.width = 0;
+      chunkCanvas.height = 0;
+      
+      // Save to queue with part metadata
+      const response = await chrome.runtime.sendMessage({
+        action: 'snipComplete',
+        dataUrl: chunkDataUrl,
+        metadata: {
+          isChunk: true,
+          part: chunkIndex + 1,
+          totalParts: totalChunks,
+          pagesInChunk: pagesInChunk,
+          startPage: startPage + 1,
+          endPage: endPage
+        }
+      });
+      
+      if (response && response.queueFull) {
+        updateStatus(`Saved ${chunkIndex} chunks. Queue full - clear and retry for remaining.`);
+        break;
       }
       
-      // Create temp canvas for this page with annotations
-      const pageCanvas = document.createElement('canvas');
-      pageCanvas.width = img.width;
-      pageCanvas.height = img.height;
-      const pageCtx = pageCanvas.getContext('2d');
+      savedChunks.push(chunkIndex + 1);
       
-      // Draw original image
-      pageCtx.drawImage(img, 0, 0);
-      
-      // Draw annotations for this page
-      const pageAnns = pageAnnotations[i] || [];
-      drawAnnotationsToContext(pageCtx, pageAnns);
-      
-      // Stitch to final canvas
-      if (i === 0) {
-        finalCtx.drawImage(pageCanvas, 0, 0);
-        currentY = pageCanvas.height;
-      } else {
-        const sourceY = overlap;
-        const sourceHeight = pageCanvas.height - overlap;
-        finalCtx.drawImage(
-          pageCanvas,
-          0, sourceY, pageCanvas.width, sourceHeight,
-          0, currentY - overlap, pageCanvas.width, sourceHeight
-        );
-        currentY += pageCanvas.height - overlap;
-      }
-      
-      // Release page canvas immediately to free memory
-      pageCanvas.width = 0;
-      pageCanvas.height = 0;
-    }
-    
-    // STEP 4: Finalize
-    updateStatus('Adding watermark...');
-    await yieldToUI();
-    addInvisibleWatermarkToCanvas(finalCanvas);
-    
-    updateStatus('Exporting image...');
-    await yieldToUI();
-    const finalDataUrl = finalCanvas.toDataURL('image/jpeg', 0.90);
-    
-    // Release final canvas
-    finalCanvas.width = 0;
-    finalCanvas.height = 0;
-    
-    updateStatus('Saving to queue...');
-    
-    // Save to queue
-    const response = await chrome.runtime.sendMessage({
-      action: 'snipComplete',
-      dataUrl: finalDataUrl
-    });
-    
-    if (response && response.queueFull) {
-      updateStatus(response.error || 'Queue full (9/9). Delete some images first.');
-      return;
-    }
-    
-    if (response && !response.success) {
-      updateStatus(response.error || 'Failed to save.');
-      return;
+      // Brief pause between chunks
+      await yieldToUI();
     }
     
     // Clear local storage
     await chrome.storage.local.remove('fullPageScreenshots');
     
-    updateStatus(`${totalPages} pages saved with annotations!`);
+    updateStatus(`Saved ${savedChunks.length} chunks! Upload to AI one at a time.`);
     
-    // Notify background that full page capture is complete
+    // Notify background
     chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
     
-    setTimeout(() => window.close(), 1500);
+    setTimeout(() => window.close(), 2000);
     
   } catch (error) {
     console.error('Save full page error:', error);
