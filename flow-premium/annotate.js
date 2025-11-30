@@ -139,7 +139,7 @@ function setupFullPageMode() {
 }
 
 // Navigate between pages
-function navigatePage(direction) {
+async function navigatePage(direction) {
   if (!isFullPageMode || pages.length === 0) return;
   
   // Save current page annotations before navigating (deep copy)
@@ -150,13 +150,26 @@ function navigatePage(direction) {
   if (newIndex < 0 || newIndex >= pages.length) return;
   
   currentPageIndex = newIndex;
+  
+  // Load page if not yet loaded (lazy loading)
+  if (!pageImages[currentPageIndex]) {
+    updateStatus(`Loading page ${currentPageIndex + 1}...`);
+    await loadPageImage(currentPageIndex);
+  }
+  
   loadCurrentPage();
   updatePageIndicator();
+  
+  // Preload neighbors for smooth navigation
+  preloadNeighbors(currentPageIndex);
 }
 
 // Load current page into canvas
 function loadCurrentPage() {
-  if (!pageImages[currentPageIndex]) return;
+  if (!pageImages[currentPageIndex]) {
+    updateStatus(`Page ${currentPageIndex + 1} loading...`);
+    return;
+  }
   
   const img = pageImages[currentPageIndex];
   canvas.width = img.width;
@@ -316,7 +329,7 @@ async function loadImage() {
   }
 }
 
-// Load all pages for full page mode
+// Load pages for full page mode - LAZY LOADING for performance
 async function loadFullPageImages() {
   try {
     // Get pages from local storage (unlimited size)
@@ -328,50 +341,89 @@ async function loadFullPageImages() {
       return;
     }
     
-    updateStatus(`Loading ${pages.length} pages...`);
+    // Show warning for large captures
+    if (pages.length > 30) {
+      updateStatus(`Loading ${pages.length} pages (large capture - please wait)...`);
+    } else {
+      updateStatus(`Loading ${pages.length} pages...`);
+    }
     
-    // Initialize annotation arrays
+    // Initialize arrays - but DON'T load all images yet (lazy loading)
     pageAnnotations = new Array(pages.length).fill(null).map(() => []);
-    pageOriginalImages = new Array(pages.length);
-    pageImages = new Array(pages.length);
+    pageOriginalImages = new Array(pages.length).fill(null);
+    pageImages = new Array(pages.length).fill(null);
     
-    // Load all page images
-    const loadPromises = pages.map((dataUrl, index) => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          pageImages[index] = img;
-          resolve();
-        };
-        img.onerror = reject;
-        img.src = dataUrl;
-      });
-    });
+    console.log(`[SnapToAI] Prepared ${pages.length} pages for lazy loading`);
     
-    await Promise.all(loadPromises);
+    // Load first page and neighbors
+    currentPageIndex = 0;
+    await loadPageImage(0);
+    if (pages.length > 1) {
+      loadPageImage(1); // Preload next page (don't await)
+    }
     
-    // Store original image data for each page (draw image first!)
-    for (let i = 0; i < pageImages.length; i++) {
-      const img = pageImages[i];
+    loadCurrentPage();
+    updatePageIndicator();
+    
+    if (pages.length > 50) {
+      updateStatus(`Page 1 of ${pages.length} - Large capture loaded!`);
+    } else {
+      updateStatus(`Page 1 of ${pages.length} - Use ◀ ▶ to navigate`);
+    }
+    
+  } catch (error) {
+    console.error('Failed to load full page images:', error);
+    updateStatus('Failed to load pages. Please try again.');
+  }
+}
+
+// Load a single page image on demand (lazy loading)
+async function loadPageImage(index) {
+  if (index < 0 || index >= pages.length) return;
+  if (pageImages[index]) return; // Already loaded
+  
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      pageImages[index] = img;
+      
+      // Create original image data for this page
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = img.width;
       tempCanvas.height = img.height;
       const tempCtx = tempCanvas.getContext('2d');
       tempCtx.drawImage(img, 0, 0);
-      pageOriginalImages[i] = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+      pageOriginalImages[index] = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+      
+      resolve();
+    };
+    img.onerror = () => {
+      console.log(`Failed to load page ${index + 1}`);
+      resolve(); // Don't block on error
+    };
+    img.src = pages[index];
+  });
+}
+
+// Preload neighboring pages for smooth navigation
+function preloadNeighbors(currentIndex) {
+  // Preload next 2 and previous 1 pages
+  const toPreload = [currentIndex - 1, currentIndex + 1, currentIndex + 2];
+  toPreload.forEach(idx => {
+    if (idx >= 0 && idx < pages.length && !pageImages[idx]) {
+      loadPageImage(idx); // Fire and forget
     }
-    
-    console.log(`[SnapToAI] Loaded ${pages.length} pages for annotation`);
-    
-    // Load first page
-    currentPageIndex = 0;
-    loadCurrentPage();
-    updatePageIndicator();
-    updateStatus(`Page 1 of ${pages.length} - Use ◀ ▶ or arrow keys to navigate`);
-    
-  } catch (error) {
-    console.error('Failed to load full page images:', error);
-    updateStatus('Failed to load pages. Please try again.');
+  });
+  
+  // Release memory for distant pages (keep 5 page window)
+  const keepRange = 3;
+  for (let i = 0; i < pages.length; i++) {
+    if (Math.abs(i - currentIndex) > keepRange) {
+      if (pageImages[i]) {
+        pageImages[i] = null; // Release Image object
+        pageOriginalImages[i] = null; // Release ImageData
+      }
+    }
   }
 }
 
@@ -926,23 +978,94 @@ async function save() {
   }
 }
 
-// Save full page with all annotations - stitch pages and save
+// Yield to UI thread to prevent freezing
+function yieldToUI() {
+  return new Promise(resolve => setTimeout(resolve, 0));
+}
+
+// Save full page with all annotations - optimized for large captures
 async function saveFullPageWithAnnotations() {
   try {
-    updateStatus('Saving all pages with annotations...');
+    const totalPages = pages.length;
+    
+    // Warning for very large captures
+    if (totalPages > 50) {
+      updateStatus(`Processing ${totalPages} pages - this may take a moment...`);
+      await yieldToUI();
+    } else {
+      updateStatus('Saving all pages with annotations...');
+    }
     
     // Save current page annotations first (deep copy)
     pageAnnotations[currentPageIndex] = JSON.parse(JSON.stringify(annotations));
     
     const overlap = 50; // Same overlap as capture
     
-    // Render each page with its annotations to a canvas
-    const renderedPages = [];
+    // STEP 1: Load ALL page dimensions first (needed for accurate height)
+    updateStatus('Calculating dimensions...');
+    await yieldToUI();
     
-    for (let i = 0; i < pages.length; i++) {
-      updateStatus(`Rendering page ${i + 1}/${pages.length}...`);
+    let totalHeight = 0;
+    let pageWidth = 0;
+    const pageHeights = [];
+    
+    for (let i = 0; i < totalPages; i++) {
+      // Load page if needed
+      if (!pageImages[i]) {
+        if (i % 10 === 0) {
+          updateStatus(`Loading page ${i + 1}/${totalPages} for dimensions...`);
+          await yieldToUI();
+        }
+        await loadPageImage(i);
+      }
       
       const img = pageImages[i];
+      if (img) {
+        if (i === 0) {
+          pageWidth = img.width;
+          totalHeight = img.height;
+        } else {
+          totalHeight += img.height - overlap;
+        }
+        pageHeights[i] = img.height;
+      }
+    }
+    
+    // STEP 2: Create final canvas with accurate dimensions
+    updateStatus(`Creating canvas (${totalPages} pages, ${Math.round(totalHeight/1000)}k px)...`);
+    await yieldToUI();
+    
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = pageWidth;
+    finalCanvas.height = totalHeight;
+    const finalCtx = finalCanvas.getContext('2d');
+    
+    // STEP 3: Process pages one at a time to save memory
+    let currentY = 0;
+    const batchSize = 5; // Process in batches of 5
+    
+    for (let i = 0; i < totalPages; i++) {
+      // Update progress
+      const percent = Math.round((i / totalPages) * 100);
+      updateStatus(`Processing page ${i + 1}/${totalPages} (${percent}%)...`);
+      
+      // Yield every batch to keep UI responsive
+      if (i % batchSize === 0) {
+        await yieldToUI();
+      }
+      
+      // Load page if needed (lazy loading)
+      if (!pageImages[i]) {
+        await loadPageImage(i);
+      }
+      
+      const img = pageImages[i];
+      if (!img) {
+        console.log(`Skipping page ${i + 1} - failed to load`);
+        continue;
+      }
+      
+      // Create temp canvas for this page with annotations
       const pageCanvas = document.createElement('canvas');
       pageCanvas.width = img.width;
       pageCanvas.height = img.height;
@@ -955,26 +1078,7 @@ async function saveFullPageWithAnnotations() {
       const pageAnns = pageAnnotations[i] || [];
       drawAnnotationsToContext(pageCtx, pageAnns);
       
-      renderedPages.push(pageCanvas);
-    }
-    
-    // Calculate total stitched height
-    let totalHeight = renderedPages[0].height;
-    for (let i = 1; i < renderedPages.length; i++) {
-      totalHeight += renderedPages[i].height - overlap;
-    }
-    
-    // Create final stitched canvas
-    const finalCanvas = document.createElement('canvas');
-    finalCanvas.width = renderedPages[0].width;
-    finalCanvas.height = totalHeight;
-    const finalCtx = finalCanvas.getContext('2d');
-    
-    // Stitch all pages
-    let currentY = 0;
-    for (let i = 0; i < renderedPages.length; i++) {
-      const pageCanvas = renderedPages[i];
-      
+      // Stitch to final canvas
       if (i === 0) {
         finalCtx.drawImage(pageCanvas, 0, 0);
         currentY = pageCanvas.height;
@@ -989,14 +1093,23 @@ async function saveFullPageWithAnnotations() {
         currentY += pageCanvas.height - overlap;
       }
       
-      updateStatus(`Stitching page ${i + 1}/${renderedPages.length}...`);
+      // Release page canvas immediately to free memory
+      pageCanvas.width = 0;
+      pageCanvas.height = 0;
     }
     
-    // Add watermark
+    // STEP 4: Finalize
+    updateStatus('Adding watermark...');
+    await yieldToUI();
     addInvisibleWatermarkToCanvas(finalCanvas);
     
-    // Export as JPEG with high quality
+    updateStatus('Exporting image...');
+    await yieldToUI();
     const finalDataUrl = finalCanvas.toDataURL('image/jpeg', 0.90);
+    
+    // Release final canvas
+    finalCanvas.width = 0;
+    finalCanvas.height = 0;
     
     updateStatus('Saving to queue...');
     
@@ -1019,12 +1132,12 @@ async function saveFullPageWithAnnotations() {
     // Clear local storage
     await chrome.storage.local.remove('fullPageScreenshots');
     
-    updateStatus('Full page saved with annotations! ✓');
+    updateStatus(`${totalPages} pages saved with annotations!`);
     
     // Notify background that full page capture is complete
     chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
     
-    setTimeout(() => window.close(), 1000);
+    setTimeout(() => window.close(), 1500);
     
   } catch (error) {
     console.error('Save full page error:', error);
