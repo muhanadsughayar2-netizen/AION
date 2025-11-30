@@ -482,7 +482,29 @@
     const screenshots = [];
     let originalStyles = null;
     
+    // Constants
+    const MAX_QUEUE_SIZE = 9;  // Total queue capacity
+    const MAX_CHUNK_SIZE = 7;  // Max images per full page capture
+    
     try {
+      // Check current queue capacity
+      const queueResult = await chrome.storage.session.get('snaps');
+      const currentSnaps = queueResult.snaps || [];
+      const remainingCapacity = MAX_QUEUE_SIZE - currentSnaps.length;
+      
+      console.log(`[SnapToAI] Queue: ${currentSnaps.length}/${MAX_QUEUE_SIZE}, remaining capacity: ${remainingCapacity}`);
+      
+      // If queue is already full, show message and exit
+      if (remainingCapacity <= 0) {
+        removeFullPageOverlay();
+        showToast('Queue full (9/9) - clear some snaps first', 'error');
+        return { success: false, error: 'Queue full' };
+      }
+      
+      // Calculate actual limit: minimum of remaining capacity and max chunk size
+      const captureLimit = Math.min(remainingCapacity, MAX_CHUNK_SIZE);
+      console.log(`[SnapToAI] Capture limit: ${captureLimit} images`);
+      
       // Get page dimensions
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
@@ -528,11 +550,9 @@
       const numCaptures = Math.ceil(totalHeight / stepHeight);
       let currentScroll = 0;
       let limitReached = false;
+      let limitReason = '';
       
-      // Hard limit - stop at 7 images maximum
-      const MAX_FULL_PAGE_CAPTURES = 7;
-      
-      console.log(`[SnapToAI] Full page: ${numCaptures} captures needed (max ${MAX_FULL_PAGE_CAPTURES}), total height: ${totalHeight}px`);
+      console.log(`[SnapToAI] Full page: ${numCaptures} captures needed (limit: ${captureLimit}), total height: ${totalHeight}px`);
       
       for (let i = 0; i < numCaptures; i++) {
         // Calculate scroll position
@@ -548,7 +568,7 @@
         await new Promise(resolve => setTimeout(resolve, 400));
         
         // Update progress (show actual progress, capped at 99% until done)
-        const progress = limitReached ? 100 : Math.min(Math.round(((i + 1) / Math.min(numCaptures, MAX_FULL_PAGE_CAPTURES)) * 100), 99);
+        const progress = limitReached ? 100 : Math.min(Math.round(((i + 1) / Math.min(numCaptures, captureLimit)) * 100), 99);
         updateOverlayProgress(progress);
         
         // Request capture from background script
@@ -563,11 +583,19 @@
             scrollY: targetScroll,
             index: i
           });
-          console.log(`[SnapToAI] Captured step ${i + 1}/${Math.min(numCaptures, MAX_FULL_PAGE_CAPTURES)}`);
+          console.log(`[SnapToAI] Captured step ${i + 1}/${Math.min(numCaptures, captureLimit)}`);
           
-          // Check image count limit - stop at exactly 7
-          if (screenshots.length >= MAX_FULL_PAGE_CAPTURES) {
-            console.log(`[SnapToAI] Limit reached: ${MAX_FULL_PAGE_CAPTURES} images captured`);
+          // Check if we've hit our limit
+          if (screenshots.length >= captureLimit) {
+            // Determine the reason
+            if (captureLimit < MAX_CHUNK_SIZE) {
+              // Queue capacity was the limit
+              limitReason = `Queue capacity (${currentSnaps.length + screenshots.length}/${MAX_QUEUE_SIZE})`;
+            } else {
+              // Chunk size was the limit
+              limitReason = `${MAX_CHUNK_SIZE} pages max`;
+            }
+            console.log(`[SnapToAI] Limit reached: ${limitReason}`);
             limitReached = true;
             updateOverlayProgress(100);
             break;
@@ -606,9 +634,11 @@
       // Send screenshots to background for stitching
       console.log(`[SnapToAI] Sending ${screenshots.length} screenshots for stitching`);
       
-      // Show limit reached message if applicable
+      // Show appropriate message
       if (limitReached) {
-        showToast(`Limit reached: ${screenshots.length} pages captured`, 'success');
+        showToast(`${limitReason}: ${screenshots.length} pages captured`, 'success');
+      } else {
+        showToast(`Full page: ${screenshots.length} pages captured`, 'success');
       }
       
       // Only send if we have screenshots - background will handle completion messaging
