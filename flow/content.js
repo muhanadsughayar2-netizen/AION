@@ -527,8 +527,12 @@
       
       const numCaptures = Math.ceil(totalHeight / stepHeight);
       let currentScroll = 0;
+      let limitReached = false;
       
-      console.log(`[SnapToAI] Full page: ${numCaptures} captures needed, total height: ${totalHeight}px`);
+      // Hard limit - stop at 7 images maximum
+      const MAX_FULL_PAGE_CAPTURES = 7;
+      
+      console.log(`[SnapToAI] Full page: ${numCaptures} captures needed (max ${MAX_FULL_PAGE_CAPTURES}), total height: ${totalHeight}px`);
       
       for (let i = 0; i < numCaptures; i++) {
         // Calculate scroll position
@@ -543,8 +547,8 @@
         // Wait for scroll animation + page settle
         await new Promise(resolve => setTimeout(resolve, 400));
         
-        // Update progress
-        const progress = Math.round(((i + 1) / numCaptures) * 100);
+        // Update progress (show actual progress, capped at 99% until done)
+        const progress = limitReached ? 100 : Math.min(Math.round(((i + 1) / Math.min(numCaptures, MAX_FULL_PAGE_CAPTURES)) * 100), 99);
         updateOverlayProgress(progress);
         
         // Request capture from background script
@@ -559,7 +563,15 @@
             scrollY: targetScroll,
             index: i
           });
-          console.log(`[SnapToAI] Captured step ${i + 1}/${numCaptures}`);
+          console.log(`[SnapToAI] Captured step ${i + 1}/${Math.min(numCaptures, MAX_FULL_PAGE_CAPTURES)}`);
+          
+          // Check image count limit - stop at exactly 7
+          if (screenshots.length >= MAX_FULL_PAGE_CAPTURES) {
+            console.log(`[SnapToAI] Limit reached: ${MAX_FULL_PAGE_CAPTURES} images captured`);
+            limitReached = true;
+            updateOverlayProgress(100);
+            break;
+          }
         } else {
           console.error(`[SnapToAI] Capture step ${i + 1} failed:`, response.error);
         }
@@ -568,6 +580,11 @@
         if (targetScroll >= totalHeight - viewportHeight) {
           break;
         }
+      }
+      
+      // Ensure progress shows 100% on successful completion
+      if (!limitReached) {
+        updateOverlayProgress(100);
       }
       
       // Restore element styles before removing overlay
@@ -589,15 +606,21 @@
       // Send screenshots to background for stitching
       console.log(`[SnapToAI] Sending ${screenshots.length} screenshots for stitching`);
       
+      // Show limit reached message if applicable
+      if (limitReached) {
+        showToast(`Limit reached: ${screenshots.length} pages captured`, 'success');
+      }
+      
       // Only send if we have screenshots - background will handle completion messaging
       chrome.runtime.sendMessage({
         action: 'fullPageCaptureComplete',
         screenshots: screenshots.map(s => s.dataUrl),
         viewportWidth,
-        viewportHeight
+        viewportHeight,
+        limitReached: limitReached
       });
       
-      return { success: true, count: screenshots.length };
+      return { success: true, count: screenshots.length, limitReached };
     } catch (error) {
       console.error('[SnapToAI] Full page capture failed:', error);
       
