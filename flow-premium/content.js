@@ -443,6 +443,7 @@
       // Send screenshots to background for stitching
       console.log(`[SnapToAI] Sending ${screenshots.length} screenshots for stitching`);
       
+      // Only send if we have screenshots - background will handle completion messaging
       chrome.runtime.sendMessage({
         action: 'fullPageCaptureComplete',
         screenshots: screenshots.map(s => s.dataUrl),
@@ -455,10 +456,9 @@
       console.error('[SnapToAI] Full page capture failed:', error);
       removeFullPageOverlay();
       
+      // Notify background of failure so it can reset state
       chrome.runtime.sendMessage({
-        action: 'fullPageComplete',
-        success: false,
-        error: error.message
+        action: 'fullPageStitchFailed'
       }).catch(() => {});
       
       return { success: false, error: error.message };

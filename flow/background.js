@@ -8,6 +8,10 @@ const CAPTURE_COOLDOWN = 500; // Minimum 500ms between captures to avoid Chrome 
 // Track last capture time to prevent rate limiting
 let lastCaptureTime = 0;
 
+// Full page capture state - prevents duplicate captures
+let isFullPageCaptureInProgress = false;
+let fullPageCapturePort = null; // Port to detect popup disconnect
+
 // Listen for keyboard command (Ctrl+Shift+S)
 chrome.commands.onCommand.addListener((command) => {
   if (command === 'capture') {
@@ -54,6 +58,29 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Stitch and save full page capture
     finalizeFullPageCapture(request.screenshots, request.viewportWidth, request.viewportHeight).then(sendResponse);
     return true;
+  } else if (request.action === 'fullPageStitchComplete' || request.action === 'fullPageStitchFailed') {
+    // Full page capture cycle complete (success or failure) - reset the flag
+    isFullPageCaptureInProgress = false;
+    fullPageCapturePort = null;
+    console.log('[SnapToAI] Full page capture completed, flag reset');
+    sendResponse({ success: true });
+    return true;
+  }
+});
+
+// Listen for port connections from popup for full page capture
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === 'fullPageCapture') {
+    fullPageCapturePort = port;
+    
+    // When popup disconnects (closes, navigates away, crashes), reset the flag immediately
+    port.onDisconnect.addListener(() => {
+      if (isFullPageCaptureInProgress) {
+        console.log('[SnapToAI] Popup disconnected during full page capture - resetting flag');
+        isFullPageCaptureInProgress = false;
+        fullPageCapturePort = null;
+      }
+    });
   }
 });
 
@@ -218,6 +245,22 @@ async function setSnaps(snaps) {
   return { success: true };
 }
 
+// Track last saved image to prevent duplicates
+let lastSavedImageHash = null;
+let lastSaveTime = 0;
+const DUPLICATE_WINDOW = 5000; // 5 second window to detect duplicates
+
+// Simple hash function for duplicate detection
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < Math.min(str.length, 1000); i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash;
+}
+
 // Add snip (cropped image) as new snap
 async function addSnip(dataUrl) {
   try {
@@ -232,6 +275,18 @@ async function addSnip(dataUrl) {
         queueFull: true
       };
     }
+    
+    // Check for duplicate save within time window
+    const now = Date.now();
+    const imageHash = simpleHash(dataUrl);
+    if (imageHash === lastSavedImageHash && (now - lastSaveTime) < DUPLICATE_WINDOW) {
+      console.log('[SnapToAI] Duplicate image detected, skipping save');
+      return { success: true, count: snaps.length, duplicate: true };
+    }
+    
+    // Update duplicate detection state
+    lastSavedImageHash = imageHash;
+    lastSaveTime = now;
     
     // Add new snip
     snaps.push(dataUrl);
@@ -281,6 +336,14 @@ chrome.action.onClicked.addListener(async () => {
 // Start full page capture process
 async function startFullPageCapture() {
   try {
+    // Check if capture already in progress
+    if (isFullPageCaptureInProgress) {
+      return { 
+        success: false, 
+        error: 'Full page capture already in progress. Please wait.' 
+      };
+    }
+    
     // Check if queue has space
     const snaps = await getSnaps();
     if (snaps.length >= MAX_SNAPS) {
@@ -289,6 +352,10 @@ async function startFullPageCapture() {
         error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.` 
       };
     }
+    
+    // Set capture in progress flag
+    // Port connection from popup will detect if popup closes and reset the flag
+    isFullPageCaptureInProgress = true;
     
     // Get active tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -315,6 +382,7 @@ async function startFullPageCapture() {
     return { success: true };
   } catch (error) {
     console.error('Start full page capture failed:', error);
+    isFullPageCaptureInProgress = false; // Reset on error
     return { success: false, error: error.message };
   }
 }
@@ -339,42 +407,42 @@ async function captureFullPageStep(tabId) {
 async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeight) {
   try {
     if (!screenshots || screenshots.length === 0) {
+      isFullPageCaptureInProgress = false;
       return { success: false, error: 'No screenshots to stitch' };
     }
-    
-    // Create offscreen document for canvas operations
-    // Note: For simplicity, we'll send the stitching to the popup
-    // which already has canvas capabilities
     
     // Get current snaps
     const snaps = await getSnaps();
     
     // Block if queue is full
     if (snaps.length >= MAX_SNAPS) {
+      isFullPageCaptureInProgress = false;
       return { 
         success: false, 
         error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.` 
       };
     }
     
-    // For now, we'll do simple stitching using createImageBitmap in a more complex way
-    // But since background.js doesn't have canvas, we need to use offscreen document
-    // Let's create a simple approach - send to popup for stitching
-    
-    // Actually, let's use OffscreenCanvas if available, or send back to content script
-    // For Chrome MV3, we can use offscreen document
-    
-    // Simpler approach: Send back to popup for final stitching
+    // Send to popup for stitching - popup will notify us when done
     chrome.runtime.sendMessage({
       action: 'stitchFullPage',
       screenshots,
       viewportWidth,
       viewportHeight
-    }).catch(() => {});
+    }).catch(() => {
+      // If popup isn't open, reset the flag
+      isFullPageCaptureInProgress = false;
+    });
     
     return { success: true, pending: true };
   } catch (error) {
     console.error('Finalize full page capture failed:', error);
+    isFullPageCaptureInProgress = false;
     return { success: false, error: error.message };
   }
+}
+
+// Reset full page capture state (called when stitch completes or fails)
+function resetFullPageCaptureState() {
+  isFullPageCaptureInProgress = false;
 }

@@ -254,8 +254,6 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) 
     
   } catch (error) {
     console.error('Stitch error:', error);
-    overlay.style.display = 'none';
-    fullPageButton.disabled = false;
     status.textContent = error.message || 'Stitching failed';
     status.className = 'status error';
     
@@ -263,6 +261,19 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) 
       status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
     }, 2000);
+  } finally {
+    // ALWAYS notify background to reset the capture flag, regardless of success/failure
+    chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
+    
+    // Disconnect the port
+    if (fullPageCapturePort) {
+      fullPageCapturePort.disconnect();
+      fullPageCapturePort = null;
+    }
+    
+    // ALWAYS reset UI state
+    overlay.style.display = 'none';
+    fullPageButton.disabled = false;
   }
 }
 
@@ -405,6 +416,8 @@ async function handleSnipClick() {
 }
 
 // Handle full page button click - scroll and capture entire page
+let fullPageCapturePort = null; // Port to maintain connection with background
+
 async function handleFullPageClick() {
   const fullPageButton = document.getElementById('fullPageButton');
   const status = document.getElementById('status');
@@ -427,6 +440,9 @@ async function handleFullPageClick() {
   }
   
   try {
+    // Establish port connection so background can detect if popup closes
+    fullPageCapturePort = chrome.runtime.connect({ name: 'fullPageCapture' });
+    
     // Show overlay in popup
     overlay.style.display = 'flex';
     overlayStatus.textContent = 'Starting full page capture...';
@@ -444,6 +460,11 @@ async function handleFullPageClick() {
     }
   } catch (error) {
     console.error('Full page capture error:', error);
+    // Disconnect port on error
+    if (fullPageCapturePort) {
+      fullPageCapturePort.disconnect();
+      fullPageCapturePort = null;
+    }
     overlay.style.display = 'none';
     status.textContent = error.message || 'Full page capture failed';
     status.className = 'status error';
