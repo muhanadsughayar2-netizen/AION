@@ -8,15 +8,9 @@ const CAPTURE_COOLDOWN = 500; // Minimum 500ms between captures to avoid Chrome 
 // Track last capture time to prevent rate limiting
 let lastCaptureTime = 0;
 
-// Full page capture state - managed entirely in background, independent of popup
+// Full page capture state - prevents duplicate captures
 let isFullPageCaptureInProgress = false;
-let fullPageCaptureData = {
-  tabId: null,
-  tiles: [],
-  viewportWidth: 0,
-  viewportHeight: 0,
-  overlap: 50
-};
+let fullPageCapturePort = null; // Port to detect popup disconnect
 
 // Listen for keyboard command (Ctrl+Shift+S)
 chrome.commands.onCommand.addListener((command) => {
@@ -53,44 +47,42 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     addSnip(request.dataUrl).then(sendResponse);
     return true;
   } else if (request.action === 'startFullPageCapture') {
-    // Start full page capture - everything managed in background
+    // Start full page capture process
     startFullPageCapture().then(sendResponse);
     return true;
-  } else if (request.action === 'fullPageTileReady') {
-    // Content script captured a tile, store it in background
-    handleFullPageTile(request).then(sendResponse);
+  } else if (request.action === 'fullPageCaptureStep') {
+    // Capture a single step during full page capture
+    captureFullPageStep(request.tabId).then(sendResponse);
     return true;
-  } else if (request.action === 'fullPageScrollComplete') {
-    // Content script finished scrolling, now stitch via offscreen
-    handleFullPageScrollComplete().then(sendResponse);
+  } else if (request.action === 'fullPageCaptureComplete') {
+    // Stitch and save full page capture
+    finalizeFullPageCapture(request.screenshots, request.viewportWidth, request.viewportHeight).then(sendResponse);
     return true;
-  } else if (request.action === 'fullPageScrollFailed') {
-    // Scrolling failed, reset state
-    resetFullPageCapture('Scroll failed: ' + (request.error || 'Unknown error'));
-    sendResponse({ success: false });
-    return true;
-  } else if (request.action === 'getFullPageStatus') {
-    // Popup asking for current status
-    sendResponse({ 
-      inProgress: isFullPageCaptureInProgress,
-      tileCount: fullPageCaptureData.tiles.length
-    });
-    return true;
-  } else if (request.action === 'cancelFullPageCapture') {
-    // User wants to cancel
-    resetFullPageCapture('Cancelled by user');
-    sendResponse({ success: true });
-    return true;
-  } else if (request.action === 'forceResetFullPageCapture') {
-    // Force reset - for when capture gets stuck
-    console.log('[SnapToAI] Force reset requested');
+  } else if (request.action === 'fullPageStitchComplete' || request.action === 'fullPageStitchFailed') {
+    // Full page capture cycle complete (success or failure) - reset the flag
     isFullPageCaptureInProgress = false;
-    fullPageCaptureData = { tabId: null, tiles: [], viewportWidth: 0, viewportHeight: 0, overlap: 50 };
+    fullPageCapturePort = null;
+    console.log('[SnapToAI] Full page capture completed, flag reset');
     sendResponse({ success: true });
     return true;
   }
 });
 
+// Listen for port connections from popup for full page capture
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === 'fullPageCapture') {
+    fullPageCapturePort = port;
+    
+    // When popup disconnects (closes, navigates away, crashes), reset the flag immediately
+    port.onDisconnect.addListener(() => {
+      if (isFullPageCaptureInProgress) {
+        console.log('[SnapToAI] Popup disconnected during full page capture - resetting flag');
+        isFullPageCaptureInProgress = false;
+        fullPageCapturePort = null;
+      }
+    });
+  }
+});
 
 // Capture screenshot of active tab
 async function captureScreenshot() {
@@ -338,55 +330,8 @@ chrome.action.onClicked.addListener(async () => {
 });
 
 // ============================================
-// FULL PAGE CAPTURE - BACKGROUND ORCHESTRATED
-// Uses offscreen document for stitching
-// Independent of popup lifecycle
+// FULL PAGE CAPTURE FUNCTIONS
 // ============================================
-
-// Ensure offscreen document exists
-async function ensureOffscreenDocument() {
-  const existingContexts = await chrome.runtime.getContexts({
-    contextTypes: ['OFFSCREEN_DOCUMENT']
-  });
-  
-  if (existingContexts.length > 0) {
-    return; // Already exists
-  }
-  
-  await chrome.offscreen.createDocument({
-    url: 'offscreen.html',
-    reasons: ['BLOBS'],
-    justification: 'Canvas stitching for full-page screenshots'
-  });
-}
-
-// Close offscreen document when done
-async function closeOffscreenDocument() {
-  try {
-    await chrome.offscreen.closeDocument();
-  } catch (e) {
-    // Ignore if already closed
-  }
-}
-
-// Reset full page capture state
-function resetFullPageCapture(errorMessage = null) {
-  console.log('[SnapToAI] Resetting full page capture state', errorMessage ? `(${errorMessage})` : '');
-  isFullPageCaptureInProgress = false;
-  fullPageCaptureData = {
-    tabId: null,
-    tiles: [],
-    viewportWidth: 0,
-    viewportHeight: 0,
-    overlap: 50
-  };
-  
-  // Notify popup about the reset
-  chrome.runtime.sendMessage({
-    action: 'fullPageCaptureReset',
-    error: errorMessage
-  }).catch(() => {});
-}
 
 // Start full page capture process
 async function startFullPageCapture() {
@@ -408,19 +353,12 @@ async function startFullPageCapture() {
       };
     }
     
-    // Set capture in progress - this flag is managed entirely in background
+    // Set capture in progress flag
+    // Port connection from popup will detect if popup closes and reset the flag
     isFullPageCaptureInProgress = true;
-    fullPageCaptureData = {
-      tabId: null,
-      tiles: [],
-      viewportWidth: 0,
-      viewportHeight: 0,
-      overlap: 50
-    };
     
     // Get active tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    fullPageCaptureData.tabId = tab.id;
     
     // Inject content script if needed
     try {
@@ -429,149 +367,82 @@ async function startFullPageCapture() {
         files: ['content.js']
       });
     } catch (e) {
-      console.log('Content script already injected:', e.message);
+      console.log('Content script already injected or injection failed:', e.message);
     }
     
     // Small delay to ensure content script is ready
     await new Promise(resolve => setTimeout(resolve, 100));
     
-    // Tell content script to start scrolling
-    // Content script will call back with fullPageTileReady for each tile
-    try {
-      const scrollResponse = await chrome.tabs.sendMessage(tab.id, {
-        action: 'startFullPageScroll',
-        tabId: tab.id
-      });
-      
-      console.log('[SnapToAI] Full page capture started for tab', tab.id, scrollResponse);
-      
-      // Set a timeout to reset the flag if no tiles are received
-      // This prevents the flag from getting stuck if content script fails silently
-      setTimeout(() => {
-        if (isFullPageCaptureInProgress && fullPageCaptureData.tiles.length === 0) {
-          console.log('[SnapToAI] Timeout: No tiles received, resetting capture state');
-          resetFullPageCapture('No response from page. Try refreshing and try again.');
-        }
-      }, 10000); // 10 second timeout
-      
-      return { success: true };
-    } catch (sendError) {
-      console.error('[SnapToAI] Failed to send message to content script:', sendError);
-      resetFullPageCapture('Could not connect to page. Try refreshing the page.');
-      return { success: false, error: 'Could not connect to page. Try refreshing the page.' };
-    }
+    // Send message to content script to start scrolling and capturing
+    chrome.tabs.sendMessage(tab.id, {
+      action: 'startFullPageScroll',
+      tabId: tab.id
+    });
+    
+    return { success: true };
   } catch (error) {
     console.error('Start full page capture failed:', error);
-    resetFullPageCapture(error.message);
+    isFullPageCaptureInProgress = false; // Reset on error
     return { success: false, error: error.message };
   }
 }
 
-// Handle a tile captured by content script
-async function handleFullPageTile(request) {
+// Capture a single viewport during full page capture
+async function captureFullPageStep(tabId) {
   try {
-    if (!isFullPageCaptureInProgress) {
-      return { success: false, error: 'No capture in progress' };
-    }
+    // Small delay to ensure page has settled after scroll
+    await new Promise(resolve => setTimeout(resolve, 100));
     
-    // Store viewport dimensions from first tile
-    if (fullPageCaptureData.tiles.length === 0) {
-      fullPageCaptureData.viewportWidth = request.viewportWidth;
-      fullPageCaptureData.viewportHeight = request.viewportHeight;
-    }
-    
-    // Capture the visible tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
     
-    // Store the tile
-    fullPageCaptureData.tiles.push(dataUrl);
-    
-    // Notify popup of progress
-    chrome.runtime.sendMessage({
-      action: 'fullPageProgress',
-      current: fullPageCaptureData.tiles.length,
-      total: request.totalTiles || 0,
-      percent: request.percent || 0
-    }).catch(() => {});
-    
-    console.log('[SnapToAI] Tile captured:', fullPageCaptureData.tiles.length);
-    return { success: true, tileCount: fullPageCaptureData.tiles.length };
+    return { success: true, dataUrl };
   } catch (error) {
-    console.error('Handle tile failed:', error);
+    console.error('Capture step failed:', error);
     return { success: false, error: error.message };
   }
 }
 
-// Handle scroll complete - stitch via offscreen document
-async function handleFullPageScrollComplete() {
+// Finalize full page capture - stitch images and save to queue
+async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeight) {
   try {
-    if (!isFullPageCaptureInProgress) {
-      return { success: false, error: 'No capture in progress' };
+    if (!screenshots || screenshots.length === 0) {
+      isFullPageCaptureInProgress = false;
+      return { success: false, error: 'No screenshots to stitch' };
     }
     
-    const tiles = fullPageCaptureData.tiles;
-    console.log('[SnapToAI] Scroll complete, stitching', tiles.length, 'tiles');
-    
-    if (tiles.length === 0) {
-      resetFullPageCapture('No tiles captured');
-      return { success: false, error: 'No tiles captured' };
-    }
-    
-    // Check queue space before stitching
+    // Get current snaps
     const snaps = await getSnaps();
+    
+    // Block if queue is full
     if (snaps.length >= MAX_SNAPS) {
-      resetFullPageCapture('Queue full');
-      return { success: false, error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS})` };
+      isFullPageCaptureInProgress = false;
+      return { 
+        success: false, 
+        error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.` 
+      };
     }
     
-    // Notify popup we're stitching
+    // Send to popup for stitching - popup will notify us when done
     chrome.runtime.sendMessage({
-      action: 'fullPageStitching'
-    }).catch(() => {});
-    
-    // Create offscreen document for canvas stitching
-    await ensureOffscreenDocument();
-    
-    // Send tiles to offscreen for stitching
-    const result = await chrome.runtime.sendMessage({
       action: 'stitchFullPage',
-      tiles: tiles,
-      viewportWidth: fullPageCaptureData.viewportWidth,
-      viewportHeight: fullPageCaptureData.viewportHeight,
-      overlap: fullPageCaptureData.overlap
+      screenshots,
+      viewportWidth,
+      viewportHeight
+    }).catch(() => {
+      // If popup isn't open, reset the flag
+      isFullPageCaptureInProgress = false;
     });
     
-    // Close offscreen document
-    await closeOffscreenDocument();
-    
-    if (!result || !result.success) {
-      resetFullPageCapture(result?.error || 'Stitching failed');
-      return { success: false, error: result?.error || 'Stitching failed' };
-    }
-    
-    // Save stitched image to queue
-    const saveResult = await addSnip(result.dataUrl);
-    
-    if (!saveResult.success) {
-      resetFullPageCapture(saveResult.error);
-      return saveResult;
-    }
-    
-    // Success! Reset state
-    console.log('[SnapToAI] Full page capture saved successfully');
-    
-    // Notify popup of completion
-    chrome.runtime.sendMessage({
-      action: 'fullPageCaptureComplete',
-      count: saveResult.count
-    }).catch(() => {});
-    
-    resetFullPageCapture();
-    return { success: true, count: saveResult.count };
+    return { success: true, pending: true };
   } catch (error) {
-    console.error('Scroll complete handling failed:', error);
-    resetFullPageCapture(error.message);
+    console.error('Finalize full page capture failed:', error);
+    isFullPageCaptureInProgress = false;
     return { success: false, error: error.message };
   }
+}
+
+// Reset full page capture state (called when stitch completes or fails)
+function resetFullPageCaptureState() {
+  isFullPageCaptureInProgress = false;
 }

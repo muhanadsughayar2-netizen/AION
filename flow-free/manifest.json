@@ -9,8 +9,7 @@
     "activeTab",
     "storage",
     "scripting",
-    "clipboardWrite",
-    "offscreen"
+    "clipboardWrite"
   ],
   "host_permissions": [
     "https://grok.x.ai/*",
