@@ -158,6 +158,7 @@ const CHUNK_SIZE_TARGET = 1.8 * 1024 * 1024; // 1.8 MB target per chunk
 const CHUNK_SIZE_HARD_LIMIT = 2.1 * 1024 * 1024; // 2.1 MB hard stop
 const CHUNK_HEIGHT_TARGET = 10500; // 10,500 px target height
 const CHUNK_HEIGHT_HARD_LIMIT = 12000; // 12,000 px hard stop
+const CHUNK_MAX_IMAGES = 7; // Maximum 7 viewport captures per chunk
 const JPEG_QUALITY = 0.90; // High quality - never compress!
 
 // Estimate base64 data URL size in bytes
@@ -221,6 +222,7 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) 
     let canvasHeight = 0;
     let currentY = 0;
     let chunkStartIdx = 0;
+    let imagesInCurrentChunk = 0; // Track images per chunk
     
     for (let i = 0; i < images.length; i++) {
       const img = images[i];
@@ -266,6 +268,7 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) 
       canvas = tempCanvas;
       ctx = tempCtx;
       canvasHeight = newHeight;
+      imagesInCurrentChunk++;
       
       overlayStatus.textContent = `Stitching ${i + 1}/${images.length}...`;
       
@@ -274,8 +277,14 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) 
       let shouldFinalize = isLastImage;
       
       if (!isLastImage) {
+        // Check image count threshold (max 7 images per chunk)
+        if (imagesInCurrentChunk >= CHUNK_MAX_IMAGES) {
+          shouldFinalize = true;
+          console.log(`[SnapToAI] Chunk finalized at ${imagesInCurrentChunk} images (max: ${CHUNK_MAX_IMAGES})`);
+        }
+        
         // Check height threshold
-        if (canvasHeight >= CHUNK_HEIGHT_TARGET) {
+        if (!shouldFinalize && canvasHeight >= CHUNK_HEIGHT_TARGET) {
           shouldFinalize = true;
           console.log(`[SnapToAI] Chunk finalized at height ${canvasHeight}px (target: ${CHUNK_HEIGHT_TARGET}px)`);
         }
@@ -322,6 +331,7 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) 
           canvasHeight = 0;
           currentY = 0;
           chunkStartIdx = i + 1;
+          imagesInCurrentChunk = 0; // Reset image counter
         }
       }
     }
