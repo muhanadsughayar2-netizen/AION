@@ -55,8 +55,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     captureFullPageStep(request.tabId).then(sendResponse);
     return true;
   } else if (request.action === 'fullPageCaptureComplete') {
-    // Stitch and save full page capture
+    // Stitch and save full page capture (legacy - for annotation flow)
     finalizeFullPageCapture(request.screenshots, request.viewportWidth, request.viewportHeight).then(sendResponse);
+    return true;
+  } else if (request.action === 'fullPageCaptureChunk') {
+    // Stitch and save a single chunk directly to queue (no annotation)
+    stitchAndSaveChunk(request.screenshots, request.viewportWidth, request.viewportHeight, request.chunkNumber).then(sendResponse);
     return true;
   } else if (request.action === 'fullPageStitchComplete' || request.action === 'fullPageStitchFailed') {
     // Full page capture cycle complete (success or failure) - reset the flag
@@ -455,4 +459,93 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
 // Reset full page capture state (called when stitch completes or fails)
 function resetFullPageCaptureState() {
   isFullPageCaptureInProgress = false;
+}
+
+// Stitch screenshots and save directly to queue (for multi-chunk full page capture)
+async function stitchAndSaveChunk(screenshots, viewportWidth, viewportHeight, chunkNumber) {
+  try {
+    if (!screenshots || screenshots.length === 0) {
+      return { success: false, error: 'No screenshots to stitch' };
+    }
+    
+    // Get current snaps to check capacity
+    const snaps = await getSnaps();
+    
+    if (snaps.length >= MAX_SNAPS) {
+      return { 
+        success: false, 
+        error: 'Queue full',
+        queueFull: true,
+        remainingCapacity: 0
+      };
+    }
+    
+    console.log(`[SnapToAI] Stitching chunk ${chunkNumber} with ${screenshots.length} screenshots`);
+    
+    // Use OffscreenDocument for stitching (required for canvas in service worker)
+    const stitchedDataUrl = await stitchImagesOffscreen(screenshots, viewportWidth, viewportHeight);
+    
+    if (!stitchedDataUrl) {
+      return { success: false, error: 'Stitching failed' };
+    }
+    
+    // Add to queue
+    snaps.push(stitchedDataUrl);
+    await chrome.storage.session.set({ snaps });
+    await updateBadge(snaps.length);
+    
+    const remainingCapacity = MAX_SNAPS - snaps.length;
+    console.log(`[SnapToAI] Chunk ${chunkNumber} saved. Queue: ${snaps.length}/${MAX_SNAPS}, remaining: ${remainingCapacity}`);
+    
+    return { 
+      success: true, 
+      count: snaps.length,
+      chunkNumber,
+      remainingCapacity,
+      queueFull: remainingCapacity <= 0
+    };
+  } catch (error) {
+    console.error('Stitch and save chunk failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Stitch images using OffscreenDocument (for service worker canvas support)
+async function stitchImagesOffscreen(screenshots, viewportWidth, viewportHeight) {
+  try {
+    // Calculate overlap (same as content.js)
+    const overlap = 50;
+    const stepHeight = viewportHeight - overlap;
+    
+    // Calculate total height: first image full height, rest add stepHeight
+    const totalHeight = viewportHeight + (screenshots.length - 1) * stepHeight;
+    
+    // Create offscreen document if needed
+    const existingContexts = await chrome.runtime.getContexts({
+      contextTypes: ['OFFSCREEN_DOCUMENT']
+    });
+    
+    if (existingContexts.length === 0) {
+      await chrome.offscreen.createDocument({
+        url: 'offscreen.html',
+        reasons: ['CANVAS'],
+        justification: 'Stitch full page screenshots'
+      });
+    }
+    
+    // Send stitch request to offscreen document
+    const result = await chrome.runtime.sendMessage({
+      action: 'offscreenStitch',
+      screenshots,
+      viewportWidth,
+      viewportHeight,
+      totalHeight,
+      stepHeight
+    });
+    
+    return result.dataUrl;
+  } catch (error) {
+    console.error('Offscreen stitch failed:', error);
+    return null;
+  }
 }
