@@ -169,8 +169,73 @@ function estimateDataUrlBytes(dataUrl) {
   return Math.ceil((base64Part.length * 3) / 4);
 }
 
-// Stitch full page images into chunks (splits large pages into multiple high-quality files)
+// Open full page annotation editor with paginated view
 async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) {
+  const overlay = document.getElementById('fullPageOverlay');
+  const overlayStatus = document.getElementById('fullPageStatus');
+  const status = document.getElementById('status');
+  const fullPageButton = document.getElementById('fullPageButton');
+  
+  try {
+    if (!screenshots || screenshots.length === 0) {
+      throw new Error('No screenshots to stitch');
+    }
+    
+    overlayStatus.textContent = 'Opening editor...';
+    
+    // Store screenshots in session storage for the annotation page
+    await chrome.storage.session.set({ fullPageScreenshots: screenshots });
+    
+    // Open annotation screen in full page mode
+    const width = Math.min(1200, screen.width - 100);
+    const height = Math.min(900, screen.height - 100);
+    const left = Math.round((screen.width - width) / 2);
+    const top = Math.round((screen.height - height) / 2);
+    
+    window.open(
+      'annotate.html?mode=fullpage',
+      'FullPageEditor',
+      `width=${width},height=${height},left=${left},top=${top}`
+    );
+    
+    // Hide overlay and update UI
+    overlay.style.display = 'none';
+    fullPageButton.disabled = false;
+    status.textContent = `Full page: ${screenshots.length} pages ready to edit`;
+    status.className = 'status active';
+    
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 3000);
+    
+    // Don't reset capture state here - annotation window will do it when done
+    return;
+    
+  } catch (error) {
+    console.error('Full page error:', error);
+    status.textContent = error.message || 'Full page capture failed';
+    status.className = 'status error';
+    
+    // Notify background to reset capture state
+    chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
+    
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 2000);
+  } finally {
+    if (fullPageCapturePort) {
+      fullPageCapturePort.disconnect();
+      fullPageCapturePort = null;
+    }
+    overlay.style.display = 'none';
+    fullPageButton.disabled = false;
+  }
+}
+
+// OLD chunking logic - kept for reference but not used
+async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportHeight) {
   const overlay = document.getElementById('fullPageOverlay');
   const overlayStatus = document.getElementById('fullPageStatus');
   const status = document.getElementById('status');

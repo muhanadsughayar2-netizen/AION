@@ -21,13 +21,22 @@ let cropRect = null;
 let isCropping = false;
 let cropStartX, cropStartY, cropEndX, cropEndY;
 
+// Full Page Paginated Mode variables
+let isFullPageMode = false;
+let pages = []; // Array of page image data URLs
+let pageImages = []; // Array of loaded Image objects
+let pageAnnotations = []; // Annotations per page: [[page0 annotations], [page1 annotations], ...]
+let pageOriginalImages = []; // Original ImageData per page
+let currentPageIndex = 0;
+
 document.addEventListener('DOMContentLoaded', () => {
   canvas = document.getElementById('canvas');
   ctx = canvas.getContext('2d');
   
-  // Check if we're in snip mode
+  // Check mode from URL params
   const urlParams = new URLSearchParams(window.location.search);
   isSnipMode = urlParams.get('mode') === 'snip';
+  isFullPageMode = urlParams.get('mode') === 'fullpage';
   
   if (isSnipMode) {
     // Auto-select crop tool in snip mode
@@ -37,6 +46,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Simplify toolbar for snip mode - hide all except scissors, save, exit
     simplifyToolbarForSnipMode();
+  }
+  
+  if (isFullPageMode) {
+    document.title = 'Full Page Editor - SnapToAI';
+    setupFullPageMode();
   }
   
   setupEventListeners();
@@ -97,6 +111,82 @@ function simplifyToolbarForSnipMode() {
   // Change cancel button to "Exit Snip Mode"
   const cancelBtn = document.getElementById('cancelBtn');
   if (cancelBtn) cancelBtn.innerHTML = '✖ Exit Snip Mode';
+}
+
+// Setup Full Page Paginated Mode
+function setupFullPageMode() {
+  // Show page navigation
+  const pageNav = document.getElementById('pageNav');
+  if (pageNav) pageNav.style.display = 'flex';
+  
+  // Update save button text
+  const saveBtn = document.getElementById('saveBtn');
+  if (saveBtn) saveBtn.innerHTML = '💾 Save All Pages';
+  
+  // Setup navigation buttons
+  document.getElementById('prevPage').addEventListener('click', () => navigatePage(-1));
+  document.getElementById('nextPage').addEventListener('click', () => navigatePage(1));
+  
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (isFullPageMode && !document.activeElement.matches('input, textarea')) {
+      if (e.key === 'ArrowLeft') navigatePage(-1);
+      if (e.key === 'ArrowRight') navigatePage(1);
+    }
+  });
+  
+  updateStatus('Use ◀ ▶ to navigate pages. Edit each page at full size!');
+}
+
+// Navigate between pages
+function navigatePage(direction) {
+  if (!isFullPageMode || pages.length === 0) return;
+  
+  // Save current page annotations before navigating (deep copy)
+  pageAnnotations[currentPageIndex] = JSON.parse(JSON.stringify(annotations));
+  
+  // Calculate new index
+  const newIndex = currentPageIndex + direction;
+  if (newIndex < 0 || newIndex >= pages.length) return;
+  
+  currentPageIndex = newIndex;
+  loadCurrentPage();
+  updatePageIndicator();
+}
+
+// Load current page into canvas
+function loadCurrentPage() {
+  if (!pageImages[currentPageIndex]) return;
+  
+  const img = pageImages[currentPageIndex];
+  canvas.width = img.width;
+  canvas.height = img.height;
+  
+  // Draw the image first
+  ctx.drawImage(img, 0, 0);
+  
+  // Restore original image data for this page
+  originalImage = pageOriginalImages[currentPageIndex];
+  
+  // Restore annotations for this page (deep copy)
+  annotations = pageAnnotations[currentPageIndex] 
+    ? JSON.parse(JSON.stringify(pageAnnotations[currentPageIndex])) 
+    : [];
+  
+  // Redraw with annotations
+  redraw();
+}
+
+// Update page indicator
+function updatePageIndicator() {
+  const indicator = document.getElementById('pageIndicator');
+  if (indicator) {
+    indicator.textContent = `Page ${currentPageIndex + 1} / ${pages.length}`;
+  }
+  
+  // Update button states
+  document.getElementById('prevPage').disabled = currentPageIndex === 0;
+  document.getElementById('nextPage').disabled = currentPageIndex === pages.length - 1;
 }
 
 function setupEventListeners() {
@@ -174,6 +264,13 @@ function loadImage() {
   const urlParams = new URLSearchParams(window.location.search);
   const imageUrl = urlParams.get('img');
   
+  // Full Page Mode - load pages from session storage
+  if (isFullPageMode) {
+    loadFullPageImages();
+    return;
+  }
+  
+  // Regular mode - load single image
   if (imageUrl) {
     const img = new Image();
     img.onload = () => {
@@ -183,6 +280,65 @@ function loadImage() {
       originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
     };
     img.src = imageUrl;
+  }
+}
+
+// Load all pages for full page mode
+async function loadFullPageImages() {
+  try {
+    // Get pages from session storage
+    const result = await chrome.storage.session.get('fullPageScreenshots');
+    pages = result.fullPageScreenshots || [];
+    
+    if (pages.length === 0) {
+      updateStatus('No pages found. Please try again.');
+      return;
+    }
+    
+    updateStatus(`Loading ${pages.length} pages...`);
+    
+    // Initialize annotation arrays
+    pageAnnotations = new Array(pages.length).fill(null).map(() => []);
+    pageOriginalImages = new Array(pages.length);
+    pageImages = new Array(pages.length);
+    
+    // Load all page images
+    const loadPromises = pages.map((dataUrl, index) => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          pageImages[index] = img;
+          resolve();
+        };
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+    });
+    
+    await Promise.all(loadPromises);
+    
+    // Store original image data for each page (draw image first!)
+    for (let i = 0; i < pageImages.length; i++) {
+      const img = pageImages[i];
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = img.width;
+      tempCanvas.height = img.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(img, 0, 0);
+      pageOriginalImages[i] = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+    }
+    
+    console.log(`[SnapToAI] Loaded ${pages.length} pages for annotation`);
+    
+    // Load first page
+    currentPageIndex = 0;
+    loadCurrentPage();
+    updatePageIndicator();
+    updateStatus(`Page 1 of ${pages.length} - Use ◀ ▶ or arrow keys to navigate`);
+    
+  } catch (error) {
+    console.error('Failed to load full page images:', error);
+    updateStatus('Failed to load pages. Please try again.');
   }
 }
 
@@ -664,6 +820,12 @@ async function save() {
   const index = urlParams.get('index');
   
   try {
+    // FULL PAGE MODE: Stitch all pages with annotations and save
+    if (mode === 'fullpage' && isFullPageMode) {
+      await saveFullPageWithAnnotations();
+      return;
+    }
+    
     // SNIP MODE: Save cropped region as new snap
     if (mode === 'snip' && cropRect) {
       // Extract the cropped region from original image
@@ -729,4 +891,235 @@ async function save() {
     console.error('Save error:', error);
     updateStatus('Save failed. Try again.');
   }
+}
+
+// Save full page with all annotations - stitch pages and save
+async function saveFullPageWithAnnotations() {
+  try {
+    updateStatus('Saving all pages with annotations...');
+    
+    // Save current page annotations first (deep copy)
+    pageAnnotations[currentPageIndex] = JSON.parse(JSON.stringify(annotations));
+    
+    const overlap = 50; // Same overlap as capture
+    
+    // Render each page with its annotations to a canvas
+    const renderedPages = [];
+    
+    for (let i = 0; i < pages.length; i++) {
+      updateStatus(`Rendering page ${i + 1}/${pages.length}...`);
+      
+      const img = pageImages[i];
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = img.width;
+      pageCanvas.height = img.height;
+      const pageCtx = pageCanvas.getContext('2d');
+      
+      // Draw original image
+      pageCtx.drawImage(img, 0, 0);
+      
+      // Draw annotations for this page
+      const pageAnns = pageAnnotations[i] || [];
+      drawAnnotationsToContext(pageCtx, pageAnns);
+      
+      renderedPages.push(pageCanvas);
+    }
+    
+    // Calculate total stitched height
+    let totalHeight = renderedPages[0].height;
+    for (let i = 1; i < renderedPages.length; i++) {
+      totalHeight += renderedPages[i].height - overlap;
+    }
+    
+    // Create final stitched canvas
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = renderedPages[0].width;
+    finalCanvas.height = totalHeight;
+    const finalCtx = finalCanvas.getContext('2d');
+    
+    // Stitch all pages
+    let currentY = 0;
+    for (let i = 0; i < renderedPages.length; i++) {
+      const pageCanvas = renderedPages[i];
+      
+      if (i === 0) {
+        finalCtx.drawImage(pageCanvas, 0, 0);
+        currentY = pageCanvas.height;
+      } else {
+        const sourceY = overlap;
+        const sourceHeight = pageCanvas.height - overlap;
+        finalCtx.drawImage(
+          pageCanvas,
+          0, sourceY, pageCanvas.width, sourceHeight,
+          0, currentY - overlap, pageCanvas.width, sourceHeight
+        );
+        currentY += pageCanvas.height - overlap;
+      }
+      
+      updateStatus(`Stitching page ${i + 1}/${renderedPages.length}...`);
+    }
+    
+    // Add watermark
+    addInvisibleWatermarkToCanvas(finalCanvas);
+    
+    // Export as JPEG with high quality
+    const finalDataUrl = finalCanvas.toDataURL('image/jpeg', 0.90);
+    
+    updateStatus('Saving to queue...');
+    
+    // Save to queue
+    const response = await chrome.runtime.sendMessage({
+      action: 'snipComplete',
+      dataUrl: finalDataUrl
+    });
+    
+    if (response && response.queueFull) {
+      updateStatus(response.error || 'Queue full (9/9). Delete some images first.');
+      return;
+    }
+    
+    if (response && !response.success) {
+      updateStatus(response.error || 'Failed to save.');
+      return;
+    }
+    
+    // Clear session storage
+    await chrome.storage.session.remove('fullPageScreenshots');
+    
+    updateStatus('Full page saved with annotations! ✓');
+    
+    // Notify background that full page capture is complete
+    chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
+    
+    setTimeout(() => window.close(), 1000);
+    
+  } catch (error) {
+    console.error('Save full page error:', error);
+    updateStatus('Failed to save. Please try again.');
+  }
+}
+
+// Draw annotations to a canvas context (for rendering annotated pages)
+function drawAnnotationsToContext(ctx, anns) {
+  for (const ann of anns) {
+    if (ann.tool === 'highlight' && ann.points) {
+      ctx.strokeStyle = ann.color;
+      ctx.lineWidth = ann.size || 12;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.globalAlpha = 0.6;
+      ctx.shadowColor = ann.color;
+      ctx.shadowBlur = 15;
+      
+      ctx.beginPath();
+      if (ann.points.length > 0) {
+        ctx.moveTo(ann.points[0].x, ann.points[0].y);
+        for (let i = 1; i < ann.points.length; i++) {
+          ctx.lineTo(ann.points[i].x, ann.points[i].y);
+        }
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+    } else if (ann.tool === 'callout') {
+      // Circle with glow (matches redraw())
+      ctx.fillStyle = ann.color;
+      ctx.shadowColor = ann.color;
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(ann.x, ann.y, 28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      
+      // White border
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      
+      // Number
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 26px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(ann.number.toString(), ann.x, ann.y);
+      
+      // Label pill (if text exists)
+      if (ann.text) {
+        const textY = ann.y + 50;
+        ctx.font = 'bold 16px Arial';
+        const w = ctx.measureText(ann.text).width;
+        
+        ctx.fillStyle = ann.color;
+        ctx.shadowColor = ann.color;
+        ctx.shadowBlur = 10;
+        ctx.fillRect(ann.x - w/2 - 10, textY - 12, w + 20, 28);
+        ctx.shadowBlur = 0;
+        
+        ctx.fillStyle = '#000';
+        ctx.fillText(ann.text, ann.x, textY);
+      }
+    } else if (ann.tool === 'text') {
+      // Text with outline (matches redraw())
+      ctx.font = '26px Arial';
+      ctx.fillStyle = ann.color;
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 3;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      
+      ctx.strokeText(ann.text, ann.x, ann.y);
+      ctx.fillText(ann.text, ann.x, ann.y);
+    } else if (ann.tool === 'sticker') {
+      // Sticker pill with glow (matches redraw())
+      ctx.font = 'bold 18px Arial';
+      const w = ctx.measureText(ann.text).width;
+      
+      ctx.fillStyle = ann.color;
+      ctx.shadowColor = ann.color;
+      ctx.shadowBlur = 12;
+      ctx.fillRect(ann.x - w/2 - 14, ann.y - 18, w + 28, 36);
+      ctx.shadowBlur = 0;
+      
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(ann.x - w/2 - 14, ann.y - 18, w + 28, 36);
+      
+      ctx.fillStyle = '#000';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(ann.text, ann.x, ann.y);
+    }
+  }
+}
+
+// Add invisible watermark to canvas
+function addInvisibleWatermarkToCanvas(canvas) {
+  const ctx = canvas.getContext('2d');
+  ctx.globalAlpha = 0.005;
+  ctx.fillStyle = '#fff';
+  ctx.font = '12px Arial';
+  
+  const lines = [
+    'Captured with SnapToAI',
+    'snaptoai.com',
+    'Free Chrome Extension',
+    'Batch Screenshots for AI'
+  ];
+  
+  for (let y = 50; y < canvas.height; y += 200) {
+    for (let x = 50; x < canvas.width; x += 300) {
+      const line = lines[Math.floor(Math.random() * lines.length)];
+      ctx.fillText(line, x, y);
+    }
+  }
+  
+  ctx.globalAlpha = 1;
+  
+  // Magic pixel
+  const imageData = ctx.getImageData(canvas.width - 1, canvas.height - 1, 1, 1);
+  imageData.data[0] = 0x53;
+  imageData.data[1] = 0x4E;
+  imageData.data[2] = 0x41;
+  imageData.data[3] = 255;
+  ctx.putImageData(imageData, canvas.width - 1, canvas.height - 1);
 }
