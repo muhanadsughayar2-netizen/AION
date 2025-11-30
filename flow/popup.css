@@ -122,13 +122,14 @@ body {
   color: #ff3b30;
 }
 
-/* Dual Orb Container - Side by Side Snap & Snip */
-.orb-dual-container {
+/* Triple Orb Container - Side by Side Snap, Snip & Full Page */
+.orb-triple-container {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  gap: 24px;
+  gap: 16px;
   margin: 8px 0;
+  flex-wrap: wrap;
 }
 
 .orb-wrapper {
@@ -188,6 +189,50 @@ body {
 
 .orb-inner svg {
   /* No glow effect, just clean icon */
+}
+
+/* Full Page Capture Overlay */
+.fullpage-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(5px);
+}
+
+.fullpage-progress {
+  background: rgba(10, 10, 10, 0.95);
+  border: 2px solid rgba(0, 217, 255, 0.5);
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  min-width: 250px;
+}
+
+.fullpage-spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(0, 217, 255, 0.2);
+  border-top-color: rgba(0, 217, 255, 0.8);
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+#fullPageStatus {
+  color: #00d9ff;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 /* Last Capture Preview - Shared for Snap and Snip */
