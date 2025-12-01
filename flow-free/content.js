@@ -27,35 +27,80 @@
     return { x: lastMouseX, y: lastMouseY };
   }
 
-  // Listen for messages from background script
+  // Listen for messages from background script - BULLETPROOF ERROR HANDLING
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'showToast') {
-      showToast(request.message, request.type || 'success');
-      sendResponse({ success: true });
-    } else if (request.action === 'captureComplete') {
-      showToast(request.message, 'success');
-      sendResponse({ success: true });
-    } else if (request.action === 'beginUpload') {
-      uploadToAI(request.platform, request.useSelectedOnly).then(sendResponse);
-      return true;
-    } else if (request.action === 'startFullPageScroll') {
-      // Only run full page capture in main frame, not iframes
-      if (window.self !== window.top) {
-        console.log('[SnapToAI] Ignoring full page capture in iframe');
-        sendResponse({ success: false, error: 'iframe' });
-        return;
+    try {
+      if (request.action === 'showToast') {
+        showToast(request.message, request.type || 'success');
+        sendResponse({ success: true });
+      } else if (request.action === 'captureComplete') {
+        showToast(request.message, 'success');
+        sendResponse({ success: true });
+      } else if (request.action === 'beginUpload') {
+        uploadToAI(request.platform, request.useSelectedOnly)
+          .then(sendResponse)
+          .catch(err => {
+            console.warn('[SnapToAI] Upload error:', err.message);
+            sendResponse({ success: false, error: 'Upload not available on this page' });
+          });
+        return true;
+      } else if (request.action === 'startFullPageScroll') {
+        // Only run full page capture in main frame, not iframes
+        if (window.self !== window.top) {
+          console.log('[SnapToAI] Ignoring full page capture in iframe');
+          sendResponse({ success: false, error: 'iframe' });
+          return;
+        }
+        // Prevent concurrent captures in same content script
+        if (isFullPageCaptureRunning) {
+          console.log('[SnapToAI] Full page capture already running, ignoring duplicate request');
+          sendResponse({ success: false, error: 'already_running' });
+          return;
+        }
+        // Start full page capture with visible scrolling - WRAPPED IN SAFE HANDLER
+        safeFullPageCapture(request.tabId)
+          .then(sendResponse)
+          .catch(err => {
+            console.warn('[SnapToAI] Full page capture failed safely:', err.message);
+            showToast('This page cannot be captured. Try SNAP instead.', 'error');
+            sendResponse({ success: false, error: 'Page not capturable' });
+          });
+        return true;
       }
-      // Prevent concurrent captures in same content script
-      if (isFullPageCaptureRunning) {
-        console.log('[SnapToAI] Full page capture already running, ignoring duplicate request');
-        sendResponse({ success: false, error: 'already_running' });
-        return;
-      }
-      // Start full page capture with visible scrolling
-      performFullPageCapture(request.tabId).then(sendResponse);
-      return true;
+    } catch (err) {
+      // NEVER let errors bubble up to Chrome
+      console.warn('[SnapToAI] Message handler error:', err.message);
+      sendResponse({ success: false, error: 'Internal error' });
     }
   });
+  
+  // BULLETPROOF wrapper for full page capture - catches all errors gracefully
+  async function safeFullPageCapture(tabId) {
+    try {
+      return await performFullPageCapture(tabId);
+    } catch (error) {
+      // Log to console but NEVER throw - this prevents Chrome extension errors
+      console.warn('[SnapToAI] Capture error (handled):', error.message || error);
+      
+      // Clean up any UI elements
+      try {
+        removeFullPageOverlay();
+      } catch (e) {}
+      
+      // Reset state
+      isFullPageCaptureRunning = false;
+      
+      // Notify background to reset state
+      try {
+        chrome.runtime.sendMessage({ action: 'fullPageStitchFailed' });
+      } catch (e) {}
+      
+      // Show user-friendly message
+      showToast('This page cannot be captured. Try SNAP instead.', 'error');
+      
+      return { success: false, error: 'Page not capturable' };
+    }
+  }
 
   // Show floating toast notification near cursor
   function showToast(message, type = 'success') {
@@ -551,7 +596,7 @@
         return { success: false, error: 'Capture failed' };
       }
     } catch (error) {
-      console.error('[SnapToAI] Simple capture error:', error);
+      console.warn('[SnapToAI] Simple capture issue:', error?.message || error);
       showToast('Capture failed: ' + error.message, 'error');
       return { success: false, error: error.message };
     }
@@ -809,7 +854,7 @@
           });
           console.log(`[SnapToAI] Captured step ${i + 1}/${numCaptures}`);
         } else {
-          console.error(`[SnapToAI] Capture step ${i + 1} failed:`, response.error);
+          console.warn(`[SnapToAI] Capture step ${i + 1} skipped:`, response.error);
         }
         
         // Check if we've reached the bottom
@@ -847,25 +892,31 @@
       
       return { success: true, count: screenshots.length };
     } catch (error) {
-      console.error('[SnapToAI] Full page capture failed:', error);
+      // Use console.warn, NEVER console.error - prevents Chrome extension warnings
+      console.warn('[SnapToAI] Full page capture issue:', error?.message || error);
       
       // Restore element styles on error
-      if (originalStyles && originalStyles.size > 0) {
-        restoreExpandedStyles(originalStyles);
-      }
+      try {
+        if (originalStyles && originalStyles.size > 0) {
+          restoreExpandedStyles(originalStyles);
+        }
+      } catch (e) {}
       
-      removeFullPageOverlay();
+      try {
+        removeFullPageOverlay();
+      } catch (e) {}
       
-      // SHOW USER-FRIENDLY ERROR MESSAGE
-      const userMessage = error.message || 'Unknown error';
-      showToast(`Capture failed: ${userMessage}. Try SNAP instead.`, 'error');
+      // SHOW USER-FRIENDLY ERROR MESSAGE - calm, not alarming
+      showToast('This page cannot be captured. Try SNAP instead.', 'error');
       
-      // Notify background of failure so it can reset state
-      chrome.runtime.sendMessage({
-        action: 'fullPageStitchFailed'
-      }).catch(() => {});
+      // Notify background of failure so it can reset state - wrapped in try/catch
+      try {
+        chrome.runtime.sendMessage({
+          action: 'fullPageStitchFailed'
+        });
+      } catch (e) {}
       
-      return { success: false, error: error.message };
+      return { success: false, error: 'Page not capturable' };
     } finally {
       // Always reset guard flag
       isFullPageCaptureRunning = false;
