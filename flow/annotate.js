@@ -29,6 +29,15 @@ let pageAnnotations = []; // Annotations per page: [[page0 annotations], [page1 
 let pageOriginalImages = []; // Original ImageData per page
 let currentPageIndex = 0;
 
+// Zoom and Frame variables
+let zoomLevel = 1.0;
+let hasBrowserFrame = false;
+let browserFrameUrl = '';
+let hasBorder = false;
+let borderColor = '#333333';
+let borderWidth = 4;
+let borderRadius = 8;
+
 document.addEventListener('DOMContentLoaded', () => {
   canvas = document.getElementById('canvas');
   ctx = canvas.getContext('2d');
@@ -203,6 +212,81 @@ function updatePageIndicator() {
 }
 
 function setupEventListeners() {
+  // Zoom controls
+  document.getElementById('zoomIn').addEventListener('click', () => {
+    zoomLevel = Math.min(zoomLevel + 0.25, 3.0);
+    applyZoom();
+  });
+  
+  document.getElementById('zoomOut').addEventListener('click', () => {
+    zoomLevel = Math.max(zoomLevel - 0.25, 0.25);
+    applyZoom();
+  });
+  
+  document.getElementById('zoomReset').addEventListener('click', () => {
+    zoomLevel = 1.0;
+    applyZoom();
+  });
+  
+  // Browser frame toggle
+  document.getElementById('toggleBrowserFrame').addEventListener('click', () => {
+    hasBrowserFrame = !hasBrowserFrame;
+    const btn = document.getElementById('toggleBrowserFrame');
+    const urlInput = document.getElementById('urlInput');
+    
+    if (hasBrowserFrame) {
+      btn.classList.add('active');
+      urlInput.style.display = 'block';
+      browserFrameUrl = urlInput.value || 'https://example.com';
+    } else {
+      btn.classList.remove('active');
+      urlInput.style.display = 'none';
+    }
+    redraw();
+  });
+  
+  document.getElementById('urlInput').addEventListener('input', (e) => {
+    browserFrameUrl = e.target.value;
+    if (hasBrowserFrame) redraw();
+  });
+  
+  // Border toggle
+  document.getElementById('toggleBorder').addEventListener('click', () => {
+    hasBorder = !hasBorder;
+    const btn = document.getElementById('toggleBorder');
+    const colorPicker = document.getElementById('borderColor');
+    const widthSelect = document.getElementById('borderWidth');
+    const radiusSelect = document.getElementById('borderRadius');
+    
+    if (hasBorder) {
+      btn.classList.add('active');
+      colorPicker.style.display = 'block';
+      widthSelect.style.display = 'block';
+      radiusSelect.style.display = 'block';
+    } else {
+      btn.classList.remove('active');
+      colorPicker.style.display = 'none';
+      widthSelect.style.display = 'none';
+      radiusSelect.style.display = 'none';
+    }
+    redraw();
+  });
+  
+  document.getElementById('borderColor').addEventListener('input', (e) => {
+    borderColor = e.target.value;
+    if (hasBorder) redraw();
+  });
+  
+  document.getElementById('borderWidth').addEventListener('change', (e) => {
+    borderWidth = parseInt(e.target.value);
+    if (hasBorder) redraw();
+  });
+  
+  document.getElementById('borderRadius').addEventListener('change', (e) => {
+    borderRadius = parseInt(e.target.value);
+    if (hasBorder) redraw();
+  });
+  
   // Tools
   document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -484,6 +568,9 @@ function handleMouseDown(e) {
     pendingStickerText = null;
     redraw();
     updateStatus('Draw highlights, add numbers, or add text. All draggable!');
+  } else if (currentTool === 'rectangle' || currentTool === 'arrow') {
+    isDrawing = true;
+    // Store starting position for rectangle/arrow
   } else if (currentTool === 'callout') {
     const label = prompt('Label:', 'Step ' + calloutNumber);
     if (label) {
@@ -542,6 +629,53 @@ function handleMouseMove(e) {
     return;
   }
   
+  // Preview rectangle/arrow while drawing
+  if (currentTool === 'rectangle') {
+    redraw();
+    const x1 = Math.min(startX, x);
+    const y1 = Math.min(startY, y);
+    const width = Math.abs(x - startX);
+    const height = Math.abs(y - startY);
+    ctx.strokeStyle = currentColor;
+    ctx.lineWidth = brushSize;
+    ctx.shadowColor = currentColor;
+    ctx.shadowBlur = 10;
+    ctx.globalAlpha = 0.7;
+    ctx.strokeRect(x1, y1, width, height);
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+    return;
+  }
+  
+  if (currentTool === 'arrow') {
+    redraw();
+    ctx.strokeStyle = currentColor;
+    ctx.fillStyle = currentColor;
+    ctx.lineWidth = brushSize;
+    ctx.shadowColor = currentColor;
+    ctx.shadowBlur = 10;
+    ctx.globalAlpha = 0.7;
+    
+    // Draw line
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    
+    // Draw arrowhead
+    const angle = Math.atan2(y - startY, x - startX);
+    const headLength = 20;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - headLength * Math.cos(angle - Math.PI / 6), y - headLength * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(x - headLength * Math.cos(angle + Math.PI / 6), y - headLength * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+    return;
+  }
+  
   if (currentTool === 'highlight') {
     highlightPoints.push({x, y});
     redraw();
@@ -566,7 +700,7 @@ function handleMouseMove(e) {
   }
 }
 
-function handleMouseUp() {
+function handleMouseUp(e) {
   // Handle crop completion
   if (isCropping && currentTool === 'crop') {
     isCropping = false;
@@ -600,6 +734,54 @@ function handleMouseUp() {
   }
   
   if (!isDrawing) return;
+  
+  // Get end position for rectangle/arrow using the passed event parameter
+  const rect = canvas.getBoundingClientRect();
+  const endX = e ? (e.clientX - rect.left) * (canvas.width / rect.width) : startX;
+  const endY = e ? (e.clientY - rect.top) * (canvas.height / rect.height) : startY;
+  
+  if (currentTool === 'rectangle') {
+    const x1 = Math.min(startX, endX);
+    const y1 = Math.min(startY, endY);
+    const width = Math.abs(endX - startX);
+    const height = Math.abs(endY - startY);
+    
+    if (width > 5 && height > 5) {
+      annotations.push({
+        tool: 'rectangle',
+        x: x1,
+        y: y1,
+        width: width,
+        height: height,
+        color: currentColor,
+        lineWidth: brushSize
+      });
+      redraw();
+    }
+    isDrawing = false;
+    return;
+  }
+  
+  if (currentTool === 'arrow') {
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    
+    if (length > 10) {
+      annotations.push({
+        tool: 'arrow',
+        x1: startX,
+        y1: startY,
+        x2: endX,
+        y2: endY,
+        color: currentColor,
+        lineWidth: brushSize
+      });
+      redraw();
+    }
+    isDrawing = false;
+    return;
+  }
   
   if (currentTool === 'highlight' && highlightPoints.length > 1) {
     const xs = highlightPoints.map(p => p.x);
@@ -715,11 +897,98 @@ function findAnnotation(x, y) {
   return null;
 }
 
+// Apply zoom to canvas container
+function applyZoom() {
+  const container = document.querySelector('.canvas-container');
+  container.style.transform = `scale(${zoomLevel})`;
+  container.style.transformOrigin = 'center top';
+  document.getElementById('zoomLevel').textContent = Math.round(zoomLevel * 100) + '%';
+}
+
+// Draw browser frame on canvas
+function drawBrowserFrame() {
+  if (!hasBrowserFrame) return;
+  
+  const frameHeight = 40;
+  const originalData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  
+  // Expand canvas for frame
+  const newCanvas = document.createElement('canvas');
+  newCanvas.width = canvas.width;
+  newCanvas.height = canvas.height + frameHeight;
+  const newCtx = newCanvas.getContext('2d');
+  
+  // Draw browser chrome
+  newCtx.fillStyle = '#323232';
+  newCtx.fillRect(0, 0, newCanvas.width, frameHeight);
+  
+  // Traffic lights
+  const buttonY = frameHeight / 2;
+  newCtx.fillStyle = '#ff5f57';
+  newCtx.beginPath();
+  newCtx.arc(16, buttonY, 6, 0, Math.PI * 2);
+  newCtx.fill();
+  
+  newCtx.fillStyle = '#ffbd2e';
+  newCtx.beginPath();
+  newCtx.arc(36, buttonY, 6, 0, Math.PI * 2);
+  newCtx.fill();
+  
+  newCtx.fillStyle = '#28ca41';
+  newCtx.beginPath();
+  newCtx.arc(56, buttonY, 6, 0, Math.PI * 2);
+  newCtx.fill();
+  
+  // URL bar
+  newCtx.fillStyle = '#1a1a1a';
+  newCtx.roundRect(80, 8, newCanvas.width - 100, 24, 6);
+  newCtx.fill();
+  
+  // URL text
+  newCtx.fillStyle = '#888';
+  newCtx.font = '12px system-ui, -apple-system, sans-serif';
+  newCtx.textAlign = 'left';
+  newCtx.textBaseline = 'middle';
+  newCtx.fillText(browserFrameUrl || 'https://example.com', 92, buttonY);
+  
+  // Draw original image below frame
+  newCtx.putImageData(originalData, 0, frameHeight);
+  
+  // Update canvas
+  canvas.height = newCanvas.height;
+  ctx.drawImage(newCanvas, 0, 0);
+  originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+// Draw border around canvas
+function drawBorder() {
+  if (!hasBorder) return;
+  
+  ctx.save();
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = borderWidth;
+  
+  if (borderRadius > 0) {
+    // Draw rounded border
+    const offset = borderWidth / 2;
+    ctx.beginPath();
+    ctx.roundRect(offset, offset, canvas.width - borderWidth, canvas.height - borderWidth, borderRadius);
+    ctx.stroke();
+  } else {
+    // Draw square border
+    ctx.strokeRect(borderWidth / 2, borderWidth / 2, canvas.width - borderWidth, canvas.height - borderWidth);
+  }
+  ctx.restore();
+}
+
 function redraw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (originalImage) {
     ctx.putImageData(originalImage, 0, 0);
   }
+  
+  // Draw border first (below annotations)
+  drawBorder();
   
   annotations.forEach(ann => {
     if (ann.tool === 'highlight') {
@@ -803,6 +1072,44 @@ function redraw() {
       
       ctx.strokeText(ann.text, ann.x, ann.y);
       ctx.fillText(ann.text, ann.x, ann.y);
+    } else if (ann.tool === 'rectangle') {
+      // Draw rectangle with glow
+      ctx.strokeStyle = ann.color;
+      ctx.lineWidth = ann.lineWidth || 4;
+      ctx.shadowColor = ann.color;
+      ctx.shadowBlur = 10;
+      ctx.strokeRect(ann.x, ann.y, ann.width, ann.height);
+      ctx.shadowBlur = 0;
+    } else if (ann.tool === 'arrow') {
+      // Draw arrow with glow
+      ctx.strokeStyle = ann.color;
+      ctx.fillStyle = ann.color;
+      ctx.lineWidth = ann.lineWidth || 4;
+      ctx.shadowColor = ann.color;
+      ctx.shadowBlur = 10;
+      
+      // Draw line
+      ctx.beginPath();
+      ctx.moveTo(ann.x1, ann.y1);
+      ctx.lineTo(ann.x2, ann.y2);
+      ctx.stroke();
+      
+      // Draw arrowhead
+      const angle = Math.atan2(ann.y2 - ann.y1, ann.x2 - ann.x1);
+      const headLength = 20;
+      ctx.beginPath();
+      ctx.moveTo(ann.x2, ann.y2);
+      ctx.lineTo(
+        ann.x2 - headLength * Math.cos(angle - Math.PI / 6),
+        ann.y2 - headLength * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.lineTo(
+        ann.x2 - headLength * Math.cos(angle + Math.PI / 6),
+        ann.y2 - headLength * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
     }
   });
   
@@ -1089,6 +1396,28 @@ async function saveFullPageWithAnnotations() {
         } else {
           const sourceY = overlap;
           const sourceHeight = pageCanvas.height - overlap;
+          
+          // Draw PAGE BREAK marker before stitching next page
+          const breakY = currentY - overlap;
+          chunkCtx.save();
+          // Subtle dashed line
+          chunkCtx.strokeStyle = 'rgba(0, 217, 255, 0.4)';
+          chunkCtx.lineWidth = 2;
+          chunkCtx.setLineDash([10, 5]);
+          chunkCtx.beginPath();
+          chunkCtx.moveTo(0, breakY);
+          chunkCtx.lineTo(pageWidth, breakY);
+          chunkCtx.stroke();
+          // Page label
+          chunkCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+          chunkCtx.fillRect(pageWidth - 100, breakY - 12, 90, 24);
+          chunkCtx.fillStyle = 'rgba(0, 217, 255, 0.7)';
+          chunkCtx.font = '11px system-ui';
+          chunkCtx.textAlign = 'right';
+          chunkCtx.textBaseline = 'middle';
+          chunkCtx.fillText(`Page ${i + 1}`, pageWidth - 15, breakY);
+          chunkCtx.restore();
+          
           chunkCtx.drawImage(
             pageCanvas,
             0, sourceY, pageCanvas.width, sourceHeight,

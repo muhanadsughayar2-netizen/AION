@@ -11,11 +11,135 @@ body {
   color: #fff;
 }
 
+/* Canvas container zoom support */
+.canvas-container {
+  transition: transform 0.2s ease;
+  will-change: transform;
+}
+
 .annotate-container {
   width: 100vw;
   height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+/* Top Bar - Zoom, Browser Frame, Border Controls */
+.top-bar {
+  background: rgba(0, 0, 0, 0.95);
+  padding: 8px 16px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+  flex-wrap: wrap;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.zoom-btn {
+  width: 28px;
+  height: 28px;
+  background: rgba(0, 217, 255, 0.1);
+  border: 1px solid rgba(0, 217, 255, 0.3);
+  border-radius: 4px;
+  color: #00d9ff;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.zoom-btn:hover {
+  background: rgba(0, 217, 255, 0.25);
+  border-color: #00d9ff;
+}
+
+.zoom-btn.zoom-reset {
+  font-size: 14px;
+  width: 32px;
+}
+
+.zoom-level {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 45px;
+  text-align: center;
+}
+
+.browser-frame-controls, .border-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.frame-btn {
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.frame-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.frame-btn.active {
+  background: rgba(0, 217, 255, 0.2);
+  border-color: #00d9ff;
+  color: #00d9ff;
+}
+
+.url-input {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: #fff;
+  padding: 6px 10px;
+  font-size: 12px;
+  width: 200px;
+}
+
+.url-input:focus {
+  outline: none;
+  border-color: #00d9ff;
+}
+
+.border-width-select, .border-radius-select {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.border-width-select:focus, .border-radius-select:focus {
+  outline: none;
+  border-color: #00d9ff;
+}
+
+#borderColor {
+  width: 32px;
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 2px;
 }
 
 /* Toolbar - SMALLER to prevent cutoff */

@@ -8,6 +8,40 @@
 </head>
 <body>
   <div class="annotate-container">
+    <!-- Top Bar: Zoom + Browser Frame -->
+    <div class="top-bar">
+      <!-- Zoom Controls -->
+      <div class="zoom-controls">
+        <button id="zoomOut" class="zoom-btn" title="Zoom Out">−</button>
+        <span id="zoomLevel" class="zoom-level">100%</span>
+        <button id="zoomIn" class="zoom-btn" title="Zoom In">+</button>
+        <button id="zoomReset" class="zoom-btn zoom-reset" title="Reset Zoom">⟳</button>
+      </div>
+      
+      <!-- Browser Frame Toggle -->
+      <div class="browser-frame-controls">
+        <button id="toggleBrowserFrame" class="frame-btn" title="Add browser frame">🖥️ Browser Frame</button>
+        <input type="text" id="urlInput" class="url-input" placeholder="https://example.com" style="display: none;">
+      </div>
+      
+      <!-- Border Controls -->
+      <div class="border-controls">
+        <button id="toggleBorder" class="frame-btn" title="Add border">🔲 Border</button>
+        <input type="color" id="borderColor" value="#333333" title="Border color" style="display: none;">
+        <select id="borderWidth" class="border-width-select" style="display: none;">
+          <option value="2">Thin (2px)</option>
+          <option value="4" selected>Medium (4px)</option>
+          <option value="8">Thick (8px)</option>
+          <option value="16">Extra Thick (16px)</option>
+        </select>
+        <select id="borderRadius" class="border-radius-select" style="display: none;">
+          <option value="0">Square</option>
+          <option value="8" selected>Rounded</option>
+          <option value="16">More Rounded</option>
+        </select>
+      </div>
+    </div>
+
     <!-- Toolbar -->
     <div class="toolbar">
       <div class="toolbar-section" id="toolSection">
@@ -15,12 +49,11 @@
         <button class="tool-btn active" data-tool="highlight" title="Draw highlights">✨</button>
         <button class="tool-btn" data-tool="callout" title="Add numbers">🔢</button>
         <button class="tool-btn" data-tool="text" title="Add text">✏️</button>
+        <button class="tool-btn" data-tool="rectangle" title="Draw rectangle">▢</button>
+        <button class="tool-btn" data-tool="arrow" title="Draw arrow">➤</button>
       </div>
       
       <div class="toolbar-section">
-        <button class="sticker-btn" data-text="🐛 BUG">BUG</button>
-        <button class="sticker-btn" data-text="⚠️ IMPORTANT">IMPORTANT</button>
-        <button class="sticker-btn" data-text="👉 FOCUS">FOCUS</button>
         <div id="customStickers"></div>
         <button id="createStickerBtn" class="create-sticker-btn" title="Create your own sticker">+ Custom</button>
       </div>
