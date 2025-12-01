@@ -1722,7 +1722,7 @@ async function saveFullPageWithAnnotations() {
   try {
     const totalPages = pages.length;
     const PAGES_PER_CHUNK = 5; // Smaller chunks for AI compatibility (5 pages max)
-    const overlap = 50;
+    const CSS_OVERLAP = 50; // Overlap in CSS pixels (matches content.js scroll step)
     
     // Calculate how many chunks we need
     const totalChunks = Math.ceil(totalPages / PAGES_PER_CHUNK);
@@ -1756,6 +1756,8 @@ async function saveFullPageWithAnnotations() {
     await yieldToUI();
     
     let pageWidth = 0;
+    let overlapPx = CSS_OVERLAP; // Will be scaled for DPR
+    
     for (let i = 0; i < totalPages; i++) {
       if (!pageImages[i]) {
         if (i % 10 === 0) {
@@ -1766,6 +1768,11 @@ async function saveFullPageWithAnnotations() {
       }
       if (i === 0 && pageImages[0]) {
         pageWidth = pageImages[0].width;
+        // Calculate DPR scale: image pixels / CSS viewport pixels
+        // viewportHeight is stored during capture, use it to derive scale
+        const dpr = window.devicePixelRatio || 1;
+        overlapPx = Math.round(CSS_OVERLAP * dpr);
+        console.log(`[SnapToAI] DPR: ${dpr}, overlap: ${CSS_OVERLAP}px CSS -> ${overlapPx}px device`);
       }
     }
     
@@ -1780,7 +1787,7 @@ async function saveFullPageWithAnnotations() {
       updateStatus(`Creating chunk ${chunkIndex + 1}/${totalChunks} (pages ${startPage + 1}-${endPage})...`);
       await yieldToUI();
       
-      // Calculate chunk height
+      // Calculate chunk height (using DPR-scaled overlap)
       let chunkHeight = 0;
       for (let i = startPage; i < endPage; i++) {
         const img = pageImages[i];
@@ -1788,7 +1795,7 @@ async function saveFullPageWithAnnotations() {
           if (i === startPage) {
             chunkHeight = img.height;
           } else {
-            chunkHeight += img.height - overlap;
+            chunkHeight += img.height - overlapPx;
           }
         }
       }
@@ -1815,41 +1822,22 @@ async function saveFullPageWithAnnotations() {
         const pageAnns = pageAnnotations[i] || [];
         drawAnnotationsToContext(pageCtx, pageAnns);
         
-        // Stitch to chunk
+        // Stitch to chunk - clean seamless stitching (DPR-aware, no visible breaks)
         if (i === startPage) {
           chunkCtx.drawImage(pageCanvas, 0, 0);
           currentY = pageCanvas.height;
         } else {
-          const sourceY = overlap;
-          const sourceHeight = pageCanvas.height - overlap;
+          // Use DPR-scaled overlap to skip the correct number of device pixels
+          const sourceY = overlapPx;
+          const sourceHeight = pageCanvas.height - overlapPx;
           
-          // Draw PAGE BREAK marker before stitching next page
-          const breakY = currentY - overlap;
-          chunkCtx.save();
-          // Subtle dashed line
-          chunkCtx.strokeStyle = 'rgba(0, 217, 255, 0.4)';
-          chunkCtx.lineWidth = 2;
-          chunkCtx.setLineDash([10, 5]);
-          chunkCtx.beginPath();
-          chunkCtx.moveTo(0, breakY);
-          chunkCtx.lineTo(pageWidth, breakY);
-          chunkCtx.stroke();
-          // Page label
-          chunkCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-          chunkCtx.fillRect(pageWidth - 100, breakY - 12, 90, 24);
-          chunkCtx.fillStyle = 'rgba(0, 217, 255, 0.7)';
-          chunkCtx.font = '11px system-ui';
-          chunkCtx.textAlign = 'right';
-          chunkCtx.textBaseline = 'middle';
-          chunkCtx.fillText(`Page ${i + 1}`, pageWidth - 15, breakY);
-          chunkCtx.restore();
-          
+          // Draw seamlessly - skip the overlapped region at top of each page
           chunkCtx.drawImage(
             pageCanvas,
             0, sourceY, pageCanvas.width, sourceHeight,
-            0, currentY - overlap, pageCanvas.width, sourceHeight
+            0, currentY - overlapPx, pageCanvas.width, sourceHeight
           );
-          currentY += pageCanvas.height - overlap;
+          currentY += pageCanvas.height - overlapPx;
         }
         
         // Release temp canvas
