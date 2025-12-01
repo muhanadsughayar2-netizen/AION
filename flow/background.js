@@ -269,7 +269,7 @@ async function handleUpload(preferredPlatform = 'auto', selectedSnaps = null) {
     
     return { success: true, count: snapsToUpload.length };
   } catch (error) {
-    console.error('Upload failed:', error);
+    console.log('[SnapToAI] Upload:', error.message || error);
     return { success: false, error: error.message };
   }
 }
@@ -372,7 +372,7 @@ async function addSnip(dataUrl, metadata = null) {
     
     return { success: true, count: snaps.length };
   } catch (error) {
-    console.error('Add snip failed:', error);
+    console.log('[SnapToAI] Snip:', error.message || error);
     
     // Check for storage quota exceeded error
     if (error.message && (error.message.includes('QUOTA') || error.message.includes('quota') || error.message.includes('storage'))) {
@@ -413,6 +413,43 @@ chrome.action.onClicked.addListener(async () => {
 // FULL PAGE CAPTURE FUNCTIONS
 // ============================================
 
+// Check if a URL is capturable (not a restricted page)
+function isCapturableUrl(url) {
+  if (!url) return false;
+  const restrictedPrefixes = [
+    'chrome://',
+    'chrome-extension://',
+    'about:',
+    'edge://',
+    'brave://',
+    'opera://',
+    'vivaldi://',
+    'file://',
+    'view-source:',
+    'devtools://',
+    'chrome-search://'
+  ];
+  const restrictedDomains = [
+    'chrome.google.com/webstore',
+    'chromewebstore.google.com',
+    'addons.mozilla.org'
+  ];
+  
+  const lowerUrl = url.toLowerCase();
+  
+  // Check prefixes
+  for (const prefix of restrictedPrefixes) {
+    if (lowerUrl.startsWith(prefix)) return false;
+  }
+  
+  // Check domains
+  for (const domain of restrictedDomains) {
+    if (lowerUrl.includes(domain)) return false;
+  }
+  
+  return true;
+}
+
 // Start full page capture process
 async function startFullPageCapture() {
   try {
@@ -420,7 +457,8 @@ async function startFullPageCapture() {
     if (isFullPageCaptureInProgress) {
       return { 
         success: false, 
-        error: 'Full page capture already in progress. Please wait.' 
+        error: 'Full page capture already in progress. Please wait.',
+        isExpected: true
       };
     }
     
@@ -429,16 +467,27 @@ async function startFullPageCapture() {
     if (snaps.length >= MAX_SNAPS) {
       return { 
         success: false, 
-        error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.` 
+        error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.`,
+        isExpected: true
+      };
+    }
+    
+    // Get active tab
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    // Check if this is a capturable page
+    if (!isCapturableUrl(tab.url)) {
+      console.log('[SnapToAI] Cannot capture this page type:', tab.url?.split('/')[0] || 'unknown');
+      return { 
+        success: false, 
+        error: 'Cannot capture this page. Works on regular websites only.',
+        isExpected: true
       };
     }
     
     // Set capture in progress flag
     // Port connection from popup will detect if popup closes and reset the flag
     isFullPageCaptureInProgress = true;
-    
-    // Get active tab
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
     // Inject content script if needed
     try {
@@ -447,7 +496,7 @@ async function startFullPageCapture() {
         files: ['content.js']
       });
     } catch (e) {
-      console.log('Content script already injected or injection failed:', e.message);
+      console.log('[SnapToAI] Content script injection skipped:', e.message);
     }
     
     // Small delay to ensure content script is ready
@@ -460,16 +509,24 @@ async function startFullPageCapture() {
         tabId: tab.id
       });
     } catch (msgError) {
-      console.log('[SnapToAI] Content script not ready:', msgError.message);
+      console.log('[SnapToAI] Cannot access this page');
       isFullPageCaptureInProgress = false;
-      return { success: false, error: 'Page not ready. Please try again.' };
+      return { 
+        success: false, 
+        error: 'Cannot capture this page. Works on regular websites only.',
+        isExpected: true
+      };
     }
     
     return { success: true };
   } catch (error) {
-    console.error('Start full page capture failed:', error);
+    console.log('[SnapToAI] Capture not available:', error.message);
     isFullPageCaptureInProgress = false; // Reset on error
-    return { success: false, error: error.message };
+    return { 
+      success: false, 
+      error: 'Cannot capture this page. Works on regular websites only.',
+      isExpected: true
+    };
   }
 }
 
@@ -484,7 +541,7 @@ async function captureFullPageStep(tabId) {
     
     return { success: true, dataUrl };
   } catch (error) {
-    console.error('Capture step failed:', error);
+    console.log('[SnapToAI] Capture step:', error.message || error);
     return { success: false, error: error.message };
   }
 }
@@ -522,7 +579,7 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
     
     return { success: true, pending: true };
   } catch (error) {
-    console.error('Finalize full page capture failed:', error);
+    console.log('[SnapToAI] Finalize:', error.message || error);
     isFullPageCaptureInProgress = false;
     return { success: false, error: error.message };
   }
@@ -573,7 +630,7 @@ async function downloadImage(dataUrl, filename = null, options = {}) {
     
     return { success: true, downloadId, filename: fullPath };
   } catch (error) {
-    console.error('Download failed:', error);
+    console.log('[SnapToAI] Download:', error.message || error);
     return { success: false, error: error.message };
   }
 }
@@ -619,7 +676,7 @@ async function downloadMultipleImages(images) {
     
     return { success: true, results };
   } catch (error) {
-    console.error('Multiple download failed:', error);
+    console.log('[SnapToAI] Download:', error.message || error);
     return { success: false, error: error.message };
   }
 }
@@ -649,7 +706,7 @@ async function convertToJpeg(pngDataUrl, quality) {
     // Convert blob to data URL
     return await blobToDataUrl(jpegBlob);
   } catch (error) {
-    console.error('JPEG conversion failed:', error);
+    console.log('[SnapToAI] JPEG:', error.message || error);
     return pngDataUrl; // Return original if conversion fails
   }
 }
@@ -697,7 +754,7 @@ async function copyToClipboardWithLimit(dataUrl) {
       limitPixels: GOOGLE_DOCS_LIMIT
     };
   } catch (error) {
-    console.error('Clipboard resize failed:', error);
+    console.log('[SnapToAI] Resize:', error.message || error);
     return { success: false, error: error.message, dataUrl: dataUrl };
   }
 }
@@ -710,7 +767,7 @@ async function getImageDimensions(dataUrl) {
     const imageBitmap = await createImageBitmap(blob);
     return { width: imageBitmap.width, height: imageBitmap.height };
   } catch (error) {
-    console.error('Failed to get image dimensions:', error);
+    console.log('[SnapToAI] Dimensions:', error.message || error);
     return { width: 0, height: 0 };
   }
 }

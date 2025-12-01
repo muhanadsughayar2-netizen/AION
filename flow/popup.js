@@ -214,7 +214,7 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) 
     return;
     
   } catch (error) {
-    console.error('Full page error:', error);
+    console.log('[SnapToAI] Full page:', error.message || error);
     status.textContent = error.message || 'Full page capture failed';
     status.className = 'status error';
     
@@ -464,7 +464,7 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
     }, 2000);
     
   } catch (error) {
-    console.error('Stitch error:', error);
+    console.log('[SnapToAI] Stitch:', error.message || error);
     status.textContent = error.message || 'Stitching failed';
     status.className = 'status error';
     
@@ -523,7 +523,7 @@ async function handleOrbClick() {
           new ClipboardItem({ [blob.type]: blob })
         ]);
       } catch (clipError) {
-        console.error('Clipboard write failed:', clipError);
+        console.log('[SnapToAI] Clipboard:', clipError.message || clipError);
       }
       
       // Show last capture preview
@@ -555,11 +555,11 @@ async function handleOrbClick() {
       }, 2000);
     }
   } catch (error) {
-    console.error('Orb click error:', error);
-    status.textContent = 'Error occurred';
+    console.log('[SnapToAI] Capture:', error.message || error);
+    status.textContent = 'Cannot capture this page';
     status.className = 'status error';
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
     }, 2000);
   } finally {
@@ -614,8 +614,8 @@ async function handleSnipClick() {
       }, 2000);
     }
   } catch (error) {
-    console.error('Snip click error:', error);
-    status.textContent = 'Error occurred';
+    console.log('[SnapToAI] Snip:', error.message || error);
+    status.textContent = 'Cannot capture this page';
     status.className = 'status error';
     setTimeout(() => {
       status.textContent = 'SnapToAI: Ready';
@@ -670,19 +670,24 @@ async function handleFullPageClick() {
       throw new Error(response.error || 'Failed to start full page capture');
     }
   } catch (error) {
-    console.error('Full page capture error:', error);
+    // Use console.log for expected situations (restricted pages, etc.)
+    console.log('[SnapToAI] Capture not available:', error.message || error);
     // Disconnect port on error
     if (fullPageCapturePort) {
       fullPageCapturePort.disconnect();
       fullPageCapturePort = null;
     }
     overlay.style.display = 'none';
-    status.textContent = error.message || 'Full page capture failed';
+    // Show friendly message for restricted pages
+    const friendlyMessage = error.message?.includes('Cannot capture') 
+      ? error.message 
+      : 'Cannot capture this page. Works on regular websites only.';
+    status.textContent = friendlyMessage;
     status.className = 'status error';
     setTimeout(() => {
       status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
-    }, 2000);
+    }, 3000);
     fullPageButton.disabled = false;
   }
 }
@@ -705,11 +710,11 @@ async function handleClear() {
     updateUI();
     
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
     }, 1500);
   } catch (error) {
-    console.error('Clear error:', error);
+    console.log('[SnapToAI] Clear error:', error);
   }
 }
 
@@ -731,7 +736,7 @@ async function loadSnaps() {
     
     currentSnaps = newSnaps;
   } catch (error) {
-    console.error('Load snaps error:', error);
+    console.log('[SnapToAI] Load snaps:', error);
     currentSnaps = [];
     currentSnapMetadata = [];
     selectedSnapIds.clear();
