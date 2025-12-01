@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "__MSG_extensionDescription__",
   "default_locale": "en",
   "permissions": [
@@ -10,8 +10,10 @@
     "storage",
     "unlimitedStorage",
     "scripting",
-    "clipboardWrite"
+    "clipboardWrite",
+    "downloads"
   ],
+  "options_page": "options.html",
   "host_permissions": [
     "https://grok.x.ai/*",
     "https://grok.com/*",
@@ -22,7 +24,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["content.js", "popup.html", "popup.css", "popup.js", "annotate.html", "annotate.css", "annotate.js"],
+      "resources": ["content.js", "popup.html", "popup.css", "popup.js", "annotate.html", "annotate.css", "annotate.js", "options.html", "options.css", "options.js"],
       "matches": ["<all_urls>"]
     }
   ],

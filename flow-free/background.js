@@ -1,12 +1,35 @@
-// Flow Background Service Worker
-// Handles screenshot capture, storage management, and messaging
+// SnapToAI Background Service Worker
+// Handles screenshot capture, storage management, downloads, and messaging
 
 const MAX_SNAPS = 9;
 const AI_SITES = ['grok.com', 'grok.x.ai', 'chat.openai.com', 'chatgpt.com', 'claude.ai'];
 const CAPTURE_COOLDOWN = 500; // Minimum 500ms between captures to avoid Chrome rate limit
 
+// Default settings
+const DEFAULT_SETTINGS = {
+  imageFormat: 'png',
+  jpegQuality: 90,
+  pdfPaperSize: 'letter-portrait',
+  smartPageSplit: true,
+  addUrlDateTime: false,
+  downloadDirectory: '',
+  showSaveAs: false,
+  autoDownload: false,
+  fitGoogleDocsLimit: true,
+  defaultBorderEnabled: true,
+  defaultBorderColor: '#00bcd4',
+  defaultBorderWidth: 8,
+  defaultFrameStyle: 'none'
+};
+
 // Track last capture time to prevent rate limiting
 let lastCaptureTime = 0;
+
+// Get current settings
+async function getSettings() {
+  const result = await chrome.storage.local.get('snaptoaiSettings');
+  return { ...DEFAULT_SETTINGS, ...result.snaptoaiSettings };
+}
 
 // Full page capture state - prevents duplicate captures
 let isFullPageCaptureInProgress = false;
@@ -70,6 +93,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     fullPageCapturePort = null;
     console.log('[SnapToAI] Full page capture completed, flag reset');
     sendResponse({ success: true });
+    return true;
+  } else if (request.action === 'getSettings') {
+    // Get current settings
+    getSettings().then(sendResponse);
+    return true;
+  } else if (request.action === 'downloadImage') {
+    // Download image with settings
+    downloadImage(request.dataUrl, request.filename, request.options).then(sendResponse);
+    return true;
+  } else if (request.action === 'downloadMultiple') {
+    // Download multiple images
+    downloadMultipleImages(request.images).then(sendResponse);
+    return true;
+  } else if (request.action === 'copyToClipboard') {
+    // Copy image to clipboard with Google Docs limit check
+    copyToClipboardWithLimit(request.dataUrl).then(sendResponse);
     return true;
   }
 });
@@ -492,4 +531,198 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
 // Reset full page capture state (called when stitch completes or fails)
 function resetFullPageCaptureState() {
   isFullPageCaptureInProgress = false;
+}
+
+// ============================================
+// DOWNLOAD FUNCTIONS
+// ============================================
+
+// Download a single image
+async function downloadImage(dataUrl, filename = null, options = {}) {
+  try {
+    const settings = await getSettings();
+    
+    // Generate filename if not provided
+    if (!filename) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const format = settings.imageFormat === 'jpeg' ? 'jpg' : 'png';
+      filename = `SnapToAI_${timestamp}.${format}`;
+    }
+    
+    // Build full path with directory setting
+    let fullPath = filename;
+    if (settings.downloadDirectory) {
+      fullPath = `${settings.downloadDirectory}/${filename}`;
+    }
+    
+    // Convert format if needed
+    let finalDataUrl = dataUrl;
+    if (settings.imageFormat === 'jpeg' && dataUrl.includes('image/png')) {
+      finalDataUrl = await convertToJpeg(dataUrl, settings.jpegQuality);
+    }
+    
+    // Download options
+    const downloadOptions = {
+      url: finalDataUrl,
+      filename: fullPath,
+      saveAs: settings.showSaveAs
+    };
+    
+    // Use chrome.downloads API
+    const downloadId = await chrome.downloads.download(downloadOptions);
+    
+    return { success: true, downloadId, filename: fullPath };
+  } catch (error) {
+    console.error('Download failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Download multiple images
+async function downloadMultipleImages(images) {
+  try {
+    const settings = await getSettings();
+    const results = [];
+    
+    for (let i = 0; i < images.length; i++) {
+      const { dataUrl, filename } = images[i];
+      
+      // Generate filename with index
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const format = settings.imageFormat === 'jpeg' ? 'jpg' : 'png';
+      const finalFilename = filename || `SnapToAI_${timestamp}_${i + 1}.${format}`;
+      
+      // Build full path
+      let fullPath = finalFilename;
+      if (settings.downloadDirectory) {
+        fullPath = `${settings.downloadDirectory}/${finalFilename}`;
+      }
+      
+      // Convert format if needed
+      let finalDataUrl = dataUrl;
+      if (settings.imageFormat === 'jpeg' && dataUrl.includes('image/png')) {
+        finalDataUrl = await convertToJpeg(dataUrl, settings.jpegQuality);
+      }
+      
+      // Download (no saveAs for multiple files)
+      const downloadId = await chrome.downloads.download({
+        url: finalDataUrl,
+        filename: fullPath,
+        saveAs: false // Never show saveAs for batch downloads
+      });
+      
+      results.push({ success: true, downloadId, filename: fullPath });
+      
+      // Small delay between downloads to prevent issues
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    return { success: true, results };
+  } catch (error) {
+    console.error('Multiple download failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Convert PNG to JPEG with quality setting (service worker compatible)
+async function convertToJpeg(pngDataUrl, quality) {
+  try {
+    // Fetch the data URL as a blob
+    const response = await fetch(pngDataUrl);
+    const blob = await response.blob();
+    
+    // Use createImageBitmap (available in service workers)
+    const imageBitmap = await createImageBitmap(blob);
+    
+    // Create offscreen canvas
+    const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
+    const ctx = canvas.getContext('2d');
+    
+    // Fill white background (JPEG doesn't support transparency)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(imageBitmap, 0, 0);
+    
+    // Convert to JPEG blob
+    const jpegBlob = await canvas.convertToBlob({ type: 'image/jpeg', quality: quality / 100 });
+    
+    // Convert blob to data URL
+    return await blobToDataUrl(jpegBlob);
+  } catch (error) {
+    console.error('JPEG conversion failed:', error);
+    return pngDataUrl; // Return original if conversion fails
+  }
+}
+
+// Copy to clipboard with Google Docs limit (service worker compatible)
+// Note: Clipboard operations need to be done via content script
+async function copyToClipboardWithLimit(dataUrl) {
+  try {
+    const settings = await getSettings();
+    
+    // Get image dimensions using createImageBitmap
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    const imageBitmap = await createImageBitmap(blob);
+    
+    const pixels = imageBitmap.width * imageBitmap.height;
+    const GOOGLE_DOCS_LIMIT = 25000000; // 25 million pixels
+    
+    let finalDataUrl = dataUrl;
+    let resized = false;
+    
+    // Resize if needed and setting is enabled
+    if (settings.fitGoogleDocsLimit && pixels > GOOGLE_DOCS_LIMIT) {
+      const scale = Math.sqrt(GOOGLE_DOCS_LIMIT / pixels);
+      const newWidth = Math.floor(imageBitmap.width * scale);
+      const newHeight = Math.floor(imageBitmap.height * scale);
+      
+      const canvas = new OffscreenCanvas(newWidth, newHeight);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(imageBitmap, 0, 0, newWidth, newHeight);
+      
+      const resizedBlob = await canvas.convertToBlob({ type: 'image/png' });
+      finalDataUrl = await blobToDataUrl(resizedBlob);
+      resized = true;
+      
+      console.log(`[SnapToAI] Resized from ${imageBitmap.width}x${imageBitmap.height} to ${newWidth}x${newHeight} for Google Docs`);
+    }
+    
+    // Return the dataUrl - clipboard write must be done in content script/popup
+    return { 
+      success: true, 
+      dataUrl: finalDataUrl,
+      resized: resized,
+      originalPixels: pixels,
+      limitPixels: GOOGLE_DOCS_LIMIT
+    };
+  } catch (error) {
+    console.error('Clipboard resize failed:', error);
+    return { success: false, error: error.message, dataUrl: dataUrl };
+  }
+}
+
+// Helper: Get image dimensions (service worker compatible)
+async function getImageDimensions(dataUrl) {
+  try {
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    const imageBitmap = await createImageBitmap(blob);
+    return { width: imageBitmap.width, height: imageBitmap.height };
+  } catch (error) {
+    console.error('Failed to get image dimensions:', error);
+    return { width: 0, height: 0 };
+  }
+}
+
+// Helper: Convert blob to data URL (service worker compatible)
+async function blobToDataUrl(blob) {
+  const arrayBuffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64 = btoa(binary);
+  return `data:${blob.type};base64,${base64}`;
 }

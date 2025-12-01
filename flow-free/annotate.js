@@ -29,7 +29,7 @@ let pageAnnotations = []; // Annotations per page: [[page0 annotations], [page1 
 let pageOriginalImages = []; // Original ImageData per page
 let currentPageIndex = 0;
 
-// Zoom and Frame variables
+// Zoom and Frame variables - will be overridden by settings
 let zoomLevel = 1.0;
 let hasBrowserFrame = false;
 let browserFrameUrl = '';
@@ -39,9 +39,43 @@ let borderColor = '#00bcd4'; // Cyan like GoFullPage
 let borderWidth = 8; // Default to thick
 let borderRadius = 0; // Square by default for professional look
 
-document.addEventListener('DOMContentLoaded', () => {
+// Load settings from storage
+async function loadSettings() {
+  try {
+    const result = await chrome.storage.local.get('snaptoaiSettings');
+    const settings = result.snaptoaiSettings || {};
+    
+    // Apply border defaults
+    if (settings.defaultBorderEnabled !== undefined) {
+      hasBorder = settings.defaultBorderEnabled;
+    }
+    if (settings.defaultBorderColor) {
+      borderColor = settings.defaultBorderColor;
+      document.getElementById('borderColor').value = borderColor;
+    }
+    if (settings.defaultBorderWidth) {
+      borderWidth = settings.defaultBorderWidth;
+      document.getElementById('borderWidth').value = borderWidth;
+    }
+    
+    // Apply frame defaults
+    if (settings.defaultFrameStyle && settings.defaultFrameStyle !== 'none') {
+      hasBrowserFrame = true;
+      browserFrameStyle = settings.defaultFrameStyle;
+      document.getElementById('frameStyle').value = browserFrameStyle;
+    }
+    
+  } catch (error) {
+    console.log('Failed to load settings:', error);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
   canvas = document.getElementById('canvas');
   ctx = canvas.getContext('2d');
+  
+  // Load settings first (for default border/frame preferences)
+  await loadSettings();
   
   // Check mode from URL params
   const urlParams = new URLSearchParams(window.location.search);
@@ -67,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadCustomStickers();
   loadImage();
   
-  // Initialize border UI to reflect default enabled state
+  // Initialize border UI to reflect current settings
   initializeBorderUI();
   
   // Highlight crop tool if in snip mode
@@ -82,18 +116,39 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Initialize border UI to show controls since border is enabled by default
+// Initialize border and frame UI to reflect current settings
 function initializeBorderUI() {
-  const btn = document.getElementById('toggleBorder');
+  // Border UI
+  const borderBtn = document.getElementById('toggleBorder');
   const colorPicker = document.getElementById('borderColor');
   const widthSelect = document.getElementById('borderWidth');
   const radiusSelect = document.getElementById('borderRadius');
   
   if (hasBorder) {
-    btn.classList.add('active');
+    borderBtn.classList.add('active');
     colorPicker.style.display = 'block';
     widthSelect.style.display = 'block';
     radiusSelect.style.display = 'block';
+  } else {
+    borderBtn.classList.remove('active');
+    colorPicker.style.display = 'none';
+    widthSelect.style.display = 'none';
+    radiusSelect.style.display = 'none';
+  }
+  
+  // Browser frame UI
+  const frameBtn = document.getElementById('toggleBrowserFrame');
+  const urlInput = document.getElementById('urlInput');
+  const frameStyleSelect = document.getElementById('frameStyle');
+  
+  if (hasBrowserFrame) {
+    frameBtn.classList.add('active');
+    urlInput.style.display = 'block';
+    frameStyleSelect.style.display = 'block';
+  } else {
+    frameBtn.classList.remove('active');
+    urlInput.style.display = 'none';
+    frameStyleSelect.style.display = 'none';
   }
   
   // Apply initial zoom
