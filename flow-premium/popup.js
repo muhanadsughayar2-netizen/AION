@@ -384,7 +384,8 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
         
         // Add watermark only once to final chunk
         addInvisibleWatermark(finalCanvas);
-        const chunkDataUrl = finalCanvas.toDataURL('image/jpeg', JPEG_QUALITY);
+        // PNG for crisp text - JPEG destroys text clarity
+        const chunkDataUrl = finalCanvas.toDataURL('image/png');
         chunks.push(chunkDataUrl);
         
         console.log(`[SnapToAI] Chunk ${chunks.length} created: ${canvasHeight}px, ${(estimateDataUrlBytes(chunkDataUrl) / 1024 / 1024).toFixed(2)}MB`);
