@@ -5,6 +5,53 @@ let currentSnaps = [];
 let currentSnapMetadata = []; // Stores chunk metadata (Part 1/7, etc.)
 let selectedSnapIds = new Set();
 
+// ===== PROCESSING OVERLAY WITH TIMER =====
+let processingStartTime = null;
+let processingTimerInterval = null;
+
+function showProcessingOverlay(text = 'Processing...', subtext = 'Please wait') {
+  const overlay = document.getElementById('processingOverlay');
+  const textEl = document.getElementById('processingText');
+  const timerEl = document.getElementById('processingTimer');
+  const subtextEl = document.getElementById('processingSubtext');
+  
+  if (!overlay) return;
+  
+  textEl.textContent = text;
+  subtextEl.textContent = subtext;
+  timerEl.textContent = '00:00';
+  
+  // Start timer
+  processingStartTime = Date.now();
+  clearInterval(processingTimerInterval);
+  processingTimerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - processingStartTime) / 1000);
+    const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+    const secs = (elapsed % 60).toString().padStart(2, '0');
+    timerEl.textContent = `${mins}:${secs}`;
+  }, 100);
+  
+  overlay.classList.add('active');
+}
+
+function updateProcessingText(text, subtext) {
+  const textEl = document.getElementById('processingText');
+  const subtextEl = document.getElementById('processingSubtext');
+  if (textEl) textEl.textContent = text;
+  if (subtextEl) subtextEl.textContent = subtext;
+}
+
+function hideProcessingOverlay() {
+  const overlay = document.getElementById('processingOverlay');
+  if (!overlay) return;
+  
+  clearInterval(processingTimerInterval);
+  processingTimerInterval = null;
+  processingStartTime = null;
+  
+  overlay.classList.remove('active');
+}
+
 // Add invisible watermark for AI detection
 function addInvisibleWatermark(canvas) {
   const ctx = canvas.getContext('2d');
@@ -1141,11 +1188,23 @@ async function handleDownloadSelected() {
       .sort((a, b) => a - b)
       .map(index => ({ index, dataUrl: currentSnaps[index] }));
     
+    // Show processing overlay for multiple files
+    if (selectedSnaps.length > 1) {
+      showProcessingOverlay('Downloading images...', `${selectedSnaps.length} high-quality files`);
+    }
+    
     status.textContent = `Downloading ${selectedSnaps.length} snaps...`;
     status.className = 'status active';
     
     // Download each snap
-    for (const { index, dataUrl } of selectedSnaps) {
+    for (let i = 0; i < selectedSnaps.length; i++) {
+      const { index, dataUrl } = selectedSnaps[i];
+      
+      // Update processing overlay with progress
+      if (selectedSnaps.length > 1) {
+        updateProcessingText(`Downloading ${i + 1}/${selectedSnaps.length}`, 'Preparing high-quality PNG...');
+      }
+      
       const link = document.createElement('a');
       link.href = dataUrl;
       link.download = `snaptoai_snap_${index + 1}.png`;
@@ -1154,6 +1213,9 @@ async function handleDownloadSelected() {
       // Small delay between downloads
       await new Promise(resolve => setTimeout(resolve, 200));
     }
+    
+    // Hide processing overlay
+    hideProcessingOverlay();
     
     status.textContent = `${selectedSnaps.length} snaps downloaded ✓`;
     status.className = 'status active';
@@ -1164,6 +1226,7 @@ async function handleDownloadSelected() {
     }, 2000);
   } catch (error) {
     console.error('Download selected error:', error);
+    hideProcessingOverlay();
     status.textContent = 'Download failed';
     status.className = 'status error';
     setTimeout(() => {
@@ -1381,6 +1444,9 @@ async function exportPDFCombined(snaps, mode) {
   const status = document.getElementById('status');
   
   try {
+    // Show processing overlay with timer
+    showProcessingOverlay('Generating PDF...', `${snaps.length} screenshot${snaps.length > 1 ? 's' : ''}`);
+    
     status.textContent = 'Loading PDF library...';
     status.className = 'status active';
     
@@ -1426,6 +1492,9 @@ async function exportPDFCombined(snaps, mode) {
         pdf.addPage();
       }
       
+      // Update processing overlay with progress
+      updateProcessingText(`Processing page ${i + 1}/${snaps.length}`, 'Adding high-quality image...');
+      
       // Add image to PDF
       const img = await createImageBitmap(await (await fetch(snaps[i])).blob());
       const aspectRatio = img.width / img.height;
@@ -1451,10 +1520,16 @@ async function exportPDFCombined(snaps, mode) {
       pdf.text(`Snap ${i + 1} of ${snaps.length}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
     }
     
+    // Update overlay for save phase
+    updateProcessingText('Saving PDF...', 'Almost done');
+    
     // Save PDF
     const timestamp = new Date().toISOString().slice(0, 10);
     const filename = mode === 'selected' ? `snaptoai-selected-${timestamp}.pdf` : `snaptoai-screenshots-${timestamp}.pdf`;
     pdf.save(filename);
+    
+    // Hide processing overlay
+    hideProcessingOverlay();
     
     status.textContent = 'PDF exported ✓';
     status.className = 'status active';
@@ -1465,6 +1540,7 @@ async function exportPDFCombined(snaps, mode) {
     }, 2000);
   } catch (error) {
     console.error('PDF export error:', error);
+    hideProcessingOverlay();
     status.textContent = 'PDF export failed';
     status.className = 'status error';
     setTimeout(() => {
@@ -1489,6 +1565,9 @@ async function exportPDFSeparate(snaps, mode) {
   }
   
   try {
+    // Show processing overlay with timer
+    showProcessingOverlay('Generating PDFs...', `${snaps.length} file${snaps.length > 1 ? 's' : ''}`);
+    
     status.textContent = 'Loading PDF library...';
     status.className = 'status active';
     
@@ -1528,6 +1607,8 @@ async function exportPDFSeparate(snaps, mode) {
     
     // Generate and download each PDF
     for (let i = 0; i < snaps.length; i++) {
+      // Update processing overlay with progress
+      updateProcessingText(`Generating PDF ${i + 1}/${snaps.length}`, 'Processing high-quality image...');
       status.textContent = `Generating PDF ${i + 1} of ${snaps.length}...`;
       
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -1552,6 +1633,7 @@ async function exportPDFSeparate(snaps, mode) {
       pdf.addImage(snaps[i], 'PNG', x, y, imgWidth, imgHeight);
       
       // Save individual PDF
+      updateProcessingText(`Saving PDF ${i + 1}/${snaps.length}`, 'Downloading...');
       const filename = `snaptoai-screenshot-${i + 1}-${timestamp}.pdf`;
       pdf.save(filename);
       
@@ -1560,6 +1642,9 @@ async function exportPDFSeparate(snaps, mode) {
         await new Promise(resolve => setTimeout(resolve, 300));
       }
     }
+    
+    // Hide processing overlay
+    hideProcessingOverlay();
     
     status.textContent = `${snaps.length} PDFs exported ✓`;
     status.className = 'status active';
@@ -1570,6 +1655,7 @@ async function exportPDFSeparate(snaps, mode) {
     }, 2000);
   } catch (error) {
     console.error('PDF export error:', error);
+    hideProcessingOverlay();
     status.textContent = 'PDF export failed';
     status.className = 'status error';
     setTimeout(() => {

@@ -980,3 +980,64 @@ html[dir="rtl"] .logo-word {
   white-space: normal;
   overflow-wrap: break-word;
 }
+
+/* ===== PROCESSING OVERLAY ===== */
+.processing-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+
+.processing-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.processing-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(0, 217, 255, 0.2);
+  border-top-color: #00d9ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.processing-text {
+  color: #00d9ff;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+.processing-timer {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 24px;
+  font-weight: 700;
+  font-family: 'SF Mono', Monaco, 'Fira Code', monospace;
+  letter-spacing: 2px;
+}
+
+.processing-subtext {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  text-align: center;
+}
