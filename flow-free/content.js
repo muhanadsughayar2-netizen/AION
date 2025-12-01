@@ -429,140 +429,38 @@
     console.log(`[SnapToAI] Restored ${elements.length} sticky elements`);
   }
   
-  // Detect AI platform and return platform-specific selectors
-  function getAIPlatformSelectors() {
-    const host = window.location.hostname.toLowerCase();
-    
-    // ChatGPT (chat.openai.com, chatgpt.com)
-    if (host.includes('openai.com') || host.includes('chatgpt.com')) {
-      console.log('[SnapToAI] Detected: ChatGPT');
-      return [
-        '[data-testid="conversation-turn-*"]',
-        'main div[class*="react-scroll-to-bottom"]',
-        'div[class*="react-scroll-to-bottom"]',
-        '[role="presentation"] > div > div',
-        'main .overflow-y-auto',
-        'main'
-      ];
-    }
-    
-    // Claude (claude.ai)
-    if (host.includes('claude.ai')) {
-      console.log('[SnapToAI] Detected: Claude');
-      return [
-        '[data-testid="chat-messages"]',
-        'div[class*="overflow-y-auto"]',
-        'main div[class*="scroll"]',
-        'div[class*="conversation"]',
-        'main'
-      ];
-    }
-    
-    // Grok (grok.com, x.ai, grok.x.ai)
-    if (host.includes('grok.com') || host.includes('x.ai') || host.includes('grok.x.ai')) {
-      console.log('[SnapToAI] Detected: Grok');
-      return [
-        '[data-testid="conversation-container"]',
-        'div[class*="chat-messages"]',
-        'div[class*="overflow-y-auto"]',
-        'main div[class*="scroll"]',
-        'main'
-      ];
-    }
-    
-    // Google AI Studio / Gemini
-    if (host.includes('aistudio.google') || host.includes('gemini.google')) {
-      console.log('[SnapToAI] Detected: Google AI');
-      return [
-        'ms-chat-session',
-        '[role="log"]',
-        'div[class*="chat"]',
-        'main'
-      ];
-    }
-    
-    // Replit (replit.com)
-    if (host.includes('replit.com')) {
-      console.log('[SnapToAI] Detected: Replit');
-      return [
-        '.cm-scroller', // CodeMirror editor
-        '.repl-console',
-        '[data-cy="output-panel"]',
-        'div[class*="ScrollableComponent"]',
-        'main'
-      ];
-    }
-    
-    // Google Docs
-    if (host.includes('docs.google.com')) {
-      console.log('[SnapToAI] Detected: Google Docs');
-      return [
-        '.kix-appview-editor',
-        '.docs-editor-container',
-        '#docs-editor-container',
-        '.docs-editor'
-      ];
-    }
-    
-    // No specific platform detected
-    return null;
-  }
-  
-  // TIER 1: Find scrollable container using known selectors
+  // TIER 1: Check if document/body is scrollable (preferred - works on most sites)
   function findScrollableContainerTier1() {
-    // First try AI-platform-specific selectors
-    const platformSelectors = getAIPlatformSelectors();
-    if (platformSelectors) {
-      for (const sel of platformSelectors) {
-        try {
-          const el = document.querySelector(sel);
-          if (el && el.scrollHeight && el.clientHeight && el.scrollHeight > el.clientHeight + 50) {
-            console.log(`[SnapToAI] AI Platform: Found via selector: ${sel}`);
-            return el;
-          }
-        } catch (e) {
-          continue;
-        }
-      }
+    // ALWAYS try document-level scroll first - this works for 95% of sites
+    // including AI chat platforms when properly expanded
+    const docEl = document.documentElement;
+    const body = document.body;
+    
+    // Check if document is scrollable
+    if (docEl && docEl.scrollHeight > window.innerHeight + 100) {
+      console.log(`[SnapToAI] Tier 1: Using documentElement (height: ${docEl.scrollHeight}px)`);
+      return docEl;
     }
     
-    // Generic selectors
-    const selectors = [
-      '[data-testid="conversation-container"]',
-      '.overflow-y-auto',
-      '[role="log"]',
-      '.flex-1.overflow-y-auto',
-      '.chat-messages',
-      '.messages',
-      'div[class*="conversation"]',
-      'div[class*="chat-content"]',
-      'main',
-      'div[class*="scroll"]',
-      'div[class*="overflow"]'
-    ];
-
-    for (const sel of selectors) {
-      try {
-        const el = document.querySelector(sel);
-        if (el && el.scrollHeight && el.clientHeight && el.scrollHeight > el.clientHeight + 50) {
-          console.log(`[SnapToAI] Tier 1: Found via selector: ${sel}`);
-          return el;
-        }
-      } catch (e) {
-        continue;
-      }
+    // Check if body is scrollable
+    if (body && body.scrollHeight > window.innerHeight + 100) {
+      console.log(`[SnapToAI] Tier 1: Using body (height: ${body.scrollHeight}px)`);
+      return body;
     }
+    
     return null;
   }
 
-  // TIER 2: Scan all elements for scrollable containers
+  // TIER 2: Scan for embedded scrollable containers (rare fallback)
   function findScrollableContainerTier2() {
+    // Only use this if document/body aren't scrollable
+    // Skip AI platform inner containers - they cause more problems than they solve
     try {
-      const all = document.querySelectorAll('div, main, section, article');
+      const candidates = document.querySelectorAll('main, article, section');
       let best = null;
       let bestHeight = 0;
       
-      for (const el of all) {
+      for (const el of candidates) {
         try {
           if (el && el.scrollHeight && el.clientHeight && 
               el.scrollHeight > el.clientHeight + 100 && 
