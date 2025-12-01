@@ -34,7 +34,7 @@ let zoomLevel = 1.0;
 let hasBrowserFrame = false;
 let browserFrameUrl = '';
 let browserFrameStyle = 'mac'; // 'mac', 'windows', 'minimal'
-let hasBorder = false;
+let hasBorder = true; // ENABLED by default for professional output
 let borderColor = '#00bcd4'; // Cyan like GoFullPage
 let borderWidth = 8; // Default to thick
 let borderRadius = 0; // Square by default for professional look
@@ -67,6 +67,9 @@ document.addEventListener('DOMContentLoaded', () => {
   loadCustomStickers();
   loadImage();
   
+  // Initialize border UI to reflect default enabled state
+  initializeBorderUI();
+  
   // Highlight crop tool if in snip mode
   if (isSnipMode) {
     document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
@@ -78,6 +81,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cropBtn) cropBtn.style.display = 'none';
   }
 });
+
+// Initialize border UI to show controls since border is enabled by default
+function initializeBorderUI() {
+  const btn = document.getElementById('toggleBorder');
+  const colorPicker = document.getElementById('borderColor');
+  const widthSelect = document.getElementById('borderWidth');
+  const radiusSelect = document.getElementById('borderRadius');
+  
+  if (hasBorder) {
+    btn.classList.add('active');
+    colorPicker.style.display = 'block';
+    widthSelect.style.display = 'block';
+    radiusSelect.style.display = 'block';
+  }
+  
+  // Apply initial zoom
+  applyZoom();
+}
 
 // Simplify toolbar for snip mode - only scissors, save snip, exit
 function simplifyToolbarForSnipMode() {
@@ -396,6 +417,10 @@ async function loadImage() {
         
         // Clear storage after loading
         chrome.storage.local.remove(['editImage']);
+        
+        // Redraw immediately to apply default border styling
+        // (originalImage is now set, so redraw() will restore image properly)
+        redraw();
       };
       img.onerror = () => {
         updateStatus('Failed to load image.');
@@ -417,6 +442,9 @@ async function loadImage() {
       canvas.height = img.height;
       ctx.drawImage(img, 0, 0);
       originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Redraw immediately to apply default border styling
+      redraw();
     };
     img.src = imageUrl;
   }
@@ -1047,14 +1075,106 @@ function drawBrowserFrame(targetCtx, targetCanvas) {
   return { frameHeight };
 }
 
-// Reusable border decoration helper - applies border to any canvas
+// Reusable decoration helper - applies border AND browser frame to any canvas
 function applyBorderDecoration(sourceCanvas) {
+  // First, apply browser frame if enabled (adds height at top)
+  let workingCanvas = sourceCanvas;
+  
+  if (hasBrowserFrame) {
+    const frameHeight = browserFrameStyle === 'minimal' ? 32 : 44;
+    const framedCanvas = document.createElement('canvas');
+    framedCanvas.width = sourceCanvas.width;
+    framedCanvas.height = sourceCanvas.height + frameHeight;
+    const framedCtx = framedCanvas.getContext('2d');
+    
+    // Draw the frame header
+    if (browserFrameStyle === 'mac') {
+      framedCtx.fillStyle = '#3a3a3c';
+      framedCtx.fillRect(0, 0, framedCanvas.width, frameHeight);
+      const buttonY = frameHeight / 2;
+      [{ x: 20, c: '#ff5f57' }, { x: 40, c: '#ffbd2e' }, { x: 60, c: '#28c840' }].forEach(b => {
+        framedCtx.fillStyle = b.c;
+        framedCtx.beginPath();
+        framedCtx.arc(b.x, buttonY, 6, 0, Math.PI * 2);
+        framedCtx.fill();
+      });
+      framedCtx.fillStyle = '#1c1c1e';
+      framedCtx.beginPath();
+      framedCtx.roundRect(85, 10, framedCanvas.width - 110, 24, 6);
+      framedCtx.fill();
+      framedCtx.fillStyle = '#86868b';
+      framedCtx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+      framedCtx.textAlign = 'left';
+      framedCtx.textBaseline = 'middle';
+      framedCtx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), 95, buttonY);
+    } else if (browserFrameStyle === 'windows') {
+      framedCtx.fillStyle = '#f3f3f3';
+      framedCtx.fillRect(0, 0, framedCanvas.width, frameHeight);
+      const btnWidth = 46;
+      framedCtx.fillStyle = '#e1e1e1';
+      framedCtx.fillRect(framedCanvas.width - btnWidth * 3, 0, btnWidth, frameHeight);
+      framedCtx.strokeStyle = '#616161';
+      framedCtx.lineWidth = 1;
+      framedCtx.beginPath();
+      framedCtx.moveTo(framedCanvas.width - btnWidth * 3 + 18, frameHeight / 2);
+      framedCtx.lineTo(framedCanvas.width - btnWidth * 3 + 28, frameHeight / 2);
+      framedCtx.stroke();
+      framedCtx.fillStyle = '#e1e1e1';
+      framedCtx.fillRect(framedCanvas.width - btnWidth * 2, 0, btnWidth, frameHeight);
+      framedCtx.strokeRect(framedCanvas.width - btnWidth * 2 + 16, frameHeight / 2 - 5, 14, 10);
+      framedCtx.fillStyle = '#e81123';
+      framedCtx.fillRect(framedCanvas.width - btnWidth, 0, btnWidth, frameHeight);
+      framedCtx.strokeStyle = '#fff';
+      framedCtx.lineWidth = 1.5;
+      framedCtx.beginPath();
+      framedCtx.moveTo(framedCanvas.width - btnWidth + 16, frameHeight / 2 - 5);
+      framedCtx.lineTo(framedCanvas.width - btnWidth + 30, frameHeight / 2 + 5);
+      framedCtx.moveTo(framedCanvas.width - btnWidth + 30, frameHeight / 2 - 5);
+      framedCtx.lineTo(framedCanvas.width - btnWidth + 16, frameHeight / 2 + 5);
+      framedCtx.stroke();
+      framedCtx.fillStyle = '#fff';
+      framedCtx.beginPath();
+      framedCtx.roundRect(10, 10, framedCanvas.width - btnWidth * 3 - 30, 24, 4);
+      framedCtx.fill();
+      framedCtx.strokeStyle = '#ccc';
+      framedCtx.lineWidth = 1;
+      framedCtx.stroke();
+      framedCtx.fillStyle = '#333';
+      framedCtx.font = '12px Segoe UI, sans-serif';
+      framedCtx.textAlign = 'left';
+      framedCtx.textBaseline = 'middle';
+      framedCtx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), 20, frameHeight / 2);
+    } else if (browserFrameStyle === 'minimal') {
+      framedCtx.fillStyle = '#2d2d30';
+      framedCtx.fillRect(0, 0, framedCanvas.width, frameHeight);
+      const barWidth = Math.min(400, framedCanvas.width - 40);
+      framedCtx.fillStyle = '#1e1e1e';
+      framedCtx.beginPath();
+      framedCtx.roundRect((framedCanvas.width - barWidth) / 2, 6, barWidth, 20, 4);
+      framedCtx.fill();
+      framedCtx.fillStyle = '#aaa';
+      framedCtx.font = '11px system-ui, sans-serif';
+      framedCtx.textAlign = 'center';
+      framedCtx.textBaseline = 'middle';
+      framedCtx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), framedCanvas.width / 2, frameHeight / 2);
+    }
+    
+    // Draw the source canvas below the frame
+    framedCtx.drawImage(sourceCanvas, 0, frameHeight);
+    workingCanvas = framedCanvas;
+  }
+  
+  // Now apply border if enabled
+  if (!hasBorder) {
+    return workingCanvas;
+  }
+  
   const padding = borderWidth;
   const decoratedCanvas = document.createElement('canvas');
   const decoratedCtx = decoratedCanvas.getContext('2d');
   
-  decoratedCanvas.width = sourceCanvas.width + (padding * 2);
-  decoratedCanvas.height = sourceCanvas.height + (padding * 2);
+  decoratedCanvas.width = workingCanvas.width + (padding * 2);
+  decoratedCanvas.height = workingCanvas.height + (padding * 2);
   
   // Fill with border color
   decoratedCtx.fillStyle = borderColor;
@@ -1064,18 +1184,131 @@ function applyBorderDecoration(sourceCanvas) {
   if (borderRadius > 0) {
     decoratedCtx.save();
     decoratedCtx.beginPath();
-    decoratedCtx.roundRect(padding, padding, sourceCanvas.width, sourceCanvas.height, borderRadius);
+    decoratedCtx.roundRect(padding, padding, workingCanvas.width, workingCanvas.height, borderRadius);
     decoratedCtx.clip();
   }
   
   // Draw source canvas
-  decoratedCtx.drawImage(sourceCanvas, padding, padding);
+  decoratedCtx.drawImage(workingCanvas, padding, padding);
   
   if (borderRadius > 0) {
     decoratedCtx.restore();
   }
   
   return decoratedCanvas;
+}
+
+// Draw browser frame preview overlay on canvas (for live preview)
+function drawBrowserFramePreview() {
+  if (!hasBrowserFrame) return;
+  
+  const frameHeight = browserFrameStyle === 'minimal' ? 32 : 44;
+  
+  ctx.save();
+  
+  if (browserFrameStyle === 'mac') {
+    // macOS Style - Dark with traffic lights
+    ctx.fillStyle = '#3a3a3c';
+    ctx.fillRect(0, 0, canvas.width, frameHeight);
+    
+    // Traffic lights
+    const buttonY = frameHeight / 2;
+    const circles = [
+      { x: 20, color: '#ff5f57' },
+      { x: 40, color: '#ffbd2e' },
+      { x: 60, color: '#28c840' }
+    ];
+    circles.forEach(c => {
+      ctx.fillStyle = c.color;
+      ctx.beginPath();
+      ctx.arc(c.x, buttonY, 6, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // URL bar
+    ctx.fillStyle = '#1c1c1e';
+    ctx.beginPath();
+    ctx.roundRect(85, 10, canvas.width - 110, 24, 6);
+    ctx.fill();
+    
+    // Lock icon + URL
+    ctx.fillStyle = '#86868b';
+    ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), 95, buttonY);
+    
+  } else if (browserFrameStyle === 'windows') {
+    // Windows Style - Light gray with square buttons
+    ctx.fillStyle = '#f3f3f3';
+    ctx.fillRect(0, 0, canvas.width, frameHeight);
+    
+    // Window controls (right side)
+    const btnWidth = 46;
+    // Minimize
+    ctx.fillStyle = '#e1e1e1';
+    ctx.fillRect(canvas.width - btnWidth * 3, 0, btnWidth, frameHeight);
+    ctx.strokeStyle = '#616161';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width - btnWidth * 3 + 18, frameHeight / 2);
+    ctx.lineTo(canvas.width - btnWidth * 3 + 28, frameHeight / 2);
+    ctx.stroke();
+    
+    // Maximize
+    ctx.fillStyle = '#e1e1e1';
+    ctx.fillRect(canvas.width - btnWidth * 2, 0, btnWidth, frameHeight);
+    ctx.strokeRect(canvas.width - btnWidth * 2 + 16, frameHeight / 2 - 5, 14, 10);
+    
+    // Close (red)
+    ctx.fillStyle = '#e81123';
+    ctx.fillRect(canvas.width - btnWidth, 0, btnWidth, frameHeight);
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width - btnWidth + 16, frameHeight / 2 - 5);
+    ctx.lineTo(canvas.width - btnWidth + 30, frameHeight / 2 + 5);
+    ctx.moveTo(canvas.width - btnWidth + 30, frameHeight / 2 - 5);
+    ctx.lineTo(canvas.width - btnWidth + 16, frameHeight / 2 + 5);
+    ctx.stroke();
+    
+    // URL bar
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.roundRect(10, 10, canvas.width - btnWidth * 3 - 30, 24, 4);
+    ctx.fill();
+    ctx.strokeStyle = '#ccc';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    
+    // URL text
+    ctx.fillStyle = '#333';
+    ctx.font = '12px Segoe UI, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), 20, frameHeight / 2);
+    
+  } else if (browserFrameStyle === 'minimal') {
+    // Minimal Style - Just URL bar
+    ctx.fillStyle = '#2d2d30';
+    ctx.fillRect(0, 0, canvas.width, frameHeight);
+    
+    // Centered URL bar
+    const barWidth = Math.min(400, canvas.width - 40);
+    ctx.fillStyle = '#1e1e1e';
+    ctx.beginPath();
+    ctx.roundRect((canvas.width - barWidth) / 2, 6, barWidth, 20, 4);
+    ctx.fill();
+    
+    // URL text
+    ctx.fillStyle = '#aaa';
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), canvas.width / 2, frameHeight / 2);
+  }
+  
+  ctx.restore();
 }
 
 // Draw border around canvas
@@ -1100,10 +1333,16 @@ function drawBorder() {
 }
 
 function redraw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (originalImage) {
-    ctx.putImageData(originalImage, 0, 0);
+  // Guard: Only redraw if we have image data
+  if (!originalImage) {
+    return;
   }
+  
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.putImageData(originalImage, 0, 0);
+  
+  // Draw browser frame preview if enabled (overlay at top)
+  drawBrowserFramePreview();
   
   // Draw border first (below annotations)
   drawBorder();
@@ -1354,9 +1593,9 @@ async function save() {
         x, y, width, height
       );
       
-      // Apply border decoration if enabled
+      // Apply border and browser frame decoration if enabled
       let cropDataUrl;
-      if (hasBorder) {
+      if (hasBorder || hasBrowserFrame) {
         const decoratedCanvas = applyBorderDecoration(tempCanvas);
         cropDataUrl = decoratedCanvas.toDataURL('image/png');
       } else {
@@ -1396,9 +1635,9 @@ async function save() {
     }
     
     // ANNOTATION MODE: Replace existing snap with annotated version
-    // Use shared decorator helper for consistent border styling
+    // Use shared decorator helper for consistent border AND browser frame styling
     let exportCanvas;
-    if (hasBorder) {
+    if (hasBorder || hasBrowserFrame) {
       exportCanvas = applyBorderDecoration(canvas);
     } else {
       exportCanvas = canvas;
@@ -1566,9 +1805,9 @@ async function saveFullPageWithAnnotations() {
       // Add watermark to chunk
       addInvisibleWatermarkToCanvas(chunkCanvas);
       
-      // Add border if enabled (professional look like GoFullPage)
-      // Use shared decorator helper for consistent border styling
-      if (hasBorder) {
+      // Add border and browser frame if enabled (professional look like GoFullPage)
+      // Use shared decorator helper for consistent styling
+      if (hasBorder || hasBrowserFrame) {
         const decoratedChunk = applyBorderDecoration(chunkCanvas);
         chunkCanvas.width = decoratedChunk.width;
         chunkCanvas.height = decoratedChunk.height;

@@ -1,0 +1,37 @@
+GoFullPage (version 8.5)
+
+Configure your settings for the GoFullPage extension. Stay tuned for further updates. Beta settings may change in the future.
+
+Capture
+Image format:
+
+png
+PNG is lossless and should match exactly what is seen on the screen, but will usually have larger file sizes than JPG, which uses compression.
+PDF
+Paper size:
+
+US letter portrait
+Specify the format size of PDFs for when exporting to PDF.
+
+Smart page splitting (Premium) ⚡️
+Perform extra checks when splitting a PDF across multiple pages to try to prevent it from cutting lines of text in half. Otherwise, the screenshot is split at the paper size height regardless of its content. ?
+
+Add URL and date/time (Premium) ⚡️
+Add your screenshot’s URL and capture date/time when exporting to PDF from the main view screenshot page. You can add URL and capture date in the Editor from the “More” menu. ?
+Download
+Directory:
+Specify a directory underneath your downloads directory to save your screenshots, such as “screencaptures”. Defaults to the downloads directory if blank. (Please limit it to letters, numbers, dashes, underscores, and slashes—invalid characters will automatically be removed).
+
+Save as
+Automatically show a “save as” dialog when downloading your screenshots. If the “Ask where to save each file before downloading” option is enabled in your browser’s settings, then that takes priority.
+
+There are issues with “save as” for auto-download and when downloading multiple files, so it is disabled in those scenarios.
+
+Auto-download files
+Automatically download your screenshot as an image instead of opening it in a new window. This means the extension capture tab will not open. You can return back here by right-clicking on the extension and selecting "Options".
+
+This feature is incompatible with the “Ask where to save each file before downloading” browser setting and can result in errors with the save dialog if that is enabled too.
+
+Fit copies to Google Docs limits
+When copying a screenshot to your clipboard, auto-resize it if it exceeds the Google Docs copy-paste limit (25,000,000 pixels). You may still experience issues pasting very large images into other applications, for example Google Docs sometimes truncates the image unless you resize it much smaller.
+Permissions
