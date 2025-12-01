@@ -33,10 +33,11 @@ let currentPageIndex = 0;
 let zoomLevel = 1.0;
 let hasBrowserFrame = false;
 let browserFrameUrl = '';
+let browserFrameStyle = 'mac'; // 'mac', 'windows', 'minimal'
 let hasBorder = false;
-let borderColor = '#333333';
-let borderWidth = 4;
-let borderRadius = 8;
+let borderColor = '#00bcd4'; // Cyan like GoFullPage
+let borderWidth = 8; // Default to thick
+let borderRadius = 0; // Square by default for professional look
 
 document.addEventListener('DOMContentLoaded', () => {
   canvas = document.getElementById('canvas');
@@ -233,20 +234,28 @@ function setupEventListeners() {
     hasBrowserFrame = !hasBrowserFrame;
     const btn = document.getElementById('toggleBrowserFrame');
     const urlInput = document.getElementById('urlInput');
+    const frameStyleSelect = document.getElementById('frameStyle');
     
     if (hasBrowserFrame) {
       btn.classList.add('active');
       urlInput.style.display = 'block';
+      frameStyleSelect.style.display = 'block';
       browserFrameUrl = urlInput.value || 'https://example.com';
     } else {
       btn.classList.remove('active');
       urlInput.style.display = 'none';
+      frameStyleSelect.style.display = 'none';
     }
     redraw();
   });
   
   document.getElementById('urlInput').addEventListener('input', (e) => {
     browserFrameUrl = e.target.value;
+    if (hasBrowserFrame) redraw();
+  });
+  
+  document.getElementById('frameStyle').addEventListener('change', (e) => {
+    browserFrameStyle = e.target.value;
     if (hasBrowserFrame) redraw();
   });
   
@@ -905,59 +914,168 @@ function applyZoom() {
   document.getElementById('zoomLevel').textContent = Math.round(zoomLevel * 100) + '%';
 }
 
-// Draw browser frame on canvas
-function drawBrowserFrame() {
-  if (!hasBrowserFrame) return;
+// Draw browser frame on canvas - with style presets
+function drawBrowserFrame(targetCtx, targetCanvas) {
+  if (!hasBrowserFrame) return null;
   
-  const frameHeight = 40;
-  const originalData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const useCtx = targetCtx || ctx;
+  const useCanvas = targetCanvas || canvas;
+  const frameHeight = browserFrameStyle === 'minimal' ? 32 : 44;
+  
+  const originalData = useCtx.getImageData(0, 0, useCanvas.width, useCanvas.height);
   
   // Expand canvas for frame
   const newCanvas = document.createElement('canvas');
-  newCanvas.width = canvas.width;
-  newCanvas.height = canvas.height + frameHeight;
+  newCanvas.width = useCanvas.width;
+  newCanvas.height = useCanvas.height + frameHeight;
   const newCtx = newCanvas.getContext('2d');
   
-  // Draw browser chrome
-  newCtx.fillStyle = '#323232';
-  newCtx.fillRect(0, 0, newCanvas.width, frameHeight);
-  
-  // Traffic lights
-  const buttonY = frameHeight / 2;
-  newCtx.fillStyle = '#ff5f57';
-  newCtx.beginPath();
-  newCtx.arc(16, buttonY, 6, 0, Math.PI * 2);
-  newCtx.fill();
-  
-  newCtx.fillStyle = '#ffbd2e';
-  newCtx.beginPath();
-  newCtx.arc(36, buttonY, 6, 0, Math.PI * 2);
-  newCtx.fill();
-  
-  newCtx.fillStyle = '#28ca41';
-  newCtx.beginPath();
-  newCtx.arc(56, buttonY, 6, 0, Math.PI * 2);
-  newCtx.fill();
-  
-  // URL bar
-  newCtx.fillStyle = '#1a1a1a';
-  newCtx.roundRect(80, 8, newCanvas.width - 100, 24, 6);
-  newCtx.fill();
-  
-  // URL text
-  newCtx.fillStyle = '#888';
-  newCtx.font = '12px system-ui, -apple-system, sans-serif';
-  newCtx.textAlign = 'left';
-  newCtx.textBaseline = 'middle';
-  newCtx.fillText(browserFrameUrl || 'https://example.com', 92, buttonY);
+  if (browserFrameStyle === 'mac') {
+    // macOS Style - Dark with traffic lights
+    newCtx.fillStyle = '#3a3a3c';
+    newCtx.fillRect(0, 0, newCanvas.width, frameHeight);
+    
+    // Traffic lights
+    const buttonY = frameHeight / 2;
+    const circles = [
+      { x: 20, color: '#ff5f57' },
+      { x: 40, color: '#ffbd2e' },
+      { x: 60, color: '#28c840' }
+    ];
+    circles.forEach(c => {
+      newCtx.fillStyle = c.color;
+      newCtx.beginPath();
+      newCtx.arc(c.x, buttonY, 6, 0, Math.PI * 2);
+      newCtx.fill();
+    });
+    
+    // URL bar
+    newCtx.fillStyle = '#1c1c1e';
+    newCtx.beginPath();
+    newCtx.roundRect(85, 10, newCanvas.width - 110, 24, 6);
+    newCtx.fill();
+    
+    // Lock icon + URL
+    newCtx.fillStyle = '#86868b';
+    newCtx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+    newCtx.textAlign = 'left';
+    newCtx.textBaseline = 'middle';
+    newCtx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), 95, buttonY);
+    
+  } else if (browserFrameStyle === 'windows') {
+    // Windows Style - Light gray with square buttons
+    newCtx.fillStyle = '#f3f3f3';
+    newCtx.fillRect(0, 0, newCanvas.width, frameHeight);
+    
+    // Window controls (right side)
+    const btnWidth = 46;
+    const btnHeight = frameHeight;
+    // Minimize
+    newCtx.fillStyle = '#e1e1e1';
+    newCtx.fillRect(newCanvas.width - btnWidth * 3, 0, btnWidth, btnHeight);
+    newCtx.strokeStyle = '#616161';
+    newCtx.lineWidth = 1;
+    newCtx.beginPath();
+    newCtx.moveTo(newCanvas.width - btnWidth * 3 + 18, frameHeight / 2);
+    newCtx.lineTo(newCanvas.width - btnWidth * 3 + 28, frameHeight / 2);
+    newCtx.stroke();
+    // Maximize
+    newCtx.fillStyle = '#e1e1e1';
+    newCtx.fillRect(newCanvas.width - btnWidth * 2, 0, btnWidth, btnHeight);
+    newCtx.strokeRect(newCanvas.width - btnWidth * 2 + 18, frameHeight / 2 - 5, 10, 10);
+    // Close
+    newCtx.fillStyle = '#e81123';
+    newCtx.fillRect(newCanvas.width - btnWidth, 0, btnWidth, btnHeight);
+    newCtx.strokeStyle = '#fff';
+    newCtx.lineWidth = 1.5;
+    newCtx.beginPath();
+    newCtx.moveTo(newCanvas.width - btnWidth + 18, 16);
+    newCtx.lineTo(newCanvas.width - btnWidth + 28, frameHeight - 16);
+    newCtx.moveTo(newCanvas.width - btnWidth + 28, 16);
+    newCtx.lineTo(newCanvas.width - btnWidth + 18, frameHeight - 16);
+    newCtx.stroke();
+    
+    // URL bar
+    newCtx.fillStyle = '#fff';
+    newCtx.strokeStyle = '#ccc';
+    newCtx.lineWidth = 1;
+    newCtx.beginPath();
+    newCtx.roundRect(10, 8, newCanvas.width - 160, 28, 4);
+    newCtx.fill();
+    newCtx.stroke();
+    
+    // URL text
+    newCtx.fillStyle = '#333';
+    newCtx.font = '13px Segoe UI, sans-serif';
+    newCtx.textAlign = 'left';
+    newCtx.textBaseline = 'middle';
+    newCtx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), 20, frameHeight / 2);
+    
+  } else {
+    // Minimal Style - Just URL bar
+    newCtx.fillStyle = '#f5f5f5';
+    newCtx.fillRect(0, 0, newCanvas.width, frameHeight);
+    
+    // Simple URL bar
+    newCtx.fillStyle = '#fff';
+    newCtx.strokeStyle = '#ddd';
+    newCtx.lineWidth = 1;
+    newCtx.beginPath();
+    newCtx.roundRect(10, 6, newCanvas.width - 20, 20, 10);
+    newCtx.fill();
+    newCtx.stroke();
+    
+    // URL text centered
+    newCtx.fillStyle = '#666';
+    newCtx.font = '11px system-ui, sans-serif';
+    newCtx.textAlign = 'center';
+    newCtx.textBaseline = 'middle';
+    newCtx.fillText(browserFrameUrl || 'example.com', newCanvas.width / 2, frameHeight / 2);
+  }
   
   // Draw original image below frame
   newCtx.putImageData(originalData, 0, frameHeight);
   
   // Update canvas
-  canvas.height = newCanvas.height;
-  ctx.drawImage(newCanvas, 0, 0);
-  originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  useCanvas.height = newCanvas.height;
+  useCtx.drawImage(newCanvas, 0, 0);
+  
+  if (!targetCtx) {
+    originalImage = useCtx.getImageData(0, 0, useCanvas.width, useCanvas.height);
+  }
+  
+  return { frameHeight };
+}
+
+// Reusable border decoration helper - applies border to any canvas
+function applyBorderDecoration(sourceCanvas) {
+  const padding = borderWidth;
+  const decoratedCanvas = document.createElement('canvas');
+  const decoratedCtx = decoratedCanvas.getContext('2d');
+  
+  decoratedCanvas.width = sourceCanvas.width + (padding * 2);
+  decoratedCanvas.height = sourceCanvas.height + (padding * 2);
+  
+  // Fill with border color
+  decoratedCtx.fillStyle = borderColor;
+  decoratedCtx.fillRect(0, 0, decoratedCanvas.width, decoratedCanvas.height);
+  
+  // Apply rounded corners if needed
+  if (borderRadius > 0) {
+    decoratedCtx.save();
+    decoratedCtx.beginPath();
+    decoratedCtx.roundRect(padding, padding, sourceCanvas.width, sourceCanvas.height, borderRadius);
+    decoratedCtx.clip();
+  }
+  
+  // Draw source canvas
+  decoratedCtx.drawImage(sourceCanvas, padding, padding);
+  
+  if (borderRadius > 0) {
+    decoratedCtx.restore();
+  }
+  
+  return decoratedCanvas;
 }
 
 // Draw border around canvas
@@ -1236,8 +1354,14 @@ async function save() {
         x, y, width, height
       );
       
-      // Alternative: Use drawImage for better quality
-      const cropDataUrl = tempCanvas.toDataURL('image/png');
+      // Apply border decoration if enabled
+      let cropDataUrl;
+      if (hasBorder) {
+        const decoratedCanvas = applyBorderDecoration(tempCanvas);
+        cropDataUrl = decoratedCanvas.toDataURL('image/png');
+      } else {
+        cropDataUrl = tempCanvas.toDataURL('image/png');
+      }
       
       // Send as new snap (add to queue)
       const response = await chrome.runtime.sendMessage({
@@ -1272,7 +1396,15 @@ async function save() {
     }
     
     // ANNOTATION MODE: Replace existing snap with annotated version
-    const dataUrl = canvas.toDataURL('image/png');
+    // Use shared decorator helper for consistent border styling
+    let exportCanvas;
+    if (hasBorder) {
+      exportCanvas = applyBorderDecoration(canvas);
+    } else {
+      exportCanvas = canvas;
+    }
+    
+    const dataUrl = exportCanvas.toDataURL('image/png');
     await chrome.runtime.sendMessage({
       action: 'annotationComplete',
       dataUrl,
@@ -1434,14 +1566,35 @@ async function saveFullPageWithAnnotations() {
       // Add watermark to chunk
       addInvisibleWatermarkToCanvas(chunkCanvas);
       
-      // Add visible part label at top
-      chunkCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      chunkCtx.fillRect(0, 0, 200, 40);
-      chunkCtx.fillStyle = '#00ff88';
-      chunkCtx.font = 'bold 20px Arial';
-      chunkCtx.textAlign = 'left';
-      chunkCtx.textBaseline = 'middle';
-      chunkCtx.fillText(`Part ${chunkIndex + 1} of ${totalChunks}`, 15, 22);
+      // Add border if enabled (professional look like GoFullPage)
+      // Use shared decorator helper for consistent border styling
+      if (hasBorder) {
+        const decoratedChunk = applyBorderDecoration(chunkCanvas);
+        chunkCanvas.width = decoratedChunk.width;
+        chunkCanvas.height = decoratedChunk.height;
+        chunkCtx.drawImage(decoratedChunk, 0, 0);
+      }
+      
+      // Add subtle part indicator (bottom right, professional styling)
+      if (totalChunks > 1) {
+        const labelWidth = 90;
+        const labelHeight = 24;
+        const labelX = chunkCanvas.width - labelWidth - 10;
+        const labelY = chunkCanvas.height - labelHeight - 10;
+        
+        // Semi-transparent background
+        chunkCtx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        chunkCtx.beginPath();
+        chunkCtx.roundRect(labelX, labelY, labelWidth, labelHeight, 4);
+        chunkCtx.fill();
+        
+        // Label text
+        chunkCtx.fillStyle = '#ffffff';
+        chunkCtx.font = '12px system-ui, -apple-system, sans-serif';
+        chunkCtx.textAlign = 'center';
+        chunkCtx.textBaseline = 'middle';
+        chunkCtx.fillText(`${chunkIndex + 1} / ${totalChunks}`, labelX + labelWidth / 2, labelY + labelHeight / 2);
+      }
       
       // Export chunk
       updateStatus(`Exporting chunk ${chunkIndex + 1}/${totalChunks}...`);

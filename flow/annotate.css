@@ -118,7 +118,7 @@ body {
   border-color: #00d9ff;
 }
 
-.border-width-select, .border-radius-select {
+.border-width-select, .border-radius-select, .frame-style-select {
   background: rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
@@ -128,9 +128,13 @@ body {
   cursor: pointer;
 }
 
-.border-width-select:focus, .border-radius-select:focus {
+.border-width-select:focus, .border-radius-select:focus, .frame-style-select:focus {
   outline: none;
   border-color: #00d9ff;
+}
+
+.frame-style-select {
+  min-width: 100px;
 }
 
 #borderColor {

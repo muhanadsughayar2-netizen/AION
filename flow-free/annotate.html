@@ -21,22 +21,27 @@
       <!-- Browser Frame Toggle -->
       <div class="browser-frame-controls">
         <button id="toggleBrowserFrame" class="frame-btn" title="Add browser frame">🖥️ Browser Frame</button>
+        <select id="frameStyle" class="frame-style-select" style="display: none;">
+          <option value="mac" selected>macOS Style</option>
+          <option value="windows">Windows Style</option>
+          <option value="minimal">Minimal</option>
+        </select>
         <input type="text" id="urlInput" class="url-input" placeholder="https://example.com" style="display: none;">
       </div>
       
       <!-- Border Controls -->
       <div class="border-controls">
         <button id="toggleBorder" class="frame-btn" title="Add border">🔲 Border</button>
-        <input type="color" id="borderColor" value="#333333" title="Border color" style="display: none;">
+        <input type="color" id="borderColor" value="#00bcd4" title="Border color" style="display: none;">
         <select id="borderWidth" class="border-width-select" style="display: none;">
           <option value="2">Thin (2px)</option>
-          <option value="4" selected>Medium (4px)</option>
-          <option value="8">Thick (8px)</option>
+          <option value="4">Medium (4px)</option>
+          <option value="8" selected>Thick (8px)</option>
           <option value="16">Extra Thick (16px)</option>
         </select>
         <select id="borderRadius" class="border-radius-select" style="display: none;">
-          <option value="0">Square</option>
-          <option value="8" selected>Rounded</option>
+          <option value="0" selected>Square</option>
+          <option value="8">Rounded</option>
           <option value="16">More Rounded</option>
         </select>
       </div>
