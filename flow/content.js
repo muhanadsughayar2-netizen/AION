@@ -557,6 +557,35 @@
     }
   }
 
+  // Detect if this is a complex web app with non-scrollable body
+  function isComplexWebApp() {
+    const host = window.location.hostname.toLowerCase();
+    const complexApps = ['replit.com', 'figma.com', 'canva.com', 'notion.so', 'airtable.com', 'miro.com'];
+    
+    // Check by hostname
+    for (const app of complexApps) {
+      if (host.includes(app)) return true;
+    }
+    
+    // Check if body has fixed/hidden overflow (indicator of complex app layout)
+    const bodyStyle = window.getComputedStyle(document.body);
+    const htmlStyle = window.getComputedStyle(document.documentElement);
+    
+    if ((bodyStyle.overflow === 'hidden' || bodyStyle.overflowY === 'hidden') &&
+        (htmlStyle.overflow === 'hidden' || htmlStyle.overflowY === 'hidden')) {
+      // Both body and html have hidden overflow - likely a complex app
+      const bodyHeight = document.body.scrollHeight || 0;
+      const viewportHeight = window.innerHeight;
+      
+      // If body height equals viewport, it's a fixed-layout app
+      if (Math.abs(bodyHeight - viewportHeight) < 50) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+  
   // Pre-flight check: validate page is capturable
   function preFlightCheck() {
     const result = {
@@ -564,10 +593,17 @@
       warnings: [],
       errors: [],
       pageHeight: 0,
-      viewportHeight: window.innerHeight
+      viewportHeight: window.innerHeight,
+      isComplexApp: false
     };
     
     try {
+      // Check if this is a complex web app (Replit, Figma, etc.)
+      result.isComplexApp = isComplexWebApp();
+      if (result.isComplexApp) {
+        result.warnings.push('Complex app detected - capturing viewport only');
+      }
+      
       // Check page height (with null checks)
       const bodyHeight = document.body ? (document.body.scrollHeight || 0) : 0;
       const docHeight = document.documentElement ? (document.documentElement.scrollHeight || 0) : 0;
@@ -667,6 +703,13 @@
       showToast('Cannot capture this page: ' + preflight.errors.join(', '), 'error');
       isFullPageCaptureRunning = false;
       return { success: false, error: preflight.errors.join(', ') };
+    }
+    
+    // COMPLEX APP DETECTION: Replit, Figma, etc. have fixed layouts that can't be scroll-captured
+    if (preflight.isComplexApp) {
+      showToast('App layout detected - capturing visible screen', 'success');
+      isFullPageCaptureRunning = false;
+      return await simpleViewportCapture(tabId);
     }
     
     // Warn user if page is very short
