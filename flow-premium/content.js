@@ -380,40 +380,55 @@
   
   // Find the main scrollable container on AI chat sites
   function findScrollableContainer() {
-    // Selectors for AI chat platforms (ordered by specificity)
-    const selectors = [
-      '[data-testid="conversation-container"]',
-      '.overflow-y-auto',
-      '[role="log"]',
-      '.flex-1.overflow-y-auto',
-      '.chat-messages',
-      '.messages',
-      'div[class*="conversation"]',
-      'div[class*="chat-content"]',
-      'main',
-      'div[class*="scroll"]',
-      'div[class*="overflow"]'
-    ];
+    try {
+      // Selectors for AI chat platforms (ordered by specificity)
+      const selectors = [
+        '[data-testid="conversation-container"]',
+        '.overflow-y-auto',
+        '[role="log"]',
+        '.flex-1.overflow-y-auto',
+        '.chat-messages',
+        '.messages',
+        'div[class*="conversation"]',
+        'div[class*="chat-content"]',
+        'main',
+        'div[class*="scroll"]',
+        'div[class*="overflow"]'
+      ];
 
-    // Try each selector
-    for (const sel of selectors) {
-      const el = document.querySelector(sel);
-      if (el && el.scrollHeight > el.clientHeight + 50) {
-        console.log(`[SnapToAI] Found scrollable container: ${sel}, scrollHeight: ${el.scrollHeight}px`);
-        return el;
+      // Try each selector
+      for (const sel of selectors) {
+        try {
+          const el = document.querySelector(sel);
+          if (el && el.scrollHeight && el.clientHeight && el.scrollHeight > el.clientHeight + 50) {
+            console.log(`[SnapToAI] Found scrollable container: ${sel}, scrollHeight: ${el.scrollHeight}px`);
+            return el;
+          }
+        } catch (e) {
+          // Skip this selector if it causes issues
+          continue;
+        }
       }
-    }
 
-    // Fallback: find deepest scrollable element
-    const all = document.querySelectorAll('div, main, section');
-    for (const el of all) {
-      if (el.scrollHeight > el.clientHeight + 100 && el.scrollHeight > window.innerHeight) {
-        console.log(`[SnapToAI] Found scrollable fallback: ${el.tagName}.${el.className}`);
-        return el;
+      // Fallback: find deepest scrollable element
+      const all = document.querySelectorAll('div, main, section');
+      for (const el of all) {
+        try {
+          if (el && el.scrollHeight && el.clientHeight && 
+              el.scrollHeight > el.clientHeight + 100 && el.scrollHeight > window.innerHeight) {
+            console.log(`[SnapToAI] Found scrollable fallback: ${el.tagName}.${el.className}`);
+            return el;
+          }
+        } catch (e) {
+          continue;
+        }
       }
-    }
 
-    return null;
+      return null;
+    } catch (error) {
+      console.log('[SnapToAI] Error finding scrollable container:', error);
+      return null;
+    }
   }
   
   // Save and set a style property, tracking original value
