@@ -1755,8 +1755,12 @@ async function saveFullPageWithAnnotations() {
     updateStatus('Loading all pages...');
     await yieldToUI();
     
+    // Get stored viewport dimensions for accurate DPR calculation
+    const storedDims = await chrome.storage.local.get(['fullPageViewportWidth', 'fullPageViewportHeight']);
+    const storedViewportHeight = storedDims.fullPageViewportHeight || window.innerHeight;
+    
     let pageWidth = 0;
-    let overlapPx = CSS_OVERLAP; // Will be scaled for DPR
+    let overlapPx = CSS_OVERLAP; // Will be scaled for actual capture DPR
     
     for (let i = 0; i < totalPages; i++) {
       if (!pageImages[i]) {
@@ -1768,11 +1772,11 @@ async function saveFullPageWithAnnotations() {
       }
       if (i === 0 && pageImages[0]) {
         pageWidth = pageImages[0].width;
-        // Calculate DPR scale: image pixels / CSS viewport pixels
-        // viewportHeight is stored during capture, use it to derive scale
-        const dpr = window.devicePixelRatio || 1;
-        overlapPx = Math.round(CSS_OVERLAP * dpr);
-        console.log(`[SnapToAI] DPR: ${dpr}, overlap: ${CSS_OVERLAP}px CSS -> ${overlapPx}px device`);
+        // Calculate ACTUAL capture scale from image dimensions vs stored viewport
+        // This is critical: the annotation window DPR may differ from the capture DPR
+        const captureScale = pageImages[0].height / storedViewportHeight;
+        overlapPx = Math.round(CSS_OVERLAP * captureScale);
+        console.log(`[SnapToAI] Capture scale: ${captureScale.toFixed(2)}x (image: ${pageImages[0].height}px / viewport: ${storedViewportHeight}px), overlap: ${CSS_OVERLAP}px CSS -> ${overlapPx}px device`);
       }
     }
     
@@ -1914,8 +1918,8 @@ async function saveFullPageWithAnnotations() {
       await yieldToUI();
     }
     
-    // Clear local storage
-    await chrome.storage.local.remove('fullPageScreenshots');
+    // Clear local storage (screenshots and viewport dimensions)
+    await chrome.storage.local.remove(['fullPageScreenshots', 'fullPageViewportWidth', 'fullPageViewportHeight']);
     
     updateStatus(`Saved ${savedChunks.length} chunks! Upload to AI one at a time.`);
     
