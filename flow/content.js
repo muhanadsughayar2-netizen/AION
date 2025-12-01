@@ -603,8 +603,20 @@
   }
 
   // Detect if this is a complex web app with non-scrollable body
+  // NOTE: AI chat platforms are NOT treated as complex apps - we try to capture them
   function isComplexWebApp() {
     const host = window.location.hostname.toLowerCase();
+    
+    // AI platforms we WANT to capture - never treat as complex apps
+    const aiPlatforms = ['grok.com', 'grok.x.ai', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
+    for (const ai of aiPlatforms) {
+      if (host.includes(ai)) {
+        console.log('[SnapToAI] AI platform detected - will attempt full capture');
+        return false; // NOT a complex app - try to capture
+      }
+    }
+    
+    // These are truly complex apps with fixed layouts that can't be scroll-captured
     const complexApps = ['replit.com', 'figma.com', 'canva.com', 'notion.so', 'airtable.com', 'miro.com'];
     
     // Check by hostname

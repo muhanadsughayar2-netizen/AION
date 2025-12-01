@@ -489,18 +489,22 @@ async function startFullPageCapture() {
     // Port connection from popup will detect if popup closes and reset the flag
     isFullPageCaptureInProgress = true;
     
-    // Inject content script if needed
+    // Check if this is an AI platform (Grok, ChatGPT, Claude, etc.)
+    const isAIPlatform = AI_SITES.some(site => tab.url.includes(site));
+    
+    // Inject content script - use allFrames for AI platforms with nested iframes
     try {
       await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
+        target: { tabId: tab.id, allFrames: isAIPlatform },
         files: ['content.js']
       });
+      console.log(`[SnapToAI] Content script injected (allFrames: ${isAIPlatform})`);
     } catch (e) {
       console.log('[SnapToAI] Content script injection skipped:', e.message);
     }
     
-    // Small delay to ensure content script is ready
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Longer delay for AI platforms (they need time to settle after injection)
+    await new Promise(resolve => setTimeout(resolve, isAIPlatform ? 300 : 100));
     
     // Send message to content script to start scrolling and capturing
     try {

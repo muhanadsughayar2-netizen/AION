@@ -1,0 +1,95 @@
+pdated background.js (Replace Your Current Full-Page Block)
+JavaScript// Grok-proof full-page injector – handles 15+ nested iframes + re-renders
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.action === "startFullPageInAI") {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tabId = tabs[0].id;
+
+      // Force inject into ALL frames (top + every iframe) – this "enters" Grok
+      const injectEverywhere = () => {
+        chrome.scripting.executeScript({
+          target: { tabId: tabId, allFrames: true },  // Key: allFrames: true
+          func: runGrokProofCapture,
+          world: 'MAIN'  // Runs in main world to bypass CSP
+        }, () => {
+          // No errors – silent if it fails on one frame
+          if (chrome.runtime.lastError) {
+            console.warn('Grok iframe injection skipped (protected frame) – trying next...');
+          }
+        });
+      };
+
+      // Inject now + re-inject on every update (Grok re-renders constantly)
+      injectEverywhere();
+      const updateListener = (updatedTabId, changeInfo) => {
+        if (updatedTabId === tabId && changeInfo.status === 'complete') {
+          setTimeout(injectEverywhere, 200);  // Quick debounce
+        }
+      };
+      chrome.tabs.onUpdated.addListener(updateListener);
+
+      // Clean up listener after 30s (or when done)
+      setTimeout(() => chrome.tabs.onUpdated.removeListener(updateListener), 30000);
+
+      sendResponse({ status: 'injected' });
+    });
+    return true;  // Async
+  }
+
+  if (msg.action === 'captureVisible') {
+    chrome.tabs.captureVisibleTab(null, { format: 'png' }, sendResponse);
+    return true;
+  }
+
+  if (msg.action === 'fullPageDone') {
+    // Stitch and add to your tray (your existing function)
+    stitchAndAddToTray(msg.images);
+  }
+});
+
+// The capture function that runs INSIDE the page/iframes
+function runGrokProofCapture() {
+  try {
+    let images = [];
+    let currentPos = window.scrollY || 0;
+    const viewportHeight = window.innerHeight;
+    const totalHeight = Math.max(
+      document.body.scrollHeight, document.documentElement.scrollHeight, window.innerHeight
+    );
+
+    const captureChunk = async () => {
+      // Capture current visible viewport
+      const dataUrl = await new Promise(resolve => {
+        chrome.runtime.sendMessage({ action: 'captureVisible' }, resolve);
+      });
+      images.push(dataUrl);
+
+      // Scroll down one viewport (or up if at bottom – Grok starts scrolled)
+      const nextPos = Math.min(currentPos + viewportHeight, totalHeight - viewportHeight);
+      window.scrollTo(0, nextPos);
+      currentPos = nextPos;
+
+      // Wait for render (Grok needs this for lazy-load messages)
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      if (currentPos < totalHeight - viewportHeight) {
+        captureChunk();
+      } else {
+        // Done – send back to background
+        chrome.runtime.sendMessage({ action: 'fullPageDone', images });
+      }
+    };
+
+    captureChunk();
+  } catch (e) {
+    // Silent fail – no error popup, just log
+    console.warn('Capture skipped on this frame (Grok protection) – continuing...');
+  }
+}
+How to Use This (Trigger It)
+In your popup.js (when FULL PAGE button is clicked):
+JavaScriptchrome.runtime.sendMessage({ action: "startFullPageInAI" }, (response) => {
+  if (response.status === 'injected') {
+    // Show your progress bar: "Entering Grok... Capturing full convo"
+  }
+});
