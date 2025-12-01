@@ -496,12 +496,42 @@
     return null;
   }
 
-  // TIER 2: Scan for embedded scrollable containers (rare fallback)
+  // TIER 2: AI Chat Platform specific selectors
   function findScrollableContainerTier2() {
-    // Only use this if document/body aren't scrollable
-    // Skip AI platform inner containers - they cause more problems than they solve
+    const host = window.location.hostname.toLowerCase();
+    
+    // AI platform specific selectors - these are the chat transcript containers
+    const aiSelectors = {
+      'grok.com': ['[data-testid="conversation"]', '[role="main"]', 'main'],
+      'grok.x.ai': ['[data-testid="conversation"]', '[role="main"]', 'main'],
+      'chat.openai.com': ['[data-testid^="conversation"]', 'main', '[role="presentation"]'],
+      'chatgpt.com': ['[data-testid^="conversation"]', 'main', '[role="presentation"]'],
+      'claude.ai': ['[data-testid="conversation"]', 'main', '[role="main"]'],
+      'gemini.google.com': ['main', '[role="main"]'],
+      'perplexity.ai': ['main', '[role="main"]']
+    };
+    
+    // Check if we're on an AI platform
+    for (const [platform, selectors] of Object.entries(aiSelectors)) {
+      if (host.includes(platform)) {
+        console.log(`[SnapToAI] Tier 2: Checking AI platform selectors for ${platform}`);
+        for (const selector of selectors) {
+          try {
+            const el = document.querySelector(selector);
+            if (el && el.scrollHeight > window.innerHeight) {
+              console.log(`[SnapToAI] Tier 2: Found AI container: ${selector}, height: ${el.scrollHeight}px`);
+              return el;
+            }
+          } catch (e) {
+            continue;
+          }
+        }
+      }
+    }
+    
+    // Fallback: scan for generic scrollable containers
     try {
-      const candidates = document.querySelectorAll('main, article, section');
+      const candidates = document.querySelectorAll('main, article, section, [role="main"]');
       let best = null;
       let bestHeight = 0;
       
