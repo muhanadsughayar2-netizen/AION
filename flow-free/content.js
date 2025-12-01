@@ -378,57 +378,178 @@
     return document.documentElement.scrollHeight;
   }
   
-  // Find the main scrollable container on AI chat sites
-  function findScrollableContainer() {
-    try {
-      // Selectors for AI chat platforms (ordered by specificity)
-      const selectors = [
-        '[data-testid="conversation-container"]',
-        '.overflow-y-auto',
-        '[role="log"]',
-        '.flex-1.overflow-y-auto',
-        '.chat-messages',
-        '.messages',
-        'div[class*="conversation"]',
-        'div[class*="chat-content"]',
-        'main',
-        'div[class*="scroll"]',
-        'div[class*="overflow"]'
-      ];
+  // TIER 1: Find scrollable container using known selectors
+  function findScrollableContainerTier1() {
+    const selectors = [
+      '[data-testid="conversation-container"]',
+      '.overflow-y-auto',
+      '[role="log"]',
+      '.flex-1.overflow-y-auto',
+      '.chat-messages',
+      '.messages',
+      'div[class*="conversation"]',
+      'div[class*="chat-content"]',
+      'main',
+      'div[class*="scroll"]',
+      'div[class*="overflow"]'
+    ];
 
-      // Try each selector
-      for (const sel of selectors) {
-        try {
-          const el = document.querySelector(sel);
-          if (el && el.scrollHeight && el.clientHeight && el.scrollHeight > el.clientHeight + 50) {
-            console.log(`[SnapToAI] Found scrollable container: ${sel}, scrollHeight: ${el.scrollHeight}px`);
-            return el;
-          }
-        } catch (e) {
-          // Skip this selector if it causes issues
-          continue;
+    for (const sel of selectors) {
+      try {
+        const el = document.querySelector(sel);
+        if (el && el.scrollHeight && el.clientHeight && el.scrollHeight > el.clientHeight + 50) {
+          console.log(`[SnapToAI] Tier 1: Found via selector: ${sel}`);
+          return el;
         }
+      } catch (e) {
+        continue;
       }
+    }
+    return null;
+  }
 
-      // Fallback: find deepest scrollable element
-      const all = document.querySelectorAll('div, main, section');
+  // TIER 2: Scan all elements for scrollable containers
+  function findScrollableContainerTier2() {
+    try {
+      const all = document.querySelectorAll('div, main, section, article');
+      let best = null;
+      let bestHeight = 0;
+      
       for (const el of all) {
         try {
           if (el && el.scrollHeight && el.clientHeight && 
-              el.scrollHeight > el.clientHeight + 100 && el.scrollHeight > window.innerHeight) {
-            console.log(`[SnapToAI] Found scrollable fallback: ${el.tagName}.${el.className}`);
-            return el;
+              el.scrollHeight > el.clientHeight + 100 && 
+              el.scrollHeight > window.innerHeight &&
+              el.scrollHeight > bestHeight) {
+            best = el;
+            bestHeight = el.scrollHeight;
           }
         } catch (e) {
           continue;
         }
       }
-
-      return null;
-    } catch (error) {
-      console.log('[SnapToAI] Error finding scrollable container:', error);
+      
+      if (best) {
+        console.log(`[SnapToAI] Tier 2: Found scrollable: ${best.tagName}, height: ${bestHeight}px`);
+      }
+      return best;
+    } catch (e) {
       return null;
     }
+  }
+
+  // TIER 3: Use document.body or documentElement as fallback
+  function findScrollableContainerTier3() {
+    try {
+      // Check if body exists and is scrollable
+      if (document.body && document.body.scrollHeight && 
+          document.body.scrollHeight > window.innerHeight + 100) {
+        console.log('[SnapToAI] Tier 3: Using document.body');
+        return document.body;
+      }
+      // Check documentElement
+      if (document.documentElement && document.documentElement.scrollHeight &&
+          document.documentElement.scrollHeight > window.innerHeight + 100) {
+        console.log('[SnapToAI] Tier 3: Using documentElement');
+        return document.documentElement;
+      }
+    } catch (e) {
+      console.log('[SnapToAI] Tier 3 error:', e);
+    }
+    return null;
+  }
+
+  // Master function: tries all tiers
+  function findScrollableContainer() {
+    console.log('[SnapToAI] Finding scrollable container...');
+    
+    // Try Tier 1: Known selectors
+    let container = findScrollableContainerTier1();
+    if (container) return container;
+    
+    // Try Tier 2: Scan all elements
+    container = findScrollableContainerTier2();
+    if (container) return container;
+    
+    // Try Tier 3: Body/documentElement fallback
+    container = findScrollableContainerTier3();
+    if (container) return container;
+    
+    console.log('[SnapToAI] No scrollable container found - page may be short');
+    return null;
+  }
+
+  // Simple viewport capture - fallback for short pages
+  async function simpleViewportCapture(tabId) {
+    try {
+      const response = await chrome.runtime.sendMessage({ 
+        action: 'fullPageCaptureStep',
+        tabId: tabId
+      });
+      
+      if (response.success && response.dataUrl) {
+        // Save single screenshot as full page result
+        await chrome.storage.local.set({ 
+          fullPageScreenshots: [response.dataUrl],
+          fullPageViewportWidth: window.innerWidth,
+          fullPageViewportHeight: window.innerHeight
+        });
+        
+        // Open annotate screen
+        chrome.runtime.sendMessage({
+          action: 'openAnnotateForFullPage'
+        });
+        
+        return { success: true };
+      } else {
+        showToast('Capture failed - try SNAP instead', 'error');
+        return { success: false, error: 'Capture failed' };
+      }
+    } catch (error) {
+      console.error('[SnapToAI] Simple capture error:', error);
+      showToast('Capture failed: ' + error.message, 'error');
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Pre-flight check: validate page is capturable
+  function preFlightCheck() {
+    const result = {
+      canCapture: true,
+      warnings: [],
+      errors: [],
+      pageHeight: 0,
+      viewportHeight: window.innerHeight
+    };
+    
+    try {
+      // Check page height (with null checks)
+      const bodyHeight = document.body ? (document.body.scrollHeight || 0) : 0;
+      const docHeight = document.documentElement ? (document.documentElement.scrollHeight || 0) : 0;
+      result.pageHeight = Math.max(bodyHeight, docHeight);
+      
+      // Warning: page is very short
+      if (result.pageHeight <= result.viewportHeight) {
+        result.warnings.push('Page fits in one screen - use SNAP instead');
+      }
+      
+      // Warning: page is extremely long
+      if (result.pageHeight > 50000) {
+        result.warnings.push('Very long page - may create many chunks');
+      }
+      
+      // Check for problematic elements
+      const iframes = document.querySelectorAll('iframe');
+      if (iframes.length > 5) {
+        result.warnings.push('Page has many iframes - some content may not capture');
+      }
+      
+    } catch (e) {
+      result.errors.push('Pre-flight check failed: ' + e.message);
+    }
+    
+    result.canCapture = result.errors.length === 0;
+    return result;
   }
   
   // Save and set a style property, tracking original value
@@ -487,11 +608,29 @@
     console.log(`[SnapToAI] Restored ${originalStyles.size} element styles`);
   }
 
-  // Perform full page scroll and capture
+  // Perform full page scroll and capture - with robust error handling
   async function performFullPageCapture(tabId) {
     // Set guard flag immediately
     isFullPageCaptureRunning = true;
     console.log('[SnapToAI] Full page capture started');
+    
+    // PRE-FLIGHT CHECK
+    const preflight = preFlightCheck();
+    console.log('[SnapToAI] Pre-flight:', preflight);
+    
+    if (!preflight.canCapture) {
+      showToast('Cannot capture this page: ' + preflight.errors.join(', '), 'error');
+      isFullPageCaptureRunning = false;
+      return { success: false, error: preflight.errors.join(', ') };
+    }
+    
+    // Warn user if page is very short
+    if (preflight.pageHeight <= preflight.viewportHeight + 50) {
+      showToast('Page is short - using simple capture', 'success');
+      // Fall back to simple viewport capture
+      isFullPageCaptureRunning = false;
+      return await simpleViewportCapture(tabId);
+    }
     
     const overlay = createFullPageOverlay();
     const screenshots = [];
@@ -502,10 +641,10 @@
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
       
-      // Step 1: Find the main scrollable container (for AI chat sites)
+      // Step 1: Find the main scrollable container (with multi-tier fallback)
       const scrollContainer = findScrollableContainer();
       const containerScrollHeight = scrollContainer ? scrollContainer.scrollHeight : 0;
-      console.log(`[SnapToAI] Scroll container found: ${!!scrollContainer}, content height: ${containerScrollHeight}px`);
+      console.log(`[SnapToAI] Scroll container: ${scrollContainer ? scrollContainer.tagName : 'none'}, height: ${containerScrollHeight}px`);
       
       // Measure initial document height
       const initialHeight = document.documentElement.scrollHeight;
@@ -524,9 +663,15 @@
       let totalHeight = document.documentElement.scrollHeight;
       console.log(`[SnapToAI] Document height after expansion: ${totalHeight}px`);
       
-      // Check if expansion worked
+      // GRACEFUL DEGRADATION: If expansion didn't work, try alternative approach
       if (totalHeight <= initialHeight + 100 && totalHeight <= viewportHeight * 1.5) {
-        console.log('[SnapToAI] Warning: Expansion may have failed, document height still small');
+        console.log('[SnapToAI] Expansion failed - trying body scroll fallback');
+        // Try body scroll height
+        totalHeight = Math.max(
+          document.body.scrollHeight || 0,
+          document.documentElement.scrollHeight || 0,
+          containerScrollHeight || 0
+        );
       }
       
       // Calculate number of captures needed
@@ -622,6 +767,10 @@
       }
       
       removeFullPageOverlay();
+      
+      // SHOW USER-FRIENDLY ERROR MESSAGE
+      const userMessage = error.message || 'Unknown error';
+      showToast(`Capture failed: ${userMessage}. Try SNAP instead.`, 'error');
       
       // Notify background of failure so it can reset state
       chrome.runtime.sendMessage({
