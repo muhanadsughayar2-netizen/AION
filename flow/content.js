@@ -378,8 +378,155 @@
     return document.documentElement.scrollHeight;
   }
   
+  // Temporarily hide sticky headers/footers during capture to avoid duplication
+  function hideStickyElements() {
+    const stickySelectors = [
+      '[style*="position: sticky"]',
+      '[style*="position: fixed"]',
+      'header[class*="sticky"]',
+      'nav[class*="sticky"]',
+      'div[class*="sticky"]',
+      '[class*="fixed-top"]',
+      '[class*="fixed-header"]'
+    ];
+    
+    const hidden = [];
+    for (const sel of stickySelectors) {
+      try {
+        const elements = document.querySelectorAll(sel);
+        elements.forEach(el => {
+          // Don't hide our overlay
+          if (el.id === 'snaptoai-fullpage-overlay') return;
+          // Skip if already hidden
+          if (el.dataset.snaptoaiHidden) return;
+          
+          const originalVisibility = el.style.visibility;
+          el.style.visibility = 'hidden';
+          el.dataset.snaptoaiHidden = 'true';
+          el.dataset.snaptoaiOriginalVisibility = originalVisibility;
+          hidden.push(el);
+        });
+      } catch (e) {
+        continue;
+      }
+    }
+    
+    console.log(`[SnapToAI] Hid ${hidden.length} sticky elements`);
+    return hidden;
+  }
+  
+  // Restore hidden sticky elements
+  function restoreStickyElements(elements) {
+    elements.forEach(el => {
+      try {
+        el.style.visibility = el.dataset.snaptoaiOriginalVisibility || '';
+        delete el.dataset.snaptoaiHidden;
+        delete el.dataset.snaptoaiOriginalVisibility;
+      } catch (e) {
+        // Element may have been removed
+      }
+    });
+    console.log(`[SnapToAI] Restored ${elements.length} sticky elements`);
+  }
+  
+  // Detect AI platform and return platform-specific selectors
+  function getAIPlatformSelectors() {
+    const host = window.location.hostname.toLowerCase();
+    
+    // ChatGPT (chat.openai.com, chatgpt.com)
+    if (host.includes('openai.com') || host.includes('chatgpt.com')) {
+      console.log('[SnapToAI] Detected: ChatGPT');
+      return [
+        '[data-testid="conversation-turn-*"]',
+        'main div[class*="react-scroll-to-bottom"]',
+        'div[class*="react-scroll-to-bottom"]',
+        '[role="presentation"] > div > div',
+        'main .overflow-y-auto',
+        'main'
+      ];
+    }
+    
+    // Claude (claude.ai)
+    if (host.includes('claude.ai')) {
+      console.log('[SnapToAI] Detected: Claude');
+      return [
+        '[data-testid="chat-messages"]',
+        'div[class*="overflow-y-auto"]',
+        'main div[class*="scroll"]',
+        'div[class*="conversation"]',
+        'main'
+      ];
+    }
+    
+    // Grok (grok.com, x.ai, grok.x.ai)
+    if (host.includes('grok.com') || host.includes('x.ai') || host.includes('grok.x.ai')) {
+      console.log('[SnapToAI] Detected: Grok');
+      return [
+        '[data-testid="conversation-container"]',
+        'div[class*="chat-messages"]',
+        'div[class*="overflow-y-auto"]',
+        'main div[class*="scroll"]',
+        'main'
+      ];
+    }
+    
+    // Google AI Studio / Gemini
+    if (host.includes('aistudio.google') || host.includes('gemini.google')) {
+      console.log('[SnapToAI] Detected: Google AI');
+      return [
+        'ms-chat-session',
+        '[role="log"]',
+        'div[class*="chat"]',
+        'main'
+      ];
+    }
+    
+    // Replit (replit.com)
+    if (host.includes('replit.com')) {
+      console.log('[SnapToAI] Detected: Replit');
+      return [
+        '.cm-scroller', // CodeMirror editor
+        '.repl-console',
+        '[data-cy="output-panel"]',
+        'div[class*="ScrollableComponent"]',
+        'main'
+      ];
+    }
+    
+    // Google Docs
+    if (host.includes('docs.google.com')) {
+      console.log('[SnapToAI] Detected: Google Docs');
+      return [
+        '.kix-appview-editor',
+        '.docs-editor-container',
+        '#docs-editor-container',
+        '.docs-editor'
+      ];
+    }
+    
+    // No specific platform detected
+    return null;
+  }
+  
   // TIER 1: Find scrollable container using known selectors
   function findScrollableContainerTier1() {
+    // First try AI-platform-specific selectors
+    const platformSelectors = getAIPlatformSelectors();
+    if (platformSelectors) {
+      for (const sel of platformSelectors) {
+        try {
+          const el = document.querySelector(sel);
+          if (el && el.scrollHeight && el.clientHeight && el.scrollHeight > el.clientHeight + 50) {
+            console.log(`[SnapToAI] AI Platform: Found via selector: ${sel}`);
+            return el;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+    }
+    
+    // Generic selectors
     const selectors = [
       '[data-testid="conversation-container"]',
       '.overflow-y-auto',
