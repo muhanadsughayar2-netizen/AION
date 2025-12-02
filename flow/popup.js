@@ -312,13 +312,12 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
       });
     }));
     
-    // Calculate correct overlap based on platform type
-    // AI platforms: 30% overlap (scrolls 70%), Regular sites: 10% overlap (scrolls 90%)
-    // Note: This old chunking function doesn't have isAIPlatform, so use 10% as default
-    const cssOverlap = Math.round(viewportHeight * 0.1);
+    // Calculate correct overlap: 15% of viewport
+    // Increased from 10% to catch missing lines at page boundaries
+    const cssOverlap = Math.round(viewportHeight * 0.15);
     const captureScale = images[0].height / viewportHeight; // DPR
     const overlap = Math.round(cssOverlap * captureScale);
-    console.log(`[SnapToAI] Stitching overlap: ${cssOverlap}px CSS (10% of ${viewportHeight}px) -> ${overlap}px device`);
+    console.log(`[SnapToAI] Stitching overlap: ${cssOverlap}px CSS (15% of ${viewportHeight}px) -> ${overlap}px device`);
     
     const width = images[0].width;
     

@@ -969,9 +969,9 @@
         console.log('[SnapToAI] AI platform detected - skipping style expansion to preserve scroll');
       }
       
-      // Scroll step size: 90% of viewport (10% overlap) for both AI and regular sites
-      // Fixed elements are now hidden during capture, so we don't need extra overlap
-      const stepHeight = Math.floor(viewportHeight * 0.9);
+      // Scroll step size: 85% of viewport (15% overlap) for both AI and regular sites
+      // Increased overlap to 15% to catch edge cases and missing lines
+      const stepHeight = Math.floor(viewportHeight * 0.85);
       
       // Get the scroll target
       const scrollTarget = useContainerScroll ? scrollContainer : window;
