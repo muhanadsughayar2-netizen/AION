@@ -4,11 +4,14 @@
 (function() {
   'use strict';
   
-  // Guard against multiple injections
-  if (window.__snaptoai_loaded) {
-    return; // Exit immediately (now legal inside function)
+  // Guard against multiple injections - but allow re-injection after errors
+  // Reset flag on each page load to allow fresh start
+  if (window.__snaptoai_loaded && window.__snaptoai_healthy) {
+    console.log('[SnapToAI] Already loaded and healthy, skipping');
+    return;
   }
   window.__snaptoai_loaded = true;
+  window.__snaptoai_healthy = true; // Will be set to false on critical errors
 
   // Track last mouse position for toast placement
   let lastMouseX = window.innerWidth - 20;
@@ -320,14 +323,18 @@
   }
 
   // Convert dataURL to File object
-  // For uploads: use JPEG for speed (smaller files = faster upload)
-  // Original PNGs kept in storage for downloads/PDF (quality preserved)
+  // For uploads: try JPEG for speed, fallback to PNG if conversion fails
   async function dataUrlToFile(dataUrl, filename, forUpload = true) {
     if (forUpload) {
-      // Convert to optimized JPEG for faster AI platform uploads
-      return await convertToOptimizedJpeg(dataUrl, filename.replace('.png', '.jpg'));
+      try {
+        // Try to convert to optimized JPEG for faster AI platform uploads
+        return await convertToOptimizedJpeg(dataUrl, filename.replace('.png', '.jpg'));
+      } catch (e) {
+        console.warn('[SnapToAI] JPEG conversion failed, using original PNG:', e.message);
+        // Fall through to PNG
+      }
     }
-    // Keep original format for downloads
+    // Keep original format for downloads (or if JPEG conversion failed)
     const response = await fetch(dataUrl);
     const blob = await response.blob();
     return new File([blob], filename, { type: 'image/png' });
@@ -336,29 +343,37 @@
   // Convert dataURL to optimized JPEG for fast uploads
   async function convertToOptimizedJpeg(dataUrl, filename) {
     return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        
-        // White background for JPEG (no transparency)
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-        
-        // Convert to JPEG with good quality (0.85 = good balance of quality/size)
-        canvas.toBlob((blob) => {
-          if (blob) {
-            resolve(new File([blob], filename, { type: 'image/jpeg' }));
-          } else {
-            reject(new Error('Failed to create JPEG blob'));
+      try {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            
+            // White background for JPEG (no transparency)
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            
+            // Convert to JPEG with good quality (0.85 = good balance of quality/size)
+            canvas.toBlob((blob) => {
+              if (blob) {
+                resolve(new File([blob], filename, { type: 'image/jpeg' }));
+              } else {
+                reject(new Error('Blob creation failed'));
+              }
+            }, 'image/jpeg', 0.85);
+          } catch (canvasErr) {
+            reject(canvasErr);
           }
-        }, 'image/jpeg', 0.85);
-      };
-      img.onerror = () => reject(new Error('Failed to load image for conversion'));
-      img.src = dataUrl;
+        };
+        img.onerror = () => reject(new Error('Image load failed'));
+        img.src = dataUrl;
+      } catch (err) {
+        reject(err);
+      }
     });
   }
 
