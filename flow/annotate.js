@@ -1759,10 +1759,9 @@ async function saveFullPageWithAnnotations() {
     const storedViewportHeight = storedDims.fullPageViewportHeight || window.innerHeight;
     const isAIPlatform = storedDims.fullPageIsAIPlatform || false;
     
-    // Calculate CSS_OVERLAP based on capture type:
-    // - AI platforms: 30% overlap (content.js scrolls 70% - accounts for fixed headers/footers)
-    // - Regular sites: 10% overlap (content.js scrolls 90% of viewport)
-    const CSS_OVERLAP = isAIPlatform ? Math.round(storedViewportHeight * 0.3) : Math.round(storedViewportHeight * 0.1);
+    // Calculate CSS_OVERLAP: 10% of viewport for all sites
+    // Fixed elements are now hidden during capture, so consistent 10% overlap works for all
+    const CSS_OVERLAP = Math.round(storedViewportHeight * 0.1);
     
     let pageWidth = 0;
     let overlapPx = CSS_OVERLAP; // Will be scaled for actual capture DPR

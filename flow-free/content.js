@@ -969,10 +969,9 @@
         console.log('[SnapToAI] AI platform detected - skipping style expansion to preserve scroll');
       }
       
-      // Scroll step size:
-      // - AI platforms: 70% of viewport (they have fixed headers/footers that eat 20-30% of space)
-      // - Regular sites: 90% of viewport (10% overlap for safety)
-      const stepHeight = isAIPlatform ? Math.floor(viewportHeight * 0.7) : Math.floor(viewportHeight * 0.9);
+      // Scroll step size: 90% of viewport (10% overlap) for both AI and regular sites
+      // Fixed elements are now hidden during capture, so we don't need extra overlap
+      const stepHeight = Math.floor(viewportHeight * 0.9);
       
       // Get the scroll target
       const scrollTarget = useContainerScroll ? scrollContainer : window;
@@ -1053,6 +1052,51 @@
       
       console.log(`[SnapToAI] Starting capture - containerScroll: ${useContainerScroll}, isAI: ${isAIPlatform}`);
       
+      // === HIDE FIXED ELEMENTS FOR AI PLATFORMS ===
+      // Fixed headers/footers appear in every screenshot and cause duplication in stitched result
+      const hiddenFixedElements = [];
+      
+      const hideFixedElements = () => {
+        if (!isAIPlatform) return;
+        try {
+          // Find all fixed/sticky positioned elements
+          const allElements = document.querySelectorAll('*');
+          allElements.forEach(el => {
+            try {
+              const style = window.getComputedStyle(el);
+              const position = style.position;
+              const isFixed = position === 'fixed' || position === 'sticky';
+              const isOurOverlay = el.id === 'snaptoai-fullpage-overlay';
+              
+              if (isFixed && !isOurOverlay && el.offsetHeight > 0) {
+                // Store original visibility and hide
+                hiddenFixedElements.push({
+                  element: el,
+                  originalVisibility: el.style.visibility,
+                  originalDisplay: el.style.display
+                });
+                el.style.visibility = 'hidden';
+              }
+            } catch (e) {}
+          });
+          console.log(`[SnapToAI] Hidden ${hiddenFixedElements.length} fixed elements`);
+        } catch (e) {}
+      };
+      
+      const restoreFixedElements = () => {
+        try {
+          hiddenFixedElements.forEach(item => {
+            try {
+              item.element.style.visibility = item.originalVisibility;
+            } catch (e) {}
+          });
+          hiddenFixedElements.length = 0;
+        } catch (e) {}
+      };
+      
+      // Hide fixed elements before capture loop (for AI platforms)
+      hideFixedElements();
+      
       // === AI-PROOF CAPTURE LOOP ===
       // Uses scrollBy + checks if scroll actually moved (detects real bottom)
       let lastScrollTop = -1;
@@ -1116,6 +1160,9 @@
       
       console.log(`[SnapToAI] Full page capture complete: ${screenshots.length} images`);
       updateOverlayProgress(100);
+      
+      // Restore fixed elements (headers, footers) that we hid during capture
+      restoreFixedElements();
       
       // Restore element styles before removing overlay
       if (originalStyles && originalStyles.size > 0) {
