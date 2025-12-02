@@ -633,17 +633,32 @@
   // Master function: tries all tiers
   function findScrollableContainer() {
     console.log('[SnapToAI] Finding scrollable container...');
+    const host = window.location.hostname.toLowerCase();
     
-    // Try Tier 1: Known selectors
-    let container = findScrollableContainerTier1();
-    if (container) return container;
+    // AI platforms: Check Tier 2 FIRST (their scroll containers are internal, not body)
+    const aiPlatforms = ['grok.com', 'grok.x.ai', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
+    const isAIPlatform = aiPlatforms.some(p => host.includes(p));
     
-    // Try Tier 2: Scan all elements
-    container = findScrollableContainerTier2();
-    if (container) return container;
+    if (isAIPlatform) {
+      console.log('[SnapToAI] AI platform detected - checking internal containers first');
+      let container = findScrollableContainerTier2();
+      if (container) return container;
+      
+      // Fallback to document/body
+      container = findScrollableContainerTier1();
+      if (container) return container;
+    } else {
+      // Normal sites: Check document/body first
+      let container = findScrollableContainerTier1();
+      if (container) return container;
+      
+      // Then check internal containers
+      container = findScrollableContainerTier2();
+      if (container) return container;
+    }
     
     // Try Tier 3: Body/documentElement fallback
-    container = findScrollableContainerTier3();
+    let container = findScrollableContainerTier3();
     if (container) return container;
     
     console.log('[SnapToAI] No scrollable container found - page may be short');
@@ -904,27 +919,55 @@
       const overlap = 50; // Pixels of overlap between captures
       const stepHeight = viewportHeight - overlap;
       
+      // Determine if we need container scrolling (AI platforms) or window scrolling
+      const host = window.location.hostname.toLowerCase();
+      const aiPlatforms = ['grok.com', 'grok.x.ai', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
+      const isAIPlatform = aiPlatforms.some(p => host.includes(p));
+      const useContainerScroll = isAIPlatform && scrollContainer && scrollContainer !== document.documentElement && scrollContainer !== document.body;
+      
+      // Helper function to scroll (handles both container and window scroll)
+      const scrollTo = (position) => {
+        if (useContainerScroll) {
+          scrollContainer.scrollTo({ top: position, behavior: 'smooth' });
+        } else {
+          window.scrollTo({ top: position, behavior: 'smooth' });
+        }
+      };
+      
+      // Helper to get current scroll position
+      const getScrollTop = () => {
+        if (useContainerScroll) {
+          return scrollContainer.scrollTop;
+        }
+        return window.scrollY || document.documentElement.scrollTop;
+      };
+      
+      // For AI platforms, use container's scrollHeight
+      if (useContainerScroll) {
+        totalHeight = scrollContainer.scrollHeight;
+        console.log(`[SnapToAI] AI platform - using container scroll, height: ${totalHeight}px`);
+      }
+      
       // Scroll to top first
-      window.scrollTo(0, 0);
+      scrollTo(0);
       await new Promise(resolve => setTimeout(resolve, 300));
       
       // Recalculate after scroll (some pages load content)
-      totalHeight = await waitForScrollSettled(totalHeight, 300);
+      if (!useContainerScroll) {
+        totalHeight = await waitForScrollSettled(totalHeight, 300);
+      }
       
       const numCaptures = Math.ceil(totalHeight / stepHeight);
       let currentScroll = 0;
       
-      console.log(`[SnapToAI] Full page: ${numCaptures} captures needed, total height: ${totalHeight}px`);
+      console.log(`[SnapToAI] Full page: ${numCaptures} captures needed, total height: ${totalHeight}px, containerScroll: ${useContainerScroll}`);
       
       for (let i = 0; i < numCaptures; i++) {
         // Calculate scroll position
         const targetScroll = Math.min(i * stepHeight, totalHeight - viewportHeight);
         
         // Smooth scroll to position (visible to user!)
-        window.scrollTo({
-          top: targetScroll,
-          behavior: 'smooth'
-        });
+        scrollTo(targetScroll);
         
         // Wait for scroll animation + page settle
         await new Promise(resolve => setTimeout(resolve, 400));
@@ -965,8 +1008,8 @@
       // Remove overlay
       removeFullPageOverlay();
       
-      // Scroll back to top
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Scroll back to top (using container or window)
+      scrollTo(0);
       
       if (screenshots.length === 0) {
         throw new Error('No screenshots captured');
