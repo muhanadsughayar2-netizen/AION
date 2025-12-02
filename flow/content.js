@@ -975,28 +975,78 @@
       // Get the scroll target
       const scrollTarget = useContainerScroll ? scrollContainer : window;
       
-      // Helper to get scroll position
+      // === SILENT SCROLL HELPERS (never throw errors) ===
+      
+      // Helper to get scroll position (safe)
       const getScrollTop = () => {
-        if (useContainerScroll) {
-          return scrollContainer.scrollTop;
+        try {
+          if (useContainerScroll && scrollContainer) {
+            return scrollContainer.scrollTop || 0;
+          }
+          return window.scrollY || document.documentElement.scrollTop || 0;
+        } catch (e) {
+          return 0;
         }
-        return window.scrollY || document.documentElement.scrollTop;
       };
       
-      // Helper to get max scroll height
+      // Helper to get max scroll height (safe)
       const getMaxScroll = () => {
-        if (useContainerScroll) {
-          return scrollContainer.scrollHeight - scrollContainer.clientHeight;
+        try {
+          if (useContainerScroll && scrollContainer) {
+            return (scrollContainer.scrollHeight - scrollContainer.clientHeight) || 0;
+          }
+          return (document.documentElement.scrollHeight - window.innerHeight) || 0;
+        } catch (e) {
+          return 0;
         }
-        return document.documentElement.scrollHeight - window.innerHeight;
       };
       
-      // Scroll to top first
-      if (useContainerScroll) {
-        scrollContainer.scrollTo(0, 0);
-      } else {
-        window.scrollTo(0, 0);
-      }
+      // SAFE scrollTo - never throws errors
+      const safeScrollTo = (position) => {
+        try {
+          if (useContainerScroll && scrollContainer) {
+            scrollContainer.scrollTo({ top: position, left: 0, behavior: 'instant' });
+          } else {
+            window.scrollTo({ top: position, left: 0, behavior: 'instant' });
+          }
+        } catch (e) {
+          // Silent fallback - try alternative syntax
+          try {
+            if (useContainerScroll && scrollContainer) {
+              scrollContainer.scrollTop = position;
+            } else {
+              window.scroll(0, position);
+            }
+          } catch (e2) {
+            // Completely silent - do nothing
+          }
+        }
+      };
+      
+      // SAFE scrollBy - never throws errors
+      const safeScrollBy = (amount) => {
+        try {
+          if (useContainerScroll && scrollContainer) {
+            scrollContainer.scrollBy({ top: amount, left: 0, behavior: 'instant' });
+          } else {
+            window.scrollBy({ top: amount, left: 0, behavior: 'instant' });
+          }
+        } catch (e) {
+          // Silent fallback
+          try {
+            if (useContainerScroll && scrollContainer) {
+              scrollContainer.scrollTop += amount;
+            } else {
+              window.scrollBy(0, amount);
+            }
+          } catch (e2) {
+            // Completely silent - do nothing
+          }
+        }
+      };
+      
+      // Scroll to top first (using safe function)
+      safeScrollTo(0);
       await new Promise(resolve => setTimeout(resolve, 300));
       
       console.log(`[SnapToAI] Starting capture - containerScroll: ${useContainerScroll}, isAI: ${isAIPlatform}`);
@@ -1055,12 +1105,8 @@
         
         lastScrollTop = currentScrollTop;
         
-        // Scroll down by one viewport using scrollBy (works on AI platforms!)
-        if (useContainerScroll) {
-          scrollContainer.scrollBy(0, stepHeight);
-        } else {
-          window.scrollBy(0, stepHeight);
-        }
+        // Scroll down by one viewport using safe scrollBy (never throws errors!)
+        safeScrollBy(stepHeight);
         
         // Wait for scroll + render
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -1078,12 +1124,8 @@
       // Remove overlay
       removeFullPageOverlay();
       
-      // Scroll back to top (using container or window)
-      if (useContainerScroll && scrollContainer) {
-        scrollContainer.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      } else {
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      }
+      // Scroll back to top (using safe function - never throws errors!)
+      safeScrollTo(0);
       
       if (screenshots.length === 0) {
         throw new Error('No screenshots captured');
