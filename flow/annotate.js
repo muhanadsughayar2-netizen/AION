@@ -1760,9 +1760,9 @@ async function saveFullPageWithAnnotations() {
     const isAIPlatform = storedDims.fullPageIsAIPlatform || false;
     
     // Calculate CSS_OVERLAP based on capture type:
-    // - AI platforms: 0% overlap (content.js scrolls full viewport)
+    // - AI platforms: 30% overlap (content.js scrolls 70% - accounts for fixed headers/footers)
     // - Regular sites: 10% overlap (content.js scrolls 90% of viewport)
-    const CSS_OVERLAP = isAIPlatform ? 0 : Math.round(storedViewportHeight * 0.1);
+    const CSS_OVERLAP = isAIPlatform ? Math.round(storedViewportHeight * 0.3) : Math.round(storedViewportHeight * 0.1);
     
     let pageWidth = 0;
     let overlapPx = CSS_OVERLAP; // Will be scaled for actual capture DPR
@@ -1780,7 +1780,7 @@ async function saveFullPageWithAnnotations() {
         // Calculate ACTUAL capture scale from image dimensions vs stored viewport
         // This is critical: the annotation window DPR may differ from the capture DPR
         const captureScale = pageImages[0].height / storedViewportHeight;
-        overlapPx = isAIPlatform ? 0 : Math.round(CSS_OVERLAP * captureScale);
+        overlapPx = Math.round(CSS_OVERLAP * captureScale);
         console.log(`[SnapToAI] Capture scale: ${captureScale.toFixed(2)}x, AI platform: ${isAIPlatform}, CSS overlap: ${CSS_OVERLAP}px -> ${overlapPx}px device`);
       }
     }

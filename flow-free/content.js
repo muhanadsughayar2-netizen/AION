@@ -969,8 +969,10 @@
         console.log('[SnapToAI] AI platform detected - skipping style expansion to preserve scroll');
       }
       
-      // Scroll step size (full viewport for AI platforms, 90% otherwise)
-      const stepHeight = isAIPlatform ? viewportHeight : Math.floor(viewportHeight * 0.9);
+      // Scroll step size:
+      // - AI platforms: 70% of viewport (they have fixed headers/footers that eat 20-30% of space)
+      // - Regular sites: 90% of viewport (10% overlap for safety)
+      const stepHeight = isAIPlatform ? Math.floor(viewportHeight * 0.7) : Math.floor(viewportHeight * 0.9);
       
       // Get the scroll target
       const scrollTarget = useContainerScroll ? scrollContainer : window;

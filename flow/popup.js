@@ -312,8 +312,9 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
       });
     }));
     
-    // Calculate correct overlap: 10% of viewport * DPR scale
-    // content.js scrolls by 90% of viewport, so overlap is 10%
+    // Calculate correct overlap based on platform type
+    // AI platforms: 30% overlap (scrolls 70%), Regular sites: 10% overlap (scrolls 90%)
+    // Note: This old chunking function doesn't have isAIPlatform, so use 10% as default
     const cssOverlap = Math.round(viewportHeight * 0.1);
     const captureScale = images[0].height / viewportHeight; // DPR
     const overlap = Math.round(cssOverlap * captureScale);
