@@ -993,11 +993,18 @@
         const progress = maxScroll > 0 ? Math.min(99, Math.round((currentScrollTop / maxScroll) * 100)) : 50;
         updateOverlayProgress(progress);
         
+        // HIDE overlay before capture (so it doesn't appear in screenshot!)
+        overlay.style.visibility = 'hidden';
+        await new Promise(resolve => setTimeout(resolve, 50)); // Brief wait for render
+        
         // Request capture from background script
         const response = await chrome.runtime.sendMessage({ 
           action: 'fullPageCaptureStep',
           tabId: tabId
         });
+        
+        // SHOW overlay again after capture
+        overlay.style.visibility = 'visible';
         
         if (response.success && response.dataUrl) {
           screenshots.push({
