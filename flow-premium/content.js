@@ -1079,7 +1079,11 @@
       removeFullPageOverlay();
       
       // Scroll back to top (using container or window)
-      scrollTo(0);
+      if (useContainerScroll && scrollContainer) {
+        scrollContainer.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      } else {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      }
       
       if (screenshots.length === 0) {
         throw new Error('No screenshots captured');
