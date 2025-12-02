@@ -1722,7 +1722,6 @@ async function saveFullPageWithAnnotations() {
   try {
     const totalPages = pages.length;
     const PAGES_PER_CHUNK = 5; // Smaller chunks for AI compatibility (5 pages max)
-    const CSS_OVERLAP = 50; // Overlap in CSS pixels (matches content.js scroll step)
     
     // Calculate how many chunks we need
     const totalChunks = Math.ceil(totalPages / PAGES_PER_CHUNK);
@@ -1755,9 +1754,15 @@ async function saveFullPageWithAnnotations() {
     updateStatus('Loading all pages...');
     await yieldToUI();
     
-    // Get stored viewport dimensions for accurate DPR calculation
-    const storedDims = await chrome.storage.local.get(['fullPageViewportWidth', 'fullPageViewportHeight']);
+    // Get stored viewport dimensions and AI platform flag for accurate overlap calculation
+    const storedDims = await chrome.storage.local.get(['fullPageViewportWidth', 'fullPageViewportHeight', 'fullPageIsAIPlatform']);
     const storedViewportHeight = storedDims.fullPageViewportHeight || window.innerHeight;
+    const isAIPlatform = storedDims.fullPageIsAIPlatform || false;
+    
+    // Calculate CSS_OVERLAP based on capture type:
+    // - AI platforms: 0% overlap (content.js scrolls full viewport)
+    // - Regular sites: 10% overlap (content.js scrolls 90% of viewport)
+    const CSS_OVERLAP = isAIPlatform ? 0 : Math.round(storedViewportHeight * 0.1);
     
     let pageWidth = 0;
     let overlapPx = CSS_OVERLAP; // Will be scaled for actual capture DPR
@@ -1775,8 +1780,8 @@ async function saveFullPageWithAnnotations() {
         // Calculate ACTUAL capture scale from image dimensions vs stored viewport
         // This is critical: the annotation window DPR may differ from the capture DPR
         const captureScale = pageImages[0].height / storedViewportHeight;
-        overlapPx = Math.round(CSS_OVERLAP * captureScale);
-        console.log(`[SnapToAI] Capture scale: ${captureScale.toFixed(2)}x (image: ${pageImages[0].height}px / viewport: ${storedViewportHeight}px), overlap: ${CSS_OVERLAP}px CSS -> ${overlapPx}px device`);
+        overlapPx = isAIPlatform ? 0 : Math.round(CSS_OVERLAP * captureScale);
+        console.log(`[SnapToAI] Capture scale: ${captureScale.toFixed(2)}x, AI platform: ${isAIPlatform}, CSS overlap: ${CSS_OVERLAP}px -> ${overlapPx}px device`);
       }
     }
     

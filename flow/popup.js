@@ -196,7 +196,7 @@ function setupEventListeners() {
     
     // Listen for stitch request from background
     if (request.action === 'stitchFullPage') {
-      stitchFullPageImages(request.screenshots, request.viewportWidth, request.viewportHeight);
+      stitchFullPageImages(request.screenshots, request.viewportWidth, request.viewportHeight, request.isAIPlatform);
     }
   });
 }
@@ -218,7 +218,7 @@ function estimateDataUrlBytes(dataUrl) {
 }
 
 // Open full page annotation editor with paginated view
-async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) {
+async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, isAIPlatform = false) {
   const overlay = document.getElementById('fullPageOverlay');
   const overlayStatus = document.getElementById('fullPageStatus');
   const status = document.getElementById('status');
@@ -232,10 +232,12 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight) 
     overlayStatus.textContent = 'Opening editor...';
     
     // Store screenshots AND viewport dimensions for correct DPR-scaled overlap calculation
+    // Also store isAIPlatform flag (AI platforms use 0% overlap, regular sites use 10%)
     await chrome.storage.local.set({ 
       fullPageScreenshots: screenshots,
       fullPageViewportWidth: viewportWidth,
-      fullPageViewportHeight: viewportHeight
+      fullPageViewportHeight: viewportHeight,
+      fullPageIsAIPlatform: isAIPlatform
     });
     
     // Open annotation screen in full page mode
@@ -310,7 +312,13 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
       });
     }));
     
-    const overlap = 50;
+    // Calculate correct overlap: 10% of viewport * DPR scale
+    // content.js scrolls by 90% of viewport, so overlap is 10%
+    const cssOverlap = Math.round(viewportHeight * 0.1);
+    const captureScale = images[0].height / viewportHeight; // DPR
+    const overlap = Math.round(cssOverlap * captureScale);
+    console.log(`[SnapToAI] Stitching overlap: ${cssOverlap}px CSS (10% of ${viewportHeight}px) -> ${overlap}px device`);
+    
     const width = images[0].width;
     
     // Calculate total height to estimate chunks needed

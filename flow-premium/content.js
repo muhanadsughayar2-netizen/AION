@@ -1139,7 +1139,8 @@
         action: 'fullPageCaptureComplete',
         screenshots: screenshots.map(s => s.dataUrl),
         viewportWidth,
-        viewportHeight
+        viewportHeight,
+        isAIPlatform: isAIPlatform // Pass flag so stitching uses correct overlap (0% for AI, 10% for regular)
       });
       
       return { success: true, count: screenshots.length };

@@ -85,7 +85,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   } else if (request.action === 'fullPageCaptureComplete') {
     // Stitch and save full page capture
-    finalizeFullPageCapture(request.screenshots, request.viewportWidth, request.viewportHeight).then(sendResponse);
+    finalizeFullPageCapture(request.screenshots, request.viewportWidth, request.viewportHeight, request.isAIPlatform).then(sendResponse);
     return true;
   } else if (request.action === 'fullPageStitchComplete' || request.action === 'fullPageStitchFailed') {
     // Full page capture cycle complete (success or failure) - reset the flag
@@ -551,7 +551,7 @@ async function captureFullPageStep(tabId) {
 }
 
 // Finalize full page capture - stitch images and save to queue
-async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeight) {
+async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeight, isAIPlatform = false) {
   try {
     if (!screenshots || screenshots.length === 0) {
       isFullPageCaptureInProgress = false;
@@ -571,11 +571,13 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
     }
     
     // Send to popup for stitching - popup will notify us when done
+    // Pass isAIPlatform flag so stitching uses correct overlap (0% for AI, 10% for regular)
     chrome.runtime.sendMessage({
       action: 'stitchFullPage',
       screenshots,
       viewportWidth,
-      viewportHeight
+      viewportHeight,
+      isAIPlatform
     }).catch(() => {
       // If popup isn't open, reset the flag
       isFullPageCaptureInProgress = false;
