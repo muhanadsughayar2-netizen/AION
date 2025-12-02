@@ -547,80 +547,100 @@
     return null;
   }
 
-  // TIER 2: AI Chat Platform specific selectors - ULTRA AI-PROOF
-  // These selectors find the REAL scrolling container that AI platforms hide
+  // TIER 2: UNIVERSAL SCROLL DETECTOR
+  // Traverses DOM + shadow roots, tests elements by actually trying to scroll them
   function findScrollableContainerTier2() {
-    // Universal selectors that work across ALL AI platforms
-    const universalSelectors = [
-      // Grok specific
-      'div[data-testid="conversation-container"]',
-      'div[data-testid="conversation"]',
-      // ChatGPT specific  
-      'main div.overflow-y-auto',
-      'div[class*="overflow-auto"]',
-      '[data-testid^="conversation"]',
-      // Claude specific
-      'div[class*="messages"]',
-      'div[class*="conversation"]',
-      // Gemini / Perplexity / general
-      'div[style*="overflow"]',
-      'div[class*="scroll"]',
-      '[role="main"]',
-      'main'
-    ];
+    console.log('[SnapToAI] Tier 2: Universal scroll detector starting...');
     
-    console.log('[SnapToAI] Tier 2: Scanning for AI scroll container...');
+    const candidates = [];
+    const minScrollableHeight = 100; // Must have at least 100px of scrollable content
     
-    for (const selector of universalSelectors) {
+    // Helper: check if element is actually scrollable
+    function isElementScrollable(el) {
+      if (!el || !el.scrollHeight) return false;
+      
+      const scrollDiff = el.scrollHeight - el.clientHeight;
+      if (scrollDiff < minScrollableHeight) return false;
+      
       try {
-        const elements = document.querySelectorAll(selector);
-        for (const el of elements) {
-          // Check if this element is actually scrollable
-          if (el && el.scrollHeight > el.clientHeight + 50 && el.scrollHeight > window.innerHeight) {
-            const style = window.getComputedStyle(el);
-            const isScrollable = style.overflowY === 'auto' || style.overflowY === 'scroll' || 
-                                 style.overflow === 'auto' || style.overflow === 'scroll';
-            
-            if (isScrollable || el.scrollHeight > window.innerHeight * 1.5) {
-              console.log(`[SnapToAI] Tier 2: Found scroll container: ${selector}, height: ${el.scrollHeight}px`);
-              return el;
-            }
+        const style = window.getComputedStyle(el);
+        const overflow = style.overflowY || style.overflow;
+        // Include 'overlay' which some platforms use
+        return overflow === 'auto' || overflow === 'scroll' || overflow === 'overlay';
+      } catch (e) {
+        return false;
+      }
+    }
+    
+    // Helper: test if element actually scrolls (the ultimate proof)
+    function canActuallyScroll(el) {
+      if (!el || el === document.body || el === document.documentElement) return false;
+      
+      try {
+        const originalScroll = el.scrollTop;
+        el.scrollTop = originalScroll + 1;
+        const moved = el.scrollTop !== originalScroll;
+        el.scrollTop = originalScroll; // Restore
+        return moved;
+      } catch (e) {
+        return false;
+      }
+    }
+    
+    // Walk DOM tree including shadow roots
+    function walkDOM(node, depth = 0) {
+      if (depth > 20) return; // Safety limit
+      
+      try {
+        // Check current node
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          if (isElementScrollable(node)) {
+            const scrollAmount = node.scrollHeight - node.clientHeight;
+            candidates.push({ el: node, scrollAmount, depth });
+          }
+          
+          // Check shadow root
+          if (node.shadowRoot) {
+            walkDOM(node.shadowRoot, depth + 1);
+          }
+        }
+        
+        // Walk children
+        const children = node.children || node.childNodes;
+        for (const child of children) {
+          if (child.nodeType === Node.ELEMENT_NODE) {
+            walkDOM(child, depth + 1);
           }
         }
       } catch (e) {
-        continue;
+        // Shadow root access denied or other error - skip
       }
     }
     
-    // Last resort: find ANY div with overflow that's scrollable
-    try {
-      const allDivs = document.querySelectorAll('div');
-      let best = null;
-      let bestHeight = 0;
-      
-      for (const el of allDivs) {
-        try {
-          const style = window.getComputedStyle(el);
-          const isScrollable = style.overflowY === 'auto' || style.overflowY === 'scroll';
-          
-          if (isScrollable && el.scrollHeight > el.clientHeight + 100 && 
-              el.scrollHeight > window.innerHeight && el.scrollHeight > bestHeight) {
-            best = el;
-            bestHeight = el.scrollHeight;
-          }
-        } catch (e) {
-          continue;
-        }
+    // Start walk from document
+    walkDOM(document.body);
+    
+    console.log(`[SnapToAI] Tier 2: Found ${candidates.length} potential scroll containers`);
+    
+    // Sort by scroll amount (most scrollable first)
+    candidates.sort((a, b) => b.scrollAmount - a.scrollAmount);
+    
+    // Test top candidates to see which one actually scrolls
+    for (const candidate of candidates.slice(0, 10)) {
+      if (canActuallyScroll(candidate.el)) {
+        console.log(`[SnapToAI] Tier 2: Found working scroller! Tag: ${candidate.el.tagName}, height: ${candidate.el.scrollHeight}px, scrollable: ${candidate.scrollAmount}px`);
+        return candidate.el;
       }
-      
-      if (best) {
-        console.log(`[SnapToAI] Tier 2: Found scrollable div, height: ${bestHeight}px`);
-        return best;
-      }
-    } catch (e) {
-      console.log('[SnapToAI] Tier 2: Scan failed:', e.message);
     }
     
+    // If nothing works, return the best candidate anyway (might work with scrollBy)
+    if (candidates.length > 0) {
+      const best = candidates[0];
+      console.log(`[SnapToAI] Tier 2: Using best candidate (may not respond to scroll test): ${best.el.tagName}, height: ${best.el.scrollHeight}px`);
+      return best.el;
+    }
+    
+    console.log('[SnapToAI] Tier 2: No scroll container found');
     return null;
   }
 
@@ -650,7 +670,8 @@
     console.log('[SnapToAI] Finding scrollable container...');
     const host = window.location.hostname.toLowerCase();
     
-    // AI platforms: Check Tier 2 FIRST (their scroll containers are internal, not body)
+    // AI platforms with internal scroll containers: Check Tier 2 FIRST
+    // Note: Replit uses window scroll, not internal containers
     const aiPlatforms = ['grok.com', 'grok.x.ai', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
     const isAIPlatform = aiPlatforms.some(p => host.includes(p));
     
@@ -728,7 +749,8 @@
     }
     
     // These are truly complex apps with fixed layouts that can't be scroll-captured
-    const complexApps = ['replit.com', 'figma.com', 'canva.com', 'notion.so', 'airtable.com', 'miro.com'];
+    // Complex apps that truly can't be scroll-captured (Replit removed - it can scroll in some views)
+    const complexApps = ['figma.com', 'canva.com', 'notion.so', 'airtable.com', 'miro.com'];
     
     // Check by hostname
     for (const app of complexApps) {
@@ -915,7 +937,7 @@
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
       
-      // Check if this is an AI platform
+      // Check if this is an AI platform (internal scroll containers)
       const host = window.location.hostname.toLowerCase();
       const aiPlatforms = ['grok.com', 'grok.x.ai', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
       const isAIPlatform = aiPlatforms.some(p => host.includes(p));
