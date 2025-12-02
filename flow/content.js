@@ -320,10 +320,46 @@
   }
 
   // Convert dataURL to File object
-  async function dataUrlToFile(dataUrl, filename) {
+  // For uploads: use JPEG for speed (smaller files = faster upload)
+  // Original PNGs kept in storage for downloads/PDF (quality preserved)
+  async function dataUrlToFile(dataUrl, filename, forUpload = true) {
+    if (forUpload) {
+      // Convert to optimized JPEG for faster AI platform uploads
+      return await convertToOptimizedJpeg(dataUrl, filename.replace('.png', '.jpg'));
+    }
+    // Keep original format for downloads
     const response = await fetch(dataUrl);
     const blob = await response.blob();
     return new File([blob], filename, { type: 'image/png' });
+  }
+  
+  // Convert dataURL to optimized JPEG for fast uploads
+  async function convertToOptimizedJpeg(dataUrl, filename) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        
+        // White background for JPEG (no transparency)
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        
+        // Convert to JPEG with good quality (0.85 = good balance of quality/size)
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(new File([blob], filename, { type: 'image/jpeg' }));
+          } else {
+            reject(new Error('Failed to create JPEG blob'));
+          }
+        }, 'image/jpeg', 0.85);
+      };
+      img.onerror = () => reject(new Error('Failed to load image for conversion'));
+      img.src = dataUrl;
+    });
   }
 
   // ============================================
