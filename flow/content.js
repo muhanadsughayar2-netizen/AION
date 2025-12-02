@@ -762,7 +762,8 @@
       errors: [],
       pageHeight: 0,
       viewportHeight: window.innerHeight,
-      isComplexApp: false
+      isComplexApp: false,
+      isAIPlatform: false
     };
     
     try {
@@ -772,13 +773,30 @@
         result.warnings.push('Complex app detected - capturing viewport only');
       }
       
+      // Check if this is an AI platform (they hide scroll in nested containers)
+      const host = window.location.hostname.toLowerCase();
+      const aiPlatforms = ['grok.com', 'grok.x.ai', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
+      result.isAIPlatform = aiPlatforms.some(p => host.includes(p));
+      
       // Check page height (with null checks)
       const bodyHeight = document.body ? (document.body.scrollHeight || 0) : 0;
       const docHeight = document.documentElement ? (document.documentElement.scrollHeight || 0) : 0;
-      result.pageHeight = Math.max(bodyHeight, docHeight);
+      let maxHeight = Math.max(bodyHeight, docHeight);
       
-      // Warning: page is very short
-      if (result.pageHeight <= result.viewportHeight) {
+      // CRITICAL FIX: For AI platforms, also check for hidden scroll containers
+      // because body has overflow:hidden and scrollHeight is misleading
+      if (result.isAIPlatform) {
+        const scrollContainer = findScrollableContainerTier2();
+        if (scrollContainer && scrollContainer.scrollHeight > maxHeight) {
+          maxHeight = scrollContainer.scrollHeight;
+          console.log(`[SnapToAI] AI platform detected - using container height: ${maxHeight}px`);
+        }
+      }
+      
+      result.pageHeight = maxHeight;
+      
+      // Warning: page is very short (but skip this warning for AI platforms - they often look short)
+      if (result.pageHeight <= result.viewportHeight && !result.isAIPlatform) {
         result.warnings.push('Page fits in one screen - use SNAP instead');
       }
       
@@ -880,8 +898,8 @@
       return await simpleViewportCapture(tabId);
     }
     
-    // Warn user if page is very short
-    if (preflight.pageHeight <= preflight.viewportHeight + 50) {
+    // Warn user if page is very short (BUT skip for AI platforms - they need container scroll)
+    if (preflight.pageHeight <= preflight.viewportHeight + 50 && !preflight.isAIPlatform) {
       showToast('Page is short - using simple capture', 'success');
       // Fall back to simple viewport capture
       isFullPageCaptureRunning = false;
