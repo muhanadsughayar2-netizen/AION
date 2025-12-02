@@ -1759,9 +1759,9 @@ async function saveFullPageWithAnnotations() {
     const storedViewportHeight = storedDims.fullPageViewportHeight || window.innerHeight;
     const isAIPlatform = storedDims.fullPageIsAIPlatform || false;
     
-    // Calculate CSS_OVERLAP: 15% of viewport for all sites
-    // Increased from 10% to catch missing lines at page boundaries (ChatGPT/Grok)
-    const CSS_OVERLAP = Math.round(storedViewportHeight * 0.15);
+    // Calculate CSS_OVERLAP: 20% of viewport for all sites
+    // Increased to catch all missing lines at page boundaries (ChatGPT/Grok)
+    const CSS_OVERLAP = Math.round(storedViewportHeight * 0.20);
     
     let pageWidth = 0;
     let overlapPx = CSS_OVERLAP; // Will be scaled for actual capture DPR

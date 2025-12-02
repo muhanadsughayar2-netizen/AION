@@ -312,12 +312,12 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
       });
     }));
     
-    // Calculate correct overlap: 15% of viewport
-    // Increased from 10% to catch missing lines at page boundaries
-    const cssOverlap = Math.round(viewportHeight * 0.15);
+    // Calculate correct overlap: 20% of viewport
+    // Increased to catch all missing lines at page boundaries
+    const cssOverlap = Math.round(viewportHeight * 0.20);
     const captureScale = images[0].height / viewportHeight; // DPR
     const overlap = Math.round(cssOverlap * captureScale);
-    console.log(`[SnapToAI] Stitching overlap: ${cssOverlap}px CSS (15% of ${viewportHeight}px) -> ${overlap}px device`);
+    console.log(`[SnapToAI] Stitching overlap: ${cssOverlap}px CSS (20% of ${viewportHeight}px) -> ${overlap}px device`);
     
     const width = images[0].width;
     
