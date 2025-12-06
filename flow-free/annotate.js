@@ -222,17 +222,15 @@ function initializeBorderUI() {
   
   // Browser frame UI
   const frameBtn = document.getElementById('toggleBrowserFrame');
-  const urlInput = document.getElementById('urlInput');
-  const frameStyleSelect = document.getElementById('frameStyle');
+  
+  // Force fixed settings: always macOS style, always top
+  browserFrameStyle = 'mac';
+  browserFramePosition = 'top';
   
   if (hasBrowserFrame) {
     frameBtn.classList.add('active');
-    urlInput.style.display = 'block';
-    frameStyleSelect.style.display = 'block';
   } else {
     frameBtn.classList.remove('active');
-    urlInput.style.display = 'none';
-    frameStyleSelect.style.display = 'none';
   }
   
   // Apply initial zoom
@@ -389,37 +387,31 @@ function setupEventListeners() {
     applyZoom();
   });
   
-  // Browser frame toggle
+  // Browser frame toggle - SIMPLIFIED: always macOS style, always top, auto URL
   document.getElementById('toggleBrowserFrame').addEventListener('click', async () => {
     hasBrowserFrame = !hasBrowserFrame;
     const btn = document.getElementById('toggleBrowserFrame');
-    const urlInput = document.getElementById('urlInput');
-    const frameStyleSelect = document.getElementById('frameStyle');
-    const framePositionSelect = document.getElementById('frameUrlPosition');
+    
+    // Force fixed settings: macOS style, URL on top (no extra UI needed)
+    browserFrameStyle = 'mac';
+    browserFramePosition = 'top';
     
     if (hasBrowserFrame) {
       btn.classList.add('active');
-      urlInput.style.display = 'block';
-      frameStyleSelect.style.display = 'block';
-      framePositionSelect.style.display = 'block';
       
-      // Auto-fill URL from storage (captured page URL)
+      // Auto-fill URL from storage (captured page URL) - no input field shown
       try {
         const stored = await chrome.storage.session.get(['lastCapturedPageUrl', 'lastCapturedPageTitle']);
         if (stored.lastCapturedPageUrl && stored.lastCapturedPageUrl !== '') {
-          urlInput.value = stored.lastCapturedPageUrl;
           browserFrameUrl = stored.lastCapturedPageUrl;
         } else {
-          browserFrameUrl = urlInput.value || 'Untitled Page';
+          browserFrameUrl = 'example.com';
         }
       } catch (e) {
-        browserFrameUrl = urlInput.value || 'https://example.com';
+        browserFrameUrl = 'example.com';
       }
     } else {
       btn.classList.remove('active');
-      urlInput.style.display = 'none';
-      frameStyleSelect.style.display = 'none';
-      framePositionSelect.style.display = 'none';
     }
     updateBrowserFrameOverlay();
     redraw();
