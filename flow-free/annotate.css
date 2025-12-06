@@ -171,13 +171,14 @@ body {
 .canvas-wrapper {
   position: relative;
   display: inline-block;
+  line-height: 0; /* Remove any inline spacing */
 }
 
 /* CSS Border on canvas-wrapper - wraps around EVERYTHING including browser frame */
 .canvas-wrapper.has-border {
   border-style: solid;
   /* border-color set via inline style for dynamic updates */
-  border-radius: 0; /* Always square */
+  border-radius: 0; /* Always square - no rounded corners ever */
 }
 
 .canvas-wrapper.has-border.border-thin {
@@ -225,8 +226,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  border-radius: 0;
+  border-radius: 0; /* Always square */
   overflow: hidden;
+  margin: 0; /* No margin - flush with edges */
+  padding: 0;
 }
 
 .browser-frame-overlay.frame-top {
@@ -592,9 +595,10 @@ body {
 #canvas {
   max-width: 100%;
   max-height: 100%;
-  border: 2px solid rgba(0, 122, 255, 0.2);
-  border-radius: 8px;
+  border: none; /* No canvas border - wrapper handles border */
+  border-radius: 0; /* Always square - no rounded corners */
   cursor: crosshair;
+  display: block; /* Remove any inline spacing */
 }
 
 .text-input {
