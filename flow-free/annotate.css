@@ -230,6 +230,7 @@ body {
   overflow: hidden;
   margin: 0; /* No margin - flush with edges */
   padding: 0;
+  line-height: normal; /* Reset line-height for text visibility */
 }
 
 .browser-frame-overlay.frame-top {
@@ -302,6 +303,7 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: normal; /* Ensure text is visible */
 }
 
 .style-windows .frame-url-bar {
