@@ -41,9 +41,9 @@ let hasBorder = true; // ENABLED by default for professional output
 let historyStack = [];
 let redoStack = [];
 const MAX_HISTORY = 50; // Limit to prevent memory issues
-let borderColor = '#007AFF'; // Blue - SnapToAI brand
-let borderWidth = 8; // Default to thick
-let borderRadius = 0; // Square by default for professional look
+let borderColor = '#007AFF'; // Blue - SnapToAI brand (fixed, no picker)
+let borderWidth = 2; // Default to thin
+let borderRadius = 8; // Rounded by default
 
 // ============================================================
 // AUTO DUPLICATE-ROW REMOVAL
@@ -205,20 +205,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Initialize border and frame UI to reflect current settings
 function initializeBorderUI() {
-  // Border UI
+  // Border UI - color is fixed blue, no picker shown
   const borderBtn = document.getElementById('toggleBorder');
-  const colorPicker = document.getElementById('borderColor');
   const widthSelect = document.getElementById('borderWidth');
   const radiusSelect = document.getElementById('borderRadius');
   
   if (hasBorder) {
     borderBtn.classList.add('active');
-    colorPicker.style.display = 'block';
     widthSelect.style.display = 'block';
     radiusSelect.style.display = 'block';
   } else {
     borderBtn.classList.remove('active');
-    colorPicker.style.display = 'none';
     widthSelect.style.display = 'none';
     radiusSelect.style.display = 'none';
   }
@@ -447,22 +444,19 @@ function setupEventListeners() {
     if (hasBrowserFrame) redraw();
   });
   
-  // Border toggle
+  // Border toggle - color is fixed blue, only show size/radius options
   document.getElementById('toggleBorder').addEventListener('click', () => {
     hasBorder = !hasBorder;
     const btn = document.getElementById('toggleBorder');
-    const colorPicker = document.getElementById('borderColor');
     const widthSelect = document.getElementById('borderWidth');
     const radiusSelect = document.getElementById('borderRadius');
     
     if (hasBorder) {
       btn.classList.add('active');
-      colorPicker.style.display = 'block';
       widthSelect.style.display = 'block';
       radiusSelect.style.display = 'block';
     } else {
       btn.classList.remove('active');
-      colorPicker.style.display = 'none';
       widthSelect.style.display = 'none';
       radiusSelect.style.display = 'none';
     }
