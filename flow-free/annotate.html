@@ -26,7 +26,11 @@
           <option value="windows">Windows Style</option>
           <option value="minimal">Minimal</option>
         </select>
-        <input type="text" id="urlInput" class="url-input" placeholder="https://example.com" style="display: none;">
+        <select id="frameUrlPosition" class="frame-style-select" style="display: none;">
+          <option value="top" selected>URL on Top</option>
+          <option value="bottom">URL on Bottom</option>
+        </select>
+        <input type="text" id="urlInput" class="url-input" readonly placeholder="Auto-detected URL" style="display: none; background: #2a2a2e; font-family: 'SF Mono', Menlo, monospace; font-size: 11px; color: #aaa; border: 1px solid #444; border-radius: 4px; padding: 4px 8px; text-align: center; cursor: default;">
       </div>
       
       <!-- Border Controls -->

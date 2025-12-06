@@ -1996,7 +1996,9 @@
         screenshots: screenshots.map(s => s.dataUrl),
         viewportWidth,
         viewportHeight,
-        isAIPlatform: isAIPlatform // Pass flag so stitching uses correct overlap (0% for AI, 10% for regular)
+        isAIPlatform: isAIPlatform, // Pass flag so stitching uses correct overlap (0% for AI, 10% for regular)
+        pageUrl: window.location.href, // Auto-fill URL in editor
+        pageTitle: document.title || 'Untitled Page'
       });
       
       return { success: true, count: screenshots.length };

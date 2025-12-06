@@ -84,8 +84,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     captureFullPageStep(request.tabId).then(sendResponse);
     return true;
   } else if (request.action === 'fullPageCaptureComplete') {
-    // Stitch and save full page capture
-    finalizeFullPageCapture(request.screenshots, request.viewportWidth, request.viewportHeight, request.isAIPlatform).then(sendResponse);
+    // Stitch and save full page capture (now includes page URL for browser frame)
+    finalizeFullPageCapture(request.screenshots, request.viewportWidth, request.viewportHeight, request.isAIPlatform, request.pageUrl, request.pageTitle).then(sendResponse);
     return true;
   } else if (request.action === 'fullPageStitchComplete' || request.action === 'fullPageStitchFailed') {
     // Full page capture cycle complete (success or failure) - reset the flag
@@ -551,7 +551,7 @@ async function captureFullPageStep(tabId) {
 }
 
 // Finalize full page capture - stitch images and save to queue
-async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeight, isAIPlatform = false) {
+async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeight, isAIPlatform = false, pageUrl = '', pageTitle = '') {
   try {
     if (!screenshots || screenshots.length === 0) {
       isFullPageCaptureInProgress = false;
@@ -570,6 +570,12 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
       };
     }
     
+    // Store the captured page URL for the editor's browser frame feature
+    await chrome.storage.session.set({ 
+      lastCapturedPageUrl: pageUrl || '',
+      lastCapturedPageTitle: pageTitle || 'Untitled Page'
+    });
+    
     // Send to popup for stitching - popup will notify us when done
     // Pass isAIPlatform flag so stitching uses correct overlap (0% for AI, 10% for regular)
     chrome.runtime.sendMessage({
@@ -577,7 +583,9 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
       screenshots,
       viewportWidth,
       viewportHeight,
-      isAIPlatform
+      isAIPlatform,
+      pageUrl,
+      pageTitle
     }).catch(() => {
       // If popup isn't open, reset the flag
       isFullPageCaptureInProgress = false;

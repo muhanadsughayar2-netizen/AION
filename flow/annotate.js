@@ -34,6 +34,7 @@ let zoomLevel = 1.0;
 let hasBrowserFrame = false;
 let browserFrameUrl = '';
 let browserFrameStyle = 'mac'; // 'mac', 'windows', 'minimal'
+let browserFramePosition = 'top'; // 'top' or 'bottom' - exactly like GoFullPage
 let hasBorder = true; // ENABLED by default for professional output
 let borderColor = '#00bcd4'; // Cyan like GoFullPage
 let borderWidth = 8; // Default to thick
@@ -387,21 +388,36 @@ function setupEventListeners() {
   });
   
   // Browser frame toggle
-  document.getElementById('toggleBrowserFrame').addEventListener('click', () => {
+  document.getElementById('toggleBrowserFrame').addEventListener('click', async () => {
     hasBrowserFrame = !hasBrowserFrame;
     const btn = document.getElementById('toggleBrowserFrame');
     const urlInput = document.getElementById('urlInput');
     const frameStyleSelect = document.getElementById('frameStyle');
+    const framePositionSelect = document.getElementById('frameUrlPosition');
     
     if (hasBrowserFrame) {
       btn.classList.add('active');
       urlInput.style.display = 'block';
       frameStyleSelect.style.display = 'block';
-      browserFrameUrl = urlInput.value || 'https://example.com';
+      framePositionSelect.style.display = 'block';
+      
+      // Auto-fill URL from storage (captured page URL)
+      try {
+        const stored = await chrome.storage.session.get(['lastCapturedPageUrl', 'lastCapturedPageTitle']);
+        if (stored.lastCapturedPageUrl && stored.lastCapturedPageUrl !== '') {
+          urlInput.value = stored.lastCapturedPageUrl;
+          browserFrameUrl = stored.lastCapturedPageUrl;
+        } else {
+          browserFrameUrl = urlInput.value || 'Untitled Page';
+        }
+      } catch (e) {
+        browserFrameUrl = urlInput.value || 'https://example.com';
+      }
     } else {
       btn.classList.remove('active');
       urlInput.style.display = 'none';
       frameStyleSelect.style.display = 'none';
+      framePositionSelect.style.display = 'none';
     }
     redraw();
   });
@@ -413,6 +429,12 @@ function setupEventListeners() {
   
   document.getElementById('frameStyle').addEventListener('change', (e) => {
     browserFrameStyle = e.target.value;
+    if (hasBrowserFrame) redraw();
+  });
+  
+  // URL position toggle (top/bottom)
+  document.getElementById('frameUrlPosition').addEventListener('change', (e) => {
+    browserFramePosition = e.target.value;
     if (hasBrowserFrame) redraw();
   });
   
@@ -1213,7 +1235,7 @@ function drawBrowserFrame(targetCtx, targetCanvas) {
 
 // Reusable decoration helper - applies border AND browser frame to any canvas
 function applyBorderDecoration(sourceCanvas) {
-  // First, apply browser frame if enabled (adds height at top)
+  // First, apply browser frame if enabled (adds height at top or bottom)
   let workingCanvas = sourceCanvas;
   
   if (hasBrowserFrame) {
@@ -1223,11 +1245,19 @@ function applyBorderDecoration(sourceCanvas) {
     framedCanvas.height = sourceCanvas.height + frameHeight;
     const framedCtx = framedCanvas.getContext('2d');
     
-    // Draw the frame header
+    // Determine frame Y position based on browserFramePosition (top/bottom)
+    const isBottom = browserFramePosition === 'bottom';
+    const frameY = isBottom ? sourceCanvas.height : 0;
+    const imageY = isBottom ? 0 : frameHeight;
+    
+    // Draw the source canvas first (at correct position)
+    framedCtx.drawImage(sourceCanvas, 0, imageY);
+    
+    // Draw the frame header at frameY
     if (browserFrameStyle === 'mac') {
       framedCtx.fillStyle = '#3a3a3c';
-      framedCtx.fillRect(0, 0, framedCanvas.width, frameHeight);
-      const buttonY = frameHeight / 2;
+      framedCtx.fillRect(0, frameY, framedCanvas.width, frameHeight);
+      const buttonY = frameY + frameHeight / 2;
       [{ x: 20, c: '#ff5f57' }, { x: 40, c: '#ffbd2e' }, { x: 60, c: '#28c840' }].forEach(b => {
         framedCtx.fillStyle = b.c;
         framedCtx.beginPath();
@@ -1236,7 +1266,7 @@ function applyBorderDecoration(sourceCanvas) {
       });
       framedCtx.fillStyle = '#1c1c1e';
       framedCtx.beginPath();
-      framedCtx.roundRect(85, 10, framedCanvas.width - 110, 24, 6);
+      framedCtx.roundRect(85, frameY + 10, framedCanvas.width - 110, 24, 6);
       framedCtx.fill();
       framedCtx.fillStyle = '#86868b';
       framedCtx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
@@ -1245,32 +1275,32 @@ function applyBorderDecoration(sourceCanvas) {
       framedCtx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), 95, buttonY);
     } else if (browserFrameStyle === 'windows') {
       framedCtx.fillStyle = '#f3f3f3';
-      framedCtx.fillRect(0, 0, framedCanvas.width, frameHeight);
+      framedCtx.fillRect(0, frameY, framedCanvas.width, frameHeight);
       const btnWidth = 46;
       framedCtx.fillStyle = '#e1e1e1';
-      framedCtx.fillRect(framedCanvas.width - btnWidth * 3, 0, btnWidth, frameHeight);
+      framedCtx.fillRect(framedCanvas.width - btnWidth * 3, frameY, btnWidth, frameHeight);
       framedCtx.strokeStyle = '#616161';
       framedCtx.lineWidth = 1;
       framedCtx.beginPath();
-      framedCtx.moveTo(framedCanvas.width - btnWidth * 3 + 18, frameHeight / 2);
-      framedCtx.lineTo(framedCanvas.width - btnWidth * 3 + 28, frameHeight / 2);
+      framedCtx.moveTo(framedCanvas.width - btnWidth * 3 + 18, frameY + frameHeight / 2);
+      framedCtx.lineTo(framedCanvas.width - btnWidth * 3 + 28, frameY + frameHeight / 2);
       framedCtx.stroke();
       framedCtx.fillStyle = '#e1e1e1';
-      framedCtx.fillRect(framedCanvas.width - btnWidth * 2, 0, btnWidth, frameHeight);
-      framedCtx.strokeRect(framedCanvas.width - btnWidth * 2 + 16, frameHeight / 2 - 5, 14, 10);
+      framedCtx.fillRect(framedCanvas.width - btnWidth * 2, frameY, btnWidth, frameHeight);
+      framedCtx.strokeRect(framedCanvas.width - btnWidth * 2 + 16, frameY + frameHeight / 2 - 5, 14, 10);
       framedCtx.fillStyle = '#e81123';
-      framedCtx.fillRect(framedCanvas.width - btnWidth, 0, btnWidth, frameHeight);
+      framedCtx.fillRect(framedCanvas.width - btnWidth, frameY, btnWidth, frameHeight);
       framedCtx.strokeStyle = '#fff';
       framedCtx.lineWidth = 1.5;
       framedCtx.beginPath();
-      framedCtx.moveTo(framedCanvas.width - btnWidth + 16, frameHeight / 2 - 5);
-      framedCtx.lineTo(framedCanvas.width - btnWidth + 30, frameHeight / 2 + 5);
-      framedCtx.moveTo(framedCanvas.width - btnWidth + 30, frameHeight / 2 - 5);
-      framedCtx.lineTo(framedCanvas.width - btnWidth + 16, frameHeight / 2 + 5);
+      framedCtx.moveTo(framedCanvas.width - btnWidth + 16, frameY + frameHeight / 2 - 5);
+      framedCtx.lineTo(framedCanvas.width - btnWidth + 30, frameY + frameHeight / 2 + 5);
+      framedCtx.moveTo(framedCanvas.width - btnWidth + 30, frameY + frameHeight / 2 - 5);
+      framedCtx.lineTo(framedCanvas.width - btnWidth + 16, frameY + frameHeight / 2 + 5);
       framedCtx.stroke();
       framedCtx.fillStyle = '#fff';
       framedCtx.beginPath();
-      framedCtx.roundRect(10, 10, framedCanvas.width - btnWidth * 3 - 30, 24, 4);
+      framedCtx.roundRect(10, frameY + 10, framedCanvas.width - btnWidth * 3 - 30, 24, 4);
       framedCtx.fill();
       framedCtx.strokeStyle = '#ccc';
       framedCtx.lineWidth = 1;
@@ -1279,24 +1309,22 @@ function applyBorderDecoration(sourceCanvas) {
       framedCtx.font = '12px Segoe UI, sans-serif';
       framedCtx.textAlign = 'left';
       framedCtx.textBaseline = 'middle';
-      framedCtx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), 20, frameHeight / 2);
+      framedCtx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), 20, frameY + frameHeight / 2);
     } else if (browserFrameStyle === 'minimal') {
       framedCtx.fillStyle = '#2d2d30';
-      framedCtx.fillRect(0, 0, framedCanvas.width, frameHeight);
+      framedCtx.fillRect(0, frameY, framedCanvas.width, frameHeight);
       const barWidth = Math.min(400, framedCanvas.width - 40);
       framedCtx.fillStyle = '#1e1e1e';
       framedCtx.beginPath();
-      framedCtx.roundRect((framedCanvas.width - barWidth) / 2, 6, barWidth, 20, 4);
+      framedCtx.roundRect((framedCanvas.width - barWidth) / 2, frameY + 6, barWidth, 20, 4);
       framedCtx.fill();
       framedCtx.fillStyle = '#aaa';
       framedCtx.font = '11px system-ui, sans-serif';
       framedCtx.textAlign = 'center';
       framedCtx.textBaseline = 'middle';
-      framedCtx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), framedCanvas.width / 2, frameHeight / 2);
+      framedCtx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), framedCanvas.width / 2, frameY + frameHeight / 2);
     }
     
-    // Draw the source canvas below the frame
-    framedCtx.drawImage(sourceCanvas, 0, frameHeight);
     workingCanvas = framedCanvas;
   }
   
