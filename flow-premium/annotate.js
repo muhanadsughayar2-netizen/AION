@@ -1758,15 +1758,13 @@ function updateHistoryButtons() {
   const redoBtn = document.getElementById('redoBtn');
   
   if (undoBtn) {
-    undoBtn.textContent = `↩️ (${historyStack.length})`;
     undoBtn.disabled = historyStack.length === 0;
-    undoBtn.style.opacity = historyStack.length === 0 ? '0.5' : '1';
+    undoBtn.style.opacity = historyStack.length === 0 ? '0.4' : '1';
   }
   
   if (redoBtn) {
-    redoBtn.textContent = `↪️ (${redoStack.length})`;
     redoBtn.disabled = redoStack.length === 0;
-    redoBtn.style.opacity = redoStack.length === 0 ? '0.5' : '1';
+    redoBtn.style.opacity = redoStack.length === 0 ? '0.4' : '1';
   }
 }
 

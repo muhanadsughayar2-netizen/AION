@@ -361,6 +361,26 @@ body {
   box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
 }
 
+/* Undo/Redo history buttons - filled blue */
+.tool-btn.history-btn {
+  background: #007AFF;
+  border-color: #007AFF;
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.tool-btn.history-btn:hover {
+  background: #0066cc;
+  border-color: #0066cc;
+}
+
+.tool-btn.history-btn:disabled {
+  background: #007AFF;
+  border-color: #007AFF;
+  cursor: not-allowed;
+}
+
 .sticker-btn {
   padding: 8px 14px;
   background: #e3f2fd;
