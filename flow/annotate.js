@@ -197,9 +197,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cropBtn = document.querySelector('.tool-btn[data-tool="crop"]');
     if (cropBtn) cropBtn.classList.add('active');
   } else {
-    // Hide scissors in regular edit mode - scissors is only for snip mode
+    // Crop tool is now available in ALL modes - users can crop and continue editing
     const cropBtn = document.querySelector('.tool-btn[data-tool="crop"]');
-    if (cropBtn) cropBtn.style.display = 'none';
+    if (cropBtn) cropBtn.style.display = 'inline-flex';
   }
 });
 
@@ -730,6 +730,17 @@ function handleMouseDown(e) {
   
   // Handle crop tool
   if (currentTool === 'crop') {
+    // Check if user clicked inside existing crop rectangle to APPLY it
+    if (cropRect) {
+      const { x, y, width, height } = cropRect;
+      if (startX >= x && startX <= x + width && startY >= y && startY <= y + height) {
+        // Clicked inside crop area - APPLY the crop
+        applyCrop();
+        return;
+      }
+    }
+    
+    // Otherwise, start new crop selection
     isCropping = true;
     cropStartX = startX;
     cropStartY = startY;
@@ -931,7 +942,7 @@ function handleMouseUp(e) {
       cropRect = { x: x1, y: y1, width, height };
       redraw();
       drawCropRect();
-      updateStatus(`Snip area selected (${Math.round(width)}x${Math.round(height)}). Click Save Snip to add to your snaps.`);
+      updateStatus(`Crop area selected (${Math.round(width)}x${Math.round(height)}). Click INSIDE to apply crop.`);
     } else {
       cropRect = null;
       redraw();
@@ -1083,16 +1094,79 @@ function drawCropRect() {
   ctx.fillRect(x - handleSize/2, y + height - handleSize/2, handleSize, handleSize);
   ctx.fillRect(x + width - handleSize/2, y + height - handleSize/2, handleSize, handleSize);
   
-  // Draw "✂️ SNIP" label
+  // Draw "✂️ CROP" label with Apply button hint
   ctx.fillStyle = 'rgba(0, 217, 255, 0.95)';
-  const labelWidth = 80;
+  const labelWidth = 120;
   const labelHeight = 28;
   ctx.fillRect(x + width/2 - labelWidth/2, y + height/2 - labelHeight/2, labelWidth, labelHeight);
   ctx.fillStyle = '#000';
   ctx.font = 'bold 14px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('✂️ SNIP', x + width/2, y + height/2);
+  ctx.fillText('✂️ Apply Crop', x + width/2, y + height/2);
+}
+
+// ========================================
+// APPLY CROP - Permanently resize canvas
+// ========================================
+function applyCrop() {
+  if (!cropRect) {
+    updateStatus('Draw a crop rectangle first.');
+    return;
+  }
+  
+  const { x, y, width, height } = cropRect;
+  
+  // Validate crop dimensions
+  if (width < 10 || height < 10) {
+    updateStatus('Crop area too small.');
+    return;
+  }
+  
+  // Save state before crop for undo
+  pushHistory();
+  
+  console.log('[SnapToAI] Applying crop:', { x, y, width, height });
+  
+  // Extract the cropped region from original image
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = width;
+  tempCanvas.height = height;
+  const tempCtx = tempCanvas.getContext('2d');
+  
+  // Draw the cropped region
+  tempCtx.putImageData(
+    originalImage,
+    -x, -y,
+    x, y, width, height
+  );
+  
+  // Resize main canvas to cropped size
+  canvas.width = width;
+  canvas.height = height;
+  
+  // Draw cropped image onto main canvas
+  ctx.drawImage(tempCanvas, 0, 0);
+  
+  // Update original image reference
+  originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  
+  // Clear annotations (they're relative to old coordinates)
+  // User can add new ones on the cropped canvas
+  annotations = [];
+  calloutNumber = 1;
+  
+  // Clear crop rectangle
+  cropRect = null;
+  
+  // Redraw
+  redraw();
+  
+  // Update frame overlay position if enabled
+  updateBrowserFrameOverlay();
+  
+  updateStatus(`Cropped to ${width}x${height}. Continue editing or save.`);
+  console.log('[SnapToAI] Crop applied successfully');
 }
 
 function findAnnotation(x, y) {
