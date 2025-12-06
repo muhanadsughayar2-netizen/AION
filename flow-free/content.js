@@ -526,6 +526,313 @@
   }
   
   // ============================================================
+  // SMART SCROLL STABILIZER v2
+  // Waits for scrollHeight to stop changing before capture
+  // Eliminates white gaps and duplicated posts on infinite-scroll pages
+  // ============================================================
+  
+  /**
+   * waitForScrollStabilization() - Waits for page content to stabilize
+   * 
+   * Checks every 50ms until scrollHeight stops changing (max 400ms)
+   * This ensures lazy-loaded content has finished loading before capture
+   * 
+   * @param {Element|null} scrollContainer - The scroll container (or null for window)
+   * @param {boolean} useContainerScroll - Whether to use container or window scroll
+   * @returns {Promise<boolean>} - True if stabilized, false if timeout
+   */
+  async function waitForScrollStabilization(scrollContainer, useContainerScroll) {
+    const MAX_WAIT = 400;      // Maximum wait time in ms
+    const CHECK_INTERVAL = 50; // Check every 50ms
+    const STABLE_COUNT = 2;    // Need 2 consecutive stable readings
+    
+    let lastScrollHeight = 0;
+    let lastClientHeight = 0;
+    let stableCount = 0;
+    let elapsed = 0;
+    
+    // Get current scroll height
+    const getScrollHeight = () => {
+      try {
+        if (useContainerScroll && scrollContainer) {
+          return scrollContainer.scrollHeight || 0;
+        }
+        return document.documentElement.scrollHeight || 0;
+      } catch (e) {
+        return 0;
+      }
+    };
+    
+    // Get current client height (visible area)
+    const getClientHeight = () => {
+      try {
+        if (useContainerScroll && scrollContainer) {
+          return scrollContainer.clientHeight || 0;
+        }
+        return window.innerHeight || 0;
+      } catch (e) {
+        return 0;
+      }
+    };
+    
+    // Initial reading
+    lastScrollHeight = getScrollHeight();
+    lastClientHeight = getClientHeight();
+    
+    return new Promise(resolve => {
+      const check = () => {
+        const currentScrollHeight = getScrollHeight();
+        const currentClientHeight = getClientHeight();
+        
+        // Check if heights are stable
+        if (currentScrollHeight === lastScrollHeight && currentClientHeight === lastClientHeight) {
+          stableCount++;
+          if (stableCount >= STABLE_COUNT) {
+            // Stabilized!
+            resolve(true);
+            return;
+          }
+        } else {
+          // Heights changed, reset counter
+          stableCount = 0;
+          lastScrollHeight = currentScrollHeight;
+          lastClientHeight = currentClientHeight;
+        }
+        
+        elapsed += CHECK_INTERVAL;
+        
+        if (elapsed >= MAX_WAIT) {
+          // Timeout - proceed anyway
+          resolve(false);
+          return;
+        }
+        
+        // Check again after interval
+        setTimeout(check, CHECK_INTERVAL);
+      };
+      
+      // Start checking after first interval
+      setTimeout(check, CHECK_INTERVAL);
+    });
+  }
+  
+  // ============================================================
+  // CANVAS / WEBGL / VIDEO CAPTURE ENGINE
+  // Replaces dynamic canvas/WebGL/video with static images during capture
+  // Fixes: black charts, maps, Figma, Replit previews, YouTube videos
+  // ============================================================
+  
+  // Storage for canvas/video replacements
+  const mediaState = {
+    canvasElements: [],    // Original canvas elements and their data
+    videoElements: [],     // Original video elements and their frames
+    isMediaCaptured: false
+  };
+  
+  /**
+   * captureCanvasAndVideo() - Captures all canvas and video elements
+   * 
+   * Replaces each canvas with a static image of its current content
+   * Replaces each video with a static image of its current frame
+   * This ensures dynamic content appears in screenshots instead of black boxes
+   */
+  function captureCanvasAndVideo() {
+    if (mediaState.isMediaCaptured) {
+      console.log('[SnapToAI] Media already captured, skipping');
+      return;
+    }
+    
+    console.log('[SnapToAI] 🎬 Capturing canvas/WebGL/video elements...');
+    
+    try {
+      // 1. CAPTURE ALL CANVAS ELEMENTS (including WebGL)
+      const canvases = document.querySelectorAll('canvas');
+      canvases.forEach((canvas, index) => {
+        try {
+          // Skip if canvas is too small or invisible
+          if (canvas.width < 10 || canvas.height < 10) return;
+          if (canvas.offsetWidth === 0 || canvas.offsetHeight === 0) return;
+          
+          // Try to capture canvas content
+          let dataUrl = null;
+          
+          try {
+            // For WebGL, we need to preserve drawing buffer
+            const gl = canvas.getContext('webgl') || canvas.getContext('webgl2');
+            if (gl) {
+              // WebGL canvas - attempt to capture
+              // Note: Some WebGL contexts don't have preserveDrawingBuffer
+              // and may return a blank image
+              dataUrl = canvas.toDataURL('image/png');
+            } else {
+              // 2D canvas - straightforward capture
+              dataUrl = canvas.toDataURL('image/png');
+            }
+          } catch (e) {
+            // Canvas may be tainted by CORS
+            console.warn(`[SnapToAI] Canvas ${index} is tainted, cannot capture`);
+            return;
+          }
+          
+          if (!dataUrl || dataUrl === 'data:,') return;
+          
+          // Create replacement image
+          const img = document.createElement('img');
+          img.src = dataUrl;
+          img.style.cssText = window.getComputedStyle(canvas).cssText;
+          img.style.width = canvas.offsetWidth + 'px';
+          img.style.height = canvas.offsetHeight + 'px';
+          img.className = canvas.className;
+          img.dataset.snaptoaiCanvasReplacement = 'true';
+          
+          // Store original canvas and its parent
+          mediaState.canvasElements.push({
+            original: canvas,
+            replacement: img,
+            parent: canvas.parentNode,
+            nextSibling: canvas.nextSibling,
+            originalDisplay: canvas.style.display
+          });
+          
+          // Replace canvas with static image
+          canvas.style.display = 'none';
+          canvas.parentNode.insertBefore(img, canvas);
+          
+        } catch (e) {
+          console.warn(`[SnapToAI] Failed to capture canvas ${index}:`, e.message);
+        }
+      });
+      
+      console.log(`[SnapToAI] Captured ${mediaState.canvasElements.length} canvas elements`);
+      
+      // 2. CAPTURE ALL VIDEO ELEMENTS
+      const videos = document.querySelectorAll('video');
+      videos.forEach((video, index) => {
+        try {
+          // Skip if video is too small or invisible
+          if (video.videoWidth < 10 || video.videoHeight < 10) return;
+          if (video.offsetWidth === 0 || video.offsetHeight === 0) return;
+          
+          // Create canvas to capture current frame
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = video.videoWidth;
+          tempCanvas.height = video.videoHeight;
+          const tempCtx = tempCanvas.getContext('2d');
+          
+          try {
+            // Draw current video frame to canvas
+            tempCtx.drawImage(video, 0, 0);
+            const dataUrl = tempCanvas.toDataURL('image/png');
+            
+            if (!dataUrl || dataUrl === 'data:,') return;
+            
+            // Create replacement image
+            const img = document.createElement('img');
+            img.src = dataUrl;
+            img.style.cssText = window.getComputedStyle(video).cssText;
+            img.style.width = video.offsetWidth + 'px';
+            img.style.height = video.offsetHeight + 'px';
+            img.className = video.className;
+            img.dataset.snaptoaiVideoReplacement = 'true';
+            
+            // Store original video and its parent
+            mediaState.videoElements.push({
+              original: video,
+              replacement: img,
+              parent: video.parentNode,
+              nextSibling: video.nextSibling,
+              originalDisplay: video.style.display,
+              wasPlaying: !video.paused,
+              currentTime: video.currentTime
+            });
+            
+            // Replace video with static image
+            video.style.display = 'none';
+            video.parentNode.insertBefore(img, video);
+            
+          } catch (e) {
+            // Video may be CORS-restricted
+            console.warn(`[SnapToAI] Video ${index} is CORS-restricted, cannot capture frame`);
+          }
+          
+        } catch (e) {
+          console.warn(`[SnapToAI] Failed to capture video ${index}:`, e.message);
+        }
+      });
+      
+      console.log(`[SnapToAI] Captured ${mediaState.videoElements.length} video elements`);
+      
+      mediaState.isMediaCaptured = true;
+      console.log('[SnapToAI] 🎬 Canvas/WebGL/video capture complete');
+      
+    } catch (error) {
+      console.warn('[SnapToAI] Media capture error (non-fatal):', error.message);
+    }
+  }
+  
+  /**
+   * restoreCanvasAndVideo() - Restores all original canvas and video elements
+   * 
+   * Removes replacement images and shows original elements again
+   */
+  function restoreCanvasAndVideo() {
+    if (!mediaState.isMediaCaptured) {
+      console.log('[SnapToAI] No media to restore');
+      return;
+    }
+    
+    console.log('[SnapToAI] 🔄 Restoring canvas/WebGL/video elements...');
+    
+    try {
+      // 1. RESTORE CANVAS ELEMENTS
+      mediaState.canvasElements.forEach(item => {
+        try {
+          // Remove replacement image
+          if (item.replacement && item.replacement.parentNode) {
+            item.replacement.parentNode.removeChild(item.replacement);
+          }
+          // Show original canvas
+          item.original.style.display = item.originalDisplay || '';
+        } catch (e) {}
+      });
+      
+      // 2. RESTORE VIDEO ELEMENTS
+      mediaState.videoElements.forEach(item => {
+        try {
+          // Remove replacement image
+          if (item.replacement && item.replacement.parentNode) {
+            item.replacement.parentNode.removeChild(item.replacement);
+          }
+          // Show original video
+          item.original.style.display = item.originalDisplay || '';
+          // Resume playback if was playing
+          if (item.wasPlaying) {
+            item.original.play().catch(() => {});
+          }
+        } catch (e) {}
+      });
+      
+      // Reset state
+      mediaState.canvasElements = [];
+      mediaState.videoElements = [];
+      mediaState.isMediaCaptured = false;
+      
+      console.log('[SnapToAI] 🔄 Canvas/WebGL/video restore complete');
+      
+    } catch (error) {
+      console.warn('[SnapToAI] Media restore error (non-fatal):', error.message);
+      // Force reset state even on error
+      mediaState.canvasElements = [];
+      mediaState.videoElements = [];
+      mediaState.isMediaCaptured = false;
+    }
+  }
+  
+  // ============================================================
+  // END CANVAS / WEBGL / VIDEO CAPTURE ENGINE
+  // ============================================================
+  
+  // ============================================================
   // DOM FREEZE ENGINE - Professional Full Page Capture
   // Freezes ALL dynamic content during capture for perfect results
   // ============================================================
@@ -1435,6 +1742,11 @@
       // This prevents content from changing during capture
       freezeDOM();
       
+      // === CAPTURE CANVAS / WEBGL / VIDEO ===
+      // Replace dynamic canvas/WebGL/video with static images
+      // This fixes black charts, maps, Figma, Replit previews, YouTube videos
+      captureCanvasAndVideo();
+      
       // === AI-PROOF CAPTURE LOOP ===
       // Uses scrollBy + checks if scroll actually moved (detects real bottom)
       let lastScrollTop = -1;
@@ -1492,12 +1804,22 @@
         // Scroll down by one viewport using safe scrollBy (never throws errors!)
         safeScrollBy(stepHeight);
         
-        // Wait for scroll + render
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // === SMART SCROLL STABILIZER v2 ===
+        // Wait for content to stabilize (max 400ms, checks every 50ms)
+        // This eliminates white gaps and duplicated posts on infinite-scroll pages
+        const stabilized = await waitForScrollStabilization(scrollContainer, useContainerScroll);
+        if (!stabilized) {
+          // Timeout - add small buffer wait anyway
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
       }
       
       console.log(`[SnapToAI] Full page capture complete: ${screenshots.length} images`);
       updateOverlayProgress(100);
+      
+      // === RESTORE CANVAS / WEBGL / VIDEO ===
+      // Restore original canvas/video elements (remove static replacements)
+      restoreCanvasAndVideo();
       
       // === UNFREEZE DOM ===
       // Restore all dynamic content (animations, videos, lazy loaders, etc.)
@@ -1538,6 +1860,11 @@
     } catch (error) {
       // Use console.warn, NEVER console.error - prevents Chrome extension warnings
       console.warn('[SnapToAI] Full page capture issue:', error?.message || error);
+      
+      // === ALWAYS RESTORE CANVAS/VIDEO ON ERROR ===
+      try {
+        restoreCanvasAndVideo();
+      } catch (e) {}
       
       // === ALWAYS UNFREEZE DOM ON ERROR ===
       try {

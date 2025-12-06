@@ -39,6 +39,87 @@ let borderColor = '#00bcd4'; // Cyan like GoFullPage
 let borderWidth = 8; // Default to thick
 let borderRadius = 0; // Square by default for professional look
 
+// ============================================================
+// AUTO DUPLICATE-ROW REMOVAL
+// Compares pixel rows in overlap area to find exact match point
+// ============================================================
+
+function findBestOverlapMatch(img1Data, img2, expectedOverlap, searchRange = 50) {
+  try {
+    const canvas2 = document.createElement('canvas');
+    canvas2.width = img2.width;
+    canvas2.height = Math.min(expectedOverlap + searchRange, img2.height);
+    const ctx2 = canvas2.getContext('2d');
+    ctx2.drawImage(img2, 0, 0);
+    const img2Data = ctx2.getImageData(0, 0, canvas2.width, canvas2.height);
+    
+    const width = img2.width;
+    const sampleWidth = Math.min(width, 200);
+    const sampleStart = Math.floor((width - sampleWidth) / 2);
+    
+    let bestMatch = expectedOverlap;
+    let bestScore = Infinity;
+    
+    const minOverlap = Math.max(0, expectedOverlap - searchRange);
+    const maxOverlap = Math.min(img1Data.height, expectedOverlap + searchRange);
+    
+    for (let testOverlap = minOverlap; testOverlap <= maxOverlap; testOverlap++) {
+      let score = 0;
+      const rowsToCompare = Math.min(5, expectedOverlap);
+      
+      for (let row = 0; row < rowsToCompare; row++) {
+        const y1 = img1Data.height - testOverlap + row;
+        const y2 = row;
+        
+        if (y1 < 0 || y1 >= img1Data.height || y2 >= img2Data.height) continue;
+        
+        for (let x = sampleStart; x < sampleStart + sampleWidth; x++) {
+          const idx1 = (y1 * img1Data.width + x) * 4;
+          const idx2 = (y2 * width + x) * 4;
+          
+          const dr = Math.abs(img1Data.data[idx1] - img2Data.data[idx2]);
+          const dg = Math.abs(img1Data.data[idx1 + 1] - img2Data.data[idx2 + 1]);
+          const db = Math.abs(img1Data.data[idx1 + 2] - img2Data.data[idx2 + 2]);
+          
+          score += dr + dg + db;
+        }
+      }
+      
+      score = score / (rowsToCompare * sampleWidth);
+      
+      if (score < bestScore) {
+        bestScore = score;
+        bestMatch = testOverlap;
+      }
+      
+      if (bestScore < 5) break;
+    }
+    
+    if (bestScore < 30) {
+      console.log(`[SnapToAI] Duplicate-row removal: adjusted overlap ${expectedOverlap}px -> ${bestMatch}px`);
+      return bestMatch;
+    }
+    return expectedOverlap;
+  } catch (e) {
+    return expectedOverlap;
+  }
+}
+
+function getCanvasImageData(canvas, bottomRows) {
+  try {
+    const ctx = canvas.getContext('2d');
+    const startY = Math.max(0, canvas.height - bottomRows);
+    const height = Math.min(bottomRows, canvas.height);
+    return ctx.getImageData(0, startY, canvas.width, height);
+  } catch (e) {
+    return null;
+  }
+}
+
+// ============================================================
+// END AUTO DUPLICATE-ROW REMOVAL
+// ============================================================
+
 // Load settings from storage
 async function loadSettings() {
   try {
@@ -1835,17 +1916,29 @@ async function saveFullPageWithAnnotations() {
           chunkCtx.drawImage(pageCanvas, 0, 0);
           currentY = pageCanvas.height;
         } else {
-          // Use DPR-scaled overlap to skip the correct number of device pixels
-          const sourceY = overlapPx;
-          const sourceHeight = pageCanvas.height - overlapPx;
+          // === AUTO DUPLICATE-ROW REMOVAL ===
+          // Find exact overlap point by comparing pixel rows
+          let actualOverlap = overlapPx;
+          try {
+            const bottomData = getCanvasImageData(chunkCanvas, overlapPx + 50);
+            if (bottomData) {
+              actualOverlap = findBestOverlapMatch(bottomData, pageCanvas, overlapPx, 30);
+            }
+          } catch (e) {
+            actualOverlap = overlapPx;
+          }
+          
+          // Use adjusted overlap to skip the correct number of device pixels
+          const sourceY = actualOverlap;
+          const sourceHeight = pageCanvas.height - actualOverlap;
           
           // Draw seamlessly - skip the overlapped region at top of each page
           chunkCtx.drawImage(
             pageCanvas,
             0, sourceY, pageCanvas.width, sourceHeight,
-            0, currentY - overlapPx, pageCanvas.width, sourceHeight
+            0, currentY - actualOverlap, pageCanvas.width, sourceHeight
           );
-          currentY += pageCanvas.height - overlapPx;
+          currentY += pageCanvas.height - actualOverlap;
         }
         
         // Release temp canvas

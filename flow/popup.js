@@ -79,6 +79,115 @@ function addInvisibleWatermark(canvas) {
   });
 }
 
+// ============================================================
+// AUTO DUPLICATE-ROW REMOVAL
+// Compares pixel rows in overlap area to find exact match point
+// Eliminates thin repeated lines at stitch boundaries
+// ============================================================
+
+/**
+ * findBestOverlapMatch() - Finds the exact overlap point between two images
+ * 
+ * Compares pixel rows from bottom of img1 with rows from top of img2
+ * to find where they match exactly, eliminating duplicate content
+ * 
+ * @param {CanvasRenderingContext2D} ctx1 - Context of first image (or canvas)
+ * @param {HTMLImageElement} img2 - Second image to compare
+ * @param {number} expectedOverlap - The expected overlap in pixels
+ * @param {number} searchRange - How many pixels above/below to search (default: 50)
+ * @returns {number} - The actual overlap to use (adjusted from expected)
+ */
+function findBestOverlapMatch(img1Data, img2, expectedOverlap, searchRange = 50) {
+  try {
+    // Create canvas for img2 to get its pixel data
+    const canvas2 = document.createElement('canvas');
+    canvas2.width = img2.width;
+    canvas2.height = Math.min(expectedOverlap + searchRange, img2.height);
+    const ctx2 = canvas2.getContext('2d');
+    ctx2.drawImage(img2, 0, 0);
+    const img2Data = ctx2.getImageData(0, 0, canvas2.width, canvas2.height);
+    
+    const width = img2.width;
+    const sampleWidth = Math.min(width, 200); // Sample center portion for speed
+    const sampleStart = Math.floor((width - sampleWidth) / 2);
+    
+    let bestMatch = expectedOverlap;
+    let bestScore = Infinity;
+    
+    // Search range around expected overlap
+    const minOverlap = Math.max(0, expectedOverlap - searchRange);
+    const maxOverlap = Math.min(img1Data.height, expectedOverlap + searchRange);
+    
+    for (let testOverlap = minOverlap; testOverlap <= maxOverlap; testOverlap++) {
+      let score = 0;
+      const rowsToCompare = Math.min(5, expectedOverlap); // Compare 5 rows
+      
+      for (let row = 0; row < rowsToCompare; row++) {
+        // Row from bottom of img1
+        const y1 = img1Data.height - testOverlap + row;
+        // Row from top of img2
+        const y2 = row;
+        
+        if (y1 < 0 || y1 >= img1Data.height || y2 >= img2Data.height) continue;
+        
+        for (let x = sampleStart; x < sampleStart + sampleWidth; x++) {
+          const idx1 = (y1 * img1Data.width + x) * 4;
+          const idx2 = (y2 * width + x) * 4;
+          
+          // Compare RGB (skip alpha)
+          const dr = Math.abs(img1Data.data[idx1] - img2Data.data[idx2]);
+          const dg = Math.abs(img1Data.data[idx1 + 1] - img2Data.data[idx2 + 1]);
+          const db = Math.abs(img1Data.data[idx1 + 2] - img2Data.data[idx2 + 2]);
+          
+          score += dr + dg + db;
+        }
+      }
+      
+      // Normalize score
+      score = score / (rowsToCompare * sampleWidth);
+      
+      if (score < bestScore) {
+        bestScore = score;
+        bestMatch = testOverlap;
+      }
+      
+      // Perfect match found (score near 0)
+      if (bestScore < 5) break;
+    }
+    
+    // Only use adjusted overlap if confidence is high (score is low)
+    if (bestScore < 30) {
+      console.log(`[SnapToAI] Duplicate-row removal: adjusted overlap from ${expectedOverlap}px to ${bestMatch}px (score: ${bestScore.toFixed(1)})`);
+      return bestMatch;
+    } else {
+      // Low confidence - use expected overlap
+      return expectedOverlap;
+    }
+  } catch (e) {
+    console.warn('[SnapToAI] Duplicate detection failed, using default overlap:', e.message);
+    return expectedOverlap;
+  }
+}
+
+/**
+ * getImageDataFromCanvas() - Gets ImageData from current canvas state
+ * Used for duplicate-row detection
+ */
+function getCanvasImageData(canvas, bottomRows) {
+  try {
+    const ctx = canvas.getContext('2d');
+    const startY = Math.max(0, canvas.height - bottomRows);
+    const height = Math.min(bottomRows, canvas.height);
+    return ctx.getImageData(0, startY, canvas.width, height);
+  } catch (e) {
+    return null;
+  }
+}
+
+// ============================================================
+// END AUTO DUPLICATE-ROW REMOVAL
+// ============================================================
+
 // Initialize popup on load
 document.addEventListener('DOMContentLoaded', async () => {
   translateUI(); // Add translation support
@@ -352,13 +461,27 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
     for (let i = 0; i < images.length; i++) {
       const img = images[i];
       let heightToAdd;
+      let actualOverlap = overlap; // May be adjusted by duplicate detection
       
       if (i === chunkStartIdx) {
         // First image of this chunk - draw full
         heightToAdd = img.height;
       } else {
-        // Subsequent images - account for overlap
-        heightToAdd = img.height - overlap;
+        // === AUTO DUPLICATE-ROW REMOVAL ===
+        // Compare pixel rows to find exact match point
+        if (canvasHeight > 0) {
+          try {
+            const bottomData = getCanvasImageData(canvas, overlap + 50);
+            if (bottomData) {
+              actualOverlap = findBestOverlapMatch(bottomData, img, overlap, 30);
+            }
+          } catch (e) {
+            // Fall back to expected overlap
+            actualOverlap = overlap;
+          }
+        }
+        // Subsequent images - account for (adjusted) overlap
+        heightToAdd = img.height - actualOverlap;
       }
       
       // Check if adding this image would exceed limits
@@ -380,14 +503,15 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
         tempCtx.drawImage(img, 0, currentY);
         currentY = img.height;
       } else {
-        const sourceY = overlap;
-        const sourceHeight = img.height - overlap;
+        // Use actualOverlap (may be adjusted by duplicate detection)
+        const sourceY = actualOverlap;
+        const sourceHeight = img.height - actualOverlap;
         tempCtx.drawImage(
           img,
           0, sourceY, img.width, sourceHeight,
-          0, currentY - overlap, img.width, sourceHeight
+          0, currentY - actualOverlap, img.width, sourceHeight
         );
-        currentY += img.height - overlap;
+        currentY += img.height - actualOverlap;
       }
       
       canvas = tempCanvas;
