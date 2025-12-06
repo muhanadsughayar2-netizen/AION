@@ -419,22 +419,26 @@ function setupEventListeners() {
       frameStyleSelect.style.display = 'none';
       framePositionSelect.style.display = 'none';
     }
+    updateBrowserFrameOverlay();
     redraw();
   });
   
   document.getElementById('urlInput').addEventListener('input', (e) => {
     browserFrameUrl = e.target.value;
+    updateBrowserFrameOverlay();
     if (hasBrowserFrame) redraw();
   });
   
   document.getElementById('frameStyle').addEventListener('change', (e) => {
     browserFrameStyle = e.target.value;
+    updateBrowserFrameOverlay();
     if (hasBrowserFrame) redraw();
   });
   
   // URL position toggle (top/bottom)
   document.getElementById('frameUrlPosition').addEventListener('change', (e) => {
     browserFramePosition = e.target.value;
+    updateBrowserFrameOverlay();
     if (hasBrowserFrame) redraw();
   });
   
@@ -1360,6 +1364,56 @@ function applyBorderDecoration(sourceCanvas) {
   }
   
   return decoratedCanvas;
+}
+
+// Update the floating browser frame overlay (GoFullPage-style, never overlaps content)
+function updateBrowserFrameOverlay() {
+  const wrapper = document.getElementById('canvasWrapper');
+  const overlay = document.getElementById('browserFrameOverlay');
+  const urlText = document.getElementById('frameUrlText');
+  const trafficLights = overlay.querySelector('.frame-traffic-lights');
+  const windowsControls = overlay.querySelector('.frame-windows-controls');
+  
+  if (!hasBrowserFrame) {
+    overlay.style.display = 'none';
+    wrapper.classList.remove('url-top', 'url-bottom');
+    return;
+  }
+  
+  // Show overlay
+  overlay.style.display = 'flex';
+  
+  // Apply position classes
+  wrapper.classList.remove('url-top', 'url-bottom');
+  overlay.classList.remove('frame-top', 'frame-bottom');
+  
+  if (browserFramePosition === 'top') {
+    wrapper.classList.add('url-top');
+    overlay.classList.add('frame-top');
+  } else {
+    wrapper.classList.add('url-bottom');
+    overlay.classList.add('frame-bottom');
+  }
+  
+  // Apply style classes
+  overlay.classList.remove('style-mac', 'style-windows', 'style-minimal', 'frame-minimal');
+  
+  if (browserFrameStyle === 'mac') {
+    overlay.classList.add('style-mac');
+    trafficLights.style.display = 'flex';
+    windowsControls.style.display = 'none';
+  } else if (browserFrameStyle === 'windows') {
+    overlay.classList.add('style-windows');
+    trafficLights.style.display = 'none';
+    windowsControls.style.display = 'flex';
+  } else {
+    overlay.classList.add('style-minimal', 'frame-minimal');
+    trafficLights.style.display = 'none';
+    windowsControls.style.display = 'none';
+  }
+  
+  // Update URL text with ellipsis
+  urlText.textContent = '🔒 ' + (browserFrameUrl || 'example.com');
 }
 
 // Draw browser frame preview overlay on canvas (for live preview)

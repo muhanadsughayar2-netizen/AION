@@ -92,7 +92,25 @@
 
     <!-- Canvas Area -->
     <div class="canvas-container">
-      <canvas id="canvas"></canvas>
+      <div id="canvasWrapper" class="canvas-wrapper">
+        <!-- Browser Frame Overlay - Floats above canvas, never overlaps content -->
+        <div id="browserFrameOverlay" class="browser-frame-overlay" style="display: none;">
+          <div class="frame-traffic-lights">
+            <div class="traffic-light red"></div>
+            <div class="traffic-light yellow"></div>
+            <div class="traffic-light green"></div>
+          </div>
+          <div class="frame-url-bar">
+            <span class="frame-url-text" id="frameUrlText">🔒 example.com</span>
+          </div>
+          <div class="frame-windows-controls" style="display: none;">
+            <div class="win-btn">─</div>
+            <div class="win-btn">☐</div>
+            <div class="win-btn close">✕</div>
+          </div>
+        </div>
+        <canvas id="canvas"></canvas>
+      </div>
       <input type="text" id="textInput" class="text-input" style="display: none;" placeholder="Type text...">
     </div>
     
