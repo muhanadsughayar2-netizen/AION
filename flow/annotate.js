@@ -564,9 +564,11 @@ function setupEventListeners() {
   updateHistoryButtons();
   
   document.getElementById('clearBtn').addEventListener('click', () => {
+    pushHistory(); // Save state before clearing (enables undo)
     annotations = [];
     calloutNumber = 1;
     redraw();
+    updateHistoryButtons();
   });
   
   document.getElementById('saveBtn').addEventListener('click', save);
@@ -611,8 +613,11 @@ async function loadImage() {
         chrome.storage.local.remove(['editImage']);
         
         // Redraw immediately to apply default border styling
-        // (originalImage is now set, so redraw() will restore image properly)
         redraw();
+        
+        // Push initial state to history (enables undo)
+        pushHistory();
+        updateHistoryButtons();
       };
       img.onerror = () => {
         updateStatus('Failed to load image.');
@@ -637,6 +642,10 @@ async function loadImage() {
       
       // Redraw immediately to apply default border styling
       redraw();
+      
+      // Push initial state to history (enables undo)
+      pushHistory();
+      updateHistoryButtons();
     };
     img.src = imageUrl;
   }
@@ -1437,6 +1446,7 @@ function updateBrowserFrameOverlay() {
   
   // Apply style classes
   overlay.classList.remove('style-mac', 'style-windows', 'style-minimal', 'frame-minimal');
+  wrapper.classList.remove('frame-is-minimal');
   
   if (browserFrameStyle === 'mac') {
     overlay.classList.add('style-mac');
@@ -1448,6 +1458,7 @@ function updateBrowserFrameOverlay() {
     windowsControls.style.display = 'flex';
   } else {
     overlay.classList.add('style-minimal', 'frame-minimal');
+    wrapper.classList.add('frame-is-minimal');
     trafficLights.style.display = 'none';
     windowsControls.style.display = 'none';
   }
@@ -1717,9 +1728,7 @@ function redraw() {
   
   // Browser frame is HTML overlay only - no canvas drawing (prevents duplicate URL bar)
   
-  // Draw border first (below annotations)
-  drawBorder();
-  
+  // Draw annotations first
   annotations.forEach(ann => {
     if (ann.tool === 'callout') {
       // Circle - browser-frame blue #007AFF
@@ -1847,6 +1856,9 @@ function redraw() {
       ctx.shadowBlur = 0;
     }
   });
+  
+  // Draw border LAST (on top of everything) so it frames the final output
+  drawBorder();
   
   // Draw crop rectangle if exists (for snip mode)
   if (cropRect && currentTool === 'crop') {

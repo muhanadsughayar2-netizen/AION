@@ -163,47 +163,55 @@ body {
 }
 
 /* ========================================
-   GOFULLPAGE-STYLE BROWSER FRAME OVERLAY
-   Never overlaps content - floats with safe padding
+   BROWSER FRAME OVERLAY - ANCHORED TO CANVAS EDGE
+   Full width, flush with canvas top/bottom
    ======================================== */
 
-/* Canvas wrapper with safe padding for browser frame */
+/* Canvas wrapper - no padding by default */
 .canvas-wrapper {
   position: relative;
   display: inline-block;
 }
 
+/* Padding only when frame is active */
 .canvas-wrapper.url-top {
-  padding-top: 60px !important;
+  padding-top: 44px !important;
 }
 
 .canvas-wrapper.url-bottom {
-  padding-bottom: 60px !important;
+  padding-bottom: 44px !important;
 }
 
-/* Browser frame overlay - absolute positioned, centered */
+.canvas-wrapper.url-top.frame-is-minimal {
+  padding-top: 32px !important;
+}
+
+.canvas-wrapper.url-bottom.frame-is-minimal {
+  padding-bottom: 32px !important;
+}
+
+/* Browser frame overlay - full width, real browser chrome layout */
 .browser-frame-overlay {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: fit-content;
-  max-width: 90%;
+  left: 0;
+  right: 0;
+  width: 100%;
   z-index: 99999;
   pointer-events: none;
   height: 44px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 8px;
+  justify-content: flex-start;
+  border-radius: 0;
   overflow: hidden;
 }
 
 .browser-frame-overlay.frame-top {
-  top: 8px;
+  top: 0;
 }
 
 .browser-frame-overlay.frame-bottom {
-  bottom: 8px;
+  bottom: 0;
 }
 
 .browser-frame-overlay.frame-minimal {
@@ -213,18 +221,20 @@ body {
 /* Frame styles - SnapToAI brand (white + blue + black only) */
 .browser-frame-overlay.style-mac {
   background: #000;
-  min-width: 300px;
 }
 
 .browser-frame-overlay.style-windows {
   background: #fff;
-  border: 2px solid #007AFF;
-  min-width: 300px;
+  border-bottom: 2px solid #007AFF;
+}
+
+.browser-frame-overlay.frame-bottom.style-windows {
+  border-bottom: none;
+  border-top: 2px solid #007AFF;
 }
 
 .browser-frame-overlay.style-minimal {
   background: #000;
-  min-width: 200px;
 }
 
 /* Traffic lights - SnapToAI brand blue */
@@ -244,18 +254,28 @@ body {
 .traffic-light.yellow { background: #007AFF; opacity: 0.6; }
 .traffic-light.green { background: #007AFF; opacity: 0.3; }
 
-/* URL bar inside frame */
+/* URL bar inside frame - takes remaining space */
 .frame-url-bar {
   flex: 1;
   margin: 0 12px;
   padding: 6px 12px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 6px;
+  overflow: hidden;
   display: flex;
   align-items: center;
-  gap: 6px;
-  max-width: calc(100% - 100px);
+}
+
+.frame-url-text {
+  flex: 1;
+  width: 100%;
+  text-align: center;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: #fff;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .style-windows .frame-url-bar {
@@ -263,23 +283,13 @@ body {
   border: 1px solid #007AFF;
 }
 
+.style-windows .frame-url-text {
+  color: #000;
+}
+
 .style-minimal .frame-url-bar {
   background: rgba(255, 255, 255, 0.1);
   margin: 0 20px;
-}
-
-.frame-url-text {
-  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-  font-size: 13px;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 400px;
-}
-
-.style-windows .frame-url-text {
-  color: #000;
 }
 
 .style-minimal .frame-url-text {
