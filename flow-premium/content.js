@@ -1719,6 +1719,58 @@
               }
             } catch (e) {}
           });
+          
+          // === UNIVERSAL AI CHAT INPUT BAR / PARROT PROMPT KILLER (2025–2026) ===
+          const aiDomains = [
+            'chatgpt.com', 'chat.openai.com',
+            'claude.ai',
+            'grok.com', 'x.com/grok',
+            'gemini.google.com',
+            'copilot.microsoft.com',
+            'perplexity.ai',
+            'meta.ai',
+            'poe.com',
+            'deepseek.com',
+            'character.ai'
+          ];
+          
+          if (aiDomains.some(d => location.hostname.includes(d))) {
+            // Ultra-wide selectors that catch every known input bar / parrot prompt in 2025
+            const universalSelectors = [
+              'div[class*="bottom"]',
+              'div[class*="input"]',
+              'form ~ div',
+              'textarea ~ div',
+              '[data-testid*="input"]',
+              'div[class*="sticky"]',
+              'div[role="textbox"] ~ div',
+              '#prompt-textarea',
+              'div[data-state="open"]',
+              'div[class*="message-input"]',
+              'div[class*="composer"]',
+              'div[class*="send-container"]',
+              'footer',
+              'div:has(textarea):has(button)'
+            ];
+            
+            universalSelectors.forEach(sel => {
+              try {
+                document.querySelectorAll(sel).forEach(el => {
+                  if (el && !hiddenFixedElements.some(item => item.element === el)) {
+                    hiddenFixedElements.push({
+                      element: el,
+                      originalDisplay: el.style.display || 'block',
+                      originalVisibility: el.style.visibility || 'visible'
+                    });
+                    el.style.setProperty('display', 'none', 'important');
+                  }
+                });
+              } catch (e) {}
+            });
+            console.log(`[SnapToAI] 🔫 AI Input Bar Killer: nuked input bars on ${location.hostname}`);
+          }
+          // === END UNIVERSAL AI KILLER ===
+          
           console.log(`[SnapToAI] Hidden ${hiddenFixedElements.length} fixed elements`);
         } catch (e) {}
       };
@@ -1727,7 +1779,13 @@
         try {
           hiddenFixedElements.forEach(item => {
             try {
-              item.element.style.visibility = item.originalVisibility;
+              // Restore both visibility and display (for AI Input Bar Killer)
+              if (item.originalVisibility !== undefined) {
+                item.element.style.visibility = item.originalVisibility;
+              }
+              if (item.originalDisplay !== undefined) {
+                item.element.style.display = item.originalDisplay;
+              }
             } catch (e) {}
           });
           hiddenFixedElements.length = 0;
