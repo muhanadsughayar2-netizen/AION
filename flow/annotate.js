@@ -14,6 +14,7 @@ let draggingAnnotation = null;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 let pendingStickerText = null;
+let pendingSpecialEmoji = null;
 
 // Crop/Snip mode variables
 let isSnipMode = false;
@@ -486,13 +487,55 @@ function setupEventListeners() {
   
   // Tools
   document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      const tool = btn.dataset.tool;
+      
+      // Special emoji tool - show/hide panel
+      if (tool === 'special') {
+        e.stopPropagation();
+        const panel = document.getElementById('emojiPanel');
+        const isVisible = panel.style.display === 'block';
+        panel.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) {
+          updateStatus('Click an emoji to place it on the image');
+        }
+        return;
+      }
+      
+      // Hide emoji panel when switching to other tools
+      document.getElementById('emojiPanel').style.display = 'none';
+      
       document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      currentTool = btn.dataset.tool;
+      currentTool = tool;
       pendingStickerText = null; // Clear pending sticker when switching tools
+      pendingSpecialEmoji = null; // Clear pending emoji when switching tools
       updateStatus('Draw highlights, add numbers, or add text. All draggable!');
     });
+  });
+  
+  // Emoji panel items
+  document.querySelectorAll('.emoji-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const emoji = item.dataset.emoji;
+      pendingSpecialEmoji = emoji;
+      currentTool = 'special';
+      document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+      document.getElementById('specialBtn').classList.add('active');
+      document.getElementById('emojiPanel').style.display = 'none';
+      canvas.style.cursor = 'crosshair';
+      updateStatus(`Click on the image to place ${emoji}`);
+    });
+  });
+  
+  // Close emoji panel when clicking outside
+  document.addEventListener('click', (e) => {
+    const panel = document.getElementById('emojiPanel');
+    const specialBtn = document.getElementById('specialBtn');
+    if (panel && !panel.contains(e.target) && e.target !== specialBtn) {
+      panel.style.display = 'none';
+    }
   });
   
   // Color & size
@@ -741,20 +784,19 @@ function handleMouseDown(e) {
     return;
   }
   
-  if (currentTool === 'special') {
-    // Special emojis picker
-    const specialEmojis = ['✅', '❌', '⚠️', '❓', '💡', '🔥', '⭐', '❤️', '👍', '👎', '🎯', '🚀'];
-    const emoji = prompt('Choose special emoji:\\n' + specialEmojis.join(' ') + '\\n\\nOr type your own:', '✅');
-    if (emoji && emoji.trim()) {
-      pushHistory();
-      annotations.push({
-        tool: 'special',
-        text: emoji.trim(),
-        x: startX,
-        y: startY
-      });
-      redraw();
-    }
+  if (currentTool === 'special' && pendingSpecialEmoji) {
+    // Place selected emoji from panel
+    pushHistory();
+    annotations.push({
+      tool: 'special',
+      text: pendingSpecialEmoji,
+      x: startX,
+      y: startY
+    });
+    pendingSpecialEmoji = null;
+    canvas.style.cursor = 'default';
+    redraw();
+    updateStatus('Emoji placed! Click 🎯 to add more.');
   } else if (currentTool === 'sticker' && pendingStickerText) {
     annotations.push({
       tool: 'sticker',
