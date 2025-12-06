@@ -541,25 +541,6 @@ function setupEventListeners() {
   canvas.addEventListener('mousemove', handleMouseMove);
   canvas.addEventListener('mouseup', handleMouseUp);
   
-  // Text input
-  const textInput = document.getElementById('textInput');
-  textInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const text = textInput.value.trim();
-      if (text) {
-        pushHistory(); // Save state before action
-        annotations.push({
-          tool: 'text',
-          color: currentColor,
-          x: startX,
-          y: startY,
-          text
-        });
-        redraw();
-      }
-      textInput.style.display = 'none';
-    }
-  });
 }
 
 async function loadImage() {
@@ -760,26 +741,20 @@ function handleMouseDown(e) {
     return;
   }
   
-  if (currentTool === 'text') {
-    const textInput = document.getElementById('textInput');
-    const canvasRect = canvas.getBoundingClientRect();
-    const container = document.querySelector('.canvas-container');
-    const containerRect = container.getBoundingClientRect();
-    
-    // Convert canvas coordinates to container-relative coordinates
-    const canvasLeft = canvasRect.left - containerRect.left;
-    const canvasTop = canvasRect.top - containerRect.top;
-    const scaleX = canvasRect.width / canvas.width;
-    const scaleY = canvasRect.height / canvas.height;
-    
-    const inputX = canvasLeft + (startX * scaleX);
-    const inputY = canvasTop + (startY * scaleY);
-    
-    textInput.style.display = 'block';
-    textInput.style.left = inputX + 'px';
-    textInput.style.top = inputY + 'px';
-    textInput.value = '';
-    textInput.focus();
+  if (currentTool === 'special') {
+    // Special emojis picker
+    const specialEmojis = ['✅', '❌', '⚠️', '❓', '💡', '🔥', '⭐', '❤️', '👍', '👎', '🎯', '🚀'];
+    const emoji = prompt('Choose special emoji:\\n' + specialEmojis.join(' ') + '\\n\\nOr type your own:', '✅');
+    if (emoji && emoji.trim()) {
+      pushHistory();
+      annotations.push({
+        tool: 'special',
+        text: emoji.trim(),
+        x: startX,
+        y: startY
+      });
+      redraw();
+    }
   } else if (currentTool === 'sticker' && pendingStickerText) {
     annotations.push({
       tool: 'sticker',
@@ -1840,15 +1815,11 @@ function redraw() {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(ann.text, ann.x, ann.y);
-    } else if (ann.tool === 'text') {
-      ctx.font = '26px Arial';
-      ctx.fillStyle = ann.color;
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 3;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      
-      ctx.strokeText(ann.text, ann.x, ann.y);
+    } else if (ann.tool === 'special') {
+      // Special emoji - large centered
+      ctx.font = '48px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       ctx.fillText(ann.text, ann.x, ann.y);
     } else if (ann.tool === 'rectangle') {
       // Draw rectangle with glow
@@ -2375,16 +2346,11 @@ function drawAnnotationsToContext(ctx, anns) {
         ctx.fillStyle = '#fff';
         ctx.fillText(ann.text, ann.x, textY);
       }
-    } else if (ann.tool === 'text') {
-      // Text with outline (matches redraw())
-      ctx.font = '26px Arial';
-      ctx.fillStyle = ann.color;
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 3;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      
-      ctx.strokeText(ann.text, ann.x, ann.y);
+    } else if (ann.tool === 'special') {
+      // Special emoji - large centered
+      ctx.font = '48px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       ctx.fillText(ann.text, ann.x, ann.y);
     } else if (ann.tool === 'sticker') {
       // Sticker pill with glow (matches redraw())
