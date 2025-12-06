@@ -382,10 +382,6 @@ function setupEventListeners() {
     applyZoom();
   });
   
-  document.getElementById('zoomReset').addEventListener('click', () => {
-    zoomLevel = 1.0;
-    applyZoom();
-  });
   
   // Browser frame toggle - SIMPLIFIED: always macOS style, always top, auto URL
   document.getElementById('toggleBrowserFrame').addEventListener('click', async () => {
