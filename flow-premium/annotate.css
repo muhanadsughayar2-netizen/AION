@@ -162,6 +162,27 @@ body {
   min-width: 100px;
 }
 
+/* Border Color Picker */
+.border-color-picker {
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.border-color-picker::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.border-color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+
 /* ========================================
    BROWSER FRAME OVERLAY - ANCHORED TO CANVAS EDGE
    Full width, flush with canvas top/bottom

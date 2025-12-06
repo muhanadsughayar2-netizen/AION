@@ -32,10 +32,10 @@
         <input type="text" id="urlInput" class="url-input" readonly placeholder="Auto-detected URL" style="display: none; background: #2a2a2e; font-family: 'SF Mono', Menlo, monospace; font-size: 11px; color: #aaa; border: 1px solid #444; border-radius: 4px; padding: 4px 8px; text-align: center; cursor: default;">
       </div>
       
-      <!-- Border Controls - Fixed blue color, thin square by default -->
+      <!-- Border Controls - Color picker + thickness -->
       <div class="border-controls">
         <button id="toggleBorder" class="frame-btn active" title="Toggle border">🔲 Border</button>
-        <input type="color" id="borderColor" value="#007AFF" title="Border color" style="display: none !important;">
+        <input type="color" id="borderColor" value="#007AFF" title="Border color" class="border-color-picker">
         <select id="borderWidth" class="border-width-select">
           <option value="2" selected>Thin (2px)</option>
           <option value="4">Medium (4px)</option>
