@@ -16,6 +16,12 @@ body {
   transition: transform 0.2s ease;
   will-change: transform;
   background: #f8f9fa !important;
+  margin-top: 40px !important;
+}
+
+/* Breathing space under page counter */
+#canvas-container, .capture-canvas {
+  margin-top: 40px !important;
 }
 
 /* Light background for editor (GoFullPage style) */
