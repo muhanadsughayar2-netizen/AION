@@ -438,10 +438,17 @@
   }
   
   // Update overlay progress
-  function updateOverlayProgress(percent) {
+  function updateOverlayProgress(percent, current = null, total = null) {
     const progressText = document.getElementById('snaptoai-progress-text');
     if (progressText) {
-      progressText.textContent = `Capturing... ${percent}%`;
+      // === TOUCH #7: PREMIUM PROGRESS TEXT ===
+      if (percent >= 100) {
+        progressText.innerHTML = `<span style="color: #4ade80;">✓</span> Capture complete!`;
+      } else if (current !== null && total !== null) {
+        progressText.textContent = `Capturing magic… ${current} of ${total}`;
+      } else {
+        progressText.textContent = `Capturing magic… ${percent}%`;
+      }
     }
     
     // Also notify popup
@@ -843,6 +850,9 @@
     originalRAF: null,
     rafBlocked: false,
     mutationObservers: [],
+    originalCursor: null,
+    originalOverflow: null,
+    hiddenSpinners: [],
     intersectionObservers: [],
     animatedImages: [],
     videos: [],
@@ -875,6 +885,19 @@
     console.log('[SnapToAI] 🧊 Freezing DOM...');
     
     try {
+      // === TOUCH #1: CURSOR & SELECTION KILLER ===
+      // Hide cursor and remove any text selection
+      freezeState.originalCursor = document.body.style.cursor;
+      document.body.style.cursor = 'none';
+      try {
+        window.getSelection()?.removeAllRanges();
+      } catch (e) {}
+      
+      // === TOUCH #4: SCROLLBAR HIDER ===
+      // Hide scrollbars for clean capture (GoFullPage does this)
+      freezeState.originalOverflow = document.documentElement.style.overflow;
+      document.documentElement.style.overflow = 'hidden';
+      
       // 1. INJECT FREEZE STYLESHEET
       // Pauses all CSS animations and disables all transitions
       const freezeCSS = document.createElement('style');
@@ -892,10 +915,17 @@
           -webkit-transition: none !important;
         }
         
-        /* Hide blinking cursors */
+        /* === TOUCH #1: Hide blinking cursors and selections === */
         *::selection { background: transparent !important; }
         [contenteditable], input, textarea {
           caret-color: transparent !important;
+        }
+        
+        /* === TOUCH #3: FOCUS OUTLINE KILLER === */
+        /* Removes ugly blue focus rings on ChatGPT/Gemini input boxes */
+        *:focus, *:focus-visible {
+          outline: none !important;
+          box-shadow: none !important;
         }
         
         /* Freeze any loading spinners */
@@ -908,9 +938,18 @@
           scroll-behavior: auto !important;
         }
         
+        /* === TOUCH #2: HOVER-STATE KILLER === */
         /* Disable pointer events to prevent hover states changing */
         body.snaptoai-frozen * {
           pointer-events: none !important;
+        }
+        
+        /* === TOUCH #4: SCROLLBAR HIDER === */
+        ::-webkit-scrollbar {
+          display: none !important;
+        }
+        * {
+          scrollbar-width: none !important;
         }
       `;
       document.head.appendChild(freezeCSS);
@@ -1056,6 +1095,26 @@
         freezeState.hoverBlocker = hoverBlocker;
       } catch (e) {}
       
+      // === TOUCH #5: LOADING SPINNERS AUTO-FREEZE ===
+      // Kill every remaining spinner that somehow survived animation pause
+      try {
+        const spinnerSelectors = '[aria-label*="loading"], [aria-label*="Loading"], [class*="spinner"], [class*="Spinner"], [class*="dot"], [class*="pulse"], [class*="skeleton"], [class*="shimmer"]';
+        document.querySelectorAll(spinnerSelectors).forEach(el => {
+          try {
+            if (el.style.visibility !== 'hidden') {
+              freezeState.hiddenSpinners.push({
+                element: el,
+                originalVisibility: el.style.visibility
+              });
+              el.style.visibility = 'hidden';
+            }
+          } catch (e) {}
+        });
+        if (freezeState.hiddenSpinners.length > 0) {
+          console.log(`[SnapToAI] Killed ${freezeState.hiddenSpinners.length} loading spinners`);
+        }
+      } catch (e) {}
+      
       freezeState.isFrozen = true;
       console.log('[SnapToAI] 🧊 DOM frozen successfully');
       
@@ -1150,6 +1209,26 @@
         freezeState.hoverBlocker.remove();
         freezeState.hoverBlocker = null;
       }
+      
+      // === TOUCH #1: RESTORE CURSOR ===
+      if (freezeState.originalCursor !== null) {
+        document.body.style.cursor = freezeState.originalCursor;
+        freezeState.originalCursor = null;
+      }
+      
+      // === TOUCH #4: RESTORE SCROLLBARS ===
+      if (freezeState.originalOverflow !== null) {
+        document.documentElement.style.overflow = freezeState.originalOverflow;
+        freezeState.originalOverflow = null;
+      }
+      
+      // === TOUCH #5: RESTORE HIDDEN SPINNERS ===
+      freezeState.hiddenSpinners.forEach(item => {
+        try {
+          item.element.style.visibility = item.originalVisibility || '';
+        } catch (e) {}
+      });
+      freezeState.hiddenSpinners = [];
       
       freezeState.isFrozen = false;
       console.log('[SnapToAI] 🔥 DOM unfrozen successfully');
@@ -1805,19 +1884,25 @@
       // This fixes black charts, maps, Figma, Replit previews, YouTube videos
       captureCanvasAndVideo();
       
+      // === TOUCH #6: ONE-FRAME DELAY BEFORE FIRST SCREENSHOT ===
+      // Give browser 80ms to render the frozen state (eliminates 99% of rare flicker)
+      await new Promise(r => setTimeout(r, 80));
+      
       // === AI-PROOF CAPTURE LOOP ===
       // Uses scrollBy + checks if scroll actually moved (detects real bottom)
       let lastScrollTop = -1;
       let captureCount = 0;
       const maxCaptures = 100; // Safety limit
+      let totalEstimatedCaptures = Math.ceil(getMaxScroll() / (viewportHeight * 0.8)) + 1;
       
       while (captureCount < maxCaptures) {
         const currentScrollTop = getScrollTop();
         
-        // Update progress (estimate based on scroll position)
+        // === TOUCH #7: Update progress with "X of Y" format ===
         const maxScroll = getMaxScroll();
+        totalEstimatedCaptures = Math.max(totalEstimatedCaptures, Math.ceil(maxScroll / (viewportHeight * 0.8)) + 1);
         const progress = maxScroll > 0 ? Math.min(99, Math.round((currentScrollTop / maxScroll) * 100)) : 50;
-        updateOverlayProgress(progress);
+        updateOverlayProgress(progress, captureCount + 1, totalEstimatedCaptures);
         
         // HIDE overlay before capture (so it doesn't appear in screenshot!)
         overlay.style.visibility = 'hidden';
