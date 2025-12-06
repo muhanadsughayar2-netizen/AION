@@ -36,6 +36,11 @@ let browserFrameUrl = '';
 let browserFrameStyle = 'mac'; // 'mac', 'windows', 'minimal'
 let browserFramePosition = 'top'; // 'top' or 'bottom' - exactly like GoFullPage
 let hasBorder = true; // ENABLED by default for professional output
+
+// History stack for full undo/redo (GoFullPage-style)
+let historyStack = [];
+let redoStack = [];
+const MAX_HISTORY = 50; // Limit to prevent memory issues
 let borderColor = '#00bcd4'; // Cyan like GoFullPage
 let borderWidth = 8; // Default to thick
 let borderRadius = 0; // Square by default for professional look
@@ -508,12 +513,19 @@ function setupEventListeners() {
   
   // Controls
   document.getElementById('undoBtn').addEventListener('click', () => {
-    const removed = annotations.pop();
-    if (removed && removed.tool === 'callout') {
-      calloutNumber--;
-    }
-    redraw();
+    undo();
   });
+  
+  // Redo button handler
+  const redoBtn = document.getElementById('redoBtn');
+  if (redoBtn) {
+    redoBtn.addEventListener('click', () => {
+      redo();
+    });
+  }
+  
+  // Initialize history buttons
+  updateHistoryButtons();
   
   document.getElementById('clearBtn').addEventListener('click', () => {
     annotations = [];
@@ -535,6 +547,7 @@ function setupEventListeners() {
     if (e.key === 'Enter') {
       const text = textInput.value.trim();
       if (text) {
+        pushHistory(); // Save state before action
         annotations.push({
           tool: 'text',
           color: currentColor,
@@ -773,6 +786,7 @@ function handleMouseDown(e) {
   } else if (currentTool === 'callout') {
     const label = prompt('Label:', 'Step ' + calloutNumber);
     if (label) {
+      pushHistory(); // Save state before action
       annotations.push({
         tool: 'callout',
         number: calloutNumber++,
@@ -946,6 +960,7 @@ function handleMouseUp(e) {
     const height = Math.abs(endY - startY);
     
     if (width > 5 && height > 5) {
+      pushHistory(); // Save state before action
       annotations.push({
         tool: 'rectangle',
         x: x1,
@@ -967,6 +982,7 @@ function handleMouseUp(e) {
     const length = Math.sqrt(dx * dx + dy * dy);
     
     if (length > 10) {
+      pushHistory(); // Save state before action
       annotations.push({
         tool: 'arrow',
         x1: startX,
@@ -988,6 +1004,7 @@ function handleMouseUp(e) {
     const centerX = (Math.min(...xs) + Math.max(...xs)) / 2;
     const centerY = (Math.min(...ys) + Math.max(...ys)) / 2;
     
+    pushHistory(); // Save state before action
     annotations.push({
       tool: 'highlight',
       color: currentColor,
@@ -1548,6 +1565,122 @@ function drawBorder() {
     ctx.strokeRect(borderWidth / 2, borderWidth / 2, canvas.width - borderWidth, canvas.height - borderWidth);
   }
   ctx.restore();
+}
+
+// ========================================
+// HISTORY STACK - Full Undo/Redo (GoFullPage-style)
+// ========================================
+
+function pushHistory() {
+  try {
+    // Save current state: canvas data + annotations + settings
+    const state = {
+      imageData: canvas.toDataURL('image/png'),
+      annotations: JSON.parse(JSON.stringify(annotations)),
+      calloutNumber: calloutNumber,
+      width: canvas.width,
+      height: canvas.height
+    };
+    
+    historyStack.push(state);
+    
+    // Limit history size
+    if (historyStack.length > MAX_HISTORY) {
+      historyStack.shift();
+    }
+    
+    // Clear redo stack when new action is performed
+    redoStack = [];
+    
+    updateHistoryButtons();
+  } catch (e) {
+    console.log('[SnapToAI] History push failed:', e);
+  }
+}
+
+function undo() {
+  if (historyStack.length === 0) return;
+  
+  try {
+    // Save current state to redo stack
+    const currentState = {
+      imageData: canvas.toDataURL('image/png'),
+      annotations: JSON.parse(JSON.stringify(annotations)),
+      calloutNumber: calloutNumber,
+      width: canvas.width,
+      height: canvas.height
+    };
+    redoStack.push(currentState);
+    
+    // Restore previous state
+    const prevState = historyStack.pop();
+    
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = prevState.width;
+      canvas.height = prevState.height;
+      ctx.drawImage(img, 0, 0);
+      originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      annotations = prevState.annotations;
+      calloutNumber = prevState.calloutNumber;
+      redraw();
+      updateHistoryButtons();
+    };
+    img.src = prevState.imageData;
+  } catch (e) {
+    console.log('[SnapToAI] Undo failed:', e);
+  }
+}
+
+function redo() {
+  if (redoStack.length === 0) return;
+  
+  try {
+    // Save current state to history stack
+    const currentState = {
+      imageData: canvas.toDataURL('image/png'),
+      annotations: JSON.parse(JSON.stringify(annotations)),
+      calloutNumber: calloutNumber,
+      width: canvas.width,
+      height: canvas.height
+    };
+    historyStack.push(currentState);
+    
+    // Restore redo state
+    const redoState = redoStack.pop();
+    
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = redoState.width;
+      canvas.height = redoState.height;
+      ctx.drawImage(img, 0, 0);
+      originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      annotations = redoState.annotations;
+      calloutNumber = redoState.calloutNumber;
+      redraw();
+      updateHistoryButtons();
+    };
+    img.src = redoState.imageData;
+  } catch (e) {
+    console.log('[SnapToAI] Redo failed:', e);
+  }
+}
+
+function updateHistoryButtons() {
+  const undoBtn = document.getElementById('undoBtn');
+  const redoBtn = document.getElementById('redoBtn');
+  
+  if (undoBtn) {
+    undoBtn.textContent = `↩️ (${historyStack.length})`;
+    undoBtn.disabled = historyStack.length === 0;
+    undoBtn.style.opacity = historyStack.length === 0 ? '0.5' : '1';
+  }
+  
+  if (redoBtn) {
+    redoBtn.textContent = `↪️ (${redoStack.length})`;
+    redoBtn.disabled = redoStack.length === 0;
+    redoBtn.style.opacity = redoStack.length === 0 ? '0.5' : '1';
+  }
 }
 
 function redraw() {
