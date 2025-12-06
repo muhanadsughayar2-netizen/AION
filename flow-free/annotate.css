@@ -79,11 +79,17 @@ body {
 }
 
 .zoom-level {
-  color: #fff;
+  color: #333 !important;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: bold !important;
   min-width: 45px;
   text-align: center;
+}
+
+/* Zoom percentage text - dark for light theme */
+.zoom-value, .zoom-display {
+  color: #333 !important;
+  font-weight: bold !important;
 }
 
 .browser-frame-controls, .border-controls {
