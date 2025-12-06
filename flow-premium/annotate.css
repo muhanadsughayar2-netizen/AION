@@ -667,9 +667,11 @@ body {
 
 .emoji-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(10, 1fr);
   gap: 6px;
-  width: 200px;
+  width: 420px;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .emoji-item {
