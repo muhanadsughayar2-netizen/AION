@@ -210,23 +210,24 @@ body {
   height: 32px;
 }
 
-/* Frame styles */
+/* Frame styles - SnapToAI brand (white + blue + black only) */
 .browser-frame-overlay.style-mac {
-  background: #3a3a3c;
+  background: #000;
   min-width: 300px;
 }
 
 .browser-frame-overlay.style-windows {
-  background: #f3f3f3;
+  background: #fff;
+  border: 2px solid #007AFF;
   min-width: 300px;
 }
 
 .browser-frame-overlay.style-minimal {
-  background: #2d2d30;
+  background: #000;
   min-width: 200px;
 }
 
-/* Traffic lights for macOS */
+/* Traffic lights - SnapToAI brand blue */
 .frame-traffic-lights {
   display: flex;
   gap: 8px;
@@ -239,16 +240,16 @@ body {
   border-radius: 50%;
 }
 
-.traffic-light.red { background: #ff5f57; }
-.traffic-light.yellow { background: #ffbd2e; }
-.traffic-light.green { background: #28c840; }
+.traffic-light.red { background: #007AFF; }
+.traffic-light.yellow { background: #007AFF; opacity: 0.6; }
+.traffic-light.green { background: #007AFF; opacity: 0.3; }
 
 /* URL bar inside frame */
 .frame-url-bar {
   flex: 1;
   margin: 0 12px;
   padding: 6px 12px;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -259,18 +260,18 @@ body {
 
 .style-windows .frame-url-bar {
   background: #fff;
-  border: 1px solid #ccc;
+  border: 1px solid #007AFF;
 }
 
 .style-minimal .frame-url-bar {
-  background: #1e1e1e;
+  background: rgba(255, 255, 255, 0.1);
   margin: 0 20px;
 }
 
 .frame-url-text {
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
   font-size: 13px;
-  color: #86868b;
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -278,11 +279,11 @@ body {
 }
 
 .style-windows .frame-url-text {
-  color: #333;
+  color: #000;
 }
 
 .style-minimal .frame-url-text {
-  color: #aaa;
+  color: #fff;
 }
 
 /* Windows controls */
@@ -298,18 +299,18 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 10px;
-  color: #616161;
+  color: #007AFF;
 }
 
 .win-btn.close {
-  background: #e81123;
+  background: #007AFF;
   color: #fff;
 }
 
 #borderColor {
   width: 32px;
   height: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid #007AFF;
   border-radius: 4px;
   cursor: pointer;
   padding: 2px;

@@ -1228,60 +1228,62 @@ function drawBrowserFrame(targetCtx, targetCanvas) {
   const newCtx = newCanvas.getContext('2d');
   
   if (browserFrameStyle === 'mac') {
-    // macOS Style - Dark with traffic lights
-    newCtx.fillStyle = '#3a3a3c';
+    // macOS Style - SnapToAI brand (black + blue)
+    newCtx.fillStyle = '#000';
     newCtx.fillRect(0, 0, newCanvas.width, frameHeight);
     
-    // Traffic lights
+    // Traffic lights - all blue with opacity
     const buttonY = frameHeight / 2;
     const circles = [
-      { x: 20, color: '#ff5f57' },
-      { x: 40, color: '#ffbd2e' },
-      { x: 60, color: '#28c840' }
+      { x: 20, opacity: 1 },
+      { x: 40, opacity: 0.6 },
+      { x: 60, opacity: 0.3 }
     ];
     circles.forEach(c => {
-      newCtx.fillStyle = c.color;
+      newCtx.fillStyle = '#007AFF';
+      newCtx.globalAlpha = c.opacity;
       newCtx.beginPath();
       newCtx.arc(c.x, buttonY, 6, 0, Math.PI * 2);
       newCtx.fill();
     });
+    newCtx.globalAlpha = 1;
     
     // URL bar
-    newCtx.fillStyle = '#1c1c1e';
+    newCtx.fillStyle = 'rgba(255, 255, 255, 0.1)';
     newCtx.beginPath();
     newCtx.roundRect(85, 10, newCanvas.width - 110, 24, 6);
     newCtx.fill();
     
     // Lock icon + URL
-    newCtx.fillStyle = '#86868b';
+    newCtx.fillStyle = '#fff';
     newCtx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
     newCtx.textAlign = 'left';
     newCtx.textBaseline = 'middle';
     newCtx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), 95, buttonY);
     
   } else if (browserFrameStyle === 'windows') {
-    // Windows Style - Light gray with square buttons
-    newCtx.fillStyle = '#f3f3f3';
+    // Windows Style - SnapToAI brand (white + blue)
+    newCtx.fillStyle = '#fff';
     newCtx.fillRect(0, 0, newCanvas.width, frameHeight);
     
     // Window controls (right side)
     const btnWidth = 46;
     const btnHeight = frameHeight;
     // Minimize
-    newCtx.fillStyle = '#e1e1e1';
+    newCtx.fillStyle = '#fff';
     newCtx.fillRect(newCanvas.width - btnWidth * 3, 0, btnWidth, btnHeight);
-    newCtx.strokeStyle = '#616161';
+    newCtx.strokeStyle = '#007AFF';
     newCtx.lineWidth = 1;
     newCtx.beginPath();
     newCtx.moveTo(newCanvas.width - btnWidth * 3 + 18, frameHeight / 2);
     newCtx.lineTo(newCanvas.width - btnWidth * 3 + 28, frameHeight / 2);
     newCtx.stroke();
     // Maximize
-    newCtx.fillStyle = '#e1e1e1';
+    newCtx.fillStyle = '#fff';
     newCtx.fillRect(newCanvas.width - btnWidth * 2, 0, btnWidth, btnHeight);
     newCtx.strokeRect(newCanvas.width - btnWidth * 2 + 18, frameHeight / 2 - 5, 10, 10);
     // Close
-    newCtx.fillStyle = '#e81123';
+    newCtx.fillStyle = '#007AFF';
     newCtx.fillRect(newCanvas.width - btnWidth, 0, btnWidth, btnHeight);
     newCtx.strokeStyle = '#fff';
     newCtx.lineWidth = 1.5;
@@ -1294,7 +1296,7 @@ function drawBrowserFrame(targetCtx, targetCanvas) {
     
     // URL bar
     newCtx.fillStyle = '#fff';
-    newCtx.strokeStyle = '#ccc';
+    newCtx.strokeStyle = '#007AFF';
     newCtx.lineWidth = 1;
     newCtx.beginPath();
     newCtx.roundRect(10, 8, newCanvas.width - 160, 28, 4);
@@ -1302,20 +1304,20 @@ function drawBrowserFrame(targetCtx, targetCanvas) {
     newCtx.stroke();
     
     // URL text
-    newCtx.fillStyle = '#333';
+    newCtx.fillStyle = '#000';
     newCtx.font = '13px Segoe UI, sans-serif';
     newCtx.textAlign = 'left';
     newCtx.textBaseline = 'middle';
     newCtx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), 20, frameHeight / 2);
     
   } else {
-    // Minimal Style - Just URL bar
-    newCtx.fillStyle = '#f5f5f5';
+    // Minimal Style - SnapToAI brand
+    newCtx.fillStyle = '#000';
     newCtx.fillRect(0, 0, newCanvas.width, frameHeight);
     
     // Simple URL bar
-    newCtx.fillStyle = '#fff';
-    newCtx.strokeStyle = '#ddd';
+    newCtx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    newCtx.strokeStyle = '#007AFF';
     newCtx.lineWidth = 1;
     newCtx.beginPath();
     newCtx.roundRect(10, 6, newCanvas.width - 20, 20, 10);
@@ -1323,7 +1325,7 @@ function drawBrowserFrame(targetCtx, targetCanvas) {
     newCtx.stroke();
     
     // URL text centered
-    newCtx.fillStyle = '#666';
+    newCtx.fillStyle = '#fff';
     newCtx.font = '11px system-ui, sans-serif';
     newCtx.textAlign = 'center';
     newCtx.textBaseline = 'middle';
@@ -1364,42 +1366,44 @@ function applyBorderDecoration(sourceCanvas) {
     // Draw the source canvas first (at correct position)
     framedCtx.drawImage(sourceCanvas, 0, imageY);
     
-    // Draw the frame header at frameY
+    // Draw the frame header at frameY - SnapToAI brand colors
     if (browserFrameStyle === 'mac') {
-      framedCtx.fillStyle = '#3a3a3c';
+      framedCtx.fillStyle = '#000';
       framedCtx.fillRect(0, frameY, framedCanvas.width, frameHeight);
       const buttonY = frameY + frameHeight / 2;
-      [{ x: 20, c: '#ff5f57' }, { x: 40, c: '#ffbd2e' }, { x: 60, c: '#28c840' }].forEach(b => {
-        framedCtx.fillStyle = b.c;
+      [{ x: 20, opacity: 1 }, { x: 40, opacity: 0.6 }, { x: 60, opacity: 0.3 }].forEach(b => {
+        framedCtx.fillStyle = '#007AFF';
+        framedCtx.globalAlpha = b.opacity;
         framedCtx.beginPath();
         framedCtx.arc(b.x, buttonY, 6, 0, Math.PI * 2);
         framedCtx.fill();
       });
-      framedCtx.fillStyle = '#1c1c1e';
+      framedCtx.globalAlpha = 1;
+      framedCtx.fillStyle = 'rgba(255, 255, 255, 0.1)';
       framedCtx.beginPath();
       framedCtx.roundRect(85, frameY + 10, framedCanvas.width - 110, 24, 6);
       framedCtx.fill();
-      framedCtx.fillStyle = '#86868b';
+      framedCtx.fillStyle = '#fff';
       framedCtx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
       framedCtx.textAlign = 'left';
       framedCtx.textBaseline = 'middle';
       framedCtx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), 95, buttonY);
     } else if (browserFrameStyle === 'windows') {
-      framedCtx.fillStyle = '#f3f3f3';
+      framedCtx.fillStyle = '#fff';
       framedCtx.fillRect(0, frameY, framedCanvas.width, frameHeight);
       const btnWidth = 46;
-      framedCtx.fillStyle = '#e1e1e1';
+      framedCtx.fillStyle = '#fff';
       framedCtx.fillRect(framedCanvas.width - btnWidth * 3, frameY, btnWidth, frameHeight);
-      framedCtx.strokeStyle = '#616161';
+      framedCtx.strokeStyle = '#007AFF';
       framedCtx.lineWidth = 1;
       framedCtx.beginPath();
       framedCtx.moveTo(framedCanvas.width - btnWidth * 3 + 18, frameY + frameHeight / 2);
       framedCtx.lineTo(framedCanvas.width - btnWidth * 3 + 28, frameY + frameHeight / 2);
       framedCtx.stroke();
-      framedCtx.fillStyle = '#e1e1e1';
+      framedCtx.fillStyle = '#fff';
       framedCtx.fillRect(framedCanvas.width - btnWidth * 2, frameY, btnWidth, frameHeight);
       framedCtx.strokeRect(framedCanvas.width - btnWidth * 2 + 16, frameY + frameHeight / 2 - 5, 14, 10);
-      framedCtx.fillStyle = '#e81123';
+      framedCtx.fillStyle = '#007AFF';
       framedCtx.fillRect(framedCanvas.width - btnWidth, frameY, btnWidth, frameHeight);
       framedCtx.strokeStyle = '#fff';
       framedCtx.lineWidth = 1.5;
@@ -1413,23 +1417,23 @@ function applyBorderDecoration(sourceCanvas) {
       framedCtx.beginPath();
       framedCtx.roundRect(10, frameY + 10, framedCanvas.width - btnWidth * 3 - 30, 24, 4);
       framedCtx.fill();
-      framedCtx.strokeStyle = '#ccc';
+      framedCtx.strokeStyle = '#007AFF';
       framedCtx.lineWidth = 1;
       framedCtx.stroke();
-      framedCtx.fillStyle = '#333';
+      framedCtx.fillStyle = '#000';
       framedCtx.font = '12px Segoe UI, sans-serif';
       framedCtx.textAlign = 'left';
       framedCtx.textBaseline = 'middle';
       framedCtx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), 20, frameY + frameHeight / 2);
     } else if (browserFrameStyle === 'minimal') {
-      framedCtx.fillStyle = '#2d2d30';
+      framedCtx.fillStyle = '#000';
       framedCtx.fillRect(0, frameY, framedCanvas.width, frameHeight);
       const barWidth = Math.min(400, framedCanvas.width - 40);
-      framedCtx.fillStyle = '#1e1e1e';
+      framedCtx.fillStyle = 'rgba(255, 255, 255, 0.1)';
       framedCtx.beginPath();
       framedCtx.roundRect((framedCanvas.width - barWidth) / 2, frameY + 6, barWidth, 20, 4);
       framedCtx.fill();
-      framedCtx.fillStyle = '#aaa';
+      framedCtx.fillStyle = '#fff';
       framedCtx.font = '11px system-ui, sans-serif';
       framedCtx.textAlign = 'center';
       framedCtx.textBaseline = 'middle';
@@ -1532,48 +1536,50 @@ function drawBrowserFramePreview() {
   ctx.save();
   
   if (browserFrameStyle === 'mac') {
-    // macOS Style - Dark with traffic lights
-    ctx.fillStyle = '#3a3a3c';
+    // macOS Style - SnapToAI brand (black + blue)
+    ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, frameHeight);
     
-    // Traffic lights
+    // Traffic lights - all blue with opacity
     const buttonY = frameHeight / 2;
     const circles = [
-      { x: 20, color: '#ff5f57' },
-      { x: 40, color: '#ffbd2e' },
-      { x: 60, color: '#28c840' }
+      { x: 20, opacity: 1 },
+      { x: 40, opacity: 0.6 },
+      { x: 60, opacity: 0.3 }
     ];
     circles.forEach(c => {
-      ctx.fillStyle = c.color;
+      ctx.fillStyle = '#007AFF';
+      ctx.globalAlpha = c.opacity;
       ctx.beginPath();
       ctx.arc(c.x, buttonY, 6, 0, Math.PI * 2);
       ctx.fill();
     });
+    ctx.globalAlpha = 1;
     
     // URL bar
-    ctx.fillStyle = '#1c1c1e';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.beginPath();
     ctx.roundRect(85, 10, canvas.width - 110, 24, 6);
     ctx.fill();
     
     // Lock icon + URL
-    ctx.fillStyle = '#86868b';
+    ctx.fillStyle = '#fff';
     ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), 95, buttonY);
     
   } else if (browserFrameStyle === 'windows') {
-    // Windows Style - Light gray with square buttons
-    ctx.fillStyle = '#f3f3f3';
+    // Windows Style - SnapToAI brand (white + blue)
+    ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, canvas.width, frameHeight);
     
     // Window controls (right side)
     const btnWidth = 46;
     // Minimize
-    ctx.fillStyle = '#e1e1e1';
+    ctx.fillStyle = '#fff';
     ctx.fillRect(canvas.width - btnWidth * 3, 0, btnWidth, frameHeight);
-    ctx.strokeStyle = '#616161';
+    ctx.strokeStyle = '#007AFF';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(canvas.width - btnWidth * 3 + 18, frameHeight / 2);
@@ -1581,12 +1587,12 @@ function drawBrowserFramePreview() {
     ctx.stroke();
     
     // Maximize
-    ctx.fillStyle = '#e1e1e1';
+    ctx.fillStyle = '#fff';
     ctx.fillRect(canvas.width - btnWidth * 2, 0, btnWidth, frameHeight);
     ctx.strokeRect(canvas.width - btnWidth * 2 + 16, frameHeight / 2 - 5, 14, 10);
     
-    // Close (red)
-    ctx.fillStyle = '#e81123';
+    // Close (blue)
+    ctx.fillStyle = '#007AFF';
     ctx.fillRect(canvas.width - btnWidth, 0, btnWidth, frameHeight);
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 1.5;
@@ -1602,31 +1608,31 @@ function drawBrowserFramePreview() {
     ctx.beginPath();
     ctx.roundRect(10, 10, canvas.width - btnWidth * 3 - 30, 24, 4);
     ctx.fill();
-    ctx.strokeStyle = '#ccc';
+    ctx.strokeStyle = '#007AFF';
     ctx.lineWidth = 1;
     ctx.stroke();
     
     // URL text
-    ctx.fillStyle = '#333';
+    ctx.fillStyle = '#000';
     ctx.font = '12px Segoe UI, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText('🔒 ' + (browserFrameUrl || 'example.com'), 20, frameHeight / 2);
     
   } else if (browserFrameStyle === 'minimal') {
-    // Minimal Style - Just URL bar
-    ctx.fillStyle = '#2d2d30';
+    // Minimal Style - SnapToAI brand
+    ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, frameHeight);
     
     // Centered URL bar
     const barWidth = Math.min(400, canvas.width - 40);
-    ctx.fillStyle = '#1e1e1e';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.beginPath();
     ctx.roundRect((canvas.width - barWidth) / 2, 6, barWidth, 20, 4);
     ctx.fill();
     
     // URL text
-    ctx.fillStyle = '#aaa';
+    ctx.fillStyle = '#fff';
     ctx.font = '11px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -1861,20 +1867,23 @@ function redraw() {
       ctx.quadraticCurveTo(noteX + w - 6, noteY + h - 6, noteX + w - 12, noteY + h);
       ctx.fill();
       
-      // Main sticky note body
-      ctx.fillStyle = '#ffff99';
-      ctx.shadowColor = 'rgba(0,0,0,0.2)';
+      // Main sticky note body - white with blue shadow (SnapToAI brand)
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = 'rgba(0, 122, 255, 0.3)';
       ctx.shadowBlur = 8;
       ctx.shadowOffsetX = 2;
       ctx.shadowOffsetY = 2;
+      ctx.strokeStyle = '#007AFF';
+      ctx.lineWidth = 2;
       ctx.fillRect(noteX, noteY, w, h);
+      ctx.strokeRect(noteX, noteY, w, h);
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
       
       // Text on sticky note
-      ctx.fillStyle = '#333';
+      ctx.fillStyle = '#000';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(ann.text, 0, 0);
@@ -2438,20 +2447,23 @@ function drawAnnotationsToContext(ctx, anns) {
       ctx.quadraticCurveTo(noteX + w - 6, noteY + h - 6, noteX + w - 12, noteY + h);
       ctx.fill();
       
-      // Main sticky note body
-      ctx.fillStyle = '#ffff99';
-      ctx.shadowColor = 'rgba(0,0,0,0.2)';
+      // Main sticky note body - white with blue shadow (SnapToAI brand)
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = 'rgba(0, 122, 255, 0.3)';
       ctx.shadowBlur = 8;
       ctx.shadowOffsetX = 2;
       ctx.shadowOffsetY = 2;
+      ctx.strokeStyle = '#007AFF';
+      ctx.lineWidth = 2;
       ctx.fillRect(noteX, noteY, w, h);
+      ctx.strokeRect(noteX, noteY, w, h);
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
       
       // Text on sticky note
-      ctx.fillStyle = '#333';
+      ctx.fillStyle = '#000';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(ann.text, 0, 0);
