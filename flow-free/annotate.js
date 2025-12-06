@@ -43,7 +43,7 @@ let redoStack = [];
 const MAX_HISTORY = 50; // Limit to prevent memory issues
 let borderColor = '#007AFF'; // Blue - SnapToAI brand (fixed, no picker)
 let borderWidth = 2; // Default to thin
-let borderRadius = 8; // Rounded by default
+let borderRadius = 0; // Always square (no rounded corners)
 
 // ============================================================
 // AUTO DUPLICATE-ROW REMOVAL
@@ -205,20 +205,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Initialize border and frame UI to reflect current settings
 function initializeBorderUI() {
-  // Border UI - color is fixed blue, no picker shown
+  // Border UI - color is fixed blue, always square, no radius option
   const borderBtn = document.getElementById('toggleBorder');
   const widthSelect = document.getElementById('borderWidth');
-  const radiusSelect = document.getElementById('borderRadius');
   
   if (hasBorder) {
     borderBtn.classList.add('active');
     widthSelect.style.display = 'block';
-    radiusSelect.style.display = 'block';
   } else {
     borderBtn.classList.remove('active');
     widthSelect.style.display = 'none';
-    radiusSelect.style.display = 'none';
   }
+  
+  // Apply initial CSS border
+  updateCssBorder();
   
   // Browser frame UI
   const frameBtn = document.getElementById('toggleBrowserFrame');
@@ -444,38 +444,30 @@ function setupEventListeners() {
     if (hasBrowserFrame) redraw();
   });
   
-  // Border toggle - color is fixed blue, only show size/radius options
+  // Border toggle - color is fixed blue, only show size option (always square)
   document.getElementById('toggleBorder').addEventListener('click', () => {
     hasBorder = !hasBorder;
     const btn = document.getElementById('toggleBorder');
     const widthSelect = document.getElementById('borderWidth');
-    const radiusSelect = document.getElementById('borderRadius');
     
     if (hasBorder) {
       btn.classList.add('active');
       widthSelect.style.display = 'block';
-      radiusSelect.style.display = 'block';
     } else {
       btn.classList.remove('active');
       widthSelect.style.display = 'none';
-      radiusSelect.style.display = 'none';
     }
-    redraw();
+    updateCssBorder(); // Use CSS border on wrapper (wraps browser frame too)
   });
   
   document.getElementById('borderColor').addEventListener('input', (e) => {
     borderColor = e.target.value;
-    if (hasBorder) redraw();
+    if (hasBorder) updateCssBorder();
   });
   
   document.getElementById('borderWidth').addEventListener('change', (e) => {
     borderWidth = parseInt(e.target.value);
-    if (hasBorder) redraw();
-  });
-  
-  document.getElementById('borderRadius').addEventListener('change', (e) => {
-    borderRadius = parseInt(e.target.value);
-    if (hasBorder) redraw();
+    if (hasBorder) updateCssBorder();
   });
   
   // Tools
@@ -614,6 +606,7 @@ async function loadImage() {
         
         // Redraw immediately to apply default border styling
         redraw();
+        updateCssBorder(); // Apply CSS border on wrapper
         
         // Push initial state to history (enables undo)
         pushHistory();
@@ -642,6 +635,7 @@ async function loadImage() {
       
       // Redraw immediately to apply default border styling
       redraw();
+      updateCssBorder(); // Apply CSS border on wrapper
       
       // Push initial state to history (enables undo)
       pushHistory();
@@ -686,6 +680,7 @@ async function loadFullPageImages() {
     
     loadCurrentPage();
     updatePageIndicator();
+    updateCssBorder(); // Apply CSS border on wrapper for full page mode
     
     if (pages.length > 50) {
       updateStatus(`Page 1 of ${pages.length} - Large capture loaded!`);
@@ -1415,6 +1410,36 @@ function applyBorderDecoration(sourceCanvas) {
   return decoratedCanvas;
 }
 
+// Update CSS border on canvas-wrapper (wraps around browser frame overlay too)
+function updateCssBorder() {
+  const wrapper = document.getElementById('canvasWrapper');
+  
+  // Remove all border classes first
+  wrapper.classList.remove('has-border', 'border-thin', 'border-medium', 'border-thick', 'border-extra');
+  
+  if (!hasBorder) {
+    wrapper.style.borderColor = '';
+    return;
+  }
+  
+  // Add border class
+  wrapper.classList.add('has-border');
+  
+  // Set border color dynamically via inline style (matches export)
+  wrapper.style.borderColor = borderColor;
+  
+  // Add width class based on borderWidth
+  if (borderWidth <= 2) {
+    wrapper.classList.add('border-thin');
+  } else if (borderWidth <= 4) {
+    wrapper.classList.add('border-medium');
+  } else if (borderWidth <= 8) {
+    wrapper.classList.add('border-thick');
+  } else {
+    wrapper.classList.add('border-extra');
+  }
+}
+
 // Update the floating browser frame overlay (GoFullPage-style, never overlaps content)
 function updateBrowserFrameOverlay() {
   const wrapper = document.getElementById('canvasWrapper');
@@ -1857,8 +1882,8 @@ function redraw() {
     }
   });
   
-  // Draw border LAST (on top of everything) so it frames the final output
-  drawBorder();
+  // Note: Visual border is now CSS-based on canvas-wrapper (see updateCssBorder)
+  // Border for export is handled in createDecoratedCanvas function
   
   // Draw crop rectangle if exists (for snip mode)
   if (cropRect && currentTool === 'crop') {
