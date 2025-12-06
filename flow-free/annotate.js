@@ -1,7 +1,7 @@
 // Flow Annotation Tool - SIMPLE VERSION (only working tools)
 
 let canvas, ctx;
-let currentTool = 'highlight';
+let currentTool = 'callout';
 let currentColor = '#007AFF';
 let brushSize = 12;
 let isDrawing = false;
@@ -9,7 +9,6 @@ let startX, startY;
 let annotations = [];
 let originalImage = null;
 let calloutNumber = 1;
-let highlightPoints = [];
 let draggingAnnotation = null;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
@@ -510,7 +509,7 @@ function setupEventListeners() {
       currentTool = tool;
       pendingStickerText = null; // Clear pending sticker when switching tools
       pendingSpecialEmoji = null; // Clear pending emoji when switching tools
-      updateStatus('Draw highlights, add numbers, or add text. All draggable!');
+      updateStatus('Add numbers, shapes, or text. All draggable!');
     });
   });
   
@@ -807,7 +806,7 @@ function handleMouseDown(e) {
     });
     pendingStickerText = null;
     redraw();
-    updateStatus('Draw highlights, add numbers, or add text. All draggable!');
+    updateStatus('Add numbers, shapes, or text. All draggable!');
   } else if (currentTool === 'rectangle' || currentTool === 'arrow') {
     isDrawing = true;
     // Store starting position for rectangle/arrow
@@ -825,9 +824,6 @@ function handleMouseDown(e) {
       });
       redraw();
     }
-  } else if (currentTool === 'highlight') {
-    isDrawing = true;
-    highlightPoints = [{x: startX, y: startY}];
   }
 }
 
@@ -848,18 +844,6 @@ function handleMouseMove(e) {
   if (draggingAnnotation) {
     draggingAnnotation.x = x - dragOffsetX;
     draggingAnnotation.y = y - dragOffsetY;
-    
-    // Move highlight points
-    if (draggingAnnotation.tool === 'highlight' && draggingAnnotation.points) {
-      const deltaX = (x - dragOffsetX) - draggingAnnotation.centerX;
-      const deltaY = (y - dragOffsetY) - draggingAnnotation.centerY;
-      draggingAnnotation.points.forEach(p => {
-        p.x += deltaX;
-        p.y += deltaY;
-      });
-      draggingAnnotation.centerX = x - dragOffsetX;
-      draggingAnnotation.centerY = y - dragOffsetY;
-    }
     
     redraw();
     return;
@@ -918,28 +902,6 @@ function handleMouseMove(e) {
     return;
   }
   
-  if (currentTool === 'highlight') {
-    highlightPoints.push({x, y});
-    redraw();
-    
-    // Draw preview
-    ctx.strokeStyle = currentColor;
-    ctx.lineWidth = brushSize;
-    ctx.lineCap = 'round';
-    ctx.globalAlpha = 0.6;
-    ctx.shadowColor = currentColor;
-    ctx.shadowBlur = 15;
-    
-    ctx.beginPath();
-    ctx.moveTo(highlightPoints[0].x, highlightPoints[0].y);
-    for (let i = 1; i < highlightPoints.length; i++) {
-      ctx.lineTo(highlightPoints[i].x, highlightPoints[i].y);
-    }
-    ctx.stroke();
-    
-    ctx.shadowBlur = 0;
-    ctx.globalAlpha = 1;
-  }
 }
 
 function handleMouseUp(e) {
@@ -1025,27 +987,6 @@ function handleMouseUp(e) {
     }
     isDrawing = false;
     return;
-  }
-  
-  if (currentTool === 'highlight' && highlightPoints.length > 1) {
-    const xs = highlightPoints.map(p => p.x);
-    const ys = highlightPoints.map(p => p.y);
-    const centerX = (Math.min(...xs) + Math.max(...xs)) / 2;
-    const centerY = (Math.min(...ys) + Math.max(...ys)) / 2;
-    
-    pushHistory(); // Save state before action
-    annotations.push({
-      tool: 'highlight',
-      color: currentColor,
-      size: brushSize,
-      points: [...highlightPoints],
-      x: centerX,
-      y: centerY,
-      centerX,
-      centerY
-    });
-    highlightPoints = [];
-    redraw();
   }
   
   isDrawing = false;
@@ -1190,13 +1131,7 @@ function findAnnotation(x, y) {
     const ann = annotations[i];
     const tolerance = 50;
     
-    if (ann.tool === 'highlight' && ann.points) {
-      for (let p of ann.points) {
-        if (Math.sqrt((x - p.x) ** 2 + (y - p.y) ** 2) < (ann.size || 12)) {
-          return ann;
-        }
-      }
-    } else if (Math.abs(x - ann.x) < tolerance && Math.abs(y - ann.y) < tolerance) {
+    if (Math.abs(x - ann.x) < tolerance && Math.abs(y - ann.y) < tolerance) {
       return ann;
     }
   }
@@ -1792,24 +1727,7 @@ function redraw() {
   drawBorder();
   
   annotations.forEach(ann => {
-    if (ann.tool === 'highlight') {
-      ctx.strokeStyle = ann.color;
-      ctx.lineWidth = ann.size || 12;
-      ctx.lineCap = 'round';
-      ctx.globalAlpha = 0.6;
-      ctx.shadowColor = ann.color;
-      ctx.shadowBlur = 15;
-      
-      ctx.beginPath();
-      ctx.moveTo(ann.points[0].x, ann.points[0].y);
-      for (let i = 1; i < ann.points.length; i++) {
-        ctx.lineTo(ann.points[i].x, ann.points[i].y);
-      }
-      ctx.stroke();
-      
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 1;
-    } else if (ann.tool === 'callout') {
+    if (ann.tool === 'callout') {
       // Circle - browser-frame blue #007AFF
       ctx.fillStyle = '#007AFF';
       ctx.shadowColor = '#007AFF';
@@ -2364,26 +2282,7 @@ async function saveFullPageWithAnnotations() {
 // Draw annotations to a canvas context (for rendering annotated pages)
 function drawAnnotationsToContext(ctx, anns) {
   for (const ann of anns) {
-    if (ann.tool === 'highlight' && ann.points) {
-      ctx.strokeStyle = ann.color;
-      ctx.lineWidth = ann.size || 12;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.globalAlpha = 0.6;
-      ctx.shadowColor = ann.color;
-      ctx.shadowBlur = 15;
-      
-      ctx.beginPath();
-      if (ann.points.length > 0) {
-        ctx.moveTo(ann.points[0].x, ann.points[0].y);
-        for (let i = 1; i < ann.points.length; i++) {
-          ctx.lineTo(ann.points[i].x, ann.points[i].y);
-        }
-      }
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 1;
-    } else if (ann.tool === 'callout') {
+    if (ann.tool === 'callout') {
       // Circle - browser-frame blue #007AFF
       ctx.fillStyle = '#007AFF';
       ctx.shadowColor = '#007AFF';
