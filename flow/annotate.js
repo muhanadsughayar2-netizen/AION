@@ -1094,16 +1094,11 @@ function drawCropRect() {
   ctx.fillRect(x - handleSize/2, y + height - handleSize/2, handleSize, handleSize);
   ctx.fillRect(x + width - handleSize/2, y + height - handleSize/2, handleSize, handleSize);
   
-  // Draw "✂️ CROP" label with Apply button hint
-  ctx.fillStyle = 'rgba(0, 217, 255, 0.95)';
-  const labelWidth = 120;
-  const labelHeight = 28;
-  ctx.fillRect(x + width/2 - labelWidth/2, y + height/2 - labelHeight/2, labelWidth, labelHeight);
-  ctx.fillStyle = '#000';
-  ctx.font = 'bold 14px Arial';
+  // Draw scissors icon only (centered, disappears on apply)
+  ctx.font = 'bold 32px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('✂️ Apply Crop', x + width/2, y + height/2);
+  ctx.fillText('✂️', x + width/2, y + height/2);
 }
 
 // ========================================
