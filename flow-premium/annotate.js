@@ -2,7 +2,7 @@
 
 let canvas, ctx;
 let currentTool = 'highlight';
-let currentColor = '#00d9ff';
+let currentColor = '#007AFF';
 let brushSize = 12;
 let isDrawing = false;
 let startX, startY;
