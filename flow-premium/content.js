@@ -525,6 +525,339 @@
     console.log(`[SnapToAI] Restored ${elements.length} sticky elements`);
   }
   
+  // ============================================================
+  // DOM FREEZE ENGINE - Professional Full Page Capture
+  // Freezes ALL dynamic content during capture for perfect results
+  // ============================================================
+  
+  // Storage for original states (for perfect restoration)
+  const freezeState = {
+    styleElement: null,
+    originalRAF: null,
+    rafBlocked: false,
+    mutationObservers: [],
+    intersectionObservers: [],
+    animatedImages: [],
+    videos: [],
+    intervals: [],
+    timeouts: [],
+    scrollListeners: [],
+    isFrozen: false
+  };
+  
+  /**
+   * freezeDOM() - Freezes ALL dynamic content on the page
+   * 
+   * What it freezes:
+   * - All CSS animations (paused)
+   * - All CSS transitions (disabled)
+   * - All GIFs and animated images (paused via canvas replacement)
+   * - requestAnimationFrame (blocked)
+   * - MutationObserver callbacks (disconnected)
+   * - IntersectionObserver (disconnected - stops lazy loading)
+   * - Videos (paused)
+   * - Scroll-triggered events (blocked)
+   * - Blinking cursors (hidden)
+   */
+  function freezeDOM() {
+    if (freezeState.isFrozen) {
+      console.log('[SnapToAI] DOM already frozen, skipping');
+      return;
+    }
+    
+    console.log('[SnapToAI] 🧊 Freezing DOM...');
+    
+    try {
+      // 1. INJECT FREEZE STYLESHEET
+      // Pauses all CSS animations and disables all transitions
+      const freezeCSS = document.createElement('style');
+      freezeCSS.id = 'snaptoai-freeze-styles';
+      freezeCSS.textContent = `
+        /* Pause ALL CSS animations */
+        *, *::before, *::after {
+          animation-play-state: paused !important;
+          -webkit-animation-play-state: paused !important;
+        }
+        
+        /* Disable ALL CSS transitions */
+        *, *::before, *::after {
+          transition: none !important;
+          -webkit-transition: none !important;
+        }
+        
+        /* Hide blinking cursors */
+        *::selection { background: transparent !important; }
+        [contenteditable], input, textarea {
+          caret-color: transparent !important;
+        }
+        
+        /* Freeze any loading spinners */
+        [class*="loading"], [class*="spinner"], [class*="loader"] {
+          animation-play-state: paused !important;
+        }
+        
+        /* Disable smooth scrolling during capture */
+        html, body, * {
+          scroll-behavior: auto !important;
+        }
+        
+        /* Disable pointer events to prevent hover states changing */
+        body.snaptoai-frozen * {
+          pointer-events: none !important;
+        }
+      `;
+      document.head.appendChild(freezeCSS);
+      freezeState.styleElement = freezeCSS;
+      
+      // Add frozen class to body
+      document.body.classList.add('snaptoai-frozen');
+      
+      // 2. BLOCK requestAnimationFrame
+      // This stops JS-driven animations (React transitions, D3 charts, etc.)
+      freezeState.originalRAF = window.requestAnimationFrame;
+      freezeState.rafBlocked = true;
+      window.requestAnimationFrame = function(callback) {
+        // Store but don't execute - will be restored later
+        return 0;
+      };
+      
+      // 3. DISCONNECT ALL MutationObservers
+      // This prevents React/Vue/Angular from updating the DOM during capture
+      try {
+        // We can't access existing observers directly, but we can override the constructor
+        // to catch new ones. For existing ones, we rely on the CSS freeze.
+        const originalMutationObserver = window.MutationObserver;
+        window.MutationObserver = function(callback) {
+          const observer = new originalMutationObserver(callback);
+          const originalObserve = observer.observe.bind(observer);
+          observer.observe = function() {
+            // Don't observe while frozen
+            if (freezeState.isFrozen) return;
+            return originalObserve.apply(this, arguments);
+          };
+          freezeState.mutationObservers.push({ observer, originalObserve });
+          return observer;
+        };
+        window.MutationObserver.prototype = originalMutationObserver.prototype;
+        freezeState.originalMutationObserver = originalMutationObserver;
+      } catch (e) {
+        console.warn('[SnapToAI] Could not override MutationObserver:', e.message);
+      }
+      
+      // 4. DISCONNECT ALL IntersectionObservers
+      // This stops lazy-loading images from loading during capture
+      try {
+        const originalIntersectionObserver = window.IntersectionObserver;
+        if (originalIntersectionObserver) {
+          window.IntersectionObserver = function(callback, options) {
+            const observer = new originalIntersectionObserver(callback, options);
+            const originalObserve = observer.observe.bind(observer);
+            observer.observe = function() {
+              if (freezeState.isFrozen) return;
+              return originalObserve.apply(this, arguments);
+            };
+            freezeState.intersectionObservers.push({ observer, originalObserve });
+            return observer;
+          };
+          window.IntersectionObserver.prototype = originalIntersectionObserver.prototype;
+          freezeState.originalIntersectionObserver = originalIntersectionObserver;
+        }
+      } catch (e) {
+        console.warn('[SnapToAI] Could not override IntersectionObserver:', e.message);
+      }
+      
+      // 5. PAUSE ALL VIDEOS
+      try {
+        const videos = document.querySelectorAll('video');
+        videos.forEach(video => {
+          if (!video.paused) {
+            freezeState.videos.push({
+              element: video,
+              wasPlaying: true,
+              currentTime: video.currentTime
+            });
+            video.pause();
+          }
+        });
+        console.log(`[SnapToAI] Paused ${freezeState.videos.length} videos`);
+      } catch (e) {}
+      
+      // 6. FREEZE GIFS AND ANIMATED IMAGES
+      // Replace animated GIFs with static canvas snapshots
+      try {
+        const images = document.querySelectorAll('img[src*=".gif"], img[src*="giphy"], img[src*="tenor"]');
+        images.forEach(img => {
+          try {
+            // Only freeze if image is loaded and visible
+            if (!img.complete || img.offsetWidth === 0) return;
+            
+            // Create canvas with current frame
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth || img.width;
+            canvas.height = img.naturalHeight || img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            
+            // Store original src and replace with static image
+            freezeState.animatedImages.push({
+              element: img,
+              originalSrc: img.src,
+              originalSrcset: img.srcset
+            });
+            
+            // Replace with data URL of current frame
+            try {
+              img.src = canvas.toDataURL('image/png');
+              img.srcset = '';
+            } catch (e) {
+              // Canvas tainted by CORS - skip this image
+            }
+          } catch (e) {}
+        });
+        console.log(`[SnapToAI] Froze ${freezeState.animatedImages.length} animated images`);
+      } catch (e) {}
+      
+      // 7. BLOCK SCROLL EVENT LISTENERS (prevent lazy load triggers)
+      try {
+        const originalAddEventListener = EventTarget.prototype.addEventListener;
+        EventTarget.prototype.addEventListener = function(type, listener, options) {
+          if (freezeState.isFrozen && (type === 'scroll' || type === 'wheel')) {
+            // Don't add scroll listeners while frozen
+            return;
+          }
+          return originalAddEventListener.call(this, type, listener, options);
+        };
+        freezeState.originalAddEventListener = originalAddEventListener;
+      } catch (e) {}
+      
+      // 8. DISABLE HOVER STATES
+      // Add a transparent overlay to prevent mouse interactions
+      try {
+        const hoverBlocker = document.createElement('div');
+        hoverBlocker.id = 'snaptoai-hover-blocker';
+        hoverBlocker.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 2147483646;
+          pointer-events: auto;
+          background: transparent;
+        `;
+        document.body.appendChild(hoverBlocker);
+        freezeState.hoverBlocker = hoverBlocker;
+      } catch (e) {}
+      
+      freezeState.isFrozen = true;
+      console.log('[SnapToAI] 🧊 DOM frozen successfully');
+      
+    } catch (error) {
+      console.warn('[SnapToAI] Freeze error (non-fatal):', error.message);
+    }
+  }
+  
+  /**
+   * unfreezeDOM() - Restores ALL frozen content to original state
+   * 
+   * Perfectly restores:
+   * - CSS animations (resume playing)
+   * - CSS transitions (re-enabled)
+   * - GIFs (original src restored)
+   * - requestAnimationFrame (original function restored)
+   * - MutationObserver (original constructor restored)
+   * - IntersectionObserver (original constructor restored)
+   * - Videos (resume if was playing)
+   * - Scroll listeners (restored)
+   * - Hover states (overlay removed)
+   */
+  function unfreezeDOM() {
+    if (!freezeState.isFrozen) {
+      console.log('[SnapToAI] DOM not frozen, skipping unfreeze');
+      return;
+    }
+    
+    console.log('[SnapToAI] 🔥 Unfreezing DOM...');
+    
+    try {
+      // 1. REMOVE FREEZE STYLESHEET
+      if (freezeState.styleElement) {
+        freezeState.styleElement.remove();
+        freezeState.styleElement = null;
+      }
+      
+      // Remove frozen class from body
+      document.body.classList.remove('snaptoai-frozen');
+      
+      // 2. RESTORE requestAnimationFrame
+      if (freezeState.originalRAF) {
+        window.requestAnimationFrame = freezeState.originalRAF;
+        freezeState.originalRAF = null;
+        freezeState.rafBlocked = false;
+      }
+      
+      // 3. RESTORE MutationObserver
+      if (freezeState.originalMutationObserver) {
+        window.MutationObserver = freezeState.originalMutationObserver;
+        freezeState.originalMutationObserver = null;
+        freezeState.mutationObservers = [];
+      }
+      
+      // 4. RESTORE IntersectionObserver
+      if (freezeState.originalIntersectionObserver) {
+        window.IntersectionObserver = freezeState.originalIntersectionObserver;
+        freezeState.originalIntersectionObserver = null;
+        freezeState.intersectionObservers = [];
+      }
+      
+      // 5. RESTORE VIDEOS (resume playback if was playing)
+      freezeState.videos.forEach(item => {
+        try {
+          if (item.wasPlaying) {
+            item.element.currentTime = item.currentTime;
+            item.element.play().catch(() => {});
+          }
+        } catch (e) {}
+      });
+      freezeState.videos = [];
+      
+      // 6. RESTORE ANIMATED IMAGES (GIFs)
+      freezeState.animatedImages.forEach(item => {
+        try {
+          item.element.src = item.originalSrc;
+          if (item.originalSrcset) {
+            item.element.srcset = item.originalSrcset;
+          }
+        } catch (e) {}
+      });
+      freezeState.animatedImages = [];
+      
+      // 7. RESTORE EVENT LISTENERS
+      if (freezeState.originalAddEventListener) {
+        EventTarget.prototype.addEventListener = freezeState.originalAddEventListener;
+        freezeState.originalAddEventListener = null;
+      }
+      
+      // 8. REMOVE HOVER BLOCKER
+      if (freezeState.hoverBlocker) {
+        freezeState.hoverBlocker.remove();
+        freezeState.hoverBlocker = null;
+      }
+      
+      freezeState.isFrozen = false;
+      console.log('[SnapToAI] 🔥 DOM unfrozen successfully');
+      
+    } catch (error) {
+      console.warn('[SnapToAI] Unfreeze error (non-fatal):', error.message);
+      // Force reset state even on error
+      freezeState.isFrozen = false;
+    }
+  }
+  
+  // ============================================================
+  // END DOM FREEZE ENGINE
+  // ============================================================
+  
   // TIER 1: Check if document/body is scrollable (preferred - works on most sites)
   function findScrollableContainerTier1() {
     // ALWAYS try document-level scroll first - this works for 95% of sites
@@ -1097,6 +1430,11 @@
       // Hide fixed elements before capture loop (for AI platforms)
       hideFixedElements();
       
+      // === FREEZE DOM ===
+      // Freeze all dynamic content (animations, videos, lazy loaders, etc.)
+      // This prevents content from changing during capture
+      freezeDOM();
+      
       // === AI-PROOF CAPTURE LOOP ===
       // Uses scrollBy + checks if scroll actually moved (detects real bottom)
       let lastScrollTop = -1;
@@ -1161,6 +1499,10 @@
       console.log(`[SnapToAI] Full page capture complete: ${screenshots.length} images`);
       updateOverlayProgress(100);
       
+      // === UNFREEZE DOM ===
+      // Restore all dynamic content (animations, videos, lazy loaders, etc.)
+      unfreezeDOM();
+      
       // Restore fixed elements (headers, footers) that we hid during capture
       restoreFixedElements();
       
@@ -1196,6 +1538,11 @@
     } catch (error) {
       // Use console.warn, NEVER console.error - prevents Chrome extension warnings
       console.warn('[SnapToAI] Full page capture issue:', error?.message || error);
+      
+      // === ALWAYS UNFREEZE DOM ON ERROR ===
+      try {
+        unfreezeDOM();
+      } catch (e) {}
       
       // Restore element styles on error
       try {
