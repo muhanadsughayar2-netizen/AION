@@ -42,7 +42,7 @@ let hasBorder = true; // ENABLED by default for professional output
 let historyStack = [];
 let redoStack = [];
 const MAX_HISTORY = 50; // Limit to prevent memory issues
-let borderColor = '#00bcd4'; // Cyan like GoFullPage
+let borderColor = '#007AFF'; // Blue - SnapToAI brand
 let borderWidth = 8; // Default to thick
 let borderRadius = 0; // Square by default for professional look
 
@@ -1066,7 +1066,7 @@ function drawCropPreview() {
   ctx.fillRect(x1 + width, y1, canvas.width - x1 - width, height); // Right
   
   // Draw crop border
-  ctx.strokeStyle = '#00d9ff';
+  ctx.strokeStyle = '#007AFF';
   ctx.lineWidth = 2;
   ctx.setLineDash([5, 5]);
   ctx.strokeRect(x1, y1, width, height);
@@ -1074,14 +1074,14 @@ function drawCropPreview() {
   
   // Draw corner handles
   const handleSize = 8;
-  ctx.fillStyle = '#00d9ff';
+  ctx.fillStyle = '#007AFF';
   ctx.fillRect(x1 - handleSize/2, y1 - handleSize/2, handleSize, handleSize);
   ctx.fillRect(x1 + width - handleSize/2, y1 - handleSize/2, handleSize, handleSize);
   ctx.fillRect(x1 - handleSize/2, y1 + height - handleSize/2, handleSize, handleSize);
   ctx.fillRect(x1 + width - handleSize/2, y1 + height - handleSize/2, handleSize, handleSize);
   
   // Draw dimensions label
-  ctx.fillStyle = 'rgba(0, 217, 255, 0.9)';
+  ctx.fillStyle = '#007AFF';
   ctx.font = 'bold 14px Arial';
   ctx.fillText(`${Math.round(width)} x ${Math.round(height)}`, x1 + 5, y1 - 8);
 }
@@ -1100,23 +1100,26 @@ function drawCropRect() {
   ctx.fillRect(x + width, y, canvas.width - x - width, height); // Right
   
   // Draw crop border
-  ctx.strokeStyle = '#00d9ff';
+  ctx.strokeStyle = '#007AFF';
   ctx.lineWidth = 3;
   ctx.strokeRect(x, y, width, height);
   
   // Draw corner handles
   const handleSize = 10;
-  ctx.fillStyle = '#00d9ff';
+  ctx.fillStyle = '#007AFF';
   ctx.fillRect(x - handleSize/2, y - handleSize/2, handleSize, handleSize);
   ctx.fillRect(x + width - handleSize/2, y - handleSize/2, handleSize, handleSize);
   ctx.fillRect(x - handleSize/2, y + height - handleSize/2, handleSize, handleSize);
   ctx.fillRect(x + width - handleSize/2, y + height - handleSize/2, handleSize, handleSize);
   
-  // Draw scissors icon only (centered, disappears on apply)
-  ctx.font = 'bold 32px Arial';
+  // Draw scissors icon - DEAD CENTER in crop box
+  ctx.save();
+  ctx.font = '48px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#007AFF';
   ctx.fillText('✂️', x + width/2, y + height/2);
+  ctx.restore();
 }
 
 // ========================================
@@ -1777,8 +1780,7 @@ function redraw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.putImageData(originalImage, 0, 0);
   
-  // Draw browser frame preview if enabled (overlay at top)
-  drawBrowserFramePreview();
+  // Browser frame is HTML overlay only - no canvas drawing (prevents duplicate URL bar)
   
   // Draw border first (below annotations)
   drawBorder();
