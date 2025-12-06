@@ -1799,23 +1799,45 @@ function redraw() {
         ctx.fillText(ann.text, ann.x, textY);
       }
     } else if (ann.tool === 'sticker') {
-      ctx.font = 'bold 18px Arial';
-      const w = ctx.measureText(ann.text).width;
+      // Sticky note - soft yellow, slight tilt, curl shadow
+      ctx.save();
+      ctx.translate(ann.x, ann.y);
+      ctx.rotate(-0.03); // Slight tilt
       
-      ctx.fillStyle = ann.color;
-      ctx.shadowColor = ann.color;
-      ctx.shadowBlur = 12;
-      ctx.fillRect(ann.x - w/2 - 14, ann.y - 18, w + 28, 36);
+      ctx.font = '16px Arial';
+      const w = Math.max(ctx.measureText(ann.text).width + 24, 80);
+      const h = 60;
+      const noteX = -w/2;
+      const noteY = -h/2;
+      
+      // Curl shadow (bottom-right)
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      ctx.beginPath();
+      ctx.moveTo(noteX + w - 12, noteY + h);
+      ctx.lineTo(noteX + w, noteY + h);
+      ctx.lineTo(noteX + w, noteY + h - 12);
+      ctx.quadraticCurveTo(noteX + w - 6, noteY + h - 6, noteX + w - 12, noteY + h);
+      ctx.fill();
+      
+      // Main sticky note body
+      ctx.fillStyle = '#ffff99';
+      ctx.shadowColor = 'rgba(0,0,0,0.2)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      ctx.fillRect(noteX, noteY, w, h);
+      ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
       
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(ann.x - w/2 - 14, ann.y - 18, w + 28, 36);
-      
-      ctx.fillStyle = '#000';
+      // Text on sticky note
+      ctx.fillStyle = '#333';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(ann.text, ann.x, ann.y);
+      ctx.fillText(ann.text, 0, 0);
+      
+      ctx.restore();
     } else if (ann.tool === 'special') {
       // Special emoji - large centered
       ctx.font = '48px Arial';
@@ -1891,7 +1913,7 @@ function setupStickerListeners() {
       currentTool = 'sticker';
       document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
       canvas.style.cursor = 'crosshair';
-      updateStatus('Click on the image to place sticker');
+      updateStatus('Click on the image to place sticky note');
     });
   });
 }
@@ -1927,7 +1949,7 @@ async function createCustomSticker() {
       return;
     }
     
-    const text = prompt('Enter your custom sticker text (e.g., "TODO", "CHECK THIS", "URGENT"):');
+    const text = prompt('Enter sticky note text (e.g., "TODO", "CHECK THIS", "URGENT"):');
     if (text && text.trim()) {
       const trimmed = text.trim().toUpperCase();
       if (customStickers.includes(trimmed)) {
@@ -2354,24 +2376,45 @@ function drawAnnotationsToContext(ctx, anns) {
       ctx.textBaseline = 'middle';
       ctx.fillText(ann.text, ann.x, ann.y);
     } else if (ann.tool === 'sticker') {
-      // Sticker pill with glow (matches redraw())
-      ctx.font = 'bold 18px Arial';
-      const w = ctx.measureText(ann.text).width;
+      // Sticky note - soft yellow, slight tilt, curl shadow (matches redraw())
+      ctx.save();
+      ctx.translate(ann.x, ann.y);
+      ctx.rotate(-0.03); // Slight tilt
       
-      ctx.fillStyle = ann.color;
-      ctx.shadowColor = ann.color;
-      ctx.shadowBlur = 12;
-      ctx.fillRect(ann.x - w/2 - 14, ann.y - 18, w + 28, 36);
+      ctx.font = '16px Arial';
+      const w = Math.max(ctx.measureText(ann.text).width + 24, 80);
+      const h = 60;
+      const noteX = -w/2;
+      const noteY = -h/2;
+      
+      // Curl shadow (bottom-right)
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      ctx.beginPath();
+      ctx.moveTo(noteX + w - 12, noteY + h);
+      ctx.lineTo(noteX + w, noteY + h);
+      ctx.lineTo(noteX + w, noteY + h - 12);
+      ctx.quadraticCurveTo(noteX + w - 6, noteY + h - 6, noteX + w - 12, noteY + h);
+      ctx.fill();
+      
+      // Main sticky note body
+      ctx.fillStyle = '#ffff99';
+      ctx.shadowColor = 'rgba(0,0,0,0.2)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      ctx.fillRect(noteX, noteY, w, h);
+      ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
       
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(ann.x - w/2 - 14, ann.y - 18, w + 28, 36);
-      
-      ctx.fillStyle = '#000';
+      // Text on sticky note
+      ctx.fillStyle = '#333';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(ann.text, ann.x, ann.y);
+      ctx.fillText(ann.text, 0, 0);
+      
+      ctx.restore();
     }
   }
 }
