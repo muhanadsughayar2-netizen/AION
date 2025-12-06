@@ -76,7 +76,7 @@ body {
 
 .zoom-btn:hover {
   background: #e0e0e0;
-  border-color: #0066cc;
+  border-color: #007AFF;
 }
 
 .zoom-btn.zoom-reset {
@@ -117,12 +117,12 @@ body {
 
 .frame-btn:hover {
   background: #e8e8e8;
-  border-color: #0066cc;
+  border-color: #007AFF;
 }
 
 .frame-btn.active {
-  background: #0066cc;
-  border-color: #0066cc;
+  background: #007AFF;
+  border-color: #007AFF;
   color: #fff;
 }
 
@@ -351,14 +351,14 @@ body {
 
 .tool-btn:hover {
   background: #e8e8e8;
-  border-color: #0066cc;
+  border-color: #007AFF;
 }
 
 .tool-btn.active {
-  background: #0066cc;
-  border-color: #0066cc;
+  background: #007AFF;
+  border-color: #007AFF;
   color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
 }
 
 /* Undo/Redo history buttons - filled blue */
@@ -371,8 +371,8 @@ body {
 }
 
 .tool-btn.history-btn:hover {
-  background: #0066cc;
-  border-color: #0066cc;
+  background: #005ebb;
+  border-color: #005ebb;
 }
 
 .tool-btn.history-btn:disabled {
@@ -383,10 +383,10 @@ body {
 
 .sticker-btn {
   padding: 8px 14px;
-  background: #e3f2fd;
-  border: 1px solid #90caf9;
+  background: #fff;
+  border: 1px solid #007AFF;
   border-radius: 6px;
-  color: #1565c0;
+  color: #007AFF;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -395,16 +395,17 @@ body {
 }
 
 .sticker-btn:hover {
-  background: #bbdefb;
-  border-color: #1565c0;
+  background: #007AFF;
+  border-color: #007AFF;
+  color: #fff;
 }
 
 .create-sticker-btn {
   padding: 8px 14px;
-  background: rgba(255, 215, 0, 0.1);
-  border: 2px dashed rgba(255, 215, 0, 0.4);
+  background: #fff;
+  border: 2px dashed #007AFF;
   border-radius: 6px;
-  color: #ffd700;
+  color: #007AFF;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -412,16 +413,17 @@ body {
 }
 
 .create-sticker-btn:hover {
-  background: rgba(255, 215, 0, 0.2);
-  border-color: #ffd700;
+  background: #007AFF;
+  border-color: #007AFF;
+  color: #fff;
 }
 
 .custom-sticker-btn {
   padding: 8px 14px;
-  background: rgba(147, 51, 234, 0.1);
-  border: 2px solid rgba(147, 51, 234, 0.3);
+  background: #fff;
+  border: 2px solid #007AFF;
   border-radius: 6px;
-  color: #9333ea;
+  color: #007AFF;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -431,8 +433,9 @@ body {
 }
 
 .custom-sticker-btn:hover {
-  background: rgba(147, 51, 234, 0.2);
-  border-color: #9333ea;
+  background: #007AFF;
+  border-color: #007AFF;
+  color: #fff;
 }
 
 .delete-sticker {
@@ -489,7 +492,7 @@ body {
   width: 60px;
   height: 4px;
   -webkit-appearance: none;
-  background: rgba(0, 217, 255, 0.2);
+  background: rgba(0, 122, 255, 0.2);
   border-radius: 2px;
 }
 
@@ -497,21 +500,21 @@ body {
   -webkit-appearance: none;
   width: 14px;
   height: 14px;
-  background: #00d9ff;
+  background: #007AFF;
   border-radius: 50%;
   cursor: pointer;
 }
 
 #sizeValue {
   font-size: 11px;
-  color: #00d9ff;
+  color: #000;
   font-weight: 700;
   min-width: 30px;
 }
 
 .save-btn, .cancel-btn {
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 10px 24px;
+  border-radius: 25px;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -519,18 +522,24 @@ body {
 }
 
 .save-btn {
-  background: linear-gradient(135deg, #00d9ff, #00a8cc);
-  color: #000;
+  background: #007AFF;
+  color: #fff;
 }
 
 .save-btn:hover {
-  box-shadow: 0 4px 15px rgba(0, 217, 255, 0.5);
+  background: #005ebb;
+  box-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
 }
 
 .cancel-btn {
-  background: rgba(255, 59, 48, 0.1);
-  border: 2px solid rgba(255, 59, 48, 0.3);
-  color: #ff3b30;
+  background: #fff;
+  border: 2px solid #000;
+  color: #000;
+}
+
+.cancel-btn:hover {
+  background: #000;
+  color: #fff;
 }
 
 .canvas-container {
@@ -546,18 +555,18 @@ body {
 #canvas {
   max-width: 100%;
   max-height: 100%;
-  border: 2px solid rgba(0, 217, 255, 0.2);
+  border: 2px solid rgba(0, 122, 255, 0.2);
   border-radius: 8px;
   cursor: crosshair;
 }
 
 .text-input {
   position: absolute;
-  background: rgba(0, 0, 0, 0.9);
-  border: 2px solid #00d9ff;
+  background: #fff;
+  border: 2px solid #007AFF;
   border-radius: 6px;
   padding: 6px 10px;
-  color: #fff;
+  color: #000;
   font-size: 16px;
   outline: none;
   min-width: 150px;
@@ -565,32 +574,32 @@ body {
 }
 
 .status-bar {
-  background: rgba(0, 0, 0, 0.8);
+  background: #f5f5f5;
   padding: 8px 16px;
   text-align: center;
   font-size: 12px;
-  color: #aaa;
-  border-top: 1px solid rgba(0, 217, 255, 0.2);
+  color: #666;
+  border-top: 1px solid #ddd;
 }
 
 /* Page Navigation for Full Page Mode */
 .page-nav {
-  background: rgba(0, 0, 0, 0.9);
+  background: #f5f5f5;
   padding: 10px 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 20px;
-  border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+  border-bottom: 1px solid #ddd;
 }
 
 .nav-btn {
   width: 50px;
   height: 40px;
-  background: rgba(0, 217, 255, 0.15);
-  border: 2px solid rgba(0, 217, 255, 0.4);
+  background: #fff;
+  border: 2px solid #007AFF;
   border-radius: 8px;
-  color: #00d9ff;
+  color: #007AFF;
   font-size: 20px;
   cursor: pointer;
   transition: all 0.2s;
@@ -600,9 +609,9 @@ body {
 }
 
 .nav-btn:hover:not(:disabled) {
-  background: rgba(0, 217, 255, 0.3);
-  border-color: #00d9ff;
-  box-shadow: 0 0 15px rgba(0, 217, 255, 0.4);
+  background: #007AFF;
+  border-color: #007AFF;
+  color: #fff;
 }
 
 .nav-btn:disabled {
@@ -613,7 +622,7 @@ body {
 .page-indicator {
   font-size: 16px;
   font-weight: 700;
-  color: #00d9ff;
+  color: #000;
   min-width: 120px;
   text-align: center;
 }
@@ -674,8 +683,8 @@ body {
 }
 
 .emoji-item:hover {
-  background: rgba(0, 217, 255, 0.2);
-  border-color: #00d9ff;
+  background: rgba(0, 122, 255, 0.2);
+  border-color: #007AFF;
   transform: scale(1.15);
 }
 
