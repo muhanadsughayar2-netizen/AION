@@ -1786,21 +1786,22 @@ function redraw() {
       ctx.shadowBlur = 0;
       ctx.globalAlpha = 1;
     } else if (ann.tool === 'callout') {
-      // Circle
-      ctx.fillStyle = ann.color;
-      ctx.shadowColor = ann.color;
+      // Circle - browser-frame blue #007AFF
+      ctx.fillStyle = '#007AFF';
+      ctx.shadowColor = '#007AFF';
       ctx.shadowBlur = 15;
       ctx.beginPath();
       ctx.arc(ann.x, ann.y, 28, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
       
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 3;
+      // 2px blue border
+      ctx.strokeStyle = '#007AFF';
+      ctx.lineWidth = 2;
       ctx.stroke();
       
-      // Number
-      ctx.fillStyle = '#000';
+      // White number text
+      ctx.fillStyle = '#fff';
       ctx.font = 'bold 26px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -1812,13 +1813,13 @@ function redraw() {
         ctx.font = 'bold 16px Arial';
         const w = ctx.measureText(ann.text).width;
         
-        ctx.fillStyle = ann.color;
-        ctx.shadowColor = ann.color;
+        ctx.fillStyle = '#007AFF';
+        ctx.shadowColor = '#007AFF';
         ctx.shadowBlur = 10;
         ctx.fillRect(ann.x - w/2 - 10, textY - 12, w + 20, 28);
         ctx.shadowBlur = 0;
         
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = '#fff';
         ctx.fillText(ann.text, ann.x, textY);
       }
     } else if (ann.tool === 'sticker') {
@@ -2338,22 +2339,22 @@ function drawAnnotationsToContext(ctx, anns) {
       ctx.shadowBlur = 0;
       ctx.globalAlpha = 1;
     } else if (ann.tool === 'callout') {
-      // Circle with glow (matches redraw())
-      ctx.fillStyle = ann.color;
-      ctx.shadowColor = ann.color;
+      // Circle - browser-frame blue #007AFF
+      ctx.fillStyle = '#007AFF';
+      ctx.shadowColor = '#007AFF';
       ctx.shadowBlur = 15;
       ctx.beginPath();
       ctx.arc(ann.x, ann.y, 28, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
       
-      // White border
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 3;
+      // 2px blue border
+      ctx.strokeStyle = '#007AFF';
+      ctx.lineWidth = 2;
       ctx.stroke();
       
-      // Number
-      ctx.fillStyle = '#000';
+      // White number text
+      ctx.fillStyle = '#fff';
       ctx.font = 'bold 26px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -2365,13 +2366,13 @@ function drawAnnotationsToContext(ctx, anns) {
         ctx.font = 'bold 16px Arial';
         const w = ctx.measureText(ann.text).width;
         
-        ctx.fillStyle = ann.color;
-        ctx.shadowColor = ann.color;
+        ctx.fillStyle = '#007AFF';
+        ctx.shadowColor = '#007AFF';
         ctx.shadowBlur = 10;
         ctx.fillRect(ann.x - w/2 - 10, textY - 12, w + 20, 28);
         ctx.shadowBlur = 0;
         
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = '#fff';
         ctx.fillText(ann.text, ann.x, textY);
       }
     } else if (ann.tool === 'text') {
