@@ -412,19 +412,45 @@ body {
 }
 
 /* Thumbnails Container */
+/* Gallery Header with Select All */
+.gallery-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+}
+
+.select-all-gallery-btn {
+  background: transparent;
+  border: none;
+  color: #00d9ff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.select-all-gallery-btn:hover {
+  background: rgba(0, 217, 255, 0.15);
+  color: #00ffaa;
+}
+
 .thumbnails-container {
   flex: 1;
   min-height: 0;
   overflow-y: hidden;
-  overflow-x: hidden;
-  margin: 8px 0;
-  padding: 4px;
-  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0 0 8px 0;
+  padding: 8px;
+  border-radius: 10px;
   background: rgba(0, 0, 0, 0.2);
 }
 
 .thumbnails-container::-webkit-scrollbar {
-  width: 6px;
+  height: 6px;
 }
 
 .thumbnails-container::-webkit-scrollbar-track {
@@ -441,42 +467,47 @@ body {
   background: rgba(0, 217, 255, 0.5);
 }
 
-/* Thumbnails Grid */
+/* Thumbnails - Horizontal Scroll */
 .thumbnails {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  min-height: 40px;
-  align-content: start;
-  grid-auto-rows: minmax(0, 1fr);
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  min-height: 180px;
+  align-items: center;
+  padding: 4px 0;
 }
 
 .thumbnail {
-  aspect-ratio: 16 / 9;
-  border-radius: 4px;
+  flex-shrink: 0;
+  height: 180px;
+  width: auto;
+  min-width: 120px;
+  max-width: 320px;
+  border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(0, 217, 255, 0.2);
-  transition: all 0.3s ease;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.25s ease;
   cursor: pointer;
   position: relative;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .thumbnail:hover {
-  border-color: #00d9ff;
-  transform: scale(1.05);
-  box-shadow: 0 0 10px rgba(0, 217, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
 .thumbnail.selected {
-  border-color: #00d9ff;
-  box-shadow: 0 0 12px rgba(0, 217, 255, 0.6);
+  border-color: #00ffaa !important;
+  box-shadow: 0 0 20px rgba(0, 255, 170, 0.5), 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 .thumbnail img {
-  width: 100%;
   height: 100%;
-  object-fit: cover;
+  width: auto;
+  object-fit: contain;
 }
 
 .thumbnail-number {

@@ -248,6 +248,7 @@ function setupEventListeners() {
   
   // Selection controls
   document.getElementById('selectAllBtn').addEventListener('click', handleSelectAll);
+  document.getElementById('selectAllGalleryBtn').addEventListener('click', handleSelectAll);
   
   // Big SEND TO AI button
   document.getElementById('sendToAiBtn').addEventListener('click', sendToAI);
