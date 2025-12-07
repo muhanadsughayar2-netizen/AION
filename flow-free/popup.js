@@ -865,7 +865,7 @@ async function handleSnipClick() {
   }
 }
 
-// Handle full page button click - uses html2canvas for 2025-proof capture on AI sites
+// Handle full page button click - scroll and capture entire page
 let fullPageCapturePort = null; // Port to maintain connection with background
 
 async function handleFullPageClick() {
@@ -890,128 +890,44 @@ async function handleFullPageClick() {
   }
   
   try {
+    // Establish port connection so background can detect if popup closes
+    fullPageCapturePort = chrome.runtime.connect({ name: 'fullPageCapture' });
+    
     // Show overlay in popup
     overlay.style.display = 'flex';
-    overlayStatus.textContent = 'Preparing capture...';
+    overlayStatus.textContent = 'Starting full page capture...';
     status.textContent = 'Capturing full page...';
     status.className = 'status active';
     
-    // Get active tab
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    // Send message to background to start full page capture
+    const response = await chrome.runtime.sendMessage({ action: 'startFullPageCapture' });
     
-    if (!tab || !tab.id) {
-      throw new Error('No active tab found');
+    if (response.success) {
+      // Full page capture initiated - we'll receive progress updates via messages
+      overlayStatus.textContent = 'Scrolling page... 0%';
+    } else {
+      throw new Error(response.error || 'Failed to start full page capture');
     }
-    
-    // Check for restricted pages
-    if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || 
-        tab.url.startsWith('about:') || tab.url.startsWith('edge://')) {
-      throw new Error('Cannot capture browser pages');
-    }
-    
-    overlayStatus.textContent = 'Loading capture library...';
-    
-    // Inject html2canvas if not already there
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: () => {
-        return new Promise((resolve) => {
-          if (window.html2canvas) { resolve(); return; }
-          const script = document.createElement('script');
-          script.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-          script.onload = resolve;
-          script.onerror = () => resolve(); // Continue even if CDN fails
-          document.head.appendChild(script);
-        });
-      }
-    });
-    
-    // Wait for script to be ready
-    await new Promise(r => setTimeout(r, 800));
-    
-    overlayStatus.textContent = 'Capturing page content...';
-    
-    // Capture the entire real DOM (works on React/virtualized pages)
-    const result = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: () => {
-        return new Promise((resolve, reject) => {
-          if (!window.html2canvas) {
-            reject(new Error('html2canvas not loaded'));
-            return;
-          }
-          html2canvas(document.body, {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            scrollX: 0,
-            scrollY: -window.scrollY,
-            windowWidth: document.documentElement.scrollWidth,
-            windowHeight: document.documentElement.scrollHeight,
-            logging: false
-          }).then(canvas => {
-            resolve(canvas.toDataURL('image/png'));
-          }).catch(err => {
-            reject(err);
-          });
-        });
-      }
-    });
-    
-    const dataUrl = result[0].result;
-    
-    if (!dataUrl || !dataUrl.startsWith('data:image')) {
-      throw new Error('Invalid capture result');
-    }
-    
-    overlayStatus.textContent = 'Saving to queue...';
-    
-    // Save to queue using FIFO
-    const storageResult = await chrome.storage.session.get({ snaps: [] });
-    let snaps = storageResult.snaps || [];
-    
-    // FIFO: remove oldest if at capacity
-    if (snaps.length >= 9) {
-      snaps.shift();
-    }
-    
-    // Add new full page capture
-    snaps.push(dataUrl);
-    await chrome.storage.session.set({ snaps });
-    
-    // Hide overlay and update UI
-    overlay.style.display = 'none';
-    fullPageButton.disabled = false;
-    
-    // Show preview and update gallery
-    showLastCapturePreview(dataUrl);
-    await loadSnaps();
-    updateUI();
-    
-    status.textContent = 'Full page captured! ✓';
-    status.className = 'status active';
-    
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 2000);
-    
   } catch (error) {
-    console.log('[SnapToAI] Full page capture:', error.message || error);
+    // Use console.log for expected situations (restricted pages, etc.)
+    console.log('[SnapToAI] Capture not available:', error.message || error);
+    // Disconnect port on error
+    if (fullPageCapturePort) {
+      fullPageCapturePort.disconnect();
+      fullPageCapturePort = null;
+    }
     overlay.style.display = 'none';
-    fullPageButton.disabled = false;
-    
-    // Show friendly message
+    // Show friendly message for restricted pages
     const friendlyMessage = error.message?.includes('Cannot capture') 
       ? error.message 
-      : 'Cannot capture this page. Try a regular website.';
+      : 'Cannot capture this page. Works on regular websites only.';
     status.textContent = friendlyMessage;
     status.className = 'status error';
     setTimeout(() => {
       status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
     }, 3000);
+    fullPageButton.disabled = false;
   }
 }
 
