@@ -248,9 +248,9 @@ function setupEventListeners() {
   
   // Selection controls
   document.getElementById('selectAllBtn').addEventListener('click', handleSelectAll);
-  
-  // Big SEND TO AI button
-  document.getElementById('sendToAiBtn').addEventListener('click', sendToAI);
+  document.getElementById('copySelectedBtn').addEventListener('click', handleCopySelected);
+  document.getElementById('downloadSelectedBtn').addEventListener('click', handleDownloadSelected);
+  document.getElementById('exportPdfBtn').addEventListener('click', handleExportPDF);
   
   // Preview modal
   document.getElementById('previewClose').addEventListener('click', closePreview);
@@ -994,13 +994,11 @@ function updateThumbnails() {
     `;
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';
-    document.getElementById('sendToAiBtn').style.display = 'none';
     return;
   }
   
-  // Show selection bar and SEND TO AI button when snaps exist
+  // Show selection bar when snaps exist
   selectionBar.style.display = 'flex';
-  document.getElementById('sendToAiBtn').style.display = 'block';
   
   currentSnaps.forEach((dataUrl, index) => {
     const thumbnail = document.createElement('div');
@@ -1145,20 +1143,6 @@ function updateSelectAllButton() {
     return msg || fallback;
   };
   btn.textContent = allSelected ? getMessage('deselectAll', 'Deselect All') : getMessage('selectAll', 'Select All');
-}
-
-// SEND TO AI - Copy all selected and open AI platforms
-async function sendToAI() {
-  // First copy selected images
-  await handleCopySelected();
-  
-  // Show helpful alert
-  alert("All selected images copied!\n\nNow just click the + button in ChatGPT, Claude or Grok → Paste from clipboard");
-  
-  // Open AI platforms in new tabs
-  window.open("https://chatgpt.com", "_blank");
-  window.open("https://claude.ai", "_blank");
-  window.open("https://grok.x.ai", "_blank");
 }
 
 // Handle Copy Selected

@@ -237,47 +237,48 @@ function initializeBorderUI() {
   applyZoom();
 }
 
-// Simplify toolbar for snip mode - minimal UI, one line top bar
+// Simplify toolbar for snip mode - only scissors, save snip, exit
 function simplifyToolbarForSnipMode() {
-  // Add snip-mode class for CSS styling
-  document.querySelector('.annotate-container').classList.add('snip-mode');
+  // Hide all tool buttons except scissors (crop)
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+    if (btn.dataset.tool !== 'crop') {
+      btn.style.display = 'none';
+    }
+  });
   
-  // SHOW snip mode instructions banner
-  const snipInstructions = document.getElementById('snipInstructions');
-  if (snipInstructions) snipInstructions.style.display = 'block';
+  // Hide all sticker buttons
+  document.querySelectorAll('.sticker-btn').forEach(btn => {
+    btn.style.display = 'none';
+  });
   
-  // HIDE browser frame controls (not needed for snipping)
-  const browserFrameControls = document.querySelector('.browser-frame-controls');
-  if (browserFrameControls) browserFrameControls.style.display = 'none';
+  // Hide custom stickers area and create button
+  const customStickers = document.getElementById('customStickers');
+  if (customStickers) customStickers.style.display = 'none';
   
-  // HIDE border controls (not needed for snipping)
-  const borderControls = document.querySelector('.border-controls');
-  if (borderControls) borderControls.style.display = 'none';
+  const createStickerBtn = document.getElementById('createStickerBtn');
+  if (createStickerBtn) createStickerBtn.style.display = 'none';
   
-  // Force browser frame and border OFF for snip mode
-  hasBrowserFrame = false;
-  hasBorder = false;
-  updateBrowserFrameOverlay();
-  updateCssBorder();
+  // Hide color picker and brush size
+  const colorPicker = document.getElementById('colorPicker');
+  if (colorPicker) colorPicker.style.display = 'none';
   
-  // Hide entire toolbar row (snip mode only needs canvas for drawing rectangles)
-  const toolbar = document.querySelector('.toolbar');
-  if (toolbar) toolbar.style.display = 'none';
+  const sizeControl = document.querySelector('.size-control');
+  if (sizeControl) sizeControl.style.display = 'none';
   
-  // Hide redo button
-  const redoBtn = document.getElementById('redoBtn');
-  if (redoBtn) redoBtn.style.display = 'none';
+  // Hide undo and clear buttons
+  const undoBtn = document.getElementById('undoBtn');
+  if (undoBtn) undoBtn.style.display = 'none';
+  
+  const clearBtn = document.getElementById('clearBtn');
+  if (clearBtn) clearBtn.style.display = 'none';
   
   // Update save button text
   const saveBtn = document.getElementById('saveBtn');
   if (saveBtn) saveBtn.innerHTML = '💾 Save Snip';
   
-  // Change cancel button to "Exit"
+  // Change cancel button to "Exit Snip Mode"
   const cancelBtn = document.getElementById('cancelBtn');
-  if (cancelBtn) cancelBtn.innerHTML = '✖ Exit';
-  
-  // Set helpful status message
-  updateStatus('Draw a rectangle on the image, then tap inside to save your snip!');
+  if (cancelBtn) cancelBtn.innerHTML = '✖ Exit Snip Mode';
 }
 
 // Setup Full Page Paginated Mode
