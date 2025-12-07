@@ -1989,21 +1989,33 @@ async function sendToAI() {
   // Copy selected images
   await handleCopySelected();
   
-  // Show the toast notification
-  const toast = document.createElement("div");
-  toast.innerHTML = `<div style="position:fixed;top:20px;left:50%;transform:translateX(-50%);
-    background:#000;padding:20px 30px;border-radius:16px;border:3px solid #00d9ff;
-    color:white;font-weight:bold;box-shadow:0 10px 40px rgba(0,217,255,0.6);z-index:99999;
-    text-align:center;max-width:90%;">
-    All images copied! Just click the + → "Paste from clipboard" in your AI
-  </div>`;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 5000);
+  // Show toast with AI platform links (user clicks to choose)
+  const existingToast = document.getElementById('aiToast');
+  if (existingToast) existingToast.remove();
   
-  // Open AI platforms
-  window.open("https://chatgpt.com", "_blank");
-  window.open("https://claude.ai", "_blank");
-  window.open("https://grok.x.ai", "_blank");
+  const toast = document.createElement("div");
+  toast.id = 'aiToast';
+  toast.innerHTML = `
+    <div style="position:fixed;top:10px;left:50%;transform:translateX(-50%);
+      background:#000;padding:15px 20px;border-radius:16px;border:2px solid #00d9ff;
+      color:white;box-shadow:0 10px 40px rgba(0,217,255,0.6);z-index:99999;
+      text-align:center;max-width:95%;font-size:13px;">
+      <div style="margin-bottom:12px;font-weight:bold;">Images copied! Choose your AI:</div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <a href="https://chatgpt.com" target="_blank" style="background:#10a37f;color:white;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:12px;">ChatGPT</a>
+        <a href="https://claude.ai" target="_blank" style="background:#d97706;color:white;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:12px;">Claude</a>
+        <a href="https://grok.x.ai" target="_blank" style="background:#1d9bf0;color:white;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:12px;">Grok</a>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:#888;">Click + in chat → Paste from clipboard</div>
+    </div>
+  `;
+  document.body.appendChild(toast);
+  
+  // Auto-dismiss after 8 seconds
+  setTimeout(() => {
+    const t = document.getElementById('aiToast');
+    if (t) t.remove();
+  }, 8000);
 }
 
 // ===== Download PNG Handler =====
