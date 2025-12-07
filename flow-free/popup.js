@@ -326,7 +326,7 @@ function estimateDataUrlBytes(dataUrl) {
   return Math.ceil((base64Part.length * 3) / 4);
 }
 
-// Open full page annotation editor with paginated view
+// Stitch full page images and save directly to queue (no auto-open editor)
 async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, isAIPlatform = false) {
   const overlay = document.getElementById('fullPageOverlay');
   const overlayStatus = document.getElementById('fullPageStatus');
@@ -338,42 +338,92 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
       throw new Error('No screenshots to stitch');
     }
     
-    overlayStatus.textContent = 'Opening editor...';
+    overlayStatus.textContent = 'Stitching images...';
     
-    // Store screenshots AND viewport dimensions for correct DPR-scaled overlap calculation
-    // Also store isAIPlatform flag (AI platforms use 0% overlap, regular sites use 10%)
-    await chrome.storage.local.set({ 
-      fullPageScreenshots: screenshots,
-      fullPageViewportWidth: viewportWidth,
-      fullPageViewportHeight: viewportHeight,
-      fullPageIsAIPlatform: isAIPlatform
-    });
+    // Load all images
+    const images = await Promise.all(screenshots.map(dataUrl => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+    }));
     
-    // Open annotation screen in full page mode
-    const width = Math.min(1200, screen.width - 100);
-    const height = Math.min(900, screen.height - 100);
-    const left = Math.round((screen.width - width) / 2);
-    const top = Math.round((screen.height - height) / 2);
+    if (images.length === 0) {
+      throw new Error('No images loaded');
+    }
     
-    window.open(
-      'annotate.html?mode=fullpage',
-      'FullPageEditor',
-      `width=${width},height=${height},left=${left},top=${top}`
-    );
+    // Calculate dimensions - use actual image dimensions
+    const imgWidth = images[0].width;
+    const imgHeight = images[0].height;
+    
+    // Calculate overlap (10% for regular sites, 0% for AI platforms)
+    const overlapPercent = isAIPlatform ? 0 : 0.10;
+    const overlapPx = Math.round(imgHeight * overlapPercent);
+    
+    // Calculate total stitched height
+    let totalHeight = imgHeight; // First image full height
+    for (let i = 1; i < images.length; i++) {
+      totalHeight += (images[i].height - overlapPx);
+    }
+    
+    overlayStatus.textContent = 'Creating full page image...';
+    
+    // Create canvas and stitch
+    const canvas = document.createElement('canvas');
+    canvas.width = imgWidth;
+    canvas.height = totalHeight;
+    const ctx = canvas.getContext('2d');
+    
+    // Draw images with overlap
+    let currentY = 0;
+    for (let i = 0; i < images.length; i++) {
+      ctx.drawImage(images[i], 0, currentY);
+      if (i === 0) {
+        currentY += imgHeight - overlapPx;
+      } else {
+        currentY += images[i].height - overlapPx;
+      }
+    }
+    
+    // Convert to data URL (JPEG for smaller size)
+    const stitchedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    
+    overlayStatus.textContent = 'Saving to queue...';
+    
+    // Save directly to queue using FIFO
+    const result = await chrome.storage.session.get({ snaps: [] });
+    let snaps = result.snaps || [];
+    
+    // FIFO: remove oldest if at capacity
+    if (snaps.length >= 9) {
+      snaps.shift();
+    }
+    
+    // Add new full page capture
+    snaps.push(stitchedDataUrl);
+    await chrome.storage.session.set({ snaps });
     
     // Hide overlay and update UI
     overlay.style.display = 'none';
     fullPageButton.disabled = false;
-    status.textContent = `Full page: ${screenshots.length} pages ready to edit`;
+    
+    // Show preview and update gallery
+    showLastCapturePreview(stitchedDataUrl);
+    await loadSnaps();
+    updateUI();
+    
+    status.textContent = 'Full page captured! ✓';
     status.className = 'status active';
+    
+    // Notify background that stitch is complete
+    chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
     
     setTimeout(() => {
       status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
-    }, 3000);
-    
-    // Don't reset capture state here - annotation window will do it when done
-    return;
+    }, 2000);
     
   } catch (error) {
     console.log('[SnapToAI] Full page:', error.message || error);
