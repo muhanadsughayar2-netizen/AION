@@ -242,6 +242,10 @@ function simplifyToolbarForSnipMode() {
   // Add snip-mode class for CSS styling
   document.querySelector('.annotate-container').classList.add('snip-mode');
   
+  // SHOW snip mode instructions banner
+  const snipInstructions = document.getElementById('snipInstructions');
+  if (snipInstructions) snipInstructions.style.display = 'block';
+  
   // HIDE browser frame controls (not needed for snipping)
   const browserFrameControls = document.querySelector('.browser-frame-controls');
   if (browserFrameControls) browserFrameControls.style.display = 'none';
@@ -271,6 +275,9 @@ function simplifyToolbarForSnipMode() {
   // Change cancel button to "Exit"
   const cancelBtn = document.getElementById('cancelBtn');
   if (cancelBtn) cancelBtn.innerHTML = '✖ Exit';
+  
+  // Set helpful status message
+  updateStatus('Draw a rectangle on the image, then tap inside to save your snip!');
 }
 
 // Setup Full Page Paginated Mode

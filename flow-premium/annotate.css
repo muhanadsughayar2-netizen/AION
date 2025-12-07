@@ -69,6 +69,27 @@ body {
   font-weight: 500;
 }
 
+/* Snip Mode Instructions Banner */
+.snip-instructions {
+  background: linear-gradient(135deg, #007AFF 0%, #0056b3 100%);
+  color: #fff;
+  padding: 12px 20px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.4;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.snip-instructions-text {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.snip-instructions strong {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
 .zoom-controls {
   display: flex;
   align-items: center;
