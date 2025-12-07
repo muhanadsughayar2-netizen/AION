@@ -210,12 +210,23 @@ function translateUI() {
     return msg || fallback;
   };
   
-  document.querySelector('.status').textContent = getMessage('flowReady', 'Flow: Ready');
-  document.getElementById('selectAllBtn').textContent = getMessage('selectAll', 'Select All');
-  document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Copy Selected');
-  document.getElementById('downloadSelectedBtn').textContent = getMessage('downloadSelected', 'Download Selected');
-  document.getElementById('exportPdfBtn').textContent = '📄 ' + getMessage('exportPDF', 'Export PDF');
-  document.getElementById('clearButton').textContent = getMessage('clearAll', 'Clear All');
+  const statusEl = document.querySelector('.status');
+  if (statusEl) statusEl.textContent = getMessage('flowReady', 'SnapToAI: Ready');
+  
+  const selectAllBtn = document.getElementById('selectAllBtn');
+  if (selectAllBtn) selectAllBtn.textContent = getMessage('selectAll', 'Select All');
+  
+  const selectAllGalleryBtn = document.getElementById('selectAllGalleryBtn');
+  if (selectAllGalleryBtn) selectAllGalleryBtn.textContent = getMessage('selectAll', 'Select All');
+  
+  const exportPdfBtn = document.getElementById('exportPdfBtn');
+  if (exportPdfBtn) exportPdfBtn.textContent = '📄 ' + getMessage('exportPDF', 'Export PDF');
+  
+  const exportLongImageBtn = document.getElementById('exportLongImageBtn');
+  if (exportLongImageBtn) exportLongImageBtn.textContent = '🖼️ ' + getMessage('oneLongImage', 'One Long Image');
+  
+  const clearButton = document.getElementById('clearButton');
+  if (clearButton) clearButton.textContent = getMessage('clearAll', 'Clear All');
   
   // Translate PDF modal
   const pdfOptions = document.querySelectorAll('.pdf-option-text strong');
