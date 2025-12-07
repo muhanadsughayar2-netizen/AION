@@ -51,6 +51,24 @@ body {
   box-shadow: 0 1px 3px rgba(0,122,255,0.1);
 }
 
+/* SNIP MODE - Simplified single-line top bar */
+.snip-mode .top-bar {
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 12px;
+  padding: 6px 16px;
+}
+
+.snip-mode .toolbar {
+  display: none !important;
+}
+
+.snip-mode .status-bar {
+  background: #007AFF;
+  color: #fff;
+  font-weight: 500;
+}
+
 .zoom-controls {
   display: flex;
   align-items: center;
