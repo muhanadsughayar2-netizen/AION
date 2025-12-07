@@ -1988,10 +1988,161 @@ async function sendToAI() {
   window.open("https://grok.x.ai", "_blank");
 }
 
-// Add event listener for SEND TO AI button (CSP compliant - no inline onclick)
+// Add event listeners for action buttons (CSP compliant - no inline onclick)
 document.addEventListener('DOMContentLoaded', () => {
+  // SEND TO AI button
   const sendToAIBtn = document.getElementById('sendToAIBtn');
   if (sendToAIBtn) {
     sendToAIBtn.addEventListener('click', sendToAI);
   }
+  
+  // Select All small button
+  const selectAllBtnSmall = document.getElementById('selectAllBtnSmall');
+  if (selectAllBtnSmall) {
+    selectAllBtnSmall.addEventListener('click', () => {
+      // Select all snaps
+      if (currentSnaps.length > 0) {
+        currentSnaps.forEach((_, index) => {
+          selectedSnapIds.add(index);
+        });
+        updateThumbnails();
+        const status = document.getElementById('status');
+        status.textContent = `All ${currentSnaps.length} selected ✓`;
+        status.className = 'status active';
+        setTimeout(() => {
+          status.textContent = 'SnapToAI: Ready';
+          status.className = 'status';
+        }, 1500);
+      }
+    });
+  }
+  
+  // Download PNG button - downloads all selected as separate PNGs
+  const downloadPngBtn = document.getElementById('downloadPngBtn');
+  if (downloadPngBtn) {
+    downloadPngBtn.addEventListener('click', async () => {
+      // Select all if none selected
+      if (selectedSnapIds.size === 0 && currentSnaps.length > 0) {
+        currentSnaps.forEach((_, index) => {
+          selectedSnapIds.add(index);
+        });
+        updateThumbnails();
+      }
+      
+      if (selectedSnapIds.size === 0) return;
+      
+      const status = document.getElementById('status');
+      status.textContent = 'Downloading PNGs...';
+      status.className = 'status active';
+      
+      // Download each selected image as PNG
+      let count = 0;
+      for (const index of selectedSnapIds) {
+        const dataUrl = currentSnaps[index];
+        if (dataUrl) {
+          const link = document.createElement('a');
+          link.download = `screenshot_${index + 1}.png`;
+          link.href = dataUrl;
+          link.click();
+          count++;
+          await new Promise(r => setTimeout(r, 200)); // Small delay between downloads
+        }
+      }
+      
+      status.textContent = `${count} PNG(s) downloaded ✓`;
+      setTimeout(() => {
+        status.textContent = 'SnapToAI: Ready';
+        status.className = 'status';
+      }, 2000);
+    });
+  }
+  
+  // Download PDF button - combines all selected into one high-quality PDF
+  const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+  if (downloadPdfBtn) {
+    downloadPdfBtn.addEventListener('click', async () => {
+      // Select all if none selected
+      if (selectedSnapIds.size === 0 && currentSnaps.length > 0) {
+        currentSnaps.forEach((_, index) => {
+          selectedSnapIds.add(index);
+        });
+        updateThumbnails();
+      }
+      
+      if (selectedSnapIds.size === 0) return;
+      
+      const status = document.getElementById('status');
+      status.textContent = 'Creating PDF...';
+      status.className = 'status active';
+      
+      try {
+        // Get selected snaps in order
+        const selectedSnaps = [];
+        for (const index of [...selectedSnapIds].sort((a, b) => a - b)) {
+          if (currentSnaps[index]) {
+            selectedSnaps.push(currentSnaps[index]);
+          }
+        }
+        
+        // Create high-quality PDF using jsPDF
+        const { jsPDF } = window.jspdf;
+        
+        // Calculate dimensions for first image to set PDF size
+        const firstImg = await loadImage(selectedSnaps[0]);
+        const pdfWidth = firstImg.width;
+        const pdfHeight = firstImg.height * selectedSnaps.length;
+        
+        // Create PDF with custom size (in mm, convert from pixels at 72 DPI)
+        const pdf = new jsPDF({
+          orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
+          unit: 'px',
+          format: [pdfWidth, pdfHeight],
+          compress: false
+        });
+        
+        // Add each image
+        let yOffset = 0;
+        for (let i = 0; i < selectedSnaps.length; i++) {
+          const img = await loadImage(selectedSnaps[i]);
+          
+          if (i > 0) {
+            // Add new page for each additional image
+            pdf.addPage([img.width, img.height]);
+            yOffset = 0;
+          }
+          
+          pdf.addImage(selectedSnaps[i], 'PNG', 0, 0, img.width, img.height, undefined, 'FAST');
+        }
+        
+        // Save the PDF
+        const timestamp = new Date().toISOString().slice(0, 10);
+        pdf.save(`SnapToAI_${timestamp}.pdf`);
+        
+        status.textContent = `PDF created (${selectedSnaps.length} pages) ✓`;
+        setTimeout(() => {
+          status.textContent = 'SnapToAI: Ready';
+          status.className = 'status';
+        }, 2000);
+        
+      } catch (error) {
+        console.error('PDF creation error:', error);
+        status.textContent = 'PDF failed - try again';
+        status.className = 'status error';
+        setTimeout(() => {
+          status.textContent = 'SnapToAI: Ready';
+          status.className = 'status';
+        }, 2000);
+      }
+    });
+  }
 });
+
+// Helper to load image and get dimensions
+function loadImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}

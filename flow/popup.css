@@ -1046,28 +1046,41 @@ html[dir="rtl"] .logo-word {
 #actionButtonsContainer {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
-/* Select All Button - matches logo style */
-#actionButtonsContainer .select-all-btn {
+/* Small buttons row - 3 buttons in one line */
+.small-buttons-row {
+  display: flex;
+  gap: 8px;
   width: 100%;
+}
+
+.small-action-btn {
+  flex: 1;
   background: transparent;
-  border: 2px solid #00d9ff;
+  border: 1.5px solid rgba(0, 217, 255, 0.5);
   color: #00d9ff;
-  font-weight: 700;
-  font-size: 14px;
-  padding: 12px 20px;
-  border-radius: 12px;
+  font-weight: 600;
+  font-size: 11px;
+  padding: 8px 6px;
+  border-radius: 8px;
   cursor: pointer;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
 }
 
-#actionButtonsContainer .select-all-btn:hover {
+.small-action-btn:hover {
   background: rgba(0, 217, 255, 0.15);
-  box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+  border-color: #00d9ff;
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.25);
+}
+
+/* Primary button (PDF) - slightly more prominent */
+.small-action-btn.primary {
+  background: rgba(0, 217, 255, 0.15);
+  border-color: #00d9ff;
 }
 
 /* SEND TO AI Button - matches logo gradient style (cyan/blue) */
