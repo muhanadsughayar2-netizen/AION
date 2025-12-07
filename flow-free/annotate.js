@@ -274,7 +274,7 @@ function simplifyToolbarForSnipMode() {
   
   // Update save button text
   const saveBtn = document.getElementById('saveBtn');
-  if (saveBtn) saveBtn.innerHTML = '✂️ Save Snip';
+  if (saveBtn) saveBtn.innerHTML = '💾 Save Snip';
   
   // Change cancel button to "Exit Snip Mode"
   const cancelBtn = document.getElementById('cancelBtn');
@@ -1049,13 +1049,13 @@ function drawCropRect() {
   ctx.fillRect(x - handleSize/2, y + height - handleSize/2, handleSize, handleSize);
   ctx.fillRect(x + width - handleSize/2, y + height - handleSize/2, handleSize, handleSize);
   
-  // Draw scissors icon - DEAD CENTER in crop box
+  // Draw "TAP TO SNIP" text in center
   ctx.save();
-  ctx.font = '48px Arial';
+  ctx.font = 'bold 16px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#007AFF';
-  ctx.fillText('✂️', x + width/2, y + height/2);
+  ctx.fillText('TAP TO SNIP', x + width/2, y + height/2);
   ctx.restore();
 }
 
