@@ -739,13 +739,23 @@ function handleMouseDown(e) {
   
   // Handle crop tool
   if (currentTool === 'crop') {
-    // Check if user clicked inside existing crop rectangle to APPLY it
+    // Check if user clicked inside existing crop rectangle
     if (cropRect) {
       const { x, y, width, height } = cropRect;
       if (startX >= x && startX <= x + width && startY >= y && startY <= y + height) {
-        // Clicked inside crop area - APPLY the crop
-        applyCrop();
-        return;
+        // Check if we're in SNIP MODE - save to queue and keep original image
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode');
+        
+        if (mode === 'snip') {
+          // SNIP MODE: Save snip to queue, keep original image for more snips
+          saveSnipToQueue();
+          return;
+        } else {
+          // NORMAL MODE: Apply crop permanently
+          applyCrop();
+          return;
+        }
       }
     }
     
@@ -1110,6 +1120,77 @@ function applyCrop() {
   
   updateStatus(`Cropped to ${width}x${height}. Continue editing or save.`);
   console.log('[SnapToAI] Crop applied successfully');
+}
+
+// SNIP MODE: Save snip to queue WITHOUT modifying the original image
+// Allows multiple snips from the same source image
+async function saveSnipToQueue() {
+  if (!cropRect) {
+    updateStatus('Draw a rectangle first to snip an area.');
+    return;
+  }
+  
+  const { x, y, width, height } = cropRect;
+  
+  // Validate dimensions
+  if (width < 10 || height < 10) {
+    updateStatus('Snip area too small.');
+    return;
+  }
+  
+  try {
+    // Create temporary canvas for the snipped region
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    // Draw the snipped region from original image (NOT modifying original)
+    tempCtx.putImageData(
+      originalImage,
+      -x, -y,
+      x, y, width, height
+    );
+    
+    // Apply border and browser frame decoration if enabled
+    let snipDataUrl;
+    if (hasBorder || hasBrowserFrame) {
+      const decoratedCanvas = applyBorderDecoration(tempCanvas);
+      snipDataUrl = decoratedCanvas.toDataURL('image/png');
+    } else {
+      snipDataUrl = tempCanvas.toDataURL('image/png');
+    }
+    
+    // Send as new snap (add to queue)
+    const response = await chrome.runtime.sendMessage({
+      action: 'snipComplete',
+      dataUrl: snipDataUrl
+    });
+    
+    // Check if queue is full
+    if (response && response.queueFull) {
+      alert(response.error || 'Queue full (9/9). Delete some images first.');
+      return;
+    }
+    
+    if (response && !response.success) {
+      updateStatus(response.error || 'Failed to save snip.');
+      return;
+    }
+    
+    // Clear crop rectangle but KEEP original image intact
+    cropRect = null;
+    
+    // Redraw the original image (ready for more snips)
+    redraw();
+    
+    updateStatus('Snip saved! Draw another area to snip more.');
+    console.log('[SnapToAI] Snip saved to queue, original preserved for more snips');
+    
+  } catch (error) {
+    console.error('[SnapToAI] Snip save error:', error);
+    updateStatus('Failed to save snip. Try again.');
+  }
 }
 
 function findAnnotation(x, y) {
