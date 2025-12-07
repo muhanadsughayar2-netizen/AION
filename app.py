@@ -1,10 +1,15 @@
 from flask import Flask, send_from_directory, request, redirect, Response
 import os
 import mimetypes
+import logging
 
-# Disable automatic static folder - we'll handle all routing manually
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__, static_folder=None)
 app.url_map.strict_slashes = False
+
+logger.info("Flask app initialized successfully")
 
 # Handle www redirect
 @app.before_request
@@ -25,12 +30,11 @@ SUPPORTED_LANGUAGES = {
 
 BASE_DIR = 'landing-page'
 
-def serve_file(filepath):
+def serve_file(filepath, fallback=True):
     """Read file from disk and serve directly to bypass caching"""
     try:
         mime_type, _ = mimetypes.guess_type(filepath)
         
-        # Binary files (images, etc.) need binary mode
         binary_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp', '.svg', '.woff', '.woff2', '.ttf', '.eot'}
         is_binary = any(filepath.lower().endswith(ext) for ext in binary_extensions)
         
@@ -47,7 +51,13 @@ def serve_file(filepath):
         response.headers['Expires'] = '0'
         return response
     except FileNotFoundError:
-        return serve_file(os.path.join(BASE_DIR, 'index.html'))
+        if fallback:
+            return serve_file(os.path.join(BASE_DIR, 'index.html'), fallback=False)
+        logger.error(f"File not found: {filepath}")
+        return Response("File not found", status=404)
+    except Exception as e:
+        logger.error(f"Error serving file {filepath}: {e}")
+        return Response("Internal server error", status=500)
 
 @app.after_request
 def add_headers(response):
