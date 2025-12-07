@@ -365,6 +365,34 @@ body {
   transform: scale(0.98);
 }
 
+/* Big SEND TO AI Button */
+.send-to-ai-btn {
+  width: 100%;
+  background: #00ffaa;
+  color: #000;
+  border: none;
+  padding: 16px 24px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 8px 0;
+  box-shadow: 0 4px 15px rgba(0, 255, 170, 0.4), 0 0 30px rgba(0, 255, 170, 0.2);
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.send-to-ai-btn:hover {
+  background: #00ff99;
+  box-shadow: 0 6px 25px rgba(0, 255, 170, 0.5), 0 0 40px rgba(0, 255, 170, 0.3);
+  transform: translateY(-2px);
+}
+
+.send-to-ai-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
 /* Thumbnails Container */
 .thumbnails-container {
   flex: 1;
