@@ -936,9 +936,24 @@ function updateUI() {
   updateClearButton();
 }
 
-// Update snap counter
+// Update snap counter with green styling when full
 function updateCounter() {
-  document.getElementById('snapCount').textContent = currentSnaps.length;
+  const snapCountEl = document.getElementById('snapCount');
+  const counterWrapper = document.getElementById('counterWrapper');
+  const counterCheck = document.getElementById('counterCheck');
+  const maxSnapsEl = document.getElementById('maxSnaps');
+  
+  const maxSnaps = parseInt(maxSnapsEl?.textContent) || 9;
+  snapCountEl.textContent = currentSnaps.length;
+  
+  // Check if counter is full
+  if (currentSnaps.length === maxSnaps) {
+    counterWrapper.classList.add('counter-full');
+    counterCheck.textContent = ' ✓';
+  } else {
+    counterWrapper.classList.remove('counter-full');
+    counterCheck.textContent = '';
+  }
 }
 
 // Dynamically adjust popup height based on number of screenshots

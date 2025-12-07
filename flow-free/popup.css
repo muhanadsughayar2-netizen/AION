@@ -1090,3 +1090,15 @@ html[dir="rtl"] .logo-word {
       0 4px 15px rgba(0, 0, 0, 0.3);
   }
 }
+
+/* Counter full state - bright green with checkmark */
+.counter.counter-full {
+  color: #00ffaa !important;
+  font-weight: 900 !important;
+  text-shadow: 0 0 10px rgba(0, 255, 170, 0.6);
+}
+
+.counter.counter-full #counterCheck {
+  color: #00ffaa;
+  font-weight: 900;
+}
