@@ -938,7 +938,21 @@ function updateUI() {
 
 // Update snap counter
 function updateCounter() {
-  document.getElementById('snapCount').textContent = currentSnaps.length;
+  const countEl = document.getElementById('snapCount');
+  const counterWrapper = document.querySelector('.counter');
+  const count = currentSnaps.length;
+  
+  if (count === 9) {
+    // Full! Show green with checkmark
+    countEl.textContent = count;
+    counterWrapper.innerHTML = `<span id="snapCount" class="counter-full">${count}</span> / <span class="counter-full">9</span> <span class="counter-check">✓</span>`;
+    counterWrapper.classList.add('counter-ready');
+  } else {
+    // Normal display
+    countEl.textContent = count;
+    counterWrapper.innerHTML = `<span id="snapCount">${count}</span> / <span>9</span>`;
+    counterWrapper.classList.remove('counter-ready');
+  }
 }
 
 // Dynamically adjust popup height based on number of screenshots

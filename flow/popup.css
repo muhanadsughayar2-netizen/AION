@@ -89,11 +89,29 @@ body {
   font-size: 12px;
   color: #888;
   font-weight: 600;
+  transition: all 0.3s ease;
 }
 
 #snapCount {
   color: #00d9ff;
   font-weight: 700;
+}
+
+/* Counter when queue is full (9/9) */
+.counter-ready {
+  color: #00ffaa !important;
+}
+
+.counter-full {
+  color: #00ffaa !important;
+  font-weight: 700 !important;
+}
+
+.counter-check {
+  color: #00ffaa;
+  font-weight: 700;
+  margin-left: 4px;
+  text-shadow: 0 0 8px rgba(0, 255, 170, 0.5);
 }
 
 /* Status Line */
