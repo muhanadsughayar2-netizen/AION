@@ -1989,7 +1989,7 @@ async function sendToAI() {
   // Copy selected images
   await handleCopySelected();
   
-  // Show toast with AI platform links (user clicks to choose)
+  // Show toast with AI platform buttons (uses smart tab opening)
   const existingToast = document.getElementById('aiToast');
   if (existingToast) existingToast.remove();
   
@@ -2002,20 +2002,43 @@ async function sendToAI() {
       text-align:center;max-width:95%;font-size:13px;">
       <div style="margin-bottom:12px;font-weight:bold;">Images copied! Choose your AI:</div>
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-        <a href="https://chatgpt.com" target="_blank" style="background:#10a37f;color:white;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:12px;">ChatGPT</a>
-        <a href="https://claude.ai" target="_blank" style="background:#d97706;color:white;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:12px;">Claude</a>
-        <a href="https://grok.x.ai" target="_blank" style="background:#1d9bf0;color:white;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:12px;">Grok</a>
+        <button id="openChatGPT" style="background:#10a37f;color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-weight:bold;font-size:12px;">ChatGPT</button>
+        <button id="openClaude" style="background:#d97706;color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-weight:bold;font-size:12px;">Claude</button>
+        <button id="openGrok" style="background:#1d9bf0;color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-weight:bold;font-size:12px;">Grok</button>
       </div>
       <div style="margin-top:10px;font-size:11px;color:#888;">Click + in chat → Paste from clipboard</div>
     </div>
   `;
   document.body.appendChild(toast);
   
+  // Add click handlers for smart tab opening (reuse existing tabs)
+  document.getElementById('openChatGPT').addEventListener('click', () => openOrFocusTab('https://chatgpt.com'));
+  document.getElementById('openClaude').addEventListener('click', () => openOrFocusTab('https://claude.ai'));
+  document.getElementById('openGrok').addEventListener('click', () => openOrFocusTab('https://grok.x.ai'));
+  
   // Auto-dismiss after 8 seconds
   setTimeout(() => {
     const t = document.getElementById('aiToast');
     if (t) t.remove();
   }, 8000);
+}
+
+// Smart tab opener - reuses existing tab if already open
+async function openOrFocusTab(url) {
+  const domain = new URL(url).hostname;
+  
+  // Search for existing tabs with this domain
+  const tabs = await chrome.tabs.query({});
+  const existingTab = tabs.find(tab => tab.url && tab.url.includes(domain));
+  
+  if (existingTab) {
+    // Focus the existing tab
+    await chrome.tabs.update(existingTab.id, { active: true });
+    await chrome.windows.update(existingTab.windowId, { focused: true });
+  } else {
+    // Open new tab
+    chrome.tabs.create({ url: url });
+  }
 }
 
 // ===== Download PNG Handler =====
