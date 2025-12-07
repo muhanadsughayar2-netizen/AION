@@ -1976,51 +1976,77 @@ async function handleDeleteSnap(index) {
   }
 }
 
-// ===== SEND TO AI - One-click magic =====
+// ===== SEND TO AI - One-click magic (PDF + clipboard + AI chooser) =====
 async function sendToAI() {
-  // First, select all snaps if none selected
+  // Auto-select all if none selected
   if (selectedSnapIds.size === 0 && currentSnaps.length > 0) {
-    currentSnaps.forEach((_, index) => {
-      selectedSnapIds.add(index);
-    });
+    currentSnaps.forEach((_, index) => selectedSnapIds.add(index));
     updateThumbnails();
   }
   
-  // Copy selected images
-  await handleCopySelected();
+  const snaps = getSelectedSnaps();
+  if (snaps.length === 0) return;
   
-  // Show toast with AI platform buttons (uses smart tab opening)
-  const existingToast = document.getElementById('aiToast');
-  if (existingToast) existingToast.remove();
+  const status = document.getElementById('status');
+  status.textContent = 'Preparing for AI...';
+  status.className = 'status active';
   
-  const toast = document.createElement("div");
-  toast.id = 'aiToast';
-  toast.innerHTML = `
-    <div style="position:fixed;top:10px;left:50%;transform:translateX(-50%);
-      background:#000;padding:15px 20px;border-radius:16px;border:2px solid #00d9ff;
-      color:white;box-shadow:0 10px 40px rgba(0,217,255,0.6);z-index:99999;
-      text-align:center;max-width:95%;font-size:13px;">
-      <div style="margin-bottom:12px;font-weight:bold;">Images copied! Choose your AI:</div>
-      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-        <button id="openChatGPT" style="background:#10a37f;color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-weight:bold;font-size:12px;">ChatGPT</button>
-        <button id="openClaude" style="background:#d97706;color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-weight:bold;font-size:12px;">Claude</button>
-        <button id="openGrok" style="background:#1d9bf0;color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-weight:bold;font-size:12px;">Grok</button>
+  try {
+    // Copy images to clipboard (for paste workflow)
+    await handleCopySelected();
+    
+    // Also download combined PDF (for upload workflow)
+    const pdf = await buildCombinedPDF(snaps);
+    const timestamp = new Date().toISOString().slice(0, 10);
+    pdf.save(`SnapToAI_${timestamp}.pdf`);
+    
+    status.textContent = `Ready! Choose your AI`;
+    
+    // Show toast with AI platform buttons
+    const existingToast = document.getElementById('aiToast');
+    if (existingToast) existingToast.remove();
+    
+    const toast = document.createElement("div");
+    toast.id = 'aiToast';
+    toast.innerHTML = `
+      <div style="position:fixed;top:10px;left:50%;transform:translateX(-50%);
+        background:#000;padding:15px 20px;border-radius:16px;border:2px solid #00d9ff;
+        color:white;box-shadow:0 10px 40px rgba(0,217,255,0.6);z-index:99999;
+        text-align:center;max-width:95%;font-size:13px;">
+        <div style="margin-bottom:8px;font-weight:bold;color:#0f0;">PDF Downloaded + Images Copied!</div>
+        <div style="margin-bottom:12px;font-size:11px;color:#ccc;">Choose your AI platform:</div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+          <button id="openChatGPT" style="background:#10a37f;color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-weight:bold;font-size:12px;">ChatGPT</button>
+          <button id="openClaude" style="background:#d97706;color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-weight:bold;font-size:12px;">Claude</button>
+          <button id="openGrok" style="background:#1d9bf0;color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-weight:bold;font-size:12px;">Grok</button>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:#888;">Paste images OR attach the PDF file</div>
       </div>
-      <div style="margin-top:10px;font-size:11px;color:#888;">Click + in chat → Paste from clipboard</div>
-    </div>
-  `;
-  document.body.appendChild(toast);
-  
-  // Add click handlers for smart tab opening (reuse existing tabs)
-  document.getElementById('openChatGPT').addEventListener('click', () => openOrFocusTab('https://chatgpt.com'));
-  document.getElementById('openClaude').addEventListener('click', () => openOrFocusTab('https://claude.ai'));
-  document.getElementById('openGrok').addEventListener('click', () => openOrFocusTab('https://grok.x.ai'));
-  
-  // Auto-dismiss after 8 seconds
-  setTimeout(() => {
-    const t = document.getElementById('aiToast');
-    if (t) t.remove();
-  }, 8000);
+    `;
+    document.body.appendChild(toast);
+    
+    // Add click handlers for smart tab opening (reuse existing tabs)
+    document.getElementById('openChatGPT').addEventListener('click', () => openOrFocusTab('https://chatgpt.com'));
+    document.getElementById('openClaude').addEventListener('click', () => openOrFocusTab('https://claude.ai'));
+    document.getElementById('openGrok').addEventListener('click', () => openOrFocusTab('https://grok.x.ai'));
+    
+    // Auto-dismiss after 10 seconds
+    setTimeout(() => {
+      const t = document.getElementById('aiToast');
+      if (t) t.remove();
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 10000);
+    
+  } catch (error) {
+    console.error('Send to AI error:', error);
+    status.textContent = 'Failed - try again';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 2000);
+  }
 }
 
 // Smart tab opener - reuses existing tab if already open
@@ -2041,106 +2067,179 @@ async function openOrFocusTab(url) {
   }
 }
 
-// ===== Download PNG Handler =====
-async function handleDownloadPNG() {
-  // Select all if none selected
+// ===== Helper: Load image and get dimensions =====
+function loadImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
+// ===== Helper: Get selected snaps in order =====
+function getSelectedSnaps() {
   if (selectedSnapIds.size === 0 && currentSnaps.length > 0) {
-    currentSnaps.forEach((_, index) => {
-      selectedSnapIds.add(index);
-    });
+    currentSnaps.forEach((_, index) => selectedSnapIds.add(index));
     updateThumbnails();
   }
   
-  if (selectedSnapIds.size === 0) return;
-  
-  const status = document.getElementById('status');
-  status.textContent = 'Downloading PNGs...';
-  status.className = 'status active';
-  
-  // Download each selected image as PNG
-  let count = 0;
-  for (const index of selectedSnapIds) {
-    const dataUrl = currentSnaps[index];
-    if (dataUrl) {
-      const link = document.createElement('a');
-      link.download = `screenshot_${index + 1}.png`;
-      link.href = dataUrl;
-      link.click();
-      count++;
-      await new Promise(r => setTimeout(r, 200)); // Small delay between downloads
+  const snaps = [];
+  for (const index of [...selectedSnapIds].sort((a, b) => a - b)) {
+    if (currentSnaps[index]) {
+      snaps.push(currentSnaps[index]);
     }
   }
+  return snaps;
+}
+
+// ===== Build Combined PNG (stitches all images vertically) =====
+async function buildCombinedPNG(snaps) {
+  if (snaps.length === 0) return null;
   
-  status.textContent = `${count} PNG(s) downloaded ✓`;
-  setTimeout(() => {
-    status.textContent = 'SnapToAI: Ready';
-    status.className = 'status';
-  }, 2000);
+  // Load all images and calculate total height
+  const images = await Promise.all(snaps.map(s => loadImage(s)));
+  const maxWidth = Math.max(...images.map(img => img.width));
+  const totalHeight = images.reduce((sum, img) => sum + img.height, 0);
+  
+  // Create combined canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = maxWidth;
+  canvas.height = totalHeight;
+  const ctx = canvas.getContext('2d');
+  
+  // Draw each image stacked vertically
+  let yOffset = 0;
+  for (const img of images) {
+    ctx.drawImage(img, 0, yOffset, img.width, img.height);
+    yOffset += img.height;
+  }
+  
+  return canvas.toDataURL('image/png');
+}
+
+// ===== Ensure jsPDF is loaded =====
+async function ensureJsPDFLoaded() {
+  if (window.jspdf && window.jspdf.jsPDF) return true;
+  
+  // Wait up to 2 seconds for jsPDF to load
+  for (let i = 0; i < 20; i++) {
+    await new Promise(r => setTimeout(r, 100));
+    if (window.jspdf && window.jspdf.jsPDF) return true;
+  }
+  return false;
+}
+
+// ===== Build Combined PDF =====
+async function buildCombinedPDF(snaps) {
+  if (snaps.length === 0) return null;
+  
+  // Ensure jsPDF is loaded
+  const loaded = await ensureJsPDFLoaded();
+  if (!loaded) {
+    throw new Error('PDF library not loaded - please try again');
+  }
+  
+  const { jsPDF } = window.jspdf;
+  const images = await Promise.all(snaps.map(s => loadImage(s)));
+  
+  // Use A4 size for cleaner output
+  const pageWidth = 210; // mm
+  const pageHeight = 297; // mm
+  const margin = 10;
+  const maxW = pageWidth - (2 * margin);
+  const maxH = pageHeight - (2 * margin);
+  
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  
+  for (let i = 0; i < snaps.length; i++) {
+    if (i > 0) pdf.addPage();
+    
+    const img = images[i];
+    const aspectRatio = img.width / img.height;
+    
+    let imgWidth = maxW;
+    let imgHeight = imgWidth / aspectRatio;
+    
+    if (imgHeight > maxH) {
+      imgHeight = maxH;
+      imgWidth = imgHeight * aspectRatio;
+    }
+    
+    const x = (pageWidth - imgWidth) / 2;
+    const y = margin;
+    
+    pdf.addImage(snaps[i], 'PNG', x, y, imgWidth, imgHeight);
+  }
+  
+  return pdf;
+}
+
+// ===== Download PNG Handler (Combined) =====
+async function handleDownloadPNG() {
+  // Auto-select all if none selected
+  if (selectedSnapIds.size === 0 && currentSnaps.length > 0) {
+    currentSnaps.forEach((_, index) => selectedSnapIds.add(index));
+    updateThumbnails();
+  }
+  
+  const snaps = getSelectedSnaps();
+  if (snaps.length === 0) return;
+  
+  const status = document.getElementById('status');
+  status.textContent = 'Creating combined PNG...';
+  status.className = 'status active';
+  
+  try {
+    const combinedPNG = await buildCombinedPNG(snaps);
+    
+    const link = document.createElement('a');
+    const timestamp = new Date().toISOString().slice(0, 10);
+    link.download = `SnapToAI_${timestamp}.png`;
+    link.href = combinedPNG;
+    link.click();
+    
+    status.textContent = `PNG downloaded (${snaps.length} images) ✓`;
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 2000);
+  } catch (error) {
+    console.error('PNG creation error:', error);
+    status.textContent = 'PNG failed - try again';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 2000);
+  }
 }
 
 // ===== Download PDF Handler =====
 async function handleDownloadPDF() {
-  // Select all if none selected
+  // Auto-select all if none selected
   if (selectedSnapIds.size === 0 && currentSnaps.length > 0) {
-    currentSnaps.forEach((_, index) => {
-      selectedSnapIds.add(index);
-    });
+    currentSnaps.forEach((_, index) => selectedSnapIds.add(index));
     updateThumbnails();
   }
   
-  if (selectedSnapIds.size === 0) return;
+  const snaps = getSelectedSnaps();
+  if (snaps.length === 0) return;
   
   const status = document.getElementById('status');
   status.textContent = 'Creating PDF...';
   status.className = 'status active';
   
   try {
-    // Get selected snaps in order
-    const selectedSnaps = [];
-    for (const index of [...selectedSnapIds].sort((a, b) => a - b)) {
-      if (currentSnaps[index]) {
-        selectedSnaps.push(currentSnaps[index]);
-      }
-    }
-    
-    // Create high-quality PDF using jsPDF
-    const { jsPDF } = window.jspdf;
-    
-    // Calculate dimensions for first image to set PDF size
-    const firstImg = await loadImageForPDF(selectedSnaps[0]);
-    const pdfWidth = firstImg.width;
-    const pdfHeight = firstImg.height;
-    
-    // Create PDF with first page size
-    const pdf = new jsPDF({
-      orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
-      unit: 'px',
-      format: [pdfWidth, pdfHeight],
-      compress: false
-    });
-    
-    // Add each image as a page
-    for (let i = 0; i < selectedSnaps.length; i++) {
-      const img = await loadImageForPDF(selectedSnaps[i]);
-      
-      if (i > 0) {
-        // Add new page for each additional image
-        pdf.addPage([img.width, img.height]);
-      }
-      
-      pdf.addImage(selectedSnaps[i], 'PNG', 0, 0, img.width, img.height, undefined, 'FAST');
-    }
-    
-    // Save the PDF
+    const pdf = await buildCombinedPDF(snaps);
     const timestamp = new Date().toISOString().slice(0, 10);
     pdf.save(`SnapToAI_${timestamp}.pdf`);
     
-    status.textContent = `PDF created (${selectedSnaps.length} pages) ✓`;
+    status.textContent = `PDF created (${snaps.length} pages) ✓`;
     setTimeout(() => {
       status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
     }, 2000);
-    
   } catch (error) {
     console.error('PDF creation error:', error);
     status.textContent = 'PDF failed - try again';
@@ -2150,14 +2249,4 @@ async function handleDownloadPDF() {
       status.className = 'status';
     }, 2000);
   }
-}
-
-// Helper to load image and get dimensions
-function loadImageForPDF(dataUrl) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = dataUrl;
-  });
 }
