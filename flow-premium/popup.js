@@ -210,23 +210,12 @@ function translateUI() {
     return msg || fallback;
   };
   
-  const statusEl = document.querySelector('.status');
-  if (statusEl) statusEl.textContent = getMessage('flowReady', 'SnapToAI: Ready');
-  
-  const selectAllBtn = document.getElementById('selectAllBtn');
-  if (selectAllBtn) selectAllBtn.textContent = getMessage('selectAll', 'Select All');
-  
-  const selectAllGalleryBtn = document.getElementById('selectAllGalleryBtn');
-  if (selectAllGalleryBtn) selectAllGalleryBtn.textContent = getMessage('selectAll', 'Select All');
-  
-  const exportPdfBtn = document.getElementById('exportPdfBtn');
-  if (exportPdfBtn) exportPdfBtn.textContent = '📄 ' + getMessage('exportPDF', 'Export PDF');
-  
-  const exportLongImageBtn = document.getElementById('exportLongImageBtn');
-  if (exportLongImageBtn) exportLongImageBtn.textContent = '🖼️ ' + getMessage('oneLongImage', 'One Long Image');
-  
-  const clearButton = document.getElementById('clearButton');
-  if (clearButton) clearButton.textContent = getMessage('clearAll', 'Clear All');
+  document.querySelector('.status').textContent = getMessage('flowReady', 'Flow: Ready');
+  document.getElementById('selectAllBtn').textContent = getMessage('selectAll', 'Select All');
+  document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Copy Selected');
+  document.getElementById('downloadSelectedBtn').textContent = getMessage('downloadSelected', 'Download Selected');
+  document.getElementById('exportPdfBtn').textContent = '📄 ' + getMessage('exportPDF', 'Export PDF');
+  document.getElementById('clearButton').textContent = getMessage('clearAll', 'Clear All');
   
   // Translate PDF modal
   const pdfOptions = document.querySelectorAll('.pdf-option-text strong');
@@ -259,11 +248,6 @@ function setupEventListeners() {
   
   // Selection controls
   document.getElementById('selectAllBtn').addEventListener('click', handleSelectAll);
-  document.getElementById('selectAllGalleryBtn').addEventListener('click', handleSelectAll);
-  
-  // Gallery action buttons
-  document.getElementById('exportPdfBtn').addEventListener('click', handleExportPDF);
-  document.getElementById('exportLongImageBtn').addEventListener('click', handleExportLongImage);
   
   // Big SEND TO AI button
   document.getElementById('sendToAiBtn').addEventListener('click', sendToAI);
@@ -342,7 +326,7 @@ function estimateDataUrlBytes(dataUrl) {
   return Math.ceil((base64Part.length * 3) / 4);
 }
 
-// Stitch full page images and save directly to queue (no auto-open editor)
+// Open full page annotation editor with paginated view
 async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, isAIPlatform = false) {
   const overlay = document.getElementById('fullPageOverlay');
   const overlayStatus = document.getElementById('fullPageStatus');
@@ -354,92 +338,42 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
       throw new Error('No screenshots to stitch');
     }
     
-    overlayStatus.textContent = 'Stitching images...';
+    overlayStatus.textContent = 'Opening editor...';
     
-    // Load all images
-    const images = await Promise.all(screenshots.map(dataUrl => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = dataUrl;
-      });
-    }));
+    // Store screenshots AND viewport dimensions for correct DPR-scaled overlap calculation
+    // Also store isAIPlatform flag (AI platforms use 0% overlap, regular sites use 10%)
+    await chrome.storage.local.set({ 
+      fullPageScreenshots: screenshots,
+      fullPageViewportWidth: viewportWidth,
+      fullPageViewportHeight: viewportHeight,
+      fullPageIsAIPlatform: isAIPlatform
+    });
     
-    if (images.length === 0) {
-      throw new Error('No images loaded');
-    }
+    // Open annotation screen in full page mode
+    const width = Math.min(1200, screen.width - 100);
+    const height = Math.min(900, screen.height - 100);
+    const left = Math.round((screen.width - width) / 2);
+    const top = Math.round((screen.height - height) / 2);
     
-    // Calculate dimensions - use actual image dimensions
-    const imgWidth = images[0].width;
-    const imgHeight = images[0].height;
-    
-    // Calculate overlap (10% for regular sites, 0% for AI platforms)
-    const overlapPercent = isAIPlatform ? 0 : 0.10;
-    const overlapPx = Math.round(imgHeight * overlapPercent);
-    
-    // Calculate total stitched height
-    let totalHeight = imgHeight; // First image full height
-    for (let i = 1; i < images.length; i++) {
-      totalHeight += (images[i].height - overlapPx);
-    }
-    
-    overlayStatus.textContent = 'Creating full page image...';
-    
-    // Create canvas and stitch
-    const canvas = document.createElement('canvas');
-    canvas.width = imgWidth;
-    canvas.height = totalHeight;
-    const ctx = canvas.getContext('2d');
-    
-    // Draw images with overlap
-    let currentY = 0;
-    for (let i = 0; i < images.length; i++) {
-      ctx.drawImage(images[i], 0, currentY);
-      if (i === 0) {
-        currentY += imgHeight - overlapPx;
-      } else {
-        currentY += images[i].height - overlapPx;
-      }
-    }
-    
-    // Convert to data URL (JPEG for smaller size)
-    const stitchedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
-    
-    overlayStatus.textContent = 'Saving to queue...';
-    
-    // Save directly to queue using FIFO
-    const result = await chrome.storage.session.get({ snaps: [] });
-    let snaps = result.snaps || [];
-    
-    // FIFO: remove oldest if at capacity
-    if (snaps.length >= 9) {
-      snaps.shift();
-    }
-    
-    // Add new full page capture
-    snaps.push(stitchedDataUrl);
-    await chrome.storage.session.set({ snaps });
+    window.open(
+      'annotate.html?mode=fullpage',
+      'FullPageEditor',
+      `width=${width},height=${height},left=${left},top=${top}`
+    );
     
     // Hide overlay and update UI
     overlay.style.display = 'none';
     fullPageButton.disabled = false;
-    
-    // Show preview and update gallery
-    showLastCapturePreview(stitchedDataUrl);
-    await loadSnaps();
-    updateUI();
-    
-    status.textContent = 'Full page captured! ✓';
+    status.textContent = `Full page: ${screenshots.length} pages ready to edit`;
     status.className = 'status active';
-    
-    // Notify background that stitch is complete
-    chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
     
     setTimeout(() => {
       status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
-    }, 2000);
+    }, 3000);
+    
+    // Don't reset capture state here - annotation window will do it when done
+    return;
     
   } catch (error) {
     console.log('[SnapToAI] Full page:', error.message || error);
@@ -1004,21 +938,7 @@ function updateUI() {
 
 // Update snap counter
 function updateCounter() {
-  const countEl = document.getElementById('snapCount');
-  const counterWrapper = document.querySelector('.counter');
-  const count = currentSnaps.length;
-  
-  if (count === 9) {
-    // Full! Show green with checkmark
-    countEl.textContent = count;
-    counterWrapper.innerHTML = `<span id="snapCount" class="counter-full">${count}</span> / <span class="counter-full">9</span> <span class="counter-check">✓</span>`;
-    counterWrapper.classList.add('counter-ready');
-  } else {
-    // Normal display
-    countEl.textContent = count;
-    counterWrapper.innerHTML = `<span id="snapCount">${count}</span> / <span>9</span>`;
-    counterWrapper.classList.remove('counter-ready');
-  }
+  document.getElementById('snapCount').textContent = currentSnaps.length;
 }
 
 // Dynamically adjust popup height based on number of screenshots
@@ -1538,93 +1458,6 @@ async function handleExportPDF() {
   
   // Show PDF export modal
   showPDFExportModal();
-}
-
-// Handle Export as One Long Image
-async function handleExportLongImage() {
-  const status = document.getElementById('status');
-  
-  // Get images to combine (selected or all)
-  const selectedIndexes = getSelectedIndexes();
-  let imagesToCombine = [];
-  
-  if (selectedIndexes.length > 0) {
-    // Use selected images
-    imagesToCombine = selectedIndexes.map(i => currentSnaps[i]);
-  } else if (currentSnaps.length > 0) {
-    // Use all images
-    imagesToCombine = [...currentSnaps];
-  } else {
-    status.textContent = 'No images to combine';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 1500);
-    return;
-  }
-  
-  status.textContent = 'Creating long image...';
-  status.className = 'status active';
-  
-  try {
-    // Load all images
-    const images = await Promise.all(imagesToCombine.map(dataUrl => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = dataUrl;
-      });
-    }));
-    
-    // Calculate total dimensions (max width, sum of heights)
-    const maxWidth = Math.max(...images.map(img => img.width));
-    const totalHeight = images.reduce((sum, img) => sum + img.height, 0);
-    
-    // Create canvas
-    const canvas = document.createElement('canvas');
-    canvas.width = maxWidth;
-    canvas.height = totalHeight;
-    const ctx = canvas.getContext('2d');
-    
-    // Fill with white background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw images vertically stacked (centered horizontally)
-    let currentY = 0;
-    for (const img of images) {
-      const x = Math.round((maxWidth - img.width) / 2);
-      ctx.drawImage(img, x, currentY);
-      currentY += img.height;
-    }
-    
-    // Convert to PNG and download
-    const dataUrl = canvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.download = `snaptoai-combined-${Date.now()}.png`;
-    link.href = dataUrl;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    status.textContent = `Combined ${images.length} images ✓`;
-    status.className = 'status active';
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 2000);
-    
-  } catch (error) {
-    console.error('[SnapToAI] Long image export error:', error);
-    status.textContent = 'Export failed';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 1500);
-  }
 }
 
 // Get indexes of selected thumbnails
