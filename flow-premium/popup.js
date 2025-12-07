@@ -1009,15 +1009,15 @@ function updateThumbnails() {
     `;
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';
-    // Hide SEND TO AI button when no snaps
-    const sendToAIContainer = document.getElementById('sendToAIContainer');
-    if (sendToAIContainer) sendToAIContainer.style.display = 'none';
+    // Hide action buttons when no snaps
+    const actionButtonsContainer = document.getElementById('actionButtonsContainer');
+    if (actionButtonsContainer) actionButtonsContainer.style.display = 'none';
     return;
   }
   
-  // Show SEND TO AI button when snaps exist
-  const sendToAIContainer = document.getElementById('sendToAIContainer');
-  if (sendToAIContainer) sendToAIContainer.style.display = 'block';
+  // Show action buttons when snaps exist
+  const actionButtonsContainer = document.getElementById('actionButtonsContainer');
+  if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex';
   selectionBar.style.display = 'none'; // Hide old buttons, keep functional
   
   currentSnaps.forEach((dataUrl, index) => {
@@ -1974,8 +1974,8 @@ async function sendToAI() {
   // Show the toast notification
   const toast = document.createElement("div");
   toast.innerHTML = `<div style="position:fixed;top:20px;left:50%;transform:translateX(-50%);
-    background:#000;padding:20px 30px;border-radius:16px;border:3px solid #00ffaa;
-    color:white;font-weight:bold;box-shadow:0 10px 40px rgba(0,255,170,0.6);z-index:99999;
+    background:#000;padding:20px 30px;border-radius:16px;border:3px solid #00d9ff;
+    color:white;font-weight:bold;box-shadow:0 10px 40px rgba(0,217,255,0.6);z-index:99999;
     text-align:center;max-width:90%;">
     All images copied! Just click the + → "Paste from clipboard" in your AI
   </div>`;
@@ -1988,5 +1988,10 @@ async function sendToAI() {
   window.open("https://grok.x.ai", "_blank");
 }
 
-// Make sendToAI available globally for onclick
-window.sendToAI = sendToAI;
+// Add event listener for SEND TO AI button (CSP compliant - no inline onclick)
+document.addEventListener('DOMContentLoaded', () => {
+  const sendToAIBtn = document.getElementById('sendToAIBtn');
+  if (sendToAIBtn) {
+    sendToAIBtn.addEventListener('click', sendToAI);
+  }
+});

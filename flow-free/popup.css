@@ -1042,10 +1042,39 @@ html[dir="rtl"] .logo-word {
   text-align: center;
 }
 
-/* SEND TO AI Button - Big, bright green, glowing */
+/* Action Buttons Container */
+#actionButtonsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Select All Button - matches logo style */
+#actionButtonsContainer .select-all-btn {
+  width: 100%;
+  background: transparent;
+  border: 2px solid #00d9ff;
+  color: #00d9ff;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+}
+
+#actionButtonsContainer .select-all-btn:hover {
+  background: rgba(0, 217, 255, 0.15);
+  box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+}
+
+/* SEND TO AI Button - matches logo gradient style (cyan/blue) */
 .send-to-ai-btn {
   width: 100%;
-  background: #00ffaa;
+  background: linear-gradient(90deg, #00ffff, #0099ff, #00ffff);
+  background-size: 200% 100%;
   color: #000000;
   font-weight: 900;
   font-size: 16px;
@@ -1056,19 +1085,18 @@ html[dir="rtl"] .logo-word {
   text-transform: uppercase;
   letter-spacing: 1px;
   box-shadow: 
-    0 0 20px rgba(0, 255, 170, 0.5),
-    0 0 40px rgba(0, 255, 170, 0.3),
+    0 0 20px rgba(0, 217, 255, 0.5),
+    0 0 40px rgba(0, 255, 255, 0.3),
     0 4px 15px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
-  animation: sendToAI-glow 2s ease-in-out infinite;
+  animation: sendToAI-glow 2s ease-in-out infinite, gradient-shift 3s ease-in-out infinite;
 }
 
 .send-to-ai-btn:hover {
-  background: #33ffbb;
   transform: translateY(-2px);
   box-shadow: 
-    0 0 30px rgba(0, 255, 170, 0.7),
-    0 0 60px rgba(0, 255, 170, 0.4),
+    0 0 30px rgba(0, 217, 255, 0.7),
+    0 0 60px rgba(0, 255, 255, 0.5),
     0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
@@ -1076,17 +1104,26 @@ html[dir="rtl"] .logo-word {
   transform: translateY(0);
 }
 
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
 @keyframes sendToAI-glow {
   0%, 100% {
     box-shadow: 
-      0 0 20px rgba(0, 255, 170, 0.5),
-      0 0 40px rgba(0, 255, 170, 0.3),
+      0 0 20px rgba(0, 217, 255, 0.5),
+      0 0 40px rgba(0, 255, 255, 0.3),
       0 4px 15px rgba(0, 0, 0, 0.3);
   }
   50% {
     box-shadow: 
-      0 0 30px rgba(0, 255, 170, 0.7),
-      0 0 60px rgba(0, 255, 170, 0.5),
+      0 0 30px rgba(0, 217, 255, 0.7),
+      0 0 60px rgba(0, 255, 255, 0.5),
       0 4px 15px rgba(0, 0, 0, 0.3);
   }
 }
