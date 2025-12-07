@@ -994,11 +994,16 @@ function updateThumbnails() {
     `;
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';
+    // Hide SEND TO AI button when no snaps
+    const sendToAIContainer = document.getElementById('sendToAIContainer');
+    if (sendToAIContainer) sendToAIContainer.style.display = 'none';
     return;
   }
   
-  // Show selection bar when snaps exist
-  selectionBar.style.display = 'flex';
+  // Show SEND TO AI button when snaps exist
+  const sendToAIContainer = document.getElementById('sendToAIContainer');
+  if (sendToAIContainer) sendToAIContainer.style.display = 'block';
+  selectionBar.style.display = 'none'; // Hide old buttons, keep functional
   
   currentSnaps.forEach((dataUrl, index) => {
     const thumbnail = document.createElement('div');
@@ -1937,3 +1942,36 @@ async function handleDeleteSnap(index) {
     }, 2000);
   }
 }
+
+// ===== SEND TO AI - One-click magic =====
+async function sendToAI() {
+  // First, select all snaps if none selected
+  if (selectedSnapIds.size === 0 && currentSnaps.length > 0) {
+    currentSnaps.forEach((_, index) => {
+      selectedSnapIds.add(index);
+    });
+    updateThumbnails();
+  }
+  
+  // Copy selected images
+  await handleCopySelected();
+  
+  // Show the toast notification
+  const toast = document.createElement("div");
+  toast.innerHTML = `<div style="position:fixed;top:20px;left:50%;transform:translateX(-50%);
+    background:#000;padding:20px 30px;border-radius:16px;border:3px solid #00ffaa;
+    color:white;font-weight:bold;box-shadow:0 10px 40px rgba(0,255,170,0.6);z-index:99999;
+    text-align:center;max-width:90%;">
+    All images copied! Just click the + → "Paste from clipboard" in your AI
+  </div>`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 5000);
+  
+  // Open AI platforms
+  window.open("https://chatgpt.com", "_blank");
+  window.open("https://claude.ai", "_blank");
+  window.open("https://grok.x.ai", "_blank");
+}
+
+// Make sendToAI available globally for onclick
+window.sendToAI = sendToAI;

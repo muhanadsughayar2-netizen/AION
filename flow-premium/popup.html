@@ -86,7 +86,14 @@
       <img id="lastCaptureImage" class="last-capture-image" alt="Last capture">
     </div>
 
-    <!-- Selection Controls -->
+    <!-- SEND TO AI - Main Action Button -->
+    <div id="sendToAIContainer" style="display: none; padding: 10px 15px;">
+      <button id="sendToAIBtn" class="send-to-ai-btn" onclick="sendToAI()">
+        SEND TO AI → (ChatGPT / Claude / Grok)
+      </button>
+    </div>
+
+    <!-- Selection Controls (hidden but functional) -->
     <div class="selection-bar" id="selectionBar" style="display: none;">
       <button id="selectAllBtn" class="select-all-btn">Select All</button>
       <button id="copySelectedBtn" class="action-btn">Copy Selected</button>
