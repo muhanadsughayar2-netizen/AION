@@ -250,6 +250,10 @@ function setupEventListeners() {
   document.getElementById('selectAllBtn').addEventListener('click', handleSelectAll);
   document.getElementById('selectAllGalleryBtn').addEventListener('click', handleSelectAll);
   
+  // Gallery action buttons
+  document.getElementById('exportPdfBtn').addEventListener('click', handleExportPDF);
+  document.getElementById('exportLongImageBtn').addEventListener('click', handleExportLongImage);
+  
   // Big SEND TO AI button
   document.getElementById('sendToAiBtn').addEventListener('click', sendToAI);
   
@@ -1523,6 +1527,93 @@ async function handleExportPDF() {
   
   // Show PDF export modal
   showPDFExportModal();
+}
+
+// Handle Export as One Long Image
+async function handleExportLongImage() {
+  const status = document.getElementById('status');
+  
+  // Get images to combine (selected or all)
+  const selectedIndexes = getSelectedIndexes();
+  let imagesToCombine = [];
+  
+  if (selectedIndexes.length > 0) {
+    // Use selected images
+    imagesToCombine = selectedIndexes.map(i => currentSnaps[i]);
+  } else if (currentSnaps.length > 0) {
+    // Use all images
+    imagesToCombine = [...currentSnaps];
+  } else {
+    status.textContent = 'No images to combine';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 1500);
+    return;
+  }
+  
+  status.textContent = 'Creating long image...';
+  status.className = 'status active';
+  
+  try {
+    // Load all images
+    const images = await Promise.all(imagesToCombine.map(dataUrl => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+    }));
+    
+    // Calculate total dimensions (max width, sum of heights)
+    const maxWidth = Math.max(...images.map(img => img.width));
+    const totalHeight = images.reduce((sum, img) => sum + img.height, 0);
+    
+    // Create canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = maxWidth;
+    canvas.height = totalHeight;
+    const ctx = canvas.getContext('2d');
+    
+    // Fill with white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw images vertically stacked (centered horizontally)
+    let currentY = 0;
+    for (const img of images) {
+      const x = Math.round((maxWidth - img.width) / 2);
+      ctx.drawImage(img, x, currentY);
+      currentY += img.height;
+    }
+    
+    // Convert to PNG and download
+    const dataUrl = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = `snaptoai-combined-${Date.now()}.png`;
+    link.href = dataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    status.textContent = `Combined ${images.length} images ✓`;
+    status.className = 'status active';
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 2000);
+    
+  } catch (error) {
+    console.error('[SnapToAI] Long image export error:', error);
+    status.textContent = 'Export failed';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 1500);
+  }
 }
 
 // Get indexes of selected thumbnails

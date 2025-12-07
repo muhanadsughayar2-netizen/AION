@@ -438,6 +438,36 @@ body {
   color: #00ffaa;
 }
 
+.gallery-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.gallery-action-btn {
+  background: rgba(0, 217, 255, 0.1);
+  border: 1px solid rgba(0, 217, 255, 0.3);
+  color: #00d9ff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.gallery-action-btn:hover {
+  background: rgba(0, 217, 255, 0.2);
+  border-color: #00d9ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 217, 255, 0.3);
+}
+
+.gallery-action-btn:active {
+  transform: translateY(0);
+}
+
 .thumbnails-container {
   flex: 1;
   min-height: 0;
