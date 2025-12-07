@@ -1996,26 +1996,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sendToAIBtn.addEventListener('click', sendToAI);
   }
   
-  // Select All small button
-  const selectAllBtnSmall = document.getElementById('selectAllBtnSmall');
-  if (selectAllBtnSmall) {
-    selectAllBtnSmall.addEventListener('click', () => {
-      // Select all snaps
-      if (currentSnaps.length > 0) {
-        currentSnaps.forEach((_, index) => {
-          selectedSnapIds.add(index);
-        });
-        updateThumbnails();
-        const status = document.getElementById('status');
-        status.textContent = `All ${currentSnaps.length} selected ✓`;
-        status.className = 'status active';
-        setTimeout(() => {
-          status.textContent = 'SnapToAI: Ready';
-          status.className = 'status';
-        }, 1500);
-      }
-    });
-  }
+  // Note: selectAllBtn is handled in setupEventListeners() with handleSelectAll()
   
   // Download PNG button - downloads all selected as separate PNGs
   const downloadPngBtn = document.getElementById('downloadPngBtn');
