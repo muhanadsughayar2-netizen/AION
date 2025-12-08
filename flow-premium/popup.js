@@ -211,7 +211,10 @@ function translateUI() {
   };
   
   document.querySelector('.status').textContent = getMessage('flowReady', 'Flow: Ready');
-  document.getElementById('selectAllBtn').textContent = getMessage('selectAll', 'Select All');
+  const selectAllBtnTranslate = document.getElementById('selectAllBtn');
+  if (selectAllBtnTranslate) selectAllBtnTranslate.textContent = getMessage('selectAll', 'Select All');
+  const quickSelectAllBtnTranslate = document.getElementById('quickSelectAllBtn');
+  if (quickSelectAllBtnTranslate) quickSelectAllBtnTranslate.textContent = getMessage('selectAll', 'SELECT ALL');
   document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Copy Selected');
   document.getElementById('downloadSelectedBtn').textContent = getMessage('downloadSelected', 'Download Selected');
   document.getElementById('exportPdfBtn').textContent = '📄 ' + getMessage('exportPDF', 'Export PDF');
@@ -246,8 +249,13 @@ function setupEventListeners() {
   // Clear button
   document.getElementById('clearButton').addEventListener('click', handleClear);
   
-  // Selection controls
-  document.getElementById('selectAllBtn').addEventListener('click', handleSelectAll);
+  // Selection controls (old hidden selection bar)
+  const selectAllBtn = document.getElementById('selectAllBtn');
+  if (selectAllBtn) selectAllBtn.addEventListener('click', handleSelectAll);
+  
+  // Quick select buttons (new layout)
+  const quickSelectAllBtn = document.getElementById('quickSelectAllBtn');
+  if (quickSelectAllBtn) quickSelectAllBtn.addEventListener('click', handleSelectAll);
   document.getElementById('copySelectedBtn').addEventListener('click', handleCopySelected);
   document.getElementById('downloadSelectedBtn').addEventListener('click', handleDownloadSelected);
   document.getElementById('exportPdfBtn').addEventListener('click', handleExportPDF);
@@ -268,6 +276,18 @@ function setupEventListeners() {
   const downloadPdfBtn = document.getElementById('downloadPdfBtn');
   if (downloadPdfBtn) {
     downloadPdfBtn.addEventListener('click', handleDownloadPDF);
+  }
+  
+  // MIX & MATCH button - clears selection so user can pick individually
+  const mixMatchBtn = document.getElementById('mixMatchBtn');
+  if (mixMatchBtn) {
+    mixMatchBtn.addEventListener('click', handleMixMatch);
+  }
+  
+  // EDIT button - opens the annotate screen for the first selected image
+  const editBtn = document.getElementById('editBtn');
+  if (editBtn) {
+    editBtn.addEventListener('click', handleEdit);
   }
   
   // Preview modal
@@ -344,7 +364,7 @@ function estimateDataUrlBytes(dataUrl) {
   return Math.ceil((base64Part.length * 3) / 4);
 }
 
-// Open full page annotation editor with paginated view
+// Stitch full page images directly and save to queue (no editor)
 async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, isAIPlatform = false) {
   const overlay = document.getElementById('fullPageOverlay');
   const overlayStatus = document.getElementById('fullPageStatus');
@@ -356,42 +376,77 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
       throw new Error('No screenshots to stitch');
     }
     
-    overlayStatus.textContent = 'Opening editor...';
+    overlayStatus.textContent = 'Stitching images...';
     
-    // Store screenshots AND viewport dimensions for correct DPR-scaled overlap calculation
-    // Also store isAIPlatform flag (AI platforms use 0% overlap, regular sites use 10%)
-    await chrome.storage.local.set({ 
-      fullPageScreenshots: screenshots,
-      fullPageViewportWidth: viewportWidth,
-      fullPageViewportHeight: viewportHeight,
-      fullPageIsAIPlatform: isAIPlatform
+    // Load all images
+    const images = await Promise.all(screenshots.map(dataUrl => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+    }));
+    
+    // Calculate overlap (10% for regular sites, 0% for AI platforms)
+    const overlapPercent = isAIPlatform ? 0 : 0.10;
+    const cssOverlap = Math.round(viewportHeight * overlapPercent);
+    const captureScale = images[0].height / viewportHeight;
+    const overlap = Math.round(cssOverlap * captureScale);
+    
+    const width = images[0].width;
+    const effectiveHeight = images[0].height - overlap;
+    const totalHeight = images[0].height + (images.length - 1) * effectiveHeight;
+    
+    overlayStatus.textContent = 'Creating final image...';
+    
+    // Create canvas and stitch
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = totalHeight;
+    const ctx = canvas.getContext('2d');
+    
+    let yOffset = 0;
+    for (let i = 0; i < images.length; i++) {
+      const img = images[i];
+      if (i === 0) {
+        ctx.drawImage(img, 0, 0);
+        yOffset = img.height - overlap;
+      } else {
+        ctx.drawImage(img, 0, yOffset, img.width, img.height, 0, yOffset, img.width, img.height);
+        yOffset += effectiveHeight;
+      }
+    }
+    
+    // Convert to PNG and save directly to queue
+    const dataUrl = canvas.toDataURL('image/png');
+    
+    overlayStatus.textContent = 'Saving to queue...';
+    
+    // Save to queue
+    await chrome.runtime.sendMessage({ 
+      action: 'addSnap', 
+      dataUrl: dataUrl 
     });
     
-    // Open annotation screen in full page mode
-    const width = Math.min(1200, screen.width - 100);
-    const height = Math.min(900, screen.height - 100);
-    const left = Math.round((screen.width - width) / 2);
-    const top = Math.round((screen.height - height) / 2);
+    // Notify background that stitch is complete
+    chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
     
-    window.open(
-      'annotate.html?mode=fullpage',
-      'FullPageEditor',
-      `width=${width},height=${height},left=${left},top=${top}`
-    );
+    // Refresh UI
+    await loadSnaps();
+    updateUI();
+    showLastCapturePreview(dataUrl);
     
-    // Hide overlay and update UI
+    // Hide overlay and update status
     overlay.style.display = 'none';
     fullPageButton.disabled = false;
-    status.textContent = `Full page: ${screenshots.length} pages ready to edit`;
+    status.textContent = `Full page captured! ✓`;
     status.className = 'status active';
     
     setTimeout(() => {
       status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
-    }, 3000);
-    
-    // Don't reset capture state here - annotation window will do it when done
-    return;
+    }, 2000);
     
   } catch (error) {
     console.log('[SnapToAI] Full page:', error.message || error);
@@ -841,8 +896,8 @@ async function handleFullPageClick() {
   fullPageButton.disabled = true;
   
   // Check if queue has space
-  if (currentSnaps.length >= 9) {
-    status.textContent = 'Queue full (9/9). Delete some images first.';
+  if (currentSnaps.length >= 18) {
+    status.textContent = 'Queue full (18/18). Delete some images first.';
     status.className = 'status error';
     setTimeout(() => {
       status.textContent = 'SnapToAI: Ready';
@@ -1174,13 +1229,55 @@ function handleSelectAll() {
 
 // Update Select All button text
 function updateSelectAllButton() {
+  const allSelected = selectedSnapIds.size === currentSnaps.length && currentSnaps.length > 0;
+  
+  // Update old selection bar button
   const btn = document.getElementById('selectAllBtn');
-  const allSelected = selectedSnapIds.size === currentSnaps.length;
-  const getMessage = (key, fallback) => {
-    const msg = chrome.i18n.getMessage(key);
-    return msg || fallback;
-  };
-  btn.textContent = allSelected ? getMessage('deselectAll', 'Deselect All') : getMessage('selectAll', 'Select All');
+  if (btn) btn.textContent = allSelected ? 'Deselect All' : 'Select All';
+  
+  // Update quick select button
+  const quickBtn = document.getElementById('quickSelectAllBtn');
+  if (quickBtn) quickBtn.textContent = allSelected ? 'DESELECT ALL' : 'SELECT ALL';
+}
+
+// Handle MIX & MATCH - clears selection so user can tap to pick individually
+function handleMixMatch() {
+  selectedSnapIds.clear();
+  updateThumbnails();
+  
+  const status = document.getElementById('status');
+  status.textContent = 'Tap thumbnails to pick & mix';
+  status.className = 'status active';
+  
+  setTimeout(() => {
+    status.textContent = 'SnapToAI: Ready';
+    status.className = 'status';
+  }, 3000);
+}
+
+// Handle EDIT - opens the annotate screen for the first selected image
+function handleEdit() {
+  if (currentSnaps.length === 0) {
+    const status = document.getElementById('status');
+    status.textContent = 'No snaps to edit';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 1500);
+    return;
+  }
+  
+  // Get first selected, or first snap if none selected
+  let indexToEdit = 0;
+  if (selectedSnapIds.size > 0) {
+    indexToEdit = Math.min(...selectedSnapIds);
+  }
+  
+  const dataUrl = currentSnaps[indexToEdit];
+  if (dataUrl) {
+    openAnnotateScreen(dataUrl, indexToEdit);
+  }
 }
 
 // Handle Copy Selected
