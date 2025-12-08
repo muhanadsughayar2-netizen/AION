@@ -395,8 +395,14 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
     const overlap = Math.round(cssOverlap * captureScale);
     
     const width = images[0].width;
-    const effectiveHeight = images[0].height - overlap;
-    const totalHeight = images[0].height + (images.length - 1) * effectiveHeight;
+    
+    // Calculate total height: first image full + (remaining images - clamped overlap each)
+    let totalHeight = images[0].height;
+    for (let i = 1; i < images.length; i++) {
+      // Clamp overlap to image height (final segment may be shorter)
+      const effectiveOverlap = Math.min(overlap, images[i].height);
+      totalHeight += images[i].height - effectiveOverlap;
+    }
     
     overlayStatus.textContent = 'Creating final image...';
     
@@ -406,15 +412,23 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
     canvas.height = totalHeight;
     const ctx = canvas.getContext('2d');
     
-    let yOffset = 0;
+    let destY = 0;
     for (let i = 0; i < images.length; i++) {
       const img = images[i];
       if (i === 0) {
+        // First image: draw full
         ctx.drawImage(img, 0, 0);
-        yOffset = img.height - overlap;
+        destY = img.height;
       } else {
-        ctx.drawImage(img, 0, yOffset, img.width, img.height, 0, yOffset, img.width, img.height);
-        yOffset += effectiveHeight;
+        // Subsequent images: skip top overlap (it duplicates bottom of previous)
+        // Clamp overlap if image is shorter than expected (e.g., final segment)
+        const effectiveOverlap = Math.min(overlap, img.height);
+        const srcY = effectiveOverlap;
+        const srcHeight = img.height - effectiveOverlap;
+        if (srcHeight > 0) {
+          ctx.drawImage(img, 0, srcY, img.width, srcHeight, 0, destY, img.width, srcHeight);
+          destY += srcHeight;
+        }
       }
     }
     
