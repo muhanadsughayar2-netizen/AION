@@ -101,30 +101,43 @@ def language_assets(lang_code, subpath):
 @app.route('/sitemap.xml')
 def sitemap():
     """Serve XML sitemap for SEO"""
-    filepath = os.path.join(BASE_DIR, 'sitemap.xml')
-    with open(filepath, 'r', encoding='utf-8') as f:
-        content = f.read()
-    response = Response(content, mimetype='application/xml')
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    return response
+    try:
+        filepath = os.path.join(BASE_DIR, 'sitemap.xml')
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+        response = Response(content, mimetype='application/xml')
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
+    except Exception as e:
+        logger.error(f"Error serving sitemap: {e}")
+        return Response("Sitemap not found", status=404)
 
 @app.route('/robots.txt')
 def robots():
     """Serve robots.txt for search engine crawling"""
-    filepath = os.path.join(BASE_DIR, 'robots.txt')
-    with open(filepath, 'r', encoding='utf-8') as f:
-        content = f.read()
-    response = Response(content, mimetype='text/plain')
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    return response
+    try:
+        filepath = os.path.join(BASE_DIR, 'robots.txt')
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+        response = Response(content, mimetype='text/plain')
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
+    except Exception as e:
+        logger.error(f"Error serving robots.txt: {e}")
+        return Response("User-agent: *\nAllow: /", mimetype='text/plain')
 
 @app.errorhandler(404)
 def not_found(e):
     return serve_file(os.path.join(BASE_DIR, 'index.html'))
+
+@app.errorhandler(500)
+def server_error(e):
+    logger.error(f"Server error: {e}")
+    return Response("Internal server error", status=500)
 
 if __name__ == '__main__':
     print('✅ Landing page live at: 0.0.0.0:5000')
