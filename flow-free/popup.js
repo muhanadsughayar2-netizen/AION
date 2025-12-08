@@ -1976,7 +1976,7 @@ async function handleDeleteSnap(index) {
   }
 }
 
-// ===== SEND TO AI - One-click magic (PDF + clipboard + AI chooser) =====
+// ===== SEND TO AI - Lightning fast! Just COPY =====
 async function sendToAI() {
   // Auto-select all if none selected
   if (selectedSnapIds.size === 0 && currentSnaps.length > 0) {
@@ -1984,69 +1984,10 @@ async function sendToAI() {
     updateThumbnails();
   }
   
-  const snaps = getSelectedSnaps();
-  if (snaps.length === 0) return;
+  if (selectedSnapIds.size === 0) return;
   
-  const status = document.getElementById('status');
-  status.textContent = 'Preparing for AI...';
-  status.className = 'status active';
-  
-  try {
-    // Copy images to clipboard (for paste workflow)
-    await handleCopySelected();
-    
-    // Also download combined PDF (for upload workflow)
-    const pdf = await buildCombinedPDF(snaps);
-    const timestamp = new Date().toISOString().slice(0, 10);
-    pdf.save(`SnapToAI_${timestamp}.pdf`);
-    
-    status.textContent = `Ready! Choose your AI`;
-    
-    // Show toast with AI platform buttons
-    const existingToast = document.getElementById('aiToast');
-    if (existingToast) existingToast.remove();
-    
-    const toast = document.createElement("div");
-    toast.id = 'aiToast';
-    toast.innerHTML = `
-      <div style="position:fixed;top:10px;left:50%;transform:translateX(-50%);
-        background:#000;padding:15px 20px;border-radius:16px;border:2px solid #00d9ff;
-        color:white;box-shadow:0 10px 40px rgba(0,217,255,0.6);z-index:99999;
-        text-align:center;max-width:95%;font-size:13px;">
-        <div style="margin-bottom:8px;font-weight:bold;color:#0f0;">PDF Downloaded + Images Copied!</div>
-        <div style="margin-bottom:12px;font-size:11px;color:#ccc;">Choose your AI platform:</div>
-        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-          <button id="openChatGPT" style="background:#10a37f;color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-weight:bold;font-size:12px;">ChatGPT</button>
-          <button id="openClaude" style="background:#d97706;color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-weight:bold;font-size:12px;">Claude</button>
-          <button id="openGrok" style="background:#1d9bf0;color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-weight:bold;font-size:12px;">Grok</button>
-        </div>
-        <div style="margin-top:10px;font-size:11px;color:#888;">Paste images OR attach the PDF file</div>
-      </div>
-    `;
-    document.body.appendChild(toast);
-    
-    // Add click handlers for smart tab opening (reuse existing tabs)
-    document.getElementById('openChatGPT').addEventListener('click', () => openOrFocusTab('https://chatgpt.com'));
-    document.getElementById('openClaude').addEventListener('click', () => openOrFocusTab('https://claude.ai'));
-    document.getElementById('openGrok').addEventListener('click', () => openOrFocusTab('https://grok.x.ai'));
-    
-    // Auto-dismiss after 10 seconds
-    setTimeout(() => {
-      const t = document.getElementById('aiToast');
-      if (t) t.remove();
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 10000);
-    
-  } catch (error) {
-    console.error('Send to AI error:', error);
-    status.textContent = 'Failed - try again';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 2000);
-  }
+  // Just copy - that's it! Maximum speed.
+  await handleCopySelected();
 }
 
 // Smart tab opener - reuses existing tab if already open
