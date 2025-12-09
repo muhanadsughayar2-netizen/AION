@@ -2474,7 +2474,7 @@ function drawAnnotationsToContext(ctx, anns) {
 
 // Add invisible watermark to canvas
 function addInvisibleWatermarkToCanvas(canvas) {
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   ctx.globalAlpha = 0.005;
   ctx.fillStyle = '#fff';
   ctx.font = '12px Arial';

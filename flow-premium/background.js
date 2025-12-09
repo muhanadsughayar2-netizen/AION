@@ -3,7 +3,7 @@
 
 const MAX_SNAPS = 9;
 const AI_SITES = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai', 'specode.ai'];
-const CAPTURE_COOLDOWN = 500; // Minimum 500ms between captures to avoid Chrome rate limit
+const CAPTURE_COOLDOWN = 700; // Minimum 700ms between captures to avoid Chrome rate limit (MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND)
 
 // Default settings
 const DEFAULT_SETTINGS = {
