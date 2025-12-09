@@ -1706,7 +1706,7 @@
       
       // Check if this is an AI platform (they hide scroll in nested containers)
       const host = window.location.hostname.toLowerCase();
-      const aiPlatforms = ['grok.com', 'grok.x.ai', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
+      const aiPlatforms = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
       result.isAIPlatform = aiPlatforms.some(p => host.includes(p));
       
       // Check page height (with null checks)
@@ -1714,13 +1714,18 @@
       const docHeight = document.documentElement ? (document.documentElement.scrollHeight || 0) : 0;
       let maxHeight = Math.max(bodyHeight, docHeight);
       
-      // CRITICAL FIX: For AI platforms, also check for hidden scroll containers
-      // because body has overflow:hidden and scrollHeight is misleading
+      // CRITICAL FIX: For AI platforms, use the full findScrollableContainer() 
+      // which includes Tier-0 platform-specific selectors
       if (result.isAIPlatform) {
-        const scrollContainer = findScrollableContainerTier2();
+        const scrollContainer = findScrollableContainer();
         if (scrollContainer && scrollContainer.scrollHeight > maxHeight) {
           maxHeight = scrollContainer.scrollHeight;
           console.log(`[SnapToAI] AI platform detected - using container height: ${maxHeight}px`);
+        }
+        // For AI platforms, always set a minimum height to prevent early abort
+        if (maxHeight <= result.viewportHeight) {
+          maxHeight = result.viewportHeight + 100;
+          console.log(`[SnapToAI] AI platform: forcing min height to allow capture`);
         }
       }
       
@@ -1848,7 +1853,7 @@
       
       // Check if this is an AI platform (internal scroll containers)
       const host = window.location.hostname.toLowerCase();
-      const aiPlatforms = ['grok.com', 'grok.x.ai', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
+      const aiPlatforms = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
       const isAIPlatform = aiPlatforms.some(p => host.includes(p));
       
       // Step 1: Find the main scrollable container
