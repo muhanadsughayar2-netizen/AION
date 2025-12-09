@@ -1533,6 +1533,23 @@
       'perplexity.ai': [
         'main [class*="overflow-y-auto"]',
         '[class*="overflow-auto"]'
+      ],
+      'replit.com': [
+        '#replit-app [data-scroll-container]',
+        '.replit-ui-theme-root [class*="overflow-y-auto"]',
+        '[class*="cm-scroller"]',
+        'main [class*="overflow-auto"]',
+        '[class*="overflow-y-auto"]',
+        '[class*="overflow-auto"]'
+      ],
+      'github.com': [
+        'main [class*="overflow-auto"]',
+        '.application-main [class*="overflow"]',
+        '[class*="overflow-y-auto"]'
+      ],
+      'stackoverflow.com': [
+        '#content [class*="overflow"]',
+        'main [class*="overflow-auto"]'
       ]
     };
     
@@ -1568,12 +1585,16 @@
     console.log('[SnapToAI] Finding scrollable container...');
     const host = window.location.hostname.toLowerCase();
     
-    // AI platforms with internal scroll containers
-    const aiPlatforms = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
-    const isAIPlatform = aiPlatforms.some(p => host.includes(p));
+    // Platforms with internal scroll containers (AI + developer tools)
+    const specialPlatforms = [
+      'grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 
+      'claude.ai', 'gemini.google.com', 'perplexity.ai',
+      'replit.com', 'github.com', 'stackoverflow.com'
+    ];
+    const isSpecialPlatform = specialPlatforms.some(p => host.includes(p));
     
-    if (isAIPlatform) {
-      console.log('[SnapToAI] AI platform detected - checking known selectors first');
+    if (isSpecialPlatform) {
+      console.log('[SnapToAI] Special platform detected - checking known selectors first');
       
       // TIER 0: Try known platform-specific selectors first (most reliable)
       let container = findScrollableContainerTier0(host);
@@ -1600,9 +1621,9 @@
     let container = findScrollableContainerTier3();
     if (container) return container;
     
-    // FINAL FALLBACK: For AI platforms, use documentElement anyway (allow capture to proceed)
-    if (isAIPlatform) {
-      console.log('[SnapToAI] AI platform fallback: Using documentElement to allow capture');
+    // FINAL FALLBACK: For special platforms, use documentElement anyway (allow capture to proceed)
+    if (isSpecialPlatform) {
+      console.log('[SnapToAI] Special platform fallback: Using documentElement to allow capture');
       return document.documentElement;
     }
     
@@ -1644,22 +1665,28 @@
   }
 
   // Detect if this is a complex web app with non-scrollable body
-  // NOTE: AI chat platforms are NOT treated as complex apps - we try to capture them
+  // NOTE: AI chat platforms and Replit are NOT treated as complex apps - we try to capture them
   function isComplexWebApp() {
     const host = window.location.hostname.toLowerCase();
     
-    // AI platforms we WANT to capture - never treat as complex apps
-    const aiPlatforms = ['grok.com', 'grok.x.ai', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
-    for (const ai of aiPlatforms) {
-      if (host.includes(ai)) {
-        console.log('[SnapToAI] AI platform detected - will attempt full capture');
+    // Sites we WANT to capture - never treat as complex apps
+    const allowedSites = [
+      // AI platforms
+      'grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 
+      'claude.ai', 'gemini.google.com', 'perplexity.ai',
+      // Developer tools (they have scrollable content areas)
+      'replit.com', 'github.com', 'gitlab.com', 'stackoverflow.com'
+    ];
+    
+    for (const site of allowedSites) {
+      if (host.includes(site)) {
+        console.log(`[SnapToAI] ${site} detected - will attempt full capture`);
         return false; // NOT a complex app - try to capture
       }
     }
     
     // These are truly complex apps with fixed layouts that can't be scroll-captured
-    // Complex apps that truly can't be scroll-captured (Replit removed - it can scroll in some views)
-    const complexApps = ['figma.com', 'canva.com', 'notion.so', 'airtable.com', 'miro.com'];
+    const complexApps = ['figma.com', 'canva.com', 'miro.com'];
     
     // Check by hostname
     for (const app of complexApps) {
