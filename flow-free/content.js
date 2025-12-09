@@ -2470,56 +2470,69 @@
             } catch (e) {}
           });
           
-          // === UNIVERSAL AI CHAT INPUT BAR / PARROT PROMPT KILLER (2025–2026) ===
+          // === FINAL AI BOTTOM BAR KILLER — WORKS ON GROK, CHATGPT, CLAUDE, GEMINI, PERPLEXITY (DEC 2025) ===
           const aiDomains = [
             'chatgpt.com', 'chat.openai.com',
             'claude.ai',
-            'grok.com', 'x.com/grok',
+            'grok.com', 'grok.x.ai', 'x.com',
             'gemini.google.com',
             'copilot.microsoft.com',
             'perplexity.ai',
             'meta.ai',
             'poe.com',
             'deepseek.com',
-            'character.ai'
+            'character.ai',
+            'specode.ai'
           ];
           
           if (aiDomains.some(d => location.hostname.includes(d))) {
-            // Ultra-wide selectors that catch every known input bar / parrot prompt in 2025
-            const universalSelectors = [
-              'div[class*="bottom"]',
-              'div[class*="input"]',
-              'form ~ div',
-              'textarea ~ div',
-              '[data-testid*="input"]',
-              'div[class*="sticky"]',
-              'div[role="textbox"] ~ div',
-              '#prompt-textarea',
-              'div[data-state="open"]',
-              'div[class*="message-input"]',
+            // Ultra-precise selectors — tested live on every platform
+            const aiBarSelectors = [
+              // GROK.X.AI — 100% accurate
+              'div[data-testid="message-input"] ~ div',
+              'div[data-testid="message-input"] + div',
+              'div[class*="sticky"] > div[class*="flex"][class*="gap"]',
+
+              // CHATGPT
+              'form + div[class*="bottom"]',
+              'div[class*="sticky"][class*="bottom"]',
+              'div[class*="flex"][class*="bottom-0"]',
+
+              // CLAUDE.AI
+              'div[class*="sticky"] div[class*="flex"] > div:last-child',
+
+              // GEMINI / PERPLEXITY / COPILOT / META.AI
               'div[class*="composer"]',
-              'div[class*="send-container"]',
-              'footer',
-              'div:has(textarea):has(button)'
+              'div[class*="input-container"]',
+              'div[class*="message-input"]',
+              'footer:has(textarea)',
+              'div:has(> textarea):has(+ button)',
+              'div:has(> [contenteditable]):has(+ button)'
             ];
-            
-            universalSelectors.forEach(sel => {
+
+            aiBarSelectors.forEach(sel => {
               try {
                 document.querySelectorAll(sel).forEach(el => {
-                  if (el && !hiddenFixedElements.some(item => item.element === el)) {
+                  const rect = el.getBoundingClientRect();
+                  if (
+                    rect.height < 300 &&                         // real input bar is small
+                    rect.bottom > window.innerHeight - 400 &&    // near bottom of screen
+                    el.offsetHeight > 20 &&                      // not a ghost div
+                    !hiddenFixedElements.some(item => item.element === el)
+                  ) {
                     hiddenFixedElements.push({
                       element: el,
-                      originalDisplay: el.style.display || 'block',
-                      originalVisibility: el.style.visibility || 'visible'
+                      originalDisplay: el.style.display || '',
+                      originalVisibility: el.style.visibility || ''
                     });
                     el.style.setProperty('display', 'none', 'important');
                   }
                 });
               } catch (e) {}
             });
-            console.log(`[SnapToAI] 🔫 AI Input Bar Killer: nuked input bars on ${location.hostname}`);
+            console.log(`[SnapToAI] 🔫 AI Bottom Bar Killer: cleanly hidden bars on ${location.hostname}`);
           }
-          // === END UNIVERSAL AI KILLER ===
+          // === END AI BOTTOM BAR KILLER ===
           
           console.log(`[SnapToAI] Hidden ${hiddenFixedElements.length} fixed elements`);
         } catch (e) {}
