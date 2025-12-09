@@ -2610,56 +2610,68 @@
       // Give browser 80ms to render the frozen state (eliminates 99% of rare flicker)
       await new Promise(r => setTimeout(r, 80));
       
-      // === AI-PROOF CAPTURE LOOP ===
-      // Uses scrollBy + checks if scroll actually moved (detects real bottom)
+      // === RATE-LIMITED CAPTURE LOOP (Respects Chrome's MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND) ===
+      // Uses 700ms delay between captures to avoid quota errors (used by GoFullPage, FireShot)
       let lastScrollTop = -1;
       let captureCount = 0;
       const maxCaptures = 100; // Safety limit
+      let consecutiveFails = 0;
+      const MAX_CONSECUTIVE_FAILS = 5;
       let totalEstimatedCaptures = Math.ceil(getMaxScroll() / (viewportHeight * 0.8)) + 1;
       
-      while (captureCount < maxCaptures) {
+      while (captureCount < maxCaptures && consecutiveFails < MAX_CONSECUTIVE_FAILS) {
         const currentScrollTop = getScrollTop();
         
-        // === TOUCH #7: Update progress with "X of Y" format ===
+        // Update progress with "X of Y" format
         const maxScroll = getMaxScroll();
-        totalEstimatedCaptures = Math.max(totalEstimatedCaptures, Math.ceil(maxScroll / (viewportHeight * 0.8)) + 1);
+        totalEstimatedCaptures = Math.max(totalEstimatedCaptures, Math.ceil(maxScroll / stepHeight) + 2);
         const progress = maxScroll > 0 ? Math.min(99, Math.round((currentScrollTop / maxScroll) * 100)) : 50;
         updateOverlayProgress(progress, captureCount + 1, totalEstimatedCaptures);
         
         // HIDE overlay before capture (so it doesn't appear in screenshot!)
         overlay.style.visibility = 'hidden';
-        await new Promise(resolve => setTimeout(resolve, 50)); // Brief wait for render
+        await new Promise(r => setTimeout(r, 80)); // Let render settle
         
-        // Request capture from background script
-        const response = await chrome.runtime.sendMessage({ 
-          action: 'fullPageCaptureStep',
-          tabId: tabId
-        });
+        // Request capture from background script with timeout protection
+        let response;
+        try {
+          response = await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => resolve({ success: false, error: 'timeout' }), 5000);
+            chrome.runtime.sendMessage({ action: 'fullPageCaptureStep', tabId: tabId }, resp => {
+              clearTimeout(timeout);
+              resolve(resp || { success: false, error: 'no response' });
+            });
+          });
+        } catch (e) {
+          response = { success: false, error: e.message };
+        }
         
         // SHOW overlay again after capture
         overlay.style.visibility = 'visible';
         
-        if (response.success && response.dataUrl) {
+        if (response?.success && response.dataUrl) {
           screenshots.push({
             dataUrl: response.dataUrl,
             scrollY: currentScrollTop,
             index: captureCount
           });
           console.log(`[SnapToAI] Captured ${captureCount + 1}, scrollTop: ${currentScrollTop}px`);
+          consecutiveFails = 0; // Reset on success
         } else {
-          console.warn(`[SnapToAI] Capture ${captureCount + 1} failed:`, response.error);
+          console.warn(`[SnapToAI] Capture ${captureCount + 1} failed:`, response?.error || 'unknown');
+          consecutiveFails++;
         }
         
         captureCount++;
         
         // Check if we've reached the bottom (scroll position didn't change)
-        if (currentScrollTop === lastScrollTop && captureCount > 1) {
+        if (currentScrollTop === lastScrollTop && captureCount > 2) {
           console.log('[SnapToAI] Reached bottom - scroll stopped moving');
           break;
         }
         
         // Check if we're at max scroll
-        if (currentScrollTop >= getMaxScroll() - 10) {
+        if (currentScrollTop >= getMaxScroll() - 20) {
           console.log('[SnapToAI] Reached max scroll position');
           break;
         }
@@ -2669,14 +2681,16 @@
         // Scroll down by one viewport using safe scrollBy (never throws errors!)
         safeScrollBy(stepHeight);
         
-        // === SMART SCROLL STABILIZER v2 ===
         // Wait for content to stabilize (max 400ms, checks every 50ms)
-        // This eliminates white gaps and duplicated posts on infinite-scroll pages
         const stabilized = await waitForScrollStabilization(scrollContainer, useContainerScroll);
         if (!stabilized) {
-          // Timeout - add small buffer wait anyway
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(r => setTimeout(r, 100));
         }
+        
+        // === CRITICAL: 700ms DELAY TO RESPECT CHROME'S RATE LIMIT ===
+        // Chrome limits captureVisibleTab to ~2 calls/second
+        // This prevents MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND quota errors
+        await new Promise(r => setTimeout(r, 700));
       }
       
       console.log(`[SnapToAI] Full page capture complete: ${screenshots.length} images`);

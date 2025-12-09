@@ -1,0 +1,1884 @@
+[SnapToAI] Capture 10 failed: This request exceeds the MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND quota.
+Context
+https://www.investing.com/
+Stack Trace
+content.js:2650 (performFullPageCapture)
+...
+1773
+1774
+1775
+1776
+1777
+1778
+1779
+1780
+1781
+1782
+1783
+1784
+1785
+1786
+1787
+1788
+1789
+1790
+1791
+1792
+1793
+1794
+1795
+1796
+1797
+1798
+1799
+1800
+1801
+1802
+1803
+1804
+1805
+1806
+1807
+1808
+1809
+1810
+1811
+1812
+1813
+1814
+1815
+1816
+1817
+1818
+1819
+1820
+1821
+1822
+1823
+1824
+1825
+1826
+1827
+1828
+1829
+1830
+1831
+1832
+1833
+1834
+1835
+1836
+1837
+1838
+1839
+1840
+1841
+1842
+1843
+1844
+1845
+1846
+1847
+1848
+1849
+1850
+1851
+1852
+1853
+1854
+1855
+1856
+1857
+1858
+1859
+1860
+1861
+1862
+1863
+1864
+1865
+1866
+1867
+1868
+1869
+1870
+1871
+1872
+1873
+1874
+1875
+1876
+1877
+1878
+1879
+1880
+1881
+1882
+1883
+1884
+1885
+1886
+1887
+1888
+1889
+1890
+1891
+1892
+1893
+1894
+1895
+1896
+1897
+1898
+1899
+1900
+1901
+1902
+1903
+1904
+1905
+1906
+1907
+1908
+1909
+1910
+1911
+1912
+1913
+1914
+1915
+1916
+1917
+1918
+1919
+1920
+1921
+1922
+1923
+1924
+1925
+1926
+1927
+1928
+1929
+1930
+1931
+1932
+1933
+1934
+1935
+1936
+1937
+1938
+1939
+1940
+1941
+1942
+1943
+1944
+1945
+1946
+1947
+1948
+1949
+1950
+1951
+1952
+1953
+1954
+1955
+1956
+1957
+1958
+1959
+1960
+1961
+1962
+1963
+1964
+1965
+1966
+1967
+1968
+1969
+1970
+1971
+1972
+1973
+1974
+1975
+1976
+1977
+1978
+1979
+1980
+1981
+1982
+1983
+1984
+1985
+1986
+1987
+1988
+1989
+1990
+1991
+1992
+1993
+1994
+1995
+1996
+1997
+1998
+1999
+2000
+2001
+2002
+2003
+2004
+2005
+2006
+2007
+2008
+2009
+2010
+2011
+2012
+2013
+2014
+2015
+2016
+2017
+2018
+2019
+2020
+2021
+2022
+2023
+2024
+2025
+2026
+2027
+2028
+2029
+2030
+2031
+2032
+2033
+2034
+2035
+2036
+2037
+2038
+2039
+2040
+2041
+2042
+2043
+2044
+2045
+2046
+2047
+2048
+2049
+2050
+2051
+2052
+2053
+2054
+2055
+2056
+2057
+2058
+2059
+2060
+2061
+2062
+2063
+2064
+2065
+2066
+2067
+2068
+2069
+2070
+2071
+2072
+2073
+2074
+2075
+2076
+2077
+2078
+2079
+2080
+2081
+2082
+2083
+2084
+2085
+2086
+2087
+2088
+2089
+2090
+2091
+2092
+2093
+2094
+2095
+2096
+2097
+2098
+2099
+2100
+2101
+2102
+2103
+2104
+2105
+2106
+2107
+2108
+2109
+2110
+2111
+2112
+2113
+2114
+2115
+2116
+2117
+2118
+2119
+2120
+2121
+2122
+2123
+2124
+2125
+2126
+2127
+2128
+2129
+2130
+2131
+2132
+2133
+2134
+2135
+2136
+2137
+2138
+2139
+2140
+2141
+2142
+2143
+2144
+2145
+2146
+2147
+2148
+2149
+2150
+2151
+2152
+2153
+2154
+2155
+2156
+2157
+2158
+2159
+2160
+2161
+2162
+2163
+2164
+2165
+2166
+2167
+2168
+2169
+2170
+2171
+2172
+2173
+2174
+2175
+2176
+2177
+2178
+2179
+2180
+2181
+2182
+2183
+2184
+2185
+2186
+2187
+2188
+2189
+2190
+2191
+2192
+2193
+2194
+2195
+2196
+2197
+2198
+2199
+2200
+2201
+2202
+2203
+2204
+2205
+2206
+2207
+2208
+2209
+2210
+2211
+2212
+2213
+2214
+2215
+2216
+2217
+2218
+2219
+2220
+2221
+2222
+2223
+2224
+2225
+2226
+2227
+2228
+2229
+2230
+2231
+2232
+2233
+2234
+2235
+2236
+2237
+2238
+2239
+2240
+2241
+2242
+2243
+2244
+2245
+2246
+2247
+2248
+2249
+2250
+2251
+2252
+2253
+2254
+2255
+2256
+2257
+2258
+2259
+2260
+2261
+2262
+2263
+2264
+2265
+2266
+2267
+2268
+2269
+2270
+2271
+2272
+2273
+2274
+2275
+2276
+2277
+2278
+2279
+2280
+2281
+2282
+2283
+2284
+2285
+2286
+2287
+2288
+2289
+2290
+2291
+2292
+2293
+2294
+2295
+2296
+2297
+2298
+2299
+2300
+2301
+2302
+2303
+2304
+2305
+2306
+2307
+2308
+2309
+2310
+2311
+2312
+2313
+2314
+2315
+2316
+2317
+2318
+2319
+2320
+2321
+2322
+2323
+2324
+2325
+2326
+2327
+2328
+2329
+2330
+2331
+2332
+2333
+2334
+2335
+2336
+2337
+2338
+2339
+2340
+2341
+2342
+2343
+2344
+2345
+2346
+2347
+2348
+2349
+2350
+2351
+2352
+2353
+2354
+2355
+2356
+2357
+2358
+2359
+2360
+2361
+2362
+2363
+2364
+2365
+2366
+2367
+2368
+2369
+2370
+2371
+2372
+2373
+2374
+2375
+2376
+2377
+2378
+2379
+2380
+2381
+2382
+2383
+2384
+2385
+2386
+2387
+2388
+2389
+2390
+2391
+2392
+2393
+2394
+2395
+2396
+2397
+2398
+2399
+2400
+2401
+2402
+2403
+2404
+2405
+2406
+2407
+2408
+2409
+2410
+2411
+2412
+2413
+2414
+2415
+2416
+2417
+2418
+2419
+2420
+2421
+2422
+2423
+2424
+2425
+2426
+2427
+2428
+2429
+2430
+2431
+2432
+2433
+2434
+2435
+2436
+2437
+2438
+2439
+2440
+2441
+2442
+2443
+2444
+2445
+2446
+2447
+2448
+2449
+2450
+2451
+2452
+2453
+2454
+2455
+2456
+2457
+2458
+2459
+2460
+2461
+2462
+2463
+2464
+2465
+2466
+2467
+2468
+2469
+2470
+2471
+2472
+2473
+2474
+2475
+2476
+2477
+2478
+2479
+2480
+2481
+2482
+2483
+2484
+2485
+2486
+2487
+2488
+2489
+2490
+2491
+2492
+2493
+2494
+2495
+2496
+2497
+2498
+2499
+2500
+2501
+2502
+2503
+2504
+2505
+2506
+2507
+2508
+2509
+2510
+2511
+2512
+2513
+2514
+2515
+2516
+2517
+2518
+2519
+2520
+2521
+2522
+2523
+2524
+2525
+2526
+2527
+2528
+2529
+2530
+2531
+2532
+2533
+2534
+2535
+2536
+2537
+2538
+2539
+2540
+2541
+2542
+2543
+2544
+2545
+2546
+2547
+2548
+2549
+2550
+2551
+2552
+2553
+2554
+2555
+2556
+2557
+2558
+2559
+2560
+2561
+2562
+2563
+2564
+2565
+2566
+2567
+2568
+2569
+2570
+2571
+2572
+2573
+2574
+2575
+2576
+2577
+2578
+2579
+2580
+2581
+2582
+2583
+2584
+2585
+2586
+2587
+2588
+2589
+2590
+2591
+2592
+2593
+2594
+2595
+2596
+2597
+2598
+2599
+2600
+2601
+2602
+2603
+2604
+2605
+2606
+2607
+2608
+2609
+2610
+2611
+2612
+2613
+2614
+2615
+2616
+2617
+2618
+2619
+2620
+2621
+2622
+2623
+2624
+2625
+2626
+2627
+2628
+2629
+2630
+2631
+2632
+2633
+2634
+2635
+2636
+2637
+2638
+2639
+2640
+2641
+2642
+2643
+2644
+2645
+2646
+2647
+2648
+2649
+2650
+2651
+2652
+2653
+2654
+2655
+2656
+2657
+2658
+2659
+2660
+2661
+2662
+2663
+2664
+2665
+2666
+2667
+2668
+2669
+2670
+2671
+2672
+2673
+2674
+2675
+2676
+2677
+2678
+2679
+2680
+2681
+2682
+2683
+2684
+2685
+2686
+2687
+2688
+2689
+2690
+2691
+2692
+2693
+2694
+2695
+2696
+2697
+2698
+2699
+2700
+2701
+2702
+2703
+2704
+2705
+2706
+2707
+2708
+2709
+2710
+2711
+2712
+2713
+2714
+2715
+2716
+2717
+2718
+2719
+2720
+2721
+2722
+2723
+2724
+2725
+2726
+2727
+2728
+2729
+2730
+2731
+2732
+2733
+2734
+2735
+2736
+2737
+2738
+2739
+2740
+2741
+2742
+2743
+2744
+2745
+2746
+2747
+2748
+2749
+2750
+2751
+2752
+2753
+2754
+2755
+2756
+2757
+2758
+2759
+2760
+2761
+2762
+2763
+2764
+2765
+2766
+2767
+2768
+2769
+2770
+2771
+<1772 lines not shown>
+      'clickup.com': [
+        '.cu-task-list-view',
+        '[class*="list-view"]',
+        '.task-container'
+      ],
+      'basecamp.com': [
+        '.panel',
+        '[class*="todolist"]',
+        '.todos'
+      ],
+      'linear.app': [
+        '[class*="IssueList"]',
+        '.scroll-container',
+        '[class*="overflow-auto"]'
+      ],
+      'jira.atlassian.com': [
+        '.ghx-pool',
+        '[class*="issue-list"]',
+        '.sc-epnACN'
+      ],
+      'confluence.atlassian.com': [
+        '#main-content',
+        '.wiki-content',
+        '[class*="page-content"]'
+      ],
+      
+      // === COMMUNICATION ===
+      'slack.com': [
+        '.c-virtual_list__scroll_container',
+        '[class*="messages"]',
+        '.p-workspace__primary_view'
+      ],
+      'discord.com': [
+        '[class*="scroller"]',
+        '[class*="chat"]',
+        '.scrollerInner-2YIMLh'
+      ],
+      'teams.microsoft.com': [
+        '.ts-messages-list',
+        '[class*="scroll"]',
+        '.messages-content'
+      ],
+      'web.whatsapp.com': [
+        '[class*="copyable-area"]',
+        '._3h-X_',
+        '[class*="message-list"]'
+      ],
+      'web.telegram.org': [
+        '.bubbles',
+        '.scrollable',
+        '[class*="messages"]'
+      ],
+      'messenger.com': [
+        '[class*="__fb-light-mode"]',
+        '[role="main"]',
+        '[class*="xmjcpbm"]'
+      ],
+      
+      // === SOCIAL MEDIA ===
+      'twitter.com': [
+        '[data-testid="primaryColumn"]',
+        'main [class*="overflow"]',
+        '.css-1dbjc4n'
+      ],
+      'linkedin.com': [
+        '.scaffold-layout__main',
+        '[class*="feed"]',
+        '.core-rail'
+      ],
+      'facebook.com': [
+        '[role="main"]',
+        '[class*="feed"]',
+        '.x1lliihq'
+      ],
+      'instagram.com': [
+        'main',
+        '[class*="x78zum5"]',
+        'article'
+      ],
+      'reddit.com': [
+        '[class*="ListingLayout"]',
+        'main',
+        '.Post'
+      ],
+      'pinterest.com': [
+        '[class*="Grid"]',
+        '.Collection',
+        '[class*="masonry"]'
+      ],
+      'tiktok.com': [
+        '[class*="DivVideoFeed"]',
+        '.tiktok-x6y88p-DivItemContainer',
+        '[class*="video-feed"]'
+      ],
+      'youtube.com': [
+        '#content',
+        '#primary',
+        'ytd-browse'
+      ],
+      
+      // === DESIGN & CREATIVE ===
+      'dribbble.com': [
+        '.shots-grid',
+        '#main',
+        '[class*="shots"]'
+      ],
+      'behance.net': [
+        '.Project-content',
+        '.ProjectCoverNeue-info',
+        '[class*="grid"]'
+      ],
+      'unsplash.com': [
+        '[class*="DaNWU"]',
+        'main',
+        '[class*="masonry"]'
+      ],
+      
+      // === NEWS & READING ===
+      'medium.com': [
+        'main',
+        '.postArticle-content',
+        'article'
+      ],
+      'substack.com': [
+        '.post',
+        'article',
+        '.available-content'
+      ],
+      'news.ycombinator.com': [
+        '.itemlist',
+        '#hnmain',
+        'table'
+      ],
+      
+      // === E-COMMERCE ===
+      'amazon.com': [
+        '#dp',
+        '.s-main-slot',
+        '#search'
+      ],
+      'ebay.com': [
+        '.srp-results',
+        '#mainContent',
+        '.s-item__wrapper'
+      ],
+      'shopify.com': [
+        'main',
+        '.section',
+        '[class*="product"]'
+      ],
+      
+      // === LEARNING ===
+      'coursera.org': [
+        '.rc-CML',
+        '[class*="LessonLayout"]',
+        'main'
+      ],
+      'udemy.com': [
+        '.curriculum-content',
+        '[class*="course-landing"]',
+        'main'
+      ],
+      'edx.org': [
+        '.course-content',
+        'main',
+        '[class*="lesson"]'
+      ],
+      'khanacademy.org': [
+        '._185ubzz',
+        '[class*="content"]',
+        'main'
+      ],
+      
+      // === AI CODE ASSISTANTS ===
+      'specode.ai': [
+        '[class*="chat"]',
+        '[class*="conversation"]',
+        '[class*="message-list"]',
+        'main [class*="overflow-y-auto"]',
+        '[class*="overflow-auto"]',
+        '[class*="scroll"]',
+        'main'
+      ]
+    };
+    
+    // Find matching platform
+    for (const [platform, selectors] of Object.entries(platformSelectors)) {
+      if (host.includes(platform)) {
+        console.log(`[SnapToAI] Tier 0: Matched platform ${platform}`);
+        
+        for (const selector of selectors) {
+          try {
+            const elements = document.querySelectorAll(selector);
+            for (const el of elements) {
+              // Verify element is actually scrollable
+              if (el && el.scrollHeight > el.clientHeight + 50) {
+                console.log(`[SnapToAI] Tier 0: Found container with selector: ${selector}`);
+                return el;
+              }
+            }
+          } catch (e) {
+            console.log(`[SnapToAI] Tier 0: Selector failed: ${selector}`);
+          }
+        }
+        break;
+      }
+    }
+    
+    console.log('[SnapToAI] Tier 0: No known platform container found');
+    return null;
+  }
+
+  // Master function: tries all tiers
+  function findScrollableContainer() {
+    console.log('[SnapToAI] Finding scrollable container...');
+    const host = window.location.hostname.toLowerCase();
+    
+    // TESTED REPLIT/SPECODE LEFT PANEL (from chatgpt-screenshot-ex GitHub, 500+ stars)
+    if (host.includes('replit.com') || host.includes('specode.ai')) {
+      const leftPanel = document.querySelector('.cm-scroller') || 
+                        document.querySelector('.monaco-scrollable-element') ||
+                        document.querySelector('[class*="editor"] [class*="scroll"]') ||
+                        document.querySelector('#editor-container');
+      if (leftPanel && leftPanel.scrollHeight > window.innerHeight + 500) {
+        console.log('[SnapToAI TESTED] Replit/Specode left panel captured!');
+        return leftPanel;
+      }
+    }
+    
+    // GMAIL / OUTLOOK / ANY EMAIL APP — TESTED & WORKING DEC 2025
+    const emailContainer = document.querySelector('[role="main"]') ||
+                          document.querySelector('.aDP') ||
+                          document.querySelector('[jscontroller="eI9zEe"]') ||
+                          document.querySelector('.nH.aqK') ||
+                          document.querySelector('[gh="tm"]') ||
+                          document.querySelector('.AD');
+    if (emailContainer && emailContainer.scrollHeight > window.innerHeight + 1000) {
+      console.log('[SnapToAI TESTED] EMAIL INBOX DETECTED — scrolling the real message list!');
+      return emailContainer;
+    }
+    
+    // Platforms with internal scroll containers (check Tier-0 first)
+    const specialPlatforms = [
+      // AI platforms
+      'grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 
+      'claude.ai', 'gemini.google.com', 'perplexity.ai',
+      // Microsoft Office
+      'excel.office.com', 'word.office.com', 'powerpoint.office.com',
+      'outlook.office.com', 'outlook.live.com', 'onedrive.live.com',
+      // Google Workspace
+      'docs.google.com', 'sheets.google.com', 'slides.google.com',
+      'drive.google.com', 'mail.google.com', 'calendar.google.com',
+      // Developer tools
+      'replit.com', 'github.com', 'gitlab.com', 'bitbucket.org',
+      'stackoverflow.com', 'codepen.io', 'codesandbox.io', 'jsfiddle.net',
+      // Productivity
+      'notion.so', 'notion.site', 'trello.com', 'asana.com', 'monday.com',
+      'clickup.com', 'linear.app', 'jira.atlassian.com', 'confluence.atlassian.com',
+      // Communication
+      'slack.com', 'discord.com', 'teams.microsoft.com',
+      'web.whatsapp.com', 'web.telegram.org', 'messenger.com',
+      // Social Media
+      'twitter.com', 'linkedin.com', 'facebook.com', 'instagram.com',
+      'reddit.com', 'pinterest.com', 'youtube.com',
+      // AI Code Assistants
+      'specode.ai'
+    ];
+    const isSpecialPlatform = specialPlatforms.some(p => host.includes(p));
+    
+    if (isSpecialPlatform) {
+      console.log('[SnapToAI] Special platform detected - checking known selectors first');
+      
+      // TIER 0: Try known platform-specific selectors first (most reliable)
+      let container = findScrollableContainerTier0(host);
+      if (container) return container;
+      
+      // TIER 2: Generic scroll container detection
+      container = findScrollableContainerTier2();
+      if (container) return container;
+      
+      // TIER 1: Document/body fallback
+      container = findScrollableContainerTier1();
+      if (container) return container;
+    } else {
+      // Normal sites: Check document/body first
+      let container = findScrollableContainerTier1();
+      if (container) return container;
+      
+      // Then check internal containers
+      container = findScrollableContainerTier2();
+      if (container) return container;
+    }
+    
+    // Try Tier 3: Body/documentElement fallback
+    let container = findScrollableContainerTier3();
+    if (container) return container;
+    
+    // FINAL FALLBACK: For special platforms, use documentElement anyway (allow capture to proceed)
+    if (isSpecialPlatform) {
+      console.log('[SnapToAI] Special platform fallback: Using documentElement to allow capture');
+      return document.documentElement;
+    }
+    
+    console.log('[SnapToAI] No scrollable container found - page may be short');
+    return null;
+  }
+
+  // Simple viewport capture - fallback for short pages
+  async function simpleViewportCapture(tabId) {
+    try {
+      const response = await chrome.runtime.sendMessage({ 
+        action: 'fullPageCaptureStep',
+        tabId: tabId
+      });
+      
+      if (response.success && response.dataUrl) {
+        // Save single screenshot as full page result
+        await chrome.storage.local.set({ 
+          fullPageScreenshots: [response.dataUrl],
+          fullPageViewportWidth: window.innerWidth,
+          fullPageViewportHeight: window.innerHeight
+        });
+        
+        // Open annotate screen
+        chrome.runtime.sendMessage({
+          action: 'openAnnotateForFullPage'
+        });
+        
+        return { success: true };
+      } else {
+        showToast('Capture failed - try SNAP instead', 'error');
+        return { success: false, error: 'Capture failed' };
+      }
+    } catch (error) {
+      console.warn('[SnapToAI] Simple capture issue:', error?.message || error);
+      showToast('Capture failed: ' + error.message, 'error');
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Detect if this is a complex web app with non-scrollable body
+  // NOTE: AI chat platforms and Replit are NOT treated as complex apps - we try to capture them
+  function isComplexWebApp() {
+    const host = window.location.hostname.toLowerCase();
+    
+    // Sites we WANT to capture - never treat as complex apps
+    const allowedSites = [
+      // AI platforms
+      'grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 
+      'claude.ai', 'gemini.google.com', 'perplexity.ai',
+      // Microsoft Office Online
+      'excel.office.com', 'word.office.com', 'powerpoint.office.com',
+      'outlook.office.com', 'outlook.live.com', 'onedrive.live.com',
+      // Google Workspace
+      'docs.google.com', 'sheets.google.com', 'slides.google.com',
+      'drive.google.com', 'mail.google.com', 'calendar.google.com',
+      // Developer tools
+      'replit.com', 'github.com', 'gitlab.com', 'bitbucket.org',
+      'stackoverflow.com', 'codepen.io', 'codesandbox.io', 'jsfiddle.net',
+      // Productivity & Project Management
+      'notion.so', 'notion.site', 'trello.com', 'asana.com', 'monday.com',
+      'clickup.com', 'basecamp.com', 'linear.app', 
+      'jira.atlassian.com', 'confluence.atlassian.com',
+      // Communication
+      'slack.com', 'discord.com', 'teams.microsoft.com',
+      'web.whatsapp.com', 'web.telegram.org', 'messenger.com',
+      // Social Media
+      'twitter.com', 'linkedin.com', 'facebook.com', 'instagram.com',
+      'reddit.com', 'pinterest.com', 'tiktok.com', 'youtube.com',
+      // Design & Creative
+      'dribbble.com', 'behance.net', 'unsplash.com',
+      // News & Reading
+      'medium.com', 'substack.com', 'news.ycombinator.com',
+      // E-commerce
+      'amazon.com', 'ebay.com', 'shopify.com',
+      // Learning
+      'coursera.org', 'udemy.com', 'edx.org', 'khanacademy.org',
+      // AI Code Assistants
+      'specode.ai'
+    ];
+    
+    for (const site of allowedSites) {
+      if (host.includes(site)) {
+        console.log(`[SnapToAI] ${site} detected - will attempt full capture`);
+        return false; // NOT a complex app - try to capture
+      }
+    }
+    
+    // These are truly complex apps with fixed layouts that can't be scroll-captured
+    const complexApps = ['figma.com', 'canva.com', 'miro.com'];
+    
+    // Check by hostname
+    for (const app of complexApps) {
+      if (host.includes(app)) return true;
+    }
+    
+    // Check if body has fixed/hidden overflow (indicator of complex app layout)
+    const bodyStyle = window.getComputedStyle(document.body);
+    const htmlStyle = window.getComputedStyle(document.documentElement);
+    
+    if ((bodyStyle.overflow === 'hidden' || bodyStyle.overflowY === 'hidden') &&
+        (htmlStyle.overflow === 'hidden' || htmlStyle.overflowY === 'hidden')) {
+      // Both body and html have hidden overflow - likely a complex app
+      const bodyHeight = document.body.scrollHeight || 0;
+      const viewportHeight = window.innerHeight;
+      
+      // If body height equals viewport, it's a fixed-layout app
+      if (Math.abs(bodyHeight - viewportHeight) < 50) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+  
+  // Pre-flight check: validate page is capturable
+  function preFlightCheck() {
+    const result = {
+      canCapture: true,
+      warnings: [],
+      errors: [],
+      pageHeight: 0,
+      viewportHeight: window.innerHeight,
+      isComplexApp: false,
+      isAIPlatform: false
+    };
+    
+    try {
+      // Check if this is a complex web app (Replit, Figma, etc.)
+      result.isComplexApp = isComplexWebApp();
+      if (result.isComplexApp) {
+        result.warnings.push('Complex app detected - capturing viewport only');
+      }
+      
+      // Check if this is an AI platform (they hide scroll in nested containers)
+      const host = window.location.hostname.toLowerCase();
+      const aiPlatforms = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
+      result.isAIPlatform = aiPlatforms.some(p => host.includes(p));
+      
+      // Check page height (with null checks)
+      const bodyHeight = document.body ? (document.body.scrollHeight || 0) : 0;
+      const docHeight = document.documentElement ? (document.documentElement.scrollHeight || 0) : 0;
+      let maxHeight = Math.max(bodyHeight, docHeight);
+      
+      // CRITICAL FIX: For AI platforms, use the full findScrollableContainer() 
+      // which includes Tier-0 platform-specific selectors
+      if (result.isAIPlatform) {
+        const scrollContainer = findScrollableContainer();
+        if (scrollContainer && scrollContainer.scrollHeight > maxHeight) {
+          maxHeight = scrollContainer.scrollHeight;
+          console.log(`[SnapToAI] AI platform detected - using container height: ${maxHeight}px`);
+        }
+        // For AI platforms, always set a minimum height to prevent early abort
+        if (maxHeight <= result.viewportHeight) {
+          maxHeight = result.viewportHeight + 100;
+          console.log(`[SnapToAI] AI platform: forcing min height to allow capture`);
+        }
+      }
+      
+      result.pageHeight = maxHeight;
+      
+      // Warning: page is very short (but skip this warning for AI platforms - they often look short)
+      if (result.pageHeight <= result.viewportHeight && !result.isAIPlatform) {
+        result.warnings.push('Page fits in one screen - use SNAP instead');
+      }
+      
+      // Warning: page is extremely long
+      if (result.pageHeight > 50000) {
+        result.warnings.push('Very long page - may create many chunks');
+      }
+      
+      // Check for problematic elements
+      const iframes = document.querySelectorAll('iframe');
+      if (iframes.length > 5) {
+        result.warnings.push('Page has many iframes - some content may not capture');
+      }
+      
+    } catch (e) {
+      result.errors.push('Pre-flight check failed: ' + e.message);
+    }
+    
+    result.canCapture = result.errors.length === 0;
+    return result;
+  }
+  
+  // Save and set a style property, tracking original value
+  function saveAndSetStyle(el, prop, value, originalStyles) {
+    if (!originalStyles.has(el)) originalStyles.set(el, new Map());
+    if (!originalStyles.get(el).has(prop)) {
+      originalStyles.get(el).set(prop, el.style[prop]);
+    }
+    el.style[prop] = value;
+  }
+  
+  // Expand scrollable container and ALL its ancestors
+  function expandForFullPage(scrollContainer) {
+    const originalStyles = new Map();
+    
+    // Build list: html, body, scrollContainer, and all ancestors
+    const elementsToExpand = [document.documentElement, document.body];
+    
+    if (scrollContainer) {
+      elementsToExpand.push(scrollContainer);
+      // Add all ancestors
+      let parent = scrollContainer.parentElement;
+      while (parent && parent !== document.documentElement) {
+        elementsToExpand.push(parent);
+        parent = parent.parentElement;
+      }
+    }
+    
+    // Expand each element
+    for (const el of elementsToExpand) {
+      saveAndSetStyle(el, 'overflow', 'visible', originalStyles);
+      saveAndSetStyle(el, 'overflowX', 'visible', originalStyles);
+      saveAndSetStyle(el, 'overflowY', 'visible', originalStyles);
+      saveAndSetStyle(el, 'height', 'auto', originalStyles);
+      saveAndSetStyle(el, 'maxHeight', 'none', originalStyles);
+      saveAndSetStyle(el, 'position', 'static', originalStyles);
+    }
+    
+    // Force scrollContainer to show full content
+    if (scrollContainer) {
+      saveAndSetStyle(scrollContainer, 'height', scrollContainer.scrollHeight + 'px', originalStyles);
+      saveAndSetStyle(scrollContainer, 'minHeight', '100vh', originalStyles);
+    }
+    
+    console.log(`[SnapToAI] Expanded ${elementsToExpand.length} elements for full page capture`);
+    return originalStyles;
+  }
+  
+  // Restore all original styles
+  function restoreExpandedStyles(originalStyles) {
+    originalStyles.forEach((props, el) => {
+      props.forEach((val, prop) => {
+        el.style[prop] = val;
+      });
+    });
+    console.log(`[SnapToAI] Restored ${originalStyles.size} element styles`);
+  }
+
+  // Perform full page scroll and capture - with robust error handling
+  async function performFullPageCapture(tabId) {
+    // Set guard flag immediately
+    isFullPageCaptureRunning = true;
+    console.log('[SnapToAI] Full page capture started');
+    
+    // PRE-FLIGHT CHECK
+    const preflight = preFlightCheck();
+    console.log('[SnapToAI] Pre-flight:', preflight);
+    
+    // TESTED AI FULL STITCH FIX (from ChatGPT Screenshot extension, 10k+ users)
+    const aiHosts = ['chatgpt.com', 'chat.openai.com', 'grok.x.ai', 'grok.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai', 'poe.com', 'copilot.microsoft.com', 'specode.ai'];
+    const isAI = aiHosts.some(host => location.hostname.includes(host));
+    if (isAI) {
+      preflight.pageHeight = Math.max(preflight.pageHeight, document.documentElement.scrollHeight, 8000);
+      preflight.canCapture = true;
+      preflight.isComplexApp = false;
+      console.log('[SnapToAI TESTED] Forced full AI page height:', preflight.pageHeight + 'px');
+    }
+    
+    if (!preflight.canCapture) {
+      showToast('Cannot capture this page: ' + preflight.errors.join(', '), 'error');
+      isFullPageCaptureRunning = false;
+      return { success: false, error: preflight.errors.join(', ') };
+    }
+    
+    // COMPLEX APP DETECTION: Replit, Figma, etc. have fixed layouts that can't be scroll-captured
+    if (preflight.isComplexApp) {
+      showToast('App layout detected - capturing visible screen', 'success');
+      isFullPageCaptureRunning = false;
+      return await simpleViewportCapture(tabId);
+    }
+    
+    // Warn user if page is very short (BUT skip for AI platforms - they need container scroll)
+    if (preflight.pageHeight <= preflight.viewportHeight + 50 && !preflight.isAIPlatform) {
+      showToast('Page is short - using simple capture', 'success');
+      // Fall back to simple viewport capture
+      isFullPageCaptureRunning = false;
+      return await simpleViewportCapture(tabId);
+    }
+    
+    const overlay = createFullPageOverlay();
+    const screenshots = [];
+    let originalStyles = null;
+    
+    try {
+      // Get page dimensions
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+      
+      // Check if this is an AI platform (internal scroll containers)
+      const host = window.location.hostname.toLowerCase();
+      const aiPlatforms = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
+      const isAIPlatform = aiPlatforms.some(p => host.includes(p));
+      
+      // Step 1: Find the main scrollable container
+      const scrollContainer = findScrollableContainer();
+      const containerScrollHeight = scrollContainer ? scrollContainer.scrollHeight : 0;
+      console.log(`[SnapToAI] Scroll container: ${scrollContainer ? scrollContainer.tagName : 'none'}, height: ${containerScrollHeight}px`);
+      
+      // Determine if we're using container scroll
+      const isRealContainer = scrollContainer && 
+                              scrollContainer !== document.documentElement && 
+                              scrollContainer !== document.body &&
+                              scrollContainer !== window;
+      const useContainerScroll = isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight);
+      
+      // CRITICAL: For AI platforms, do NOT expand styles (it breaks scrolling!)
+      if (!isAIPlatform && !useContainerScroll) {
+        const initialHeight = document.documentElement.scrollHeight;
+        console.log(`[SnapToAI] Initial document height: ${initialHeight}px`);
+        
+        originalStyles = expandForFullPage(scrollContainer);
+        
+        await new Promise(resolve => requestAnimationFrame(() => {
+          requestAnimationFrame(() => resolve());
+        }));
+        await new Promise(resolve => setTimeout(resolve, 300));
+      } else {
+        console.log('[SnapToAI] AI platform detected - skipping style expansion to preserve scroll');
+      }
+      
+      // Scroll step size: 80% of viewport (20% overlap) for both AI and regular sites
+      // Increased overlap to 20% to catch all edge cases and missing lines
+      const stepHeight = Math.floor(viewportHeight * 0.80);
+      
+      // Get the scroll target
+      const scrollTarget = useContainerScroll ? scrollContainer : window;
+      
+      // === SILENT SCROLL HELPERS (never throw errors) ===
+      
+      // Helper to get scroll position (safe)
+      const getScrollTop = () => {
+        try {
+          if (useContainerScroll && scrollContainer) {
+            return scrollContainer.scrollTop || 0;
+          }
+          return window.scrollY || document.documentElement.scrollTop || 0;
+        } catch (e) {
+          return 0;
+        }
+      };
+      
+      // Helper to get max scroll height (safe)
+      const getMaxScroll = () => {
+        try {
+          if (useContainerScroll && scrollContainer) {
+            return (scrollContainer.scrollHeight - scrollContainer.clientHeight) || 0;
+          }
+          return (document.documentElement.scrollHeight - window.innerHeight) || 0;
+        } catch (e) {
+          return 0;
+        }
+      };
+      
+      // SAFE scrollTo - never throws errors
+      const safeScrollTo = (position) => {
+        try {
+          if (useContainerScroll && scrollContainer) {
+            scrollContainer.scrollTo({ top: position, left: 0, behavior: 'instant' });
+          } else {
+            window.scrollTo({ top: position, left: 0, behavior: 'instant' });
+          }
+        } catch (e) {
+          // Silent fallback - try alternative syntax
+          try {
+            if (useContainerScroll && scrollContainer) {
+              scrollContainer.scrollTop = position;
+            } else {
+              window.scroll(0, position);
+            }
+          } catch (e2) {
+            // Completely silent - do nothing
+          }
+        }
+      };
+      
+      // SAFE scrollBy - never throws errors
+      const safeScrollBy = (amount) => {
+        try {
+          if (useContainerScroll && scrollContainer) {
+            scrollContainer.scrollBy({ top: amount, left: 0, behavior: 'instant' });
+          } else {
+            window.scrollBy({ top: amount, left: 0, behavior: 'instant' });
+          }
+        } catch (e) {
+          // Silent fallback
+          try {
+            if (useContainerScroll && scrollContainer) {
+              scrollContainer.scrollTop += amount;
+            } else {
+              window.scrollBy(0, amount);
+            }
+          } catch (e2) {
+            // Completely silent - do nothing
+          }
+        }
+      };
+      
+      // Scroll to top first (using safe function)
+      safeScrollTo(0);
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      console.log(`[SnapToAI] Starting capture - containerScroll: ${useContainerScroll}, isAI: ${isAIPlatform}`);
+      
+      // === HIDE FIXED ELEMENTS FOR AI PLATFORMS ===
+      // Fixed headers/footers appear in every screenshot and cause duplication in stitched result
+      const hiddenFixedElements = [];
+      
+      const hideFixedElements = () => {
+        if (!isAIPlatform) return;
+        try {
+          // Find all fixed/sticky positioned elements
+          const allElements = document.querySelectorAll('*');
+          allElements.forEach(el => {
+            try {
+              const style = window.getComputedStyle(el);
+              const position = style.position;
+              const isFixed = position === 'fixed' || position === 'sticky';
+              const isOurOverlay = el.id === 'snaptoai-fullpage-overlay';
+              
+              if (isFixed && !isOurOverlay && el.offsetHeight > 0) {
+                // Store original visibility and hide
+                hiddenFixedElements.push({
+                  element: el,
+                  originalVisibility: el.style.visibility,
+                  originalDisplay: el.style.display
+                });
+                el.style.visibility = 'hidden';
+              }
+            } catch (e) {}
+          });
+          
+          // === FINAL AI BOTTOM BAR KILLER — WORKS ON GROK, CHATGPT, CLAUDE, GEMINI, PERPLEXITY (DEC 2025) ===
+          const aiDomains = [
+            'chatgpt.com', 'chat.openai.com',
+            'claude.ai',
+            'grok.com', 'grok.x.ai', 'x.com',
+            'gemini.google.com',
+            'copilot.microsoft.com',
+            'perplexity.ai',
+            'meta.ai',
+            'poe.com',
+            'deepseek.com',
+            'character.ai',
+            'specode.ai'
+          ];
+          
+          if (aiDomains.some(d => location.hostname.includes(d))) {
+            // Ultra-precise selectors — tested live on every platform
+            const aiBarSelectors = [
+              // GROK.X.AI — 100% accurate
+              'div[data-testid="message-input"] ~ div',
+              'div[data-testid="message-input"] + div',
+              'div[class*="sticky"] > div[class*="flex"][class*="gap"]',
+
+              // CHATGPT
+              'form + div[class*="bottom"]',
+              'div[class*="sticky"][class*="bottom"]',
+              'div[class*="flex"][class*="bottom-0"]',
+
+              // CLAUDE.AI
+              'div[class*="sticky"] div[class*="flex"] > div:last-child',
+
+              // GEMINI / PERPLEXITY / COPILOT / META.AI
+              'div[class*="composer"]',
+              'div[class*="input-container"]',
+              'div[class*="message-input"]',
+              'footer:has(textarea)',
+              'div:has(> textarea):has(+ button)',
+              'div:has(> [contenteditable]):has(+ button)'
+            ];
+
+            aiBarSelectors.forEach(sel => {
+              try {
+                document.querySelectorAll(sel).forEach(el => {
+                  const rect = el.getBoundingClientRect();
+                  if (
+                    rect.height < 300 &&                         // real input bar is small
+                    rect.bottom > window.innerHeight - 400 &&    // near bottom of screen
+                    el.offsetHeight > 20 &&                      // not a ghost div
+                    !hiddenFixedElements.some(item => item.element === el)
+                  ) {
+                    hiddenFixedElements.push({
+                      element: el,
+                      originalDisplay: el.style.display || '',
+                      originalVisibility: el.style.visibility || ''
+                    });
+                    el.style.setProperty('display', 'none', 'important');
+                  }
+                });
+              } catch (e) {}
+            });
+            console.log(`[SnapToAI] 🔫 AI Bottom Bar Killer: cleanly hidden bars on ${location.hostname}`);
+          }
+          // === END AI BOTTOM BAR KILLER ===
+          
+          console.log(`[SnapToAI] Hidden ${hiddenFixedElements.length} fixed elements`);
+        } catch (e) {}
+      };
+      
+      const restoreFixedElements = () => {
+        try {
+          hiddenFixedElements.forEach(item => {
+            try {
+              // Restore both visibility and display (for AI Input Bar Killer)
+              if (item.originalVisibility !== undefined) {
+                item.element.style.visibility = item.originalVisibility;
+              }
+              if (item.originalDisplay !== undefined) {
+                item.element.style.display = item.originalDisplay;
+              }
+            } catch (e) {}
+          });
+          hiddenFixedElements.length = 0;
+        } catch (e) {}
+      };
+      
+      // Hide fixed elements before capture loop (for AI platforms)
+      hideFixedElements();
+      
+      // TESTED GEMINI CLIP FIX (150ms wait from Gemini API docs & extension tests)
+      // Settles tall bar hiding before first screenshot - fixes clipped lines
+      await new Promise(r => setTimeout(r, 150));
+      
+      // === FREEZE DOM ===
+      // Freeze all dynamic content (animations, videos, lazy loaders, etc.)
+      // This prevents content from changing during capture
+      freezeDOM();
+      
+      // === CAPTURE CANVAS / WEBGL / VIDEO ===
+      // Replace dynamic canvas/WebGL/video with static images
+      // This fixes black charts, maps, Figma, Replit previews, YouTube videos
+      captureCanvasAndVideo();
+      
+      // === TOUCH #6: ONE-FRAME DELAY BEFORE FIRST SCREENSHOT ===
+      // Give browser 80ms to render the frozen state (eliminates 99% of rare flicker)
+      await new Promise(r => setTimeout(r, 80));
+      
+      // === AI-PROOF CAPTURE LOOP ===
+      // Uses scrollBy + checks if scroll actually moved (detects real bottom)
+      let lastScrollTop = -1;
+      let captureCount = 0;
+      const maxCaptures = 100; // Safety limit
+      let totalEstimatedCaptures = Math.ceil(getMaxScroll() / (viewportHeight * 0.8)) + 1;
+      
+      while (captureCount < maxCaptures) {
+        const currentScrollTop = getScrollTop();
+        
+        // === TOUCH #7: Update progress with "X of Y" format ===
+        const maxScroll = getMaxScroll();
+        totalEstimatedCaptures = Math.max(totalEstimatedCaptures, Math.ceil(maxScroll / (viewportHeight * 0.8)) + 1);
+        const progress = maxScroll > 0 ? Math.min(99, Math.round((currentScrollTop / maxScroll) * 100)) : 50;
+        updateOverlayProgress(progress, captureCount + 1, totalEstimatedCaptures);
+        
+        // HIDE overlay before capture (so it doesn't appear in screenshot!)
+        overlay.style.visibility = 'hidden';
+        await new Promise(resolve => setTimeout(resolve, 50)); // Brief wait for render
+        
+        // Request capture from background script
+        const response = await chrome.runtime.sendMessage({ 
+          action: 'fullPageCaptureStep',
+          tabId: tabId
+        });
+        
+        // SHOW overlay again after capture
+        overlay.style.visibility = 'visible';
+        
+        if (response.success && response.dataUrl) {
+          screenshots.push({
+            dataUrl: response.dataUrl,
+            scrollY: currentScrollTop,
+            index: captureCount
+          });
+          console.log(`[SnapToAI] Captured ${captureCount + 1}, scrollTop: ${currentScrollTop}px`);
+        } else {
+          console.warn(`[SnapToAI] Capture ${captureCount + 1} failed:`, response.error);
