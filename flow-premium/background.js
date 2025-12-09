@@ -71,7 +71,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   } else if (request.action === 'addSnap') {
     // Add a snap directly to the queue (used by full page capture)
-    addSnapToQueue(request.dataUrl).then(sendResponse);
+    addSnapToQueue(request.dataUrl, request.metadata).then(sendResponse);
     return true;
   } else if (request.action === 'getQueueStatus') {
     // Return current queue size for capacity checking
@@ -403,7 +403,7 @@ async function getNextFullPageNumber() {
 }
 
 // Add snap directly to queue (used by full page capture)
-async function addSnapToQueue(dataUrl, isFullPage = true) {
+async function addSnapToQueue(dataUrl, metadata = null) {
   try {
     const snaps = await getSnaps();
     const result = await chrome.storage.local.get({ snapMetadata: [] });
@@ -418,16 +418,16 @@ async function addSnapToQueue(dataUrl, isFullPage = true) {
       };
     }
     
-    // Get full page number for metadata
-    let metadata = null;
-    if (isFullPage) {
+    // Use provided metadata or create default full page metadata
+    let finalMetadata = metadata;
+    if (!finalMetadata) {
       const fpNumber = await getNextFullPageNumber();
-      metadata = { isFullPage: true, fullPageNumber: fpNumber };
+      finalMetadata = { isFullPage: true, fullPageNumber: fpNumber };
     }
     
     // Add new snap
     snaps.push(dataUrl);
-    snapMetadata.push(metadata);
+    snapMetadata.push(finalMetadata);
     
     // Save to local storage
     await chrome.storage.local.set({ snaps, snapMetadata });
@@ -435,7 +435,7 @@ async function addSnapToQueue(dataUrl, isFullPage = true) {
     // Update badge
     await updateBadge(snaps.length);
     
-    return { success: true, count: snaps.length, fullPageNumber: metadata?.fullPageNumber };
+    return { success: true, count: snaps.length, metadata: finalMetadata };
   } catch (error) {
     console.log('[SnapToAI] Add snap:', error.message || error);
     return { success: false, error: error.message };

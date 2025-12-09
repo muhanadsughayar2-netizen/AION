@@ -364,12 +364,13 @@ function estimateDataUrlBytes(dataUrl) {
   return Math.ceil((base64Part.length * 3) / 4);
 }
 
-// Stitch full page images directly and save to queue (no editor)
+// Stitch full page images directly and save to queue (splits into 5 chunks)
 async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, isAIPlatform = false) {
   const overlay = document.getElementById('fullPageOverlay');
   const overlayStatus = document.getElementById('fullPageStatus');
   const status = document.getElementById('status');
   const fullPageButton = document.getElementById('fullPageButton');
+  const NUM_CHUNKS = 5;
   
   try {
     if (!screenshots || screenshots.length === 0) {
@@ -399,49 +400,84 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
     // Calculate total height: first image full + (remaining images - clamped overlap each)
     let totalHeight = images[0].height;
     for (let i = 1; i < images.length; i++) {
-      // Clamp overlap to image height (final segment may be shorter)
       const effectiveOverlap = Math.min(overlap, images[i].height);
       totalHeight += images[i].height - effectiveOverlap;
     }
     
-    overlayStatus.textContent = 'Creating final image...';
+    overlayStatus.textContent = 'Creating full page...';
     
-    // Create canvas and stitch
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = totalHeight;
-    const ctx = canvas.getContext('2d');
+    // Create full stitched canvas first
+    const fullCanvas = document.createElement('canvas');
+    fullCanvas.width = width;
+    fullCanvas.height = totalHeight;
+    const fullCtx = fullCanvas.getContext('2d');
     
     let destY = 0;
     for (let i = 0; i < images.length; i++) {
       const img = images[i];
       if (i === 0) {
-        // First image: draw full
-        ctx.drawImage(img, 0, 0);
+        fullCtx.drawImage(img, 0, 0);
         destY = img.height;
       } else {
-        // Subsequent images: skip top overlap (it duplicates bottom of previous)
-        // Clamp overlap if image is shorter than expected (e.g., final segment)
         const effectiveOverlap = Math.min(overlap, img.height);
         const srcY = effectiveOverlap;
         const srcHeight = img.height - effectiveOverlap;
         if (srcHeight > 0) {
-          ctx.drawImage(img, 0, srcY, img.width, srcHeight, 0, destY, img.width, srcHeight);
+          fullCtx.drawImage(img, 0, srcY, img.width, srcHeight, 0, destY, img.width, srcHeight);
           destY += srcHeight;
         }
       }
     }
     
-    // Convert to PNG and save directly to queue
-    const dataUrl = canvas.toDataURL('image/png');
+    // Split into 5 equal chunks
+    overlayStatus.textContent = 'Splitting into parts...';
+    const chunkHeight = Math.ceil(totalHeight / NUM_CHUNKS);
+    const chunks = [];
+    
+    for (let c = 0; c < NUM_CHUNKS; c++) {
+      const startY = c * chunkHeight;
+      const endY = Math.min(startY + chunkHeight, totalHeight);
+      const thisChunkHeight = endY - startY;
+      
+      if (thisChunkHeight <= 0) break;
+      
+      const chunkCanvas = document.createElement('canvas');
+      chunkCanvas.width = width;
+      chunkCanvas.height = thisChunkHeight;
+      const chunkCtx = chunkCanvas.getContext('2d');
+      
+      chunkCtx.drawImage(fullCanvas, 0, startY, width, thisChunkHeight, 0, 0, width, thisChunkHeight);
+      
+      const chunkDataUrl = chunkCanvas.toDataURL('image/png');
+      const chunkNumber = c + 1;
+      chunks.push({
+        dataUrl: chunkDataUrl,
+        metadata: {
+          isFullPage: true,
+          chunkIndex: chunkNumber,
+          totalChunks: NUM_CHUNKS
+        }
+      });
+    }
+    
+    // Update totalChunks in all metadata to reflect actual count
+    const actualChunks = chunks.length;
+    for (const chunk of chunks) {
+      chunk.metadata.totalChunks = actualChunks;
+    }
     
     overlayStatus.textContent = 'Saving to queue...';
     
-    // Save to queue
-    await chrome.runtime.sendMessage({ 
-      action: 'addSnap', 
-      dataUrl: dataUrl 
-    });
+    // Save all chunks to queue with metadata
+    let lastDataUrl = null;
+    for (const chunk of chunks) {
+      await chrome.runtime.sendMessage({ 
+        action: 'addSnap', 
+        dataUrl: chunk.dataUrl,
+        metadata: chunk.metadata
+      });
+      lastDataUrl = chunk.dataUrl;
+    }
     
     // Notify background that stitch is complete
     chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
@@ -449,12 +485,12 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
     // Refresh UI
     await loadSnaps();
     updateUI();
-    showLastCapturePreview(dataUrl);
+    if (lastDataUrl) showLastCapturePreview(lastDataUrl);
     
     // Hide overlay and update status
     overlay.style.display = 'none';
     fullPageButton.disabled = false;
-    status.textContent = `Full page captured! ✓`;
+    status.textContent = `Full page: ${chunks.length} parts saved! ✓`;
     status.className = 'status active';
     
     setTimeout(() => {
