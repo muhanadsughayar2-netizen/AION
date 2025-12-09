@@ -2,7 +2,7 @@
 // Handles screenshot capture, storage management, downloads, and messaging
 
 const MAX_SNAPS = 9;
-const AI_SITES = ['grok.com', 'grok.x.ai', 'chat.openai.com', 'chatgpt.com', 'claude.ai'];
+const AI_SITES = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
 const CAPTURE_COOLDOWN = 500; // Minimum 500ms between captures to avoid Chrome rate limit
 
 // Default settings

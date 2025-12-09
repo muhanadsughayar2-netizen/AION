@@ -271,8 +271,87 @@
     }
   }
 
+  // Click attachment button to make file input appear (ChatGPT, Grok create inputs lazily)
+  async function ensureFileInputVisible(platform) {
+    console.log(`[SnapToAI] Ensuring file input is visible for: ${platform}`);
+    
+    // Platform-specific attachment button selectors
+    let buttonSelectors = [];
+    
+    if (platform.includes('chatgpt.com') || platform.includes('chat.openai.com')) {
+      buttonSelectors = [
+        'button[data-testid="composer-attach-button"]',
+        'button[aria-label*="Attach"]',
+        'button[aria-label*="attach"]',
+        'button[aria-label*="Upload"]',
+        'button[aria-label*="upload"]',
+        '[data-testid="attach-button"]',
+        'button svg[class*="paperclip"]',
+        'button:has(svg path[d*="M21.44"])'
+      ];
+    } else if (platform.includes('grok.com') || platform.includes('x.com') || platform.includes('grok.x.ai')) {
+      buttonSelectors = [
+        'button[aria-label*="image"]',
+        'button[aria-label*="Image"]',
+        'button[aria-label*="Upload"]',
+        'button[aria-label*="upload"]',
+        'button[aria-label*="media"]',
+        'button[aria-label*="Media"]',
+        '[data-testid="fileInput"]',
+        '[data-testid="file-input"]',
+        'input[data-testid*="file"]'
+      ];
+    } else if (platform.includes('claude.ai')) {
+      buttonSelectors = [
+        'button[aria-label*="Attach"]',
+        'button[aria-label*="attach"]',
+        'button[aria-label*="Upload"]',
+        'button[aria-label*="upload"]',
+        'button[aria-label*="file"]',
+        '[data-testid="upload-button"]'
+      ];
+    } else if (platform.includes('gemini.google.com')) {
+      buttonSelectors = [
+        'button[aria-label*="Upload"]',
+        'button[aria-label*="upload"]',
+        'button[aria-label*="Add"]',
+        'button[aria-label*="image"]',
+        '[data-testid="upload"]'
+      ];
+    } else if (platform.includes('perplexity.ai')) {
+      buttonSelectors = [
+        'button[aria-label*="Attach"]',
+        'button[aria-label*="attach"]',
+        'button[aria-label*="Upload"]',
+        'button[aria-label*="upload"]'
+      ];
+    }
+    
+    // Try to find and click the attachment button
+    for (const selector of buttonSelectors) {
+      try {
+        const button = document.querySelector(selector);
+        if (button) {
+          console.log(`[SnapToAI] Found attachment button: ${selector}`);
+          button.click();
+          // Wait for file input to appear after click
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return true;
+        }
+      } catch (e) {
+        console.log(`[SnapToAI] Selector failed: ${selector}`);
+      }
+    }
+    
+    console.log('[SnapToAI] No attachment button found, file input may already exist');
+    return false;
+  }
+
   // Find file input for AI platform
   async function findFileInput(platform) {
+    // First, try to make file input visible by clicking attachment button
+    await ensureFileInputVisible(platform);
+    
     let selectors = [];
     
     if (platform.includes('chatgpt.com') || platform.includes('chat.openai.com')) {
@@ -288,7 +367,21 @@
         'input[type="file"][multiple]',
         'input[type="file"]'
       ];
-    } else if (platform.includes('grok.com')) {
+    } else if (platform.includes('grok.com') || platform.includes('x.com') || platform.includes('grok.x.ai')) {
+      selectors = [
+        'input[type="file"][accept*="image"]',
+        'input[type="file"][data-testid*="file"]',
+        'input[data-testid="fileInput"]',
+        'input[data-testid="file-input"]',
+        'input[type="file"]'
+      ];
+    } else if (platform.includes('gemini.google.com')) {
+      selectors = [
+        'input[type="file"][accept*="image"]',
+        'input[type="file"][multiple]',
+        'input[type="file"]'
+      ];
+    } else if (platform.includes('perplexity.ai')) {
       selectors = [
         'input[type="file"][accept*="image"]',
         'input[type="file"]'
@@ -297,8 +390,8 @@
       selectors = ['input[type="file"]'];
     }
     
-    const maxRetries = 3;
-    const retryDelay = 500;
+    const maxRetries = 5;
+    const retryDelay = 600;
     
     for (let retry = 0; retry < maxRetries; retry++) {
       for (const selector of selectors) {
@@ -314,6 +407,10 @@
       
       if (retry < maxRetries - 1) {
         console.log(`[SnapToAI] File input not found, retry ${retry + 1}/${maxRetries}...`);
+        // On retry 2, try clicking attachment button again
+        if (retry === 1) {
+          await ensureFileInputVisible(platform);
+        }
         await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
     }
