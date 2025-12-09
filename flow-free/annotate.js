@@ -1998,7 +1998,11 @@ async function loadCustomStickers() {
       const btn = document.createElement('button');
       btn.className = 'custom-sticker-btn';
       btn.dataset.text = text;
-      btn.innerHTML = `${text}<span class="delete-sticker">×</span>`;
+      btn.textContent = text;
+      const deleteSpan = document.createElement('span');
+      deleteSpan.className = 'delete-sticker';
+      deleteSpan.textContent = '×';
+      btn.appendChild(deleteSpan);
       container.appendChild(btn);
     });
     
