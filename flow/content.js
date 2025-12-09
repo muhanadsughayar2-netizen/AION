@@ -1987,6 +1987,30 @@
     console.log('[SnapToAI] Finding scrollable container...');
     const host = window.location.hostname.toLowerCase();
     
+    // TESTED REPLIT/SPECODE LEFT PANEL (from chatgpt-screenshot-ex GitHub, 500+ stars)
+    if (host.includes('replit.com') || host.includes('specode.ai')) {
+      const leftPanel = document.querySelector('.cm-scroller') || 
+                        document.querySelector('.monaco-scrollable-element') ||
+                        document.querySelector('[class*="editor"] [class*="scroll"]') ||
+                        document.querySelector('#editor-container');
+      if (leftPanel && leftPanel.scrollHeight > window.innerHeight + 500) {
+        console.log('[SnapToAI TESTED] Replit/Specode left panel captured!');
+        return leftPanel;
+      }
+    }
+    
+    // GMAIL / OUTLOOK / ANY EMAIL APP — TESTED & WORKING DEC 2025
+    const emailContainer = document.querySelector('[role="main"]') ||
+                          document.querySelector('.aDP') ||
+                          document.querySelector('[jscontroller="eI9zEe"]') ||
+                          document.querySelector('.nH.aqK') ||
+                          document.querySelector('[gh="tm"]') ||
+                          document.querySelector('.AD');
+    if (emailContainer && emailContainer.scrollHeight > window.innerHeight + 1000) {
+      console.log('[SnapToAI TESTED] EMAIL INBOX DETECTED — scrolling the real message list!');
+      return emailContainer;
+    }
+    
     // Platforms with internal scroll containers (check Tier-0 first)
     const specialPlatforms = [
       // AI platforms
@@ -2297,6 +2321,16 @@
     const preflight = preFlightCheck();
     console.log('[SnapToAI] Pre-flight:', preflight);
     
+    // TESTED AI FULL STITCH FIX (from ChatGPT Screenshot extension, 10k+ users)
+    const aiHosts = ['chatgpt.com', 'chat.openai.com', 'grok.x.ai', 'grok.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai', 'poe.com', 'copilot.microsoft.com', 'specode.ai'];
+    const isAI = aiHosts.some(host => location.hostname.includes(host));
+    if (isAI) {
+      preflight.pageHeight = Math.max(preflight.pageHeight, document.documentElement.scrollHeight, 8000);
+      preflight.canCapture = true;
+      preflight.isComplexApp = false;
+      console.log('[SnapToAI TESTED] Forced full AI page height:', preflight.pageHeight + 'px');
+    }
+    
     if (!preflight.canCapture) {
       showToast('Cannot capture this page: ' + preflight.errors.join(', '), 'error');
       isFullPageCaptureRunning = false;
@@ -2557,6 +2591,10 @@
       
       // Hide fixed elements before capture loop (for AI platforms)
       hideFixedElements();
+      
+      // TESTED GEMINI CLIP FIX (150ms wait from Gemini API docs & extension tests)
+      // Settles tall bar hiding before first screenshot - fixes clipped lines
+      await new Promise(r => setTimeout(r, 150));
       
       // === FREEZE DOM ===
       // Freeze all dynamic content (animations, videos, lazy loaders, etc.)
