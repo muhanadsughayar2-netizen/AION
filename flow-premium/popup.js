@@ -1089,11 +1089,21 @@ function updateThumbnails() {
     const sub1 = chrome.i18n.getMessage('emptySubheading1') || 'Capture → Select → Copy → Paste';
     const sub2 = chrome.i18n.getMessage('emptySubheading2') || 'Up to 18 screenshots merge into ONE image for AI';
     
-    emptyState.innerHTML = `
-      <div class="empty-heading">${heading}</div>
-      <div class="empty-subheading">${sub1}</div>
-      <div class="empty-subheading">${sub2}</div>
-    `;
+    const headingEl = document.createElement('div');
+    headingEl.className = 'empty-heading';
+    headingEl.textContent = heading;
+    
+    const sub1El = document.createElement('div');
+    sub1El.className = 'empty-subheading';
+    sub1El.textContent = sub1;
+    
+    const sub2El = document.createElement('div');
+    sub2El.className = 'empty-subheading';
+    sub2El.textContent = sub2;
+    
+    emptyState.appendChild(headingEl);
+    emptyState.appendChild(sub1El);
+    emptyState.appendChild(sub2El);
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';
     // Hide action buttons when no snaps
