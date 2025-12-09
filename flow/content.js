@@ -1112,8 +1112,15 @@
         
         /* === TOUCH #2: HOVER-STATE KILLER === */
         /* Disable pointer events to prevent hover states changing */
-        body.snaptoai-frozen * {
+        /* FIXED: Exclude interactive elements so AI chat inputs still work */
+        body.snaptoai-frozen *:not(textarea):not([contenteditable]):not(input):not(button):not(a):not([role="textbox"]):not([role="textbox"] *) {
           pointer-events: none !important;
+        }
+        
+        /* PROTECT AI CHAT INPUTS - Never freeze these */
+        textarea, [contenteditable], [role="textbox"], input[type="text"], input[type="search"] {
+          pointer-events: auto !important;
+          animation-play-state: running !important;
         }
         
         /* === TOUCH #4: SCROLLBAR HIDER === */
@@ -1126,6 +1133,19 @@
       `;
       document.head.appendChild(freezeCSS);
       freezeState.styleElement = freezeCSS;
+      
+      // PROTECT AI CHAT INPUTS - Never let them freeze
+      const protectInputs = () => {
+        document.querySelectorAll('textarea, [contenteditable], [role="textbox"], input[type="text"], input[type="search"]').forEach(el => {
+          el.style.pointerEvents = 'auto';
+          el.dataset.snaptoaiProtected = 'true';
+        });
+      };
+      protectInputs();
+      
+      // Re-protect on every DOM change (AI platforms dynamically recreate inputs)
+      freezeState.inputProtectionObserver = new MutationObserver(protectInputs);
+      freezeState.inputProtectionObserver.observe(document.body, { childList: true, subtree: true });
       
       // Add frozen class to body
       document.body.classList.add('snaptoai-frozen');
@@ -1323,6 +1343,17 @@
         freezeState.styleElement.remove();
         freezeState.styleElement = null;
       }
+      
+      // Disconnect input protection observer
+      if (freezeState.inputProtectionObserver) {
+        freezeState.inputProtectionObserver.disconnect();
+        freezeState.inputProtectionObserver = null;
+      }
+      
+      // Clean up protected input markers
+      document.querySelectorAll('[data-snaptoai-protected]').forEach(el => {
+        delete el.dataset.snaptoaiProtected;
+      });
       
       // Remove frozen class from body
       document.body.classList.remove('snaptoai-frozen');
