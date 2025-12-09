@@ -432,7 +432,11 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
     // Split into 5 equal chunks
     overlayStatus.textContent = 'Splitting into parts...';
     const chunkHeight = Math.ceil(totalHeight / NUM_CHUNKS);
-    const chunks = [];
+    const chunkDataUrls = [];
+    
+    // Preview thumbnail target height for nice display in 16:9 grid
+    const PREVIEW_HEIGHT = 480;
+    let previewUrl = null;
     
     for (let c = 0; c < NUM_CHUNKS; c++) {
       const startY = c * chunkHeight;
@@ -441,6 +445,7 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
       
       if (thisChunkHeight <= 0) break;
       
+      // Create full-res chunk canvas
       const chunkCanvas = document.createElement('canvas');
       chunkCanvas.width = width;
       chunkCanvas.height = thisChunkHeight;
@@ -449,35 +454,39 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
       chunkCtx.drawImage(fullCanvas, 0, startY, width, thisChunkHeight, 0, 0, width, thisChunkHeight);
       
       const chunkDataUrl = chunkCanvas.toDataURL('image/png');
-      const chunkNumber = c + 1;
-      chunks.push({
-        dataUrl: chunkDataUrl,
-        metadata: {
-          isFullPage: true,
-          chunkIndex: chunkNumber,
-          totalChunks: NUM_CHUNKS
-        }
-      });
-    }
-    
-    // Update totalChunks in all metadata to reflect actual count
-    const actualChunks = chunks.length;
-    for (const chunk of chunks) {
-      chunk.metadata.totalChunks = actualChunks;
+      chunkDataUrls.push(chunkDataUrl);
+      
+      // Create preview from first chunk only
+      if (c === 0) {
+        const previewScale = PREVIEW_HEIGHT / thisChunkHeight;
+        const previewWidth = Math.round(width * previewScale);
+        const previewCanvas = document.createElement('canvas');
+        previewCanvas.width = previewWidth;
+        previewCanvas.height = PREVIEW_HEIGHT;
+        const previewCtx = previewCanvas.getContext('2d');
+        previewCtx.drawImage(chunkCanvas, 0, 0, width, thisChunkHeight, 0, 0, previewWidth, PREVIEW_HEIGHT);
+        previewUrl = previewCanvas.toDataURL('image/jpeg', 0.85);
+      }
     }
     
     overlayStatus.textContent = 'Saving to queue...';
     
-    // Save all chunks to queue with metadata
-    let lastDataUrl = null;
-    for (const chunk of chunks) {
-      await chrome.runtime.sendMessage({ 
-        action: 'addSnap', 
-        dataUrl: chunk.dataUrl,
-        metadata: chunk.metadata
-      });
-      lastDataUrl = chunk.dataUrl;
-    }
+    // Save as ONE item with all chunks in metadata (shows as single thumbnail)
+    const metadata = {
+      isFullPage: true,
+      totalChunks: chunkDataUrls.length,
+      previewUrl: previewUrl,
+      chunks: chunkDataUrls  // All 5 full-res chunks stored here for export
+    };
+    
+    // Use first chunk as the main dataUrl (for backwards compatibility)
+    await chrome.runtime.sendMessage({ 
+      action: 'addSnap', 
+      dataUrl: chunkDataUrls[0],
+      metadata: metadata
+    });
+    
+    const lastDataUrl = chunkDataUrls[0];
     
     // Notify background that stitch is complete
     chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
@@ -490,7 +499,7 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
     // Hide overlay and update status
     overlay.style.display = 'none';
     fullPageButton.disabled = false;
-    status.textContent = `Full page: ${chunks.length} parts saved! ✓`;
+    status.textContent = `Full page captured! (${chunkDataUrls.length} parts) ✓`;
     status.className = 'status active';
     
     setTimeout(() => {
@@ -1209,8 +1218,16 @@ function updateThumbnails() {
       handleCopySingle(index);
     });
     
+    // Check metadata for full page or chunk info
+    const meta = currentSnapMetadata[index];
+    
     const img = document.createElement('img');
-    img.src = dataUrl;
+    // Use preview URL for full page (nicer thumbnail display), fall back to full image
+    if (meta && meta.previewUrl) {
+      img.src = meta.previewUrl;
+    } else {
+      img.src = dataUrl;
+    }
     img.alt = `Snap ${index + 1}`;
     
     // Thumbnail click to preview
@@ -1233,23 +1250,20 @@ function updateThumbnails() {
     thumbnail.addEventListener('drop', (e) => handleDrop(e, index));
     thumbnail.addEventListener('dragend', handleDragEnd);
     
-    // Check metadata for full page or chunk info
-    const meta = currentSnapMetadata[index];
-    
-    // Create number badge - shows FP# for full pages, regular number for snaps
+    // Create number badge
     const number = document.createElement('div');
-    if (meta && meta.isFullPage) {
-      // Full page capture - purple styling with FP badge
+    if (meta && meta.isFullPage && meta.chunks) {
+      // Full page capture with chunks - purple styling with FULL PAGE badge
       thumbnail.classList.add('fullpage');
       number.className = 'fullpage-badge';
-      number.textContent = `FP${meta.fullPageNumber}`;
-      number.title = `Full Page Capture #${meta.fullPageNumber}`;
-    } else if (meta && meta.isChunk) {
-      // Chunked capture (legacy) - show chunk info
+      number.textContent = `FULL PAGE`;
+      number.title = `Full Page Capture (${meta.totalChunks} parts)`;
+    } else if (meta && meta.isFullPage) {
+      // Full page capture (legacy single) - purple styling with FP badge
       thumbnail.classList.add('fullpage');
       number.className = 'fullpage-badge';
-      number.textContent = `FP${meta.fullPageNumber || '?'} ${meta.part}/${meta.totalParts}`;
-      number.title = `Part ${meta.part} of ${meta.totalParts}`;
+      number.textContent = `FP`;
+      number.title = `Full Page Capture`;
     } else {
       // Regular snap/snip - cyan styling with number
       number.className = 'thumbnail-number';
