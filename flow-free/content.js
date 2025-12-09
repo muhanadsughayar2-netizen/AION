@@ -1481,22 +1481,109 @@
     return null;
   }
 
+  // TIER 0: Known AI platform selectors (most reliable for AI chat sites)
+  function findScrollableContainerTier0(host) {
+    console.log('[SnapToAI] Tier 0: Checking known AI platform selectors...');
+    
+    // Platform-specific selectors for chat containers
+    const platformSelectors = {
+      'chatgpt.com': [
+        '[data-testid="scroll-container"]',
+        'main div[class*="react-scroll-to-bottom"]',
+        '.group.w-full',
+        '[class*="overflow-y-auto"]',
+        'main > div > div[class*="overflow"]'
+      ],
+      'chat.openai.com': [
+        '[data-testid="scroll-container"]',
+        'main div[class*="react-scroll-to-bottom"]',
+        '.group.w-full',
+        '[class*="overflow-y-auto"]',
+        'main > div > div[class*="overflow"]'
+      ],
+      'grok.com': [
+        '[data-testid="conversation-scroll-view"]',
+        '[data-testid="deck-feed"]',
+        '[role="presentation"] .css-1dbjc4n',
+        'main [class*="overflow-y-auto"]',
+        'main [class*="overflow-auto"]'
+      ],
+      'grok.x.ai': [
+        '[data-testid="conversation-scroll-view"]',
+        '[data-testid="deck-feed"]',
+        '[role="presentation"]',
+        'main [class*="overflow"]'
+      ],
+      'x.com': [
+        '[data-testid="conversation-scroll-view"]',
+        '[data-testid="deck-feed"]',
+        'main [class*="overflow"]'
+      ],
+      'claude.ai': [
+        '[data-testid="conversation-content"]',
+        '.conversation-content',
+        'main [class*="overflow-y-auto"]',
+        '[class*="overflow-y-auto"]'
+      ],
+      'gemini.google.com': [
+        'main [class*="overflow-y-auto"]',
+        '.conversation-container',
+        '[class*="overflow-auto"]'
+      ],
+      'perplexity.ai': [
+        'main [class*="overflow-y-auto"]',
+        '[class*="overflow-auto"]'
+      ]
+    };
+    
+    // Find matching platform
+    for (const [platform, selectors] of Object.entries(platformSelectors)) {
+      if (host.includes(platform)) {
+        console.log(`[SnapToAI] Tier 0: Matched platform ${platform}`);
+        
+        for (const selector of selectors) {
+          try {
+            const elements = document.querySelectorAll(selector);
+            for (const el of elements) {
+              // Verify element is actually scrollable
+              if (el && el.scrollHeight > el.clientHeight + 50) {
+                console.log(`[SnapToAI] Tier 0: Found container with selector: ${selector}`);
+                return el;
+              }
+            }
+          } catch (e) {
+            console.log(`[SnapToAI] Tier 0: Selector failed: ${selector}`);
+          }
+        }
+        break;
+      }
+    }
+    
+    console.log('[SnapToAI] Tier 0: No known platform container found');
+    return null;
+  }
+
   // Master function: tries all tiers
   function findScrollableContainer() {
     console.log('[SnapToAI] Finding scrollable container...');
     const host = window.location.hostname.toLowerCase();
     
-    // AI platforms with internal scroll containers: Check Tier 2 FIRST
-    // Note: Replit uses window scroll, not internal containers
-    const aiPlatforms = ['grok.com', 'grok.x.ai', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
+    // AI platforms with internal scroll containers
+    const aiPlatforms = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
     const isAIPlatform = aiPlatforms.some(p => host.includes(p));
     
     if (isAIPlatform) {
-      console.log('[SnapToAI] AI platform detected - checking internal containers first');
-      let container = findScrollableContainerTier2();
+      console.log('[SnapToAI] AI platform detected - checking known selectors first');
+      
+      // TIER 0: Try known platform-specific selectors first (most reliable)
+      let container = findScrollableContainerTier0(host);
       if (container) return container;
       
-      // Fallback to document/body
+      // TIER 2: Generic scroll container detection
+      container = findScrollableContainerTier2();
+      if (container) return container;
+      
+      // TIER 1: Document/body fallback
       container = findScrollableContainerTier1();
       if (container) return container;
     } else {
@@ -1512,6 +1599,12 @@
     // Try Tier 3: Body/documentElement fallback
     let container = findScrollableContainerTier3();
     if (container) return container;
+    
+    // FINAL FALLBACK: For AI platforms, use documentElement anyway (allow capture to proceed)
+    if (isAIPlatform) {
+      console.log('[SnapToAI] AI platform fallback: Using documentElement to allow capture');
+      return document.documentElement;
+    }
     
     console.log('[SnapToAI] No scrollable container found - page may be short');
     return null;
