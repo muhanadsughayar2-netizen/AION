@@ -1485,8 +1485,10 @@
   function findScrollableContainerTier0(host) {
     console.log('[SnapToAI] Tier 0: Checking known AI platform selectors...');
     
-    // Platform-specific selectors for chat containers
+    // Platform-specific selectors for scroll containers
+    // Covers: AI platforms, Office apps, Dev tools, Social media, Productivity apps
     const platformSelectors = {
+      // === AI CHAT PLATFORMS ===
       'chatgpt.com': [
         '[data-testid="scroll-container"]',
         'main div[class*="react-scroll-to-bottom"]',
@@ -1498,21 +1500,18 @@
         '[data-testid="scroll-container"]',
         'main div[class*="react-scroll-to-bottom"]',
         '.group.w-full',
-        '[class*="overflow-y-auto"]',
-        'main > div > div[class*="overflow"]'
+        '[class*="overflow-y-auto"]'
       ],
       'grok.com': [
         '[data-testid="conversation-scroll-view"]',
         '[data-testid="deck-feed"]',
         '[role="presentation"] .css-1dbjc4n',
-        'main [class*="overflow-y-auto"]',
-        'main [class*="overflow-auto"]'
+        'main [class*="overflow-y-auto"]'
       ],
       'grok.x.ai': [
         '[data-testid="conversation-scroll-view"]',
         '[data-testid="deck-feed"]',
-        '[role="presentation"]',
-        'main [class*="overflow"]'
+        '[role="presentation"]'
       ],
       'x.com': [
         '[data-testid="conversation-scroll-view"]',
@@ -1522,8 +1521,7 @@
       'claude.ai': [
         '[data-testid="conversation-content"]',
         '.conversation-content',
-        'main [class*="overflow-y-auto"]',
-        '[class*="overflow-y-auto"]'
+        'main [class*="overflow-y-auto"]'
       ],
       'gemini.google.com': [
         'main [class*="overflow-y-auto"]',
@@ -1534,22 +1532,309 @@
         'main [class*="overflow-y-auto"]',
         '[class*="overflow-auto"]'
       ],
+      
+      // === MICROSOFT OFFICE ONLINE ===
+      'excel.office.com': [
+        '[class*="scroll-region"]',
+        '.ewr-cnt-main',
+        '[class*="canvas-container"]'
+      ],
+      'word.office.com': [
+        '.Page',
+        '[class*="Page"]',
+        '.WACViewPanel',
+        '[class*="scroll"]'
+      ],
+      'powerpoint.office.com': [
+        '.slide-container',
+        '[class*="slide"]',
+        '.filmstrip'
+      ],
+      'outlook.office.com': [
+        '[class*="customScrollBar"]',
+        '.ms-ScrollablePane',
+        '[class*="ReadingPane"]'
+      ],
+      'outlook.live.com': [
+        '[class*="customScrollBar"]',
+        '.ms-ScrollablePane',
+        '[class*="ReadingPane"]'
+      ],
+      'onedrive.live.com': [
+        '.od-ItemsScopeItemRow-list',
+        '[class*="Files"]',
+        '[class*="overflow-auto"]'
+      ],
+      
+      // === GOOGLE WORKSPACE ===
+      'docs.google.com': [
+        '.kix-appview-editor',
+        '.docs-texteventtarget-iframe',
+        '[class*="docs-editor"]'
+      ],
+      'sheets.google.com': [
+        '.grid-container',
+        '[class*="waffle"]',
+        '.docs-sheet-container'
+      ],
+      'slides.google.com': [
+        '.punch-viewer-container',
+        '[class*="filmstrip"]',
+        '.punch-filmstrip'
+      ],
+      'drive.google.com': [
+        '[class*="a-s-tb"]',
+        '.a-t',
+        '[class*="overflow-auto"]'
+      ],
+      'mail.google.com': [
+        '[class*="Tm"]',
+        '.aeF',
+        '[class*="overflow-auto"]'
+      ],
+      'calendar.google.com': [
+        '[class*="tEhMVd"]',
+        '.k3oqHe',
+        '[role="main"]'
+      ],
+      
+      // === DEVELOPER TOOLS ===
       'replit.com': [
         '#replit-app [data-scroll-container]',
         '.replit-ui-theme-root [class*="overflow-y-auto"]',
         '[class*="cm-scroller"]',
-        'main [class*="overflow-auto"]',
-        '[class*="overflow-y-auto"]',
-        '[class*="overflow-auto"]'
+        'main [class*="overflow-auto"]'
       ],
       'github.com': [
-        'main [class*="overflow-auto"]',
         '.application-main [class*="overflow"]',
-        '[class*="overflow-y-auto"]'
+        'main [class*="overflow-auto"]',
+        '.js-code-block-container'
+      ],
+      'gitlab.com': [
+        '.content-wrapper',
+        'main [class*="overflow"]',
+        '.file-holder'
+      ],
+      'bitbucket.org': [
+        '.main',
+        '[class*="overflow-auto"]',
+        '.diff-container'
       ],
       'stackoverflow.com': [
-        '#content [class*="overflow"]',
-        'main [class*="overflow-auto"]'
+        '#content',
+        '.s-page-title',
+        'main'
+      ],
+      'codepen.io': [
+        '.code-wrap',
+        '[class*="editor"]',
+        '.CodeMirror-scroll'
+      ],
+      'codesandbox.io': [
+        '.monaco-scrollable-element',
+        '[class*="Editor"]'
+      ],
+      'jsfiddle.net': [
+        '.CodeMirror-scroll',
+        '#content'
+      ],
+      
+      // === PRODUCTIVITY & PROJECT MANAGEMENT ===
+      'notion.so': [
+        '.notion-scroller',
+        '.notion-page-content',
+        '[class*="scroller"]'
+      ],
+      'notion.site': [
+        '.notion-scroller',
+        '.notion-page-content'
+      ],
+      'trello.com': [
+        '.board-canvas',
+        '[class*="list"]',
+        '.js-board-canvas'
+      ],
+      'asana.com': [
+        '.TaskPane',
+        '[class*="SpreadsheetGrid"]',
+        '.SortableList'
+      ],
+      'monday.com': [
+        '.board-view-container',
+        '[class*="pulse"]',
+        '.table-component'
+      ],
+      'clickup.com': [
+        '.cu-task-list-view',
+        '[class*="list-view"]',
+        '.task-container'
+      ],
+      'basecamp.com': [
+        '.panel',
+        '[class*="todolist"]',
+        '.todos'
+      ],
+      'linear.app': [
+        '[class*="IssueList"]',
+        '.scroll-container',
+        '[class*="overflow-auto"]'
+      ],
+      'jira.atlassian.com': [
+        '.ghx-pool',
+        '[class*="issue-list"]',
+        '.sc-epnACN'
+      ],
+      'confluence.atlassian.com': [
+        '#main-content',
+        '.wiki-content',
+        '[class*="page-content"]'
+      ],
+      
+      // === COMMUNICATION ===
+      'slack.com': [
+        '.c-virtual_list__scroll_container',
+        '[class*="messages"]',
+        '.p-workspace__primary_view'
+      ],
+      'discord.com': [
+        '[class*="scroller"]',
+        '[class*="chat"]',
+        '.scrollerInner-2YIMLh'
+      ],
+      'teams.microsoft.com': [
+        '.ts-messages-list',
+        '[class*="scroll"]',
+        '.messages-content'
+      ],
+      'web.whatsapp.com': [
+        '[class*="copyable-area"]',
+        '._3h-X_',
+        '[class*="message-list"]'
+      ],
+      'web.telegram.org': [
+        '.bubbles',
+        '.scrollable',
+        '[class*="messages"]'
+      ],
+      'messenger.com': [
+        '[class*="__fb-light-mode"]',
+        '[role="main"]',
+        '[class*="xmjcpbm"]'
+      ],
+      
+      // === SOCIAL MEDIA ===
+      'twitter.com': [
+        '[data-testid="primaryColumn"]',
+        'main [class*="overflow"]',
+        '.css-1dbjc4n'
+      ],
+      'linkedin.com': [
+        '.scaffold-layout__main',
+        '[class*="feed"]',
+        '.core-rail'
+      ],
+      'facebook.com': [
+        '[role="main"]',
+        '[class*="feed"]',
+        '.x1lliihq'
+      ],
+      'instagram.com': [
+        'main',
+        '[class*="x78zum5"]',
+        'article'
+      ],
+      'reddit.com': [
+        '[class*="ListingLayout"]',
+        'main',
+        '.Post'
+      ],
+      'pinterest.com': [
+        '[class*="Grid"]',
+        '.Collection',
+        '[class*="masonry"]'
+      ],
+      'tiktok.com': [
+        '[class*="DivVideoFeed"]',
+        '.tiktok-x6y88p-DivItemContainer',
+        '[class*="video-feed"]'
+      ],
+      'youtube.com': [
+        '#content',
+        '#primary',
+        'ytd-browse'
+      ],
+      
+      // === DESIGN & CREATIVE ===
+      'dribbble.com': [
+        '.shots-grid',
+        '#main',
+        '[class*="shots"]'
+      ],
+      'behance.net': [
+        '.Project-content',
+        '.ProjectCoverNeue-info',
+        '[class*="grid"]'
+      ],
+      'unsplash.com': [
+        '[class*="DaNWU"]',
+        'main',
+        '[class*="masonry"]'
+      ],
+      
+      // === NEWS & READING ===
+      'medium.com': [
+        'main',
+        '.postArticle-content',
+        'article'
+      ],
+      'substack.com': [
+        '.post',
+        'article',
+        '.available-content'
+      ],
+      'news.ycombinator.com': [
+        '.itemlist',
+        '#hnmain',
+        'table'
+      ],
+      
+      // === E-COMMERCE ===
+      'amazon.com': [
+        '#dp',
+        '.s-main-slot',
+        '#search'
+      ],
+      'ebay.com': [
+        '.srp-results',
+        '#mainContent',
+        '.s-item__wrapper'
+      ],
+      'shopify.com': [
+        'main',
+        '.section',
+        '[class*="product"]'
+      ],
+      
+      // === LEARNING ===
+      'coursera.org': [
+        '.rc-CML',
+        '[class*="LessonLayout"]',
+        'main'
+      ],
+      'udemy.com': [
+        '.curriculum-content',
+        '[class*="course-landing"]',
+        'main'
+      ],
+      'edx.org': [
+        '.course-content',
+        'main',
+        '[class*="lesson"]'
+      ],
+      'khanacademy.org': [
+        '._185ubzz',
+        '[class*="content"]',
+        'main'
       ]
     };
     
@@ -1585,11 +1870,29 @@
     console.log('[SnapToAI] Finding scrollable container...');
     const host = window.location.hostname.toLowerCase();
     
-    // Platforms with internal scroll containers (AI + developer tools)
+    // Platforms with internal scroll containers (check Tier-0 first)
     const specialPlatforms = [
+      // AI platforms
       'grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 
       'claude.ai', 'gemini.google.com', 'perplexity.ai',
-      'replit.com', 'github.com', 'stackoverflow.com'
+      // Microsoft Office
+      'excel.office.com', 'word.office.com', 'powerpoint.office.com',
+      'outlook.office.com', 'outlook.live.com', 'onedrive.live.com',
+      // Google Workspace
+      'docs.google.com', 'sheets.google.com', 'slides.google.com',
+      'drive.google.com', 'mail.google.com', 'calendar.google.com',
+      // Developer tools
+      'replit.com', 'github.com', 'gitlab.com', 'bitbucket.org',
+      'stackoverflow.com', 'codepen.io', 'codesandbox.io', 'jsfiddle.net',
+      // Productivity
+      'notion.so', 'notion.site', 'trello.com', 'asana.com', 'monday.com',
+      'clickup.com', 'linear.app', 'jira.atlassian.com', 'confluence.atlassian.com',
+      // Communication
+      'slack.com', 'discord.com', 'teams.microsoft.com',
+      'web.whatsapp.com', 'web.telegram.org', 'messenger.com',
+      // Social Media
+      'twitter.com', 'linkedin.com', 'facebook.com', 'instagram.com',
+      'reddit.com', 'pinterest.com', 'youtube.com'
     ];
     const isSpecialPlatform = specialPlatforms.some(p => host.includes(p));
     
@@ -1674,8 +1977,33 @@
       // AI platforms
       'grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 
       'claude.ai', 'gemini.google.com', 'perplexity.ai',
-      // Developer tools (they have scrollable content areas)
-      'replit.com', 'github.com', 'gitlab.com', 'stackoverflow.com'
+      // Microsoft Office Online
+      'excel.office.com', 'word.office.com', 'powerpoint.office.com',
+      'outlook.office.com', 'outlook.live.com', 'onedrive.live.com',
+      // Google Workspace
+      'docs.google.com', 'sheets.google.com', 'slides.google.com',
+      'drive.google.com', 'mail.google.com', 'calendar.google.com',
+      // Developer tools
+      'replit.com', 'github.com', 'gitlab.com', 'bitbucket.org',
+      'stackoverflow.com', 'codepen.io', 'codesandbox.io', 'jsfiddle.net',
+      // Productivity & Project Management
+      'notion.so', 'notion.site', 'trello.com', 'asana.com', 'monday.com',
+      'clickup.com', 'basecamp.com', 'linear.app', 
+      'jira.atlassian.com', 'confluence.atlassian.com',
+      // Communication
+      'slack.com', 'discord.com', 'teams.microsoft.com',
+      'web.whatsapp.com', 'web.telegram.org', 'messenger.com',
+      // Social Media
+      'twitter.com', 'linkedin.com', 'facebook.com', 'instagram.com',
+      'reddit.com', 'pinterest.com', 'tiktok.com', 'youtube.com',
+      // Design & Creative
+      'dribbble.com', 'behance.net', 'unsplash.com',
+      // News & Reading
+      'medium.com', 'substack.com', 'news.ycombinator.com',
+      // E-commerce
+      'amazon.com', 'ebay.com', 'shopify.com',
+      // Learning
+      'coursera.org', 'udemy.com', 'edx.org', 'khanacademy.org'
     ];
     
     for (const site of allowedSites) {
