@@ -395,10 +395,10 @@ body {
   background: rgba(0, 217, 255, 0.5);
 }
 
-/* Thumbnails Grid - 4 columns, expands with content */
+/* Thumbnails Grid - 3 columns, expands with content */
 .thumbnails {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   min-height: 40px;
   align-content: start;
