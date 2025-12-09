@@ -1086,8 +1086,8 @@ function updateThumbnails() {
     };
     
     const heading = chrome.i18n.getMessage('emptyHeading') || 'Screenshots to AI in One Click';
-    const sub1 = chrome.i18n.getMessage('emptySubheading1') || 'Select All → Copy → Paste.';
-    const sub2 = chrome.i18n.getMessage('emptySubheading2') || 'All 9 screenshots drop as ONE stacked image.';
+    const sub1 = chrome.i18n.getMessage('emptySubheading1') || 'Capture → Select → Copy → Paste';
+    const sub2 = chrome.i18n.getMessage('emptySubheading2') || 'Up to 18 screenshots merge into ONE image for AI';
     
     emptyState.innerHTML = `
       <div class="empty-heading">${heading}</div>
