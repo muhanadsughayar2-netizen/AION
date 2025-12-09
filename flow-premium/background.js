@@ -540,12 +540,22 @@ async function captureFullPageStep(tabId) {
     // Small delay to ensure page has settled after scroll
     await new Promise(resolve => setTimeout(resolve, 100));
     
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    // Get the tab info using the provided tabId (more reliable than querying active tab)
+    const tab = await chrome.tabs.get(tabId);
+    
+    // Capture using the tab's windowId - with retry logic for permission issues
+    let dataUrl;
+    try {
+      dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    } catch (captureError) {
+      // If first attempt fails, retry with null windowId (current window)
+      console.log('[SnapToAI] Retrying capture with current window...');
+      dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png' });
+    }
     
     return { success: true, dataUrl };
   } catch (error) {
-    console.log('[SnapToAI] Capture step:', error.message || error);
+    console.log('[SnapToAI] Capture step error:', error.message || error);
     return { success: false, error: error.message };
   }
 }
