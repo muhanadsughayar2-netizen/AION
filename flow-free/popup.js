@@ -452,7 +452,7 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
     const chunks = [];
     let canvas = document.createElement('canvas');
     canvas.width = width;
-    let ctx = canvas.getContext('2d');
+    let ctx = canvas.getContext('2d', { willReadFrequently: true });
     let canvasHeight = 0;
     let currentY = 0;
     let chunkStartIdx = 0;
@@ -491,7 +491,7 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = width;
       tempCanvas.height = newHeight;
-      const tempCtx = tempCanvas.getContext('2d');
+      const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
       
       // Copy existing content
       if (canvasHeight > 0) {
@@ -544,7 +544,7 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
           const testCanvas = document.createElement('canvas');
           testCanvas.width = canvas.width;
           testCanvas.height = canvas.height;
-          const testCtx = testCanvas.getContext('2d');
+          const testCtx = testCanvas.getContext('2d', { willReadFrequently: true });
           testCtx.drawImage(canvas, 0, 0);
           addInvisibleWatermark(testCanvas);
           const testDataUrl = testCanvas.toDataURL('image/jpeg', JPEG_QUALITY);
@@ -562,7 +562,7 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
         const finalCanvas = document.createElement('canvas');
         finalCanvas.width = canvas.width;
         finalCanvas.height = canvas.height;
-        const finalCtx = finalCanvas.getContext('2d');
+        const finalCtx = finalCanvas.getContext('2d', { willReadFrequently: true });
         finalCtx.drawImage(canvas, 0, 0);
         
         // Add watermark only once to final chunk
@@ -577,7 +577,7 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
         if (!isLastImage) {
           canvas = document.createElement('canvas');
           canvas.width = width;
-          ctx = canvas.getContext('2d');
+          ctx = canvas.getContext('2d', { willReadFrequently: true });
           canvasHeight = 0;
           currentY = 0;
           chunkStartIdx = i + 1;
@@ -1217,7 +1217,7 @@ async function createCompositeImage(dataUrls) {
   const canvas = document.createElement('canvas');
   canvas.width = maxWidth + (padding * 2);
   canvas.height = totalHeight;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   
   // Fill background
   ctx.fillStyle = '#1a1a2e';

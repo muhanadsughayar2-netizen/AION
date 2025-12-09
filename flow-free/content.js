@@ -2620,7 +2620,30 @@
       const MAX_CONSECUTIVE_FAILS = 5;
       let totalEstimatedCaptures = Math.ceil(getMaxScroll() / (viewportHeight * 0.8)) + 1;
       
+      // === SERVICE WORKER KEEP-ALIVE ===
+      // Ping service worker every 15 seconds to prevent it from going to sleep (MV3 issue)
+      // Chrome 109+: API calls reset the 30-second inactivity timer
+      let lastKeepAliveTime = Date.now();
+      const KEEP_ALIVE_INTERVAL = 15000; // 15 seconds
+      
+      async function keepServiceWorkerAlive() {
+        const now = Date.now();
+        if (now - lastKeepAliveTime >= KEEP_ALIVE_INTERVAL) {
+          try {
+            // Any chrome.storage call resets the service worker timer
+            await chrome.storage.session.set({ keepAlive: now });
+            lastKeepAliveTime = now;
+            console.log('[SnapToAI] Service worker keep-alive ping sent');
+          } catch (e) {
+            // Ignore keep-alive errors
+          }
+        }
+      }
+      
       while (captureCount < maxCaptures && consecutiveFails < MAX_CONSECUTIVE_FAILS) {
+        // Keep service worker alive during long captures
+        await keepServiceWorkerAlive();
+        
         const currentScrollTop = getScrollTop();
         
         // Update progress with "X of Y" format
