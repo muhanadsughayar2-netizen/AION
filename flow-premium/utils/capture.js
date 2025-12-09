@@ -1,7 +1,7 @@
 // Flow Capture Utilities
 // Helper functions for screenshot capture and storage management
 
-const MAX_SNAPS = 9; // Maximum 9 screenshots in queue
+const MAX_SNAPS = 18; // Maximum 18 screenshots in queue
 
 // Convert dataURL to Blob
 async function dataUrlToBlob(dataUrl) {

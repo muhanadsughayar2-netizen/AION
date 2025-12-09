@@ -1,7 +1,7 @@
 // SnapToAI Background Service Worker
 // Handles screenshot capture, storage management, downloads, and messaging
 
-const MAX_SNAPS = 9;
+const MAX_SNAPS = 18;
 const AI_SITES = ['grok.com', 'grok.x.ai', 'chat.openai.com', 'chatgpt.com', 'claude.ai'];
 const CAPTURE_COOLDOWN = 500; // Minimum 500ms between captures to avoid Chrome rate limit
 
