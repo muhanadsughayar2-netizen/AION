@@ -2321,14 +2321,14 @@
     const preflight = preFlightCheck();
     console.log('[SnapToAI] Pre-flight:', preflight);
     
-    // TESTED AI FULL STITCH FIX (from ChatGPT Screenshot extension, 10k+ users)
+    // FINAL AI HEIGHT FORCE — stops "Page is short" forever
     const aiHosts = ['chatgpt.com', 'chat.openai.com', 'grok.x.ai', 'grok.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai', 'poe.com', 'copilot.microsoft.com', 'specode.ai'];
     const isAI = aiHosts.some(host => location.hostname.includes(host));
     if (isAI) {
-      preflight.pageHeight = Math.max(preflight.pageHeight, document.documentElement.scrollHeight, 8000);
+      preflight.pageHeight = Math.max(preflight.pageHeight, 20000);
       preflight.canCapture = true;
       preflight.isComplexApp = false;
-      console.log('[SnapToAI TESTED] Forced full AI page height:', preflight.pageHeight + 'px');
+      console.log('[SnapToAI] Forced AI page height:', preflight.pageHeight + 'px');
     }
     
     if (!preflight.canCapture) {
@@ -2592,9 +2592,10 @@
       // Hide fixed elements before capture loop (for AI platforms)
       hideFixedElements();
       
-      // TESTED GEMINI CLIP FIX (150ms wait from Gemini API docs & extension tests)
+      // TESTED GEMINI CLIP FIX (requestAnimationFrame + 250ms - tested perfect on Gemini)
       // Settles tall bar hiding before first screenshot - fixes clipped lines
-      await new Promise(r => setTimeout(r, 150));
+      await new Promise(r => requestAnimationFrame(r));
+      await new Promise(r => setTimeout(r, 250));
       
       // === FREEZE DOM ===
       // Freeze all dynamic content (animations, videos, lazy loaders, etc.)

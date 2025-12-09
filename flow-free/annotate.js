@@ -55,7 +55,7 @@ function findBestOverlapMatch(img1Data, img2, expectedOverlap, searchRange = 50)
     const canvas2 = document.createElement('canvas');
     canvas2.width = img2.width;
     canvas2.height = Math.min(expectedOverlap + searchRange, img2.height);
-    const ctx2 = canvas2.getContext('2d');
+    const ctx2 = canvas2.getContext('2d', { willReadFrequently: true });
     ctx2.drawImage(img2, 0, 0);
     const img2Data = ctx2.getImageData(0, 0, canvas2.width, canvas2.height);
     
