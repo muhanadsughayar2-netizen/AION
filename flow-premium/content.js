@@ -522,7 +522,7 @@
             const canvas = document.createElement('canvas');
             canvas.width = img.width;
             canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
             
             // White background for JPEG (no transparency)
             ctx.fillStyle = '#FFFFFF';
@@ -896,7 +896,7 @@
           const tempCanvas = document.createElement('canvas');
           tempCanvas.width = video.videoWidth;
           tempCanvas.height = video.videoHeight;
-          const tempCtx = tempCanvas.getContext('2d');
+          const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
           
           try {
             // Draw current video frame to canvas
@@ -1233,7 +1233,7 @@
             const canvas = document.createElement('canvas');
             canvas.width = img.naturalWidth || img.width;
             canvas.height = img.naturalHeight || img.height;
-            const ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
             ctx.drawImage(img, 0, 0);
             
             // Store original src and replace with static image

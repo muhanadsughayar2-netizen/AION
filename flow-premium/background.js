@@ -717,7 +717,7 @@ async function convertToJpeg(pngDataUrl, quality) {
     
     // Create offscreen canvas
     const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     
     // Fill white background (JPEG doesn't support transparency)
     ctx.fillStyle = '#ffffff';
@@ -759,7 +759,7 @@ async function copyToClipboardWithLimit(dataUrl) {
       const newHeight = Math.floor(imageBitmap.height * scale);
       
       const canvas = new OffscreenCanvas(newWidth, newHeight);
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
       ctx.drawImage(imageBitmap, 0, 0, newWidth, newHeight);
       
       const resizedBlob = await canvas.convertToBlob({ type: 'image/png' });
