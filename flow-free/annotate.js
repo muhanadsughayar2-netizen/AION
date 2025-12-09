@@ -113,7 +113,7 @@ function findBestOverlapMatch(img1Data, img2, expectedOverlap, searchRange = 50)
 
 function getCanvasImageData(canvas, bottomRows) {
   try {
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const startY = Math.max(0, canvas.height - bottomRows);
     const height = Math.min(bottomRows, canvas.height);
     return ctx.getImageData(0, startY, canvas.width, height);
@@ -159,7 +159,7 @@ async function loadSettings() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   canvas = document.getElementById('canvas');
-  ctx = canvas.getContext('2d');
+  ctx = canvas.getContext('2d', { willReadFrequently: true });
   
   // Load settings first (for default border/frame preferences)
   await loadSettings();
@@ -696,7 +696,7 @@ async function loadPageImage(index) {
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = img.width;
       tempCanvas.height = img.height;
-      const tempCtx = tempCanvas.getContext('2d');
+      const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
       tempCtx.drawImage(img, 0, 0);
       pageOriginalImages[index] = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
       
