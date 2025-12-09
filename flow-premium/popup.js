@@ -54,7 +54,7 @@ function hideProcessingOverlay() {
 
 // Add invisible watermark for AI detection
 function addInvisibleWatermark(canvas) {
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   const w = canvas.width;
   const h = canvas.height;
 
