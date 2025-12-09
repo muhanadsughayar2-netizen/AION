@@ -1,0 +1,29 @@
+The CanvasSettings object also has a desynchronized boolean. When a CanvasSettings object's desynchronized is true, then the user agent may optimize the rendering of the canvas to reduce the latency, as measured from input events to rasterization, by desynchronizing the canvas paint cycle from the event loop, bypassing the ordinary user agent rendering algorithm, or both. Insofar as this mode involves bypassing the usual paint mechanisms, rasterization, or both, it might introduce visible tearing artifacts.
+
+The user agent usually renders on a buffer which is not being displayed, quickly swapping it and the one being scanned out for presentation; the former buffer is called back buffer and the latter front buffer. A popular technique for reducing latency is called front buffer rendering, also known as single buffer rendering, where rendering happens in parallel and racily with the scanning out process. This technique reduces the latency at the price of potentially introducing tearing artifacts and can be used to implement in total or part of the desynchronized boolean. [MULTIPLEBUFFERING]
+
+The desynchronized boolean can be useful when implementing certain kinds of applications, such as drawing applications, where the latency between input and rasterization is critical.
+
+The CanvasSettings object also has a will read frequently boolean. When a CanvasSettings object's will read frequently is true, the user agent may optimize the canvas for readback operations.
+
+On most devices the user agent needs to decide whether to store the canvas's output bitmap on the GPU (this is also called "hardware accelerated"), or on the CPU (also called "software"). Most rendering operations are more performant for accelerated canvases, with the major exception being readback with getImageData(), toDataURL(), or toBlob(). CanvasSettings objects with will read frequently equal to true tell the user agent that the webpage is likely to perform many readback operations and that it is advantageous to use a software canvas.
+
+The CanvasSettings object also has a color space setting of type PredefinedColorSpace. The CanvasSettings object's color space indicates the color space for the output bitmap.
+
+The CanvasSettings object also has a color type setting of type CanvasColorType. The CanvasSettings object's color type indicates the data type of the color and alpha components of the pixels of the output bitmap.
+
+To initialize a CanvasSettings output bitmap, given a CanvasSettings context and a CanvasRenderingContext2DSettings settings:
+
+Set context's alpha to settings["alpha"].
+
+Set context's desynchronized to settings["desynchronized"].
+
+Set context's color space to settings["colorSpace"].
+
+Set context's color type to settings["colorType"].
+
+Set context's will read frequently to settings["willReadFrequently"].
+
+The getContextAttributes() method steps are to return «[ "alpha" → this's alpha, "desynchronized" → this's desynchronized, "colorSpace" → this's color space, "colorType" → this's color type, "willReadFrequently" → this's will read frequently ]».
+
+4.12.5.1.3 The canvas state
