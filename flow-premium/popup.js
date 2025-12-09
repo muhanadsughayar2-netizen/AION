@@ -1378,9 +1378,12 @@ async function handleCopySelected() {
   }
   
   try {
-    const selectedSnaps = Array.from(selectedSnapIds)
-      .sort((a, b) => a - b)
-      .map(index => currentSnaps[index]);
+    // Expand full page chunks into separate images for copying
+    const selectedSnaps = [];
+    for (const index of Array.from(selectedSnapIds).sort((a, b) => a - b)) {
+      const expanded = getExpandedSnaps(index);
+      selectedSnaps.push(...expanded);
+    }
     
     status.textContent = `Creating composite image...`;
     status.className = 'status active';
@@ -1534,30 +1537,50 @@ async function handleDownloadSelected() {
   }
   
   try {
-    const selectedSnaps = Array.from(selectedSnapIds)
-      .sort((a, b) => a - b)
-      .map(index => ({ index, dataUrl: currentSnaps[index] }));
-    
-    // Show processing overlay for multiple files
-    if (selectedSnaps.length > 1) {
-      showProcessingOverlay('Downloading images...', `${selectedSnaps.length} high-quality files`);
+    // Expand full page chunks into separate files for download
+    const downloadItems = [];
+    let fileCounter = 1;
+    for (const index of Array.from(selectedSnapIds).sort((a, b) => a - b)) {
+      const meta = currentSnapMetadata[index];
+      
+      if (meta && meta.isFullPage && meta.chunks && Array.isArray(meta.chunks)) {
+        // Full page capture - download each chunk as separate file
+        for (let c = 0; c < meta.chunks.length; c++) {
+          downloadItems.push({
+            dataUrl: meta.chunks[c],
+            filename: `snaptoai_fullpage_part${c + 1}_of_${meta.chunks.length}.png`
+          });
+        }
+      } else {
+        // Regular snap
+        downloadItems.push({
+          dataUrl: currentSnaps[index],
+          filename: `snaptoai_snap_${fileCounter}.png`
+        });
+        fileCounter++;
+      }
     }
     
-    status.textContent = `Downloading ${selectedSnaps.length} snaps...`;
+    // Show processing overlay for multiple files
+    if (downloadItems.length > 1) {
+      showProcessingOverlay('Downloading images...', `${downloadItems.length} high-quality files`);
+    }
+    
+    status.textContent = `Downloading ${downloadItems.length} files...`;
     status.className = 'status active';
     
-    // Download each snap
-    for (let i = 0; i < selectedSnaps.length; i++) {
-      const { index, dataUrl } = selectedSnaps[i];
+    // Download each file
+    for (let i = 0; i < downloadItems.length; i++) {
+      const { dataUrl, filename } = downloadItems[i];
       
       // Update processing overlay with progress
-      if (selectedSnaps.length > 1) {
-        updateProcessingText(`Downloading ${i + 1}/${selectedSnaps.length}`, 'Preparing high-quality PNG...');
+      if (downloadItems.length > 1) {
+        updateProcessingText(`Downloading ${i + 1}/${downloadItems.length}`, 'Preparing high-quality PNG...');
       }
       
       const link = document.createElement('a');
       link.href = dataUrl;
-      link.download = `snaptoai_snap_${index + 1}.png`;
+      link.download = filename;
       link.click();
       
       // Small delay between downloads
@@ -1567,11 +1590,11 @@ async function handleDownloadSelected() {
     // Hide processing overlay
     hideProcessingOverlay();
     
-    status.textContent = `${selectedSnaps.length} snaps downloaded ✓`;
+    status.textContent = `${downloadItems.length} files downloaded ✓`;
     status.className = 'status active';
     
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
     }, 2000);
   } catch (error) {
@@ -1580,7 +1603,7 @@ async function handleDownloadSelected() {
     status.textContent = 'Download failed';
     status.className = 'status error';
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
     }, 2000);
   }
@@ -2198,7 +2221,23 @@ function loadImage(dataUrl) {
   });
 }
 
-// ===== Helper: Get selected snaps in order =====
+// ===== Helper: Expand full page chunks for a given index =====
+// Returns array of dataUrls - for full page captures, returns all chunks stitched together
+// For regular snaps, returns single-element array with the dataUrl
+function getExpandedSnaps(index) {
+  const meta = currentSnapMetadata[index];
+  const dataUrl = currentSnaps[index];
+  
+  // Check if this is a full page capture with chunks stored in metadata
+  if (meta && meta.isFullPage && meta.chunks && Array.isArray(meta.chunks)) {
+    return meta.chunks; // Return all 5 full-res chunks
+  }
+  
+  // Regular snap - return as single-element array
+  return dataUrl ? [dataUrl] : [];
+}
+
+// ===== Helper: Get selected snaps in order (with full page expansion) =====
 function getSelectedSnaps() {
   if (selectedSnapIds.size === 0 && currentSnaps.length > 0) {
     currentSnaps.forEach((_, index) => selectedSnapIds.add(index));
@@ -2207,9 +2246,9 @@ function getSelectedSnaps() {
   
   const snaps = [];
   for (const index of [...selectedSnapIds].sort((a, b) => a - b)) {
-    if (currentSnaps[index]) {
-      snaps.push(currentSnaps[index]);
-    }
+    // Expand full page chunks into separate images for export
+    const expanded = getExpandedSnaps(index);
+    snaps.push(...expanded);
   }
   return snaps;
 }
