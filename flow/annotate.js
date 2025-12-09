@@ -1085,7 +1085,7 @@ function applyCrop() {
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = width;
   tempCanvas.height = height;
-  const tempCtx = tempCanvas.getContext('2d');
+  const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
   
   // Draw the cropped region
   tempCtx.putImageData(
@@ -1143,7 +1143,7 @@ async function saveSnipToQueue() {
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = width;
     tempCanvas.height = height;
-    const tempCtx = tempCanvas.getContext('2d');
+    const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
     
     // Draw the snipped region from original image (NOT modifying original)
     tempCtx.putImageData(
@@ -1227,7 +1227,7 @@ function drawBrowserFrame(targetCtx, targetCanvas) {
   const newCanvas = document.createElement('canvas');
   newCanvas.width = useCanvas.width;
   newCanvas.height = useCanvas.height + frameHeight;
-  const newCtx = newCanvas.getContext('2d');
+  const newCtx = newCanvas.getContext('2d', { willReadFrequently: true });
   
   if (browserFrameStyle === 'mac') {
     // macOS Style - SnapToAI brand (black + blue)
@@ -1358,7 +1358,7 @@ function applyBorderDecoration(sourceCanvas) {
     const framedCanvas = document.createElement('canvas');
     framedCanvas.width = sourceCanvas.width;
     framedCanvas.height = sourceCanvas.height + frameHeight;
-    const framedCtx = framedCanvas.getContext('2d');
+    const framedCtx = framedCanvas.getContext('2d', { willReadFrequently: true });
     
     // Determine frame Y position based on browserFramePosition (top/bottom)
     const isBottom = browserFramePosition === 'bottom';
@@ -1452,7 +1452,7 @@ function applyBorderDecoration(sourceCanvas) {
   
   const padding = borderWidth;
   const decoratedCanvas = document.createElement('canvas');
-  const decoratedCtx = decoratedCanvas.getContext('2d');
+  const decoratedCtx = decoratedCanvas.getContext('2d', { willReadFrequently: true });
   
   decoratedCanvas.width = workingCanvas.width + (padding * 2);
   decoratedCanvas.height = workingCanvas.height + (padding * 2);
@@ -2068,7 +2068,7 @@ async function save() {
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = width;
       tempCanvas.height = height;
-      const tempCtx = tempCanvas.getContext('2d');
+      const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
       
       // Draw the cropped region from original image
       tempCtx.putImageData(
@@ -2241,7 +2241,7 @@ async function saveFullPageWithAnnotations() {
       const chunkCanvas = document.createElement('canvas');
       chunkCanvas.width = pageWidth;
       chunkCanvas.height = chunkHeight;
-      const chunkCtx = chunkCanvas.getContext('2d');
+      const chunkCtx = chunkCanvas.getContext('2d', { willReadFrequently: true });
       
       // Render pages to chunk
       let currentY = 0;
@@ -2253,7 +2253,7 @@ async function saveFullPageWithAnnotations() {
         const pageCanvas = document.createElement('canvas');
         pageCanvas.width = img.width;
         pageCanvas.height = img.height;
-        const pageCtx = pageCanvas.getContext('2d');
+        const pageCtx = pageCanvas.getContext('2d', { willReadFrequently: true });
         pageCtx.drawImage(img, 0, 0);
         
         const pageAnns = pageAnnotations[i] || [];

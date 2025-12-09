@@ -2759,7 +2759,7 @@
           restoreExpandedStyles(originalStyles);
         }
       } catch (e) {}
-      
+      R
       try {
         removeFullPageOverlay();
       } catch (e) {}
