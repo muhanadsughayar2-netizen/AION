@@ -1169,7 +1169,7 @@ async function saveSnipToQueue() {
     
     // Check if queue is full
     if (response && response.queueFull) {
-      alert(response.error || 'Queue full (18/18). Delete some images first.');
+      alert(response.error || 'Queue full (9/9). Delete some images first.');
       return;
     }
     
@@ -1998,11 +1998,7 @@ async function loadCustomStickers() {
       const btn = document.createElement('button');
       btn.className = 'custom-sticker-btn';
       btn.dataset.text = text;
-      btn.textContent = text;
-      const deleteSpan = document.createElement('span');
-      deleteSpan.className = 'delete-sticker';
-      deleteSpan.textContent = '×';
-      btn.appendChild(deleteSpan);
+      btn.innerHTML = `${text}<span class="delete-sticker">×</span>`;
       container.appendChild(btn);
     });
     
@@ -2098,7 +2094,7 @@ async function save() {
       
       // Check if queue is full
       if (response && response.queueFull) {
-        alert(response.error || 'Queue full (18/18). Delete some images first.');
+        alert(response.error || 'Queue full (9/9). Delete some images first.');
         return;
       }
       

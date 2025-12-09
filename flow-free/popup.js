@@ -211,10 +211,7 @@ function translateUI() {
   };
   
   document.querySelector('.status').textContent = getMessage('flowReady', 'Flow: Ready');
-  const selectAllBtnTranslate = document.getElementById('selectAllBtn');
-  if (selectAllBtnTranslate) selectAllBtnTranslate.textContent = getMessage('selectAll', 'Select All');
-  const quickSelectAllBtnTranslate = document.getElementById('quickSelectAllBtn');
-  if (quickSelectAllBtnTranslate) quickSelectAllBtnTranslate.textContent = getMessage('selectAll', 'SELECT ALL');
+  document.getElementById('selectAllBtn').textContent = getMessage('selectAll', 'Select All');
   document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Copy Selected');
   document.getElementById('downloadSelectedBtn').textContent = getMessage('downloadSelected', 'Download Selected');
   document.getElementById('exportPdfBtn').textContent = '📄 ' + getMessage('exportPDF', 'Export PDF');
@@ -249,46 +246,11 @@ function setupEventListeners() {
   // Clear button
   document.getElementById('clearButton').addEventListener('click', handleClear);
   
-  // Selection controls (old hidden selection bar)
-  const selectAllBtn = document.getElementById('selectAllBtn');
-  if (selectAllBtn) selectAllBtn.addEventListener('click', handleSelectAll);
-  
-  // Quick select buttons (new layout)
-  const quickSelectAllBtn = document.getElementById('quickSelectAllBtn');
-  if (quickSelectAllBtn) quickSelectAllBtn.addEventListener('click', handleSelectAll);
+  // Selection controls
+  document.getElementById('selectAllBtn').addEventListener('click', handleSelectAll);
   document.getElementById('copySelectedBtn').addEventListener('click', handleCopySelected);
   document.getElementById('downloadSelectedBtn').addEventListener('click', handleDownloadSelected);
   document.getElementById('exportPdfBtn').addEventListener('click', handleExportPDF);
-  
-  // SEND TO AI button
-  const sendToAIBtn = document.getElementById('sendToAIBtn');
-  if (sendToAIBtn) {
-    sendToAIBtn.addEventListener('click', sendToAI);
-  }
-  
-  // Download PNG button - downloads all selected as separate PNGs
-  const downloadPngBtn = document.getElementById('downloadPngBtn');
-  if (downloadPngBtn) {
-    downloadPngBtn.addEventListener('click', handleDownloadPNG);
-  }
-  
-  // Download PDF button - combines all selected into one high-quality PDF
-  const downloadPdfBtn = document.getElementById('downloadPdfBtn');
-  if (downloadPdfBtn) {
-    downloadPdfBtn.addEventListener('click', handleDownloadPDF);
-  }
-  
-  // MIX & MATCH button - clears selection so user can pick individually
-  const mixMatchBtn = document.getElementById('mixMatchBtn');
-  if (mixMatchBtn) {
-    mixMatchBtn.addEventListener('click', handleMixMatch);
-  }
-  
-  // EDIT button - opens the annotate screen for the first selected image
-  const editBtn = document.getElementById('editBtn');
-  if (editBtn) {
-    editBtn.addEventListener('click', handleEdit);
-  }
   
   // Preview modal
   document.getElementById('previewClose').addEventListener('click', closePreview);
@@ -364,7 +326,7 @@ function estimateDataUrlBytes(dataUrl) {
   return Math.ceil((base64Part.length * 3) / 4);
 }
 
-// Stitch full page images directly and save to queue (no editor)
+// Open full page annotation editor with paginated view
 async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, isAIPlatform = false) {
   const overlay = document.getElementById('fullPageOverlay');
   const overlayStatus = document.getElementById('fullPageStatus');
@@ -376,91 +338,42 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
       throw new Error('No screenshots to stitch');
     }
     
-    overlayStatus.textContent = 'Stitching images...';
+    overlayStatus.textContent = 'Opening editor...';
     
-    // Load all images
-    const images = await Promise.all(screenshots.map(dataUrl => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = dataUrl;
-      });
-    }));
-    
-    // Calculate overlap (10% for regular sites, 0% for AI platforms)
-    const overlapPercent = isAIPlatform ? 0 : 0.10;
-    const cssOverlap = Math.round(viewportHeight * overlapPercent);
-    const captureScale = images[0].height / viewportHeight;
-    const overlap = Math.round(cssOverlap * captureScale);
-    
-    const width = images[0].width;
-    
-    // Calculate total height: first image full + (remaining images - clamped overlap each)
-    let totalHeight = images[0].height;
-    for (let i = 1; i < images.length; i++) {
-      // Clamp overlap to image height (final segment may be shorter)
-      const effectiveOverlap = Math.min(overlap, images[i].height);
-      totalHeight += images[i].height - effectiveOverlap;
-    }
-    
-    overlayStatus.textContent = 'Creating final image...';
-    
-    // Create canvas and stitch
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = totalHeight;
-    const ctx = canvas.getContext('2d');
-    
-    let destY = 0;
-    for (let i = 0; i < images.length; i++) {
-      const img = images[i];
-      if (i === 0) {
-        // First image: draw full
-        ctx.drawImage(img, 0, 0);
-        destY = img.height;
-      } else {
-        // Subsequent images: skip top overlap (it duplicates bottom of previous)
-        // Clamp overlap if image is shorter than expected (e.g., final segment)
-        const effectiveOverlap = Math.min(overlap, img.height);
-        const srcY = effectiveOverlap;
-        const srcHeight = img.height - effectiveOverlap;
-        if (srcHeight > 0) {
-          ctx.drawImage(img, 0, srcY, img.width, srcHeight, 0, destY, img.width, srcHeight);
-          destY += srcHeight;
-        }
-      }
-    }
-    
-    // Convert to PNG and save directly to queue
-    const dataUrl = canvas.toDataURL('image/png');
-    
-    overlayStatus.textContent = 'Saving to queue...';
-    
-    // Save to queue
-    await chrome.runtime.sendMessage({ 
-      action: 'addSnap', 
-      dataUrl: dataUrl 
+    // Store screenshots AND viewport dimensions for correct DPR-scaled overlap calculation
+    // Also store isAIPlatform flag (AI platforms use 0% overlap, regular sites use 10%)
+    await chrome.storage.local.set({ 
+      fullPageScreenshots: screenshots,
+      fullPageViewportWidth: viewportWidth,
+      fullPageViewportHeight: viewportHeight,
+      fullPageIsAIPlatform: isAIPlatform
     });
     
-    // Notify background that stitch is complete
-    chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
+    // Open annotation screen in full page mode
+    const width = Math.min(1200, screen.width - 100);
+    const height = Math.min(900, screen.height - 100);
+    const left = Math.round((screen.width - width) / 2);
+    const top = Math.round((screen.height - height) / 2);
     
-    // Refresh UI
-    await loadSnaps();
-    updateUI();
-    showLastCapturePreview(dataUrl);
+    window.open(
+      'annotate.html?mode=fullpage',
+      'FullPageEditor',
+      `width=${width},height=${height},left=${left},top=${top}`
+    );
     
-    // Hide overlay and update status
+    // Hide overlay and update UI
     overlay.style.display = 'none';
     fullPageButton.disabled = false;
-    status.textContent = `Full page captured! ✓`;
+    status.textContent = `Full page: ${screenshots.length} pages ready to edit`;
     status.className = 'status active';
     
     setTimeout(() => {
       status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
-    }, 2000);
+    }, 3000);
+    
+    // Don't reset capture state here - annotation window will do it when done
+    return;
     
   } catch (error) {
     console.log('[SnapToAI] Full page:', error.message || error);
@@ -814,7 +727,7 @@ async function handleOrbClick() {
     } else {
       // Check if queue is full - show alert for this specific error
       if (response.queueFull) {
-        alert(response.error || 'Queue full (18/18). Delete some images first.');
+        alert(response.error || 'Queue full (9/9). Delete some images first.');
       }
       
       // Show specific error message or generic failure
@@ -910,8 +823,8 @@ async function handleFullPageClick() {
   fullPageButton.disabled = true;
   
   // Check if queue has space
-  if (currentSnaps.length >= 18) {
-    status.textContent = 'Queue full (18/18). Delete some images first.';
+  if (currentSnaps.length >= 9) {
+    status.textContent = 'Queue full (9/9). Delete some images first.';
     status.className = 'status error';
     setTimeout(() => {
       status.textContent = 'SnapToAI: Ready';
@@ -1023,24 +936,9 @@ function updateUI() {
   updateClearButton();
 }
 
-// Update snap counter with green styling when full
+// Update snap counter
 function updateCounter() {
-  const snapCountEl = document.getElementById('snapCount');
-  const counterWrapper = document.getElementById('counterWrapper');
-  const counterCheck = document.getElementById('counterCheck');
-  const maxSnapsEl = document.getElementById('maxSnaps');
-  
-  const maxSnaps = parseInt(maxSnapsEl?.textContent) || 9;
-  snapCountEl.textContent = currentSnaps.length;
-  
-  // Check if counter is full
-  if (currentSnaps.length === maxSnaps) {
-    counterWrapper.classList.add('counter-full');
-    counterCheck.textContent = ' ✓';
-  } else {
-    counterWrapper.classList.remove('counter-full');
-    counterCheck.textContent = '';
-  }
+  document.getElementById('snapCount').textContent = currentSnaps.length;
 }
 
 // Dynamically adjust popup height based on number of screenshots
@@ -1086,36 +984,21 @@ function updateThumbnails() {
     };
     
     const heading = chrome.i18n.getMessage('emptyHeading') || 'Screenshots to AI in One Click';
-    const sub1 = chrome.i18n.getMessage('emptySubheading1') || 'Capture → Select → Copy → Paste';
-    const sub2 = chrome.i18n.getMessage('emptySubheading2') || 'Up to 18 screenshots merge into ONE image for AI';
+    const sub1 = chrome.i18n.getMessage('emptySubheading1') || 'Select All → Copy → Paste.';
+    const sub2 = chrome.i18n.getMessage('emptySubheading2') || 'All 9 screenshots drop as ONE stacked image.';
     
-    const headingEl = document.createElement('div');
-    headingEl.className = 'empty-heading';
-    headingEl.textContent = heading;
-    
-    const sub1El = document.createElement('div');
-    sub1El.className = 'empty-subheading';
-    sub1El.textContent = sub1;
-    
-    const sub2El = document.createElement('div');
-    sub2El.className = 'empty-subheading';
-    sub2El.textContent = sub2;
-    
-    emptyState.appendChild(headingEl);
-    emptyState.appendChild(sub1El);
-    emptyState.appendChild(sub2El);
+    emptyState.innerHTML = `
+      <div class="empty-heading">${heading}</div>
+      <div class="empty-subheading">${sub1}</div>
+      <div class="empty-subheading">${sub2}</div>
+    `;
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';
-    // Hide action buttons when no snaps
-    const actionButtonsContainer = document.getElementById('actionButtonsContainer');
-    if (actionButtonsContainer) actionButtonsContainer.style.display = 'none';
     return;
   }
   
-  // Show action buttons when snaps exist
-  const actionButtonsContainer = document.getElementById('actionButtonsContainer');
-  if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex';
-  selectionBar.style.display = 'none'; // Hide old buttons, keep functional
+  // Show selection bar when snaps exist
+  selectionBar.style.display = 'flex';
   
   currentSnaps.forEach((dataUrl, index) => {
     const thumbnail = document.createElement('div');
@@ -1197,27 +1080,18 @@ function updateThumbnails() {
     thumbnail.addEventListener('drop', (e) => handleDrop(e, index));
     thumbnail.addEventListener('dragend', handleDragEnd);
     
-    // Check metadata for full page or chunk info
-    const meta = currentSnapMetadata[index];
-    
-    // Create number badge - shows FP# for full pages, regular number for snaps
     const number = document.createElement('div');
-    if (meta && meta.isFullPage) {
-      // Full page capture - purple styling with FP badge
-      thumbnail.classList.add('fullpage');
-      number.className = 'fullpage-badge';
-      number.textContent = `FP${meta.fullPageNumber}`;
-      number.title = `Full Page Capture #${meta.fullPageNumber}`;
-    } else if (meta && meta.isChunk) {
-      // Chunked capture (legacy) - show chunk info
-      thumbnail.classList.add('fullpage');
-      number.className = 'fullpage-badge';
-      number.textContent = `FP${meta.fullPageNumber || '?'} ${meta.part}/${meta.totalParts}`;
-      number.title = `Part ${meta.part} of ${meta.totalParts}`;
-    } else {
-      // Regular snap/snip - cyan styling with number
-      number.className = 'thumbnail-number';
-      number.textContent = index + 1;
+    number.className = 'thumbnail-number';
+    number.textContent = index + 1;
+    
+    // Check if this is a chunked capture and add badge
+    const meta = currentSnapMetadata[index];
+    if (meta && meta.isChunk) {
+      const chunkBadge = document.createElement('div');
+      chunkBadge.className = 'chunk-badge';
+      chunkBadge.textContent = `${meta.part}/${meta.totalParts}`;
+      chunkBadge.title = `Part ${meta.part} of ${meta.totalParts} (pages ${meta.startPage}-${meta.endPage})`;
+      thumbnail.appendChild(chunkBadge);
     }
     
     thumbnail.appendChild(checkbox);
@@ -1262,55 +1136,13 @@ function handleSelectAll() {
 
 // Update Select All button text
 function updateSelectAllButton() {
-  const allSelected = selectedSnapIds.size === currentSnaps.length && currentSnaps.length > 0;
-  
-  // Update old selection bar button
   const btn = document.getElementById('selectAllBtn');
-  if (btn) btn.textContent = allSelected ? 'Deselect All' : 'Select All';
-  
-  // Update quick select button
-  const quickBtn = document.getElementById('quickSelectAllBtn');
-  if (quickBtn) quickBtn.textContent = allSelected ? 'DESELECT ALL' : 'SELECT ALL';
-}
-
-// Handle MIX & MATCH - clears selection so user can tap to pick individually
-function handleMixMatch() {
-  selectedSnapIds.clear();
-  updateThumbnails();
-  
-  const status = document.getElementById('status');
-  status.textContent = 'Tap thumbnails to pick & mix';
-  status.className = 'status active';
-  
-  setTimeout(() => {
-    status.textContent = 'SnapToAI: Ready';
-    status.className = 'status';
-  }, 3000);
-}
-
-// Handle EDIT - opens the annotate screen for the first selected image
-function handleEdit() {
-  if (currentSnaps.length === 0) {
-    const status = document.getElementById('status');
-    status.textContent = 'No snaps to edit';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 1500);
-    return;
-  }
-  
-  // Get first selected, or first snap if none selected
-  let indexToEdit = 0;
-  if (selectedSnapIds.size > 0) {
-    indexToEdit = Math.min(...selectedSnapIds);
-  }
-  
-  const dataUrl = currentSnaps[indexToEdit];
-  if (dataUrl) {
-    openAnnotateScreen(dataUrl, indexToEdit);
-  }
+  const allSelected = selectedSnapIds.size === currentSnaps.length;
+  const getMessage = (key, fallback) => {
+    const msg = chrome.i18n.getMessage(key);
+    return msg || fallback;
+  };
+  btn.textContent = allSelected ? getMessage('deselectAll', 'Deselect All') : getMessage('selectAll', 'Select All');
 }
 
 // Handle Copy Selected
@@ -2101,222 +1933,6 @@ async function handleDeleteSnap(index) {
     status.className = 'status error';
     setTimeout(() => {
       status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 2000);
-  }
-}
-
-// ===== SEND TO AI - Lightning fast! Just COPY =====
-async function sendToAI() {
-  // Auto-select all if none selected
-  if (selectedSnapIds.size === 0 && currentSnaps.length > 0) {
-    currentSnaps.forEach((_, index) => selectedSnapIds.add(index));
-    updateThumbnails();
-  }
-  
-  if (selectedSnapIds.size === 0) return;
-  
-  // Just copy - that's it! Maximum speed.
-  await handleCopySelected();
-}
-
-// Smart tab opener - reuses existing tab if already open
-async function openOrFocusTab(url) {
-  const domain = new URL(url).hostname;
-  
-  // Search for existing tabs with this domain
-  const tabs = await chrome.tabs.query({});
-  const existingTab = tabs.find(tab => tab.url && tab.url.includes(domain));
-  
-  if (existingTab) {
-    // Focus the existing tab
-    await chrome.tabs.update(existingTab.id, { active: true });
-    await chrome.windows.update(existingTab.windowId, { focused: true });
-  } else {
-    // Open new tab
-    chrome.tabs.create({ url: url });
-  }
-}
-
-// ===== Helper: Load image and get dimensions =====
-function loadImage(dataUrl) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = dataUrl;
-  });
-}
-
-// ===== Helper: Get selected snaps in order =====
-function getSelectedSnaps() {
-  if (selectedSnapIds.size === 0 && currentSnaps.length > 0) {
-    currentSnaps.forEach((_, index) => selectedSnapIds.add(index));
-    updateThumbnails();
-  }
-  
-  const snaps = [];
-  for (const index of [...selectedSnapIds].sort((a, b) => a - b)) {
-    if (currentSnaps[index]) {
-      snaps.push(currentSnaps[index]);
-    }
-  }
-  return snaps;
-}
-
-// ===== Build Combined PNG (stitches all images vertically) =====
-async function buildCombinedPNG(snaps) {
-  if (snaps.length === 0) return null;
-  
-  // Load all images and calculate total height
-  const images = await Promise.all(snaps.map(s => loadImage(s)));
-  const maxWidth = Math.max(...images.map(img => img.width));
-  const totalHeight = images.reduce((sum, img) => sum + img.height, 0);
-  
-  // Create combined canvas
-  const canvas = document.createElement('canvas');
-  canvas.width = maxWidth;
-  canvas.height = totalHeight;
-  const ctx = canvas.getContext('2d');
-  
-  // Draw each image stacked vertically
-  let yOffset = 0;
-  for (const img of images) {
-    ctx.drawImage(img, 0, yOffset, img.width, img.height);
-    yOffset += img.height;
-  }
-  
-  return canvas.toDataURL('image/png');
-}
-
-// ===== Ensure jsPDF is loaded =====
-async function ensureJsPDFLoaded() {
-  if (window.jspdf && window.jspdf.jsPDF) return true;
-  
-  // Wait up to 2 seconds for jsPDF to load
-  for (let i = 0; i < 20; i++) {
-    await new Promise(r => setTimeout(r, 100));
-    if (window.jspdf && window.jspdf.jsPDF) return true;
-  }
-  return false;
-}
-
-// ===== Build Combined PDF =====
-async function buildCombinedPDF(snaps) {
-  if (snaps.length === 0) return null;
-  
-  // Ensure jsPDF is loaded
-  const loaded = await ensureJsPDFLoaded();
-  if (!loaded) {
-    throw new Error('PDF library not loaded - please try again');
-  }
-  
-  const { jsPDF } = window.jspdf;
-  const images = await Promise.all(snaps.map(s => loadImage(s)));
-  
-  // Use A4 size for cleaner output
-  const pageWidth = 210; // mm
-  const pageHeight = 297; // mm
-  const margin = 10;
-  const maxW = pageWidth - (2 * margin);
-  const maxH = pageHeight - (2 * margin);
-  
-  const pdf = new jsPDF('p', 'mm', 'a4');
-  
-  for (let i = 0; i < snaps.length; i++) {
-    if (i > 0) pdf.addPage();
-    
-    const img = images[i];
-    const aspectRatio = img.width / img.height;
-    
-    let imgWidth = maxW;
-    let imgHeight = imgWidth / aspectRatio;
-    
-    if (imgHeight > maxH) {
-      imgHeight = maxH;
-      imgWidth = imgHeight * aspectRatio;
-    }
-    
-    const x = (pageWidth - imgWidth) / 2;
-    const y = margin;
-    
-    pdf.addImage(snaps[i], 'PNG', x, y, imgWidth, imgHeight);
-  }
-  
-  return pdf;
-}
-
-// ===== Download PNG Handler (Combined) =====
-async function handleDownloadPNG() {
-  // Auto-select all if none selected
-  if (selectedSnapIds.size === 0 && currentSnaps.length > 0) {
-    currentSnaps.forEach((_, index) => selectedSnapIds.add(index));
-    updateThumbnails();
-  }
-  
-  const snaps = getSelectedSnaps();
-  if (snaps.length === 0) return;
-  
-  const status = document.getElementById('status');
-  status.textContent = 'Creating combined PNG...';
-  status.className = 'status active';
-  
-  try {
-    const combinedPNG = await buildCombinedPNG(snaps);
-    
-    const link = document.createElement('a');
-    const timestamp = new Date().toISOString().slice(0, 10);
-    link.download = `SnapToAI_${timestamp}.png`;
-    link.href = combinedPNG;
-    link.click();
-    
-    status.textContent = `PNG downloaded (${snaps.length} images) ✓`;
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 2000);
-  } catch (error) {
-    console.error('PNG creation error:', error);
-    status.textContent = 'PNG failed - try again';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 2000);
-  }
-}
-
-// ===== Download PDF Handler =====
-async function handleDownloadPDF() {
-  // Auto-select all if none selected
-  if (selectedSnapIds.size === 0 && currentSnaps.length > 0) {
-    currentSnaps.forEach((_, index) => selectedSnapIds.add(index));
-    updateThumbnails();
-  }
-  
-  const snaps = getSelectedSnaps();
-  if (snaps.length === 0) return;
-  
-  const status = document.getElementById('status');
-  status.textContent = 'Creating PDF...';
-  status.className = 'status active';
-  
-  try {
-    const pdf = await buildCombinedPDF(snaps);
-    const timestamp = new Date().toISOString().slice(0, 10);
-    pdf.save(`SnapToAI_${timestamp}.pdf`);
-    
-    status.textContent = `PDF created (${snaps.length} pages) ✓`;
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 2000);
-  } catch (error) {
-    console.error('PDF creation error:', error);
-    status.textContent = 'PDF failed - try again';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
     }, 2000);
   }

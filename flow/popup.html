@@ -20,8 +20,8 @@
     <!-- Header -->
     <div class="header">
       <div class="logo"><span class="logo-word">Snap</span> <span class="logo-word">To</span> <span class="logo-word">AI</span></div>
-      <div class="counter" id="counterWrapper">
-        <span id="snapCount">0</span> / <span id="maxSnaps">18</span><span id="counterCheck"></span>
+      <div class="counter">
+        <span id="snapCount">0</span> / <span>9</span>
       </div>
     </div>
 
@@ -86,29 +86,9 @@
       <img id="lastCaptureImage" class="last-capture-image" alt="Last capture">
     </div>
 
-    <!-- Action Buttons Container -->
-    <div id="actionButtonsContainer" style="display: none; padding: 10px 15px;">
-      <!-- Quick Selection Row -->
-      <div class="quick-select-row">
-        <button id="quickSelectAllBtn" class="quick-select-btn">SELECT ALL</button>
-        <button id="mixMatchBtn" class="quick-select-btn secondary">MIX & MATCH</button>
-      </div>
-      
-      <!-- SEND TO AI - Main Action Button (THE STAR - huge and glowing) -->
-      <button id="sendToAIBtn" class="send-to-ai-btn">
-        COPY → PASTE TO ANY AI
-      </button>
-      
-      <!-- Secondary tools row -->
-      <div class="secondary-tools-row">
-        <button id="editBtn" class="secondary-tool-btn">✏️ EDIT</button>
-        <button id="downloadPdfBtn" class="secondary-tool-btn">⬇ PDF</button>
-        <button id="downloadPngBtn" class="secondary-tool-btn">⬇ PNG</button>
-      </div>
-    </div>
-
-    <!-- Selection Controls (hidden but functional) -->
+    <!-- Selection Controls -->
     <div class="selection-bar" id="selectionBar" style="display: none;">
+      <button id="selectAllBtn" class="select-all-btn">Select All</button>
       <button id="copySelectedBtn" class="action-btn">Copy Selected</button>
       <button id="downloadSelectedBtn" class="action-btn">Download Selected</button>
       <button id="exportPdfBtn" class="action-btn premium">📄 Export PDF</button>
@@ -184,7 +164,6 @@
     <div class="processing-subtext" id="processingSubtext">Please wait</div>
   </div>
 
-  <script src="jspdf.min.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

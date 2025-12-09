@@ -1169,7 +1169,7 @@ async function saveSnipToQueue() {
     
     // Check if queue is full
     if (response && response.queueFull) {
-      alert(response.error || 'Queue full (18/18). Delete some images first.');
+      alert(response.error || 'Queue full (9/9). Delete some images first.');
       return;
     }
     
@@ -2094,7 +2094,7 @@ async function save() {
       
       // Check if queue is full
       if (response && response.queueFull) {
-        alert(response.error || 'Queue full (18/18). Delete some images first.');
+        alert(response.error || 'Queue full (9/9). Delete some images first.');
         return;
       }
       

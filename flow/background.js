@@ -1,7 +1,7 @@
 // SnapToAI Background Service Worker
 // Handles screenshot capture, storage management, downloads, and messaging
 
-const MAX_SNAPS = 18;
+const MAX_SNAPS = 9;
 const AI_SITES = ['grok.com', 'grok.x.ai', 'chat.openai.com', 'chatgpt.com', 'claude.ai'];
 const CAPTURE_COOLDOWN = 500; // Minimum 500ms between captures to avoid Chrome rate limit
 
@@ -68,10 +68,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === 'snipComplete') {
     // Handle snip (cropped image) - add as new snap with optional metadata
     addSnip(request.dataUrl, request.metadata).then(sendResponse);
-    return true;
-  } else if (request.action === 'addSnap') {
-    // Add a snap directly to the queue (used by full page capture)
-    addSnapToQueue(request.dataUrl).then(sendResponse);
     return true;
   } else if (request.action === 'getQueueStatus') {
     // Return current queue size for capacity checking
@@ -387,57 +383,6 @@ async function addSnip(dataUrl, metadata = null) {
       };
     }
     
-    return { success: false, error: error.message };
-  }
-}
-
-// Track full page capture counter
-let fullPageCaptureCounter = 0;
-
-// Get next full page number
-async function getNextFullPageNumber() {
-  const result = await chrome.storage.local.get({ fullPageCounter: 0 });
-  const nextNumber = (result.fullPageCounter || 0) + 1;
-  await chrome.storage.local.set({ fullPageCounter: nextNumber });
-  return nextNumber;
-}
-
-// Add snap directly to queue (used by full page capture)
-async function addSnapToQueue(dataUrl, isFullPage = true) {
-  try {
-    const snaps = await getSnaps();
-    const result = await chrome.storage.local.get({ snapMetadata: [] });
-    const snapMetadata = result.snapMetadata || [];
-    
-    // Block if queue is full
-    if (snaps.length >= MAX_SNAPS) {
-      return { 
-        success: false, 
-        error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.`,
-        queueFull: true
-      };
-    }
-    
-    // Get full page number for metadata
-    let metadata = null;
-    if (isFullPage) {
-      const fpNumber = await getNextFullPageNumber();
-      metadata = { isFullPage: true, fullPageNumber: fpNumber };
-    }
-    
-    // Add new snap
-    snaps.push(dataUrl);
-    snapMetadata.push(metadata);
-    
-    // Save to local storage
-    await chrome.storage.local.set({ snaps, snapMetadata });
-    
-    // Update badge
-    await updateBadge(snaps.length);
-    
-    return { success: true, count: snaps.length, fullPageNumber: metadata?.fullPageNumber };
-  } catch (error) {
-    console.log('[SnapToAI] Add snap:', error.message || error);
     return { success: false, error: error.message };
   }
 }
