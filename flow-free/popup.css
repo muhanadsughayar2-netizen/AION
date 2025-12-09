@@ -369,7 +369,7 @@ body {
 .thumbnails-container {
   flex: 1;
   min-height: 0;
-  overflow-y: hidden;
+  overflow-y: auto;
   overflow-x: hidden;
   margin: 8px 0;
   padding: 4px;
@@ -395,14 +395,13 @@ body {
   background: rgba(0, 217, 255, 0.5);
 }
 
-/* Thumbnails Grid - 6 columns for 18 slots */
+/* Thumbnails Grid - 4 columns, expands with content */
 .thumbnails {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
   min-height: 40px;
   align-content: start;
-  grid-auto-rows: minmax(0, 1fr);
 }
 
 .thumbnail {
