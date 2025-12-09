@@ -1835,6 +1835,17 @@
         '._185ubzz',
         '[class*="content"]',
         'main'
+      ],
+      
+      // === AI CODE ASSISTANTS ===
+      'specode.ai': [
+        '[class*="chat"]',
+        '[class*="conversation"]',
+        '[class*="message-list"]',
+        'main [class*="overflow-y-auto"]',
+        '[class*="overflow-auto"]',
+        '[class*="scroll"]',
+        'main'
       ]
     };
     
@@ -1892,7 +1903,9 @@
       'web.whatsapp.com', 'web.telegram.org', 'messenger.com',
       // Social Media
       'twitter.com', 'linkedin.com', 'facebook.com', 'instagram.com',
-      'reddit.com', 'pinterest.com', 'youtube.com'
+      'reddit.com', 'pinterest.com', 'youtube.com',
+      // AI Code Assistants
+      'specode.ai'
     ];
     const isSpecialPlatform = specialPlatforms.some(p => host.includes(p));
     
@@ -2003,7 +2016,9 @@
       // E-commerce
       'amazon.com', 'ebay.com', 'shopify.com',
       // Learning
-      'coursera.org', 'udemy.com', 'edx.org', 'khanacademy.org'
+      'coursera.org', 'udemy.com', 'edx.org', 'khanacademy.org',
+      // AI Code Assistants
+      'specode.ai'
     ];
     
     for (const site of allowedSites) {
