@@ -69,6 +69,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Handle snip (cropped image) - add as new snap with optional metadata
     addSnip(request.dataUrl, request.metadata).then(sendResponse);
     return true;
+  } else if (request.action === 'addSnap') {
+    // Add a snap directly to the queue (used by full page capture)
+    addSnapToQueue(request.dataUrl).then(sendResponse);
+    return true;
   } else if (request.action === 'getQueueStatus') {
     // Return current queue size for capacity checking
     getSnaps().then(snaps => {
@@ -383,6 +387,39 @@ async function addSnip(dataUrl, metadata = null) {
       };
     }
     
+    return { success: false, error: error.message };
+  }
+}
+
+// Add snap directly to queue (used by full page capture)
+async function addSnapToQueue(dataUrl) {
+  try {
+    const snaps = await getSnaps();
+    const result = await chrome.storage.local.get({ snapMetadata: [] });
+    const snapMetadata = result.snapMetadata || [];
+    
+    // Block if queue is full
+    if (snaps.length >= MAX_SNAPS) {
+      return { 
+        success: false, 
+        error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.`,
+        queueFull: true
+      };
+    }
+    
+    // Add new snap
+    snaps.push(dataUrl);
+    snapMetadata.push(null);
+    
+    // Save to local storage
+    await chrome.storage.local.set({ snaps, snapMetadata });
+    
+    // Update badge
+    await updateBadge(snaps.length);
+    
+    return { success: true, count: snaps.length };
+  } catch (error) {
+    console.log('[SnapToAI] Add snap:', error.message || error);
     return { success: false, error: error.message };
   }
 }
