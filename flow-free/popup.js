@@ -1187,18 +1187,27 @@ function updateThumbnails() {
     thumbnail.addEventListener('drop', (e) => handleDrop(e, index));
     thumbnail.addEventListener('dragend', handleDragEnd);
     
-    const number = document.createElement('div');
-    number.className = 'thumbnail-number';
-    number.textContent = index + 1;
-    
-    // Check if this is a chunked capture and add badge
+    // Check metadata for full page or chunk info
     const meta = currentSnapMetadata[index];
-    if (meta && meta.isChunk) {
-      const chunkBadge = document.createElement('div');
-      chunkBadge.className = 'chunk-badge';
-      chunkBadge.textContent = `${meta.part}/${meta.totalParts}`;
-      chunkBadge.title = `Part ${meta.part} of ${meta.totalParts} (pages ${meta.startPage}-${meta.endPage})`;
-      thumbnail.appendChild(chunkBadge);
+    
+    // Create number badge - shows FP# for full pages, regular number for snaps
+    const number = document.createElement('div');
+    if (meta && meta.isFullPage) {
+      // Full page capture - purple styling with FP badge
+      thumbnail.classList.add('fullpage');
+      number.className = 'fullpage-badge';
+      number.textContent = `FP${meta.fullPageNumber}`;
+      number.title = `Full Page Capture #${meta.fullPageNumber}`;
+    } else if (meta && meta.isChunk) {
+      // Chunked capture (legacy) - show chunk info
+      thumbnail.classList.add('fullpage');
+      number.className = 'fullpage-badge';
+      number.textContent = `FP${meta.fullPageNumber || '?'} ${meta.part}/${meta.totalParts}`;
+      number.title = `Part ${meta.part} of ${meta.totalParts}`;
+    } else {
+      // Regular snap/snip - cyan styling with number
+      number.className = 'thumbnail-number';
+      number.textContent = index + 1;
     }
     
     thumbnail.appendChild(checkbox);

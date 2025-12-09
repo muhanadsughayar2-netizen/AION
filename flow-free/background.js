@@ -391,8 +391,19 @@ async function addSnip(dataUrl, metadata = null) {
   }
 }
 
+// Track full page capture counter
+let fullPageCaptureCounter = 0;
+
+// Get next full page number
+async function getNextFullPageNumber() {
+  const result = await chrome.storage.local.get({ fullPageCounter: 0 });
+  const nextNumber = (result.fullPageCounter || 0) + 1;
+  await chrome.storage.local.set({ fullPageCounter: nextNumber });
+  return nextNumber;
+}
+
 // Add snap directly to queue (used by full page capture)
-async function addSnapToQueue(dataUrl) {
+async function addSnapToQueue(dataUrl, isFullPage = true) {
   try {
     const snaps = await getSnaps();
     const result = await chrome.storage.local.get({ snapMetadata: [] });
@@ -407,9 +418,16 @@ async function addSnapToQueue(dataUrl) {
       };
     }
     
+    // Get full page number for metadata
+    let metadata = null;
+    if (isFullPage) {
+      const fpNumber = await getNextFullPageNumber();
+      metadata = { isFullPage: true, fullPageNumber: fpNumber };
+    }
+    
     // Add new snap
     snaps.push(dataUrl);
-    snapMetadata.push(null);
+    snapMetadata.push(metadata);
     
     // Save to local storage
     await chrome.storage.local.set({ snaps, snapMetadata });
@@ -417,7 +435,7 @@ async function addSnapToQueue(dataUrl) {
     // Update badge
     await updateBadge(snaps.length);
     
-    return { success: true, count: snaps.length };
+    return { success: true, count: snaps.length, fullPageNumber: metadata?.fullPageNumber };
   } catch (error) {
     console.log('[SnapToAI] Add snap:', error.message || error);
     return { success: false, error: error.message };
