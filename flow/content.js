@@ -30,6 +30,78 @@
     return { x: lastMouseX, y: lastMouseY };
   }
 
+  // === GROK INPUT BAR RESTORATION ===
+  // Prevents blank page/missing input bar after SnapToAI interactions
+  function restoreGrokInput() {
+    const host = window.location.hostname;
+    if (!host.includes('grok.x.ai') && !host.includes('grok.com')) return;
+
+    console.log('[SnapToAI] Checking Grok input bar health...');
+
+    // Find chat container
+    const chatContainer = document.querySelector('main, [role="main"], div[data-testid="conversation"]') ||
+                          document.querySelector('div[class*="chat-container"], div[class*="conversation-root"]');
+    
+    if (!chatContainer) {
+      console.log('[SnapToAI] Grok chat container missing - page may still be loading');
+      return;
+    }
+
+    // Find real input (not clones/ghosts)
+    const allInputs = document.querySelectorAll('textarea, div[contenteditable="true"]');
+    const realInput = Array.from(allInputs).find(el => 
+      el.placeholder?.toLowerCase().includes('message grok') || 
+      el.getAttribute('data-testid') === 'message-input' ||
+      el.closest('[role="textbox"]')
+    );
+
+    if (realInput) {
+      // Ensure it's visible and functional
+      realInput.style.display = 'block';
+      realInput.style.visibility = 'visible';
+      realInput.style.opacity = '1';
+      
+      // Remove any ghost/duplicate inputs
+      allInputs.forEach(input => {
+        if (input !== realInput && input.id?.includes('snap-clone')) {
+          input.remove();
+        }
+      });
+
+      console.log('[SnapToAI] Grok input bar confirmed healthy');
+    }
+  }
+
+  // Run Grok restoration on load and after mutations
+  if (window.location.hostname.includes('grok')) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', restoreGrokInput);
+    } else {
+      setTimeout(restoreGrokInput, 500);
+    }
+
+    // Watch for input removal and auto-restore
+    const grokObserver = new MutationObserver((mutations) => {
+      let inputVanished = false;
+      mutations.forEach((mutation) => {
+        if (mutation.removedNodes.length > 0) {
+          mutation.removedNodes.forEach(node => {
+            if (node.nodeType === 1 && (node.matches?.('textarea, [contenteditable="true"]') || node.querySelector?.('textarea'))) {
+              inputVanished = true;
+            }
+          });
+        }
+      });
+      if (inputVanished) {
+        setTimeout(restoreGrokInput, 100);
+      }
+    });
+    
+    if (document.body) {
+      grokObserver.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+
   // Listen for messages from background script - BULLETPROOF ERROR HANDLING
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     try {
@@ -262,6 +334,9 @@
       showToast(`${uploadedCount} snap${uploadedCount > 1 ? 's' : ''} uploaded ✓`, 'success');
       await chrome.storage.local.remove('snaps');
       chrome.runtime.sendMessage({ action: 'uploadComplete' });
+      
+      // Restore Grok input bar after upload (prevents blank page issue)
+      setTimeout(restoreGrokInput, 200);
       
       return { success: true, count: uploadedCount };
     } catch (error) {
