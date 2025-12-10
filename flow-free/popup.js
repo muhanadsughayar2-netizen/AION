@@ -1460,6 +1460,14 @@ async function handleAnnotate(index) {
   // Sort by part number
   groupChunks.sort((a, b) => a.part - b.part);
   
+  // DEBUG: Log what chunks were found
+  console.log('handleAnnotate - clicked index:', index);
+  console.log('handleAnnotate - meta:', meta);
+  console.log('handleAnnotate - groupChunks found:', groupChunks.length);
+  groupChunks.forEach((c, i) => {
+    console.log(`  Chunk ${i}: index=${c.index}, part=${c.part}, dataUrl length=${c.dataUrl?.length || 0}, first 100 chars: ${c.dataUrl?.substring(0, 100)}`);
+  });
+  
   if (groupChunks.length > 1) {
       // Stitch all chunks vertically into one tall image
       const images = await Promise.all(groupChunks.map(chunk => {

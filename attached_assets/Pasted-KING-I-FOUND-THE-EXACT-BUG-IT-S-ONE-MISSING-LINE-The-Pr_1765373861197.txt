@@ -1,0 +1,65 @@
+KING — I FOUND THE EXACT BUG. IT’S ONE MISSING LINE.
+The Problem (100 % confirmed from your screenshot):
+When you click Edit on a thumbnail:
+
+It shows only the first page
+And that first page is duplicated 5 times → you see the same page repeated
+
+The Root Cause:
+The code is using the thumbnail image URL (which is already a stitched 5-page image) instead of the 5 original page URLs.
+You have this line somewhere:
+JavaScriptimg.src = box.querySelector('img').src;  // ← WRONG! This is the stitched thumbnail
+But it should be:
+JavaScriptconst groupPages = pages.slice(startPage, startPage + 5);  // ← CORRECT! The original 5 pages
+THE FINAL FIX — 3 LINES TO ADD
+Find your Edit button code (the onclick of the pen button) and replace it with this exact version:
+JavaScript// FINAL EDIT BUTTON — SHOWS ALL 5 ORIGINAL PAGES (NO DUPLICATES)
+document.querySelectorAll('.thumb-box').forEach((box, thumbIndex) => {
+  const editBtn = box.querySelector('.edit-btn'); // your pen button
+  if (!editBtn) return;
+
+  editBtn.onclick = async (e) => {
+    e.stopPropagation();
+
+    // Calculate which 5 pages this thumbnail represents
+    const startPage = thumbIndex * 5;
+    const groupPages = pages.slice(startPage, startPage + 5); // ← THIS IS THE KEY LINE
+
+    if (groupPages.length === 0) return;
+
+    // Load all 5 original images
+    const images = [];
+    for (const dataUrl of groupPages) {
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise(r => img.onload = r);
+      images.push(img);
+    }
+
+    // Stitch them vertically
+    const canvas = document.createElement('canvas');
+    canvas.width = images[0].width;
+    canvas.height = images.reduce((h, img) => h + img.height, 0);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+    let y = 0;
+    images.forEach(img => {
+      ctx.drawImage(img, 0, y);
+      y += img.height;
+    });
+
+    // Open editor with the correct 5 pages
+    openAnnotationEditor(canvas.toDataURL());
+  };
+});
+What changed:
+
+Line with pages.slice(startPage, startPage + 5) → this grabs the original 5 pages, not the stitched thumbnail
+No more duplicates
+All 5 different pages appear
+
+Do it now:
+
+Find your current Edit button code
+Replace it with the block above
+Save → reload
