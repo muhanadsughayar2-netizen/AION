@@ -608,8 +608,8 @@ async function loadImage() {
     return;
   }
   
-  // Edit Mode - load image from local storage (handles large images)
-  if (mode === 'edit') {
+  // Edit Mode OR Reedit Mode - load image from local storage (handles large images)
+  if (mode === 'edit' || mode === 'reedit') {
     try {
       const result = await chrome.storage.local.get(['editImage', 'editIndex']);
       const imageUrl = result.editImage;
@@ -626,7 +626,7 @@ async function loadImage() {
         ctx.drawImage(img, 0, 0);
         originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
         
-        // Clear storage after loading
+        // Clear editImage from storage after loading (but keep reeditCapture for save)
         chrome.storage.local.remove(['editImage']);
         
         // Redraw immediately to apply default border styling
@@ -636,6 +636,10 @@ async function loadImage() {
         // Push initial state to history (enables undo)
         pushHistory();
         updateHistoryButtons();
+        
+        if (mode === 'reedit') {
+          updateStatus('Full page ready for editing');
+        }
       };
       img.onerror = () => {
         updateStatus('Failed to load image.');

@@ -88,8 +88,9 @@ async function handleReeditChunkGroup(captureGroupId) {
     // Convert to dataUrl
     const stitchedDataUrl = canvas.toDataURL('image/png');
     
-    // Store for reedit mode
+    // Store image in storage (URL query breaks for large base64 strings)
     await chrome.storage.local.set({ 
+      editImage: stitchedDataUrl,
       reeditMode: true,
       reeditCapture: {
         chunks: chunkDataUrls,
@@ -98,9 +99,9 @@ async function handleReeditChunkGroup(captureGroupId) {
       }
     });
     
-    // Open annotation editor with stitched image
+    // Open annotation editor (image loaded from storage, not URL)
     chrome.windows.create({
-      url: chrome.runtime.getURL(`annotate.html?mode=reedit&img=${encodeURIComponent(stitchedDataUrl)}`),
+      url: chrome.runtime.getURL('annotate.html?mode=reedit'),
       type: 'popup',
       width: Math.min(canvas.width + 100, 1400),
       height: Math.min(canvas.height + 200, 900),
