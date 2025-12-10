@@ -23,7 +23,7 @@ function updateReeditButton(smartName = null) {
   }
 }
 
-// Handle RE-EDIT from chunk thumbnail - find all chunks in group and open editor
+// Handle RE-EDIT from chunk thumbnail - find all chunks in group and open fullpage editor
 async function handleReeditChunkGroup(captureGroupId) {
   const status = document.getElementById('status');
   
@@ -33,10 +33,12 @@ async function handleReeditChunkGroup(captureGroupId) {
     
     // Find all chunks with this captureGroupId
     const chunkIndices = [];
+    let smartName = 'Full Page';
     for (let i = 0; i < currentSnapMetadata.length; i++) {
       const meta = currentSnapMetadata[i];
       if (meta && meta.isChunk && meta.captureGroupId === captureGroupId) {
         chunkIndices.push({ index: i, part: meta.part });
+        if (meta.smartName) smartName = meta.smartName;
       }
     }
     
@@ -53,62 +55,33 @@ async function handleReeditChunkGroup(captureGroupId) {
     // Sort by part number
     chunkIndices.sort((a, b) => a.part - b.part);
     
-    // Get the dataUrls for these chunks
+    // Get the dataUrls for these chunks (keep as separate pages)
     const chunkDataUrls = chunkIndices.map(c => currentSnaps[c.index]);
     
-    status.textContent = `Stitching ${chunkDataUrls.length} parts...`;
+    status.textContent = 'Opening full page editor...';
     
-    // Load all chunk images
-    const images = await Promise.all(chunkDataUrls.map(dataUrl => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = dataUrl;
-      });
-    }));
-    
-    // Calculate total dimensions (chunks are already processed, no overlap)
-    const width = Math.max(...images.map(img => img.width));
-    const totalHeight = images.reduce((sum, img) => sum + img.height, 0);
-    
-    // Create stitched canvas
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = totalHeight;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    
-    // Draw each chunk vertically (no overlap - chunks are final images)
-    let y = 0;
-    for (const img of images) {
-      ctx.drawImage(img, 0, y);
-      y += img.height;
-    }
-    
-    // Convert to dataUrl
-    const stitchedDataUrl = canvas.toDataURL('image/png');
-    
-    // Store image in storage (URL query breaks for large base64 strings)
+    // Store chunks for fullpage mode (with Page X/Y navigation)
     await chrome.storage.local.set({ 
-      editImage: stitchedDataUrl,
-      reeditMode: true,
-      reeditCapture: {
-        chunks: chunkDataUrls,
-        captureGroupId: captureGroupId,
-        totalParts: chunkDataUrls.length
+      fullPageImages: chunkDataUrls,
+      fullPageInfo: {
+        url: '',
+        title: '',
+        smartName: smartName
       }
     });
     
-    // Open annotation editor (image loaded from storage, not URL)
+    // Open annotation editor in FULLPAGE mode
+    const w = Math.min(1400, screen.width - 100);
+    const h = Math.min(900, screen.height - 100);
+    
     chrome.windows.create({
-      url: chrome.runtime.getURL('annotate.html?mode=reedit'),
+      url: chrome.runtime.getURL('annotate.html?mode=fullpage'),
       type: 'popup',
-      width: Math.min(canvas.width + 100, 1400),
-      height: Math.min(canvas.height + 200, 900),
+      width: w,
+      height: h,
       focused: true
     });
     
-    status.textContent = 'Opening editor...';
     setTimeout(() => {
       status.textContent = 'SnapToAI: Ready';
       status.className = 'status';
@@ -125,7 +98,7 @@ async function handleReeditChunkGroup(captureGroupId) {
   }
 }
 
-// Handle RE-EDIT button click - reopen full page in editor with all chunks
+// Handle RE-EDIT button click - reopen full page in editor with all chunks (fullpage mode)
 async function handleReeditFullPage() {
   const status = document.getElementById('status');
   
@@ -144,55 +117,39 @@ async function handleReeditFullPage() {
       return;
     }
     
-    // Stitch all chunks back together for editing
-    const images = await Promise.all(capture.chunks.map(dataUrl => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = dataUrl;
-      });
-    }));
+    status.textContent = 'Opening full page editor...';
+    status.className = 'status active';
     
-    // Calculate total dimensions
-    const width = Math.max(...images.map(img => img.width));
-    const totalHeight = images.reduce((sum, img) => sum + img.height, 0);
-    
-    // Create stitched canvas
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = totalHeight;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    
-    // Draw each image vertically
-    let currentY = 0;
-    for (const img of images) {
-      ctx.drawImage(img, 0, currentY);
-      currentY += img.height;
-    }
-    
-    // Convert to dataURL
-    const stitchedDataUrl = canvas.toDataURL('image/png');
-    
-    // Store for editing (using special reedit mode)
+    // Store the chunks array for fullpage mode (same format as original capture)
     await chrome.storage.local.set({ 
-      editImage: stitchedDataUrl,
-      editIndex: -1, // Special index for RE-EDIT mode
-      reeditMode: true,
-      reeditCapture: capture // Store original capture data
+      fullPageImages: capture.chunks,
+      fullPageInfo: {
+        url: capture.url || '',
+        title: capture.title || '',
+        smartName: capture.smartName || 'Full Page'
+      }
     });
     
-    // Open annotation window
-    const w = Math.min(1200, screen.width - 100);
+    // Open annotation window in FULLPAGE mode (with Page X/Y navigation)
+    const w = Math.min(1400, screen.width - 100);
     const h = Math.min(900, screen.height - 100);
     const left = Math.round((screen.width - w) / 2);
     const top = Math.round((screen.height - h) / 2);
     
-    window.open(
-      `annotate.html?mode=reedit`,
-      'Annotate',
-      `width=${w},height=${h},left=${left},top=${top}`
-    );
+    chrome.windows.create({
+      url: chrome.runtime.getURL('annotate.html?mode=fullpage'),
+      type: 'popup',
+      width: w,
+      height: h,
+      left: left,
+      top: top,
+      focused: true
+    });
+    
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 1500);
     
   } catch (error) {
     console.log('[SnapToAI] RE-EDIT error:', error);
