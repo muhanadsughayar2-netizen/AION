@@ -1390,16 +1390,35 @@ async function handleAnnotate(index) {
   const meta = currentSnapMetadata[index];
   
   // Check if this is a chunked capture (multiple pages stitched together)
-  if (meta && meta.isChunk && meta.totalParts > 1 && meta.captureGroupId) {
-    // Find ALL chunks that belong to this SPECIFIC capture group
+  if (meta && meta.isChunk && meta.totalParts > 1) {
     const groupChunks = [];
-    const captureGroupId = meta.captureGroupId;
     
-    // Find all chunks with matching captureGroupId (unique per capture)
-    for (let i = 0; i < currentSnapMetadata.length; i++) {
-      const m = currentSnapMetadata[i];
-      if (m && m.isChunk && m.captureGroupId === captureGroupId) {
-        groupChunks.push({ index: i, part: m.part, dataUrl: currentSnaps[i] });
+    if (meta.captureGroupId) {
+      // NEW captures: Find all chunks with matching captureGroupId
+      for (let i = 0; i < currentSnapMetadata.length; i++) {
+        const m = currentSnapMetadata[i];
+        if (m && m.isChunk && m.captureGroupId === meta.captureGroupId) {
+          groupChunks.push({ index: i, part: m.part, dataUrl: currentSnaps[i] });
+        }
+      }
+    } else {
+      // OLD captures (no captureGroupId): Find consecutive chunks by index
+      // Look backwards to find part 1, then forwards to find all parts
+      const totalParts = meta.totalParts;
+      const myPart = meta.part;
+      
+      // Calculate where part 1 should be (relative to clicked index)
+      const firstPartIndex = index - (myPart - 1);
+      
+      // Collect all consecutive parts starting from firstPartIndex
+      for (let p = 0; p < totalParts; p++) {
+        const chunkIndex = firstPartIndex + p;
+        if (chunkIndex >= 0 && chunkIndex < currentSnapMetadata.length) {
+          const m = currentSnapMetadata[chunkIndex];
+          if (m && m.isChunk && m.part === (p + 1) && m.totalParts === totalParts) {
+            groupChunks.push({ index: chunkIndex, part: m.part, dataUrl: currentSnaps[chunkIndex] });
+          }
+        }
       }
     }
     
