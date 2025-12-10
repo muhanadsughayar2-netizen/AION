@@ -5,6 +5,155 @@ let currentSnaps = [];
 let currentSnapMetadata = []; // Stores chunk metadata (Part 1/7, etc.)
 let selectedSnapIds = new Set();
 
+// Last full-page capture info for RE-EDIT functionality
+let lastFullPageCaptureInfo = null;
+
+// Update RE-EDIT button visibility and text
+function updateReeditButton(smartName = null) {
+  const btn = document.getElementById('reeditFullPageBtn');
+  const nameSpan = document.getElementById('reeditCaptureName');
+  
+  if (!btn) return;
+  
+  if (smartName) {
+    nameSpan.textContent = smartName;
+    btn.style.display = 'block';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+// Handle RE-EDIT button click - reopen full page in editor with all chunks
+async function handleReeditFullPage() {
+  const status = document.getElementById('status');
+  
+  try {
+    // Get stored last full page capture
+    const result = await chrome.storage.local.get('lastFullPageCapture');
+    const capture = result.lastFullPageCapture;
+    
+    if (!capture || !capture.chunks || capture.chunks.length === 0) {
+      status.textContent = 'No full page capture to edit';
+      status.className = 'status error';
+      setTimeout(() => {
+        status.textContent = 'SnapToAI: Ready';
+        status.className = 'status';
+      }, 2000);
+      return;
+    }
+    
+    // Stitch all chunks back together for editing
+    const images = await Promise.all(capture.chunks.map(dataUrl => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+    }));
+    
+    // Calculate total dimensions
+    const width = Math.max(...images.map(img => img.width));
+    const totalHeight = images.reduce((sum, img) => sum + img.height, 0);
+    
+    // Create stitched canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = totalHeight;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    
+    // Draw each image vertically
+    let currentY = 0;
+    for (const img of images) {
+      ctx.drawImage(img, 0, currentY);
+      currentY += img.height;
+    }
+    
+    // Convert to dataURL
+    const stitchedDataUrl = canvas.toDataURL('image/png');
+    
+    // Store for editing (using special reedit mode)
+    await chrome.storage.local.set({ 
+      editImage: stitchedDataUrl,
+      editIndex: -1, // Special index for RE-EDIT mode
+      reeditMode: true,
+      reeditCapture: capture // Store original capture data
+    });
+    
+    // Open annotation window
+    const w = Math.min(1200, screen.width - 100);
+    const h = Math.min(900, screen.height - 100);
+    const left = Math.round((screen.width - w) / 2);
+    const top = Math.round((screen.height - h) / 2);
+    
+    window.open(
+      `annotate.html?mode=reedit`,
+      'Annotate',
+      `width=${w},height=${h},left=${left},top=${top}`
+    );
+    
+  } catch (error) {
+    console.log('[SnapToAI] RE-EDIT error:', error);
+    status.textContent = 'Failed to open editor';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 2000);
+  }
+}
+
+// Generate smart name from page URL and title
+function generateSmartName(url, title) {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    
+    // Domain-specific smart names
+    if (hostname.includes('chatgpt.com') || hostname.includes('chat.openai.com')) {
+      return 'ChatGPT Chat';
+    } else if (hostname.includes('claude.ai')) {
+      return 'Claude Chat';
+    } else if (hostname.includes('grok.com') || hostname.includes('x.com/i/grok')) {
+      return 'Grok Thread';
+    } else if (hostname.includes('gemini.google.com')) {
+      return 'Gemini Chat';
+    } else if (hostname.includes('perplexity.ai')) {
+      return 'Perplexity Search';
+    } else if (hostname.includes('replit.com')) {
+      return 'Replit Project';
+    } else if (hostname.includes('specode.ai')) {
+      return 'Specode Chat';
+    } else if (hostname.includes('github.com')) {
+      return 'GitHub Page';
+    } else if (hostname.includes('stackoverflow.com')) {
+      return 'Stack Overflow';
+    } else if (hostname.includes('wikipedia.org')) {
+      return 'Wikipedia Article';
+    } else if (hostname.includes('youtube.com')) {
+      return 'YouTube Page';
+    } else if (hostname.includes('twitter.com') || hostname.includes('x.com')) {
+      return 'X/Twitter Page';
+    } else if (hostname.includes('reddit.com')) {
+      return 'Reddit Thread';
+    } else if (hostname.includes('notion.so') || hostname.includes('notion.site')) {
+      return 'Notion Page';
+    } else if (hostname.includes('docs.google.com')) {
+      return 'Google Doc';
+    }
+    
+    // Fallback: Use page title (first 25 chars) or domain name
+    if (title && title.length > 0) {
+      const cleanTitle = title.replace(/[\n\r\t]/g, ' ').trim();
+      return cleanTitle.length > 25 ? cleanTitle.substring(0, 25) + '...' : cleanTitle;
+    }
+    
+    // Last fallback: domain name
+    return hostname.replace('www.', '').split('.')[0];
+  } catch (e) {
+    return 'Full Page';
+  }
+}
+
 // ===== PROCESSING OVERLAY WITH TIMER =====
 let processingStartTime = null;
 let processingTimerInterval = null;
@@ -194,6 +343,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadSnaps();
   setupEventListeners();
   updateUI();
+  
+  // Check for existing lastFullPageCapture and show RE-EDIT button
+  try {
+    const result = await chrome.storage.local.get('lastFullPageCapture');
+    if (result.lastFullPageCapture && result.lastFullPageCapture.smartName) {
+      updateReeditButton(result.lastFullPageCapture.smartName);
+    }
+  } catch (e) {
+    console.log('[SnapToAI] Could not load last capture:', e);
+  }
 });
 
 // Translate all UI elements
@@ -260,6 +419,12 @@ function setupEventListeners() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closePreview();
   });
+  
+  // RE-EDIT Full Page button
+  const reeditBtn = document.getElementById('reeditFullPageBtn');
+  if (reeditBtn) {
+    reeditBtn.addEventListener('click', handleReeditFullPage);
+  }
   
   // Listen for annotation completion via Chrome runtime messaging
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -643,6 +808,28 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
       await loadSnaps();
       updateUI();
       
+      // Generate smart name and store lastFullPageCapture for RE-EDIT
+      const smartName = generateSmartName(
+        currentFullPageInfo?.url || '', 
+        currentFullPageInfo?.title || ''
+      );
+      
+      // Store the capture with all chunks for re-editing
+      const lastFullPageCapture = {
+        smartName: smartName,
+        timestamp: Date.now(),
+        captureGroupId: captureGroupId,
+        totalParts: totalChunks,
+        chunks: chunks, // All chunk dataURLs
+        url: currentFullPageInfo?.url || '',
+        title: currentFullPageInfo?.title || ''
+      };
+      
+      await chrome.storage.local.set({ lastFullPageCapture });
+      
+      // Update RE-EDIT button visibility
+      updateReeditButton(smartName);
+      
       if (totalChunks > 1) {
         status.textContent = `Full page saved as ${savedCount} parts! ✓`;
       } else {
@@ -823,6 +1010,7 @@ async function handleSnipClick() {
 
 // Handle full page button click - scroll and capture entire page
 let fullPageCapturePort = null; // Port to maintain connection with background
+let currentFullPageInfo = null; // Stores URL/title during capture
 
 async function handleFullPageClick() {
   const fullPageButton = document.getElementById('fullPageButton');
@@ -846,6 +1034,13 @@ async function handleFullPageClick() {
   }
   
   try {
+    // Get current tab info for smart naming
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    currentFullPageInfo = {
+      url: tab?.url || '',
+      title: tab?.title || ''
+    };
+    
     // Establish port connection so background can detect if popup closes
     fullPageCapturePort = chrome.runtime.connect({ name: 'fullPageCapture' });
     
@@ -1095,22 +1290,28 @@ function updateThumbnails() {
     number.className = 'thumbnail-number';
     number.textContent = index + 1;
     
-    // Check if this is a chunked capture and add badge
+    // Get metadata for this snap
     const meta = currentSnapMetadata[index];
+    
+    thumbnail.appendChild(checkbox);
+    thumbnail.appendChild(deleteBtn);
+    // Only add annotate button for non-chunk thumbnails (hide edit on full-page chunks)
+    if (!meta || !meta.isChunk) {
+      thumbnail.appendChild(annotateBtn);
+    }
+    thumbnail.appendChild(copyBtn);
+    thumbnail.appendChild(img);
+    thumbnail.appendChild(number);
+    
+    // Add chunk badge if this is a chunked capture
     if (meta && meta.isChunk) {
       const chunkBadge = document.createElement('div');
       chunkBadge.className = 'chunk-badge';
       chunkBadge.textContent = `${meta.part}/${meta.totalParts}`;
-      chunkBadge.title = `Part ${meta.part} of ${meta.totalParts} (pages ${meta.startPage}-${meta.endPage})`;
+      chunkBadge.title = `Part ${meta.part} of ${meta.totalParts}`;
       thumbnail.appendChild(chunkBadge);
     }
     
-    thumbnail.appendChild(checkbox);
-    thumbnail.appendChild(deleteBtn);
-    thumbnail.appendChild(annotateBtn);
-    thumbnail.appendChild(copyBtn);
-    thumbnail.appendChild(img);
-    thumbnail.appendChild(number);
     container.appendChild(thumbnail);
   });
   
@@ -1459,14 +1660,6 @@ async function handleAnnotate(index) {
   
   // Sort by part number
   groupChunks.sort((a, b) => a.part - b.part);
-  
-  // DEBUG: Log what chunks were found
-  console.log('handleAnnotate - clicked index:', index);
-  console.log('handleAnnotate - meta:', meta);
-  console.log('handleAnnotate - groupChunks found:', groupChunks.length);
-  groupChunks.forEach((c, i) => {
-    console.log(`  Chunk ${i}: index=${c.index}, part=${c.part}, dataUrl length=${c.dataUrl?.length || 0}, first 100 chars: ${c.dataUrl?.substring(0, 100)}`);
-  });
   
   if (groupChunks.length > 1) {
       // Stitch all chunks vertically into one tall image

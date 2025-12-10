@@ -114,6 +114,32 @@ body {
   color: #00d9ff;
 }
 
+/* RE-EDIT Full Page Button */
+.reedit-fullpage-btn {
+  display: block;
+  margin: 10px auto;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #007AFF 0%, #0055cc 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
+}
+
+.reedit-fullpage-btn:hover {
+  background: linear-gradient(135deg, #0088ff 0%, #0066dd 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4);
+}
+
+.reedit-fullpage-btn:active {
+  transform: translateY(0);
+}
+
 .status.uploading {
   color: #ff9500;
 }

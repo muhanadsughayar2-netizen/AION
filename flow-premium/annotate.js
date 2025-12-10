@@ -2059,6 +2059,47 @@ async function save() {
       return;
     }
     
+    // RE-EDIT MODE: Save annotated image back to lastFullPageCapture
+    if (mode === 'reedit') {
+      updateStatus('Saving annotated full page...');
+      
+      // Apply border/frame decoration if enabled
+      let exportCanvas;
+      if (hasBorder || hasBrowserFrame) {
+        exportCanvas = applyBorderDecoration(canvas);
+      } else {
+        exportCanvas = canvas;
+      }
+      
+      const annotatedDataUrl = exportCanvas.toDataURL('image/png');
+      
+      // Get existing lastFullPageCapture and update with annotated version
+      const result = await chrome.storage.local.get(['lastFullPageCapture', 'reeditCapture']);
+      const capture = result.reeditCapture || result.lastFullPageCapture || {};
+      
+      // Store the annotated image as a single chunk (replacing previous chunks)
+      const updatedCapture = {
+        ...capture,
+        chunks: [annotatedDataUrl], // Single annotated image
+        totalParts: 1,
+        timestamp: Date.now(),
+        annotated: true
+      };
+      
+      await chrome.storage.local.set({ 
+        lastFullPageCapture: updatedCapture,
+        reeditMode: false,
+        reeditCapture: null
+      });
+      
+      updateStatus('Full page with annotations saved! ✓');
+      
+      setTimeout(() => {
+        window.close();
+      }, 1000);
+      return;
+    }
+    
     // SNIP MODE: Save cropped region as new snap
     if (mode === 'snip' && cropRect) {
       // Extract the cropped region from original image
