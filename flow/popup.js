@@ -1388,11 +1388,10 @@ function updateClearButton() {
 // Handle annotation
 async function handleAnnotate(index) {
   const meta = currentSnapMetadata[index];
+  let groupChunks = [];
   
   // Check if this is a chunked capture (multiple pages stitched together)
   if (meta && meta.isChunk && meta.totalParts > 1) {
-    const groupChunks = [];
-    
     if (meta.captureGroupId) {
       // NEW captures: Find all chunks with matching captureGroupId
       for (let i = 0; i < currentSnapMetadata.length; i++) {
@@ -1403,14 +1402,10 @@ async function handleAnnotate(index) {
       }
     } else {
       // OLD captures (no captureGroupId): Find consecutive chunks by index
-      // Look backwards to find part 1, then forwards to find all parts
       const totalParts = meta.totalParts;
       const myPart = meta.part;
-      
-      // Calculate where part 1 should be (relative to clicked index)
       const firstPartIndex = index - (myPart - 1);
       
-      // Collect all consecutive parts starting from firstPartIndex
       for (let p = 0; p < totalParts; p++) {
         const chunkIndex = firstPartIndex + p;
         if (chunkIndex >= 0 && chunkIndex < currentSnapMetadata.length) {
@@ -1421,11 +1416,51 @@ async function handleAnnotate(index) {
         }
       }
     }
+  }
+  
+  // UNIVERSAL FALLBACK: If no chunks found via metadata, scan ALL snaps for chunk patterns
+  if (groupChunks.length <= 1) {
+    // Look for ANY chunks near this index that might belong together
+    // Find all chunks in the queue first
+    const allChunks = [];
+    for (let i = 0; i < currentSnapMetadata.length; i++) {
+      const m = currentSnapMetadata[i];
+      if (m && m.isChunk && m.part && m.totalParts) {
+        allChunks.push({ index: i, part: m.part, totalParts: m.totalParts, captureGroupId: m.captureGroupId });
+      }
+    }
     
-    // Sort by part number
-    groupChunks.sort((a, b) => a.part - b.part);
-    
-    if (groupChunks.length > 1) {
+    // Find the group that contains our clicked index
+    for (const chunk of allChunks) {
+      if (chunk.index === index) {
+        // Found our chunk - now find all chunks with same totalParts in consecutive positions
+        const totalParts = chunk.totalParts;
+        const myPart = chunk.part;
+        const firstPartIndex = index - (myPart - 1);
+        
+        groupChunks = [];
+        for (let p = 0; p < totalParts; p++) {
+          const chunkIndex = firstPartIndex + p;
+          if (chunkIndex >= 0 && chunkIndex < currentSnaps.length) {
+            const m = currentSnapMetadata[chunkIndex];
+            // Accept if it's a chunk with correct part number OR if no metadata (old format)
+            if (m && m.isChunk && m.part === (p + 1)) {
+              groupChunks.push({ index: chunkIndex, part: m.part, dataUrl: currentSnaps[chunkIndex] });
+            } else if (currentSnaps[chunkIndex]) {
+              // No metadata but snap exists - include it anyway
+              groupChunks.push({ index: chunkIndex, part: p + 1, dataUrl: currentSnaps[chunkIndex] });
+            }
+          }
+        }
+        break;
+      }
+    }
+  }
+  
+  // Sort by part number
+  groupChunks.sort((a, b) => a.part - b.part);
+  
+  if (groupChunks.length > 1) {
       // Stitch all chunks vertically into one tall image
       const images = await Promise.all(groupChunks.map(chunk => {
         return new Promise((resolve, reject) => {
@@ -1476,7 +1511,6 @@ async function handleAnnotate(index) {
         `width=${w},height=${h},left=${left},top=${top}`
       );
       return;
-    }
   }
   
   // Single image (not chunked) - original behavior
