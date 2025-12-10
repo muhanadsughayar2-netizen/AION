@@ -111,8 +111,8 @@ async function handleReeditFullPage() {
     let chunks = [];
     let smartName = 'Full Page';
     
-    // First try: use stored lastFullPageCapture.chunks
-    if (capture && capture.chunks && capture.chunks.length > 0) {
+    // First try: use stored lastFullPageCapture.chunks (must be an ARRAY, not string)
+    if (capture && capture.chunks && Array.isArray(capture.chunks) && capture.chunks.length > 0) {
       chunks = capture.chunks;
       smartName = capture.smartName || 'Full Page';
     } else {
