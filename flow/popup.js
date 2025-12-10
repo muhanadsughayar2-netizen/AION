@@ -1095,22 +1095,28 @@ function updateThumbnails() {
     number.className = 'thumbnail-number';
     number.textContent = index + 1;
     
-    // Check if this is a chunked capture and add badge
+    // Get metadata for this snap
     const meta = currentSnapMetadata[index];
+    
+    thumbnail.appendChild(checkbox);
+    thumbnail.appendChild(deleteBtn);
+    // Only add annotate button for non-chunk thumbnails (hide edit on full-page chunks)
+    if (!meta || !meta.isChunk) {
+      thumbnail.appendChild(annotateBtn);
+    }
+    thumbnail.appendChild(copyBtn);
+    thumbnail.appendChild(img);
+    thumbnail.appendChild(number);
+    
+    // Add chunk badge if this is a chunked capture
     if (meta && meta.isChunk) {
       const chunkBadge = document.createElement('div');
       chunkBadge.className = 'chunk-badge';
       chunkBadge.textContent = `${meta.part}/${meta.totalParts}`;
-      chunkBadge.title = `Part ${meta.part} of ${meta.totalParts} (pages ${meta.startPage}-${meta.endPage})`;
+      chunkBadge.title = `Part ${meta.part} of ${meta.totalParts}`;
       thumbnail.appendChild(chunkBadge);
     }
     
-    thumbnail.appendChild(checkbox);
-    thumbnail.appendChild(deleteBtn);
-    thumbnail.appendChild(annotateBtn);
-    thumbnail.appendChild(copyBtn);
-    thumbnail.appendChild(img);
-    thumbnail.appendChild(number);
     container.appendChild(thumbnail);
   });
   
