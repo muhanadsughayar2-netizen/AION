@@ -60,9 +60,9 @@ async function handleReeditChunkGroup(captureGroupId) {
     
     status.textContent = 'Opening full page editor...';
     
-    // Store chunks for fullpage mode (with Page X/Y navigation)
+    // Store chunks for fullpage mode (key must match what annotate.js expects)
     await chrome.storage.local.set({ 
-      fullPageImages: chunkDataUrls,
+      fullPageScreenshots: chunkDataUrls,  // MUST be 'fullPageScreenshots' - that's what loadFullPageImages reads!
       fullPageInfo: {
         url: '',
         title: '',
@@ -159,9 +159,9 @@ async function handleReeditFullPage() {
     status.textContent = 'Opening full page editor...';
     status.className = 'status active';
     
-    // Store the chunks array for fullpage mode (same format as original capture)
+    // Store the chunks array for fullpage mode (key must match what annotate.js expects)
     await chrome.storage.local.set({ 
-      fullPageImages: chunks,
+      fullPageScreenshots: chunks,  // MUST be 'fullPageScreenshots' - that's what loadFullPageImages reads!
       fullPageInfo: {
         url: capture?.url || '',
         title: capture?.title || '',
