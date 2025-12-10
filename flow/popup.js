@@ -1376,6 +1376,81 @@ function updateClearButton() {
 
 // Handle annotation
 async function handleAnnotate(index) {
+  const meta = currentSnapMetadata[index];
+  
+  // Check if this is a chunked capture (multiple pages stitched together)
+  if (meta && meta.isChunk && meta.totalParts > 1) {
+    // Find ALL chunks that belong to this group
+    // Look for consecutive parts with same totalParts
+    const groupChunks = [];
+    const totalParts = meta.totalParts;
+    
+    // Find all chunks in this group by scanning for matching totalParts
+    for (let i = 0; i < currentSnapMetadata.length; i++) {
+      const m = currentSnapMetadata[i];
+      if (m && m.isChunk && m.totalParts === totalParts) {
+        groupChunks.push({ index: i, part: m.part, dataUrl: currentSnaps[i] });
+      }
+    }
+    
+    // Sort by part number
+    groupChunks.sort((a, b) => a.part - b.part);
+    
+    if (groupChunks.length > 1) {
+      // Stitch all chunks vertically into one tall image
+      const images = await Promise.all(groupChunks.map(chunk => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = chunk.dataUrl;
+        });
+      }));
+      
+      // Calculate total dimensions
+      const width = Math.max(...images.map(img => img.width));
+      const totalHeight = images.reduce((sum, img) => sum + img.height, 0);
+      
+      // Create stitched canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = totalHeight;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      
+      // Draw each image vertically (no overlap since they're already stitched chunks)
+      let currentY = 0;
+      for (const img of images) {
+        ctx.drawImage(img, 0, currentY);
+        currentY += img.height;
+      }
+      
+      // Convert to dataURL
+      const stitchedDataUrl = canvas.toDataURL('image/png');
+      
+      // Store stitched image for editing
+      // Use special mode to indicate this is a multi-chunk edit
+      await chrome.storage.local.set({ 
+        editImage: stitchedDataUrl,
+        editIndex: index,
+        editChunkGroup: groupChunks.map(c => c.index) // Track which chunks are being edited
+      });
+      
+      // Open annotation window
+      const w = Math.min(1200, screen.width - 100);
+      const h = Math.min(900, screen.height - 100);
+      const left = Math.round((screen.width - w) / 2);
+      const top = Math.round((screen.height - h) / 2);
+      
+      window.open(
+        `annotate.html?mode=edit&index=${index}&chunked=true`,
+        'Annotate',
+        `width=${w},height=${h},left=${left},top=${top}`
+      );
+      return;
+    }
+  }
+  
+  // Single image (not chunked) - original behavior
   const dataUrl = currentSnaps[index];
   
   // Store image in local storage (handles large images that exceed URL limits)
