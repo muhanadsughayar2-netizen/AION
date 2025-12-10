@@ -451,6 +451,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const result = await chrome.storage.local.get('lastFullPageCapture');
     if (result.lastFullPageCapture && result.lastFullPageCapture.smartName) {
       updateReeditButton(result.lastFullPageCapture.smartName);
+    } else {
+      // Fallback: check if there are any chunks in the current queue
+      const hasChunks = currentSnapMetadata.some(m => m && m.isChunk);
+      if (hasChunks) {
+        // Find the most recent chunk group
+        const chunkMeta = currentSnapMetadata.find(m => m && m.isChunk);
+        updateReeditButton(chunkMeta?.smartName || 'Full Page');
+      }
     }
   } catch (e) {
     console.log('[SnapToAI] Could not load last capture:', e);
