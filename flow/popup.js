@@ -601,16 +601,27 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
     let savedCount = 0;
     let lastDataUrl = null;
     
+    // Generate unique captureGroupId for this set of chunks
+    const captureGroupId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    
     for (let c = 0; c < chunks.length; c++) {
       const chunkDataUrl = chunks[c];
       const partLabel = totalChunks > 1 ? ` (Part ${c + 1}/${totalChunks})` : '';
       
       overlayStatus.textContent = `Saving${partLabel}...`;
       
+      // Build proper metadata for chunked captures
+      const chunkMetadata = totalChunks > 1 ? {
+        isChunk: true,
+        part: c + 1,
+        totalParts: totalChunks,
+        captureGroupId: captureGroupId
+      } : null;
+      
       const response = await chrome.runtime.sendMessage({
         action: 'snipComplete',
         dataUrl: chunkDataUrl,
-        label: totalChunks > 1 ? `FullPage – Part ${c + 1}/${totalChunks}` : null
+        metadata: chunkMetadata
       });
       
       if (response.success) {
@@ -1379,16 +1390,15 @@ async function handleAnnotate(index) {
   const meta = currentSnapMetadata[index];
   
   // Check if this is a chunked capture (multiple pages stitched together)
-  if (meta && meta.isChunk && meta.totalParts > 1) {
-    // Find ALL chunks that belong to this group
-    // Look for consecutive parts with same totalParts
+  if (meta && meta.isChunk && meta.totalParts > 1 && meta.captureGroupId) {
+    // Find ALL chunks that belong to this SPECIFIC capture group
     const groupChunks = [];
-    const totalParts = meta.totalParts;
+    const captureGroupId = meta.captureGroupId;
     
-    // Find all chunks in this group by scanning for matching totalParts
+    // Find all chunks with matching captureGroupId (unique per capture)
     for (let i = 0; i < currentSnapMetadata.length; i++) {
       const m = currentSnapMetadata[i];
-      if (m && m.isChunk && m.totalParts === totalParts) {
+      if (m && m.isChunk && m.captureGroupId === captureGroupId) {
         groupChunks.push({ index: i, part: m.part, dataUrl: currentSnaps[i] });
       }
     }
