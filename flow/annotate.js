@@ -45,6 +45,43 @@ let borderColor = '#007AFF'; // Blue - SnapToAI brand (fixed, no picker)
 let borderWidth = 2; // Default to thin
 let borderRadius = 0; // Always square (no rounded corners)
 
+// Generate smart name for RE-EDIT functionality
+function generateSmartNameForFullPage(url, title) {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    
+    // AI Platforms
+    if (hostname.includes('chatgpt.com') || hostname.includes('chat.openai.com')) return 'ChatGPT Chat';
+    if (hostname.includes('claude.ai')) return 'Claude Conversation';
+    if (hostname.includes('grok.com') || hostname.includes('x.com/i/grok')) return 'Grok Thread';
+    if (hostname.includes('gemini.google.com')) return 'Gemini Session';
+    if (hostname.includes('perplexity.ai')) return 'Perplexity Search';
+    if (hostname.includes('specode.ai')) return 'Specode Code';
+    if (hostname.includes('replit.com')) return 'Replit Project';
+    
+    // Popular sites
+    if (hostname.includes('github.com')) return 'GitHub Page';
+    if (hostname.includes('stackoverflow.com')) return 'StackOverflow';
+    if (hostname.includes('wikipedia.org')) return 'Wikipedia Article';
+    if (hostname.includes('youtube.com')) return 'YouTube Page';
+    if (hostname.includes('twitter.com') || hostname.includes('x.com')) return 'X/Twitter';
+    if (hostname.includes('reddit.com')) return 'Reddit Thread';
+    if (hostname.includes('notion.so') || hostname.includes('notion.site')) return 'Notion Page';
+    if (hostname.includes('docs.google.com')) return 'Google Docs';
+    
+    // Fallback: Use page title (first 30 chars) or domain
+    if (title && title.length > 0) {
+      const cleanTitle = title.replace(/[^\w\s-]/g, '').trim();
+      return cleanTitle.length > 30 ? cleanTitle.substring(0, 30) + '...' : cleanTitle;
+    }
+    
+    // Last fallback: domain name
+    return hostname.replace('www.', '').split('.')[0];
+  } catch (e) {
+    return 'Full Page';
+  }
+}
+
 // ============================================================
 // AUTO DUPLICATE-ROW REMOVAL
 // Compares pixel rows in overlap area to find exact match point
@@ -2256,6 +2293,7 @@ async function saveFullPageWithAnnotations() {
     
     // STEP 2: Process each chunk (only save up to chunksToSave)
     const savedChunks = [];
+    const savedChunkDataUrls = []; // For RE-EDIT functionality
     
     for (let chunkIndex = 0; chunkIndex < chunksToSave; chunkIndex++) {
       const startPage = chunkIndex * PAGES_PER_CHUNK;
@@ -2399,6 +2437,7 @@ async function saveFullPageWithAnnotations() {
       }
       
       savedChunks.push(chunkIndex + 1);
+      savedChunkDataUrls.push(chunkDataUrl); // Store for RE-EDIT
       
       // Brief pause between chunks
       await yieldToUI();
@@ -2406,6 +2445,27 @@ async function saveFullPageWithAnnotations() {
     
     // Clear local storage (screenshots and viewport dimensions)
     await chrome.storage.local.remove(['fullPageScreenshots', 'fullPageViewportWidth', 'fullPageViewportHeight']);
+    
+    // Save lastFullPageCapture for RE-EDIT functionality
+    if (savedChunkDataUrls.length > 0) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const capturedUrl = urlParams.get('url') || window.location.href;
+      const capturedTitle = urlParams.get('title') || document.title;
+      const smartName = generateSmartNameForFullPage(capturedUrl, capturedTitle);
+      
+      const lastFullPageCapture = {
+        smartName: smartName,
+        timestamp: Date.now(),
+        captureGroupId: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+        totalParts: savedChunkDataUrls.length,
+        chunks: savedChunkDataUrls,
+        url: capturedUrl,
+        title: capturedTitle
+      };
+      
+      await chrome.storage.local.set({ lastFullPageCapture });
+      console.log('[SnapToAI] Saved lastFullPageCapture for RE-EDIT:', smartName);
+    }
     
     updateStatus(`Saved ${savedChunks.length} chunks! Upload to AI one at a time.`);
     
