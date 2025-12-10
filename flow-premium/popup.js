@@ -405,15 +405,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Check for existing lastFullPageCapture and show RE-EDIT button
   try {
-    const result = await chrome.storage.local.get('lastFullPageCapture');
+    // Load both lastFullPageCapture and snapMetadata directly from storage
+    const result = await chrome.storage.local.get(['lastFullPageCapture', 'snapMetadata']);
+    const metadata = result.snapMetadata || [];
+    
     if (result.lastFullPageCapture && result.lastFullPageCapture.smartName) {
       updateReeditButton(result.lastFullPageCapture.smartName);
     } else {
-      // Fallback: check if there are any chunks in the current queue
-      const hasChunks = currentSnapMetadata.some(m => m && m.isChunk);
+      // Fallback: check if there are any chunks in the queue metadata
+      // Check for isChunk OR (part AND totalParts) to support older captures
+      const hasChunks = metadata.some(m => m && (m.isChunk || (m.part && m.totalParts)));
       if (hasChunks) {
         // Find the most recent chunk group
-        const chunkMeta = currentSnapMetadata.find(m => m && m.isChunk);
+        const chunkMeta = metadata.find(m => m && (m.isChunk || (m.part && m.totalParts)));
         updateReeditButton(chunkMeta?.smartName || 'Full Page');
       }
     }
