@@ -23,6 +23,107 @@ function updateReeditButton(smartName = null) {
   }
 }
 
+// Handle RE-EDIT from chunk thumbnail - find all chunks in group and open editor
+async function handleReeditChunkGroup(captureGroupId) {
+  const status = document.getElementById('status');
+  
+  try {
+    status.textContent = 'Finding all parts...';
+    status.className = 'status active';
+    
+    // Find all chunks with this captureGroupId
+    const chunkIndices = [];
+    for (let i = 0; i < currentSnapMetadata.length; i++) {
+      const meta = currentSnapMetadata[i];
+      if (meta && meta.isChunk && meta.captureGroupId === captureGroupId) {
+        chunkIndices.push({ index: i, part: meta.part });
+      }
+    }
+    
+    if (chunkIndices.length === 0) {
+      status.textContent = 'No chunks found for this capture';
+      status.className = 'status error';
+      setTimeout(() => {
+        status.textContent = 'SnapToAI: Ready';
+        status.className = 'status';
+      }, 2000);
+      return;
+    }
+    
+    // Sort by part number
+    chunkIndices.sort((a, b) => a.part - b.part);
+    
+    // Get the dataUrls for these chunks
+    const chunkDataUrls = chunkIndices.map(c => currentSnaps[c.index]);
+    
+    status.textContent = `Stitching ${chunkDataUrls.length} parts...`;
+    
+    // Load all chunk images
+    const images = await Promise.all(chunkDataUrls.map(dataUrl => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+    }));
+    
+    // Calculate total dimensions (chunks are already processed, no overlap)
+    const width = Math.max(...images.map(img => img.width));
+    const totalHeight = images.reduce((sum, img) => sum + img.height, 0);
+    
+    // Create stitched canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = totalHeight;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    
+    // Draw each chunk vertically (no overlap - chunks are final images)
+    let y = 0;
+    for (const img of images) {
+      ctx.drawImage(img, 0, y);
+      y += img.height;
+    }
+    
+    // Convert to dataUrl
+    const stitchedDataUrl = canvas.toDataURL('image/png');
+    
+    // Store for reedit mode
+    await chrome.storage.local.set({ 
+      reeditMode: true,
+      reeditCapture: {
+        chunks: chunkDataUrls,
+        captureGroupId: captureGroupId,
+        totalParts: chunkDataUrls.length
+      }
+    });
+    
+    // Open annotation editor with stitched image
+    chrome.windows.create({
+      url: chrome.runtime.getURL(`annotate.html?mode=reedit&img=${encodeURIComponent(stitchedDataUrl)}`),
+      type: 'popup',
+      width: Math.min(canvas.width + 100, 1400),
+      height: Math.min(canvas.height + 200, 900),
+      focused: true
+    });
+    
+    status.textContent = 'Opening editor...';
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 1500);
+    
+  } catch (error) {
+    console.log('[SnapToAI] RE-EDIT chunk group error:', error);
+    status.textContent = 'Failed to open editor';
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 2000);
+  }
+}
+
 // Handle RE-EDIT button click - reopen full page in editor with all chunks
 async function handleReeditFullPage() {
   const status = document.getElementById('status');
@@ -1310,6 +1411,19 @@ function updateThumbnails() {
       chunkBadge.textContent = `${meta.part}/${meta.totalParts}`;
       chunkBadge.title = `Part ${meta.part} of ${meta.totalParts}`;
       thumbnail.appendChild(chunkBadge);
+      
+      // Add RE-EDIT ALL button for chunked captures
+      if (meta.captureGroupId && meta.totalParts > 1) {
+        const reeditAllBtn = document.createElement('button');
+        reeditAllBtn.className = 'thumbnail-reedit-all';
+        reeditAllBtn.textContent = '✏️';
+        reeditAllBtn.title = `RE-EDIT all ${meta.totalParts} parts together`;
+        reeditAllBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          handleReeditChunkGroup(meta.captureGroupId);
+        });
+        thumbnail.appendChild(reeditAllBtn);
+      }
     }
     
     container.appendChild(thumbnail);
