@@ -104,11 +104,50 @@ async function handleReeditFullPage() {
   
   try {
     // Get stored last full page capture
-    const result = await chrome.storage.local.get('lastFullPageCapture');
+    const result = await chrome.storage.local.get(['lastFullPageCapture', 'snapMetadata']);
     const capture = result.lastFullPageCapture;
+    const metadata = result.snapMetadata || [];
     
-    if (!capture || !capture.chunks || capture.chunks.length === 0) {
-      status.textContent = 'No full page capture to edit';
+    let chunks = [];
+    let smartName = 'Full Page';
+    
+    // First try: use stored lastFullPageCapture.chunks
+    if (capture && capture.chunks && capture.chunks.length > 0) {
+      chunks = capture.chunks;
+      smartName = capture.smartName || 'Full Page';
+    } else {
+      // Fallback: gather chunks from the current queue
+      status.textContent = 'Finding chunks in queue...';
+      
+      // Find all chunk metadata
+      const chunkIndices = [];
+      for (let i = 0; i < metadata.length; i++) {
+        const meta = metadata[i];
+        if (meta && (meta.isChunk || (meta.part && meta.totalParts))) {
+          chunkIndices.push({ index: i, part: meta.part || 1 });
+          if (meta.smartName) smartName = meta.smartName;
+        }
+      }
+      
+      if (chunkIndices.length === 0) {
+        status.textContent = 'No full page capture found';
+        status.className = 'status error';
+        setTimeout(() => {
+          status.textContent = 'SnapToAI: Ready';
+          status.className = 'status';
+        }, 2000);
+        return;
+      }
+      
+      // Sort by part number
+      chunkIndices.sort((a, b) => a.part - b.part);
+      
+      // Get chunk data from currentSnaps
+      chunks = chunkIndices.map(c => currentSnaps[c.index]).filter(Boolean);
+    }
+    
+    if (chunks.length === 0) {
+      status.textContent = 'No chunks found to edit';
       status.className = 'status error';
       setTimeout(() => {
         status.textContent = 'SnapToAI: Ready';
@@ -122,11 +161,11 @@ async function handleReeditFullPage() {
     
     // Store the chunks array for fullpage mode (same format as original capture)
     await chrome.storage.local.set({ 
-      fullPageImages: capture.chunks,
+      fullPageImages: chunks,
       fullPageInfo: {
-        url: capture.url || '',
-        title: capture.title || '',
-        smartName: capture.smartName || 'Full Page'
+        url: capture?.url || '',
+        title: capture?.title || '',
+        smartName: smartName
       }
     });
     
