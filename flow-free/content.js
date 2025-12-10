@@ -2322,10 +2322,9 @@
     console.log('[SnapToAI] Pre-flight:', preflight);
     
     // FINAL AI HEIGHT FORCE — stops "Page is short" forever
-    const aiHosts = ['chatgpt.com', 'chat.openai.com', 'grok.x.ai', 'grok.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai', 'poe.com', 'copilot.microsoft.com', 'specode.ai'];
-    const isAI = aiHosts.some(host => location.hostname.includes(host));
+    const isAI = ['chatgpt.com','chat.openai.com','gemini.google.com','claude.ai','grok.x.ai','grok.com','perplexity.ai','poe.com','replit.com','specode.ai'].some(h => location.hostname.includes(h));
     if (isAI) {
-      preflight.pageHeight = Math.max(preflight.pageHeight, 20000);
+      preflight.pageHeight = Math.max(preflight.pageHeight, 25000);
       preflight.canCapture = true;
       preflight.isComplexApp = false;
       console.log('[SnapToAI] Forced AI page height:', preflight.pageHeight + 'px');
