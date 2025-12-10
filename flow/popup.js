@@ -196,45 +196,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateUI();
 });
 
-// Listen for annotation save messages from the editor window
-window.addEventListener('message', async (event) => {
-  if (event.data && event.data.type === 'annotationSave') {
-    const { dataUrl, index, chunkIndices } = event.data;
-    
-    if (chunkIndices && chunkIndices.length > 0) {
-      // Multi-chunk edit: replace first chunk, delete the rest
-      currentSnaps[chunkIndices[0]] = dataUrl;
-      currentSnapMetadata[chunkIndices[0]] = null; // Clear chunk metadata
-      
-      // Remove other chunks (reverse order to preserve indices)
-      for (let i = chunkIndices.length - 1; i > 0; i--) {
-        currentSnaps.splice(chunkIndices[i], 1);
-        currentSnapMetadata.splice(chunkIndices[i], 1);
-      }
-    } else {
-      // Single image edit
-      currentSnaps[index] = dataUrl;
-    }
-    
-    // Save to storage
-    await chrome.runtime.sendMessage({ 
-      action: 'setSnaps', 
-      snaps: currentSnaps,
-      metadata: currentSnapMetadata
-    });
-    
-    updateUI();
-    
-    const status = document.getElementById('status');
-    status.textContent = 'Annotation saved!';
-    status.className = 'status active';
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 1500);
-  }
-});
-
 // Translate all UI elements
 function translateUI() {
   // Check if language is RTL (Arabic)
@@ -1499,7 +1460,13 @@ async function handleAnnotate(index) {
   // Sort by part number
   groupChunks.sort((a, b) => a.part - b.part);
   
-  let imageToEdit;
+  // DEBUG: Log what chunks were found
+  console.log('handleAnnotate - clicked index:', index);
+  console.log('handleAnnotate - meta:', meta);
+  console.log('handleAnnotate - groupChunks found:', groupChunks.length);
+  groupChunks.forEach((c, i) => {
+    console.log(`  Chunk ${i}: index=${c.index}, part=${c.part}, dataUrl length=${c.dataUrl?.length || 0}, first 100 chars: ${c.dataUrl?.substring(0, 100)}`);
+  });
   
   if (groupChunks.length > 1) {
       // Stitch all chunks vertically into one tall image
@@ -1522,174 +1489,58 @@ async function handleAnnotate(index) {
       canvas.height = totalHeight;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       
-      // Draw each image vertically
+      // Draw each image vertically (no overlap since they're already stitched chunks)
       let currentY = 0;
       for (const img of images) {
         ctx.drawImage(img, 0, currentY);
         currentY += img.height;
       }
       
-      imageToEdit = canvas.toDataURL('image/png');
-  } else {
-      // Single image
-      imageToEdit = currentSnaps[index];
+      // Convert to dataURL
+      const stitchedDataUrl = canvas.toDataURL('image/png');
+      
+      // Store stitched image for editing
+      // Use special mode to indicate this is a multi-chunk edit
+      await chrome.storage.local.set({ 
+        editImage: stitchedDataUrl,
+        editIndex: index,
+        editChunkGroup: groupChunks.map(c => c.index) // Track which chunks are being edited
+      });
+      
+      // Open annotation window
+      const w = Math.min(1200, screen.width - 100);
+      const h = Math.min(900, screen.height - 100);
+      const left = Math.round((screen.width - w) / 2);
+      const top = Math.round((screen.height - h) / 2);
+      
+      window.open(
+        `annotate.html?mode=edit&index=${index}&chunked=true`,
+        'Annotate',
+        `width=${w},height=${h},left=${left},top=${top}`
+      );
+      return;
   }
   
-  // Open the fast annotation editor
-  openAnnotationEditor(imageToEdit, index, groupChunks.length > 1 ? groupChunks.map(c => c.index) : null);
-}
-
-// NEW ULTRA-FAST ANNOTATION EDITOR
-function openAnnotationEditor(imageDataUrl, editIndex, chunkIndices) {
-  const w = Math.min(1200, screen.width - 100);
-  const h = Math.min(900, screen.height - 100);
-  const left = Math.round((screen.width - w) / 2);
-  const top = Math.round((screen.height - h) / 2);
+  // Single image (not chunked) - original behavior
+  const dataUrl = currentSnaps[index];
   
-  const win = window.open('', 'SnapToAI Editor', `width=${w},height=${h},left=${left},top=${top}`);
-  win.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>SnapToAI Editor</title>
-      <style>
-        body,html{margin:0;padding:0;background:#111;color:#fff;font-family:system-ui;overflow:auto}
-        canvas{cursor:crosshair;display:block;margin:20px auto;border:2px solid #007AFF;max-width:95%}
-        .tools{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#000;padding:10px;border-radius:12px;z-index:10;display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
-        button{padding:10px 20px;background:#007AFF;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px}
-        button:hover{background:#0056b3}
-        button.active{background:#00d9ff;color:#000}
-        .colors{display:flex;gap:5px;align-items:center}
-        .color-btn{width:30px;height:30px;border-radius:50%;border:3px solid transparent;cursor:pointer}
-        .color-btn.active{border-color:#fff}
-      </style>
-    </head>
-    <body>
-      <div class="tools">
-        <button id="pen" class="active">Pen</button>
-        <button id="highlighter">Highlighter</button>
-        <button id="arrow">Arrow</button>
-        <button id="undo">Undo</button>
-        <div class="colors">
-          <div class="color-btn active" style="background:#007AFF" data-color="#007AFF"></div>
-          <div class="color-btn" style="background:#FF3B30" data-color="#FF3B30"></div>
-          <div class="color-btn" style="background:#34C759" data-color="#34C759"></div>
-          <div class="color-btn" style="background:#FFCC00" data-color="#FFCC00"></div>
-          <div class="color-btn" style="background:#FFFFFF" data-color="#FFFFFF"></div>
-        </div>
-        <button id="save">SAVE</button>
-      </div>
-      <canvas id="c"></canvas>
-      <script>
-        const canvas = document.getElementById('c');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        let drawing = false, tool = 'pen', color = '#007AFF', size = 4;
-        const history = [];
-        let startX, startY;
-        
-        const img = new Image();
-        img.onload = () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
-          saveState();
-        };
-        img.src = \`${imageDataUrl}\`;
-        
-        function saveState() {
-          history.push(canvas.toDataURL());
-        }
-        
-        canvas.addEventListener('mousedown', e => {
-          drawing = true;
-          startX = e.offsetX;
-          startY = e.offsetY;
-          if (tool !== 'arrow') {
-            ctx.beginPath();
-            ctx.moveTo(e.offsetX, e.offsetY);
-          }
-        });
-        
-        canvas.addEventListener('mousemove', e => {
-          if (!drawing || tool === 'arrow') return;
-          ctx.globalCompositeOperation = tool === 'highlighter' ? 'multiply' : 'source-over';
-          ctx.strokeStyle = tool === 'highlighter' ? 'rgba(255,255,0,0.5)' : color;
-          ctx.lineWidth = tool === 'highlighter' ? 20 : size;
-          ctx.lineCap = 'round';
-          ctx.lineTo(e.offsetX, e.offsetY);
-          ctx.stroke();
-        });
-        
-        canvas.addEventListener('mouseup', e => {
-          if (tool === 'arrow' && drawing) {
-            drawArrow(startX, startY, e.offsetX, e.offsetY);
-          }
-          drawing = false;
-          saveState();
-        });
-        
-        function drawArrow(fromX, fromY, toX, toY) {
-          const headLen = 15;
-          const angle = Math.atan2(toY - fromY, toX - fromX);
-          ctx.strokeStyle = color;
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.moveTo(fromX, fromY);
-          ctx.lineTo(toX, toY);
-          ctx.lineTo(toX - headLen * Math.cos(angle - Math.PI/6), toY - headLen * Math.sin(angle - Math.PI/6));
-          ctx.moveTo(toX, toY);
-          ctx.lineTo(toX - headLen * Math.cos(angle + Math.PI/6), toY - headLen * Math.sin(angle + Math.PI/6));
-          ctx.stroke();
-        }
-        
-        document.getElementById('pen').onclick = () => { tool = 'pen'; updateToolButtons(); };
-        document.getElementById('highlighter').onclick = () => { tool = 'highlighter'; updateToolButtons(); };
-        document.getElementById('arrow').onclick = () => { tool = 'arrow'; updateToolButtons(); };
-        
-        function updateToolButtons() {
-          document.querySelectorAll('.tools > button').forEach(b => b.classList.remove('active'));
-          document.getElementById(tool).classList.add('active');
-        }
-        
-        document.querySelectorAll('.color-btn').forEach(btn => {
-          btn.onclick = () => {
-            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            color = btn.dataset.color;
-          };
-        });
-        
-        document.getElementById('undo').onclick = () => {
-          if (history.length > 1) {
-            history.pop();
-            const img = new Image();
-            img.onload = () => ctx.drawImage(img, 0, 0);
-            img.src = history[history.length - 1];
-          }
-        };
-        
-        document.getElementById('save').onclick = async () => {
-          const dataUrl = canvas.toDataURL('image/png');
-          // Copy to clipboard
-          canvas.toBlob(blob => {
-            navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
-          });
-          // Send back to popup to save
-          if (window.opener) {
-            window.opener.postMessage({ 
-              type: 'annotationSave', 
-              dataUrl: dataUrl, 
-              index: ${editIndex},
-              chunkIndices: ${chunkIndices ? JSON.stringify(chunkIndices) : 'null'}
-            }, '*');
-          }
-          alert('Saved & copied to clipboard!');
-          window.close();
-        };
-      </script>
-    </body>
-    </html>
-  `);
+  // Store image in local storage (handles large images that exceed URL limits)
+  await chrome.storage.local.set({ 
+    editImage: dataUrl,
+    editIndex: index 
+  });
+  
+  // Open annotation window
+  const width = 1200;
+  const height = 800;
+  const left = (screen.width - width) / 2;
+  const top = (screen.height - height) / 2;
+  
+  window.open(
+    `annotate.html?mode=edit&index=${index}`,
+    'Annotate',
+    `width=${width},height=${height},left=${left},top=${top}`
+  );
 }
 
 // Handle annotation message from annotation window
