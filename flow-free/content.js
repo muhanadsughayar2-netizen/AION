@@ -20,6 +20,95 @@
   // Guard against concurrent full page captures in this content script instance
   let isFullPageCaptureRunning = false;
 
+  // === TEXT EXTRACTION FOR PDF SEARCHABILITY ===
+  // Extract visible text from current viewport for embedding in PDFs
+  // This makes PDFs searchable and AI-readable without OCR
+  function extractVisibleText() {
+    try {
+      const viewportTop = window.scrollY;
+      const viewportBottom = viewportTop + window.innerHeight;
+      const viewportLeft = 0;
+      const viewportRight = window.innerWidth;
+      
+      const textBlocks = [];
+      
+      // Get all text nodes via TreeWalker (fastest method)
+      const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode: (node) => {
+            // Skip hidden elements, scripts, styles
+            const parent = node.parentElement;
+            if (!parent) return NodeFilter.FILTER_REJECT;
+            
+            const tagName = parent.tagName.toLowerCase();
+            if (['script', 'style', 'noscript', 'svg', 'canvas'].includes(tagName)) {
+              return NodeFilter.FILTER_REJECT;
+            }
+            
+            // Skip empty text
+            const text = node.textContent.trim();
+            if (!text) return NodeFilter.FILTER_REJECT;
+            
+            // Check visibility
+            const style = window.getComputedStyle(parent);
+            if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+              return NodeFilter.FILTER_REJECT;
+            }
+            
+            return NodeFilter.FILTER_ACCEPT;
+          }
+        }
+      );
+      
+      let node;
+      while (node = walker.nextNode()) {
+        try {
+          const parent = node.parentElement;
+          const rect = parent.getBoundingClientRect();
+          
+          // Check if element is in viewport
+          if (rect.bottom < 0 || rect.top > window.innerHeight) continue;
+          if (rect.right < 0 || rect.left > window.innerWidth) continue;
+          if (rect.width === 0 || rect.height === 0) continue;
+          
+          const text = node.textContent.trim();
+          if (text.length < 2) continue; // Skip single chars
+          
+          // Get position relative to viewport (for PDF text layer positioning)
+          textBlocks.push({
+            text: text,
+            x: Math.round(rect.left),
+            y: Math.round(rect.top),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+            fontSize: parseInt(window.getComputedStyle(parent).fontSize) || 12
+          });
+        } catch (e) {
+          // Skip problematic nodes
+        }
+      }
+      
+      // Sort by Y position (top to bottom), then X (left to right)
+      textBlocks.sort((a, b) => {
+        if (Math.abs(a.y - b.y) < 5) return a.x - b.x;
+        return a.y - b.y;
+      });
+      
+      // Return both structured blocks (for positioned PDF text) and plain text (for simple search)
+      const plainText = textBlocks.map(b => b.text).join(' ');
+      
+      return {
+        blocks: textBlocks,
+        plainText: plainText.substring(0, 50000) // Cap at 50KB to prevent storage bloat
+      };
+    } catch (error) {
+      console.log('[SnapToAI] Text extraction skipped:', error?.message);
+      return { blocks: [], plainText: '' };
+    }
+  }
+
   document.addEventListener('mousemove', (e) => {
     lastMouseX = e.clientX;
     lastMouseY = e.clientY;
@@ -2688,10 +2777,15 @@
         
         // Only add if we got a real image
         if (response.success && response.dataUrl && response.dataUrl.length > 1000) {
+          // Extract visible text from current viewport (for PDF text layer)
+          const textData = extractVisibleText();
+          
           screenshots.push({
             dataUrl: response.dataUrl,
             scrollY: currentScrollTop,
-            index: captureCount
+            index: captureCount,
+            text: textData.plainText, // Plain text for PDF searchability
+            textBlocks: textData.blocks // Positioned blocks for precise text layer
           });
           consecutiveFails = 0;
         } else {
@@ -2767,10 +2861,14 @@
       // Send screenshots to background for stitching
       console.log(`[SnapToAI] Sending ${screenshots.length} screenshots for stitching`);
       
+      // Collect text from all pages for PDF text layer
+      const allPageText = screenshots.map(s => s.text || '');
+      
       // Only send if we have screenshots - background will handle completion messaging
       chrome.runtime.sendMessage({
         action: 'fullPageCaptureComplete',
         screenshots: screenshots.map(s => s.dataUrl),
+        screenshotText: allPageText, // Text extracted from each page for PDF searchability
         viewportWidth,
         viewportHeight,
         isAIPlatform: isAIPlatform, // Pass flag so stitching uses correct overlap (0% for AI, 10% for regular)

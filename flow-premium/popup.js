@@ -580,7 +580,7 @@ function setupEventListeners() {
     
     // Listen for stitch request from background
     if (request.action === 'stitchFullPage') {
-      stitchFullPageImages(request.screenshots, request.viewportWidth, request.viewportHeight, request.isAIPlatform);
+      stitchFullPageImages(request.screenshots, request.viewportWidth, request.viewportHeight, request.isAIPlatform, request.screenshotText);
     }
   });
 }
@@ -602,7 +602,7 @@ function estimateDataUrlBytes(dataUrl) {
 }
 
 // Open full page annotation editor with paginated view
-async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, isAIPlatform = false) {
+async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, isAIPlatform = false, screenshotText = []) {
   const overlay = document.getElementById('fullPageOverlay');
   const overlayStatus = document.getElementById('fullPageStatus');
   const status = document.getElementById('status');
@@ -617,11 +617,13 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
     
     // Store screenshots AND viewport dimensions for correct DPR-scaled overlap calculation
     // Also store isAIPlatform flag (AI platforms use 0% overlap, regular sites use 10%)
+    // Also store extracted text for PDF text layer embedding
     await chrome.storage.local.set({ 
       fullPageScreenshots: screenshots,
       fullPageViewportWidth: viewportWidth,
       fullPageViewportHeight: viewportHeight,
-      fullPageIsAIPlatform: isAIPlatform
+      fullPageIsAIPlatform: isAIPlatform,
+      fullPageText: screenshotText || [] // Text extracted from each page for PDF
     });
     
     // Open annotation screen in full page mode
@@ -2113,6 +2115,15 @@ async function exportPDFCombined(snaps, mode) {
     
     status.textContent = 'Generating PDF...';
     
+    // Load stored text for searchable PDF (from full-page capture)
+    let pageTextData = [];
+    try {
+      const textResult = await chrome.storage.local.get('fullPageText');
+      pageTextData = textResult.fullPageText || [];
+    } catch (e) {
+      // No text data - continue without text layer
+    }
+    
     const { jsPDF } = window.jspdf;
     // Enable compression for smaller PDF files
     const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
@@ -2148,8 +2159,28 @@ async function exportPDFCombined(snaps, mode) {
       const x = (pageWidth - imgWidth) / 2;
       const y = margin;
       
-      // Use JPEG format for much smaller file size
+      // Add image first
       pdf.addImage(optimized.dataUrl, 'JPEG', x, y, imgWidth, imgHeight);
+      
+      // Add invisible text layer AFTER image for PDF searchability
+      // Use text rendering mode 3 (invisible) - proper PDF technique for OCR layers
+      const pageText = pageTextData[i] || '';
+      if (pageText && pageText.length > 0) {
+        // Set invisible text rendering mode (Tr 3)
+        pdf.internal.write('3 Tr'); // Switch to invisible text mode
+        
+        pdf.setFontSize(8); // Readable font size for search indexing
+        pdf.setTextColor(0, 0, 0); // Black text (doesn't matter - it's invisible)
+        
+        // Split text into lines that fit the page width
+        const textLines = pdf.splitTextToSize(pageText, maxWidth);
+        
+        // Add text on top of image (invisible but searchable/selectable)
+        pdf.text(textLines, x, y + 5, { maxWidth: maxWidth });
+        
+        // Reset to normal text rendering mode
+        pdf.internal.write('0 Tr');
+      }
       
       // Add page number at bottom
       pdf.setFontSize(10);
@@ -2234,6 +2265,15 @@ async function exportPDFSeparate(snaps, mode) {
       throw new Error('jsPDF library not available after loading');
     }
     
+    // Load stored text for searchable PDF (from full-page capture)
+    let pageTextData = [];
+    try {
+      const textResult = await chrome.storage.local.get('fullPageText');
+      pageTextData = textResult.fullPageText || [];
+    } catch (e) {
+      // No text data - continue without text layer
+    }
+    
     const { jsPDF } = window.jspdf;
     const pageWidth = 210; // A4 width in mm
     const pageHeight = 297; // A4 height in mm
@@ -2269,8 +2309,19 @@ async function exportPDFSeparate(snaps, mode) {
       const x = (pageWidth - imgWidth) / 2;
       const y = margin;
       
-      // Use JPEG format for much smaller file size
+      // Add image first
       pdf.addImage(optimized.dataUrl, 'JPEG', x, y, imgWidth, imgHeight);
+      
+      // Add invisible text layer AFTER image for PDF searchability
+      const pageText = pageTextData[i] || '';
+      if (pageText && pageText.length > 0) {
+        pdf.internal.write('3 Tr'); // Invisible text mode
+        pdf.setFontSize(8);
+        pdf.setTextColor(0, 0, 0);
+        const textLines = pdf.splitTextToSize(pageText, maxWidth);
+        pdf.text(textLines, x, y + 5, { maxWidth: maxWidth });
+        pdf.internal.write('0 Tr'); // Reset to normal
+      }
       
       // Save individual PDF
       updateProcessingText(`Saving PDF ${i + 1}/${snaps.length}`, 'Downloading...');
