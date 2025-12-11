@@ -2410,13 +2410,13 @@ async function saveFullPageWithAnnotations() {
         chunkCtx.fillText(`${chunkIndex + 1} / ${totalChunks}`, labelX + labelWidth / 2, labelY + labelHeight / 2);
       }
       
-      // Export chunk - JPEG 85% quality for ~70% smaller files while keeping text readable
+      // Export chunk - JPEG 92% quality for ~60% smaller files, virtually lossless
       updateStatus(`Exporting chunk ${chunkIndex + 1}/${totalChunks}...`);
       await yieldToUI();
       
-      // JPEG 0.85 quality: great balance of file size vs text clarity
-      // 198MB PNG → ~50-60MB JPEG at this quality
-      const chunkDataUrl = chunkCanvas.toDataURL('image/jpeg', 0.85);
+      // JPEG 0.92 quality: virtually indistinguishable from PNG, ~60% smaller
+      // 198MB PNG → ~80MB JPEG at this quality
+      const chunkDataUrl = chunkCanvas.toDataURL('image/jpeg', 0.92);
       
       // Release chunk canvas
       chunkCanvas.width = 0;
