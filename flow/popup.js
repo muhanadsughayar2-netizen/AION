@@ -580,7 +580,7 @@ function setupEventListeners() {
     
     // Listen for stitch request from background
     if (request.action === 'stitchFullPage') {
-      stitchFullPageImages(request.screenshots, request.viewportWidth, request.viewportHeight, request.isAIPlatform, request.screenshotText);
+      stitchFullPageImages(request.screenshots, request.viewportWidth, request.viewportHeight, request.isAIPlatform);
     }
   });
 }
@@ -602,7 +602,7 @@ function estimateDataUrlBytes(dataUrl) {
 }
 
 // Open full page annotation editor with paginated view
-async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, isAIPlatform = false, screenshotText = []) {
+async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, isAIPlatform = false) {
   const overlay = document.getElementById('fullPageOverlay');
   const overlayStatus = document.getElementById('fullPageStatus');
   const status = document.getElementById('status');
@@ -617,13 +617,11 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
     
     // Store screenshots AND viewport dimensions for correct DPR-scaled overlap calculation
     // Also store isAIPlatform flag (AI platforms use 0% overlap, regular sites use 10%)
-    // Also store extracted text for PDF text layer embedding
     await chrome.storage.local.set({ 
       fullPageScreenshots: screenshots,
       fullPageViewportWidth: viewportWidth,
       fullPageViewportHeight: viewportHeight,
-      fullPageIsAIPlatform: isAIPlatform,
-      fullPageText: screenshotText || [] // Text extracted from each page for PDF
+      fullPageIsAIPlatform: isAIPlatform
     });
     
     // Open annotation screen in full page mode
@@ -2035,46 +2033,6 @@ document.querySelectorAll('.pdf-option-btn').forEach(btn => {
   });
 });
 
-// Optimize image for PDF: convert to JPEG and cap dimensions for smaller file size
-// This reduces PDF size by ~4-6x without visible quality loss (95% quality for sharp charts/tables)
-async function optimizeImageForPDF(dataUrl, maxDimension = 2200, jpegQuality = 0.95) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      let width = img.width;
-      let height = img.height;
-      
-      // Cap dimensions to prevent massive images
-      if (width > maxDimension || height > maxDimension) {
-        const ratio = Math.min(maxDimension / width, maxDimension / height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
-      
-      // Draw to canvas and export as JPEG
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      // JPEG at 95% quality is crystal clear for charts/tables but still ~4-6x smaller than PNG
-      const optimizedDataUrl = canvas.toDataURL('image/jpeg', jpegQuality);
-      
-      // Cleanup
-      canvas.width = 0;
-      canvas.height = 0;
-      
-      resolve({ dataUrl: optimizedDataUrl, width, height });
-    };
-    img.onerror = () => {
-      // Fallback to original if optimization fails
-      resolve({ dataUrl, width: 0, height: 0 });
-    };
-    img.src = dataUrl;
-  });
-}
-
 // Export Combined PDF (original function refactored)
 async function exportPDFCombined(snaps, mode) {
   const status = document.getElementById('status');
@@ -2115,18 +2073,8 @@ async function exportPDFCombined(snaps, mode) {
     
     status.textContent = 'Generating PDF...';
     
-    // Load stored text for searchable PDF (from full-page capture)
-    let pageTextData = [];
-    try {
-      const textResult = await chrome.storage.local.get('fullPageText');
-      pageTextData = textResult.fullPageText || [];
-    } catch (e) {
-      // No text data - continue without text layer
-    }
-    
     const { jsPDF } = window.jspdf;
-    // Enable compression for smaller PDF files
-    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
+    const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = 210; // A4 width in mm
     const pageHeight = 297; // A4 height in mm
     const margin = 10;
@@ -2139,11 +2087,10 @@ async function exportPDFCombined(snaps, mode) {
       }
       
       // Update processing overlay with progress
-      updateProcessingText(`Processing page ${i + 1}/${snaps.length}`, 'Optimizing image...');
+      updateProcessingText(`Processing page ${i + 1}/${snaps.length}`, 'Adding high-quality image...');
       
-      // Optimize image for PDF (JPEG compression + dimension cap)
-      const optimized = await optimizeImageForPDF(snaps[i]);
-      const img = await createImageBitmap(await (await fetch(optimized.dataUrl)).blob());
+      // Add image to PDF
+      const img = await createImageBitmap(await (await fetch(snaps[i])).blob());
       const aspectRatio = img.width / img.height;
       
       let imgWidth = maxWidth;
@@ -2159,28 +2106,7 @@ async function exportPDFCombined(snaps, mode) {
       const x = (pageWidth - imgWidth) / 2;
       const y = margin;
       
-      // Add image first
-      pdf.addImage(optimized.dataUrl, 'JPEG', x, y, imgWidth, imgHeight);
-      
-      // Add invisible text layer AFTER image for PDF searchability
-      // Use text rendering mode 3 (invisible) - proper PDF technique for OCR layers
-      const pageText = pageTextData[i] || '';
-      if (pageText && pageText.length > 0) {
-        // Set invisible text rendering mode (Tr 3)
-        pdf.internal.write('3 Tr'); // Switch to invisible text mode
-        
-        pdf.setFontSize(8); // Readable font size for search indexing
-        pdf.setTextColor(0, 0, 0); // Black text (doesn't matter - it's invisible)
-        
-        // Split text into lines that fit the page width
-        const textLines = pdf.splitTextToSize(pageText, maxWidth);
-        
-        // Add text on top of image (invisible but searchable/selectable)
-        pdf.text(textLines, x, y + 5, { maxWidth: maxWidth });
-        
-        // Reset to normal text rendering mode
-        pdf.internal.write('0 Tr');
-      }
+      pdf.addImage(snaps[i], 'PNG', x, y, imgWidth, imgHeight);
       
       // Add page number at bottom
       pdf.setFontSize(10);
@@ -2265,15 +2191,6 @@ async function exportPDFSeparate(snaps, mode) {
       throw new Error('jsPDF library not available after loading');
     }
     
-    // Load stored text for searchable PDF (from full-page capture)
-    let pageTextData = [];
-    try {
-      const textResult = await chrome.storage.local.get('fullPageText');
-      pageTextData = textResult.fullPageText || [];
-    } catch (e) {
-      // No text data - continue without text layer
-    }
-    
     const { jsPDF } = window.jspdf;
     const pageWidth = 210; // A4 width in mm
     const pageHeight = 297; // A4 height in mm
@@ -2285,15 +2202,13 @@ async function exportPDFSeparate(snaps, mode) {
     // Generate and download each PDF
     for (let i = 0; i < snaps.length; i++) {
       // Update processing overlay with progress
-      updateProcessingText(`Generating PDF ${i + 1}/${snaps.length}`, 'Optimizing image...');
+      updateProcessingText(`Generating PDF ${i + 1}/${snaps.length}`, 'Processing high-quality image...');
       status.textContent = `Generating PDF ${i + 1} of ${snaps.length}...`;
       
-      // Enable compression for smaller PDF files
-      const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
+      const pdf = new jsPDF('p', 'mm', 'a4');
       
-      // Optimize image for PDF (JPEG compression + dimension cap)
-      const optimized = await optimizeImageForPDF(snaps[i]);
-      const img = await createImageBitmap(await (await fetch(optimized.dataUrl)).blob());
+      // Add image to PDF
+      const img = await createImageBitmap(await (await fetch(snaps[i])).blob());
       const aspectRatio = img.width / img.height;
       
       let imgWidth = maxWidth;
@@ -2309,19 +2224,7 @@ async function exportPDFSeparate(snaps, mode) {
       const x = (pageWidth - imgWidth) / 2;
       const y = margin;
       
-      // Add image first
-      pdf.addImage(optimized.dataUrl, 'JPEG', x, y, imgWidth, imgHeight);
-      
-      // Add invisible text layer AFTER image for PDF searchability
-      const pageText = pageTextData[i] || '';
-      if (pageText && pageText.length > 0) {
-        pdf.internal.write('3 Tr'); // Invisible text mode
-        pdf.setFontSize(8);
-        pdf.setTextColor(0, 0, 0);
-        const textLines = pdf.splitTextToSize(pageText, maxWidth);
-        pdf.text(textLines, x, y + 5, { maxWidth: maxWidth });
-        pdf.internal.write('0 Tr'); // Reset to normal
-      }
+      pdf.addImage(snaps[i], 'PNG', x, y, imgWidth, imgHeight);
       
       // Save individual PDF
       updateProcessingText(`Saving PDF ${i + 1}/${snaps.length}`, 'Downloading...');

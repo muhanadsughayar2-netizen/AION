@@ -84,8 +84,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     captureFullPageStep(request.tabId).then(sendResponse);
     return true;
   } else if (request.action === 'fullPageCaptureComplete') {
-    // Stitch and save full page capture (now includes page URL for browser frame + text for PDF)
-    finalizeFullPageCapture(request.screenshots, request.viewportWidth, request.viewportHeight, request.isAIPlatform, request.pageUrl, request.pageTitle, request.screenshotText).then(sendResponse);
+    // Stitch and save full page capture (now includes page URL for browser frame)
+    finalizeFullPageCapture(request.screenshots, request.viewportWidth, request.viewportHeight, request.isAIPlatform, request.pageUrl, request.pageTitle).then(sendResponse);
     return true;
   } else if (request.action === 'fullPageStitchComplete' || request.action === 'fullPageStitchFailed') {
     // Full page capture cycle complete (success or failure) - reset the flag
@@ -561,7 +561,7 @@ async function captureFullPageStep(tabId) {
 }
 
 // Finalize full page capture - stitch images and save to queue
-async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeight, isAIPlatform = false, pageUrl = '', pageTitle = '', screenshotText = []) {
+async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeight, isAIPlatform = false, pageUrl = '', pageTitle = '') {
   try {
     if (!screenshots || screenshots.length === 0) {
       isFullPageCaptureInProgress = false;
@@ -591,7 +591,6 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
     chrome.runtime.sendMessage({
       action: 'stitchFullPage',
       screenshots,
-      screenshotText, // Text extracted from each page for PDF searchability
       viewportWidth,
       viewportHeight,
       isAIPlatform,
