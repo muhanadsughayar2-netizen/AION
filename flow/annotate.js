@@ -2410,12 +2410,13 @@ async function saveFullPageWithAnnotations() {
         chunkCtx.fillText(`${chunkIndex + 1} / ${totalChunks}`, labelX + labelWidth / 2, labelY + labelHeight / 2);
       }
       
-      // Export chunk - USE PNG for crisp text (JPEG destroys text quality!)
+      // Export chunk - JPEG 85% quality for ~70% smaller files while keeping text readable
       updateStatus(`Exporting chunk ${chunkIndex + 1}/${totalChunks}...`);
       await yieldToUI();
       
-      // PNG format for maximum text clarity - never use JPEG for screenshots with text
-      const chunkDataUrl = chunkCanvas.toDataURL('image/png');
+      // JPEG 0.85 quality: great balance of file size vs text clarity
+      // 198MB PNG → ~50-60MB JPEG at this quality
+      const chunkDataUrl = chunkCanvas.toDataURL('image/jpeg', 0.85);
       
       // Release chunk canvas
       chunkCanvas.width = 0;
