@@ -2034,8 +2034,8 @@ document.querySelectorAll('.pdf-option-btn').forEach(btn => {
 });
 
 // Optimize image for PDF: convert to JPEG and cap dimensions for smaller file size
-// This reduces PDF size by ~5-8x without visible quality loss
-async function optimizeImageForPDF(dataUrl, maxDimension = 2200, jpegQuality = 0.80) {
+// This reduces PDF size by ~4-6x without visible quality loss (95% quality for sharp charts/tables)
+async function optimizeImageForPDF(dataUrl, maxDimension = 2200, jpegQuality = 0.95) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -2056,7 +2056,7 @@ async function optimizeImageForPDF(dataUrl, maxDimension = 2200, jpegQuality = 0
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
       
-      // JPEG at 80% quality is visually identical but ~5x smaller than PNG
+      // JPEG at 95% quality is crystal clear for charts/tables but still ~4-6x smaller than PNG
       const optimizedDataUrl = canvas.toDataURL('image/jpeg', jpegQuality);
       
       // Cleanup
