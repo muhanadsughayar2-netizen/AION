@@ -1,7 +1,7 @@
 // Flow Annotation Tool - SIMPLE VERSION (only working tools)
 
 let canvas, ctx;
-let currentTool = 'callout';
+let currentTool = 'select';
 let currentColor = '#007AFF';
 let brushSize = 12;
 let isDrawing = false;
@@ -590,6 +590,79 @@ function setupEventListeners() {
   
   document.getElementById('saveBtn').addEventListener('click', save);
   document.getElementById('cancelBtn').addEventListener('click', () => window.close());
+  
+  // Resize button handler
+  const resizeBtn = document.getElementById('resizeBtn');
+  if (resizeBtn) {
+    resizeBtn.addEventListener('click', () => {
+      pushHistory(); // Save state before resize
+      
+      const width = prompt('New width (px):', canvas.width);
+      const height = prompt('New height (px):', canvas.height);
+      
+      if (width && height && !isNaN(width) && !isNaN(height)) {
+        const newWidth = parseInt(width);
+        const newHeight = parseInt(height);
+        const oldWidth = canvas.width;
+        const oldHeight = canvas.height;
+        
+        if (newWidth > 100 && newHeight > 100 && newWidth < 10000 && newHeight < 10000) {
+          // Create temp canvas to resize image + annotations
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = newWidth;
+          tempCanvas.height = newHeight;
+          const tempCtx = tempCanvas.getContext('2d');
+          
+          // Scale and draw original content
+          tempCtx.drawImage(canvas, 0, 0, newWidth, newHeight);
+          
+          // Resize main canvas
+          canvas.width = newWidth;
+          canvas.height = newHeight;
+          ctx.drawImage(tempCanvas, 0, 0);
+          
+          // Update originalImage
+          originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          
+          // Scale all annotations
+          const scaleX = newWidth / oldWidth;
+          const scaleY = newHeight / oldHeight;
+          annotations.forEach(ann => {
+            ann.x *= scaleX;
+            ann.y *= scaleY;
+            if (ann.width) ann.width *= scaleX;
+            if (ann.height) ann.height *= scaleY;
+            if (ann.x1 !== undefined) { ann.x1 *= scaleX; ann.x2 *= scaleX; }
+            if (ann.y1 !== undefined) { ann.y1 *= scaleY; ann.y2 *= scaleY; }
+          });
+          
+          redraw();
+          updateCssBorder();
+          updateBrowserFrameOverlay();
+          updateStatus(`Resized to ${newWidth}×${newHeight}`);
+        } else {
+          alert('Invalid size. Use 100–10000px.');
+        }
+      }
+    });
+  }
+  
+  // ESC key handler - cancel current action, return to select mode
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      currentTool = 'select';
+      document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+      const selectBtn = document.querySelector('[data-tool="select"]');
+      if (selectBtn) selectBtn.classList.add('active');
+      canvas.style.cursor = 'default';
+      cropRect = null;
+      isCropping = false;
+      pendingStickerText = null;
+      pendingSpecialEmoji = null;
+      redraw();
+      updateStatus('Select mode — click objects to move, delete with Backspace');
+    }
+  });
   
   // Canvas
   canvas.addEventListener('mousedown', handleMouseDown);
@@ -1866,80 +1939,66 @@ function redraw() {
   // Draw annotations first
   annotations.forEach(ann => {
     if (ann.tool === 'callout') {
-      // Circle - browser-frame blue #007AFF
+      // Soft professional circle (Apple-style)
       ctx.fillStyle = '#007AFF';
-      ctx.shadowColor = '#007AFF';
-      ctx.shadowBlur = 15;
+      ctx.globalAlpha = 0.95;
       ctx.beginPath();
-      ctx.arc(ann.x, ann.y, 28, 0, Math.PI * 2);
+      ctx.arc(ann.x, ann.y, 32, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
       
-      // 2px blue border
-      ctx.strokeStyle = '#007AFF';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      
-      // White number text
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 26px Arial';
+      // Clean white number
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(ann.number, ann.x, ann.y);
+      ctx.fillText(ann.number, ann.x, ann.y + 1);
       
-      // Label
+      // Label (if exists) - rounded pill style
       if (ann.text) {
-        const textY = ann.y + 50;
-        ctx.font = 'bold 16px Arial';
-        const w = ctx.measureText(ann.text).width;
+        const textY = ann.y + 55;
+        ctx.font = 'bold 17px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        const metrics = ctx.measureText(ann.text);
+        const padding = 14;
+        const labelW = metrics.width + padding * 2;
         
         ctx.fillStyle = '#007AFF';
-        ctx.shadowColor = '#007AFF';
-        ctx.shadowBlur = 10;
-        ctx.fillRect(ann.x - w/2 - 10, textY - 12, w + 20, 28);
-        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.roundRect(ann.x - labelW/2, textY - 18, labelW, 36, 18);
+        ctx.fill();
         
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = '#FFFFFF';
         ctx.fillText(ann.text, ann.x, textY);
       }
     } else if (ann.tool === 'sticker') {
-      // Sticky note - soft yellow, slight tilt, curl shadow
+      // Sticky note - uses color picker, auto-contrast text
       ctx.save();
       ctx.translate(ann.x, ann.y);
-      ctx.rotate(-0.03); // Slight tilt
+      ctx.rotate(-0.05); // Slight tilt
       
-      ctx.font = '16px Arial';
-      const w = Math.max(ctx.measureText(ann.text).width + 24, 80);
-      const h = 60;
-      const noteX = -w/2;
-      const noteY = -h/2;
+      const stickerColor = ann.color || '#FFFF88';
+      const textColor = getContrastColor(stickerColor);
+      ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, sans-serif';
+      const w = Math.max(ctx.measureText(ann.text).width + 40, 100);
+      const h = 70;
       
-      // Curl shadow (bottom-right)
-      ctx.fillStyle = 'rgba(0,0,0,0.15)';
-      ctx.beginPath();
-      ctx.moveTo(noteX + w - 12, noteY + h);
-      ctx.lineTo(noteX + w, noteY + h);
-      ctx.lineTo(noteX + w, noteY + h - 12);
-      ctx.quadraticCurveTo(noteX + w - 6, noteY + h - 6, noteX + w - 12, noteY + h);
-      ctx.fill();
+      // Background with shadow
+      ctx.fillStyle = stickerColor;
+      ctx.shadowColor = 'rgba(0,0,0,0.25)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 4;
+      ctx.fillRect(-w/2, -h/2, w, h);
       
-      // Main sticky note body - white with blue shadow (SnapToAI brand)
-      ctx.fillStyle = '#fff';
-      ctx.shadowColor = 'rgba(0, 122, 255, 0.3)';
-      ctx.shadowBlur = 8;
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
-      ctx.strokeStyle = '#007AFF';
+      // Border
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
       ctx.lineWidth = 2;
-      ctx.fillRect(noteX, noteY, w, h);
-      ctx.strokeRect(noteX, noteY, w, h);
+      ctx.strokeRect(-w/2, -h/2, w, h);
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
-      ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
       
-      // Text on sticky note
-      ctx.fillStyle = '#000';
+      // Text - always visible with auto contrast
+      ctx.fillStyle = textColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(ann.text, 0, 0);
@@ -1999,6 +2058,16 @@ function redraw() {
   if (cropRect && currentTool === 'crop') {
     drawCropRect();
   }
+}
+
+// Helper: auto black/white text for contrast
+function getContrastColor(hex) {
+  if (!hex || hex.length < 7) return '#000000';
+  const r = parseInt(hex.substr(1,2),16);
+  const g = parseInt(hex.substr(3,2),16);
+  const b = parseInt(hex.substr(5,2),16);
+  const yiq = ((r*299)+(g*587)+(b*114))/1000;
+  return (yiq >= 128) ? '#000000' : '#FFFFFF';
 }
 
 function updateStatus(message) {
@@ -2488,40 +2557,35 @@ async function saveFullPageWithAnnotations() {
 function drawAnnotationsToContext(ctx, anns) {
   for (const ann of anns) {
     if (ann.tool === 'callout') {
-      // Circle - browser-frame blue #007AFF
+      // Soft professional circle (Apple-style)
       ctx.fillStyle = '#007AFF';
-      ctx.shadowColor = '#007AFF';
-      ctx.shadowBlur = 15;
+      ctx.globalAlpha = 0.95;
       ctx.beginPath();
-      ctx.arc(ann.x, ann.y, 28, 0, Math.PI * 2);
+      ctx.arc(ann.x, ann.y, 32, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
       
-      // 2px blue border
-      ctx.strokeStyle = '#007AFF';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      
-      // White number text
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 26px Arial';
+      // Clean white number
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(ann.number.toString(), ann.x, ann.y);
+      ctx.fillText(ann.number.toString(), ann.x, ann.y + 1);
       
-      // Label pill (if text exists)
+      // Label (if exists) - rounded pill style
       if (ann.text) {
-        const textY = ann.y + 50;
-        ctx.font = 'bold 16px Arial';
-        const w = ctx.measureText(ann.text).width;
+        const textY = ann.y + 55;
+        ctx.font = 'bold 17px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        const metrics = ctx.measureText(ann.text);
+        const padding = 14;
+        const labelW = metrics.width + padding * 2;
         
         ctx.fillStyle = '#007AFF';
-        ctx.shadowColor = '#007AFF';
-        ctx.shadowBlur = 10;
-        ctx.fillRect(ann.x - w/2 - 10, textY - 12, w + 20, 28);
-        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.roundRect(ann.x - labelW/2, textY - 18, labelW, 36, 18);
+        ctx.fill();
         
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = '#FFFFFF';
         ctx.fillText(ann.text, ann.x, textY);
       }
     } else if (ann.tool === 'special') {
@@ -2531,43 +2595,34 @@ function drawAnnotationsToContext(ctx, anns) {
       ctx.textBaseline = 'middle';
       ctx.fillText(ann.text, ann.x, ann.y);
     } else if (ann.tool === 'sticker') {
-      // Sticky note - soft yellow, slight tilt, curl shadow (matches redraw())
+      // Sticky note - uses color picker, auto-contrast text
       ctx.save();
       ctx.translate(ann.x, ann.y);
-      ctx.rotate(-0.03); // Slight tilt
+      ctx.rotate(-0.05); // Slight tilt
       
-      ctx.font = '16px Arial';
-      const w = Math.max(ctx.measureText(ann.text).width + 24, 80);
-      const h = 60;
-      const noteX = -w/2;
-      const noteY = -h/2;
+      const stickerColor = ann.color || '#FFFF88';
+      const textColor = getContrastColor(stickerColor);
+      ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, sans-serif';
+      const w = Math.max(ctx.measureText(ann.text).width + 40, 100);
+      const h = 70;
       
-      // Curl shadow (bottom-right)
-      ctx.fillStyle = 'rgba(0,0,0,0.15)';
-      ctx.beginPath();
-      ctx.moveTo(noteX + w - 12, noteY + h);
-      ctx.lineTo(noteX + w, noteY + h);
-      ctx.lineTo(noteX + w, noteY + h - 12);
-      ctx.quadraticCurveTo(noteX + w - 6, noteY + h - 6, noteX + w - 12, noteY + h);
-      ctx.fill();
+      // Background with shadow
+      ctx.fillStyle = stickerColor;
+      ctx.shadowColor = 'rgba(0,0,0,0.25)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 4;
+      ctx.fillRect(-w/2, -h/2, w, h);
       
-      // Main sticky note body - white with blue shadow (SnapToAI brand)
-      ctx.fillStyle = '#fff';
-      ctx.shadowColor = 'rgba(0, 122, 255, 0.3)';
-      ctx.shadowBlur = 8;
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
-      ctx.strokeStyle = '#007AFF';
+      // Border
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
       ctx.lineWidth = 2;
-      ctx.fillRect(noteX, noteY, w, h);
-      ctx.strokeRect(noteX, noteY, w, h);
+      ctx.strokeRect(-w/2, -h/2, w, h);
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
-      ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
       
-      // Text on sticky note
-      ctx.fillStyle = '#000';
+      // Text - always visible with auto contrast
+      ctx.fillStyle = textColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(ann.text, 0, 0);
