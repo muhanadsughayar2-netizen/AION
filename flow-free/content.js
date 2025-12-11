@@ -2355,18 +2355,8 @@
     const screenshots = [];
     let originalStyles = null;
     
-    // === HIGH RESOLUTION CAPTURE: 150% ZOOM ===
-    // Apply 150% browser zoom for ~2x DPI effective resolution
-    const originalZoom = document.body.style.zoom || '1';
-    const CAPTURE_ZOOM = 1.5; // 150% zoom for higher resolution
-    document.body.style.zoom = CAPTURE_ZOOM;
-    console.log(`[SnapToAI] Applied ${CAPTURE_ZOOM * 100}% zoom for high-res capture`);
-    
-    // Wait for zoom to apply
-    await new Promise(r => setTimeout(r, 200));
-    
     try {
-      // Get page dimensions (after zoom applied)
+      // Get page dimensions
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
       
@@ -2767,10 +2757,6 @@
       // Remove overlay
       removeFullPageOverlay();
       
-      // === RESTORE ZOOM ===
-      document.body.style.zoom = originalZoom;
-      console.log('[SnapToAI] Restored original zoom');
-      
       // Scroll back to top (using safe function - never throws errors!)
       safeScrollTo(0);
       
@@ -2816,11 +2802,6 @@
       
       try {
         removeFullPageOverlay();
-      } catch (e) {}
-      
-      // === RESTORE ZOOM ON ERROR ===
-      try {
-        document.body.style.zoom = originalZoom;
       } catch (e) {}
       
       // SHOW USER-FRIENDLY ERROR MESSAGE - calm, not alarming
