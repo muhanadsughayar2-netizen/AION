@@ -520,7 +520,20 @@ function setupEventListeners() {
       currentTool = tool;
       pendingStickerText = null; // Clear pending sticker when switching tools
       pendingSpecialEmoji = null; // Clear pending emoji when switching tools
-      updateStatus('Add numbers, shapes, or text. All draggable!');
+      
+      // Toggle resize handles visibility
+      if (typeof toggleResizeHandles === 'function') {
+        toggleResizeHandles(tool === 'resize');
+      }
+      
+      // Update status based on tool
+      if (tool === 'resize') {
+        updateStatus('Drag the blue handles to resize the image');
+      } else if (tool === 'select') {
+        updateStatus('Click objects to move, delete with Backspace');
+      } else {
+        updateStatus('Add numbers, shapes, or text. All draggable!');
+      }
     });
   });
   
@@ -591,61 +604,8 @@ function setupEventListeners() {
   document.getElementById('saveBtn').addEventListener('click', save);
   document.getElementById('cancelBtn').addEventListener('click', () => window.close());
   
-  // Resize button handler
-  const resizeBtn = document.getElementById('resizeBtn');
-  if (resizeBtn) {
-    resizeBtn.addEventListener('click', () => {
-      pushHistory(); // Save state before resize
-      
-      const width = prompt('New width (px):', canvas.width);
-      const height = prompt('New height (px):', canvas.height);
-      
-      if (width && height && !isNaN(width) && !isNaN(height)) {
-        const newWidth = parseInt(width);
-        const newHeight = parseInt(height);
-        const oldWidth = canvas.width;
-        const oldHeight = canvas.height;
-        
-        if (newWidth > 100 && newHeight > 100 && newWidth < 10000 && newHeight < 10000) {
-          // Create temp canvas to resize image + annotations
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = newWidth;
-          tempCanvas.height = newHeight;
-          const tempCtx = tempCanvas.getContext('2d');
-          
-          // Scale and draw original content
-          tempCtx.drawImage(canvas, 0, 0, newWidth, newHeight);
-          
-          // Resize main canvas
-          canvas.width = newWidth;
-          canvas.height = newHeight;
-          ctx.drawImage(tempCanvas, 0, 0);
-          
-          // Update originalImage
-          originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          
-          // Scale all annotations
-          const scaleX = newWidth / oldWidth;
-          const scaleY = newHeight / oldHeight;
-          annotations.forEach(ann => {
-            ann.x *= scaleX;
-            ann.y *= scaleY;
-            if (ann.width) ann.width *= scaleX;
-            if (ann.height) ann.height *= scaleY;
-            if (ann.x1 !== undefined) { ann.x1 *= scaleX; ann.x2 *= scaleX; }
-            if (ann.y1 !== undefined) { ann.y1 *= scaleY; ann.y2 *= scaleY; }
-          });
-          
-          redraw();
-          updateCssBorder();
-          updateBrowserFrameOverlay();
-          updateStatus(`Resized to ${newWidth}×${newHeight}`);
-        } else {
-          alert('Invalid size. Use 100–10000px.');
-        }
-      }
-    });
-  }
+  // Visual Resize Tool - GoFullPage style drag handles
+  setupResizeHandles();
   
   // ESC key handler - cancel current action, return to select mode
   document.addEventListener('keydown', (e) => {
@@ -659,6 +619,7 @@ function setupEventListeners() {
       isCropping = false;
       pendingStickerText = null;
       pendingSpecialEmoji = null;
+      if (typeof toggleResizeHandles === 'function') toggleResizeHandles(false);
       redraw();
       updateStatus('Select mode — click objects to move, delete with Backspace');
     }
@@ -2662,4 +2623,130 @@ function addInvisibleWatermarkToCanvas(canvas) {
   imageData.data[2] = 0x41;
   imageData.data[3] = 255;
   ctx.putImageData(imageData, canvas.width - 1, canvas.height - 1);
+}
+
+// Setup visual resize handles - GoFullPage style drag-to-resize
+function setupResizeHandles() {
+  const resizeHandles = document.getElementById('resizeHandles');
+  const resizeBorder = document.getElementById('resizeBorder');
+  if (!resizeHandles) return;
+  
+  let isResizing = false;
+  let resizeDir = null;
+  let startMouseX, startMouseY;
+  let startWidth, startHeight;
+  
+  // Handle mousedown on resize handles
+  document.querySelectorAll('.resize-handle').forEach(handle => {
+    handle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      isResizing = true;
+      resizeDir = handle.dataset.dir;
+      startMouseX = e.clientX;
+      startMouseY = e.clientY;
+      startWidth = canvas.width;
+      startHeight = canvas.height;
+      
+      pushHistory(); // Save state before resize
+      updateStatus(`Drag to resize (${startWidth}×${startHeight})`);
+    });
+  });
+  
+  // Handle mousemove for resizing
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing || !resizeDir) return;
+    
+    const dx = e.clientX - startMouseX;
+    const dy = e.clientY - startMouseY;
+    
+    let newWidth = startWidth;
+    let newHeight = startHeight;
+    
+    // Calculate new dimensions based on direction
+    if (resizeDir.includes('e')) newWidth = Math.max(100, startWidth + dx);
+    if (resizeDir.includes('w')) newWidth = Math.max(100, startWidth - dx);
+    if (resizeDir.includes('s')) newHeight = Math.max(100, startHeight + dy);
+    if (resizeDir.includes('n')) newHeight = Math.max(100, startHeight - dy);
+    
+    // Clamp to reasonable bounds
+    newWidth = Math.min(10000, newWidth);
+    newHeight = Math.min(10000, newHeight);
+    
+    updateStatus(`Resizing: ${Math.round(newWidth)}×${Math.round(newHeight)}`);
+  });
+  
+  // Handle mouseup to finalize resize
+  document.addEventListener('mouseup', (e) => {
+    if (!isResizing || !resizeDir) return;
+    
+    const dx = e.clientX - startMouseX;
+    const dy = e.clientY - startMouseY;
+    
+    let newWidth = startWidth;
+    let newHeight = startHeight;
+    
+    // Calculate final dimensions
+    if (resizeDir.includes('e')) newWidth = Math.max(100, startWidth + dx);
+    if (resizeDir.includes('w')) newWidth = Math.max(100, startWidth - dx);
+    if (resizeDir.includes('s')) newHeight = Math.max(100, startHeight + dy);
+    if (resizeDir.includes('n')) newHeight = Math.max(100, startHeight - dy);
+    
+    newWidth = Math.min(10000, Math.round(newWidth));
+    newHeight = Math.min(10000, Math.round(newHeight));
+    
+    // Only resize if dimensions actually changed
+    if (newWidth !== startWidth || newHeight !== startHeight) {
+      applyResize(startWidth, startHeight, newWidth, newHeight);
+    }
+    
+    isResizing = false;
+    resizeDir = null;
+  });
+}
+
+// Apply resize to canvas and scale annotations
+function applyResize(oldWidth, oldHeight, newWidth, newHeight) {
+  // Create temp canvas to resize image
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = newWidth;
+  tempCanvas.height = newHeight;
+  const tempCtx = tempCanvas.getContext('2d');
+  
+  // Scale and draw original content
+  tempCtx.drawImage(canvas, 0, 0, newWidth, newHeight);
+  
+  // Resize main canvas
+  canvas.width = newWidth;
+  canvas.height = newHeight;
+  ctx.drawImage(tempCanvas, 0, 0);
+  
+  // Update originalImage
+  originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  
+  // Scale all annotations proportionally
+  const scaleX = newWidth / oldWidth;
+  const scaleY = newHeight / oldHeight;
+  annotations.forEach(ann => {
+    ann.x *= scaleX;
+    ann.y *= scaleY;
+    if (ann.width) ann.width *= scaleX;
+    if (ann.height) ann.height *= scaleY;
+    if (ann.x1 !== undefined) { ann.x1 *= scaleX; ann.x2 *= scaleX; }
+    if (ann.y1 !== undefined) { ann.y1 *= scaleY; ann.y2 *= scaleY; }
+  });
+  
+  redraw();
+  updateCssBorder();
+  updateBrowserFrameOverlay();
+  updateStatus(`Resized to ${newWidth}×${newHeight}`);
+}
+
+// Toggle resize handles visibility
+function toggleResizeHandles(show) {
+  const resizeHandles = document.getElementById('resizeHandles');
+  const resizeBorder = document.getElementById('resizeBorder');
+  if (resizeHandles) resizeHandles.classList.toggle('active', show);
+  if (resizeBorder) resizeBorder.classList.toggle('active', show);
 }
