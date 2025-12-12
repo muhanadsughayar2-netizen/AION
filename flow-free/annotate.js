@@ -2720,17 +2720,21 @@ function enterCropMode() {
     height: canvas.height
   };
   
-  // Show/hide buttons
+  // Show/hide controls
   const cropBtn = document.getElementById('cropBtn');
-  const doneCropBtn = document.getElementById('doneCropBtn');
-  const cancelCropBtn = document.getElementById('cancelCropBtn');
+  const cropControls = document.getElementById('cropControls');
   if (cropBtn) cropBtn.style.display = 'none';
-  if (doneCropBtn) doneCropBtn.style.display = 'inline-flex';
-  if (cancelCropBtn) cancelCropBtn.style.display = 'inline-flex';
+  if (cropControls) cropControls.style.display = 'flex';
   
   canvas.style.cursor = 'crosshair';
   redraw();
-  updateStatus('Drag the handles to crop. Click Done when ready.');
+  
+  // Show helpful message for full-page mode
+  if (isFullPageMode && pages && pages.length > 1) {
+    updateStatus(`Crop mode: Left/right crop applies to ALL ${pages.length} pages. Drag handles to adjust.`);
+  } else {
+    updateStatus('Drag the handles to crop. Click Done when ready.');
+  }
 }
 
 function exitCropMode() {
@@ -2738,13 +2742,11 @@ function exitCropMode() {
   cropRect = null;
   cropHandle = null;
   
-  // Show/hide buttons
+  // Show/hide controls
   const cropBtn = document.getElementById('cropBtn');
-  const doneCropBtn = document.getElementById('doneCropBtn');
-  const cancelCropBtn = document.getElementById('cancelCropBtn');
+  const cropControls = document.getElementById('cropControls');
   if (cropBtn) cropBtn.style.display = 'inline-flex';
-  if (doneCropBtn) doneCropBtn.style.display = 'none';
-  if (cancelCropBtn) cancelCropBtn.style.display = 'none';
+  if (cropControls) cropControls.style.display = 'none';
   
   // Update toolbar
   document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
@@ -2766,6 +2768,103 @@ function applyVisualCrop() {
   
   const { x, y, width, height } = cropRect;
   
+  // SMART FULL-PAGE CROP: Apply only left/right to all pages
+  if (isFullPageMode && pages && pages.length > 1) {
+    updateStatus(`Removing sidebars from all ${pages.length} pages...`);
+    
+    const sideCropX = Math.round(x);
+    const sideCropWidth = Math.round(width);
+    
+    // Helper to load image from data URL
+    const loadImage = (src) => new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+    
+    // Apply to all pages asynchronously
+    (async () => {
+      for (let i = 0; i < pages.length; i++) {
+        const pageDataUrl = pages[i];
+        if (!pageDataUrl) continue;
+        
+        // Load image from data URL (await ensures it's ready)
+        let imgToUse = pageImages[i];
+        if (!imgToUse || !imgToUse.complete || !imgToUse.width) {
+          imgToUse = await loadImage(pageDataUrl);
+        }
+        
+        if (!imgToUse || !imgToUse.width || !imgToUse.height) continue;
+        
+        const fullHeight = imgToUse.height;
+        
+        // Create cropped canvas
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = sideCropWidth;
+        tempCanvas.height = fullHeight;
+        const tctx = tempCanvas.getContext('2d', { willReadFrequently: true });
+        
+        // Crop left/right only (preserve full height)
+        tctx.drawImage(imgToUse, sideCropX, 0, sideCropWidth, fullHeight, 0, 0, sideCropWidth, fullHeight);
+        
+        // Update pages[] with cropped data URL
+        const newDataUrl = tempCanvas.toDataURL();
+        pages[i] = newDataUrl;
+        
+        // Update pageOriginalImages with cropped data
+        pageOriginalImages[i] = tctx.getImageData(0, 0, sideCropWidth, fullHeight);
+        
+        // Update pageImages with new Image
+        const newImg = await loadImage(newDataUrl);
+        pageImages[i] = newImg;
+        
+        // Shift annotations horizontally only (clamp to new bounds)
+        const anns = pageAnnotations[i] || [];
+        anns.forEach(ann => {
+          if (ann.x !== undefined) {
+            ann.x -= sideCropX;
+            if (ann.x < 0) ann.x = 0;
+            if (ann.x > sideCropWidth) ann.x = sideCropWidth - 10;
+          }
+        });
+        pageAnnotations[i] = anns;
+      }
+      
+      updateStatus(`Sidebars removed from all ${pages.length} pages! Headers/footers preserved.`);
+    })();
+    
+    // Also apply to current page view (with user's top/bottom crop)
+    applyCropToCurrentPageOnly(x, y, width, height);
+  } else {
+    // Single image: full crop (including top/bottom)
+    applyCropToCurrentPageOnly(x, y, width, height);
+    updateStatus(`Cropped to ${Math.round(width)}×${Math.round(height)}.`);
+  }
+  
+  // Exit crop mode
+  cropRect = null;
+  cropHandle = null;
+  currentTool = 'select';
+  
+  // Reset controls
+  const cropBtn = document.getElementById('cropBtn');
+  const cropControls = document.getElementById('cropControls');
+  if (cropBtn) cropBtn.style.display = 'inline-flex';
+  if (cropControls) cropControls.style.display = 'none';
+  
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+  const selectBtn = document.querySelector('[data-tool="select"]');
+  if (selectBtn) selectBtn.classList.add('active');
+  
+  canvas.style.cursor = 'default';
+  redraw();
+  updateCssBorder();
+  updateBrowserFrameOverlay();
+}
+
+// Helper: Apply crop to current page only (used by applyVisualCrop)
+function applyCropToCurrentPageOnly(x, y, width, height) {
   // Extract cropped region
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = width;
@@ -2779,32 +2878,14 @@ function applyVisualCrop() {
   ctx.drawImage(tempCanvas, 0, 0);
   originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
   
-  // Clear annotations (they're relative to old coordinates)
-  annotations = [];
-  calloutNumber = 1;
-  
-  // Exit crop mode
-  cropRect = null;
-  cropHandle = null;
-  currentTool = 'select';
-  
-  // Reset buttons
-  const cropBtn = document.getElementById('cropBtn');
-  const doneCropBtn = document.getElementById('doneCropBtn');
-  const cancelCropBtn = document.getElementById('cancelCropBtn');
-  if (cropBtn) cropBtn.style.display = 'inline-flex';
-  if (doneCropBtn) doneCropBtn.style.display = 'none';
-  if (cancelCropBtn) cancelCropBtn.style.display = 'none';
-  
-  document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
-  const selectBtn = document.querySelector('[data-tool="select"]');
-  if (selectBtn) selectBtn.classList.add('active');
-  
-  canvas.style.cursor = 'default';
-  redraw();
-  updateCssBorder();
-  updateBrowserFrameOverlay();
-  updateStatus(`Cropped to ${width}×${height}. Image is now permanent.`);
+  // Shift annotations for current page
+  annotations.forEach(ann => {
+    if (ann.x !== undefined) ann.x -= x;
+    if (ann.y !== undefined) ann.y -= y;
+    if (ann.points) {
+      ann.points = ann.points.map(p => ({ x: p.x - x, y: p.y - y }));
+    }
+  });
 }
 
 // Get crop cursor based on handle

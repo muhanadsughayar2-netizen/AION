@@ -758,25 +758,60 @@ body {
   transform: scale(0.95);
 }
 
-/* Crop action buttons styling */
-.crop-action-btn {
-  background: #007AFF !important;
-  color: #fff !important;
-  border-color: #007AFF !important;
-  font-weight: 700;
+/* Crop Controls Container */
+#cropControls {
+  display: none;
+  align-items: center;
+  gap: 6px;
 }
 
-.crop-action-btn:hover {
+#cropControls[style*="flex"] {
+  display: flex !important;
+}
+
+/* Crop Done button - green check */
+.crop-done-btn {
+  background: #007AFF !important;
+  color: #fff !important;
+  border: 1px solid #007AFF !important;
+  padding: 6px 12px !important;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.crop-done-btn:hover {
   background: #0056b3 !important;
   border-color: #0056b3 !important;
 }
 
-#cancelCropBtn {
-  background: #000 !important;
-  border-color: #000 !important;
+.crop-done-btn svg {
+  stroke: #fff;
 }
 
-#cancelCropBtn:hover {
+/* Crop Cancel button - black X */
+.crop-cancel-btn {
+  background: #000 !important;
+  color: #fff !important;
+  border: 1px solid #000 !important;
+  padding: 6px 12px !important;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.crop-cancel-btn:hover {
   background: #333 !important;
   border-color: #333 !important;
+}
+
+.crop-cancel-btn svg {
+  stroke: #fff;
+}
+
+/* Crop button icon alignment */
+#cropBtn svg {
+  vertical-align: middle;
 }
