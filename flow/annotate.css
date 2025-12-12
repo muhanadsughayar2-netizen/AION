@@ -762,7 +762,7 @@ body {
 #cropControls {
   display: none;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
 }
 
 #cropControls[style*="flex"] {
@@ -774,7 +774,9 @@ body {
   background: #007AFF !important;
   color: #fff !important;
   border: 1px solid #007AFF !important;
-  padding: 6px 12px !important;
+  padding: 8px 12px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -795,7 +797,9 @@ body {
   background: #000 !important;
   color: #fff !important;
   border: 1px solid #000 !important;
-  padding: 6px 12px !important;
+  padding: 8px 12px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
   font-weight: 700;
   display: flex;
   align-items: center;
