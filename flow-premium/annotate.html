@@ -141,7 +141,9 @@
         </div>
         <button class="tool-btn" data-tool="rectangle" title="Draw rectangle">▢</button>
         <button class="tool-btn" data-tool="arrow" title="Draw arrow">➤</button>
-        <button class="tool-btn" data-tool="resize" title="Resize - drag edges">↔</button>
+        <button id="cropBtn" class="tool-btn" data-tool="crop" title="Crop image">✂</button>
+        <button id="doneCropBtn" class="tool-btn crop-action-btn" style="display:none;" title="Apply crop">✓ Done</button>
+        <button id="cancelCropBtn" class="tool-btn crop-action-btn" style="display:none;" title="Cancel crop">✕</button>
       </div>
       
       <div class="toolbar-section">
@@ -176,18 +178,6 @@
     <!-- Canvas Area -->
     <div class="canvas-container">
       <div id="canvasWrapper" class="canvas-wrapper">
-        <!-- Resize Handles - GoFullPage style drag-to-resize -->
-        <div id="resizeHandles" class="resize-handles">
-          <div class="resize-handle nw" data-dir="nw"></div>
-          <div class="resize-handle n" data-dir="n"></div>
-          <div class="resize-handle ne" data-dir="ne"></div>
-          <div class="resize-handle w" data-dir="w"></div>
-          <div class="resize-handle e" data-dir="e"></div>
-          <div class="resize-handle sw" data-dir="sw"></div>
-          <div class="resize-handle s" data-dir="s"></div>
-          <div class="resize-handle se" data-dir="se"></div>
-        </div>
-        <div id="resizeBorder" class="resize-border"></div>
         <!-- Browser Frame Overlay - Floats above canvas, never overlaps content -->
         <div id="browserFrameOverlay" class="browser-frame-overlay" style="display: none;">
           <div class="frame-traffic-lights">

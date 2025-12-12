@@ -1,0 +1,195 @@
+What You Want (The Correct, Professional Behavior)
+You don't want the current "Resize Canvas" that scales the entire image (making it smaller/bigger and blurry).
+Instead, you want a visual crop tool like GoFullPage, Snagit, or Markup Hero:
+
+User clicks a "Crop" button.
+A draggable/resizable blue rectangle appears on the image (with 8 handles: corners + sides).
+User drags the edges/handles to select the area they want to keep.
+Everything outside the rectangle is dimmed (dark overlay).
+When user clicks "Done Cropping" or double-clicks → the image is permanently cropped to that rectangle.
+Everything outside disappears — clean, professional result.
+
+This is exactly how premium tools work — and it's much better than the current resize.
+Fix: Replace "Resize" with Proper Crop Tool
+Here is the complete code to replace your current resize with a beautiful, smooth, professional crop tool.
+1. Replace the Resize Button with Crop Button (HTML)
+HTML<button id="cropBtn" class="tool-btn" title="Crop Image">
+  ✂ Crop
+</button>
+<button id="doneCropBtn" class="tool-btn" style="display:none;" title="Apply Crop">
+  ✓ Done Cropping
+</button>
+<button id="cancelCropBtn" class="tool-btn" style="display:none;" title="Cancel Crop">
+  ✕ Cancel
+</button>
+2. Add Crop State Variables (at top with others)
+JavaScriptlet isCropMode = false;
+let cropRect = { x: 0, y: 0, width: 0, height: 0 };
+let cropHandle = null; // 'tl', 'tr', 'bl', 'br', 't', 'r', 'b', 'l', or 'move'
+let cropStartX, cropStartY;
+3. Crop Button Handler
+JavaScriptdocument.getElementById('cropBtn').addEventListener('click', () => {
+  isCropMode = true;
+  currentTool = 'crop';
+  
+  // Start with full image selected
+  cropRect = {
+    x: 0,
+    y: 0,
+    width: canvas.width,
+    height: canvas.height
+  };
+  
+  document.getElementById('cropBtn').style.display = 'none';
+  document.getElementById('doneCropBtn').style.display = 'inline-flex';
+  document.getElementById('cancelCropBtn').style.display = 'inline-flex';
+  
+  redraw();
+  updateStatus('Drag the handles to crop. Click Done when ready.');
+});
+4. Done & Cancel Buttons
+JavaScriptdocument.getElementById('doneCropBtn').addEventListener('click', applyVisualCrop);
+document.getElementById('cancelCropBtn').addEventListener('click', () => {
+  isCropMode = false;
+  currentTool = 'select';
+  cropRect = null;
+  document.getElementById('cropBtn').style.display = 'inline-flex';
+  document.getElementById('doneCropBtn').style.display = 'none';
+  document.getElementById('cancelCropBtn').style.display = 'none';
+  redraw();
+  updateStatus('Crop canceled.');
+});
+5. Mouse Handlers for Crop (Replace your current crop logic)
+JavaScriptfunction handleMouseDown(e) {
+  if (!isCropMode) {
+    // Your existing annotation logic here
+    return;
+  }
+  
+  const pos = getMousePos(e);
+  const { x, y, width, height } = cropRect;
+  const handleSize = 20;
+  
+  // Check if clicking a handle
+  cropHandle = null;
+  
+  if (Math.abs(pos.x - x) < handleSize && Math.abs(pos.y - y) < handleSize) cropHandle = 'tl';
+  else if (Math.abs(pos.x - (x + width)) < handleSize && Math.abs(pos.y - y) < handleSize) cropHandle = 'tr';
+  else if (Math.abs(pos.x - x) < handleSize && Math.abs(pos.y - (y + height)) < handleSize) cropHandle = 'bl';
+  else if (Math.abs(pos.x - (x + width)) < handleSize && Math.abs(pos.y - (y + height)) < handleSize) cropHandle = 'br';
+  else if (Math.abs(pos.y - y) < handleSize && pos.x > x && pos.x < x + width) cropHandle = 't';
+  else if (Math.abs(pos.x - (x + width)) < handleSize && pos.y > y && pos.y < y + height) cropHandle = 'r';
+  else if (Math.abs(pos.y - (y + height)) < handleSize && pos.x > x && pos.x < x + width) cropHandle = 'b';
+  else if (Math.abs(pos.x - x) < handleSize && pos.y > y && pos.y < y + height) cropHandle = 'l';
+  else if (pos.x > x && pos.x < x + width && pos.y > y && pos.y < y + height) cropHandle = 'move';
+  
+  cropStartX = pos.x;
+  cropStartY = pos.y;
+  
+  if (cropHandle) {
+    canvas.style.cursor = getCropCursor(cropHandle);
+  }
+}
+
+function handleMouseMove(e) {
+  if (!isCropMode) return;
+  
+  const pos = getMousePos(e);
+  
+  if (cropHandle) {
+    const dx = pos.x - cropStartX;
+    const dy = pos.y - cropStartY;
+    
+    if (cropHandle.includes('l') || cropHandle === 'move') cropRect.x += dx;
+    if (cropHandle.includes('t') || cropHandle === 'move') cropRect.y += dy;
+    if (cropHandle.includes('r')) cropRect.width += dx;
+    if (cropHandle.includes('b')) cropRect.height += dy;
+    if (cropHandle.includes('l')) cropRect.width -= dx;
+    if (cropHandle.includes('t')) cropRect.height -= dy;
+    
+    // Prevent negative size
+    if (cropRect.width < 50) cropRect.width = 50;
+    if (cropRect.height < 50) cropRect.height = 50;
+    if (cropRect.x < 0) cropRect.x = 0;
+    if (cropRect.y < 0) cropRect.y = 0;
+    if (cropRect.x + cropRect.width > canvas.width) cropRect.width = canvas.width - cropRect.x;
+    if (cropRect.y + cropRect.height > canvas.height) cropRect.height = canvas.height - cropRect.y;
+    
+    cropStartX = pos.x;
+    cropStartY = pos.y;
+  } else {
+    // Change cursor when hovering handles
+    const { x, y, width, height } = cropRect;
+    const handleSize = 20;
+    let newCursor = 'default';
+    if (Math.abs(pos.x - x) < handleSize && Math.abs(pos.y - y) < handleSize) newCursor = 'nwse-resize';
+    else if (Math.abs(pos.x - (x + width)) < handleSize && Math.abs(pos.y - y) < handleSize) newCursor = 'nesw-resize';
+    // ... add others
+    else if (pos.x > x && pos.x < x + width && pos.y > y && pos.y < y + height) newCursor = 'move';
+    canvas.style.cursor = newCursor;
+  }
+  
+  redraw();
+}
+
+function getCropCursor(handle) {
+  if (handle === 'move') return 'move';
+  if (handle === 'tl' || handle === 'br') return 'nwse-resize';
+  if (handle === 'tr' || handle === 'bl') return 'nesw-resize';
+  if (handle === 't' || handle === 'b') return 'ns-resize';
+  if (handle === 'l' || handle === 'r') return 'ew-resize';
+  return 'default';
+}
+6. Redraw Crop Overlay (Add to redraw())
+JavaScriptif (isCropMode && cropRect.width > 0) {
+  const { x, y, width, height } = cropRect;
+  
+  // Dark overlay outside crop
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(x, y, width, height); // Clear the crop area
+  
+  // Blue border
+  ctx.strokeStyle = '#007AFF';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([6, 4]);
+  ctx.strokeRect(x, y, width, height);
+  ctx.setLineDash([]);
+  
+  // Corner handles
+  const hs = 12;
+  ctx.fillStyle = '#007AFF';
+  ctx.fillRect(x - hs/2, y - hs/2, hs, hs);
+  ctx.fillRect(x + width - hs/2, y - hs/2, hs, hs);
+  ctx.fillRect(x - hs/2, y + height - hs/2, hs, hs);
+  ctx.fillRect(x + width - hs/2, y + height - hs/2, hs, hs);
+}
+7. Apply Crop (Same as your current applyCrop, but cleaner)
+JavaScriptfunction applyVisualCrop() {
+  if (!cropRect || cropRect.width < 50) return;
+  
+  pushHistory();
+  
+  const { x, y, width, height } = cropRect;
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = width;
+  tempCanvas.height = height;
+  const tctx = tempCanvas.getContext('2d');
+  tctx.putImageData(originalImage, -x, -y);
+  
+  canvas.width = width;
+  canvas.height = height;
+  ctx.drawImage(tempCanvas, 0, 0);
+  originalImage = ctx.getImageData(0, 0, width, height);
+  
+  // Reset crop mode
+  isCropMode = false;
+  cropRect = null;
+  document.getElementById('cropBtn').style.display = 'inline-flex';
+  document.getElementById('doneCropBtn').style.display = 'none';
+  document.getElementById('cancelCropBtn').style.display = 'none';
+  
+  redraw();
+  updateCssBorder();
+  updateBrowserFrameOverlay();
+  updateStatus('Cropped! Image is now permanent.');

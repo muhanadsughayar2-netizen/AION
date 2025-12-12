@@ -521,15 +521,14 @@ function setupEventListeners() {
       pendingStickerText = null; // Clear pending sticker when switching tools
       pendingSpecialEmoji = null; // Clear pending emoji when switching tools
       
-      // Toggle resize handles visibility
-      if (typeof toggleResizeHandles === 'function') {
-        toggleResizeHandles(tool === 'resize');
+      // Handle crop tool activation
+      if (tool === 'crop') {
+        enterCropMode();
+        return;
       }
       
       // Update status based on tool
-      if (tool === 'resize') {
-        updateStatus('Drag the blue handles to resize the image');
-      } else if (tool === 'select') {
+      if (tool === 'select') {
         updateStatus('Click objects to move, delete with Backspace');
       } else {
         updateStatus('Add numbers, shapes, or text. All draggable!');
@@ -604,12 +603,28 @@ function setupEventListeners() {
   document.getElementById('saveBtn').addEventListener('click', save);
   document.getElementById('cancelBtn').addEventListener('click', () => window.close());
   
-  // Visual Resize Tool - GoFullPage style drag handles
-  setupResizeHandles();
+  // Crop Done/Cancel button handlers
+  const doneCropBtn = document.getElementById('doneCropBtn');
+  if (doneCropBtn) {
+    doneCropBtn.addEventListener('click', () => {
+      applyVisualCrop();
+    });
+  }
+  
+  const cancelCropBtn = document.getElementById('cancelCropBtn');
+  if (cancelCropBtn) {
+    cancelCropBtn.addEventListener('click', () => {
+      exitCropMode();
+    });
+  }
   
   // ESC key handler - cancel current action, return to select mode
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      if (currentTool === 'crop') {
+        exitCropMode();
+        return;
+      }
       currentTool = 'select';
       document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
       const selectBtn = document.querySelector('[data-tool="select"]');
@@ -619,7 +634,6 @@ function setupEventListeners() {
       isCropping = false;
       pendingStickerText = null;
       pendingSpecialEmoji = null;
-      if (typeof toggleResizeHandles === 'function') toggleResizeHandles(false);
       redraw();
       updateStatus('Select mode — click objects to move, delete with Backspace');
     }
@@ -812,35 +826,26 @@ function handleMouseDown(e) {
   startX = (e.clientX - rect.left) * (canvas.width / rect.width);
   startY = (e.clientY - rect.top) * (canvas.height / rect.height);
   
-  // Handle crop tool
-  if (currentTool === 'crop') {
-    // Check if user clicked inside existing crop rectangle
-    if (cropRect) {
-      const { x, y, width, height } = cropRect;
-      if (startX >= x && startX <= x + width && startY >= y && startY <= y + height) {
-        // Check if we're in SNIP MODE - save to queue and keep original image
-        const urlParams = new URLSearchParams(window.location.search);
-        const mode = urlParams.get('mode');
-        
-        if (mode === 'snip') {
-          // SNIP MODE: Save snip to queue, keep original image for more snips
-          saveSnipToQueue();
-          return;
-        } else {
-          // NORMAL MODE: Apply crop permanently
-          applyCrop();
-          return;
-        }
-      }
-    }
+  // Handle visual crop tool with 8 handles
+  if (currentTool === 'crop' && cropRect) {
+    const pos = { x: startX, y: startY };
+    cropHandle = getCropHandleAt(pos);
     
-    // Otherwise, start new crop selection
+    if (cropHandle) {
+      cropDragStartX = startX;
+      cropDragStartY = startY;
+      canvas.style.cursor = getCropCursor(cropHandle);
+      return;
+    }
+  }
+  
+  // Handle snip mode (drawing new crop area)
+  if (currentTool === 'crop' && !cropRect) {
     isCropping = true;
     cropStartX = startX;
     cropStartY = startY;
     cropEndX = startX;
     cropEndY = startY;
-    cropRect = null;
     return;
   }
   
@@ -903,12 +908,52 @@ function handleMouseMove(e) {
   const x = (e.clientX - rect.left) * (canvas.width / rect.width);
   const y = (e.clientY - rect.top) * (canvas.height / rect.height);
   
-  // Handle crop drawing
+  // Handle visual crop handle dragging
+  if (currentTool === 'crop' && cropHandle && cropRect) {
+    const dx = x - cropDragStartX;
+    const dy = y - cropDragStartY;
+    
+    let { x: cx, y: cy, width: cw, height: ch } = cropRect;
+    
+    // Apply changes based on handle
+    if (cropHandle.includes('l') || cropHandle === 'move') cx += dx;
+    if (cropHandle.includes('t') || cropHandle === 'move') cy += dy;
+    if (cropHandle.includes('r')) cw += dx;
+    if (cropHandle.includes('b')) ch += dy;
+    if (cropHandle.includes('l')) cw -= dx;
+    if (cropHandle.includes('t')) ch -= dy;
+    
+    // Prevent negative/too small
+    if (cw < 50) cw = 50;
+    if (ch < 50) ch = 50;
+    if (cx < 0) cx = 0;
+    if (cy < 0) cy = 0;
+    if (cx + cw > canvas.width) cw = canvas.width - cx;
+    if (cy + ch > canvas.height) ch = canvas.height - cy;
+    
+    cropRect = { x: cx, y: cy, width: cw, height: ch };
+    cropDragStartX = x;
+    cropDragStartY = y;
+    
+    redraw();
+    updateStatus(`Crop: ${Math.round(cw)} × ${Math.round(ch)}`);
+    return;
+  }
+  
+  // Handle new crop drawing (snip mode)
   if (isCropping && currentTool === 'crop') {
     cropEndX = x;
     cropEndY = y;
     redraw();
     drawCropPreview();
+    return;
+  }
+  
+  // Update cursor for crop mode
+  if (currentTool === 'crop' && cropRect) {
+    const pos = { x, y };
+    const handle = getCropHandleAt(pos);
+    canvas.style.cursor = handle ? getCropCursor(handle) : 'default';
     return;
   }
   
@@ -976,7 +1021,16 @@ function handleMouseMove(e) {
 }
 
 function handleMouseUp(e) {
-  // Handle crop completion
+  // Handle crop handle release
+  if (cropHandle) {
+    cropHandle = null;
+    if (cropRect) {
+      canvas.style.cursor = 'default';
+    }
+    return;
+  }
+  
+  // Handle crop completion (new crop drawing)
   if (isCropping && currentTool === 'crop') {
     isCropping = false;
     
@@ -989,15 +1043,12 @@ function handleMouseUp(e) {
     const height = y2 - y1;
     
     // Only create crop if it's a valid size
-    if (width > 10 && height > 10) {
+    if (width > 50 && height > 50) {
       cropRect = { x: x1, y: y1, width, height };
       redraw();
-      drawCropRect();
-      updateStatus(`Crop area selected (${Math.round(width)}x${Math.round(height)}). Click INSIDE to apply crop.`);
+      updateStatus(`Crop: ${Math.round(width)} × ${Math.round(height)}. Drag handles to adjust.`);
     } else {
-      cropRect = null;
-      redraw();
-      updateStatus('Draw a larger rectangle to snip.');
+      updateStatus('Crop area too small (min 50x50)');
     }
     return;
   }
@@ -1098,7 +1149,7 @@ function drawCropPreview() {
   ctx.fillText(`${Math.round(width)} x ${Math.round(height)}`, x1 + 5, y1 - 8);
 }
 
-// Draw final crop rectangle
+// Draw final crop rectangle with 8 handles
 function drawCropRect() {
   if (!cropRect) return;
   
@@ -1114,24 +1165,42 @@ function drawCropRect() {
   // Draw crop border
   ctx.strokeStyle = '#007AFF';
   ctx.lineWidth = 3;
+  ctx.setLineDash([6, 4]);
   ctx.strokeRect(x, y, width, height);
+  ctx.setLineDash([]);
   
-  // Draw corner handles
-  const handleSize = 10;
+  // Draw 8 handles (corners + edges)
+  const hs = 12;
   ctx.fillStyle = '#007AFF';
-  ctx.fillRect(x - handleSize/2, y - handleSize/2, handleSize, handleSize);
-  ctx.fillRect(x + width - handleSize/2, y - handleSize/2, handleSize, handleSize);
-  ctx.fillRect(x - handleSize/2, y + height - handleSize/2, handleSize, handleSize);
-  ctx.fillRect(x + width - handleSize/2, y + height - handleSize/2, handleSize, handleSize);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
   
-  // Draw "TAP TO SNIP" text in center
-  ctx.save();
-  ctx.font = 'bold 16px Arial';
+  // Corner handles
+  ctx.fillRect(x - hs/2, y - hs/2, hs, hs);
+  ctx.strokeRect(x - hs/2, y - hs/2, hs, hs);
+  ctx.fillRect(x + width - hs/2, y - hs/2, hs, hs);
+  ctx.strokeRect(x + width - hs/2, y - hs/2, hs, hs);
+  ctx.fillRect(x - hs/2, y + height - hs/2, hs, hs);
+  ctx.strokeRect(x - hs/2, y + height - hs/2, hs, hs);
+  ctx.fillRect(x + width - hs/2, y + height - hs/2, hs, hs);
+  ctx.strokeRect(x + width - hs/2, y + height - hs/2, hs, hs);
+  
+  // Edge handles (centers of each side)
+  ctx.fillRect(x + width/2 - hs/2, y - hs/2, hs, hs);
+  ctx.strokeRect(x + width/2 - hs/2, y - hs/2, hs, hs);
+  ctx.fillRect(x + width/2 - hs/2, y + height - hs/2, hs, hs);
+  ctx.strokeRect(x + width/2 - hs/2, y + height - hs/2, hs, hs);
+  ctx.fillRect(x - hs/2, y + height/2 - hs/2, hs, hs);
+  ctx.strokeRect(x - hs/2, y + height/2 - hs/2, hs, hs);
+  ctx.fillRect(x + width - hs/2, y + height/2 - hs/2, hs, hs);
+  ctx.strokeRect(x + width - hs/2, y + height/2 - hs/2, hs, hs);
+  
+  // Draw dimensions label
+  ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#007AFF';
-  ctx.fillText('TAP TO SNIP', x + width/2, y + height/2);
-  ctx.restore();
+  ctx.fillText(`${Math.round(width)} × ${Math.round(height)}`, x + width/2, y + height/2);
 }
 
 // ========================================
@@ -2625,128 +2694,141 @@ function addInvisibleWatermarkToCanvas(canvas) {
   ctx.putImageData(imageData, canvas.width - 1, canvas.height - 1);
 }
 
-// Setup visual resize handles - GoFullPage style drag-to-resize
-function setupResizeHandles() {
-  const resizeHandles = document.getElementById('resizeHandles');
-  const resizeBorder = document.getElementById('resizeBorder');
-  if (!resizeHandles) return;
+// ========================================
+// VISUAL CROP MODE - Professional crop tool
+// ========================================
+let cropHandle = null; // 'tl', 'tr', 'bl', 'br', 't', 'r', 'b', 'l', or 'move'
+let cropDragStartX = 0, cropDragStartY = 0;
+
+function enterCropMode() {
+  currentTool = 'crop';
   
-  let isResizing = false;
-  let resizeDir = null;
-  let startMouseX, startMouseY;
-  let startWidth, startHeight;
+  // Start with full image selected
+  cropRect = {
+    x: 0,
+    y: 0,
+    width: canvas.width,
+    height: canvas.height
+  };
   
-  // Handle mousedown on resize handles
-  document.querySelectorAll('.resize-handle').forEach(handle => {
-    handle.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      isResizing = true;
-      resizeDir = handle.dataset.dir;
-      startMouseX = e.clientX;
-      startMouseY = e.clientY;
-      startWidth = canvas.width;
-      startHeight = canvas.height;
-      
-      pushHistory(); // Save state before resize
-      updateStatus(`Drag to resize (${startWidth}×${startHeight})`);
-    });
-  });
+  // Show/hide buttons
+  const cropBtn = document.getElementById('cropBtn');
+  const doneCropBtn = document.getElementById('doneCropBtn');
+  const cancelCropBtn = document.getElementById('cancelCropBtn');
+  if (cropBtn) cropBtn.style.display = 'none';
+  if (doneCropBtn) doneCropBtn.style.display = 'inline-flex';
+  if (cancelCropBtn) cancelCropBtn.style.display = 'inline-flex';
   
-  // Handle mousemove for resizing
-  document.addEventListener('mousemove', (e) => {
-    if (!isResizing || !resizeDir) return;
-    
-    const dx = e.clientX - startMouseX;
-    const dy = e.clientY - startMouseY;
-    
-    let newWidth = startWidth;
-    let newHeight = startHeight;
-    
-    // Calculate new dimensions based on direction
-    if (resizeDir.includes('e')) newWidth = Math.max(100, startWidth + dx);
-    if (resizeDir.includes('w')) newWidth = Math.max(100, startWidth - dx);
-    if (resizeDir.includes('s')) newHeight = Math.max(100, startHeight + dy);
-    if (resizeDir.includes('n')) newHeight = Math.max(100, startHeight - dy);
-    
-    // Clamp to reasonable bounds
-    newWidth = Math.min(10000, newWidth);
-    newHeight = Math.min(10000, newHeight);
-    
-    updateStatus(`Resizing: ${Math.round(newWidth)}×${Math.round(newHeight)}`);
-  });
-  
-  // Handle mouseup to finalize resize
-  document.addEventListener('mouseup', (e) => {
-    if (!isResizing || !resizeDir) return;
-    
-    const dx = e.clientX - startMouseX;
-    const dy = e.clientY - startMouseY;
-    
-    let newWidth = startWidth;
-    let newHeight = startHeight;
-    
-    // Calculate final dimensions
-    if (resizeDir.includes('e')) newWidth = Math.max(100, startWidth + dx);
-    if (resizeDir.includes('w')) newWidth = Math.max(100, startWidth - dx);
-    if (resizeDir.includes('s')) newHeight = Math.max(100, startHeight + dy);
-    if (resizeDir.includes('n')) newHeight = Math.max(100, startHeight - dy);
-    
-    newWidth = Math.min(10000, Math.round(newWidth));
-    newHeight = Math.min(10000, Math.round(newHeight));
-    
-    // Only resize if dimensions actually changed
-    if (newWidth !== startWidth || newHeight !== startHeight) {
-      applyResize(startWidth, startHeight, newWidth, newHeight);
-    }
-    
-    isResizing = false;
-    resizeDir = null;
-  });
+  canvas.style.cursor = 'crosshair';
+  redraw();
+  updateStatus('Drag the handles to crop. Click Done when ready.');
 }
 
-// Apply resize to canvas and scale annotations
-function applyResize(oldWidth, oldHeight, newWidth, newHeight) {
-  // Create temp canvas to resize image
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = newWidth;
-  tempCanvas.height = newHeight;
-  const tempCtx = tempCanvas.getContext('2d');
+function exitCropMode() {
+  currentTool = 'select';
+  cropRect = null;
+  cropHandle = null;
   
-  // Scale and draw original content
-  tempCtx.drawImage(canvas, 0, 0, newWidth, newHeight);
+  // Show/hide buttons
+  const cropBtn = document.getElementById('cropBtn');
+  const doneCropBtn = document.getElementById('doneCropBtn');
+  const cancelCropBtn = document.getElementById('cancelCropBtn');
+  if (cropBtn) cropBtn.style.display = 'inline-flex';
+  if (doneCropBtn) doneCropBtn.style.display = 'none';
+  if (cancelCropBtn) cancelCropBtn.style.display = 'none';
+  
+  // Update toolbar
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+  const selectBtn = document.querySelector('[data-tool="select"]');
+  if (selectBtn) selectBtn.classList.add('active');
+  
+  canvas.style.cursor = 'default';
+  redraw();
+  updateStatus('Crop canceled.');
+}
+
+function applyVisualCrop() {
+  if (!cropRect || cropRect.width < 50 || cropRect.height < 50) {
+    updateStatus('Crop area too small (min 50x50)');
+    return;
+  }
+  
+  pushHistory(); // Save state before crop
+  
+  const { x, y, width, height } = cropRect;
+  
+  // Extract cropped region
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = width;
+  tempCanvas.height = height;
+  const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+  tempCtx.putImageData(originalImage, -x, -y, x, y, width, height);
   
   // Resize main canvas
-  canvas.width = newWidth;
-  canvas.height = newHeight;
+  canvas.width = width;
+  canvas.height = height;
   ctx.drawImage(tempCanvas, 0, 0);
-  
-  // Update originalImage
   originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
   
-  // Scale all annotations proportionally
-  const scaleX = newWidth / oldWidth;
-  const scaleY = newHeight / oldHeight;
-  annotations.forEach(ann => {
-    ann.x *= scaleX;
-    ann.y *= scaleY;
-    if (ann.width) ann.width *= scaleX;
-    if (ann.height) ann.height *= scaleY;
-    if (ann.x1 !== undefined) { ann.x1 *= scaleX; ann.x2 *= scaleX; }
-    if (ann.y1 !== undefined) { ann.y1 *= scaleY; ann.y2 *= scaleY; }
-  });
+  // Clear annotations (they're relative to old coordinates)
+  annotations = [];
+  calloutNumber = 1;
   
+  // Exit crop mode
+  cropRect = null;
+  cropHandle = null;
+  currentTool = 'select';
+  
+  // Reset buttons
+  const cropBtn = document.getElementById('cropBtn');
+  const doneCropBtn = document.getElementById('doneCropBtn');
+  const cancelCropBtn = document.getElementById('cancelCropBtn');
+  if (cropBtn) cropBtn.style.display = 'inline-flex';
+  if (doneCropBtn) doneCropBtn.style.display = 'none';
+  if (cancelCropBtn) cancelCropBtn.style.display = 'none';
+  
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+  const selectBtn = document.querySelector('[data-tool="select"]');
+  if (selectBtn) selectBtn.classList.add('active');
+  
+  canvas.style.cursor = 'default';
   redraw();
   updateCssBorder();
   updateBrowserFrameOverlay();
-  updateStatus(`Resized to ${newWidth}×${newHeight}`);
+  updateStatus(`Cropped to ${width}×${height}. Image is now permanent.`);
 }
 
-// Toggle resize handles visibility
-function toggleResizeHandles(show) {
-  const resizeHandles = document.getElementById('resizeHandles');
-  const resizeBorder = document.getElementById('resizeBorder');
-  if (resizeHandles) resizeHandles.classList.toggle('active', show);
-  if (resizeBorder) resizeBorder.classList.toggle('active', show);
+// Get crop cursor based on handle
+function getCropCursor(handle) {
+  if (handle === 'move') return 'move';
+  if (handle === 'tl' || handle === 'br') return 'nwse-resize';
+  if (handle === 'tr' || handle === 'bl') return 'nesw-resize';
+  if (handle === 't' || handle === 'b') return 'ns-resize';
+  if (handle === 'l' || handle === 'r') return 'ew-resize';
+  return 'default';
+}
+
+// Detect which crop handle is at position
+function getCropHandleAt(pos) {
+  if (!cropRect) return null;
+  
+  const { x, y, width, height } = cropRect;
+  const handleSize = 20;
+  
+  // Check corners first (higher priority)
+  if (Math.abs(pos.x - x) < handleSize && Math.abs(pos.y - y) < handleSize) return 'tl';
+  if (Math.abs(pos.x - (x + width)) < handleSize && Math.abs(pos.y - y) < handleSize) return 'tr';
+  if (Math.abs(pos.x - x) < handleSize && Math.abs(pos.y - (y + height)) < handleSize) return 'bl';
+  if (Math.abs(pos.x - (x + width)) < handleSize && Math.abs(pos.y - (y + height)) < handleSize) return 'br';
+  
+  // Check edges
+  if (Math.abs(pos.y - y) < handleSize && pos.x > x && pos.x < x + width) return 't';
+  if (Math.abs(pos.x - (x + width)) < handleSize && pos.y > y && pos.y < y + height) return 'r';
+  if (Math.abs(pos.y - (y + height)) < handleSize && pos.x > x && pos.x < x + width) return 'b';
+  if (Math.abs(pos.x - x) < handleSize && pos.y > y && pos.y < y + height) return 'l';
+  
+  // Check inside for move
+  if (pos.x > x && pos.x < x + width && pos.y > y && pos.y < y + height) return 'move';
+  
+  return null;
 }
