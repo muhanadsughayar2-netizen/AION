@@ -1035,10 +1035,10 @@ function handleMouseMove(e) {
   
   if (currentTool === 'arrow') {
     redraw();
-    // Arrow preview - #007AFF blue, 3px thick, white arrowhead
-    ctx.strokeStyle = '#007AFF';
+    // Arrow preview - line uses currentColor, arrowhead always white
+    ctx.strokeStyle = currentColor;
     ctx.lineWidth = 3;
-    ctx.shadowColor = '#007AFF';
+    ctx.shadowColor = currentColor;
     ctx.shadowBlur = 10;
     ctx.globalAlpha = 0.7;
     
@@ -1048,7 +1048,7 @@ function handleMouseMove(e) {
     ctx.lineTo(x, y);
     ctx.stroke();
     
-    // Draw white arrowhead
+    // Draw white arrowhead (always white for visibility)
     ctx.fillStyle = '#fff';
     const angle = Math.atan2(y - startY, x - startX);
     const headLength = 20;
@@ -2094,10 +2094,11 @@ function redraw() {
       ctx.strokeRect(ann.x, ann.y, ann.width, ann.height);
       ctx.shadowBlur = 0;
     } else if (ann.tool === 'arrow') {
-      // Draw arrow - #007AFF blue, 3px thick, white arrowhead
-      ctx.strokeStyle = '#007AFF';
+      // Draw arrow - line uses stored color, arrowhead always white
+      const lineColor = ann.color || '#007AFF';
+      ctx.strokeStyle = lineColor;
       ctx.lineWidth = 3;
-      ctx.shadowColor = '#007AFF';
+      ctx.shadowColor = lineColor;
       ctx.shadowBlur = 10;
       
       // Draw line
@@ -2106,7 +2107,7 @@ function redraw() {
       ctx.lineTo(ann.x2, ann.y2);
       ctx.stroke();
       
-      // Draw white arrowhead
+      // Draw white arrowhead (always white for visibility)
       ctx.fillStyle = '#fff';
       const angle = Math.atan2(ann.y2 - ann.y1, ann.x2 - ann.x1);
       const headLength = 20;
