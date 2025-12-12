@@ -20,6 +20,8 @@ let isSnipMode = false;
 let cropRect = null;
 let isCropping = false;
 let cropStartX, cropStartY, cropEndX, cropEndY;
+let cropHandle = null; // 'tl', 'tr', 'bl', 'br', 't', 'r', 'b', 'l', or 'move'
+let cropDragStartX = 0, cropDragStartY = 0;
 
 // Full Page Paginated Mode variables
 let isFullPageMode = false;
@@ -915,21 +917,30 @@ function handleMouseMove(e) {
     
     let { x: cx, y: cy, width: cw, height: ch } = cropRect;
     
-    // Apply changes based on handle
-    if (cropHandle.includes('l') || cropHandle === 'move') cx += dx;
-    if (cropHandle.includes('t') || cropHandle === 'move') cy += dy;
-    if (cropHandle.includes('r')) cw += dx;
-    if (cropHandle.includes('b')) ch += dy;
-    if (cropHandle.includes('l')) cw -= dx;
-    if (cropHandle.includes('t')) ch -= dy;
-    
-    // Prevent negative/too small
-    if (cw < 50) cw = 50;
-    if (ch < 50) ch = 50;
-    if (cx < 0) cx = 0;
-    if (cy < 0) cy = 0;
-    if (cx + cw > canvas.width) cw = canvas.width - cx;
-    if (cy + ch > canvas.height) ch = canvas.height - cy;
+    if (cropHandle === 'move') {
+      // Move: preserve size, just change position
+      cx += dx;
+      cy += dy;
+      // Clamp position to keep box inside canvas
+      if (cx < 0) cx = 0;
+      if (cy < 0) cy = 0;
+      if (cx + cw > canvas.width) cx = canvas.width - cw;
+      if (cy + ch > canvas.height) cy = canvas.height - ch;
+    } else {
+      // Resize handles
+      if (cropHandle.includes('l')) { cx += dx; cw -= dx; }
+      if (cropHandle.includes('t')) { cy += dy; ch -= dy; }
+      if (cropHandle.includes('r')) cw += dx;
+      if (cropHandle.includes('b')) ch += dy;
+      
+      // Prevent too small
+      if (cw < 50) cw = 50;
+      if (ch < 50) ch = 50;
+      if (cx < 0) cx = 0;
+      if (cy < 0) cy = 0;
+      if (cx + cw > canvas.width) cw = canvas.width - cx;
+      if (cy + ch > canvas.height) ch = canvas.height - cy;
+    }
     
     cropRect = { x: cx, y: cy, width: cw, height: ch };
     cropDragStartX = x;
@@ -2697,8 +2708,6 @@ function addInvisibleWatermarkToCanvas(canvas) {
 // ========================================
 // VISUAL CROP MODE - Professional crop tool
 // ========================================
-let cropHandle = null; // 'tl', 'tr', 'bl', 'br', 't', 'r', 'b', 'l', or 'move'
-let cropDragStartX = 0, cropDragStartY = 0;
 
 function enterCropMode() {
   currentTool = 'crop';
