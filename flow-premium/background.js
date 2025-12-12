@@ -543,8 +543,9 @@ async function startFullPageCapture() {
 // Capture a single viewport during full page capture
 async function captureFullPageStep(tabId) {
   try {
-    // Small delay to ensure page has settled after scroll
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Delay for lazy-loading (500ms allows dynamic content to load - like GoFullPage)
+    // Increase this to 1000ms for very dynamic sites (investing.com, etc)
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     // Get the tab info using the provided tabId (more reliable than querying active tab)
     const tab = await chrome.tabs.get(tabId);
