@@ -722,6 +722,22 @@ async function loadImage() {
       // Push initial state to history (enables undo)
       pushHistory();
       updateHistoryButtons();
+      
+      // Load real URL for browser frame (same as full-page)
+      (async () => {
+        try {
+          const stored = await chrome.storage.session.get(['lastCapturedPageUrl']);
+          if (stored.lastCapturedPageUrl && stored.lastCapturedPageUrl !== '') {
+            browserFrameUrl = stored.lastCapturedPageUrl;
+          } else {
+            browserFrameUrl = 'example.com';
+          }
+          updateBrowserFrameOverlay();
+          redraw();
+        } catch (e) {
+          browserFrameUrl = 'example.com';
+        }
+      })();
     };
     img.src = imageUrl;
   }
