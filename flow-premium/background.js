@@ -187,6 +187,12 @@ async function captureScreenshot() {
     // Save to session storage
     await chrome.storage.local.set({ snaps });
     
+    // Store the captured page URL for the editor's browser frame feature (for SNAP mode)
+    await chrome.storage.session.set({ 
+      lastCapturedPageUrl: tab.url || '',
+      lastCapturedPageTitle: tab.title || 'Untitled Page'
+    });
+    
     // Update badge
     await updateBadge(snaps.length);
     

@@ -29,7 +29,16 @@ let pages = []; // Array of page image data URLs
 let pageImages = []; // Array of loaded Image objects
 let pageAnnotations = []; // Annotations per page: [[page0 annotations], [page1 annotations], ...]
 let pageOriginalImages = []; // Original ImageData per page
+let pagesUntouched = []; // Original unmodified pages for smart crop (never mutated)
 let currentPageIndex = 0;
+
+// Cumulative crop state for smart crop (relative to pagesUntouched)
+let cumulativeCrop = {
+  sideX: 0,         // Left offset applied
+  sideWidth: null,  // Width after crop (null = full width)
+  topCrop: 0,       // Top crop on page 0
+  bottomCrop: 0     // Bottom crop on last page
+};
 
 // Zoom and Frame variables - will be overridden by settings
 let zoomLevel = 1.0;
@@ -749,6 +758,12 @@ async function loadFullPageImages() {
     // Get pages from local storage (unlimited size)
     const result = await chrome.storage.local.get('fullPageScreenshots');
     pages = result.fullPageScreenshots || [];
+    
+    // Store untouched copy for smart crop (never modify this array)
+    pagesUntouched = [...pages];
+    
+    // Reset cumulative crop state
+    cumulativeCrop = { sideX: 0, sideWidth: null, topCrop: 0, bottomCrop: 0 };
     
     if (pages.length === 0) {
       updateStatus('No pages found. Please try again.');
@@ -2816,14 +2831,33 @@ function applyVisualCrop() {
   
   const { x, y, width, height } = cropRect;
   
-  // SMART FULL-PAGE CROP: Apply only left/right to all pages
-  if (isFullPageMode && pages && pages.length > 1) {
-    updateStatus(`Removing sidebars from all ${pages.length} pages...`);
+  // SMART FULL-PAGE CROP with cumulative offsets:
+  // - LEFT/RIGHT crop applies to ALL pages (sidebar removal)
+  // - TOP crop applies ONLY when editing page 0
+  // - BOTTOM crop applies ONLY when editing last page
+  // Uses pagesUntouched + cumulative offsets to prevent drift
+  if (isFullPageMode && pages && pages.length > 1 && pagesUntouched.length > 0) {
+    updateStatus(`Smart cropping ${pages.length} pages...`);
     
-    const sideCropX = Math.round(x);
-    const sideCropWidth = Math.round(width);
+    // Calculate new crop relative to current view, then add to cumulative
+    const newSideX = Math.round(x);
+    const newSideWidth = Math.round(width);
     
-    // Helper to load image from data URL
+    // Update cumulative sidebar crop (add new offset to existing)
+    cumulativeCrop.sideX += newSideX;
+    cumulativeCrop.sideWidth = newSideWidth;
+    
+    // Top crop: only if editing page 0
+    if (currentPageIndex === 0) {
+      cumulativeCrop.topCrop += Math.round(y);
+    }
+    
+    // Bottom crop: only if editing last page
+    if (currentPageIndex === pages.length - 1) {
+      cumulativeCrop.bottomCrop += Math.round(canvas.height - (y + height));
+    }
+    
+    // Helper to load image
     const loadImage = (src) => new Promise((resolve) => {
       const img = new Image();
       img.onload = () => resolve(img);
@@ -2831,59 +2865,81 @@ function applyVisualCrop() {
       img.src = src;
     });
     
-    // Apply to all pages asynchronously
+    // Process all pages from untouched source with cumulative offsets
     (async () => {
-      for (let i = 0; i < pages.length; i++) {
-        const pageDataUrl = pages[i];
-        if (!pageDataUrl) continue;
+      for (let i = 0; i < pagesUntouched.length; i++) {
+        const srcUrl = pagesUntouched[i];
+        if (!srcUrl) continue;
         
-        // Load image from data URL (await ensures it's ready)
-        let imgToUse = pageImages[i];
-        if (!imgToUse || !imgToUse.complete || !imgToUse.width) {
-          imgToUse = await loadImage(pageDataUrl);
+        const srcImg = await loadImage(srcUrl);
+        if (!srcImg || !srcImg.width || !srcImg.height) continue;
+        
+        const srcWidth = srcImg.width;
+        const srcHeight = srcImg.height;
+        
+        // Apply cumulative crop values
+        const finalSideX = Math.min(cumulativeCrop.sideX, srcWidth - 50);
+        const finalSideWidth = Math.min(cumulativeCrop.sideWidth || srcWidth, srcWidth - finalSideX);
+        
+        let finalTopCrop = 0;
+        let finalBottomCrop = srcHeight;
+        
+        // First page: apply cumulative top crop
+        if (i === 0 && cumulativeCrop.topCrop > 0) {
+          finalTopCrop = Math.min(cumulativeCrop.topCrop, srcHeight - 50);
         }
         
-        if (!imgToUse || !imgToUse.width || !imgToUse.height) continue;
+        // Last page: apply cumulative bottom crop
+        if (i === pages.length - 1 && cumulativeCrop.bottomCrop > 0) {
+          finalBottomCrop = Math.max(50, srcHeight - cumulativeCrop.bottomCrop);
+        }
         
-        const fullHeight = imgToUse.height;
+        const pageHeight = Math.max(50, finalBottomCrop - finalTopCrop);
         
         // Create cropped canvas
         const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = sideCropWidth;
-        tempCanvas.height = fullHeight;
+        tempCanvas.width = finalSideWidth;
+        tempCanvas.height = pageHeight;
         const tctx = tempCanvas.getContext('2d', { willReadFrequently: true });
         
-        // Crop left/right only (preserve full height)
-        tctx.drawImage(imgToUse, sideCropX, 0, sideCropWidth, fullHeight, 0, 0, sideCropWidth, fullHeight);
+        // Crop from untouched source using cumulative offsets
+        tctx.drawImage(srcImg, finalSideX, finalTopCrop, finalSideWidth, pageHeight, 0, 0, finalSideWidth, pageHeight);
         
-        // Update pages[] with cropped data URL
+        // Update pages
         const newDataUrl = tempCanvas.toDataURL();
         pages[i] = newDataUrl;
+        pageOriginalImages[i] = tctx.getImageData(0, 0, finalSideWidth, pageHeight);
+        pageImages[i] = await loadImage(newDataUrl);
         
-        // Update pageOriginalImages with cropped data
-        pageOriginalImages[i] = tctx.getImageData(0, 0, sideCropWidth, fullHeight);
-        
-        // Update pageImages with new Image
-        const newImg = await loadImage(newDataUrl);
-        pageImages[i] = newImg;
-        
-        // Shift annotations horizontally only (clamp to new bounds)
+        // Clamp annotations to new bounds
         const anns = pageAnnotations[i] || [];
         anns.forEach(ann => {
           if (ann.x !== undefined) {
-            ann.x -= sideCropX;
-            if (ann.x < 0) ann.x = 0;
-            if (ann.x > sideCropWidth) ann.x = sideCropWidth - 10;
+            ann.x = Math.max(0, Math.min(ann.x, finalSideWidth - 10));
+          }
+          if (ann.y !== undefined) {
+            ann.y = Math.max(0, Math.min(ann.y, pageHeight - 10));
           }
         });
         pageAnnotations[i] = anns;
       }
       
-      updateStatus(`Sidebars removed from all ${pages.length} pages! Headers/footers preserved.`);
+      // Reload current page
+      if (pages[currentPageIndex]) {
+        const img = await loadImage(pages[currentPageIndex]);
+        if (img) {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
+      }
+      
+      redraw();
+      updateCssBorder();
+      updateBrowserFrameOverlay();
+      updateStatus(`Smart crop complete! Sidebars removed from all ${pages.length} pages.`);
     })();
-    
-    // Also apply to current page view (with user's top/bottom crop)
-    applyCropToCurrentPageOnly(x, y, width, height);
   } else {
     // Single image: full crop (including top/bottom)
     applyCropToCurrentPageOnly(x, y, width, height);
