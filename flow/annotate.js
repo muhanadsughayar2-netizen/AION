@@ -47,6 +47,9 @@ let borderColor = '#007AFF'; // Blue - SnapToAI brand (fixed, no picker)
 let borderWidth = 2; // Default to thin
 let borderRadius = 0; // Always square (no rounded corners)
 
+// PDF chunk uniform width (ensures all chunks in PDF have same width)
+window.finalChunkWidth = null;
+
 // Generate smart name for RE-EDIT functionality
 function generateSmartNameForFullPage(url, title) {
   try {
@@ -2341,6 +2344,9 @@ function yieldToUI() {
 // Splits into 5-page chunks so AI platforms can process each piece
 async function saveFullPageWithAnnotations() {
   try {
+    // Reset chunk width for fresh export (prevent leaking between sessions)
+    window.finalChunkWidth = null;
+    
     const totalPages = pages.length;
     const PAGES_PER_CHUNK = 5; // Smaller chunks for AI compatibility (5 pages max)
     
@@ -2490,13 +2496,39 @@ async function saveFullPageWithAnnotations() {
       // Add watermark to chunk
       addInvisibleWatermarkToCanvas(chunkCanvas);
       
-      // Add border and browser frame if enabled (professional look like GoFullPage)
-      // Use shared decorator helper for consistent styling
+      // Add border and browser frame if enabled — ENSURE UNIFORM WIDTH FOR PDF
       if (hasBorder || hasBrowserFrame) {
         const decoratedChunk = applyBorderDecoration(chunkCanvas);
-        chunkCanvas.width = decoratedChunk.width;
-        chunkCanvas.height = decoratedChunk.height;
-        chunkCtx.drawImage(decoratedChunk, 0, 0);
+        
+        // Force all chunks to have the same final width (use first chunk's width)
+        if (chunkIndex === 0) {
+          window.finalChunkWidth = decoratedChunk.width;
+        }
+        
+        // If current decorated width differs (due to shorter content), pad it
+        if (decoratedChunk.width !== window.finalChunkWidth && window.finalChunkWidth) {
+          const paddedCanvas = document.createElement('canvas');
+          paddedCanvas.width = window.finalChunkWidth;
+          paddedCanvas.height = decoratedChunk.height;
+          const pctx = paddedCanvas.getContext('2d');
+          
+          // Fill background to match border color
+          pctx.fillStyle = borderColor;
+          pctx.fillRect(0, 0, paddedCanvas.width, paddedCanvas.height);
+          
+          // Center the decorated chunk horizontally
+          const offsetX = (paddedCanvas.width - decoratedChunk.width) / 2;
+          pctx.drawImage(decoratedChunk, offsetX, 0);
+          
+          // Use padded canvas
+          chunkCanvas.width = paddedCanvas.width;
+          chunkCanvas.height = paddedCanvas.height;
+          chunkCtx.drawImage(paddedCanvas, 0, 0);
+        } else {
+          chunkCanvas.width = decoratedChunk.width;
+          chunkCanvas.height = decoratedChunk.height;
+          chunkCtx.drawImage(decoratedChunk, 0, 0);
+        }
       }
       
       // Add subtle part indicator (bottom right, professional styling)
