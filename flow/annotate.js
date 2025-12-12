@@ -2913,18 +2913,36 @@ function applyVisualCrop() {
 
 // Helper: Apply crop to current page only (used by applyVisualCrop)
 function applyCropToCurrentPageOnly(x, y, width, height) {
+  // Get source image - use pageOriginalImages for full-page mode, or current originalImage
+  let sourceImage = originalImage;
+  if (isFullPageMode && pageOriginalImages[currentPageIndex]) {
+    sourceImage = pageOriginalImages[currentPageIndex];
+  }
+  
   // Extract cropped region
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = width;
   tempCanvas.height = height;
   const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-  tempCtx.putImageData(originalImage, -x, -y, x, y, width, height);
+  tempCtx.putImageData(sourceImage, -x, -y, x, y, width, height);
   
   // Resize main canvas
   canvas.width = width;
   canvas.height = height;
   ctx.drawImage(tempCanvas, 0, 0);
   originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  
+  // Update page data for full-page mode (ensures crop persists on navigation)
+  if (isFullPageMode) {
+    pageOriginalImages[currentPageIndex] = originalImage;
+    // Update pages[] data URL
+    const newDataUrl = canvas.toDataURL();
+    pages[currentPageIndex] = newDataUrl;
+    // Update pageImages[] so navigation shows cropped version
+    const newImg = new Image();
+    newImg.src = newDataUrl;
+    pageImages[currentPageIndex] = newImg;
+  }
   
   // Shift annotations for current page
   annotations.forEach(ann => {
