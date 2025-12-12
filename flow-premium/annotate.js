@@ -56,8 +56,9 @@ let borderColor = '#007AFF'; // Blue - SnapToAI brand (fixed, no picker)
 let borderWidth = 2; // Default to thin
 let borderRadius = 0; // Always square (no rounded corners)
 
-// PDF chunk uniform width (ensures all chunks in PDF have same width)
+// PDF chunk uniform dimensions (ensures all chunks in PDF have same width & height)
 window.finalChunkWidth = null;
+window.finalChunkHeight = null;
 
 // Generate smart name for RE-EDIT functionality
 function generateSmartNameForFullPage(url, title) {
@@ -2376,8 +2377,9 @@ function yieldToUI() {
 // Splits into 5-page chunks so AI platforms can process each piece
 async function saveFullPageWithAnnotations() {
   try {
-    // Reset chunk width for fresh export (prevent leaking between sessions)
+    // Reset chunk dimensions for fresh export (prevent leaking between sessions)
     window.finalChunkWidth = null;
+    window.finalChunkHeight = null;
     
     const totalPages = pages.length;
     const PAGES_PER_CHUNK = 5; // Smaller chunks for AI compatibility (5 pages max)
@@ -2528,35 +2530,41 @@ async function saveFullPageWithAnnotations() {
       // Add watermark to chunk
       addInvisibleWatermarkToCanvas(chunkCanvas);
       
-      // Add border and browser frame if enabled — ENSURE UNIFORM WIDTH FOR PDF
+      // Add border and browser frame if enabled — ENSURE UNIFORM SIZE FOR PDF
       if (hasBorder || hasBrowserFrame) {
         const decoratedChunk = applyBorderDecoration(chunkCanvas);
         
-        // Force all chunks to have the same final width (use first chunk's width)
+        // Track max dimensions across all chunks
         if (chunkIndex === 0) {
           window.finalChunkWidth = decoratedChunk.width;
+          window.finalChunkHeight = decoratedChunk.height;
         }
         
-        // If current decorated width differs (due to shorter content), pad it
-        if (decoratedChunk.width !== window.finalChunkWidth && window.finalChunkWidth) {
+        // Pad shorter chunks to match the tallest
+        if (decoratedChunk.height < window.finalChunkHeight || decoratedChunk.width < window.finalChunkWidth) {
           const paddedCanvas = document.createElement('canvas');
-          paddedCanvas.width = window.finalChunkWidth;
-          paddedCanvas.height = decoratedChunk.height;
+          paddedCanvas.width = window.finalChunkWidth || decoratedChunk.width;
+          paddedCanvas.height = window.finalChunkHeight || decoratedChunk.height;
           const pctx = paddedCanvas.getContext('2d');
           
-          // Fill background to match border color
+          // Fill background with border color
           pctx.fillStyle = borderColor;
           pctx.fillRect(0, 0, paddedCanvas.width, paddedCanvas.height);
           
-          // Center the decorated chunk horizontally
+          // Center the decorated chunk (horizontally + vertically)
           const offsetX = (paddedCanvas.width - decoratedChunk.width) / 2;
-          pctx.drawImage(decoratedChunk, offsetX, 0);
+          const offsetY = (paddedCanvas.height - decoratedChunk.height) / 2;
+          pctx.drawImage(decoratedChunk, offsetX, offsetY);
           
-          // Use padded canvas
+          // Use padded version
           chunkCanvas.width = paddedCanvas.width;
           chunkCanvas.height = paddedCanvas.height;
           chunkCtx.drawImage(paddedCanvas, 0, 0);
         } else {
+          // This chunk is the tallest/widest — update max
+          window.finalChunkWidth = decoratedChunk.width;
+          window.finalChunkHeight = decoratedChunk.height;
+          
           chunkCanvas.width = decoratedChunk.width;
           chunkCanvas.height = decoratedChunk.height;
           chunkCtx.drawImage(decoratedChunk, 0, 0);
