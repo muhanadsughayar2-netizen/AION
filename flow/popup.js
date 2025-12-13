@@ -903,7 +903,6 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
       if (response.success) {
         savedCount++;
         lastDataUrl = chunkDataUrl;
-        incrementGlobalCounter();
       } else {
         // Abort on first failure - don't continue with partial save
         const savedInfo = savedCount > 0 ? ` (${savedCount} parts already saved)` : '';
@@ -948,6 +947,7 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
         status.textContent = 'Full page captured! ✓';
       }
       status.className = 'status active';
+      incrementGlobalCounter();
     } else {
       throw new Error('Failed to save full page capture');
     }

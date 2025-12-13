@@ -1049,7 +1049,7 @@ function handleMouseMove(e) {
     ctx.lineTo(x, y);
     ctx.stroke();
     
-    // Draw white arrowhead (always white for visibility)
+    // Draw white arrowhead with dark border (visible on any background)
     ctx.fillStyle = '#fff';
     const angle = Math.atan2(y - startY, x - startX);
     const headLength = 20;
@@ -1059,6 +1059,9 @@ function handleMouseMove(e) {
     ctx.lineTo(x - headLength * Math.cos(angle + Math.PI / 6), y - headLength * Math.sin(angle + Math.PI / 6));
     ctx.closePath();
     ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.stroke();
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
     return;
@@ -2108,7 +2111,7 @@ function redraw() {
       ctx.lineTo(ann.x2, ann.y2);
       ctx.stroke();
       
-      // Draw white arrowhead (always white for visibility)
+      // Draw white arrowhead with dark border (visible on any background)
       ctx.fillStyle = '#fff';
       const angle = Math.atan2(ann.y2 - ann.y1, ann.x2 - ann.x1);
       const headLength = 20;
@@ -2124,6 +2127,9 @@ function redraw() {
       );
       ctx.closePath();
       ctx.fill();
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1;
+      ctx.stroke();
       ctx.shadowBlur = 0;
     }
   });
