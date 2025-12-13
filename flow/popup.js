@@ -2402,90 +2402,27 @@ async function handleDeleteSnap(index) {
   }
 }
 
-// === GLOBAL COUNTER - Custom Text (expands + celebrates) ===
+// === GLOBAL COUNTER - Hits.sh (fetch SVG as text and inject) ===
 async function loadGlobalCounter() {
   try {
-    const response = await fetch('https://hits.sh/snaptoai.com/screenshots.txt');
-    const text = await response.text();
-    let count = parseInt(text.trim()) || 10000;
-
-    // Format number
-    let displayCount = count.toLocaleString();
-
-    // Elements
-    const container = document.getElementById('globalCounterContainer');
-    const title = document.getElementById('counterTitle');
-    const counter = document.getElementById('globalCounter');
-    const message = document.getElementById('counterMessage');
-
-    if (!container || !counter) return;
-
-    // Reset
-    container.style.padding = '16px';
-    counter.style.fontSize = '28px';
-    counter.style.textShadow = '0 0 20px #00FFFF';
-    if (message) {
-      message.style.opacity = '0';
-      message.textContent = '';
-    }
-
-    counter.textContent = displayCount + ' screenshots captured';
-
-    // EXPAND & CELEBRATE at milestones
-    if (count >= 1000000000) { // 1B+
-      container.style.padding = '40px';
-      counter.style.fontSize = '60px';
-      counter.style.textShadow = '0 0 50px #00FFFF';
-      if (message) {
-        message.textContent = '🚀 ONE BILLION! The AI revolution is here!';
-        message.style.opacity = '1';
-      }
-    } else if (count >= 100000000) { // 100M+
-      container.style.padding = '35px';
-      counter.style.fontSize = '54px';
-      counter.style.textShadow = '0 0 45px #00FFFF';
-      if (message) {
-        message.textContent = '🔥 100 MILLION — we are unstoppable!';
-        message.style.opacity = '1';
-      }
-    } else if (count >= 10000000) { // 10M+
-      container.style.padding = '30px';
-      counter.style.fontSize = '48px';
-      counter.style.textShadow = '0 0 40px #00FFFF';
-      if (message) {
-        message.textContent = '🌟 10 MILLION screenshots — thank you!';
-        message.style.opacity = '1';
-      }
-    } else if (count >= 1000000) { // 1M+
-      container.style.padding = '28px';
-      counter.style.fontSize = '42px';
-      counter.style.textShadow = '0 0 35px #00FFFF';
-      if (message) {
-        message.textContent = '🎉 WE HIT 1 MILLION! Keep shipping!';
-        message.style.opacity = '1';
-      }
-    } else if (count >= 100000) { // 100K+
-      container.style.padding = '24px';
-      counter.style.fontSize = '36px';
-      counter.style.textShadow = '0 0 30px #00FFFF';
-    } else if (count >= 10000) { // 10K+
-      counter.style.fontSize = '32px';
-    }
-
+    const response = await fetch('https://hits.sh/snaptoai.com/screenshots.svg?label=&color=00FFFF&style=flat&extraCount=10000');
+    const svgText = await response.text();
+    document.getElementById('globalCounter').innerHTML = svgText;
   } catch (error) {
-    const counter = document.getElementById('globalCounter');
-    if (counter) counter.textContent = '10,000+ screenshots captured';
+    document.getElementById('globalCounter').innerHTML = '<span style="color:#00FFFF;">10,000+ shipped worldwide</span>';
   }
 }
 
-// Load on popup open and refresh every 30 seconds
-document.addEventListener('DOMContentLoaded', loadGlobalCounter);
+// Refresh every 30 seconds
 setInterval(loadGlobalCounter, 30000);
+
+// On popup open
+document.addEventListener('DOMContentLoaded', loadGlobalCounter);
 
 // Increment counter
 async function incrementGlobalCounter() {
   try {
     await fetch('https://hits.sh/snaptoai.com/screenshots/');
-    loadGlobalCounter(); // Immediate refresh
+    loadGlobalCounter(); // Refresh immediately
   } catch (e) {}
 }
