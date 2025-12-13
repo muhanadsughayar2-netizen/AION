@@ -2405,8 +2405,8 @@ async function handleDeleteSnap(index) {
 // === GLOBAL COUNTER - Hits.sh (reliable, free, real-time) ===
 async function incrementGlobalCounter() {
   try {
-    // Increment the real count by 1
-    await fetch('https://hits.sh/snaptoai.com/screenshots/');
+    // Increment the real count by 1 (matches set/10000 endpoint)
+    await fetch('https://hits.sh/snaptoai.com/screenshots/set/10000/');
     
     // Refresh the SVG image to show updated number (cache bust)
     const img = document.getElementById('globalCounterImg');
