@@ -2478,7 +2478,8 @@ async function loadGlobalCounter() {
   }
 }
 
-// Refresh every 30 seconds
+// Load on popup open and refresh every 30 seconds
+document.addEventListener('DOMContentLoaded', loadGlobalCounter);
 setInterval(loadGlobalCounter, 30000);
 
 // Increment counter
