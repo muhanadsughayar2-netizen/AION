@@ -567,6 +567,7 @@ function setupEventListeners() {
         loadSnaps().then(updateUI);
         status.textContent = 'Full page captured! ✓';
         status.className = 'status active';
+        incrementGlobalCounter();
       } else {
         status.textContent = request.error || 'Full page capture failed';
         status.className = 'status error';
@@ -902,6 +903,7 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
       if (response.success) {
         savedCount++;
         lastDataUrl = chunkDataUrl;
+        incrementGlobalCounter();
       } else {
         // Abort on first failure - don't continue with partial save
         const savedInfo = savedCount > 0 ? ` (${savedCount} parts already saved)` : '';
@@ -2399,3 +2401,28 @@ async function handleDeleteSnap(index) {
     }, 2000);
   }
 }
+
+// === GLOBAL COUNTER - Hits.sh (reliable, free, real-time) ===
+async function incrementGlobalCounter() {
+  try {
+    // Increment the real count by 1
+    await fetch('https://hits.sh/snaptoai.com/screenshots/');
+    
+    // Refresh the SVG image to show updated number (cache bust)
+    const img = document.getElementById('globalCounterImg');
+    if (img) {
+      img.src = img.src.split('?')[0] + '?' + Date.now();
+    }
+  } catch (e) {
+    // Silent fail — not critical
+    console.log('Counter increment failed (offline?)');
+  }
+}
+
+// Auto-refresh counter every 30 seconds
+setInterval(() => {
+  const img = document.getElementById('globalCounterImg');
+  if (img) {
+    img.src = img.src.split('?')[0] + '?' + Date.now();
+  }
+}, 30000);
