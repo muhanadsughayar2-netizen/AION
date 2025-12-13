@@ -2402,27 +2402,27 @@ async function handleDeleteSnap(index) {
   }
 }
 
-// === GLOBAL COUNTER - Hits.sh (reliable, free, real-time) ===
-async function incrementGlobalCounter() {
+// === GLOBAL COUNTER - Hits.sh (fetch SVG as text and inject) ===
+async function loadGlobalCounter() {
   try {
-    // Increment the real count by 1 (matches set/10000 endpoint)
-    await fetch('https://hits.sh/snaptoai.com/screenshots/set/10000/');
-    
-    // Refresh the SVG image to show updated number (cache bust)
-    const img = document.getElementById('globalCounterImg');
-    if (img) {
-      img.src = img.src.split('?')[0] + '?' + Date.now();
-    }
-  } catch (e) {
-    // Silent fail — not critical
-    console.log('Counter increment failed (offline?)');
+    const response = await fetch('https://hits.sh/snaptoai.com/screenshots.svg?label=&color=00FFFF&style=flat&extraCount=10000');
+    const svgText = await response.text();
+    document.getElementById('globalCounter').innerHTML = svgText;
+  } catch (error) {
+    document.getElementById('globalCounter').innerHTML = '<span style="color:#00FFFF;">10,000+ shipped worldwide</span>';
   }
 }
 
-// Auto-refresh counter every 30 seconds
-setInterval(() => {
-  const img = document.getElementById('globalCounterImg');
-  if (img) {
-    img.src = img.src.split('?')[0] + '?' + Date.now();
-  }
-}, 30000);
+// Refresh every 30 seconds
+setInterval(loadGlobalCounter, 30000);
+
+// On popup open
+document.addEventListener('DOMContentLoaded', loadGlobalCounter);
+
+// Increment counter
+async function incrementGlobalCounter() {
+  try {
+    await fetch('https://hits.sh/snaptoai.com/screenshots/');
+    loadGlobalCounter(); // Refresh immediately
+  } catch (e) {}
+}
