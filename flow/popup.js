@@ -11,6 +11,76 @@ let lastFullPageCaptureInfo = null;
 // Status reset timeout
 let statusResetTimeout = null;
 
+// Full-page capture timeout (detects when page is inaccessible)
+let fullPageCaptureTimeout = null;
+let fullPageCaptureAborted = false; // Flag to ignore late progress messages after timeout
+const FULL_PAGE_TIMEOUT_MS = 12000; // 12 seconds - if no progress, page is likely inaccessible
+
+// Handle full-page capture timeout - called when no progress received
+function handleFullPageTimeout() {
+  console.log('[SnapToAI] Full-page capture timeout - page may be inaccessible');
+  
+  // Set abort flag to ignore any late-arriving progress/completion messages
+  fullPageCaptureAborted = true;
+  
+  // Clear the timeout variable
+  fullPageCaptureTimeout = null;
+  
+  const overlay = document.getElementById('fullPageOverlay');
+  const status = document.getElementById('status');
+  const fullPageButton = document.getElementById('fullPageButton');
+  
+  // Hide overlay
+  if (overlay) overlay.style.display = 'none';
+  
+  // Disconnect port
+  if (fullPageCapturePort) {
+    fullPageCapturePort.disconnect();
+    fullPageCapturePort = null;
+  }
+  
+  // Re-enable button
+  if (fullPageButton) fullPageButton.disabled = false;
+  
+  // Show error message
+  if (status) {
+    status.textContent = "Can't access this page - try a different site or check permissions";
+    status.className = 'status error';
+    setTimeout(() => {
+      status.textContent = 'SnapToAI: Ready';
+      status.className = 'status';
+    }, 4000);
+  }
+  
+  // Notify background to reset capture state and stop content script
+  chrome.runtime.sendMessage({ action: 'fullPageCaptureAborted' }).catch(() => {});
+}
+
+// Start/reset the full-page capture timeout
+function startFullPageTimeout() {
+  // Clear any existing timeout
+  if (fullPageCaptureTimeout) {
+    clearTimeout(fullPageCaptureTimeout);
+  }
+  // Start new timeout
+  fullPageCaptureTimeout = setTimeout(handleFullPageTimeout, FULL_PAGE_TIMEOUT_MS);
+}
+
+// Clear the full-page capture timeout and reset abort flag
+function clearFullPageTimeout() {
+  if (fullPageCaptureTimeout) {
+    clearTimeout(fullPageCaptureTimeout);
+    fullPageCaptureTimeout = null;
+  }
+  fullPageCaptureAborted = false;
+}
+
+// Reset abort flag when starting a new capture
+function resetFullPageCaptureState() {
+  clearFullPageTimeout();
+  fullPageCaptureAborted = false;
+}
+
 // ===== ENHANCED STATUS SYSTEM =====
 // Updates status text and dot with proper styling
 function setStatus(message, type = 'default', duration = null) {
@@ -674,13 +744,28 @@ function setupEventListeners() {
     }
     // Listen for full page capture progress updates
     if (request.action === 'fullPageProgress') {
+      // Ignore late messages if capture was aborted
+      if (fullPageCaptureAborted) {
+        console.log('[SnapToAI] Ignoring late progress message after abort');
+        return;
+      }
       const overlayStatus = document.getElementById('fullPageStatus');
       if (overlayStatus) {
         overlayStatus.textContent = `Capturing full page... ${request.progress}%`;
       }
+      // Reset timeout on each progress update (page is responding)
+      startFullPageTimeout();
     }
     // Listen for full page capture completion
     if (request.action === 'fullPageComplete') {
+      // Ignore late messages if capture was aborted
+      if (fullPageCaptureAborted) {
+        console.log('[SnapToAI] Ignoring late completion message after abort');
+        return;
+      }
+      // Clear the timeout - capture completed
+      clearFullPageTimeout();
+      
       const overlay = document.getElementById('fullPageOverlay');
       const status = document.getElementById('status');
       const fullPageButton = document.getElementById('fullPageButton');
@@ -707,6 +792,13 @@ function setupEventListeners() {
     
     // Listen for stitch request from background
     if (request.action === 'stitchFullPage') {
+      // Ignore late messages if capture was aborted
+      if (fullPageCaptureAborted) {
+        console.log('[SnapToAI] Ignoring late stitch message after abort');
+        return;
+      }
+      // Clear timeout - capture phase succeeded, now stitching
+      clearFullPageTimeout();
       stitchFullPageImages(request.screenshots, request.viewportWidth, request.viewportHeight, request.isAIPlatform);
     }
   });
@@ -1214,6 +1306,9 @@ async function handleFullPageClick() {
   const overlay = document.getElementById('fullPageOverlay');
   const overlayStatus = document.getElementById('fullPageStatus');
   
+  // Reset abort flag and clear any stale timeout from previous captures
+  resetFullPageCaptureState();
+  
   // Disable button during operation
   fullPageButton.disabled = true;
   
@@ -1260,12 +1355,16 @@ async function handleFullPageClick() {
     if (response.success) {
       // Full page capture initiated - we'll receive progress updates via messages
       overlayStatus.textContent = 'Scrolling page... 0%';
+      // Start timeout to detect inaccessible pages
+      startFullPageTimeout();
     } else {
       throw new Error(response.error || 'Failed to start full page capture');
     }
   } catch (error) {
     // Use console.log for expected situations (restricted pages, etc.)
     console.log('[SnapToAI] Capture not available:', error.message || error);
+    // Clear timeout on error
+    clearFullPageTimeout();
     // Disconnect port on error
     if (fullPageCapturePort) {
       fullPageCapturePort.disconnect();

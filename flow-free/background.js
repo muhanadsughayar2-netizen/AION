@@ -94,6 +94,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log('[SnapToAI] Full page capture completed, flag reset');
     sendResponse({ success: true });
     return true;
+  } else if (request.action === 'fullPageCaptureAborted') {
+    // Timeout/abort from popup - reset capture state and notify content script
+    isFullPageCaptureInProgress = false;
+    fullPageCapturePort = null;
+    console.log('[SnapToAI] Full page capture aborted (timeout or user cancel)');
+    
+    // Try to notify content script to stop scrolling
+    chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
+      if (tab?.id) {
+        chrome.tabs.sendMessage(tab.id, { action: 'abortFullPageCapture' }).catch(() => {
+          // Content script may not be running - that's fine
+        });
+      }
+    }).catch(() => {});
+    
+    sendResponse({ success: true });
+    return true;
   } else if (request.action === 'getSettings') {
     // Get current settings
     getSettings().then(sendResponse);

@@ -19,6 +19,7 @@
   
   // Guard against concurrent full page captures in this content script instance
   let isFullPageCaptureRunning = false;
+  let isFullPageCaptureAborted = false; // Flag to stop capture loop when aborted
 
   document.addEventListener('mousemove', (e) => {
     lastMouseX = e.clientX;
@@ -132,6 +133,8 @@
           sendResponse({ success: false, error: 'already_running' });
           return;
         }
+        // Reset abort flag for new capture
+        isFullPageCaptureAborted = false;
         // Start full page capture with visible scrolling - WRAPPED IN SAFE HANDLER
         safeFullPageCapture(request.tabId)
           .then(sendResponse)
@@ -141,6 +144,14 @@
             sendResponse({ success: false, error: 'Page not capturable' });
           });
         return true;
+      } else if (request.action === 'abortFullPageCapture') {
+        // Popup/background requested abort (timeout or user cancel)
+        console.log('[SnapToAI] Full page capture abort received');
+        isFullPageCaptureAborted = true;
+        isFullPageCaptureRunning = false;
+        removeFullPageOverlay();
+        sendResponse({ success: true });
+        return;
       }
     } catch (err) {
       // NEVER let errors bubble up to Chrome
@@ -2640,6 +2651,12 @@
       }
       
       while (captureCount < maxCaptures && consecutiveFails < MAX_CONSECUTIVE_FAILS) {
+        // Check if capture was aborted (timeout from popup)
+        if (isFullPageCaptureAborted) {
+          console.log('[SnapToAI] Full page capture aborted - stopping loop');
+          break;
+        }
+        
         // Keep service worker alive during long captures
         await keepServiceWorkerAlive();
         
@@ -2762,6 +2779,13 @@
       
       if (screenshots.length === 0) {
         throw new Error('No screenshots captured');
+      }
+      
+      // If aborted, don't send screenshots - just clean up
+      if (isFullPageCaptureAborted) {
+        console.log('[SnapToAI] Capture aborted - not sending screenshots');
+        isFullPageCaptureRunning = false;
+        return { success: false, error: 'Capture aborted' };
       }
       
       // Send screenshots to background for stitching
