@@ -952,10 +952,18 @@ function handleMouseMove(e) {
     
     let { x: cx, y: cy, width: cw, height: ch } = cropRect;
     
+    // For full-page groups: smart vertical cropping based on page position
+    const isMultiPageFullPage = isFullPageMode && pages && pages.length > 1;
+    const isFirstPage = currentPageIndex === 0;
+    const isLastPage = currentPageIndex === pages.length - 1;
+    
     if (cropHandle === 'move') {
       // Move: preserve size, just change position
       cx += dx;
-      cy += dy;
+      // Only allow vertical move for single images (not full-page groups)
+      if (!isMultiPageFullPage) {
+        cy += dy;
+      }
       // Clamp position to keep box inside canvas
       if (cx < 0) cx = 0;
       if (cy < 0) cy = 0;
@@ -964,9 +972,18 @@ function handleMouseMove(e) {
     } else {
       // Resize handles
       if (cropHandle.includes('l')) { cx += dx; cw -= dx; }
-      if (cropHandle.includes('t')) { cy += dy; ch -= dy; }
       if (cropHandle.includes('r')) cw += dx;
-      if (cropHandle.includes('b')) ch += dy;
+      
+      // Vertical resize: allow on boundary pages or single images
+      if (!isMultiPageFullPage) {
+        // Single image: full cropping
+        if (cropHandle.includes('t')) { cy += dy; ch -= dy; }
+        if (cropHandle.includes('b')) ch += dy;
+      } else {
+        // Full-page group: smart vertical cropping
+        if (isFirstPage && cropHandle === 't') { cy += dy; ch -= dy; }
+        if (isLastPage && cropHandle === 'b') ch += dy;
+      }
       
       // Prevent too small
       if (cw < 50) cw = 50;
@@ -982,7 +999,17 @@ function handleMouseMove(e) {
     cropDragStartY = y;
     
     redraw();
-    updateStatus(`Crop: ${Math.round(cw)} × ${Math.round(ch)}`);
+    if (isMultiPageFullPage) {
+      if (isFirstPage) {
+        updateStatus(`Crop: ${Math.round(cw)}px wide, top trim ${Math.round(cy)}px`);
+      } else if (isLastPage) {
+        updateStatus(`Crop: ${Math.round(cw)}px wide, bottom trim ${Math.round(canvas.height - cy - ch)}px`);
+      } else {
+        updateStatus(`Sidebar crop: ${Math.round(cw)}px wide (left/right only on this page)`);
+      }
+    } else {
+      updateStatus(`Crop: ${Math.round(cw)} × ${Math.round(ch)}`);
+    }
     return;
   }
   
@@ -1198,11 +1225,16 @@ function drawCropPreview() {
   ctx.fillText(`${Math.round(width)} x ${Math.round(height)}`, x1 + 5, y1 - 8);
 }
 
-// Draw final crop rectangle with 8 handles
+// Draw final crop rectangle with smart handles based on mode and page position
 function drawCropRect() {
   if (!cropRect) return;
   
   const { x, y, width, height } = cropRect;
+  
+  // Check if full-page group and page position
+  const isMultiPageFullPage = isFullPageMode && pages && pages.length > 1;
+  const isFirstPage = currentPageIndex === 0;
+  const isLastPage = currentPageIndex === pages.length - 1;
   
   // Draw semi-transparent overlay outside crop area
   ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
@@ -1218,38 +1250,72 @@ function drawCropRect() {
   ctx.strokeRect(x, y, width, height);
   ctx.setLineDash([]);
   
-  // Draw 8 handles (corners + edges)
   const hs = 12;
   ctx.fillStyle = '#007AFF';
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 2;
   
-  // Corner handles
-  ctx.fillRect(x - hs/2, y - hs/2, hs, hs);
-  ctx.strokeRect(x - hs/2, y - hs/2, hs, hs);
-  ctx.fillRect(x + width - hs/2, y - hs/2, hs, hs);
-  ctx.strokeRect(x + width - hs/2, y - hs/2, hs, hs);
-  ctx.fillRect(x - hs/2, y + height - hs/2, hs, hs);
-  ctx.strokeRect(x - hs/2, y + height - hs/2, hs, hs);
-  ctx.fillRect(x + width - hs/2, y + height - hs/2, hs, hs);
-  ctx.strokeRect(x + width - hs/2, y + height - hs/2, hs, hs);
-  
-  // Edge handles (centers of each side)
-  ctx.fillRect(x + width/2 - hs/2, y - hs/2, hs, hs);
-  ctx.strokeRect(x + width/2 - hs/2, y - hs/2, hs, hs);
-  ctx.fillRect(x + width/2 - hs/2, y + height - hs/2, hs, hs);
-  ctx.strokeRect(x + width/2 - hs/2, y + height - hs/2, hs, hs);
-  ctx.fillRect(x - hs/2, y + height/2 - hs/2, hs, hs);
-  ctx.strokeRect(x - hs/2, y + height/2 - hs/2, hs, hs);
-  ctx.fillRect(x + width - hs/2, y + height/2 - hs/2, hs, hs);
-  ctx.strokeRect(x + width - hs/2, y + height/2 - hs/2, hs, hs);
-  
-  // Draw dimensions label
-  ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#007AFF';
-  ctx.fillText(`${Math.round(width)} × ${Math.round(height)}`, x + width/2, y + height/2);
+  if (isMultiPageFullPage) {
+    // For full-page groups: show handles based on page position
+    // Always show left/right edge handles
+    ctx.fillRect(x - hs/2, y + height/2 - hs/2, hs, hs);
+    ctx.strokeRect(x - hs/2, y + height/2 - hs/2, hs, hs);
+    ctx.fillRect(x + width - hs/2, y + height/2 - hs/2, hs, hs);
+    ctx.strokeRect(x + width - hs/2, y + height/2 - hs/2, hs, hs);
+    
+    // Top handle: only on first page
+    if (isFirstPage) {
+      ctx.fillRect(x + width/2 - hs/2, y - hs/2, hs, hs);
+      ctx.strokeRect(x + width/2 - hs/2, y - hs/2, hs, hs);
+    }
+    
+    // Bottom handle: only on last page
+    if (isLastPage) {
+      ctx.fillRect(x + width/2 - hs/2, y + height - hs/2, hs, hs);
+      ctx.strokeRect(x + width/2 - hs/2, y + height - hs/2, hs, hs);
+    }
+    
+    // Draw info label
+    ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#007AFF';
+    if (isFirstPage) {
+      ctx.fillText(`Page 1: Crop sidebar + top`, x + width/2, y + height/2);
+    } else if (isLastPage) {
+      ctx.fillText(`Last page: Crop sidebar + bottom`, x + width/2, y + height/2);
+    } else {
+      ctx.fillText(`Sidebar crop only (${Math.round(width)}px)`, x + width/2, y + height/2);
+    }
+  } else {
+    // Single image: show all 8 handles
+    // Corner handles
+    ctx.fillRect(x - hs/2, y - hs/2, hs, hs);
+    ctx.strokeRect(x - hs/2, y - hs/2, hs, hs);
+    ctx.fillRect(x + width - hs/2, y - hs/2, hs, hs);
+    ctx.strokeRect(x + width - hs/2, y - hs/2, hs, hs);
+    ctx.fillRect(x - hs/2, y + height - hs/2, hs, hs);
+    ctx.strokeRect(x - hs/2, y + height - hs/2, hs, hs);
+    ctx.fillRect(x + width - hs/2, y + height - hs/2, hs, hs);
+    ctx.strokeRect(x + width - hs/2, y + height - hs/2, hs, hs);
+    
+    // Edge handles (centers of each side)
+    ctx.fillRect(x + width/2 - hs/2, y - hs/2, hs, hs);
+    ctx.strokeRect(x + width/2 - hs/2, y - hs/2, hs, hs);
+    ctx.fillRect(x + width/2 - hs/2, y + height - hs/2, hs, hs);
+    ctx.strokeRect(x + width/2 - hs/2, y + height - hs/2, hs, hs);
+    ctx.fillRect(x - hs/2, y + height/2 - hs/2, hs, hs);
+    ctx.strokeRect(x - hs/2, y + height/2 - hs/2, hs, hs);
+    ctx.fillRect(x + width - hs/2, y + height/2 - hs/2, hs, hs);
+    ctx.strokeRect(x + width - hs/2, y + height/2 - hs/2, hs, hs);
+    
+    // Draw dimensions label
+    ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#007AFF';
+    ctx.fillText(`${Math.round(width)} × ${Math.round(height)}`, x + width/2, y + height/2);
+  }
 }
 
 // ========================================
@@ -2808,9 +2874,17 @@ function enterCropMode() {
   canvas.style.cursor = 'crosshair';
   redraw();
   
-  // Show helpful message for full-page mode
+  // Show helpful message based on mode
   if (isFullPageMode && pages && pages.length > 1) {
-    updateStatus(`Crop mode: Left/right crop applies to ALL ${pages.length} pages. Drag handles to adjust.`);
+    const isFirstPage = currentPageIndex === 0;
+    const isLastPage = currentPageIndex === pages.length - 1;
+    if (isFirstPage) {
+      updateStatus(`Page 1: Crop sidebars (all pages) + top edge. Navigate to last page to crop bottom.`);
+    } else if (isLastPage) {
+      updateStatus(`Last page: Crop sidebars (all pages) + bottom edge. Navigate to page 1 to crop top.`);
+    } else {
+      updateStatus(`Middle page: Sidebar crop only (applies to all ${pages.length} pages).`);
+    }
   } else {
     updateStatus('Drag the handles to crop. Click Done when ready.');
   }
@@ -3043,6 +3117,31 @@ function getCropHandleAt(pos) {
   const { x, y, width, height } = cropRect;
   const handleSize = 20;
   
+  // For full-page groups: smart vertical cropping
+  // - Left/right: always allowed (sidebar removal)
+  // - Top: only on first page
+  // - Bottom: only on last page
+  const isMultiPageFullPage = isFullPageMode && pages && pages.length > 1;
+  const isFirstPage = currentPageIndex === 0;
+  const isLastPage = currentPageIndex === pages.length - 1;
+  
+  if (isMultiPageFullPage) {
+    // Always allow left/right edges
+    if (Math.abs(pos.x - (x + width)) < handleSize && pos.y > y && pos.y < y + height) return 'r';
+    if (Math.abs(pos.x - x) < handleSize && pos.y > y && pos.y < y + height) return 'l';
+    
+    // Top edge: only on first page
+    if (isFirstPage && Math.abs(pos.y - y) < handleSize && pos.x > x && pos.x < x + width) return 't';
+    
+    // Bottom edge: only on last page
+    if (isLastPage && Math.abs(pos.y - (y + height)) < handleSize && pos.x > x && pos.x < x + width) return 'b';
+    
+    // Move allowed (restricted in handleMouseMove based on page)
+    if (pos.x > x && pos.x < x + width && pos.y > y && pos.y < y + height) return 'move';
+    return null;
+  }
+  
+  // Single images: full 8-handle cropping
   // Check corners first (higher priority)
   if (Math.abs(pos.x - x) < handleSize && Math.abs(pos.y - y) < handleSize) return 'tl';
   if (Math.abs(pos.x - (x + width)) < handleSize && Math.abs(pos.y - y) < handleSize) return 'tr';
