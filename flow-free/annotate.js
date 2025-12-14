@@ -2547,11 +2547,11 @@ async function saveFullPageWithAnnotations() {
       }
     }
     
-    // STEP 2: Process each chunk (only save up to chunksToSave)
+    // STEP 2: Process each chunk
     const savedChunks = [];
     const savedChunkDataUrls = []; // For RE-EDIT functionality
     
-    for (let chunkIndex = 0; chunkIndex < chunksToSave; chunkIndex++) {
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
       const startPage = chunkIndex * PAGES_PER_CHUNK;
       const endPage = Math.min(startPage + PAGES_PER_CHUNK, totalPages);
       const pagesInChunk = endPage - startPage;
