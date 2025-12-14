@@ -1301,14 +1301,20 @@ function updateThumbnails() {
       return msg || fallback;
     };
     
-    const heading = chrome.i18n.getMessage('emptyHeading') || 'Screenshots to AI in One Click';
+    const heading = chrome.i18n.getMessage('emptyHeading') || 'One click. One screenshot.';
     const sub1 = chrome.i18n.getMessage('emptySubheading1') || 'Select All → Copy → Paste.';
-    const sub2 = chrome.i18n.getMessage('emptySubheading2') || 'All 9 screenshots drop as ONE stacked image.';
+    const sub2 = chrome.i18n.getMessage('emptySubheading2') || 'All 9 screenshots drop as ONE stacked image';
     
     emptyState.innerHTML = `
+      <div class="empty-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
       <div class="empty-heading">${heading}</div>
       <div class="empty-subheading">${sub1}</div>
-      <div class="empty-subheading">${sub2}</div>
+      <div class="empty-subheading highlight">${sub2}</div>
     `;
     container.appendChild(emptyState);
     selectionBar.style.display = 'none';
