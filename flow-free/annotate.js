@@ -2433,11 +2433,33 @@ async function save() {
     }
     
     const dataUrl = exportCanvas.toDataURL('image/png');
-    await chrome.runtime.sendMessage({
-      action: 'annotationComplete',
-      dataUrl,
-      index
-    });
+    
+    // Check if this is a chunked group edit (multiple chunks stitched into one)
+    const isChunkedEdit = urlParams.get('chunked') === 'true';
+    
+    if (isChunkedEdit) {
+      // Get all chunk indices that were edited together
+      const stored = await chrome.storage.local.get('editChunkGroup');
+      const chunkIndices = stored.editChunkGroup || [parseInt(index)];
+      
+      // Send special message to replace all chunks with single edited image
+      await chrome.runtime.sendMessage({
+        action: 'chunkedAnnotationComplete',
+        dataUrl,
+        chunkIndices,
+        primaryIndex: parseInt(index)
+      });
+      
+      // Clean up storage
+      await chrome.storage.local.remove('editChunkGroup');
+    } else {
+      // Normal single-image annotation
+      await chrome.runtime.sendMessage({
+        action: 'annotationComplete',
+        dataUrl,
+        index
+      });
+    }
     window.close();
   } catch (error) {
     console.error('Save error:', error);

@@ -616,6 +616,10 @@ function setupEventListeners() {
     if (request.action === 'annotationComplete') {
       handleAnnotationMessage(request);
     }
+    // Listen for chunked annotation completion (multiple chunks edited as one)
+    if (request.action === 'chunkedAnnotationComplete') {
+      handleChunkedAnnotationMessage(request);
+    }
     // Listen for snip completion to show in preview
     if (request.action === 'snipSaved') {
       showLastCapturePreview(request.dataUrl);
@@ -1910,6 +1914,62 @@ async function handleAnnotationMessage(request) {
     status.textContent = 'Flow: Ready';
     status.className = 'status';
   }, 1500);
+}
+
+// Handle chunked annotation message (multiple chunks edited as one image)
+async function handleChunkedAnnotationMessage(request) {
+  const { dataUrl, chunkIndices, primaryIndex } = request;
+  
+  // Get the lowest index (where we'll insert the edited image)
+  const insertIndex = Math.min(...chunkIndices);
+  
+  // Preserve metadata from the first chunk (lowest index) for RE-EDIT functionality
+  const firstChunkMeta = currentSnapMetadata[insertIndex] || {};
+  const preservedMeta = {
+    smartName: firstChunkMeta.smartName,
+    captureGroupId: firstChunkMeta.captureGroupId,
+    url: firstChunkMeta.url,
+    title: firstChunkMeta.title,
+    isChunk: false,
+    isCropped: true,
+    editedFrom: 'chunked_group',
+    originalParts: chunkIndices.length,
+    timestamp: Date.now()
+  };
+  
+  // Sort indices in descending order so we can remove from end first
+  const sortedIndices = [...chunkIndices].sort((a, b) => b - a);
+  
+  // Remove all chunk indices from the arrays (from highest to lowest to maintain indices)
+  for (const idx of sortedIndices) {
+    currentSnaps.splice(idx, 1);
+    currentSnapMetadata.splice(idx, 1);
+  }
+  
+  // Insert the single edited image at the lowest index position
+  currentSnaps.splice(insertIndex, 0, dataUrl);
+  currentSnapMetadata.splice(insertIndex, 0, preservedMeta);
+  
+  // Update storage
+  await chrome.runtime.sendMessage({ 
+    action: 'setSnaps', 
+    snaps: currentSnaps 
+  });
+  await chrome.storage.local.set({ snapMetadata: currentSnapMetadata });
+  
+  // Clear selection since indices changed
+  selectedSnapIds.clear();
+  
+  updateUI();
+  
+  // Show success message
+  const status = document.getElementById('status');
+  status.textContent = 'Edited group saved as single image ✓';
+  status.className = 'status active';
+  setTimeout(() => {
+    status.textContent = 'Flow: Ready';
+    status.className = 'status';
+  }, 2000);
 }
 
 // Track if jsPDF is loaded
