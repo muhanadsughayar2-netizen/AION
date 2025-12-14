@@ -1924,17 +1924,22 @@ async function handleChunkedAnnotationMessage(request) {
   const insertIndex = Math.min(...chunkIndices);
   
   // Preserve metadata from the first chunk (lowest index) for RE-EDIT functionality
+  // Keep the group identity intact so RE-EDIT and display still work
   const firstChunkMeta = currentSnapMetadata[insertIndex] || {};
   const preservedMeta = {
+    // Preserve core identity fields for RE-EDIT functionality
     smartName: firstChunkMeta.smartName,
     captureGroupId: firstChunkMeta.captureGroupId,
     url: firstChunkMeta.url,
     title: firstChunkMeta.title,
+    // Mark as collapsed group (NOT a chunk anymore - single edited image)
     isChunk: false,
-    isCropped: true,
+    collapsedGroup: true, // Flag indicating this was a multi-chunk group that's been edited into one
+    // Lineage tracking for RE-EDIT discovery
     editedFrom: 'chunked_group',
+    wasMultiChunk: true,
     originalParts: chunkIndices.length,
-    timestamp: Date.now()
+    editedAt: Date.now()
   };
   
   // Sort indices in descending order so we can remove from end first
@@ -1950,12 +1955,32 @@ async function handleChunkedAnnotationMessage(request) {
   currentSnaps.splice(insertIndex, 0, dataUrl);
   currentSnapMetadata.splice(insertIndex, 0, preservedMeta);
   
-  // Update storage
+  // Update storage - both snaps and metadata
   await chrome.runtime.sendMessage({ 
     action: 'setSnaps', 
     snaps: currentSnaps 
   });
   await chrome.storage.local.set({ snapMetadata: currentSnapMetadata });
+  
+  // Also update lastFullPageCapture if this was the last capture (for RE-EDIT button)
+  if (firstChunkMeta.captureGroupId) {
+    try {
+      const stored = await chrome.storage.local.get('lastFullPageCapture');
+      if (stored.lastFullPageCapture && stored.lastFullPageCapture.captureGroupId === firstChunkMeta.captureGroupId) {
+        await chrome.storage.local.set({
+          lastFullPageCapture: {
+            ...stored.lastFullPageCapture,
+            chunks: [dataUrl],
+            totalParts: 1,
+            annotatedSingle: true,
+            editedAt: Date.now()
+          }
+        });
+      }
+    } catch (e) {
+      console.log('[SnapToAI] Could not update lastFullPageCapture:', e);
+    }
+  }
   
   // Clear selection since indices changed
   selectedSnapIds.clear();
