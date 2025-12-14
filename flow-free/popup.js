@@ -594,7 +594,7 @@ function setupEventListeners() {
   document.getElementById('selectAllBtn').addEventListener('click', handleSelectAll);
   document.getElementById('copySelectedBtn').addEventListener('click', handleCopySelected);
   document.getElementById('downloadSelectedBtn').addEventListener('click', handleDownloadSelected);
-  document.getElementById('exportPdfBtn').addEventListener('click', handleExportPDF);
+  document.getElementById('exportPdfBtn').addEventListener('click', handleExportPDFDirect);
   
   // Preview modal
   document.getElementById('previewClose').addEventListener('click', closePreview);
@@ -1891,7 +1891,93 @@ async function handleAnnotationMessage(request) {
 let jsPDFLoaded = false;
 let jsPDFLoadPromise = null;
 
-// Handle Export as PDF - Show modal with options
+// Handle Export as PDF - DIRECT export, NO popup, NO options
+async function handleExportPDFDirect() {
+  // Check if any screenshots are selected
+  if (selectedSnapIds.size === 0) {
+    statusError('No screenshots selected');
+    return;
+  }
+  
+  try {
+    const selectedSnaps = Array.from(selectedSnapIds)
+      .sort((a, b) => a - b)
+      .map(index => currentSnaps[index]);
+    
+    // Show processing overlay
+    showProcessingOverlay('Creating PDF...', `${selectedSnaps.length} screenshot${selectedSnaps.length > 1 ? 's' : ''}`);
+    
+    statusExporting();
+    
+    // Load jsPDF if not loaded
+    if (!jsPDFLoaded) {
+      if (!jsPDFLoadPromise) {
+        jsPDFLoadPromise = new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'jspdf.min.js';
+          script.onload = () => {
+            jsPDFLoaded = true;
+            setTimeout(() => resolve(), 200);
+          };
+          script.onerror = () => reject(new Error('Failed to load PDF library'));
+          document.head.appendChild(script);
+        });
+      }
+      await jsPDFLoadPromise;
+    }
+    
+    if (!window.jspdf || typeof window.jspdf.jsPDF === 'undefined') {
+      throw new Error('PDF library not available');
+    }
+    
+    updateProcessingText('Combining screenshots...', 'Creating clean stacked image');
+    
+    // Create ONE clean stacked image - NO borders, NO padding, WHITE background
+    const stackedDataUrl = await createCleanStackedImage(selectedSnaps);
+    
+    // Load stacked image to get dimensions
+    const stackedImg = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = stackedDataUrl;
+    });
+    
+    // Convert pixels to mm (96 DPI)
+    const pxToMm = 25.4 / 96;
+    const pdfWidth = stackedImg.width * pxToMm;
+    const pdfHeight = stackedImg.height * pxToMm;
+    
+    updateProcessingText('Generating PDF...', 'No borders, no margins');
+    
+    // Create PDF with EXACT page size - NO margins
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
+      unit: 'mm',
+      format: [pdfWidth, pdfHeight]
+    });
+    
+    // Add image at 0,0 filling entire page - NO borders, NO padding
+    pdf.addImage(stackedDataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    
+    // Save immediately
+    const timestamp = new Date().toISOString().slice(0, 10);
+    pdf.save(`snaptoai-stacked-${timestamp}.pdf`);
+    
+    hideProcessingOverlay();
+    
+    // Show success toast
+    setStatus('Selected combined & exported as clean PDF! 🔥', 'success', 4000);
+    
+  } catch (error) {
+    console.error('PDF export error:', error);
+    hideProcessingOverlay();
+    statusError('PDF export failed');
+  }
+}
+
+// Handle Export as PDF - Show modal with options (LEGACY - not used)
 async function handleExportPDF() {
   const status = document.getElementById('status');
   
