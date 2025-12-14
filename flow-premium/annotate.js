@@ -952,10 +952,8 @@ function handleMouseMove(e) {
     
     let { x: cx, y: cy, width: cw, height: ch } = cropRect;
     
-    // For full-page groups: smart vertical cropping based on page position
-    const isMultiPageFullPage = isFullPageMode && pages && pages.length > 1;
-    const isFirstPage = currentPageIndex === 0;
-    const isLastPage = currentPageIndex === pages.length - 1;
+    // Check if multi-page full-page mode (must be explicit true check)
+    const isMultiPageFullPage = isFullPageMode === true && Array.isArray(pages) && pages.length > 1;
     
     if (cropHandle === 'move') {
       // Move: preserve size, just change position
@@ -970,19 +968,21 @@ function handleMouseMove(e) {
       if (cx + cw > canvas.width) cx = canvas.width - cw;
       if (cy + ch > canvas.height) cy = canvas.height - ch;
     } else {
-      // Resize handles
+      // Resize handles - horizontal always allowed
       if (cropHandle.includes('l')) { cx += dx; cw -= dx; }
       if (cropHandle.includes('r')) cw += dx;
       
-      // Vertical resize: allow on boundary pages or single images
-      if (!isMultiPageFullPage) {
-        // Single image: full cropping
-        if (cropHandle.includes('t')) { cy += dy; ch -= dy; }
-        if (cropHandle.includes('b')) ch += dy;
-      } else {
-        // Full-page group: smart vertical cropping
+      // Vertical resize logic
+      if (isMultiPageFullPage) {
+        // Full-page group: smart vertical cropping based on page position
+        const isFirstPage = currentPageIndex === 0;
+        const isLastPage = currentPageIndex === pages.length - 1;
         if (isFirstPage && cropHandle === 't') { cy += dy; ch -= dy; }
         if (isLastPage && cropHandle === 'b') ch += dy;
+      } else {
+        // Single image/snip: full vertical cropping allowed
+        if (cropHandle.includes('t')) { cy += dy; ch -= dy; }
+        if (cropHandle.includes('b')) ch += dy;
       }
       
       // Prevent too small
@@ -1000,6 +1000,8 @@ function handleMouseMove(e) {
     
     redraw();
     if (isMultiPageFullPage) {
+      const isFirstPage = currentPageIndex === 0;
+      const isLastPage = currentPageIndex === pages.length - 1;
       if (isFirstPage) {
         updateStatus(`Crop: ${Math.round(cw)}px wide, top trim ${Math.round(cy)}px`);
       } else if (isLastPage) {
@@ -1231,10 +1233,8 @@ function drawCropRect() {
   
   const { x, y, width, height } = cropRect;
   
-  // Check if full-page group and page position
-  const isMultiPageFullPage = isFullPageMode && pages && pages.length > 1;
-  const isFirstPage = currentPageIndex === 0;
-  const isLastPage = currentPageIndex === pages.length - 1;
+  // Check if multi-page full-page mode (must be explicit true check)
+  const isMultiPageFullPage = isFullPageMode === true && Array.isArray(pages) && pages.length > 1;
   
   // Draw semi-transparent overlay outside crop area
   ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
@@ -1257,7 +1257,11 @@ function drawCropRect() {
   
   if (isMultiPageFullPage) {
     // For full-page groups: show handles based on page position
-    // Always show left/right edge handles
+    // Compute boundary flags only inside this block (safe since pages.length > 1)
+    const isFirstPage = currentPageIndex === 0;
+    const isLastPage = currentPageIndex === pages.length - 1;
+    
+    // Always show left/right edge handles (sidebar crop)
     ctx.fillRect(x - hs/2, y + height/2 - hs/2, hs, hs);
     ctx.strokeRect(x - hs/2, y + height/2 - hs/2, hs, hs);
     ctx.fillRect(x + width - hs/2, y + height/2 - hs/2, hs, hs);
@@ -1288,7 +1292,7 @@ function drawCropRect() {
       ctx.fillText(`Sidebar crop only (${Math.round(width)}px)`, x + width/2, y + height/2);
     }
   } else {
-    // Single image: show all 8 handles
+    // Single image/snip: show all 8 handles (corners + edges)
     // Corner handles
     ctx.fillRect(x - hs/2, y - hs/2, hs, hs);
     ctx.strokeRect(x - hs/2, y - hs/2, hs, hs);
@@ -3117,16 +3121,17 @@ function getCropHandleAt(pos) {
   const { x, y, width, height } = cropRect;
   const handleSize = 20;
   
-  // For full-page groups: smart vertical cropping
-  // - Left/right: always allowed (sidebar removal)
-  // - Top: only on first page
-  // - Bottom: only on last page
-  const isMultiPageFullPage = isFullPageMode && pages && pages.length > 1;
-  const isFirstPage = currentPageIndex === 0;
-  const isLastPage = currentPageIndex === pages.length - 1;
+  // Check if multi-page full-page mode (pages array must exist and have >1 pages)
+  // This MUST be false for single images/snips to enable all 8 handles
+  const isMultiPageFullPage = isFullPageMode === true && Array.isArray(pages) && pages.length > 1;
   
   if (isMultiPageFullPage) {
-    // Always allow left/right edges
+    // For full-page groups: smart vertical cropping based on page position
+    // Compute boundary flags only inside this block (safe since pages.length > 1)
+    const isFirstPage = currentPageIndex === 0;
+    const isLastPage = currentPageIndex === pages.length - 1;
+    
+    // Always allow left/right edges (sidebar crop)
     if (Math.abs(pos.x - (x + width)) < handleSize && pos.y > y && pos.y < y + height) return 'r';
     if (Math.abs(pos.x - x) < handleSize && pos.y > y && pos.y < y + height) return 'l';
     
@@ -3141,7 +3146,7 @@ function getCropHandleAt(pos) {
     return null;
   }
   
-  // Single images: full 8-handle cropping
+  // Single images/snips: full 8-handle cropping (corners + edges + move)
   // Check corners first (higher priority)
   if (Math.abs(pos.x - x) < handleSize && Math.abs(pos.y - y) < handleSize) return 'tl';
   if (Math.abs(pos.x - (x + width)) < handleSize && Math.abs(pos.y - y) < handleSize) return 'tr';
