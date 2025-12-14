@@ -1362,14 +1362,15 @@ async function handleFullPageClick() {
     status.textContent = 'Capturing full page...';
     status.className = 'status active';
     
+    // Start timeout BEFORE sending message - catches cases where content script can't load
+    startFullPageTimeout();
+    
     // Send message to background to start full page capture
     const response = await chrome.runtime.sendMessage({ action: 'startFullPageCapture' });
     
     if (response.success) {
       // Full page capture initiated - we'll receive progress updates via messages
       overlayStatus.textContent = 'Scrolling page... 0%';
-      // Start timeout to detect inaccessible pages
-      startFullPageTimeout();
     } else {
       throw new Error(response.error || 'Failed to start full page capture');
     }
