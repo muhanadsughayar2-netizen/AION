@@ -75,9 +75,9 @@ const statusSelected = (count) => setStatus(`${count} selected → will combine 
 const statusCopying = () => setStatus('Copying...', 'copying');
 const statusPasteReady = () => setStatus('Copied! Paste in AI now 🚀', 'paste-ready', 5000);
 const statusDownloading = () => setStatus('Downloading...', 'active');
-const statusDownloaded = () => setStatus('Downloaded! ✓', 'success', 2000);
+const statusDownloaded = () => setStatus('Clean stacked PNG exported! 🔥', 'success', 3000);
 const statusExporting = () => setStatus('Generating PDF...', 'active');
-const statusExported = () => setStatus('PDF ready! ✓', 'success', 2000);
+const statusExported = () => setStatus('Clean stacked PDF exported! 🔥', 'success', 3000);
 const statusDeleted = () => setStatus('Deleted', 'success', 1500);
 const statusCleared = () => setStatus('All cleared', 'success', 1500);
 const statusError = (msg) => setStatus(msg || 'Something went wrong', 'error', 3000);
@@ -1546,8 +1546,14 @@ async function handleCopySelected() {
   }
 }
 
-// Create composite image from multiple snapshots
+// Create composite image from multiple snapshots (for clipboard - with styling)
 async function createCompositeImage(dataUrls) {
+  // Use clean version for clipboard too - no borders/labels
+  return await createCleanStackedImage(dataUrls);
+}
+
+// Create CLEAN stacked image - no padding, no borders, white background
+async function createCleanStackedImage(dataUrls) {
   // Load all images first
   const images = await Promise.all(dataUrls.map(url => {
     return new Promise((resolve, reject) => {
@@ -1558,50 +1564,44 @@ async function createCompositeImage(dataUrls) {
     });
   }));
   
-  // Calculate composite dimensions
-  const padding = 20;
+  // Find max width
   const maxWidth = Math.max(...images.map(img => img.width));
-  const totalHeight = images.reduce((sum, img) => sum + img.height + padding, padding);
   
-  // Create canvas for composite
+  // Calculate SCALED heights for each image (when scaled to maxWidth)
+  const scaledHeights = images.map(img => {
+    const scale = maxWidth / img.width;
+    return Math.round(img.height * scale);
+  });
+  
+  // Total height is sum of ALL scaled heights
+  const totalHeight = scaledHeights.reduce((sum, h) => sum + h, 0);
+  
+  // Create canvas - exact size, no extra space
   const canvas = document.createElement('canvas');
-  canvas.width = maxWidth + (padding * 2);
+  canvas.width = maxWidth;
   canvas.height = totalHeight;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   
-  // Fill background
-  ctx.fillStyle = '#1a1a2e';
+  // Fill with white background
+  ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
-  // Draw each image vertically stacked
-  let currentY = padding;
+  // Draw each image vertically stacked - NO gaps, NO borders, NO labels
+  let currentY = 0;
   images.forEach((img, index) => {
-    const x = (canvas.width - img.width) / 2; // Center horizontally
+    const scaledHeight = scaledHeights[index];
     
-    // Add subtle border and shadow
-    ctx.shadowColor = 'rgba(0, 217, 255, 0.3)';
-    ctx.shadowBlur = 10;
-    ctx.strokeStyle = 'rgba(0, 217, 255, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x - 1, currentY - 1, img.width + 2, img.height + 2);
-    ctx.shadowBlur = 0;
+    // Draw image at full width with correct scaled height
+    ctx.drawImage(img, 0, currentY, maxWidth, scaledHeight);
     
-    // Draw image
-    ctx.drawImage(img, x, currentY);
-    
-    // Add snap number label
-    ctx.fillStyle = 'rgba(0, 217, 255, 0.9)';
-    ctx.font = 'bold 16px Arial';
-    ctx.fillText(`Snap ${index + 1}`, x + 10, currentY + 25);
-    
-    currentY += img.height + padding;
+    currentY += scaledHeight;
   });
   
   // Add invisible watermark for AI detection
   addInvisibleWatermark(canvas);
   
-  // Convert to dataURL
-  return canvas.toDataURL('image/png');
+  // Convert to high-quality PNG
+  return canvas.toDataURL('image/png', 1.0);
 }
 
 // Handle Copy Single (individual snap)
@@ -1651,7 +1651,7 @@ async function handleCopySingle(index) {
   }
 }
 
-// Handle Download Selected
+// Handle Download Selected - Creates ONE clean stacked PNG
 async function handleDownloadSelected() {
   if (selectedSnapIds.size === 0) {
     statusError('No snaps selected');
@@ -1661,32 +1661,23 @@ async function handleDownloadSelected() {
   try {
     const selectedSnaps = Array.from(selectedSnapIds)
       .sort((a, b) => a - b)
-      .map(index => ({ index, dataUrl: currentSnaps[index] }));
+      .map(index => currentSnaps[index]);
     
-    // Show processing overlay for multiple files
-    if (selectedSnaps.length > 1) {
-      showProcessingOverlay('Downloading images...', `${selectedSnaps.length} high-quality files`);
-    }
+    // Show processing overlay
+    showProcessingOverlay('Creating stacked PNG...', `${selectedSnaps.length} screenshot${selectedSnaps.length > 1 ? 's' : ''}`);
     
     statusDownloading();
     
-    // Download each snap
-    for (let i = 0; i < selectedSnaps.length; i++) {
-      const { index, dataUrl } = selectedSnaps[i];
-      
-      // Update processing overlay with progress
-      if (selectedSnaps.length > 1) {
-        updateProcessingText(`Downloading ${i + 1}/${selectedSnaps.length}`, 'Preparing high-quality PNG...');
-      }
-      
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = `snaptoai_snap_${index + 1}.png`;
-      link.click();
-      
-      // Small delay between downloads
-      await new Promise(resolve => setTimeout(resolve, 200));
-    }
+    // Create ONE clean stacked image from all selected
+    updateProcessingText('Combining images...', 'No extra space or borders');
+    const stackedDataUrl = await createCleanStackedImage(selectedSnaps);
+    
+    // Download the single combined PNG
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const link = document.createElement('a');
+    link.href = stackedDataUrl;
+    link.download = `snaptoai-stacked-${timestamp}.png`;
+    link.click();
     
     // Hide processing overlay
     hideProcessingOverlay();
@@ -2029,7 +2020,7 @@ document.querySelectorAll('.pdf-option-btn').forEach(btn => {
   });
 });
 
-// Export Combined PDF (original function refactored)
+// Export Combined PDF - Clean stacked, NO margins, NO borders, NO page numbers
 async function exportPDFCombined(snaps, mode) {
   const status = document.getElementById('status');
   
@@ -2037,8 +2028,7 @@ async function exportPDFCombined(snaps, mode) {
     // Show processing overlay with timer
     showProcessingOverlay('Generating PDF...', `${snaps.length} screenshot${snaps.length > 1 ? 's' : ''}`);
     
-    status.textContent = 'Loading PDF library...';
-    status.className = 'status active';
+    statusExporting();
     
     // Load jsPDF once (or wait if already loading)
     if (!jsPDFLoaded) {
@@ -2049,7 +2039,6 @@ async function exportPDFCombined(snaps, mode) {
           script.onload = () => {
             console.log('jsPDF loaded successfully');
             jsPDFLoaded = true;
-            // Wait for library to be available on window
             setTimeout(() => resolve(), 200);
           };
           script.onerror = (err) => {
@@ -2067,76 +2056,54 @@ async function exportPDFCombined(snaps, mode) {
       throw new Error('jsPDF library not available after loading');
     }
     
-    status.textContent = 'Generating PDF...';
+    updateProcessingText('Combining images...', 'Creating clean stacked PDF');
     
+    // First, create a clean stacked image from all screenshots
+    const stackedDataUrl = await createCleanStackedImage(snaps);
+    
+    // Load the stacked image to get dimensions
+    const stackedImg = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = stackedDataUrl;
+    });
+    
+    // Calculate PDF page size to exactly fit the image (NO margins)
+    // Convert pixels to mm (assuming 96 DPI: 1 inch = 25.4mm, 96 pixels = 1 inch)
+    const pxToMm = 25.4 / 96;
+    const pdfWidth = stackedImg.width * pxToMm;
+    const pdfHeight = stackedImg.height * pxToMm;
+    
+    // Create PDF with custom page size matching the image exactly
     const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = 210; // A4 width in mm
-    const pageHeight = 297; // A4 height in mm
-    const margin = 10;
-    const maxWidth = pageWidth - (2 * margin);
-    const maxHeight = pageHeight - (2 * margin);
+    const pdf = new jsPDF({
+      orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
+      unit: 'mm',
+      format: [pdfWidth, pdfHeight]
+    });
     
-    for (let i = 0; i < snaps.length; i++) {
-      if (i > 0) {
-        pdf.addPage();
-      }
-      
-      // Update processing overlay with progress
-      updateProcessingText(`Processing page ${i + 1}/${snaps.length}`, 'Adding high-quality image...');
-      
-      // Add image to PDF
-      const img = await createImageBitmap(await (await fetch(snaps[i])).blob());
-      const aspectRatio = img.width / img.height;
-      
-      let imgWidth = maxWidth;
-      let imgHeight = imgWidth / aspectRatio;
-      
-      // If image is too tall, scale by height instead
-      if (imgHeight > maxHeight) {
-        imgHeight = maxHeight;
-        imgWidth = imgHeight * aspectRatio;
-      }
-      
-      // Center the image
-      const x = (pageWidth - imgWidth) / 2;
-      const y = margin;
-      
-      pdf.addImage(snaps[i], 'PNG', x, y, imgWidth, imgHeight);
-      
-      // Add page number at bottom
-      pdf.setFontSize(10);
-      pdf.setTextColor(150);
-      pdf.text(`Snap ${i + 1} of ${snaps.length}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
-    }
+    // Add image at position 0,0 filling the entire page - NO margins, NO borders
+    pdf.addImage(stackedDataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    
+    // NO page numbers, NO headers, NO footers - just clean image
     
     // Update overlay for save phase
     updateProcessingText('Saving PDF...', 'Almost done');
     
     // Save PDF
     const timestamp = new Date().toISOString().slice(0, 10);
-    const filename = mode === 'selected' ? `snaptoai-selected-${timestamp}.pdf` : `snaptoai-screenshots-${timestamp}.pdf`;
+    const filename = mode === 'selected' ? `snaptoai-stacked-${timestamp}.pdf` : `snaptoai-screenshots-${timestamp}.pdf`;
     pdf.save(filename);
     
     // Hide processing overlay
     hideProcessingOverlay();
     
-    status.textContent = 'PDF exported ✓';
-    status.className = 'status active';
-    
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 2000);
+    statusExported();
   } catch (error) {
     console.error('PDF export error:', error);
     hideProcessingOverlay();
-    status.textContent = 'PDF export failed';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 2000);
+    statusError('PDF export failed');
   }
 }
 
