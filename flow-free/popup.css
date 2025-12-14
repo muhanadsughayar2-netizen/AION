@@ -101,17 +101,22 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+  transition: all 0.3s ease;
 }
 
 .status-dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #00d9ff;
   box-shadow: 0 0 6px rgba(0, 217, 255, 0.6);
   animation: dot-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
 }
 
 @keyframes dot-pulse {
@@ -127,21 +132,64 @@ body {
 
 .status-dot.active {
   background: #00ff88;
-  box-shadow: 0 0 6px rgba(0, 255, 136, 0.6);
-  animation: dot-active 0.5s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.8);
+  animation: dot-active 0.4s ease-in-out infinite;
+}
+
+.status-dot.success {
+  background: #00ff88;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.8);
+  animation: dot-success 0.3s ease-out;
+}
+
+.status-dot.error {
+  background: #ff4444;
+  box-shadow: 0 0 8px rgba(255, 68, 68, 0.8);
+  animation: none;
+}
+
+.status-dot.copying {
+  background: #ffaa00;
+  box-shadow: 0 0 8px rgba(255, 170, 0, 0.8);
+  animation: dot-copying 0.3s ease-in-out infinite;
+}
+
+.status-dot.paste-ready {
+  background: #00ff88;
+  box-shadow: 0 0 12px rgba(0, 255, 136, 1);
+  animation: dot-paste-ready 0.5s ease-in-out infinite;
 }
 
 @keyframes dot-active {
-  0%, 100% {
-    opacity: 0.8;
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+@keyframes dot-success {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.5); }
+  100% { transform: scale(1); }
+}
+
+@keyframes dot-copying {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@keyframes dot-paste-ready {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
   }
-  50% {
-    opacity: 1;
+  50% { 
+    transform: scale(1.3);
+    box-shadow: 0 0 16px rgba(0, 255, 136, 1);
   }
 }
 
 .status {
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   color: #aaa;
   min-height: 16px;
   transition: all 0.3s ease;
@@ -152,6 +200,26 @@ body {
 
 .status.active {
   color: #00d9ff;
+}
+
+.status.success {
+  color: #00ff88;
+}
+
+.status.error {
+  color: #ff4444;
+}
+
+.status.paste-ready {
+  color: #00ff88;
+  font-size: 14px;
+  font-weight: 700;
+  animation: text-glow 1s ease-in-out infinite;
+}
+
+@keyframes text-glow {
+  0%, 100% { text-shadow: 0 0 4px rgba(0, 255, 136, 0.3); }
+  50% { text-shadow: 0 0 12px rgba(0, 255, 136, 0.8); }
 }
 
 /* RE-EDIT Full Page Button - same style as Clear button */

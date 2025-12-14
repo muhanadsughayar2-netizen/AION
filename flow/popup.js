@@ -8,6 +8,81 @@ let selectedSnapIds = new Set();
 // Last full-page capture info for RE-EDIT functionality
 let lastFullPageCaptureInfo = null;
 
+// Status reset timeout
+let statusResetTimeout = null;
+
+// ===== ENHANCED STATUS SYSTEM =====
+// Updates status text and dot with proper styling
+function setStatus(message, type = 'default', duration = null) {
+  const status = document.getElementById('status');
+  const dot = document.getElementById('statusDot');
+  
+  if (!status) return;
+  
+  // Clear any pending reset
+  if (statusResetTimeout) {
+    clearTimeout(statusResetTimeout);
+    statusResetTimeout = null;
+  }
+  
+  // Update text
+  status.textContent = message;
+  
+  // Reset classes
+  status.className = 'status';
+  if (dot) dot.className = 'status-dot';
+  
+  // Apply type-specific styling
+  switch (type) {
+    case 'active':
+      status.classList.add('active');
+      if (dot) dot.classList.add('active');
+      break;
+    case 'success':
+      status.classList.add('success');
+      if (dot) dot.classList.add('success');
+      break;
+    case 'error':
+      status.classList.add('error');
+      if (dot) dot.classList.add('error');
+      break;
+    case 'copying':
+      status.classList.add('active');
+      if (dot) dot.classList.add('copying');
+      break;
+    case 'paste-ready':
+      status.classList.add('paste-ready');
+      if (dot) dot.classList.add('paste-ready');
+      break;
+    default:
+      // Default idle state
+      break;
+  }
+  
+  // Auto-reset to ready state after duration
+  if (duration) {
+    statusResetTimeout = setTimeout(() => {
+      setStatus('Ready', 'default');
+    }, duration);
+  }
+}
+
+// Quick status helpers
+const statusReady = () => setStatus('Ready', 'default');
+const statusCapturing = (type) => setStatus(`Capturing ${type}...`, 'active');
+const statusCaptured = (type) => setStatus(`${type} captured! ✓`, 'success', 2500);
+const statusSelected = (count) => setStatus(`${count} selected`, 'active');
+const statusCopying = () => setStatus('Copying...', 'copying');
+const statusPasteReady = () => setStatus('Copied! Paste in AI now 🚀', 'paste-ready', 5000);
+const statusDownloading = () => setStatus('Downloading...', 'active');
+const statusDownloaded = () => setStatus('Downloaded! ✓', 'success', 2000);
+const statusExporting = () => setStatus('Generating PDF...', 'active');
+const statusExported = () => setStatus('PDF ready! ✓', 'success', 2000);
+const statusDeleted = () => setStatus('Deleted', 'success', 1500);
+const statusCleared = () => setStatus('All cleared', 'success', 1500);
+const statusError = (msg) => setStatus(msg || 'Something went wrong', 'error', 3000);
+// ===== END STATUS SYSTEM =====
+
 // Update RE-EDIT button visibility and text
 function updateReeditButton(smartName = null) {
   const btn = document.getElementById('reeditFullPageBtn');
@@ -995,16 +1070,13 @@ function showLastCapturePreview(dataUrl) {
 // Handle orb button click
 async function handleOrbClick() {
   const orbButton = document.getElementById('orbButton');
-  const status = document.getElementById('status');
   
   // Disable button during operation
   orbButton.disabled = true;
   
   try {
     // Snap button ALWAYS captures - never auto-uploads
-    // Upload only happens via explicit Upload button click
-    status.textContent = 'Snapping...';
-    status.className = 'status active';
+    statusCapturing('screenshot');
     
     const response = await chrome.runtime.sendMessage({ action: 'capture' });
     
@@ -1023,39 +1095,22 @@ async function handleOrbClick() {
       // Show last capture preview
       showLastCapturePreview(response.dataUrl);
       
-      status.textContent = `Snap ${response.count} captured ✓`;
-      status.className = 'status active';
+      setStatus(`Snap ${response.count} captured! ✓`, 'success', 2500);
       
       // Reload snaps
       await loadSnaps();
       updateUI();
-      
-      setTimeout(() => {
-        status.textContent = 'SnapToAI: Ready';
-        status.className = 'status';
-      }, 1500);
     } else {
       // Check if queue is full - show alert for this specific error
       if (response.queueFull) {
         alert(response.error || 'Queue full (9/9). Delete some images first.');
       }
       
-      // Show specific error message or generic failure
-      status.textContent = response.error || 'Capture failed';
-      status.className = 'status error';
-      setTimeout(() => {
-        status.textContent = 'SnapToAI: Ready';
-        status.className = 'status';
-      }, 2000);
+      statusError(response.error || 'Capture failed');
     }
   } catch (error) {
     console.log('[SnapToAI] Capture:', error.message || error);
-    status.textContent = 'Cannot capture this page';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 2000);
+    statusError('Cannot capture this page');
   } finally {
     orbButton.disabled = false;
   }
@@ -1064,21 +1119,19 @@ async function handleOrbClick() {
 // Handle snip button click - capture and open in crop mode
 async function handleSnipClick() {
   const snipButton = document.getElementById('snipButton');
-  const status = document.getElementById('status');
   
   // Disable button during operation
   snipButton.disabled = true;
   
   try {
-    status.textContent = 'Capturing for snip...';
-    status.className = 'status active';
+    setStatus('Capturing for snip...', 'active');
     
     // Capture screenshot WITHOUT saving to queue (just get the dataUrl)
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
     
     if (dataUrl) {
-      status.textContent = 'Opening snip editor...';
+      setStatus('Opening snip editor...', 'active');
       
       // Open annotation window in SNIP MODE (crop mode)
       const width = 1200;
@@ -1092,29 +1145,13 @@ async function handleSnipClick() {
         `width=${width},height=${height},left=${left},top=${top}`
       );
       
-      status.textContent = 'Snip mode opened ✓';
-      status.className = 'status active';
-      
-      setTimeout(() => {
-        status.textContent = 'SnapToAI: Ready';
-        status.className = 'status';
-      }, 1500);
+      setStatus('Snip editor opened! ✓', 'success', 2000);
     } else {
-      status.textContent = 'Capture failed';
-      status.className = 'status error';
-      setTimeout(() => {
-        status.textContent = 'SnapToAI: Ready';
-        status.className = 'status';
-      }, 2000);
+      statusError('Capture failed');
     }
   } catch (error) {
     console.log('[SnapToAI] Snip:', error.message || error);
-    status.textContent = 'Cannot capture this page';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 2000);
+    statusError('Cannot capture this page');
   } finally {
     snipButton.disabled = false;
   }
@@ -1196,8 +1233,6 @@ async function handleFullPageClick() {
 
 // Handle clear all
 async function handleClear() {
-  const status = document.getElementById('status');
-  
   try {
     await chrome.runtime.sendMessage({ action: 'clearSnaps' });
     
@@ -1205,16 +1240,10 @@ async function handleClear() {
     const preview = document.getElementById('lastCapturePreview');
     if (preview) preview.style.display = 'none';
     
-    status.textContent = 'Cleared ✓';
-    status.className = 'status active';
+    statusCleared();
     
     await loadSnaps();
     updateUI();
-    
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 1500);
   } catch (error) {
     console.log('[SnapToAI] Clear error:', error);
   }
@@ -1490,15 +1519,8 @@ function updateSelectAllButton() {
 
 // Handle Copy Selected
 async function handleCopySelected() {
-  const status = document.getElementById('status');
-  
   if (selectedSnapIds.size === 0) {
-    status.textContent = 'No snaps selected';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 1500);
+    statusError('No snaps selected');
     return;
   }
   
@@ -1507,8 +1529,7 @@ async function handleCopySelected() {
       .sort((a, b) => a - b)
       .map(index => currentSnaps[index]);
     
-    status.textContent = `Creating composite image...`;
-    status.className = 'status active';
+    statusCopying();
     
     // Clipboard can only hold ONE image at a time!
     // Solution: Combine all selected images into a single composite image
@@ -1521,21 +1542,11 @@ async function handleCopySelected() {
       new ClipboardItem({ [blob.type]: blob })
     ]);
     
-    status.textContent = `${selectedSnaps.length} snaps copied as collage ✓`;
-    status.className = 'status active';
-    
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 2000);
+    // Show the prominent "Paste in AI now" message!
+    statusPasteReady();
   } catch (error) {
     console.error('Copy selected error:', error);
-    status.textContent = 'Copy failed - try Upload instead';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 2000);
+    statusError('Copy failed - try Download instead');
   }
 }
 
@@ -1646,15 +1657,8 @@ async function handleCopySingle(index) {
 
 // Handle Download Selected
 async function handleDownloadSelected() {
-  const status = document.getElementById('status');
-  
   if (selectedSnapIds.size === 0) {
-    status.textContent = 'No snaps selected';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 1500);
+    statusError('No snaps selected');
     return;
   }
   
@@ -1668,8 +1672,7 @@ async function handleDownloadSelected() {
       showProcessingOverlay('Downloading images...', `${selectedSnaps.length} high-quality files`);
     }
     
-    status.textContent = `Downloading ${selectedSnaps.length} snaps...`;
-    status.className = 'status active';
+    statusDownloading();
     
     // Download each snap
     for (let i = 0; i < selectedSnaps.length; i++) {
@@ -1692,22 +1695,11 @@ async function handleDownloadSelected() {
     // Hide processing overlay
     hideProcessingOverlay();
     
-    status.textContent = `${selectedSnaps.length} snaps downloaded ✓`;
-    status.className = 'status active';
-    
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 2000);
+    statusDownloaded();
   } catch (error) {
     console.error('Download selected error:', error);
     hideProcessingOverlay();
-    status.textContent = 'Download failed';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 2000);
+    statusError('Download failed');
   }
 }
 
@@ -2356,8 +2348,6 @@ function closePreview() {
 
 // Delete individual snap
 async function handleDeleteSnap(index) {
-  const status = document.getElementById('status');
-  
   try {
     // Remove snap from array
     currentSnaps.splice(index, 1);
@@ -2388,23 +2378,12 @@ async function handleDeleteSnap(index) {
     });
     selectedSnapIds = newSelection;
     
-    status.textContent = 'Snap deleted ✓';
-    status.className = 'status active';
+    statusDeleted();
     
     updateUI();
-    
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 1500);
   } catch (error) {
     console.error('Delete snap error:', error);
-    status.textContent = 'Delete failed';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'Flow: Ready';
-      status.className = 'status';
-    }, 2000);
+    statusError('Delete failed');
   }
 }
 
