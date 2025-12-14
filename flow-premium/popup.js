@@ -1222,10 +1222,23 @@ async function handleOrbClick() {
     if (response.success && response.dataUrl) {
       // Write to clipboard immediately (user gesture context)
       try {
-        const res = await fetch(response.dataUrl);
-        const blob = await res.blob();
+        // Apply invisible watermark before clipboard
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = response.dataUrl;
+        });
+        const wCanvas = document.createElement('canvas');
+        wCanvas.width = img.width;
+        wCanvas.height = img.height;
+        const wCtx = wCanvas.getContext('2d');
+        wCtx.drawImage(img, 0, 0);
+        addInvisibleWatermark(wCanvas);
+        
+        const blob = await new Promise(r => wCanvas.toBlob(r, 'image/png'));
         await navigator.clipboard.write([
-          new ClipboardItem({ [blob.type]: blob })
+          new ClipboardItem({ 'image/png': blob })
         ]);
       } catch (clipError) {
         console.log('[SnapToAI] Clipboard:', clipError.message || clipError);
@@ -1834,13 +1847,26 @@ async function handleCopySingle(index) {
       throw new Error('Image not found');
     }
     
-    const res = await fetch(dataUrl);
-    const blob = await res.blob();
+    // Apply invisible watermark before clipboard
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = dataUrl;
+    });
+    const wCanvas = document.createElement('canvas');
+    wCanvas.width = img.width;
+    wCanvas.height = img.height;
+    const wCtx = wCanvas.getContext('2d');
+    wCtx.drawImage(img, 0, 0);
+    addInvisibleWatermark(wCanvas);
+    
+    const blob = await new Promise(r => wCanvas.toBlob(r, 'image/png'));
     
     // Try clipboard API
     if (navigator.clipboard && navigator.clipboard.write) {
       await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type]: blob })
+        new ClipboardItem({ 'image/png': blob })
       ]);
     } else {
       throw new Error('Clipboard not available');
