@@ -1226,3 +1226,116 @@ html[dir="rtl"] .logo-word {
   font-size: 12px;
   text-align: center;
 }
+
+/* Queue Full Warning Modal */
+.queue-full-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.queue-modal-content {
+  background: linear-gradient(145deg, rgba(30, 40, 50, 0.95), rgba(20, 28, 36, 0.98));
+  border: 1px solid rgba(0, 217, 255, 0.3);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  max-width: 320px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 217, 255, 0.1);
+}
+
+.queue-modal-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.queue-modal-content h3 {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.queue-modal-content p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+}
+
+.queue-modal-info {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.queue-modal-info span {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+#queueSlotsNeeded {
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+#queueSlotsAvailable {
+  color: #00d9ff;
+  border: 1px solid rgba(0, 217, 255, 0.3);
+}
+
+.queue-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.queue-btn-primary {
+  width: 100%;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #00d9ff, #00b8d9);
+  border: none;
+  border-radius: 10px;
+  color: #0a1015;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.queue-btn-primary:hover {
+  background: linear-gradient(135deg, #00e8ff, #00c8e8);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0, 217, 255, 0.4);
+}
+
+.queue-btn-secondary {
+  width: 100%;
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.queue-btn-secondary:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+}

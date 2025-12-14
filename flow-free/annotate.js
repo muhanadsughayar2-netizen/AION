@@ -2486,25 +2486,28 @@ async function saveFullPageWithAnnotations() {
     // Calculate how many chunks we need
     const totalChunks = Math.ceil(totalPages / PAGES_PER_CHUNK);
     
-    // Check queue capacity first
+    // Check queue capacity first - NEVER save partial captures
     const queueStatus = await chrome.runtime.sendMessage({ action: 'getQueueStatus' });
     const currentQueueSize = queueStatus?.count || 0;
     const availableSlots = 9 - currentQueueSize;
     
-    // If we need more chunks than available slots, save what we can
-    const chunksToSave = Math.min(totalChunks, availableSlots);
-    
-    if (chunksToSave === 0) {
-      updateStatus('Queue full! Clear some images first.');
+    // CRITICAL: Refuse to save if we can't fit ALL chunks
+    if (totalChunks > availableSlots) {
+      const shortfall = totalChunks - availableSlots;
+      updateStatus(`⚠️ Need ${totalChunks} slots but only ${availableSlots} available. Clear ${shortfall} image${shortfall > 1 ? 's' : ''} first!`);
+      
+      // Flash the status bar to make it noticeable
+      const statusBar = document.querySelector('.status-bar') || document.getElementById('status');
+      if (statusBar) {
+        statusBar.style.background = 'rgba(255, 71, 87, 0.3)';
+        setTimeout(() => {
+          statusBar.style.background = '';
+        }, 3000);
+      }
       return;
     }
     
-    if (chunksToSave < totalChunks) {
-      updateStatus(`Will save ${chunksToSave} of ${totalChunks} chunks. Upload these, clear queue, capture again for rest.`);
-      await new Promise(r => setTimeout(r, 2000)); // Let user read the message
-    } else {
-      updateStatus(`Splitting ${totalPages} pages into ${totalChunks} chunks for AI...`);
-    }
+    updateStatus(`Splitting ${totalPages} pages into ${totalChunks} chunks for AI...`);
     await yieldToUI();
     
     // Save current page annotations first

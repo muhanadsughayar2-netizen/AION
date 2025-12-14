@@ -611,6 +611,53 @@ function setupEventListeners() {
     reeditBtn.addEventListener('click', handleReeditFullPage);
   }
   
+  // Queue Full Modal buttons
+  const queueClearBtn = document.getElementById('queueClearAndContinue');
+  const queueCancelBtn = document.getElementById('queueCancelCapture');
+  if (queueClearBtn) {
+    queueClearBtn.addEventListener('click', async () => {
+      const modal = document.getElementById('queueFullModal');
+      const fullPageButton = document.getElementById('fullPageButton');
+      const status = document.getElementById('status');
+      
+      modal.style.display = 'none';
+      
+      try {
+        // Clear queue and wait for completion
+        status.textContent = 'Clearing queue...';
+        await chrome.runtime.sendMessage({ action: 'clearSnaps' });
+        const preview = document.getElementById('lastCapturePreview');
+        if (preview) preview.style.display = 'none';
+        await loadSnaps();
+        updateUI();
+        
+        // Verify queue is now empty
+        if (currentSnaps.length === 0) {
+          status.textContent = 'Queue cleared! Starting capture...';
+          status.className = 'status active';
+          // Now start capture - button will be managed by handleFullPageClick
+          handleFullPageClick();
+        } else {
+          // Queue still has items - something went wrong
+          status.textContent = 'Could not clear queue. Try again.';
+          status.className = 'status error';
+          fullPageButton.disabled = false;
+        }
+      } catch (error) {
+        console.log('[SnapToAI] Clear and capture error:', error);
+        status.textContent = 'Error clearing queue';
+        status.className = 'status error';
+        fullPageButton.disabled = false;
+      }
+    });
+  }
+  if (queueCancelBtn) {
+    queueCancelBtn.addEventListener('click', () => {
+      document.getElementById('queueFullModal').style.display = 'none';
+      document.getElementById('fullPageButton').disabled = false;
+    });
+  }
+  
   // Listen for annotation completion via Chrome runtime messaging
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'annotationComplete') {
@@ -1170,14 +1217,22 @@ async function handleFullPageClick() {
   // Disable button during operation
   fullPageButton.disabled = true;
   
-  // Check if queue has space
+  // Estimate slots needed for full-page capture (typically 1-4 chunks)
+  // Worst case: very long page = 4 chunks (20+ viewport heights)
+  const ESTIMATED_MAX_CHUNKS = 4;
+  const PAGES_PER_CHUNK = 5;
+  const availableSlots = 9 - currentSnaps.length;
+  
+  // If queue is completely full
   if (currentSnaps.length >= 9) {
-    status.textContent = 'Queue full (9/9). Delete some images first.';
-    status.className = 'status error';
-    setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
-      status.className = 'status';
-    }, 2000);
+    showQueueFullModal(ESTIMATED_MAX_CHUNKS, availableSlots);
+    fullPageButton.disabled = false;
+    return;
+  }
+  
+  // If queue might not have enough space for a long page
+  if (availableSlots < ESTIMATED_MAX_CHUNKS && currentSnaps.length > 0) {
+    showQueueFullModal(ESTIMATED_MAX_CHUNKS, availableSlots);
     fullPageButton.disabled = false;
     return;
   }
@@ -1228,6 +1283,27 @@ async function handleFullPageClick() {
       status.className = 'status';
     }, 3000);
     fullPageButton.disabled = false;
+  }
+}
+
+// Show queue full warning modal
+function showQueueFullModal(chunksNeeded, availableSlots) {
+  const modal = document.getElementById('queueFullModal');
+  const slotsNeededEl = document.getElementById('queueSlotsNeeded');
+  const slotsAvailableEl = document.getElementById('queueSlotsAvailable');
+  const messageEl = document.getElementById('queueModalMessage');
+  
+  if (modal && slotsNeededEl && slotsAvailableEl && messageEl) {
+    slotsNeededEl.textContent = `Need: up to ${chunksNeeded} slots`;
+    slotsAvailableEl.textContent = `Available: ${availableSlots} slot${availableSlots !== 1 ? 's' : ''}`;
+    
+    if (availableSlots === 0) {
+      messageEl.textContent = 'Queue is full! Clear it to capture a full page.';
+    } else {
+      messageEl.textContent = `Full page capture may need more space. Clear queue to ensure all chunks are saved.`;
+    }
+    
+    modal.style.display = 'flex';
   }
 }
 
