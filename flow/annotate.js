@@ -1354,10 +1354,11 @@ async function saveSnipToQueue() {
       snipDataUrl = tempCanvas.toDataURL('image/png');
     }
     
-    // Send as new snap (add to queue)
+    // Send as new snap (add to queue) with isSnip metadata
     const response = await chrome.runtime.sendMessage({
       action: 'snipComplete',
-      dataUrl: snipDataUrl
+      dataUrl: snipDataUrl,
+      metadata: { isSnip: true }
     });
     
     // Check if queue is full

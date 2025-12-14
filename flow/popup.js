@@ -1429,12 +1429,37 @@ function updateThumbnails() {
     thumbnail.addEventListener('drop', (e) => handleDrop(e, index));
     thumbnail.addEventListener('dragend', handleDragEnd);
     
-    const number = document.createElement('div');
-    number.className = 'thumbnail-number';
-    number.textContent = index + 1;
-    
     // Get metadata for this snap
     const meta = currentSnapMetadata[index];
+    
+    // Create number label based on capture type
+    const number = document.createElement('div');
+    number.className = 'thumbnail-number';
+    
+    // Determine label based on capture type
+    if (meta && meta.isChunk) {
+      // Full Page capture - show "Page X of Full Page"
+      number.textContent = `Pg ${meta.part}/${meta.totalParts}`;
+      number.title = `Page ${meta.part} of ${meta.totalParts} (Full Page)`;
+    } else if (meta && meta.isSnip) {
+      // Snip capture - count snips up to this point
+      let snipCount = 0;
+      for (let i = 0; i <= index; i++) {
+        const m = currentSnapMetadata[i];
+        if (m && m.isSnip) snipCount++;
+      }
+      number.textContent = `S${snipCount}`;
+      number.title = `Snip ${snipCount}`;
+    } else {
+      // Regular Snap - count snaps up to this point
+      let snapCount = 0;
+      for (let i = 0; i <= index; i++) {
+        const m = currentSnapMetadata[i];
+        if (!m || (!m.isChunk && !m.isSnip)) snapCount++;
+      }
+      number.textContent = snapCount;
+      number.title = `Snap ${snapCount}`;
+    }
     
     thumbnail.appendChild(checkbox);
     thumbnail.appendChild(deleteBtn);
