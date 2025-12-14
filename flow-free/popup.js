@@ -71,7 +71,7 @@ function setStatus(message, type = 'default', duration = null) {
 const statusReady = () => setStatus('Ready', 'default');
 const statusCapturing = (type) => setStatus(`Capturing ${type}...`, 'active');
 const statusCaptured = (type) => setStatus(`${type} captured! ✓`, 'success', 2500);
-const statusSelected = (count) => setStatus(`${count} selected`, 'active');
+const statusSelected = (count) => setStatus(`${count} selected → will combine into ONE stacked image`, 'active');
 const statusCopying = () => setStatus('Copying...', 'copying');
 const statusPasteReady = () => setStatus('Copied! Paste in AI now 🚀', 'paste-ready', 5000);
 const statusDownloading = () => setStatus('Downloading...', 'active');
