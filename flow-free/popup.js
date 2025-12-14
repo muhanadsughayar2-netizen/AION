@@ -1057,14 +1057,10 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
   }
 }
 
-// Show last capture preview (shared for Snap and Snip)
+// Show last capture preview - DISABLED (user requested removal)
 function showLastCapturePreview(dataUrl) {
-  const preview = document.getElementById('lastCapturePreview');
-  const img = document.getElementById('lastCaptureImage');
-  if (preview && img && dataUrl) {
-    img.src = dataUrl;
-    preview.style.display = 'block';
-  }
+  // Do nothing - preview box completely removed from UI
+  return;
 }
 
 // Handle orb button click
