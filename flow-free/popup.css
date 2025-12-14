@@ -96,17 +96,22 @@ body {
   font-weight: 700;
 }
 
-/* Status Row with Activity Indicator */
+/* Status Row with Activity Indicator - Sticky for visibility when scrolling */
 .status-row {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(10, 10, 20, 0.95);
   border-radius: 20px;
   transition: all 0.3s ease;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 217, 255, 0.15);
 }
 
 .status-dot {

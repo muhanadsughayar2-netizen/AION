@@ -25,12 +25,6 @@
       </div>
     </div>
 
-    <!-- Status Line with Activity Indicator -->
-    <div class="status-row">
-      <span class="status-dot" id="statusDot"></span>
-      <span class="status" id="status" data-i18n="flowReady">SnapToAI: Ready</span>
-    </div>
-
     <!-- Triple Orb Buttons: Snap, Snip & Full Page -->
     <div class="orb-triple-container">
       <div class="orb-wrapper">
@@ -76,20 +70,26 @@
       </div>
     </div>
 
-    <!-- GLOBAL COUNTER - SnapToAI Community -->
+    <!-- GLOBAL COUNTER - SnapToAI Community (NOW AT TOP) -->
     <div id="globalCounterContainer" style="
       text-align: center;
-      margin: 12px 0;
+      margin: 8px 0;
       font-size: 13px;
       color: rgba(0, 255, 255, 0.7);
     ">
       Snap it. Snip it. Ship it to AI. 🔥
       <br>
-      <div id="globalCounter" style="margin-top: 8px; min-height: 30px;">
+      <div id="globalCounter" style="margin-top: 6px; min-height: 24px;">
         Loading counter...
       </div>
     </div>
     <!-- END GLOBAL COUNTER -->
+
+    <!-- Status Line with Activity Indicator (NOW BELOW COUNTER, STICKY) -->
+    <div class="status-row">
+      <span class="status-dot" id="statusDot"></span>
+      <span class="status" id="status" data-i18n="flowReady">SnapToAI: Ready</span>
+    </div>
 
     <!-- Full Page Capture Overlay -->
     <div id="fullPageOverlay" class="fullpage-overlay" style="display: none;">
@@ -99,8 +99,8 @@
       </div>
     </div>
 
-    <!-- Last Capture Preview (shared for Snap and Snip) -->
-    <div id="lastCapturePreview" class="last-capture-preview" style="display: none;">
+    <!-- Last Capture Preview - HIDDEN (takes up space unnecessarily) -->
+    <div id="lastCapturePreview" class="last-capture-preview" style="display: none !important; height: 0; overflow: hidden;">
       <img id="lastCaptureImage" class="last-capture-image" alt="Last capture">
     </div>
 
