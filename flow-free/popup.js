@@ -71,9 +71,9 @@ function setStatus(message, type = 'default', duration = null) {
 const statusReady = () => setStatus('Ready', 'default');
 const statusCapturing = (type) => setStatus(`Capturing ${type}...`, 'active');
 const statusCaptured = (type) => setStatus(`${type} captured! ✓`, 'success', 2500);
-const statusSelected = (count) => setStatus(`${count} selected → will combine into ONE stacked image`, 'active');
-const statusCopying = () => setStatus('Copying...', 'copying');
-const statusPasteReady = () => setStatus('Copied! Paste in AI now 🚀', 'paste-ready', 5000);
+const statusSelected = (count) => setStatus(`${count} screenshots selected → will combine into ONE stacked image`, 'active');
+const statusCopying = () => setStatus('Combining & copying...', 'copying');
+const statusPasteReady = (count) => setStatus(`${count || ''} screenshots combined & copied! 👉 Paste into AI now!`, 'paste-ready', 5000);
 const statusDownloading = () => setStatus('Downloading...', 'active');
 const statusDownloaded = () => setStatus('Clean stacked PNG exported! 🔥', 'success', 3000);
 const statusExporting = () => setStatus('Generating PDF...', 'active');
@@ -1482,6 +1482,14 @@ function toggleSelection(index) {
     selectedSnapIds.add(index);
   }
   updateThumbnails();
+  
+  // UPDATE STATUS IMMEDIATELY with selection count
+  const count = selectedSnapIds.size;
+  if (count > 0) {
+    statusSelected(count);
+  } else {
+    statusReady();
+  }
 }
 
 // Handle Select All / Deselect All
@@ -1500,6 +1508,14 @@ function handleSelectAll() {
   }
   
   updateThumbnails();
+  
+  // UPDATE STATUS IMMEDIATELY with selection count
+  const count = selectedSnapIds.size;
+  if (count > 0) {
+    statusSelected(count);
+  } else {
+    statusReady();
+  }
 }
 
 // Update Select All button text
@@ -1538,8 +1554,8 @@ async function handleCopySelected() {
       new ClipboardItem({ [blob.type]: blob })
     ]);
     
-    // Show the prominent "Paste in AI now" message!
-    statusPasteReady();
+    // Show the prominent "Paste in AI now" message with count!
+    statusPasteReady(selectedSnaps.length);
   } catch (error) {
     console.error('Copy selected error:', error);
     statusError('Copy failed - try Download instead');
