@@ -1693,14 +1693,12 @@ function updateThumbnails() {
     const isFullPageChunk = captureType === 'FULL';
     
     if (isFullPageChunk) {
-      // Full Page capture - show base.part format (e.g., 1.1, 1.2)
-      const groupKey = meta.captureGroupId || meta._implicitGroupKey || `implicit_${index}`;
-      const baseNum = groupBaseNumbers[groupKey] || 1;
+      // Full Page capture - show "FULL 1/3" format in badge
       const partNum = meta.part || 1;
       const totalParts = meta.totalParts || 1;
-      number.textContent = `${baseNum}.${partNum}`;
-      number.title = `Full Page ${baseNum}, Part ${partNum} of ${totalParts}`;
-      typeBadge.textContent = 'FULL';
+      number.textContent = partNum;
+      number.title = `Full Page Part ${partNum} of ${totalParts}`;
+      typeBadge.textContent = `FULL ${partNum}/${totalParts}`;
       typeBadge.classList.add('type-full');
     } else if (captureType === 'SNIP') {
       // Snip capture
@@ -1729,26 +1727,19 @@ function updateThumbnails() {
     thumbnail.appendChild(number);
     thumbnail.appendChild(typeBadge);
     
-    // Add chunk badge if this is a chunked capture
-    if (meta && meta.isChunk) {
-      const chunkBadge = document.createElement('div');
-      chunkBadge.className = 'chunk-badge';
-      chunkBadge.textContent = `${meta.part}/${meta.totalParts}`;
-      chunkBadge.title = `Part ${meta.part} of ${meta.totalParts}`;
-      thumbnail.appendChild(chunkBadge);
-      
-      // Add RE-EDIT ALL button for chunked captures
-      if (meta.captureGroupId && meta.totalParts > 1) {
-        const reeditAllBtn = document.createElement('button');
-        reeditAllBtn.className = 'thumbnail-reedit-all';
-        reeditAllBtn.textContent = '✏️';
-        reeditAllBtn.title = `RE-EDIT all ${meta.totalParts} parts together`;
-        reeditAllBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
+    // Add RE-EDIT ALL button for chunked captures (part numbers now shown in main badge)
+    if (isFullPageChunk && meta && meta.totalParts > 1) {
+      const reeditAllBtn = document.createElement('button');
+      reeditAllBtn.className = 'thumbnail-reedit-all';
+      reeditAllBtn.textContent = '✏️';
+      reeditAllBtn.title = `RE-EDIT all ${meta.totalParts} parts together`;
+      reeditAllBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (meta.captureGroupId) {
           handleReeditChunkGroup(meta.captureGroupId);
-        });
-        thumbnail.appendChild(reeditAllBtn);
-      }
+        }
+      });
+      thumbnail.appendChild(reeditAllBtn);
     }
     
     container.appendChild(thumbnail);
