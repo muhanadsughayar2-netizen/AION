@@ -2391,11 +2391,11 @@ async function save() {
         cropDataUrl = tempCanvas.toDataURL('image/png');
       }
       
-      // Send as new snap (add to queue) - NO metadata here, this is the annotation editor save
-      // The actual SNIP capture goes through saveSnipToQueue() which has the isSnip flag
+      // Send as new snap (add to queue) with isSnip metadata
       const response = await chrome.runtime.sendMessage({
         action: 'snipComplete',
-        dataUrl: cropDataUrl
+        dataUrl: cropDataUrl,
+        metadata: { isSnip: true }
       });
       
       // Check if queue is full

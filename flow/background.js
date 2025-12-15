@@ -185,12 +185,18 @@ async function captureScreenshot() {
     // Capture visible tab as PNG
     const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
     
-    // Get current snaps
-    const snaps = await getSnaps();
-    const snapCount = snaps.length;
+    // Get current snaps and metadata atomically to avoid race conditions
+    const result = await chrome.storage.local.get({ snaps: [], snapMetadata: [] });
+    const snaps = result.snaps || [];
+    let snapMetadata = result.snapMetadata || [];
+    
+    // Backfill metadata if arrays are misaligned (handles existing queues gracefully)
+    while (snapMetadata.length < snaps.length) {
+      snapMetadata.push(null);
+    }
     
     // Block capture if queue is full - user must delete to make room
-    if (snapCount >= MAX_SNAPS) {
+    if (snaps.length >= MAX_SNAPS) {
       return { 
         success: false, 
         error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.`,
@@ -198,11 +204,12 @@ async function captureScreenshot() {
       };
     }
     
-    // Add new snap
+    // Add new snap and its metadata together
     snaps.push(dataUrl);
+    snapMetadata.push(null); // Regular snap has no special metadata
     
-    // Save to session storage
-    await chrome.storage.local.set({ snaps });
+    // Save both arrays atomically
+    await chrome.storage.local.set({ snaps, snapMetadata });
     
     // Store the captured page URL for the editor's browser frame feature (for SNAP mode)
     await chrome.storage.session.set({ 
