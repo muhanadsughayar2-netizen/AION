@@ -1509,6 +1509,29 @@ function updateThumbnails() {
   // Dynamically adjust popup height based on number of screenshots
   adjustPopupHeight(currentSnaps.length);
   
+  // Pre-calculate numbering: assign base numbers to capture groups
+  // Full page chunks share a base number (e.g., 1.1, 1.2, 1.3)
+  // Snaps and Snips get their own sequential numbers
+  const groupBaseNumbers = {}; // captureGroupId -> base number
+  let nextBaseNumber = 1;
+  let snapCounter = 0;
+  let snipCounter = 0;
+  
+  // First pass: assign base numbers to groups and count snaps/snips
+  for (let i = 0; i < currentSnapMetadata.length; i++) {
+    const meta = currentSnapMetadata[i];
+    if (meta && (meta.isChunk || meta.totalParts > 1) && meta.captureGroupId) {
+      // Full page chunk - assign base number to group if not already assigned
+      if (!groupBaseNumbers[meta.captureGroupId]) {
+        groupBaseNumbers[meta.captureGroupId] = nextBaseNumber++;
+      }
+    } else if (meta && meta.isSnip) {
+      nextBaseNumber++; // Snip takes a number slot
+    } else {
+      nextBaseNumber++; // Snap takes a number slot
+    }
+  }
+  
   if (currentSnaps.length === 0) {
     const emptyState = document.createElement('div');
     emptyState.className = 'empty-state';
@@ -1629,40 +1652,47 @@ function updateThumbnails() {
     const number = document.createElement('div');
     number.className = 'thumbnail-number';
     
-    // Determine label based on capture type
-    if (meta && meta.isChunk) {
-      // Full Page capture - show "Page X of Full Page"
-      number.textContent = `Pg ${meta.part}/${meta.totalParts}`;
-      number.title = `Page ${meta.part} of ${meta.totalParts} (Full Page)`;
+    // Create type badge
+    const typeBadge = document.createElement('div');
+    typeBadge.className = 'capture-type-badge';
+    
+    // Determine label based on capture type - use totalParts OR isChunk to catch all chunks
+    const isFullPageChunk = meta && (meta.isChunk || meta.totalParts > 1) && meta.captureGroupId;
+    
+    if (isFullPageChunk) {
+      // Full Page capture - show base.part format (e.g., 1.1, 1.2)
+      const baseNum = groupBaseNumbers[meta.captureGroupId] || 1;
+      const partNum = meta.part || 1;
+      number.textContent = `${baseNum}.${partNum}`;
+      number.title = `Full Page ${baseNum}, Part ${partNum} of ${meta.totalParts}`;
+      typeBadge.textContent = 'FULL';
+      typeBadge.classList.add('type-full');
     } else if (meta && meta.isSnip) {
       // Snip capture - count snips up to this point
-      let snipCount = 0;
-      for (let i = 0; i <= index; i++) {
-        const m = currentSnapMetadata[i];
-        if (m && m.isSnip) snipCount++;
-      }
-      number.textContent = `S${snipCount}`;
-      number.title = `Snip ${snipCount}`;
+      snipCounter++;
+      number.textContent = snipCounter;
+      number.title = `Snip ${snipCounter}`;
+      typeBadge.textContent = 'SNIP';
+      typeBadge.classList.add('type-snip');
     } else {
-      // Regular Snap - count snaps up to this point
-      let snapCount = 0;
-      for (let i = 0; i <= index; i++) {
-        const m = currentSnapMetadata[i];
-        if (!m || (!m.isChunk && !m.isSnip)) snapCount++;
-      }
-      number.textContent = snapCount;
-      number.title = `Snap ${snapCount}`;
+      // Regular Snap
+      snapCounter++;
+      number.textContent = snapCounter;
+      number.title = `Snap ${snapCounter}`;
+      typeBadge.textContent = 'SNAP';
+      typeBadge.classList.add('type-snap');
     }
     
     thumbnail.appendChild(checkbox);
     thumbnail.appendChild(deleteBtn);
     // Only add annotate button for non-chunk thumbnails (hide edit on full-page chunks)
-    if (!meta || !meta.isChunk) {
+    if (!isFullPageChunk) {
       thumbnail.appendChild(annotateBtn);
     }
     thumbnail.appendChild(copyBtn);
     thumbnail.appendChild(img);
     thumbnail.appendChild(number);
+    thumbnail.appendChild(typeBadge);
     
     // Add chunk badge if this is a chunked capture
     if (meta && meta.isChunk) {

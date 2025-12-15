@@ -606,6 +606,35 @@ body {
   z-index: 5;
 }
 
+/* Capture type badge - shows SNAP/SNIP/FULL */
+.capture-type-badge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 7px;
+  font-weight: 700;
+  padding: 2px 4px;
+  border-radius: 2px;
+  z-index: 5;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.capture-type-badge.type-snap {
+  background: rgba(0, 217, 255, 0.9);
+  color: #000;
+}
+
+.capture-type-badge.type-snip {
+  background: rgba(255, 165, 0, 0.9);
+  color: #000;
+}
+
+.capture-type-badge.type-full {
+  background: linear-gradient(135deg, #00ff88, #00d9ff);
+  color: #000;
+}
+
 .thumbnail-checkbox {
   position: absolute;
   top: 4px;
