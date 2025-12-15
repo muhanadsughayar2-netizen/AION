@@ -1,114 +1,119 @@
 {
-  "allAsOnePDF": {
-    "message": "Snap To AI",
-    "description": "allAsOnePDF"
-  },
-  "allAsOnePDFDesc": {
-    "message": "Заснеми. Изрежи. Изпрати до AI. 🔥",
-    "description": "allAsOnePDFDesc"
-  },
-  "allAsSeparatePDFs": {
-    "message": "Зареждане на брояча...",
-    "description": "allAsSeparatePDFs"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "посещения",
-    "description": "allAsSeparatePDFsDesc"
-  },
-  "cancel": {
-    "message": "Заснеми",
-    "description": "cancel"
-  },
-  "clearAll": {
-    "message": "Изрежи",
-    "description": "clearAll"
-  },
-  "clickCameraButton": {
-    "message": "Цяла страница",
-    "description": "clickCameraButton"
-  },
-  "copySelected": {
-    "message": "Заснеми цял екран",
-    "description": "copySelected"
-  },
-  "daysRemaining": {
-    "message": "Изрежи и орежи области",
-    "description": "daysRemaining"
-  },
-  "deselectAll": {
-    "message": "Заснеми цялата страница",
-    "description": "deselectAll"
-  },
-  "downloadSelected": {
-    "message": "Избери всичко",
-    "description": "downloadSelected"
-  },
-  "emptyHeading": {
-    "message": "Копирай избраното",
-    "description": "emptyHeading"
-  },
-  "emptySubheading1": {
-    "message": "Изтегли като PNG",
-    "description": "emptySubheading1"
-  },
-  "emptySubheading2": {
-    "message": "Изтегли PDF",
-    "description": "emptySubheading2"
-  },
-  "exportPDF": {
-    "message": "Изчисти всичко",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "Отказ",
-    "description": "exportPDFOptions"
-  },
-  "extensionDescription": {
-    "message": "Готов",
-    "description": "extensionDescription"
-  },
   "extensionName": {
-    "message": "SnapToAI: Готов",
+    "message": "SnapToAI - Екранна снимка за ИИ",
     "description": "extensionName"
   },
+  "extensionDescription": {
+    "message": "Снимайте екрана и качвайте партидно към платформи с ИИ",
+    "description": "extensionDescription"
+  },
   "flowReady": {
-    "message": "Заснемане на снимка...",
+    "message": "SnapToAI: Готово",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
-    "message": "Изрязване...",
+    "message": "Един клик. Една снимка.",
     "description": "oneClickOneFlow"
   },
   "pagesReadyForAI": {
-    "message": "Заснемане на цяла страница...",
+    "message": "Вашите страници готови за ИИ",
     "description": "pagesReadyForAI"
   },
+  "clickCameraButton": {
+    "message": "Натиснете камерата за снимка",
+    "description": "clickCameraButton"
+  },
   "selectAll": {
-    "message": "Снимката е заснета! ✓",
+    "message": "Избери всички",
     "description": "selectAll"
   },
+  "deselectAll": {
+    "message": "Отмени избора",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "Копирай избраните",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "Изтегли избраните",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Експортирай PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "Опции за PDF",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "Всички като един PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Комбинирай всички снимки в един PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "Всички като отделни PDF",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Изтегли всяка снимка като отделен PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
   "selectedAsOnePDF": {
-    "message": "Изрязано! ✓",
+    "message": "Избрани като един PDF",
     "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
-    "message": "Цялата страница е заснета! ✓",
+    "message": "Комбинирай избраните в един PDF",
     "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
-    "message": "[count] заснети екрани са избрани → ще се комбинират в ЕДНА наслоена снимка",
+    "message": "Избрани като отделни PDF",
     "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "Комбиниране и копиране...",
+    "message": "Изтегли избраните като отделни PDF",
     "description": "selectedAsSeparatePDFsDesc"
   },
+  "clearAll": {
+    "message": "Изчисти всички",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "Отмени",
+    "description": "cancel"
+  },
   "trialEnded": {
-    "message": "[count] заснети екрани комбинирани и копирани! 👉 Постави в AI сега!",
+    "message": "Пробата свърши",
     "description": "trialEnded"
   },
   "upgradeNow": {
-    "message": "Изтегляне...",
+    "message": "Надгради сега - $9.90/година",
     "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ дни остават",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "Един клик. Един екран.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Избери всичко → Копирай → Постави.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Всички 9 екранни снимки стават ЕДНО наслоено изображение",
+    "description": "Empty state subheading 2"
   }
 }

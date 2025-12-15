@@ -628,7 +628,7 @@ function translateUI() {
   document.getElementById('selectAllBtn').textContent = getMessage('selectAll', 'Select All');
   document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Copy Selected');
   document.getElementById('downloadSelectedBtn').textContent = getMessage('downloadAsPNG', 'Download as PNG');
-  document.getElementById('exportPdfBtn').textContent = getMessage('downloadAsPDF', 'Download PDF');
+  document.getElementById('exportPdfBtn').textContent = getMessage('exportAsPDF', 'Export as PDF');
   document.getElementById('clearButton').textContent = getMessage('clearAll', 'Clear All');
   
   // Translate PDF modal
