@@ -1790,35 +1790,12 @@ function updateThumbnails() {
       
       thumbnail.appendChild(checkbox);
       thumbnail.appendChild(deleteBtn);
-      // Only add annotate button for non-chunk thumbnails (hide edit on full-page chunks)
-      if (!isFullPageChunk) {
-        thumbnail.appendChild(annotateBtn);
-      }
+      thumbnail.appendChild(annotateBtn);
       thumbnail.appendChild(copyBtn);
       thumbnail.appendChild(img);
       thumbnail.appendChild(number);
       
-      // Add chunk badge if this is a chunked capture
-      if (isFullPageChunk) {
-        const chunkBadge = document.createElement('div');
-        chunkBadge.className = 'chunk-badge';
-        chunkBadge.textContent = `${meta.part}/${meta.totalParts}`;
-        chunkBadge.title = `Part ${meta.part} of ${meta.totalParts}`;
-        thumbnail.appendChild(chunkBadge);
-       
-        // Add RE-EDIT ALL button for chunked captures
-        if (meta.captureGroupId && meta.totalParts > 1) {
-          const reeditAllBtn = document.createElement('button');
-          reeditAllBtn.className = 'thumbnail-reedit-all';
-          reeditAllBtn.textContent = '✏️';
-          reeditAllBtn.title = `RE-EDIT all ${meta.totalParts} parts together`;
-          reeditAllBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            handleReeditChunkGroup(meta.captureGroupId);
-          });
-          thumbnail.appendChild(reeditAllBtn);
-        }
-      }
+      // NO CHUNK BADGES, NO TYPE LABELS - JUST SIMPLE 1-9 NUMBERING
       
       container.appendChild(thumbnail);
     });
