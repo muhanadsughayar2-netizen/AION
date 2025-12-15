@@ -2851,6 +2851,62 @@ function drawAnnotationsToContext(ctx, anns) {
   }
 }
 
+// Trim white/empty space from bottom of canvas
+async function trimBottomEmptySpace(canvas) {
+  if (!canvas || canvas.width === 0 || canvas.height === 0) {
+    return canvas;
+  }
+  
+  try {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    // Scan from bottom to top, find last row with non-white pixels
+    let lastContentRow = canvas.height - 1;
+    
+    for (let y = canvas.height - 1; y >= 0; y--) {
+      let hasContent = false;
+      
+      for (let x = 0; x < canvas.width; x++) {
+        const idx = (y * canvas.width + x) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const a = data[idx + 3];
+        
+        // Check if pixel is not white (r,g,b < 250) or has content (alpha > 10)
+        if (a > 10 && (r < 250 || g < 250 || b < 250)) {
+          hasContent = true;
+          lastContentRow = y;
+          break;
+        }
+      }
+      
+      if (hasContent) break;
+    }
+    
+    // If nothing found, return original
+    if (lastContentRow === canvas.height - 1) {
+      return canvas;
+    }
+    
+    // Create trimmed canvas
+    const trimmedHeight = Math.max(lastContentRow + 1, canvas.height * 0.1); // Keep at least 10% height
+    const trimmedCanvas = document.createElement('canvas');
+    trimmedCanvas.width = canvas.width;
+    trimmedCanvas.height = trimmedHeight;
+    
+    const trimmedCtx = trimmedCanvas.getContext('2d', { willReadFrequently: true });
+    trimmedCtx.drawImage(canvas, 0, 0, canvas.width, trimmedHeight, 0, 0, canvas.width, trimmedHeight);
+    
+    return trimmedCanvas;
+  } catch (e) {
+    console.error('Trim error:', e);
+    return canvas; // Return original on error
+  }
+}
+
 // Add invisible watermark to canvas
 function addInvisibleWatermarkToCanvas(canvas) {
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
