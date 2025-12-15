@@ -1681,7 +1681,8 @@
     
     // Walk DOM tree including shadow roots
     function walkDOM(node, depth = 0) {
-      if (depth > 20) return; // Safety limit
+      // PERFORMANCE: Depth limit prevents freezing on infinite scroll pages
+      if (depth > 12) return; // Safety limit (reduced for better performance)
       
       try {
         // Check current node
