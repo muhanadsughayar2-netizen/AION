@@ -993,10 +993,17 @@
     
     console.log('[SnapToAI] 🎬 Capturing canvas/WebGL/video elements...');
     
+    // MEMORY OPTIMIZATION: Limit total replacements to prevent RAM issues on media-heavy sites
+    const MAX_MEDIA_REPLACEMENTS = 15;
+    let currentReplacements = 0;
+    
     try {
       // 1. CAPTURE ALL CANVAS ELEMENTS (including WebGL)
       const canvases = document.querySelectorAll('canvas');
       canvases.forEach((canvas, index) => {
+        // Check limit before processing
+        if (currentReplacements >= MAX_MEDIA_REPLACEMENTS) return;
+        
         try {
           // Skip if canvas is too small or invisible
           if (canvas.width < 10 || canvas.height < 10) return;
@@ -1046,6 +1053,7 @@
           // Replace canvas with static image
           canvas.style.display = 'none';
           canvas.parentNode.insertBefore(img, canvas);
+          currentReplacements++; // Increment successful replacement counter
           
         } catch (e) {
           console.warn(`[SnapToAI] Failed to capture canvas ${index}:`, e.message);
@@ -1057,6 +1065,9 @@
       // 2. CAPTURE ALL VIDEO ELEMENTS
       const videos = document.querySelectorAll('video');
       videos.forEach((video, index) => {
+        // Check limit before processing
+        if (currentReplacements >= MAX_MEDIA_REPLACEMENTS) return;
+        
         try {
           // Skip if video is too small or invisible
           if (video.videoWidth < 10 || video.videoHeight < 10) return;
@@ -1098,6 +1109,7 @@
             // Replace video with static image
             video.style.display = 'none';
             video.parentNode.insertBefore(img, video);
+            currentReplacements++; // Increment successful replacement counter
             
           } catch (e) {
             // Video may be CORS-restricted
@@ -1110,6 +1122,11 @@
       });
       
       console.log(`[SnapToAI] Captured ${mediaState.videoElements.length} video elements`);
+      
+      // Log warning if limit was reached
+      if (currentReplacements >= MAX_MEDIA_REPLACEMENTS) {
+        console.warn(`[SnapToAI] Media replacement limit reached (${MAX_MEDIA_REPLACEMENTS}). Skipping remaining elements to preserve memory.`);
+      }
       
       mediaState.isMediaCaptured = true;
       console.log('[SnapToAI] 🎬 Canvas/WebGL/video capture complete');
