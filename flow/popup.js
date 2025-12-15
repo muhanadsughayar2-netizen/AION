@@ -1827,14 +1827,15 @@ async function handleCopySelected() {
   }
 }
 
-// Create composite image from multiple snapshots (for clipboard - with styling)
+// Create composite image from multiple snapshots (for clipboard - with watermark)
 async function createCompositeImage(dataUrls) {
-  // Use clean version for clipboard too - no borders/labels
-  return await createCleanStackedImage(dataUrls);
+  // Use clean version with visible watermark for clipboard
+  return await createCleanStackedImage(dataUrls, true);
 }
 
 // Create CLEAN stacked image - no padding, no borders, white background
-async function createCleanStackedImage(dataUrls) {
+// addVisibleWatermark: true for clipboard copy, false for PNG download
+async function createCleanStackedImage(dataUrls, addVisibleWatermark = false) {
   // Load all images first
   const images = await Promise.all(dataUrls.map(url => {
     return new Promise((resolve, reject) => {
@@ -1880,6 +1881,15 @@ async function createCleanStackedImage(dataUrls) {
   
   // Add invisible watermark for AI detection
   addInvisibleWatermark(canvas);
+  
+  // Add visible watermark ONLY for clipboard copy (not download/export)
+  if (addVisibleWatermark) {
+    ctx.font = '12px Arial';
+    ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('snapto.ai', canvas.width - 15, canvas.height - 8);
+  }
   
   // Convert to high-quality PNG
   return canvas.toDataURL('image/png', 1.0);
