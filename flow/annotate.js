@@ -343,6 +343,24 @@ function setupFullPageMode() {
   const saveBtn = document.getElementById('saveBtn');
   if (saveBtn) saveBtn.innerHTML = '💾 Save All Pages';
   
+  // HIDE BORDER BUTTON AND CONTROLS IN FULL PAGE MODE - never show borders for full page
+  const borderBtn = document.getElementById('toggleBorder');
+  if (borderBtn) borderBtn.style.display = 'none';
+  
+  const borderWidth = document.getElementById('borderWidth');
+  if (borderWidth) borderWidth.style.display = 'none';
+  
+  const borderColor = document.getElementById('borderColor');
+  if (borderColor) borderColor.style.display = 'none';
+  
+  // Also hide browser frame button in full page mode
+  const frameBtn = document.getElementById('toggleBrowserFrame');
+  if (frameBtn) frameBtn.style.display = 'none';
+  
+  // Disable borders for full page mode completely
+  hasBorder = false;
+  hasBrowserFrame = false;
+  
   // Setup navigation buttons
   document.getElementById('prevPage').addEventListener('click', () => navigatePage(-1));
   document.getElementById('nextPage').addEventListener('click', () => navigatePage(1));
@@ -952,14 +970,11 @@ function handleMouseMove(e) {
     
     let { x: cx, y: cy, width: cw, height: ch } = cropRect;
     
-    // Check if multi-page full-page mode (must be explicit true check)
-    const isMultiPageFullPage = isFullPageMode === true && Array.isArray(pages) && pages.length > 1;
-    
     if (cropHandle === 'move') {
       // Move: preserve size, just change position
       cx += dx;
-      // Only allow vertical move for single images (not full-page groups)
-      if (!isMultiPageFullPage) {
+      // Only allow vertical move for single images (not full-page mode)
+      if (!isFullPageMode) {
         cy += dy;
       }
       // Clamp position to keep box inside canvas
@@ -974,7 +989,7 @@ function handleMouseMove(e) {
       
       // Vertical resize: NEVER for full-page mode (only L/R handles)
       // Only for single images/snips
-      if (!isMultiPageFullPage) {
+      if (!isFullPageMode) {
         if (cropHandle.includes('t')) { cy += dy; ch -= dy; }
         if (cropHandle.includes('b')) ch += dy;
       }
@@ -3158,21 +3173,21 @@ function getCropHandleAt(pos) {
   const { x, y, width, height } = cropRect;
   const handleSize = 20;
   
-  // Check if multi-page full-page mode (pages array must exist and have >1 pages)
-  // This MUST be false for single images/snips to enable all 8 handles
-  const isMultiPageFullPage = isFullPageMode === true && Array.isArray(pages) && pages.length > 1;
-  
-  if (isMultiPageFullPage) {
-    // For full-page mode: ONLY LEFT/RIGHT handles allowed
+  // Check if full-page mode - ANY full page mode restricts to L/R only
+  // This is a HARD check - if isFullPageMode is true, only L/R handles work
+  if (isFullPageMode === true) {
+    // For full-page mode: ONLY LEFT/RIGHT handles allowed - NO exceptions
     // Never allow top/bottom handles - crop only horizontally (sidebar removal)
     
     // Always allow left/right edges (sidebar crop only)
     if (Math.abs(pos.x - (x + width)) < handleSize && pos.y > y && pos.y < y + height) return 'r';
     if (Math.abs(pos.x - x) < handleSize && pos.y > y && pos.y < y + height) return 'l';
     
-    // NO top/bottom handles in full page mode - never disabled, never shown
+    // NO top/bottom handles in full page mode - never, ever
+    // NO corners either (tl, tr, bl, br)
+    // NO vertical movement
     
-    // Move allowed (restricted in handleMouseMove based on page)
+    // Move: allow horizontal repositioning only
     if (pos.x > x && pos.x < x + width && pos.y > y && pos.y < y + height) return 'move';
     return null;
   }
