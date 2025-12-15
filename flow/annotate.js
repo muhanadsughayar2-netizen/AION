@@ -2391,11 +2391,11 @@ async function save() {
         cropDataUrl = tempCanvas.toDataURL('image/png');
       }
       
-      // Send as new snap (add to queue) with isSnip metadata
+      // Send as new snap (add to queue) - NO metadata here, this is the annotation editor save
+      // The actual SNIP capture goes through saveSnipToQueue() which has the isSnip flag
       const response = await chrome.runtime.sendMessage({
         action: 'snipComplete',
-        dataUrl: cropDataUrl,
-        metadata: { isSnip: true }
+        dataUrl: cropDataUrl
       });
       
       // Check if queue is full
@@ -2552,9 +2552,6 @@ async function saveFullPageWithAnnotations() {
     const savedChunks = [];
     const savedChunkDataUrls = []; // For RE-EDIT functionality
     
-    // Generate unique captureGroupId for this set of chunks (BEFORE loop, so all chunks share same ID)
-    const fullPageCaptureGroupId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-    
     for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
       const startPage = chunkIndex * PAGES_PER_CHUNK;
       const endPage = Math.min(startPage + PAGES_PER_CHUNK, totalPages);
@@ -2709,7 +2706,7 @@ async function saveFullPageWithAnnotations() {
       chunkCanvas.width = 0;
       chunkCanvas.height = 0;
       
-      // Save to queue with part metadata (include captureGroupId for correct grouping)
+      // Save to queue with part metadata
       const response = await chrome.runtime.sendMessage({
         action: 'snipComplete',
         dataUrl: chunkDataUrl,
@@ -2719,8 +2716,7 @@ async function saveFullPageWithAnnotations() {
           totalParts: totalChunks,
           pagesInChunk: pagesInChunk,
           startPage: startPage + 1,
-          endPage: endPage,
-          captureGroupId: fullPageCaptureGroupId
+          endPage: endPage
         }
       });
       
@@ -2749,7 +2745,7 @@ async function saveFullPageWithAnnotations() {
       const lastFullPageCapture = {
         smartName: smartName,
         timestamp: Date.now(),
-        captureGroupId: fullPageCaptureGroupId,
+        captureGroupId: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
         totalParts: savedChunkDataUrls.length,
         chunks: savedChunkDataUrls,
         url: capturedUrl,

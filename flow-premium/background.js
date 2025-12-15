@@ -377,9 +377,8 @@ async function addSnip(dataUrl, metadata = null) {
     // Add new snip
     snaps.push(dataUrl);
     
-    // Add metadata - ALWAYS push an object to maintain array alignment
-    // Use empty object {} for regular snaps, chunk info for chunked captures
-    snapMetadata.push(metadata || {});
+    // Add metadata (null for regular snaps, chunk info for chunked captures)
+    snapMetadata.push(metadata);
     
     // Save to local storage
     await chrome.storage.local.set({ snaps, snapMetadata });
