@@ -2332,17 +2332,17 @@ async function handleExportPDFDirect() {
     statusError('No screenshots selected');
     return;
   }
-  
+
   try {
     const selectedSnaps = Array.from(selectedSnapIds)
       .sort((a, b) => a - b)
       .map(index => currentSnaps[index]);
-    
+
     // Show processing overlay
     showProcessingOverlay('Creating PDF...', `${selectedSnaps.length} screenshot${selectedSnaps.length > 1 ? 's' : ''}`);
-    
+
     statusExporting();
-    
+
     // Load jsPDF if not loaded
     if (!jsPDFLoaded) {
       if (!jsPDFLoadPromise) {
@@ -2359,16 +2359,16 @@ async function handleExportPDFDirect() {
       }
       await jsPDFLoadPromise;
     }
-    
+
     if (!window.jspdf || typeof window.jspdf.jsPDF === 'undefined') {
       throw new Error('PDF library not available');
     }
-    
+
     updateProcessingText('Combining screenshots...', 'Creating clean stacked image');
-    
+
     // Create ONE clean stacked image - NO borders, NO padding, WHITE background
     const stackedDataUrl = await createCleanStackedImage(selectedSnaps);
-    
+
     // Load stacked image to get dimensions
     const stackedImg = await new Promise((resolve, reject) => {
       const img = new Image();
@@ -2376,34 +2376,77 @@ async function handleExportPDFDirect() {
       img.onerror = reject;
       img.src = stackedDataUrl;
     });
-    
-    // Convert pixels to mm (96 DPI)
-    const pxToMm = 25.4 / 96;
-    const pdfWidth = stackedImg.width * pxToMm;
-    const pdfHeight = stackedImg.height * pxToMm;
-    
-    updateProcessingText('Generating PDF...', 'No borders, no margins');
-    
-    // Create PDF with EXACT page size - NO margins
+
+    // Convert pixels to points (PDF uses 72 DPI)
+    const pxToPt = (px) => px * 72 / 96;  // Standard conversion (96 DPI screen to 72 DPI PDF)
+
+    // Use A4 size (595 x 842 pt) - portrait for tall content
+    const pageWidthPt = 595;  // A4 width
+    const pageHeightPt = 842; // A4 height
+    const pageMarginPt = 0;   // No margins for clean edge-to-edge
+
+    // Calculate effective drawable area
+    const drawableWidthPt = pageWidthPt - (2 * pageMarginPt);
+    const drawableHeightPt = pageHeightPt - (2 * pageMarginPt);
+
+    // Scale image to fit page width (maintain aspect ratio)
+    const imgWidthPx = stackedImg.width;
+    const imgHeightPx = stackedImg.height;
+    const scale = drawableWidthPt / pxToPt(imgWidthPx);
+    const scaledImgHeightPt = pxToPt(imgHeightPx) * scale;
+
+    updateProcessingText('Generating PDF...', 'Paginating tall content');
+
+    // Create PDF
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({
-      orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
-      unit: 'mm',
-      format: [pdfWidth, pdfHeight]
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'a4'
     });
-    
-    // Add image at 0,0 filling entire page - NO borders, NO padding
-    pdf.addImage(stackedDataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    
-    // Save immediately
+
+    // Paginate if image is taller than one page
+    let remainingHeightPt = scaledImgHeightPt;
+    let srcY = 0;  // Source Y in original image (pixels)
+    let pageNum = 1;
+
+    while (remainingHeightPt > 0) {
+      if (pageNum > 1) pdf.addPage();  // Add new page for multi-page
+
+      const drawHeightPt = Math.min(remainingHeightPt, drawableHeightPt);
+
+      // Draw slice of image - scale to fit width, crop height if needed
+      pdf.addImage(
+        stackedDataUrl,
+        'PNG',
+        pageMarginPt,  // X
+        pageMarginPt,  // Y
+        drawableWidthPt,  // Width on page
+        drawHeightPt,  // Height on page (may be less than full page)
+        undefined,  // No alias
+        'FAST',     // Fast compression for speed
+        0,          // Rotation
+        srcY / scale  // Source Y offset in original image (adjusted for scale)
+      );
+
+      // Update for next page
+      remainingHeightPt -= drawHeightPt;
+      srcY += drawHeightPt / scale;  // Advance source Y by drawn amount (pixels)
+
+      pageNum++;
+    }
+
+    // Update overlay for save phase
+    updateProcessingText('Saving PDF...', 'Almost done');
+
+    // Save PDF
     const timestamp = new Date().toISOString().slice(0, 10);
     pdf.save(`snaptoai-stacked-${timestamp}.pdf`);
-    
+
+    // Hide processing overlay
     hideProcessingOverlay();
-    
-    // Show success toast
-    setStatus('Selected combined & exported as clean PDF! 🔥', 'success', 4000);
-    
+
+    statusExported();
   } catch (error) {
     console.error('PDF export error:', error);
     hideProcessingOverlay();
