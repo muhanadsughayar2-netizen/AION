@@ -25,6 +25,24 @@
   const restoredElements = []; // Used for videos/canvases replacement tracking
   const hiddenModals = [];    // Used for modals/pop-ups tracking
 
+  // === LOGGING HELPER FUNCTION ===
+  /**
+   * Provides a centralized logging interface.
+   * Can be easily modified later to send logs to the background script.
+   */
+  function logSnapToAI(level, message, data = null) {
+    const timestamp = new Date().toISOString().split('T')[1].slice(0, 12);
+    const prefix = `[SnapToAI:CS - ${timestamp}]`;
+    
+    if (level === 'error') {
+      console.error(`${prefix} 🛑 ERROR: ${message}`, data !== null ? data : '');
+    } else if (level === 'warn') {
+      console.warn(`${prefix} ⚠️ WARN: ${message}`, data !== null ? data : '');
+    } else {
+      console.log(`${prefix} ${message}`, data !== null ? data : '');
+    }
+  }
+
   // === P1 FIX: Custom Scroll Container Detection (Reddit/Chat Fix) ===
   function findTheScrollContainer() {
     const SCROLL_THRESHOLD = 1.5; 
