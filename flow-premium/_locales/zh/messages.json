@@ -113,7 +113,7 @@
     "description": "Empty state subheading 1"
   },
   "emptySubheading2": {
-    "message": "",
+    "message": "所有9张截图合并为一张堆叠图片",
     "description": "Empty state subheading 2"
   },
   "statusReady": {

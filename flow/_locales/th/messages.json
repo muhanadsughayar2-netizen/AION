@@ -113,7 +113,7 @@
     "description": "Empty state subheading 1"
   },
   "emptySubheading2": {
-    "message": "",
+    "message": "ภาพหน้าจอทั้ง 9 ภาพจะรวมเป็นภาพเดียว",
     "description": "Empty state subheading 2"
   },
   "statusReady": {

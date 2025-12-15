@@ -113,7 +113,7 @@
     "description": "Empty state subheading 1"
   },
   "emptySubheading2": {
-    "message": "",
+    "message": "9枚のスクリーンショットが1枚の画像に",
     "description": "Empty state subheading 2"
   },
   "statusReady": {
