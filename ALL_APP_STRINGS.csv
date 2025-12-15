@@ -1,0 +1,29 @@
+STRING_KEY|ENGLISH_VALUE
+allAsOnePDF|All as One PDF
+allAsOnePDFDesc|Combine all screenshots into one PDF file
+allAsSeparatePDFs|All as Separate PDFs
+allAsSeparatePDFsDesc|Download each screenshot as individual PDF
+cancel|Cancel
+clearAll|Clear All
+clickCameraButton|Click the glowing camera button above to capture instantly
+copySelected|Copy Selected
+daysRemaining|$DAYS$ days remaining
+deselectAll|Deselect All
+downloadSelected|Download Selected
+emptyHeading|Screenshots to AI in One Click
+emptySubheading1|Select All → Copy → Paste.
+emptySubheading2|All 9 screenshots drop as ONE stacked image
+exportPDF|Export PDF
+exportPDFOptions|Export PDF Options
+extensionDescription|Capture screenshots and batch upload to AI platforms
+extensionName|SnapToAI - Screenshot to AI
+flowReady|SnapToAI: Ready
+oneClickOneFlow|One click. One snap.
+pagesReadyForAI|Your pages, ready for AI in seconds.
+selectAll|Select All
+selectedAsOnePDF|Selected as One PDF
+selectedAsOnePDFDesc|Combine selected screenshots into one PDF
+selectedAsSeparatePDFs|Selected as Separate PDFs
+selectedAsSeparatePDFsDesc|Download each selected screenshot as PDF
+trialEnded|Trial Ended
+upgradeNow|Upgrade Now - $9.90/year
