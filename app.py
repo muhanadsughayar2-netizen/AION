@@ -56,6 +56,11 @@ def add_headers(response):
     response.headers['Expires'] = '0'
     return response
 
+@app.route('/health')
+def health():
+    """Health check endpoint for deployment"""
+    return Response("OK", status=200, mimetype='text/plain')
+
 @app.route('/')
 def index():
     """Serve English landing page (default) - read directly from disk"""
