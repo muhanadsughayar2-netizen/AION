@@ -1776,40 +1776,17 @@ function updateThumbnails() {
       thumbnail.addEventListener('drop', (e) => handleDrop(e, index));
       thumbnail.addEventListener('dragend', handleDragEnd);
       
-      // Get metadata for this snap
+      // Get metadata for this snap (only used for RE-EDIT button, not for numbering)
       const isFullPageChunk = meta.isChunk || (meta.totalParts && meta.totalParts > 1);
       const isSnip = meta.isSnip;
       
-      // Create number label
+      // Create number label - SIMPLE SEQUENTIAL NUMBER (index + 1)
       const number = document.createElement('div');
       number.className = 'thumbnail-number';
+      number.textContent = index + 1;  // Just the queue position: 1, 2, 3, 4...
+      number.title = `#${index + 1}`;
       
-      // Create type badge
-      const typeBadge = document.createElement('div');
-      typeBadge.className = 'capture-type-badge';
-      
-      // Determine label based on capture type
-      let typeLabel = 'SNAP';
-      if (isFullPageChunk) {
-        typeLabel = 'FULL';
-        typeBadge.classList.add('type-full');
-        const partNum = meta.part || (groupIndex + 1);
-        const totalParts = meta.totalParts || group.items.length;
-        number.textContent = `${baseNum}.${partNum}`;
-        number.title = `Full Page ${baseNum}, Part ${partNum} of ${totalParts}`;
-      } else if (isSnip) {
-        typeLabel = 'SNIP';
-        typeBadge.classList.add('type-snip');
-        number.textContent = baseNum;
-        number.title = `Snip ${baseNum}`;
-      } else {
-        typeLabel = 'SNAP';
-        typeBadge.classList.add('type-snap');
-        number.textContent = baseNum;
-        number.title = `Snap ${baseNum}`;
-      }
-      
-      typeBadge.textContent = typeLabel;
+      // NO TYPE BADGE - just simple numbers now
       
       thumbnail.appendChild(checkbox);
       thumbnail.appendChild(deleteBtn);
@@ -1820,7 +1797,6 @@ function updateThumbnails() {
       thumbnail.appendChild(copyBtn);
       thumbnail.appendChild(img);
       thumbnail.appendChild(number);
-      thumbnail.appendChild(typeBadge);
       
       // Add chunk badge if this is a chunked capture
       if (isFullPageChunk) {
