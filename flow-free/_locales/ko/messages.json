@@ -1,119 +1,30 @@
 {
-  "extensionName": {
-    "message": "SnapToAI - 스크린샷에서 AI로",
-    "description": "extensionName"
-  },
-  "extensionDescription": {
-    "message": "스크린샷을 캡처하고 AI 플랫폼에 일괄 업로드",
-    "description": "extensionDescription"
-  },
-  "flowReady": {
-    "message": "SnapToAI: 준비됨",
-    "description": "flowReady"
-  },
-  "oneClickOneFlow": {
-    "message": "한 번 클릭. 한 번 스냅.",
-    "description": "oneClickOneFlow"
-  },
-  "pagesReadyForAI": {
-    "message": "당신의 페이지는 AI를 위해 준비되었습니다",
-    "description": "pagesReadyForAI"
-  },
-  "clickCameraButton": {
-    "message": "카메라를 클릭하여 스크린샷 캡처",
-    "description": "clickCameraButton"
-  },
-  "selectAll": {
-    "message": "모두 선택",
-    "description": "selectAll"
-  },
-  "deselectAll": {
-    "message": "모두 선택 해제",
-    "description": "deselectAll"
-  },
-  "copySelected": {
-    "message": "선택항목 복사",
-    "description": "copySelected"
-  },
-  "downloadSelected": {
-    "message": "선택항목 다운로드",
-    "description": "downloadSelected"
-  },
-  "exportPDF": {
-    "message": "PDF 내보내기",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "PDF 옵션",
-    "description": "exportPDFOptions"
-  },
-  "allAsOnePDF": {
-    "message": "모두 하나의 PDF로",
-    "description": "allAsOnePDF"
-  },
-  "allAsOnePDFDesc": {
-    "message": "모든 스크린샷을 하나의 PDF로 결합",
-    "description": "allAsOnePDFDesc"
-  },
-  "allAsSeparatePDFs": {
-    "message": "모두 별도 PDF로",
-    "description": "allAsSeparatePDFs"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "각 스크린샷을 별도 PDF로 다운로드",
-    "description": "allAsSeparatePDFsDesc"
-  },
-  "selectedAsOnePDF": {
-    "message": "선택항목을 하나의 PDF로",
-    "description": "selectedAsOnePDF"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "선택항목을 하나의 PDF로 결합",
-    "description": "selectedAsOnePDFDesc"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "선택항목을 별도 PDF로",
-    "description": "selectedAsSeparatePDFs"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "각 선택항목을 별도 PDF로 다운로드",
-    "description": "selectedAsSeparatePDFsDesc"
-  },
-  "clearAll": {
-    "message": "모두 지우기",
-    "description": "clearAll"
-  },
-  "cancel": {
-    "message": "취소",
-    "description": "cancel"
-  },
-  "trialEnded": {
-    "message": "평가판 종료",
-    "description": "trialEnded"
-  },
-  "upgradeNow": {
-    "message": "지금 업그레이드 - $9.90/년",
-    "description": "upgradeNow"
-  },
-  "daysRemaining": {
-    "message": "$DAYS$일 남음",
-    "description": "daysRemaining",
-    "placeholders": {
-      "days": {
-        "content": "$1"
-      }
-    }
-  },
-  "emptyHeading": {
-    "message": "한 번 클릭. 한 번의 스냅샷.",
-    "description": "Empty state heading"
-  },
-  "emptySubheading1": {
-    "message": "전체 선택 → 복사 → 붙여넣기.",
-    "description": "Empty state subheading 1"
-  },
-  "emptySubheading2": {
-    "message": "9개의 스크린샷이 하나의 스택 이미지로",
-    "description": "Empty state subheading 2"
-  }
+  "allAsOnePDF": { "message": "Snap To AI", "description": "allAsOnePDF" },
+  "allAsOnePDFDesc": { "message": "촬영. 자르기. AI로 보내기. 🔥", "description": "allAsOnePDFDesc" },
+  "allAsSeparatePDFs": { "message": "카운터 로딩 중...", "description": "allAsSeparatePDFs" },
+  "allAsSeparatePDFsDesc": { "message": "방문", "description": "allAsSeparatePDFsDesc" },
+  "cancel": { "message": "촬영", "description": "cancel" },
+  "clearAll": { "message": "자르기", "description": "clearAll" },
+  "clickCameraButton": { "message": "전체 페이지", "description": "clickCameraButton" },
+  "copySelected": { "message": "전체 스크린샷 캡처", "description": "copySelected" },
+  "daysRemaining": { "message": "영역 자르기 및 선택", "description": "daysRemaining" },
+  "deselectAll": { "message": "전체 페이지 캡처", "description": "deselectAll" },
+  "downloadSelected": { "message": "전체 선택", "description": "downloadSelected" },
+  "emptyHeading": { "message": "선택한 항목 복사", "description": "emptyHeading" },
+  "emptySubheading1": { "message": "PNG로 다운로드", "description": "emptySubheading1" },
+  "emptySubheading2": { "message": "PDF 다운로드", "description": "emptySubheading2" },
+  "exportPDF": { "message": "모두 지우기", "description": "exportPDF" },
+  "exportPDFOptions": { "message": "취소", "description": "exportPDFOptions" },
+  "extensionDescription": { "message": "준비됨", "description": "extensionDescription" },
+  "extensionName": { "message": "SnapToAI: 준비됨", "description": "extensionName" },
+  "flowReady": { "message": "촬영 중...", "description": "flowReady" },
+  "oneClickOneFlow": { "message": "자르기 중...", "description": "oneClickOneFlow" },
+  "pagesReadyForAI": { "message": "전체 페이지 캡처 중...", "description": "pagesReadyForAI" },
+  "selectAll": { "message": "촬영 완료! ✓", "description": "selectAll" },
+  "selectedAsOnePDF": { "message": "자르기 완료! ✓", "description": "selectedAsOnePDF" },
+  "selectedAsOnePDFDesc": { "message": "전체 페이지 캡처 완료! ✓", "description": "selectedAsOnePDFDesc" },
+  "selectedAsSeparatePDFs": { "message": "[count]개의 스크린샷 선택됨 → 하나의 중첩 이미지로 결합됩니다", "description": "selectedAsSeparatePDFs" },
+  "selectedAsSeparatePDFsDesc": { "message": "결합 및 복사 중...", "description": "selectedAsSeparatePDFsDesc" },
+  "trialEnded": { "message": "[count]개의 스크린샷 결합 및 복사 완료! 👉 지금 AI에 붙여넣기", "description": "trialEnded" },
+  "upgradeNow": { "message": "다운로드 중...", "description": "upgradeNow" }
 }

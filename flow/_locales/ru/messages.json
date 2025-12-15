@@ -1,119 +1,30 @@
 {
-  "extensionName": {
-    "message": "SnapToAI - Скриншот в ИИ",
-    "description": "extensionName"
-  },
-  "extensionDescription": {
-    "message": "Захватывайте скриншоты и массово загружайте на платформы ИИ",
-    "description": "extensionDescription"
-  },
-  "flowReady": {
-    "message": "SnapToAI: Готово",
-    "description": "flowReady"
-  },
-  "oneClickOneFlow": {
-    "message": "Один клик. Один снимок.",
-    "description": "oneClickOneFlow"
-  },
-  "pagesReadyForAI": {
-    "message": "Ваши страницы готовы к ИИ",
-    "description": "pagesReadyForAI"
-  },
-  "clickCameraButton": {
-    "message": "Нажмите на камеру, чтобы захватить скриншот",
-    "description": "clickCameraButton"
-  },
-  "selectAll": {
-    "message": "Выбрать все",
-    "description": "selectAll"
-  },
-  "deselectAll": {
-    "message": "Снять выделение",
-    "description": "deselectAll"
-  },
-  "copySelected": {
-    "message": "Копировать выбранное",
-    "description": "copySelected"
-  },
-  "downloadSelected": {
-    "message": "Загрузить выбранное",
-    "description": "downloadSelected"
-  },
-  "exportPDF": {
-    "message": "Экспортировать PDF",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "Опции PDF",
-    "description": "exportPDFOptions"
-  },
-  "allAsOnePDF": {
-    "message": "Все как один PDF",
-    "description": "allAsOnePDF"
-  },
-  "allAsOnePDFDesc": {
-    "message": "Объединить все скриншоты в один PDF",
-    "description": "allAsOnePDFDesc"
-  },
-  "allAsSeparatePDFs": {
-    "message": "Все как отдельные PDF",
-    "description": "allAsSeparatePDFs"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "Загрузить каждый скриншот как отдельный PDF",
-    "description": "allAsSeparatePDFsDesc"
-  },
-  "selectedAsOnePDF": {
-    "message": "Выбранное как один PDF",
-    "description": "selectedAsOnePDF"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "Объединить выбранное в один PDF",
-    "description": "selectedAsOnePDFDesc"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "Выбранное как отдельные PDF",
-    "description": "selectedAsSeparatePDFs"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "Загрузить каждое выбранное как отдельный PDF",
-    "description": "selectedAsSeparatePDFsDesc"
-  },
-  "clearAll": {
-    "message": "Очистить все",
-    "description": "clearAll"
-  },
-  "cancel": {
-    "message": "Отмена",
-    "description": "cancel"
-  },
-  "trialEnded": {
-    "message": "Пробный период завершен",
-    "description": "trialEnded"
-  },
-  "upgradeNow": {
-    "message": "Обновить сейчас - $9.90/год",
-    "description": "upgradeNow"
-  },
-  "daysRemaining": {
-    "message": "Осталось $DAYS$ дней",
-    "description": "daysRemaining",
-    "placeholders": {
-      "days": {
-        "content": "$1"
-      }
-    }
-  },
-  "emptyHeading": {
-    "message": "Один клик. Одна скриншот.",
-    "description": "Empty state heading"
-  },
-  "emptySubheading1": {
-    "message": "Выбрать всё → Копировать → Вставить.",
-    "description": "Empty state subheading 1"
-  },
-  "emptySubheading2": {
-    "message": "Все 9 скриншотов становятся ОДНИМ изображением",
-    "description": "Empty state subheading 2"
-  }
+  "allAsOnePDF": { "message": "Snap To AI", "description": "allAsOnePDF" },
+  "allAsOnePDFDesc": { "message": "Сними. Обрежь. Отправь в ИИ. 🔥", "description": "allAsOnePDFDesc" },
+  "allAsSeparatePDFs": { "message": "Загрузка счётчика...", "description": "allAsSeparatePDFs" },
+  "allAsSeparatePDFsDesc": { "message": "посещений", "description": "allAsSeparatePDFsDesc" },
+  "cancel": { "message": "Снимок", "description": "cancel" },
+  "clearAll": { "message": "Обрезать", "description": "clearAll" },
+  "clickCameraButton": { "message": "Вся страница", "description": "clickCameraButton" },
+  "copySelected": { "message": "Снять полный скриншот", "description": "copySelected" },
+  "daysRemaining": { "message": "Обрезать и выбрать области", "description": "daysRemaining" },
+  "deselectAll": { "message": "Снять всю страницу", "description": "deselectAll" },
+  "downloadSelected": { "message": "Выделить всё", "description": "downloadSelected" },
+  "emptyHeading": { "message": "Копировать выбранное", "description": "emptyHeading" },
+  "emptySubheading1": { "message": "Скачать как PNG", "description": "emptySubheading1" },
+  "emptySubheading2": { "message": "Скачать PDF", "description": "emptySubheading2" },
+  "exportPDF": { "message": "Очистить всё", "description": "exportPDF" },
+  "exportPDFOptions": { "message": "Отмена", "description": "exportPDFOptions" },
+  "extensionDescription": { "message": "Готов", "description": "extensionDescription" },
+  "extensionName": { "message": "SnapToAI: Готов", "description": "extensionName" },
+  "flowReady": { "message": "Съёмка снимка...", "description": "flowReady" },
+  "oneClickOneFlow": { "message": "Обрезка...", "description": "oneClickOneFlow" },
+  "pagesReadyForAI": { "message": "Съёмка всей страницы...", "description": "pagesReadyForAI" },
+  "selectAll": { "message": "Снимок сделан! ✓", "description": "selectAll" },
+  "selectedAsOnePDF": { "message": "Обрезано! ✓", "description": "selectedAsOnePDF" },
+  "selectedAsOnePDFDesc": { "message": "Вся страница снята! ✓", "description": "selectedAsOnePDFDesc" },
+  "selectedAsSeparatePDFs": { "message": "[count] скриншотов выбрано → будут объединены в ОДНО наложенное изображение", "description": "selectedAsSeparatePDFs" },
+  "selectedAsSeparatePDFsDesc": { "message": "Объединение и копирование...", "description": "selectedAsSeparatePDFsDesc" },
+  "trialEnded": { "message": "[count] скриншотов объединено и скопировано! 👉 Вставьте в ИИ сейчас", "description": "trialEnded" },
+  "upgradeNow": { "message": "Скачивание...", "description": "upgradeNow" }
 }

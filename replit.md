@@ -4,7 +4,7 @@
 
 SnapToAI is a privacy-first, client-side Chrome Extension (Manifest V3) designed to streamline capturing multiple screenshots and uploading them in batches to AI chat platforms like ChatGPT, Claude, and Grok. It temporarily stores up to 10 screenshots in browser session storage using a FIFO queue and operates without any backend server. The extension features a "Capture Mode" for taking screenshots and an "Upload Mode" that auto-detects AI chat sites for batch-uploading.
 
-Key capabilities include simplified annotation tools (Highlight Brush, Numbered Callouts, Text, Quick Stickers), custom sticker templates, advanced PDF export options, drag & drop reordering, multi-select operations, individual snapshot management, and full multi-language support (55 Chrome-supported languages). The project also includes a viral, responsive, glassmorphism-designed landing page with professional SaaS copywriting, emphasizing time savings, privacy, and workflow transformation.
+Key capabilities include simplified annotation tools (Highlight Brush, Numbered Callouts, Text, Quick Stickers), custom sticker templates, advanced PDF export options, drag & drop reordering, multi-select operations, individual snapshot management, and full multi-language support (59 Chrome-supported languages). The project also includes a viral, responsive, glassmorphism-designed landing page with professional SaaS copywriting, emphasizing time savings, privacy, and workflow transformation.
 
 ## User Preferences
 
@@ -16,7 +16,7 @@ Logo: Keep camera emoji (📸) in logo - user's preference
 ## System Architecture
 
 ### UI/UX Decisions
-The extension features a glassmorphism dark theme for its popup interface. The landing page utilizes a glassmorphism design with a responsive, mobile-first approach, elegant text badges, and professional styling, available in 55 languages. It includes a "Taste It Now" interactive demo with a 3-click modal system for generating sample code snippets. The workflow presentation on the landing page is ultra-clean, minimal, and emoji-driven.
+The extension features a glassmorphism dark theme for its popup interface. The landing page utilizes a glassmorphism design with a responsive, mobile-first approach, elegant text badges, and professional styling, available in 59 languages. It includes a "Taste It Now" interactive demo with a 3-click modal system for generating sample code snippets. The workflow presentation on the landing page is ultra-clean, minimal, and emoji-driven.
 
 ### Technical Implementations
 The landing page implements a robust SEO strategy with separate, pre-rendered HTML files for each of the 54 supported languages, utilizing proper `lang` and `dir` attributes, canonical URLs, and `hreflang` tags. An XML sitemap and `robots.txt` are configured to optimize search engine indexing and crawling. Aggressive no-cache headers ensure fresh content delivery.
@@ -34,6 +34,10 @@ The extension supports capturing, annotating, organizing (reordering, multi-sele
 5. Applies invisible watermark (SnapToAI marketing)
 6. Saves the stitched image to the queue
 Handles infinite-scroll sites with scroll settlement detection. Works on any web page regardless of length.
+
+**Watermark Implementation (December 2025):** Invisible watermark applied to all exported PDFs and clipboard operations. Protects SnapToAI branding across all shared content while remaining invisible to end users. Watermark is stored as base64 image data in popup.js and applied during export/clipboard operations across all three extension versions (flow, flow-free, flow-premium).
+
+**Extended Language Support (December 2025):** Language support expanded from 55 to 59 languages with the addition of Russian, Italian, Turkish, and Korean. All 59 language versions maintained across three extension folders with identical translation strings.
 
 ### System Design Choices
 The extension is built as a Manifest V3 Chrome Extension. It employs a Service Worker for background processes, a Content Script for in-page interactions and AI platform detection, and a Popup Interface for user interaction. Data is stored entirely client-side using Chrome's session and local storage APIs, ensuring privacy and eliminating the need for an external backend database. Screenshots are stored as base64 dataURL strings in a FIFO queue within session storage.

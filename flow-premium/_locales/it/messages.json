@@ -1,119 +1,30 @@
 {
-  "extensionName": {
-    "message": "SnapToAI - Italian",
-    "description": "extensionName"
-  },
-  "extensionDescription": {
-    "message": "Screenshot and batch upload to AI",
-    "description": "extensionDescription"
-  },
-  "flowReady": {
-    "message": "SnapToAI: Ready",
-    "description": "flowReady"
-  },
-  "oneClickOneFlow": {
-    "message": "Un clic. Uno scatto.",
-    "description": "oneClickOneFlow"
-  },
-  "pagesReadyForAI": {
-    "message": "Your pages ready for AI",
-    "description": "pagesReadyForAI"
-  },
-  "clickCameraButton": {
-    "message": "Click camera to capture",
-    "description": "clickCameraButton"
-  },
-  "selectAll": {
-    "message": "Seleziona tutto",
-    "description": "selectAll"
-  },
-  "deselectAll": {
-    "message": "Seleziona tutto",
-    "description": "deselectAll"
-  },
-  "copySelected": {
-    "message": "Copia selezionato",
-    "description": "copySelected"
-  },
-  "downloadSelected": {
-    "message": "Scarica selezionato",
-    "description": "downloadSelected"
-  },
-  "exportPDF": {
-    "message": "Export PDF",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "PDF Options",
-    "description": "exportPDFOptions"
-  },
-  "allAsOnePDF": {
-    "message": "All as One PDF",
-    "description": "allAsOnePDF"
-  },
-  "allAsOnePDFDesc": {
-    "message": "Combine all into one PDF",
-    "description": "allAsOnePDFDesc"
-  },
-  "allAsSeparatePDFs": {
-    "message": "All as Separate PDFs",
-    "description": "allAsSeparatePDFs"
-  },
-  "allAsSeparatePDFsDesc": {
-    "message": "Download each as separate PDF",
-    "description": "allAsSeparatePDFsDesc"
-  },
-  "selectedAsOnePDF": {
-    "message": "Selected as One PDF",
-    "description": "selectedAsOnePDF"
-  },
-  "selectedAsOnePDFDesc": {
-    "message": "Combine selected as one PDF",
-    "description": "selectedAsOnePDFDesc"
-  },
-  "selectedAsSeparatePDFs": {
-    "message": "Selected as Separate PDFs",
-    "description": "selectedAsSeparatePDFs"
-  },
-  "selectedAsSeparatePDFsDesc": {
-    "message": "Download each selected as PDF",
-    "description": "selectedAsSeparatePDFsDesc"
-  },
-  "clearAll": {
-    "message": "Cancella tutto",
-    "description": "clearAll"
-  },
-  "cancel": {
-    "message": "Annulla",
-    "description": "cancel"
-  },
-  "trialEnded": {
-    "message": "Trial Ended",
-    "description": "trialEnded"
-  },
-  "upgradeNow": {
-    "message": "Upgrade Now - $9.90/year",
-    "description": "upgradeNow"
-  },
-  "daysRemaining": {
-    "message": "$DAYS$ days remaining",
-    "description": "daysRemaining",
-    "placeholders": {
-      "days": {
-        "content": "$1"
-      }
-    }
-  },
-  "emptyHeading": {
-    "message": "Screenshot verso l'IA in un clic",
-    "description": "Empty state heading"
-  },
-  "emptySubheading1": {
-    "message": "Seleziona tutto → Copia → Incolla.",
-    "description": "Empty state subheading 1"
-  },
-  "emptySubheading2": {
-    "message": "Tutte le 9 schermate diventano UN'immagine impilata",
-    "description": "Empty state subheading 2"
-  }
+  "allAsOnePDF": { "message": "Snap To AI", "description": "allAsOnePDF" },
+  "allAsOnePDFDesc": { "message": "Scatta. Ritaglia. Invia all'IA. 🔥", "description": "allAsOnePDFDesc" },
+  "allAsSeparatePDFs": { "message": "Caricamento contatore...", "description": "allAsSeparatePDFs" },
+  "allAsSeparatePDFsDesc": { "message": "visite", "description": "allAsSeparatePDFsDesc" },
+  "cancel": { "message": "Scatta", "description": "cancel" },
+  "clearAll": { "message": "Ritaglia", "description": "clearAll" },
+  "clickCameraButton": { "message": "Pagina intera", "description": "clickCameraButton" },
+  "copySelected": { "message": "Cattura screenshot completo", "description": "copySelected" },
+  "daysRemaining": { "message": "Ritaglia e seleziona aree", "description": "daysRemaining" },
+  "deselectAll": { "message": "Cattura tutta la pagina", "description": "deselectAll" },
+  "downloadSelected": { "message": "Seleziona tutto", "description": "downloadSelected" },
+  "emptyHeading": { "message": "Copia selezionato", "description": "emptyHeading" },
+  "emptySubheading1": { "message": "Scarica come PNG", "description": "emptySubheading1" },
+  "emptySubheading2": { "message": "Scarica PDF", "description": "emptySubheading2" },
+  "exportPDF": { "message": "Cancella tutto", "description": "exportPDF" },
+  "exportPDFOptions": { "message": "Annulla", "description": "exportPDFOptions" },
+  "extensionDescription": { "message": "Pronto", "description": "extensionDescription" },
+  "extensionName": { "message": "SnapToAI: Pronto", "description": "extensionName" },
+  "flowReady": { "message": "Cattura scatto in corso...", "description": "flowReady" },
+  "oneClickOneFlow": { "message": "Ritaglio in corso...", "description": "oneClickOneFlow" },
+  "pagesReadyForAI": { "message": "Cattura pagina intera in corso...", "description": "pagesReadyForAI" },
+  "selectAll": { "message": "Scatto catturato! ✓", "description": "selectAll" },
+  "selectedAsOnePDF": { "message": "Ritaglio completato! ✓", "description": "selectedAsOnePDF" },
+  "selectedAsOnePDFDesc": { "message": "Pagina intera catturata! ✓", "description": "selectedAsOnePDFDesc" },
+  "selectedAsSeparatePDFs": { "message": "[count] screenshot selezionati → verranno combinati in UNA immagine sovrapposta", "description": "selectedAsSeparatePDFs" },
+  "selectedAsSeparatePDFsDesc": { "message": "Combinazione e copia in corso...", "description": "selectedAsSeparatePDFsDesc" },
+  "trialEnded": { "message": "[count] screenshot combinati e copiati! 👉 Incolla nell'IA ora", "description": "trialEnded" },
+  "upgradeNow": { "message": "Download in corso...", "description": "upgradeNow" }
 }
