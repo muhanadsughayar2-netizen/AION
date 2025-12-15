@@ -692,6 +692,27 @@ async function loadImage() {
   // Edit Mode OR Reedit Mode - load image from local storage (handles large images)
   if (mode === 'edit' || mode === 'reedit') {
     try {
+      // Check if this is a full-page re-edit - if so, force full page mode settings
+      if (mode === 'reedit') {
+        const fpCheck = await chrome.storage.local.get(['lastFullPageCapture', 'reeditCapture']);
+        if (fpCheck.reeditCapture || fpCheck.lastFullPageCapture) {
+          // This is a full-page re-edit - force full page mode settings
+          isFullPageMode = true;
+          hasBorder = false;
+          hasBrowserFrame = false;
+          
+          // Hide border controls
+          const borderBtn = document.getElementById('toggleBorder');
+          if (borderBtn) borderBtn.style.display = 'none';
+          const borderWidth = document.getElementById('borderWidth');
+          if (borderWidth) borderWidth.style.display = 'none';
+          const borderColor = document.getElementById('borderColor');
+          if (borderColor) borderColor.style.display = 'none';
+          const frameBtn = document.getElementById('toggleBrowserFrame');
+          if (frameBtn) frameBtn.style.display = 'none';
+        }
+      }
+      
       const result = await chrome.storage.local.get(['editImage', 'editIndex']);
       const imageUrl = result.editImage;
       
@@ -774,6 +795,21 @@ async function loadImage() {
 // Load pages for full page mode - LAZY LOADING for performance
 async function loadFullPageImages() {
   try {
+    // FORCE full page mode settings - hide borders and restrict crop
+    isFullPageMode = true;
+    hasBorder = false;
+    hasBrowserFrame = false;
+    
+    // Hide border controls (redundant but ensures they're hidden)
+    const borderBtn = document.getElementById('toggleBorder');
+    if (borderBtn) borderBtn.style.display = 'none';
+    const borderWidth = document.getElementById('borderWidth');
+    if (borderWidth) borderWidth.style.display = 'none';
+    const borderColor = document.getElementById('borderColor');
+    if (borderColor) borderColor.style.display = 'none';
+    const frameBtn = document.getElementById('toggleBrowserFrame');
+    if (frameBtn) frameBtn.style.display = 'none';
+    
     // Get pages from local storage (unlimited size)
     const result = await chrome.storage.local.get('fullPageScreenshots');
     pages = result.fullPageScreenshots || [];
