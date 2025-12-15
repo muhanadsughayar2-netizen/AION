@@ -2899,10 +2899,28 @@
       // Uses 700ms delay between captures to avoid quota errors (used by GoFullPage, FireShot)
       let lastScrollTop = -1;
       let captureCount = 0;
-      const maxCaptures = 100; // Safety limit
+      const MAX_PAGES_LIMIT = 45; // HARD CAP: Maximum 45 pages per full page capture
       let consecutiveFails = 0;
       const MAX_CONSECUTIVE_FAILS = 5;
       let totalEstimatedCaptures = Math.ceil(getMaxScroll() / (viewportHeight * 0.8)) + 1;
+      
+      // PRE-FLIGHT: Check if page exceeds 45 page limit
+      if (totalEstimatedCaptures > MAX_PAGES_LIMIT) {
+        logSnapToAI('warn', `[SnapToAI] Page too long: ${totalEstimatedCaptures} pages (max ${MAX_PAGES_LIMIT})`);
+        // Clean up
+        restoreFixedElements();
+        unfreezeDOM();
+        restoreReplacedMedia();
+        if (overlay && overlay.parentNode) overlay.remove();
+        
+        // Send error back to popup
+        chrome.runtime.sendMessage({
+          action: 'fullPageCaptureComplete',
+          success: false,
+          error: `Page too long (${totalEstimatedCaptures} pages). Maximum is ${MAX_PAGES_LIMIT} pages. Try capturing a shorter section.`
+        });
+        return;
+      }
       
       // === SERVICE WORKER KEEP-ALIVE ===
       // Ping service worker every 15 seconds to prevent it from going to sleep (MV3 issue)
@@ -2924,7 +2942,7 @@
         }
       }
       
-      while (captureCount < maxCaptures && consecutiveFails < MAX_CONSECUTIVE_FAILS) {
+      while (captureCount < MAX_PAGES_LIMIT && consecutiveFails < MAX_CONSECUTIVE_FAILS) {
         // Check if capture was aborted (timeout from popup)
         if (isFullPageCaptureAborted) {
           logSnapToAI('log', '[SnapToAI] Full page capture aborted - stopping loop');
