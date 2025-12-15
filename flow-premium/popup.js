@@ -1466,20 +1466,14 @@ async function loadSnaps() {
     const result = await chrome.storage.local.get({ snapMetadata: [] });
     let snapMetadata = result.snapMetadata || [];
     
-    // Migration: pad metadata array if it's shorter than snaps (legacy queue fix)
-    if (snapMetadata.length < newSnaps.length) {
-      console.log(`[SnapToAI] Repairing metadata: ${snapMetadata.length} → ${newSnaps.length}`);
-      while (snapMetadata.length < newSnaps.length) {
-        snapMetadata.unshift(null); // Prepend nulls for old snaps missing metadata
-      }
-      // Save repaired metadata
-      await chrome.storage.local.set({ snapMetadata });
+    // Read-only padding for display (do NOT write back - avoids race with background)
+    // If metadata is shorter, pad locally with nulls for correct indexing
+    while (snapMetadata.length < newSnaps.length) {
+      snapMetadata.unshift(null);
     }
-    
-    // Trim metadata if longer than snaps (shouldn't happen, but safety)
+    // If metadata is longer, trim locally
     if (snapMetadata.length > newSnaps.length) {
       snapMetadata = snapMetadata.slice(0, newSnaps.length);
-      await chrome.storage.local.set({ snapMetadata });
     }
     
     currentSnapMetadata = snapMetadata;
