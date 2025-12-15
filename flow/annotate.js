@@ -46,7 +46,7 @@ let hasBrowserFrame = false;
 let browserFrameUrl = '';
 let browserFrameStyle = 'mac'; // 'mac', 'windows', 'minimal'
 let browserFramePosition = 'top'; // 'top' or 'bottom' - exactly like GoFullPage
-let hasBorder = true; // ENABLED by default for professional output
+let hasBorder = false; // Disabled by default to prevent blue issues
 
 // History stack for full undo/redo (GoFullPage-style)
 let historyStack = [];
@@ -1624,6 +1624,10 @@ function applyBorderDecoration(sourceCanvas) {
     framedCanvas.height = sourceCanvas.height + frameHeight;
     const framedCtx = framedCanvas.getContext('2d', { willReadFrequently: true });
     
+    // Fill entire frame background with WHITE (clean, no blue)
+    framedCtx.fillStyle = '#FFFFFF';
+    framedCtx.fillRect(0, 0, framedCanvas.width, framedCanvas.height);
+    
     // Determine frame Y position based on browserFramePosition (top/bottom)
     const isBottom = browserFramePosition === 'bottom';
     const frameY = isBottom ? sourceCanvas.height : 0;
@@ -1713,33 +1717,25 @@ function applyBorderDecoration(sourceCanvas) {
   if (!hasBorder) {
     return workingCanvas;
   }
-  
-  const padding = borderWidth;
+
+  const padding = borderWidth / 2;  // Reduced padding - border is now stroke, not fill
   const decoratedCanvas = document.createElement('canvas');
+  decoratedCanvas.width = workingCanvas.width + borderWidth;
+  decoratedCanvas.height = workingCanvas.height + borderWidth;
   const decoratedCtx = decoratedCanvas.getContext('2d', { willReadFrequently: true });
   
-  decoratedCanvas.width = workingCanvas.width + (padding * 2);
-  decoratedCanvas.height = workingCanvas.height + (padding * 2);
-  
-  // Fill with border color
-  decoratedCtx.fillStyle = borderColor;
+  // Fill ENTIRE background with WHITE (clean padding, no blue boxes)
+  decoratedCtx.fillStyle = '#FFFFFF';
   decoratedCtx.fillRect(0, 0, decoratedCanvas.width, decoratedCanvas.height);
   
-  // Apply rounded corners if needed
-  if (borderRadius > 0) {
-    decoratedCtx.save();
-    decoratedCtx.beginPath();
-    decoratedCtx.roundRect(padding, padding, workingCanvas.width, workingCanvas.height, borderRadius);
-    decoratedCtx.clip();
-  }
-  
-  // Draw source canvas
+  // Draw image in center (with padding for border)
   decoratedCtx.drawImage(workingCanvas, padding, padding);
   
-  if (borderRadius > 0) {
-    decoratedCtx.restore();
-  }
-  
+  // Draw border STROKE around the image (thin outline, not fill)
+  decoratedCtx.strokeStyle = borderColor;
+  decoratedCtx.lineWidth = borderWidth;
+  decoratedCtx.strokeRect(padding, padding, workingCanvas.width, workingCanvas.height);
+
   return decoratedCanvas;
 }
 
@@ -2335,6 +2331,7 @@ async function save() {
         exportCanvas = canvas;
       }
       
+      exportCanvas = await trimBottomEmptySpace(exportCanvas);
       const annotatedDataUrl = exportCanvas.toDataURL('image/png');
       
       // Get existing lastFullPageCapture and update with annotated version
@@ -2386,9 +2383,11 @@ async function save() {
       let cropDataUrl;
       if (hasBorder || hasBrowserFrame) {
         const decoratedCanvas = applyBorderDecoration(tempCanvas);
-        cropDataUrl = decoratedCanvas.toDataURL('image/png');
+        const trimmedCanvas = await trimBottomEmptySpace(decoratedCanvas);
+        cropDataUrl = trimmedCanvas.toDataURL('image/png');
       } else {
-        cropDataUrl = tempCanvas.toDataURL('image/png');
+        const trimmedCanvas = await trimBottomEmptySpace(tempCanvas);
+        cropDataUrl = trimmedCanvas.toDataURL('image/png');
       }
       
       // Send as new snap (add to queue) with isSnip metadata
@@ -2429,8 +2428,9 @@ async function save() {
     let exportCanvas;
     if (hasBorder || hasBrowserFrame) {
       exportCanvas = applyBorderDecoration(canvas);
+      exportCanvas = await trimBottomEmptySpace(exportCanvas);
     } else {
-      exportCanvas = canvas;
+      exportCanvas = await trimBottomEmptySpace(canvas);
     }
     
     const dataUrl = exportCanvas.toDataURL('image/png');
@@ -2632,6 +2632,9 @@ async function saveFullPageWithAnnotations() {
       
       // Add watermark to chunk
       addInvisibleWatermarkToCanvas(chunkCanvas);
+      
+      // Trim bottom empty/blue space after stitching chunk
+      chunkCanvas = await trimBottomEmptySpace(chunkCanvas);
       
       // Add border and browser frame if enabled — ENSURE UNIFORM SIZE FOR PDF
       if (hasBorder || hasBrowserFrame) {
