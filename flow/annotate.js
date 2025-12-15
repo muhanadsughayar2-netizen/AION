@@ -972,15 +972,9 @@ function handleMouseMove(e) {
       if (cropHandle.includes('l')) { cx += dx; cw -= dx; }
       if (cropHandle.includes('r')) cw += dx;
       
-      // Vertical resize logic
-      if (isMultiPageFullPage) {
-        // Full-page group: smart vertical cropping based on page position
-        const isFirstPage = currentPageIndex === 0;
-        const isLastPage = currentPageIndex === pages.length - 1;
-        if (isFirstPage && cropHandle === 't') { cy += dy; ch -= dy; }
-        if (isLastPage && cropHandle === 'b') ch += dy;
-      } else {
-        // Single image/snip: full vertical cropping allowed
+      // Vertical resize: NEVER for full-page mode (only L/R handles)
+      // Only for single images/snips
+      if (!isMultiPageFullPage) {
         if (cropHandle.includes('t')) { cy += dy; ch -= dy; }
         if (cropHandle.includes('b')) ch += dy;
       }
@@ -3169,20 +3163,14 @@ function getCropHandleAt(pos) {
   const isMultiPageFullPage = isFullPageMode === true && Array.isArray(pages) && pages.length > 1;
   
   if (isMultiPageFullPage) {
-    // For full-page groups: smart vertical cropping based on page position
-    // Compute boundary flags only inside this block (safe since pages.length > 1)
-    const isFirstPage = currentPageIndex === 0;
-    const isLastPage = currentPageIndex === pages.length - 1;
+    // For full-page mode: ONLY LEFT/RIGHT handles allowed
+    // Never allow top/bottom handles - crop only horizontally (sidebar removal)
     
-    // Always allow left/right edges (sidebar crop)
+    // Always allow left/right edges (sidebar crop only)
     if (Math.abs(pos.x - (x + width)) < handleSize && pos.y > y && pos.y < y + height) return 'r';
     if (Math.abs(pos.x - x) < handleSize && pos.y > y && pos.y < y + height) return 'l';
     
-    // Top edge: only on first page
-    if (isFirstPage && Math.abs(pos.y - y) < handleSize && pos.x > x && pos.x < x + width) return 't';
-    
-    // Bottom edge: only on last page
-    if (isLastPage && Math.abs(pos.y - (y + height)) < handleSize && pos.x > x && pos.x < x + width) return 'b';
+    // NO top/bottom handles in full page mode - never disabled, never shown
     
     // Move allowed (restricted in handleMouseMove based on page)
     if (pos.x > x && pos.x < x + width && pos.y > y && pos.y < y + height) return 'move';
