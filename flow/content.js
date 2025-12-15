@@ -7,7 +7,7 @@
   // Guard against multiple injections - but allow re-injection after errors
   // Reset flag on each page load to allow fresh start
   if (window.__snaptoai_loaded && window.__snaptoai_healthy) {
-    console.log('[SnapToAI] Already loaded and healthy, skipping');
+    logSnapToAI('log', '[SnapToAI] Already loaded and healthy, skipping');
     return;
   }
   window.__snaptoai_loaded = true;
@@ -35,11 +35,11 @@
     const prefix = `[SnapToAI:CS - ${timestamp}]`;
     
     if (level === 'error') {
-      console.error(`${prefix} 🛑 ERROR: ${message}`, data !== null ? data : '');
+      logSnapToAI('error', `${prefix} 🛑 ERROR: ${message}`, data !== null ? data : '');
     } else if (level === 'warn') {
-      console.warn(`${prefix} ⚠️ WARN: ${message}`, data !== null ? data : '');
+      logSnapToAI('warn', `${prefix} ⚠️ WARN: ${message}`, data !== null ? data : '');
     } else {
-      console.log(`${prefix} ${message}`, data !== null ? data : '');
+      logSnapToAI('log', `${prefix} ${message}`, data !== null ? data : '');
     }
   }
 
@@ -70,7 +70,7 @@
               container.offsetHeight > 0 && 
               container.scrollHeight > container.clientHeight * SCROLL_THRESHOLD) {
             
-            console.log('[SnapToAI] Found custom scroll container:', container);
+            logSnapToAI('log', '[SnapToAI] Found custom scroll container:', container);
             return container;
           }
         }
@@ -105,7 +105,7 @@
           element.style.visibility = 'hidden';
         });
       } catch (e) {
-        console.warn(`[SnapToAI] Error checking selector ${selector}:`, e);
+        logSnapToAI('warn', `[SnapToAI] Error checking selector ${selector}:`, e);
       }
     });
   }
@@ -116,7 +116,7 @@
         element.style.display = originalDisplay;
         element.style.visibility = originalVisibility;
       } catch (e) {
-        console.error('[SnapToAI] Error restoring modal:', e);
+        logSnapToAI('error', '[SnapToAI] Error restoring modal:', e);
       }
     });
     hiddenModals.length = 0;
@@ -137,7 +137,7 @@
       ctx.drawImage(element, 0, 0, width, height);
     } catch (error) {
       // Tainted Canvas (CORS violation) or WebGL buffer issue
-      console.warn(`[SnapToAI] Failed to draw element to canvas: ${error.message}`);
+      logSnapToAI('warn', `[SnapToAI] Failed to draw element to canvas: ${error.message}`);
       return;
     }
 
@@ -170,7 +170,7 @@
           replacement.parentNode.removeChild(replacement);
         }
       } catch (e) {
-        console.error('[SnapToAI] Error restoring element:', e);
+        logSnapToAI('error', '[SnapToAI] Error restoring element:', e);
       }
     });
     restoredElements.length = 0;
@@ -192,14 +192,14 @@
     const host = window.location.hostname;
     if (!host.includes('grok.x.ai') && !host.includes('grok.com')) return;
 
-    console.log('[SnapToAI] Checking Grok input bar health...');
+    logSnapToAI('log', '[SnapToAI] Checking Grok input bar health...');
 
     // Find chat container
     const chatContainer = document.querySelector('main, [role="main"], div[data-testid="conversation"]') ||
                           document.querySelector('div[class*="chat-container"], div[class*="conversation-root"]');
     
     if (!chatContainer) {
-      console.log('[SnapToAI] Grok chat container missing - page may still be loading');
+      logSnapToAI('log', '[SnapToAI] Grok chat container missing - page may still be loading');
       return;
     }
 
@@ -224,7 +224,7 @@
         }
       });
 
-      console.log('[SnapToAI] Grok input bar confirmed healthy');
+      logSnapToAI('log', '[SnapToAI] Grok input bar confirmed healthy');
     }
   }
 
@@ -271,20 +271,20 @@
         uploadToAI(request.platform, request.useSelectedOnly)
           .then(sendResponse)
           .catch(err => {
-            console.warn('[SnapToAI] Upload error:', err.message);
+            logSnapToAI('warn', '[SnapToAI] Upload error:', err.message);
             sendResponse({ success: false, error: 'Upload not available on this page' });
           });
         return true;
       } else if (request.action === 'startFullPageScroll') {
         // Only run full page capture in main frame, not iframes
         if (window.self !== window.top) {
-          console.log('[SnapToAI] Ignoring full page capture in iframe');
+          logSnapToAI('log', '[SnapToAI] Ignoring full page capture in iframe');
           sendResponse({ success: false, error: 'iframe' });
           return;
         }
         // Prevent concurrent captures in same content script
         if (isFullPageCaptureRunning) {
-          console.log('[SnapToAI] Full page capture already running, ignoring duplicate request');
+          logSnapToAI('log', '[SnapToAI] Full page capture already running, ignoring duplicate request');
           sendResponse({ success: false, error: 'already_running' });
           return;
         }
@@ -294,14 +294,14 @@
         safeFullPageCapture(request.tabId)
           .then(sendResponse)
           .catch(err => {
-            console.warn('[SnapToAI] Full page capture failed safely:', err.message);
+            logSnapToAI('warn', '[SnapToAI] Full page capture failed safely:', err.message);
             showToast('This page cannot be captured. Try SNAP instead.', 'error');
             sendResponse({ success: false, error: 'Page not capturable' });
           });
         return true;
       } else if (request.action === 'abortFullPageCapture') {
         // Popup/background requested abort (timeout or user cancel)
-        console.log('[SnapToAI] Full page capture abort received');
+        logSnapToAI('log', '[SnapToAI] Full page capture abort received');
         isFullPageCaptureAborted = true;
         isFullPageCaptureRunning = false;
         removeFullPageOverlay();
@@ -310,7 +310,7 @@
       }
     } catch (err) {
       // NEVER let errors bubble up to Chrome
-      console.warn('[SnapToAI] Message handler error:', err.message);
+      logSnapToAI('warn', '[SnapToAI] Message handler error:', err.message);
       sendResponse({ success: false, error: 'Internal error' });
     }
   });
@@ -321,7 +321,7 @@
       return await performFullPageCapture(tabId);
     } catch (error) {
       // Log to console but NEVER throw - this prevents Chrome extension errors
-      console.warn('[SnapToAI] Capture error (handled):', error.message || error);
+      logSnapToAI('warn', '[SnapToAI] Capture error (handled):', error.message || error);
       
       // Clean up any UI elements
       try {
@@ -431,7 +431,7 @@
       
       return { success: true };
     } catch (error) {
-      console.error('Clipboard write failed:', error);
+      logSnapToAI('error', 'Clipboard write failed:', error);
       return { success: false, error: error.message };
     }
   }
@@ -439,7 +439,7 @@
   // Upload snaps to AI platform
   async function uploadToAI(platform, useSelectedOnly = false) {
     try {
-      console.log(`[SnapToAI] Starting upload to platform: ${platform}`);
+      logSnapToAI('log', `[SnapToAI] Starting upload to platform: ${platform}`);
       
       let snaps;
       if (useSelectedOnly) {
@@ -451,7 +451,7 @@
         snaps = result.snaps || [];
       }
       
-      console.log(`[SnapToAI] Found ${snaps.length} snaps to upload`);
+      logSnapToAI('log', `[SnapToAI] Found ${snaps.length} snaps to upload`);
       
       if (snaps.length === 0) {
         showToast('No snaps to upload', 'error');
@@ -462,7 +462,7 @@
       
       if (!fileInput) {
         // P3 FALLBACK: Copy to clipboard if upload button not found
-        console.warn('[SnapToAI] File input not found, attempting clipboard fallback...');
+        logSnapToAI('warn', '[SnapToAI] File input not found, attempting clipboard fallback...');
         
         try {
           // Copy first image to clipboard as fallback
@@ -481,14 +481,14 @@
             return { success: true, clipboard: true };
           }
         } catch (clipboardError) {
-          console.error('[SnapToAI] Clipboard fallback failed:', clipboardError);
+          logSnapToAI('error', '[SnapToAI] Clipboard fallback failed:', clipboardError);
         }
         
         showToast('Upload button not found. Try clicking the paperclip/attach icon first.', 'error');
         return { success: false, error: 'File input not found. Make sure the chat input area is visible.' };
       }
       
-      console.log(`[SnapToAI] File input found, uploading ${snaps.length} snaps...`);
+      logSnapToAI('log', `[SnapToAI] File input found, uploading ${snaps.length} snaps...`);
       
       let uploadedCount = 0;
       for (let i = 0; i < snaps.length; i++) {
@@ -504,13 +504,13 @@
           fileInput.dispatchEvent(new Event('input', { bubbles: true }));
           
           uploadedCount++;
-          console.log(`[SnapToAI] Uploaded snap ${i + 1}/${snaps.length}`);
+          logSnapToAI('log', `[SnapToAI] Uploaded snap ${i + 1}/${snaps.length}`);
           
           if (i < snaps.length - 1) {
             await new Promise(resolve => setTimeout(resolve, 1400));
           }
         } catch (snapError) {
-          console.error(`[SnapToAI] Failed to upload snap ${i + 1}:`, snapError);
+          logSnapToAI('error', `[SnapToAI] Failed to upload snap ${i + 1}:`, snapError);
         }
       }
       
@@ -528,7 +528,7 @@
       
       return { success: true, count: uploadedCount };
     } catch (error) {
-      console.error('[SnapToAI] Upload failed:', error);
+      logSnapToAI('error', '[SnapToAI] Upload failed:', error);
       showToast('Upload failed: ' + (error.message || 'Unknown error'), 'error');
       return { success: false, error: error.message };
     }
@@ -536,7 +536,7 @@
 
   // Click attachment button to make file input appear (ChatGPT, Grok create inputs lazily)
   async function ensureFileInputVisible(platform) {
-    console.log(`[SnapToAI] Ensuring file input is visible for: ${platform}`);
+    logSnapToAI('log', `[SnapToAI] Ensuring file input is visible for: ${platform}`);
     
     // Platform-specific attachment button selectors
     let buttonSelectors = [];
@@ -595,18 +595,18 @@
       try {
         const button = document.querySelector(selector);
         if (button) {
-          console.log(`[SnapToAI] Found attachment button: ${selector}`);
+          logSnapToAI('log', `[SnapToAI] Found attachment button: ${selector}`);
           button.click();
           // Wait for file input to appear after click
           await new Promise(resolve => setTimeout(resolve, 500));
           return true;
         }
       } catch (e) {
-        console.log(`[SnapToAI] Selector failed: ${selector}`);
+        logSnapToAI('log', `[SnapToAI] Selector failed: ${selector}`);
       }
     }
     
-    console.log('[SnapToAI] No attachment button found, file input may already exist');
+    logSnapToAI('log', '[SnapToAI] No attachment button found, file input may already exist');
     return false;
   }
 
@@ -662,14 +662,14 @@
         
         for (const input of inputs) {
           if (input && !input.disabled) {
-            console.log(`[SnapToAI] Found file input with selector: ${selector}`);
+            logSnapToAI('log', `[SnapToAI] Found file input with selector: ${selector}`);
             return input;
           }
         }
       }
       
       if (retry < maxRetries - 1) {
-        console.log(`[SnapToAI] File input not found, retry ${retry + 1}/${maxRetries}...`);
+        logSnapToAI('log', `[SnapToAI] File input not found, retry ${retry + 1}/${maxRetries}...`);
         // On retry 2, try clicking attachment button again
         if (retry === 1) {
           await ensureFileInputVisible(platform);
@@ -678,7 +678,7 @@
       }
     }
     
-    console.error('[SnapToAI] No file input found after all retries');
+    logSnapToAI('error', '[SnapToAI] No file input found after all retries');
     return null;
   }
 
@@ -690,7 +690,7 @@
         // Try to convert to optimized JPEG for faster AI platform uploads
         return await convertToOptimizedJpeg(dataUrl, filename.replace('.png', '.jpg'));
       } catch (e) {
-        console.warn('[SnapToAI] JPEG conversion failed, using original PNG:', e.message);
+        logSnapToAI('warn', '[SnapToAI] JPEG conversion failed, using original PNG:', e.message);
         // Fall through to PNG
       }
     }
@@ -874,7 +874,7 @@
       }
     }
     
-    console.log(`[SnapToAI] Hid ${hidden.length} sticky elements`);
+    logSnapToAI('log', `[SnapToAI] Hid ${hidden.length} sticky elements`);
     return hidden;
   }
   
@@ -889,7 +889,7 @@
         // Element may have been removed
       }
     });
-    console.log(`[SnapToAI] Restored ${elements.length} sticky elements`);
+    logSnapToAI('log', `[SnapToAI] Restored ${elements.length} sticky elements`);
   }
   
   // ============================================================
@@ -1005,11 +1005,11 @@
    */
   function captureCanvasAndVideo() {
     if (mediaState.isMediaCaptured) {
-      console.log('[SnapToAI] Media already captured, skipping');
+      logSnapToAI('log', '[SnapToAI] Media already captured, skipping');
       return;
     }
     
-    console.log('[SnapToAI] 🎬 Capturing canvas/WebGL/video elements...');
+    logSnapToAI('log', '[SnapToAI] 🎬 Capturing canvas/WebGL/video elements...');
     
     // MEMORY OPTIMIZATION: Limit total replacements to prevent RAM issues on media-heavy sites
     const MAX_MEDIA_REPLACEMENTS = 15;
@@ -1044,7 +1044,7 @@
             }
           } catch (e) {
             // Canvas may be tainted by CORS
-            console.warn(`[SnapToAI] Canvas ${index} is tainted, cannot capture`);
+            logSnapToAI('warn', `[SnapToAI] Canvas ${index} is tainted, cannot capture`);
             return;
           }
           
@@ -1074,11 +1074,11 @@
           currentReplacements++; // Increment successful replacement counter
           
         } catch (e) {
-          console.warn(`[SnapToAI] Failed to capture canvas ${index}:`, e.message);
+          logSnapToAI('warn', `[SnapToAI] Failed to capture canvas ${index}:`, e.message);
         }
       });
       
-      console.log(`[SnapToAI] Captured ${mediaState.canvasElements.length} canvas elements`);
+      logSnapToAI('log', `[SnapToAI] Captured ${mediaState.canvasElements.length} canvas elements`);
       
       // 2. CAPTURE ALL VIDEO ELEMENTS
       const videos = document.querySelectorAll('video');
@@ -1131,26 +1131,26 @@
             
           } catch (e) {
             // Video may be CORS-restricted
-            console.warn(`[SnapToAI] Video ${index} is CORS-restricted, cannot capture frame`);
+            logSnapToAI('warn', `[SnapToAI] Video ${index} is CORS-restricted, cannot capture frame`);
           }
           
         } catch (e) {
-          console.warn(`[SnapToAI] Failed to capture video ${index}:`, e.message);
+          logSnapToAI('warn', `[SnapToAI] Failed to capture video ${index}:`, e.message);
         }
       });
       
-      console.log(`[SnapToAI] Captured ${mediaState.videoElements.length} video elements`);
+      logSnapToAI('log', `[SnapToAI] Captured ${mediaState.videoElements.length} video elements`);
       
       // Log warning if limit was reached
       if (currentReplacements >= MAX_MEDIA_REPLACEMENTS) {
-        console.warn(`[SnapToAI] Media replacement limit reached (${MAX_MEDIA_REPLACEMENTS}). Skipping remaining elements to preserve memory.`);
+        logSnapToAI('warn', `[SnapToAI] Media replacement limit reached (${MAX_MEDIA_REPLACEMENTS}). Skipping remaining elements to preserve memory.`);
       }
       
       mediaState.isMediaCaptured = true;
-      console.log('[SnapToAI] 🎬 Canvas/WebGL/video capture complete');
+      logSnapToAI('log', '[SnapToAI] 🎬 Canvas/WebGL/video capture complete');
       
     } catch (error) {
-      console.warn('[SnapToAI] Media capture error (non-fatal):', error.message);
+      logSnapToAI('warn', '[SnapToAI] Media capture error (non-fatal):', error.message);
     }
   }
   
@@ -1161,11 +1161,11 @@
    */
   function restoreCanvasAndVideo() {
     if (!mediaState.isMediaCaptured) {
-      console.log('[SnapToAI] No media to restore');
+      logSnapToAI('log', '[SnapToAI] No media to restore');
       return;
     }
     
-    console.log('[SnapToAI] 🔄 Restoring canvas/WebGL/video elements...');
+    logSnapToAI('log', '[SnapToAI] 🔄 Restoring canvas/WebGL/video elements...');
     
     try {
       // 1. RESTORE CANVAS ELEMENTS
@@ -1201,10 +1201,10 @@
       mediaState.videoElements = [];
       mediaState.isMediaCaptured = false;
       
-      console.log('[SnapToAI] 🔄 Canvas/WebGL/video restore complete');
+      logSnapToAI('log', '[SnapToAI] 🔄 Canvas/WebGL/video restore complete');
       
     } catch (error) {
-      console.warn('[SnapToAI] Media restore error (non-fatal):', error.message);
+      logSnapToAI('warn', '[SnapToAI] Media restore error (non-fatal):', error.message);
       // Force reset state even on error
       mediaState.canvasElements = [];
       mediaState.videoElements = [];
@@ -1255,11 +1255,11 @@
    */
   function freezeDOM() {
     if (freezeState.isFrozen) {
-      console.log('[SnapToAI] DOM already frozen, skipping');
+      logSnapToAI('log', '[SnapToAI] DOM already frozen, skipping');
       return;
     }
     
-    console.log('[SnapToAI] 🧊 Freezing DOM...');
+    logSnapToAI('log', '[SnapToAI] 🧊 Freezing DOM...');
     
     try {
       // === TOUCH #1: CURSOR & SELECTION KILLER ===
@@ -1384,7 +1384,7 @@
         window.MutationObserver.prototype = originalMutationObserver.prototype;
         freezeState.originalMutationObserver = originalMutationObserver;
       } catch (e) {
-        console.warn('[SnapToAI] Could not override MutationObserver:', e.message);
+        logSnapToAI('warn', '[SnapToAI] Could not override MutationObserver:', e.message);
       }
       
       // 4. DISCONNECT ALL IntersectionObservers
@@ -1406,7 +1406,7 @@
           freezeState.originalIntersectionObserver = originalIntersectionObserver;
         }
       } catch (e) {
-        console.warn('[SnapToAI] Could not override IntersectionObserver:', e.message);
+        logSnapToAI('warn', '[SnapToAI] Could not override IntersectionObserver:', e.message);
       }
       
       // 5. PAUSE ALL VIDEOS
@@ -1422,7 +1422,7 @@
             video.pause();
           }
         });
-        console.log(`[SnapToAI] Paused ${freezeState.videos.length} videos`);
+        logSnapToAI('log', `[SnapToAI] Paused ${freezeState.videos.length} videos`);
       } catch (e) {}
       
       // 6. FREEZE GIFS AND ANIMATED IMAGES
@@ -1457,7 +1457,7 @@
             }
           } catch (e) {}
         });
-        console.log(`[SnapToAI] Froze ${freezeState.animatedImages.length} animated images`);
+        logSnapToAI('log', `[SnapToAI] Froze ${freezeState.animatedImages.length} animated images`);
       } catch (e) {}
       
       // 7. BLOCK SCROLL EVENT LISTENERS (prevent lazy load triggers)
@@ -1508,15 +1508,15 @@
           } catch (e) {}
         });
         if (freezeState.hiddenSpinners.length > 0) {
-          console.log(`[SnapToAI] Killed ${freezeState.hiddenSpinners.length} loading spinners`);
+          logSnapToAI('log', `[SnapToAI] Killed ${freezeState.hiddenSpinners.length} loading spinners`);
         }
       } catch (e) {}
       
       freezeState.isFrozen = true;
-      console.log('[SnapToAI] 🧊 DOM frozen successfully');
+      logSnapToAI('log', '[SnapToAI] 🧊 DOM frozen successfully');
       
     } catch (error) {
-      console.warn('[SnapToAI] Freeze error (non-fatal):', error.message);
+      logSnapToAI('warn', '[SnapToAI] Freeze error (non-fatal):', error.message);
     }
   }
   
@@ -1536,11 +1536,11 @@
    */
   function unfreezeDOM() {
     if (!freezeState.isFrozen) {
-      console.log('[SnapToAI] DOM not frozen, skipping unfreeze');
+      logSnapToAI('log', '[SnapToAI] DOM not frozen, skipping unfreeze');
       return;
     }
     
-    console.log('[SnapToAI] 🔥 Unfreezing DOM...');
+    logSnapToAI('log', '[SnapToAI] 🔥 Unfreezing DOM...');
     
     try {
       // 1. REMOVE FREEZE STYLESHEET
@@ -1639,10 +1639,10 @@
       freezeState.hiddenSpinners = [];
       
       freezeState.isFrozen = false;
-      console.log('[SnapToAI] 🔥 DOM unfrozen successfully');
+      logSnapToAI('log', '[SnapToAI] 🔥 DOM unfrozen successfully');
       
     } catch (error) {
-      console.warn('[SnapToAI] Unfreeze error (non-fatal):', error.message);
+      logSnapToAI('warn', '[SnapToAI] Unfreeze error (non-fatal):', error.message);
       // Force reset state even on error
       freezeState.isFrozen = false;
     }
@@ -1661,13 +1661,13 @@
     
     // Check if document is scrollable
     if (docEl && docEl.scrollHeight > window.innerHeight + 100) {
-      console.log(`[SnapToAI] Tier 1: Using documentElement (height: ${docEl.scrollHeight}px)`);
+      logSnapToAI('log', `[SnapToAI] Tier 1: Using documentElement (height: ${docEl.scrollHeight}px)`);
       return docEl;
     }
     
     // Check if body is scrollable
     if (body && body.scrollHeight > window.innerHeight + 100) {
-      console.log(`[SnapToAI] Tier 1: Using body (height: ${body.scrollHeight}px)`);
+      logSnapToAI('log', `[SnapToAI] Tier 1: Using body (height: ${body.scrollHeight}px)`);
       return body;
     }
     
@@ -1677,7 +1677,7 @@
   // TIER 2: UNIVERSAL SCROLL DETECTOR
   // Traverses DOM + shadow roots, tests elements by actually trying to scroll them
   function findScrollableContainerTier2() {
-    console.log('[SnapToAI] Tier 2: Universal scroll detector starting...');
+    logSnapToAI('log', '[SnapToAI] Tier 2: Universal scroll detector starting...');
     
     const candidates = [];
     const minScrollableHeight = 100; // Must have at least 100px of scrollable content
@@ -1748,7 +1748,7 @@
     // Start walk from document
     walkDOM(document.body);
     
-    console.log(`[SnapToAI] Tier 2: Found ${candidates.length} potential scroll containers`);
+    logSnapToAI('log', `[SnapToAI] Tier 2: Found ${candidates.length} potential scroll containers`);
     
     // Sort by scroll amount (most scrollable first)
     candidates.sort((a, b) => b.scrollAmount - a.scrollAmount);
@@ -1756,7 +1756,7 @@
     // Test top candidates to see which one actually scrolls
     for (const candidate of candidates.slice(0, 10)) {
       if (canActuallyScroll(candidate.el)) {
-        console.log(`[SnapToAI] Tier 2: Found working scroller! Tag: ${candidate.el.tagName}, height: ${candidate.el.scrollHeight}px, scrollable: ${candidate.scrollAmount}px`);
+        logSnapToAI('log', `[SnapToAI] Tier 2: Found working scroller! Tag: ${candidate.el.tagName}, height: ${candidate.el.scrollHeight}px, scrollable: ${candidate.scrollAmount}px`);
         return candidate.el;
       }
     }
@@ -1764,11 +1764,11 @@
     // If nothing works, return the best candidate anyway (might work with scrollBy)
     if (candidates.length > 0) {
       const best = candidates[0];
-      console.log(`[SnapToAI] Tier 2: Using best candidate (may not respond to scroll test): ${best.el.tagName}, height: ${best.el.scrollHeight}px`);
+      logSnapToAI('log', `[SnapToAI] Tier 2: Using best candidate (may not respond to scroll test): ${best.el.tagName}, height: ${best.el.scrollHeight}px`);
       return best.el;
     }
     
-    console.log('[SnapToAI] Tier 2: No scroll container found');
+    logSnapToAI('log', '[SnapToAI] Tier 2: No scroll container found');
     return null;
   }
 
@@ -1778,24 +1778,24 @@
       // Check if body exists and is scrollable
       if (document.body && document.body.scrollHeight && 
           document.body.scrollHeight > window.innerHeight + 100) {
-        console.log('[SnapToAI] Tier 3: Using document.body');
+        logSnapToAI('log', '[SnapToAI] Tier 3: Using document.body');
         return document.body;
       }
       // Check documentElement
       if (document.documentElement && document.documentElement.scrollHeight &&
           document.documentElement.scrollHeight > window.innerHeight + 100) {
-        console.log('[SnapToAI] Tier 3: Using documentElement');
+        logSnapToAI('log', '[SnapToAI] Tier 3: Using documentElement');
         return document.documentElement;
       }
     } catch (e) {
-      console.log('[SnapToAI] Tier 3 error:', e);
+      logSnapToAI('log', '[SnapToAI] Tier 3 error:', e);
     }
     return null;
   }
 
   // TIER 0: Known AI platform selectors (most reliable for AI chat sites)
   function findScrollableContainerTier0(host) {
-    console.log('[SnapToAI] Tier 0: Checking known AI platform selectors...');
+    logSnapToAI('log', '[SnapToAI] Tier 0: Checking known AI platform selectors...');
     
     // Platform-specific selectors for scroll containers
     // Covers: AI platforms, Office apps, Dev tools, Social media, Productivity apps
@@ -2164,7 +2164,7 @@
     // Find matching platform
     for (const [platform, selectors] of Object.entries(platformSelectors)) {
       if (host.includes(platform)) {
-        console.log(`[SnapToAI] Tier 0: Matched platform ${platform}`);
+        logSnapToAI('log', `[SnapToAI] Tier 0: Matched platform ${platform}`);
         
         for (const selector of selectors) {
           try {
@@ -2172,25 +2172,25 @@
             for (const el of elements) {
               // Verify element is actually scrollable
               if (el && el.scrollHeight > el.clientHeight + 50) {
-                console.log(`[SnapToAI] Tier 0: Found container with selector: ${selector}`);
+                logSnapToAI('log', `[SnapToAI] Tier 0: Found container with selector: ${selector}`);
                 return el;
               }
             }
           } catch (e) {
-            console.log(`[SnapToAI] Tier 0: Selector failed: ${selector}`);
+            logSnapToAI('log', `[SnapToAI] Tier 0: Selector failed: ${selector}`);
           }
         }
         break;
       }
     }
     
-    console.log('[SnapToAI] Tier 0: No known platform container found');
+    logSnapToAI('log', '[SnapToAI] Tier 0: No known platform container found');
     return null;
   }
 
   // Master function: tries all tiers
   function findScrollableContainer() {
-    console.log('[SnapToAI] Finding scrollable container...');
+    logSnapToAI('log', '[SnapToAI] Finding scrollable container...');
     const host = window.location.hostname.toLowerCase();
     
     // TESTED REPLIT/SPECODE LEFT PANEL (from chatgpt-screenshot-ex GitHub, 500+ stars)
@@ -2200,7 +2200,7 @@
                         document.querySelector('[class*="editor"] [class*="scroll"]') ||
                         document.querySelector('#editor-container');
       if (leftPanel && leftPanel.scrollHeight > window.innerHeight + 500) {
-        console.log('[SnapToAI TESTED] Replit/Specode left panel captured!');
+        logSnapToAI('log', '[SnapToAI TESTED] Replit/Specode left panel captured!');
         return leftPanel;
       }
     }
@@ -2213,7 +2213,7 @@
                           document.querySelector('[gh="tm"]') ||
                           document.querySelector('.AD');
     if (emailContainer && emailContainer.scrollHeight > window.innerHeight + 1000) {
-      console.log('[SnapToAI TESTED] EMAIL INBOX DETECTED — scrolling the real message list!');
+      logSnapToAI('log', '[SnapToAI TESTED] EMAIL INBOX DETECTED — scrolling the real message list!');
       return emailContainer;
     }
     
@@ -2246,7 +2246,7 @@
     const isSpecialPlatform = specialPlatforms.some(p => host.includes(p));
     
     if (isSpecialPlatform) {
-      console.log('[SnapToAI] Special platform detected - checking known selectors first');
+      logSnapToAI('log', '[SnapToAI] Special platform detected - checking known selectors first');
       
       // TIER 0: Try known platform-specific selectors first (most reliable)
       let container = findScrollableContainerTier0(host);
@@ -2275,11 +2275,11 @@
     
     // FINAL FALLBACK: For special platforms, use documentElement anyway (allow capture to proceed)
     if (isSpecialPlatform) {
-      console.log('[SnapToAI] Special platform fallback: Using documentElement to allow capture');
+      logSnapToAI('log', '[SnapToAI] Special platform fallback: Using documentElement to allow capture');
       return document.documentElement;
     }
     
-    console.log('[SnapToAI] No scrollable container found - page may be short');
+    logSnapToAI('log', '[SnapToAI] No scrollable container found - page may be short');
     return null;
   }
 
@@ -2310,7 +2310,7 @@
         return { success: false, error: 'Capture failed' };
       }
     } catch (error) {
-      console.warn('[SnapToAI] Simple capture issue:', error?.message || error);
+      logSnapToAI('warn', '[SnapToAI] Simple capture issue:', error?.message || error);
       showToast('Capture failed: ' + error.message, 'error');
       return { success: false, error: error.message };
     }
@@ -2359,7 +2359,7 @@
     
     for (const site of allowedSites) {
       if (host.includes(site)) {
-        console.log(`[SnapToAI] ${site} detected - will attempt full capture`);
+        logSnapToAI('log', `[SnapToAI] ${site} detected - will attempt full capture`);
         return false; // NOT a complex app - try to capture
       }
     }
@@ -2426,12 +2426,12 @@
         const scrollContainer = findScrollableContainer();
         if (scrollContainer && scrollContainer.scrollHeight > maxHeight) {
           maxHeight = scrollContainer.scrollHeight;
-          console.log(`[SnapToAI] AI platform detected - using container height: ${maxHeight}px`);
+          logSnapToAI('log', `[SnapToAI] AI platform detected - using container height: ${maxHeight}px`);
         }
         // For AI platforms, always set a minimum height to prevent early abort
         if (maxHeight <= result.viewportHeight) {
           maxHeight = result.viewportHeight + 100;
-          console.log(`[SnapToAI] AI platform: forcing min height to allow capture`);
+          logSnapToAI('log', `[SnapToAI] AI platform: forcing min height to allow capture`);
         }
       }
       
@@ -2503,7 +2503,7 @@
       saveAndSetStyle(scrollContainer, 'minHeight', '100vh', originalStyles);
     }
     
-    console.log(`[SnapToAI] Expanded ${elementsToExpand.length} elements for full page capture`);
+    logSnapToAI('log', `[SnapToAI] Expanded ${elementsToExpand.length} elements for full page capture`);
     return originalStyles;
   }
   
@@ -2514,18 +2514,18 @@
         el.style[prop] = val;
       });
     });
-    console.log(`[SnapToAI] Restored ${originalStyles.size} element styles`);
+    logSnapToAI('log', `[SnapToAI] Restored ${originalStyles.size} element styles`);
   }
 
   // Perform full page scroll and capture - with robust error handling
   async function performFullPageCapture(tabId) {
     // Set guard flag immediately
     isFullPageCaptureRunning = true;
-    console.log('[SnapToAI] Full page capture started');
+    logSnapToAI('log', '[SnapToAI] Full page capture started');
     
     // PRE-FLIGHT CHECK
     const preflight = preFlightCheck();
-    console.log('[SnapToAI] Pre-flight:', preflight);
+    logSnapToAI('log', '[SnapToAI] Pre-flight:', preflight);
     
     // FINAL AI HEIGHT FORCE — stops "Page is short" forever
     const isAI = ['chatgpt.com','chat.openai.com','gemini.google.com','claude.ai','grok.x.ai','grok.com','perplexity.ai','poe.com','replit.com','specode.ai'].some(h => location.hostname.includes(h));
@@ -2533,7 +2533,7 @@
       preflight.pageHeight = Math.max(preflight.pageHeight, 25000);
       preflight.canCapture = true;
       preflight.isComplexApp = false;
-      console.log('[SnapToAI] Forced AI page height:', preflight.pageHeight + 'px');
+      logSnapToAI('log', '[SnapToAI] Forced AI page height:', preflight.pageHeight + 'px');
     }
     
     if (!preflight.canCapture) {
@@ -2581,7 +2581,7 @@
       // Step 1: Find the main scrollable container
       const scrollContainer = findScrollableContainer();
       const containerScrollHeight = scrollContainer ? scrollContainer.scrollHeight : 0;
-      console.log(`[SnapToAI] Scroll container: ${scrollContainer ? scrollContainer.tagName : 'none'}, height: ${containerScrollHeight}px`);
+      logSnapToAI('log', `[SnapToAI] Scroll container: ${scrollContainer ? scrollContainer.tagName : 'none'}, height: ${containerScrollHeight}px`);
       
       // Determine if we're using container scroll
       const isRealContainer = scrollContainer && 
@@ -2593,7 +2593,7 @@
       // CRITICAL: For AI platforms, do NOT expand styles (it breaks scrolling!)
       if (!isAIPlatform && !useContainerScroll) {
         const initialHeight = document.documentElement.scrollHeight;
-        console.log(`[SnapToAI] Initial document height: ${initialHeight}px`);
+        logSnapToAI('log', `[SnapToAI] Initial document height: ${initialHeight}px`);
         
         originalStyles = expandForFullPage(scrollContainer);
         
@@ -2602,7 +2602,7 @@
         }));
         await new Promise(resolve => setTimeout(resolve, 300));
       } else {
-        console.log('[SnapToAI] AI platform detected - skipping style expansion to preserve scroll');
+        logSnapToAI('log', '[SnapToAI] AI platform detected - skipping style expansion to preserve scroll');
       }
       
       // Scroll step size: 80% of viewport (20% overlap) for both AI and regular sites
@@ -2686,7 +2686,7 @@
       safeScrollTo(0);
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      console.log(`[SnapToAI] Starting capture - containerScroll: ${useContainerScroll}, isAI: ${isAIPlatform}`);
+      logSnapToAI('log', `[SnapToAI] Starting capture - containerScroll: ${useContainerScroll}, isAI: ${isAIPlatform}`);
       
       // === HIDE FIXED ELEMENTS FOR AI PLATFORMS ===
       // Fixed headers/footers appear in every screenshot and cause duplication in stitched result
@@ -2776,11 +2776,11 @@
                 });
               } catch (e) {}
             });
-            console.log(`[SnapToAI] 🔫 AI Bottom Bar Killer: cleanly hidden bars on ${location.hostname}`);
+            logSnapToAI('log', `[SnapToAI] 🔫 AI Bottom Bar Killer: cleanly hidden bars on ${location.hostname}`);
           }
           // === END AI BOTTOM BAR KILLER ===
           
-          console.log(`[SnapToAI] Hidden ${hiddenFixedElements.length} fixed elements`);
+          logSnapToAI('log', `[SnapToAI] Hidden ${hiddenFixedElements.length} fixed elements`);
         } catch (e) {}
       };
       
@@ -2845,7 +2845,7 @@
             // Any chrome.storage call resets the service worker timer
             await chrome.storage.session.set({ keepAlive: now });
             lastKeepAliveTime = now;
-            console.log('[SnapToAI] Service worker keep-alive ping sent');
+            logSnapToAI('log', '[SnapToAI] Service worker keep-alive ping sent');
           } catch (e) {
             // Ignore keep-alive errors
           }
@@ -2855,7 +2855,7 @@
       while (captureCount < maxCaptures && consecutiveFails < MAX_CONSECUTIVE_FAILS) {
         // Check if capture was aborted (timeout from popup)
         if (isFullPageCaptureAborted) {
-          console.log('[SnapToAI] Full page capture aborted - stopping loop');
+          logSnapToAI('log', '[SnapToAI] Full page capture aborted - stopping loop');
           break;
         }
         
@@ -2880,7 +2880,7 @@
           // Safe message with timeout + error handling
           response = await new Promise((resolve) => {
             const timeout = setTimeout(() => {
-              console.log('[SnapToAI] Capture timeout — using fallback blank frame');
+              logSnapToAI('log', '[SnapToAI] Capture timeout — using fallback blank frame');
               resolve({ success: true, dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' });
             }, 4000);
 
@@ -2889,7 +2889,7 @@
               (resp) => {
                 clearTimeout(timeout);
                 if (chrome.runtime.lastError) {
-                  console.log('[SnapToAI] Capture skipped (tab busy) — continuing...');
+                  logSnapToAI('log', '[SnapToAI] Capture skipped (tab busy) — continuing...');
                   resolve({ success: true, dataUrl: null }); // null = skip this frame
                 } else {
                   resolve(resp || { success: true, dataUrl: null });
@@ -2898,7 +2898,7 @@
             );
           });
         } catch (e) {
-          console.log('[SnapToAI] Capture error ignored — continuing...');
+          logSnapToAI('log', '[SnapToAI] Capture error ignored — continuing...');
           response = { success: true, dataUrl: null };
         }
         
@@ -2917,7 +2917,7 @@
           consecutiveFails++;
           // Only warn if many in a row fail (real problem)
           if (consecutiveFails > 10) {
-            console.log('[SnapToAI] Many frames skipped — possible tab sleep');
+            logSnapToAI('log', '[SnapToAI] Many frames skipped — possible tab sleep');
             consecutiveFails = 0; // reset so it doesn't spam
           }
         }
@@ -2926,13 +2926,13 @@
         
         // Check if we've reached the bottom (scroll position didn't change)
         if (currentScrollTop === lastScrollTop && captureCount > 2) {
-          console.log('[SnapToAI] Reached bottom - scroll stopped moving');
+          logSnapToAI('log', '[SnapToAI] Reached bottom - scroll stopped moving');
           break;
         }
         
         // Check if we're at max scroll
         if (currentScrollTop >= getMaxScroll() - 20) {
-          console.log('[SnapToAI] Reached max scroll position');
+          logSnapToAI('log', '[SnapToAI] Reached max scroll position');
           break;
         }
         
@@ -2953,7 +2953,7 @@
         await new Promise(r => setTimeout(r, 700));
       }
       
-      console.log(`[SnapToAI] Full page capture complete: ${screenshots.length} images`);
+      logSnapToAI('log', `[SnapToAI] Full page capture complete: ${screenshots.length} images`);
       updateOverlayProgress(100);
       
       // === RESTORE CANVAS / WEBGL / VIDEO ===
@@ -2985,13 +2985,13 @@
       
       // If aborted, don't send screenshots - just clean up
       if (isFullPageCaptureAborted) {
-        console.log('[SnapToAI] Capture aborted - not sending screenshots');
+        logSnapToAI('log', '[SnapToAI] Capture aborted - not sending screenshots');
         isFullPageCaptureRunning = false;
         return { success: false, error: 'Capture aborted' };
       }
       
       // Send screenshots to background for stitching
-      console.log(`[SnapToAI] Sending ${screenshots.length} screenshots for stitching`);
+      logSnapToAI('log', `[SnapToAI] Sending ${screenshots.length} screenshots for stitching`);
       
       // Only send if we have screenshots - background will handle completion messaging
       chrome.runtime.sendMessage({
@@ -3007,7 +3007,7 @@
       return { success: true, count: screenshots.length };
     } catch (error) {
       // Use console.warn, NEVER console.error - prevents Chrome extension warnings
-      console.warn('[SnapToAI] Full page capture issue:', error?.message || error);
+      logSnapToAI('warn', '[SnapToAI] Full page capture issue:', error?.message || error);
       
       // === ALWAYS RESTORE CANVAS/VIDEO ON ERROR ===
       try {
@@ -3050,7 +3050,7 @@
       
       // Always reset guard flag
       isFullPageCaptureRunning = false;
-      console.log('[SnapToAI] Full page capture ended');
+      logSnapToAI('log', '[SnapToAI] Full page capture ended');
     }
   }
 
