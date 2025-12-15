@@ -11,7 +11,8 @@
     "unlimitedStorage",
     "scripting",
     "clipboardWrite",
-    "downloads"
+    "downloads",
+    "offscreen"
   ],
   "options_page": "options.html",
   "host_permissions": [

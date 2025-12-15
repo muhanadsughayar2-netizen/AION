@@ -941,3 +941,52 @@ async function blobToDataUrl(blob) {
   const base64 = btoa(binary);
   return `data:${blob.type};base64,${base64}`;
 }
+
+// ============================================
+// P3 FIX: OFFSCREEN DOCUMENT CLIPBOARD WRITE
+// ============================================
+
+const OFFSCR_DOC_PATH = 'offscreen.html';
+
+/**
+ * Ensures an Offscreen Document is created and ready for use.
+ */
+async function ensureOffscreenDocument() {
+  try {
+    // Check if the offscreen document is already open
+    const hasDoc = await chrome.offscreen.hasDocument();
+    if (hasDoc) return;
+
+    // Create the offscreen document
+    await chrome.offscreen.createDocument({
+      url: OFFSCR_DOC_PATH,
+      reasons: [chrome.offscreen.Reason.CLIPBOARD],
+      justification: 'To write the captured image to the system clipboard for AI upload fallback.'
+    });
+  } catch (error) {
+    console.log('[SnapToAI] Offscreen document:', error.message);
+  }
+}
+
+/**
+ * Writes the processed image data to the clipboard using an Offscreen Document.
+ * @param {string} dataUrl - The image data URL to write.
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+async function writeImageToClipboard(dataUrl) {
+  try {
+    await ensureOffscreenDocument();
+
+    // Send the data URL to the offscreen document to perform the write
+    const result = await chrome.runtime.sendMessage({
+      action: 'offscreenWriteClipboard',
+      dataUrl: dataUrl
+    });
+
+    return result || { success: false, error: 'No response from offscreen document' };
+
+  } catch (error) {
+    console.error('[SnapToAI] Clipboard write failed:', error);
+    return { success: false, error: `Clipboard operation failed: ${error.message}` };
+  }
+}
