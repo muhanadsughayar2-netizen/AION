@@ -44,10 +44,10 @@ function handleFullPageTimeout() {
   
   // Show error message
   if (status) {
-    status.textContent = "Can't access this page - try a different site or check permissions";
+    status.textContent = chrome.i18n.getMessage('statusCantAccessPage') || "Can't access this page - try a different site";
     status.className = 'status error';
     setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 4000);
   }
@@ -132,25 +132,42 @@ function setStatus(message, type = 'default', duration = null) {
   // Auto-reset to ready state after duration
   if (duration) {
     statusResetTimeout = setTimeout(() => {
-      setStatus('Ready', 'default');
+      setStatus(chrome.i18n.getMessage('statusReady') || 'Ready', 'default');
     }, duration);
   }
 }
 
-// Quick status helpers
-const statusReady = () => setStatus('Ready', 'default');
-const statusCapturing = (type) => setStatus(`Capturing ${type}...`, 'active');
-const statusCaptured = (type) => setStatus(`${type} captured! ✓`, 'success', 2500);
-const statusSelected = (count) => setStatus(`${count} screenshots selected → will combine into ONE stacked image`, 'active');
-const statusCopying = () => setStatus('Combining & copying...', 'copying');
-const statusPasteReady = (count) => setStatus(`${count || ''} screenshots combined & copied! 👉 Paste into AI now!`, 'paste-ready', 5000);
-const statusDownloading = () => setStatus('Downloading...', 'active');
-const statusDownloaded = () => setStatus('Clean stacked PNG exported! 🔥', 'success', 3000);
-const statusExporting = () => setStatus('Generating PDF...', 'active');
-const statusExported = () => setStatus('Clean stacked PDF exported! 🔥', 'success', 3000);
-const statusDeleted = () => setStatus('Deleted', 'success', 1500);
-const statusCleared = () => setStatus('All cleared', 'success', 1500);
-const statusError = (msg) => setStatus(msg || 'Something went wrong', 'error', 3000);
+// i18n helper for status messages
+const getStatusMsg = (key, fallback, substitutions) => {
+  const msg = substitutions 
+    ? chrome.i18n.getMessage(key, substitutions) 
+    : chrome.i18n.getMessage(key);
+  return msg || fallback;
+};
+
+// Quick status helpers - now using i18n
+const statusReady = () => setStatus(getStatusMsg('statusReady', 'Ready'), 'default');
+const statusCapturing = (type) => {
+  if (type === 'screenshot') return setStatus(getStatusMsg('statusCapturingScreenshot', 'Capturing screenshot...'), 'active');
+  if (type === 'snip') return setStatus(getStatusMsg('statusCapturingSnip', 'Capturing snip...'), 'active');
+  if (type === 'full page') return setStatus(getStatusMsg('statusCapturingFullPage', 'Capturing full page...'), 'active');
+  return setStatus(getStatusMsg('statusCapturingScreenshot', 'Capturing screenshot...'), 'active');
+};
+const statusCaptured = (type) => {
+  if (type === 'Snap' || type === 'screenshot') return setStatus(getStatusMsg('statusSnapCaptured', 'Snap captured! ✓'), 'success', 2500);
+  if (type === 'Full page') return setStatus(getStatusMsg('statusFullPageCaptured', 'Full page captured! ✓'), 'success', 2500);
+  return setStatus(getStatusMsg('statusSnapCaptured', 'Snap captured! ✓'), 'success', 2500);
+};
+const statusSelected = (count) => setStatus(getStatusMsg('statusScreenshotsSelected', `${count} screenshots selected → will combine into ONE stacked image`, [String(count)]), 'active');
+const statusCopying = () => setStatus(getStatusMsg('statusCombiningCopying', 'Combining & copying...'), 'copying');
+const statusPasteReady = (count) => setStatus(getStatusMsg('statusCopiedPasteNow', `${count || ''} screenshots combined & copied! 👉 Paste into AI now!`, [String(count || '')]), 'paste-ready', 5000);
+const statusDownloading = () => setStatus(getStatusMsg('statusDownloading', 'Downloading...'), 'active');
+const statusDownloaded = () => setStatus(getStatusMsg('statusPngExported', 'Clean stacked PNG exported! 🔥'), 'success', 3000);
+const statusExporting = () => setStatus(getStatusMsg('statusGeneratingPdf', 'Generating PDF...'), 'active');
+const statusExported = () => setStatus(getStatusMsg('statusPdfExported', 'Clean stacked PDF exported! 🔥'), 'success', 3000);
+const statusDeleted = () => setStatus(getStatusMsg('statusDeleted', 'Deleted'), 'success', 1500);
+const statusCleared = () => setStatus(getStatusMsg('statusAllCleared', 'All cleared'), 'success', 1500);
+const statusError = (msg) => setStatus(msg || getStatusMsg('statusSomethingWrong', 'Something went wrong'), 'error', 3000);
 // ===== END STATUS SYSTEM =====
 
 // Update RE-EDIT button visibility and text
@@ -173,7 +190,7 @@ async function handleReeditChunkGroup(captureGroupId) {
   const status = document.getElementById('status');
   
   try {
-    status.textContent = 'Finding all parts...';
+    status.textContent = chrome.i18n.getMessage('statusFindingParts') || 'Finding all parts...';
     status.className = 'status active';
     
     // Find all chunks with this captureGroupId
@@ -188,10 +205,10 @@ async function handleReeditChunkGroup(captureGroupId) {
     }
     
     if (chunkIndices.length === 0) {
-      status.textContent = 'No chunks found for this capture';
+      status.textContent = chrome.i18n.getMessage('statusNoCapture') || 'No chunks found for this capture';
       status.className = 'status error';
       setTimeout(() => {
-        status.textContent = 'SnapToAI: Ready';
+        status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
         status.className = 'status';
       }, 2000);
       return;
@@ -203,7 +220,7 @@ async function handleReeditChunkGroup(captureGroupId) {
     // Get the dataUrls for these chunks (keep as separate pages)
     const chunkDataUrls = chunkIndices.map(c => currentSnaps[c.index]);
     
-    status.textContent = 'Opening full page editor...';
+    status.textContent = chrome.i18n.getMessage('statusOpeningEditor') || 'Opening full page editor...';
     
     // Store chunks for fullpage mode (key must match what annotate.js expects)
     await chrome.storage.local.set({ 
@@ -228,16 +245,16 @@ async function handleReeditChunkGroup(captureGroupId) {
     });
     
     setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 1500);
     
   } catch (error) {
     console.log('[SnapToAI] RE-EDIT chunk group error:', error);
-    status.textContent = 'Failed to open editor';
+    status.textContent = chrome.i18n.getMessage('statusEditorFailed') || 'Failed to open editor';
     status.className = 'status error';
     setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 2000);
   }
@@ -262,7 +279,7 @@ async function handleReeditFullPage() {
       smartName = capture.smartName || 'Full Page';
     } else {
       // Fallback: gather chunks from the current queue
-      status.textContent = 'Finding chunks in queue...';
+      status.textContent = chrome.i18n.getMessage('statusFindingParts') || 'Finding chunks in queue...';
       
       // Find all chunk metadata
       const chunkIndices = [];
@@ -275,10 +292,10 @@ async function handleReeditFullPage() {
       }
       
       if (chunkIndices.length === 0) {
-        status.textContent = 'No full page capture found';
+        status.textContent = chrome.i18n.getMessage('statusNoCapture') || 'No full page capture found';
         status.className = 'status error';
         setTimeout(() => {
-          status.textContent = 'SnapToAI: Ready';
+          status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
           status.className = 'status';
         }, 2000);
         return;
@@ -292,16 +309,16 @@ async function handleReeditFullPage() {
     }
     
     if (chunks.length === 0) {
-      status.textContent = 'No chunks found to edit';
+      status.textContent = chrome.i18n.getMessage('statusNoCapture') || 'No chunks found to edit';
       status.className = 'status error';
       setTimeout(() => {
-        status.textContent = 'SnapToAI: Ready';
+        status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
         status.className = 'status';
       }, 2000);
       return;
     }
     
-    status.textContent = 'Opening full page editor...';
+    status.textContent = chrome.i18n.getMessage('statusOpeningEditor') || 'Opening full page editor...';
     status.className = 'status active';
     
     // Store the chunks array for fullpage mode (key must match what annotate.js expects)
@@ -331,16 +348,16 @@ async function handleReeditFullPage() {
     });
     
     setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 1500);
     
   } catch (error) {
     console.log('[SnapToAI] RE-EDIT error:', error);
-    status.textContent = 'Failed to open editor';
+    status.textContent = chrome.i18n.getMessage('statusEditorFailed') || 'Failed to open editor';
     status.className = 'status error';
     setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 2000);
   }
@@ -694,7 +711,7 @@ function setupEventListeners() {
       
       try {
         // Clear queue and wait for completion
-        status.textContent = 'Clearing queue...';
+        status.textContent = chrome.i18n.getMessage('statusAllCleared') || 'Clearing queue...';
         await chrome.runtime.sendMessage({ action: 'clearSnaps' });
         const preview = document.getElementById('lastCapturePreview');
         if (preview) preview.style.display = 'none';
@@ -703,19 +720,19 @@ function setupEventListeners() {
         
         // Verify queue is now empty
         if (currentSnaps.length === 0) {
-          status.textContent = 'Queue cleared! Starting capture...';
+          status.textContent = chrome.i18n.getMessage('statusCapturingFullPage') || 'Queue cleared! Starting capture...';
           status.className = 'status active';
           // Now start capture - button will be managed by handleFullPageClick
           handleFullPageClick();
         } else {
           // Queue still has items - something went wrong
-          status.textContent = 'Could not clear queue. Try again.';
+          status.textContent = chrome.i18n.getMessage('statusCaptureFailed') || 'Could not clear queue. Try again.';
           status.className = 'status error';
           fullPageButton.disabled = false;
         }
       } catch (error) {
         console.log('[SnapToAI] Clear and capture error:', error);
-        status.textContent = 'Error clearing queue';
+        status.textContent = chrome.i18n.getMessage('statusSomethingWrong') || 'Error clearing queue';
         status.className = 'status error';
         fullPageButton.disabled = false;
       }
@@ -751,7 +768,7 @@ function setupEventListeners() {
       }
       const overlayStatus = document.getElementById('fullPageStatus');
       if (overlayStatus) {
-        overlayStatus.textContent = `Capturing full page... ${request.progress}%`;
+        overlayStatus.textContent = (chrome.i18n.getMessage('statusScrollingPage') || 'Scrolling page...') + ` ${request.progress}%`;
       }
       // Reset timeout on each progress update (page is responding)
       startFullPageTimeout();
@@ -776,16 +793,16 @@ function setupEventListeners() {
       if (request.success) {
         showLastCapturePreview(request.dataUrl);
         loadSnaps().then(updateUI);
-        status.textContent = 'Full page captured! ✓';
+        status.textContent = chrome.i18n.getMessage('statusFullPageCaptured') || 'Full page captured! ✓';
         status.className = 'status active';
         incrementGlobalCounter();
       } else {
-        status.textContent = request.error || 'Full page capture failed';
+        status.textContent = request.error || chrome.i18n.getMessage('statusCaptureFailed') || 'Full page capture failed';
         status.className = 'status error';
       }
       
       setTimeout(() => {
-        status.textContent = 'SnapToAI: Ready';
+        status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
         status.className = 'status';
       }, 2000);
     }
@@ -858,11 +875,11 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
     // Hide overlay and update UI
     overlay.style.display = 'none';
     fullPageButton.disabled = false;
-    status.textContent = `Full page: ${screenshots.length} pages ready to edit`;
+    status.textContent = chrome.i18n.getMessage('statusFullPageCaptured') || `Full page: ${screenshots.length} pages ready to edit`;
     status.className = 'status active';
     
     setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 3000);
     
@@ -871,14 +888,14 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
     
   } catch (error) {
     console.log('[SnapToAI] Full page:', error.message || error);
-    status.textContent = error.message || 'Full page capture failed';
+    status.textContent = error.message || chrome.i18n.getMessage('statusCaptureFailed') || 'Full page capture failed';
     status.className = 'status error';
     
     // Notify background to reset capture state
     chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
     
     setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 2000);
   } finally {
@@ -1160,9 +1177,9 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
       updateReeditButton(smartName);
       
       if (totalChunks > 1) {
-        status.textContent = `Full page saved as ${savedCount} parts! ✓`;
+        status.textContent = chrome.i18n.getMessage('statusFullPageSavedParts', [String(savedCount)]) || `Full page saved as ${savedCount} parts! ✓`;
       } else {
-        status.textContent = 'Full page captured! ✓';
+        status.textContent = chrome.i18n.getMessage('statusFullPageCaptured') || 'Full page captured! ✓';
       }
       status.className = 'status active';
       incrementGlobalCounter();
@@ -1171,17 +1188,17 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
     }
     
     setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 2000);
     
   } catch (error) {
     console.log('[SnapToAI] Stitch:', error.message || error);
-    status.textContent = error.message || 'Stitching failed';
+    status.textContent = error.message || chrome.i18n.getMessage('statusCaptureFailed') || 'Stitching failed';
     status.className = 'status error';
     
     setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 2000);
   } finally {
@@ -1358,8 +1375,8 @@ async function handleFullPageClick() {
     
     // Show overlay in popup
     overlay.style.display = 'flex';
-    overlayStatus.textContent = 'Starting full page capture...';
-    status.textContent = 'Capturing full page...';
+    overlayStatus.textContent = chrome.i18n.getMessage('statusCapturingFullPage') || 'Starting full page capture...';
+    status.textContent = chrome.i18n.getMessage('statusCapturingFullPage') || 'Capturing full page...';
     status.className = 'status active';
     
     // Start timeout BEFORE sending message - catches cases where content script can't load
@@ -1370,7 +1387,7 @@ async function handleFullPageClick() {
     
     if (response.success) {
       // Full page capture initiated - we'll receive progress updates via messages
-      overlayStatus.textContent = 'Scrolling page... 0%';
+      overlayStatus.textContent = chrome.i18n.getMessage('statusScrollingPage') || 'Scrolling page... 0%';
     } else {
       throw new Error(response.error || 'Failed to start full page capture');
     }
@@ -1388,11 +1405,11 @@ async function handleFullPageClick() {
     // Show friendly message for restricted pages
     const friendlyMessage = error.message?.includes('Cannot capture') 
       ? error.message 
-      : 'Cannot capture this page. Works on regular websites only.';
+      : chrome.i18n.getMessage('statusCannotCapture') || 'Cannot capture this page. Works on regular websites only.';
     status.textContent = friendlyMessage;
     status.className = 'status error';
     setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 3000);
     fullPageButton.disabled = false;
@@ -1903,18 +1920,18 @@ async function handleCopySingle(index) {
       throw new Error('Clipboard not available');
     }
     
-    status.textContent = `Snap ${index + 1} copied`;
+    status.textContent = chrome.i18n.getMessage('statusSnapCopied') || `Snap ${index + 1} copied`;
     status.className = 'status active';
     
     setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 1500);
   } catch (error) {
     console.log('Copy failed:', error.message || error.name);
     
     // User-friendly error
-    let errorMsg = 'Copy failed';
+    let errorMsg = chrome.i18n.getMessage('statusCaptureFailed') || 'Copy failed';
     if (error.name === 'NotAllowedError') {
       errorMsg = 'Click page first';
     }
@@ -1922,7 +1939,7 @@ async function handleCopySingle(index) {
     status.textContent = errorMsg;
     status.className = 'status error';
     setTimeout(() => {
-      status.textContent = 'SnapToAI: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 2000);
   }
@@ -2140,10 +2157,10 @@ async function handleAnnotationMessage(request) {
   
   // Show success message
   const status = document.getElementById('status');
-  status.textContent = 'Annotation saved ✓';
+  status.textContent = chrome.i18n.getMessage('statusSnapCaptured') || 'Annotation saved ✓';
   status.className = 'status active';
   setTimeout(() => {
-    status.textContent = 'Flow: Ready';
+    status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
     status.className = 'status';
   }, 1500);
 }
@@ -2221,10 +2238,10 @@ async function handleChunkedAnnotationMessage(request) {
   
   // Show success message
   const status = document.getElementById('status');
-  status.textContent = 'Edited group saved as single image ✓';
+  status.textContent = chrome.i18n.getMessage('statusSnapCaptured') || 'Edited group saved ✓';
   status.className = 'status active';
   setTimeout(() => {
-    status.textContent = 'Flow: Ready';
+    status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
     status.className = 'status';
   }, 2000);
 }
@@ -2324,10 +2341,10 @@ async function handleExportPDF() {
   const status = document.getElementById('status');
   
   if (currentSnaps.length === 0) {
-    status.textContent = 'No snaps to export';
+    status.textContent = chrome.i18n.getMessage('statusSomethingWrong') || 'No snaps to export';
     status.className = 'status error';
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 1500);
     return;
@@ -2437,10 +2454,10 @@ document.querySelectorAll('.pdf-option-btn').forEach(btn => {
       const selectedIndexes = getSelectedIndexes();
       if (selectedIndexes.length === 0) {
         const status = document.getElementById('status');
-        status.textContent = 'No screenshots selected';
+        status.textContent = chrome.i18n.getMessage('statusSomethingWrong') || 'No screenshots selected';
         status.className = 'status error';
         setTimeout(() => {
-          status.textContent = 'Flow: Ready';
+          status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
           status.className = 'status';
         }, 1500);
         hidePDFExportModal();
@@ -2556,10 +2573,10 @@ async function exportPDFSeparate(snaps, mode) {
   const status = document.getElementById('status');
   
   if (snaps.length === 0) {
-    status.textContent = 'No screenshots to export';
+    status.textContent = chrome.i18n.getMessage('statusSomethingWrong') || 'No screenshots to export';
     status.className = 'status error';
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 1500);
     return;
@@ -2567,9 +2584,9 @@ async function exportPDFSeparate(snaps, mode) {
   
   try {
     // Show processing overlay with timer
-    showProcessingOverlay('Generating PDFs...', `${snaps.length} file${snaps.length > 1 ? 's' : ''}`);
+    showProcessingOverlay(chrome.i18n.getMessage('statusGeneratingPdf') || 'Generating PDFs...', `${snaps.length} file${snaps.length > 1 ? 's' : ''}`);
     
-    status.textContent = 'Loading PDF library...';
+    status.textContent = chrome.i18n.getMessage('statusGeneratingPdf') || 'Loading PDF library...';
     status.className = 'status active';
     
     // Load jsPDF once (or wait if already loading)
@@ -2647,20 +2664,20 @@ async function exportPDFSeparate(snaps, mode) {
     // Hide processing overlay
     hideProcessingOverlay();
     
-    status.textContent = `${snaps.length} PDFs exported ✓`;
+    status.textContent = chrome.i18n.getMessage('statusPdfExported') || `${snaps.length} PDFs exported ✓`;
     status.className = 'status active';
     
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 2000);
   } catch (error) {
     console.error('PDF export error:', error);
     hideProcessingOverlay();
-    status.textContent = 'PDF export failed';
+    status.textContent = chrome.i18n.getMessage('statusCaptureFailed') || 'PDF export failed';
     status.className = 'status error';
     setTimeout(() => {
-      status.textContent = 'Flow: Ready';
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 2000);
   }
