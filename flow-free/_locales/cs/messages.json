@@ -115,5 +115,128 @@
   "emptySubheading2": {
     "message": "Všech 9 snímků se stane JEDNÍM vrstveným obrázkem",
     "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Připraveno",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Pořizování snímku obrazovky...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Pořizování výřezu...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Zachycování celé stránky...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Posouvání stránky...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Snímek pořízen! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Celá stránka zachycena! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Celá stránka uložena jako $COUNT$ částí! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Editor výřezu otevřen! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ snímků vybráno → stanou se JEDNÍM vrstveným obrázkem",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Kombinování a kopírování...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ snímků zkombinováno a zkopírováno! 👉 Vložte do AI nyní!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Stahování...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "Čisté vrstvené PNG exportováno! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "Generování PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "Čisté vrstvené PDF exportováno! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Smazáno",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Vše vymazáno",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Nelze přistoupit k této stránce - zkuste jinou stránku",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Tuto stránku nelze zachytit",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Zachycení selhalo",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Něco se pokazilo",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Otevírání editoru...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Hledání částí...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Editor se nepodařilo otevřít",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "Nebyl nalezen snímek celé stránky",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Snímek zkopírován",
+    "description": "Status: single copy done"
   }
 }

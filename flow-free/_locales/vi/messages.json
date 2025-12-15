@@ -115,5 +115,128 @@
   "emptySubheading2": {
     "message": "Tất cả 9 ảnh chụp màn hình trở thành MỘT hình ảnh xếp chồng",
     "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Sẵn sàng",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Đang chụp ảnh màn hình...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Đang chụp vùng...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Đang chụp toàn trang...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Đang cuộn trang...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Đã chụp ảnh màn hình! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Đã chụp toàn trang! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Toàn trang đã lưu thành $COUNT$ phần! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Trình chỉnh sửa vùng đã mở! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ ảnh chụp màn hình đã chọn → trở thành MỘT hình ảnh xếp chồng",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Đang kết hợp và sao chép...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ ảnh chụp màn hình đã kết hợp và sao chép! 👉 Dán vào AI ngay!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Đang tải xuống...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "PNG xếp chồng sạch đã xuất! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "Đang tạo PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "PDF xếp chồng sạch đã xuất! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Đã xóa",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Đã xóa tất cả",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Không thể truy cập trang này - hãy thử trang khác",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Không thể chụp trang này",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Chụp thất bại",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Đã xảy ra lỗi",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Đang mở trình chỉnh sửa...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Đang tìm tất cả các phần...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Không thể mở trình chỉnh sửa",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "Không tìm thấy ảnh chụp toàn trang",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Đã sao chép ảnh chụp màn hình",
+    "description": "Status: single copy done"
   }
 }

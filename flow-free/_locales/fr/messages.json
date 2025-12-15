@@ -115,5 +115,128 @@
   "emptySubheading2": {
     "message": "Les 9 captures deviennent UNE image empilée",
     "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Prêt",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Capture en cours...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Capture de recadrage...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Capture de page complète...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Défilement de la page...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Capture réussie ! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Page complète capturée ! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Page sauvegardée en $COUNT$ parties ! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Éditeur de recadrage ouvert ! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ captures sélectionnées → seront combinées en UNE image empilée",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Combinaison et copie...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ captures combinées et copiées ! 👉 Collez dans l'IA maintenant !",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Téléchargement...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "PNG empilé propre exporté ! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "Génération du PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "PDF empilé propre exporté ! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Supprimé",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Tout effacé",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Impossible d'accéder à cette page - essayez un autre site",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Impossible de capturer cette page",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Échec de la capture",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Quelque chose s'est mal passé",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Ouverture de l'éditeur...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Recherche de toutes les parties...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Échec de l'ouverture de l'éditeur",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "Aucune capture de page complète trouvée",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Capture copiée",
+    "description": "Status: single copy done"
   }
 }

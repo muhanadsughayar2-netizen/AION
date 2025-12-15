@@ -115,5 +115,128 @@
   "emptySubheading2": {
     "message": "Les 9 captures de pantalla es converteixen en UNA imatge apilada",
     "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Llest",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Capturant captura de pantalla...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Capturant retall...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Capturant pàgina completa...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Desplaçant la pàgina...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Captura de pantalla feta! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Pàgina completa capturada! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Pàgina completa desada en $COUNT$ parts! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Editor de retall obert! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ captures seleccionades → es converteixen en UNA imatge apilada",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Combinant i copiant...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ captures combinades i copiades! 👉 Enganxa a IA ara!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Descarregant...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "PNG apilat net exportat! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "Generant PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "PDF apilat net exportat! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Eliminat",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Tot esborrat",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "No es pot accedir a aquesta pàgina - prova una altra pàgina",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "No es pot capturar aquesta pàgina",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "La captura ha fallat",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Alguna cosa ha anat malament",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Obrint l'editor...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Buscant les parts...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "No s'ha pogut obrir l'editor",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "No s'ha trobat captura de pàgina completa",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Captura copiada",
+    "description": "Status: single copy done"
   }
 }

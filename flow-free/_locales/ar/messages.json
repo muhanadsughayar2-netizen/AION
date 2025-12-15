@@ -115,5 +115,128 @@
   "emptySubheading2": {
     "message": "كل 9 لقطات شاشة تصبح صورة واحدة مكدسة",
     "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "جاهز",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "جاري التقاط الشاشة...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "جاري التقاط القص...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "جاري التقاط الصفحة كاملة...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "جاري تمرير الصفحة...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "تم التقاط اللقطة! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "تم التقاط الصفحة كاملة! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "تم حفظ الصفحة كاملة في $COUNT$ أجزاء! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "تم فتح محرر القص! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "تم تحديد $COUNT$ لقطات شاشة → سيتم دمجها في صورة واحدة مكدسة",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "جاري الدمج والنسخ...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "تم دمج ونسخ $COUNT$ لقطات شاشة! 👉 الصق في الذكاء الاصطناعي الآن!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "جاري التحميل...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "تم تصدير PNG مكدس نظيف! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "جاري إنشاء PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "تم تصدير PDF مكدس نظيف! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "تم الحذف",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "تم مسح الكل",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "لا يمكن الوصول إلى هذه الصفحة - جرب موقعًا آخر",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "لا يمكن التقاط هذه الصفحة",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "فشل الالتقاط",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "حدث خطأ ما",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "جاري فتح المحرر...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "جاري البحث عن جميع الأجزاء...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "فشل في فتح المحرر",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "لم يتم العثور على التقاط صفحة كاملة",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "تم نسخ اللقطة",
+    "description": "Status: single copy done"
   }
 }

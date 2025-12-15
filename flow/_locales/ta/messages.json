@@ -115,5 +115,128 @@
   "emptySubheading2": {
     "message": "அனைத்து 9 திரைப்பிடிப்புகளும் ஒரு அடுக்கப்பட்ட படமாக மாறும்",
     "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "தயார்",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "திரைப்பிடிப்பு எடுக்கிறது...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "ஸ்னிப் எடுக்கிறது...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "முழு பக்கம் எடுக்கிறது...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "பக்கத்தை உருட்டுகிறது...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "திரைப்பிடிப்பு எடுக்கப்பட்டது! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "முழு பக்கம் எடுக்கப்பட்டது! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "முழு பக்கம் $COUNT$ பகுதிகளில் சேமிக்கப்பட்டது! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "ஸ்னிப் எடிட்டர் திறந்தது! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ திரைப்பிடிப்புகள் தேர்ந்தெடுக்கப்பட்டன → ஒரு அடுக்கப்பட்ட படமாகும்",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "இணைத்து நகலெடுக்கிறது...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ திரைப்பிடிப்புகள் இணைக்கப்பட்டு நகலெடுக்கப்பட்டன! 👉 AI-ல் ஒட்டவும்!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "பதிவிறக்குகிறது...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "தூய்மையான அடுக்கப்பட்ட PNG ஏற்றுமதி செய்யப்பட்டது! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "PDF உருவாக்குகிறது...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "தூய்மையான அடுக்கப்பட்ட PDF ஏற்றுமதி செய்யப்பட்டது! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "நீக்கப்பட்டது",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "அனைத்தும் அழிக்கப்பட்டன",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "இந்த பக்கத்தை அணுக முடியவில்லை - வேறு பக்கத்தை முயற்சிக்கவும்",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "இந்த பக்கத்தை எடுக்க முடியாது",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "எடுப்பது தோல்வியடைந்தது",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "ஏதோ தவறு ஏற்பட்டது",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "எடிட்டர் திறக்கிறது...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "அனைத்து பகுதிகளையும் கண்டுபிடிக்கிறது...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "எடிட்டர் திறக்க முடியவில்லை",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "முழு பக்க பிடிப்பு காணப்படவில்லை",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "திரைப்பிடிப்பு நகலெடுக்கப்பட்டது",
+    "description": "Status: single copy done"
   }
 }

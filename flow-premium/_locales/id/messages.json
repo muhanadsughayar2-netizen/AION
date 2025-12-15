@@ -115,5 +115,128 @@
   "emptySubheading2": {
     "message": "Semua 9 tangkapan layar menjadi SATU gambar bertumpuk",
     "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Siap",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Mengambil tangkapan layar...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Mengambil potongan...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Mengambil halaman penuh...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Menggulir halaman...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Tangkapan layar berhasil! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Halaman penuh berhasil! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Halaman penuh disimpan sebagai $COUNT$ bagian! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Editor potongan dibuka! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ tangkapan layar dipilih → menjadi SATU gambar bertumpuk",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Menggabungkan & menyalin...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ tangkapan layar digabung & disalin! 👉 Tempel ke AI sekarang!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Mengunduh...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "PNG bertumpuk bersih diekspor! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "Membuat PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "PDF bertumpuk bersih diekspor! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Dihapus",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Semua dihapus",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Tidak dapat mengakses halaman ini - coba halaman lain",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Tidak dapat menangkap halaman ini",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Tangkapan gagal",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Terjadi kesalahan",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Membuka editor...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Mencari semua bagian...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Tidak dapat membuka editor",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "Tidak ditemukan tangkapan halaman penuh",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Tangkapan layar disalin",
+    "description": "Status: single copy done"
   }
 }

@@ -115,5 +115,128 @@
   "emptySubheading2": {
     "message": "Alle 9 skjermbilder blir til ETT stablet bilde",
     "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Klar",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Tar skjermbilde...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Tar utklipp...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Tar hel side...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Ruller siden...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Skjermbilde tatt! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Hel side tatt! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Hel side lagret som $COUNT$ deler! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Utklippsredigering åpnet! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ skjermbilder valgt → blir ETT stablet bilde",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Kombinerer og kopierer...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ skjermbilder kombinert og kopiert! 👉 Lim inn i AI nå!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Laster ned...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "Ren stablet PNG eksportert! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "Genererer PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "Ren stablet PDF eksportert! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Slettet",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Alt tømt",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Kan ikke få tilgang til denne siden - prøv en annen side",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Kan ikke ta bilde av denne siden",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Bildetaking mislyktes",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Noe gikk galt",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Åpner redigering...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Finner alle deler...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Kunne ikke åpne redigering",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "Fant ikke helsidebilde",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Skjermbilde kopiert",
+    "description": "Status: single copy done"
   }
 }

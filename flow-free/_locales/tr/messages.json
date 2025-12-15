@@ -115,5 +115,128 @@
   "emptySubheading2": {
     "message": "9 ekran görüntüsü TEK yığılmış resim olur",
     "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Hazır",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Ekran görüntüsü alınıyor...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Kesit alınıyor...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Tam sayfa alınıyor...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Sayfa kaydırılıyor...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Ekran görüntüsü alındı! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Tam sayfa alındı! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Tam sayfa $COUNT$ parça olarak kaydedildi! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Kesit düzenleyici açıldı! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ ekran görüntüsü seçildi → TEK yığılmış resim olacak",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Birleştiriliyor ve kopyalanıyor...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ ekran görüntüsü birleştirildi ve kopyalandı! 👉 Şimdi AI'ye yapıştır!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "İndiriliyor...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "Temiz yığılmış PNG dışa aktarıldı! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "PDF oluşturuluyor...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "Temiz yığılmış PDF dışa aktarıldı! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Silindi",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Hepsi temizlendi",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Bu sayfaya erişilemiyor - başka bir sayfa deneyin",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Bu sayfa yakalanamıyor",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Yakalama başarısız",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Bir şeyler ters gitti",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Düzenleyici açılıyor...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Tüm parçalar bulunuyor...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Düzenleyici açılamadı",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "Tam sayfa yakalama bulunamadı",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Ekran görüntüsü kopyalandı",
+    "description": "Status: single copy done"
   }
 }

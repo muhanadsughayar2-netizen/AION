@@ -115,5 +115,128 @@
   "emptySubheading2": {
     "message": "Toate cele 9 capturi de ecran devin O imagine stivuită",
     "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Pregătit",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Se capturează...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Se decupează...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Se capturează pagina completă...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Se derulează pagina...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Captură făcută! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Pagină completă capturată! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Pagină completă salvată în $COUNT$ părți! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Editor de decupare deschis! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ capturi selectate → devin O imagine stivuită",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Se combină și copiază...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ capturi combinate și copiate! 👉 Lipește în AI acum!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Se descarcă...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "PNG stivuit curat exportat! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "Se generează PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "PDF stivuit curat exportat! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Șters",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Totul șters",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Nu se poate accesa această pagină - încercați alta",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Nu se poate captura această pagină",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Captura a eșuat",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Ceva nu a mers bine",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Se deschide editorul...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Se găsesc toate părțile...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Nu s-a putut deschide editorul",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "Nicio captură de pagină completă găsită",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Captură copiată",
+    "description": "Status: single copy done"
   }
 }

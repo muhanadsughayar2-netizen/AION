@@ -115,5 +115,128 @@
   "emptySubheading2": {
     "message": "Visi 9 ekrānuzņēmumi kļūst par VIENU sakrautu attēlu",
     "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Gatavs",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Tiek uzņemts ekrānuzņēmums...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Tiek uzņemts izgriezums...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Tiek uzņemta visa lapa...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Tiek ritināta lapa...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Ekrānuzņēmums uzņemts! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Visa lapa uzņemta! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Visa lapa saglabāta kā $COUNT$ daļas! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Izgriezuma redaktors atvērts! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ ekrānuzņēmumi atlasīti → kļūs par VIENU sakrautu attēlu",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Apvienošana un kopēšana...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ ekrānuzņēmumi apvienoti un nokopēti! 👉 Ielīmē AI tagad!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Lejupielādē...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "Tīrs sakrauts PNG eksportēts! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "Ģenerē PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "Tīrs sakrauts PDF eksportēts! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Izdzēsts",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Viss notīrīts",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Nevar piekļūt šai lapai - izmēģiniet citu lapu",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Nevar uzņemt šo lapu",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Uzņemšana neizdevās",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Kaut kas nogāja greizi",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Atver redaktoru...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Meklē visas daļas...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Nevarēja atvērt redaktoru",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "Nav atrasts visas lapas uzņēmums",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Ekrānuzņēmums nokopēts",
+    "description": "Status: single copy done"
   }
 }

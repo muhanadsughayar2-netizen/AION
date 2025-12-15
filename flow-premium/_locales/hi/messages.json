@@ -115,5 +115,128 @@
   "emptySubheading2": {
     "message": "",
     "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "तैयार",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "स्क्रीनशॉट ले रहे हैं...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "स्निप कैप्चर हो रहा है...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "पूरा पेज कैप्चर हो रहा है...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "पेज स्क्रॉल हो रहा है...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "स्नैप कैप्चर हो गया! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "पूरा पेज कैप्चर हो गया! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "पूरा पेज $COUNT$ भागों में सेव हुआ! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "स्निप एडिटर खुला! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ स्क्रीनशॉट चयनित → एक स्टैक्ड इमेज में संयोजित होंगे",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "संयोजित और कॉपी हो रहा है...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ स्क्रीनशॉट संयोजित और कॉपी हो गए! 👉 अब AI में पेस्ट करें!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "डाउनलोड हो रहा है...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "साफ स्टैक्ड PNG निर्यात हो गया! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "PDF बन रहा है...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "साफ स्टैक्ड PDF निर्यात हो गया! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "हटा दिया गया",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "सब साफ हो गया",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "इस पेज तक पहुंच नहीं हो सकती - कोई और साइट आज़माएं",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "इस पेज को कैप्चर नहीं किया जा सकता",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "कैप्चर विफल",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "कुछ गड़बड़ हो गई",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "एडिटर खोल रहे हैं...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "सभी भाग खोज रहे हैं...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "एडिटर खोलने में विफल",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "पूरे पेज का कैप्चर नहीं मिला",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "स्नैप कॉपी हो गया",
+    "description": "Status: single copy done"
   }
 }
