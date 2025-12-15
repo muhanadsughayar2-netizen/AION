@@ -2524,8 +2524,15 @@
     const overlay = createFullPageOverlay();
     const screenshots = [];
     let originalStyles = null;
+    let originalScrollTop = 0;
     
     try {
+      // P5: Hide modals and pop-ups first
+      hideModalsAndOverlays();
+      
+      // P2: Capture dynamic media (videos/canvases) as static images
+      captureCanvasAndVideo();
+      
       // Get page dimensions
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
@@ -2999,6 +3006,12 @@
       
       return { success: false, error: 'Page not capturable' };
     } finally {
+      // P5: Restore modals and pop-ups
+      restoreModalsAndOverlays();
+      
+      // P2: Restore videos/canvases
+      restoreCanvasAndVideo();
+      
       // Always reset guard flag
       isFullPageCaptureRunning = false;
       console.log('[SnapToAI] Full page capture ended');
