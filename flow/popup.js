@@ -1223,12 +1223,53 @@ function showLastCapturePreview(dataUrl) {
   return;
 }
 
+// PRE-FLIGHT CHECK: Returns true if page can be captured, false otherwise
+// Shows error message and returns false for restricted pages
+async function canCapturePage() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const url = tab?.url || '';
+    
+    const restrictedPatterns = [
+      /^chrome:\/\//i,
+      /^chrome-extension:\/\//i,
+      /^edge:\/\//i,
+      /^about:/i,
+      /^file:\/\//i,
+      /^view-source:/i,
+      /^devtools:\/\//i,
+      /^chrome-search:\/\//i,
+      /^chrome-untrusted:\/\//i,
+      /^brave:\/\//i,
+      /^opera:\/\//i,
+      /^vivaldi:\/\//i
+    ];
+    
+    const isRestricted = restrictedPatterns.some(pattern => pattern.test(url));
+    
+    if (isRestricted || !url || url === 'about:blank') {
+      statusError('Cannot capture this page type');
+      return false;
+    }
+    return true;
+  } catch (e) {
+    statusError('Cannot access this page');
+    return false;
+  }
+}
+
 // Handle orb button click
 async function handleOrbClick() {
   const orbButton = document.getElementById('orbButton');
   
   // Disable button during operation
   orbButton.disabled = true;
+  
+  // PRE-FLIGHT: Check if page is capturable
+  if (!await canCapturePage()) {
+    orbButton.disabled = false;
+    return;
+  }
   
   try {
     // Snap button ALWAYS captures - never auto-uploads
@@ -1292,6 +1333,12 @@ async function handleSnipClick() {
   // Disable button during operation
   snipButton.disabled = true;
   
+  // PRE-FLIGHT: Check if page is capturable
+  if (!await canCapturePage()) {
+    snipButton.disabled = false;
+    return;
+  }
+  
   try {
     setStatus('Capturing for snip...', 'active');
     
@@ -1342,6 +1389,12 @@ async function handleFullPageClick() {
   // Disable button during operation
   fullPageButton.disabled = true;
   
+  // PRE-FLIGHT: Check if page is capturable (uses shared helper)
+  if (!await canCapturePage()) {
+    fullPageButton.disabled = false;
+    return;
+  }
+  
   // Estimate slots needed for full-page capture (typically 1-4 chunks)
   // Worst case: very long page = 4 chunks (20+ viewport heights)
   const ESTIMATED_MAX_CHUNKS = 4;
@@ -1363,7 +1416,7 @@ async function handleFullPageClick() {
   }
   
   try {
-    // Get current tab info for smart naming
+    // Get current tab info for smart naming (already fetched above, fetch again for scope)
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     currentFullPageInfo = {
       url: tab?.url || '',
