@@ -1459,17 +1459,43 @@ async function handleClear() {
 // Load snaps from storage
 async function loadSnaps() {
   try {
-    const response = await chrome.runtime.sendMessage({ action: 'getSnaps' });
-    const newSnaps = response || [];
+    // Load both snaps and metadata together
+    const result = await chrome.storage.local.get(['snaps', 'snapMetadata']);
+    const newSnaps = result.snaps || [];
+    const rawMetadata = result.snapMetadata || [];
     
-    // Also load metadata for chunk badges
-    const result = await chrome.storage.local.get({ snapMetadata: [] });
-    currentSnapMetadata = result.snapMetadata || [];
+    // FORCE SYNC: Ensure metadata array aligns perfectly with snaps array
+    // CASE 1: Metadata array is shorter than images (Common bug source)
+    if (rawMetadata.length < newSnaps.length) {
+      console.warn(`[SnapToAI] Sync fixed: Metadata shorter than snaps (${rawMetadata.length} vs ${newSnaps.length})`);
+      const diff = newSnaps.length - rawMetadata.length;
+      currentSnapMetadata = [...rawMetadata, ...Array(diff).fill(null)];
+      // Heal storage immediately so it doesn't happen next reload
+      chrome.storage.local.set({ snapMetadata: currentSnapMetadata });
+    } 
+    // CASE 2: Metadata is longer than images (Rare, happens if image save fails)
+    else if (rawMetadata.length > newSnaps.length) {
+      console.warn(`[SnapToAI] Sync fixed: Metadata longer than snaps (${rawMetadata.length} vs ${newSnaps.length})`);
+      currentSnapMetadata = rawMetadata.slice(0, newSnaps.length);
+      // Heal storage
+      chrome.storage.local.set({ snapMetadata: currentSnapMetadata });
+    } 
+    // CASE 3: Perfectly synced
+    else {
+      currentSnapMetadata = rawMetadata;
+    }
     
     // Clear selection if snap count changed (FIFO or clear happened)
     if (newSnaps.length !== currentSnaps.length) {
       selectedSnapIds.clear();
     }
+    
+    // Prune selection IDs that no longer exist
+    const validIndices = new Set();
+    selectedSnapIds.forEach(index => {
+      if (index < newSnaps.length) validIndices.add(index);
+    });
+    selectedSnapIds = validIndices;
     
     currentSnaps = newSnaps;
   } catch (error) {
@@ -1478,6 +1504,27 @@ async function loadSnaps() {
     currentSnapMetadata = [];
     selectedSnapIds.clear();
   }
+}
+
+// Safe type helper - determines capture type from metadata
+function getCaptureType(index) {
+  const meta = currentSnapMetadata[index];
+  
+  // Safety check - if no metadata, default to SNAP
+  if (!meta) return 'SNAP'; 
+
+  // Check for Full Page Chunk
+  if (meta.isChunk || (meta.part && meta.totalParts)) {
+    return 'CHUNK';
+  }
+
+  // Check for Snip
+  if (meta.isSnip) {
+    return 'SNIP';
+  }
+
+  // Default
+  return 'SNAP';
 }
 
 // Load platform preference

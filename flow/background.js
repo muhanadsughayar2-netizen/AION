@@ -353,10 +353,15 @@ function simpleHash(str) {
 // Add snip (cropped image) as new snap with optional chunk metadata
 async function addSnip(dataUrl, metadata = null) {
   try {
-    // Get current snaps and metadata
-    const snaps = await getSnaps();
-    const result = await chrome.storage.local.get({ snapMetadata: [] });
-    const snapMetadata = result.snapMetadata || [];
+    // Get current snaps and metadata atomically to avoid race conditions
+    const result = await chrome.storage.local.get({ snaps: [], snapMetadata: [] });
+    const snaps = result.snaps || [];
+    let snapMetadata = result.snapMetadata || [];
+    
+    // Backfill metadata if arrays are misaligned (handles existing queues gracefully)
+    while (snapMetadata.length < snaps.length) {
+      snapMetadata.push(null);
+    }
     
     // Block snip if queue is full - user must delete to make room
     if (snaps.length >= MAX_SNAPS) {

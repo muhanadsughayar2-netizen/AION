@@ -1,0 +1,135 @@
+This is a classic "parallel array" synchronization issue. Because snaps[] (the heavy images) and snapMetadata[] (the light JSON) are stored as separate keys in Chrome Storage, they are prone to race conditions—especially during rapid capturing or if one write operation fails while the other succeeds.
+
+If snapMetadata is shorter than snaps, your loop accesses undefined metadata, causing the code to default to "SNAP" (the fallback) instead of "SNIP", and index calculations for chunks get messed up.
+
+Here is the solution to force synchronization and fix the type detection.
+
+1. Robust loadSnaps Implementation
+The code you provided calls await loadSnaps() but the definition is missing (likely cut off). You need to implement a "self-healing" loader that forces the arrays to match lengths before the UI tries to render them.
+
+Replace (or add) this function in your flow-popup.js:
+
+JavaScript
+
+// FORCE SYNC: Load snaps and ensure metadata aligns perfectly
+async function loadSnaps() {
+  try {
+    const result = await chrome.storage.local.get(['snaps', 'snapMetadata']);
+    currentSnaps = result.snaps || [];
+    const rawMetadata = result.snapMetadata || [];
+
+    // CASE 1: Metadata array is shorter than images (Common bug source)
+    // Fix: Fill the gap with nulls so indices match
+    if (rawMetadata.length < currentSnaps.length) {
+      console.warn(`[SnapToAI] Sync fixed: Metadata shorter than snaps (${rawMetadata.length} vs ${currentSnaps.length})`);
+      const diff = currentSnaps.length - rawMetadata.length;
+      // create array of nulls and append
+      currentSnapMetadata = [...rawMetadata, ...Array(diff).fill(null)];
+      
+      // Optional: Heal storage immediately so it doesn't happen next reload
+      chrome.storage.local.set({ snapMetadata: currentSnapMetadata });
+    } 
+    // CASE 2: Metadata is longer than images (Rare, happens if image save fails)
+    // Fix: Truncate metadata
+    else if (rawMetadata.length > currentSnaps.length) {
+      console.warn(`[SnapToAI] Sync fixed: Metadata longer than snaps`);
+      currentSnapMetadata = rawMetadata.slice(0, currentSnaps.length);
+    } 
+    // CASE 3: Perfectly synced
+    else {
+      currentSnapMetadata = rawMetadata;
+    }
+
+    // Update selection set (prune IDs that no longer exist)
+    const validIndices = new Set();
+    selectedSnapIds.forEach(index => {
+      if (index < currentSnaps.length) validIndices.add(index);
+    });
+    selectedSnapIds = validIndices;
+
+  } catch (e) {
+    console.error('[SnapToAI] Error loading snaps:', e);
+    setStatus('Error loading captures', 'error');
+  }
+}
+2. Safe Type Helper (Fixes "Snip showing as Snap")
+Do not access currentSnapMetadata[i].isSnip directly in your UI loop, because currentSnapMetadata[i] might be null or undefined. Use this helper function to determine the type safely:
+
+JavaScript
+
+function getCaptureType(index) {
+  const meta = currentSnapMetadata[index];
+  
+  // 1. Safety check
+  if (!meta) return 'SNAP'; 
+
+  // 2. Check for Full Page Chunk
+  if (meta.isChunk || (meta.part && meta.totalParts)) {
+    return 'CHUNK';
+  }
+
+  // 3. Check for Snip
+  if (meta.isSnip) {
+    return 'SNIP';
+  }
+
+  // 4. Default
+  return 'SNAP';
+}
+
+function getCaptureLabel(index) {
+  const meta = currentSnapMetadata[index];
+  const type = getCaptureType(index);
+  
+  if (type === 'CHUNK') {
+    return `Part ${meta.part}/${meta.totalParts}`;
+  }
+  if (type === 'SNIP') {
+    return 'Snip';
+  }
+  return 'Snap';
+}
+3. Update the handleReeditChunkGroup Loop
+Your existing code in handleReeditChunkGroup iterates through metadata. Ensure it handles the "healing" (null values) we added in Step 1:
+
+JavaScript
+
+// In handleReeditChunkGroup(captureGroupId)...
+
+for (let i = 0; i < currentSnapMetadata.length; i++) {
+  const meta = currentSnapMetadata[i];
+  // ADD THIS CHECK: if meta is null, skip it
+  if (!meta) continue; 
+  
+  if (meta.isChunk && meta.captureGroupId === captureGroupId) {
+    chunkIndices.push({ index: i, part: meta.part });
+    if (meta.smartName) smartName = meta.smartName;
+  }
+}
+4. Root Cause Fix (Background Script Advice)
+While the Popup fixes the display, the desynchronization happens during the write in background.js.
+
+The Issue: You likely have two separate calls:
+
+JavaScript
+
+// BAD: Race condition prone
+chrome.storage.local.set({ snaps: newSnaps });
+chrome.storage.local.set({ snapMetadata: newMeta });
+The Fix: You must use a single atomic object when saving in background.js or content.js.
+
+JavaScript
+
+// GOOD: Atomic update
+chrome.storage.local.set({
+    snaps: newSnaps,
+    snapMetadata: newMeta
+}, () => {
+    // Both are guaranteed to be saved together
+});
+Summary of Changes
+Added logic to loadSnaps to physically pad the metadata array if it's shorter than the images array. This ensures index i in snaps always exists in metadata.
+
+Created a safe accessor (getCaptureType) that defaults to 'SNAP' only if metadata is explicitly null, preventing SNIPs from being mislabeled due to array offset errors.
+
+Next Step: Would you like me to generate the background.js handler to ensure snaps and metadata are always saved atomically to prevent this drift in the future?
