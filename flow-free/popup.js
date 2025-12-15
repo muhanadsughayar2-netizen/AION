@@ -1522,47 +1522,24 @@ function updateThumbnails() {
   const container = document.getElementById('thumbnails');
   const selectionBar = document.getElementById('selectionBar');
   container.innerHTML = '';
-  
+
   // Dynamically adjust popup height based on number of screenshots
   adjustPopupHeight(currentSnaps.length);
-  
-  // Pre-calculate numbering: assign base numbers to capture groups
-  // Full page chunks share a base number (e.g., 1.1, 1.2, 1.3)
-  // Snaps and Snips get their own sequential numbers
-  const groupBaseNumbers = {}; // captureGroupId -> base number
-  let nextBaseNumber = 1;
-  let snapCounter = 0;
-  let snipCounter = 0;
-  
-  // First pass: assign base numbers to groups and count snaps/snips
-  for (let i = 0; i < currentSnapMetadata.length; i++) {
-    const meta = currentSnapMetadata[i];
-    if (meta && (meta.isChunk || meta.totalParts > 1) && meta.captureGroupId) {
-      // Full page chunk - assign base number to group if not already assigned
-      if (!groupBaseNumbers[meta.captureGroupId]) {
-        groupBaseNumbers[meta.captureGroupId] = nextBaseNumber++;
-      }
-    } else if (meta && meta.isSnip) {
-      nextBaseNumber++; // Snip takes a number slot
-    } else {
-      nextBaseNumber++; // Snap takes a number slot
-    }
-  }
-  
+
   if (currentSnaps.length === 0) {
     const emptyState = document.createElement('div');
     emptyState.className = 'empty-state';
-    
+   
     // Get translated messages
     const getMessage = (key, fallback) => {
       const msg = chrome.i18n.getMessage(key);
       return msg || fallback;
     };
-    
+   
     const heading = chrome.i18n.getMessage('emptyHeading') || 'One click. One screenshot.';
     const sub1 = chrome.i18n.getMessage('emptySubheading1') || 'Select All → Copy → Paste.';
     const sub2 = chrome.i18n.getMessage('emptySubheading2') || 'All 9 screenshots drop as ONE stacked image';
-    
+   
     emptyState.innerHTML = `
       <div class="empty-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1578,164 +1555,238 @@ function updateThumbnails() {
     selectionBar.style.display = 'none';
     return;
   }
-  
+
   // Show selection bar when snaps exist
   selectionBar.style.display = 'flex';
-  
-  currentSnaps.forEach((dataUrl, index) => {
-    const thumbnail = document.createElement('div');
-    thumbnail.className = 'thumbnail fade-in';
-    thumbnail.dataset.index = index;
+
+  // First, group chunks by captureGroupId (or consecutive if old format)
+  const groups = [];
+  let currentGroup = [];
+  let currentGroupId = null;
+  let currentGroupBase = 1;
+
+  for (let i = 0; i < currentSnaps.length; i++) {
+    const meta = currentSnapMetadata[i] || {};
+    const isChunk = meta.isChunk || (meta.totalParts && meta.totalParts > 1);
     
-    // Add selected class if this snap is selected
-    if (selectedSnapIds.has(index)) {
-      thumbnail.classList.add('selected');
-    }
-    
-    // Create checkbox
-    const checkbox = document.createElement('div');
-    checkbox.className = 'thumbnail-checkbox';
-    if (selectedSnapIds.has(index)) {
-      checkbox.classList.add('checked');
-    }
-    
-    // Checkbox click handler
-    checkbox.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleSelection(index);
-    });
-    
-    // Create delete button
-    const deleteBtn = document.createElement('div');
-    deleteBtn.className = 'thumbnail-delete';
-    deleteBtn.title = 'Delete this snap';
-    
-    // Delete button click handler
-    deleteBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      handleDeleteSnap(index);
-    });
-    
-    // Create annotate button
-    const annotateBtn = document.createElement('div');
-    annotateBtn.className = 'thumbnail-annotate';
-    annotateBtn.title = 'Annotate this snap';
-    
-    // Annotate button click handler
-    annotateBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      handleAnnotate(index);
-    });
-    
-    // Create copy button
-    const copyBtn = document.createElement('div');
-    copyBtn.className = 'thumbnail-copy';
-    copyBtn.title = 'Copy this snap';
-    
-    // Copy button click handler
-    copyBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      handleCopySingle(index);
-    });
-    
-    const img = document.createElement('img');
-    img.src = dataUrl;
-    img.alt = `Snap ${index + 1}`;
-    
-    // Thumbnail click to preview
-    thumbnail.addEventListener('click', (e) => {
-      // Don't open preview if clicking checkbox, delete, annotate, or copy button
-      if (!e.target.classList.contains('thumbnail-checkbox') && 
-          !e.target.classList.contains('thumbnail-delete') &&
-          !e.target.classList.contains('thumbnail-annotate') &&
-          !e.target.classList.contains('thumbnail-copy')) {
-        showPreview(index);
+    if (isChunk) {
+      if (meta.captureGroupId && meta.captureGroupId !== currentGroupId) {
+        if (currentGroup.length > 0) {
+          groups.push({
+            items: currentGroup,
+            base: currentGroupBase,
+            isChunkGroup: true
+          });
+          currentGroupBase++;
+        }
+        currentGroup = [{ index: i, meta }];
+        currentGroupId = meta.captureGroupId;
+      } else if (meta.captureGroupId === currentGroupId) {
+        currentGroup.push({ index: i, meta });
+      } else {
+        // Old format without groupId — assume consecutive chunks
+        if (currentGroup.length === 0 || (meta.part === currentGroup[currentGroup.length - 1].meta.part + 1)) {
+          currentGroup.push({ index: i, meta });
+        } else {
+          if (currentGroup.length > 0) {
+            groups.push({
+              items: currentGroup,
+              base: currentGroupBase,
+              isChunkGroup: true
+            });
+            currentGroupBase++;
+          }
+          currentGroup = [{ index: i, meta }];
+        }
       }
-    });
-    
-    // Drag and drop support
-    thumbnail.draggable = true;
-    thumbnail.addEventListener('dragstart', (e) => handleDragStart(e, index));
-    thumbnail.addEventListener('dragover', (e) => handleDragOver(e));
-    thumbnail.addEventListener('dragenter', (e) => handleDragEnter(e));
-    thumbnail.addEventListener('dragleave', (e) => handleDragLeave(e));
-    thumbnail.addEventListener('drop', (e) => handleDrop(e, index));
-    thumbnail.addEventListener('dragend', handleDragEnd);
-    
-    // Get metadata for this snap
-    const meta = currentSnapMetadata[index];
-    
-    // Create number label based on capture type
-    const number = document.createElement('div');
-    number.className = 'thumbnail-number';
-    
-    // Create type badge
-    const typeBadge = document.createElement('div');
-    typeBadge.className = 'capture-type-badge';
-    
-    // Determine label based on capture type - use totalParts OR isChunk to catch all chunks
-    const isFullPageChunk = meta && (meta.isChunk || meta.totalParts > 1) && meta.captureGroupId;
-    
-    if (isFullPageChunk) {
-      // Full Page capture - show base.part format (e.g., 1.1, 1.2)
-      const baseNum = groupBaseNumbers[meta.captureGroupId] || 1;
-      const partNum = meta.part || 1;
-      number.textContent = `${baseNum}.${partNum}`;
-      number.title = `Full Page ${baseNum}, Part ${partNum} of ${meta.totalParts}`;
-      typeBadge.textContent = 'FULL';
-      typeBadge.classList.add('type-full');
-    } else if (meta && meta.isSnip) {
-      // Snip capture - count snips up to this point
-      snipCounter++;
-      number.textContent = snipCounter;
-      number.title = `Snip ${snipCounter}`;
-      typeBadge.textContent = 'SNIP';
-      typeBadge.classList.add('type-snip');
     } else {
-      // Regular Snap
-      snapCounter++;
-      number.textContent = snapCounter;
-      number.title = `Snap ${snapCounter}`;
-      typeBadge.textContent = 'SNAP';
-      typeBadge.classList.add('type-snap');
-    }
-    
-    thumbnail.appendChild(checkbox);
-    thumbnail.appendChild(deleteBtn);
-    // Only add annotate button for non-chunk thumbnails (hide edit on full-page chunks)
-    if (!isFullPageChunk) {
-      thumbnail.appendChild(annotateBtn);
-    }
-    thumbnail.appendChild(copyBtn);
-    thumbnail.appendChild(img);
-    thumbnail.appendChild(number);
-    thumbnail.appendChild(typeBadge);
-    
-    // Add chunk badge if this is a chunked capture
-    if (meta && meta.isChunk) {
-      const chunkBadge = document.createElement('div');
-      chunkBadge.className = 'chunk-badge';
-      chunkBadge.textContent = `${meta.part}/${meta.totalParts}`;
-      chunkBadge.title = `Part ${meta.part} of ${meta.totalParts}`;
-      thumbnail.appendChild(chunkBadge);
-      
-      // Add RE-EDIT ALL button for chunked captures
-      if (meta.captureGroupId && meta.totalParts > 1) {
-        const reeditAllBtn = document.createElement('button');
-        reeditAllBtn.className = 'thumbnail-reedit-all';
-        reeditAllBtn.textContent = '✏️';
-        reeditAllBtn.title = `RE-EDIT all ${meta.totalParts} parts together`;
-        reeditAllBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          handleReeditChunkGroup(meta.captureGroupId);
+      if (currentGroup.length > 0) {
+        groups.push({
+          items: currentGroup,
+          base: currentGroupBase,
+          isChunkGroup: true
         });
-        thumbnail.appendChild(reeditAllBtn);
+        currentGroupBase++;
+        currentGroup = [];
+        currentGroupId = null;
       }
+      groups.push({
+        items: [{ index: i, meta }],
+        base: currentGroupBase,
+        isChunkGroup: false
+      });
+      currentGroupBase++;
     }
+  }
+
+  // Add the last group if any
+  if (currentGroup.length > 0) {
+    groups.push({
+      items: currentGroup,
+      base: currentGroupBase,
+      isChunkGroup: true
+    });
+  }
+
+  // Now render groups in order
+  groups.forEach(group => {
+    const isChunkGroup = group.isChunkGroup;
+    const baseNum = group.base;
     
-    container.appendChild(thumbnail);
+    group.items.forEach((item, groupIndex) => {
+      const index = item.index;
+      const meta = item.meta || {};
+      const thumbnail = document.createElement('div');
+      thumbnail.className = 'thumbnail fade-in';
+      thumbnail.dataset.index = index;
+      
+      // Add selected class if this snap is selected
+      if (selectedSnapIds.has(index)) {
+        thumbnail.classList.add('selected');
+      }
+      
+      // Create checkbox
+      const checkbox = document.createElement('div');
+      checkbox.className = 'thumbnail-checkbox';
+      if (selectedSnapIds.has(index)) {
+        checkbox.classList.add('checked');
+      }
+      
+      // Checkbox click handler
+      checkbox.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSelection(index);
+      });
+      
+      // Create delete button
+      const deleteBtn = document.createElement('div');
+      deleteBtn.className = 'thumbnail-delete';
+      deleteBtn.title = 'Delete this snap';
+      
+      // Delete button click handler
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleDeleteSnap(index);
+      });
+      
+      // Create annotate button
+      const annotateBtn = document.createElement('div');
+      annotateBtn.className = 'thumbnail-annotate';
+      annotateBtn.title = 'Annotate this snap';
+      
+      // Annotate button click handler
+      annotateBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleAnnotate(index);
+      });
+      
+      // Create copy button
+      const copyBtn = document.createElement('div');
+      copyBtn.className = 'thumbnail-copy';
+      copyBtn.title = 'Copy this snap';
+      
+      // Copy button click handler
+      copyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleCopySingle(index);
+      });
+      
+      const img = document.createElement('img');
+      img.src = currentSnaps[index];
+      img.alt = `Snap ${index + 1}`;
+      
+      // Thumbnail click to preview
+      thumbnail.addEventListener('click', (e) => {
+        // Don't open preview if clicking checkbox, delete, annotate, or copy button
+        if (!e.target.classList.contains('thumbnail-checkbox') &&
+            !e.target.classList.contains('thumbnail-delete') &&
+            !e.target.classList.contains('thumbnail-annotate') &&
+            !e.target.classList.contains('thumbnail-copy')) {
+          showPreview(index);
+        }
+      });
+      
+      // Drag and drop support
+      thumbnail.draggable = true;
+      thumbnail.addEventListener('dragstart', (e) => handleDragStart(e, index));
+      thumbnail.addEventListener('dragover', (e) => handleDragOver(e));
+      thumbnail.addEventListener('dragenter', (e) => handleDragEnter(e));
+      thumbnail.addEventListener('dragleave', (e) => handleDragLeave(e));
+      thumbnail.addEventListener('drop', (e) => handleDrop(e, index));
+      thumbnail.addEventListener('dragend', handleDragEnd);
+      
+      // Get metadata for this snap
+      const isFullPageChunk = meta.isChunk || (meta.totalParts && meta.totalParts > 1);
+      const isSnip = meta.isSnip;
+      
+      // Create number label
+      const number = document.createElement('div');
+      number.className = 'thumbnail-number';
+      
+      // Create type badge
+      const typeBadge = document.createElement('div');
+      typeBadge.className = 'capture-type-badge';
+      
+      // Determine label based on capture type
+      let typeLabel = 'SNAP';
+      if (isFullPageChunk) {
+        typeLabel = 'FULL';
+        typeBadge.classList.add('type-full');
+        const partNum = meta.part || (groupIndex + 1);
+        const totalParts = meta.totalParts || group.items.length;
+        number.textContent = `${baseNum}.${partNum}`;
+        number.title = `Full Page ${baseNum}, Part ${partNum} of ${totalParts}`;
+      } else if (isSnip) {
+        typeLabel = 'SNIP';
+        typeBadge.classList.add('type-snip');
+        number.textContent = baseNum;
+        number.title = `Snip ${baseNum}`;
+      } else {
+        typeLabel = 'SNAP';
+        typeBadge.classList.add('type-snap');
+        number.textContent = baseNum;
+        number.title = `Snap ${baseNum}`;
+      }
+      
+      typeBadge.textContent = typeLabel;
+      
+      thumbnail.appendChild(checkbox);
+      thumbnail.appendChild(deleteBtn);
+      // Only add annotate button for non-chunk thumbnails (hide edit on full-page chunks)
+      if (!isFullPageChunk) {
+        thumbnail.appendChild(annotateBtn);
+      }
+      thumbnail.appendChild(copyBtn);
+      thumbnail.appendChild(img);
+      thumbnail.appendChild(number);
+      thumbnail.appendChild(typeBadge);
+      
+      // Add chunk badge if this is a chunked capture
+      if (isFullPageChunk) {
+        const chunkBadge = document.createElement('div');
+        chunkBadge.className = 'chunk-badge';
+        chunkBadge.textContent = `${meta.part}/${meta.totalParts}`;
+        chunkBadge.title = `Part ${meta.part} of ${meta.totalParts}`;
+        thumbnail.appendChild(chunkBadge);
+       
+        // Add RE-EDIT ALL button for chunked captures
+        if (meta.captureGroupId && meta.totalParts > 1) {
+          const reeditAllBtn = document.createElement('button');
+          reeditAllBtn.className = 'thumbnail-reedit-all';
+          reeditAllBtn.textContent = '✏️';
+          reeditAllBtn.title = `RE-EDIT all ${meta.totalParts} parts together`;
+          reeditAllBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleReeditChunkGroup(meta.captureGroupId);
+          });
+          thumbnail.appendChild(reeditAllBtn);
+        }
+      }
+      
+      container.appendChild(thumbnail);
+    });
   });
-  
+
   updateSelectAllButton();
 }
 
