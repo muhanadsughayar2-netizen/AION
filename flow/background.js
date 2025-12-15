@@ -127,6 +127,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Copy image to clipboard with Google Docs limit check
     copyToClipboardWithLimit(request.dataUrl).then(sendResponse);
     return true;
+  } else if (request.action === 'saveSnap') {
+    // ATOMIC SAVE HANDLER - Unified save for all capture types (Gemini fix)
+    handleSaveSnap(request).then(sendResponse);
+    return true;
+  } else if (request.action === 'captureVisible') {
+    // SCREENSHOT PING-PONG LISTENER - Content script requests screenshot
+    const tabId = sender.tab?.id;
+    if (!tabId) {
+      sendResponse({ success: false, error: 'No tab ID available' });
+      return true;
+    }
+    
+    chrome.tabs.captureVisibleTab(null, { format: 'png' }, function(dataUrl) {
+      if (chrome.runtime.lastError) {
+        console.error("[SnapToAI:BG] Capture failed:", chrome.runtime.lastError.message);
+        sendResponse({ success: false, error: chrome.runtime.lastError.message });
+        return;
+      }
+      sendResponse({ success: true, dataUrl: dataUrl });
+    });
+    return true;
   }
 });
 
@@ -418,6 +439,83 @@ async function addSnip(dataUrl, metadata = null) {
       };
     }
     
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Atomic Saver: Unified handler for all capture types (Gemini fix)
+ * Guarantees snaps and metadata are always saved together
+ * @param {Object} request - { dataUrl, isSnip, chunkInfo, smartName }
+ */
+async function handleSaveSnap(request) {
+  try {
+    // 1. Get current state (both arrays at once)
+    const store = await chrome.storage.local.get(['snaps', 'snapMetadata']);
+    let snaps = store.snaps || [];
+    let metadata = store.snapMetadata || [];
+
+    // 2. SELF-HEALING: If arrays are already out of sync, fix them before adding new data
+    if (metadata.length !== snaps.length) {
+      console.warn(`[SnapToAI:BG] Sync drift detected. Repairing...`);
+      
+      if (metadata.length < snaps.length) {
+        const diff = snaps.length - metadata.length;
+        metadata = [...metadata, ...Array(diff).fill(null)];
+      } else {
+        metadata = metadata.slice(0, snaps.length);
+      }
+    }
+
+    // 3. Check queue capacity
+    if (snaps.length >= MAX_SNAPS) {
+      return { 
+        success: false, 
+        error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.`,
+        queueFull: true
+      };
+    }
+
+    // 4. Prepare the new Metadata Object
+    let newMeta = null;
+
+    if (request.chunkInfo) {
+      // --- TYPE: FULL PAGE CHUNK ---
+      newMeta = {
+        isChunk: true,
+        part: request.chunkInfo.part,
+        totalParts: request.chunkInfo.totalParts,
+        captureGroupId: request.chunkInfo.captureGroupId,
+        smartName: request.smartName || 'Full Page'
+      };
+    } else if (request.isSnip) {
+      // --- TYPE: SNIP ---
+      newMeta = {
+        isSnip: true,
+        timestamp: Date.now()
+      };
+    } else {
+      // --- TYPE: STANDARD SNAP ---
+      newMeta = null; 
+    }
+
+    // 5. ATOMIC UPDATE: Push to memory, then save to storage
+    snaps.push(request.dataUrl);
+    metadata.push(newMeta);
+
+    // CRITICAL: Save BOTH in one object
+    await chrome.storage.local.set({
+      snaps: snaps,
+      snapMetadata: metadata
+    });
+
+    // Update badge
+    await updateBadge(snaps.length);
+
+    return { success: true, count: snaps.length };
+
+  } catch (error) {
+    console.error('[SnapToAI:BG] Save failed:', error);
     return { success: false, error: error.message };
   }
 }
