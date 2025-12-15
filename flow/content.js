@@ -35,17 +35,33 @@
     const prefix = `[SnapToAI:CS - ${timestamp}]`;
     
     if (level === 'error') {
-      logSnapToAI('error', `${prefix} 🛑 ERROR: ${message}`, data !== null ? data : '');
+      console.error(`${prefix} 🛑 ERROR: ${message}`, data !== null ? data : '');
     } else if (level === 'warn') {
-      logSnapToAI('warn', `${prefix} ⚠️ WARN: ${message}`, data !== null ? data : '');
+      console.warn(`${prefix} ⚠️ WARN: ${message}`, data !== null ? data : '');
     } else {
-      logSnapToAI('log', `${prefix} ${message}`, data !== null ? data : '');
+      console.log(`${prefix} ${message}`, data !== null ? data : '');
     }
   }
 
   // === P1 FIX: Custom Scroll Container Detection (Reddit/Chat Fix) ===
   function findTheScrollContainer() {
     const SCROLL_THRESHOLD = 1.5; 
+    
+    // --- TIER 0: HIGHLY SPECIFIC YOUTUBE SELECTORS ---
+    const youtubeSelectors = [
+      'ytd-app:not([hidden])',
+      '#page-manager.ytd-app #columns',
+      '#primary.ytd-two-column-browse-results-renderer',
+      '#contents.ytd-section-list-renderer'
+    ];
+
+    for (const selector of youtubeSelectors) {
+      const container = document.querySelector(selector);
+      if (container && container.scrollHeight > container.clientHeight) {
+        logSnapToAI('log', 'T0: Found YouTube custom scroll container.', container);
+        return container;
+      }
+    }
     
     // 1. Check the default document scroll
     if (document.documentElement.scrollHeight > window.innerHeight * SCROLL_THRESHOLD) {
