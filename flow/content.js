@@ -2582,6 +2582,10 @@
       // P5: Hide modals and pop-ups first
       hideModalsAndOverlays();
       
+      // FIX 1: Reddit horizontal shift - prevent overflow-x during capture
+      document.documentElement.style.overflowX = 'hidden';
+      document.body.style.overflowX = 'hidden';
+      
       // P2: Capture dynamic media (videos/canvases) as static images
       captureCanvasAndVideo();
       
@@ -3063,6 +3067,10 @@
       
       // P2: Restore videos/canvases
       restoreCanvasAndVideo();
+      
+      // FIX 1 CLEANUP: Restore overflow-x
+      document.documentElement.style.overflowX = '';
+      document.body.style.overflowX = '';
       
       // Always reset guard flag
       isFullPageCaptureRunning = false;
