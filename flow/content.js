@@ -47,7 +47,9 @@
   function findTheScrollContainer() {
     const SCROLL_THRESHOLD = 1.5; 
     
-    // --- TIER 0: HIGHLY SPECIFIC YOUTUBE SELECTORS ---
+    // --- TIER 0: HIGHLY SPECIFIC PLATFORM SELECTORS ---
+    
+    // YouTube selectors
     const youtubeSelectors = [
       'ytd-app:not([hidden])',
       '#page-manager.ytd-app #columns',
@@ -55,11 +57,61 @@
       '#contents.ytd-section-list-renderer'
     ];
 
-    for (const selector of youtubeSelectors) {
-      const container = document.querySelector(selector);
-      if (container && container.scrollHeight > container.clientHeight) {
-        logSnapToAI('log', 'T0: Found YouTube custom scroll container.', container);
-        return container;
+    // Gemini selectors (tested Dec 2025)
+    const geminiSelectors = [
+      'main[class*="conversation"]',
+      'div[class*="conversation-container"]',
+      'div[class*="chat-history"]',
+      'div[data-message-list]',
+      'div[class*="responses-container"]',
+      '.chat-container',
+      'main > div:first-child' // Gemini's main scrollable area
+    ];
+
+    // Check which platform we're on
+    const hostname = window.location.hostname.toLowerCase();
+    
+    // YouTube
+    if (hostname.includes('youtube.com')) {
+      for (const selector of youtubeSelectors) {
+        const container = document.querySelector(selector);
+        if (container && container.scrollHeight > container.clientHeight) {
+          logSnapToAI('log', 'T0: Found YouTube scroll container.', container);
+          return container;
+        }
+      }
+    }
+    
+    // Gemini
+    if (hostname.includes('gemini.google.com')) {
+      for (const selector of geminiSelectors) {
+        try {
+          const container = document.querySelector(selector);
+          if (container && container.scrollHeight > container.clientHeight + 100) {
+            logSnapToAI('log', 'T0: Found Gemini scroll container.', container);
+            return container;
+          }
+        } catch (e) {}
+      }
+      // Gemini fallback: find the largest scrollable div
+      const allDivs = document.querySelectorAll('div');
+      let bestContainer = null;
+      let maxScrollHeight = 0;
+      allDivs.forEach(div => {
+        try {
+          const style = window.getComputedStyle(div);
+          const overflow = style.overflowY;
+          if ((overflow === 'auto' || overflow === 'scroll') && 
+              div.scrollHeight > div.clientHeight + 100 &&
+              div.scrollHeight > maxScrollHeight) {
+            maxScrollHeight = div.scrollHeight;
+            bestContainer = div;
+          }
+        } catch (e) {}
+      });
+      if (bestContainer) {
+        logSnapToAI('log', 'T0: Found Gemini scroll container (fallback).', bestContainer);
+        return bestContainer;
       }
     }
     
