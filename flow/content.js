@@ -443,7 +443,29 @@
       const fileInput = await findFileInput(platform);
       
       if (!fileInput) {
-        console.error('[SnapToAI] Could not find file input on this page');
+        // P3 FALLBACK: Copy to clipboard if upload button not found
+        console.warn('[SnapToAI] File input not found, attempting clipboard fallback...');
+        
+        try {
+          // Copy first image to clipboard as fallback
+          const finalImage = snaps[0];
+          
+          // Send to background to execute high-privilege clipboard write
+          const fallbackResult = await chrome.runtime.sendMessage({
+            action: 'copyToClipboard',
+            dataUrl: finalImage
+          });
+          
+          if (fallbackResult && fallbackResult.success) {
+            showToast('Upload button not found. Image copied to clipboard! Use Ctrl+V to paste.', 'error');
+            await chrome.storage.local.remove('snaps');
+            chrome.runtime.sendMessage({ action: 'uploadComplete' });
+            return { success: true, clipboard: true };
+          }
+        } catch (clipboardError) {
+          console.error('[SnapToAI] Clipboard fallback failed:', clipboardError);
+        }
+        
         showToast('Upload button not found. Try clicking the paperclip/attach icon first.', 'error');
         return { success: false, error: 'File input not found. Make sure the chat input area is visible.' };
       }
