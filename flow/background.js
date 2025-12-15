@@ -124,8 +124,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     downloadMultipleImages(request.images).then(sendResponse);
     return true;
   } else if (request.action === 'copyToClipboard') {
-    // Copy image to clipboard with Google Docs limit check
-    copyToClipboardWithLimit(request.dataUrl).then(sendResponse);
+    // P3 FIX: Full clipboard operation with Google Docs limit check and final write
+    handleCopyToClipboard(request.dataUrl || request.imageDataUrl).then(sendResponse);
     return true;
   } else if (request.action === 'saveSnap') {
     // ATOMIC SAVE HANDLER - Unified save for all capture types (Gemini fix)
@@ -945,6 +945,34 @@ async function blobToDataUrl(blob) {
 // ============================================
 // P3 FIX: OFFSCREEN DOCUMENT CLIPBOARD WRITE
 // ============================================
+
+/**
+ * Full clipboard operation: resize if needed, then write to clipboard
+ * @param {string} dataUrl - The image data URL to copy
+ */
+async function handleCopyToClipboard(dataUrl) {
+  try {
+    // Step 1: Apply Google Docs limit check and resize if needed
+    const limitResult = await copyToClipboardWithLimit(dataUrl);
+    
+    if (!limitResult.success) {
+      return { success: false, error: limitResult.error };
+    }
+    
+    // Step 2: Write the (possibly resized) image to clipboard
+    const finalDataUrl = limitResult.dataUrl || dataUrl;
+    const writeResult = await writeImageToClipboard(finalDataUrl);
+    
+    return {
+      success: writeResult.success,
+      error: writeResult.error,
+      resized: limitResult.resized
+    };
+  } catch (error) {
+    console.error('[SnapToAI] handleCopyToClipboard failed:', error);
+    return { success: false, error: error.message };
+  }
+}
 
 const OFFSCR_DOC_PATH = 'offscreen.html';
 
