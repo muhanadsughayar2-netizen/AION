@@ -1,119 +1,114 @@
 {
-  "extensionName": {
-    "message": "SnapToAI - لقطات الشاشة للذكاء الاصطناعي",
-    "description": "extensionName"
-  },
-  "extensionDescription": {
-    "message": "التقط لقطات الشاشة وحملها إلى منصات الذكاء الاصطناعي",
-    "description": "extensionDescription"
-  },
-  "flowReady": {
-    "message": "SnapToAI: جاهز",
-    "description": "flowReady"
-  },
-  "oneClickOneFlow": {
-    "message": "نقرة واحدة. لقطة واحدة.",
-    "description": "oneClickOneFlow"
-  },
-  "pagesReadyForAI": {
-    "message": "صفحاتك جاهزة للذكاء الاصطناعي في ثوانٍ",
-    "description": "pagesReadyForAI"
-  },
-  "clickCameraButton": {
-    "message": "انقر على زر الكاميرا المضيء أعلاه للالتقاط الفوري",
-    "description": "clickCameraButton"
-  },
-  "selectAll": {
-    "message": "تحديد الكل",
-    "description": "selectAll"
-  },
-  "deselectAll": {
-    "message": "إلغاء تحديد الكل",
-    "description": "deselectAll"
-  },
-  "copySelected": {
-    "message": "نسخ المحدد",
-    "description": "copySelected"
-  },
-  "downloadSelected": {
-    "message": "تحميل المحدد",
-    "description": "downloadSelected"
-  },
-  "exportPDF": {
-    "message": "تصدير PDF",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "خيارات تصدير PDF",
-    "description": "exportPDFOptions"
-  },
   "allAsOnePDF": {
-    "message": "الكل في PDF واحد",
+    "message": "Snap To AI",
     "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
-    "message": "دمج جميع لقطات الشاشة في ملف PDF واحد",
+    "message": "التقطها. اقتطعها. أرسلها إلى الذكاء الاصطناعي. 🔥",
     "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
-    "message": "الكل في ملفات PDF منفصلة",
+    "message": "جارٍ تحميل العداد...",
     "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "تحميل كل لقطة شاشة كملف PDF منفصل",
+    "message": "زيارات",
     "description": "allAsSeparatePDFsDesc"
   },
+  "cancel": {
+    "message": "التقاط",
+    "description": "cancel"
+  },
+  "clearAll": {
+    "message": "قص",
+    "description": "clearAll"
+  },
+  "clickCameraButton": {
+    "message": "صفحة كاملة",
+    "description": "clickCameraButton"
+  },
+  "copySelected": {
+    "message": "التقاط لقطة شاشة كاملة",
+    "description": "copySelected"
+  },
+  "daysRemaining": {
+    "message": "قص وتحديد مناطق",
+    "description": "daysRemaining"
+  },
+  "deselectAll": {
+    "message": "التقاط الصفحة بأكملها",
+    "description": "deselectAll"
+  },
+  "downloadSelected": {
+    "message": "تحديد الكل",
+    "description": "downloadSelected"
+  },
+  "emptyHeading": {
+    "message": "نسخ المحدد",
+    "description": "emptyHeading"
+  },
+  "emptySubheading1": {
+    "message": "تنزيل كـ PNG",
+    "description": "emptySubheading1"
+  },
+  "emptySubheading2": {
+    "message": "تنزيل PDF",
+    "description": "emptySubheading2"
+  },
+  "exportPDF": {
+    "message": "مسح الكل",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "إلغاء",
+    "description": "exportPDFOptions"
+  },
+  "extensionDescription": {
+    "message": "جاهز",
+    "description": "extensionDescription"
+  },
+  "extensionName": {
+    "message": "SnapToAI: جاهز",
+    "description": "extensionName"
+  },
+  "flowReady": {
+    "message": "جارٍ التقاط الالتقاط...",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "جارٍ التقاط القص...",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "جارٍ التقاط الصفحة الكاملة...",
+    "description": "pagesReadyForAI"
+  },
+  "selectAll": {
+    "message": "تم التقاط الالتقاط! ✓",
+    "description": "selectAll"
+  },
   "selectedAsOnePDF": {
-    "message": "المحدد في PDF واحد",
+    "message": "تم التقاط القص! ✓",
     "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
-    "message": "دمج لقطات الشاشة المحددة في ملف PDF واحد",
+    "message": "تم التقاط الصفحة الكاملة! ✓",
     "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
-    "message": "المحدد في ملفات PDF منفصلة",
+    "message": "تم تحديد [count] لقطات شاشة → سيتم دمجها في صورة واحدة مكدسة",
     "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "تحميل كل لقطة شاشة محددة كملف PDF منفصل",
+    "message": "جارٍ الدمج والنسخ...",
     "description": "selectedAsSeparatePDFsDesc"
   },
-  "clearAll": {
-    "message": "مسح الكل",
-    "description": "clearAll"
-  },
-  "cancel": {
-    "message": "إلغاء",
-    "description": "cancel"
-  },
   "trialEnded": {
-    "message": "انتهت الفترة التجريبية",
+    "message": "تم دمج ونسخ [count] لقطات شاشة! 👉 الصقها في الذكاء الاصطناعي الآن!",
     "description": "trialEnded"
   },
   "upgradeNow": {
-    "message": "الترقية الآن - $9.90/سنة",
+    "message": "جارٍ التنزيل...",
     "description": "upgradeNow"
-  },
-  "daysRemaining": {
-    "message": "متبقي $DAYS$ أيام",
-    "description": "daysRemaining",
-    "placeholders": {
-      "days": {
-        "content": "$1"
-      }
-    }
-  },
-  "emptyHeading": {
-    "message": "لقطات الشاشة إلى الذكاء الاصطناعي بنقرة واحدة",
-    "description": "Empty state heading"
-  },
-  "emptySubheading1": {
-    "message": "تحديد الكل ← نسخ ← لصق.",
-    "description": "Empty state subheading 1"
-  },
-  "emptySubheading2": {
-    "message": "كل 9 لقطات شاشة تصبح صورة واحدة مكدسة",
-    "description": "Empty state subheading 2"
   }
 }
