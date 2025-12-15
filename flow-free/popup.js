@@ -1464,19 +1464,7 @@ async function loadSnaps() {
     
     // Also load metadata for chunk badges
     const result = await chrome.storage.local.get({ snapMetadata: [] });
-    let snapMetadata = result.snapMetadata || [];
-    
-    // Read-only padding for display (do NOT write back - avoids race with background)
-    // If metadata is shorter, pad locally with nulls for correct indexing
-    while (snapMetadata.length < newSnaps.length) {
-      snapMetadata.unshift(null);
-    }
-    // If metadata is longer, trim locally
-    if (snapMetadata.length > newSnaps.length) {
-      snapMetadata = snapMetadata.slice(0, newSnaps.length);
-    }
-    
-    currentSnapMetadata = snapMetadata;
+    currentSnapMetadata = result.snapMetadata || [];
     
     // Clear selection if snap count changed (FIFO or clear happened)
     if (newSnaps.length !== currentSnaps.length) {
@@ -1546,33 +1534,18 @@ function updateThumbnails() {
   let snapCounter = 0;
   let snipCounter = 0;
   
-  // Helper: detect capture type from metadata
-  const getCaptureType = (meta) => {
-    if (!meta) return 'SNAP';
-    if (meta.isChunk || meta.totalParts > 1) return 'FULL';
-    if (meta.isSnip) return 'SNIP';
-    return 'SNAP';
-  };
-  
-  // First pass: assign base numbers to full page groups
+  // First pass: assign base numbers to groups and count snaps/snips
   for (let i = 0; i < currentSnapMetadata.length; i++) {
     const meta = currentSnapMetadata[i];
-    const type = getCaptureType(meta);
-    
-    if (type === 'FULL') {
-      // Full page chunk - group by captureGroupId or create implicit group
-      const groupKey = meta.captureGroupId || `implicit_${i}`;
-      if (!groupBaseNumbers[groupKey]) {
-        groupBaseNumbers[groupKey] = nextBaseNumber++;
+    if (meta && (meta.isChunk || meta.totalParts > 1) && meta.captureGroupId) {
+      // Full page chunk - assign base number to group if not already assigned
+      if (!groupBaseNumbers[meta.captureGroupId]) {
+        groupBaseNumbers[meta.captureGroupId] = nextBaseNumber++;
       }
-      // Store the group key on metadata for later use
-      if (!meta.captureGroupId) {
-        meta._implicitGroupKey = groupKey;
-      }
-    } else if (type === 'SNIP') {
-      nextBaseNumber++;
+    } else if (meta && meta.isSnip) {
+      nextBaseNumber++; // Snip takes a number slot
     } else {
-      nextBaseNumber++;
+      nextBaseNumber++; // Snap takes a number slot
     }
   }
   
@@ -1700,20 +1673,19 @@ function updateThumbnails() {
     const typeBadge = document.createElement('div');
     typeBadge.className = 'capture-type-badge';
     
-    // Determine label based on capture type using helper
-    const captureType = getCaptureType(meta);
-    const isFullPageChunk = captureType === 'FULL';
+    // Determine label based on capture type - use totalParts OR isChunk to catch all chunks
+    const isFullPageChunk = meta && (meta.isChunk || meta.totalParts > 1) && meta.captureGroupId;
     
     if (isFullPageChunk) {
-      // Full Page capture - show "FULL 1/3" format in badge
+      // Full Page capture - show base.part format (e.g., 1.1, 1.2)
+      const baseNum = groupBaseNumbers[meta.captureGroupId] || 1;
       const partNum = meta.part || 1;
-      const totalParts = meta.totalParts || 1;
-      number.textContent = partNum;
-      number.title = `Full Page Part ${partNum} of ${totalParts}`;
-      typeBadge.textContent = `FULL ${partNum}/${totalParts}`;
+      number.textContent = `${baseNum}.${partNum}`;
+      number.title = `Full Page ${baseNum}, Part ${partNum} of ${meta.totalParts}`;
+      typeBadge.textContent = 'FULL';
       typeBadge.classList.add('type-full');
-    } else if (captureType === 'SNIP') {
-      // Snip capture
+    } else if (meta && meta.isSnip) {
+      // Snip capture - count snips up to this point
       snipCounter++;
       number.textContent = snipCounter;
       number.title = `Snip ${snipCounter}`;
@@ -1739,19 +1711,26 @@ function updateThumbnails() {
     thumbnail.appendChild(number);
     thumbnail.appendChild(typeBadge);
     
-    // Add RE-EDIT ALL button for chunked captures (part numbers now shown in main badge)
-    if (isFullPageChunk && meta && meta.totalParts > 1) {
-      const reeditAllBtn = document.createElement('button');
-      reeditAllBtn.className = 'thumbnail-reedit-all';
-      reeditAllBtn.textContent = '✏️';
-      reeditAllBtn.title = `RE-EDIT all ${meta.totalParts} parts together`;
-      reeditAllBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (meta.captureGroupId) {
+    // Add chunk badge if this is a chunked capture
+    if (meta && meta.isChunk) {
+      const chunkBadge = document.createElement('div');
+      chunkBadge.className = 'chunk-badge';
+      chunkBadge.textContent = `${meta.part}/${meta.totalParts}`;
+      chunkBadge.title = `Part ${meta.part} of ${meta.totalParts}`;
+      thumbnail.appendChild(chunkBadge);
+      
+      // Add RE-EDIT ALL button for chunked captures
+      if (meta.captureGroupId && meta.totalParts > 1) {
+        const reeditAllBtn = document.createElement('button');
+        reeditAllBtn.className = 'thumbnail-reedit-all';
+        reeditAllBtn.textContent = '✏️';
+        reeditAllBtn.title = `RE-EDIT all ${meta.totalParts} parts together`;
+        reeditAllBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
           handleReeditChunkGroup(meta.captureGroupId);
-        }
-      });
-      thumbnail.appendChild(reeditAllBtn);
+        });
+        thumbnail.appendChild(reeditAllBtn);
+      }
     }
     
     container.appendChild(thumbnail);

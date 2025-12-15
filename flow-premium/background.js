@@ -201,13 +201,8 @@ async function captureScreenshot() {
     // Add new snap
     snaps.push(dataUrl);
     
-    // Also update metadata array to keep it in sync (null for regular snaps)
-    const metaResult = await chrome.storage.local.get({ snapMetadata: [] });
-    const snapMetadata = metaResult.snapMetadata || [];
-    snapMetadata.push(null); // Regular snap has no special metadata
-    
-    // Save both snaps and metadata to keep them in sync
-    await chrome.storage.local.set({ snaps, snapMetadata });
+    // Save to session storage
+    await chrome.storage.local.set({ snaps });
     
     // Store the captured page URL for the editor's browser frame feature (for SNAP mode)
     await chrome.storage.session.set({ 
