@@ -2632,49 +2632,8 @@ async function saveFullPageWithAnnotations() {
       // Add watermark to chunk
       addInvisibleWatermarkToCanvas(chunkCanvas);
       
-      // Trim bottom empty/blue space BEFORE adding border (so border isn't trimmed away)
+      // Trim bottom empty/blue space
       chunkCanvas = await trimBottomEmptySpace(chunkCanvas);
-      
-      // Add border and browser frame if enabled — ENSURE UNIFORM SIZE FOR PDF
-      if (hasBorder || hasBrowserFrame) {
-        const decoratedChunk = applyBorderDecoration(chunkCanvas);
-        
-        // Track max dimensions across all chunks
-        if (chunkIndex === 0) {
-          window.finalChunkWidth = decoratedChunk.width;
-          window.finalChunkHeight = decoratedChunk.height;
-        }
-        
-        // Pad shorter chunks to match the tallest
-        if (decoratedChunk.height < window.finalChunkHeight || decoratedChunk.width < window.finalChunkWidth) {
-          const paddedCanvas = document.createElement('canvas');
-          paddedCanvas.width = window.finalChunkWidth || decoratedChunk.width;
-          paddedCanvas.height = window.finalChunkHeight || decoratedChunk.height;
-          const pctx = paddedCanvas.getContext('2d');
-          
-          // Fill background with border color
-          pctx.fillStyle = borderColor;
-          pctx.fillRect(0, 0, paddedCanvas.width, paddedCanvas.height);
-          
-          // Center the decorated chunk (horizontally + vertically)
-          const offsetX = (paddedCanvas.width - decoratedChunk.width) / 2;
-          const offsetY = (paddedCanvas.height - decoratedChunk.height) / 2;
-          pctx.drawImage(decoratedChunk, offsetX, offsetY);
-          
-          // Use padded version
-          chunkCanvas.width = paddedCanvas.width;
-          chunkCanvas.height = paddedCanvas.height;
-          chunkCtx.drawImage(paddedCanvas, 0, 0);
-        } else {
-          // This chunk is the tallest/widest — update max
-          window.finalChunkWidth = decoratedChunk.width;
-          window.finalChunkHeight = decoratedChunk.height;
-          
-          chunkCanvas.width = decoratedChunk.width;
-          chunkCanvas.height = decoratedChunk.height;
-          chunkCtx.drawImage(decoratedChunk, 0, 0);
-        }
-      }
       
       // Add subtle part indicator (bottom right, professional styling)
       if (totalChunks > 1) {
