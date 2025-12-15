@@ -1464,7 +1464,25 @@ async function loadSnaps() {
     
     // Also load metadata for chunk badges
     const result = await chrome.storage.local.get({ snapMetadata: [] });
-    currentSnapMetadata = result.snapMetadata || [];
+    let snapMetadata = result.snapMetadata || [];
+    
+    // Migration: pad metadata array if it's shorter than snaps (legacy queue fix)
+    if (snapMetadata.length < newSnaps.length) {
+      console.log(`[SnapToAI] Repairing metadata: ${snapMetadata.length} → ${newSnaps.length}`);
+      while (snapMetadata.length < newSnaps.length) {
+        snapMetadata.unshift(null); // Prepend nulls for old snaps missing metadata
+      }
+      // Save repaired metadata
+      await chrome.storage.local.set({ snapMetadata });
+    }
+    
+    // Trim metadata if longer than snaps (shouldn't happen, but safety)
+    if (snapMetadata.length > newSnaps.length) {
+      snapMetadata = snapMetadata.slice(0, newSnaps.length);
+      await chrome.storage.local.set({ snapMetadata });
+    }
+    
+    currentSnapMetadata = snapMetadata;
     
     // Clear selection if snap count changed (FIFO or clear happened)
     if (newSnaps.length !== currentSnaps.length) {
