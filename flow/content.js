@@ -21,6 +21,143 @@
   let isFullPageCaptureRunning = false;
   let isFullPageCaptureAborted = false; // Flag to stop capture loop when aborted
 
+  // --- P2/P5 GLOBAL STATE ---
+  const restoredElements = []; // Used for videos/canvases replacement tracking
+  const hiddenModals = [];    // Used for modals/pop-ups tracking
+
+  // === P1 FIX: Custom Scroll Container Detection (Reddit/Chat Fix) ===
+  function findTheScrollContainer() {
+    const SCROLL_THRESHOLD = 1.5; 
+    
+    // 1. Check the default document scroll
+    if (document.documentElement.scrollHeight > window.innerHeight * SCROLL_THRESHOLD) {
+      return window;
+    }
+
+    // 2. Search for common, custom scroll containers
+    const complexSelectors = [
+      'div[role="feed"]',                     
+      'main',                                 
+      '[style*="overflow-y: scroll"]',        
+      '[style*="overflow-y: auto"]',
+      '[class*="scroll-container"]',
+      '[class*="content-scroll"]'
+    ];
+
+    for (const selector of complexSelectors) {
+      try {
+        const candidates = document.querySelectorAll(selector);
+        for (const container of candidates) {
+          if (container.offsetWidth > 0 && 
+              container.offsetHeight > 0 && 
+              container.scrollHeight > container.clientHeight * SCROLL_THRESHOLD) {
+            
+            console.log('[SnapToAI] Found custom scroll container:', container);
+            return container;
+          }
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+
+    // 3. Fallback
+    return window;
+  }
+
+  // === P5 FIX: Modals and Overlays Hide/Restore ===
+  function hideModalsAndOverlays() {
+    const modalSelectors = [
+      'dialog[open]', '[role="dialog"]', '[aria-modal="true"]',
+      'div[id*="modal"]', 'div[class*="backdrop"]', '.fixed.inset-0', '[class*="popup"]'
+    ];
+
+    modalSelectors.forEach(selector => {
+      try {
+        document.querySelectorAll(selector).forEach(element => {
+          if (element.id === 'snaptoai-fullpage-overlay') return; 
+
+          hiddenModals.push({
+            element: element,
+            originalDisplay: element.style.display,
+            originalVisibility: element.style.visibility
+          });
+
+          element.style.display = 'none';
+          element.style.visibility = 'hidden';
+        });
+      } catch (e) {
+        console.warn(`[SnapToAI] Error checking selector ${selector}:`, e);
+      }
+    });
+  }
+
+  function restoreModalsAndOverlays() {
+    hiddenModals.forEach(({ element, originalDisplay, originalVisibility }) => {
+      try {
+        element.style.display = originalDisplay;
+        element.style.visibility = originalVisibility;
+      } catch (e) {
+        console.error('[SnapToAI] Error restoring modal:', e);
+      }
+    });
+    hiddenModals.length = 0;
+  }
+
+  // === P2 HELPER: Capture and Replace Dynamic Element (Videos/Canvases) ===
+  function replaceElementWithImage(element) {
+    if (!element.videoWidth && element.tagName.toLowerCase() !== 'canvas') return;
+
+    const { width, height } = element.getBoundingClientRect();
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    
+    const ctx = tempCanvas.getContext('2d');
+    
+    try {
+      ctx.drawImage(element, 0, 0, width, height);
+    } catch (error) {
+      // Tainted Canvas (CORS violation) or WebGL buffer issue
+      console.warn(`[SnapToAI] Failed to draw element to canvas: ${error.message}`);
+      return;
+    }
+
+    const imgSnapshot = document.createElement('img');
+    imgSnapshot.src = tempCanvas.toDataURL('image/png');
+    
+    const computedStyle = window.getComputedStyle(element);
+    
+    imgSnapshot.style.cssText = computedStyle.cssText;
+    imgSnapshot.style.width = width + 'px';
+    imgSnapshot.style.height = height + 'px';
+    imgSnapshot.dataset.snaptoaiReplacement = 'true';
+
+    restoredElements.push({ 
+      original: element, 
+      replacement: imgSnapshot,
+      originalDisplay: element.style.display
+    });
+
+    element.style.display = 'none'; // Hide the original
+    element.parentNode.insertBefore(imgSnapshot, element); // Insert snapshot
+  }
+
+  // === P2 HELPER: Restore replaced elements ===
+  function restoreReplacedElements() {
+    restoredElements.forEach(({ original, replacement, originalDisplay }) => {
+      try {
+        original.style.display = originalDisplay;
+        if (replacement.parentNode) {
+          replacement.parentNode.removeChild(replacement);
+        }
+      } catch (e) {
+        console.error('[SnapToAI] Error restoring element:', e);
+      }
+    });
+    restoredElements.length = 0;
+  }
+
   document.addEventListener('mousemove', (e) => {
     lastMouseX = e.clientX;
     lastMouseY = e.clientY;

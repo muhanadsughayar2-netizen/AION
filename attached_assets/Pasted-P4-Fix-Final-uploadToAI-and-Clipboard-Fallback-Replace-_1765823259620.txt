@@ -1,0 +1,49 @@
+P4 Fix: Final uploadToAI and Clipboard Fallback (Replace your existing function)
+This modification integrates the P3 Clipboard Fallback logic into your excellent uploadToAI logic. NOTE: This requires the Background Script to handle the actual clipboard write.
+
+JavaScript
+
+// === MODIFIED uploadToAI (P3 Fallback Integration) ===
+async function uploadToAI(platform, useSelectedOnly = false) {
+    // ... (Your existing logic to gather snaps remains the same) ...
+    // ...
+
+    try {
+        // ... (Your existing file input finding logic remains the same) ...
+        const fileInput = await findFileInput(platform); 
+        
+        if (!fileInput) {
+            // P3 FALLBACK TRIGGERED
+            console.warn('[SnapToAI] File input not found, attempting clipboard fallback...');
+
+            // Assuming only ONE image for full-page capture for simplicity here
+            const finalImage = snaps[0]; 
+
+            // Send to background to execute high-privilege clipboard write
+            const fallbackResult = await chrome.runtime.sendMessage({
+                action: 'copyToClipboard',
+                imageDataUrl: finalImage
+            });
+
+            if (fallbackResult.success) {
+                showToast('❌ Upload button not found. Image copied to clipboard! (Ctrl+V)', 'error');
+                await chrome.storage.local.remove('snaps');
+                chrome.runtime.sendMessage({ action: 'uploadComplete' });
+                return { success: true, clipboard: true };
+            } else {
+                showToast('Fatal error: Cannot upload or copy image.', 'error');
+                return { success: false, error: 'Upload and clipboard failed.' };
+            }
+        }
+        
+        // --- NORMAL UPLOAD CONTINUES HERE ---
+        // ... (Your existing upload logic using DataTransfer remains here) ...
+        
+        // P4: Restore Grok input bar after upload (prevents blank page issue)
+        setTimeout(restoreGrokInput, 200);
+        
+        return { success: true, count: uploadedCount };
+    } catch (error) {
+        // ... (Your existing error handling) ...
+    }
+}
