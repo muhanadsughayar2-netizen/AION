@@ -1527,6 +1527,20 @@ function getCaptureType(index) {
   return 'SNAP';
 }
 
+// Safe label helper - returns display label for UI
+function getCaptureLabel(index) {
+  const meta = currentSnapMetadata[index];
+  const type = getCaptureType(index);
+  
+  if (type === 'CHUNK' && meta) {
+    return `Part ${meta.part || '?'} / ${meta.totalParts || '?'}`;
+  }
+  if (type === 'SNIP') {
+    return 'Snip';
+  }
+  return 'Snap';
+}
+
 // Load platform preference
 
 // Update UI based on current state
