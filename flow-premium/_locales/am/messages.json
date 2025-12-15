@@ -1,119 +1,114 @@
 {
-  "extensionName": {
-    "message": "SnapToAI - ስክሪንቅዱ ወደ AI",
-    "description": "extensionName"
-  },
-  "extensionDescription": {
-    "message": "ስክሪንショቶችን ያስቀምጡ እና ወደ AI ሌሎች ሩብ ማዋቅር",
-    "description": "extensionDescription"
-  },
-  "flowReady": {
-    "message": "SnapToAI: ዝግጁ",
-    "description": "flowReady"
-  },
-  "oneClickOneFlow": {
-    "message": "ጠቅ አንድ። ስክሪንショት አንድ።",
-    "description": "oneClickOneFlow"
-  },
-  "pagesReadyForAI": {
-    "message": "ገጾችህ AI ዋጋ ያላቸው።",
-    "description": "pagesReadyForAI"
-  },
-  "clickCameraButton": {
-    "message": "ስክሪንsherman ለመያዝ ጥቅሉ ጠቅ ያድርጉ",
-    "description": "clickCameraButton"
-  },
-  "selectAll": {
-    "message": "ሁሉንም ምረጥ",
-    "description": "selectAll"
-  },
-  "deselectAll": {
-    "message": "ሁሉንም ምረጥ",
-    "description": "deselectAll"
-  },
-  "copySelected": {
-    "message": "የተመረጠውን ቅዳ",
-    "description": "copySelected"
-  },
-  "downloadSelected": {
-    "message": "የተመረጠውን ያውርዱ",
-    "description": "downloadSelected"
-  },
-  "exportPDF": {
-    "message": "PDF ወደ ላክ",
-    "description": "exportPDF"
-  },
-  "exportPDFOptions": {
-    "message": "PDF አማራጮች",
-    "description": "exportPDFOptions"
-  },
   "allAsOnePDF": {
-    "message": "ሁሉም ወደ ሙሉ PDF",
+    "message": "Snap To AI",
     "description": "allAsOnePDF"
   },
   "allAsOnePDFDesc": {
-    "message": "ሁሉንም ስክሪንशოಟ ወደ አንድ PDF",
+    "message": "ፎቶ አንሳ። ቆርጠህ አውጣ። ወደ AI ላክ። 🔥",
     "description": "allAsOnePDFDesc"
   },
   "allAsSeparatePDFs": {
-    "message": "ሁሉም እንደ ነጠላ PDF",
+    "message": "ቆጠራ በመጫን ላይ...",
     "description": "allAsSeparatePDFs"
   },
   "allAsSeparatePDFsDesc": {
-    "message": "እያንዳንዱን ስክሪንशოॉт ወደ PDF",
+    "message": "ጉብኝቶች",
     "description": "allAsSeparatePDFsDesc"
   },
+  "cancel": {
+    "message": "አንሳ",
+    "description": "cancel"
+  },
+  "clearAll": {
+    "message": "ቆርጥ",
+    "description": "clearAll"
+  },
+  "clickCameraButton": {
+    "message": "ሙሉ ገጽ",
+    "description": "clickCameraButton"
+  },
+  "copySelected": {
+    "message": "ሙሉ ስክሪንሾት አንሳ",
+    "description": "copySelected"
+  },
+  "daysRemaining": {
+    "message": "አካባቢዎችን ቆርጠህ አውጣ",
+    "description": "daysRemaining"
+  },
+  "deselectAll": {
+    "message": "ሙሉ ገጽ አንሳ",
+    "description": "deselectAll"
+  },
+  "downloadSelected": {
+    "message": "ሁሉንም ምረጥ",
+    "description": "downloadSelected"
+  },
+  "emptyHeading": {
+    "message": "የተመረጠውን ቅዳ",
+    "description": "emptyHeading"
+  },
+  "emptySubheading1": {
+    "message": "እንደ PNG አውርድ",
+    "description": "emptySubheading1"
+  },
+  "emptySubheading2": {
+    "message": "PDF አውርድ",
+    "description": "emptySubheading2"
+  },
+  "exportPDF": {
+    "message": "ሁሉንም አጽዳ",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "ይቅር",
+    "description": "exportPDFOptions"
+  },
+  "extensionDescription": {
+    "message": "ዝግጁ",
+    "description": "extensionDescription"
+  },
+  "extensionName": {
+    "message": "SnapToAI፡ ዝግጁ",
+    "description": "extensionName"
+  },
+  "flowReady": {
+    "message": "እየተነሳ ነው...",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "እየተቆረጠ ነው...",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "ሙሉ ገጽ እየተነሳ ነው...",
+    "description": "pagesReadyForAI"
+  },
+  "selectAll": {
+    "message": "ተነስቷል! ✓",
+    "description": "selectAll"
+  },
   "selectedAsOnePDF": {
-    "message": "የተመረጠ ወደ ሙሉ PDF",
+    "message": "ተቆረጠ! ✓",
     "description": "selectedAsOnePDF"
   },
   "selectedAsOnePDFDesc": {
-    "message": "የተመረጠውን ወደ አንድ PDF",
+    "message": "ሙሉ ገጽ ተነስቷል! ✓",
     "description": "selectedAsOnePDFDesc"
   },
   "selectedAsSeparatePDFs": {
-    "message": "የተመረጠ እንደ ነጠላ PDF",
+    "message": "[count] ስክሪንሾቶች ተመርጠዋል → ወደ አንድ ተደራረብ ምስል ይደባለቃሉ",
     "description": "selectedAsSeparatePDFs"
   },
   "selectedAsSeparatePDFsDesc": {
-    "message": "የተመረጠውን ወደ ነጠላ PDF",
+    "message": "እየተደባለቀ እና እየተቀዳ ነው...",
     "description": "selectedAsSeparatePDFsDesc"
   },
-  "clearAll": {
-    "message": "ሁሉንም ጥፋ",
-    "description": "clearAll"
-  },
-  "cancel": {
-    "message": "ይቅር",
-    "description": "cancel"
-  },
   "trialEnded": {
-    "message": "ሙከራ ተጠናቀቀ",
+    "message": "[count] ስክሪንሾቶች ተደባልቀው ተቀድተዋል! 👉 አሁን ወደ AI ለጥፍ",
     "description": "trialEnded"
   },
   "upgradeNow": {
-    "message": "አሁን ያሻሽሉ - $9.90/ዓመት",
+    "message": "እየተወረደ ነው...",
     "description": "upgradeNow"
-  },
-  "daysRemaining": {
-    "message": "$DAYS$ ቀናት ይቀራሉ",
-    "description": "daysRemaining",
-    "placeholders": {
-      "days": {
-        "content": "$1"
-      }
-    }
-  },
-  "emptyHeading": {
-    "message": "አንድ ጠቅ። አንድ ስክሪንሼት።",
-    "description": "Empty state heading"
-  },
-  "emptySubheading1": {
-    "message": "ሁሉንም ምረጥ → ቅዳ → ለጥፍ። ሁሉም 9 ስክሪንሾቶች አንድ የተደራረበ ምስል ይሆናሉ።",
-    "description": "Empty state subheading 1"
-  },
-  "emptySubheading2": {
-    "message": "",
-    "description": "Empty state subheading 2"
   }
 }
