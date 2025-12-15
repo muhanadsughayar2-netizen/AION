@@ -2323,15 +2323,14 @@ async function save() {
     if (mode === 'reedit') {
       updateStatus('Saving annotated full page...');
       
+      // Trim BEFORE applying border (so border isn't trimmed away)
+      let exportCanvas = await trimBottomEmptySpace(canvas);
+      
       // Apply border/frame decoration if enabled
-      let exportCanvas;
       if (hasBorder || hasBrowserFrame) {
-        exportCanvas = applyBorderDecoration(canvas);
-      } else {
-        exportCanvas = canvas;
+        exportCanvas = applyBorderDecoration(exportCanvas);
       }
       
-      exportCanvas = await trimBottomEmptySpace(exportCanvas);
       const annotatedDataUrl = exportCanvas.toDataURL('image/png');
       
       // Get existing lastFullPageCapture and update with annotated version
@@ -2379,14 +2378,15 @@ async function save() {
         x, y, width, height
       );
       
+      // Trim BEFORE applying border (so border isn't trimmed away)
+      let trimmedCanvas = await trimBottomEmptySpace(tempCanvas);
+      
       // Apply border and browser frame decoration if enabled
       let cropDataUrl;
       if (hasBorder || hasBrowserFrame) {
-        const decoratedCanvas = applyBorderDecoration(tempCanvas);
-        const trimmedCanvas = await trimBottomEmptySpace(decoratedCanvas);
-        cropDataUrl = trimmedCanvas.toDataURL('image/png');
+        const decoratedCanvas = applyBorderDecoration(trimmedCanvas);
+        cropDataUrl = decoratedCanvas.toDataURL('image/png');
       } else {
-        const trimmedCanvas = await trimBottomEmptySpace(tempCanvas);
         cropDataUrl = trimmedCanvas.toDataURL('image/png');
       }
       
@@ -2424,13 +2424,12 @@ async function save() {
     }
     
     // ANNOTATION MODE: Replace existing snap with annotated version
+    // Trim BEFORE applying border (so border isn't trimmed away)
+    let exportCanvas = await trimBottomEmptySpace(canvas);
+    
     // Use shared decorator helper for consistent border AND browser frame styling
-    let exportCanvas;
     if (hasBorder || hasBrowserFrame) {
-      exportCanvas = applyBorderDecoration(canvas);
-      exportCanvas = await trimBottomEmptySpace(exportCanvas);
-    } else {
-      exportCanvas = await trimBottomEmptySpace(canvas);
+      exportCanvas = applyBorderDecoration(exportCanvas);
     }
     
     const dataUrl = exportCanvas.toDataURL('image/png');
@@ -2633,7 +2632,7 @@ async function saveFullPageWithAnnotations() {
       // Add watermark to chunk
       addInvisibleWatermarkToCanvas(chunkCanvas);
       
-      // Trim bottom empty/blue space after stitching chunk
+      // Trim bottom empty/blue space BEFORE adding border (so border isn't trimmed away)
       chunkCanvas = await trimBottomEmptySpace(chunkCanvas);
       
       // Add border and browser frame if enabled — ENSURE UNIFORM SIZE FOR PDF
