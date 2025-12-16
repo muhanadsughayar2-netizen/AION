@@ -2515,7 +2515,7 @@ async function saveFullPageWithAnnotations() {
     window.finalChunkHeight = null;
     
     const totalPages = pages.length;
-    const PAGES_PER_CHUNK = 5; // Smaller chunks for AI compatibility (5 pages max)
+    const PAGES_PER_CHUNK = 40; // Larger chunks for full page capture (40 pages max)
     
     // Calculate how many chunks we need
     const totalChunks = Math.ceil(totalPages / PAGES_PER_CHUNK);

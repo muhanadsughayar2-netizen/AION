@@ -1345,7 +1345,7 @@ async function handleFullPageClick() {
   // Estimate slots needed for full-page capture (typically 1-4 chunks)
   // Worst case: very long page = 4 chunks (20+ viewport heights)
   const ESTIMATED_MAX_CHUNKS = 4;
-  const PAGES_PER_CHUNK = 5;
+  const PAGES_PER_CHUNK = 40;
   const availableSlots = 9 - currentSnaps.length;
   
   // If queue is completely full
