@@ -1717,38 +1717,15 @@ function updateThumbnails() {
       
       // Get metadata for this snap
       const isFullPageChunk = meta.isChunk || (meta.totalParts && meta.totalParts > 1);
-      const isSnip = meta.isSnip;
       
-      // Create number label
+      // Create number label - PURE SEQUENTIAL: 1, 2, 3, 4, 5...
       const number = document.createElement('div');
       number.className = 'thumbnail-number';
+      number.textContent = index + 1; // Simple sequential number
+      number.title = `Screenshot ${index + 1}`;
       
-      // Create type badge
-      const typeBadge = document.createElement('div');
-      typeBadge.className = 'capture-type-badge';
-      
-      // Determine label based on capture type
-      let typeLabel = 'SNAP';
-      if (isFullPageChunk) {
-        typeLabel = 'FULL';
-        typeBadge.classList.add('type-full');
-        const partNum = meta.part || (groupIndex + 1);
-        const totalParts = meta.totalParts || group.items.length;
-        number.textContent = `${baseNum}.${partNum}`;
-        number.title = `Full Page ${baseNum}, Part ${partNum} of ${totalParts}`;
-      } else if (isSnip) {
-        typeLabel = 'SNIP';
-        typeBadge.classList.add('type-snip');
-        number.textContent = baseNum;
-        number.title = `Snip ${baseNum}`;
-      } else {
-        typeLabel = 'SNAP';
-        typeBadge.classList.add('type-snap');
-        number.textContent = baseNum;
-        number.title = `Snap ${baseNum}`;
-      }
-      
-      typeBadge.textContent = typeLabel;
+      // NO type badges - clean thumbnails
+      // NO chunk badges - clean thumbnails
       
       thumbnail.appendChild(checkbox);
       thumbnail.appendChild(deleteBtn);
@@ -1759,28 +1736,18 @@ function updateThumbnails() {
       thumbnail.appendChild(copyBtn);
       thumbnail.appendChild(img);
       thumbnail.appendChild(number);
-      thumbnail.appendChild(typeBadge);
       
-      // Add chunk badge if this is a chunked capture
-      if (isFullPageChunk) {
-        const chunkBadge = document.createElement('div');
-        chunkBadge.className = 'chunk-badge';
-        chunkBadge.textContent = `${meta.part}/${meta.totalParts}`;
-        chunkBadge.title = `Part ${meta.part} of ${meta.totalParts}`;
-        thumbnail.appendChild(chunkBadge);
-       
-        // Add RE-EDIT ALL button for chunked captures
-        if (meta.captureGroupId && meta.totalParts > 1) {
-          const reeditAllBtn = document.createElement('button');
-          reeditAllBtn.className = 'thumbnail-reedit-all';
-          reeditAllBtn.textContent = '✏️';
-          reeditAllBtn.title = `RE-EDIT all ${meta.totalParts} parts together`;
-          reeditAllBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            handleReeditChunkGroup(meta.captureGroupId);
-          });
-          thumbnail.appendChild(reeditAllBtn);
-        }
+      // Add RE-EDIT ALL button for chunked captures (keep functionality, just no visual badges)
+      if (isFullPageChunk && meta.captureGroupId && meta.totalParts > 1) {
+        const reeditAllBtn = document.createElement('button');
+        reeditAllBtn.className = 'thumbnail-reedit-all';
+        reeditAllBtn.textContent = '✏️';
+        reeditAllBtn.title = `RE-EDIT all ${meta.totalParts} parts together`;
+        reeditAllBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          handleReeditChunkGroup(meta.captureGroupId);
+        });
+        thumbnail.appendChild(reeditAllBtn);
       }
       
       container.appendChild(thumbnail);
