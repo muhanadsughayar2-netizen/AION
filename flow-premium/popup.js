@@ -1830,19 +1830,86 @@ async function handleCopySelected() {
     // Solution: Combine all selected images into a single composite image
     const compositeDataUrl = await createCompositeImage(selectedSnaps);
     
-    // Copy the single composite image
-    const res = await fetch(compositeDataUrl);
-    const blob = await res.blob();
-    await navigator.clipboard.write([
-      new ClipboardItem({ [blob.type]: blob })
-    ]);
+    // Check if image is too large for clipboard (browsers have ~128MB limit)
+    // Estimate size: base64 is ~33% larger than binary, so divide by 1.33
+    const estimatedSize = (compositeDataUrl.length * 0.75);
+    const MAX_CLIPBOARD_SIZE = 100 * 1024 * 1024; // 100MB safe limit
+    
+    let blobToClip;
+    if (estimatedSize > MAX_CLIPBOARD_SIZE) {
+      // Image too large - compress to JPEG
+      console.log('[SnapToAI] Large image detected, compressing for clipboard...');
+      const compressedDataUrl = await compressImageForClipboard(compositeDataUrl);
+      const res = await fetch(compressedDataUrl);
+      blobToClip = await res.blob();
+    } else {
+      // Normal size - use PNG
+      const res = await fetch(compositeDataUrl);
+      blobToClip = await res.blob();
+    }
+    
+    // Try clipboard write with retry on failure
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({ [blobToClip.type]: blobToClip })
+      ]);
+    } catch (clipErr) {
+      // Clipboard failed - try with JPEG compression as fallback
+      console.warn('[SnapToAI] Clipboard write failed, trying compressed fallback:', clipErr.message);
+      const compressedDataUrl = await compressImageForClipboard(compositeDataUrl, 0.7);
+      const res = await fetch(compressedDataUrl);
+      const compressedBlob = await res.blob();
+      await navigator.clipboard.write([
+        new ClipboardItem({ [compressedBlob.type]: compressedBlob })
+      ]);
+    }
     
     // Show the prominent "Paste in AI now" message with count!
     statusPasteReady(selectedSnaps.length);
   } catch (error) {
     console.error('Copy selected error:', error);
-    statusError('Copy failed - try Download instead');
+    // Provide more helpful error message
+    if (error.name === 'NotAllowedError') {
+      statusError('Clipboard access denied - click window first');
+    } else if (error.message?.includes('too large') || error.name === 'DataError') {
+      statusError('Image too large for clipboard - use Download');
+    } else {
+      statusError('Copy failed - try Download instead');
+    }
   }
+}
+
+// Compress image for clipboard when it's too large
+async function compressImageForClipboard(dataUrl, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      
+      // Scale down if extremely large (max 8000px on any dimension)
+      const MAX_DIM = 8000;
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > MAX_DIM || height > MAX_DIM) {
+        const scale = Math.min(MAX_DIM / width, MAX_DIM / height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Convert to JPEG for smaller size
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
 }
 
 // Create composite image from multiple snapshots (for clipboard - with watermark)
