@@ -2335,22 +2335,57 @@ async function handleExportPDFDirect() {
     const pdfWidth = stackedImg.width * pxToMm;
     const pdfHeight = stackedImg.height * pxToMm;
     
+    // jsPDF has a 14400 userUnit limit (~5080mm). If image exceeds this, split across pages
+    const MAX_PDF_DIMENSION = 5000; // Safe limit in mm (slightly under 14400 userUnits)
+    
     updateProcessingText('Generating PDF...', 'No borders, no margins');
     
-    // Create PDF with EXACT page size - NO margins
     const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({
-      orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
-      unit: 'mm',
-      format: [pdfWidth, pdfHeight]
-    });
     
-    // Add image at 0,0 filling entire page - NO borders, NO padding
-    pdf.addImage(stackedDataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    
-    // Save immediately
-    const timestamp = new Date().toISOString().slice(0, 10);
-    pdf.save(`snaptoai-stacked-${timestamp}.pdf`);
+    if (pdfHeight > MAX_PDF_DIMENSION || pdfWidth > MAX_PDF_DIMENSION) {
+      // Split large image across multiple pages
+      const pageHeight = Math.min(pdfHeight, MAX_PDF_DIMENSION);
+      const pageWidth = Math.min(pdfWidth, MAX_PDF_DIMENSION);
+      const totalPages = Math.ceil(pdfHeight / pageHeight);
+      
+      updateProcessingText('Generating PDF...', `Splitting into ${totalPages} pages`);
+      
+      const pdf = new jsPDF({
+        orientation: pageWidth > pageHeight ? 'landscape' : 'portrait',
+        unit: 'mm',
+        format: [pageWidth, pageHeight]
+      });
+      
+      let heightLeft = pdfHeight;
+      let position = 0;
+      
+      // First page
+      pdf.addImage(stackedDataUrl, 'PNG', 0, position, pdfWidth, pdfHeight);
+      heightLeft -= pageHeight;
+      
+      // Additional pages using negative positioning to "slide" down the image
+      while (heightLeft > 0) {
+        position = heightLeft - pdfHeight;
+        pdf.addPage([pageWidth, Math.min(heightLeft, pageHeight)]);
+        pdf.addImage(stackedDataUrl, 'PNG', 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      const timestamp = new Date().toISOString().slice(0, 10);
+      pdf.save(`snaptoai-stacked-${timestamp}.pdf`);
+    } else {
+      // Normal case: image fits in single page
+      const pdf = new jsPDF({
+        orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
+        unit: 'mm',
+        format: [pdfWidth, pdfHeight]
+      });
+      
+      pdf.addImage(stackedDataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
+      const timestamp = new Date().toISOString().slice(0, 10);
+      pdf.save(`snaptoai-stacked-${timestamp}.pdf`);
+    }
     
     hideProcessingOverlay();
     
