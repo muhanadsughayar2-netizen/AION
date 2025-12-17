@@ -511,40 +511,6 @@ async function startFullPageCapture() {
     // Set capture in progress flag
     isFullPageCaptureInProgress = true;
     
-    // Detect Google Docs (URL like docs.google.com/document)
-    const isGoogleDocs = tab.url.includes('docs.google.com/document');
-    
-    if (isGoogleDocs) {
-      // Use debugger API for Google Docs (captures full scrollable content)
-      console.log('[SnapToAI] Google Docs detected, using debugger API');
-      try {
-        const dataUrl = await captureFullPageWithDebugger(tab.id);
-        if (!dataUrl) {
-          throw new Error('Debugger capture failed');
-        }
-        
-        // Save as single snap
-        const result = await addSnip(dataUrl, { isChunk: false, source: 'google-docs' });
-        isFullPageCaptureInProgress = false;
-        
-        if (result.success) {
-          // Notify popup about completion
-          chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
-          return { success: true, googleDocs: true };
-        } else {
-          return { success: false, error: result.error, isExpected: true };
-        }
-      } catch (docError) {
-        console.log('[SnapToAI] Google Docs capture failed:', docError.message);
-        isFullPageCaptureInProgress = false;
-        return { 
-          success: false, 
-          error: 'Google Docs capture failed. Try regular SNAP instead.',
-          isExpected: true
-        };
-      }
-    }
-    
     // Check if this is an AI platform (Grok, ChatGPT, Claude, etc.)
     const isAIPlatform = AI_SITES.some(site => tab.url.includes(site));
     
@@ -587,63 +553,6 @@ async function startFullPageCapture() {
       error: 'Cannot capture this page. Works on regular websites only.',
       isExpected: true
     };
-  }
-}
-
-// Capture full page using Chrome Debugger API (for Google Docs and similar)
-async function captureFullPageWithDebugger(tabId) {
-  try {
-    // Attach debugger to tab
-    await chrome.debugger.attach({ tabId }, '1.3');
-    
-    // Enable Page domain
-    await chrome.debugger.sendCommand({ tabId }, 'Page.enable');
-    
-    // Set transparent background for clean capture
-    await chrome.debugger.sendCommand({ tabId }, 'Emulation.setDefaultBackgroundColorOverride', {
-      color: { r: 255, g: 255, b: 255, a: 255 }
-    });
-    
-    // Get full content dimensions
-    const layoutMetrics = await chrome.debugger.sendCommand({ tabId }, 'Page.getLayoutMetrics');
-    const { width, height } = layoutMetrics.contentSize;
-    
-    console.log(`[SnapToAI] Google Docs page size: ${width}x${height}`);
-    
-    // Override viewport to capture full document
-    await chrome.debugger.sendCommand({ tabId }, 'Emulation.setDeviceMetricsOverride', {
-      height: Math.min(height, 16384), // Chrome has max texture size limit
-      width: width,
-      deviceScaleFactor: 1,
-      mobile: false
-    });
-    
-    // Small delay to let page render at new size
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Capture the full screenshot
-    const screenshot = await chrome.debugger.sendCommand({ tabId }, 'Page.captureScreenshot', {
-      format: 'png',
-      fromSurface: true,
-      captureBeyondViewport: true
-    });
-    
-    const dataUrl = `data:image/png;base64,${screenshot.data}`;
-    
-    // Clean up - restore original viewport and detach
-    await chrome.debugger.sendCommand({ tabId }, 'Emulation.clearDeviceMetricsOverride');
-    await chrome.debugger.detach({ tabId });
-    
-    return dataUrl;
-  } catch (error) {
-    console.error('[SnapToAI] Debugger capture error:', error);
-    // Try to detach debugger on error
-    try {
-      await chrome.debugger.detach({ tabId });
-    } catch (detachErr) {
-      // Ignore detach errors
-    }
-    return null;
   }
 }
 

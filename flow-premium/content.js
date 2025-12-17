@@ -160,13 +160,91 @@
     }
   });
   
+  // Force Google Docs to render full content by injecting expansion styles
+  function forceGoogleDocsFullRender() {
+    if (!location.hostname.includes('docs.google.com')) return;
+    
+    // Remove any existing style to avoid duplicates
+    const existing = document.getElementById('snaptoai-docs-styles');
+    if (existing) existing.remove();
+    
+    const style = document.createElement('style');
+    style.id = 'snaptoai-docs-styles';
+    style.textContent = `
+      /* Force full expansion for Google Docs - like GoFullPage */
+      body, html {
+        height: auto !important;
+        min-height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        position: static !important;
+        background-color: #fff !important;
+      }
+      .kix-appview-editor, .docs-editor, .kix-page-canvas, .kix-canvas-tile-content, canvas {
+        height: auto !important;
+        min-height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        position: static !important;
+        display: block !important;
+        visibility: visible !important;
+      }
+      /* Hide sticky/fixed elements to avoid duplication */
+      [style*="position: sticky"], [style*="position: fixed"] {
+        display: none !important;
+        visibility: hidden !important;
+      }
+      /* Keep header/nav but fix docs-specific sticky elements */
+      .docs-titlebar, .docs-menubar {
+        position: relative !important;
+      }
+      /* Expand all containers */
+      .kix-appview-editor-container, .kix-zoomdocumentplugin-outer {
+        height: auto !important;
+        overflow: visible !important;
+        position: relative !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Force layout recalculation
+    document.body.offsetHeight;
+    
+    console.log('[SnapToAI] Google Docs styles injected for full render');
+  }
+  
+  // Cleanup Google Docs styles after capture
+  function cleanupGoogleDocsStyles() {
+    const style = document.getElementById('snaptoai-docs-styles');
+    if (style) {
+      style.remove();
+      console.log('[SnapToAI] Google Docs styles cleaned up');
+    }
+  }
+
   // BULLETPROOF wrapper for full page capture - catches all errors gracefully
   async function safeFullPageCapture(tabId) {
     try {
-      return await performFullPageCapture(tabId);
+      // Force Google Docs to render full content before capture
+      forceGoogleDocsFullRender();
+      
+      // Small delay for styles to apply on Google Docs
+      if (location.hostname.includes('docs.google.com')) {
+        await new Promise(r => setTimeout(r, 300));
+      }
+      
+      const result = await performFullPageCapture(tabId);
+      
+      // Cleanup after capture
+      cleanupGoogleDocsStyles();
+      
+      return result;
     } catch (error) {
       // Log to console but NEVER throw - this prevents Chrome extension errors
       console.warn('[SnapToAI] Capture error (handled):', error.message || error);
+      
+      // Cleanup styles on error too
+      cleanupGoogleDocsStyles();
       
       // Clean up any UI elements
       try {

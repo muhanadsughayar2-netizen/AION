@@ -11,8 +11,7 @@
     "unlimitedStorage",
     "scripting",
     "clipboardWrite",
-    "downloads",
-    "debugger"
+    "downloads"
   ],
   "options_page": "options.html",
   "host_permissions": [
