@@ -3110,6 +3110,11 @@ async function sendToGemini(prompt) {
     addChatBubble('Please set your Gemini API key first! Click the AI button in the top row.', 'ai');
     return;
   }
+  
+  if (!aiChatCurrentImage) {
+    addChatBubble('No image loaded. Please try again.', 'ai');
+    return;
+  }
 
   addChatBubble(prompt, 'user');
   aiChatHistory.push({ role: 'user', text: prompt });
@@ -3124,6 +3129,7 @@ async function sendToGemini(prompt) {
     
     const requestBody = {
       contents: [{
+        role: 'user',
         parts: [
           { text: prompt },
           { inline_data: { mime_type: mimeType, data: base64Data } }
