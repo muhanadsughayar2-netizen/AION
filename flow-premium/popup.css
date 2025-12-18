@@ -1760,3 +1760,47 @@ html[dir="rtl"] .logo-word {
   border-color: #666;
   color: #fff;
 }
+
+/* ===== AI BRAIN WAKE UP ===== */
+.brain-container {
+  text-align: center;
+  padding: 20px;
+}
+
+.glow-button {
+  padding: 15px 30px;
+  background: linear-gradient(135deg, #00d9ff, #00ff88);
+  border: none;
+  border-radius: 25px;
+  color: #000;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
+}
+
+.glow-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 30px rgba(0, 217, 255, 0.6), 0 0 60px rgba(0, 255, 136, 0.3);
+}
+
+.glow-button:disabled {
+  background: #555;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+#brain-status {
+  margin-top: 15px;
+  color: #888;
+  font-size: 14px;
+}
+
+#brain-status.awake {
+  color: #00ff88;
+}
+
+#brain-status.error {
+  color: #ff6b6b;
+}
