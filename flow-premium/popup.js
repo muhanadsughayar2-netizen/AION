@@ -3109,21 +3109,35 @@ let aiRetryCount = 0;
 let aiCooldownActive = false;
 let aiCompressedImage = null;
 
-// Compress image to save tokens (max 512px, JPEG 65% quality)
+// === FREE TIER QUEUE (12.5s between requests = 5 RPM safe) ===
+class AIQueue {
+  constructor() { this.queue = []; this.isWaiting = false; }
+  async add(task) {
+    return new Promise((resolve, reject) => {
+      this.queue.push({ task, resolve, reject });
+      this.process();
+    });
+  }
+  async process() {
+    if (this.isWaiting || this.queue.length === 0) return;
+    this.isWaiting = true;
+    const { task, resolve, reject } = this.queue.shift();
+    try { resolve(await task()); } catch (e) { reject(e); }
+    // 12.5s cooldown for free tier (5 RPM limit)
+    setTimeout(() => { this.isWaiting = false; this.process(); }, 12500);
+  }
+}
+const aiQueue = new AIQueue();
+
+// Compress image to save tokens (max 768px, JPEG 70% = 280 tokens)
 async function compressImageForAI(dataUrl) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      const maxSize = 512;
-      let width = img.width;
-      let height = img.height;
-      
-      // Scale down if needed
-      if (width > maxSize || height > maxSize) {
-        const scale = Math.min(maxSize / width, maxSize / height);
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
-      }
+      const maxSize = 768;
+      const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+      const width = Math.round(img.width * scale);
+      const height = Math.round(img.height * scale);
       
       const canvas = document.createElement('canvas');
       canvas.width = width;
@@ -3131,12 +3145,12 @@ async function compressImageForAI(dataUrl) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
       
-      // Convert to JPEG at 65% quality (much smaller than PNG)
-      const compressedUrl = canvas.toDataURL('image/jpeg', 0.65);
-      console.log('[SnapToAI] Compressed image:', img.width + 'x' + img.height, '->', width + 'x' + height);
+      // JPEG 70% quality = optimal for AI + low tokens
+      const compressedUrl = canvas.toDataURL('image/jpeg', 0.7);
+      console.log('[SnapToAI] Optimized:', img.width + 'x' + img.height, '->', width + 'x' + height);
       resolve(compressedUrl);
     };
-    img.onerror = () => resolve(dataUrl); // Fallback to original
+    img.onerror = () => resolve(dataUrl);
     img.src = dataUrl;
   });
 }
@@ -3170,32 +3184,41 @@ async function sendToGemini(prompt, isRetry = false) {
     }
     
     const base64Data = aiCompressedImage.split(',')[1];
-    const mimeType = 'image/jpeg'; // Always JPEG after compression
+    const apiKey = result.geminiApiKey;
     
-    const requestBody = {
-      contents: [{
-        role: 'user',
-        parts: [
-          { text: prompt },
-          { inline_data: { mime_type: mimeType, data: base64Data } }
-        ]
-      }]
-    };
+    // Queue request to respect free tier limits (5 RPM)
+    const data = await aiQueue.add(async () => {
+      const requestBody = {
+        system_instruction: {
+          parts: [{ text: "You are a visual assistant. If you see code, explain the logic and find bugs. If you see a UI or image, provide a summary and key points. Be concise and helpful." }]
+        },
+        contents: [{
+          role: 'user',
+          parts: [
+            { text: prompt },
+            { inline_data: { mime_type: 'image/jpeg', data: base64Data } }
+          ]
+        }],
+        generationConfig: {
+          maxOutputTokens: 500
+        }
+      };
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${result.geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      }
-    );
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        }
+      );
+      return await response.json();
+    });
 
-    const data = await response.json();
     loadingBubble.remove();
 
     // Handle rate limit errors
-    if (response.status === 429 || (data.error && data.error.message && data.error.message.includes('quota'))) {
+    if (data.error && data.error.message && data.error.message.includes('quota')) {
       const retryMatch = data.error?.message?.match(/retry in ([\d.]+)s/i);
       const retrySeconds = retryMatch ? Math.ceil(parseFloat(retryMatch[1])) : 60;
       
