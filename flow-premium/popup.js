@@ -4,6 +4,7 @@
 let currentSnaps = [];
 let currentSnapMetadata = []; // Stores chunk metadata (Part 1/7, etc.)
 let selectedSnapIds = new Set();
+let starredSnapIds = new Set(); // Track starred snaps for AI
 
 // Last full-page capture info for RE-EDIT functionality
 let lastFullPageCaptureInfo = null;
@@ -1691,17 +1692,40 @@ function updateThumbnails() {
         handleCopySingle(index);
       });
       
+      // Create star button for AI
+      const starBtn = document.createElement('div');
+      starBtn.className = 'thumbnail-star' + (starredSnapIds.has(index) ? ' active' : '');
+      starBtn.title = starredSnapIds.has(index) ? 'Starred for AI - preview ready' : 'Star for AI';
+      starBtn.innerHTML = '★';
+      
+      // Star button click handler
+      starBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (starredSnapIds.has(index)) {
+          starredSnapIds.delete(index);
+          starBtn.classList.remove('active');
+          starBtn.title = 'Star for AI';
+          console.log('[SnapToAI] Unstarred snap', index + 1);
+        } else {
+          starredSnapIds.add(index);
+          starBtn.classList.add('active');
+          starBtn.title = 'Starred for AI - preview ready';
+          console.log('[SnapToAI] Starred snap', index + 1, 'for AI');
+        }
+      });
+      
       const img = document.createElement('img');
       img.src = currentSnaps[index];
       img.alt = `Snap ${index + 1}`;
       
       // Thumbnail click to preview
       thumbnail.addEventListener('click', (e) => {
-        // Don't open preview if clicking checkbox, delete, annotate, or copy button
+        // Don't open preview if clicking checkbox, delete, annotate, copy, or star button
         if (!e.target.classList.contains('thumbnail-checkbox') &&
             !e.target.classList.contains('thumbnail-delete') &&
             !e.target.classList.contains('thumbnail-annotate') &&
-            !e.target.classList.contains('thumbnail-copy')) {
+            !e.target.classList.contains('thumbnail-copy') &&
+            !e.target.classList.contains('thumbnail-star')) {
           showPreview(index);
         }
       });
@@ -1734,6 +1758,7 @@ function updateThumbnails() {
         thumbnail.appendChild(annotateBtn);
       }
       thumbnail.appendChild(copyBtn);
+      thumbnail.appendChild(starBtn);
       thumbnail.appendChild(img);
       thumbnail.appendChild(number);
       

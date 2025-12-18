@@ -1509,3 +1509,47 @@ html[dir="rtl"] .logo-word {
 .gemini-link:hover {
   color: #00e8ff;
 }
+
+/* ===== STAR BUTTON FOR AI ===== */
+.thumbnail-star {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 20px;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: rgba(0, 217, 255, 0.4);
+  cursor: pointer;
+  z-index: 10;
+  opacity: 0;
+  transition: all 0.3s ease;
+  text-shadow: none;
+}
+
+.thumbnail:hover .thumbnail-star {
+  opacity: 1;
+}
+
+.thumbnail-star:hover {
+  color: #00d9ff;
+  transform: translateX(-50%) scale(1.2);
+}
+
+.thumbnail-star.active {
+  color: #00d9ff;
+  opacity: 1;
+  text-shadow: 0 0 8px rgba(0, 217, 255, 0.8), 0 0 12px rgba(0, 217, 255, 0.5);
+  animation: star-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes star-glow {
+  0%, 100% {
+    text-shadow: 0 0 6px rgba(0, 217, 255, 0.6), 0 0 10px rgba(0, 217, 255, 0.4);
+  }
+  50% {
+    text-shadow: 0 0 12px rgba(0, 217, 255, 1), 0 0 18px rgba(0, 217, 255, 0.7);
+  }
+}
