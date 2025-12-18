@@ -1862,21 +1862,22 @@ html[dir="rtl"] .logo-word {
 .brain-wake-btn {
   width: 100%;
   padding: 14px 20px;
-  background: #1a1a1a;
-  border: 2px solid #00FFFF;
+  background: #000;
+  border: 2px solid #00f2ff;
   border-radius: 12px;
-  color: #00FFFF;
+  color: #00f2ff;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 8px rgba(0, 255, 255, 0.1);
-  animation: brainPulse 1s ease-in-out infinite;
+  animation: brainPulse 2s ease-in-out infinite;
+  text-shadow: 0 0 8px #00f2ff;
 }
 
 @keyframes brainPulse {
-  0%, 100% { transform: scale(1.0); }
-  50% { transform: scale(1.03); }
+  0%, 100% { transform: scale(1.0); box-shadow: 0 0 5px rgba(0, 255, 255, 0.4), inset 0 0 8px rgba(0, 255, 255, 0.1); }
+  50% { transform: scale(1.03); box-shadow: 0 0 25px rgba(0, 255, 255, 0.8), inset 0 0 12px rgba(0, 255, 255, 0.2); }
 }
 
 .brain-wake-btn:hover {

@@ -3375,28 +3375,56 @@ async function sendToGemini(prompt, isRetry = false) {
       loadingBubble.textContent = 'Reading image... 🔍';
       
       // Extract text with Tesseract
-      const extractedText = await extractTextFromImage(aiChatCurrentImage);
+      let extractedText = '';
+      try {
+        extractedText = await extractTextFromImage(aiChatCurrentImage);
+      } catch (ocrError) {
+        console.error('[SnapToAI] OCR failed:', ocrError);
+      }
       
-      if (extractedText && extractedText.length > 10) {
-        // Got text! Send to local AI
+      if (extractedText && extractedText.length > 3) {
+        // Got text (even short text like labels)! Send to local AI
         loadingBubble.textContent = 'Thinking... ✨';
         const aiPrompt = `You are reading text from a screen capture. The user asked: "${prompt}"\n\nText found in image:\n${extractedText}\n\nExplain what this text means or help with the problem shown.`;
         
-        const localResponse = await sendToLocalAI(aiPrompt);
-        if (localResponse) {
-          loadingBubble.remove();
-          addChatBubble('🔒 100% Local & Private', 'ai');
-          addChatBubble(localResponse, 'ai');
-          aiChatHistory.push({ role: 'ai', text: localResponse });
+        try {
+          const localResponse = await sendToLocalAI(aiPrompt);
+          if (localResponse) {
+            loadingBubble.remove();
+            addChatBubble('🔒 100% Local & Private', 'ai');
+            addChatBubble(localResponse, 'ai');
+            aiChatHistory.push({ role: 'ai', text: localResponse });
+            aiSendBtn.disabled = false;
+            return;
+          }
+        } catch (localAIError) {
+          console.error('[SnapToAI] Local AI failed:', localAIError);
+          // Fall through to cloud fallback
+        }
+      }
+      
+      // OCR found no text or local AI failed - offer options
+      loadingBubble.remove();
+      const hasApiKey = result.geminiApiKey;
+      if (!extractedText || extractedText.length <= 3) {
+        if (hasApiKey) {
+          addChatBubble('👀 No readable text found. Using cloud AI for visual analysis...', 'ai');
+          // Continue to cloud fallback below
+        } else {
+          addChatBubble('👀 No readable text found. For visual analysis, add a Gemini API key (click AI button), or try snipping closer to the text!', 'ai');
           aiSendBtn.disabled = false;
           return;
         }
       } else {
-        // No text found - tell user
-        loadingBubble.remove();
-        addChatBubble('👀 I see an image but no clear text. Try snipping closer to the words, or use cloud AI for visual analysis!', 'ai');
-        aiSendBtn.disabled = false;
-        return;
+        // Local AI failed but we have text - try cloud if available
+        if (hasApiKey) {
+          addChatBubble('⚠️ Local AI unavailable. Using cloud as backup...', 'ai');
+          // Continue to cloud fallback below
+        } else {
+          addChatBubble('⚠️ Local AI had trouble. Please try again or add a Gemini API key for backup.', 'ai');
+          aiSendBtn.disabled = false;
+          return;
+        }
       }
     }
     
