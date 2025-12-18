@@ -3055,12 +3055,77 @@ if (geminiModal) geminiModal.addEventListener('click', (e) => {
   if (e.target === geminiModal) hideGeminiModal();
 });
 
-// Load key on popup open
+// ===== AI BRAIN VERIFICATION (Local Gemini Nano) =====
+async function verifyBrain() {
+  const btn = document.getElementById('verify-brain-btn');
+  const status = document.getElementById('brain-status');
+  const instructions = document.getElementById('brain-instructions');
+  
+  if (!btn || !status) return;
+  
+  btn.disabled = true;
+  status.textContent = 'Checking... ⏳';
+  status.className = '';
+  
+  try {
+    // Check if Chrome's built-in AI is available
+    if (!window.ai || !window.ai.languageModel) {
+      throw new Error('not-available');
+    }
+    
+    const availability = await window.ai.languageModel.availability();
+    console.log('[SnapToAI] AI availability:', availability);
+    
+    if (availability === 'readily') {
+      // AI is ready!
+      status.textContent = 'Brain Online 🟢';
+      status.className = 'awake';
+      btn.classList.add('brain-ready');
+      btn.textContent = 'AI Brain Active ✓';
+      if (instructions) instructions.style.display = 'none';
+      
+      // Save state
+      await chrome.storage.local.set({ brainActive: true });
+      console.log('[SnapToAI] Local AI brain activated!');
+    } else {
+      // AI needs setup
+      status.textContent = 'Setup Required 🔧';
+      status.className = 'error';
+      if (instructions) instructions.style.display = 'block';
+      btn.disabled = false;
+    }
+  } catch (error) {
+    console.log('[SnapToAI] AI not available:', error);
+    status.textContent = 'Setup Required 🔧';
+    status.className = 'error';
+    if (instructions) instructions.style.display = 'block';
+    btn.disabled = false;
+  }
+}
+
+// Attach to button
+document.getElementById('verify-brain-btn')?.addEventListener('click', verifyBrain);
+
+// Check brain status on load
+document.addEventListener('DOMContentLoaded', async () => {
+  const result = await chrome.storage.local.get(['brainActive']);
+  if (result.brainActive) {
+    const btn = document.getElementById('verify-brain-btn');
+    const status = document.getElementById('brain-status');
+    if (btn && status) {
+      status.textContent = 'Brain Online 🟢';
+      status.className = 'awake';
+      btn.classList.add('brain-ready');
+      btn.textContent = 'AI Brain Active ✓';
+    }
+  }
+});
+
+// Load key on popup open (legacy)
 document.addEventListener('DOMContentLoaded', async () => {
   const hasKey = await loadGeminiKey();
   if (!hasKey) {
-    console.log('[SnapToAI] No Gemini key found, showing modal');
-    showGeminiModal();
+    console.log('[SnapToAI] No Gemini key found');
   }
 });
 
