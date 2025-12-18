@@ -3055,69 +3055,94 @@ if (geminiModal) geminiModal.addEventListener('click', (e) => {
   if (e.target === geminiModal) hideGeminiModal();
 });
 
-// ===== AI BRAIN VERIFICATION (Local Gemini Nano) =====
-async function verifyBrain() {
-  const btn = document.getElementById('verify-brain-btn');
-  const status = document.getElementById('brain-status');
-  const instructions = document.getElementById('brain-instructions');
+// ===== AI BRAIN (Local Chrome AI) =====
+let localAISession = null;
+let localAIAvailable = false;
+
+async function wakeUpBrain() {
+  const btn = document.getElementById('brain-wake-btn');
+  const status = document.getElementById('brain-wake-status');
   
   if (!btn || !status) return;
   
   btn.disabled = true;
-  status.textContent = 'Checking... ⏳';
-  status.className = '';
+  btn.textContent = 'Connecting... ⏳';
+  status.textContent = 'Status: Checking...';
+  status.className = 'brain-wake-status';
   
   try {
     // Check if Chrome's built-in AI is available
     if (!window.ai || !window.ai.languageModel) {
-      throw new Error('not-available');
+      throw new Error('Chrome AI not available');
     }
     
     const availability = await window.ai.languageModel.availability();
-    console.log('[SnapToAI] AI availability:', availability);
+    console.log('[SnapToAI] Local AI availability:', availability);
     
     if (availability === 'readily') {
-      // AI is ready!
-      status.textContent = 'Brain Online 🟢';
-      status.className = 'awake';
-      btn.classList.add('brain-ready');
-      btn.textContent = 'AI Brain Active ✓';
-      if (instructions) instructions.style.display = 'none';
+      // Create a session with the local AI
+      localAISession = await window.ai.languageModel.create({
+        systemPrompt: 'You are a helpful AI assistant. Be concise and helpful.'
+      });
+      localAIAvailable = true;
+      
+      // Update UI
+      btn.textContent = 'Brain Online 🟢';
+      btn.classList.add('online');
+      status.textContent = 'Status: Connected ✓';
+      status.className = 'brain-wake-status online';
       
       // Save state
       await chrome.storage.local.set({ brainActive: true });
-      console.log('[SnapToAI] Local AI brain activated!');
+      console.log('[SnapToAI] Local AI brain connected!');
+    } else if (availability === 'after-download') {
+      status.textContent = 'Status: Downloading AI model...';
+      // Try to trigger download
+      localAISession = await window.ai.languageModel.create();
+      localAIAvailable = true;
+      btn.textContent = 'Brain Online 🟢';
+      btn.classList.add('online');
+      status.textContent = 'Status: Connected ✓';
+      status.className = 'brain-wake-status online';
+      await chrome.storage.local.set({ brainActive: true });
     } else {
-      // AI needs setup
-      status.textContent = 'Setup Required 🔧';
-      status.className = 'error';
-      if (instructions) instructions.style.display = 'block';
-      btn.disabled = false;
+      throw new Error('AI not available: ' + availability);
     }
   } catch (error) {
-    console.log('[SnapToAI] AI not available:', error);
-    status.textContent = 'Setup Required 🔧';
-    status.className = 'error';
-    if (instructions) instructions.style.display = 'block';
+    console.log('[SnapToAI] Local AI error:', error.message);
+    localAIAvailable = false;
+    btn.textContent = 'Wake up AI Brain ✨';
     btn.disabled = false;
+    status.textContent = 'Status: Not available (use cloud AI) 🔴';
+    status.className = 'brain-wake-status';
   }
 }
 
-// Attach to button
-document.getElementById('verify-brain-btn')?.addEventListener('click', verifyBrain);
+// Send message to local AI (text only - no images)
+async function sendToLocalAI(prompt) {
+  if (!localAISession || !localAIAvailable) {
+    return null; // Fallback to cloud
+  }
+  
+  try {
+    const response = await localAISession.prompt(prompt);
+    console.log('[SnapToAI] Local AI response received');
+    return response;
+  } catch (error) {
+    console.error('[SnapToAI] Local AI error:', error);
+    return null; // Fallback to cloud
+  }
+}
+
+// Attach to main button
+document.getElementById('brain-wake-btn')?.addEventListener('click', wakeUpBrain);
 
 // Check brain status on load
 document.addEventListener('DOMContentLoaded', async () => {
   const result = await chrome.storage.local.get(['brainActive']);
   if (result.brainActive) {
-    const btn = document.getElementById('verify-brain-btn');
-    const status = document.getElementById('brain-status');
-    if (btn && status) {
-      status.textContent = 'Brain Online 🟢';
-      status.className = 'awake';
-      btn.classList.add('brain-ready');
-      btn.textContent = 'AI Brain Active ✓';
-    }
+    // Try to reconnect
+    wakeUpBrain();
   }
 });
 
@@ -3243,6 +3268,19 @@ async function sendToGemini(prompt, isRetry = false) {
   aiChatInput.value = '';
 
   try {
+    // Try local AI first for text-only (no image analysis)
+    // Note: Local AI can't process images yet, so we always use cloud for image analysis
+    if (localAIAvailable && localAISession && !aiChatCurrentImage) {
+      const localResponse = await sendToLocalAI(prompt);
+      if (localResponse) {
+        loadingBubble.remove();
+        addChatBubble(localResponse, 'ai');
+        aiChatHistory.push({ role: 'ai', text: localResponse });
+        aiSendBtn.disabled = false;
+        return;
+      }
+    }
+    
     // Compress image to save tokens (only compress once per session)
     if (!aiCompressedImage) {
       aiCompressedImage = await compressImageForAI(aiChatCurrentImage);

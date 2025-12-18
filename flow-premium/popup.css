@@ -1851,3 +1851,57 @@ html[dir="rtl"] .logo-word {
   color: #00FFFF;
   font-size: 11px;
 }
+
+/* ===== MAIN BRAIN WAKE BUTTON ===== */
+.brain-wake-container {
+  text-align: center;
+  padding: 12px 15px;
+  margin: 5px 0;
+}
+
+.brain-wake-btn {
+  width: 100%;
+  padding: 14px 20px;
+  background: #1a1a1a;
+  border: 2px solid #00FFFF;
+  border-radius: 12px;
+  color: #00FFFF;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 8px rgba(0, 255, 255, 0.1);
+  animation: brainPulse 1s ease-in-out infinite;
+}
+
+@keyframes brainPulse {
+  0%, 100% { transform: scale(1.0); }
+  50% { transform: scale(1.03); }
+}
+
+.brain-wake-btn:hover {
+  box-shadow: 0 0 25px rgba(0, 255, 255, 0.5), inset 0 0 12px rgba(0, 255, 255, 0.2);
+}
+
+.brain-wake-btn.online {
+  border-color: #00FF00;
+  color: #00FF00;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.3), inset 0 0 8px rgba(0, 255, 0, 0.1);
+  animation: none;
+}
+
+.brain-wake-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  animation: none;
+}
+
+.brain-wake-status {
+  margin: 8px 0 0 0;
+  font-size: 12px;
+  color: #ff6b6b;
+}
+
+.brain-wake-status.online {
+  color: #00FF00;
+}
