@@ -1510,46 +1510,40 @@ html[dir="rtl"] .logo-word {
   color: #00e8ff;
 }
 
-/* ===== STAR BUTTON FOR AI ===== */
-.thumbnail-star {
+/* ===== AI ANALYSIS BUTTON ===== */
+.thumbnail-ai {
   position: absolute;
-  bottom: 4px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  width: 20px;
-  height: 20px;
-  font-size: 14px;
-  line-height: 20px;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 36px;
+  font-size: 22px;
+  line-height: 36px;
   text-align: center;
-  color: rgba(0, 217, 255, 0.4);
+  color: #00d9ff;
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid rgba(0, 217, 255, 0.6);
+  border-radius: 50%;
   cursor: pointer;
   z-index: 10;
   opacity: 0;
   transition: all 0.3s ease;
-  text-shadow: none;
+  text-shadow: 0 0 8px rgba(0, 217, 255, 0.5);
 }
 
-.thumbnail:hover .thumbnail-star {
+.thumbnail:hover .thumbnail-ai {
   opacity: 1;
 }
 
-.thumbnail-star:hover {
-  color: #00d9ff;
-  transform: translateX(-50%) scale(1.2);
+.thumbnail-ai:hover {
+  background: rgba(0, 217, 255, 0.2);
+  border-color: #00d9ff;
+  transform: translate(-50%, -50%) scale(1.15);
+  box-shadow: 0 0 15px rgba(0, 217, 255, 0.6);
+  text-shadow: 0 0 12px rgba(0, 217, 255, 0.9);
 }
 
-.thumbnail-star.active {
-  color: #00d9ff;
-  opacity: 1;
-  text-shadow: 0 0 8px rgba(0, 217, 255, 0.8), 0 0 12px rgba(0, 217, 255, 0.5);
-  animation: star-glow 1.5s ease-in-out infinite;
-}
-
-@keyframes star-glow {
-  0%, 100% {
-    text-shadow: 0 0 6px rgba(0, 217, 255, 0.6), 0 0 10px rgba(0, 217, 255, 0.4);
-  }
-  50% {
-    text-shadow: 0 0 12px rgba(0, 217, 255, 1), 0 0 18px rgba(0, 217, 255, 0.7);
-  }
+.thumbnail-ai:active {
+  transform: translate(-50%, -50%) scale(1.0);
 }

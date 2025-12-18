@@ -1692,26 +1692,17 @@ function updateThumbnails() {
         handleCopySingle(index);
       });
       
-      // Create star button for AI
-      const starBtn = document.createElement('div');
-      starBtn.className = 'thumbnail-star' + (starredSnapIds.has(index) ? ' active' : '');
-      starBtn.title = starredSnapIds.has(index) ? 'Starred for AI - preview ready' : 'Star for AI';
-      starBtn.innerHTML = '★';
+      // Create AI analysis button (center, prominent)
+      const aiBtn = document.createElement('div');
+      aiBtn.className = 'thumbnail-ai';
+      aiBtn.title = 'AI Analysis';
+      aiBtn.innerHTML = '✦';
       
-      // Star button click handler
-      starBtn.addEventListener('click', (e) => {
+      // AI button click handler - opens preview for AI chat
+      aiBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (starredSnapIds.has(index)) {
-          starredSnapIds.delete(index);
-          starBtn.classList.remove('active');
-          starBtn.title = 'Star for AI';
-          console.log('[SnapToAI] Unstarred snap', index + 1);
-        } else {
-          starredSnapIds.add(index);
-          starBtn.classList.add('active');
-          starBtn.title = 'Starred for AI - preview ready';
-          console.log('[SnapToAI] Starred snap', index + 1, 'for AI');
-        }
+        console.log('[SnapToAI] AI Analysis clicked for snap', index + 1);
+        showPreview(index); // Opens preview where AI chat will be
       });
       
       const img = document.createElement('img');
@@ -1725,7 +1716,7 @@ function updateThumbnails() {
             !e.target.classList.contains('thumbnail-delete') &&
             !e.target.classList.contains('thumbnail-annotate') &&
             !e.target.classList.contains('thumbnail-copy') &&
-            !e.target.classList.contains('thumbnail-star')) {
+            !e.target.classList.contains('thumbnail-ai')) {
           showPreview(index);
         }
       });
@@ -1758,7 +1749,7 @@ function updateThumbnails() {
         thumbnail.appendChild(annotateBtn);
       }
       thumbnail.appendChild(copyBtn);
-      thumbnail.appendChild(starBtn);
+      thumbnail.appendChild(aiBtn);
       thumbnail.appendChild(img);
       thumbnail.appendChild(number);
       
