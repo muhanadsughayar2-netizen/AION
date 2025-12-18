@@ -3104,7 +3104,10 @@ function addChatBubble(text, type) {
   return bubble;
 }
 
-async function sendToGemini(prompt) {
+let aiRetryCount = 0;
+let aiCooldownActive = false;
+
+async function sendToGemini(prompt, isRetry = false) {
   const result = await chrome.storage.sync.get(['geminiApiKey']);
   if (!result.geminiApiKey) {
     addChatBubble('Please set your Gemini API key first! Click the AI button in the top row.', 'ai');
@@ -3116,8 +3119,11 @@ async function sendToGemini(prompt) {
     return;
   }
 
-  addChatBubble(prompt, 'user');
-  aiChatHistory.push({ role: 'user', text: prompt });
+  if (!isRetry) {
+    addChatBubble(prompt, 'user');
+    aiChatHistory.push({ role: 'user', text: prompt });
+    aiRetryCount = 0;
+  }
   
   const loadingBubble = addChatBubble('Thinking... ✨', 'ai loading');
   aiSendBtn.disabled = true;
@@ -3149,6 +3155,24 @@ async function sendToGemini(prompt) {
     const data = await response.json();
     loadingBubble.remove();
 
+    // Handle rate limit errors
+    if (response.status === 429 || (data.error && data.error.message && data.error.message.includes('quota'))) {
+      const retryMatch = data.error?.message?.match(/retry in ([\d.]+)s/i);
+      const retrySeconds = retryMatch ? Math.ceil(parseFloat(retryMatch[1])) : 60;
+      
+      if (aiRetryCount < 2) {
+        aiRetryCount++;
+        addChatBubble(`⏳ Rate limit hit. Retrying in ${retrySeconds} seconds... (Attempt ${aiRetryCount}/2)`, 'ai');
+        startCooldown(retrySeconds);
+        setTimeout(() => sendToGemini(prompt, true), retrySeconds * 1000);
+      } else {
+        addChatBubble('🚫 Free limit reached for now. Try again in a minute, or copy your image to use with another AI!', 'ai');
+        aiSendBtn.disabled = false;
+      }
+      console.log('[SnapToAI] Rate limit hit, retry:', aiRetryCount);
+      return;
+    }
+
     if (data.error) {
       addChatBubble('Error: ' + (data.error.message || 'API error. Check your key.'), 'ai');
       console.error('[SnapToAI] Gemini error:', data.error);
@@ -3168,6 +3192,21 @@ async function sendToGemini(prompt) {
   }
 
   aiSendBtn.disabled = false;
+}
+
+function startCooldown(seconds) {
+  aiCooldownActive = true;
+  aiSendBtn.disabled = true;
+  let remaining = seconds;
+  
+  const interval = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(interval);
+      aiCooldownActive = false;
+      if (!aiSendBtn.disabled) return;
+    }
+  }, 1000);
 }
 
 function clearAiChat() {

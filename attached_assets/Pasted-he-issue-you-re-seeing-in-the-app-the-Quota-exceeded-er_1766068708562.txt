@@ -1,0 +1,58 @@
+he issue you're seeing in the app (the "Quota exceeded" error in the chat portal) is due to hitting Gemini's free tier rate limits, as detailed in the page you shared. Specifically, the free tier has restrictions like 5 RPM (requests per minute), 250,000 TPM (tokens per minute), and 100 RPD (requests per day), which vary by model (e.g., gemini-2.0-flash). Since your chat sends a request per message (including the auto-analysis), rapid testing or large snips (high tokens from base64 images) can exceed this quickly—e.g., if you send 6 messages in a minute, it triggers the error with a retry suggestion (like 8.597s). The "limit" you added (perhaps a cooldown or cap in code) isn't working because it likely doesn't catch/handle the API's 429 error or auto-retry; it's just hitting the hard cap.
+To fix and make it robust (user-friendly with no raw errors):
+
+Catch Errors: In the fetch, check for 429 status and parse the retry-after header/time from the response.
+Auto-Retry: Delay and resend after the suggested time (e.g., setTimeout).
+User Feedback: Show "Gemini limit hit—retrying in X seconds..." instead of raw text.
+Prevent Abuse: Disable Send during cooldown, queue if multiple.
+Fallback: After 2 fails, suggest "Use another AI" (copy snip to clipboard).
+
+Here's updated code for popup.js (add to your askAIAboutSnip function). This handles limits gracefully—retry up to 2 times, then fallback.
+JavaScriptasync function askAIAboutSnip(snipId, userPrompt, retryCount = 0) {
+  const selectedImage = getSnipById(snipId);
+  if (!selectedImage) return addChatMessage('Error', 'No snip found.');
+
+  chrome.storage.sync.get('geminiApiKey', async (data) => {
+    if (!data.geminiApiKey) return addChatMessage('Error', 'Add Gemini key first!');
+
+    try {
+      const base64 = await imageToBase64(selectedImage);
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${data.geminiApiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: userPrompt }, { inline_data: { mime_type: 'image/png', data: base64 } }] }]
+        })
+      });
+
+      if (response.status === 429) { // Rate limit error
+        const retryAfter = response.headers.get('Retry-After') || 10; // Default 10s if no header
+        addChatMessage('AI', `Limit hit—retrying in ${retryAfter} seconds...`);
+        if (retryCount < 2) { // Max 2 retries
+          setTimeout(() => askAIAboutSnip(snipId, userPrompt, retryCount + 1), retryAfter * 1000);
+        } else {
+          addChatMessage('AI', 'Gemini free limit reached—try in a minute or use another AI?');
+          // Fallback: Copy snip to clipboard for external use
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': selectedImage })]);
+          addChatMessage('System', 'Snip copied to clipboard for other AIs.');
+        }
+        return;
+      }
+
+      if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+
+      const result = await response.json();
+      const aiText = result.candidates[0].content.parts[0].text;
+      addChatMessage('AI', aiText);
+    } catch (error) {
+      addChatMessage('Error', `Oops: ${error.message} (Check connection or limits in AI Studio).`);
+    }
+  });
+}
+
+// Add to Send button event (disable during send)
+chatSend.addEventListener('click', () => {
+  chatSend.disabled = true; // Prevent spam
+  // ... call askAIAboutSnip ...
+  setTimeout(() => chatSend.disabled = false, 10000); // 10s cooldown
+});
