@@ -3193,7 +3193,24 @@ function openAiChat(imageDataUrl) {
   aiChatCurrentImage = imageDataUrl;
   aiCompressedImage = null; // Reset compressed cache for new image
   aiChatHistory = [];
-  aiChatThread.innerHTML = '<div class="ai-welcome">Click a preset or type your question below ✨</div>';
+  
+  // Show appropriate welcome based on AI mode
+  if (localAIAvailable && !imageDataUrl) {
+    aiChatThread.innerHTML = '<div class="ai-welcome">🧠 Local AI ready! Ask anything ✨</div>';
+  } else if (imageDataUrl) {
+    aiChatThread.innerHTML = '<div class="ai-welcome">📷 Image loaded. Click a preset or ask below ✨</div>';
+    if (!localAIAvailable) {
+      // Check if cloud API is set up
+      chrome.storage.sync.get(['geminiApiKey'], (result) => {
+        if (!result.geminiApiKey) {
+          addChatBubble('⚠️ Images use cloud AI. Please set up your Gemini API key first, or wake up local AI for text-only chat.', 'ai');
+        }
+      });
+    }
+  } else {
+    aiChatThread.innerHTML = '<div class="ai-welcome">Click a preset or type your question below ✨</div>';
+  }
+  
   aiChatPortal.style.display = 'flex';
   setTimeout(() => aiChatPortal.classList.add('show'), 10);
   aiChatInput.focus();
@@ -3290,9 +3307,12 @@ async function sendToGemini(prompt, isRetry = false) {
   aiChatInput.value = '';
 
   try {
-    // Try local AI first for text-only (no image analysis)
-    // Note: Local AI can't process images yet, so we always use cloud for image analysis
-    if (localAIAvailable && localAISession && !aiChatCurrentImage) {
+    // Determine which AI to use
+    const hasImage = !!aiChatCurrentImage;
+    
+    // Try local AI for text-only prompts (no image)
+    if (localAIAvailable && localAISession && !hasImage) {
+      console.log('[SnapToAI] Using local AI (text-only)');
       const localResponse = await sendToLocalAI(prompt);
       if (localResponse) {
         loadingBubble.remove();
@@ -3303,9 +3323,40 @@ async function sendToGemini(prompt, isRetry = false) {
       }
     }
     
-    // Compress image to save tokens (only compress once per session)
-    if (!aiCompressedImage) {
-      aiCompressedImage = await compressImageForAI(aiChatCurrentImage);
+    // For images, must use cloud API
+    if (hasImage) {
+      // Check if we have API key for cloud
+      if (!result.geminiApiKey) {
+        loadingBubble.remove();
+        addChatBubble('⚠️ Images require cloud AI. Please set up your Gemini API key (click AI button in top row).', 'ai');
+        aiSendBtn.disabled = false;
+        return;
+      }
+      
+      // Note about cloud usage
+      if (aiChatHistory.length === 1) { // First message
+        addChatBubble('📷 Using cloud AI for image analysis...', 'ai');
+      }
+      
+      // Compress image to save tokens
+      if (!aiCompressedImage) {
+        aiCompressedImage = await compressImageForAI(aiChatCurrentImage);
+      }
+    } else if (!localAIAvailable) {
+      // No image, no local AI - need to wake up brain
+      loadingBubble.remove();
+      addChatBubble('🧠 Wake up AI Brain first! Click the button above to enable local AI chat.', 'ai');
+      aiSendBtn.disabled = false;
+      return;
+    }
+    
+    // At this point we need cloud API for image
+    if (!hasImage) {
+      // Should have been handled by local AI above
+      loadingBubble.remove();
+      addChatBubble('Something went wrong. Try waking up AI Brain first.', 'ai');
+      aiSendBtn.disabled = false;
+      return;
     }
     
     const base64Data = aiCompressedImage.split(',')[1];
@@ -3429,6 +3480,17 @@ if (aiChatInput) aiChatInput.addEventListener('keypress', (e) => {
 // Preset buttons
 document.querySelectorAll('.ai-preset-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    // Text Chat button - switch to text-only mode
+    if (btn.id === 'textOnlyBtn') {
+      aiChatCurrentImage = null;
+      aiCompressedImage = null;
+      addChatBubble('💬 Switched to text-only mode (local AI)', 'ai');
+      if (!localAIAvailable) {
+        addChatBubble('🧠 Wake up AI Brain first to use text chat!', 'ai');
+      }
+      return;
+    }
+    
     const prompt = btn.dataset.prompt;
     if (prompt) sendToGemini(prompt);
   });
