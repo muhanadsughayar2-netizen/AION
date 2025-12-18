@@ -3082,9 +3082,10 @@ async function wakeUpBrain() {
     console.log('[SnapToAI] Local AI availability:', availability);
     
     if (availability === 'readily') {
-      // AI is ready - create session
+      // AI is ready - create session with text-only config
       localAISession = await window.ai.languageModel.create({
-        systemPrompt: 'You are a helpful AI assistant. Be concise and helpful.'
+        systemPrompt: 'You are a helpful AI assistant. Be concise and helpful.',
+        expectedInputs: [{ type: 'text' }]
       });
       localAIAvailable = true;
       
@@ -3105,7 +3106,8 @@ async function wakeUpBrain() {
       
       // Try to trigger download and create session
       localAISession = await window.ai.languageModel.create({
-        systemPrompt: 'You are a helpful AI assistant. Be concise and helpful.'
+        systemPrompt: 'You are a helpful AI assistant. Be concise and helpful.',
+        expectedInputs: [{ type: 'text' }]
       });
       
       // Re-check after creation
@@ -3148,8 +3150,21 @@ async function sendToLocalAI(prompt) {
   
   try {
     const response = await localAISession.prompt(prompt);
-    console.log('[SnapToAI] Local AI response received');
-    return response;
+    console.log('[SnapToAI] Local AI response received:', typeof response);
+    
+    // Handle different response shapes
+    if (typeof response === 'string') {
+      return response;
+    } else if (response?.output?.[0]?.content?.[0]?.text) {
+      return response.output[0].content[0].text;
+    } else if (response?.text) {
+      return response.text;
+    } else if (response?.output?.text) {
+      return response.output.text;
+    } else {
+      console.log('[SnapToAI] Unknown response shape:', response);
+      return String(response);
+    }
   } catch (error) {
     console.error('[SnapToAI] Local AI error:', error);
     return null; // Fallback to cloud
