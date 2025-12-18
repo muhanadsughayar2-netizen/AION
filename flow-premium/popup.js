@@ -3142,6 +3142,38 @@ async function wakeUpBrain() {
   }
 }
 
+// ===== LOCAL OCR WITH TESSERACT.JS =====
+let tesseractReady = false;
+
+async function extractTextFromImage(imageDataUrl) {
+  console.log('[SnapToAI] Starting OCR with Tesseract...');
+  
+  try {
+    // Create worker
+    const worker = await Tesseract.createWorker('eng', 1, {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          console.log('[SnapToAI] OCR progress:', Math.round(m.progress * 100) + '%');
+        }
+      }
+    });
+    
+    // Recognize text
+    const result = await worker.recognize(imageDataUrl);
+    const text = result.data.text.trim();
+    
+    // Terminate worker to save memory
+    await worker.terminate();
+    
+    console.log('[SnapToAI] OCR complete, found', text.length, 'characters');
+    tesseractReady = true;
+    return text;
+  } catch (error) {
+    console.error('[SnapToAI] OCR error:', error);
+    return '';
+  }
+}
+
 // Send message to local AI (text only - no images)
 async function sendToLocalAI(prompt) {
   if (!localAISession || !localAIAvailable) {
@@ -3338,19 +3370,49 @@ async function sendToGemini(prompt, isRetry = false) {
       }
     }
     
-    // For images, must use cloud API
+    // For images with local AI available - use Tesseract OCR + local AI (100% FREE!)
+    if (hasImage && localAIAvailable && localAISession) {
+      loadingBubble.textContent = 'Reading image... 🔍';
+      
+      // Extract text with Tesseract
+      const extractedText = await extractTextFromImage(aiChatCurrentImage);
+      
+      if (extractedText && extractedText.length > 10) {
+        // Got text! Send to local AI
+        loadingBubble.textContent = 'Thinking... ✨';
+        const aiPrompt = `You are reading text from a screen capture. The user asked: "${prompt}"\n\nText found in image:\n${extractedText}\n\nExplain what this text means or help with the problem shown.`;
+        
+        const localResponse = await sendToLocalAI(aiPrompt);
+        if (localResponse) {
+          loadingBubble.remove();
+          addChatBubble('🔒 100% Local & Private', 'ai');
+          addChatBubble(localResponse, 'ai');
+          aiChatHistory.push({ role: 'ai', text: localResponse });
+          aiSendBtn.disabled = false;
+          return;
+        }
+      } else {
+        // No text found - tell user
+        loadingBubble.remove();
+        addChatBubble('👀 I see an image but no clear text. Try snipping closer to the words, or use cloud AI for visual analysis!', 'ai');
+        aiSendBtn.disabled = false;
+        return;
+      }
+    }
+    
+    // Fallback: For images without local AI, use cloud API
     if (hasImage) {
       // Check if we have API key for cloud
       if (!result.geminiApiKey) {
         loadingBubble.remove();
-        addChatBubble('⚠️ Images require cloud AI. Please set up your Gemini API key (click AI button in top row).', 'ai');
+        addChatBubble('⚠️ For visual analysis, set up Gemini API key (click AI button). Or wake up local AI for text extraction!', 'ai');
         aiSendBtn.disabled = false;
         return;
       }
       
       // Note about cloud usage
       if (aiChatHistory.length === 1) { // First message
-        addChatBubble('📷 Using cloud AI for image analysis...', 'ai');
+        addChatBubble('📷 Using cloud AI for visual analysis...', 'ai');
       }
       
       // Compress image to save tokens
