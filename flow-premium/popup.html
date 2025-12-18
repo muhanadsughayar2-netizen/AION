@@ -98,8 +98,17 @@
 
     <!-- AI Brain Wake Up Button -->
     <div class="brain-wake-container">
-      <button id="brain-wake-btn" class="brain-wake-btn">Wake up AI Brain ✨</button>
+      <button id="brain-wake-btn" class="brain-wake-btn" title="Unlock local AI chat—no keys needed!">Wake up AI Brain ✨</button>
       <p id="brain-wake-status" class="brain-wake-status">Status: Disconnected 🔴</p>
+      <div id="brain-instructions" class="brain-instructions-main" style="display: none;">
+        <p>To enable local AI:</p>
+        <ol>
+          <li>Go to <code>chrome://flags</code></li>
+          <li>Search & enable <code>Prompt API for Gemini Nano</code></li>
+          <li>Relaunch Chrome and try again</li>
+        </ol>
+        <p class="brain-note">📷 Images not supported yet—coming soon!</p>
+      </div>
     </div>
 
     <!-- Status Line with Activity Indicator (STICKY) -->

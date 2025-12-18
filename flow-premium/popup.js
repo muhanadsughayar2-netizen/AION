@@ -3062,59 +3062,81 @@ let localAIAvailable = false;
 async function wakeUpBrain() {
   const btn = document.getElementById('brain-wake-btn');
   const status = document.getElementById('brain-wake-status');
+  const instructions = document.getElementById('brain-instructions');
   
   if (!btn || !status) return;
   
   btn.disabled = true;
-  btn.textContent = 'Connecting... ⏳';
+  btn.innerHTML = '<span class="brain-spinner"></span>Connecting...';
   status.textContent = 'Status: Checking...';
   status.className = 'brain-wake-status';
+  if (instructions) instructions.style.display = 'none';
   
   try {
     // Check if Chrome's built-in AI is available
     if (!window.ai || !window.ai.languageModel) {
-      throw new Error('Chrome AI not available');
+      throw new Error('no');
     }
     
     const availability = await window.ai.languageModel.availability();
     console.log('[SnapToAI] Local AI availability:', availability);
     
     if (availability === 'readily') {
-      // Create a session with the local AI
+      // AI is ready - create session
       localAISession = await window.ai.languageModel.create({
         systemPrompt: 'You are a helpful AI assistant. Be concise and helpful.'
       });
       localAIAvailable = true;
       
-      // Update UI
+      // Update UI - success!
       btn.textContent = 'Brain Online 🟢';
       btn.classList.add('online');
-      status.textContent = 'Status: Connected ✓';
+      status.textContent = 'Status: Connected 🟢';
       status.className = 'brain-wake-status online';
+      if (instructions) instructions.style.display = 'none';
       
-      // Save state
       await chrome.storage.local.set({ brainActive: true });
       console.log('[SnapToAI] Local AI brain connected!');
+      
     } else if (availability === 'after-download') {
-      status.textContent = 'Status: Downloading AI model...';
-      // Try to trigger download
-      localAISession = await window.ai.languageModel.create();
-      localAIAvailable = true;
-      btn.textContent = 'Brain Online 🟢';
-      btn.classList.add('online');
-      status.textContent = 'Status: Connected ✓';
-      status.className = 'brain-wake-status online';
-      await chrome.storage.local.set({ brainActive: true });
+      // Model needs to download
+      btn.innerHTML = '<span class="brain-spinner"></span>Downloading AI model...';
+      status.textContent = 'Status: Downloading (may take a minute)...';
+      
+      // Try to trigger download and create session
+      localAISession = await window.ai.languageModel.create({
+        systemPrompt: 'You are a helpful AI assistant. Be concise and helpful.'
+      });
+      
+      // Re-check after creation
+      setTimeout(async () => {
+        const newAvail = await window.ai.languageModel.availability();
+        if (newAvail === 'readily') {
+          localAIAvailable = true;
+          btn.textContent = 'Brain Online 🟢';
+          btn.classList.add('online');
+          status.textContent = 'Status: Connected 🟢';
+          status.className = 'brain-wake-status online';
+          await chrome.storage.local.set({ brainActive: true });
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Wake up AI Brain ✨';
+          status.textContent = 'Status: Still downloading, try again...';
+        }
+      }, 300);
+      
     } else {
-      throw new Error('AI not available: ' + availability);
+      // 'no' or other - show instructions
+      throw new Error('no');
     }
   } catch (error) {
     console.log('[SnapToAI] Local AI error:', error.message);
     localAIAvailable = false;
     btn.textContent = 'Wake up AI Brain ✨';
     btn.disabled = false;
-    status.textContent = 'Status: Not available (use cloud AI) 🔴';
+    status.textContent = 'Status: Not available 🔴';
     status.className = 'brain-wake-status';
+    if (instructions) instructions.style.display = 'block';
   }
 }
 
