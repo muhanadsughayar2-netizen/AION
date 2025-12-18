@@ -3079,6 +3079,7 @@ const aiChatClose = document.getElementById('aiChatClose');
 function openAiChat(imageDataUrl) {
   console.log('[SnapToAI] Opening AI Chat Portal');
   aiChatCurrentImage = imageDataUrl;
+  aiCompressedImage = null; // Reset compressed cache for new image
   aiChatHistory = [];
   aiChatThread.innerHTML = '<div class="ai-welcome">Click a preset or type your question below ✨</div>';
   aiChatPortal.style.display = 'flex';
@@ -3106,6 +3107,39 @@ function addChatBubble(text, type) {
 
 let aiRetryCount = 0;
 let aiCooldownActive = false;
+let aiCompressedImage = null;
+
+// Compress image to save tokens (max 512px, JPEG 65% quality)
+async function compressImageForAI(dataUrl) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const maxSize = 512;
+      let width = img.width;
+      let height = img.height;
+      
+      // Scale down if needed
+      if (width > maxSize || height > maxSize) {
+        const scale = Math.min(maxSize / width, maxSize / height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Convert to JPEG at 65% quality (much smaller than PNG)
+      const compressedUrl = canvas.toDataURL('image/jpeg', 0.65);
+      console.log('[SnapToAI] Compressed image:', img.width + 'x' + img.height, '->', width + 'x' + height);
+      resolve(compressedUrl);
+    };
+    img.onerror = () => resolve(dataUrl); // Fallback to original
+    img.src = dataUrl;
+  });
+}
 
 async function sendToGemini(prompt, isRetry = false) {
   const result = await chrome.storage.sync.get(['geminiApiKey']);
@@ -3130,8 +3164,13 @@ async function sendToGemini(prompt, isRetry = false) {
   aiChatInput.value = '';
 
   try {
-    const base64Data = aiChatCurrentImage.split(',')[1];
-    const mimeType = aiChatCurrentImage.split(';')[0].split(':')[1] || 'image/png';
+    // Compress image to save tokens (only compress once per session)
+    if (!aiCompressedImage) {
+      aiCompressedImage = await compressImageForAI(aiChatCurrentImage);
+    }
+    
+    const base64Data = aiCompressedImage.split(',')[1];
+    const mimeType = 'image/jpeg'; // Always JPEG after compression
     
     const requestBody = {
       contents: [{
