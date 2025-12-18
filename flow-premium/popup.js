@@ -2965,3 +2965,85 @@ async function incrementGlobalCounter() {
     loadGlobalCounter(); // Refresh immediately
   } catch (e) {}
 }
+
+// ===== GEMINI API KEY MODAL =====
+const geminiModal = document.getElementById('geminiModal');
+const geminiKeyInput = document.getElementById('geminiKeyInput');
+const geminiStatus = document.getElementById('geminiStatus');
+const geminiSaveBtn = document.getElementById('geminiSaveBtn');
+const geminiClearBtn = document.getElementById('geminiClearBtn');
+const aiButton = document.getElementById('aiButton');
+
+function showGeminiModal() {
+  console.log('[SnapToAI] Opening Gemini modal');
+  geminiModal.style.display = 'flex';
+  setTimeout(() => geminiModal.classList.add('show'), 10);
+}
+
+function hideGeminiModal() {
+  console.log('[SnapToAI] Closing Gemini modal');
+  geminiModal.classList.remove('show');
+  setTimeout(() => geminiModal.style.display = 'none', 300);
+}
+
+async function loadGeminiKey() {
+  try {
+    const result = await chrome.storage.sync.get(['geminiApiKey']);
+    console.log('[SnapToAI] Loaded Gemini key:', result.geminiApiKey ? 'exists' : 'none');
+    if (result.geminiApiKey) {
+      geminiKeyInput.value = result.geminiApiKey;
+      geminiStatus.style.display = 'inline';
+    } else {
+      geminiKeyInput.value = '';
+      geminiStatus.style.display = 'none';
+    }
+    return !!result.geminiApiKey;
+  } catch (e) {
+    console.error('[SnapToAI] Error loading Gemini key:', e);
+    return false;
+  }
+}
+
+async function saveGeminiKey() {
+  const key = geminiKeyInput.value.trim();
+  if (!key) {
+    console.log('[SnapToAI] No key to save');
+    return;
+  }
+  try {
+    await chrome.storage.sync.set({ geminiApiKey: key });
+    console.log('[SnapToAI] Gemini key saved');
+    geminiStatus.style.display = 'inline';
+    hideGeminiModal();
+  } catch (e) {
+    console.error('[SnapToAI] Error saving Gemini key:', e);
+  }
+}
+
+async function clearGeminiKey() {
+  try {
+    await chrome.storage.sync.remove('geminiApiKey');
+    console.log('[SnapToAI] Gemini key cleared');
+    geminiKeyInput.value = '';
+    geminiStatus.style.display = 'none';
+  } catch (e) {
+    console.error('[SnapToAI] Error clearing Gemini key:', e);
+  }
+}
+
+// Event listeners
+if (aiButton) aiButton.addEventListener('click', showGeminiModal);
+if (geminiSaveBtn) geminiSaveBtn.addEventListener('click', saveGeminiKey);
+if (geminiClearBtn) geminiClearBtn.addEventListener('click', clearGeminiKey);
+if (geminiModal) geminiModal.addEventListener('click', (e) => {
+  if (e.target === geminiModal) hideGeminiModal();
+});
+
+// Load key on popup open
+document.addEventListener('DOMContentLoaded', async () => {
+  const hasKey = await loadGeminiKey();
+  if (!hasKey) {
+    console.log('[SnapToAI] No Gemini key found, showing modal');
+    showGeminiModal();
+  }
+});
