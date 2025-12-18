@@ -160,83 +160,120 @@
     }
   });
   
-  // Force Google Docs to render full content by injecting expansion styles
-  function forceGoogleDocsFullRender() {
-    if (!location.hostname.includes('docs.google.com')) return;
+  // Force special sites to render full content by injecting expansion styles
+  function forceSpecialSiteFullRender() {
+    const isGoogleDocs = location.hostname.includes('docs.google.com');
+    const isYouTube = location.hostname.includes('youtube.com');
+    
+    if (!isGoogleDocs && !isYouTube) return;
     
     // Remove any existing style to avoid duplicates
-    const existing = document.getElementById('snaptoai-docs-styles');
+    const existing = document.getElementById('snaptoai-site-styles');
     if (existing) existing.remove();
     
     const style = document.createElement('style');
-    style.id = 'snaptoai-docs-styles';
-    style.textContent = `
-      /* Force full expansion for Google Docs - like GoFullPage */
-      body, html {
-        height: auto !important;
-        min-height: auto !important;
-        max-height: none !important;
-        overflow: visible !important;
-        position: static !important;
-        background-color: #fff !important;
-      }
-      .kix-appview-editor, .docs-editor, .kix-page-canvas, .kix-canvas-tile-content, canvas {
-        height: auto !important;
-        min-height: auto !important;
-        max-height: none !important;
-        overflow: visible !important;
-        position: static !important;
-        display: block !important;
-        visibility: visible !important;
-      }
-      /* Hide sticky/fixed elements to avoid duplication */
-      [style*="position: sticky"], [style*="position: fixed"] {
-        display: none !important;
-        visibility: hidden !important;
-      }
-      /* Keep header/nav but fix docs-specific sticky elements */
-      .docs-titlebar, .docs-menubar {
-        position: relative !important;
-      }
-      /* Expand all containers */
-      .kix-appview-editor-container, .kix-zoomdocumentplugin-outer {
-        height: auto !important;
-        overflow: visible !important;
-        position: relative !important;
-      }
-    `;
+    style.id = 'snaptoai-site-styles';
+    
+    if (isGoogleDocs) {
+      style.textContent = `
+        /* Force full expansion for Google Docs */
+        body, html {
+          height: auto !important;
+          min-height: auto !important;
+          max-height: none !important;
+          overflow: visible !important;
+          position: static !important;
+          background-color: #fff !important;
+        }
+        .kix-appview-editor, .docs-editor, .kix-page-canvas, .kix-canvas-tile-content, canvas {
+          height: auto !important;
+          min-height: auto !important;
+          max-height: none !important;
+          overflow: visible !important;
+          position: static !important;
+          display: block !important;
+          visibility: visible !important;
+        }
+        [style*="position: sticky"], [style*="position: fixed"] {
+          display: none !important;
+          visibility: hidden !important;
+        }
+        .docs-titlebar, .docs-menubar {
+          position: relative !important;
+        }
+        .kix-appview-editor-container, .kix-zoomdocumentplugin-outer {
+          height: auto !important;
+          overflow: visible !important;
+          position: relative !important;
+        }
+      `;
+      console.log('[SnapToAI] Google Docs styles injected');
+    } else if (isYouTube) {
+      style.textContent = `
+        /* Force full expansion for YouTube */
+        /* Hide sticky header to avoid duplication */
+        #masthead-container, #masthead {
+          position: relative !important;
+        }
+        /* Expand video description */
+        #description.ytd-watch-metadata, #description-inline-expander,
+        ytd-text-inline-expander, #snippet, #description-inner {
+          max-height: none !important;
+          overflow: visible !important;
+          --ytd-expander-collapsed-height: none !important;
+        }
+        /* Expand comments section */
+        ytd-comments#comments, #contents.ytd-item-section-renderer {
+          max-height: none !important;
+          overflow: visible !important;
+        }
+        /* Expand playlists */
+        ytd-playlist-panel-renderer #items {
+          max-height: none !important;
+          overflow: visible !important;
+        }
+        /* Show full titles */
+        #video-title, .title {
+          max-height: none !important;
+          overflow: visible !important;
+          -webkit-line-clamp: unset !important;
+        }
+        /* Expand sidebar recommendations */
+        #related #items {
+          max-height: none !important;
+        }
+      `;
+      console.log('[SnapToAI] YouTube styles injected');
+    }
+    
     document.head.appendChild(style);
-    
-    // Force layout recalculation
     document.body.offsetHeight;
-    
-    console.log('[SnapToAI] Google Docs styles injected for full render');
   }
   
-  // Cleanup Google Docs styles after capture
-  function cleanupGoogleDocsStyles() {
-    const style = document.getElementById('snaptoai-docs-styles');
+  // Cleanup special site styles after capture
+  function cleanupSpecialSiteStyles() {
+    const style = document.getElementById('snaptoai-site-styles');
     if (style) {
       style.remove();
-      console.log('[SnapToAI] Google Docs styles cleaned up');
+      console.log('[SnapToAI] Site styles cleaned up');
     }
   }
 
   // BULLETPROOF wrapper for full page capture - catches all errors gracefully
   async function safeFullPageCapture(tabId) {
     try {
-      // Force Google Docs to render full content before capture
-      forceGoogleDocsFullRender();
+      // Force special sites (Google Docs, YouTube) to render full content
+      forceSpecialSiteFullRender();
       
-      // Small delay for styles to apply on Google Docs
-      if (location.hostname.includes('docs.google.com')) {
+      // Small delay for styles to apply on special sites
+      if (location.hostname.includes('docs.google.com') || location.hostname.includes('youtube.com')) {
         await new Promise(r => setTimeout(r, 300));
       }
       
       const result = await performFullPageCapture(tabId);
       
       // Cleanup after capture
-      cleanupGoogleDocsStyles();
+      cleanupSpecialSiteStyles();
       
       return result;
     } catch (error) {
@@ -244,7 +281,7 @@
       console.warn('[SnapToAI] Capture error (handled):', error.message || error);
       
       // Cleanup styles on error too
-      cleanupGoogleDocsStyles();
+      cleanupSpecialSiteStyles();
       
       // Clean up any UI elements
       try {
