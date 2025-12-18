@@ -1698,11 +1698,11 @@ function updateThumbnails() {
       aiBtn.title = 'AI Analysis';
       aiBtn.innerHTML = '✦';
       
-      // AI button click handler - opens preview for AI chat
+      // AI button click handler - opens AI chat portal
       aiBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         console.log('[SnapToAI] AI Analysis clicked for snap', index + 1);
-        showPreview(index); // Opens preview where AI chat will be
+        openAiChat(currentSnaps[index]); // Opens AI chat with this image
       });
       
       const img = document.createElement('img');
@@ -3062,4 +3062,147 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('[SnapToAI] No Gemini key found, showing modal');
     showGeminiModal();
   }
+});
+
+// ===== AI CHAT PORTAL =====
+let aiChatCurrentImage = null;
+let aiChatHistory = [];
+
+const aiChatPortal = document.getElementById('aiChatPortal');
+const aiChatThread = document.getElementById('aiChatThread');
+const aiChatInput = document.getElementById('aiChatInput');
+const aiSendBtn = document.getElementById('aiSendBtn');
+const aiClearBtn = document.getElementById('aiClearBtn');
+const aiCopyBtn = document.getElementById('aiCopyBtn');
+const aiChatClose = document.getElementById('aiChatClose');
+
+function openAiChat(imageDataUrl) {
+  console.log('[SnapToAI] Opening AI Chat Portal');
+  aiChatCurrentImage = imageDataUrl;
+  aiChatHistory = [];
+  aiChatThread.innerHTML = '<div class="ai-welcome">Click a preset or type your question below ✨</div>';
+  aiChatPortal.style.display = 'flex';
+  setTimeout(() => aiChatPortal.classList.add('show'), 10);
+  aiChatInput.focus();
+}
+
+function closeAiChat() {
+  console.log('[SnapToAI] Closing AI Chat Portal');
+  aiChatPortal.classList.remove('show');
+  setTimeout(() => aiChatPortal.style.display = 'none', 300);
+}
+
+function addChatBubble(text, type) {
+  const welcome = aiChatThread.querySelector('.ai-welcome');
+  if (welcome) welcome.remove();
+  
+  const bubble = document.createElement('div');
+  bubble.className = 'ai-bubble ' + type;
+  bubble.textContent = text;
+  aiChatThread.appendChild(bubble);
+  aiChatThread.scrollTop = aiChatThread.scrollHeight;
+  return bubble;
+}
+
+async function sendToGemini(prompt) {
+  const result = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!result.geminiApiKey) {
+    addChatBubble('Please set your Gemini API key first! Click the AI button in the top row.', 'ai');
+    return;
+  }
+
+  addChatBubble(prompt, 'user');
+  aiChatHistory.push({ role: 'user', text: prompt });
+  
+  const loadingBubble = addChatBubble('Thinking... ✨', 'ai loading');
+  aiSendBtn.disabled = true;
+  aiChatInput.value = '';
+
+  try {
+    const base64Data = aiChatCurrentImage.split(',')[1];
+    const mimeType = aiChatCurrentImage.split(';')[0].split(':')[1] || 'image/png';
+    
+    const requestBody = {
+      contents: [{
+        parts: [
+          { text: prompt },
+          { inline_data: { mime_type: mimeType, data: base64Data } }
+        ]
+      }]
+    };
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${result.geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      }
+    );
+
+    const data = await response.json();
+    loadingBubble.remove();
+
+    if (data.error) {
+      addChatBubble('Error: ' + (data.error.message || 'API error. Check your key.'), 'ai');
+      console.error('[SnapToAI] Gemini error:', data.error);
+    } else if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+      const aiResponse = data.candidates[0].content.parts[0].text;
+      addChatBubble(aiResponse, 'ai');
+      aiChatHistory.push({ role: 'ai', text: aiResponse });
+      console.log('[SnapToAI] Gemini response received');
+    } else {
+      addChatBubble('No response from AI. Try again?', 'ai');
+      console.log('[SnapToAI] Empty Gemini response:', data);
+    }
+  } catch (error) {
+    loadingBubble.remove();
+    addChatBubble('Connection error. Check your internet and try again.', 'ai');
+    console.error('[SnapToAI] Fetch error:', error);
+  }
+
+  aiSendBtn.disabled = false;
+}
+
+function clearAiChat() {
+  aiChatHistory = [];
+  aiChatThread.innerHTML = '<div class="ai-welcome">Chat cleared! Ask a new question ✨</div>';
+  console.log('[SnapToAI] Chat cleared');
+}
+
+function copyAiChat() {
+  const chatText = aiChatHistory.map(m => (m.role === 'user' ? 'You: ' : 'AI: ') + m.text).join('\n\n');
+  navigator.clipboard.writeText(chatText).then(() => {
+    aiCopyBtn.textContent = 'Copied!';
+    setTimeout(() => aiCopyBtn.textContent = 'Copy Chat', 1500);
+    console.log('[SnapToAI] Chat copied to clipboard');
+  });
+}
+
+// Event listeners for AI Chat
+if (aiChatClose) aiChatClose.addEventListener('click', closeAiChat);
+if (aiClearBtn) aiClearBtn.addEventListener('click', clearAiChat);
+if (aiCopyBtn) aiCopyBtn.addEventListener('click', copyAiChat);
+if (aiSendBtn) aiSendBtn.addEventListener('click', () => {
+  const prompt = aiChatInput.value.trim();
+  if (prompt) sendToGemini(prompt);
+});
+if (aiChatInput) aiChatInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    const prompt = aiChatInput.value.trim();
+    if (prompt) sendToGemini(prompt);
+  }
+});
+
+// Preset buttons
+document.querySelectorAll('.ai-preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const prompt = btn.dataset.prompt;
+    if (prompt) sendToGemini(prompt);
+  });
+});
+
+// Click outside to close
+if (aiChatPortal) aiChatPortal.addEventListener('click', (e) => {
+  if (e.target === aiChatPortal) closeAiChat();
 });
