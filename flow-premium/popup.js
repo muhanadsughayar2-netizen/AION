@@ -3304,10 +3304,54 @@ if (aiChatInput) aiChatInput.addEventListener('keypress', (e) => {
 // Preset buttons
 document.querySelectorAll('.ai-preset-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    const prompt = btn.dataset.prompt;
-    if (prompt) sendToGemini(prompt);
+    if (btn.dataset.test) {
+      testGeminiAPI();
+    } else {
+      const prompt = btn.dataset.prompt;
+      if (prompt) sendToGemini(prompt);
+    }
   });
 });
+
+// Test API without image (simple text-only request)
+async function testGeminiAPI() {
+  const result = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!result.geminiApiKey) {
+    addChatBubble('No API key set! Click the ✦ button in the top menu to add one.', 'ai');
+    return;
+  }
+  
+  addChatBubble('Testing API connection...', 'user');
+  const loadingBubble = addChatBubble('Checking... ⏳', 'ai loading');
+  
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${result.geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: 'Say "API Working!" in 2 words only.' }] }]
+        })
+      }
+    );
+    
+    const data = await response.json();
+    loadingBubble.remove();
+    
+    if (data.error) {
+      addChatBubble('❌ API Error: ' + data.error.message, 'ai');
+    } else if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      addChatBubble('✅ ' + data.candidates[0].content.parts[0].text, 'ai');
+    } else {
+      addChatBubble('❓ Unexpected response. Check console.', 'ai');
+      console.log('[SnapToAI] Test response:', data);
+    }
+  } catch (error) {
+    loadingBubble.remove();
+    addChatBubble('❌ Connection failed: ' + error.message, 'ai');
+  }
+}
 
 // Click outside to close
 if (aiChatPortal) aiChatPortal.addEventListener('click', (e) => {
