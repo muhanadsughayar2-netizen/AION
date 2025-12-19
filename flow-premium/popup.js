@@ -3055,171 +3055,12 @@ if (geminiModal) geminiModal.addEventListener('click', (e) => {
   if (e.target === geminiModal) hideGeminiModal();
 });
 
-// ===== AI BRAIN (Local Chrome AI) =====
-let localAISession = null;
-let localAIAvailable = false;
-
-async function wakeUpBrain() {
-  const btn = document.getElementById('brain-wake-btn');
-  const status = document.getElementById('brain-wake-status');
-  const instructions = document.getElementById('brain-instructions');
-  
-  if (!btn || !status) return;
-  
-  btn.disabled = true;
-  btn.innerHTML = '<span class="brain-spinner"></span>Connecting...';
-  status.textContent = 'Status: Checking...';
-  status.className = 'brain-wake-status';
-  if (instructions) instructions.style.display = 'none';
-  
-  try {
-    // Check if Chrome's built-in AI is available
-    if (!window.ai || !window.ai.languageModel) {
-      throw new Error('no');
-    }
-    
-    const availability = await window.ai.languageModel.availability();
-    console.log('[SnapToAI] Local AI availability:', availability);
-    
-    if (availability === 'readily') {
-      // AI is ready - create session with text-only config
-      localAISession = await window.ai.languageModel.create({
-        systemPrompt: 'You are a helpful AI assistant. Be concise and helpful.',
-        expectedInputs: [{ type: 'text' }]
-      });
-      localAIAvailable = true;
-      
-      // Update UI - success!
-      btn.textContent = 'Brain Online 🟢';
-      btn.classList.add('online');
-      status.textContent = 'Status: Connected 🟢';
-      status.className = 'brain-wake-status online';
-      if (instructions) instructions.style.display = 'none';
-      
-      await chrome.storage.local.set({ brainActive: true });
-      console.log('[SnapToAI] Local AI brain connected!');
-      
-    } else if (availability === 'after-download') {
-      // Model needs to download
-      btn.innerHTML = '<span class="brain-spinner"></span>Downloading AI model...';
-      status.textContent = 'Status: Downloading (may take a minute)...';
-      
-      // Try to trigger download and create session
-      localAISession = await window.ai.languageModel.create({
-        systemPrompt: 'You are a helpful AI assistant. Be concise and helpful.',
-        expectedInputs: [{ type: 'text' }]
-      });
-      
-      // Re-check after creation
-      setTimeout(async () => {
-        const newAvail = await window.ai.languageModel.availability();
-        if (newAvail === 'readily') {
-          localAIAvailable = true;
-          btn.textContent = 'Brain Online 🟢';
-          btn.classList.add('online');
-          status.textContent = 'Status: Connected 🟢';
-          status.className = 'brain-wake-status online';
-          await chrome.storage.local.set({ brainActive: true });
-        } else {
-          btn.disabled = false;
-          btn.textContent = 'Wake up AI Brain ✨';
-          status.textContent = 'Status: Still downloading, try again...';
-        }
-      }, 300);
-      
-    } else {
-      // 'no' or other - show instructions
-      throw new Error('no');
-    }
-  } catch (error) {
-    console.log('[SnapToAI] Local AI error:', error.message);
-    localAIAvailable = false;
-    btn.textContent = 'Wake up AI Brain ✨';
-    btn.disabled = false;
-    status.textContent = 'Status: Not available 🔴';
-    status.className = 'brain-wake-status';
-    if (instructions) instructions.style.display = 'block';
-  }
-}
-
-// ===== LOCAL OCR WITH TESSERACT.JS =====
-let tesseractReady = false;
-
-async function extractTextFromImage(imageDataUrl) {
-  console.log('[SnapToAI] Starting OCR with Tesseract...');
-  
-  try {
-    // Create worker
-    const worker = await Tesseract.createWorker('eng', 1, {
-      logger: m => {
-        if (m.status === 'recognizing text') {
-          console.log('[SnapToAI] OCR progress:', Math.round(m.progress * 100) + '%');
-        }
-      }
-    });
-    
-    // Recognize text
-    const result = await worker.recognize(imageDataUrl);
-    const text = result.data.text.trim();
-    
-    // Terminate worker to save memory
-    await worker.terminate();
-    
-    console.log('[SnapToAI] OCR complete, found', text.length, 'characters');
-    tesseractReady = true;
-    return text;
-  } catch (error) {
-    console.error('[SnapToAI] OCR error:', error);
-    return '';
-  }
-}
-
-// Send message to local AI (text only - no images)
-async function sendToLocalAI(prompt) {
-  if (!localAISession || !localAIAvailable) {
-    return null; // Fallback to cloud
-  }
-  
-  try {
-    const response = await localAISession.prompt(prompt);
-    console.log('[SnapToAI] Local AI response received:', typeof response);
-    
-    // Handle different response shapes
-    if (typeof response === 'string') {
-      return response;
-    } else if (response?.output?.[0]?.content?.[0]?.text) {
-      return response.output[0].content[0].text;
-    } else if (response?.text) {
-      return response.text;
-    } else if (response?.output?.text) {
-      return response.output.text;
-    } else {
-      console.log('[SnapToAI] Unknown response shape:', response);
-      return String(response);
-    }
-  } catch (error) {
-    console.error('[SnapToAI] Local AI error:', error);
-    return null; // Fallback to cloud
-  }
-}
-
-// Attach to main button
-document.getElementById('brain-wake-btn')?.addEventListener('click', wakeUpBrain);
-
-// Check brain status on load
-document.addEventListener('DOMContentLoaded', async () => {
-  const result = await chrome.storage.local.get(['brainActive']);
-  if (result.brainActive) {
-    // Try to reconnect
-    wakeUpBrain();
-  }
-});
-
-// Load key on popup open (legacy)
+// Load key on popup open
 document.addEventListener('DOMContentLoaded', async () => {
   const hasKey = await loadGeminiKey();
   if (!hasKey) {
-    console.log('[SnapToAI] No Gemini key found');
+    console.log('[SnapToAI] No Gemini key found, showing modal');
+    showGeminiModal();
   }
 });
 
@@ -3240,24 +3081,7 @@ function openAiChat(imageDataUrl) {
   aiChatCurrentImage = imageDataUrl;
   aiCompressedImage = null; // Reset compressed cache for new image
   aiChatHistory = [];
-  
-  // Show appropriate welcome based on AI mode
-  if (localAIAvailable && !imageDataUrl) {
-    aiChatThread.innerHTML = '<div class="ai-welcome">🧠 Local AI ready! Ask anything ✨</div>';
-  } else if (imageDataUrl) {
-    aiChatThread.innerHTML = '<div class="ai-welcome">📷 Image loaded. Click a preset or ask below ✨</div>';
-    if (!localAIAvailable) {
-      // Check if cloud API is set up
-      chrome.storage.sync.get(['geminiApiKey'], (result) => {
-        if (!result.geminiApiKey) {
-          addChatBubble('⚠️ Images use cloud AI. Please set up your Gemini API key first, or wake up local AI for text-only chat.', 'ai');
-        }
-      });
-    }
-  } else {
-    aiChatThread.innerHTML = '<div class="ai-welcome">Click a preset or type your question below ✨</div>';
-  }
-  
+  aiChatThread.innerHTML = '<div class="ai-welcome">Click a preset or type your question below ✨</div>';
   aiChatPortal.style.display = 'flex';
   setTimeout(() => aiChatPortal.classList.add('show'), 10);
   aiChatInput.focus();
@@ -3354,114 +3178,9 @@ async function sendToGemini(prompt, isRetry = false) {
   aiChatInput.value = '';
 
   try {
-    // Determine which AI to use
-    const hasImage = !!aiChatCurrentImage;
-    
-    // Try local AI for text-only prompts (no image)
-    if (localAIAvailable && localAISession && !hasImage) {
-      console.log('[SnapToAI] Using local AI (text-only)');
-      const localResponse = await sendToLocalAI(prompt);
-      if (localResponse) {
-        loadingBubble.remove();
-        addChatBubble(localResponse, 'ai');
-        aiChatHistory.push({ role: 'ai', text: localResponse });
-        aiSendBtn.disabled = false;
-        return;
-      }
-    }
-    
-    // For images with local AI available - use Tesseract OCR + local AI (100% FREE!)
-    if (hasImage && localAIAvailable && localAISession) {
-      loadingBubble.textContent = 'Reading image... 🔍';
-      
-      // Extract text with Tesseract
-      let extractedText = '';
-      try {
-        extractedText = await extractTextFromImage(aiChatCurrentImage);
-      } catch (ocrError) {
-        console.error('[SnapToAI] OCR failed:', ocrError);
-      }
-      
-      if (extractedText && extractedText.length > 3) {
-        // Got text (even short text like labels)! Send to local AI
-        loadingBubble.textContent = 'Thinking... ✨';
-        const aiPrompt = `You are reading text from a screen capture. The user asked: "${prompt}"\n\nText found in image:\n${extractedText}\n\nExplain what this text means or help with the problem shown.`;
-        
-        try {
-          const localResponse = await sendToLocalAI(aiPrompt);
-          if (localResponse) {
-            loadingBubble.remove();
-            addChatBubble('🔒 100% Local & Private', 'ai');
-            addChatBubble(localResponse, 'ai');
-            aiChatHistory.push({ role: 'ai', text: localResponse });
-            aiSendBtn.disabled = false;
-            return;
-          }
-        } catch (localAIError) {
-          console.error('[SnapToAI] Local AI failed:', localAIError);
-          // Fall through to cloud fallback
-        }
-      }
-      
-      // OCR found no text or local AI failed - offer options
-      loadingBubble.remove();
-      const hasApiKey = result.geminiApiKey;
-      if (!extractedText || extractedText.length <= 3) {
-        if (hasApiKey) {
-          addChatBubble('👀 No readable text found. Using cloud AI for visual analysis...', 'ai');
-          // Continue to cloud fallback below
-        } else {
-          addChatBubble('👀 No readable text found. For visual analysis, add a Gemini API key (click AI button), or try snipping closer to the text!', 'ai');
-          aiSendBtn.disabled = false;
-          return;
-        }
-      } else {
-        // Local AI failed but we have text - try cloud if available
-        if (hasApiKey) {
-          addChatBubble('⚠️ Local AI unavailable. Using cloud as backup...', 'ai');
-          // Continue to cloud fallback below
-        } else {
-          addChatBubble('⚠️ Local AI had trouble. Please try again or add a Gemini API key for backup.', 'ai');
-          aiSendBtn.disabled = false;
-          return;
-        }
-      }
-    }
-    
-    // Fallback: For images without local AI, use cloud API
-    if (hasImage) {
-      // Check if we have API key for cloud
-      if (!result.geminiApiKey) {
-        loadingBubble.remove();
-        addChatBubble('⚠️ For visual analysis, set up Gemini API key (click AI button). Or wake up local AI for text extraction!', 'ai');
-        aiSendBtn.disabled = false;
-        return;
-      }
-      
-      // Note about cloud usage
-      if (aiChatHistory.length === 1) { // First message
-        addChatBubble('📷 Using cloud AI for visual analysis...', 'ai');
-      }
-      
-      // Compress image to save tokens
-      if (!aiCompressedImage) {
-        aiCompressedImage = await compressImageForAI(aiChatCurrentImage);
-      }
-    } else if (!localAIAvailable) {
-      // No image, no local AI - need to wake up brain
-      loadingBubble.remove();
-      addChatBubble('🧠 Wake up AI Brain first! Click the button above to enable local AI chat.', 'ai');
-      aiSendBtn.disabled = false;
-      return;
-    }
-    
-    // At this point we need cloud API for image
-    if (!hasImage) {
-      // Should have been handled by local AI above
-      loadingBubble.remove();
-      addChatBubble('Something went wrong. Try waking up AI Brain first.', 'ai');
-      aiSendBtn.disabled = false;
-      return;
+    // Compress image to save tokens (only compress once per session)
+    if (!aiCompressedImage) {
+      aiCompressedImage = await compressImageForAI(aiChatCurrentImage);
     }
     
     const base64Data = aiCompressedImage.split(',')[1];
@@ -3585,17 +3304,6 @@ if (aiChatInput) aiChatInput.addEventListener('keypress', (e) => {
 // Preset buttons
 document.querySelectorAll('.ai-preset-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    // Text Chat button - switch to text-only mode
-    if (btn.id === 'textOnlyBtn') {
-      aiChatCurrentImage = null;
-      aiCompressedImage = null;
-      addChatBubble('💬 Switched to text-only mode (local AI)', 'ai');
-      if (!localAIAvailable) {
-        addChatBubble('🧠 Wake up AI Brain first to use text chat!', 'ai');
-      }
-      return;
-    }
-    
     const prompt = btn.dataset.prompt;
     if (prompt) sendToGemini(prompt);
   });
