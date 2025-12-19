@@ -3153,25 +3153,40 @@ class AIQueue {
 }
 const aiQueue = new AIQueue();
 
-// Compress image to save tokens (max 768px, JPEG 70% = 280 tokens)
+// Smart image processing: crop edges, upscale center, high quality
 async function compressImageForAI(dataUrl) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      const maxSize = 768;
-      const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
-      const width = Math.round(img.width * scale);
-      const height = Math.round(img.height * scale);
+      // Step 1: Crop outer 15% from all sides (focus on center content)
+      const cropPercent = 0.15;
+      const cropX = Math.round(img.width * cropPercent);
+      const cropY = Math.round(img.height * cropPercent);
+      const croppedW = img.width - (cropX * 2);
+      const croppedH = img.height - (cropY * 2);
+      
+      // Step 2: Upscale by 1.2x for sharper text/numbers
+      const upscale = 1.2;
+      const finalW = Math.round(croppedW * upscale);
+      const finalH = Math.round(croppedH * upscale);
+      
+      // Cap at 1024px for token efficiency
+      const maxSize = 1024;
+      const scale = Math.min(maxSize / finalW, maxSize / finalH, 1);
+      const outputW = Math.round(finalW * scale);
+      const outputH = Math.round(finalH * scale);
       
       const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = outputW;
+      canvas.height = outputH;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
       
-      // JPEG 70% quality = optimal for AI + low tokens
-      const compressedUrl = canvas.toDataURL('image/jpeg', 0.7);
-      console.log('[SnapToAI] Optimized:', img.width + 'x' + img.height, '->', width + 'x' + height);
+      // Draw cropped + upscaled center region
+      ctx.drawImage(img, cropX, cropY, croppedW, croppedH, 0, 0, outputW, outputH);
+      
+      // JPEG 80% quality for better OCR accuracy
+      const compressedUrl = canvas.toDataURL('image/jpeg', 0.8);
+      console.log('[SnapToAI] Smart crop:', img.width + 'x' + img.height, '-> center', outputW + 'x' + outputH);
       resolve(compressedUrl);
     };
     img.onerror = () => resolve(dataUrl);
@@ -3214,7 +3229,7 @@ async function sendToGemini(prompt, isRetry = false) {
     const data = await aiQueue.add(async () => {
       const requestBody = {
         system_instruction: {
-          parts: [{ text: "You are a visual assistant. If you see code, explain the logic and find bugs. If you see a UI or image, provide a summary and key points. Be concise and helpful." }]
+          parts: [{ text: "You are a High-Precision Visual Data Analyst. Primary Rule: You are an OCR specialist first. Extract values exactly as they appear in pixels. Hallucination Policy: If a number is too small or blurry to be 100% certain, report 'Unreadable' instead of guessing. Never use training data to fill in current prices or values. Mathematical Verification: If the image shows calculations, verify they are mathematically logical before reporting. Output Format: Provide a Markdown table of Key Statistics first, followed by professional bulleted analysis. For code: explain logic and find bugs. Be concise and accurate." }]
         },
         contents: [{
           role: 'user',
@@ -3228,9 +3243,9 @@ async function sendToGemini(prompt, isRetry = false) {
             include_thoughts: true,
             thinking_level: 'LOW'
           },
-          media_resolution: 'MEDIA_RESOLUTION_MEDIUM',
+          media_resolution: 'MEDIA_RESOLUTION_HIGH',
           max_output_tokens: 1024,
-          temperature: 1.0
+          temperature: 0.1
         }
       };
       

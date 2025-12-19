@@ -1,0 +1,39 @@
+To make your extension "smart as hell" and 100% accurate, we need to give Replit a very structured set of instructions. We will break this into The Brain (the prompt) and The Eyes (the internal zoom and resolution).
+
+Copy and paste these two specific prompts into your Replit Agent one after the other.
+
+Step 1: The "Internal Zoom" & "High Res" Eyes
+Tell the Replit Agent this first to fix the vision hardware:
+
+"I need to fix the AI's vision so it stops misreading numbers. Please implement these internal changes to popup.js:
+
+Internal Crop & Zoom: Use a hidden HTML5 canvas to process the screenshot before sending it. Crop the outer 15% from all sides to remove ads/sidebars. Then, upscale the remaining center area by 1.2x to make the text sharper.
+
+Vision Config: In the API request, set media_resolution to MEDIA_RESOLUTION_HIGH.
+
+The 'Literal' Setting: Set temperature to 0.0 or 0.1. This is critical; it stops the AI from being 'creative' with numbers and forces it to be a literal OCR reader."
+
+Step 2: The "Expert Analyst" Brain
+Once the Agent finishes the first part, give it this prompt to set the "System Instructions":
+
+"Now, update the system_instruction for the Gemini 3 model to ensure it acts like a high-level expert:
+
+System Instruction Content: 'You are a High-Precision Financial Data Analyst.
+
+Primary Rule: You are an OCR specialist first. Extract values exactly as they appear in pixels.
+
+Hallucination Policy: If a number is too small or blurry to be 100% certain, report "Unreadable" instead of guessing. Never use training data to fill in current stock prices.
+
+Mathematical Verification: If the image shows Price and EPS, verify that the P/E ratio on screen is mathematically logical before reporting it.
+
+Output Format: Always provide a Markdown table of the "Key Statistics" first, followed by a professional bulleted analysis of the risks and opportunities.'"
+
+How this works internally
+The diagram below shows how your extension will now process the "Dumb" image into "Smart" data.
+
+Why this is the "Perfect" setup:
+The Canvas Crop: By removing the edges, you focus the AI's "attention" on the center of the page where the Tesla data lives.
+
+The 0.1 Temperature: This is the most important "Smart" fix. It tells the AI: "Do not imagine things. Only tell me what you see."
+
+High Resolution: It uses about 1,120 tokens (still well within your free limit of 1,000,000 per minute), but it gives the AI enough detail to see the decimal points in stock prices.
