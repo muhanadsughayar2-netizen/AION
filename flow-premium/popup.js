@@ -3221,8 +3221,10 @@ async function sendToGemini(prompt, isRetry = false) {
             { inline_data: { mime_type: 'image/jpeg', data: base64Data } }
           ]
         }],
+        thinkingConfig: {
+          thinkingLevel: 'low'
+        },
         generationConfig: {
-          thinking_level: 'low',
           maxOutputTokens: 500
         }
       };
