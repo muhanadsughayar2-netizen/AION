@@ -20,6 +20,7 @@
     "https://chatgpt.com/*",
     "https://claude.ai/*",
     "https://*.openai.com/*",
+    "https://generativelanguage.googleapis.com/*",
     "<all_urls>"
   ],
   "web_accessible_resources": [
