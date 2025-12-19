@@ -6,188 +6,220 @@
   <title>SnapToAI - AI Chat</title>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0d0d0d;
-      color: #fff;
+      font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #131314;
+      color: #e3e3e3;
       height: 100vh;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
     }
     
     .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 24px;
-      background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
-      border-bottom: 1px solid rgba(0, 217, 255, 0.3);
-    }
-    
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      padding: 12px 24px;
+      background: #1e1f20;
+      border-bottom: 1px solid #3c4043;
     }
     
     .logo {
-      color: #fff;
-      font-size: 20px;
-      font-weight: 600;
+      font-size: 18px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     
-    .logo span {
-      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
+    .logo span { color: #8ab4f8; }
     
     .close-btn {
-      background: rgba(255, 255, 255, 0.1);
+      background: none;
       border: none;
-      color: #888;
-      font-size: 20px;
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
+      color: #9aa0a6;
+      font-size: 24px;
       cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      padding: 8px;
+      border-radius: 50%;
+      transition: background 0.2s;
     }
     
-    .close-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
-      color: #fff;
-    }
+    .close-btn:hover { background: rgba(255,255,255,0.1); }
     
-    .main-content {
-      flex: 1;
-      display: flex;
-      overflow: hidden;
-    }
-    
-    .image-panel {
-      width: 40%;
-      min-width: 200px;
-      max-width: 400px;
-      background: #151515;
-      border-right: 1px solid rgba(255, 255, 255, 0.1);
-      display: flex;
-      flex-direction: column;
-      padding: 20px;
-    }
-    
-    .image-label {
-      color: #888;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
-    }
-    
-    .image-preview {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      border-radius: 12px;
-      background: #0a0a0a;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .image-preview img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-      border-radius: 8px;
-    }
-    
-    .chat-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
-    }
-    
-    .chat-thread {
+    .chat-area {
       flex: 1;
       overflow-y: auto;
       padding: 24px;
+      max-width: 800px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    
+    .image-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #2d2e30;
+      padding: 8px 12px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .image-chip:hover { background: #3c4043; }
+    
+    .image-chip img {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      object-fit: cover;
+    }
+    
+    .image-chip span {
+      font-size: 13px;
+      color: #9aa0a6;
+    }
+    
+    .image-preview-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.9);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    
+    .image-preview-modal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 12px;
+    }
+    
+    .message-container {
+      margin-bottom: 24px;
+    }
+    
+    .message-container.user {
       display: flex;
-      flex-direction: column;
-      gap: 16px;
+      justify-content: flex-end;
     }
     
-    .welcome-message {
-      text-align: center;
-      color: #888;
-      font-size: 16px;
-      padding: 40px 20px;
-    }
-    
-    .chat-bubble {
+    .user-bubble {
+      background: #004a77;
+      color: #e3e3e3;
+      padding: 12px 16px;
+      border-radius: 20px;
       max-width: 80%;
-      padding: 16px 20px;
-      border-radius: 16px;
       font-size: 15px;
-      line-height: 1.6;
-      animation: bubbleIn 0.3s ease;
+      line-height: 1.5;
     }
     
-    @keyframes bubbleIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    .ai-message {
+      display: flex;
+      gap: 12px;
     }
     
-    .chat-bubble.user {
-      align-self: flex-end;
-      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
-      color: #000;
-      border-bottom-right-radius: 4px;
-    }
-    
-    .chat-bubble.ai {
-      align-self: flex-start;
-      background: #2a2a2a;
-      color: #e0e0e0;
-      border-bottom-left-radius: 4px;
-    }
-    
-    .chat-bubble.ai strong { color: #00d9ff; }
-    .chat-bubble.ai ul, .chat-bubble.ai ol { margin: 8px 0; padding-left: 20px; }
-    .chat-bubble.ai li { margin: 4px 0; }
-    .chat-bubble.ai code { background: #1a1a1a; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
-    .chat-bubble.ai pre { background: #1a1a1a; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 8px 0; }
-    .chat-bubble.ai p { margin: 8px 0; }
-    .chat-bubble.ai p:first-child { margin-top: 0; }
-    .chat-bubble.ai p:last-child { margin-bottom: 0; }
-    
-    .chat-bubble.loading {
-      background: #2a2a2a;
-      color: #00d9ff;
+    .ai-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #4285f4, #9b72cb, #d96570);
+      border-radius: 50%;
+      flex-shrink: 0;
       display: flex;
       align-items: center;
-      gap: 10px;
+      justify-content: center;
     }
     
-    .star {
-      width: 18px;
-      height: 18px;
-      background: linear-gradient(45deg, #4285f4, #9b72cb, #d96570, #00d9ff);
+    .ai-icon svg {
+      width: 16px;
+      height: 16px;
+      fill: white;
+    }
+    
+    .ai-content {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .ai-content p { margin: 0 0 12px 0; line-height: 1.7; font-size: 15px; }
+    .ai-content p:last-child { margin-bottom: 0; }
+    .ai-content strong { color: #8ab4f8; font-weight: 600; }
+    .ai-content ul, .ai-content ol { margin: 12px 0; padding-left: 24px; }
+    .ai-content li { margin: 8px 0; line-height: 1.6; }
+    .ai-content li strong { color: #8ab4f8; }
+    
+    .ai-content code {
+      background: #2d2e30;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 13px;
+    }
+    
+    .ai-content pre {
+      background: #1e1f20;
+      border: 1px solid #3c4043;
+      border-radius: 12px;
+      padding: 16px;
+      margin: 12px 0;
+      overflow-x: auto;
+      position: relative;
+    }
+    
+    .ai-content pre code {
+      background: none;
+      padding: 0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    
+    .message-actions {
+      display: flex;
+      gap: 4px;
+      margin-top: 12px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    
+    .message-container:hover .message-actions { opacity: 1; }
+    
+    .action-btn {
+      background: none;
+      border: none;
+      color: #9aa0a6;
+      padding: 8px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .action-btn:hover { background: rgba(255,255,255,0.1); }
+    
+    .action-btn svg { width: 18px; height: 18px; }
+    
+    .thinking {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    
+    .thinking-star {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #4285f4, #9b72cb, #d96570, #00d9ff);
       mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>');
       -webkit-mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>');
-      animation: spin 2s infinite linear;
+      animation: spin 2s linear infinite;
     }
     
     @keyframes spin {
@@ -195,135 +227,149 @@
       to { transform: rotate(360deg); }
     }
     
-    .chat-bubble.error {
-      background: rgba(255, 82, 82, 0.2);
-      color: #ff5252;
-      border: 1px solid rgba(255, 82, 82, 0.3);
+    .thinking span { color: #9aa0a6; font-size: 14px; }
+    
+    .input-section {
+      padding: 16px 24px 24px;
+      background: #131314;
     }
     
-    .input-area {
+    .input-wrapper {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .input-box {
       display: flex;
+      align-items: center;
       gap: 12px;
-      padding: 20px 24px;
-      background: #0d0d0d;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .chat-input {
-      flex: 1;
-      padding: 16px 20px;
-      background: #1a1a1a;
-      border: 1px solid rgba(0, 217, 255, 0.3);
-      border-radius: 12px;
-      color: #fff;
-      font-size: 15px;
-      outline: none;
+      background: #1e1f20;
+      border: 1px solid #3c4043;
+      border-radius: 28px;
+      padding: 8px 8px 8px 20px;
       transition: border-color 0.2s;
     }
     
-    .chat-input:focus {
-      border-color: #00d9ff;
+    .input-box:focus-within { border-color: #8ab4f8; }
+    
+    .input-box input {
+      flex: 1;
+      background: none;
+      border: none;
+      color: #e3e3e3;
+      font-size: 15px;
+      outline: none;
     }
     
-    .chat-input::placeholder {
-      color: #555;
-    }
+    .input-box input::placeholder { color: #9aa0a6; }
     
     .send-btn {
-      padding: 16px 28px;
-      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
+      background: #8ab4f8;
       border: none;
-      border-radius: 12px;
-      color: #000;
-      font-size: 15px;
-      font-weight: 700;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
       cursor: pointer;
-      transition: all 0.2s;
-      box-shadow: 0 2px 8px rgba(0, 217, 255, 0.3);
-    }
-    
-    .send-btn:hover {
-      background: linear-gradient(135deg, #00e8ff 0%, #00d9ff 100%);
-      box-shadow: 0 4px 15px rgba(0, 217, 255, 0.5);
-      transform: translateY(-1px);
-    }
-    
-    .send-btn:disabled {
-      background: #333;
-      color: #666;
-      cursor: not-allowed;
-      box-shadow: none;
-      transform: none;
-    }
-    
-    .footer-actions {
       display: flex;
-      gap: 10px;
-      padding: 12px 24px;
-      background: #0d0d0d;
-      border-top: 1px solid rgba(255, 255, 255, 0.03);
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
     }
     
-    .action-btn {
-      padding: 10px 18px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      color: #888;
+    .send-btn:hover { background: #aecbfa; }
+    .send-btn:disabled { background: #3c4043; cursor: not-allowed; }
+    .send-btn svg { width: 20px; height: 20px; fill: #131314; }
+    
+    .footer-btns {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    
+    .footer-btn {
+      background: #2d2e30;
+      border: 1px solid #3c4043;
+      color: #9aa0a6;
+      padding: 8px 16px;
+      border-radius: 20px;
       font-size: 13px;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       transition: all 0.2s;
     }
     
-    .action-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-    }
+    .footer-btn:hover { background: #3c4043; color: #e3e3e3; }
     
-    .test-btn {
-      background: rgba(0, 217, 255, 0.1);
-      border-color: rgba(0, 217, 255, 0.3);
-      color: #00d9ff;
-    }
+    .footer-btn svg { width: 16px; height: 16px; fill: currentColor; }
     
-    .test-btn:hover {
-      background: rgba(0, 217, 255, 0.2);
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #3c4043;
+      color: #e3e3e3;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+      z-index: 1000;
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <div class="header-left">
-      <div class="logo">Gemini 3 <span>Flash</span></div>
-    </div>
-    <button class="close-btn" id="closeBtn">✕</button>
+    <div class="logo">Gemini 3 <span>Flash</span></div>
+    <button class="close-btn" onclick="window.close()">&#10005;</button>
   </div>
   
-  <div class="main-content">
-    <div class="image-panel">
-      <div class="image-label">Analyzing Image</div>
-      <div class="image-preview">
-        <img id="previewImage" src="" alt="Screenshot">
-      </div>
+  <div class="chat-area" id="chatArea">
+    <div class="image-chip" id="imageChip" onclick="showImageModal()">
+      <img id="chipImage" src="" alt="Screenshot">
+      <span>Analyzing image</span>
     </div>
     
-    <div class="chat-panel">
-      <div class="chat-thread" id="chatThread">
-        <div class="welcome-message">I'm your AI partner. Ask me anything about this image!</div>
+    <div id="chatThread"></div>
+    
+    <div class="thinking" id="thinking">
+      <div class="thinking-star"></div>
+      <span>Thinking...</span>
+    </div>
+  </div>
+  
+  <div class="image-preview-modal" id="imageModal" onclick="hideImageModal()">
+    <img id="modalImage" src="" alt="Full preview">
+  </div>
+  
+  <div class="input-section">
+    <div class="input-wrapper">
+      <div class="input-box">
+        <input type="text" id="chatInput" placeholder="Ask about your screenshot..." onkeypress="if(event.key==='Enter')handleSend()">
+        <button class="send-btn" id="sendBtn" onclick="handleSend()">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
       </div>
-      
-      <div class="input-area">
-        <input type="text" class="chat-input" id="chatInput" placeholder="Ask about your screenshot...">
-        <button class="send-btn" id="sendBtn">Send</button>
-      </div>
-      
-      <div class="footer-actions">
-        <button class="action-btn test-btn" id="testBtn">🔌 Test API</button>
-        <button class="action-btn" id="clearBtn">Clear Chat</button>
-        <button class="action-btn" id="copyBtn">Copy Chat</button>
+      <div class="footer-btns">
+        <button class="footer-btn" id="testBtn" onclick="testApi()">
+          <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+          Test API
+        </button>
+        <button class="footer-btn" onclick="clearChat()">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          Clear
+        </button>
+        <button class="footer-btn" onclick="copyChat()">
+          <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          Copy
+        </button>
       </div>
     </div>
   </div>
+  
+  <div class="toast" id="toast">Copied to clipboard!</div>
   
   <script src="ai-chat.js"></script>
 </body>
