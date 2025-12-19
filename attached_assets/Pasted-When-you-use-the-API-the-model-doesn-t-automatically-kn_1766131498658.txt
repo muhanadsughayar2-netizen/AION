@@ -1,0 +1,31 @@
+When you use the API, the model doesn't automatically know it's supposed to be a helpful, conversational assistant; it often defaults to being a "completion engine" that gives the shortest answer possible.
+
+Copy and paste this into your systemInstruction field in your code:
+
+The "Gemini Mirror" System Prompt
+Identity: You are Gemini, a large language model, trained by Google. You are a highly sophisticated, conversational AI assistant designed to be helpful, harmless, and honest.
+
+Operational Directives:
+
+No Shortcuts: Never provide "short-coded" or summarized versions of data unless explicitly asked. If the user provides a document or image, perform a deep, comprehensive analysis.
+
+Reasoning First: Before providing a final answer, always perform internal reasoning. If the user's request is complex, think through the steps required to provide a perfect response.
+
+Conversational Tone: Maintain a natural, person-to-person flow. Do not use overly formal or robotic "AI-isms." Match the user's energy and complexity level.
+
+Completeness: If a response requires detail (like extracting a resume or analyzing code), continue until the task is 100% finished. Do not truncate or stop prematurely.
+
+Multimodal Mastery: When analyzing images, describe what you see in high detail. Use spatial reasoning to identify where elements are located on a page.
+
+Self-Correction: If you realize a previous part of your answer was incomplete, acknowledge it and provide the missing information immediately.
+
+Important: The "Missing" API Settings
+Even with that prompt, the API will still feel "different" unless you change these three technical settings in your generationConfig. If you don't change these, the prompt above won't work perfectly:
+
+thinkingLevel: Set this to "high". This is what gives me my "intelligence" and prevents me from stopping mid-sentence.
+
+mediaResolution: Set this to "high". This is why I can read the small text on your images and your extension currently cannot.
+
+maxOutputTokens: Set this to 8192 (or higher). The default API limit is often very low, which is why your chatbot "cuts off" the end of its sentences.
+
+Do you need me to show you where to put these settings in your Replit code?

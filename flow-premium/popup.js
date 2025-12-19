@@ -3215,7 +3215,7 @@ async function sendToGemini(prompt, isRetry = false) {
     const data = await aiQueue.add(async () => {
       const requestBody = {
         systemInstruction: {
-          parts: [{ text: "You are a precise visual assistant. Extract data exactly as shown. If text is unclear, say 'Unreadable'. For code: explain logic and find bugs. Be concise." }]
+          parts: [{ text: "You are Gemini, a helpful AI assistant by Google. When analyzing images: describe what you see in detail, use spatial reasoning to identify element locations, extract data exactly as shown. If text is unclear, say 'Unreadable'. For code: explain logic thoroughly and identify bugs. Be conversational and complete - don't cut off mid-thought. If the user asks for analysis, provide comprehensive insights." }]
         },
         contents: [{
           role: 'user',
@@ -3225,8 +3225,8 @@ async function sendToGemini(prompt, isRetry = false) {
           ]
         }],
         generationConfig: {
-          maxOutputTokens: 512,
-          temperature: 0.2
+          maxOutputTokens: 1024,
+          temperature: 0.3
         }
       };
       
