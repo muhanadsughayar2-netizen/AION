@@ -6,6 +6,8 @@ let conversationHistory = [];
 let lastRequestTime = 0;
 const THROTTLE_MS = 3000;
 
+const SYSTEM_PROMPT = "You are Gemini, a helpful AI assistant. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. ALWAYS end with a helpful follow-up question to keep the conversation going.";
+
 // Get image from URL params or storage
 async function initializeChat() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -150,7 +152,7 @@ async function sendToGemini(prompt, imageDataUrl) {
       body: JSON.stringify({
         systemInstruction: {
           parts: [{
-            text: "You are a helpful AI assistant analyzing images. Be concise but thorough. Focus on what's most useful to the user."
+            text: SYSTEM_PROMPT
           }]
         },
         contents: contents,
@@ -181,10 +183,11 @@ async function sendToGemini(prompt, imageDataUrl) {
   return text;
 }
 
-// Handle send
+// Handle send with streaming
 async function handleSend() {
   const input = document.getElementById('chatInput');
   const sendBtn = document.getElementById('sendBtn');
+  const thread = document.getElementById('chatThread');
   const prompt = input.value.trim();
   
   if (!prompt || !currentImage) return;
@@ -192,13 +195,104 @@ async function handleSend() {
   input.value = '';
   sendBtn.disabled = true;
   
+  // Add user message
   addBubble(prompt, 'user');
   addThinkingBubble();
   
   try {
-    const response = await sendToGemini(prompt, currentImage);
+    // Throttle check
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastRequestTime;
+    if (timeSinceLastRequest < THROTTLE_MS) {
+      const waitTime = Math.ceil((THROTTLE_MS - timeSinceLastRequest) / 1000);
+      throw new Error(`Please wait ${waitTime}s (free tier limit)`);
+    }
+    
+    // Get API key
+    const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+    const apiKey = keyResult.geminiApiKey;
+    if (!apiKey) throw new Error('Please set your Gemini API key in Settings');
+    
+    lastRequestTime = Date.now();
+    
+    // Optimize image
+    const optimizedImage = await optimizeImage(currentImage);
+    const base64Data = optimizedImage.split(',')[1];
+    
+    // Build request
+    const contents = [];
+    for (const msg of conversationHistory) {
+      contents.push({ role: msg.role, parts: [{ text: msg.text }] });
+    }
+    
+    const userParts = [];
+    if (contents.length === 0) {
+      userParts.push({ inlineData: { mimeType: 'image/jpeg', data: base64Data } });
+    }
+    userParts.push({ text: prompt });
+    contents.push({ role: 'user', parts: userParts });
+    
+    // Stream request
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent?alt=sse&key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: contents,
+          generationConfig: { maxOutputTokens: 1024, temperature: 0.7 }
+        })
+      }
+    );
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+    }
+    
+    // Remove thinking bubble and create response bubble
     removeLoading();
-    addBubble(response, 'ai');
+    const responseBubble = document.createElement('div');
+    responseBubble.className = 'chat-bubble ai';
+    thread.appendChild(responseBubble);
+    
+    // Stream the response
+    let fullText = '';
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+              fullText += text;
+              // Render markdown
+              if (typeof marked !== 'undefined') {
+                responseBubble.innerHTML = marked.parse(fullText);
+              } else {
+                responseBubble.textContent = fullText;
+              }
+              thread.scrollTop = thread.scrollHeight;
+            }
+          } catch (e) {}
+        }
+      }
+    }
+    
+    // Update conversation history
+    conversationHistory.push({ role: 'user', text: prompt });
+    conversationHistory.push({ role: 'model', text: fullText });
+    
   } catch (error) {
     removeLoading();
     addBubble(error.message, 'error');
