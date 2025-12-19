@@ -3077,15 +3077,26 @@ const aiCopyBtn = document.getElementById('aiCopyBtn');
 const aiChatClose = document.getElementById('aiChatClose');
 
 function openAiChat(imageDataUrl) {
-  console.log('[SnapToAI] Opening AI Chat Portal');
-  aiChatCurrentImage = imageDataUrl;
-  aiCompressedImage = null; // Reset compressed cache for new image
-  aiChatHistory = [];
-  aiThoughtSignature = null; // Reset for new image/conversation
-  aiChatThread.innerHTML = '<div class="ai-welcome">Click a preset or type your question below ✨</div>';
-  aiChatPortal.style.display = 'flex';
-  setTimeout(() => aiChatPortal.classList.add('show'), 10);
-  aiChatInput.focus();
+  console.log('[SnapToAI] Opening AI Chat in new window');
+  
+  // Find the index of this image in snaps array
+  const imageIndex = currentSnaps.indexOf(imageDataUrl);
+  
+  // Open AI chat in a separate window like the Snap Editor
+  const width = Math.min(900, Math.round(screen.width * 0.8));
+  const height = Math.min(650, Math.round(screen.height * 0.8));
+  const left = Math.round((screen.width - width) / 2);
+  const top = Math.round((screen.height - height) / 2);
+  
+  chrome.windows.create({
+    url: chrome.runtime.getURL(`ai-chat.html?imageIndex=${imageIndex}`),
+    type: 'popup',
+    width: width,
+    height: height,
+    left: left,
+    top: top,
+    focused: true
+  });
 }
 
 function closeAiChat() {
