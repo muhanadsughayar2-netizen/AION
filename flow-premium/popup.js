@@ -3109,9 +3109,13 @@ let aiRetryCount = 0;
 let aiCooldownActive = false;
 let aiCompressedImage = null;
 
-// === FREE TIER QUEUE (12.5s between requests = 5 RPM safe) ===
+// === FREE TIER QUEUE (60s between requests for safety) ===
 class AIQueue {
-  constructor() { this.queue = []; this.isWaiting = false; }
+  constructor() { 
+    this.queue = []; 
+    this.isWaiting = false;
+    this.nextAllowedAt = 0;
+  }
   async add(task) {
     return new Promise((resolve, reject) => {
       this.queue.push({ task, resolve, reject });
@@ -3120,11 +3124,28 @@ class AIQueue {
   }
   async process() {
     if (this.isWaiting || this.queue.length === 0) return;
+    
+    // Wait if we're still in cooldown
+    const now = Date.now();
+    if (now < this.nextAllowedAt) {
+      const waitTime = this.nextAllowedAt - now;
+      console.log('[SnapToAI] Queue waiting', Math.ceil(waitTime/1000), 'seconds');
+      setTimeout(() => this.process(), waitTime + 100);
+      return;
+    }
+    
     this.isWaiting = true;
     const { task, resolve, reject } = this.queue.shift();
     try { resolve(await task()); } catch (e) { reject(e); }
-    // 12.5s cooldown for free tier (5 RPM limit)
-    setTimeout(() => { this.isWaiting = false; this.process(); }, 12500);
+    
+    // 60s cooldown for free tier (to be safe)
+    this.nextAllowedAt = Date.now() + 60000;
+    this.isWaiting = false;
+    this.process();
+  }
+  
+  setRetryDelay(seconds) {
+    this.nextAllowedAt = Date.now() + (seconds * 1000);
   }
 }
 const aiQueue = new AIQueue();
@@ -3313,7 +3334,7 @@ document.querySelectorAll('.ai-preset-btn').forEach(btn => {
   });
 });
 
-// Test API without image (simple text-only request)
+// Test API without image (uses queue like everything else)
 async function testGeminiAPI() {
   const result = await chrome.storage.sync.get(['geminiApiKey']);
   if (!result.geminiApiKey) {
@@ -3325,21 +3346,27 @@ async function testGeminiAPI() {
   const loadingBubble = addChatBubble('Checking... ⏳', 'ai loading');
   
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${result.geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: 'Say "API Working!" in 2 words only.' }] }]
-        })
-      }
-    );
+    // Use queue to respect rate limits
+    const data = await aiQueue.add(async () => {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${result.geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: 'Say "API Working!" in 2 words only.' }] }]
+          })
+        }
+      );
+      return await response.json();
+    });
     
-    const data = await response.json();
     loadingBubble.remove();
     
     if (data.error) {
+      // If rate limit, set retry delay
+      const retryMatch = data.error.message?.match(/retry in ([\d.]+)s/i);
+      if (retryMatch) aiQueue.setRetryDelay(Math.ceil(parseFloat(retryMatch[1])));
       addChatBubble('❌ API Error: ' + data.error.message, 'ai');
     } else if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
       addChatBubble('✅ ' + data.candidates[0].content.parts[0].text, 'ai');
