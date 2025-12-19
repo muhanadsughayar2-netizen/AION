@@ -3081,6 +3081,7 @@ function openAiChat(imageDataUrl) {
   aiChatCurrentImage = imageDataUrl;
   aiCompressedImage = null; // Reset compressed cache for new image
   aiChatHistory = [];
+  aiThoughtSignature = null; // Reset for new image/conversation
   aiChatThread.innerHTML = '<div class="ai-welcome">Click a preset or type your question below ✨</div>';
   aiChatPortal.style.display = 'flex';
   setTimeout(() => aiChatPortal.classList.add('show'), 10);
@@ -3108,6 +3109,7 @@ function addChatBubble(text, type) {
 let aiRetryCount = 0;
 let aiCooldownActive = false;
 let aiCompressedImage = null;
+let aiThoughtSignature = null; // For Gemini 3 multi-turn conversations
 
 // === GEMINI 3 QUEUE (3s between requests, adaptive) ===
 class AIQueue {
@@ -3225,9 +3227,15 @@ async function sendToGemini(prompt, isRetry = false) {
           thinkingLevel: 'low'
         },
         generationConfig: {
-          maxOutputTokens: 500
+          maxOutputTokens: 1024,
+          media_resolution: 'medium'
         }
       };
+      
+      // Include thoughtSignature for multi-turn conversations (Gemini 3)
+      if (aiThoughtSignature) {
+        requestBody.thoughtSignature = aiThoughtSignature;
+      }
 
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
@@ -3267,6 +3275,11 @@ async function sendToGemini(prompt, isRetry = false) {
       const aiResponse = data.candidates[0].content.parts[0].text;
       addChatBubble(aiResponse, 'ai');
       aiChatHistory.push({ role: 'ai', text: aiResponse });
+      // Capture thoughtSignature for multi-turn conversations (Gemini 3)
+      if (data.candidates[0]?.thoughtSignature) {
+        aiThoughtSignature = data.candidates[0].thoughtSignature;
+        console.log('[SnapToAI] ThoughtSignature captured for next turn');
+      }
       console.log('[SnapToAI] Gemini response received');
     } else {
       addChatBubble('No response from AI. Try again?', 'ai');
@@ -3298,6 +3311,7 @@ function startCooldown(seconds) {
 
 function clearAiChat() {
   aiChatHistory = [];
+  aiThoughtSignature = null; // Reset for new conversation
   aiChatThread.innerHTML = '<div class="ai-welcome">Chat cleared! Ask a new question ✨</div>';
   console.log('[SnapToAI] Chat cleared');
 }
