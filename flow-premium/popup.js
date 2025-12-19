@@ -3222,12 +3222,13 @@ async function sendToGemini(prompt, isRetry = false) {
           ]
         }],
         generationConfig: {
+          thinking_level: 'low',
           maxOutputTokens: 500
         }
       };
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3350,7 +3351,7 @@ async function testGeminiAPI() {
     // Use queue to respect rate limits
     const data = await aiQueue.add(async () => {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${result.geminiApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${result.geminiApiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
