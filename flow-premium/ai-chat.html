@@ -36,16 +36,17 @@
       gap: 12px;
     }
     
-    .header-title {
-      color: #00d9ff;
+    .logo {
+      color: #fff;
       font-size: 20px;
-      font-weight: 700;
-      text-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+      font-weight: 600;
     }
     
-    .header-subtitle {
-      color: #666;
-      font-size: 13px;
+    .logo span {
+      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     
     .close-btn {
@@ -165,6 +166,22 @@
     .chat-bubble.loading {
       background: #2a2a2a;
       color: #00d9ff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .star {
+      width: 20px;
+      height: 20px;
+      background: linear-gradient(135deg, #00d9ff, #00b8d4);
+      clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+      animation: spin 1.5s linear infinite;
+    }
+    
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
     
     .chat-bubble.error {
@@ -266,8 +283,7 @@
 <body>
   <div class="header">
     <div class="header-left">
-      <span class="header-title">✦ AI Chat</span>
-      <span class="header-subtitle">Powered by Gemini</span>
+      <div class="logo">Gemini 3 <span>Flash</span></div>
     </div>
     <button class="close-btn" id="closeBtn">✕</button>
   </div>

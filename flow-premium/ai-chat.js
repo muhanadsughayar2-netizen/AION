@@ -47,6 +47,16 @@ function addBubble(text, type) {
   return bubble;
 }
 
+// Add thinking bubble with star animation
+function addThinkingBubble() {
+  const thread = document.getElementById('chatThread');
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble loading';
+  bubble.innerHTML = '<div class="star"></div><span>Gemini is thinking...</span>';
+  thread.appendChild(bubble);
+  thread.scrollTop = thread.scrollHeight;
+}
+
 // Remove loading bubble
 function removeLoading() {
   const thread = document.getElementById('chatThread');
@@ -183,7 +193,7 @@ async function handleSend() {
   sendBtn.disabled = true;
   
   addBubble(prompt, 'user');
-  addBubble('Thinking...', 'loading');
+  addThinkingBubble();
   
   try {
     const response = await sendToGemini(prompt, currentImage);
