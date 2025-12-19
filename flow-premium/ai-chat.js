@@ -94,8 +94,8 @@ async function sendToGemini(prompt, imageDataUrl) {
     throw new Error(`Please wait ${waitTime}s (free tier limit)`);
   }
   
-  // Get API key
-  const keyResult = await chrome.storage.local.get(['geminiApiKey']);
+  // Get API key from sync storage (same as popup.js)
+  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
   const apiKey = keyResult.geminiApiKey;
   
   if (!apiKey) {
@@ -205,7 +205,7 @@ async function testApi() {
   testBtn.textContent = 'Testing...';
   
   try {
-    const keyResult = await chrome.storage.local.get(['geminiApiKey']);
+    const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
     if (!keyResult.geminiApiKey) {
       addBubble('No API key set. Go to Settings in main popup.', 'error');
       return;
