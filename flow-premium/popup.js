@@ -3109,12 +3109,13 @@ let aiRetryCount = 0;
 let aiCooldownActive = false;
 let aiCompressedImage = null;
 
-// === FREE TIER QUEUE (60s between requests for safety) ===
+// === GEMINI 3 QUEUE (3s between requests, adaptive) ===
 class AIQueue {
   constructor() { 
     this.queue = []; 
     this.isWaiting = false;
     this.nextAllowedAt = 0;
+    this.defaultDelay = 3000; // 3 seconds for Gemini 3
   }
   async add(task) {
     return new Promise((resolve, reject) => {
@@ -3138,8 +3139,8 @@ class AIQueue {
     const { task, resolve, reject } = this.queue.shift();
     try { resolve(await task()); } catch (e) { reject(e); }
     
-    // 60s cooldown for free tier (to be safe)
-    this.nextAllowedAt = Date.now() + 60000;
+    // 3s default cooldown (adapts if API says otherwise)
+    this.nextAllowedAt = Date.now() + this.defaultDelay;
     this.isWaiting = false;
     this.process();
   }
@@ -3226,7 +3227,7 @@ async function sendToGemini(prompt, isRetry = false) {
       };
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3349,7 +3350,7 @@ async function testGeminiAPI() {
     // Use queue to respect rate limits
     const data = await aiQueue.add(async () => {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${result.geminiApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${result.geminiApiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
