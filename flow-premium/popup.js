@@ -3076,11 +3076,17 @@ const aiClearBtn = document.getElementById('aiClearBtn');
 const aiCopyBtn = document.getElementById('aiCopyBtn');
 const aiChatClose = document.getElementById('aiChatClose');
 
-function openAiChat(imageDataUrl) {
+async function openAiChat(imageDataUrl) {
   console.log('[SnapToAI] Opening AI Chat in new window');
   
   // Find the index of this image in snaps array
   const imageIndex = currentSnaps.indexOf(imageDataUrl);
+  
+  // Save snaps to session storage so the new window can access them
+  await chrome.storage.session.set({ 
+    snaps: currentSnaps, 
+    snapMetadata: currentSnapMetadata 
+  });
   
   // Open AI chat in a separate window like the Snap Editor
   const width = Math.min(900, Math.round(screen.width * 0.8));

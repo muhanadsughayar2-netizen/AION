@@ -16,10 +16,17 @@ async function initializeChat() {
     const result = await chrome.storage.session.get(['snaps']);
     const snaps = result.snaps || [];
     const index = parseInt(imageIndex);
+    
     if (snaps[index]) {
       currentImage = snaps[index];
       document.getElementById('previewImage').src = currentImage;
+    } else {
+      // Show error if image not found
+      document.querySelector('.image-preview').innerHTML = '<div style="color: #ff5252; padding: 20px; text-align: center;">Image not found. Please try again.</div>';
+      addBubble('Could not load image. Please close and try again.', 'error');
     }
+  } else {
+    document.querySelector('.image-preview').innerHTML = '<div style="color: #888; padding: 20px; text-align: center;">No image selected</div>';
   }
   
   // Focus input
