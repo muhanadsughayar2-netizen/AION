@@ -113,7 +113,7 @@
         showToast(request.message, 'success');
         sendResponse({ success: true });
       } else if (request.action === 'beginUpload') {
-        uploadToAI(request.platform, request.useSelectedOnly)
+        uploadToAI(request.platform, request.useSelectedOnly, request.payloadMode)
           .then(sendResponse)
           .catch(err => {
             console.warn('[SnapToAI] Upload error:', err.message);
@@ -415,10 +415,68 @@
     }
   }
 
+  // Paste text into AI platform input (for hybrid mode)
+  async function pasteTextToAI(platform, text) {
+    console.log(`[SnapToAI] Pasting text to ${platform}`);
+    
+    // Find the text input for each platform
+    let inputSelectors = [];
+    
+    if (platform.includes('chatgpt.com') || platform.includes('chat.openai.com')) {
+      inputSelectors = ['#prompt-textarea', 'textarea[data-id="root"]', 'div[contenteditable="true"]'];
+    } else if (platform.includes('claude.ai')) {
+      inputSelectors = ['div[contenteditable="true"]', 'textarea', '[data-placeholder*="message"]'];
+    } else if (platform.includes('grok.com') || platform.includes('grok.x.ai')) {
+      inputSelectors = ['textarea', 'div[contenteditable="true"]', '[data-testid="message-input"]'];
+    } else if (platform.includes('gemini.google.com')) {
+      inputSelectors = ['div[contenteditable="true"]', 'textarea', 'rich-textarea'];
+    }
+    
+    for (const selector of inputSelectors) {
+      const input = document.querySelector(selector);
+      if (input) {
+        const prefix = '[PAGE CONTEXT]:\n';
+        const suffix = '\n\n[SCREENSHOT ATTACHED - Please analyze both the text above and the image]';
+        const fullText = prefix + text.substring(0, 4000) + suffix;
+        
+        if (input.tagName === 'TEXTAREA') {
+          input.value = fullText;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        } else {
+          input.textContent = fullText;
+          input.dispatchEvent(new InputEvent('input', { bubbles: true, data: fullText }));
+        }
+        
+        console.log('[SnapToAI] Text pasted successfully');
+        await new Promise(r => setTimeout(r, 300)); // Brief pause before images
+        return true;
+      }
+    }
+    
+    console.log('[SnapToAI] Could not find input to paste text');
+    return false;
+  }
+
   // Upload snaps to AI platform
-  async function uploadToAI(platform, useSelectedOnly = false) {
+  async function uploadToAI(platform, useSelectedOnly = false, payloadMode = 'images') {
     try {
-      console.log(`[SnapToAI] Starting upload to platform: ${platform}`);
+      console.log(`[SnapToAI] Starting upload to platform: ${platform}, mode: ${payloadMode}`);
+      
+      // HYBRID MODE: Paste text first if available
+      if (payloadMode === 'hybrid') {
+        try {
+          const sessionData = await chrome.storage.session.get(['aiPageText']);
+          const pageText = sessionData.aiPageText;
+          if (pageText && pageText.length > 0) {
+            console.log(`[SnapToAI] Hybrid mode: pasting ${pageText.length} chars of text first`);
+            await pasteTextToAI(platform, pageText);
+            // Clear after use
+            await chrome.storage.session.remove(['aiPageText', 'aiPayloadMode']);
+          }
+        } catch (e) {
+          console.log('[SnapToAI] Could not paste text, continuing with images:', e.message);
+        }
+      }
       
       let snaps;
       if (useSelectedOnly) {
