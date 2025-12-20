@@ -284,29 +284,25 @@ async function handleUpload(preferredPlatform = 'auto', selectedSnaps = null) {
     }
     
     // Smart AI Payload: Try to get page text for hybrid mode
-    let pageText = null;
+    let pageData = null;
     let useHybridPayload = false;
     
     try {
-      const response = await chrome.tabs.sendMessage(tab.id, { action: 'get_page_text' });
-      pageText = response?.text || null;
-      useHybridPayload = pageText && pageText.length >= 1000;
+      pageData = await chrome.tabs.sendMessage(tab.id, { action: 'get_page_text' });
+      useHybridPayload = pageData && pageData.text && pageData.text.length >= 800;
     } catch (err) {
-      console.log('[SnapToAI] No page text available');
+      console.log('[SnapToAI] Could not get text, using images only');
     }
     
-    // Store text for content script (MV3-safe, clears on tab close)
+    // Store to Session Locker (MV3-safe, clears on tab close)
+    await chrome.storage.session.set({
+      aiText: useHybridPayload ? pageData.text : null,
+      aiTitle: useHybridPayload ? pageData.title : null,
+      payloadMode: useHybridPayload ? 'hybrid' : 'images'
+    });
+    
     if (useHybridPayload) {
-      await chrome.storage.session.set({
-        aiPageText: pageText,
-        aiPayloadMode: 'hybrid'
-      });
-      console.log('[SnapToAI] Hybrid payload:', pageText.length, 'chars');
-    } else {
-      await chrome.storage.session.set({
-        aiPageText: null,
-        aiPayloadMode: 'images'
-      });
+      console.log('[SnapToAI] Hybrid payload:', pageData.text.length, 'chars');
     }
     
     // Send upload command to content script with payload mode

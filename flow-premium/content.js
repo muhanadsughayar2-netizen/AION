@@ -156,8 +156,12 @@
           }
         }
         if (!pageText) pageText = document.body.innerText;
-        // Limit to 8000 chars to save tokens
-        sendResponse({ text: pageText.substring(0, 8000) });
+        // Return title and text (limit to 15k chars)
+        const pageData = {
+          title: document.title,
+          text: pageText.substring(0, 15000)
+        };
+        sendResponse(pageData);
         return;
       } else if (request.action === 'abortFullPageCapture') {
         // Popup/background requested abort (timeout or user cancel)
@@ -2989,6 +2993,54 @@
       isFullPageCaptureRunning = false;
       console.log('[SnapToAI] Full page capture ended');
     }
+  }
+
+  // === AUTO-PASTE TEXT FOR AI SITES (Gemini, ChatGPT, Claude) ===
+  async function autoPasteText() {
+    try {
+      const data = await chrome.storage.session.get(['aiText', 'aiTitle', 'payloadMode']);
+      
+      if (data.payloadMode === 'hybrid' && data.aiText) {
+        const input = document.querySelector('div[role="textbox"], textarea, [contenteditable="true"]');
+        if (input) {
+          const prompt = `SOURCE: ${data.aiTitle}\n\nTEXT CONTENT:\n${data.aiText}\n\n--- INSTRUCTION: Analyze the images using the text above for context. ---`;
+          
+          // Handle different input types
+          if (input.tagName === 'TEXTAREA') {
+            input.value = prompt;
+          } else {
+            input.innerText = prompt;
+          }
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          
+          // Clear the locker so it doesn't paste again on refresh
+          chrome.storage.session.remove(['aiText', 'aiTitle', 'payloadMode']);
+          console.log('[SnapToAI] Auto-pasted text context to AI input');
+        }
+      }
+    } catch (e) {
+      console.log('[SnapToAI] Auto-paste not available');
+    }
+  }
+
+  // Check for AI input box on AI sites
+  const hostname = window.location.hostname;
+  const isAISite = hostname.includes('gemini.google.com') || 
+                   hostname.includes('chatgpt.com') || 
+                   hostname.includes('chat.openai.com') ||
+                   hostname.includes('claude.ai') ||
+                   hostname.includes('grok.com');
+  
+  if (isAISite) {
+    const pasteInterval = setInterval(() => {
+      if (document.querySelector('div[role="textbox"], textarea, [contenteditable="true"]')) {
+        autoPasteText();
+        clearInterval(pasteInterval);
+      }
+    }, 1000);
+    
+    // Clear interval after 30 seconds to prevent memory leaks
+    setTimeout(() => clearInterval(pasteInterval), 30000);
   }
 
 })();
