@@ -283,11 +283,38 @@ async function handleUpload(preferredPlatform = 'auto', selectedSnaps = null) {
       }
     }
     
-    // Send upload command to content script with snap count
+    // Smart AI Payload: Try to get page text for hybrid mode
+    let pageText = null;
+    let useHybridPayload = false;
+    
+    try {
+      const response = await chrome.tabs.sendMessage(tab.id, { action: 'get_page_text' });
+      pageText = response?.text || null;
+      useHybridPayload = pageText && pageText.length >= 1000;
+    } catch (err) {
+      console.log('[SnapToAI] No page text available');
+    }
+    
+    // Store text for content script (MV3-safe, clears on tab close)
+    if (useHybridPayload) {
+      await chrome.storage.session.set({
+        aiPageText: pageText,
+        aiPayloadMode: 'hybrid'
+      });
+      console.log('[SnapToAI] Hybrid payload:', pageText.length, 'chars');
+    } else {
+      await chrome.storage.session.set({
+        aiPageText: null,
+        aiPayloadMode: 'images'
+      });
+    }
+    
+    // Send upload command to content script with payload mode
     await chrome.tabs.sendMessage(tab.id, {
       action: 'beginUpload',
       platform: targetPlatform,
-      useSelectedOnly: selectedSnaps !== null
+      useSelectedOnly: selectedSnaps !== null,
+      payloadMode: useHybridPayload ? 'hybrid' : 'images'
     });
     
     return { success: true, count: snapsToUpload.length };
