@@ -298,6 +298,11 @@ async function handleSend() {
               // Render markdown
               if (typeof marked !== 'undefined') {
                 responseBubble.innerHTML = marked.parse(fullText);
+                // Make all links open in new tabs
+                responseBubble.querySelectorAll('a').forEach(link => {
+                  link.setAttribute('target', '_blank');
+                  link.setAttribute('rel', 'noopener noreferrer');
+                });
               } else {
                 responseBubble.textContent = fullText;
               }
