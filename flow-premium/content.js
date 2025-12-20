@@ -144,6 +144,21 @@
             sendResponse({ success: false, error: 'Page not capturable' });
           });
         return true;
+      } else if (request.action === 'get_page_text') {
+        // Smart text extraction for AI context
+        const mainSelectors = ['article', 'main', '.post-content', '.article-body', '#content', '.content'];
+        let pageText = '';
+        for (const selector of mainSelectors) {
+          const el = document.querySelector(selector);
+          if (el && el.innerText.length > 500) {
+            pageText = el.innerText;
+            break;
+          }
+        }
+        if (!pageText) pageText = document.body.innerText;
+        // Limit to 8000 chars to save tokens
+        sendResponse({ text: pageText.substring(0, 8000) });
+        return;
       } else if (request.action === 'abortFullPageCapture') {
         // Popup/background requested abort (timeout or user cancel)
         console.log('[SnapToAI] Full page capture abort received');

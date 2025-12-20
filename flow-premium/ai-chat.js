@@ -2,11 +2,14 @@
 // Handles AI chat in a standalone window
 
 let currentImage = null;
+let currentPageText = '';
 let conversationHistory = [];
 let lastRequestTime = 0;
 const THROTTLE_MS = 3000;
 
 const SYSTEM_PROMPT = "You are Gemini, a helpful AI assistant. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. ALWAYS end with a helpful follow-up question to keep the conversation going.";
+
+const SMART_SYSTEM_PROMPT = "I am providing you with the raw text of a webpage for accuracy, and the screenshot of that page for visual context (charts, layout, images). Please use the text for your primary analysis and the images to confirm visual details. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. ALWAYS end with a helpful follow-up question.";
 
 // Get image from URL params or storage
 async function initializeChat() {
@@ -14,10 +17,15 @@ async function initializeChat() {
   const imageIndex = urlParams.get('imageIndex');
   
   if (imageIndex !== null) {
-    // Get image from session storage
-    const result = await chrome.storage.session.get(['snaps']);
+    // Get image and page text from session storage
+    const result = await chrome.storage.session.get(['snaps', 'pageText']);
     const snaps = result.snaps || [];
+    currentPageText = result.pageText || '';
     const index = parseInt(imageIndex);
+    
+    if (currentPageText) {
+      console.log('[AI Chat] Got page text:', currentPageText.length, 'chars');
+    }
     
     if (snaps[index]) {
       currentImage = snaps[index];
@@ -227,10 +235,21 @@ async function handleSend() {
     
     const userParts = [];
     if (contents.length === 0) {
+      // First message: include image
       userParts.push({ inlineData: { mimeType: 'image/jpeg', data: base64Data } });
+      // If we have page text, include it for smarter analysis
+      if (currentPageText && currentPageText.length > 800) {
+        userParts.push({ text: `[PAGE TEXT FOR CONTEXT]:\n${currentPageText}\n\n[USER QUESTION]: ${prompt}` });
+      } else {
+        userParts.push({ text: prompt });
+      }
+    } else {
+      userParts.push({ text: prompt });
     }
-    userParts.push({ text: prompt });
     contents.push({ role: 'user', parts: userParts });
+    
+    // Use smart prompt if we have page text
+    const systemPrompt = (currentPageText && currentPageText.length > 800) ? SMART_SYSTEM_PROMPT : SYSTEM_PROMPT;
     
     // Stream request
     const response = await fetch(
@@ -239,7 +258,7 @@ async function handleSend() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: contents,
           generationConfig: { maxOutputTokens: 1024, temperature: 0.7 }
         })

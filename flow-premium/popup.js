@@ -3082,10 +3082,26 @@ async function openAiChat(imageDataUrl) {
   // Find the index of this image in snaps array
   const imageIndex = currentSnaps.indexOf(imageDataUrl);
   
+  // Try to get page text for smart AI context
+  let pageText = '';
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      const response = await chrome.tabs.sendMessage(tab.id, { action: 'get_page_text' });
+      if (response?.text && response.text.length > 800) {
+        pageText = response.text;
+        console.log('[SnapToAI] Got page text for AI context:', pageText.length, 'chars');
+      }
+    }
+  } catch (e) {
+    console.log('[SnapToAI] Could not get page text:', e.message);
+  }
+  
   // Save snaps to session storage so the new window can access them
   await chrome.storage.session.set({ 
     snaps: currentSnaps, 
-    snapMetadata: currentSnapMetadata 
+    snapMetadata: currentSnapMetadata,
+    pageText: pageText
   });
   
   // Open AI chat in a separate window like the Snap Editor
