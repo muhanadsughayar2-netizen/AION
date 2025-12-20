@@ -441,6 +441,35 @@
         return { success: false, error: 'No snaps found' };
       }
       
+      // --- HYBRID MODE: Paste text context before uploading images ---
+      try {
+        const sessionData = await chrome.storage.session.get(['aiText', 'payloadMode']);
+        if (sessionData.payloadMode === 'hybrid' && sessionData.aiText) {
+          const chatInput = document.querySelector('div[role="textbox"], textarea[id*="prompt"], #prompt-textarea, textarea, [contenteditable="true"]');
+          if (chatInput) {
+            chatInput.focus();
+            const textToPaste = `CONTEXT FROM PAGE:\n${sessionData.aiText}\n\n--- ANALYZE ATTACHED IMAGES BELOW ---`;
+            
+            // Use insertText for better compatibility
+            if (document.execCommand) {
+              document.execCommand('insertText', false, textToPaste);
+            } else if (chatInput.tagName === 'TEXTAREA') {
+              chatInput.value = textToPaste;
+            } else {
+              chatInput.innerText = textToPaste;
+            }
+            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            // Clear session data to prevent re-paste
+            await chrome.storage.session.remove(['aiText', 'aiTitle', 'payloadMode']);
+            console.log('[SnapToAI] Hybrid mode: pasted text context');
+          }
+        }
+      } catch (hybridErr) {
+        console.log('[SnapToAI] Hybrid paste skipped:', hybridErr.message);
+      }
+      // --- END HYBRID MODE ---
+      
       const fileInput = await findFileInput(platform);
       
       if (!fileInput) {

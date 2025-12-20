@@ -1,0 +1,59 @@
+Since you are using Replit to build your extension, the easiest way to handle this is to replace the specific sections in your files. You don't need to rewrite everything—just "swap" the logic.
+
+Here is exactly what to do for each file:
+
+1. In content.js (The "Paste" Logic)
+You need to place the "Hybrid Logic" inside the uploadToAI function.
+
+Where to place it: Look for the line that says const fileInput = await findFileInput(platform);. Paste the new code directly above that line.
+
+What to tell Replit:
+
+"In content.js, find the uploadToAI function. Just before the findFileInput call, insert logic to check chrome.storage.session for aiText. If payloadMode is 'hybrid', use document.execCommand('insertText') to paste the text context into the chat's textbox or textarea."
+
+JavaScript
+
+// --- PLACE THIS INSIDE uploadToAI ---
+const sessionData = await chrome.storage.session.get(['aiText', 'payloadMode']);
+if (sessionData.payloadMode === 'hybrid' && sessionData.aiText) {
+  const chatInput = document.querySelector('div[role="textbox"], textarea[id*="prompt"], #prompt-textarea');
+  if (chatInput) {
+    chatInput.focus();
+    const textToPaste = `CONTEXT FROM PAGE:\n${sessionData.aiText}\n\n--- ANALYZE ATTACHED IMAGES BELOW ---`;
+    document.execCommand('insertText', false, textToPaste);
+    chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+}
+// ------------------------------------
+2. In manifest.json (The "Permission" Fix)
+Replit needs to ensure the extension has permission to talk to the "Session Storage" (the private locker for your text).
+
+What to tell Replit:
+
+"Update manifest.json to include "storage" in the permissions array if it isn't there already. This is required for chrome.storage.session to work."
+
+JSON
+
+"permissions": [
+  "storage",
+  "activeTab",
+  "scripting",
+  "downloads"
+],
+3. Fixing the "Auto-Delete" Risk
+You mentioned the line await chrome.storage.local.remove('snaps');. In your current code, this happens after the upload starts. If you want to keep your snaps in case the upload fails halfway through, move that line.
+
+What to tell Replit:
+
+"In content.js, move the chrome.storage.local.remove('snaps') call to the very end of the uploadToAI function, inside a check that ensures uploadedCount > 0. This prevents the queue from being wiped if the upload fails."
+
+Summary for Replit's AI:
+If you are using the Replit AI Chat, you can copy-paste this prompt:
+
+"I need to finalize my Chrome Extension. Please perform these three tasks:
+
+In content.js, update the uploadToAI function to retrieve aiText from chrome.storage.session and paste it into the AI's chat box before starting the image uploads.
+
+Ensure manifest.json has the 'storage' permission.
+
+Make sure the 'snaps' are only cleared from local storage if at least one image was successfully uploaded."
