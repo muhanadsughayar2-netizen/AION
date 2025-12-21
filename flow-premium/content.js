@@ -348,10 +348,12 @@
   // BULLETPROOF wrapper for full page capture - catches all errors gracefully
   async function safeFullPageCapture(tabId) {
     try {
-      // Gmail uses nested scroll containers - full page doesn't work well
+      // Email sites use nested scroll containers - full page doesn't work well
       // Suggest using SNAP for individual emails instead
-      if (location.hostname.includes('mail.google.com')) {
-        showToast('Gmail tip: Use SNAP for emails (Full Page scrolls inbox, not email content)', 'info');
+      const emailSites = ['mail.google.com', 'mail.yahoo.com', 'outlook.live.com', 'outlook.office.com', 'mail.proton.me', 'protonmail.com'];
+      const isEmailSite = emailSites.some(site => location.hostname.includes(site));
+      if (isEmailSite) {
+        showToast('Email tip: Use SNAP for emails (Full Page scrolls inbox, not email content)', 'info');
         // Continue with capture anyway - user might want inbox view
       }
       
@@ -838,6 +840,21 @@
             <div id="snaptoai-progress-text" style="font-size: 12px; color: #aaa; margin-top: 4px;">Capturing... 0%</div>
           </div>
         </div>
+        <button id="snaptoai-abort-btn" style="
+          margin-top: 12px;
+          width: 100%;
+          padding: 8px 16px;
+          background: rgba(255, 100, 100, 0.2);
+          border: 1px solid rgba(255, 100, 100, 0.5);
+          border-radius: 6px;
+          color: #ff6b6b;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        " onmouseover="this.style.background='rgba(255,100,100,0.4)'" onmouseout="this.style.background='rgba(255,100,100,0.2)'">
+          ✕ Cancel Capture
+        </button>
       </div>
     `;
     
@@ -854,6 +871,20 @@
     }
     
     document.body.appendChild(overlay);
+    
+    // Wire up abort button
+    const abortBtn = document.getElementById('snaptoai-abort-btn');
+    if (abortBtn) {
+      abortBtn.addEventListener('click', () => {
+        isFullPageCaptureAborted = true;
+        isFullPageCaptureRunning = false;
+        removeFullPageOverlay();
+        cleanupSpecialSiteStyles();
+        showToast('Capture cancelled', 'info');
+        chrome.runtime.sendMessage({ action: 'fullPageStitchFailed' }).catch(() => {});
+      });
+    }
+    
     return overlay;
   }
   
