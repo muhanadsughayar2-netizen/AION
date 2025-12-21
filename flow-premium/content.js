@@ -225,36 +225,27 @@
     
     if (isGoogleDocs) {
       style.textContent = `
-        /* Force full expansion for Google Docs */
-        body, html {
+        /* Google Docs: Expand outer containers, preserve page canvas positioning */
+        /* Only expand the outer editor containers - NOT the page canvases */
+        .kix-appview-editor-container, .kix-zoomdocumentplugin-outer {
+          height: auto !important;
+          overflow: visible !important;
+        }
+        .kix-appview-editor, .docs-editor {
           height: auto !important;
           min-height: auto !important;
           max-height: none !important;
           overflow: visible !important;
-          position: static !important;
-          background-color: #fff !important;
         }
-        .kix-appview-editor, .docs-editor, .kix-page-canvas, .kix-canvas-tile-content, canvas {
-          height: auto !important;
-          min-height: auto !important;
-          max-height: none !important;
-          overflow: visible !important;
-          position: static !important;
-          display: block !important;
-          visibility: visible !important;
-        }
+        /* Hide fixed/sticky headers during capture */
         [style*="position: sticky"], [style*="position: fixed"] {
           display: none !important;
-          visibility: hidden !important;
         }
         .docs-titlebar, .docs-menubar {
           position: relative !important;
         }
-        .kix-appview-editor-container, .kix-zoomdocumentplugin-outer {
-          height: auto !important;
-          overflow: visible !important;
-          position: relative !important;
-        }
+        /* DO NOT change .kix-page-canvas, .kix-canvas-tile-content, or canvas positioning */
+        /* Google uses absolute positioning to layout pages - changing it causes overlap */
       `;
       console.log('[SnapToAI] Google Docs styles injected');
     } else if (isYouTube) {
