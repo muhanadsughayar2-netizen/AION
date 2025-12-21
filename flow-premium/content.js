@@ -2593,7 +2593,7 @@
     }
     
     // Warn user if page is very short (BUT skip for AI platforms and special sites - they need full scroll)
-    const isSpecialScrollSite = ['youtube.com', 'docs.google.com'].some(s => location.hostname.includes(s));
+    const isSpecialScrollSite = ['youtube.com', 'docs.google.com', 'mail.google.com'].some(s => location.hostname.includes(s));
     if (preflight.pageHeight <= preflight.viewportHeight + 50 && !preflight.isAIPlatform && !isSpecialScrollSite) {
       showToast('Page is short - using simple capture', 'success');
       // Fall back to simple viewport capture
@@ -2613,7 +2613,7 @@
       // Check if this is an AI platform (internal scroll containers)
       const host = window.location.hostname.toLowerCase();
       const aiPlatforms = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
-      const specialScrollSites = ['youtube.com', 'docs.google.com'];
+      const specialScrollSites = ['youtube.com', 'docs.google.com', 'mail.google.com'];
       const isAIPlatform = aiPlatforms.some(p => host.includes(p));
       const isSpecialSite = specialScrollSites.some(s => host.includes(s));
       
