@@ -2822,6 +2822,29 @@
       safeScrollTo(0);
       await new Promise(resolve => setTimeout(resolve, 300));
       
+      // === PRE-CAPTURE SCROLL TEST ===
+      // Test if container scroll actually works BEFORE capturing anything
+      if (useContainerScroll && !hasTriedWindowFallback) {
+        const beforeTest = getScrollTop();
+        safeScrollBy(100); // Small test scroll
+        await new Promise(r => setTimeout(r, 100));
+        const afterTest = getScrollTop();
+        
+        // If container didn't move, check if window can scroll
+        if (afterTest === beforeTest || afterTest < 50) {
+          const windowMax = document.documentElement.scrollHeight - window.innerHeight;
+          if (windowMax > viewportHeight) {
+            console.log('[SnapToAI] PRE-CHECK: Container scroll failed, switching to window scroll');
+            useContainerScroll = false;
+            hasTriedWindowFallback = true;
+          }
+        }
+        
+        // Scroll back to top with the (possibly new) scroll method
+        safeScrollTo(0);
+        await new Promise(r => setTimeout(r, 200));
+      }
+      
       console.log(`[SnapToAI] Starting capture - containerScroll: ${useContainerScroll}, isAI: ${isAIPlatform}`);
       
       // === AMAZON LAZY-LOAD IMAGE PREP ===
@@ -3158,28 +3181,6 @@
         
         // Scroll down by one viewport using safe scrollBy (never throws errors!)
         safeScrollBy(stepHeight);
-        
-        // === AUTO-FALLBACK: If container scroll didn't work, switch to window scroll ===
-        // This fixes sites with "fake" scroll containers (Gmail, Amazon, Google Search, etc.)
-        if (useContainerScroll && !hasTriedWindowFallback && captureCount === 1) {
-          await new Promise(r => setTimeout(r, 100)); // Let scroll settle
-          const afterScrollTop = getScrollTop();
-          const windowScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-          
-          // If container didn't move but window has scroll potential, switch to window
-          if (afterScrollTop === currentScrollTop && afterScrollTop < 50) {
-            const windowMaxScroll = document.documentElement.scrollHeight - window.innerHeight;
-            if (windowMaxScroll > viewportHeight) {
-              console.log('[SnapToAI] AUTO-FALLBACK: Container scroll failed, switching to window scroll');
-              useContainerScroll = false;
-              hasTriedWindowFallback = true;
-              
-              // Try window scroll instead
-              window.scrollBy({ top: stepHeight, left: 0, behavior: 'instant' });
-              await new Promise(r => setTimeout(r, 100));
-            }
-          }
-        }
         
         // === AMAZON PER-SCROLL CONTENT STABILIZATION ===
         if (isAmazon) {
