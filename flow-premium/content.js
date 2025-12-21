@@ -3169,9 +3169,28 @@
               } catch (e) {}
             });
             
-            // Simple fixed wait for Amazon content to stabilize (500ms max)
-            // This avoids complex logic that could hang
-            await new Promise(r => setTimeout(r, 500));
+            // Wait for content to stabilize with HARD CAP of 1.2s
+            // Updates baseline when new content arrives to avoid hanging
+            let lastItemCount = document.querySelectorAll('.s-result-item[data-asin]').length;
+            let lastHeight = document.documentElement.scrollHeight;
+            let stableFor = 0;
+            const startTime = Date.now();
+            
+            while (Date.now() - startTime < 1200) { // Hard 1.2s cap
+              await new Promise(r => setTimeout(r, 150));
+              const nowItems = document.querySelectorAll('.s-result-item[data-asin]').length;
+              const nowHeight = document.documentElement.scrollHeight;
+              
+              if (nowItems === lastItemCount && nowHeight === lastHeight) {
+                stableFor++;
+                if (stableFor >= 2) break; // Stable for 300ms, good enough
+              } else {
+                // Content changed - update baseline, reset counter
+                lastItemCount = nowItems;
+                lastHeight = nowHeight;
+                stableFor = 0;
+              }
+            }
           } catch (e) {}
         }
         
