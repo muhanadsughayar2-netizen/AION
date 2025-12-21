@@ -2510,7 +2510,7 @@
       
       // Check if this is an AI platform (they hide scroll in nested containers)
       const host = window.location.hostname.toLowerCase();
-      const aiPlatforms = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
+      const aiPlatforms = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai', 'replit.com'];
       result.isAIPlatform = aiPlatforms.some(p => host.includes(p));
       
       // Check page height (with null checks)
@@ -2690,7 +2690,7 @@
       
       // Check if this is an AI platform (internal scroll containers)
       const host = window.location.hostname.toLowerCase();
-      const aiPlatforms = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai'];
+      const aiPlatforms = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai', 'replit.com'];
       const specialScrollSites = ['youtube.com', 'docs.google.com', 'mail.google.com'];
       const isAIPlatform = aiPlatforms.some(p => host.includes(p));
       const isSpecialSite = specialScrollSites.some(s => host.includes(s));
