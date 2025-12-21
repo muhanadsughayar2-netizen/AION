@@ -3190,8 +3190,21 @@
             break;
           }
         } else {
-          // Normal pages: exit when scroll stops moving
+          // Normal pages: exit when scroll stops moving OR switch to window scroll
           if (currentScrollTop === lastScrollTop && captureCount > 2) {
+            // MID-CAPTURE FALLBACK: If container scroll stops but window can still scroll, switch!
+            if (useContainerScroll && !hasTriedWindowFallback) {
+              const windowScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+              const windowMaxScroll = document.documentElement.scrollHeight - window.innerHeight;
+              if (windowMaxScroll > viewportHeight && windowScrollY < windowMaxScroll - 50) {
+                console.log('[SnapToAI] MID-CAPTURE: Container stuck, switching to window scroll!');
+                useContainerScroll = false;
+                hasTriedWindowFallback = true;
+                lastScrollTop = -1; // Reset to continue capturing
+                safeScrollTo(0); // Start from top with window scroll
+                continue; // Restart loop with new scroll method
+              }
+            }
             console.log('[SnapToAI] Reached bottom - scroll stopped moving');
             break;
           }
