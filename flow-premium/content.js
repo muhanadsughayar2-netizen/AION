@@ -238,9 +238,9 @@
           overflow: visible !important;
         }
         /* Hide ONLY the toolbar elements - NOT the page canvases */
-        /* Page canvases (.kix-page, .page-image) use sticky and must remain visible */
+        /* WARNING: #docs-chrome contains the ENTIRE editor - never hide it! */
         .docs-titlebar, .docs-menubar, .docs-material-menu-button-bar,
-        #docs-bars, #docs-chrome, .docs-butterbar-container {
+        #docs-bars, .docs-butterbar-container {
           display: none !important;
         }
         /* DO NOT change .kix-page-canvas, .kix-canvas-tile-content, or canvas positioning */
