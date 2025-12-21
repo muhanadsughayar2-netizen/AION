@@ -1664,6 +1664,44 @@
   // END DOM FREEZE ENGINE
   // ============================================================
   
+  // DOCUMENT VIEWER DETECTION: Pages with page-image, can-zoom-in classes
+  function findDocumentViewerContainer() {
+    const htmlClasses = document.documentElement.className || '';
+    const isDocViewer = htmlClasses.includes('page-image') || htmlClasses.includes('can-zoom-in');
+    
+    if (!isDocViewer) return null;
+    
+    console.log('[SnapToAI] Document viewer detected, searching for scroll container...');
+    
+    // Common document viewer container selectors
+    const viewerSelectors = [
+      '#content', '.content', '.viewer', '.document-viewer',
+      '[class*="scroll"]', '[class*="Scroll"]',
+      'main', 'article', '.main-content'
+    ];
+    
+    for (const selector of viewerSelectors) {
+      try {
+        const el = document.querySelector(selector);
+        if (el && el.scrollHeight > window.innerHeight) {
+          const style = window.getComputedStyle(el);
+          const overflow = style.overflowY || style.overflow;
+          if (overflow === 'auto' || overflow === 'scroll' || overflow === 'visible') {
+            console.log(`[SnapToAI] Document viewer found container: ${selector}, height: ${el.scrollHeight}px`);
+            return el;
+          }
+        }
+      } catch (e) {}
+    }
+    
+    // Fallback: for document viewers, always return documentElement to ensure window scroll is used
+    const docEl = document.documentElement;
+    const body = document.body;
+    const maxHeight = Math.max(docEl?.scrollHeight || 0, body?.scrollHeight || 0);
+    console.log(`[SnapToAI] Document viewer fallback to window scroll, max height: ${maxHeight}px`);
+    return docEl;
+  }
+  
   // TIER 1: Check if document/body is scrollable (preferred - works on most sites)
   function findScrollableContainerTier1() {
     // ALWAYS try document-level scroll first - this works for 95% of sites
@@ -2212,6 +2250,13 @@
     console.log('[SnapToAI] Finding scrollable container...');
     const host = window.location.hostname.toLowerCase();
     
+    // DOCUMENT VIEWER CHECK: Pages with page-image, can-zoom-in classes
+    const docViewerContainer = findDocumentViewerContainer();
+    if (docViewerContainer) {
+      console.log('[SnapToAI] Using document viewer container');
+      return docViewerContainer;
+    }
+    
     // TESTED REPLIT/SPECODE LEFT PANEL (from chatgpt-screenshot-ex GitHub, 500+ stars)
     if (host.includes('replit.com') || host.includes('specode.ai')) {
       const leftPanel = document.querySelector('.cm-scroller') || 
@@ -2555,6 +2600,17 @@
       console.log('[SnapToAI] Forced AI page height:', preflight.pageHeight + 'px');
     }
     
+    // DOCUMENT VIEWER HEIGHT FORCE - pages with page-image or can-zoom-in classes
+    const docViewerClasses = document.documentElement.className || '';
+    const isDocViewerPage = docViewerClasses.includes('page-image') || docViewerClasses.includes('can-zoom-in');
+    if (isDocViewerPage) {
+      const docHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+      preflight.pageHeight = Math.max(docHeight, preflight.viewportHeight * 3);
+      preflight.canCapture = true;
+      preflight.isComplexApp = false;
+      console.log('[SnapToAI] Document viewer detected - forced page height:', preflight.pageHeight + 'px');
+    }
+    
     if (!preflight.canCapture) {
       showToast('Cannot capture this page: ' + preflight.errors.join(', '), 'error');
       isFullPageCaptureRunning = false;
@@ -2606,7 +2662,21 @@
       const isSpecialSite = specialScrollSites.some(s => host.includes(s));
       
       // Step 1: Find the main scrollable container
-      const scrollContainer = findScrollableContainer();
+      let scrollContainer = findScrollableContainer();
+      
+      // Check for document viewers (page-image, can-zoom-in classes)
+      const docViewerClasses = document.documentElement.className || '';
+      const isDocViewer = docViewerClasses.includes('page-image') || docViewerClasses.includes('can-zoom-in');
+      
+      // For document viewers, force use of documentElement if no container found
+      if (isDocViewer && (!scrollContainer || scrollContainer === window)) {
+        const docScrollHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+        if (docScrollHeight > viewportHeight) {
+          scrollContainer = document.documentElement;
+          console.log(`[SnapToAI] Document viewer - using documentElement, height: ${docScrollHeight}px`);
+        }
+      }
+      
       const containerScrollHeight = scrollContainer ? scrollContainer.scrollHeight : 0;
       console.log(`[SnapToAI] Scroll container: ${scrollContainer ? scrollContainer.tagName : 'none'}, height: ${containerScrollHeight}px`);
       
@@ -2615,13 +2685,12 @@
                               scrollContainer !== document.documentElement && 
                               scrollContainer !== document.body &&
                               scrollContainer !== window;
-      // Also check for document viewers (page-image, can-zoom-in classes)
-      const docViewerClasses = document.documentElement.className || '';
-      const isDocViewer = docViewerClasses.includes('page-image') || docViewerClasses.includes('can-zoom-in');
-      const useContainerScroll = isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || (isDocViewer && scrollContainer && scrollContainer.scrollHeight > viewportHeight);
+      // For document viewers, treat documentElement as a real container
+      const docViewerHasScroll = isDocViewer && scrollContainer === document.documentElement && containerScrollHeight > viewportHeight;
+      const useContainerScroll = isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || docViewerHasScroll;
       
-      // CRITICAL: For AI platforms and special sites, do NOT expand styles (they have custom CSS injection)
-      if (!isAIPlatform && !isSpecialSite && !useContainerScroll) {
+      // CRITICAL: For AI platforms, special sites, and document viewers, do NOT expand styles
+      if (!isAIPlatform && !isSpecialSite && !isDocViewer && !useContainerScroll) {
         const initialHeight = document.documentElement.scrollHeight;
         console.log(`[SnapToAI] Initial document height: ${initialHeight}px`);
         
@@ -2860,7 +2929,16 @@
       const maxCaptures = 100; // Safety limit
       let consecutiveFails = 0;
       const MAX_CONSECUTIVE_FAILS = 5;
-      let totalEstimatedCaptures = Math.ceil(getMaxScroll() / (viewportHeight * 0.8)) + 1;
+      
+      // Calculate total captures - for document viewers, use forced page height
+      let estimatedMaxScroll = getMaxScroll();
+      if (isDocViewer && estimatedMaxScroll < viewportHeight) {
+        // Document viewers may hide scroll - use forced calculation
+        const forcedHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, preflight.pageHeight || 0);
+        estimatedMaxScroll = Math.max(forcedHeight - viewportHeight, viewportHeight * 2);
+        console.log('[SnapToAI] Document viewer - forced max scroll:', estimatedMaxScroll);
+      }
+      let totalEstimatedCaptures = Math.ceil(estimatedMaxScroll / (viewportHeight * 0.8)) + 1;
       
       // === SERVICE WORKER KEEP-ALIVE ===
       // Ping service worker every 15 seconds to prevent it from going to sleep (MV3 issue)
@@ -2955,13 +3033,23 @@
         captureCount++;
         
         // Check if we've reached the bottom (scroll position didn't change)
-        if (currentScrollTop === lastScrollTop && captureCount > 2) {
-          console.log('[SnapToAI] Reached bottom - scroll stopped moving');
-          break;
+        // For document viewers: use forced page height to determine when to stop
+        if (isDocViewer) {
+          // Document viewers: exit based on estimated captures, not scroll position
+          if (captureCount >= totalEstimatedCaptures) {
+            console.log('[SnapToAI] Document viewer - completed estimated captures:', captureCount);
+            break;
+          }
+        } else {
+          // Normal pages: exit when scroll stops moving
+          if (currentScrollTop === lastScrollTop && captureCount > 2) {
+            console.log('[SnapToAI] Reached bottom - scroll stopped moving');
+            break;
+          }
         }
         
-        // Check if we're at max scroll
-        if (currentScrollTop >= getMaxScroll() - 20) {
+        // Check if we're at max scroll (not for document viewers with forced height)
+        if (!isDocViewer && currentScrollTop >= getMaxScroll() - 20) {
           console.log('[SnapToAI] Reached max scroll position');
           break;
         }
