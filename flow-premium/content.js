@@ -2540,8 +2540,18 @@
         result.warnings.push('Page fits in one screen - use SNAP instead');
       }
       
+      // Calculate estimated pages (with 80% overlap step)
+      const effectiveStepHeight = Math.floor(result.viewportHeight * 0.8);
+      result.estimatedPages = Math.ceil(result.pageHeight / effectiveStepHeight);
+      
+      // HARD LIMIT: Reject pages with >50 estimated screenshots
+      if (result.estimatedPages > 50) {
+        result.canCapture = false;
+        result.errors.push('Page is too long for full-page capture (>50 screens). Use regular Snap instead.');
+      }
+      
       // Warning: page is extremely long
-      if (result.pageHeight > 50000) {
+      if (result.pageHeight > 50000 && result.estimatedPages <= 50) {
         result.warnings.push('Very long page - may create many chunks');
       }
       
@@ -2643,6 +2653,17 @@
       preflight.canCapture = true;
       preflight.isComplexApp = false;
       console.log('[SnapToAI] Document viewer detected - forced page height:', preflight.pageHeight + 'px');
+    }
+    
+    // RECALCULATE estimated pages after height forces (for AI/doc viewer)
+    const effectiveStep = Math.floor(preflight.viewportHeight * 0.8);
+    preflight.estimatedPages = Math.ceil(preflight.pageHeight / effectiveStep);
+    
+    // HARD LIMIT: >50 pages is too long (applies to ALL sites including AI)
+    if (preflight.estimatedPages > 50) {
+      showToast('Page is too long for full-page capture (>50 screens). Use regular Snap instead.', 'error');
+      isFullPageCaptureRunning = false;
+      return { success: false, error: 'Page too long (>50 screens)' };
     }
     
     if (!preflight.canCapture) {
@@ -3075,7 +3096,7 @@
       // Uses 700ms delay between captures to avoid quota errors (used by GoFullPage, FireShot)
       let lastScrollTop = -1;
       let captureCount = 0;
-      const maxCaptures = 100; // Safety limit
+      const maxCaptures = 20; // Hard limit: max 20 screenshots per capture session for quality & stability
       let consecutiveFails = 0;
       const MAX_CONSECUTIVE_FAILS = 5;
       
