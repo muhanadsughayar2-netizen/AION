@@ -146,13 +146,42 @@
         return true;
       } else if (request.action === 'get_page_text') {
         // Smart text extraction for AI context
-        const mainSelectors = ['article', 'main', '.post-content', '.article-body', '#content', '.content'];
         let pageText = '';
-        for (const selector of mainSelectors) {
-          const el = document.querySelector(selector);
-          if (el && el.innerText.length > 500) {
-            pageText = el.innerText;
-            break;
+        
+        // Gmail-specific extraction
+        if (location.hostname.includes('mail.google.com')) {
+          // Try to get open email content
+          const emailSelectors = [
+            '.a3s.aiL', // Email body content
+            '.ii.gt', // Alternative email body
+            '[data-message-id] .a3s', // Message content
+            '.h7', // Email thread subject
+            '.nH .adn', // Conversation view
+            '.adn.ads' // Full email thread
+          ];
+          for (const selector of emailSelectors) {
+            const els = document.querySelectorAll(selector);
+            if (els.length > 0) {
+              pageText = Array.from(els).map(el => el.innerText).join('\n\n---\n\n');
+              break;
+            }
+          }
+          // Also get subject line
+          const subject = document.querySelector('.hP') || document.querySelector('h2.hP');
+          if (subject && pageText) {
+            pageText = 'Subject: ' + subject.innerText + '\n\n' + pageText;
+          }
+        }
+        
+        // General extraction if Gmail didn't find content
+        if (!pageText) {
+          const mainSelectors = ['article', 'main', '.post-content', '.article-body', '#content', '.content'];
+          for (const selector of mainSelectors) {
+            const el = document.querySelector(selector);
+            if (el && el.innerText.length > 500) {
+              pageText = el.innerText;
+              break;
+            }
           }
         }
         if (!pageText) pageText = document.body.innerText;
@@ -183,8 +212,9 @@
   function forceSpecialSiteFullRender() {
     const isGoogleDocs = location.hostname.includes('docs.google.com');
     const isYouTube = location.hostname.includes('youtube.com');
+    const isGmail = location.hostname.includes('mail.google.com');
     
-    if (!isGoogleDocs && !isYouTube) return;
+    if (!isGoogleDocs && !isYouTube && !isGmail) return;
     
     // Remove any existing style to avoid duplicates
     const existing = document.getElementById('snaptoai-site-styles');
@@ -267,6 +297,39 @@
         }
       `;
       console.log('[SnapToAI] YouTube styles injected');
+    } else if (isGmail) {
+      style.textContent = `
+        /* Force full expansion for Gmail */
+        body, html {
+          height: auto !important;
+          overflow: visible !important;
+        }
+        /* Expand email thread conversations */
+        .h7, .kv, .a3s, .ii.gt, .adn {
+          max-height: none !important;
+          overflow: visible !important;
+        }
+        /* Expand collapsed messages */
+        .kQ, .kv {
+          display: block !important;
+          visibility: visible !important;
+        }
+        /* Make fixed headers relative */
+        [style*="position: fixed"], [style*="position: sticky"] {
+          position: relative !important;
+        }
+        /* Expand email body */
+        .a3s.aiL {
+          max-height: none !important;
+          overflow: visible !important;
+        }
+        /* Show full email list */
+        .Cp, .aeJ {
+          max-height: none !important;
+          overflow: visible !important;
+        }
+      `;
+      console.log('[SnapToAI] Gmail styles injected');
     }
     
     document.head.appendChild(style);
@@ -289,7 +352,7 @@
       forceSpecialSiteFullRender();
       
       // Small delay for styles to apply on special sites
-      if (location.hostname.includes('docs.google.com') || location.hostname.includes('youtube.com')) {
+      if (location.hostname.includes('docs.google.com') || location.hostname.includes('youtube.com') || location.hostname.includes('mail.google.com')) {
         await new Promise(r => setTimeout(r, 300));
       }
       
