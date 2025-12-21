@@ -2169,8 +2169,42 @@
       
       // === E-COMMERCE ===
       'amazon.com': [
-        '#dp',
+        '#search .s-main-slot.s-result-list',
         '.s-main-slot',
+        '#dp',
+        '#ppd',
+        '#centerCol',
+        '#search',
+        '#a-page'
+      ],
+      'amazon.co.uk': [
+        '#search .s-main-slot.s-result-list',
+        '.s-main-slot',
+        '#dp',
+        '#search'
+      ],
+      'amazon.de': [
+        '#search .s-main-slot.s-result-list',
+        '.s-main-slot',
+        '#dp',
+        '#search'
+      ],
+      'amazon.fr': [
+        '#search .s-main-slot.s-result-list',
+        '.s-main-slot',
+        '#dp',
+        '#search'
+      ],
+      'amazon.ca': [
+        '#search .s-main-slot.s-result-list',
+        '.s-main-slot',
+        '#dp',
+        '#search'
+      ],
+      'amazon.co.jp': [
+        '#search .s-main-slot.s-result-list',
+        '.s-main-slot',
+        '#dp',
         '#search'
       ],
       'ebay.com': [
@@ -2787,12 +2821,42 @@
       
       console.log(`[SnapToAI] Starting capture - containerScroll: ${useContainerScroll}, isAI: ${isAIPlatform}`);
       
-      // === HIDE FIXED ELEMENTS FOR AI PLATFORMS ===
+      // === AMAZON LAZY-LOAD IMAGE PREP ===
+      // Force all lazy images to load before capture
+      const isAmazon = location.hostname.includes('amazon.');
+      if (isAmazon) {
+        try {
+          console.log('[SnapToAI] Amazon detected - preloading lazy images...');
+          // Force data-src to src for lazy images
+          document.querySelectorAll('img[data-src]:not([src]), img.s-image[data-src]').forEach(img => {
+            try {
+              if (img.dataset.src && !img.src) {
+                img.src = img.dataset.src;
+              }
+            } catch (e) {}
+          });
+          // Scroll images into view to trigger IntersectionObserver
+          document.querySelectorAll('.s-result-item img, .s-image').forEach(img => {
+            try { img.scrollIntoView({ block: 'center', behavior: 'auto' }); } catch (e) {}
+          });
+          // Wait for images to load
+          await new Promise(r => setTimeout(r, 500));
+          // Scroll back to top
+          safeScrollTo(0);
+          await new Promise(r => setTimeout(r, 200));
+          console.log('[SnapToAI] Amazon lazy images preloaded');
+        } catch (e) {
+          console.log('[SnapToAI] Amazon lazy-load prep failed (non-fatal)');
+        }
+      }
+      
+      // === HIDE FIXED ELEMENTS FOR AI PLATFORMS AND AMAZON ===
       // Fixed headers/footers appear in every screenshot and cause duplication in stitched result
       const hiddenFixedElements = [];
       
       const hideFixedElements = () => {
-        if (!isAIPlatform) return;
+        const shouldHideFixed = isAIPlatform || isAmazon;
+        if (!shouldHideFixed) return;
         try {
           // Find all fixed/sticky positioned elements
           const allElements = document.querySelectorAll('*');
@@ -2878,6 +2942,38 @@
             console.log(`[SnapToAI] 🔫 AI Bottom Bar Killer: cleanly hidden bars on ${location.hostname}`);
           }
           // === END AI BOTTOM BAR KILLER ===
+          
+          // === AMAZON STICKY ELEMENT KILLER ===
+          // Only hide sticky navigation elements, NOT footer/content
+          if (isAmazon) {
+            const amazonStickySelectors = [
+              '#navbar-main',
+              '#nav-belt',
+              '#nav-main',
+              '.nav-sprite',
+              '#navBackToTop',
+              '#nav-subnav',
+              '#skiplink',
+              '#nav-logo-sprites'
+            ];
+            
+            amazonStickySelectors.forEach(sel => {
+              try {
+                document.querySelectorAll(sel).forEach(el => {
+                  if (!hiddenFixedElements.some(item => item.element === el)) {
+                    hiddenFixedElements.push({
+                      element: el,
+                      originalDisplay: el.style.display || '',
+                      originalVisibility: el.style.visibility || ''
+                    });
+                    el.style.setProperty('visibility', 'hidden', 'important');
+                  }
+                });
+              } catch (e) {}
+            });
+            console.log(`[SnapToAI] 🛒 Amazon sticky elements hidden`);
+          }
+          // === END AMAZON STICKY ELEMENT KILLER ===
           
           console.log(`[SnapToAI] Hidden ${hiddenFixedElements.length} fixed elements`);
         } catch (e) {}
@@ -3058,6 +3154,45 @@
         
         // Scroll down by one viewport using safe scrollBy (never throws errors!)
         safeScrollBy(stepHeight);
+        
+        // === AMAZON PER-SCROLL CONTENT STABILIZATION ===
+        if (isAmazon) {
+          try {
+            // Track initial state for stabilization
+            const initialItemCount = document.querySelectorAll('.s-result-item[data-asin]').length;
+            const initialScrollHeight = document.documentElement.scrollHeight;
+            
+            // Force lazy images in current viewport to load
+            document.querySelectorAll('img[data-src]:not([src]), img.s-image[data-src]').forEach(img => {
+              try {
+                const rect = img.getBoundingClientRect();
+                const inViewport = rect.top < window.innerHeight && rect.bottom > 0;
+                if (inViewport && img.dataset.src && (!img.src || img.src.includes('data:'))) {
+                  img.src = img.dataset.src;
+                }
+              } catch (e) {}
+            });
+            
+            // Wait for new content to load with stabilization check
+            let stableChecks = 0;
+            const maxStableChecks = 6; // Max 600ms wait
+            while (stableChecks < maxStableChecks) {
+              await new Promise(r => setTimeout(r, 100));
+              const currentItemCount = document.querySelectorAll('.s-result-item[data-asin]').length;
+              const currentScrollHeight = document.documentElement.scrollHeight;
+              
+              // Check if content has stabilized (no new items and height stable)
+              if (currentItemCount === initialItemCount && currentScrollHeight === initialScrollHeight) {
+                stableChecks++;
+              } else {
+                stableChecks = 0; // Reset if still loading
+              }
+              
+              // Exit early if stable for 2 consecutive checks (200ms)
+              if (stableChecks >= 2) break;
+            }
+          } catch (e) {}
+        }
         
         // Wait for content to stabilize (max 400ms, checks every 50ms)
         const stabilized = await waitForScrollStabilization(scrollContainer, useContainerScroll);
