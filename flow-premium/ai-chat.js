@@ -80,36 +80,6 @@ function removeLoading() {
   if (loading) loading.remove();
 }
 
-// Optimize image for API (reduce size and quality)
-async function optimizeImage(dataUrl) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const maxSize = 768;
-      let w = img.width;
-      let h = img.height;
-      
-      if (w > maxSize || h > maxSize) {
-        if (w > h) {
-          h = Math.round((h * maxSize) / w);
-          w = maxSize;
-        } else {
-          w = Math.round((w * maxSize) / h);
-          h = maxSize;
-        }
-      }
-      
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', 0.7));
-    };
-    img.src = dataUrl;
-  });
-}
-
 // Send message to Gemini API
 async function sendToGemini(prompt, imageDataUrl) {
   // Throttle check
