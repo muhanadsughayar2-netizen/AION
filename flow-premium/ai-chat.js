@@ -130,9 +130,8 @@ async function sendToGemini(prompt, imageDataUrl) {
   
   lastRequestTime = Date.now();
   
-  // Optimize image
-  const optimizedImage = await optimizeImage(imageDataUrl);
-  const base64Data = optimizedImage.split(',')[1];
+  // Use original high-quality image (no compression)
+  const base64Data = imageDataUrl.split(',')[1];
   
   // Build conversation
   const contents = [];
@@ -148,9 +147,10 @@ async function sendToGemini(prompt, imageDataUrl) {
   // Add current message with image
   const userParts = [];
   if (contents.length === 0) {
+    const mimeType = imageDataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
     userParts.push({
       inlineData: {
-        mimeType: 'image/jpeg',
+        mimeType: mimeType,
         data: base64Data
       }
     });
@@ -229,9 +229,8 @@ async function handleSend() {
     
     lastRequestTime = Date.now();
     
-    // Optimize image
-    const optimizedImage = await optimizeImage(currentImage);
-    const base64Data = optimizedImage.split(',')[1];
+    // Use original high-quality image (no compression)
+    const base64Data = currentImage.split(',')[1];
     
     // Build request
     const contents = [];
@@ -242,7 +241,8 @@ async function handleSend() {
     const userParts = [];
     if (contents.length === 0) {
       // First message: include image
-      userParts.push({ inlineData: { mimeType: 'image/jpeg', data: base64Data } });
+      const mimeType = currentImage.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+      userParts.push({ inlineData: { mimeType: mimeType, data: base64Data } });
       // If we have page text, include it for smarter analysis
       if (currentPageText && currentPageText.length > 800) {
         userParts.push({ text: `[PAGE TEXT FOR CONTEXT]:\n${currentPageText}\n\n[USER QUESTION]: ${prompt}` });
