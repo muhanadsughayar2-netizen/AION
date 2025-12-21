@@ -3076,8 +3076,57 @@ const aiClearBtn = document.getElementById('aiClearBtn');
 const aiCopyBtn = document.getElementById('aiCopyBtn');
 const aiChatClose = document.getElementById('aiChatClose');
 
+// Compress image for session storage (max ~4MB to stay under quota)
+async function compressForStorage(dataUrl) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX_STORAGE_SIZE = 4 * 1024 * 1024; // 4MB target
+      const currentSize = dataUrl.length;
+      
+      // If already small enough, return as-is
+      if (currentSize < MAX_STORAGE_SIZE) {
+        resolve(dataUrl);
+        return;
+      }
+      
+      // Calculate scale factor based on how much we need to shrink
+      const ratio = Math.sqrt(MAX_STORAGE_SIZE / currentSize);
+      const newWidth = Math.floor(img.width * ratio);
+      const newHeight = Math.floor(img.height * ratio);
+      
+      canvas.width = newWidth;
+      canvas.height = newHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, newWidth, newHeight);
+      
+      // Start with 70% quality, reduce if still too large
+      let quality = 0.7;
+      let result = canvas.toDataURL('image/jpeg', quality);
+      
+      while (result.length > MAX_STORAGE_SIZE && quality > 0.2) {
+        quality -= 0.1;
+        result = canvas.toDataURL('image/jpeg', quality);
+      }
+      
+      console.log(`[SnapToAI] Compressed for storage: ${(currentSize/1024/1024).toFixed(2)}MB -> ${(result.length/1024/1024).toFixed(2)}MB`);
+      resolve(result);
+    };
+    img.onerror = () => resolve(dataUrl); // Fallback to original
+    img.src = dataUrl;
+  });
+}
+
 async function openAiChat(imageDataUrl) {
   console.log('[SnapToAI] Opening AI Chat in new window');
+  
+  // Show loading indicator on AI button
+  const aiButton = document.querySelector('.ai-orb, #aiOrbButton');
+  if (aiButton) {
+    aiButton.style.opacity = '0.5';
+    aiButton.style.pointerEvents = 'none';
+  }
   
   // Find the index of this image in snaps array
   const imageIndex = currentSnaps.indexOf(imageDataUrl);
@@ -3109,15 +3158,40 @@ async function openAiChat(imageDataUrl) {
   const selectedSnap = currentSnaps[imageIndex] || currentSnaps[0];
   const selectedMeta = currentSnapMetadata?.[imageIndex] || null;
   
+  // COMPRESS large images to fit in session storage
+  const compressedSnap = await compressForStorage(selectedSnap);
+  
   // Limit pageText to 10KB to prevent quota issues
   const limitedPageText = pageText.length > 10000 ? pageText.substring(0, 10000) : pageText;
   
-  // QUOTA FIX: Only store selected snap + limited text (no full snaps array)
-  await chrome.storage.session.set({ 
-    selectedSnap: selectedSnap,
-    selectedSnapMeta: selectedMeta,
-    pageText: limitedPageText
-  });
+  // QUOTA FIX: Store compressed snap + limited text
+  try {
+    await chrome.storage.session.set({ 
+      selectedSnap: compressedSnap,
+      selectedSnapMeta: selectedMeta,
+      pageText: limitedPageText
+    });
+  } catch (e) {
+    console.error('[SnapToAI] Storage error, trying without pageText:', e);
+    // Last resort: store just the image
+    try {
+      await chrome.storage.session.set({ selectedSnap: compressedSnap });
+    } catch (e2) {
+      console.error('[SnapToAI] Cannot store image:', e2);
+      if (aiButton) {
+        aiButton.style.opacity = '1';
+        aiButton.style.pointerEvents = 'auto';
+      }
+      alert('Image too large for AI chat. Try a smaller capture.');
+      return;
+    }
+  }
+  
+  // Restore AI button
+  if (aiButton) {
+    aiButton.style.opacity = '1';
+    aiButton.style.pointerEvents = 'auto';
+  }
   
   // Open AI chat in a separate window like the Snap Editor
   const width = Math.min(900, Math.round(screen.width * 0.8));
