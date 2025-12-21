@@ -237,15 +237,15 @@
           max-height: none !important;
           overflow: visible !important;
         }
-        /* Hide fixed/sticky headers during capture */
-        [style*="position: sticky"], [style*="position: fixed"] {
+        /* Hide ONLY the toolbar elements - NOT the page canvases */
+        /* Page canvases (.kix-page, .page-image) use sticky and must remain visible */
+        .docs-titlebar, .docs-menubar, .docs-material-menu-button-bar,
+        #docs-bars, #docs-chrome, .docs-butterbar-container {
           display: none !important;
-        }
-        .docs-titlebar, .docs-menubar {
-          position: relative !important;
         }
         /* DO NOT change .kix-page-canvas, .kix-canvas-tile-content, or canvas positioning */
         /* Google uses absolute positioning to layout pages - changing it causes overlap */
+        /* DO NOT hide [style*="position: sticky"] - page canvases use sticky positioning! */
       `;
       console.log('[SnapToAI] Google Docs styles injected');
     } else if (isYouTube) {
