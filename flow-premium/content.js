@@ -1147,12 +1147,11 @@
             video.parentNode.insertBefore(img, video);
             
           } catch (e) {
-            // Video may be CORS-restricted
-            console.warn(`[SnapToAI] Video ${index} is CORS-restricted, cannot capture frame`);
+            // Video is CORS-restricted - silently skip
           }
           
         } catch (e) {
-          console.warn(`[SnapToAI] Failed to capture video ${index}:`, e.message);
+          // Failed to capture video - silently skip
         }
       });
       
