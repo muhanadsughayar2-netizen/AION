@@ -2766,8 +2766,8 @@
       // Scroll step size: varies by site type
       // Google Docs uses absolute page positioning - needs 50% overlap to avoid stacking
       const isGoogleDocs = location.hostname.includes('docs.google.com');
-      let overlapRatioMutable = isGoogleDocs ? 0.50 : 0.80; // 50% step for Docs, 80% for others
-      let stepHeight = Math.floor(viewportHeight * overlapRatioMutable); // Mutable for mid-capture fallback
+      const overlapRatio = isGoogleDocs ? 0.50 : 0.80; // 50% step for Docs, 80% for others
+      const stepHeight = Math.floor(viewportHeight * overlapRatio);
       
       if (isGoogleDocs) {
         console.log('[SnapToAI] Google Docs detected - using 50% overlap to prevent page stacking');
@@ -3191,44 +3191,8 @@
             break;
           }
         } else {
-          // Normal pages: exit when scroll stops moving OR switch to window scroll
+          // Normal pages: exit when scroll stops moving
           if (currentScrollTop === lastScrollTop && captureCount > 2) {
-            // MID-CAPTURE FALLBACK: If container scroll stops but window can still scroll, switch!
-            if (useContainerScroll && !hasTriedWindowFallback) {
-              const windowScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-              const windowMaxScroll = document.documentElement.scrollHeight - window.innerHeight;
-              if (windowMaxScroll > viewportHeight && windowScrollY < windowMaxScroll - 50) {
-                console.log('[SnapToAI] MID-CAPTURE: Container stuck, switching to window scroll!');
-                
-                // CLEAN RESTART: Clear previous captures to avoid mixed frames
-                screenshots.length = 0;
-                captureCount = 0;
-                consecutiveFails = 0;
-                lastScrollTop = -1;
-                
-                // Switch to window scroll
-                useContainerScroll = false;
-                hasTriedWindowFallback = true;
-                
-                // FULL METRICS RECALCULATION for window scroll mode
-                // Recompute all viewport-dependent values to ensure accurate capture
-                overlapRatioMutable = 0.80; // Standard overlap for window scroll
-                stepHeight = Math.floor(viewportHeight * overlapRatioMutable); // UPDATE the actual stepHeight
-                estimatedMaxScroll = windowMaxScroll;
-                totalEstimatedCaptures = Math.ceil(estimatedMaxScroll / stepHeight) + 1;
-                
-                console.log(`[SnapToAI] Recalculated: viewport=${viewportHeight}, step=${stepHeight}, maxScroll=${estimatedMaxScroll}, est=${totalEstimatedCaptures}`);
-                
-                // Scroll to top and wait for full DOM settle
-                safeScrollTo(0);
-                await new Promise(r => requestAnimationFrame(r));
-                await new Promise(r => requestAnimationFrame(r)); // Double rAF for paint
-                await new Promise(r => setTimeout(r, 300)); // Extra settle time
-                
-                console.log('[SnapToAI] Restarting capture with window scroll');
-                continue; // Restart loop with new scroll method
-              }
-            }
             console.log('[SnapToAI] Reached bottom - scroll stopped moving');
             break;
           }
