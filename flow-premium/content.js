@@ -2722,12 +2722,9 @@
       // For document viewers, treat documentElement as a real container
       const docViewerHasScroll = isDocViewer && scrollContainer === document.documentElement && containerScrollHeight > viewportHeight;
       
-      // FORCE WINDOW SCROLL: These sites have fake scroll containers that don't work
-      const isAmazonPage = location.hostname.includes('amazon.');
-      const isGoogleSearch = location.hostname.includes('google.') && location.pathname.includes('/search');
-      const isGmail = location.hostname.includes('mail.google.com');
-      const forceWindowScroll = isAmazonPage || isGoogleSearch || isGmail;
-      const useContainerScroll = forceWindowScroll ? false : (isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || docViewerHasScroll);
+      // Initial scroll strategy - will auto-fallback to window if container doesn't work
+      let useContainerScroll = isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || docViewerHasScroll;
+      let hasTriedWindowFallback = false;
       
       // CRITICAL: For AI platforms, special sites, and document viewers, do NOT expand styles
       if (!isAIPlatform && !isSpecialSite && !isDocViewer && !useContainerScroll) {
@@ -3161,6 +3158,28 @@
         
         // Scroll down by one viewport using safe scrollBy (never throws errors!)
         safeScrollBy(stepHeight);
+        
+        // === AUTO-FALLBACK: If container scroll didn't work, switch to window scroll ===
+        // This fixes sites with "fake" scroll containers (Gmail, Amazon, Google Search, etc.)
+        if (useContainerScroll && !hasTriedWindowFallback && captureCount === 1) {
+          await new Promise(r => setTimeout(r, 100)); // Let scroll settle
+          const afterScrollTop = getScrollTop();
+          const windowScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+          
+          // If container didn't move but window has scroll potential, switch to window
+          if (afterScrollTop === currentScrollTop && afterScrollTop < 50) {
+            const windowMaxScroll = document.documentElement.scrollHeight - window.innerHeight;
+            if (windowMaxScroll > viewportHeight) {
+              console.log('[SnapToAI] AUTO-FALLBACK: Container scroll failed, switching to window scroll');
+              useContainerScroll = false;
+              hasTriedWindowFallback = true;
+              
+              // Try window scroll instead
+              window.scrollBy({ top: stepHeight, left: 0, behavior: 'instant' });
+              await new Promise(r => setTimeout(r, 100));
+            }
+          }
+        }
         
         // === AMAZON PER-SCROLL CONTENT STABILIZATION ===
         if (isAmazon) {
