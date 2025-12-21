@@ -299,34 +299,19 @@
       console.log('[SnapToAI] YouTube styles injected');
     } else if (isGmail) {
       style.textContent = `
-        /* Force full expansion for Gmail */
-        body, html {
-          height: auto !important;
-          overflow: visible !important;
-        }
-        /* Expand email thread conversations */
-        .h7, .kv, .a3s, .ii.gt, .adn {
-          max-height: none !important;
-          overflow: visible !important;
-        }
-        /* Expand collapsed messages */
+        /* Gmail: Only expand email content, keep scroll containers intact */
+        /* Expand collapsed messages in thread */
         .kQ, .kv {
           display: block !important;
           visibility: visible !important;
         }
-        /* Make fixed headers relative */
-        [style*="position: fixed"], [style*="position: sticky"] {
-          position: relative !important;
-        }
-        /* Expand email body */
-        .a3s.aiL {
+        /* Expand email body content only */
+        .a3s.aiL, .ii.gt {
           max-height: none !important;
-          overflow: visible !important;
         }
-        /* Show full email list */
-        .Cp, .aeJ {
-          max-height: none !important;
-          overflow: visible !important;
+        /* Hide mini compose popups during capture */
+        .aaZ, .aYF {
+          display: none !important;
         }
       `;
       console.log('[SnapToAI] Gmail styles injected');
