@@ -2615,7 +2615,10 @@
                               scrollContainer !== document.documentElement && 
                               scrollContainer !== document.body &&
                               scrollContainer !== window;
-      const useContainerScroll = isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight);
+      // Also check for document viewers (page-image, can-zoom-in classes)
+      const docViewerClasses = document.documentElement.className || '';
+      const isDocViewer = docViewerClasses.includes('page-image') || docViewerClasses.includes('can-zoom-in');
+      const useContainerScroll = isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || (isDocViewer && scrollContainer && scrollContainer.scrollHeight > viewportHeight);
       
       // CRITICAL: For AI platforms and special sites, do NOT expand styles (they have custom CSS injection)
       if (!isAIPlatform && !isSpecialSite && !useContainerScroll) {
