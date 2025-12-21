@@ -25,6 +25,13 @@ const DEFAULT_SETTINGS = {
 // Track last capture time to prevent rate limiting
 let lastCaptureTime = 0;
 
+// Open welcome page on first install
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === 'install') {
+    chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') });
+  }
+});
+
 // Get current settings
 async function getSettings() {
   const result = await chrome.storage.local.get('snaptoaiSettings');
