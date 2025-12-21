@@ -2722,6 +2722,16 @@
       // For document viewers, treat documentElement as a real container
       const docViewerHasScroll = isDocViewer && scrollContainer === document.documentElement && containerScrollHeight > viewportHeight;
       
+      // SITES WHERE FULL-PAGE CAPTURE IS DISABLED (too problematic to support)
+      const noFullPageSites = ['ebay.com', 'etsy.com'];
+      const isNoFullPageSite = noFullPageSites.some(s => location.hostname.includes(s));
+      
+      if (isNoFullPageSite) {
+        console.log('[SnapToAI] Full-page capture disabled on this site:', location.hostname);
+        showToast('Full-page not available on this site. Use regular Snap instead.', 'warning');
+        return; // Exit early - no error, just graceful skip
+      }
+      
       // FORCE WINDOW SCROLL for known problematic sites (Gmail, Google Docs, Google Search)
       // These sites have fake scroll containers that don't work reliably
       const isGmail = location.hostname.includes('mail.google.com');
