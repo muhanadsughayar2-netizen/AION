@@ -2741,9 +2741,15 @@
         console.log('[SnapToAI] AI platform detected - skipping style expansion to preserve scroll');
       }
       
-      // Scroll step size: 80% of viewport (20% overlap) for both AI and regular sites
-      // Increased overlap to 20% to catch all edge cases and missing lines
-      const stepHeight = Math.floor(viewportHeight * 0.80);
+      // Scroll step size: varies by site type
+      // Google Docs uses absolute page positioning - needs 50% overlap to avoid stacking
+      const isGoogleDocs = location.hostname.includes('docs.google.com');
+      const overlapRatio = isGoogleDocs ? 0.50 : 0.80; // 50% step for Docs, 80% for others
+      const stepHeight = Math.floor(viewportHeight * overlapRatio);
+      
+      if (isGoogleDocs) {
+        console.log('[SnapToAI] Google Docs detected - using 50% overlap to prevent page stacking');
+      }
       
       // Get the scroll target
       const scrollTarget = useContainerScroll ? scrollContainer : window;
