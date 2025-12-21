@@ -3082,12 +3082,15 @@ async function openAiChat(imageDataUrl) {
   // Find the index of this image in snaps array
   const imageIndex = currentSnaps.indexOf(imageDataUrl);
   
-  // Try to get page text for smart AI context
+  // Try to get page text for smart AI context (with 2s timeout to prevent freeze)
   let pageText = '';
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab?.id) {
-      const response = await chrome.tabs.sendMessage(tab.id, { action: 'get_page_text' });
+    if (tab?.id && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
+      const response = await Promise.race([
+        chrome.tabs.sendMessage(tab.id, { action: 'get_page_text' }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
+      ]);
       if (response?.text && response.text.length > 800) {
         pageText = response.text;
         console.log('[SnapToAI] Got page text for AI context:', pageText.length, 'chars');
