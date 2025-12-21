@@ -2732,13 +2732,12 @@
         return; // Exit early - no error, just graceful skip
       }
       
-      // FORCE WINDOW SCROLL for known problematic sites (Gmail, Google Docs, Google Search, Replit)
+      // FORCE WINDOW SCROLL for known problematic sites (Gmail, Google Docs, Google Search)
       // These sites have fake scroll containers that don't work reliably
       const isGmail = location.hostname.includes('mail.google.com');
       const isGoogleDocsPage = location.hostname.includes('docs.google.com');
       const isGoogleSearch = location.hostname.includes('google.') && location.pathname.includes('/search');
-      const isReplit = location.hostname.includes('replit.com');
-      const forceWindowScroll = isGmail || isGoogleDocsPage || isGoogleSearch || isReplit;
+      const forceWindowScroll = isGmail || isGoogleDocsPage || isGoogleSearch;
       
       // Initial scroll strategy - will auto-fallback to window if container doesn't work
       let useContainerScroll = forceWindowScroll ? false : (isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || docViewerHasScroll);
