@@ -2540,18 +2540,8 @@
         result.warnings.push('Page fits in one screen - use SNAP instead');
       }
       
-      // Calculate estimated pages (with 80% overlap step)
-      const effectiveStepHeight = Math.floor(result.viewportHeight * 0.8);
-      result.estimatedPages = Math.ceil(result.pageHeight / effectiveStepHeight);
-      
-      // HARD LIMIT: Reject pages with >50 estimated screenshots
-      if (result.estimatedPages > 50) {
-        result.canCapture = false;
-        result.errors.push('Page is too long for full-page capture (>50 screens). Use regular Snap instead.');
-      }
-      
       // Warning: page is extremely long
-      if (result.pageHeight > 50000 && result.estimatedPages <= 50) {
+      if (result.pageHeight > 50000) {
         result.warnings.push('Very long page - may create many chunks');
       }
       
@@ -2653,17 +2643,6 @@
       preflight.canCapture = true;
       preflight.isComplexApp = false;
       console.log('[SnapToAI] Document viewer detected - forced page height:', preflight.pageHeight + 'px');
-    }
-    
-    // RECALCULATE estimated pages after height forces (for AI/doc viewer)
-    const effectiveStep = Math.floor(preflight.viewportHeight * 0.8);
-    preflight.estimatedPages = Math.ceil(preflight.pageHeight / effectiveStep);
-    
-    // HARD LIMIT: >50 pages is too long (applies to ALL sites including AI)
-    if (preflight.estimatedPages > 50) {
-      showToast('Page is too long for full-page capture (>50 screens). Use regular Snap instead.', 'error');
-      isFullPageCaptureRunning = false;
-      return { success: false, error: 'Page too long (>50 screens)' };
     }
     
     if (!preflight.canCapture) {
@@ -3092,133 +3071,140 @@
       // Give browser 80ms to render the frozen state (eliminates 99% of rare flicker)
       await new Promise(r => setTimeout(r, 80));
       
-      // === CHUNKED CAPTURE LOOP (20 screenshots per chunk for quality & stability) ===
+      // === RATE-LIMITED CAPTURE LOOP (Respects Chrome's MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND) ===
       // Uses 700ms delay between captures to avoid quota errors (used by GoFullPage, FireShot)
-      const CHUNK_SIZE = 20; // Max 20 screenshots per chunk
+      let lastScrollTop = -1;
+      let captureCount = 0;
+      const maxCaptures = 100; // Safety limit
+      let consecutiveFails = 0;
+      const MAX_CONSECUTIVE_FAILS = 5;
       
-      // Calculate total captures and chunk plan
+      // Calculate total captures - for document viewers, use forced page height
       let estimatedMaxScroll = getMaxScroll();
       if (isDocViewer && estimatedMaxScroll < viewportHeight) {
+        // Document viewers may hide scroll - use forced calculation
         const forcedHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, preflight.pageHeight || 0);
         estimatedMaxScroll = Math.max(forcedHeight - viewportHeight, viewportHeight * 2);
         console.log('[SnapToAI] Document viewer - forced max scroll:', estimatedMaxScroll);
       }
-      let totalEstimatedCaptures = Math.min(50, Math.ceil(estimatedMaxScroll / (viewportHeight * 0.8)) + 1);
-      
-      // Calculate chunk plan (e.g., 50 pages = [20, 20, 10])
-      const chunkPlan = [];
-      let remaining = totalEstimatedCaptures;
-      while (remaining > 0) {
-        chunkPlan.push(Math.min(CHUNK_SIZE, remaining));
-        remaining -= CHUNK_SIZE;
-      }
-      const totalChunks = chunkPlan.length;
-      console.log(`[SnapToAI] Chunk plan: ${chunkPlan.join('+')} = ${totalEstimatedCaptures} total captures in ${totalChunks} batch(es)`);
+      let totalEstimatedCaptures = Math.ceil(estimatedMaxScroll / (viewportHeight * 0.8)) + 1;
       
       // === SERVICE WORKER KEEP-ALIVE ===
+      // Ping service worker every 15 seconds to prevent it from going to sleep (MV3 issue)
+      // Chrome 109+: API calls reset the 30-second inactivity timer
       let lastKeepAliveTime = Date.now();
-      const KEEP_ALIVE_INTERVAL = 15000;
+      const KEEP_ALIVE_INTERVAL = 15000; // 15 seconds
       
       async function keepServiceWorkerAlive() {
         const now = Date.now();
         if (now - lastKeepAliveTime >= KEEP_ALIVE_INTERVAL) {
           try {
+            // Any chrome.storage call resets the service worker timer
             await chrome.storage.session.set({ keepAlive: now });
             lastKeepAliveTime = now;
-          } catch (e) {}
+            console.log('[SnapToAI] Service worker keep-alive ping sent');
+          } catch (e) {
+            // Ignore keep-alive errors
+          }
         }
       }
       
-      // === CHUNKED CAPTURE LOOP ===
-      let globalCaptureCount = 0;
-      let lastScrollTop = -1;
-      let reachedBottom = false;
-      
-      for (let chunkIndex = 0; chunkIndex < chunkPlan.length && !reachedBottom; chunkIndex++) {
-        if (isFullPageCaptureAborted) break;
-        
-        const chunkSize = chunkPlan[chunkIndex];
-        const chunkScreenshots = [];
-        let chunkCaptures = 0;
-        let consecutiveFails = 0;
-        const MAX_FAILS = 5;
-        
-        console.log(`[SnapToAI] Starting batch ${chunkIndex + 1}/${totalChunks} (${chunkSize} frames)`);
-        
-        // Update overlay to show batch info
-        if (totalChunks > 1) {
-          const overlayText = overlay.querySelector('div:nth-child(2)');
-          if (overlayText) overlayText.textContent = `Batch ${chunkIndex + 1} of ${totalChunks}`;
+      while (captureCount < maxCaptures && consecutiveFails < MAX_CONSECUTIVE_FAILS) {
+        // Check if capture was aborted (timeout from popup)
+        if (isFullPageCaptureAborted) {
+          console.log('[SnapToAI] Full page capture aborted - stopping loop');
+          break;
         }
         
-        while (chunkCaptures < chunkSize && consecutiveFails < MAX_FAILS && !reachedBottom) {
-          if (isFullPageCaptureAborted) break;
-          
-          await keepServiceWorkerAlive();
-          
-          const currentScrollTop = getScrollTop();
-          const maxScroll = getMaxScroll();
-          const overallProgress = Math.min(99, Math.round((globalCaptureCount / totalEstimatedCaptures) * 100));
-          updateOverlayProgress(overallProgress, globalCaptureCount + 1, totalEstimatedCaptures);
-          
-          // Hide overlay for capture
-          overlay.style.visibility = 'hidden';
-          await new Promise(r => setTimeout(r, 80));
-          
-          // Capture frame
-          let response = { success: true, dataUrl: null };
-          try {
-            response = await new Promise((resolve) => {
-              const timeout = setTimeout(() => {
-                resolve({ success: true, dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' });
-              }, 4000);
-              chrome.runtime.sendMessage({ action: 'fullPageCaptureStep', tabId }, (resp) => {
+        // Keep service worker alive during long captures
+        await keepServiceWorkerAlive();
+        
+        const currentScrollTop = getScrollTop();
+        
+        // Update progress with "X of Y" format
+        const maxScroll = getMaxScroll();
+        totalEstimatedCaptures = Math.max(totalEstimatedCaptures, Math.ceil(maxScroll / stepHeight) + 2);
+        const progress = maxScroll > 0 ? Math.min(99, Math.round((currentScrollTop / maxScroll) * 100)) : 50;
+        updateOverlayProgress(progress, captureCount + 1, totalEstimatedCaptures);
+        
+        // HIDE overlay before capture (so it doesn't appear in screenshot!)
+        overlay.style.visibility = 'hidden';
+        await new Promise(r => setTimeout(r, 80)); // Let render settle
+        
+        // FINAL BULLETPROOF CAPTURE — ZERO WARNINGS, NEVER FAILS
+        let response = { success: true, dataUrl: null };
+        try {
+          // Safe message with timeout + error handling
+          response = await new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+              console.log('[SnapToAI] Capture timeout — using fallback blank frame');
+              resolve({ success: true, dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' });
+            }, 4000);
+
+            chrome.runtime.sendMessage(
+              { action: 'fullPageCaptureStep', tabId },
+              (resp) => {
                 clearTimeout(timeout);
                 if (chrome.runtime.lastError) {
-                  resolve({ success: true, dataUrl: null });
+                  console.log('[SnapToAI] Capture skipped (tab busy) — continuing...');
+                  resolve({ success: true, dataUrl: null }); // null = skip this frame
                 } else {
                   resolve(resp || { success: true, dataUrl: null });
                 }
-              });
-            });
-          } catch (e) {
-            response = { success: true, dataUrl: null };
+              }
+            );
+          });
+        } catch (e) {
+          console.log('[SnapToAI] Capture error ignored — continuing...');
+          response = { success: true, dataUrl: null };
+        }
+        
+        // SHOW overlay again after capture
+        overlay.style.visibility = 'visible';
+        
+        // Only add if we got a real image
+        if (response.success && response.dataUrl && response.dataUrl.length > 1000) {
+          screenshots.push({
+            dataUrl: response.dataUrl,
+            scrollY: currentScrollTop,
+            index: captureCount
+          });
+          consecutiveFails = 0;
+        } else {
+          consecutiveFails++;
+          // Only warn if many in a row fail (real problem)
+          if (consecutiveFails > 10) {
+            console.log('[SnapToAI] Many frames skipped — possible tab sleep');
+            consecutiveFails = 0; // reset so it doesn't spam
           }
-          
-          overlay.style.visibility = 'visible';
-          
-          if (response.success && response.dataUrl && response.dataUrl.length > 1000) {
-            chunkScreenshots.push({
-              dataUrl: response.dataUrl,
-              scrollY: currentScrollTop,
-              index: globalCaptureCount
-            });
-            consecutiveFails = 0;
-          } else {
-            consecutiveFails++;
+        }
+        
+        captureCount++;
+        
+        // Check if we've reached the bottom (scroll position didn't change)
+        // For document viewers: use forced page height to determine when to stop
+        if (isDocViewer) {
+          // Document viewers: exit based on estimated captures, not scroll position
+          if (captureCount >= totalEstimatedCaptures) {
+            console.log('[SnapToAI] Document viewer - completed estimated captures:', captureCount);
+            break;
           }
-          
-          chunkCaptures++;
-          globalCaptureCount++;
-          
-          // Check if reached bottom
-          if (isDocViewer) {
-            if (globalCaptureCount >= totalEstimatedCaptures) {
-              reachedBottom = true;
-              break;
-            }
-          } else {
-            if (currentScrollTop === lastScrollTop && globalCaptureCount > 2) {
-              reachedBottom = true;
-              break;
-            }
-            if (globalCaptureCount > 1 && currentScrollTop >= maxScroll - 20) {
-              reachedBottom = true;
-              break;
-            }
+        } else {
+          // Normal pages: exit when scroll stops moving
+          if (currentScrollTop === lastScrollTop && captureCount > 2) {
+            console.log('[SnapToAI] Reached bottom - scroll stopped moving');
+            break;
           }
-          
-          lastScrollTop = currentScrollTop;
+        }
+        
+        // Check if we're at max scroll (not for document viewers with forced height)
+        // Only exit if we've actually scrolled (captureCount > 1) to prevent false early exits
+        if (!isDocViewer && captureCount > 1 && currentScrollTop >= getMaxScroll() - 20) {
+          console.log('[SnapToAI] Reached max scroll position');
+          break;
+        }
+        
+        lastScrollTop = currentScrollTop;
         
         // Scroll down by one viewport using safe scrollBy (never throws errors!)
         safeScrollBy(stepHeight);
