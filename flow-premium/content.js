@@ -3158,10 +3158,6 @@
         // === AMAZON PER-SCROLL CONTENT STABILIZATION ===
         if (isAmazon) {
           try {
-            // Track initial state for stabilization
-            const initialItemCount = document.querySelectorAll('.s-result-item[data-asin]').length;
-            const initialScrollHeight = document.documentElement.scrollHeight;
-            
             // Force lazy images in current viewport to load
             document.querySelectorAll('img[data-src]:not([src]), img.s-image[data-src]').forEach(img => {
               try {
@@ -3173,24 +3169,9 @@
               } catch (e) {}
             });
             
-            // Wait for new content to load with stabilization check
-            let stableChecks = 0;
-            const maxStableChecks = 6; // Max 600ms wait
-            while (stableChecks < maxStableChecks) {
-              await new Promise(r => setTimeout(r, 100));
-              const currentItemCount = document.querySelectorAll('.s-result-item[data-asin]').length;
-              const currentScrollHeight = document.documentElement.scrollHeight;
-              
-              // Check if content has stabilized (no new items and height stable)
-              if (currentItemCount === initialItemCount && currentScrollHeight === initialScrollHeight) {
-                stableChecks++;
-              } else {
-                stableChecks = 0; // Reset if still loading
-              }
-              
-              // Exit early if stable for 2 consecutive checks (200ms)
-              if (stableChecks >= 2) break;
-            }
+            // Simple fixed wait for Amazon content to stabilize (500ms max)
+            // This avoids complex logic that could hang
+            await new Promise(r => setTimeout(r, 500));
           } catch (e) {}
         }
         
