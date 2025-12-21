@@ -2651,6 +2651,15 @@
       return { success: false, error: preflight.errors.join(', ') };
     }
     
+    // PAGE TOO LONG CHECK: If page would require more than 80 captures, abort early
+    const maxSegments = 80;
+    const totalSegments = Math.ceil(preflight.pageHeight / preflight.viewportHeight);
+    if (totalSegments > maxSegments) {
+      showToast('Page too long for full capture (80+ pages)', 'error');
+      isFullPageCaptureRunning = false;
+      return { success: false, error: 'page_too_long' };
+    }
+    
     // COMPLEX APP DETECTION: Replit, Figma, etc. have fixed layouts that can't be scroll-captured
     if (preflight.isComplexApp) {
       showToast('App layout detected - capturing visible screen', 'success');
