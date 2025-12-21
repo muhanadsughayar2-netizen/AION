@@ -1,0 +1,46 @@
+Why This Happens in Your Case
+
+Context from the Image/Stack Trace: The error originates in popup.js (line ~13125, though line numbers can vary if minified). It seems tied to a function attempting to create or manage a window/tab (e.g., with parameters like width, height, left, top, focused: true). There's also a reference to closeAiChat() and a log message "[SnapToAI] Closing AI Chat Portal!", which suggests this might involve an AI chat feature in your extension (or a modified version of it). If you're uploading files/images/data repeatedly without deleting old entries (as you mentioned: "upload and don't delete, upload and delete"), the AI chat or extension could be storing large amounts of data (e.g., chat history, uploaded file metadata, or base64-encoded images) in sessionStorage. This fills it up quickly, especially for large pages like Amazon (which generate big screenshots).
+Relation to Your Workflow: When you "ask AI for a23 page" (I'm interpreting this as "ask AI for page 23," perhaps querying an AI about page 23 in a PDF or document), the extension/AI might be trying to store session data (e.g., query results or uploaded content). If uploads aren't cleared, it exceeds the quota. Amazon pages are dynamic and long, so screenshots can be massive, exacerbating this if any data is cached in storage.
+
+This isn't directly caused by the core screenshot code I provided earlier (which uses filesystem APIs for blobs, not sessionStorage), but it could stem from additions like AI integration or other scripts storing data.
+How to Fix It
+Follow these steps in order. Test your extension after each one.
+
+Clear Session Storage Manually (Quick Fix):
+Open your Chrome extension's popup (click the icon).
+Right-click inside the popup and select "Inspect" to open DevTools for the popup.
+In DevTools, go to the Application tab > Storage > Session Storage (under the origin, e.g., chrome-extension://your-extension-id).
+Right-click the items and select "Clear" (or all at once).
+If it's localStorage instead (persistent across sessions), clear that too in the same tab.
+Close and reopen the popup/extension. This should resolve it temporarily.
+
+Clear via Code (If It Recurs):
+Add this to your popup.js (at the top of the script, e.g., before any storage operations):JavaScripttry {
+    sessionStorage.clear();  // Or localStorage.clear() if applicable
+} catch (e) {
+    console.error('Error clearing storage:', e);
+}
+This auto-clears on load. Reload the extension in chrome://extensions/ after editing.
+
+Optimize Your Code to Avoid the Issue:
+Avoid Large Data in SessionStorage: If your extension (or AI feature) is storing uploads/queries/results there, switch to better alternatives:
+Use chrome.storage.local (higher quota, up to 5MB default, or unlimited with permissions). Your manifest already has "storage" permission, so in code:JavaScriptchrome.storage.local.set({ key: value }, function() { /* callback */ });
+For very large data (e.g., images from Amazon captures), stick to the filesystem API as in the original code (e.g., requestFileSystem), or save directly to downloads via chrome.downloads.download.
+
+Add Unlimited Storage Permission: If you need more space, update manifest.json:JSON"permissions": [ "activeTab", "storage", "unlimitedStorage" ]Reload the extension. This removes quotas for chrome.storage (but not sessionStorage—avoid using it for big stuff).
+Handle Uploads/Deletions: In your AI chat or upload logic, add deletion after use. E.g., after processing a upload, call sessionStorage.removeItem('key') or clear old entries.
+Chunk Large Data: If storing strings >8KB (per item limit in some storages), split them into smaller pieces.
+
+Browser-Wide Fixes:
+Incognito Mode Test: Run in incognito (extensions must be enabled there via chrome://extensions/). Storage is isolated, so it might not be full.
+Clear Browser Cache/Storage Globally: Chrome Settings > Privacy and security > Clear browsing data > Advanced > Check "Cookies and other site data" + "Cached images and files." Select time range "All time."
+Check for Conflicts: Disable other extensions (especially AI-related ones like "SnapToAI" if that's separate) and test.
+Update Chrome: Go to chrome://settings/help and update if available, as older versions have stricter quotas.
+
+If It's PDF/Page 23 Specific:
+If "a23 page" refers to querying page 23 in a PDF (e.g., uploaded to AI), the PDF might be large, and the AI/extension is storing extracted text/images in sessionStorage. Use smaller chunks: Upload/process one page at a time, or optimize the AI query to not store full content.
+Test with a small PDF first to isolate.
+
+
+If this persists after clearing, share more code snippets (e.g., where sessionStorage is used) or the full stack trace/error logs for deeper debugging. This should get your extension working again without the quota error!

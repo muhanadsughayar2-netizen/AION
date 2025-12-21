@@ -3100,11 +3100,23 @@ async function openAiChat(imageDataUrl) {
     console.log('[SnapToAI] Could not get page text:', e.message);
   }
   
-  // Save snaps to session storage so the new window can access them
+  // Clear old session data first to prevent quota errors
+  try {
+    await chrome.storage.session.remove(['snaps', 'snapMetadata', 'pageText', 'selectedSnap', 'selectedSnapMeta']);
+  } catch (e) {}
+  
+  // Only store the SELECTED snap, not all snaps (prevents quota exceeded on large captures)
+  const selectedSnap = currentSnaps[imageIndex] || currentSnaps[0];
+  const selectedMeta = currentSnapMetadata?.[imageIndex] || null;
+  
+  // Limit pageText to 10KB to prevent quota issues
+  const limitedPageText = pageText.length > 10000 ? pageText.substring(0, 10000) : pageText;
+  
+  // QUOTA FIX: Only store selected snap + limited text (no full snaps array)
   await chrome.storage.session.set({ 
-    snaps: currentSnaps, 
-    snapMetadata: currentSnapMetadata,
-    pageText: pageText
+    selectedSnap: selectedSnap,
+    selectedSnapMeta: selectedMeta,
+    pageText: limitedPageText
   });
   
   // Open AI chat in a separate window like the Snap Editor

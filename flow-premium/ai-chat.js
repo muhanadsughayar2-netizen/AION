@@ -18,8 +18,8 @@ async function initializeChat() {
   
   if (imageIndex !== null) {
     // Get image and page text from session storage
-    const result = await chrome.storage.session.get(['snaps', 'pageText']);
-    const snaps = result.snaps || [];
+    // Try selectedSnap first (quota-friendly), fallback to full snaps array
+    const result = await chrome.storage.session.get(['selectedSnap', 'snaps', 'pageText']);
     currentPageText = result.pageText || '';
     const index = parseInt(imageIndex);
     
@@ -27,8 +27,14 @@ async function initializeChat() {
       console.log('[AI Chat] Got page text:', currentPageText.length, 'chars');
     }
     
-    if (snaps[index]) {
-      currentImage = snaps[index];
+    // Use selectedSnap if available, otherwise find in snaps array
+    let imageToUse = result.selectedSnap;
+    if (!imageToUse && result.snaps && result.snaps[index]) {
+      imageToUse = result.snaps[index];
+    }
+    
+    if (imageToUse) {
+      currentImage = imageToUse;
       document.getElementById('previewImage').src = currentImage;
     } else {
       // Show error if image not found
