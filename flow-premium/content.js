@@ -2722,9 +2722,11 @@
       // For document viewers, treat documentElement as a real container
       const docViewerHasScroll = isDocViewer && scrollContainer === document.documentElement && containerScrollHeight > viewportHeight;
       
-      // AMAZON FIX: Always use window scroll for Amazon pages (their containers don't really scroll)
+      // FORCE WINDOW SCROLL: These sites have fake scroll containers that don't work
       const isAmazonPage = location.hostname.includes('amazon.');
-      const useContainerScroll = isAmazonPage ? false : (isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || docViewerHasScroll);
+      const isGoogleSearch = location.hostname.includes('google.') && location.pathname.includes('/search');
+      const forceWindowScroll = isAmazonPage || isGoogleSearch;
+      const useContainerScroll = forceWindowScroll ? false : (isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || docViewerHasScroll);
       
       // CRITICAL: For AI platforms, special sites, and document viewers, do NOT expand styles
       if (!isAIPlatform && !isSpecialSite && !isDocViewer && !useContainerScroll) {
