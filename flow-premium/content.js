@@ -2721,7 +2721,10 @@
                               scrollContainer !== window;
       // For document viewers, treat documentElement as a real container
       const docViewerHasScroll = isDocViewer && scrollContainer === document.documentElement && containerScrollHeight > viewportHeight;
-      const useContainerScroll = isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || docViewerHasScroll;
+      
+      // AMAZON FIX: Always use window scroll for Amazon pages (their containers don't really scroll)
+      const isAmazonPage = location.hostname.includes('amazon.');
+      const useContainerScroll = isAmazonPage ? false : (isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || docViewerHasScroll);
       
       // CRITICAL: For AI platforms, special sites, and document viewers, do NOT expand styles
       if (!isAIPlatform && !isSpecialSite && !isDocViewer && !useContainerScroll) {
@@ -3145,7 +3148,8 @@
         }
         
         // Check if we're at max scroll (not for document viewers with forced height)
-        if (!isDocViewer && currentScrollTop >= getMaxScroll() - 20) {
+        // Only exit if we've actually scrolled (captureCount > 1) to prevent false early exits
+        if (!isDocViewer && captureCount > 1 && currentScrollTop >= getMaxScroll() - 20) {
           console.log('[SnapToAI] Reached max scroll position');
           break;
         }
