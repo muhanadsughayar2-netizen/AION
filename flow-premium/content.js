@@ -2725,7 +2725,8 @@
       // FORCE WINDOW SCROLL: These sites have fake scroll containers that don't work
       const isAmazonPage = location.hostname.includes('amazon.');
       const isGoogleSearch = location.hostname.includes('google.') && location.pathname.includes('/search');
-      const forceWindowScroll = isAmazonPage || isGoogleSearch;
+      const isGmail = location.hostname.includes('mail.google.com');
+      const forceWindowScroll = isAmazonPage || isGoogleSearch || isGmail;
       const useContainerScroll = forceWindowScroll ? false : (isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || docViewerHasScroll);
       
       // CRITICAL: For AI platforms, special sites, and document viewers, do NOT expand styles
