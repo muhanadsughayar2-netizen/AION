@@ -348,6 +348,13 @@
   // BULLETPROOF wrapper for full page capture - catches all errors gracefully
   async function safeFullPageCapture(tabId) {
     try {
+      // Gmail uses nested scroll containers - full page doesn't work well
+      // Suggest using SNAP for individual emails instead
+      if (location.hostname.includes('mail.google.com')) {
+        showToast('Gmail tip: Use SNAP for emails (Full Page scrolls inbox, not email content)', 'info');
+        // Continue with capture anyway - user might want inbox view
+      }
+      
       // Force special sites (Google Docs, YouTube) to render full content
       forceSpecialSiteFullRender();
       
