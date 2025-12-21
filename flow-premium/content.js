@@ -2579,11 +2579,23 @@
     
     // Warn user if page is very short (BUT skip for AI platforms and special sites - they need full scroll)
     const isSpecialScrollSite = ['youtube.com', 'docs.google.com', 'mail.google.com'].some(s => location.hostname.includes(s));
-    if (preflight.pageHeight <= preflight.viewportHeight + 50 && !preflight.isAIPlatform && !isSpecialScrollSite) {
+    // Detect document/image viewer pages (like PDF viewers, image galleries)
+    const htmlClasses = document.documentElement.className || '';
+    const isDocumentViewer = htmlClasses.includes('page-image') || htmlClasses.includes('can-zoom-in') || document.querySelector('#content .page-image, .document-page, .pdf-page');
+    if (preflight.pageHeight <= preflight.viewportHeight + 50 && !preflight.isAIPlatform && !isSpecialScrollSite && !isDocumentViewer) {
       showToast('Page is short - using simple capture', 'success');
       // Fall back to simple viewport capture
       isFullPageCaptureRunning = false;
       return await simpleViewportCapture(tabId);
+    }
+    
+    // For document viewers, force expanded height detection
+    if (isDocumentViewer) {
+      const scrollContainer = findScrollableContainer();
+      if (scrollContainer && scrollContainer.scrollHeight > preflight.viewportHeight) {
+        preflight.pageHeight = scrollContainer.scrollHeight;
+        console.log('[SnapToAI] Document viewer detected - using container height:', preflight.pageHeight);
+      }
     }
     
     const overlay = createFullPageOverlay();
