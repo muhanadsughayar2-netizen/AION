@@ -2723,7 +2723,7 @@
       const docViewerHasScroll = isDocViewer && scrollContainer === document.documentElement && containerScrollHeight > viewportHeight;
       
       // SITES WHERE FULL-PAGE CAPTURE IS DISABLED (too problematic to support)
-      const noFullPageSites = ['ebay.com', 'etsy.com'];
+      const noFullPageSites = ['ebay.com', 'etsy.com', 'zillow.com'];
       const isNoFullPageSite = noFullPageSites.some(s => location.hostname.includes(s));
       
       if (isNoFullPageSite) {
