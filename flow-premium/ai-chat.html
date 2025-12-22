@@ -389,6 +389,82 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.6; }
     }
+    
+    .flashcard-wrapper {
+      width: 100%;
+      padding: 10px 0;
+    }
+    
+    .flashcard-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .flashcard-container {
+      background: transparent;
+      width: 100%;
+      height: 120px;
+      perspective: 1000px;
+      cursor: pointer;
+    }
+    
+    .flashcard-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);
+    }
+    
+    .flashcard-container.flipped .flashcard-inner {
+      transform: rotateY(180deg);
+    }
+    
+    .flashcard-front, .flashcard-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+      border-radius: 12px;
+      font-size: 14px;
+      text-align: center;
+    }
+    
+    .flashcard-front {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-weight: 600;
+    }
+    
+    .flashcard-back {
+      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
+      color: #000;
+      transform: rotateY(180deg);
+    }
+    
+    .save-pdf-btn {
+      background: rgba(0, 217, 255, 0.1);
+      border: 1px solid rgba(0, 217, 255, 0.3);
+      color: #00d9ff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    
+    .save-pdf-btn:hover {
+      background: rgba(0, 217, 255, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -429,6 +505,7 @@
       
       <div class="footer-actions">
         <button class="action-btn test-btn" id="testBtn">🔌 Test API</button>
+        <button class="action-btn" id="flashcardBtn">⚡ Flashcards</button>
         <button class="action-btn" id="clearBtn">Clear Chat</button>
         <button class="action-btn" id="copyBtn">Copy Chat</button>
       </div>
