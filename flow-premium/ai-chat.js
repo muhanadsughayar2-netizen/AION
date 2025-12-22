@@ -498,7 +498,31 @@ ${sourceText.substring(0, 3000)}`;
     
     const data = await response.json();
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const cleanJson = rawText.replace(/```json|```/g, '').trim();
+    
+    // ERROR ARMOR: Clean and fix JSON
+    let cleanJson = rawText.trim();
+    
+    // Remove markdown code blocks
+    if (cleanJson.includes('```')) {
+      cleanJson = cleanJson.replace(/```json?|```/g, '').trim();
+    }
+    
+    // Extract JSON array using regex (ignores any text before/after)
+    const jsonMatch = cleanJson.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      cleanJson = jsonMatch[0];
+    }
+    
+    // Auto-fix unclosed brackets (common AI truncation issue)
+    const openBrackets = (cleanJson.match(/\[/g) || []).length;
+    const closeBrackets = (cleanJson.match(/\]/g) || []).length;
+    if (openBrackets > closeBrackets) {
+      cleanJson += ']'.repeat(openBrackets - closeBrackets);
+    }
+    
+    // Fix trailing commas before ]
+    cleanJson = cleanJson.replace(/,\s*\]/g, ']');
+    
     const cards = JSON.parse(cleanJson);
     
     removeLoading();
@@ -531,7 +555,17 @@ function renderFlashcards(cards) {
   cards.forEach(card => {
     const cardEl = document.createElement('div');
     cardEl.className = 'flashcard-container';
-    cardEl.onclick = () => cardEl.classList.toggle('flipped');
+    cardEl.onclick = () => {
+      const wasFlipped = cardEl.classList.contains('flipped');
+      cardEl.classList.toggle('flipped');
+      // Auto-speak the answer when flipping to back
+      if (!wasFlipped && 'speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(card.back);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+      }
+    };
     cardEl.innerHTML = `
       <div class="flashcard-inner">
         <div class="flashcard-front"><div>${card.front}</div></div>
