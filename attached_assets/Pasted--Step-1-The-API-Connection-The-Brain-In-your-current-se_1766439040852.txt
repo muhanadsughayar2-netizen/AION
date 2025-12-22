@@ -1,0 +1,30 @@
+🪜 Step 1: The API Connection (The Brain)In your current setup, you are likely using a simple fetch to talk to Google. We need to update that function to handle System Instructions (for that "Education Mode" we talked about).Action: Add this function to your logic.js. This is the "bridge" between your Star and Google.JavaScriptasync function callGeminiAPI(userInput) {
+  // 1. Get the API Key the user saved in their settings
+  const data = await chrome.storage.sync.get('apiKey');
+  const apiKey = data.apiKey;
+
+  if (!apiKey) {
+    alert("Please add your API Key in Settings first!");
+    return "No API Key found.";
+  }
+
+  // 2. Check if Tutor Mode is on
+  const isTutor = document.getElementById('tutor-mode').checked;
+  const systemInstruction = isTutor 
+    ? "You are a Socratic Tutor. Never give the answer. Ask a short, helpful hint question to lead the student."
+    : "You are a helpful, concise assistant.";
+
+  // 3. The API Request
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: systemInstruction + "\n\nUser Question: " + userInput }] }],
+      generationConfig: { maxOutputTokens: 1024 }
+    })
+  });
+
+  const result = await response.json();
+  return result.candidates[0].content.parts[0].text;
+}
+📊 What this Upgrade changes:FeatureBeforeAfter (Step 1)Response StyleStandard AISocratic Tutor (if toggled)InteractionTyping onlyVoice-Ready (connects to your Star)Cost0 creditsStill 0 credits (uses the same free API)🌟 Why this is the "Wow" Step:By adding the systemInstruction logic, you just enabled Education Mode. Now, if you toggle that switch, the AI will stop giving answers and start teaching you. This is the "Guided Learning" feature you saw in the official Gemini app!Ready for the next step? I can show you how to add the "Daily Limit" safeguard so you don't accidentally burn through your user's free quota in one hour.
