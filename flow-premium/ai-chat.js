@@ -9,7 +9,13 @@ const THROTTLE_MS = 3000;
 
 const SYSTEM_PROMPT = "You are Gemini, a helpful AI assistant. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. ALWAYS end with a helpful follow-up question to keep the conversation going.";
 
+const TUTOR_PROMPT = "You are a Socratic Tutor. Do NOT give the answer directly. Instead, analyze what the student is asking and respond with a SHORT guiding question or hint that helps them discover the answer themselves. Be encouraging but brief. Use **bold** for key concepts. End with a thought-provoking question.";
+
 const SMART_SYSTEM_PROMPT = "I am providing you with the raw text of a webpage for accuracy, and the screenshot of that page for visual context (charts, layout, images). Please use the text for your primary analysis and the images to confirm visual details. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. ALWAYS end with a helpful follow-up question.";
+
+const SMART_TUTOR_PROMPT = "I am providing you with the raw text of a webpage and a screenshot for context. You are a Socratic Tutor - do NOT give answers directly. Ask guiding questions that help the student discover the answer themselves. Be encouraging but brief. End with a thought-provoking question.";
+
+let lastAiResponse = '';
 
 // Get image from URL params or storage
 async function initializeChat() {
@@ -224,8 +230,14 @@ async function handleSend() {
     }
     contents.push({ role: 'user', parts: userParts });
     
-    // Use smart prompt if we have page text
-    const systemPrompt = (currentPageText && currentPageText.length > 800) ? SMART_SYSTEM_PROMPT : SYSTEM_PROMPT;
+    // Use smart prompt if we have page text, and tutor prompt if tutor mode is on
+    const isTutor = document.getElementById('tutorToggle')?.checked || false;
+    let systemPrompt;
+    if (currentPageText && currentPageText.length > 800) {
+      systemPrompt = isTutor ? SMART_TUTOR_PROMPT : SMART_SYSTEM_PROMPT;
+    } else {
+      systemPrompt = isTutor ? TUTOR_PROMPT : SYSTEM_PROMPT;
+    }
     
     // Stream request
     const response = await fetch(
@@ -289,9 +301,10 @@ async function handleSend() {
       }
     }
     
-    // Update conversation history
+    // Update conversation history and store for voice
     conversationHistory.push({ role: 'user', text: prompt });
     conversationHistory.push({ role: 'model', text: fullText });
+    lastAiResponse = fullText;
     
   } catch (error) {
     removeLoading();
@@ -346,6 +359,8 @@ function clearChat() {
   const thread = document.getElementById('chatThread');
   thread.innerHTML = '<div class="welcome-message">I\'m your AI partner. Ask me anything about this image!</div>';
   conversationHistory = [];
+  lastAiResponse = '';
+  window.speechSynthesis.cancel();
 }
 
 // Copy chat
@@ -370,6 +385,68 @@ document.getElementById('chatInput').addEventListener('keypress', (e) => {
 document.getElementById('testBtn').addEventListener('click', testApi);
 document.getElementById('clearBtn').addEventListener('click', clearChat);
 document.getElementById('copyBtn').addEventListener('click', copyChat);
+document.getElementById('voiceBtn').addEventListener('click', speakLastResponse);
+
+// Text-to-Speech function
+function speakLastResponse() {
+  const voiceBtn = document.getElementById('voiceBtn');
+  const synth = window.speechSynthesis;
+  
+  // If already speaking, stop
+  if (synth.speaking) {
+    synth.cancel();
+    voiceBtn.classList.remove('speaking');
+    voiceBtn.textContent = '🔊';
+    return;
+  }
+  
+  if (!lastAiResponse) {
+    addBubble('No response to read yet. Ask a question first!', 'error');
+    return;
+  }
+  
+  // Clean markdown for speech
+  const cleanText = lastAiResponse
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/#{1,6}\s/g, '')
+    .replace(/`{1,3}[^`]*`{1,3}/g, 'code block')
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+    .replace(/\n+/g, '. ');
+  
+  const utterance = new SpeechSynthesisUtterance(cleanText);
+  
+  // Try to get a good voice
+  const voices = synth.getVoices();
+  const preferredVoice = voices.find(v => 
+    (v.name.includes('Google') && v.lang.startsWith('en')) ||
+    v.name.includes('Samantha') ||
+    v.name.includes('Daniel')
+  ) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+  
+  if (preferredVoice) utterance.voice = preferredVoice;
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
+  
+  // Visual feedback
+  utterance.onstart = () => {
+    voiceBtn.classList.add('speaking');
+    voiceBtn.textContent = '🔇';
+  };
+  utterance.onend = () => {
+    voiceBtn.classList.remove('speaking');
+    voiceBtn.textContent = '🔊';
+  };
+  utterance.onerror = () => {
+    voiceBtn.classList.remove('speaking');
+    voiceBtn.textContent = '🔊';
+  };
+  
+  synth.speak(utterance);
+}
+
+// Preload voices
+window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 
 // Initialize
 initializeChat();
