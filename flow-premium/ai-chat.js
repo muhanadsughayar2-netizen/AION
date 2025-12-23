@@ -22,12 +22,19 @@ async function initializeChat() {
   const result = await chrome.storage.session.get(['selectedSnaps', 'selectedSnap', 'snaps', 'pageText']);
   currentPageText = result.pageText || '';
   
+  console.log('[AI Chat] Storage result:', {
+    selectedSnapsCount: result.selectedSnaps?.length || 0,
+    selectedSnapExists: !!result.selectedSnap,
+    pageTextLength: currentPageText.length
+  });
+  
   if (currentPageText) {
     console.log('[AI Chat] Got page text:', currentPageText.length, 'chars');
   }
   
   // Use new selectedSnaps array, fallback to legacy selectedSnap
   let imagesToUse = result.selectedSnaps || [];
+  console.log('[AI Chat] imagesToUse array length:', imagesToUse.length);
   if (imagesToUse.length === 0 && result.selectedSnap) {
     imagesToUse = [result.selectedSnap];
   }
