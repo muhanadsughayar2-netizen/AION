@@ -3016,12 +3016,18 @@ async function loadGeminiKey() {
   try {
     const result = await chrome.storage.sync.get(['geminiApiKey']);
     console.log('[SnapToAI] Loaded Gemini key:', result.geminiApiKey ? 'exists' : 'none');
+    const freeLink = document.getElementById('geminiGetFreeLink');
+    const upgradeLink = document.getElementById('geminiUpgradeLink');
     if (result.geminiApiKey) {
       geminiKeyInput.value = result.geminiApiKey;
       geminiStatus.style.display = 'inline';
+      if (freeLink) freeLink.style.display = 'none';
+      if (upgradeLink) upgradeLink.style.display = 'block';
     } else {
       geminiKeyInput.value = '';
       geminiStatus.style.display = 'none';
+      if (freeLink) freeLink.style.display = 'block';
+      if (upgradeLink) upgradeLink.style.display = 'none';
     }
     return !!result.geminiApiKey;
   } catch (e) {
@@ -3040,6 +3046,10 @@ async function saveGeminiKey() {
     await chrome.storage.sync.set({ geminiApiKey: key });
     console.log('[SnapToAI] Gemini key saved');
     geminiStatus.style.display = 'inline';
+    const freeLink = document.getElementById('geminiGetFreeLink');
+    const upgradeLink = document.getElementById('geminiUpgradeLink');
+    if (freeLink) freeLink.style.display = 'none';
+    if (upgradeLink) upgradeLink.style.display = 'block';
     hideGeminiModal();
   } catch (e) {
     console.error('[SnapToAI] Error saving Gemini key:', e);
@@ -3052,6 +3062,10 @@ async function clearGeminiKey() {
     console.log('[SnapToAI] Gemini key cleared');
     geminiKeyInput.value = '';
     geminiStatus.style.display = 'none';
+    const freeLink = document.getElementById('geminiGetFreeLink');
+    const upgradeLink = document.getElementById('geminiUpgradeLink');
+    if (freeLink) freeLink.style.display = 'block';
+    if (upgradeLink) upgradeLink.style.display = 'none';
   } catch (e) {
     console.error('[SnapToAI] Error clearing Gemini key:', e);
   }
