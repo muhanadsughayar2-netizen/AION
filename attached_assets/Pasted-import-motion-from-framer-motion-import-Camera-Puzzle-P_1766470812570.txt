@@ -1,0 +1,389 @@
+import { motion } from "framer-motion";
+import { Camera, Puzzle, Pin, Play, HelpCircle, Sparkles, Zap, MousePointer2, Scissors, Star } from "lucide-react";
+import { Link } from "react-router-dom";
+
+const FloatingParticle = ({ delay, duration, x, y, size, type }: { delay: number; duration: number; x: number; y: number; size: number; type: 'star' | 'circle' | 'sparkle' }) => {
+  const icons = {
+    star: "⭐",
+    circle: "✨",
+    sparkle: "🌟"
+  };
+  
+  return (
+    <motion.div
+      className="absolute text-yellow-400 pointer-events-none select-none"
+      style={{ left: `${x}%`, top: `${y}%`, fontSize: size }}
+      initial={{ opacity: 0, scale: 0, rotate: 0 }}
+      animate={{ 
+        opacity: [0, 1, 1, 0],
+        scale: [0, 1.2, 1, 0.8],
+        rotate: [0, 180, 360],
+        y: [0, -30, -60, -90]
+      }}
+      transition={{ 
+        duration,
+        delay,
+        repeat: Infinity,
+        repeatDelay: Math.random() * 3
+      }}
+    >
+      {icons[type]}
+    </motion.div>
+  );
+};
+
+const GlowOrb = ({ delay, x, y, color }: { delay: number; x: number; y: number; color: string }) => (
+  <motion.div
+    className="absolute rounded-full blur-3xl pointer-events-none"
+    style={{ 
+      left: `${x}%`, 
+      top: `${y}%`, 
+      width: 200, 
+      height: 200,
+      background: color
+    }}
+    animate={{ 
+      scale: [1, 1.3, 1],
+      opacity: [0.1, 0.25, 0.1],
+      x: [0, 30, 0],
+      y: [0, -20, 0]
+    }}
+    transition={{ 
+      duration: 8,
+      delay,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }}
+  />
+);
+
+const Welcome = () => {
+  const particles = Array.from({ length: 25 }, (_, i) => ({
+    id: i,
+    delay: Math.random() * 5,
+    duration: 4 + Math.random() * 4,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: 16 + Math.random() * 20,
+    type: ['star', 'circle', 'sparkle'][Math.floor(Math.random() * 3)] as 'star' | 'circle' | 'sparkle'
+  }));
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-8 overflow-hidden relative">
+      {/* Animated Glow Orbs */}
+      <GlowOrb delay={0} x={10} y={20} color="rgba(59, 130, 246, 0.3)" />
+      <GlowOrb delay={2} x={80} y={60} color="rgba(168, 85, 247, 0.3)" />
+      <GlowOrb delay={4} x={50} y={10} color="rgba(236, 72, 153, 0.2)" />
+      <GlowOrb delay={1} x={20} y={80} color="rgba(34, 197, 94, 0.2)" />
+      
+      {/* Floating Particles */}
+      {particles.map((p) => (
+        <FloatingParticle key={p.id} {...p} />
+      ))}
+
+      {/* Animated Grid Lines */}
+      <div className="absolute inset-0 overflow-hidden opacity-10">
+        <motion.div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `
+              linear-gradient(90deg, rgba(59, 130, 246, 0.3) 1px, transparent 1px),
+              linear-gradient(rgba(59, 130, 246, 0.3) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }}
+          animate={{ 
+            backgroundPosition: ['0px 0px', '60px 60px']
+          }}
+          transition={{ 
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+        />
+      </div>
+
+      {/* Main Card */}
+      <motion.div
+        className="relative z-10 max-w-2xl w-full"
+        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+      >
+        {/* Glow Effect Behind Card */}
+        <motion.div
+          className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl blur-xl opacity-40"
+          animate={{ 
+            opacity: [0.3, 0.5, 0.3],
+            scale: [1, 1.02, 1]
+          }}
+          transition={{ 
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+        
+        <div className="relative bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-10 shadow-2xl">
+          {/* Animated Mascot */}
+          <motion.div
+            className="absolute -top-6 -right-6 text-6xl"
+            animate={{ 
+              rotate: [0, 10, -10, 0],
+              scale: [1, 1.1, 1]
+            }}
+            transition={{ 
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            🚀
+          </motion.div>
+
+          {/* Header */}
+          <motion.div
+            className="text-center mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <motion.div
+              className="inline-flex items-center gap-2 text-4xl font-bold mb-2"
+              animate={{ 
+                backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
+              }}
+              transition={{ duration: 5, repeat: Infinity }}
+              style={{
+                background: 'linear-gradient(90deg, #3b82f6, #a855f7, #ec4899, #3b82f6)',
+                backgroundSize: '200% 100%',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}
+            >
+              <motion.span
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 15, -15, 0]
+                }}
+                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 1 }}
+              >
+                <Sparkles className="w-8 h-8" style={{ color: '#f59e0b' }} />
+              </motion.span>
+              Welcome to Snap To AI
+            </motion.div>
+            
+            <motion.div
+              className="h-1 w-32 mx-auto rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ delay: 0.5, duration: 0.8 }}
+            />
+          </motion.div>
+
+          {/* Content */}
+          <div className="space-y-6 text-slate-300">
+            <motion.div
+              className="flex items-start gap-4 p-4 rounded-xl bg-slate-800/50 border border-slate-700/30"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+              whileHover={{ scale: 1.02, borderColor: 'rgba(59, 130, 246, 0.5)' }}
+            >
+              <motion.div
+                className="p-3 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600"
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Camera className="w-6 h-6 text-white" />
+              </motion.div>
+              <div>
+                <p className="text-lg">
+                  Click the Snap To AI icon to open the extension, then choose Snap, Snip, Full Page, or AI to capture and share instantly
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div
+              className="flex items-start gap-4 p-4 rounded-xl bg-slate-800/50 border border-slate-700/30"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+              whileHover={{ scale: 1.02, borderColor: 'rgba(168, 85, 247, 0.5)' }}
+            >
+              <motion.div
+                className="p-3 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600"
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Puzzle className="w-6 h-6 text-white" />
+              </motion.div>
+              <div>
+                <p className="text-lg">
+                  If you don't see the Snap To AI icon, click the "Extensions" puzzle icon in the top right of your browser
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div
+              className="flex items-start gap-4 p-4 rounded-xl bg-slate-800/50 border border-slate-700/30"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6 }}
+              whileHover={{ scale: 1.02, borderColor: 'rgba(236, 72, 153, 0.5)' }}
+            >
+              <motion.div
+                className="p-3 rounded-lg bg-gradient-to-br from-pink-500 to-red-600"
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Pin className="w-6 h-6 text-white" />
+              </motion.div>
+              <div>
+                <p className="text-lg">
+                  Click the pin next to "Snap To AI" so it turns blue: 
+                  <motion.span
+                    className="inline-block mx-2"
+                    animate={{ scale: [1, 1.3, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  >
+                    📌
+                  </motion.span>
+                  → 
+                  <motion.span
+                    className="inline-block mx-2 text-blue-400"
+                    animate={{ scale: [1, 1.3, 1], rotate: [0, 10, 0] }}
+                    transition={{ duration: 1, repeat: Infinity, delay: 0.5 }}
+                  >
+                    📍
+                  </motion.span>
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Speed Badge */}
+            <motion.div
+              className="flex items-center justify-center gap-2 py-3 px-4 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.65 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              >
+                <Zap className="w-5 h-5 text-green-400" />
+              </motion.div>
+              <span className="text-green-400 font-semibold text-sm">Lightning Fast — Fastest Snap & Snip Ever</span>
+            </motion.div>
+
+            {/* Features Quick Preview */}
+            <motion.div
+              className="grid grid-cols-4 gap-3 pt-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              {[
+                { icon: MousePointer2, label: "Snap", color: "from-green-500 to-emerald-600" },
+                { icon: Scissors, label: "Snip", color: "from-orange-500 to-red-600" },
+                { icon: Zap, label: "Full Page", color: "from-yellow-500 to-orange-600" },
+                { icon: Star, label: "AI", color: "from-cyan-400 to-blue-600" }
+              ].map((feature, i) => (
+                <motion.div
+                  key={feature.label}
+                  className="flex flex-col items-center gap-2 p-4 rounded-xl bg-slate-800/30 border border-slate-700/30"
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 + i * 0.1 }}
+                >
+                  <motion.div
+                    className={`p-3 rounded-lg bg-gradient-to-br ${feature.color}`}
+                    whileHover={{ rotate: 360 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <feature.icon className="w-5 h-5 text-white" />
+                  </motion.div>
+                  <span className="text-sm font-medium text-slate-400">{feature.label}</span>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Links */}
+            <motion.div
+              className="pt-6 border-t border-slate-700/50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9 }}
+            >
+              <p className="text-slate-400 mb-4">For additional information, check out:</p>
+              <ul className="space-y-3">
+                <motion.li
+                  whileHover={{ x: 10 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Link to="/tutorials" className="flex items-center gap-3 text-blue-400 hover:text-blue-300 transition-colors group">
+                    <motion.div
+                      className="p-2 rounded-lg bg-blue-500/20 group-hover:bg-blue-500/30"
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      <Play className="w-4 h-4" />
+                    </motion.div>
+                    <span className="font-medium">Demo videos & Tutorials</span>
+                    <Sparkles className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
+                </motion.li>
+                <motion.li
+                  whileHover={{ x: 10 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Link to="/faq" className="flex items-center gap-3 text-purple-400 hover:text-purple-300 transition-colors group">
+                    <motion.div
+                      className="p-2 rounded-lg bg-purple-500/20 group-hover:bg-purple-500/30"
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      <HelpCircle className="w-4 h-4" />
+                    </motion.div>
+                    <span className="font-medium">Frequently asked questions</span>
+                    <Sparkles className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
+                </motion.li>
+              </ul>
+            </motion.div>
+          </div>
+
+          {/* AI Feature Highlight */}
+          <motion.div
+            className="mt-6 p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1 }}
+          >
+            <div className="flex items-start gap-3">
+              <motion.div
+                className="p-2 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600"
+                animate={{ 
+                  boxShadow: ['0 0 0px rgba(34, 211, 238, 0)', '0 0 20px rgba(34, 211, 238, 0.5)', '0 0 0px rgba(34, 211, 238, 0)']
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Star className="w-5 h-5 text-white" />
+              </motion.div>
+              <div>
+                <p className="text-cyan-300 font-semibold mb-1">Free AI Analysis with Gemini</p>
+                <p className="text-slate-400 text-sm">
+                  Capture and send to any AI you prefer, or connect free with Gemini for instant AI-powered analysis of your screenshots.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+export default Welcome;
