@@ -289,124 +289,14 @@
     .test-btn:hover {
       background: rgba(0, 217, 255, 0.2);
     }
-    
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .tutor-control {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-left: 20px;
-      padding: 6px 12px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 20px;
-    }
-    
-    .tutor-label {
-      font-size: 12px;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 36px;
-      height: 20px;
-    }
-    
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #333;
-      transition: 0.3s;
-    }
-    
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 14px;
-      width: 14px;
-      left: 3px;
-      bottom: 3px;
-      background-color: #888;
-      transition: 0.3s;
-    }
-    
-    .slider.round {
-      border-radius: 20px;
-    }
-    
-    .slider.round:before {
-      border-radius: 50%;
-    }
-    
-    input:checked + .slider {
-      background: linear-gradient(135deg, #9b72cb 0%, #d96570 100%);
-    }
-    
-    input:checked + .slider:before {
-      transform: translateX(16px);
-      background-color: #fff;
-    }
-    
-    .voice-btn {
-      background: rgba(255, 255, 255, 0.1);
-      border: none;
-      font-size: 18px;
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .voice-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-    
-    .voice-btn.speaking {
-      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
-      animation: pulse 1s infinite;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
-    }
   </style>
 </head>
 <body>
   <div class="header">
     <div class="header-left">
       <div class="logo">Gemini 3 <span>Flash</span></div>
-      <div class="tutor-control">
-        <span class="tutor-label">Tutor</span>
-        <label class="switch">
-          <input type="checkbox" id="tutorToggle">
-          <span class="slider round"></span>
-        </label>
-      </div>
     </div>
-    <div class="header-right">
-      <button class="voice-btn" id="voiceBtn" title="Read response aloud">🔊</button>
-      <button class="close-btn" id="closeBtn">✕</button>
-    </div>
+    <button class="close-btn" id="closeBtn">✕</button>
   </div>
   
   <div class="main-content">
