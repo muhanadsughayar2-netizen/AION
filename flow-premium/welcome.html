@@ -428,6 +428,45 @@
       height: 16px;
     }
 
+    /* Gemini Section */
+    .gemini-section {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-top: 24px;
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(59, 130, 246, 0.1));
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      border-radius: 16px;
+      animation: fade-in-up 0.5s ease-out 0.95s both;
+    }
+
+    .gemini-icon {
+      padding: 12px;
+      background: linear-gradient(135deg, #22d3ee, #3b82f6);
+      border-radius: 12px;
+      flex-shrink: 0;
+    }
+
+    .gemini-icon svg {
+      width: 24px;
+      height: 24px;
+      color: white;
+    }
+
+    .gemini-content h3 {
+      color: #22d3ee;
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .gemini-content p {
+      color: #94a3b8;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
     /* CTA Button */
     .cta-wrapper {
       text-align: center;
@@ -585,7 +624,7 @@
                 <polygon points="5 3 19 12 5 21 5 3"/>
               </svg>
             </div>
-            <span>Visit snaptoai.com for tutorials & tips</span>
+            <span>Demo videos & Tutorials</span>
           </a>
           <a href="https://snaptoai.com/#faq" target="_blank" class="link-item">
             <div class="link-icon">
@@ -595,8 +634,20 @@
                 <line x1="12" y1="17" x2="12.01" y2="17"/>
               </svg>
             </div>
-            <span>Frequently Asked Questions</span>
+            <span>Frequently asked questions</span>
           </a>
+        </div>
+      </div>
+
+      <div class="gemini-section">
+        <div class="gemini-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+        </div>
+        <div class="gemini-content">
+          <h3>Free AI Analysis with Gemini</h3>
+          <p>Capture and send to any AI you prefer, or connect free with Gemini for instant AI-powered analysis of your screenshots.</p>
         </div>
       </div>
 
