@@ -1701,8 +1701,16 @@ function updateThumbnails() {
       // AI button click handler - opens AI chat portal
       aiBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        console.log('[SnapToAI] AI Analysis clicked for snap', index + 1);
-        openAiChat(currentSnaps[index]); // Opens AI chat with this image
+        // If items are selected, send ALL selected images to AI
+        if (selectedSnapIds.size > 0) {
+          const selectedImages = Array.from(selectedSnapIds).sort((a,b) => a-b).map(i => currentSnaps[i]);
+          console.log('[SnapToAI] AI Analysis with', selectedImages.length, 'selected snaps');
+          openAiChat(selectedImages);
+        } else {
+          // No selection - send just this one image
+          console.log('[SnapToAI] AI Analysis clicked for snap', index + 1);
+          openAiChat([currentSnaps[index]]);
+        }
       });
       
       const img = document.createElement('img');
@@ -3118,8 +3126,10 @@ async function compressForStorage(dataUrl) {
   });
 }
 
-async function openAiChat(imageDataUrl) {
-  console.log('[SnapToAI] Opening AI Chat in new window');
+async function openAiChat(imageDataUrls) {
+  // Accept array of images (multi-select support)
+  const images = Array.isArray(imageDataUrls) ? imageDataUrls : [imageDataUrls];
+  console.log('[SnapToAI] Opening AI Chat with', images.length, 'image(s)');
   
   // Show loading indicator on AI button
   const aiButton = document.querySelector('.ai-orb, #aiOrbButton');
@@ -3127,9 +3137,6 @@ async function openAiChat(imageDataUrl) {
     aiButton.style.opacity = '0.5';
     aiButton.style.pointerEvents = 'none';
   }
-  
-  // Find the index of this image in snaps array
-  const imageIndex = currentSnaps.indexOf(imageDataUrl);
   
   // Try to get page text for smart AI context (with 2s timeout to prevent freeze)
   let pageText = '';
@@ -3151,38 +3158,32 @@ async function openAiChat(imageDataUrl) {
   
   // Clear old session data first to prevent quota errors
   try {
-    await chrome.storage.session.remove(['snaps', 'snapMetadata', 'pageText', 'selectedSnap', 'selectedSnapMeta']);
+    await chrome.storage.session.remove(['snaps', 'snapMetadata', 'pageText', 'selectedSnap', 'selectedSnapMeta', 'selectedSnaps']);
   } catch (e) {}
   
-  // Only store the SELECTED snap, not all snaps (prevents quota exceeded on large captures)
-  const selectedSnap = currentSnaps[imageIndex] || currentSnaps[0];
-  const selectedMeta = currentSnapMetadata?.[imageIndex] || null;
-  
-  // COMPRESS large images to fit in session storage
-  const compressedSnap = await compressForStorage(selectedSnap);
+  // COMPRESS all images to fit in session storage
+  const compressedSnaps = await Promise.all(images.map(img => compressForStorage(img)));
   
   // Limit pageText to 10KB to prevent quota issues
   const limitedPageText = pageText.length > 10000 ? pageText.substring(0, 10000) : pageText;
   
-  // QUOTA FIX: Store compressed snap + limited text
+  // Store compressed snaps array + limited text
   try {
     await chrome.storage.session.set({ 
-      selectedSnap: compressedSnap,
-      selectedSnapMeta: selectedMeta,
+      selectedSnaps: compressedSnaps,
       pageText: limitedPageText
     });
   } catch (e) {
     console.error('[SnapToAI] Storage error, trying without pageText:', e);
-    // Last resort: store just the image
     try {
-      await chrome.storage.session.set({ selectedSnap: compressedSnap });
+      await chrome.storage.session.set({ selectedSnaps: compressedSnaps });
     } catch (e2) {
-      console.error('[SnapToAI] Cannot store image:', e2);
+      console.error('[SnapToAI] Cannot store images:', e2);
       if (aiButton) {
         aiButton.style.opacity = '1';
         aiButton.style.pointerEvents = 'auto';
       }
-      alert('Image too large for AI chat. Try a smaller capture.');
+      alert('Images too large for AI chat. Try fewer or smaller captures.');
       return;
     }
   }
@@ -3193,14 +3194,14 @@ async function openAiChat(imageDataUrl) {
     aiButton.style.pointerEvents = 'auto';
   }
   
-  // Open AI chat in a separate window like the Snap Editor
+  // Open AI chat in a separate window
   const width = Math.min(900, Math.round(screen.width * 0.8));
   const height = Math.min(650, Math.round(screen.height * 0.8));
   const left = Math.round((screen.width - width) / 2);
   const top = Math.round((screen.height - height) / 2);
   
   chrome.windows.create({
-    url: chrome.runtime.getURL(`ai-chat.html?imageIndex=${imageIndex}`),
+    url: chrome.runtime.getURL(`ai-chat.html?count=${images.length}`),
     type: 'popup',
     width: width,
     height: height,

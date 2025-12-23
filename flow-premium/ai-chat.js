@@ -1,7 +1,7 @@
 // AI Chat Window Script
 // Handles AI chat in a standalone window
 
-let currentImage = null;
+let currentImages = []; // Support multiple images
 let currentPageText = '';
 let conversationHistory = [];
 let lastRequestTime = 0;
@@ -11,38 +11,55 @@ const SYSTEM_PROMPT = "You are Gemini, a helpful AI assistant. Be warm, friendly
 
 const SMART_SYSTEM_PROMPT = "I am providing you with the raw text of a webpage for accuracy, and the screenshot of that page for visual context (charts, layout, images). Please use the text for your primary analysis and the images to confirm visual details. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. ALWAYS end with a helpful follow-up question.";
 
-// Get image from URL params or storage
+const MULTI_IMAGE_PROMPT = "I am providing you with multiple screenshots that together show the full picture. Please analyze ALL images together to understand the complete context. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. ALWAYS end with a helpful follow-up question.";
+
+// Get images from URL params or storage
 async function initializeChat() {
   const urlParams = new URLSearchParams(window.location.search);
-  const imageIndex = urlParams.get('imageIndex');
+  const count = urlParams.get('count');
   
-  if (imageIndex !== null) {
-    // Get image and page text from session storage
-    // Try selectedSnap first (quota-friendly), fallback to full snaps array
-    const result = await chrome.storage.session.get(['selectedSnap', 'snaps', 'pageText']);
-    currentPageText = result.pageText || '';
-    const index = parseInt(imageIndex);
+  // Get images and page text from session storage
+  const result = await chrome.storage.session.get(['selectedSnaps', 'selectedSnap', 'snaps', 'pageText']);
+  currentPageText = result.pageText || '';
+  
+  if (currentPageText) {
+    console.log('[AI Chat] Got page text:', currentPageText.length, 'chars');
+  }
+  
+  // Use new selectedSnaps array, fallback to legacy selectedSnap
+  let imagesToUse = result.selectedSnaps || [];
+  if (imagesToUse.length === 0 && result.selectedSnap) {
+    imagesToUse = [result.selectedSnap];
+  }
+  
+  if (imagesToUse.length > 0) {
+    currentImages = imagesToUse;
+    const previewContainer = document.querySelector('.image-preview');
     
-    if (currentPageText) {
-      console.log('[AI Chat] Got page text:', currentPageText.length, 'chars');
-    }
-    
-    // Use selectedSnap if available, otherwise find in snaps array
-    let imageToUse = result.selectedSnap;
-    if (!imageToUse && result.snaps && result.snaps[index]) {
-      imageToUse = result.snaps[index];
-    }
-    
-    if (imageToUse) {
-      currentImage = imageToUse;
-      document.getElementById('previewImage').src = currentImage;
+    if (currentImages.length === 1) {
+      // Single image - show as before
+      document.getElementById('previewImage').src = currentImages[0];
     } else {
-      // Show error if image not found
-      document.querySelector('.image-preview').innerHTML = '<div style="color: #ff5252; padding: 20px; text-align: center;">Image not found. Please try again.</div>';
-      addBubble('Could not load image. Please close and try again.', 'error');
+      // Multiple images - show grid
+      previewContainer.innerHTML = '<div class="multi-image-grid" id="multiImageGrid"></div>';
+      const grid = document.getElementById('multiImageGrid');
+      currentImages.forEach((img, i) => {
+        const imgEl = document.createElement('img');
+        imgEl.src = img;
+        imgEl.alt = `Screenshot ${i + 1}`;
+        imgEl.className = 'grid-image';
+        imgEl.title = `Screenshot ${i + 1} of ${currentImages.length}`;
+        grid.appendChild(imgEl);
+      });
+      // Add info badge
+      const badge = document.createElement('div');
+      badge.className = 'multi-image-badge';
+      badge.textContent = `${currentImages.length} screenshots`;
+      previewContainer.appendChild(badge);
     }
   } else {
-    document.querySelector('.image-preview').innerHTML = '<div style="color: #888; padding: 20px; text-align: center;">No image selected</div>';
+    document.querySelector('.image-preview').innerHTML = '<div style="color: #ff5252; padding: 20px; text-align: center;">Images not found. Please try again.</div>';
+    addBubble('Could not load images. Please close and try again.', 'error');
   }
   
   // Focus input
@@ -80,8 +97,11 @@ function removeLoading() {
   if (loading) loading.remove();
 }
 
-// Send message to Gemini API
-async function sendToGemini(prompt, imageDataUrl) {
+// Send message to Gemini API (supports multiple images)
+async function sendToGemini(prompt, imageDataUrls) {
+  // Accept array of images
+  const images = Array.isArray(imageDataUrls) ? imageDataUrls : [imageDataUrls];
+  
   // Throttle check
   const now = Date.now();
   const timeSinceLastRequest = now - lastRequestTime;
@@ -100,9 +120,6 @@ async function sendToGemini(prompt, imageDataUrl) {
   
   lastRequestTime = Date.now();
   
-  // Use original high-quality image (no compression)
-  const base64Data = imageDataUrl.split(',')[1];
-  
   // Build conversation
   const contents = [];
   
@@ -114,19 +131,26 @@ async function sendToGemini(prompt, imageDataUrl) {
     });
   }
   
-  // Add current message with image
+  // Add current message with images (on first message only)
   const userParts = [];
   if (contents.length === 0) {
-    const mimeType = imageDataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
-    userParts.push({
-      inlineData: {
-        mimeType: mimeType,
-        data: base64Data
-      }
-    });
+    // Add ALL images to the first message
+    for (const imageDataUrl of images) {
+      const base64Data = imageDataUrl.split(',')[1];
+      const mimeType = imageDataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+      userParts.push({
+        inlineData: {
+          mimeType: mimeType,
+          data: base64Data
+        }
+      });
+    }
   }
   userParts.push({ text: prompt });
   contents.push({ role: 'user', parts: userParts });
+  
+  // Use multi-image prompt if multiple images
+  const systemPrompt = images.length > 1 ? MULTI_IMAGE_PROMPT : SYSTEM_PROMPT;
   
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
@@ -136,7 +160,7 @@ async function sendToGemini(prompt, imageDataUrl) {
       body: JSON.stringify({
         systemInstruction: {
           parts: [{
-            text: SYSTEM_PROMPT
+            text: systemPrompt
           }]
         },
         contents: contents,
@@ -174,7 +198,7 @@ async function handleSend() {
   const thread = document.getElementById('chatThread');
   const prompt = input.value.trim();
   
-  if (!prompt || !currentImage) return;
+  if (!prompt || currentImages.length === 0) return;
   
   input.value = '';
   sendBtn.disabled = true;
@@ -199,9 +223,6 @@ async function handleSend() {
     
     lastRequestTime = Date.now();
     
-    // Use original high-quality image (no compression)
-    const base64Data = currentImage.split(',')[1];
-    
     // Build request
     const contents = [];
     for (const msg of conversationHistory) {
@@ -210,9 +231,12 @@ async function handleSend() {
     
     const userParts = [];
     if (contents.length === 0) {
-      // First message: include image
-      const mimeType = currentImage.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
-      userParts.push({ inlineData: { mimeType: mimeType, data: base64Data } });
+      // First message: include ALL images
+      for (const imgUrl of currentImages) {
+        const base64Data = imgUrl.split(',')[1];
+        const mimeType = imgUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+        userParts.push({ inlineData: { mimeType: mimeType, data: base64Data } });
+      }
       // If we have page text, include it for smarter analysis
       if (currentPageText && currentPageText.length > 800) {
         userParts.push({ text: `[PAGE TEXT FOR CONTEXT]:\n${currentPageText}\n\n[USER QUESTION]: ${prompt}` });
@@ -224,8 +248,13 @@ async function handleSend() {
     }
     contents.push({ role: 'user', parts: userParts });
     
-    // Use smart prompt if we have page text
-    const systemPrompt = (currentPageText && currentPageText.length > 800) ? SMART_SYSTEM_PROMPT : SYSTEM_PROMPT;
+    // Use appropriate prompt based on content
+    let systemPrompt = SYSTEM_PROMPT;
+    if (currentImages.length > 1) {
+      systemPrompt = MULTI_IMAGE_PROMPT;
+    } else if (currentPageText && currentPageText.length > 800) {
+      systemPrompt = SMART_SYSTEM_PROMPT;
+    }
     
     // Stream request
     const response = await fetch(
