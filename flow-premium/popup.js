@@ -3161,24 +3161,29 @@ async function openAiChat(imageDataUrls) {
     await chrome.storage.session.remove(['snaps', 'snapMetadata', 'pageText', 'selectedSnap', 'selectedSnapMeta', 'selectedSnaps']);
   } catch (e) {}
   
-  // COMPRESS all images to fit in session storage
-  const compressedSnaps = await Promise.all(images.map(img => compressForStorage(img)));
-  
   // Limit pageText to 10KB to prevent quota issues
   const limitedPageText = pageText.length > 10000 ? pageText.substring(0, 10000) : pageText;
   
-  // Store compressed snaps array + limited text
+  // Try to store ORIGINAL high-quality images first (no compression for AI)
+  // Only compress as fallback if storage quota exceeded
   try {
     await chrome.storage.session.set({ 
-      selectedSnaps: compressedSnaps,
+      selectedSnaps: images, // ORIGINAL quality for AI
       pageText: limitedPageText
     });
+    console.log('[SnapToAI] Stored', images.length, 'original quality images for AI');
   } catch (e) {
-    console.error('[SnapToAI] Storage error, trying without pageText:', e);
+    console.warn('[SnapToAI] Storage quota exceeded, compressing images...', e);
+    // Fallback: compress images to fit in session storage
+    const compressedSnaps = await Promise.all(images.map(img => compressForStorage(img)));
     try {
-      await chrome.storage.session.set({ selectedSnaps: compressedSnaps });
+      await chrome.storage.session.set({ 
+        selectedSnaps: compressedSnaps,
+        pageText: limitedPageText
+      });
+      console.log('[SnapToAI] Stored compressed images (storage fallback)');
     } catch (e2) {
-      console.error('[SnapToAI] Cannot store images:', e2);
+      console.error('[SnapToAI] Cannot store images even compressed:', e2);
       if (aiButton) {
         aiButton.style.opacity = '1';
         aiButton.style.pointerEvents = 'auto';
