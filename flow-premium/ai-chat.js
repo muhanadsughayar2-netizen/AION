@@ -106,10 +106,9 @@ async function sendToGemini(prompt, imageDataUrls) {
     throw new Error(`Please wait ${waitTime}s (free tier limit)`);
   }
   
-  // Get API key and model from sync storage
-  const keyResult = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel']);
+  // Get API key from sync storage (same as popup.js)
+  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
   const apiKey = keyResult.geminiApiKey;
-  const selectedModel = keyResult.geminiModel || 'gemini-3-flash-preview';
   
   if (!apiKey) {
     throw new Error('Please set your Gemini API key in Settings');
@@ -150,7 +149,7 @@ async function sendToGemini(prompt, imageDataUrls) {
   const systemPrompt = images.length > 1 ? MULTI_IMAGE_PROMPT : SYSTEM_PROMPT;
   
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -215,10 +214,9 @@ async function handleSend() {
       throw new Error(`Please wait ${waitTime}s (free tier limit)`);
     }
     
-    // Get API key and model preference
-    const keyResult = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel']);
+    // Get API key
+    const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
     const apiKey = keyResult.geminiApiKey;
-    const selectedModel = keyResult.geminiModel || 'gemini-3-flash-preview';
     if (!apiKey) throw new Error('Please set your Gemini API key in Settings');
     
     lastRequestTime = Date.now();
@@ -256,9 +254,9 @@ async function handleSend() {
       systemPrompt = SMART_SYSTEM_PROMPT;
     }
     
-    // Stream request using selected model
+    // Stream request
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:streamGenerateContent?alt=sse&key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent?alt=sse&key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

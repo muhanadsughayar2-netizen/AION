@@ -228,60 +228,6 @@ footer a:hover {
   text-decoration: underline;
 }
 
-/* AI Section Styles */
-.hidden { display: none !important; }
-
-.ai-section {
-  border: 1px solid rgba(106, 17, 203, 0.3);
-  background: linear-gradient(135deg, rgba(106, 17, 203, 0.1) 0%, rgba(37, 117, 252, 0.1) 100%);
-}
-
-.ai-section h2 {
-  color: #a855f7;
-}
-
-.sub-link {
-  color: #4facfe;
-  font-size: 13px;
-  text-decoration: none;
-  margin-top: 8px;
-  display: inline-block;
-  transition: color 0.2s;
-}
-
-.sub-link:hover {
-  color: #00bcd4;
-  text-decoration: underline;
-}
-
-.divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.15);
-  margin: 20px 0;
-}
-
-.upgrade-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 16px;
-  padding: 14px 20px;
-  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-  color: white;
-  text-decoration: none;
-  border-radius: 10px;
-  font-weight: bold;
-  box-shadow: 0 4px 15px rgba(106, 17, 203, 0.4);
-  transition: all 0.2s;
-}
-
-.upgrade-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(106, 17, 203, 0.5);
-}
-
-.lock-icon { margin-right: 10px; }
-
 @media (max-width: 500px) {
   .container {
     padding: 20px 15px;

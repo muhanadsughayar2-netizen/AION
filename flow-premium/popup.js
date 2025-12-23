@@ -3016,18 +3016,12 @@ async function loadGeminiKey() {
   try {
     const result = await chrome.storage.sync.get(['geminiApiKey']);
     console.log('[SnapToAI] Loaded Gemini key:', result.geminiApiKey ? 'exists' : 'none');
-    const freeLink = document.getElementById('geminiGetFreeLink');
-    const upgradeLink = document.getElementById('geminiUpgradeLink');
     if (result.geminiApiKey) {
       geminiKeyInput.value = result.geminiApiKey;
       geminiStatus.style.display = 'inline';
-      if (freeLink) freeLink.style.display = 'none';
-      if (upgradeLink) upgradeLink.style.display = 'block';
     } else {
       geminiKeyInput.value = '';
       geminiStatus.style.display = 'none';
-      if (freeLink) freeLink.style.display = 'block';
-      if (upgradeLink) upgradeLink.style.display = 'none';
     }
     return !!result.geminiApiKey;
   } catch (e) {
@@ -3046,10 +3040,6 @@ async function saveGeminiKey() {
     await chrome.storage.sync.set({ geminiApiKey: key });
     console.log('[SnapToAI] Gemini key saved');
     geminiStatus.style.display = 'inline';
-    const freeLink = document.getElementById('geminiGetFreeLink');
-    const upgradeLink = document.getElementById('geminiUpgradeLink');
-    if (freeLink) freeLink.style.display = 'none';
-    if (upgradeLink) upgradeLink.style.display = 'block';
     hideGeminiModal();
   } catch (e) {
     console.error('[SnapToAI] Error saving Gemini key:', e);
@@ -3062,30 +3052,9 @@ async function clearGeminiKey() {
     console.log('[SnapToAI] Gemini key cleared');
     geminiKeyInput.value = '';
     geminiStatus.style.display = 'none';
-    const freeLink = document.getElementById('geminiGetFreeLink');
-    const upgradeLink = document.getElementById('geminiUpgradeLink');
-    if (freeLink) freeLink.style.display = 'block';
-    if (upgradeLink) upgradeLink.style.display = 'none';
   } catch (e) {
     console.error('[SnapToAI] Error clearing Gemini key:', e);
   }
-}
-
-// ===== UPGRADE GUIDE MODAL =====
-const upgradeModal = document.getElementById('upgradeModal');
-const upgradeClose = document.getElementById('upgradeClose');
-const geminiUpgradeLink = document.getElementById('geminiUpgradeLink');
-
-function showUpgradeModal() {
-  console.log('[SnapToAI] Opening upgrade modal');
-  upgradeModal.style.display = 'flex';
-  setTimeout(() => upgradeModal.classList.add('show'), 10);
-}
-
-function hideUpgradeModal() {
-  console.log('[SnapToAI] Closing upgrade modal');
-  upgradeModal.classList.remove('show');
-  setTimeout(() => upgradeModal.style.display = 'none', 300);
 }
 
 // Event listeners
@@ -3094,11 +3063,6 @@ if (geminiSaveBtn) geminiSaveBtn.addEventListener('click', saveGeminiKey);
 if (geminiClearBtn) geminiClearBtn.addEventListener('click', clearGeminiKey);
 if (geminiModal) geminiModal.addEventListener('click', (e) => {
   if (e.target === geminiModal) hideGeminiModal();
-});
-if (geminiUpgradeLink) geminiUpgradeLink.addEventListener('click', showUpgradeModal);
-if (upgradeClose) upgradeClose.addEventListener('click', hideUpgradeModal);
-if (upgradeModal) upgradeModal.addEventListener('click', (e) => {
-  if (e.target === upgradeModal) hideUpgradeModal();
 });
 
 // Load key on popup open
