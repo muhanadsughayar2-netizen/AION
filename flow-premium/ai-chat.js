@@ -7,11 +7,11 @@ let conversationHistory = [];
 let lastRequestTime = 0;
 const THROTTLE_MS = 3000;
 
-const SYSTEM_PROMPT = "You are Gemini, a helpful AI assistant. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. ALWAYS end with a helpful follow-up question to keep the conversation going.";
+const SYSTEM_PROMPT = "You are a thorough, exhaustive AI assistant. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never ask the user if they want more—just give it all now. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.";
 
-const SMART_SYSTEM_PROMPT = "I am providing you with the raw text of a webpage for accuracy, and the screenshot of that page for visual context (charts, layout, images). Please use the text for your primary analysis and the images to confirm visual details. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. ALWAYS end with a helpful follow-up question.";
+const SMART_SYSTEM_PROMPT = "You are a thorough, exhaustive AI assistant. I am providing you with the raw text of a webpage for accuracy, and the screenshot of that page for visual context (charts, layout, images). Please use the text for your primary analysis and the images to confirm visual details. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never truncate. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.";
 
-const MULTI_IMAGE_PROMPT = "I am providing you with multiple screenshots that together show the full picture. Please analyze ALL images together to understand the complete context. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. ALWAYS end with a helpful follow-up question.";
+const MULTI_IMAGE_PROMPT = "You are a thorough, exhaustive AI assistant. I am providing you with multiple screenshots that together show the full picture. Please analyze ALL images together to understand the complete context. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never truncate. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.";
 
 // Get images from URL params or storage
 async function initializeChat() {
@@ -161,8 +161,10 @@ async function sendToGemini(prompt, imageDataUrls) {
         },
         contents: contents,
         generationConfig: {
-          maxOutputTokens: 1024,
-          temperature: 0.3
+          maxOutputTokens: 8192,
+          temperature: 0.7,
+          topP: 0.95,
+          topK: 40
         }
       })
     }
@@ -261,7 +263,7 @@ async function handleSend() {
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: contents,
-          generationConfig: { maxOutputTokens: 1024, temperature: 0.7 }
+          generationConfig: { maxOutputTokens: 8192, temperature: 0.7, topP: 0.95, topK: 40 }
         })
       }
     );
