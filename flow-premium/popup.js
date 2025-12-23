@@ -1702,20 +1702,15 @@ function updateThumbnails() {
       aiBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         // If items are selected, send ALL selected images to AI
-        console.log('[SnapToAI] AI button clicked. Selected IDs:', Array.from(selectedSnapIds), 'Size:', selectedSnapIds.size);
         if (selectedSnapIds.size > 0) {
           const selectedIndices = Array.from(selectedSnapIds).sort((a,b) => a-b);
-          const selectedImages = selectedIndices.map(i => currentSnaps[i]).filter(img => img); // Filter out undefined
-          console.log('[SnapToAI] AI Analysis - Indices:', selectedIndices, '- Images count:', selectedImages.length);
+          const selectedImages = selectedIndices.map(i => currentSnaps[i]).filter(img => img);
           if (selectedImages.length > 0) {
             openAiChat(selectedImages);
           } else {
-            console.error('[SnapToAI] No valid images found for selected indices!');
             openAiChat([currentSnaps[index]]);
           }
         } else {
-          // No selection - send just this one image
-          console.log('[SnapToAI] AI Analysis clicked for snap', index + 1);
           openAiChat([currentSnaps[index]]);
         }
       });
@@ -3173,13 +3168,11 @@ async function openAiChat(imageDataUrls) {
   
   // Try to store ORIGINAL high-quality images first (no compression for AI)
   // Only compress as fallback if storage quota exceeded
-  console.log('[SnapToAI] About to store', images.length, 'images. Array check:', Array.isArray(images), 'Lengths:', images.map(i => i?.length || 0).slice(0, 3));
   try {
     await chrome.storage.session.set({ 
-      selectedSnaps: images, // ORIGINAL quality for AI
+      selectedSnaps: images,
       pageText: limitedPageText
     });
-    console.log('[SnapToAI] SUCCESS: Stored', images.length, 'original quality images for AI');
   } catch (e) {
     console.warn('[SnapToAI] Storage quota exceeded, compressing images...', e);
     // Fallback: compress images to fit in session storage
