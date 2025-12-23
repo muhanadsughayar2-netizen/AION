@@ -14,6 +14,34 @@
     </header>
 
     <main>
+      <!-- AI Settings - FIRST -->
+      <section class="settings-group ai-section">
+        <h2>✦ AI Analysis</h2>
+        
+        <div class="setting-item">
+          <label for="geminiApiKey">Gemini API Key:</label>
+          <input type="password" id="geminiApiKey" placeholder="Paste Gemini API Key (AIza...)">
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" id="freeKeyLink" class="sub-link">🎁 Get Free Key →</a>
+        </div>
+
+        <div id="proDashboard" class="pro-dashboard hidden">
+          <div class="divider"></div>
+          
+          <div class="setting-item">
+            <label for="modelPicker">AI Power Level:</label>
+            <select id="modelPicker">
+              <option value="gemini-3-flash-preview">⚡ Gemini 3 Flash (Fast & Free)</option>
+              <option value="gemini-1.5-pro">💎 Gemini Pro (Expert & Paid)</option>
+            </select>
+            <p class="help-text">Flash is free with generous limits. Pro requires billing enabled for complex analysis.</p>
+          </div>
+
+          <a href="https://console.cloud.google.com/billing/projects" target="_blank" class="upgrade-button">
+            <span class="lock-icon">🔒</span> Upgrade to Unlimited
+          </a>
+        </div>
+      </section>
+
       <!-- Capture Settings -->
       <section class="settings-group">
         <h2>📷 Capture</h2>

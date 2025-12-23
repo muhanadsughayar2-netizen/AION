@@ -106,9 +106,69 @@ function showStatus(message, type) {
   }, 3000);
 }
 
+// Unlock Pro features when API key is set
+function unlockProFeatures() {
+  const freeLink = document.getElementById('freeKeyLink');
+  const proDashboard = document.getElementById('proDashboard');
+  if (freeLink) freeLink.style.display = 'none';
+  if (proDashboard) proDashboard.classList.remove('hidden');
+}
+
+// Load API key and model from sync storage
+async function loadAiSettings() {
+  try {
+    const result = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel']);
+    const apiKeyInput = document.getElementById('geminiApiKey');
+    const modelPicker = document.getElementById('modelPicker');
+    
+    if (result.geminiApiKey) {
+      apiKeyInput.value = result.geminiApiKey;
+      unlockProFeatures();
+    }
+    if (result.geminiModel) {
+      modelPicker.value = result.geminiModel;
+    }
+  } catch (e) {
+    console.error('Failed to load AI settings:', e);
+  }
+}
+
+// Save API key to sync storage (secure Chrome storage)
+async function saveApiKey(value) {
+  if (value && value.length > 20) {
+    await chrome.storage.sync.set({ geminiApiKey: value });
+    unlockProFeatures();
+  }
+}
+
+// Save model preference
+async function saveModel(value) {
+  await chrome.storage.sync.set({ geminiModel: value });
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   loadSettings();
+  loadAiSettings();
+  
+  // API key input handler
+  const apiKeyInput = document.getElementById('geminiApiKey');
+  if (apiKeyInput) {
+    apiKeyInput.addEventListener('input', (e) => {
+      const value = e.target.value.trim();
+      if (value.length > 20) {
+        saveApiKey(value);
+      }
+    });
+  }
+  
+  // Model picker handler
+  const modelPicker = document.getElementById('modelPicker');
+  if (modelPicker) {
+    modelPicker.addEventListener('change', (e) => {
+      saveModel(e.target.value);
+    });
+  }
   
   // Image format change handler
   document.getElementById('imageFormat').addEventListener('change', (e) => {
