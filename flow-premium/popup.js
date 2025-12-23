@@ -3071,12 +3071,34 @@ async function clearGeminiKey() {
   }
 }
 
+// ===== UPGRADE GUIDE MODAL =====
+const upgradeModal = document.getElementById('upgradeModal');
+const upgradeClose = document.getElementById('upgradeClose');
+const geminiUpgradeLink = document.getElementById('geminiUpgradeLink');
+
+function showUpgradeModal() {
+  console.log('[SnapToAI] Opening upgrade modal');
+  upgradeModal.style.display = 'flex';
+  setTimeout(() => upgradeModal.classList.add('show'), 10);
+}
+
+function hideUpgradeModal() {
+  console.log('[SnapToAI] Closing upgrade modal');
+  upgradeModal.classList.remove('show');
+  setTimeout(() => upgradeModal.style.display = 'none', 300);
+}
+
 // Event listeners
 if (aiButton) aiButton.addEventListener('click', showGeminiModal);
 if (geminiSaveBtn) geminiSaveBtn.addEventListener('click', saveGeminiKey);
 if (geminiClearBtn) geminiClearBtn.addEventListener('click', clearGeminiKey);
 if (geminiModal) geminiModal.addEventListener('click', (e) => {
   if (e.target === geminiModal) hideGeminiModal();
+});
+if (geminiUpgradeLink) geminiUpgradeLink.addEventListener('click', showUpgradeModal);
+if (upgradeClose) upgradeClose.addEventListener('click', hideUpgradeModal);
+if (upgradeModal) upgradeModal.addEventListener('click', (e) => {
+  if (e.target === upgradeModal) hideUpgradeModal();
 });
 
 // Load key on popup open
