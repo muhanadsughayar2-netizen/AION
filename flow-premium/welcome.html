@@ -251,6 +251,16 @@
     .icon-box.purple { background: linear-gradient(135deg, #a855f7, #ec4899); }
     .icon-box.pink { background: linear-gradient(135deg, #ec4899, #ef4444); }
 
+    .icon-box-img {
+      padding: 6px;
+      border-radius: 10px;
+      background: rgba(30, 41, 59, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
     .icon-box svg {
       width: 20px;
       height: 20px;
@@ -467,6 +477,67 @@
       line-height: 1.5;
     }
 
+    /* Video Banner */
+    .video-banner {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 24px;
+      padding: 20px 24px;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(249, 115, 22, 0.15));
+      border: 2px solid rgba(239, 68, 68, 0.4);
+      border-radius: 16px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      animation: fade-in-up 0.5s ease-out 0.85s both, pulse-border 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { border-color: rgba(239, 68, 68, 0.4); }
+      50% { border-color: rgba(249, 115, 22, 0.8); }
+    }
+
+    .video-banner:hover {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(249, 115, 22, 0.25));
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
+    }
+
+    .video-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #ef4444, #f97316);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .video-icon svg {
+      width: 20px;
+      height: 20px;
+      color: white;
+      margin-left: 3px;
+    }
+
+    .video-text {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .video-title {
+      color: #fbbf24;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .video-subtitle {
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
     /* CTA Button */
     .cta-wrapper {
       text-align: center;
@@ -533,11 +604,8 @@
 
       <div class="info-cards">
         <div class="info-card">
-          <div class="icon-box blue">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-              <circle cx="12" cy="13" r="4"/>
-            </svg>
+          <div class="icon-box-img">
+            <img src="icons/icon48.png" alt="Snap To AI" width="28" height="28">
           </div>
           <div>
             <p>Click the <strong>Snap To AI</strong> icon to open the extension, then choose <strong>Snap</strong>, <strong>Snip</strong>, <strong>Full Page</strong>, or <strong>AI</strong> to capture and share instantly</p>
@@ -615,17 +683,21 @@
         </div>
       </div>
 
+      <a href="https://snaptoai.com" target="_blank" class="video-banner">
+        <div class="video-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+        </div>
+        <div class="video-text">
+          <span class="video-title">📺 Watch Demo Videos & Tutorials</span>
+          <span class="video-subtitle">Learn how to use all features in 2 minutes</span>
+        </div>
+      </a>
+
       <div class="links-section">
         <p>For additional information, check out:</p>
         <div class="links-list">
-          <a href="https://snaptoai.com" target="_blank" class="link-item">
-            <div class="link-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="5 3 19 12 5 21 5 3"/>
-              </svg>
-            </div>
-            <span>Demo videos & Tutorials</span>
-          </a>
           <a href="https://snaptoai.com/#faq" target="_blank" class="link-item">
             <div class="link-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
