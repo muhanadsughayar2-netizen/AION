@@ -393,12 +393,29 @@ function copyChat() {
   addBubble('Chat copied to clipboard!', 'ai');
 }
 
+// Auto-resize textarea
+function autoResize(textarea) {
+  textarea.style.height = 'auto';
+  textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+}
+
 // Event listeners
 document.getElementById('closeBtn').addEventListener('click', () => window.close());
 document.getElementById('sendBtn').addEventListener('click', handleSend);
-document.getElementById('chatInput').addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') handleSend();
+
+const chatInput = document.getElementById('chatInput');
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    handleSend();
+  }
 });
+chatInput.addEventListener('input', () => autoResize(chatInput));
+chatInput.addEventListener('paste', (e) => {
+  // Allow paste to complete, then auto-resize
+  setTimeout(() => autoResize(chatInput), 0);
+});
+
 document.getElementById('testBtn').addEventListener('click', testApi);
 document.getElementById('clearBtn').addEventListener('click', clearChat);
 document.getElementById('copyBtn').addEventListener('click', copyChat);

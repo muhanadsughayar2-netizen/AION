@@ -257,8 +257,14 @@
       border-radius: 12px;
       color: #fff;
       font-size: 15px;
+      font-family: inherit;
       outline: none;
       transition: border-color 0.2s;
+      resize: none;
+      min-height: 52px;
+      max-height: 150px;
+      overflow-y: auto;
+      line-height: 1.4;
     }
     
     .chat-input:focus {
@@ -353,7 +359,7 @@
       </div>
       
       <div class="input-area">
-        <input type="text" class="chat-input" id="chatInput" placeholder="Ask about your screenshot...">
+        <textarea class="chat-input" id="chatInput" placeholder="Ask about your screenshot..." rows="1"></textarea>
         <button class="send-btn" id="sendBtn">Send</button>
       </div>
       
