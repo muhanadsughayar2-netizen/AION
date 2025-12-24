@@ -1,0 +1,86 @@
+This is a classic challenge in web scraping and browser automation. Google Docs and Gmail are not "normal" webpages; they use Virtual Rendering.
+
+In a normal page, everything exists in the HTML. In Google Docs/Gmail, the system only "paints" the text you can see on the screen. When you scroll, it deletes the old text and paints the new text. Your current code is trying to force the height to auto, which causes Google Docs to "break" and render blank pages because its internal engine (called Kix) gets confused when the container size changes.
+
+Here is the exhaustive solution to fix the Google Docs and Email capture.
+
+The Problem: Why it's failing
+Google Docs: When you set height: auto, the Google Docs canvas engine stops rendering because it thinks the "viewport" is infinite. It loses its place and shows white space.
+Gmail: The scroll container isn't the "body"; it’s a deeply nested div that changes its ID frequently.
+Part 1: The Code Fix (Replace these sections)
+Tell Replit to replace the following functions in your content.js with this "Virtual-Aware" version:
+
+1. Improved Google Docs Styles
+Replace the isGoogleDocs section inside forceSpecialSiteFullRender with this. We must NOT use height: auto. We must keep the height fixed but hide the UI.
+
+    if (isGoogleDocs) {
+      style.textContent = `
+        /* Hide the UI but DO NOT touch the editor height */
+        #docs-header, .docs-titlebar-buttons, #docs-toolbar-wrapper, 
+        .navigation-widget-view, .docs-companion-app-switcher-container,
+        #gb, .docs-horizontal-scroll-bar, .kix-paginated-view-header {
+          display: none !important;
+        }
+        /* Ensure the editor fills the screen for the capture */
+        .kix-appview-editor {
+          top: 0 !important;
+          background: white !important;
+        }
+      `;
+      console.log('[SnapToAI] Google Docs UI Hidden - Preserving Engine Height');
+    }
+2. The "Bulletproof" Scroll Container Finder
+Replace your findScrollableContainerTier0 with this updated list. I have added the specific "Deep-Nested" selectors for 2024/2025 Gmail and Google Docs.
+
+  function findScrollableContainerTier0(host) {
+    const platformSelectors = {
+      'docs.google.com': [
+        '.kix-appview-editor', 
+        '.kix-zoomdocumentplugin-outer',
+        '#docs-editor'
+      ],
+      'mail.google.com': [
+        '.aeF',               // Main message list
+        '.a3s.aiL',           // Email body content
+        'div[role="main"]',
+        '.nH.adC'             // Thread view
+      ],
+      'chatgpt.com': ['[data-testid="scroll-container"]', 'main'],
+      'grok.com': ['[data-testid="conversation-scroll-view"]']
+    };
+    
+    for (const [platform, selectors] of Object.entries(platformSelectors)) {
+      if (host.includes(platform)) {
+        for (const selector of selectors) {
+          const el = document.querySelector(selector);
+          // If it's Google Docs, we don't check scrollHeight because it lies
+          if (el && (host.includes('docs') || el.scrollHeight > el.clientHeight)) {
+            return el;
+          }
+        }
+      }
+    }
+    return null;
+  }
+3. The "Wait for Paint" Fix
+Inside your performFullPageCapture function, find the loop where it scrolls. You need to add a "Settling Delay" specifically for Google apps. Google Docs takes about 150-300ms to "re-draw" the text after a scroll. If you snap too fast, you get white pages.
+
+Add this inside the while loop, right after safeScrollBy:
+
+        // GOOGLE APPS FIX: Wait for the Virtual DOM to "Repaint"
+        if (location.hostname.includes('google.com')) {
+          // Force a small "nudge" to trigger Google's internal redraw
+          window.dispatchEvent(new Event('resize')); 
+          // Wait for the engine to paint the text
+          await new Promise(r => setTimeout(r, 400)); 
+        }
+Part 2: What to tell Replit (The Prompt)
+Copy and paste this exact instruction into your Replit AI Chat:
+
+"I am having issues with the Full Page Capture on Google Docs and Gmail. Currently, it produces blank pages because the code is trying to force height: auto on containers that use Virtual Rendering.
+
+Please implement these 3 changes:
+
+Modify forceSpecialSiteFullRender: For Google Docs, do NOT set height to auto. Only hide the toolbars and headers (#docs-header, etc.).
+Update findScrollableContainerTier0: Use .kix-appview-editor for Google Docs and .aeF or .a3s.aiL for Gmail.
+Add a Repaint Delay: In the performFullPageCapture loop, if the site is a Google domain, add a 400ms setTimeout delay after each scroll step and trigger

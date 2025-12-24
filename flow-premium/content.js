@@ -225,29 +225,21 @@
     
     if (isGoogleDocs) {
       style.textContent = `
-        /* Google Docs: Expand outer containers, preserve page canvas positioning */
-        /* Only expand the outer editor containers - NOT the page canvases */
-        .kix-appview-editor-container, .kix-zoomdocumentplugin-outer {
-          height: auto !important;
-          overflow: visible !important;
-        }
-        .kix-appview-editor, .docs-editor {
-          height: auto !important;
-          min-height: auto !important;
-          max-height: none !important;
-          overflow: visible !important;
-        }
-        /* Hide ONLY the toolbar elements - NOT the page canvases */
-        /* WARNING: #docs-chrome contains the ENTIRE editor - never hide it! */
+        /* Hide the UI but DO NOT touch the editor height - Virtual Rendering fix */
+        #docs-header, .docs-titlebar-buttons, #docs-toolbar-wrapper, 
+        .navigation-widget-view, .docs-companion-app-switcher-container,
+        #gb, .docs-horizontal-scroll-bar, .kix-paginated-view-header,
         .docs-titlebar, .docs-menubar, .docs-material-menu-button-bar,
         #docs-bars, .docs-butterbar-container {
           display: none !important;
         }
-        /* DO NOT change .kix-page-canvas, .kix-canvas-tile-content, or canvas positioning */
-        /* Google uses absolute positioning to layout pages - changing it causes overlap */
-        /* DO NOT hide [style*="position: sticky"] - page canvases use sticky positioning! */
+        /* Ensure the editor fills the screen for the capture */
+        .kix-appview-editor {
+          top: 0 !important;
+          background: white !important;
+        }
       `;
-      console.log('[SnapToAI] Google Docs styles injected');
+      console.log('[SnapToAI] Google Docs UI Hidden - Preserving Engine Height');
     } else if (isYouTube) {
       style.textContent = `
         /* Force full expansion for YouTube */
@@ -1848,6 +1840,18 @@
     // Platform-specific selectors for scroll containers
     // Covers: AI platforms, Office apps, Dev tools, Social media, Productivity apps
     const platformSelectors = {
+      // === GOOGLE APPS (Virtual Rendering) ===
+      'docs.google.com': [
+        '.kix-appview-editor', 
+        '.kix-zoomdocumentplugin-outer',
+        '#docs-editor'
+      ],
+      'mail.google.com': [
+        '.aeF',               // Main message list
+        '.a3s.aiL',           // Email body content
+        'div[role="main"]',
+        '.nH.adC'             // Thread view
+      ],
       // === AI CHAT PLATFORMS ===
       'chatgpt.com': [
         '[data-testid="scroll-container"]',
@@ -3216,6 +3220,14 @@
         
         // Scroll down by one viewport using safe scrollBy (never throws errors!)
         safeScrollBy(stepHeight);
+        
+        // === GOOGLE APPS FIX: Wait for Virtual DOM to Repaint ===
+        if (location.hostname.includes('google.com')) {
+          // Force a small "nudge" to trigger Google's internal redraw
+          window.dispatchEvent(new Event('resize')); 
+          // Wait for the engine to paint the text
+          await new Promise(r => setTimeout(r, 400)); 
+        }
         
         // === AMAZON PER-SCROLL CONTENT STABILIZATION ===
         if (isAmazon) {
