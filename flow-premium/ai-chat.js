@@ -161,7 +161,7 @@ async function sendToGemini(prompt, imageDataUrls) {
         },
         contents: contents,
         generationConfig: {
-          maxOutputTokens: 8192,
+          maxOutputTokens: 16384,
           temperature: 0.7,
           topP: 0.95,
           topK: 40
@@ -263,7 +263,12 @@ async function handleSend() {
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: contents,
-          generationConfig: { maxOutputTokens: 8192, temperature: 0.7, topP: 0.95, topK: 40 }
+          generationConfig: { 
+            maxOutputTokens: 16384,
+            temperature: 0.7,
+            topP: 0.95,
+            topK: 40
+          }
         })
       }
     );

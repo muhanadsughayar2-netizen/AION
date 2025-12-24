@@ -1,0 +1,102 @@
+To implement your Chrome extension using Gemini 3 Flash (Dec 2025 version) on Replit, follow these exact steps. I have optimized the code to use the new thinkingLevel parameter and the correct gemini-3-flash-preview model ID.
+
+1. manifest.json (The Configuration)
+This file tells Chrome what permissions your extension needs. It includes web_accessible_resources so the extension can "read itself" to send your code to the AI.
+
+JSON
+
+{
+  "manifest_version": 3,
+  "name": "SnapToAI Pro",
+  "version": "1.1",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["https://generativelanguage.googleapis.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["content.js"]
+  }],
+  "web_accessible_resources": [{
+    "resources": ["content.js"],
+    "matches": ["<all_urls>"]
+  }]
+}
+2. background.js (The Brain)
+This script handles the API call. Since it is December 2025, we are using the Gemini 3 specific thinkingLevel parameter set to high for the best coding support.
+
+JavaScript
+
+const GEMINI_API_KEY = "YOUR_API_KEY_HERE";
+const MODEL_NAME = "gemini-3-flash-preview"; 
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "analyze_with_gemini") {
+    
+    const fullPrompt = `
+      SYSTEM INSTRUCTIONS:
+      You are the SnapToAI Support Engineer. Use the provided SOURCE CODE to answer the CUSTOMER QUESTION.
+      Be precise, show code snippets if needed, and be helpful.
+
+      SOURCE CODE:
+      ${request.sourceCode}
+
+      CUSTOMER QUESTION:
+      ${request.customerQuery}
+    `;
+
+    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: fullPrompt }] }],
+        generationConfig: {
+          thinkingLevel: "high", // Gemini 3 Flash specific: maximizes reasoning quality
+          maxOutputTokens: 2000
+        }
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) throw new Error(data.error.message);
+      const aiResponse = data.candidates[0].content.parts[0].text;
+      sendResponse({ success: true, answer: aiResponse });
+    })
+    .catch(error => {
+      sendResponse({ success: false, error: error.message });
+    });
+
+    return true; // Required for async response
+  }
+});
+3. content.js (The Bridge)
+Paste your original "Bulletproof" script into this file, then add this function at the very bottom to trigger the AI. This version fetches the actual script file so the AI sees your code, not the website's HTML.
+
+JavaScript
+
+// --- YOUR ORIGINAL BULLETPROOF CODE GOES ABOVE THIS LINE ---
+
+async function askSupport(customerQuestion) {
+  try {
+    // Correct way to get your extension's code
+    const response = await fetch(chrome.runtime.getURL('content.js'));
+    const myCode = await response.text();
+
+    chrome.runtime.sendMessage({
+      action: "analyze_with_gemini",
+      sourceCode: myCode, 
+      customerQuery: customerQuestion
+    }, (res) => {
+      if (res && res.success) {
+        console.log("Gemini 3 Flash Response:", res.answer);
+        // You can use your existing showToast function here:
+        // showToast(res.answer, "success");
+      } else {
+        console.error("AI Error:", res?.error);
+      }
+    });
+  } catch (err) {
+    console.error("Failed to trigger AI:", err);
+  }
+}
