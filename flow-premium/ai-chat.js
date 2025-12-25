@@ -383,9 +383,9 @@ function addBubbleActions(bubble, text) {
         return;
       }
       
-      // Use Gemini Native Audio with Kore voice (premium female)
+      // Use Gemini 3 Flash Native Audio with Kore voice (premium)
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${result.geminiApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${result.geminiApiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
