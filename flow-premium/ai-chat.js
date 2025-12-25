@@ -368,17 +368,48 @@ function clearChat() {
   conversationHistory = [];
 }
 
-// Copy chat
-function copyChat() {
+// Copy chat with rich HTML formatting (preserves bold, links, etc in Google Docs)
+async function copyChat() {
   const thread = document.getElementById('chatThread');
-  const bubbles = thread.querySelectorAll('.chat-bubble');
-  let text = '';
+  const bubbles = thread.querySelectorAll('.chat-bubble:not(.loading)');
+  
+  let html = '';
+  let plainText = '';
+  
   bubbles.forEach(b => {
+    if (b.classList.contains('welcome-message')) return;
     const role = b.classList.contains('user') ? 'You' : 'AI';
-    text += `${role}: ${b.textContent}\n\n`;
+    let content = b.innerHTML;
+    const textContent = b.textContent;
+    
+    // Convert CSS styles to inline styles for Google Docs compatibility
+    // Bold/strong text → blue color (Google Docs doesn't read CSS classes)
+    content = content.replace(/<strong>/g, '<strong style="color: #0066cc; font-weight: bold;">');
+    content = content.replace(/<b>/g, '<b style="color: #0066cc; font-weight: bold;">');
+    // Links → blue underlined
+    content = content.replace(/<a /g, '<a style="color: #0066cc; text-decoration: underline;" ');
+    
+    html += `<p><strong>${role}:</strong></p><div>${content}</div><br>`;
+    plainText += `${role}: ${textContent}\n\n`;
   });
-  navigator.clipboard.writeText(text.trim());
-  addBubble('Chat copied to clipboard!', 'ai');
+  
+  // Wrap in styled container for Google Docs compatibility
+  const styledHtml = `<div style="font-family: Arial, sans-serif; color: #000;">${html}</div>`;
+  
+  try {
+    // Copy as both HTML and plain text for maximum compatibility
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'text/html': new Blob([styledHtml], { type: 'text/html' }),
+        'text/plain': new Blob([plainText.trim()], { type: 'text/plain' })
+      })
+    ]);
+    addBubble('Copied with formatting! Paste in Google Docs to see highlights.', 'ai');
+  } catch (e) {
+    // Fallback to plain text
+    await navigator.clipboard.writeText(plainText.trim());
+    addBubble('Copied as plain text.', 'ai');
+  }
 }
 
 // Auto-resize textarea
