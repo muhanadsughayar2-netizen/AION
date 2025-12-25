@@ -409,16 +409,6 @@ function exportToPDF() {
   printWindow.print();
 }
 
-// Legacy testApi removed - functionality now integrated
-    }
-  } catch (e) {
-    addBubble('Connection failed: ' + e.message, 'error');
-  }
-  
-  testBtn.disabled = false;
-  testBtn.textContent = '🔌 Test API';
-}
-
 // Clear chat
 function clearChat() {
   const thread = document.getElementById('chatThread');
@@ -493,9 +483,10 @@ chatInput.addEventListener('paste', (e) => {
   setTimeout(() => autoResize(chatInput), 0);
 });
 
-document.getElementById('testBtn').addEventListener('click', testApi);
+document.getElementById('continueBtn').addEventListener('click', continueResponse);
+document.getElementById('summarizeBtn').addEventListener('click', summarizeChat);
 document.getElementById('clearBtn').addEventListener('click', clearChat);
-document.getElementById('copyBtn').addEventListener('click', copyChat);
+document.getElementById('exportBtn').addEventListener('click', exportToPDF);
 
 // Multi-file upload handling (Gemini-style)
 document.getElementById('fileInput').addEventListener('change', (e) => {
