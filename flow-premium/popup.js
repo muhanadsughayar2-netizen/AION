@@ -3002,12 +3002,17 @@ const aiButton = document.getElementById('aiButton');
 
 function showGeminiModal() {
   console.log('[SnapToAI] Opening Gemini modal');
+  if (!geminiModal) {
+    console.error('[SnapToAI] geminiModal not found');
+    return;
+  }
   geminiModal.style.display = 'flex';
   setTimeout(() => geminiModal.classList.add('show'), 10);
 }
 
 function hideGeminiModal() {
   console.log('[SnapToAI] Closing Gemini modal');
+  if (!geminiModal) return;
   geminiModal.classList.remove('show');
   setTimeout(() => geminiModal.style.display = 'none', 300);
 }
@@ -3017,11 +3022,11 @@ async function loadGeminiKey() {
     const result = await chrome.storage.sync.get(['geminiApiKey']);
     console.log('[SnapToAI] Loaded Gemini key:', result.geminiApiKey ? 'exists' : 'none');
     if (result.geminiApiKey) {
-      geminiKeyInput.value = result.geminiApiKey;
-      geminiStatus.style.display = 'inline';
+      if (geminiKeyInput) geminiKeyInput.value = result.geminiApiKey;
+      if (geminiStatus) geminiStatus.style.display = 'inline';
     } else {
-      geminiKeyInput.value = '';
-      geminiStatus.style.display = 'none';
+      if (geminiKeyInput) geminiKeyInput.value = '';
+      if (geminiStatus) geminiStatus.style.display = 'none';
     }
     return !!result.geminiApiKey;
   } catch (e) {
@@ -3031,6 +3036,7 @@ async function loadGeminiKey() {
 }
 
 async function saveGeminiKey() {
+  if (!geminiKeyInput) return;
   const key = geminiKeyInput.value.trim();
   if (!key) {
     console.log('[SnapToAI] No key to save');
@@ -3039,7 +3045,7 @@ async function saveGeminiKey() {
   try {
     await chrome.storage.sync.set({ geminiApiKey: key });
     console.log('[SnapToAI] Gemini key saved');
-    geminiStatus.style.display = 'inline';
+    if (geminiStatus) geminiStatus.style.display = 'inline';
     hideGeminiModal();
   } catch (e) {
     console.error('[SnapToAI] Error saving Gemini key:', e);
