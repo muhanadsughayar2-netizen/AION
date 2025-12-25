@@ -357,130 +357,42 @@ function addBubbleActions(bubble, text) {
     }
   };
   
-  // Read aloud using Gemini Native Audio - Premium Kore voice
+  // Read aloud using FREE browser TTS (no API cost!)
   const readBtn = actions.querySelector('.read-aloud-btn');
-  let currentAudio = null;
   
-  readBtn.onclick = async () => {
-    // Toggle: if playing, stop
-    if (currentAudio && !currentAudio.paused) {
-      currentAudio.pause();
-      currentAudio = null;
+  readBtn.onclick = () => {
+    const synth = window.speechSynthesis;
+    
+    // Toggle: if speaking, stop
+    if (synth.speaking) {
+      synth.cancel();
       readBtn.textContent = '🔊 Read';
       return;
     }
     
     const plainText = bubble.textContent.replace('📋 Copy🔊 Read', '').replace('✓ Copied!🔊 Read', '').replace('⏹ Stop', '');
     
-    readBtn.textContent = '⏳ Loading...';
+    // Cancel any existing speech first
+    synth.cancel();
     
-    try {
-      // Get API key
-      const result = await chrome.storage.sync.get(['geminiApiKey']);
-      if (!result.geminiApiKey) {
-        alert('Please add your Gemini API key first');
-        readBtn.textContent = '🔊 Read';
-        return;
-      }
-      
-      // Use Gemini 3 Flash Native Audio with Kore voice (premium)
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${result.geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ 
-              role: 'user', 
-              parts: [{ text: `Please read this text aloud naturally: "${plainText.substring(0, 800)}"` }] 
-            }],
-            generationConfig: {
-              responseModalities: ["AUDIO"],
-              speechConfig: {
-                voiceConfig: {
-                  prebuiltVoiceConfig: {
-                    voiceName: "Kore"
-                  }
-                }
-              }
-            }
-          })
-        }
-      );
-      
-      const data = await response.json();
-      
-      console.log('[SnapToAI] Audio API response:', JSON.stringify(data, null, 2));
-      
-      // Check for errors first
-      if (data.error) {
-        console.error('[SnapToAI] API Error:', data.error);
-        // Fallback to browser speech synthesis
-        fallbackToSpeechSynthesis(plainText, readBtn);
-        return;
-      }
-      
-      // Find audio part in response (must have audio mimeType)
-      const parts = data.candidates?.[0]?.content?.parts || [];
-      const audioPart = parts.find(p => p.inlineData && p.inlineData.mimeType?.startsWith('audio'));
-      
-      if (audioPart) {
-        console.log('[SnapToAI] Playing native Gemini audio...');
-        const audioBase64 = audioPart.inlineData.data;
-        const audioSrc = `data:audio/wav;base64,${audioBase64}`;
-        
-        currentAudio = new Audio(audioSrc);
-        currentAudio.play().catch(() => {
-          // If direct play fails, try blob method
-          const audioBlob = new Blob(
-            [Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0))],
-            { type: 'audio/wav' }
-          );
-          currentAudio = new Audio(URL.createObjectURL(audioBlob));
-          currentAudio.play();
-        });
-        readBtn.textContent = '⏹ Stop';
-        
-        currentAudio.onended = () => {
-          readBtn.textContent = '🔊 Read';
-          currentAudio = null;
-        };
-      } else {
-        // Check if we got text instead - fallback
-        const textPart = parts.find(p => p.text);
-        console.log('[SnapToAI] Native audio unavailable, using fallback...', textPart?.text?.substring(0, 50));
-        fallbackToSpeechSynthesis(plainText, readBtn);
-      }
-    } catch (error) {
-      console.error('[SnapToAI] Audio error:', error);
-      fallbackToSpeechSynthesis(plainText, readBtn);
-    }
-  };
-}
-
-// Fallback to browser speech synthesis when Gemini audio fails
-function fallbackToSpeechSynthesis(text, readBtn) {
-  if ('speechSynthesis' in window) {
-    const voices = speechSynthesis.getVoices();
+    const utterance = new SpeechSynthesisUtterance(plainText);
+    const voices = synth.getVoices();
     
-    // Find best female voice
-    let femaleVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Google UK English Female'));
-    if (!femaleVoice) femaleVoice = voices.find(v => v.name.includes('Zira') || v.name.includes('Aria') || v.name.includes('Samantha'));
-    if (!femaleVoice) femaleVoice = voices.find(v => v.lang.startsWith('en'));
+    // Find premium Google voice, fallback to English
+    const premiumVoice = voices.find(v => v.name.includes('Google US English')) || 
+                        voices.find(v => v.lang.includes('en-US')) || 
+                        voices[0];
     
-    const utterance = new SpeechSynthesisUtterance(text);
-    if (femaleVoice) utterance.voice = femaleVoice;
-    utterance.rate = 0.95;
-    utterance.pitch = 1.1;
+    if (premiumVoice) utterance.voice = premiumVoice;
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
     
-    speechSynthesis.speak(utterance);
+    synth.speak(utterance);
     readBtn.textContent = '⏹ Stop';
     
     utterance.onend = () => readBtn.textContent = '🔊 Read';
-  } else {
-    readBtn.textContent = '🔊 Read';
-    alert('Speech not supported in this browser.');
-  }
+    utterance.onerror = () => readBtn.textContent = '🔊 Read';
+  };
 }
 
 // Continue - ask AI to continue its response
