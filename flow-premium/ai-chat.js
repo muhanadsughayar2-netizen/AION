@@ -420,30 +420,35 @@ function addBubbleActions(bubble, text) {
         return;
       }
       
-      // Find audio part in response
+      // Find audio part in response (must have audio mimeType)
       const parts = data.candidates?.[0]?.content?.parts || [];
-      const audioPart = parts.find(p => p.inlineData);
+      const audioPart = parts.find(p => p.inlineData && p.inlineData.mimeType?.startsWith('audio'));
       
       if (audioPart) {
+        console.log('[SnapToAI] Playing native Gemini audio...');
         const audioBase64 = audioPart.inlineData.data;
-        // Convert Base64 to proper audio blob
-        const audioBlob = new Blob(
-          [Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0))],
-          { type: audioPart.inlineData.mimeType || 'audio/wav' }
-        );
-        const audioUrl = URL.createObjectURL(audioBlob);
+        const audioSrc = `data:audio/wav;base64,${audioBase64}`;
         
-        currentAudio = new Audio(audioUrl);
-        currentAudio.play();
+        currentAudio = new Audio(audioSrc);
+        currentAudio.play().catch(() => {
+          // If direct play fails, try blob method
+          const audioBlob = new Blob(
+            [Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0))],
+            { type: 'audio/wav' }
+          );
+          currentAudio = new Audio(URL.createObjectURL(audioBlob));
+          currentAudio.play();
+        });
         readBtn.textContent = '⏹ Stop';
         
         currentAudio.onended = () => {
           readBtn.textContent = '🔊 Read';
-          URL.revokeObjectURL(audioUrl);
           currentAudio = null;
         };
       } else {
-        console.log('[SnapToAI] No native audio in response, using fallback');
+        // Check if we got text instead - fallback
+        const textPart = parts.find(p => p.text);
+        console.log('[SnapToAI] Native audio unavailable, using fallback...', textPart?.text?.substring(0, 50));
         fallbackToSpeechSynthesis(plainText, readBtn);
       }
     } catch (error) {
