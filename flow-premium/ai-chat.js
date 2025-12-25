@@ -6,6 +6,7 @@ let currentPageText = '';
 let conversationHistory = [];
 let lastRequestTime = 0;
 const THROTTLE_MS = 3000;
+let currentUpload = null; // For file uploads
 
 const SYSTEM_PROMPT = "You are a thorough, exhaustive AI assistant. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never ask the user if they want more—just give it all now. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.";
 
@@ -244,6 +245,16 @@ async function handleSend() {
     } else {
       userParts.push({ text: prompt });
     }
+    
+    // If a file was uploaded, attach it to the message
+    if (currentUpload) {
+      userParts.push({ inlineData: { mimeType: currentUpload.mimeType, data: currentUpload.data } });
+      // Clear upload after sending
+      currentUpload = null;
+      document.getElementById('uploadPreview').style.display = 'none';
+      document.getElementById('fileInput').value = '';
+    }
+    
     contents.push({ role: 'user', parts: userParts });
     
     // Use appropriate prompt based on content
@@ -419,6 +430,40 @@ chatInput.addEventListener('paste', (e) => {
 document.getElementById('testBtn').addEventListener('click', testApi);
 document.getElementById('clearBtn').addEventListener('click', clearChat);
 document.getElementById('copyBtn').addEventListener('click', copyChat);
+
+// File upload handling
+document.getElementById('uploadBtn').addEventListener('click', () => {
+  document.getElementById('fileInput').click();
+});
+
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const base64Data = event.target.result.split(',')[1];
+    const mimeType = file.type || 'application/octet-stream';
+    
+    // Store for sending
+    currentUpload = {
+      mimeType: mimeType,
+      data: base64Data,
+      fileName: file.name
+    };
+    
+    // Show preview
+    document.getElementById('uploadFileName').textContent = '📎 ' + file.name;
+    document.getElementById('uploadPreview').style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('removeUpload').addEventListener('click', () => {
+  currentUpload = null;
+  document.getElementById('uploadPreview').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+});
 
 // Initialize
 initializeChat();
