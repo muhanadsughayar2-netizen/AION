@@ -420,21 +420,30 @@ function addBubbleActions(bubble, text) {
         return;
       }
       
-      if (data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data) {
-        const audioData = data.candidates[0].content.parts[0].inlineData.data;
-        const mimeType = data.candidates[0].content.parts[0].inlineData.mimeType || 'audio/wav';
-        const audioBlob = `data:${mimeType};base64,${audioData}`;
+      // Find audio part in response
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      const audioPart = parts.find(p => p.inlineData);
+      
+      if (audioPart) {
+        const audioBase64 = audioPart.inlineData.data;
+        // Convert Base64 to proper audio blob
+        const audioBlob = new Blob(
+          [Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0))],
+          { type: audioPart.inlineData.mimeType || 'audio/wav' }
+        );
+        const audioUrl = URL.createObjectURL(audioBlob);
         
-        currentAudio = new Audio(audioBlob);
+        currentAudio = new Audio(audioUrl);
         currentAudio.play();
         readBtn.textContent = '⏹ Stop';
         
         currentAudio.onended = () => {
           readBtn.textContent = '🔊 Read';
+          URL.revokeObjectURL(audioUrl);
           currentAudio = null;
         };
       } else {
-        console.log('[SnapToAI] No audio in response, using fallback');
+        console.log('[SnapToAI] No native audio in response, using fallback');
         fallbackToSpeechSynthesis(plainText, readBtn);
       }
     } catch (error) {
