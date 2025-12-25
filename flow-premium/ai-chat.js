@@ -5,7 +5,7 @@ let currentImages = []; // Support multiple images
 let currentPageText = '';
 let conversationHistory = [];
 let lastRequestTime = 0;
-const THROTTLE_MS = 3000;
+const THROTTLE_MS = 60000; // 60s = strict 1 RPM for free tier
 let filesQueue = []; // Multi-file upload queue (Gemini-style)
 
 const SYSTEM_PROMPT = "You are a thorough, exhaustive AI assistant. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never ask the user if they want more—just give it all now. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.";
