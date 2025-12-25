@@ -309,6 +309,9 @@ async function handleSend() {
       }
     }
     
+    // Add action buttons to this response
+    addBubbleActions(responseBubble, fullText);
+    
     // Update conversation history
     conversationHistory.push({ role: 'user', text: prompt });
     conversationHistory.push({ role: 'model', text: fullText });
@@ -322,36 +325,91 @@ async function handleSend() {
   input.focus();
 }
 
-// Test API connection
-async function testApi() {
-  const testBtn = document.getElementById('testBtn');
-  testBtn.disabled = true;
-  testBtn.textContent = 'Testing...';
+// Add action buttons under each AI response
+function addBubbleActions(bubble, text) {
+  const actions = document.createElement('div');
+  actions.className = 'bubble-actions';
+  actions.innerHTML = `
+    <button class="copy-single-btn">📋 Copy</button>
+    <button class="read-aloud-btn">🔊 Read</button>
+  `;
+  bubble.appendChild(actions);
   
-  try {
-    const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
-    if (!keyResult.geminiApiKey) {
-      addBubble('No API key set. Go to Settings in main popup.', 'error');
-      return;
-    }
-    
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${keyResult.geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: 'Reply with just: OK' }] }],
-          generationConfig: { maxOutputTokens: 10 }
+  // Copy this response only
+  actions.querySelector('.copy-single-btn').onclick = async () => {
+    let html = bubble.innerHTML.replace(/<div class="bubble-actions">.*<\/div>/s, '');
+    html = html.replace(/<strong>/g, '<strong style="color: #0066cc; font-weight: bold;">');
+    html = html.replace(/<a /g, '<a style="color: #0066cc; text-decoration: underline;" ');
+    const styledHtml = `<div style="font-family: Arial, sans-serif; color: #000;">${html}</div>`;
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([styledHtml], { type: 'text/html' }),
+          'text/plain': new Blob([text], { type: 'text/plain' })
         })
-      }
-    );
-    
-    if (response.ok) {
-      addBubble('API connection successful!', 'ai');
-    } else {
-      const err = await response.json().catch(() => ({}));
-      addBubble('API Error: ' + (err.error?.message || response.status), 'error');
+      ]);
+      actions.querySelector('.copy-single-btn').textContent = '✓ Copied!';
+      setTimeout(() => actions.querySelector('.copy-single-btn').textContent = '📋 Copy', 2000);
+    } catch (e) {
+      await navigator.clipboard.writeText(text);
+      actions.querySelector('.copy-single-btn').textContent = '✓ Copied!';
+      setTimeout(() => actions.querySelector('.copy-single-btn').textContent = '📋 Copy', 2000);
+    }
+  };
+  
+  // Read aloud
+  actions.querySelector('.read-aloud-btn').onclick = () => {
+    const plainText = bubble.textContent.replace('📋 Copy🔊 Read', '');
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(plainText);
+      utterance.rate = 1.0;
+      speechSynthesis.speak(utterance);
+      actions.querySelector('.read-aloud-btn').textContent = '⏹ Stop';
+      utterance.onend = () => actions.querySelector('.read-aloud-btn').textContent = '🔊 Read';
+    }
+  };
+}
+
+// Continue - ask AI to continue its response
+async function continueResponse() {
+  document.getElementById('chatInput').value = 'Please continue your response from where you left off.';
+  handleSend();
+}
+
+// Summarize - ask AI to summarize everything
+async function summarizeChat() {
+  document.getElementById('chatInput').value = 'Please provide a brief summary of our entire conversation and the key insights.';
+  handleSend();
+}
+
+// Export to PDF (simple print-based)
+function exportToPDF() {
+  const thread = document.getElementById('chatThread');
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <html><head><title>SnapToAI Chat Export</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+      .user { background: #e3f2fd; padding: 15px; border-radius: 10px; margin: 10px 0; }
+      .ai { background: #f5f5f5; padding: 15px; border-radius: 10px; margin: 10px 0; }
+      strong { color: #1976d2; }
+      h1 { color: #333; border-bottom: 2px solid #00d9ff; padding-bottom: 10px; }
+    </style></head><body>
+    <h1>📸 SnapToAI Chat Export</h1>
+  `);
+  thread.querySelectorAll('.chat-bubble').forEach(b => {
+    if (b.classList.contains('loading')) return;
+    const type = b.classList.contains('user') ? 'user' : 'ai';
+    let content = b.innerHTML.replace(/<div class="bubble-actions">.*<\/div>/s, '');
+    printWindow.document.write(`<div class="${type}">${content}</div>`);
+  });
+  printWindow.document.write('</body></html>');
+  printWindow.document.close();
+  printWindow.print();
+}
+
+// Legacy testApi removed - functionality now integrated
     }
   } catch (e) {
     addBubble('Connection failed: ' + e.message, 'error');

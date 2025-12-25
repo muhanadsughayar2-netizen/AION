@@ -213,6 +213,37 @@
     .chat-bubble.ai p:first-child { margin-top: 0; }
     .chat-bubble.ai p:last-child { margin-bottom: 0; }
     
+    .bubble-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .bubble-actions button {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px;
+      color: #aaa;
+      font-size: 11px;
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .bubble-actions button:hover {
+      background: rgba(0, 217, 255, 0.2);
+      border-color: rgba(0, 217, 255, 0.4);
+      color: #00d9ff;
+    }
+    
+    .continue-btn {
+      background: rgba(0, 217, 255, 0.15) !important;
+      border-color: rgba(0, 217, 255, 0.4) !important;
+      color: #00d9ff !important;
+    }
+    
     .chat-bubble.loading {
       background: #2a2a2a;
       color: #00d9ff;
@@ -430,9 +461,10 @@
       </div>
       
       <div class="footer-actions">
-        <button class="action-btn test-btn" id="testBtn">🔌 Test API</button>
-        <button class="action-btn" id="clearBtn">Clear Chat</button>
-        <button class="action-btn" id="copyBtn">Copy Chat</button>
+        <button class="action-btn continue-btn" id="continueBtn">▶ Continue</button>
+        <button class="action-btn" id="summarizeBtn">📋 Summarize</button>
+        <button class="action-btn" id="clearBtn">🗑 Clear</button>
+        <button class="action-btn" id="exportBtn">📄 Export PDF</button>
       </div>
     </div>
   </div>
