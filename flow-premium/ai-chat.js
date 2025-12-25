@@ -410,9 +410,20 @@ function addBubbleActions(bubble, text) {
       
       const data = await response.json();
       
+      console.log('[SnapToAI] Audio API response:', JSON.stringify(data, null, 2));
+      
+      // Check for errors first
+      if (data.error) {
+        console.error('[SnapToAI] API Error:', data.error);
+        // Fallback to browser speech synthesis
+        fallbackToSpeechSynthesis(plainText, readBtn);
+        return;
+      }
+      
       if (data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data) {
         const audioData = data.candidates[0].content.parts[0].inlineData.data;
-        const audioBlob = `data:audio/wav;base64,${audioData}`;
+        const mimeType = data.candidates[0].content.parts[0].inlineData.mimeType || 'audio/wav';
+        const audioBlob = `data:${mimeType};base64,${audioData}`;
         
         currentAudio = new Audio(audioBlob);
         currentAudio.play();
@@ -423,15 +434,39 @@ function addBubbleActions(bubble, text) {
           currentAudio = null;
         };
       } else {
-        console.error('[SnapToAI] Audio response error:', data);
-        readBtn.textContent = '🔊 Read';
-        alert('Audio not available. Try again.');
+        console.log('[SnapToAI] No audio in response, using fallback');
+        fallbackToSpeechSynthesis(plainText, readBtn);
       }
     } catch (error) {
       console.error('[SnapToAI] Audio error:', error);
-      readBtn.textContent = '🔊 Read';
+      fallbackToSpeechSynthesis(plainText, readBtn);
     }
   };
+}
+
+// Fallback to browser speech synthesis when Gemini audio fails
+function fallbackToSpeechSynthesis(text, readBtn) {
+  if ('speechSynthesis' in window) {
+    const voices = speechSynthesis.getVoices();
+    
+    // Find best female voice
+    let femaleVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Google UK English Female'));
+    if (!femaleVoice) femaleVoice = voices.find(v => v.name.includes('Zira') || v.name.includes('Aria') || v.name.includes('Samantha'));
+    if (!femaleVoice) femaleVoice = voices.find(v => v.lang.startsWith('en'));
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    if (femaleVoice) utterance.voice = femaleVoice;
+    utterance.rate = 0.95;
+    utterance.pitch = 1.1;
+    
+    speechSynthesis.speak(utterance);
+    readBtn.textContent = '⏹ Stop';
+    
+    utterance.onend = () => readBtn.textContent = '🔊 Read';
+  } else {
+    readBtn.textContent = '🔊 Read';
+    alert('Speech not supported in this browser.');
+  }
 }
 
 // Continue - ask AI to continue its response
