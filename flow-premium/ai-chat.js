@@ -371,32 +371,55 @@ function addBubbleActions(bubble, text) {
       const plainText = bubble.textContent.replace('📋 Copy🔊 Read', '').replace('✓ Copied!🔊 Read', '').replace('⏹ Stop', '');
       const utterance = new SpeechSynthesisUtterance(plainText);
       
-      // Get best female voice available
+      // Get best female voice - MUST be female only
       const voices = speechSynthesis.getVoices();
-      const preferredFemale = [
+      
+      // Priority: Best quality female voices first
+      const femaleVoices = [
         'Google UK English Female',
-        'Microsoft Aria Online (Natural) - English (United States)',
-        'Microsoft Ana Online (Natural) - English (United States)',
-        'Microsoft Zira - English (United States)',
+        'Microsoft Aria Online (Natural)',
+        'Microsoft Ana Online (Natural)', 
+        'Microsoft Jenny Online (Natural)',
+        'Microsoft Zira',
         'Samantha',
         'Karen',
-        'Google US English'
+        'Victoria',
+        'Moira',
+        'Fiona',
+        'Tessa',
+        'Veena'
       ];
       
       let bestVoice = null;
-      for (const name of preferredFemale) {
+      
+      // Try exact matches first
+      for (const name of femaleVoices) {
         bestVoice = voices.find(v => v.name.includes(name));
         if (bestVoice) break;
       }
-      // Fallback: find any English female voice
-      if (!bestVoice) {
-        bestVoice = voices.find(v => v.lang.startsWith('en') && 
-          (v.name.toLowerCase().includes('female') || v.name.includes('Zira') || v.name.includes('Samantha')));
-      }
-      if (bestVoice) utterance.voice = bestVoice;
       
-      utterance.rate = 1.0;
-      utterance.pitch = 1.05; // Slightly higher for pleasant female sound
+      // Fallback: find ANY voice with "female" in name
+      if (!bestVoice) {
+        bestVoice = voices.find(v => v.name.toLowerCase().includes('female'));
+      }
+      
+      // Last resort: voices that are typically female
+      if (!bestVoice) {
+        bestVoice = voices.find(v => 
+          v.lang.startsWith('en') && 
+          (v.name.includes('Zira') || v.name.includes('Samantha') || 
+           v.name.includes('Susan') || v.name.includes('Hazel') ||
+           v.name.includes('Catherine') || v.name.includes('Heather'))
+        );
+      }
+      
+      if (bestVoice) {
+        utterance.voice = bestVoice;
+        console.log('[SnapToAI] Using voice:', bestVoice.name);
+      }
+      
+      utterance.rate = 0.95; // Slightly slower for clarity
+      utterance.pitch = 1.1; // Higher pitch for lovely female sound
       
       speechSynthesis.speak(utterance);
       readBtn.textContent = '⏹ Stop';
