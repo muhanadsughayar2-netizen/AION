@@ -351,37 +351,52 @@
       border-color: rgba(0, 217, 255, 0.4);
     }
     
-    .upload-preview {
+    .file-preview-zone {
       display: flex;
-      align-items: center;
       gap: 8px;
-      padding: 8px 16px;
-      margin: 0 24px;
-      background: rgba(0, 217, 255, 0.1);
-      border: 1px solid rgba(0, 217, 255, 0.3);
-      border-radius: 8px;
-      color: #00d9ff;
-      font-size: 13px;
+      flex-wrap: wrap;
+      padding: 0 24px 8px;
+      max-height: 80px;
+      overflow-y: auto;
     }
     
-    .upload-preview span {
-      flex: 1;
+    .file-card {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #ccc;
+      animation: fadeIn 0.2s ease;
+    }
+    
+    .file-card span {
+      max-width: 80px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     
-    .remove-upload {
-      background: none;
-      border: none;
-      color: #888;
+    .file-card .remove-btn {
+      color: #ff5252;
       cursor: pointer;
+      font-weight: bold;
       font-size: 14px;
-      padding: 2px 6px;
+      padding: 0 2px;
+      opacity: 0.7;
+      transition: opacity 0.2s;
     }
     
-    .remove-upload:hover {
-      color: #ff5252;
+    .file-card .remove-btn:hover {
+      opacity: 1;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -406,13 +421,10 @@
         <div class="welcome-message">I'm your AI partner. Ask me anything about this image!</div>
       </div>
       
-      <div class="upload-preview" id="uploadPreview" style="display: none;">
-        <span id="uploadFileName"></span>
-        <button class="remove-upload" id="removeUpload">✕</button>
-      </div>
+      <div class="file-preview-zone" id="filePreviewZone"></div>
       <div class="input-area">
-        <button class="upload-btn" id="uploadBtn" title="Upload file">📎</button>
-        <input type="file" id="fileInput" accept="image/*,.pdf,.txt,.md,.json,.csv" style="display: none;">
+        <input type="file" id="fileInput" accept="image/*,.pdf,.txt,.md,.json,.csv" multiple hidden>
+        <label for="fileInput" class="upload-btn" title="Attach files">+</label>
         <textarea class="chat-input" id="chatInput" placeholder="Ask about your screenshot..." rows="1"></textarea>
         <button class="send-btn" id="sendBtn">Send</button>
       </div>

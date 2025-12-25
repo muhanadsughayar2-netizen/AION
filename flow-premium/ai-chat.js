@@ -6,7 +6,7 @@ let currentPageText = '';
 let conversationHistory = [];
 let lastRequestTime = 0;
 const THROTTLE_MS = 3000;
-let currentUpload = null; // For file uploads
+let filesQueue = []; // Multi-file upload queue (Gemini-style)
 
 const SYSTEM_PROMPT = "You are a thorough, exhaustive AI assistant. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never ask the user if they want more—just give it all now. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.";
 
@@ -246,13 +246,12 @@ async function handleSend() {
       userParts.push({ text: prompt });
     }
     
-    // If a file was uploaded, attach it to the message
-    if (currentUpload) {
-      userParts.push({ inlineData: { mimeType: currentUpload.mimeType, data: currentUpload.data } });
-      // Clear upload after sending
-      currentUpload = null;
-      document.getElementById('uploadPreview').style.display = 'none';
-      document.getElementById('fileInput').value = '';
+    // Attach all queued files (multi-file Gemini-style)
+    if (filesQueue && filesQueue.length > 0) {
+      filesQueue.forEach(f => {
+        userParts.push({ inlineData: { mimeType: f.mimeType, data: f.data } });
+      });
+      clearFilesQueue();
     }
     
     contents.push({ role: 'user', parts: userParts });
@@ -431,39 +430,39 @@ document.getElementById('testBtn').addEventListener('click', testApi);
 document.getElementById('clearBtn').addEventListener('click', clearChat);
 document.getElementById('copyBtn').addEventListener('click', copyChat);
 
-// File upload handling
-document.getElementById('uploadBtn').addEventListener('click', () => {
-  document.getElementById('fileInput').click();
-});
-
+// Multi-file upload handling (Gemini-style)
 document.getElementById('fileInput').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    const base64Data = event.target.result.split(',')[1];
-    const mimeType = file.type || 'application/octet-stream';
-    
-    // Store for sending
-    currentUpload = {
-      mimeType: mimeType,
-      data: base64Data,
-      fileName: file.name
+  Array.from(e.target.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const fileData = {
+        mimeType: file.type || 'application/octet-stream',
+        data: event.target.result.split(',')[1],
+        name: file.name
+      };
+      filesQueue.push(fileData);
+      
+      // Create file card UI
+      const card = document.createElement('div');
+      card.className = 'file-card';
+      const icon = file.type.startsWith('image/') ? '🖼️' : file.type.includes('pdf') ? '📄' : '📎';
+      card.innerHTML = `${icon} <span>${file.name}</span> <div class="remove-btn">×</div>`;
+      card.querySelector('.remove-btn').onclick = () => {
+        filesQueue = filesQueue.filter(f => f !== fileData);
+        card.remove();
+      };
+      document.getElementById('filePreviewZone').appendChild(card);
     };
-    
-    // Show preview
-    document.getElementById('uploadFileName').textContent = '📎 ' + file.name;
-    document.getElementById('uploadPreview').style.display = 'flex';
-  };
-  reader.readAsDataURL(file);
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
 });
 
-document.getElementById('removeUpload').addEventListener('click', () => {
-  currentUpload = null;
-  document.getElementById('uploadPreview').style.display = 'none';
-  document.getElementById('fileInput').value = '';
-});
+// Clear file queue after sending
+function clearFilesQueue() {
+  filesQueue = [];
+  document.getElementById('filePreviewZone').innerHTML = '';
+}
 
 // Initialize
 initializeChat();
