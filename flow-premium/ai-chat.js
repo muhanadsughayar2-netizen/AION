@@ -357,7 +357,7 @@ function addBubbleActions(bubble, text) {
     }
   };
   
-  // Read aloud with toggle and best female voice
+  // Read aloud with toggle - FEMALE VOICE ONLY
   const readBtn = actions.querySelector('.read-aloud-btn');
   readBtn.onclick = () => {
     if ('speechSynthesis' in window) {
@@ -369,63 +369,65 @@ function addBubbleActions(bubble, text) {
       }
       
       const plainText = bubble.textContent.replace('📋 Copy🔊 Read', '').replace('✓ Copied!🔊 Read', '').replace('⏹ Stop', '');
-      const utterance = new SpeechSynthesisUtterance(plainText);
       
-      // Get best female voice - MUST be female only
-      const voices = speechSynthesis.getVoices();
-      
-      // Priority: Best quality female voices first
-      const femaleVoices = [
-        'Google UK English Female',
-        'Microsoft Aria Online (Natural)',
-        'Microsoft Ana Online (Natural)', 
-        'Microsoft Jenny Online (Natural)',
-        'Microsoft Zira',
-        'Samantha',
-        'Karen',
-        'Victoria',
-        'Moira',
-        'Fiona',
-        'Tessa',
-        'Veena'
-      ];
-      
-      let bestVoice = null;
-      
-      // Try exact matches first
-      for (const name of femaleVoices) {
-        bestVoice = voices.find(v => v.name.includes(name));
-        if (bestVoice) break;
-      }
-      
-      // Fallback: find ANY voice with "female" in name
-      if (!bestVoice) {
-        bestVoice = voices.find(v => v.name.toLowerCase().includes('female'));
-      }
-      
-      // Last resort: voices that are typically female
-      if (!bestVoice) {
-        bestVoice = voices.find(v => 
-          v.lang.startsWith('en') && 
-          (v.name.includes('Zira') || v.name.includes('Samantha') || 
-           v.name.includes('Susan') || v.name.includes('Hazel') ||
-           v.name.includes('Catherine') || v.name.includes('Heather'))
+      // Function to speak with female voice
+      const speakWithFemaleVoice = () => {
+        const voices = speechSynthesis.getVoices();
+        
+        // Find female voice - check name patterns
+        let femaleVoice = voices.find(v => 
+          v.name.includes('Female') || 
+          v.name.includes('Google UK English Female')
         );
+        
+        // Microsoft female voices
+        if (!femaleVoice) {
+          femaleVoice = voices.find(v => 
+            v.name.includes('Zira') || 
+            v.name.includes('Aria') || 
+            v.name.includes('Ana') ||
+            v.name.includes('Jenny')
+          );
+        }
+        
+        // Mac/iOS female voices
+        if (!femaleVoice) {
+          femaleVoice = voices.find(v => 
+            v.name === 'Samantha' || 
+            v.name === 'Karen' ||
+            v.name === 'Victoria' ||
+            v.name === 'Moira'
+          );
+        }
+        
+        if (!femaleVoice) {
+          console.log('[SnapToAI] Available voices:', voices.map(v => v.name));
+          alert('No female voice found. Please use Edge browser for best voice quality.');
+          readBtn.textContent = '🔊 Read';
+          return;
+        }
+        
+        const utterance = new SpeechSynthesisUtterance(plainText);
+        utterance.voice = femaleVoice;
+        utterance.rate = 0.95;
+        utterance.pitch = 1.1;
+        
+        console.log('[SnapToAI] Speaking with:', femaleVoice.name);
+        
+        speechSynthesis.speak(utterance);
+        readBtn.textContent = '⏹ Stop';
+        
+        utterance.onend = () => readBtn.textContent = '🔊 Read';
+        utterance.onerror = () => readBtn.textContent = '🔊 Read';
+      };
+      
+      // Voices may not be loaded yet - wait for them
+      const voices = speechSynthesis.getVoices();
+      if (voices.length === 0) {
+        speechSynthesis.onvoiceschanged = speakWithFemaleVoice;
+      } else {
+        speakWithFemaleVoice();
       }
-      
-      if (bestVoice) {
-        utterance.voice = bestVoice;
-        console.log('[SnapToAI] Using voice:', bestVoice.name);
-      }
-      
-      utterance.rate = 0.95; // Slightly slower for clarity
-      utterance.pitch = 1.1; // Higher pitch for lovely female sound
-      
-      speechSynthesis.speak(utterance);
-      readBtn.textContent = '⏹ Stop';
-      
-      utterance.onend = () => readBtn.textContent = '🔊 Read';
-      utterance.onerror = () => readBtn.textContent = '🔊 Read';
     }
   };
 }
