@@ -357,77 +357,79 @@ function addBubbleActions(bubble, text) {
     }
   };
   
-  // Read aloud with toggle - FEMALE VOICE ONLY
+  // Read aloud using Gemini Native Audio - Premium Kore voice
   const readBtn = actions.querySelector('.read-aloud-btn');
-  readBtn.onclick = () => {
-    if ('speechSynthesis' in window) {
-      // Toggle: if speaking, stop
-      if (speechSynthesis.speaking) {
-        speechSynthesis.cancel();
+  let currentAudio = null;
+  
+  readBtn.onclick = async () => {
+    // Toggle: if playing, stop
+    if (currentAudio && !currentAudio.paused) {
+      currentAudio.pause();
+      currentAudio = null;
+      readBtn.textContent = '🔊 Read';
+      return;
+    }
+    
+    const plainText = bubble.textContent.replace('📋 Copy🔊 Read', '').replace('✓ Copied!🔊 Read', '').replace('⏹ Stop', '');
+    
+    readBtn.textContent = '⏳ Loading...';
+    
+    try {
+      // Get API key
+      const result = await chrome.storage.sync.get(['geminiApiKey']);
+      if (!result.geminiApiKey) {
+        alert('Please add your Gemini API key first');
         readBtn.textContent = '🔊 Read';
         return;
       }
       
-      const plainText = bubble.textContent.replace('📋 Copy🔊 Read', '').replace('✓ Copied!🔊 Read', '').replace('⏹ Stop', '');
+      // Use Gemini Native Audio with Kore voice (premium female)
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${result.geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ 
+              role: 'user', 
+              parts: [{ text: `Please read this text aloud naturally: "${plainText.substring(0, 800)}"` }] 
+            }],
+            generationConfig: {
+              responseModalities: ["AUDIO"],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: {
+                    voiceName: "Kore"
+                  }
+                }
+              }
+            }
+          })
+        }
+      );
       
-      // Function to speak with female voice
-      const speakWithFemaleVoice = () => {
-        const voices = speechSynthesis.getVoices();
+      const data = await response.json();
+      
+      if (data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data) {
+        const audioData = data.candidates[0].content.parts[0].inlineData.data;
+        const audioBlob = `data:audio/wav;base64,${audioData}`;
         
-        // Find female voice - check name patterns
-        let femaleVoice = voices.find(v => 
-          v.name.includes('Female') || 
-          v.name.includes('Google UK English Female')
-        );
-        
-        // Microsoft female voices
-        if (!femaleVoice) {
-          femaleVoice = voices.find(v => 
-            v.name.includes('Zira') || 
-            v.name.includes('Aria') || 
-            v.name.includes('Ana') ||
-            v.name.includes('Jenny')
-          );
-        }
-        
-        // Mac/iOS female voices
-        if (!femaleVoice) {
-          femaleVoice = voices.find(v => 
-            v.name === 'Samantha' || 
-            v.name === 'Karen' ||
-            v.name === 'Victoria' ||
-            v.name === 'Moira'
-          );
-        }
-        
-        if (!femaleVoice) {
-          console.log('[SnapToAI] Available voices:', voices.map(v => v.name));
-          alert('No female voice found. Please use Edge browser for best voice quality.');
-          readBtn.textContent = '🔊 Read';
-          return;
-        }
-        
-        const utterance = new SpeechSynthesisUtterance(plainText);
-        utterance.voice = femaleVoice;
-        utterance.rate = 0.95;
-        utterance.pitch = 1.1;
-        
-        console.log('[SnapToAI] Speaking with:', femaleVoice.name);
-        
-        speechSynthesis.speak(utterance);
+        currentAudio = new Audio(audioBlob);
+        currentAudio.play();
         readBtn.textContent = '⏹ Stop';
         
-        utterance.onend = () => readBtn.textContent = '🔊 Read';
-        utterance.onerror = () => readBtn.textContent = '🔊 Read';
-      };
-      
-      // Voices may not be loaded yet - wait for them
-      const voices = speechSynthesis.getVoices();
-      if (voices.length === 0) {
-        speechSynthesis.onvoiceschanged = speakWithFemaleVoice;
+        currentAudio.onended = () => {
+          readBtn.textContent = '🔊 Read';
+          currentAudio = null;
+        };
       } else {
-        speakWithFemaleVoice();
+        console.error('[SnapToAI] Audio response error:', data);
+        readBtn.textContent = '🔊 Read';
+        alert('Audio not available. Try again.');
       }
+    } catch (error) {
+      console.error('[SnapToAI] Audio error:', error);
+      readBtn.textContent = '🔊 Read';
     }
   };
 }
