@@ -4,8 +4,6 @@
 let currentImages = []; // Support multiple images
 let currentPageText = '';
 let conversationHistory = [];
-let lastRequestTime = 0;
-const THROTTLE_MS = 60000; // 60s = strict 1 RPM for free tier
 let filesQueue = []; // Multi-file upload queue (Gemini-style)
 
 const SYSTEM_PROMPT = "You are a thorough, exhaustive AI assistant. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never ask the user if they want more—just give it all now. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.";
@@ -99,14 +97,6 @@ async function sendToGemini(prompt, imageDataUrls) {
   // Accept array of images
   const images = Array.isArray(imageDataUrls) ? imageDataUrls : [imageDataUrls];
   
-  // Throttle check
-  const now = Date.now();
-  const timeSinceLastRequest = now - lastRequestTime;
-  if (timeSinceLastRequest < THROTTLE_MS) {
-    const waitTime = Math.ceil((THROTTLE_MS - timeSinceLastRequest) / 1000);
-    throw new Error(`Please wait ${waitTime}s (free tier limit)`);
-  }
-  
   // Get API key from sync storage (same as popup.js)
   const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
   const apiKey = keyResult.geminiApiKey;
@@ -114,8 +104,6 @@ async function sendToGemini(prompt, imageDataUrls) {
   if (!apiKey) {
     throw new Error('Please set your Gemini API key in Settings');
   }
-  
-  lastRequestTime = Date.now();
   
   // Build conversation
   const contents = [];
@@ -207,20 +195,10 @@ async function handleSend() {
   addThinkingBubble();
   
   try {
-    // Throttle check
-    const now = Date.now();
-    const timeSinceLastRequest = now - lastRequestTime;
-    if (timeSinceLastRequest < THROTTLE_MS) {
-      const waitTime = Math.ceil((THROTTLE_MS - timeSinceLastRequest) / 1000);
-      throw new Error(`Please wait ${waitTime}s (free tier limit)`);
-    }
-    
     // Get API key
     const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
     const apiKey = keyResult.geminiApiKey;
     if (!apiKey) throw new Error('Please set your Gemini API key in Settings');
-    
-    lastRequestTime = Date.now();
     
     // Build request
     const contents = [];
