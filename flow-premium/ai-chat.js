@@ -357,16 +357,52 @@ function addBubbleActions(bubble, text) {
     }
   };
   
-  // Read aloud
-  actions.querySelector('.read-aloud-btn').onclick = () => {
-    const plainText = bubble.textContent.replace('📋 Copy🔊 Read', '');
+  // Read aloud with toggle and best female voice
+  const readBtn = actions.querySelector('.read-aloud-btn');
+  readBtn.onclick = () => {
     if ('speechSynthesis' in window) {
-      speechSynthesis.cancel();
+      // Toggle: if speaking, stop
+      if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+        readBtn.textContent = '🔊 Read';
+        return;
+      }
+      
+      const plainText = bubble.textContent.replace('📋 Copy🔊 Read', '').replace('✓ Copied!🔊 Read', '').replace('⏹ Stop', '');
       const utterance = new SpeechSynthesisUtterance(plainText);
+      
+      // Get best female voice available
+      const voices = speechSynthesis.getVoices();
+      const preferredFemale = [
+        'Google UK English Female',
+        'Microsoft Aria Online (Natural) - English (United States)',
+        'Microsoft Ana Online (Natural) - English (United States)',
+        'Microsoft Zira - English (United States)',
+        'Samantha',
+        'Karen',
+        'Google US English'
+      ];
+      
+      let bestVoice = null;
+      for (const name of preferredFemale) {
+        bestVoice = voices.find(v => v.name.includes(name));
+        if (bestVoice) break;
+      }
+      // Fallback: find any English female voice
+      if (!bestVoice) {
+        bestVoice = voices.find(v => v.lang.startsWith('en') && 
+          (v.name.toLowerCase().includes('female') || v.name.includes('Zira') || v.name.includes('Samantha')));
+      }
+      if (bestVoice) utterance.voice = bestVoice;
+      
       utterance.rate = 1.0;
+      utterance.pitch = 1.05; // Slightly higher for pleasant female sound
+      
       speechSynthesis.speak(utterance);
-      actions.querySelector('.read-aloud-btn').textContent = '⏹ Stop';
-      utterance.onend = () => actions.querySelector('.read-aloud-btn').textContent = '🔊 Read';
+      readBtn.textContent = '⏹ Stop';
+      
+      utterance.onend = () => readBtn.textContent = '🔊 Read';
+      utterance.onerror = () => readBtn.textContent = '🔊 Read';
     }
   };
 }
