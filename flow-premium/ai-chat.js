@@ -22,10 +22,11 @@ if (speechSynthesis.onvoiceschanged !== undefined) {
   speechSynthesis.onvoiceschanged = loadVoices;
 }
 
-// Detect language from text
+// Detect language from text - Arabic takes priority if ANY Arabic chars present
 function detectLanguage(text) {
-  // Arabic characters (strong indicator)
-  if (/[\u0600-\u06FF]/.test(text)) return 'ar';
+  // Arabic characters - if ANY Arabic exists, treat whole text as Arabic
+  // This handles mixed Arabic+English text correctly
+  if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text)) return 'ar';
   // Chinese characters
   if (/[\u4e00-\u9fff]/.test(text)) return 'zh';
   // Japanese (hiragana/katakana)
