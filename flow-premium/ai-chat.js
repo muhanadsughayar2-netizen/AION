@@ -1,6 +1,74 @@
 // AI Chat Window Script
 // Handles AI chat in a standalone window
 
+// === PREMIUM MULTI-LANGUAGE TTS ===
+let synth = window.speechSynthesis;
+let voices = [];
+
+// Fix the "first time" empty voice list bug
+function loadVoices() {
+  voices = synth.getVoices();
+  console.log('[SnapToAI] Loaded', voices.length, 'voices');
+}
+loadVoices();
+if (speechSynthesis.onvoiceschanged !== undefined) {
+  speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+// Detect language from text
+function detectLanguage(text) {
+  // Arabic characters
+  if (/[\u0600-\u06FF]/.test(text)) return 'ar';
+  // French common patterns
+  if (/[àâäéèêëïîôùûüç]/i.test(text) || /\b(je|tu|il|elle|nous|vous|ils|elles|le|la|les|de|du|des|et|est|sont|avec|pour|dans|sur)\b/i.test(text)) return 'fr';
+  // Spanish
+  if (/[ñ¿¡]/i.test(text) || /\b(el|la|los|las|de|del|en|es|son|con|para|por|como|pero|más)\b/i.test(text)) return 'es';
+  // German
+  if (/[äöüß]/i.test(text) || /\b(der|die|das|und|ist|sind|mit|für|auf|bei|nach|von)\b/i.test(text)) return 'de';
+  // Chinese
+  if (/[\u4e00-\u9fff]/.test(text)) return 'zh';
+  // Japanese
+  if (/[\u3040-\u309f\u30a0-\u30ff]/.test(text)) return 'ja';
+  // Korean
+  if (/[\uac00-\ud7af]/.test(text)) return 'ko';
+  // Russian
+  if (/[\u0400-\u04FF]/.test(text)) return 'ru';
+  // Default English
+  return 'en';
+}
+
+// Premium voice selection with quality prioritization
+function speakText(text, langCode = null) {
+  synth.cancel(); // Stop any existing speech
+  
+  const utterance = new SpeechSynthesisUtterance(text);
+  
+  // Refresh voices if needed
+  if (voices.length === 0) voices = synth.getVoices();
+  
+  // Auto-detect language if not provided
+  const detectedLang = langCode || detectLanguage(text);
+  
+  // Find best voice: Google/Natural first, then any matching, then English fallback
+  const bestVoice = voices.find(v => v.lang.startsWith(detectedLang) && (v.name.includes('Google') || v.name.includes('Natural'))) ||
+                    voices.find(v => v.lang.startsWith(detectedLang)) ||
+                    voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural'))) ||
+                    voices.find(v => v.lang.startsWith('en'));
+
+  if (bestVoice) {
+    utterance.voice = bestVoice;
+    utterance.lang = bestVoice.lang;
+    console.log(`[SnapToAI] Using voice: ${bestVoice.name} for language: ${detectedLang}`);
+  } else {
+    utterance.lang = detectedLang;
+  }
+
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
+  
+  return utterance;
+}
+
 let currentImages = []; // Support multiple images
 let currentPageText = '';
 let conversationHistory = [];
@@ -357,12 +425,10 @@ function addBubbleActions(bubble, text) {
     }
   };
   
-  // Read aloud using FREE browser TTS (no API cost!)
+  // Read aloud using FREE browser TTS with auto language detection
   const readBtn = actions.querySelector('.read-aloud-btn');
   
   readBtn.onclick = () => {
-    const synth = window.speechSynthesis;
-    
     // Toggle: if speaking, stop
     if (synth.speaking) {
       synth.cancel();
@@ -372,20 +438,8 @@ function addBubbleActions(bubble, text) {
     
     const plainText = bubble.textContent.replace('📋 Copy🔊 Read', '').replace('✓ Copied!🔊 Read', '').replace('⏹ Stop', '');
     
-    // Cancel any existing speech first
-    synth.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(plainText);
-    const voices = synth.getVoices();
-    
-    // Find premium Google voice, fallback to English
-    const premiumVoice = voices.find(v => v.name.includes('Google US English')) || 
-                        voices.find(v => v.lang.includes('en-US')) || 
-                        voices[0];
-    
-    if (premiumVoice) utterance.voice = premiumVoice;
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
+    // Use premium multi-language TTS with auto language detection
+    const utterance = speakText(plainText);
     
     synth.speak(utterance);
     readBtn.textContent = '⏹ Stop';
