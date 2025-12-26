@@ -4,11 +4,18 @@
 // === PREMIUM MULTI-LANGUAGE TTS ===
 let synth = window.speechSynthesis;
 let voices = [];
+let voicesReady = false;
 
-// Fix the "first time" empty voice list bug
+// Load voices with retry until ready
 function loadVoices() {
   voices = synth.getVoices();
-  console.log('[SnapToAI] Loaded', voices.length, 'voices');
+  if (voices.length > 0) {
+    voicesReady = true;
+    console.log('[SnapToAI] Loaded', voices.length, 'voices');
+    // Log available languages for debugging
+    const langs = [...new Set(voices.map(v => v.lang.split('-')[0]))];
+    console.log('[SnapToAI] Available languages:', langs.join(', '));
+  }
 }
 loadVoices();
 if (speechSynthesis.onvoiceschanged !== undefined) {
@@ -17,50 +24,87 @@ if (speechSynthesis.onvoiceschanged !== undefined) {
 
 // Detect language from text
 function detectLanguage(text) {
-  // Arabic characters
+  // Arabic characters (strong indicator)
   if (/[\u0600-\u06FF]/.test(text)) return 'ar';
-  // French common patterns
-  if (/[àâäéèêëïîôùûüç]/i.test(text) || /\b(je|tu|il|elle|nous|vous|ils|elles|le|la|les|de|du|des|et|est|sont|avec|pour|dans|sur)\b/i.test(text)) return 'fr';
-  // Spanish
-  if (/[ñ¿¡]/i.test(text) || /\b(el|la|los|las|de|del|en|es|son|con|para|por|como|pero|más)\b/i.test(text)) return 'es';
-  // German
-  if (/[äöüß]/i.test(text) || /\b(der|die|das|und|ist|sind|mit|für|auf|bei|nach|von)\b/i.test(text)) return 'de';
-  // Chinese
+  // Chinese characters
   if (/[\u4e00-\u9fff]/.test(text)) return 'zh';
-  // Japanese
+  // Japanese (hiragana/katakana)
   if (/[\u3040-\u309f\u30a0-\u30ff]/.test(text)) return 'ja';
   // Korean
   if (/[\uac00-\ud7af]/.test(text)) return 'ko';
-  // Russian
+  // Russian/Cyrillic
   if (/[\u0400-\u04FF]/.test(text)) return 'ru';
+  // French - accents or common words (expanded)
+  if (/[àâäéèêëïîôùûüçœæ]/i.test(text) || 
+      /\b(bonjour|salut|merci|oui|non|je|tu|il|elle|nous|vous|ils|elles|le|la|les|un|une|de|du|des|et|est|sont|avec|pour|dans|sur|que|qui|quoi|comment|pourquoi|bien|très|aussi|mais|comme|tout|cette|votre|notre)\b/i.test(text)) return 'fr';
+  // Spanish
+  if (/[ñ¿¡]/i.test(text) || 
+      /\b(hola|gracias|buenos|buenas|el|la|los|las|de|del|en|es|son|con|para|por|como|pero|más|qué|cómo|muy|bien|todo|esta|este)\b/i.test(text)) return 'es';
+  // German
+  if (/[äöüß]/i.test(text) || 
+      /\b(guten|danke|bitte|der|die|das|und|ist|sind|mit|für|auf|bei|nach|von|haben|werden|können|müssen)\b/i.test(text)) return 'de';
   // Default English
   return 'en';
 }
 
-// Premium voice selection with quality prioritization
+// Wait for voices then speak
 function speakText(text, langCode = null) {
   synth.cancel(); // Stop any existing speech
   
-  const utterance = new SpeechSynthesisUtterance(text);
+  // Always refresh voices
+  voices = synth.getVoices();
   
-  // Refresh voices if needed
-  if (voices.length === 0) voices = synth.getVoices();
+  const utterance = new SpeechSynthesisUtterance(text);
   
   // Auto-detect language if not provided
   const detectedLang = langCode || detectLanguage(text);
+  console.log('[SnapToAI] Detected language:', detectedLang);
   
-  // Find best voice: Google/Natural first, then any matching, then English fallback
-  const bestVoice = voices.find(v => v.lang.startsWith(detectedLang) && (v.name.includes('Google') || v.name.includes('Natural'))) ||
-                    voices.find(v => v.lang.startsWith(detectedLang)) ||
-                    voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural'))) ||
-                    voices.find(v => v.lang.startsWith('en'));
+  // Find voice matching the language
+  let bestVoice = null;
+  
+  if (detectedLang === 'ar') {
+    // Arabic: look for Google Arabic or any Arabic voice
+    bestVoice = voices.find(v => v.lang.startsWith('ar') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('ar')) ||
+                voices.find(v => v.name.toLowerCase().includes('arabic'));
+  } else if (detectedLang === 'fr') {
+    // French: look for Google French or any French voice
+    bestVoice = voices.find(v => v.lang.startsWith('fr') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('fr')) ||
+                voices.find(v => v.name.toLowerCase().includes('french') || v.name.toLowerCase().includes('français'));
+  } else if (detectedLang === 'es') {
+    bestVoice = voices.find(v => v.lang.startsWith('es') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('es'));
+  } else if (detectedLang === 'de') {
+    bestVoice = voices.find(v => v.lang.startsWith('de') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('de'));
+  } else if (detectedLang === 'zh') {
+    bestVoice = voices.find(v => v.lang.startsWith('zh') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('zh'));
+  } else if (detectedLang === 'ja') {
+    bestVoice = voices.find(v => v.lang.startsWith('ja') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('ja'));
+  } else if (detectedLang === 'ko') {
+    bestVoice = voices.find(v => v.lang.startsWith('ko') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('ko'));
+  } else if (detectedLang === 'ru') {
+    bestVoice = voices.find(v => v.lang.startsWith('ru') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('ru'));
+  } else {
+    // English fallback
+    bestVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('en'));
+  }
 
   if (bestVoice) {
     utterance.voice = bestVoice;
     utterance.lang = bestVoice.lang;
-    console.log(`[SnapToAI] Using voice: ${bestVoice.name} for language: ${detectedLang}`);
+    console.log(`[SnapToAI] Using voice: ${bestVoice.name} (${bestVoice.lang})`);
   } else {
+    // Set language even without a specific voice - browser may still render
     utterance.lang = detectedLang;
+    console.log(`[SnapToAI] No voice found for ${detectedLang}, using browser default`);
   }
 
   utterance.rate = 1.0;
