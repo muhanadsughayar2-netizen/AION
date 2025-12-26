@@ -5,8 +5,6 @@
 let synth = window.speechSynthesis;
 let voices = [];
 let voicesReady = false;
-let voicesPromiseResolve = null;
-const voicesLoaded = new Promise(resolve => { voicesPromiseResolve = resolve; });
 
 // Load voices with retry until ready
 function loadVoices() {
@@ -17,95 +15,17 @@ function loadVoices() {
     // Log available languages for debugging
     const langs = [...new Set(voices.map(v => v.lang.split('-')[0]))];
     console.log('[SnapToAI] Available languages:', langs.join(', '));
-    if (voicesPromiseResolve) voicesPromiseResolve();
   }
 }
 loadVoices();
 if (speechSynthesis.onvoiceschanged !== undefined) {
   speechSynthesis.onvoiceschanged = loadVoices;
 }
-// Fallback: retry loading voices after delay
-setTimeout(() => { if (!voicesReady) loadVoices(); }, 100);
-setTimeout(() => { if (!voicesReady) loadVoices(); }, 500);
 
-// Ensure voices are ready before speaking
-async function ensureVoicesReady() {
-  if (voicesReady && voices.length > 0) return true;
-  // Wait up to 2 seconds for voices
-  await Promise.race([voicesLoaded, new Promise(r => setTimeout(r, 2000))]);
-  voices = synth.getVoices();
-  return voices.length > 0;
-}
-
-// Use Gemini 3 Flash for native audio (Arabic and languages without browser voices)
-async function requestGeminiAudio(text, langCode) {
-  const result = await chrome.storage.sync.get(['geminiApiKey']);
-  if (!result.geminiApiKey) {
-    throw new Error('No API key');
-  }
-  
-  // Select voice based on language
-  let voiceName = 'Kore'; // Default English
-  if (langCode === 'ar') voiceName = 'Sadira'; // Arabic female voice
-  else if (langCode === 'fr') voiceName = 'Aoife'; // Can handle French
-  else if (langCode === 'es') voiceName = 'Kore';
-  else if (langCode === 'de') voiceName = 'Kore';
-  
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${result.geminiApiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ 
-          role: 'user', 
-          parts: [{ text: text.substring(0, 1000) }] 
-        }],
-        generationConfig: {
-          responseModalities: ["AUDIO"],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: {
-                voiceName: voiceName
-              }
-            }
-          }
-        }
-      })
-    }
-  );
-  
-  const data = await response.json();
-  
-  if (data.error) {
-    console.error('[SnapToAI] Gemini Audio API error:', data.error);
-    throw new Error(data.error.message || 'API error');
-  }
-  
-  // Find audio part
-  const parts = data.candidates?.[0]?.content?.parts || [];
-  const audioPart = parts.find(p => p.inlineData && p.inlineData.mimeType?.startsWith('audio'));
-  
-  if (!audioPart) {
-    throw new Error('No audio in response');
-  }
-  
-  // Convert base64 to playable URL
-  const audioBase64 = audioPart.inlineData.data;
-  const mimeType = audioPart.inlineData.mimeType || 'audio/wav';
-  const audioBlob = new Blob(
-    [Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0))],
-    { type: mimeType }
-  );
-  
-  return URL.createObjectURL(audioBlob);
-}
-
-// Detect language from text - Arabic takes priority if ANY Arabic chars present
+// Detect language from text
 function detectLanguage(text) {
-  // Arabic characters - if ANY Arabic exists, treat whole text as Arabic
-  // This handles mixed Arabic+English text correctly
-  if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text)) return 'ar';
+  // Arabic characters (strong indicator)
+  if (/[\u0600-\u06FF]/.test(text)) return 'ar';
   // Chinese characters
   if (/[\u4e00-\u9fff]/.test(text)) return 'zh';
   // Japanese (hiragana/katakana)
@@ -549,68 +469,27 @@ function addBubbleActions(bubble, text) {
     }
   };
   
-  // Read aloud - uses Gemini for Arabic, browser TTS for English (free)
+  // Read aloud using FREE browser TTS with auto language detection
   const readBtn = actions.querySelector('.read-aloud-btn');
-  let currentAudio = null;
   
-  readBtn.onclick = async () => {
-    // Toggle: if playing audio, stop
-    if (currentAudio && !currentAudio.paused) {
-      currentAudio.pause();
-      currentAudio = null;
-      readBtn.textContent = '🔊 Read';
-      return;
-    }
-    
-    // Toggle: if speaking via browser, stop
+  readBtn.onclick = () => {
+    // Toggle: if speaking, stop
     if (synth.speaking) {
       synth.cancel();
       readBtn.textContent = '🔊 Read';
       return;
     }
     
-    readBtn.textContent = '⏳...';
+    const plainText = bubble.textContent.replace('📋 Copy🔊 Read', '').replace('✓ Copied!🔊 Read', '').replace('⏹ Stop', '');
     
-    const plainText = bubble.textContent.replace('📋 Copy🔊 Read', '').replace('✓ Copied!🔊 Read', '').replace('⏹ Stop', '').replace('⏳...', '');
-    const detectedLang = detectLanguage(plainText);
-    
-    console.log('[SnapToAI] Reading text in language:', detectedLang);
-    
-    // For Arabic: use Gemini native audio (browser often lacks Arabic voices)
-    if (detectedLang === 'ar') {
-      try {
-        const audioUrl = await requestGeminiAudio(plainText, 'ar');
-        currentAudio = new Audio(audioUrl);
-        currentAudio.play();
-        readBtn.textContent = '⏹ Stop';
-        
-        currentAudio.onended = () => {
-          readBtn.textContent = '🔊 Read';
-          URL.revokeObjectURL(audioUrl);
-          currentAudio = null;
-        };
-        currentAudio.onerror = () => {
-          readBtn.textContent = '🔊 Read';
-          currentAudio = null;
-        };
-        return;
-      } catch (err) {
-        console.error('[SnapToAI] Gemini audio failed:', err);
-        // Fall through to browser TTS
-      }
-    }
-    
-    // For other languages: use FREE browser TTS
-    await ensureVoicesReady();
+    // Use premium multi-language TTS with auto language detection
     const utterance = speakText(plainText);
+    
     synth.speak(utterance);
     readBtn.textContent = '⏹ Stop';
     
     utterance.onend = () => readBtn.textContent = '🔊 Read';
-    utterance.onerror = (e) => {
-      console.error('[SnapToAI] TTS error:', e);
-      readBtn.textContent = '🔊 Read';
-    };
+    utterance.onerror = () => readBtn.textContent = '🔊 Read';
   };
 }
 
