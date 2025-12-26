@@ -610,9 +610,47 @@ document.getElementById('summarizeBtn').addEventListener('click', summarizeChat)
 document.getElementById('clearBtn').addEventListener('click', clearChat);
 document.getElementById('exportBtn').addEventListener('click', exportToPDF);
 
+// Upload dropdown menu
+const addFileBtn = document.getElementById('addFileBtn');
+const uploadDropdown = document.getElementById('uploadDropdown');
+
+addFileBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  uploadDropdown.classList.toggle('show');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', () => {
+  uploadDropdown.classList.remove('show');
+});
+
+// Upload files option
+document.getElementById('uploadFilesOpt').addEventListener('click', () => {
+  document.getElementById('fileInput').click();
+  uploadDropdown.classList.remove('show');
+});
+
+// Photos option
+document.getElementById('photosOpt').addEventListener('click', () => {
+  document.getElementById('photoInput').click();
+  uploadDropdown.classList.remove('show');
+});
+
+// Add from Drive option
+document.getElementById('addFromDriveOpt').addEventListener('click', () => {
+  uploadDropdown.classList.remove('show');
+  addBubble('Google Drive integration requires your Google account. This feature is coming soon!', 'ai');
+});
+
+// NotebookLM option
+document.getElementById('notebookOpt').addEventListener('click', () => {
+  uploadDropdown.classList.remove('show');
+  window.open('https://notebooklm.google.com/', '_blank');
+});
+
 // Multi-file upload handling (Gemini-style)
-document.getElementById('fileInput').addEventListener('change', (e) => {
-  Array.from(e.target.files).forEach(file => {
+function handleFileUpload(files) {
+  Array.from(files).forEach(file => {
     const reader = new FileReader();
     reader.onload = (event) => {
       const fileData = {
@@ -635,6 +673,15 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
     };
     reader.readAsDataURL(file);
   });
+}
+
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  handleFileUpload(e.target.files);
+  e.target.value = '';
+});
+
+document.getElementById('photoInput').addEventListener('change', (e) => {
+  handleFileUpload(e.target.files);
   e.target.value = '';
 });
 
