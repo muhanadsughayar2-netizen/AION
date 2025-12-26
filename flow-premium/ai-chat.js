@@ -5,6 +5,8 @@
 let synth = window.speechSynthesis;
 let voices = [];
 let voicesReady = false;
+let voicesPromiseResolve = null;
+const voicesLoaded = new Promise(resolve => { voicesPromiseResolve = resolve; });
 
 // Load voices with retry until ready
 function loadVoices() {
@@ -15,11 +17,24 @@ function loadVoices() {
     // Log available languages for debugging
     const langs = [...new Set(voices.map(v => v.lang.split('-')[0]))];
     console.log('[SnapToAI] Available languages:', langs.join(', '));
+    if (voicesPromiseResolve) voicesPromiseResolve();
   }
 }
 loadVoices();
 if (speechSynthesis.onvoiceschanged !== undefined) {
   speechSynthesis.onvoiceschanged = loadVoices;
+}
+// Fallback: retry loading voices after delay
+setTimeout(() => { if (!voicesReady) loadVoices(); }, 100);
+setTimeout(() => { if (!voicesReady) loadVoices(); }, 500);
+
+// Ensure voices are ready before speaking
+async function ensureVoicesReady() {
+  if (voicesReady && voices.length > 0) return true;
+  // Wait up to 2 seconds for voices
+  await Promise.race([voicesLoaded, new Promise(r => setTimeout(r, 2000))]);
+  voices = synth.getVoices();
+  return voices.length > 0;
 }
 
 // Detect language from text - Arabic takes priority if ANY Arabic chars present
@@ -473,7 +488,7 @@ function addBubbleActions(bubble, text) {
   // Read aloud using FREE browser TTS with auto language detection
   const readBtn = actions.querySelector('.read-aloud-btn');
   
-  readBtn.onclick = () => {
+  readBtn.onclick = async () => {
     // Toggle: if speaking, stop
     if (synth.speaking) {
       synth.cancel();
@@ -481,7 +496,26 @@ function addBubbleActions(bubble, text) {
       return;
     }
     
-    const plainText = bubble.textContent.replace('📋 Copy🔊 Read', '').replace('✓ Copied!🔊 Read', '').replace('⏹ Stop', '');
+    readBtn.textContent = '⏳...';
+    
+    // Wait for voices to be ready
+    const ready = await ensureVoicesReady();
+    if (!ready) {
+      readBtn.textContent = '🔊 Read';
+      console.error('[SnapToAI] No voices available');
+      return;
+    }
+    
+    const plainText = bubble.textContent.replace('📋 Copy🔊 Read', '').replace('✓ Copied!🔊 Read', '').replace('⏹ Stop', '').replace('⏳...', '');
+    
+    // Detect language and check if voice exists
+    const detectedLang = detectLanguage(plainText);
+    const hasVoice = voices.some(v => v.lang.startsWith(detectedLang));
+    
+    if (!hasVoice && detectedLang !== 'en') {
+      console.warn(`[SnapToAI] No ${detectedLang} voice found, available:`, voices.map(v => v.lang).join(', '));
+      // Try to use any available voice
+    }
     
     // Use premium multi-language TTS with auto language detection
     const utterance = speakText(plainText);
@@ -490,7 +524,10 @@ function addBubbleActions(bubble, text) {
     readBtn.textContent = '⏹ Stop';
     
     utterance.onend = () => readBtn.textContent = '🔊 Read';
-    utterance.onerror = () => readBtn.textContent = '🔊 Read';
+    utterance.onerror = (e) => {
+      console.error('[SnapToAI] TTS error:', e);
+      readBtn.textContent = '🔊 Read';
+    };
   };
 }
 
