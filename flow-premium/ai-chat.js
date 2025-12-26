@@ -636,10 +636,58 @@ document.getElementById('photosOpt').addEventListener('click', () => {
   uploadDropdown.classList.remove('show');
 });
 
-// Add from Drive option
+// Add from Drive option - show modal
 document.getElementById('addFromDriveOpt').addEventListener('click', () => {
   uploadDropdown.classList.remove('show');
-  addBubble('Google Drive integration requires your Google account. This feature is coming soon!', 'ai');
+  document.getElementById('driveModalOverlay').classList.add('show');
+});
+
+// Drive modal close button
+document.getElementById('driveModalClose').addEventListener('click', () => {
+  document.getElementById('driveModalOverlay').classList.remove('show');
+});
+
+// Close modal on overlay click
+document.getElementById('driveModalOverlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) {
+    e.currentTarget.classList.remove('show');
+  }
+});
+
+// Connect Google Drive button - triggers OAuth
+document.getElementById('driveConnectBtn').addEventListener('click', async () => {
+  const connectBtn = document.getElementById('driveConnectBtn');
+  connectBtn.textContent = 'Connecting...';
+  connectBtn.disabled = true;
+  
+  try {
+    // Use Chrome Identity API for OAuth
+    chrome.identity.getAuthToken({ interactive: true }, (token) => {
+      if (chrome.runtime.lastError) {
+        console.error('[SnapToAI] OAuth error:', chrome.runtime.lastError.message);
+        addBubble('Could not connect to Google Drive. Please try again.', 'ai');
+        connectBtn.textContent = 'Connect Google Drive';
+        connectBtn.disabled = false;
+        document.getElementById('driveModalOverlay').classList.remove('show');
+        return;
+      }
+      
+      if (token) {
+        // Save token and close modal
+        chrome.storage.local.set({ googleDriveToken: token });
+        document.getElementById('driveModalOverlay').classList.remove('show');
+        addBubble('Google Drive connected! You can now access your files.', 'ai');
+        connectBtn.textContent = 'Connect Google Drive';
+        connectBtn.disabled = false;
+      }
+    });
+  } catch (error) {
+    console.error('[SnapToAI] Drive connect error:', error);
+    addBubble('Connection failed. Make sure OAuth is configured in the extension.', 'ai');
+    connectBtn.textContent = 'Connect Google Drive';
+    connectBtn.disabled = false;
+    document.getElementById('driveModalOverlay').classList.remove('show');
+  }
 });
 
 // NotebookLM option
