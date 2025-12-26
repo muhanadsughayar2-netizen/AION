@@ -37,6 +37,70 @@ async function ensureVoicesReady() {
   return voices.length > 0;
 }
 
+// Use Gemini 3 Flash for native audio (Arabic and languages without browser voices)
+async function requestGeminiAudio(text, langCode) {
+  const result = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!result.geminiApiKey) {
+    throw new Error('No API key');
+  }
+  
+  // Select voice based on language
+  let voiceName = 'Kore'; // Default English
+  if (langCode === 'ar') voiceName = 'Sadira'; // Arabic female voice
+  else if (langCode === 'fr') voiceName = 'Aoife'; // Can handle French
+  else if (langCode === 'es') voiceName = 'Kore';
+  else if (langCode === 'de') voiceName = 'Kore';
+  
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${result.geminiApiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ 
+          role: 'user', 
+          parts: [{ text: text.substring(0, 1000) }] 
+        }],
+        generationConfig: {
+          responseModalities: ["AUDIO"],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: {
+                voiceName: voiceName
+              }
+            }
+          }
+        }
+      })
+    }
+  );
+  
+  const data = await response.json();
+  
+  if (data.error) {
+    console.error('[SnapToAI] Gemini Audio API error:', data.error);
+    throw new Error(data.error.message || 'API error');
+  }
+  
+  // Find audio part
+  const parts = data.candidates?.[0]?.content?.parts || [];
+  const audioPart = parts.find(p => p.inlineData && p.inlineData.mimeType?.startsWith('audio'));
+  
+  if (!audioPart) {
+    throw new Error('No audio in response');
+  }
+  
+  // Convert base64 to playable URL
+  const audioBase64 = audioPart.inlineData.data;
+  const mimeType = audioPart.inlineData.mimeType || 'audio/wav';
+  const audioBlob = new Blob(
+    [Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0))],
+    { type: mimeType }
+  );
+  
+  return URL.createObjectURL(audioBlob);
+}
+
 // Detect language from text - Arabic takes priority if ANY Arabic chars present
 function detectLanguage(text) {
   // Arabic characters - if ANY Arabic exists, treat whole text as Arabic
@@ -485,11 +549,20 @@ function addBubbleActions(bubble, text) {
     }
   };
   
-  // Read aloud using FREE browser TTS with auto language detection
+  // Read aloud - uses Gemini for Arabic, browser TTS for English (free)
   const readBtn = actions.querySelector('.read-aloud-btn');
+  let currentAudio = null;
   
   readBtn.onclick = async () => {
-    // Toggle: if speaking, stop
+    // Toggle: if playing audio, stop
+    if (currentAudio && !currentAudio.paused) {
+      currentAudio.pause();
+      currentAudio = null;
+      readBtn.textContent = '🔊 Read';
+      return;
+    }
+    
+    // Toggle: if speaking via browser, stop
     if (synth.speaking) {
       synth.cancel();
       readBtn.textContent = '🔊 Read';
@@ -498,28 +571,38 @@ function addBubbleActions(bubble, text) {
     
     readBtn.textContent = '⏳...';
     
-    // Wait for voices to be ready
-    const ready = await ensureVoicesReady();
-    if (!ready) {
-      readBtn.textContent = '🔊 Read';
-      console.error('[SnapToAI] No voices available');
-      return;
-    }
-    
     const plainText = bubble.textContent.replace('📋 Copy🔊 Read', '').replace('✓ Copied!🔊 Read', '').replace('⏹ Stop', '').replace('⏳...', '');
-    
-    // Detect language and check if voice exists
     const detectedLang = detectLanguage(plainText);
-    const hasVoice = voices.some(v => v.lang.startsWith(detectedLang));
     
-    if (!hasVoice && detectedLang !== 'en') {
-      console.warn(`[SnapToAI] No ${detectedLang} voice found, available:`, voices.map(v => v.lang).join(', '));
-      // Try to use any available voice
+    console.log('[SnapToAI] Reading text in language:', detectedLang);
+    
+    // For Arabic: use Gemini native audio (browser often lacks Arabic voices)
+    if (detectedLang === 'ar') {
+      try {
+        const audioUrl = await requestGeminiAudio(plainText, 'ar');
+        currentAudio = new Audio(audioUrl);
+        currentAudio.play();
+        readBtn.textContent = '⏹ Stop';
+        
+        currentAudio.onended = () => {
+          readBtn.textContent = '🔊 Read';
+          URL.revokeObjectURL(audioUrl);
+          currentAudio = null;
+        };
+        currentAudio.onerror = () => {
+          readBtn.textContent = '🔊 Read';
+          currentAudio = null;
+        };
+        return;
+      } catch (err) {
+        console.error('[SnapToAI] Gemini audio failed:', err);
+        // Fall through to browser TTS
+      }
     }
     
-    // Use premium multi-language TTS with auto language detection
+    // For other languages: use FREE browser TTS
+    await ensureVoicesReady();
     const utterance = speakText(plainText);
-    
     synth.speak(utterance);
     readBtn.textContent = '⏹ Stop';
     
