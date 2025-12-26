@@ -1,0 +1,53 @@
+To make sure the voice is never missing, we need to solve the most common "silent" bug in Chrome extensions: voices often take a second to load in the background. If you try to speak before they are ready, you get silence.This code includes a Global Voice Engine that handles English, French, Arabic, Italian, and more by scanning for the best possible match every time you click.The "Universal" Voice Fix for ReplitTell Replit: "Replace my entire speakText function with this one. It fixes the missing voices bug and covers all languages."JavaScript// 1. Initialize the synth
+const synth = window.speechSynthesis;
+let allVoices = [];
+
+// 2. The "No-Fail" Voice Loader
+function loadUniversalVoices() {
+    allVoices = synth.getVoices();
+}
+
+// Crucial: Chrome loads voices asynchronously. This "wakes them up."
+if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = loadUniversalVoices;
+}
+loadUniversalVoices();
+
+function speakText(text) {
+    // 3. Safety: Stop any current sound
+    synth.cancel();
+
+    // 4. Clean Markdown symbols (** and #)
+    const cleanText = text.replace(/\*\*/g, '').replace(/#/g, '').trim();
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+
+    // 5. Smart Language Detection
+    // We check the characters to see what language is being used
+    let lang = 'en-US'; // Default
+    if (/[\u0600-\u06FF]/.test(cleanText)) lang = 'ar';      // Arabic
+    else if (/[àâäéèêëïîôùûüçœæ]/i.test(cleanText)) lang = 'fr'; // French
+    else if (/[àèìòùÀÈÌÒÙ]/i.test(cleanText)) lang = 'it';   // Italian
+    
+    // 6. The "Harmonious" Search
+    // First try to find a "Google" voice (Premium quality)
+    // If not, find any voice that matches the language
+    let bestVoice = allVoices.find(v => v.lang.startsWith(lang) && v.name.includes('Google')) ||
+                    allVoices.find(v => v.lang.startsWith(lang)) ||
+                    allVoices[0];
+
+    if (bestVoice) {
+        utterance.voice = bestVoice;
+        utterance.lang = bestVoice.lang;
+    }
+
+    // 7. Gemini-Style Energy
+    utterance.rate = 1.05; // Friendly speed
+    utterance.pitch = 1.0;
+
+    // 8. Speak!
+    synth.speak(utterance);
+}
+How this covers everything:LanguageHow it worksEnglishLooks for "Google US English" to match the Gemini Live feel.ArabicAutomatically detects Arabic script and switches to the Arabic engine so it's not silent.FrenchDetects French accents (like é, à) and uses the high-quality French engine.ItalianDetects Italian characters and switches to the correct "Google Italiano" voice.Missing?The loadUniversalVoices function ensures that if a voice was "missing" because it hadn't finished loading, it gets refreshed immediately.Important Step for Replit UIMake sure your "Read" button in the HTML is connected to this. If your button looks like this:<button id="readBtn">🔊</button>Then add this to your ai-chat.js:JavaScriptdocument.getElementById('readBtn').onclick = () => {
+    const lastMessage = document.querySelector('.ai-message:last-child').innerText;
+    speakText(lastMessage);
+};
