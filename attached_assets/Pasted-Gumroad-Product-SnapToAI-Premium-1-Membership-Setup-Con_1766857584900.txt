@@ -1,0 +1,60 @@
+Gumroad Product: SnapToAI Premium
+
+1. Membership Setup
+
+Configure your Gumroad product as a Membership with two payment frequencies.
+
+Tier: Premium Access
+
+Monthly Price: $3.99 / month
+
+Yearly Price: $39.99 / year (Get 2 months free!)
+
+Settings: Enable "Generate unique license keys for each sale."
+
+2. Marketing Copy (For Gumroad Description)
+
+SnapToAI: The Future of Browsing and Research
+Experience the power of a professional AI analyst right inside your browser. For just $3.99, you get access to a "multimodal" workflow that feels like it’s from the future.
+
+🚀 Why SnapToAI Premium?
+
+Instant Visual Intelligence: Snap any part of your screen—a complex chart on Investing.com, a messy snippet of code, or a full textbook page—and get an instant, deep analysis.
+
+Batch Processing: Don't just send one file. Select multiple screenshots and documents at once. SnapToAI organizes and sorts through the data for you in seconds.
+
+Deep Search Logic: Every prompt is treated like a deep research task. Whether it's a large image or a massive text file, our Gemini 3 Flash engine handles it with ease.
+
+Zero Friction: No more going back and forth between tabs. Analyze data where it lives.
+
+💎 What’s Included:
+
+High-Volume Access: Up to 200 AI queries per day.
+
+Multi-File/Image Support: Upload up to 10 items at once.
+
+Priority Gemini 3 Flash: Experience the fastest, most powerful reasoning engine available.
+
+Advanced Code & Data Sorting: Perfect for developers and investors who need answers now.
+
+💰 Out-of-This-World Pricing:
+
+Monthly: $3.99/mo.
+
+Yearly: $39.99/yr. (Best Value: 2 Months Free)
+
+3. Integration Details
+
+Use these direct links in your extension's "Upgrade" screen:
+
+Monthly: https://gumroad.com/l/[YOUR_ID]?plan=monthly&wanted=true
+
+Yearly: https://gumroad.com/l/[YOUR_ID]?plan=yearly&wanted=true
+
+Verification Logic (Background.js)
+
+Your extension pings the Gumroad API: https://api.gumroad.com/v2/licenses/verify
+
+Valid: Unlocks the "Plus" button and 200-call limit.
+
+Expired: Returns user to the basic 20-call/BYO-Key tier.
