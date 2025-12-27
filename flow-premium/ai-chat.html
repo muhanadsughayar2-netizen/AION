@@ -615,12 +615,130 @@
       font-size: 12px;
       margin-top: 14px;
     }
+    
+    /* Quota Badge */
+    .quota-badge {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: #888;
+    }
+    
+    /* Upgrade Modal */
+    .upgrade-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.2s ease;
+    }
+    
+    .upgrade-modal-overlay.show {
+      display: flex;
+    }
+    
+    .upgrade-modal {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border-radius: 24px;
+      padding: 40px;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      border: 1px solid rgba(0, 217, 255, 0.3);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    
+    .upgrade-emoji {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+    
+    .upgrade-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    
+    .upgrade-subtitle {
+      color: #888;
+      font-size: 15px;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+    
+    .upgrade-features {
+      text-align: left;
+      margin-bottom: 28px;
+    }
+    
+    .upgrade-feature {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #ccc;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    
+    .upgrade-feature span {
+      color: #00d9ff;
+    }
+    
+    .upgrade-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
+      border: none;
+      border-radius: 12px;
+      color: #000;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 12px;
+    }
+    
+    .upgrade-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 217, 255, 0.4);
+    }
+    
+    .upgrade-price {
+      color: #00d9ff;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .upgrade-price-note {
+      color: #666;
+      font-size: 12px;
+    }
+    
+    .upgrade-skip {
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+    
+    .upgrade-skip:hover {
+      color: #888;
+    }
   </style>
 </head>
 <body>
   <div class="header">
     <div class="header-left">
-      <div class="logo">Gemini 3 <span>Flash</span></div>
+      <div class="logo">📸 <span>Snap To AI</span></div>
+      <div id="quotaDisplay" class="quota-badge"></div>
     </div>
     <button class="close-btn" id="closeBtn">✕</button>
   </div>
@@ -725,6 +843,28 @@
       
       <button class="drive-connect-btn" id="driveConnectBtn">Connect Google Drive</button>
       <p class="drive-modal-note">Manage connections in Settings</p>
+    </div>
+  </div>
+  
+  <!-- Upgrade Modal -->
+  <div class="upgrade-modal-overlay" id="upgradeModalOverlay">
+    <div class="upgrade-modal">
+      <div class="upgrade-emoji">🚀</div>
+      <h2 class="upgrade-title">You've hit today's limit!</h2>
+      <p class="upgrade-subtitle">You've used all 20 free AI calls for today. Upgrade to Premium for 200 daily calls and priority support.</p>
+      
+      <div class="upgrade-features">
+        <div class="upgrade-feature"><span>⚡</span> 200 AI calls per day (10x more)</div>
+        <div class="upgrade-feature"><span>🎯</span> Priority response times</div>
+        <div class="upgrade-feature"><span>🔓</span> All future features included</div>
+        <div class="upgrade-feature"><span>💬</span> Premium support</div>
+      </div>
+      
+      <div class="upgrade-price">$3.99<span style="font-size:14px;color:#888">/month</span></div>
+      <p class="upgrade-price-note">Cancel anytime. No hidden fees.</p>
+      
+      <button class="upgrade-btn" id="upgradeBtn">Upgrade to Premium</button>
+      <button class="upgrade-skip" id="upgradeSkipBtn">I'll wait until tomorrow</button>
     </div>
   </div>
   

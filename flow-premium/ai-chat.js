@@ -74,6 +74,64 @@ let currentPageText = '';
 let conversationHistory = [];
 let filesQueue = []; // Multi-file upload queue (Gemini-style)
 
+// === HYBRID QUOTA SYSTEM (ZERO COST) ===
+const FREE_DAILY_LIMIT = 20;
+const PREMIUM_DAILY_LIMIT = 200;
+const PROXY_URL = 'https://snaptoai.replit.app'; // Replit proxy server
+
+// Check and update daily quota
+async function getQuotaStatus() {
+  const today = new Date().toLocaleDateString();
+  const data = await chrome.storage.local.get(['dailyCount', 'lastReset', 'isPremium']);
+  
+  // Reset if new day
+  if (data.lastReset !== today) {
+    await chrome.storage.local.set({ dailyCount: 0, lastReset: today });
+    return { count: 0, isPremium: data.isPremium || false, limit: data.isPremium ? PREMIUM_DAILY_LIMIT : FREE_DAILY_LIMIT };
+  }
+  
+  const count = data.dailyCount || 0;
+  const isPremium = data.isPremium || false;
+  const limit = isPremium ? PREMIUM_DAILY_LIMIT : FREE_DAILY_LIMIT;
+  
+  return { count, isPremium, limit };
+}
+
+// Increment quota after successful API call
+async function incrementQuota() {
+  const data = await chrome.storage.local.get(['dailyCount']);
+  const newCount = (data.dailyCount || 0) + 1;
+  await chrome.storage.local.set({ dailyCount: newCount });
+  updateQuotaDisplay();
+  return newCount;
+}
+
+// Update quota display in header
+async function updateQuotaDisplay() {
+  const status = await getQuotaStatus();
+  const quotaEl = document.getElementById('quotaDisplay');
+  if (quotaEl) {
+    const remaining = status.limit - status.count;
+    if (status.isPremium) {
+      quotaEl.innerHTML = `<span style="color:#00d9ff">⚡ ${remaining}/${status.limit}</span>`;
+    } else {
+      quotaEl.innerHTML = `<span>${remaining}/${status.limit} free</span>`;
+    }
+  }
+}
+
+// Show upgrade modal
+function showUpgradeModal() {
+  const modal = document.getElementById('upgradeModalOverlay');
+  if (modal) modal.classList.add('show');
+}
+
+// Hide upgrade modal
+function hideUpgradeModal() {
+  const modal = document.getElementById('upgradeModalOverlay');
+  if (modal) modal.classList.remove('show');
+}
+
 const SYSTEM_PROMPT = "You are a thorough, exhaustive AI assistant. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never ask the user if they want more—just give it all now. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.";
 
 const SMART_SYSTEM_PROMPT = "You are a thorough, exhaustive AI assistant. I am providing you with the raw text of a webpage for accuracy, and the screenshot of that page for visual context (charts, layout, images). Please use the text for your primary analysis and the images to confirm visual details. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never truncate. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.";
@@ -255,6 +313,13 @@ async function handleSend() {
   
   if (!prompt || currentImages.length === 0) return;
   
+  // Check quota before proceeding
+  const quota = await getQuotaStatus();
+  if (quota.count >= quota.limit) {
+    showUpgradeModal();
+    return;
+  }
+  
   input.value = '';
   sendBtn.disabled = true;
   
@@ -383,6 +448,9 @@ async function handleSend() {
     // Update conversation history
     conversationHistory.push({ role: 'user', text: prompt });
     conversationHistory.push({ role: 'model', text: fullText });
+    
+    // Increment quota after successful call
+    await incrementQuota();
     
   } catch (error) {
     removeLoading();
@@ -697,3 +765,17 @@ function clearFilesQueue() {
 
 // Initialize
 initializeChat();
+
+// Initialize quota display on load
+updateQuotaDisplay();
+
+// Upgrade modal handlers
+document.getElementById('upgradeBtn')?.addEventListener('click', () => {
+  // TODO: Connect to ExtensionPay or Stripe when ready
+  alert('Premium upgrade coming soon! For now, your quota resets tomorrow.');
+  hideUpgradeModal();
+});
+
+document.getElementById('upgradeSkipBtn')?.addEventListener('click', () => {
+  hideUpgradeModal();
+});
