@@ -1,10 +1,34 @@
-from flask import Flask, send_from_directory, request, redirect, Response
+from flask import Flask, send_from_directory, request, redirect, Response, jsonify
 import os
 import mimetypes
+import requests
+from collections import defaultdict
+import time
 
 # Disable automatic static folder - we'll handle all routing manually
 app = Flask(__name__, static_folder=None)
 app.url_map.strict_slashes = False
+
+# ===== GEMINI PROXY CONFIG =====
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+RATE_LIMIT_WINDOW = 60  # seconds
+RATE_LIMIT_MAX = 5
+rate_limit_data = defaultdict(lambda: {'count': 0, 'window_start': 0})
+
+def check_rate_limit(user_id):
+    now = time.time()
+    user_key = user_id or 'anonymous'
+    data = rate_limit_data[user_key]
+    
+    if now - data['window_start'] > RATE_LIMIT_WINDOW:
+        data['count'] = 0
+        data['window_start'] = now
+    
+    if data['count'] >= RATE_LIMIT_MAX:
+        return False
+    
+    data['count'] += 1
+    return True
 
 # Handle www redirect
 @app.before_request
@@ -60,6 +84,96 @@ def add_headers(response):
 def health():
     """Health check endpoint for deployment"""
     return Response("OK", status=200, mimetype='text/plain')
+
+# ===== GEMINI PROXY ENDPOINTS =====
+@app.route('/premium-chat', methods=['POST', 'OPTIONS'])
+def premium_chat():
+    """Proxy to Gemini API for AI chat"""
+    if request.method == 'OPTIONS':
+        response = Response('', status=200)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, X-Extension-ID'
+        return response
+    
+    if not GEMINI_API_KEY:
+        return jsonify({'error': 'Server not configured'}), 500
+    
+    data = request.get_json()
+    user_id = data.get('userId', 'anonymous')
+    
+    if not check_rate_limit(user_id):
+        return jsonify({'error': 'Rate limit exceeded. Please wait.'}), 429
+    
+    contents = data.get('contents', [])
+    system_prompt = data.get('systemPrompt')
+    
+    url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}'
+    
+    try:
+        request_body = {
+            'contents': contents,
+            'generationConfig': {
+                'maxOutputTokens': 2048,
+                'temperature': 0.7,
+                'topP': 0.95,
+                'topK': 40
+            }
+        }
+        
+        if system_prompt:
+            request_body['systemInstruction'] = {'parts': [{'text': system_prompt}]}
+        
+        response = requests.post(url, json=request_body, timeout=60)
+        result = response.json()
+        
+        resp = jsonify(result)
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
+    except Exception as e:
+        print(f'[SnapToAI Proxy] Error: {e}')
+        return jsonify({'error': 'AI Server busy. Try again.'}), 500
+
+@app.route('/verify-license', methods=['POST', 'OPTIONS'])
+def verify_license():
+    """Verify Gumroad license key"""
+    if request.method == 'OPTIONS':
+        response = Response('', status=200)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
+    
+    data = request.get_json()
+    license_key = data.get('licenseKey', '')
+    
+    if not license_key or len(license_key) < 8:
+        return jsonify({'success': False, 'error': 'Invalid license key format'}), 400
+    
+    try:
+        gumroad_product_id = os.environ.get('GUMROAD_PRODUCT_ID', 'YOUR_PRODUCT_ID')
+        response = requests.post('https://api.gumroad.com/v2/licenses/verify', data={
+            'product_id': gumroad_product_id,
+            'license_key': license_key
+        }, timeout=30)
+        
+        result = response.json()
+        
+        if result.get('success'):
+            resp = jsonify({
+                'success': True,
+                'email': result.get('purchase', {}).get('email'),
+                'uses': result.get('uses')
+            })
+        else:
+            resp = jsonify({'success': False, 'error': result.get('message', 'Invalid license')})
+            resp.status_code = 400
+        
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
+    except Exception as e:
+        print(f'[SnapToAI] License verification error: {e}')
+        return jsonify({'success': False, 'error': 'Verification failed. Try again.'}), 500
 
 @app.route('/')
 def index():
