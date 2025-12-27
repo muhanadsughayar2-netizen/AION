@@ -237,6 +237,137 @@
   </div>
 
 
+  <!-- License Activation Modal -->
+  <div id="licenseModal" class="license-modal" style="display: none;">
+    <div class="license-modal-content">
+      <div class="license-modal-header">
+        <span class="license-icon">🔑</span>
+        <span class="license-title">Activate License</span>
+        <span id="licenseStatus" class="license-status" style="display: none;">✓ Activated</span>
+      </div>
+      <p class="license-desc">Enter your Gumroad license key to unlock unlimited AI access forever.</p>
+      <input type="text" id="licenseKeyInput" class="license-input" placeholder="Paste your license key here...">
+      <div class="license-actions">
+        <button id="licenseActivateBtn" class="license-btn-primary">Activate</button>
+        <button id="licenseCloseBtn" class="license-btn-secondary">Close</button>
+      </div>
+      <p id="licenseError" class="license-error" style="display: none;"></p>
+      <p id="licenseSuccess" class="license-success" style="display: none;"></p>
+      <a href="https://snaptoai.gumroad.com/l/premium" target="_blank" class="license-link">Get license key for $5.99 ↗</a>
+    </div>
+  </div>
+
+  <style>
+    .license-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .license-modal.show { opacity: 1; }
+    .license-modal-content {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border: 1px solid rgba(0, 217, 255, 0.3);
+      border-radius: 16px;
+      padding: 24px;
+      width: 320px;
+      text-align: center;
+    }
+    .license-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .license-icon { font-size: 24px; }
+    .license-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .license-status {
+      background: linear-gradient(135deg, #00d9ff, #00b8d4);
+      color: #000;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .license-desc {
+      color: #aaa;
+      font-size: 13px;
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+    .license-input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(0, 217, 255, 0.3);
+      background: rgba(0, 0, 0, 0.4);
+      color: #fff;
+      font-size: 14px;
+      margin-bottom: 12px;
+      outline: none;
+    }
+    .license-input:focus {
+      border-color: #00d9ff;
+      box-shadow: 0 0 10px rgba(0, 217, 255, 0.2);
+    }
+    .license-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .license-btn-primary {
+      flex: 1;
+      padding: 12px;
+      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
+      border: none;
+      border-radius: 10px;
+      color: #000;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .license-btn-primary:hover { transform: scale(1.02); }
+    .license-btn-secondary {
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      color: #888;
+      cursor: pointer;
+    }
+    .license-error {
+      color: #ff4444;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .license-success {
+      color: #00ff88;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .license-link {
+      color: #00d9ff;
+      font-size: 12px;
+      text-decoration: none;
+      display: block;
+      margin-top: 12px;
+    }
+    .license-link:hover { text-decoration: underline; }
+  </style>
+
   <script src="popup.js"></script>
 </body>
 </html>

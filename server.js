@@ -132,6 +132,44 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', hasKey: !!DEVELOPER_KEY });
 });
 
+// Gumroad license verification
+const GUMROAD_PRODUCT_ID = process.env['GUMROAD_PRODUCT_ID'] || 'YOUR_PRODUCT_ID';
+
+app.post('/verify-license', async (req, res) => {
+  const { licenseKey } = req.body;
+  
+  if (!licenseKey || licenseKey.length < 8) {
+    return res.status(400).json({ success: false, error: 'Invalid license key format' });
+  }
+  
+  try {
+    // Verify with Gumroad API
+    const response = await fetch('https://api.gumroad.com/v2/licenses/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        product_id: GUMROAD_PRODUCT_ID,
+        license_key: licenseKey
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      res.json({ 
+        success: true, 
+        email: data.purchase?.email,
+        uses: data.uses
+      });
+    } else {
+      res.status(400).json({ success: false, error: data.message || 'Invalid license' });
+    }
+  } catch (error) {
+    console.error('[SnapToAI] License verification error:', error);
+    res.status(500).json({ success: false, error: 'Verification failed. Try again.' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`[SnapToAI] Premium Proxy running on port ${PORT}`);

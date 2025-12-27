@@ -2996,13 +2996,127 @@ async function incrementGlobalCounter() {
 const PROXY_URL = 'https://snaptoai.replit.app';
 const aiButton = document.getElementById('aiButton');
 
-// AI button now opens AI chat directly (no API key modal)
+// AI button now opens license activation modal
 if (aiButton) {
   aiButton.addEventListener('click', () => {
-    console.log('[SnapToAI] AI button clicked - opening AI chat');
-    openAiChat();
+    console.log('[SnapToAI] AI button clicked - opening license modal');
+    showLicenseModal();
   });
 }
+
+// ===== LICENSE ACTIVATION MODAL =====
+const licenseModal = document.getElementById('licenseModal');
+const licenseKeyInput = document.getElementById('licenseKeyInput');
+const licenseActivateBtn = document.getElementById('licenseActivateBtn');
+const licenseCloseBtn = document.getElementById('licenseCloseBtn');
+const licenseStatus = document.getElementById('licenseStatus');
+const licenseError = document.getElementById('licenseError');
+const licenseSuccess = document.getElementById('licenseSuccess');
+
+function showLicenseModal() {
+  if (!licenseModal) return;
+  loadLicenseStatus();
+  licenseModal.style.display = 'flex';
+  setTimeout(() => licenseModal.classList.add('show'), 10);
+}
+
+function hideLicenseModal() {
+  if (!licenseModal) return;
+  licenseModal.classList.remove('show');
+  setTimeout(() => licenseModal.style.display = 'none', 300);
+}
+
+async function loadLicenseStatus() {
+  try {
+    const data = await chrome.storage.local.get(['isPremium', 'gumroadLicense']);
+    if (data.isPremium && data.gumroadLicense) {
+      if (licenseStatus) licenseStatus.style.display = 'inline';
+      if (licenseKeyInput) licenseKeyInput.value = data.gumroadLicense;
+    } else {
+      if (licenseStatus) licenseStatus.style.display = 'none';
+      if (licenseKeyInput) licenseKeyInput.value = '';
+    }
+  } catch (e) {
+    console.error('[SnapToAI] Error loading license:', e);
+  }
+}
+
+async function activateLicense() {
+  const key = licenseKeyInput?.value?.trim();
+  if (!key) {
+    showLicenseError('Please enter a license key');
+    return;
+  }
+  
+  // Hide previous messages
+  if (licenseError) licenseError.style.display = 'none';
+  if (licenseSuccess) licenseSuccess.style.display = 'none';
+  
+  // Show loading state
+  if (licenseActivateBtn) {
+    licenseActivateBtn.disabled = true;
+    licenseActivateBtn.textContent = 'Verifying...';
+  }
+  
+  try {
+    // Verify license with server (which calls Gumroad API)
+    const response = await fetch(`${PROXY_URL}/verify-license`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ licenseKey: key })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      await chrome.storage.local.set({ 
+        isPremium: true, 
+        gumroadLicense: key
+      });
+      
+      if (licenseStatus) licenseStatus.style.display = 'inline';
+      showLicenseSuccess('License activated! You now have unlimited AI access.');
+      
+      setTimeout(() => {
+        hideLicenseModal();
+      }, 2000);
+    } else {
+      showLicenseError(data.error || 'Invalid license key. Please check and try again.');
+    }
+  } catch (e) {
+    showLicenseError('Verification failed. Please check your connection and try again.');
+    console.error('[SnapToAI] License activation error:', e);
+  } finally {
+    if (licenseActivateBtn) {
+      licenseActivateBtn.disabled = false;
+      licenseActivateBtn.textContent = 'Activate';
+    }
+  }
+}
+
+function showLicenseError(msg) {
+  if (licenseError) {
+    licenseError.textContent = msg;
+    licenseError.style.display = 'block';
+  }
+}
+
+function showLicenseSuccess(msg) {
+  if (licenseSuccess) {
+    licenseSuccess.textContent = msg;
+    licenseSuccess.style.display = 'block';
+  }
+}
+
+// Event listeners for license modal
+if (licenseActivateBtn) licenseActivateBtn.addEventListener('click', activateLicense);
+if (licenseCloseBtn) licenseCloseBtn.addEventListener('click', hideLicenseModal);
+if (licenseModal) licenseModal.addEventListener('click', (e) => {
+  if (e.target === licenseModal) hideLicenseModal();
+});
+if (licenseKeyInput) licenseKeyInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') activateLicense();
+});
 
 // ===== AI CHAT PORTAL =====
 let aiChatCurrentImage = null;
