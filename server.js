@@ -34,7 +34,7 @@ function checkRateLimit(userId) {
 }
 
 app.post('/premium-chat', async (req, res) => {
-  const { contents, userId } = req.body;
+  const { contents, systemPrompt, userId } = req.body;
   
   if (!DEVELOPER_KEY) {
     return res.status(500).json({ error: 'Server not configured' });
@@ -44,19 +44,27 @@ app.post('/premium-chat', async (req, res) => {
     return res.status(429).json({ error: 'Rate limit exceeded. Please wait.' });
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${DEVELOPER_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${DEVELOPER_KEY}`;
 
   try {
+    const requestBody = {
+      contents: contents,
+      generationConfig: {
+        maxOutputTokens: 2048,
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 40
+      }
+    };
+    
+    if (systemPrompt) {
+      requestBody.systemInstruction = { parts: [{ text: systemPrompt }] };
+    }
+    
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: contents,
-        generationConfig: {
-          maxOutputTokens: 2048,
-          temperature: 0.7
-        }
-      })
+      body: JSON.stringify(requestBody)
     });
 
     const data = await response.json();
@@ -68,25 +76,37 @@ app.post('/premium-chat', async (req, res) => {
 });
 
 app.post('/premium-chat-stream', async (req, res) => {
-  const { contents, userId } = req.body;
+  const { contents, systemPrompt, userId } = req.body;
   
   if (!DEVELOPER_KEY) {
     return res.status(500).json({ error: 'Server not configured' });
   }
+  
+  if (!checkRateLimit(userId)) {
+    return res.status(429).json({ error: 'Rate limit exceeded. Please wait.' });
+  }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?key=${DEVELOPER_KEY}&alt=sse`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent?key=${DEVELOPER_KEY}&alt=sse`;
 
   try {
+    const requestBody = {
+      contents: contents,
+      generationConfig: {
+        maxOutputTokens: 2048,
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 40
+      }
+    };
+    
+    if (systemPrompt) {
+      requestBody.systemInstruction = { parts: [{ text: systemPrompt }] };
+    }
+    
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: contents,
-        generationConfig: {
-          maxOutputTokens: 2048,
-          temperature: 0.7
-        }
-      })
+      body: JSON.stringify(requestBody)
     });
 
     res.setHeader('Content-Type', 'text/event-stream');

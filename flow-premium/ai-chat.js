@@ -218,18 +218,10 @@ function removeLoading() {
   if (loading) loading.remove();
 }
 
-// Send message to Gemini API (supports multiple images)
+// Send message to Gemini API via proxy (supports multiple images)
 async function sendToGemini(prompt, imageDataUrls) {
   // Accept array of images
   const images = Array.isArray(imageDataUrls) ? imageDataUrls : [imageDataUrls];
-  
-  // Get API key from sync storage (same as popup.js)
-  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
-  const apiKey = keyResult.geminiApiKey;
-  
-  if (!apiKey) {
-    throw new Error('Please set your Gemini API key in Settings');
-  }
   
   // Build conversation
   const contents = [];
@@ -263,31 +255,27 @@ async function sendToGemini(prompt, imageDataUrls) {
   // Use multi-image prompt if multiple images
   const systemPrompt = images.length > 1 ? MULTI_IMAGE_PROMPT : SYSTEM_PROMPT;
   
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{
-            text: systemPrompt
-          }]
-        },
-        contents: contents,
-        generationConfig: {
-          maxOutputTokens: 2048,
-          temperature: 0.7,
-          topP: 0.95,
-          topK: 40
-        }
-      })
-    }
-  );
+  // Get unique user ID for rate limiting
+  const userData = await chrome.storage.local.get(['snaptoaiUserId']);
+  let userId = userData.snaptoaiUserId;
+  if (!userId) {
+    userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    await chrome.storage.local.set({ snaptoaiUserId: userId });
+  }
+  
+  const response = await fetch(`${PROXY_URL}/premium-chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: contents,
+      systemPrompt: systemPrompt,
+      userId: userId
+    })
+  });
   
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+    throw new Error(errorData.error || `Server Error: ${response.status}`);
   }
   
   const data = await response.json();
@@ -328,11 +316,6 @@ async function handleSend() {
   addThinkingBubble();
   
   try {
-    // Get API key
-    const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
-    const apiKey = keyResult.geminiApiKey;
-    if (!apiKey) throw new Error('Please set your Gemini API key in Settings');
-    
     // Build request
     const contents = [];
     for (const msg of conversationHistory) {
@@ -375,24 +358,24 @@ async function handleSend() {
       systemPrompt = SMART_SYSTEM_PROMPT;
     }
     
-    // Stream request
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent?alt=sse&key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: contents,
-          generationConfig: { 
-            maxOutputTokens: 2048,
-            temperature: 0.7,
-            topP: 0.95,
-            topK: 40
-          }
-        })
-      }
-    );
+    // Get unique user ID for rate limiting
+    const userData = await chrome.storage.local.get(['snaptoaiUserId']);
+    let userId = userData.snaptoaiUserId;
+    if (!userId) {
+      userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      await chrome.storage.local.set({ snaptoaiUserId: userId });
+    }
+    
+    // Stream request via proxy
+    const response = await fetch(`${PROXY_URL}/premium-chat-stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: contents,
+        systemPrompt: systemPrompt,
+        userId: userId
+      })
+    });
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
