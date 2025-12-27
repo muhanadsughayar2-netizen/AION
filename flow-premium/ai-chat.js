@@ -766,14 +766,32 @@ function clearFilesQueue() {
 // Initialize
 initializeChat();
 
-// Initialize quota display on load
-updateQuotaDisplay();
+// Initialize quota display on load and check premium status
+async function initQuotaSystem() {
+  // Check premium status from ExtensionPay
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'checkPremium' });
+    if (response && response.isPremium) {
+      await chrome.storage.local.set({ isPremium: true });
+      console.log('[SnapToAI] Premium user detected');
+    }
+  } catch (e) {
+    console.log('[SnapToAI] Could not check premium status');
+  }
+  updateQuotaDisplay();
+}
+initQuotaSystem();
 
 // Upgrade modal handlers
-document.getElementById('upgradeBtn')?.addEventListener('click', () => {
-  // TODO: Connect to ExtensionPay or Stripe when ready
-  alert('Premium upgrade coming soon! For now, your quota resets tomorrow.');
-  hideUpgradeModal();
+document.getElementById('upgradeBtn')?.addEventListener('click', async () => {
+  // Open ExtensionPay payment page
+  try {
+    await chrome.runtime.sendMessage({ action: 'openPayment' });
+    hideUpgradeModal();
+  } catch (e) {
+    window.open('https://extensionpay.com/ext/snaptoai-abc123', '_blank');
+    hideUpgradeModal();
+  }
 });
 
 document.getElementById('upgradeSkipBtn')?.addEventListener('click', () => {

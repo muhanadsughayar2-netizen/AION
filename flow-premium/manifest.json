@@ -21,11 +21,13 @@
     "https://claude.ai/*",
     "https://*.openai.com/*",
     "https://generativelanguage.googleapis.com/*",
+    "https://extensionpay.com/*",
+    "https://snaptoai.replit.app/*",
     "<all_urls>"
   ],
   "web_accessible_resources": [
     {
-      "resources": ["content.js", "popup.html", "popup.css", "popup.js", "annotate.html", "annotate.css", "annotate.js", "options.html", "options.css", "options.js", "ai-chat.html", "ai-chat.js"],
+      "resources": ["content.js", "popup.html", "popup.css", "popup.js", "annotate.html", "annotate.css", "annotate.js", "options.html", "options.css", "options.js", "ai-chat.html", "ai-chat.js", "ExtPay.js"],
       "matches": ["<all_urls>"]
     }
   ],
@@ -33,7 +35,8 @@
     "extension_pages": "script-src 'self'; object-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline';"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "action": {
     "default_popup": "popup.html",

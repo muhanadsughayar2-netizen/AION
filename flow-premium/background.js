@@ -1,6 +1,12 @@
 // SnapToAI Background Service Worker
 // Handles screenshot capture, storage management, downloads, and messaging
 
+import ExtPay from './ExtPay.js';
+
+// Initialize ExtensionPay
+const extpay = ExtPay('snaptoai-abc123');
+extpay.startBackground();
+
 const MAX_SNAPS = 9;
 const AI_SITES = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai', 'specode.ai'];
 const CAPTURE_COOLDOWN = 700; // Minimum 700ms between captures to avoid Chrome rate limit (MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND)
@@ -53,6 +59,15 @@ chrome.commands.onCommand.addListener((command) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'capture') {
     captureScreenshot().then(sendResponse);
+    return true;
+  } else if (request.action === 'checkPremium') {
+    extpay.getUser().then(user => {
+      sendResponse({ isPremium: user.paid });
+    });
+    return true;
+  } else if (request.action === 'openPayment') {
+    extpay.openPaymentPage();
+    sendResponse({ success: true });
     return true;
   } else if (request.action === 'upload') {
     handleUpload(request.preferredPlatform, request.selectedSnaps).then(sendResponse);
