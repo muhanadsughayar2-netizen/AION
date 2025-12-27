@@ -17,11 +17,13 @@ AI Engine: **Gemini 3 Flash** (user confirmed - do NOT change to other version n
 ## Monetization System (December 2025)
 
 **Payment Provider:** Gumroad (supports PayPal - works in Jordan)
-**Pricing:** $5.99 one-time (unlimited access forever)
+**Pricing:** 
+- Monthly: $5.99/month
+- Yearly: $59.99/year (17% savings)
 
 **Quota System:**
 - Free tier: 20 AI calls TOTAL (lifetime trial, not daily)
-- Premium tier: Unlimited AI calls forever
+- Premium tier: Unlimited AI calls (monthly or yearly subscription)
 - Tracking: Local storage (zero infrastructure cost)
 - Counter styling: Blue bold number + "Free AI" / "Unlimited Access"
 

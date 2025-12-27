@@ -245,7 +245,7 @@
         <span class="license-title">Activate License</span>
         <span id="licenseStatus" class="license-status" style="display: none;">✓ Activated</span>
       </div>
-      <p class="license-desc">Enter your Gumroad license key to unlock unlimited AI access forever.</p>
+      <p class="license-desc">Enter your Gumroad license key to unlock unlimited AI access.</p>
       <input type="text" id="licenseKeyInput" class="license-input" placeholder="Paste your license key here...">
       <div class="license-actions">
         <button id="licenseActivateBtn" class="license-btn-primary">Activate</button>
@@ -253,7 +253,10 @@
       </div>
       <p id="licenseError" class="license-error" style="display: none;"></p>
       <p id="licenseSuccess" class="license-success" style="display: none;"></p>
-      <a href="https://snaptoai.gumroad.com/l/premium" target="_blank" class="license-link">Get license key for $5.99 ↗</a>
+      <div class="license-plans">
+        <a href="https://snaptoai.gumroad.com/l/monthly" target="_blank" class="license-link">Monthly $5.99/mo ↗</a>
+        <a href="https://snaptoai.gumroad.com/l/yearly" target="_blank" class="license-link">Yearly $59.99/yr (Save 17%) ↗</a>
+      </div>
     </div>
   </div>
 
@@ -358,14 +361,25 @@
       font-size: 12px;
       margin-top: 8px;
     }
+    .license-plans {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 12px;
+    }
     .license-link {
       color: #00d9ff;
       font-size: 12px;
       text-decoration: none;
-      display: block;
-      margin-top: 12px;
+      padding: 8px 12px;
+      background: rgba(0, 217, 255, 0.1);
+      border-radius: 8px;
+      transition: background 0.2s;
     }
-    .license-link:hover { text-decoration: underline; }
+    .license-link:hover { 
+      background: rgba(0, 217, 255, 0.2);
+      text-decoration: none;
+    }
   </style>
 
   <script src="popup.js"></script>
