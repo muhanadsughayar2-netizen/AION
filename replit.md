@@ -17,26 +17,33 @@ AI Engine: **Gemini 3 Flash** (user confirmed - do NOT change to other version n
 ## Monetization System (December 2025)
 
 **Payment Provider:** Gumroad (supports PayPal - works in Jordan)
-**Pricing:**
-- Monthly: $3.99/month
-- Yearly: $39.99/year (2 months free)
+**Pricing:** $5.99 one-time (unlimited access forever)
 
 **Quota System:**
-- Free tier: 20 AI calls/day
-- Premium tier: 200 AI calls/day
+- Free tier: 20 AI calls TOTAL (lifetime trial, not daily)
+- Premium tier: Unlimited AI calls forever
 - Tracking: Local storage (zero infrastructure cost)
+- Counter styling: Blue bold number + "Free AI" / "Unlimited Access"
+
+**Architecture:**
+- All AI calls route through Replit proxy (users DON'T need API keys)
+- Extension → Proxy Server → Gemini 3 Flash API
+- API key hidden on server, never exposed to users
 
 **How It Works:**
-1. User hits 20 calls → Upgrade modal appears
-2. User clicks "Get Premium License" → Opens Gumroad checkout
-3. User pays with PayPal or card → Gets license key
-4. User enters license key in extension → Verified via Gumroad API
-5. Premium unlocked with 200 calls/day
+1. User gets 20 free AI calls to try the extension
+2. User exhausts 20 calls → Upgrade modal appears
+3. User clicks "Get Unlimited Access" → Opens Gumroad checkout
+4. User pays $5.99 with PayPal or card → Gets license key
+5. User pastes license key in extension → Unlimited access activated
+
+**Cost Per User Trial:** ~$0.01 (20 Gemini calls ≈ 1 cent)
 
 **Files:**
-- background.js: Contains verifyGumroadLicense() function
-- ai-chat.js: License activation UI handler
-- ai-chat.html: Upgrade modal with license key input
+- server.js: Proxy server with Gemini API (key hidden)
+- ai-chat.js: Quota tracking + license activation
+- ai-chat.html: Upgrade modal with $5.99 pricing
+- popup.js: Proxy-based AI (no user API key needed)
 
 ## System Architecture
 

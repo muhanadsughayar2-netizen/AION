@@ -74,48 +74,39 @@ let currentPageText = '';
 let conversationHistory = [];
 let filesQueue = []; // Multi-file upload queue (Gemini-style)
 
-// === HYBRID QUOTA SYSTEM (ZERO COST) ===
-const FREE_DAILY_LIMIT = 20;
-const PREMIUM_DAILY_LIMIT = 200;
+// === QUOTA SYSTEM (20 FREE TOTAL, THEN UNLIMITED FOR $5.99) ===
+const FREE_TOTAL_LIMIT = 20;
 const PROXY_URL = 'https://snaptoai.replit.app'; // Replit proxy server
 
-// Check and update daily quota
+// Check quota status (TOTAL lifetime calls, not daily)
 async function getQuotaStatus() {
-  const today = new Date().toLocaleDateString();
-  const data = await chrome.storage.local.get(['dailyCount', 'lastReset', 'isPremium']);
+  const data = await chrome.storage.local.get(['totalCallCount', 'isPremium']);
   
-  // Reset if new day
-  if (data.lastReset !== today) {
-    await chrome.storage.local.set({ dailyCount: 0, lastReset: today });
-    return { count: 0, isPremium: data.isPremium || false, limit: data.isPremium ? PREMIUM_DAILY_LIMIT : FREE_DAILY_LIMIT };
-  }
-  
-  const count = data.dailyCount || 0;
+  const count = data.totalCallCount || 0;
   const isPremium = data.isPremium || false;
-  const limit = isPremium ? PREMIUM_DAILY_LIMIT : FREE_DAILY_LIMIT;
   
-  return { count, isPremium, limit };
+  return { count, isPremium, limit: FREE_TOTAL_LIMIT };
 }
 
 // Increment quota after successful API call
 async function incrementQuota() {
-  const data = await chrome.storage.local.get(['dailyCount']);
-  const newCount = (data.dailyCount || 0) + 1;
-  await chrome.storage.local.set({ dailyCount: newCount });
+  const data = await chrome.storage.local.get(['totalCallCount']);
+  const newCount = (data.totalCallCount || 0) + 1;
+  await chrome.storage.local.set({ totalCallCount: newCount });
   updateQuotaDisplay();
   return newCount;
 }
 
-// Update quota display in header
+// Update quota display in header (blue bold styling)
 async function updateQuotaDisplay() {
   const status = await getQuotaStatus();
   const quotaEl = document.getElementById('quotaDisplay');
   if (quotaEl) {
-    const remaining = status.limit - status.count;
     if (status.isPremium) {
-      quotaEl.innerHTML = `<span style="color:#00d9ff">⚡ ${remaining}/${status.limit}</span>`;
+      quotaEl.innerHTML = `<span style="color:#00d9ff;font-weight:700;">Unlimited Access</span>`;
     } else {
-      quotaEl.innerHTML = `<span>${remaining}/${status.limit} free</span>`;
+      const remaining = FREE_TOTAL_LIMIT - status.count;
+      quotaEl.innerHTML = `<span style="color:#00d9ff;font-weight:700;">${remaining}</span> <span style="color:#aaa;">Free AI</span>`;
     }
   }
 }
