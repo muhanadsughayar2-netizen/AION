@@ -768,12 +768,11 @@ initializeChat();
 
 // Initialize quota display on load and check premium status
 async function initQuotaSystem() {
-  // Check premium status from ExtensionPay
+  // Check if we have a stored valid license
   try {
-    const response = await chrome.runtime.sendMessage({ action: 'checkPremium' });
-    if (response && response.isPremium) {
-      await chrome.storage.local.set({ isPremium: true });
-      console.log('[SnapToAI] Premium user detected');
+    const data = await chrome.storage.local.get(['isPremium', 'gumroadLicense']);
+    if (data.isPremium && data.gumroadLicense) {
+      console.log('[SnapToAI] Premium user detected (stored license)');
     }
   } catch (e) {
     console.log('[SnapToAI] Could not check premium status');
@@ -782,16 +781,61 @@ async function initQuotaSystem() {
 }
 initQuotaSystem();
 
+// Gumroad purchase URL - REPLACE WITH YOUR ACTUAL GUMROAD PRODUCT URL
+const GUMROAD_PURCHASE_URL = 'https://YOUR_GUMROAD_USERNAME.gumroad.com/l/YOUR_PRODUCT';
+
 // Upgrade modal handlers
 document.getElementById('upgradeBtn')?.addEventListener('click', async () => {
-  // Open ExtensionPay payment page
-  try {
-    await chrome.runtime.sendMessage({ action: 'openPayment' });
-    hideUpgradeModal();
-  } catch (e) {
-    window.open('https://extensionpay.com/ext/snaptoai-abc123', '_blank');
-    hideUpgradeModal();
+  // Open Gumroad purchase page
+  window.open(GUMROAD_PURCHASE_URL, '_blank');
+});
+
+// License activation handler
+document.getElementById('activateLicenseBtn')?.addEventListener('click', async () => {
+  const licenseInput = document.getElementById('licenseKeyInput');
+  const errorEl = document.getElementById('licenseError');
+  const successEl = document.getElementById('licenseSuccess');
+  const licenseKey = licenseInput?.value?.trim();
+  
+  errorEl.style.display = 'none';
+  successEl.style.display = 'none';
+  
+  if (!licenseKey) {
+    errorEl.textContent = 'Please enter a license key';
+    errorEl.style.display = 'block';
+    return;
   }
+  
+  // Show loading state
+  const btn = document.getElementById('activateLicenseBtn');
+  const originalText = btn.textContent;
+  btn.textContent = 'Verifying...';
+  btn.disabled = true;
+  
+  try {
+    const response = await chrome.runtime.sendMessage({ 
+      action: 'verifyGumroadLicense', 
+      licenseKey: licenseKey 
+    });
+    
+    if (response.valid) {
+      successEl.textContent = 'License activated! You now have Premium access.';
+      successEl.style.display = 'block';
+      setTimeout(() => {
+        hideUpgradeModal();
+        updateQuotaDisplay();
+      }, 1500);
+    } else {
+      errorEl.textContent = response.error || 'Invalid license key';
+      errorEl.style.display = 'block';
+    }
+  } catch (e) {
+    errorEl.textContent = 'Could not verify license. Please try again.';
+    errorEl.style.display = 'block';
+  }
+  
+  btn.textContent = originalText;
+  btn.disabled = false;
 });
 
 document.getElementById('upgradeSkipBtn')?.addEventListener('click', () => {

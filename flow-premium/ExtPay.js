@@ -1,1 +1,0 @@
-Redirecting to /extpay@3.1.2/dist/ExtPay.js
