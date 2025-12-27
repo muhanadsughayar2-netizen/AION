@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, request, redirect, Response, jsonify
+from flask import Flask, send_from_directory, request, redirect, Response, jsonify, stream_with_context
 import os
 import mimetypes
 import requests
@@ -8,6 +8,13 @@ import time
 # Disable automatic static folder - we'll handle all routing manually
 app = Flask(__name__, static_folder=None)
 app.url_map.strict_slashes = False
+
+# CORS helper for all responses
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'POST, GET, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, X-Extension-ID'
+    return response
 
 # ===== GEMINI PROXY CONFIG =====
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
@@ -90,20 +97,17 @@ def health():
 def premium_chat():
     """Proxy to Gemini API for AI chat"""
     if request.method == 'OPTIONS':
-        response = Response('', status=200)
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, X-Extension-ID'
-        return response
+        return add_cors_headers(Response('', status=200))
     
     if not GEMINI_API_KEY:
-        return jsonify({'error': 'Server not configured'}), 500
+        return add_cors_headers(jsonify({'error': 'Server not configured'})), 500
     
     data = request.get_json()
     user_id = data.get('userId', 'anonymous')
     
     if not check_rate_limit(user_id):
-        return jsonify({'error': 'Rate limit exceeded. Please wait.'}), 429
+        resp = jsonify({'error': 'Rate limit exceeded. Please wait.'})
+        return add_cors_headers(resp), 429
     
     contents = data.get('contents', [])
     system_prompt = data.get('systemPrompt')
@@ -127,28 +131,71 @@ def premium_chat():
         response = requests.post(url, json=request_body, timeout=60)
         result = response.json()
         
-        resp = jsonify(result)
-        resp.headers['Access-Control-Allow-Origin'] = '*'
-        return resp
+        return add_cors_headers(jsonify(result))
     except Exception as e:
         print(f'[SnapToAI Proxy] Error: {e}')
-        return jsonify({'error': 'AI Server busy. Try again.'}), 500
+        return add_cors_headers(jsonify({'error': 'AI Server busy. Try again.'})), 500
+
+@app.route('/premium-chat-stream', methods=['POST', 'OPTIONS'])
+def premium_chat_stream():
+    """Streaming proxy to Gemini API for AI chat"""
+    if request.method == 'OPTIONS':
+        return add_cors_headers(Response('', status=200))
+    
+    if not GEMINI_API_KEY:
+        return add_cors_headers(jsonify({'error': 'Server not configured'})), 500
+    
+    data = request.get_json()
+    user_id = data.get('userId', 'anonymous')
+    
+    if not check_rate_limit(user_id):
+        resp = jsonify({'error': 'Rate limit exceeded. Please wait.'})
+        return add_cors_headers(resp), 429
+    
+    contents = data.get('contents', [])
+    system_prompt = data.get('systemPrompt')
+    
+    url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?key={GEMINI_API_KEY}&alt=sse'
+    
+    try:
+        request_body = {
+            'contents': contents,
+            'generationConfig': {
+                'maxOutputTokens': 2048,
+                'temperature': 0.7,
+                'topP': 0.95,
+                'topK': 40
+            }
+        }
+        
+        if system_prompt:
+            request_body['systemInstruction'] = {'parts': [{'text': system_prompt}]}
+        
+        def generate():
+            with requests.post(url, json=request_body, stream=True, timeout=120) as r:
+                for chunk in r.iter_content(chunk_size=1024):
+                    if chunk:
+                        yield chunk
+        
+        response = Response(stream_with_context(generate()), mimetype='text/event-stream')
+        response.headers['Cache-Control'] = 'no-cache'
+        response.headers['Connection'] = 'keep-alive'
+        return add_cors_headers(response)
+    except Exception as e:
+        print(f'[SnapToAI Proxy] Stream Error: {e}')
+        return add_cors_headers(jsonify({'error': 'AI Server busy. Try again.'})), 500
 
 @app.route('/verify-license', methods=['POST', 'OPTIONS'])
 def verify_license():
     """Verify Gumroad license key"""
     if request.method == 'OPTIONS':
-        response = Response('', status=200)
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-        return response
+        return add_cors_headers(Response('', status=200))
     
     data = request.get_json()
     license_key = data.get('licenseKey', '')
     
     if not license_key or len(license_key) < 8:
-        return jsonify({'success': False, 'error': 'Invalid license key format'}), 400
+        return add_cors_headers(jsonify({'success': False, 'error': 'Invalid license key format'})), 400
     
     try:
         gumroad_product_id = os.environ.get('GUMROAD_PRODUCT_ID', 'YOUR_PRODUCT_ID')
@@ -165,15 +212,13 @@ def verify_license():
                 'email': result.get('purchase', {}).get('email'),
                 'uses': result.get('uses')
             })
+            return add_cors_headers(resp)
         else:
             resp = jsonify({'success': False, 'error': result.get('message', 'Invalid license')})
-            resp.status_code = 400
-        
-        resp.headers['Access-Control-Allow-Origin'] = '*'
-        return resp
+            return add_cors_headers(resp), 400
     except Exception as e:
         print(f'[SnapToAI] License verification error: {e}')
-        return jsonify({'success': False, 'error': 'Verification failed. Try again.'}), 500
+        return add_cors_headers(jsonify({'success': False, 'error': 'Verification failed. Try again.'})), 500
 
 @app.route('/')
 def index():

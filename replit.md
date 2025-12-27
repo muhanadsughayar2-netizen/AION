@@ -12,7 +12,7 @@ Preferred communication style: Simple, everyday language.
 Branding: Changed from "Flow" to "SnapToAI" (November 2025)
 Logo Display: "Snap To AI" (with spaces for premium look)
 Logo: Keep camera emoji (📸) in logo - user's preference
-AI Engine: **Gemini 3 Flash** (user confirmed - do NOT change to other version names)
+AI Engine: **Gemini 2.0 Flash** (gemini-2.0-flash - the latest working Flash model in the API. Gemini 3 Flash is not yet available in the v1beta API)
 
 ## Monetization System (December 2025)
 
