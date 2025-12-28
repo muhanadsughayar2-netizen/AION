@@ -17,6 +17,9 @@ def add_cors_headers(response):
     return response
 
 # ===== GEMINI PROXY CONFIG =====
+# CRITICAL: NEVER CHANGE THIS MODEL - Gemini 3 Flash is the ONLY approved model
+# Using any other model (gemini-2.0, gemini-pro, etc.) will cause cost spikes
+GEMINI_MODEL = 'gemini-3-flash-preview'  # DO NOT CHANGE - User requirement
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 RATE_LIMIT_WINDOW = 60  # seconds
 RATE_LIMIT_MAX = 5
@@ -112,7 +115,7 @@ def premium_chat():
     contents = data.get('contents', [])
     system_prompt = data.get('systemPrompt')
     
-    url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={GEMINI_API_KEY}'
+    url = f'https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}'
     
     try:
         request_body = {
@@ -155,7 +158,7 @@ def premium_chat_stream():
     contents = data.get('contents', [])
     system_prompt = data.get('systemPrompt')
     
-    url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent?key={GEMINI_API_KEY}&alt=sse'
+    url = f'https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:streamGenerateContent?key={GEMINI_API_KEY}&alt=sse'
     
     try:
         request_body = {

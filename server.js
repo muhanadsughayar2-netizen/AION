@@ -10,6 +10,9 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 
 const DEVELOPER_KEY = process.env['GEMINI_API_KEY'];
+// CRITICAL: NEVER CHANGE THIS MODEL - Gemini 3 Flash is the ONLY approved model
+// Using any other model (gemini-2.0, gemini-pro, etc.) will cause cost spikes
+const GEMINI_MODEL = 'gemini-3-flash-preview';  // DO NOT CHANGE - User requirement
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 60000;
 const RATE_LIMIT_MAX = 5;
@@ -44,7 +47,7 @@ app.post('/premium-chat', async (req, res) => {
     return res.status(429).json({ error: 'Rate limit exceeded. Please wait.' });
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${DEVELOPER_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${DEVELOPER_KEY}`;
 
   try {
     const requestBody = {
@@ -86,7 +89,7 @@ app.post('/premium-chat-stream', async (req, res) => {
     return res.status(429).json({ error: 'Rate limit exceeded. Please wait.' });
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent?key=${DEVELOPER_KEY}&alt=sse`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?key=${DEVELOPER_KEY}&alt=sse`;
 
   try {
     const requestBody = {
