@@ -225,43 +225,21 @@
     
     if (isGoogleDocs) {
       style.textContent = `
-        /* 1. HIDE ALL GOOGLE DOCS UI CHROME */
-        #docs-chrome, 
-        #docs-header, 
-        .docs-titlebar-buttons, 
-        #docs-toolbar-wrapper, 
-        .navigation-widget-view, 
-        .docs-companion-app-switcher-container,
-        #gb, 
-        .docs-horizontal-scroll-bar, 
-        .kix-paginated-view-header,
-        .docs-titlebar, 
-        .docs-menubar, 
-        .docs-material-menu-button-bar,
-        #docs-bars, 
-        .docs-butterbar-container,
-        #kix-vertical-ruler,
-        .kix-vertical-ruler {
+        /* Hide the UI but DO NOT touch the editor height - Virtual Rendering fix */
+        #docs-header, .docs-titlebar-buttons, #docs-toolbar-wrapper, 
+        .navigation-widget-view, .docs-companion-app-switcher-container,
+        #gb, .docs-horizontal-scroll-bar, .kix-paginated-view-header,
+        .docs-titlebar, .docs-menubar, .docs-material-menu-button-bar,
+        #docs-bars, .docs-butterbar-container {
           display: none !important;
         }
-
-        /* 2. MAXIMIZE THE EDITOR AREA */
-        #docs-editor, 
-        #kix-appview, 
+        /* Ensure the editor fills the screen for the capture */
         .kix-appview-editor {
           top: 0 !important;
-          height: 100vh !important;
-          width: 100vw !important;
-          overflow-y: scroll !important;
-          background: #f8f9fa !important;
-        }
-
-        /* 3. HIDE SCROLLBARS FOR CLEAN CAPTURE */
-        ::-webkit-scrollbar {
-          display: none !important;
+          background: white !important;
         }
       `;
-      console.log('[SnapToAI] Google Docs: UI stripped and editor maximized for capture');
+      console.log('[SnapToAI] Google Docs UI Hidden - Preserving Engine Height');
     } else if (isYouTube) {
       style.textContent = `
         /* Force full expansion for YouTube */
@@ -304,46 +282,22 @@
       console.log('[SnapToAI] YouTube styles injected');
     } else if (isGmail) {
       style.textContent = `
-        /* HIDE GMAIL UI CHROME */
-        header, #gb, .nH.aqK, .bAK, .aT5-aOt-I-Jp, .aeN, .ajl, .aT5-aOt-I-Jp {
-          display: none !important;
-        }
-        
-        /* EXPAND SCROLLABLE AREAS */
-        .nH, .no, .ao8, .aeF, .aeJ {
-          overflow: visible !important;
-          height: auto !important;
-          position: relative !important;
-        }
-        
-        /* Expand email body content */
-        .a3s.aiL, .ii.gt {
-          max-height: none !important;
-          overflow: visible !important;
-        }
-        
+        /* Gmail: Only expand email content, keep scroll containers intact */
         /* Expand collapsed messages in thread */
         .kQ, .kv {
           display: block !important;
           visibility: visible !important;
         }
-        
-        /* FORCE WHITE BACKGROUND (Gmail is transparent sometimes) */
-        body, .wl {
-          background-color: white !important;
+        /* Expand email body content only */
+        .a3s.aiL, .ii.gt {
+          max-height: none !important;
         }
-        
         /* Hide mini compose popups during capture */
         .aaZ, .aYF {
           display: none !important;
         }
-        
-        /* HIDE SCROLLBARS */
-        ::-webkit-scrollbar {
-          display: none !important;
-        }
       `;
-      console.log('[SnapToAI] Gmail layout forced to expanded mode');
+      console.log('[SnapToAI] Gmail styles injected');
     }
     
     document.head.appendChild(style);
@@ -3271,15 +3225,8 @@
         if (location.hostname.includes('google.com')) {
           // Force a small "nudge" to trigger Google's internal redraw
           window.dispatchEvent(new Event('resize')); 
-          
-          // Google Docs needs extra time for Canvas text repaint
-          if (location.hostname.includes('docs.google.com')) {
-            console.log('[SnapToAI] Google Docs - waiting 1.5s for text repaint...');
-            await new Promise(r => setTimeout(r, 1500)); 
-          } else {
-            // Other Google apps (Gmail, Sheets, etc)
-            await new Promise(r => setTimeout(r, 400)); 
-          }
+          // Wait for the engine to paint the text
+          await new Promise(r => setTimeout(r, 400)); 
         }
         
         // === AMAZON PER-SCROLL CONTENT STABILIZATION ===
