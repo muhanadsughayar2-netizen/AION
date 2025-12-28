@@ -666,7 +666,11 @@ updateVerdictButtonVisibility();
 
 // Get chat context for smarter verdicts (last few messages)
 function getChatContext() {
-  return conversationHistory.slice(-4).map(m => `${m.role}: ${m.parts[0].text?.substring(0, 100) || '[image]'}`).join('\n');
+  if (!conversationHistory || conversationHistory.length === 0) return '';
+  return conversationHistory.slice(-4).map(m => {
+    const text = m.text || '';
+    return `${m.role}: ${text.substring(0, 100)}`;
+  }).join('\n');
 }
 
 document.getElementById('verdictBtn')?.addEventListener('click', async () => {
