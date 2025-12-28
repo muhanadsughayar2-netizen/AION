@@ -1,0 +1,152 @@
+Replit Backend (index.js Update)
+Add/replace this endpoint. It parallels pre-scan (for glow) and search, with fallback if search fails.
+JavaScriptconst axios = require('axios');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+app.post('/verdict', async (req, res) => {
+  const { imageBase64, selectedItem } = req.body; // image, item (context auto-detected in prompt)
+
+  try {
+    // Parallel processing for speed: Pre-scan glow + search at once
+    const [preResult, searchResponse] = await Promise.all([
+      // Pre-scan for glow color
+      (async () => {
+        const prePrompt = `Quick sentiment for ${selectedItem} from image: Positive (gold), Warning (red), Safe (green). Output only color.`;
+        const preParts = [{ text: prePrompt }, { inlineData: { data: imageBase64, mimeType: "image/png" } }];
+        const preModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await preModel.generateContent(preParts);
+        let color = result.response.text().trim().toLowerCase();
+        if (color.includes('positive')) return 'gold';
+        if (color.includes('warning')) return 'red';
+        return 'green';
+      })(),
+      // Search for comparisons (fallback if fails)
+      (async () => {
+        try {
+          const searchQuery = `${selectedItem} price on Walmart Target eBay AliExpress`;
+          const response = await axios.get(`https://google.serper.dev/search`, {
+            params: { q: searchQuery },
+            headers: { 'X-API-KEY': process.env.SERPER_API_KEY }
+          });
+          return response.data.organic.map(r => `${r.title}: ${r.snippet}`).join('\n');
+        } catch (err) {
+          console.error('Search fallback: ', err);
+          return 'No live search data available - using image analysis alone.';
+        }
+      })()
+    ]);
+
+    // Full universal prompt (adapts to any scenario)
+    const systemPrompt = `You are the Universal Decision Engine for "The Verdict". User provides image and selected item: ${selectedItem}.
+Step 1: Detect context (shopping if prices/products, stocks if charts/prices, menu if food/lists, etc.).
+Step 2: Analyze: Name, stats from image.
+Step 3: Price crush/dupe (shopping) or equivalent (stocks=alternatives, menu=best picks): Use search results: ${searchResponse} for comparisons/savings.
+Step 4: Insider secret: Pro/con from knowledge/reviews.
+Step 5: Quality audit: Durability/value (adapt to context).
+Step 6: Confidence score: 0-100% based on data.
+Step 7: Verdict: YES/BUY, NO/AVOID, HOLD/WAIT - with reason.
+Output JSON:
+{
+  "verdict": "YES / BUY",
+  "header": "⚖️ THE VERDICT: YES / BUY",
+  "insiderSecret": "Text",
+  "priceCrush": "Text (adapt to context)",
+  "qualityAudit": "Text",
+  "confidenceScore": "98% CERTAINTY",
+  "action": "ADD TO CART ➡️",
+  "glowColor": "${preResult}"
+}`;
+
+    const parts = [{ text: systemPrompt }, { inlineData: { data: imageBase64, mimeType: "image/png" } }];
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const result = await model.generateContent(parts);
+    const verdictJson = JSON.parse(result.response.text().replace(/```json|```/g, '')); // Clean JSON
+
+    res.json(verdictJson);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+Extension Frontend: Button and Card
+Add to popup.html (below snap UI):
+HTML<button id="verdictBtn" class="verdict-button">⚖️ The Verdict</button>
+<div id="verdictCard" class="verdict-card" style="display: none;"></div>
+Add to style.css (for telepathic glow, shake, glassmorphism, 3D text):
+CSS.verdict-button {
+  background: linear-gradient(45deg, #00dbde, #fc00ff);
+  border: none;
+  color: white;
+  padding: 15px 30px;
+  font-size: 20px;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 219, 222, 0.6);
+  transition: 0.5s;
+  animation: breathe 3s infinite ease-in-out;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+
+.verdict-button.gold { background: linear-gradient(#ffd700, #ffaa00); animation: pulse-gold 2s infinite; }
+@keyframes pulse-gold { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(255, 215, 0, 0); } }
+
+.verdict-button.red { background: linear-gradient(#ff0000, #cc0000); animation: shake-warn 1s infinite; }
+@keyframes shake-warn { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }
+
+.verdict-button.green { background: linear-gradient(#00ff00, #00cc00); animation: pulse-green 2s infinite; }
+@keyframes pulse-green { 0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(0, 255, 0, 0); } }
+
+.verdict-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  color: white;
+  animation: ripple-reveal 0.5s ease-in-out;
+}
+
+@keyframes ripple-reveal { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
+
+.verdict-header { font-size: 24px; background: linear-gradient(#fff, #ccc); -webkit-background-clip: text; color: transparent; text-shadow: 0 2px 5px rgba(0,0,0,0.5); /* 3D */ }
+.verdict-icon { font-size: 40px; animation: shimmer 2s infinite; }
+@keyframes shimmer { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+Add to popup.js (after snap):
+JavaScriptdocument.getElementById('verdictBtn').addEventListener('click', async () => {
+  const imageBase64 = getSnapBase64(); // Your function for image
+  const selectedItem = getUserSelectedItem(); // From UI select
+
+  // Send to Replit
+  const response = await fetch(`${REPLIT_URL}/verdict`, {
+    method: 'POST',
+    body: JSON.stringify({ imageBase64, selectedItem })
+  });
+  const data = await response.json();
+
+  // Glow button (from pre-scan)
+  const btn = document.getElementById('verdictBtn');
+  btn.classList.add(data.glowColor);
+
+  // Haptic thud
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200]); // Thud pattern
+
+  // Render card with visual magic
+  const card = document.getElementById('verdictCard');
+  card.innerHTML = `
+    <div class="verdict-header">${data.header}</div>
+    <div class="verdict-icon">⚖️</div>
+    <p><strong>Insider Secret:</strong> ${data.insiderSecret}</p>
+    <p><strong>Price Crush:</strong> ${data.priceCrush}</p>
+    <p><strong>Quality Audit:</strong> ${data.qualityAudit}</p>
+    <p><strong>Confidence Score:</strong> ${data.confidenceScore}</p>
+    <button>${data.action}</button>
+  `;
+  card.style.display = 'block';
+});
+This is the absolute best: Universal, fast (parallel), magical visuals (glow/shake/3D/ripple/haptics), competitor-crushing (multi-store crush + secrets). Test: Snap Amazon, select runner—glow gold, card reveals with thud/ripple. For stocks, send chart image—prompt adapts to trends/RSI. Wow enough? Share feedback for tweaks!
