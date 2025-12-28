@@ -971,9 +971,9 @@ function handleMouseDown(e) {
     pendingStickerText = null;
     redraw();
     updateStatus('Add numbers, shapes, or text. All draggable!');
-  } else if (currentTool === 'rectangle' || currentTool === 'arrow') {
+  } else if (currentTool === 'rectangle' || currentTool === 'arrow' || currentTool === 'highlight' || currentTool === 'blur') {
     isDrawing = true;
-    // Store starting position for rectangle/arrow
+    // Store starting position for rectangle/arrow/highlight/blur
   } else if (currentTool === 'callout') {
     const label = prompt('Label:', 'Step ' + calloutNumber);
     if (label) {
@@ -1078,8 +1078,8 @@ function handleMouseMove(e) {
     return;
   }
   
-  // Preview rectangle/arrow while drawing
-  if (currentTool === 'rectangle') {
+  // Preview rectangle/arrow/highlight/blur while drawing
+  if (currentTool === 'rectangle' || currentTool === 'highlight' || currentTool === 'blur') {
     redraw();
     const x1 = Math.min(startX, x);
     const y1 = Math.min(startY, y);
@@ -1195,6 +1195,45 @@ function handleMouseUp(e) {
         lineWidth: brushSize
       });
       redraw();
+    }
+    isDrawing = false;
+    return;
+  }
+  
+  if (currentTool === 'highlight') {
+    const x1 = Math.min(startX, endX);
+    const y1 = Math.min(startY, endY);
+    const width = Math.abs(endX - startX);
+    const height = Math.abs(endY - startY);
+    
+    if (width > 5 && height > 5) {
+      pushHistory();
+      annotations.push({
+        tool: 'highlight',
+        x: x1,
+        y: y1,
+        width: width,
+        height: height,
+        color: '#FFFF00' // Yellow highlight
+      });
+      redraw();
+      updateStatus('Area highlighted!');
+    }
+    isDrawing = false;
+    return;
+  }
+  
+  if (currentTool === 'blur') {
+    const x1 = Math.min(startX, endX);
+    const y1 = Math.min(startY, endY);
+    const width = Math.abs(endX - startX);
+    const height = Math.abs(endY - startY);
+    
+    if (width > 10 && height > 10) {
+      pushHistory();
+      // Apply pixelation blur directly to the base image
+      applyBlurToArea(x1, y1, width, height);
+      updateStatus('Area blurred/redacted!');
     }
     isDrawing = false;
     return;
@@ -2201,6 +2240,13 @@ function redraw() {
       ctx.shadowBlur = 10;
       ctx.strokeRect(ann.x, ann.y, ann.width, ann.height);
       ctx.shadowBlur = 0;
+    } else if (ann.tool === 'highlight') {
+      // Draw transparent yellow highlight
+      ctx.save();
+      ctx.globalAlpha = 0.4;
+      ctx.fillStyle = ann.color || '#FFFF00';
+      ctx.fillRect(ann.x, ann.y, ann.width, ann.height);
+      ctx.restore();
     } else if (ann.tool === 'arrow') {
       // Draw arrow - line uses stored color, arrowhead always white
       const lineColor = ann.color || '#007AFF';
@@ -2244,6 +2290,67 @@ function redraw() {
   // Draw crop rectangle if exists (for snip mode)
   if (cropRect && currentTool === 'crop') {
     drawCropRect();
+  }
+}
+
+// Apply pixelation blur to a specific area (for redacting sensitive info)
+function applyBlurToArea(x, y, w, h) {
+  // Ensure we're working with integer bounds
+  x = Math.floor(x);
+  y = Math.floor(y);
+  w = Math.floor(w);
+  h = Math.floor(h);
+  
+  // Clamp to canvas bounds
+  if (x < 0) { w += x; x = 0; }
+  if (y < 0) { h += y; y = 0; }
+  if (x + w > canvas.width) w = canvas.width - x;
+  if (y + h > canvas.height) h = canvas.height - y;
+  
+  if (w <= 0 || h <= 0) return;
+  
+  const sampleSize = 10; // Pixelation block size
+  const imageData = ctx.getImageData(x, y, w, h);
+  const data = imageData.data;
+  
+  for (let py = 0; py < h; py += sampleSize) {
+    for (let px = 0; px < w; px += sampleSize) {
+      // Get the center pixel of this block
+      const idx = (py * w + px) * 4;
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+      
+      // Fill the entire block with this color
+      for (let dy = 0; dy < sampleSize && py + dy < h; dy++) {
+        for (let dx = 0; dx < sampleSize && px + dx < w; dx++) {
+          const i = ((py + dy) * w + (px + dx)) * 4;
+          data[i] = r;
+          data[i + 1] = g;
+          data[i + 2] = b;
+        }
+      }
+    }
+  }
+  
+  ctx.putImageData(imageData, x, y);
+  
+  // Also update the base image so blur persists through redraws
+  if (originalImage) {
+    // Create a temp canvas to merge the blur into the original
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+    tempCtx.putImageData(imageData, x, y);
+    
+    // Update originalImage to this new blurred version
+    const newImg = new Image();
+    newImg.onload = () => {
+      originalImage = newImg;
+    };
+    newImg.src = tempCanvas.toDataURL('image/png');
   }
 }
 

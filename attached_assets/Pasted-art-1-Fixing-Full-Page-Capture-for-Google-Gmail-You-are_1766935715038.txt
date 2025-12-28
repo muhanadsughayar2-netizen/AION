@@ -1,0 +1,106 @@
+art 1: Fixing Full Page Capture for Google & Gmail
+You are already using "Tier 0" selectors, which is good, but Gmail classes (like .a3s) change dynamically. You need a more aggressive approach for these specific sites.
+
+1. The Gmail/Google "CSS Injection" Fix
+In your safeFullPageCapture function, you are detecting special sites. You need to add a specific handler for Gmail that expands the viewport instead of just scrolling it.
+
+Modify your forceSpecialSiteFullRender function in content.js:
+
+// ... existing code ...
+} else if (isGmail) {
+    style.textContent = `
+        /* HIDE GMAIL UI CHROME */
+        header, #gb, .nH.aqK, .bAK, .aT5-aOt-I-Jp, .aeN, .ajl, .aT5-aOt-I-Jp {
+            display: none !important;
+        }
+        
+        /* EXPAND SCROLLABLE AREAS */
+        .nH, .no, .ao8, .aeF, .aeJ {
+            overflow: visible !important;
+            height: auto !important;
+            position: relative !important;
+        }
+        
+        /* FORCE WHITE BACKGROUND (Gmail is transparent sometimes) */
+        body, .wl {
+            background-color: white !important;
+        }
+        
+        /* HIDE SCROLLBARS */
+        ::-webkit-scrollbar {
+            display: none !important;
+        }
+    `;
+    console.log('[SnapToAI] Gmail layout forced to expanded mode');
+}
+// ... existing code ...
+Why this works: Instead of trying to scroll the email container bit by bit (which often fails due to virtual scrolling), this CSS forces the email container to stretch to its full height on the screen. Then, you can scroll the main window to capture it.
+
+2. Update findScrollableContainer for Gmail
+Gmail's structure is deeply nested. Update your findScrollableContainer to prioritize the specific email body container if on Gmail.
+
+// Inside findScrollableContainer()
+if (host.includes('mail.google.com')) {
+    // Try to find the specific open email body first
+    const openEmail = document.querySelector('.a3s.aiL') || document.querySelector('.ii.gt');
+    if (openEmail && openEmail.scrollHeight > 500) {
+        // We actually want to capture the email, not the whole inbox usually
+        return document.documentElement; // Return root, because CSS injection above expanded the email
+    }
+}
+Part 2: Improving the Editor (Edit Page)
+Your editor has basic shapes and stickers. To make it "Pro" level, you are missing Privacy features and Highlights.
+
+1. Add a "Blur / Redact" Tool
+This is crucial for Gmail/Social Media snapshots to hide names and emails.
+
+Add this logic to your handleMouseDown (in Editor JS):
+
+// Add to your tool list: 'blur'
+if (currentTool === 'blur') {
+    const x1 = startX;
+    const y1 = startY;
+    const w = endX - startX;
+    const h = endY - startY;
+    
+    // Apply pixelation effect directly to canvas context
+    const imageData = ctx.getImageData(x1, y1, w, h);
+    const data = imageData.data;
+    const sampleSize = 10; // How blocky the blur is
+
+    for (let y = 0; y < h; y += sampleSize) {
+        for (let x = 0; x < w; x += sampleSize) {
+            let p = (y * w + x) * 4;
+            // Get color of pixel
+            const r = data[p];
+            const g = data[p+1];
+            const b = data[p+2];
+            
+            // Fill the sample block with that single color
+            for (let n = 0; n < sampleSize; n++) {
+                for (let m = 0; m < sampleSize; m++) {
+                    if (x + m < w && y + n < h) {
+                        const i = ((y + n) * w + (x + m)) * 4;
+                        data[i] = r;
+                        data[i+1] = g;
+                        data[i+2] = b;
+                    }
+                }
+            }
+        }
+    }
+    ctx.putImageData(imageData, x1, y1);
+    
+    // Push to history so user can Undo the blur
+    pushHistory();
+}
+2. Add a "Highlighter" Tool
+Simple logic: It's a rectangle but with globalCompositeOperation set to multiply or simple opacity.
+
+if (currentTool === 'highlight') {
+    ctx.save();
+    ctx.globalAlpha = 0.4; // Transparent
+    ctx.fillStyle = "#FFFF00"; // Yellow
+    ctx.fillRect(x, y, w, h);
+    ctx.restore();
+}
