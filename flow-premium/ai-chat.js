@@ -1,71 +1,115 @@
 // AI Chat Window Script
 // Handles AI chat in a standalone window
 
-// === UNIVERSAL NO-FAIL TTS ENGINE ===
-const synth = window.speechSynthesis;
-let allVoices = [];
+// === PREMIUM MULTI-LANGUAGE TTS ===
+let synth = window.speechSynthesis;
+let voices = [];
+let voicesReady = false;
 
-// No-Fail Voice Loader - ensures voices are always ready
-function loadUniversalVoices() {
-  allVoices = synth.getVoices();
-  if (allVoices.length > 0) {
-    console.log('[SnapToAI] Loaded', allVoices.length, 'voices');
+// Load voices with retry until ready
+function loadVoices() {
+  voices = synth.getVoices();
+  if (voices.length > 0) {
+    voicesReady = true;
+    console.log('[SnapToAI] Loaded', voices.length, 'voices');
+    // Log available languages for debugging
+    const langs = [...new Set(voices.map(v => v.lang.split('-')[0]))];
+    console.log('[SnapToAI] Available languages:', langs.join(', '));
   }
 }
-
-// Chrome loads voices asynchronously - this wakes them up
+loadVoices();
 if (speechSynthesis.onvoiceschanged !== undefined) {
-  speechSynthesis.onvoiceschanged = loadUniversalVoices;
+  speechSynthesis.onvoiceschanged = loadVoices;
 }
-loadUniversalVoices();
 
-// Universal speakText - NEVER fails, always finds a voice
-function speakText(text) {
-  // Safety: Stop any current speech
-  synth.cancel();
+// Detect language from text
+function detectLanguage(text) {
+  // Arabic characters (strong indicator)
+  if (/[\u0600-\u06FF]/.test(text)) return 'ar';
+  // Chinese characters
+  if (/[\u4e00-\u9fff]/.test(text)) return 'zh';
+  // Japanese (hiragana/katakana)
+  if (/[\u3040-\u309f\u30a0-\u30ff]/.test(text)) return 'ja';
+  // Korean
+  if (/[\uac00-\ud7af]/.test(text)) return 'ko';
+  // Russian/Cyrillic
+  if (/[\u0400-\u04FF]/.test(text)) return 'ru';
+  // French - accents or common words (expanded)
+  if (/[àâäéèêëïîôùûüçœæ]/i.test(text) || 
+      /\b(bonjour|salut|merci|oui|non|je|tu|il|elle|nous|vous|ils|elles|le|la|les|un|une|de|du|des|et|est|sont|avec|pour|dans|sur|que|qui|quoi|comment|pourquoi|bien|très|aussi|mais|comme|tout|cette|votre|notre)\b/i.test(text)) return 'fr';
+  // Spanish
+  if (/[ñ¿¡]/i.test(text) || 
+      /\b(hola|gracias|buenos|buenas|el|la|los|las|de|del|en|es|son|con|para|por|como|pero|más|qué|cómo|muy|bien|todo|esta|este)\b/i.test(text)) return 'es';
+  // German
+  if (/[äöüß]/i.test(text) || 
+      /\b(guten|danke|bitte|der|die|das|und|ist|sind|mit|für|auf|bei|nach|von|haben|werden|können|müssen)\b/i.test(text)) return 'de';
+  // Default English
+  return 'en';
+}
+
+// Wait for voices then speak
+function speakText(text, langCode = null) {
+  synth.cancel(); // Stop any existing speech
   
-  // Always refresh voices before speaking
-  allVoices = synth.getVoices();
+  // Always refresh voices
+  voices = synth.getVoices();
   
-  // Clean Markdown symbols (**, #, etc.) for natural speech
-  const cleanText = text.replace(/\*\*/g, '').replace(/#{1,6}\s?/g, '').replace(/`/g, '').trim();
-  const utterance = new SpeechSynthesisUtterance(cleanText);
+  const utterance = new SpeechSynthesisUtterance(text);
   
-  // Smart Language Detection - check characters to determine language
-  let lang = 'en-US'; // Default
-  if (/[\u0600-\u06FF]/.test(cleanText)) lang = 'ar';           // Arabic
-  else if (/[\u4e00-\u9fff]/.test(cleanText)) lang = 'zh';      // Chinese
-  else if (/[\u3040-\u309f\u30a0-\u30ff]/.test(cleanText)) lang = 'ja'; // Japanese
-  else if (/[\uac00-\ud7af]/.test(cleanText)) lang = 'ko';      // Korean
-  else if (/[\u0400-\u04FF]/.test(cleanText)) lang = 'ru';      // Russian
-  else if (/[àâäéèêëïîôùûüçœæ]/i.test(cleanText) || 
-           /\b(bonjour|merci|oui|je|vous|avec|pour|dans)\b/i.test(cleanText)) lang = 'fr'; // French
-  else if (/[àèìòùÀÈÌÒÙ]/i.test(cleanText) || 
-           /\b(ciao|grazie|buongiorno|sono|questo)\b/i.test(cleanText)) lang = 'it'; // Italian
-  else if (/[ñ¿¡]/i.test(cleanText) || 
-           /\b(hola|gracias|buenos|para|como)\b/i.test(cleanText)) lang = 'es'; // Spanish
-  else if (/[äöüß]/i.test(cleanText) || 
-           /\b(guten|danke|bitte|und|ist)\b/i.test(cleanText)) lang = 'de'; // German
+  // Auto-detect language if not provided
+  const detectedLang = langCode || detectLanguage(text);
+  console.log('[SnapToAI] Detected language:', detectedLang);
   
-  console.log('[SnapToAI] Detected language:', lang);
+  // Find voice matching the language
+  let bestVoice = null;
   
-  // The "Harmonious" Search - Premium Google voice first, then any match, then fallback
-  let bestVoice = allVoices.find(v => v.lang.startsWith(lang) && v.name.includes('Google')) ||
-                  allVoices.find(v => v.lang.startsWith(lang)) ||
-                  allVoices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) ||
-                  allVoices[0]; // Ultimate fallback - NEVER silent
-  
+  if (detectedLang === 'ar') {
+    // Arabic: look for Google Arabic or any Arabic voice
+    bestVoice = voices.find(v => v.lang.startsWith('ar') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('ar')) ||
+                voices.find(v => v.name.toLowerCase().includes('arabic'));
+  } else if (detectedLang === 'fr') {
+    // French: look for Google French or any French voice
+    bestVoice = voices.find(v => v.lang.startsWith('fr') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('fr')) ||
+                voices.find(v => v.name.toLowerCase().includes('french') || v.name.toLowerCase().includes('français'));
+  } else if (detectedLang === 'es') {
+    bestVoice = voices.find(v => v.lang.startsWith('es') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('es'));
+  } else if (detectedLang === 'de') {
+    bestVoice = voices.find(v => v.lang.startsWith('de') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('de'));
+  } else if (detectedLang === 'zh') {
+    bestVoice = voices.find(v => v.lang.startsWith('zh') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('zh'));
+  } else if (detectedLang === 'ja') {
+    bestVoice = voices.find(v => v.lang.startsWith('ja') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('ja'));
+  } else if (detectedLang === 'ko') {
+    bestVoice = voices.find(v => v.lang.startsWith('ko') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('ko'));
+  } else if (detectedLang === 'ru') {
+    bestVoice = voices.find(v => v.lang.startsWith('ru') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('ru'));
+  } else {
+    // English fallback
+    bestVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('en'));
+  }
+
   if (bestVoice) {
     utterance.voice = bestVoice;
     utterance.lang = bestVoice.lang;
     console.log(`[SnapToAI] Using voice: ${bestVoice.name} (${bestVoice.lang})`);
+  } else {
+    // Set language even without a specific voice - browser may still render
+    utterance.lang = detectedLang;
+    console.log(`[SnapToAI] No voice found for ${detectedLang}, using browser default`);
   }
-  
-  // Gemini-style friendly speed
-  utterance.rate = 1.05;
+
+  utterance.rate = 1.0;
   utterance.pitch = 1.0;
   
-  // Return utterance for the caller to speak
   return utterance;
 }
 
@@ -73,55 +117,6 @@ let currentImages = []; // Support multiple images
 let currentPageText = '';
 let conversationHistory = [];
 let filesQueue = []; // Multi-file upload queue (Gemini-style)
-
-// === QUOTA SYSTEM (20 FREE TOTAL, THEN UNLIMITED FOR $5.99) ===
-const FREE_TOTAL_LIMIT = 20;
-const PROXY_URL = 'https://snaptoai.replit.app'; // Replit proxy server
-
-// Check quota status (TOTAL lifetime calls, not daily)
-async function getQuotaStatus() {
-  const data = await chrome.storage.local.get(['totalCallCount', 'isPremium']);
-  
-  const count = data.totalCallCount || 0;
-  const isPremium = data.isPremium || false;
-  
-  return { count, isPremium, limit: FREE_TOTAL_LIMIT };
-}
-
-// Increment quota after successful API call
-async function incrementQuota() {
-  const data = await chrome.storage.local.get(['totalCallCount']);
-  const newCount = (data.totalCallCount || 0) + 1;
-  await chrome.storage.local.set({ totalCallCount: newCount });
-  updateQuotaDisplay();
-  return newCount;
-}
-
-// Update quota display in header (blue bold styling)
-async function updateQuotaDisplay() {
-  const status = await getQuotaStatus();
-  const quotaEl = document.getElementById('quotaDisplay');
-  if (quotaEl) {
-    if (status.isPremium) {
-      quotaEl.innerHTML = `<span style="color:#00d9ff;font-weight:700;">Unlimited Access</span>`;
-    } else {
-      const remaining = FREE_TOTAL_LIMIT - status.count;
-      quotaEl.innerHTML = `<span style="color:#00d9ff;font-weight:700;">${remaining}</span> <span style="color:#aaa;">Free AI</span>`;
-    }
-  }
-}
-
-// Show upgrade modal
-function showUpgradeModal() {
-  const modal = document.getElementById('upgradeModalOverlay');
-  if (modal) modal.classList.add('show');
-}
-
-// Hide upgrade modal
-function hideUpgradeModal() {
-  const modal = document.getElementById('upgradeModalOverlay');
-  if (modal) modal.classList.remove('show');
-}
 
 const SYSTEM_PROMPT = "You are a thorough, exhaustive AI assistant. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never ask the user if they want more—just give it all now. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.";
 
@@ -209,10 +204,18 @@ function removeLoading() {
   if (loading) loading.remove();
 }
 
-// Send message to Gemini API via proxy (supports multiple images)
+// Send message to Gemini API (supports multiple images)
 async function sendToGemini(prompt, imageDataUrls) {
   // Accept array of images
   const images = Array.isArray(imageDataUrls) ? imageDataUrls : [imageDataUrls];
+  
+  // Get API key from sync storage (same as popup.js)
+  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+  const apiKey = keyResult.geminiApiKey;
+  
+  if (!apiKey) {
+    throw new Error('Please set your Gemini API key in Settings');
+  }
   
   // Build conversation
   const contents = [];
@@ -246,27 +249,31 @@ async function sendToGemini(prompt, imageDataUrls) {
   // Use multi-image prompt if multiple images
   const systemPrompt = images.length > 1 ? MULTI_IMAGE_PROMPT : SYSTEM_PROMPT;
   
-  // Get unique user ID for rate limiting
-  const userData = await chrome.storage.local.get(['snaptoaiUserId']);
-  let userId = userData.snaptoaiUserId;
-  if (!userId) {
-    userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    await chrome.storage.local.set({ snaptoaiUserId: userId });
-  }
-  
-  const response = await fetch(`${PROXY_URL}/premium-chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: contents,
-      systemPrompt: systemPrompt,
-      userId: userId
-    })
-  });
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [{
+            text: systemPrompt
+          }]
+        },
+        contents: contents,
+        generationConfig: {
+          maxOutputTokens: 2048,
+          temperature: 0.7,
+          topP: 0.95,
+          topK: 40
+        }
+      })
+    }
+  );
   
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `Server Error: ${response.status}`);
+    throw new Error(errorData.error?.message || `API Error: ${response.status}`);
   }
   
   const data = await response.json();
@@ -292,13 +299,6 @@ async function handleSend() {
   
   if (!prompt || currentImages.length === 0) return;
   
-  // Check quota before proceeding
-  const quota = await getQuotaStatus();
-  if (quota.count >= quota.limit) {
-    showUpgradeModal();
-    return;
-  }
-  
   input.value = '';
   sendBtn.disabled = true;
   
@@ -307,6 +307,11 @@ async function handleSend() {
   addThinkingBubble();
   
   try {
+    // Get API key
+    const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+    const apiKey = keyResult.geminiApiKey;
+    if (!apiKey) throw new Error('Please set your Gemini API key in Settings');
+    
     // Build request
     const contents = [];
     for (const msg of conversationHistory) {
@@ -349,24 +354,24 @@ async function handleSend() {
       systemPrompt = SMART_SYSTEM_PROMPT;
     }
     
-    // Get unique user ID for rate limiting
-    const userData = await chrome.storage.local.get(['snaptoaiUserId']);
-    let userId = userData.snaptoaiUserId;
-    if (!userId) {
-      userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      await chrome.storage.local.set({ snaptoaiUserId: userId });
-    }
-    
-    // Stream request via proxy
-    const response = await fetch(`${PROXY_URL}/premium-chat-stream`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: contents,
-        systemPrompt: systemPrompt,
-        userId: userId
-      })
-    });
+    // Stream request
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent?alt=sse&key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: contents,
+          generationConfig: { 
+            maxOutputTokens: 2048,
+            temperature: 0.7,
+            topP: 0.95,
+            topK: 40
+          }
+        })
+      }
+    );
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -422,9 +427,6 @@ async function handleSend() {
     // Update conversation history
     conversationHistory.push({ role: 'user', text: prompt });
     conversationHistory.push({ role: 'model', text: fullText });
-    
-    // Increment quota after successful call
-    await incrementQuota();
     
   } catch (error) {
     removeLoading();
@@ -608,95 +610,9 @@ document.getElementById('summarizeBtn').addEventListener('click', summarizeChat)
 document.getElementById('clearBtn').addEventListener('click', clearChat);
 document.getElementById('exportBtn').addEventListener('click', exportToPDF);
 
-// Upload dropdown menu
-const addFileBtn = document.getElementById('addFileBtn');
-const uploadDropdown = document.getElementById('uploadDropdown');
-
-addFileBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  uploadDropdown.classList.toggle('show');
-});
-
-// Close dropdown when clicking outside
-document.addEventListener('click', () => {
-  uploadDropdown.classList.remove('show');
-});
-
-// Upload files option
-document.getElementById('uploadFilesOpt').addEventListener('click', () => {
-  document.getElementById('fileInput').click();
-  uploadDropdown.classList.remove('show');
-});
-
-// Photos option
-document.getElementById('photosOpt').addEventListener('click', () => {
-  document.getElementById('photoInput').click();
-  uploadDropdown.classList.remove('show');
-});
-
-// Add from Drive option - show modal
-document.getElementById('addFromDriveOpt').addEventListener('click', () => {
-  uploadDropdown.classList.remove('show');
-  document.getElementById('driveModalOverlay').classList.add('show');
-});
-
-// Drive modal close button
-document.getElementById('driveModalClose').addEventListener('click', () => {
-  document.getElementById('driveModalOverlay').classList.remove('show');
-});
-
-// Close modal on overlay click
-document.getElementById('driveModalOverlay').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) {
-    e.currentTarget.classList.remove('show');
-  }
-});
-
-// Connect Google Drive button - triggers OAuth
-document.getElementById('driveConnectBtn').addEventListener('click', async () => {
-  const connectBtn = document.getElementById('driveConnectBtn');
-  connectBtn.textContent = 'Connecting...';
-  connectBtn.disabled = true;
-  
-  try {
-    // Use Chrome Identity API for OAuth
-    chrome.identity.getAuthToken({ interactive: true }, (token) => {
-      if (chrome.runtime.lastError) {
-        console.error('[SnapToAI] OAuth error:', chrome.runtime.lastError.message);
-        addBubble('Could not connect to Google Drive. Please try again.', 'ai');
-        connectBtn.textContent = 'Connect Google Drive';
-        connectBtn.disabled = false;
-        document.getElementById('driveModalOverlay').classList.remove('show');
-        return;
-      }
-      
-      if (token) {
-        // Save token and close modal
-        chrome.storage.local.set({ googleDriveToken: token });
-        document.getElementById('driveModalOverlay').classList.remove('show');
-        addBubble('Google Drive connected! You can now access your files.', 'ai');
-        connectBtn.textContent = 'Connect Google Drive';
-        connectBtn.disabled = false;
-      }
-    });
-  } catch (error) {
-    console.error('[SnapToAI] Drive connect error:', error);
-    addBubble('Connection failed. Make sure OAuth is configured in the extension.', 'ai');
-    connectBtn.textContent = 'Connect Google Drive';
-    connectBtn.disabled = false;
-    document.getElementById('driveModalOverlay').classList.remove('show');
-  }
-});
-
-// NotebookLM option
-document.getElementById('notebookOpt').addEventListener('click', () => {
-  uploadDropdown.classList.remove('show');
-  window.open('https://notebooklm.google.com/', '_blank');
-});
-
 // Multi-file upload handling (Gemini-style)
-function handleFileUpload(files) {
-  Array.from(files).forEach(file => {
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  Array.from(e.target.files).forEach(file => {
     const reader = new FileReader();
     reader.onload = (event) => {
       const fileData = {
@@ -719,15 +635,6 @@ function handleFileUpload(files) {
     };
     reader.readAsDataURL(file);
   });
-}
-
-document.getElementById('fileInput').addEventListener('change', (e) => {
-  handleFileUpload(e.target.files);
-  e.target.value = '';
-});
-
-document.getElementById('photoInput').addEventListener('change', (e) => {
-  handleFileUpload(e.target.files);
   e.target.value = '';
 });
 
@@ -739,79 +646,3 @@ function clearFilesQueue() {
 
 // Initialize
 initializeChat();
-
-// Initialize quota display on load and check premium status
-async function initQuotaSystem() {
-  // Check if we have a stored valid license
-  try {
-    const data = await chrome.storage.local.get(['isPremium', 'gumroadLicense']);
-    if (data.isPremium && data.gumroadLicense) {
-      console.log('[SnapToAI] Premium user detected (stored license)');
-    }
-  } catch (e) {
-    console.log('[SnapToAI] Could not check premium status');
-  }
-  updateQuotaDisplay();
-}
-initQuotaSystem();
-
-// Gumroad purchase URL - REPLACE WITH YOUR ACTUAL GUMROAD PRODUCT URL
-const GUMROAD_PURCHASE_URL = 'https://YOUR_GUMROAD_USERNAME.gumroad.com/l/YOUR_PRODUCT';
-
-// Upgrade modal handlers
-document.getElementById('upgradeBtn')?.addEventListener('click', async () => {
-  // Open Gumroad purchase page
-  window.open(GUMROAD_PURCHASE_URL, '_blank');
-});
-
-// License activation handler
-document.getElementById('activateLicenseBtn')?.addEventListener('click', async () => {
-  const licenseInput = document.getElementById('licenseKeyInput');
-  const errorEl = document.getElementById('licenseError');
-  const successEl = document.getElementById('licenseSuccess');
-  const licenseKey = licenseInput?.value?.trim();
-  
-  errorEl.style.display = 'none';
-  successEl.style.display = 'none';
-  
-  if (!licenseKey) {
-    errorEl.textContent = 'Please enter a license key';
-    errorEl.style.display = 'block';
-    return;
-  }
-  
-  // Show loading state
-  const btn = document.getElementById('activateLicenseBtn');
-  const originalText = btn.textContent;
-  btn.textContent = 'Verifying...';
-  btn.disabled = true;
-  
-  try {
-    const response = await chrome.runtime.sendMessage({ 
-      action: 'verifyGumroadLicense', 
-      licenseKey: licenseKey 
-    });
-    
-    if (response.valid) {
-      successEl.textContent = 'License activated! You now have Premium access.';
-      successEl.style.display = 'block';
-      setTimeout(() => {
-        hideUpgradeModal();
-        updateQuotaDisplay();
-      }, 1500);
-    } else {
-      errorEl.textContent = response.error || 'Invalid license key';
-      errorEl.style.display = 'block';
-    }
-  } catch (e) {
-    errorEl.textContent = 'Could not verify license. Please try again.';
-    errorEl.style.display = 'block';
-  }
-  
-  btn.textContent = originalText;
-  btn.disabled = false;
-});
-
-document.getElementById('upgradeSkipBtn')?.addEventListener('click', () => {
-  hideUpgradeModal();
-});

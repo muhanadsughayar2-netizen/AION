@@ -12,40 +12,6 @@ Preferred communication style: Simple, everyday language.
 Branding: Changed from "Flow" to "SnapToAI" (November 2025)
 Logo Display: "Snap To AI" (with spaces for premium look)
 Logo: Keep camera emoji (📸) in logo - user's preference
-AI Engine: **Gemini 3 Flash** (gemini-3-flash-preview - the latest Flash model)
-
-## Monetization System (December 2025)
-
-**Payment Provider:** Gumroad (supports PayPal - works in Jordan)
-**Pricing:** 
-- Monthly: $5.99/month
-- Yearly: $59.99/year (17% savings)
-
-**Quota System:**
-- Free tier: 20 AI calls TOTAL (lifetime trial, not daily)
-- Premium tier: Unlimited AI calls (monthly or yearly subscription)
-- Tracking: Local storage (zero infrastructure cost)
-- Counter styling: Blue bold number + "Free AI" / "Unlimited Access"
-
-**Architecture:**
-- All AI calls route through Replit proxy (users DON'T need API keys)
-- Extension → Proxy Server → Gemini 3 Flash API
-- API key hidden on server, never exposed to users
-
-**How It Works:**
-1. User gets 20 free AI calls to try the extension
-2. User exhausts 20 calls → Upgrade modal appears
-3. User clicks "Get Unlimited Access" → Opens Gumroad checkout
-4. User pays $5.99 with PayPal or card → Gets license key
-5. User pastes license key in extension → Unlimited access activated
-
-**Cost Per User Trial:** ~$0.01 (20 Gemini calls ≈ 1 cent)
-
-**Files:**
-- server.js: Proxy server with Gemini API (key hidden)
-- ai-chat.js: Quota tracking + license activation
-- ai-chat.html: Upgrade modal with $5.99 pricing
-- popup.js: Proxy-based AI (no user API key needed)
 
 ## System Architecture
 

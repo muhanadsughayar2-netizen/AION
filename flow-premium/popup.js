@@ -2992,130 +2992,92 @@ async function incrementGlobalCounter() {
   } catch (e) {}
 }
 
-// ===== PROXY-BASED AI (NO USER API KEY NEEDED) =====
-const PROXY_URL = 'https://snaptoai.replit.app';
+// ===== GEMINI API KEY MODAL =====
+const geminiModal = document.getElementById('geminiModal');
+const geminiKeyInput = document.getElementById('geminiKeyInput');
+const geminiStatus = document.getElementById('geminiStatus');
+const geminiSaveBtn = document.getElementById('geminiSaveBtn');
+const geminiClearBtn = document.getElementById('geminiClearBtn');
 const aiButton = document.getElementById('aiButton');
 
-// AI button now opens license activation modal
-if (aiButton) {
-  aiButton.addEventListener('click', () => {
-    console.log('[SnapToAI] AI button clicked - opening license modal');
-    showLicenseModal();
-  });
-}
-
-// ===== LICENSE ACTIVATION MODAL =====
-const licenseModal = document.getElementById('licenseModal');
-const licenseKeyInput = document.getElementById('licenseKeyInput');
-const licenseActivateBtn = document.getElementById('licenseActivateBtn');
-const licenseCloseBtn = document.getElementById('licenseCloseBtn');
-const licenseStatus = document.getElementById('licenseStatus');
-const licenseError = document.getElementById('licenseError');
-const licenseSuccess = document.getElementById('licenseSuccess');
-
-function showLicenseModal() {
-  if (!licenseModal) return;
-  loadLicenseStatus();
-  licenseModal.style.display = 'flex';
-  setTimeout(() => licenseModal.classList.add('show'), 10);
-}
-
-function hideLicenseModal() {
-  if (!licenseModal) return;
-  licenseModal.classList.remove('show');
-  setTimeout(() => licenseModal.style.display = 'none', 300);
-}
-
-async function loadLicenseStatus() {
-  try {
-    const data = await chrome.storage.local.get(['isPremium', 'gumroadLicense']);
-    if (data.isPremium && data.gumroadLicense) {
-      if (licenseStatus) licenseStatus.style.display = 'inline';
-      if (licenseKeyInput) licenseKeyInput.value = data.gumroadLicense;
-    } else {
-      if (licenseStatus) licenseStatus.style.display = 'none';
-      if (licenseKeyInput) licenseKeyInput.value = '';
-    }
-  } catch (e) {
-    console.error('[SnapToAI] Error loading license:', e);
-  }
-}
-
-async function activateLicense() {
-  const key = licenseKeyInput?.value?.trim();
-  if (!key) {
-    showLicenseError('Please enter a license key');
+function showGeminiModal() {
+  console.log('[SnapToAI] Opening Gemini modal');
+  if (!geminiModal) {
+    console.error('[SnapToAI] geminiModal not found');
     return;
   }
-  
-  // Hide previous messages
-  if (licenseError) licenseError.style.display = 'none';
-  if (licenseSuccess) licenseSuccess.style.display = 'none';
-  
-  // Show loading state
-  if (licenseActivateBtn) {
-    licenseActivateBtn.disabled = true;
-    licenseActivateBtn.textContent = 'Verifying...';
-  }
-  
+  geminiModal.style.display = 'flex';
+  setTimeout(() => geminiModal.classList.add('show'), 10);
+}
+
+function hideGeminiModal() {
+  console.log('[SnapToAI] Closing Gemini modal');
+  if (!geminiModal) return;
+  geminiModal.classList.remove('show');
+  setTimeout(() => geminiModal.style.display = 'none', 300);
+}
+
+async function loadGeminiKey() {
   try {
-    // Verify license with server (which calls Gumroad API)
-    const response = await fetch(`${PROXY_URL}/verify-license`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ licenseKey: key })
-    });
-    
-    const data = await response.json();
-    
-    if (data.success) {
-      await chrome.storage.local.set({ 
-        isPremium: true, 
-        gumroadLicense: key
-      });
-      
-      if (licenseStatus) licenseStatus.style.display = 'inline';
-      showLicenseSuccess('License activated! You now have unlimited AI access.');
-      
-      setTimeout(() => {
-        hideLicenseModal();
-      }, 2000);
+    const result = await chrome.storage.sync.get(['geminiApiKey']);
+    console.log('[SnapToAI] Loaded Gemini key:', result.geminiApiKey ? 'exists' : 'none');
+    if (result.geminiApiKey) {
+      if (geminiKeyInput) geminiKeyInput.value = result.geminiApiKey;
+      if (geminiStatus) geminiStatus.style.display = 'inline';
     } else {
-      showLicenseError(data.error || 'Invalid license key. Please check and try again.');
+      if (geminiKeyInput) geminiKeyInput.value = '';
+      if (geminiStatus) geminiStatus.style.display = 'none';
     }
+    return !!result.geminiApiKey;
   } catch (e) {
-    showLicenseError('Verification failed. Please check your connection and try again.');
-    console.error('[SnapToAI] License activation error:', e);
-  } finally {
-    if (licenseActivateBtn) {
-      licenseActivateBtn.disabled = false;
-      licenseActivateBtn.textContent = 'Activate';
-    }
+    console.error('[SnapToAI] Error loading Gemini key:', e);
+    return false;
   }
 }
 
-function showLicenseError(msg) {
-  if (licenseError) {
-    licenseError.textContent = msg;
-    licenseError.style.display = 'block';
+async function saveGeminiKey() {
+  if (!geminiKeyInput) return;
+  const key = geminiKeyInput.value.trim();
+  if (!key) {
+    console.log('[SnapToAI] No key to save');
+    return;
+  }
+  try {
+    await chrome.storage.sync.set({ geminiApiKey: key });
+    console.log('[SnapToAI] Gemini key saved');
+    if (geminiStatus) geminiStatus.style.display = 'inline';
+    hideGeminiModal();
+  } catch (e) {
+    console.error('[SnapToAI] Error saving Gemini key:', e);
   }
 }
 
-function showLicenseSuccess(msg) {
-  if (licenseSuccess) {
-    licenseSuccess.textContent = msg;
-    licenseSuccess.style.display = 'block';
+async function clearGeminiKey() {
+  try {
+    await chrome.storage.sync.remove('geminiApiKey');
+    console.log('[SnapToAI] Gemini key cleared');
+    geminiKeyInput.value = '';
+    geminiStatus.style.display = 'none';
+  } catch (e) {
+    console.error('[SnapToAI] Error clearing Gemini key:', e);
   }
 }
 
-// Event listeners for license modal
-if (licenseActivateBtn) licenseActivateBtn.addEventListener('click', activateLicense);
-if (licenseCloseBtn) licenseCloseBtn.addEventListener('click', hideLicenseModal);
-if (licenseModal) licenseModal.addEventListener('click', (e) => {
-  if (e.target === licenseModal) hideLicenseModal();
+// Event listeners
+if (aiButton) aiButton.addEventListener('click', showGeminiModal);
+if (geminiSaveBtn) geminiSaveBtn.addEventListener('click', saveGeminiKey);
+if (geminiClearBtn) geminiClearBtn.addEventListener('click', clearGeminiKey);
+if (geminiModal) geminiModal.addEventListener('click', (e) => {
+  if (e.target === geminiModal) hideGeminiModal();
 });
-if (licenseKeyInput) licenseKeyInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') activateLicense();
+
+// Load key on popup open
+document.addEventListener('DOMContentLoaded', async () => {
+  const hasKey = await loadGeminiKey();
+  if (!hasKey) {
+    console.log('[SnapToAI] No Gemini key found, showing modal');
+    showGeminiModal();
+  }
 });
 
 // ===== AI CHAT PORTAL =====
@@ -3354,6 +3316,12 @@ async function compressImageForAI(dataUrl) {
 }
 
 async function sendToGemini(prompt, isRetry = false) {
+  const result = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!result.geminiApiKey) {
+    addChatBubble('Please set your Gemini API key first! Click the AI button in the top row.', 'ai');
+    return;
+  }
+  
   if (!aiChatCurrentImage) {
     addChatBubble('No image loaded. Please try again.', 'ai');
     return;
@@ -3376,36 +3344,40 @@ async function sendToGemini(prompt, isRetry = false) {
     }
     
     const base64Data = aiCompressedImage.split(',')[1];
+    const apiKey = result.geminiApiKey;
     
-    // Get unique user ID for rate limiting
-    let userData = await chrome.storage.local.get(['snaptoaiUserId']);
-    let userId = userData.snaptoaiUserId;
-    if (!userId) {
-      userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      await chrome.storage.local.set({ snaptoaiUserId: userId });
-    }
-    
-    // Queue request to respect rate limits
+    // Queue request to respect free tier limits (5 RPM)
     const data = await aiQueue.add(async () => {
-      const contents = [{
-        role: 'user',
-        parts: [
-          { text: prompt },
-          { inlineData: { mimeType: 'image/jpeg', data: base64Data } }
-        ]
-      }];
+      const requestBody = {
+        systemInstruction: {
+          parts: [{ text: "You are Gemini, a helpful AI assistant by Google. When analyzing images: describe what you see in detail, use spatial reasoning to identify element locations, extract data exactly as shown. If text is unclear, say 'Unreadable'. For code: explain logic thoroughly and identify bugs. Be conversational and complete - don't cut off mid-thought. If the user asks for analysis, provide comprehensive insights." }]
+        },
+        contents: [{
+          role: 'user',
+          parts: [
+            { text: prompt },
+            { inline_data: { mime_type: 'image/jpeg', data: base64Data } }
+          ]
+        }],
+        generationConfig: {
+          maxOutputTokens: 1024,
+          temperature: 0.3
+        }
+      };
       
-      const systemPrompt = "You are Gemini, a helpful AI assistant. When analyzing images: describe what you see in detail, use spatial reasoning to identify element locations, extract data exactly as shown. If text is unclear, say 'Unreadable'. For code: explain logic thoroughly and identify bugs. Be conversational and complete.";
+      // Include thoughtSignature for multi-turn conversations (Gemini 3)
+      if (aiThoughtSignature) {
+        requestBody.thoughtSignature = aiThoughtSignature;
+      }
 
-      const response = await fetch(`${PROXY_URL}/premium-chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: contents,
-          systemPrompt: systemPrompt,
-          userId: userId
-        })
-      });
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        }
+      );
       return await response.json();
     });
 
@@ -3513,21 +3485,45 @@ document.querySelectorAll('.ai-preset-btn').forEach(btn => {
   });
 });
 
-// Test API connection via proxy
+// Test API without image (uses queue like everything else)
 async function testGeminiAPI() {
-  addChatBubble('Testing AI connection...', 'user');
+  const result = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!result.geminiApiKey) {
+    addChatBubble('No API key set! Click the ✦ button in the top menu to add one.', 'ai');
+    return;
+  }
+  
+  addChatBubble('Testing API connection...', 'user');
   const loadingBubble = addChatBubble('Checking... ⏳', 'ai loading');
   
   try {
-    const response = await fetch(`${PROXY_URL}/health`);
-    const data = await response.json();
+    // Use queue to respect rate limits
+    const data = await aiQueue.add(async () => {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${result.geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: 'Say "API Working!" in 2 words only.' }] }]
+          })
+        }
+      );
+      return await response.json();
+    });
     
     loadingBubble.remove();
     
-    if (data.status === 'ok' && data.hasKey) {
-      addChatBubble('✅ AI Server Connected!', 'ai');
+    if (data.error) {
+      // If rate limit, set retry delay
+      const retryMatch = data.error.message?.match(/retry in ([\d.]+)s/i);
+      if (retryMatch) aiQueue.setRetryDelay(Math.ceil(parseFloat(retryMatch[1])));
+      addChatBubble('❌ API Error: ' + data.error.message, 'ai');
+    } else if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      addChatBubble('✅ ' + data.candidates[0].content.parts[0].text, 'ai');
     } else {
-      addChatBubble('❌ AI Server not configured. Contact support.', 'ai');
+      addChatBubble('❓ Unexpected response. Check console.', 'ai');
+      console.log('[SnapToAI] Test response:', data);
     }
   } catch (error) {
     loadingBubble.remove();

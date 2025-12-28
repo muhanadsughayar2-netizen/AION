@@ -25,55 +25,6 @@ const DEFAULT_SETTINGS = {
 // Track last capture time to prevent rate limiting
 let lastCaptureTime = 0;
 
-// Gumroad license verification
-// IMPORTANT: Replace with your actual Gumroad product ID after creating the product
-const GUMROAD_PRODUCT_ID = 'YOUR_GUMROAD_PRODUCT_ID';
-
-async function verifyGumroadLicense(licenseKey) {
-  try {
-    const requestBody = new URLSearchParams();
-    requestBody.append('product_id', GUMROAD_PRODUCT_ID);
-    requestBody.append('license_key', licenseKey);
-    requestBody.append('increment_uses_count', 'false');
-
-    const response = await fetch('https://api.gumroad.com/v2/licenses/verify', {
-      method: 'POST',
-      body: requestBody,
-    });
-
-    const data = await response.json();
-
-    if (!data.success) {
-      return { valid: false, error: data.message || 'Invalid license key' };
-    }
-
-    if (data.purchase?.refunded) {
-      return { valid: false, error: 'This license has been refunded' };
-    }
-
-    if (data.purchase?.disputed) {
-      return { valid: false, error: 'This license is disputed' };
-    }
-
-    // License is valid - store it and mark as premium
-    await chrome.storage.local.set({ 
-      isPremium: true, 
-      gumroadLicense: licenseKey,
-      licenseEmail: data.purchase?.email || ''
-    });
-
-    return { 
-      valid: true, 
-      email: data.purchase?.email,
-      productName: data.purchase?.product_name
-    };
-
-  } catch (error) {
-    console.error('[SnapToAI] License verification error:', error);
-    return { valid: false, error: 'Could not verify license. Please try again.' };
-  }
-}
-
 // Open welcome page on first install
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
@@ -102,9 +53,6 @@ chrome.commands.onCommand.addListener((command) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'capture') {
     captureScreenshot().then(sendResponse);
-    return true;
-  } else if (request.action === 'verifyGumroadLicense') {
-    verifyGumroadLicense(request.licenseKey).then(sendResponse);
     return true;
   } else if (request.action === 'upload') {
     handleUpload(request.preferredPlatform, request.selectedSnaps).then(sendResponse);
