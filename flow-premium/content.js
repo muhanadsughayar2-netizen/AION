@@ -225,21 +225,43 @@
     
     if (isGoogleDocs) {
       style.textContent = `
-        /* Hide the UI but DO NOT touch the editor height - Virtual Rendering fix */
-        #docs-header, .docs-titlebar-buttons, #docs-toolbar-wrapper, 
-        .navigation-widget-view, .docs-companion-app-switcher-container,
-        #gb, .docs-horizontal-scroll-bar, .kix-paginated-view-header,
-        .docs-titlebar, .docs-menubar, .docs-material-menu-button-bar,
-        #docs-bars, .docs-butterbar-container {
+        /* 1. HIDE ALL GOOGLE DOCS UI CHROME */
+        #docs-chrome, 
+        #docs-header, 
+        .docs-titlebar-buttons, 
+        #docs-toolbar-wrapper, 
+        .navigation-widget-view, 
+        .docs-companion-app-switcher-container,
+        #gb, 
+        .docs-horizontal-scroll-bar, 
+        .kix-paginated-view-header,
+        .docs-titlebar, 
+        .docs-menubar, 
+        .docs-material-menu-button-bar,
+        #docs-bars, 
+        .docs-butterbar-container,
+        #kix-vertical-ruler,
+        .kix-vertical-ruler {
           display: none !important;
         }
-        /* Ensure the editor fills the screen for the capture */
+
+        /* 2. MAXIMIZE THE EDITOR AREA */
+        #docs-editor, 
+        #kix-appview, 
         .kix-appview-editor {
           top: 0 !important;
-          background: white !important;
+          height: 100vh !important;
+          width: 100vw !important;
+          overflow-y: scroll !important;
+          background: #f8f9fa !important;
+        }
+
+        /* 3. HIDE SCROLLBARS FOR CLEAN CAPTURE */
+        ::-webkit-scrollbar {
+          display: none !important;
         }
       `;
-      console.log('[SnapToAI] Google Docs UI Hidden - Preserving Engine Height');
+      console.log('[SnapToAI] Google Docs: UI stripped and editor maximized for capture');
     } else if (isYouTube) {
       style.textContent = `
         /* Force full expansion for YouTube */
@@ -3249,8 +3271,15 @@
         if (location.hostname.includes('google.com')) {
           // Force a small "nudge" to trigger Google's internal redraw
           window.dispatchEvent(new Event('resize')); 
-          // Wait for the engine to paint the text
-          await new Promise(r => setTimeout(r, 400)); 
+          
+          // Google Docs needs extra time for Canvas text repaint
+          if (location.hostname.includes('docs.google.com')) {
+            console.log('[SnapToAI] Google Docs - waiting 1.5s for text repaint...');
+            await new Promise(r => setTimeout(r, 1500)); 
+          } else {
+            // Other Google apps (Gmail, Sheets, etc)
+            await new Promise(r => setTimeout(r, 400)); 
+          }
         }
         
         // === AMAZON PER-SCROLL CONTENT STABILIZATION ===
