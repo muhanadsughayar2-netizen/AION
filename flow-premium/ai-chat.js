@@ -171,6 +171,11 @@ async function initializeChat() {
   
   // Focus input
   document.getElementById('chatInput').focus();
+  
+  // Update verdict button visibility
+  if (typeof updateVerdictButtonVisibility === 'function') {
+    updateVerdictButtonVisibility();
+  }
 }
 
 // Add chat bubble
@@ -648,40 +653,59 @@ function clearFilesQueue() {
 initializeChat();
 
 // === THE VERDICT FEATURE ===
+// Show/hide verdict button based on image availability
+function updateVerdictButtonVisibility() {
+  const verdictBtn = document.getElementById('verdictBtn');
+  if (verdictBtn) {
+    verdictBtn.style.display = currentImages.length > 0 ? 'inline-block' : 'none';
+  }
+}
+
+// Call on load and when images change
+updateVerdictButtonVisibility();
+
+// Get chat context for smarter verdicts (last few messages)
+function getChatContext() {
+  return conversationHistory.slice(-4).map(m => `${m.role}: ${m.parts[0].text?.substring(0, 100) || '[image]'}`).join('\n');
+}
+
 document.getElementById('verdictBtn')?.addEventListener('click', async () => {
   const verdictBtn = document.getElementById('verdictBtn');
   const verdictCard = document.getElementById('verdictCard');
   
   if (!currentImages.length) {
-    addBubble('Please capture a screenshot first!', 'error');
+    addBubble('Please capture a screenshot first!', 'ai');
     return;
   }
   
   const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
   if (!apiResult.geminiApiKey) {
-    addBubble('Please add your Gemini API key first.', 'error');
+    addBubble('Please add your Gemini API key first.', 'ai');
     return;
   }
   
   verdictBtn.disabled = true;
   verdictBtn.textContent = '⏳ Analyzing...';
+  verdictBtn.classList.remove('gold', 'red', 'green');
   if (navigator.vibrate) navigator.vibrate(100);
   
   try {
     const imageData = currentImages[0].replace(/^data:image\/\w+;base64,/, '');
+    const chatContext = getChatContext();
     
-    const verdictPrompt = `You are "The Verdict" - a universal decision engine. Analyze this screenshot and provide a quick verdict.
-
-Identify what's shown (product, menu, chart, stock, etc.) and provide:
+    // Universal prompt with chat context - ONE API call, cost-efficient
+    const verdictPrompt = `You are "The Verdict" - a universal decision engine.
+${chatContext ? `Chat context:\n${chatContext}\n` : ''}
+Analyze this screenshot. Auto-detect what it shows (product/menu/chart/stock/service) and provide:
 1. VERDICT: YES/BUY, NO/AVOID, or HOLD/WAIT
 2. INSIDER SECRET: One key insight most people miss
-3. PRICE CHECK: Is it a good deal? Any cheaper alternatives?
-4. QUALITY: Quick durability/value assessment
-5. CONFIDENCE: Your certainty 0-100%
-6. GLOW: gold (positive), green (safe), or red (warning)
+3. PRICE CHECK: Is it worth it? Alternatives?
+4. QUALITY: Value/durability assessment
+5. CONFIDENCE: 0-100%
+6. GLOW COLOR: gold (positive/buy), green (safe/hold), red (warning/avoid)
 
-Output ONLY valid JSON:
-{"verdict":"YES / BUY","header":"⚖️ THE VERDICT: YES / BUY","insiderSecret":"text","priceCrush":"text","qualityAudit":"text","confidenceScore":"95%","action":"ADD TO CART ➡️","glowColor":"gold"}`;
+Output ONLY valid JSON (no markdown):
+{"verdict":"YES / BUY","header":"⚖️ THE VERDICT: YES","insiderSecret":"text","priceCrush":"text","qualityAudit":"text","confidenceScore":"85%","action":"BUY NOW","glowColor":"gold"}`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiResult.geminiApiKey}`,
@@ -693,7 +717,7 @@ Output ONLY valid JSON:
             { text: verdictPrompt },
             { inlineData: { mimeType: 'image/png', data: imageData } }
           ]}],
-          generationConfig: { maxOutputTokens: 512 }
+          generationConfig: { maxOutputTokens: 512, temperature: 0.7 }
         })
       }
     );
@@ -705,7 +729,7 @@ Output ONLY valid JSON:
     const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     try {
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      const jsonMatch = responseText.match(/\{[\s\S]*?\}/);
       verdictData = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
     } catch {
       verdictData = null;
@@ -714,16 +738,17 @@ Output ONLY valid JSON:
     if (!verdictData) {
       verdictData = {
         verdict: "ANALYSIS COMPLETE", header: "⚖️ THE VERDICT",
-        insiderSecret: responseText.substring(0, 200),
+        insiderSecret: responseText.substring(0, 150) || "Could not parse response",
         priceCrush: "See details", qualityAudit: "Analysis provided",
         confidenceScore: "N/A", action: "REVIEW", glowColor: "green"
       };
     }
     
-    verdictBtn.classList.remove('gold', 'red', 'green');
+    // Apply glow animation to button
     verdictBtn.classList.add(verdictData.glowColor || 'green');
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     
+    // Render card with ripple reveal animation
     verdictCard.innerHTML = `
       <div class="verdict-header">${verdictData.header || '⚖️ THE VERDICT'}</div>
       <div class="verdict-icon">⚖️</div>
@@ -731,13 +756,15 @@ Output ONLY valid JSON:
       <div class="verdict-section"><strong>💰 Price Check</strong>${verdictData.priceCrush || 'N/A'}</div>
       <div class="verdict-section"><strong>✅ Quality Audit</strong>${verdictData.qualityAudit || 'N/A'}</div>
       <div class="verdict-confidence">${verdictData.confidenceScore || '??%'} CERTAINTY</div>
-      <button class="verdict-action-btn">${verdictData.action || 'DECIDED!'}</button>
-      <div style="text-align:center"><button class="verdict-close-btn" onclick="document.getElementById('verdictCard').style.display='none'">Close</button></div>
+      <button class="verdict-action-btn" onclick="this.textContent='✓ Noted!'; this.style.background='#555';">${verdictData.action || 'DECIDED!'}</button>
+      <div style="text-align:center;margin-top:8px"><button class="verdict-close-btn" onclick="document.getElementById('verdictCard').style.display='none'">Close</button></div>
     `;
     verdictCard.style.display = 'block';
+    verdictCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     
   } catch (error) {
-    addBubble('Verdict failed: ' + error.message, 'error');
+    addBubble('Verdict failed: ' + error.message, 'ai');
+    verdictBtn.classList.add('red');
   } finally {
     verdictBtn.disabled = false;
     verdictBtn.textContent = '⚖️ The Verdict';
