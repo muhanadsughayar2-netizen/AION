@@ -646,3 +646,100 @@ function clearFilesQueue() {
 
 // Initialize
 initializeChat();
+
+// === THE VERDICT FEATURE ===
+document.getElementById('verdictBtn')?.addEventListener('click', async () => {
+  const verdictBtn = document.getElementById('verdictBtn');
+  const verdictCard = document.getElementById('verdictCard');
+  
+  if (!currentImages.length) {
+    addBubble('Please capture a screenshot first!', 'error');
+    return;
+  }
+  
+  const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!apiResult.geminiApiKey) {
+    addBubble('Please add your Gemini API key first.', 'error');
+    return;
+  }
+  
+  verdictBtn.disabled = true;
+  verdictBtn.textContent = '⏳ Analyzing...';
+  if (navigator.vibrate) navigator.vibrate(100);
+  
+  try {
+    const imageData = currentImages[0].replace(/^data:image\/\w+;base64,/, '');
+    
+    const verdictPrompt = `You are "The Verdict" - a universal decision engine. Analyze this screenshot and provide a quick verdict.
+
+Identify what's shown (product, menu, chart, stock, etc.) and provide:
+1. VERDICT: YES/BUY, NO/AVOID, or HOLD/WAIT
+2. INSIDER SECRET: One key insight most people miss
+3. PRICE CHECK: Is it a good deal? Any cheaper alternatives?
+4. QUALITY: Quick durability/value assessment
+5. CONFIDENCE: Your certainty 0-100%
+6. GLOW: gold (positive), green (safe), or red (warning)
+
+Output ONLY valid JSON:
+{"verdict":"YES / BUY","header":"⚖️ THE VERDICT: YES / BUY","insiderSecret":"text","priceCrush":"text","qualityAudit":"text","confidenceScore":"95%","action":"ADD TO CART ➡️","glowColor":"gold"}`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiResult.geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [
+            { text: verdictPrompt },
+            { inlineData: { mimeType: 'image/png', data: imageData } }
+          ]}],
+          generationConfig: { maxOutputTokens: 512 }
+        })
+      }
+    );
+    
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+    
+    let verdictData;
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    try {
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      verdictData = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+    } catch {
+      verdictData = null;
+    }
+    
+    if (!verdictData) {
+      verdictData = {
+        verdict: "ANALYSIS COMPLETE", header: "⚖️ THE VERDICT",
+        insiderSecret: responseText.substring(0, 200),
+        priceCrush: "See details", qualityAudit: "Analysis provided",
+        confidenceScore: "N/A", action: "REVIEW", glowColor: "green"
+      };
+    }
+    
+    verdictBtn.classList.remove('gold', 'red', 'green');
+    verdictBtn.classList.add(verdictData.glowColor || 'green');
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+    
+    verdictCard.innerHTML = `
+      <div class="verdict-header">${verdictData.header || '⚖️ THE VERDICT'}</div>
+      <div class="verdict-icon">⚖️</div>
+      <div class="verdict-section"><strong>🔮 Insider Secret</strong>${verdictData.insiderSecret || 'N/A'}</div>
+      <div class="verdict-section"><strong>💰 Price Check</strong>${verdictData.priceCrush || 'N/A'}</div>
+      <div class="verdict-section"><strong>✅ Quality Audit</strong>${verdictData.qualityAudit || 'N/A'}</div>
+      <div class="verdict-confidence">${verdictData.confidenceScore || '??%'} CERTAINTY</div>
+      <button class="verdict-action-btn">${verdictData.action || 'DECIDED!'}</button>
+      <div style="text-align:center"><button class="verdict-close-btn" onclick="document.getElementById('verdictCard').style.display='none'">Close</button></div>
+    `;
+    verdictCard.style.display = 'block';
+    
+  } catch (error) {
+    addBubble('Verdict failed: ' + error.message, 'error');
+  } finally {
+    verdictBtn.disabled = false;
+    verdictBtn.textContent = '⚖️ The Verdict';
+  }
+});
