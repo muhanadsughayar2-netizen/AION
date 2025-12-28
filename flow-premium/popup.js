@@ -3535,3 +3535,139 @@ async function testGeminiAPI() {
 if (aiChatPortal) aiChatPortal.addEventListener('click', (e) => {
   if (e.target === aiChatPortal) closeAiChat();
 });
+
+// === THE VERDICT FEATURE ===
+document.getElementById('verdictBtn')?.addEventListener('click', async () => {
+  const verdictBtn = document.getElementById('verdictBtn');
+  const verdictCard = document.getElementById('verdictCard');
+  
+  // Get the first snap image
+  const result = await chrome.storage.session.get(['snaps']);
+  const snaps = result.snaps || [];
+  
+  if (snaps.length === 0) {
+    alert('Please capture a screenshot first!');
+    return;
+  }
+  
+  // Get API key
+  const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!apiResult.geminiApiKey) {
+    alert('Please add your Gemini API key first (click AI button)');
+    return;
+  }
+  
+  // Disable button during processing
+  verdictBtn.disabled = true;
+  verdictBtn.textContent = '⏳ Analyzing...';
+  
+  // Haptic feedback if supported
+  if (navigator.vibrate) navigator.vibrate(100);
+  
+  try {
+    // Get first image
+    const imageData = snaps[0].replace(/^data:image\/\w+;base64,/, '');
+    
+    // Universal Verdict Prompt (cost-efficient: one API call)
+    const verdictPrompt = `You are "The Verdict" - a universal decision engine. Analyze this screenshot and provide a quick verdict.
+
+Identify what's shown (product, menu, chart, stock, etc.) and provide:
+1. VERDICT: YES/BUY, NO/AVOID, or HOLD/WAIT
+2. INSIDER SECRET: One key insight most people miss
+3. PRICE CHECK: Is it a good deal? Any cheaper alternatives?
+4. QUALITY: Quick durability/value assessment
+5. CONFIDENCE: Your certainty 0-100%
+6. GLOW: gold (positive), green (safe), or red (warning)
+
+Output ONLY valid JSON:
+{"verdict":"YES / BUY","header":"⚖️ THE VERDICT: YES / BUY","insiderSecret":"text","priceCrush":"text","qualityAudit":"text","confidenceScore":"95%","action":"ADD TO CART ➡️","glowColor":"gold"}`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiResult.geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            role: 'user',
+            parts: [
+              { text: verdictPrompt },
+              { inlineData: { mimeType: 'image/png', data: imageData } }
+            ]
+          }],
+          generationConfig: { maxOutputTokens: 512 }
+        })
+      }
+    );
+    
+    const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(data.error.message);
+    }
+    
+    // Parse JSON response
+    let verdictData;
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    try {
+      // Extract JSON from response
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        verdictData = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No JSON found');
+      }
+    } catch {
+      // Fallback if JSON parsing fails
+      verdictData = {
+        verdict: "ANALYSIS COMPLETE",
+        header: "⚖️ THE VERDICT",
+        insiderSecret: responseText.substring(0, 200),
+        priceCrush: "See details above",
+        qualityAudit: "Analysis provided",
+        confidenceScore: "N/A",
+        action: "REVIEW DETAILS",
+        glowColor: "green"
+      };
+    }
+    
+    // Update button glow
+    verdictBtn.classList.remove('gold', 'red', 'green');
+    verdictBtn.classList.add(verdictData.glowColor || 'green');
+    
+    // Haptic for result
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+    
+    // Render verdict card
+    verdictCard.innerHTML = `
+      <div class="verdict-header">${verdictData.header || '⚖️ THE VERDICT'}</div>
+      <div class="verdict-icon">⚖️</div>
+      <div class="verdict-section">
+        <strong>🔮 Insider Secret</strong>
+        ${verdictData.insiderSecret || 'N/A'}
+      </div>
+      <div class="verdict-section">
+        <strong>💰 Price Check</strong>
+        ${verdictData.priceCrush || 'N/A'}
+      </div>
+      <div class="verdict-section">
+        <strong>✅ Quality Audit</strong>
+        ${verdictData.qualityAudit || 'N/A'}
+      </div>
+      <div class="verdict-confidence">${verdictData.confidenceScore || '??%'} CERTAINTY</div>
+      <button class="verdict-action-btn">${verdictData.action || 'DECIDED!'}</button>
+      <div class="verdict-close">
+        <button class="verdict-close-btn" onclick="document.getElementById('verdictCard').style.display='none'">Close</button>
+      </div>
+    `;
+    verdictCard.style.display = 'block';
+    
+  } catch (error) {
+    console.error('[SnapToAI] Verdict error:', error);
+    alert('Verdict failed: ' + error.message);
+  } finally {
+    verdictBtn.disabled = false;
+    verdictBtn.textContent = '⚖️ The Verdict';
+  }
+});

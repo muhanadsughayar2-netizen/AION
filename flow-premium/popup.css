@@ -1774,3 +1774,144 @@ html[dir="rtl"] .logo-word {
   border-color: #666;
   color: #fff;
 }
+
+/* === THE VERDICT BUTTON === */
+.verdict-button {
+  width: 100%;
+  background: linear-gradient(45deg, #00dbde, #fc00ff);
+  border: none;
+  color: white;
+  padding: 14px 20px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 219, 222, 0.6);
+  transition: 0.3s;
+  animation: verdict-pulse 2s infinite;
+  margin: 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+@keyframes verdict-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 219, 222, 0.7); }
+  70% { box-shadow: 0 0 0 15px rgba(0, 219, 222, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 219, 222, 0); }
+}
+
+.verdict-button:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 30px rgba(252, 0, 255, 0.7);
+}
+
+.verdict-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  animation: none;
+}
+
+.verdict-button.gold { background: linear-gradient(45deg, #ffd700, #ffaa00); box-shadow: 0 0 20px rgba(255, 215, 0, 0.6); }
+.verdict-button.red { background: linear-gradient(45deg, #ff4444, #cc0000); animation: verdict-warn 1s infinite; }
+.verdict-button.green { background: linear-gradient(45deg, #00ff88, #00cc66); box-shadow: 0 0 20px rgba(0, 255, 136, 0.6); }
+
+@keyframes verdict-warn { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+
+/* Verdict Card */
+.verdict-card {
+  background: rgba(20, 20, 40, 0.95);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 16px;
+  margin: 8px 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  color: white;
+  animation: verdict-slideUp 0.4s ease-out;
+}
+
+@keyframes verdict-slideUp { 
+  0% { transform: translateY(30px); opacity: 0; } 
+  100% { transform: translateY(0); opacity: 1; } 
+}
+
+.verdict-header {
+  font-size: 18px;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 12px;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  background: linear-gradient(90deg, #00ffff, #fc00ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.verdict-icon {
+  font-size: 36px;
+  text-align: center;
+  animation: verdict-shimmer 2s infinite;
+  margin: 8px 0;
+}
+
+@keyframes verdict-shimmer { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+.verdict-section {
+  margin: 10px 0;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.verdict-section strong {
+  color: #00ffff;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.verdict-confidence {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 800;
+  color: #00ff88;
+  margin: 12px 0;
+}
+
+.verdict-action-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(45deg, #00ff88, #00cc66);
+  border: none;
+  border-radius: 25px;
+  color: #000;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: 0.2s;
+}
+
+.verdict-action-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+}
+
+.verdict-close {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.verdict-close-btn {
+  background: transparent;
+  border: 1px solid #666;
+  color: #888;
+  padding: 8px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.verdict-close-btn:hover {
+  border-color: #fff;
+  color: #fff;
+}
