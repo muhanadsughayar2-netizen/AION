@@ -809,12 +809,19 @@ function renderMagicButtons() {
     </button>
   `).join('');
   
+  // Separate listeners for delete buttons
+  container.querySelectorAll('.delete-magic').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      deleteMagicButton(parseInt(el.dataset.delete));
+    });
+  });
+  
+  // Separate listeners for magic buttons (execute)
   container.querySelectorAll('.magic-btn').forEach(el => {
     el.addEventListener('click', (e) => {
-      if (e.target.classList.contains('delete-magic')) {
-        e.stopPropagation();
-        deleteMagicButton(parseInt(e.target.dataset.delete));
-      } else {
+      if (!e.target.classList.contains('delete-magic')) {
         executeMagicButton(parseInt(el.dataset.index));
       }
     });
@@ -887,8 +894,8 @@ Analyze the image(s) and follow the user's instructions precisely. Be specific, 
     const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
     updateBubble(thinkingId, responseText);
     
-    chatHistory.push({ role: 'user', text: `[${btn.emoji} ${btn.name}] Analyze image with: ${btn.prompt}` });
-    chatHistory.push({ role: 'model', text: responseText });
+    conversationHistory.push({ role: 'user', parts: [{ text: `[${btn.emoji} ${btn.name}] Analyze image with: ${btn.prompt}` }] });
+    conversationHistory.push({ role: 'model', parts: [{ text: responseText }] });
     
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     
