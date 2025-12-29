@@ -81,7 +81,7 @@ let statusResetTimeout = null;
 // Full-page capture timeout (detects when page is inaccessible)
 let fullPageCaptureTimeout = null;
 let fullPageCaptureAborted = false; // Flag to ignore late progress messages after timeout
-const FULL_PAGE_TIMEOUT_MS = 3000; // 3 seconds - fail fast if page is inaccessible
+const FULL_PAGE_TIMEOUT_MS = 180000; // 3 minutes - long pages with 90 images need ~90 seconds minimum
 
 // Handle full-page capture timeout - called when no progress received
 function handleFullPageTimeout() {
