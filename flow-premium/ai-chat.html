@@ -535,6 +535,37 @@
     .magic-modal-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); }
     .magic-save-btn { width: 100%; background: linear-gradient(45deg, #8b5cf6, #ec4899); border: none; border-radius: 12px; padding: 12px; color: white; font-size: 14px; font-weight: 700; cursor: pointer; }
     .magic-save-btn:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(139,92,246,0.5); }
+    
+    /* MAGIC CARD - Beautiful Results */
+    .magic-card {
+      --tone-color: #34d399;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      border-radius: 20px;
+      border: 2px solid var(--tone-color);
+      padding: 20px;
+      margin: 12px 0;
+      color: white;
+      box-shadow: 0 0 30px rgba(0,0,0,0.5), 0 0 15px color-mix(in srgb, var(--tone-color) 30%, transparent);
+      animation: magicAppear 0.4s ease;
+    }
+    @keyframes magicAppear { from { transform: scale(0.9) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+    .magic-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .magic-emoji { font-size: 28px; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    .magic-title { font-size: 18px; font-weight: 800; background: linear-gradient(90deg, #fff, var(--tone-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .magic-score-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+    .magic-score { font-size: 36px; font-weight: 900; }
+    .magic-score span { font-size: 14px; opacity: 0.5; }
+    .magic-highlight { flex: 1; font-size: 13px; color: var(--tone-color); font-weight: 600; padding: 8px 12px; background: color-mix(in srgb, var(--tone-color) 15%, transparent); border-radius: 8px; }
+    .magic-section { margin-bottom: 12px; }
+    .magic-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 6px; }
+    .magic-items { margin: 0; padding-left: 20px; font-size: 12px; color: #e2e8f0; line-height: 1.6; }
+    .magic-items li { margin-bottom: 4px; }
+    .magic-verdict { background: linear-gradient(135deg, #3b82f6, #6366f1); border-radius: 12px; padding: 14px; margin-top: 12px; }
+    .magic-verdict-label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; opacity: 0.7; margin-bottom: 4px; }
+    .magic-verdict-text { font-size: 13px; font-weight: 600; line-height: 1.4; }
+    .magic-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .magic-next { font-size: 11px; color: #94a3b8; font-style: italic; }
   </style>
 </head>
 <body>

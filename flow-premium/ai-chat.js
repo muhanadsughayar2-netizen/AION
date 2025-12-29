@@ -792,6 +792,46 @@ Output ONLY JSON:
 // ============ MAGIC BUTTONS SYSTEM ============
 let magicButtons = [];
 
+// Render beautiful Magic Card
+function renderMagicCard(data, btn) {
+  const thread = document.getElementById('chatThread');
+  const toneColors = { gold: '#fbbf24', green: '#34d399', red: '#f87171' };
+  const toneColor = toneColors[data.tone] || toneColors.green;
+  
+  const sectionsHtml = (data.sections || []).map(section => `
+    <div class="magic-section">
+      <div class="magic-section-label">${section.label}</div>
+      <ul class="magic-items">
+        ${(section.items || []).map(item => `<li>${item}</li>`).join('')}
+      </ul>
+    </div>
+  `).join('');
+  
+  const card = document.createElement('div');
+  card.className = 'magic-card';
+  card.style.setProperty('--tone-color', toneColor);
+  card.innerHTML = `
+    <div class="magic-card-header">
+      <span class="magic-emoji">${btn.emoji}</span>
+      <span class="magic-title">${data.title || 'Analysis Complete'}</span>
+    </div>
+    <div class="magic-score-row">
+      <div class="magic-score" style="color: ${toneColor}">${data.score || '??'}<span>/100</span></div>
+      <div class="magic-highlight">${data.highlight || ''}</div>
+    </div>
+    ${sectionsHtml}
+    <div class="magic-verdict">
+      <div class="magic-verdict-label">THE VERDICT</div>
+      <div class="magic-verdict-text">${data.verdict || 'Analysis complete.'}</div>
+    </div>
+    <div class="magic-footer">
+      <span class="magic-next">${data.nextStep || ''}</span>
+    </div>
+  `;
+  thread.appendChild(card);
+  card.scrollIntoView({ behavior: 'smooth' });
+}
+
 async function loadMagicButtons() {
   const result = await chrome.storage.local.get(['magicButtons']);
   magicButtons = result.magicButtons || [];
@@ -862,14 +902,16 @@ async function executeMagicButton(index) {
   try {
     const chatContext = getChatContext();
     
-    const magicPrompt = `You are a helpful AI assistant. The user has created a custom "Magic Button" with these instructions:
-
+    // Structured prompt for beautiful card output
+    const magicPrompt = `You are a Magic Analysis Engine. The user created a button with these instructions:
 "${btn.prompt}"
+${chatContext ? `Context: ${chatContext.substring(0, 150)}\n` : ''}
 
-${chatContext ? `Recent chat context: ${chatContext.substring(0, 200)}\n` : ''}
-Analyze the image(s) and follow the user's instructions precisely. Be specific, helpful, and actionable. Format your response clearly.`;
+Analyze the image(s) and output ONLY valid JSON (no markdown, no prose):
+{"title":"Short catchy title","tone":"gold|green|red","score":85,"highlight":"One standout insight","sections":[{"label":"Key Findings","items":["Finding 1","Finding 2"]},{"label":"Comparison","items":["Compare point 1","Compare point 2"]},{"label":"Recommendation","items":["Action 1"]}],"verdict":"One sentence final verdict","nextStep":"What to do next"}
+(tone: gold=great/buy, green=okay/hold, red=avoid/warning)`;
 
-    // Build parts with ALL images (like main chat does)
+    // Build parts with ALL images
     const parts = [{ text: magicPrompt }];
     currentImages.forEach(img => {
       const imageData = img.replace(/^data:image\/\w+;base64,/, '');
@@ -883,7 +925,7 @@ Analyze the image(s) and follow the user's instructions precisely. Be specific, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ role: 'user', parts }],
-          generationConfig: { maxOutputTokens: 500, temperature: 0.7 }
+          generationConfig: { maxOutputTokens: 450, temperature: 0.7 }
         })
       }
     );
@@ -891,20 +933,36 @@ Analyze the image(s) and follow the user's instructions precisely. Be specific, 
     const data = await response.json();
     if (data.error) throw new Error(data.error.message);
     
-    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
-    // Update the thinking bubble with the actual response
-    thinkingBubble.innerHTML = marked.parse(responseText);
-    addBubbleActions(thinkingBubble, responseText);
+    // Try to parse JSON for magic card
+    let cardData = null;
+    try {
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) cardData = JSON.parse(jsonMatch[0]);
+    } catch { cardData = null; }
+    
+    // Remove thinking bubble
+    thinkingBubble.remove();
+    
+    if (cardData && cardData.title) {
+      // Render beautiful MAGIC CARD
+      renderMagicCard(cardData, btn);
+    } else {
+      // Fallback to plain text
+      const fallbackBubble = addBubble(responseText, 'ai');
+      fallbackBubble.innerHTML = marked.parse(responseText);
+      addBubbleActions(fallbackBubble, responseText);
+    }
+    
     document.getElementById('chatThread').scrollTop = document.getElementById('chatThread').scrollHeight;
-    
-    conversationHistory.push({ role: 'user', text: `[${btn.emoji} ${btn.name}] Analyze image with: ${btn.prompt}` });
+    conversationHistory.push({ role: 'user', text: `[${btn.emoji} ${btn.name}] ${btn.prompt}` });
     conversationHistory.push({ role: 'model', text: responseText });
     
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     
   } catch (error) {
-    thinkingBubble.textContent = 'Magic failed: ' + error.message;
+    thinkingBubble.textContent = '✨ Magic failed: ' + error.message;
   }
 }
 
