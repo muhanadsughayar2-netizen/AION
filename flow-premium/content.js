@@ -21,6 +21,59 @@
   let isFullPageCaptureRunning = false;
   let isFullPageCaptureAborted = false; // Flag to stop capture loop when aborted
 
+  // === INDEXEDDB HELPERS FOR LARGE CAPTURES ===
+  // Chrome message passing has 64MB limit - use IndexedDB for 70+ screenshots
+  const FPC_DB_NAME = 'SnapToAI_FullPageCapture';
+  const FPC_STORE_NAME = 'screenshots';
+  
+  async function openFPCDatabase() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(FPC_DB_NAME, 1);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(FPC_STORE_NAME)) {
+          db.createObjectStore(FPC_STORE_NAME, { keyPath: 'id' });
+        }
+      };
+    });
+  }
+  
+  async function saveFPCScreenshots(screenshots, metadata) {
+    try {
+      const db = await openFPCDatabase();
+      const tx = db.transaction(FPC_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(FPC_STORE_NAME);
+      
+      // Clear old data first
+      await new Promise((resolve, reject) => {
+        const clearReq = store.clear();
+        clearReq.onsuccess = () => resolve();
+        clearReq.onerror = () => reject(clearReq.error);
+      });
+      
+      // Save new data as a single record
+      await new Promise((resolve, reject) => {
+        const putReq = store.put({
+          id: 'fullpage_capture',
+          screenshots: screenshots,
+          metadata: metadata,
+          timestamp: Date.now()
+        });
+        putReq.onsuccess = () => resolve();
+        putReq.onerror = () => reject(putReq.error);
+      });
+      
+      db.close();
+      console.log(`[SnapToAI] Saved ${screenshots.length} screenshots to IndexedDB`);
+      return true;
+    } catch (e) {
+      console.warn('[SnapToAI] IndexedDB save failed:', e.message);
+      return false;
+    }
+  }
+
   document.addEventListener('mousemove', (e) => {
     lastMouseX = e.clientX;
     lastMouseY = e.clientY;
@@ -3318,18 +3371,52 @@
       }
       
       // Send screenshots to background for stitching
+      // Chrome has 64MB message limit - chunk if needed
       console.log(`[SnapToAI] Sending ${screenshots.length} screenshots for stitching`);
       
-      // Only send if we have screenshots - background will handle completion messaging
-      chrome.runtime.sendMessage({
-        action: 'fullPageCaptureComplete',
-        screenshots: screenshots.map(s => s.dataUrl),
-        viewportWidth,
-        viewportHeight,
-        isAIPlatform: isAIPlatform, // Pass flag so stitching uses correct overlap (0% for AI, 10% for regular)
-        pageUrl: window.location.href, // Auto-fill URL in editor
-        pageTitle: document.title || 'Untitled Page'
-      });
+      const allScreenshots = screenshots.map(s => s.dataUrl);
+      const CHUNK_SIZE = 15; // Send 15 images per message (safe under 64MB)
+      
+      if (allScreenshots.length > CHUNK_SIZE) {
+        // Large capture: send in chunks
+        console.log(`[SnapToAI] Large capture - sending in chunks of ${CHUNK_SIZE}`);
+        
+        const totalChunks = Math.ceil(allScreenshots.length / CHUNK_SIZE);
+        
+        for (let i = 0; i < totalChunks; i++) {
+          const start = i * CHUNK_SIZE;
+          const end = Math.min(start + CHUNK_SIZE, allScreenshots.length);
+          const chunk = allScreenshots.slice(start, end);
+          
+          chrome.runtime.sendMessage({
+            action: 'fullPageCaptureChunk',
+            chunkIndex: i,
+            totalChunks: totalChunks,
+            screenshots: chunk,
+            viewportWidth,
+            viewportHeight,
+            isAIPlatform: isAIPlatform,
+            pageUrl: window.location.href,
+            pageTitle: document.title || 'Untitled Page'
+          });
+          
+          // Small delay between chunks to avoid overwhelming
+          if (i < totalChunks - 1) {
+            await new Promise(r => setTimeout(r, 100));
+          }
+        }
+      } else {
+        // Small capture: send all at once
+        chrome.runtime.sendMessage({
+          action: 'fullPageCaptureComplete',
+          screenshots: allScreenshots,
+          viewportWidth,
+          viewportHeight,
+          isAIPlatform: isAIPlatform,
+          pageUrl: window.location.href,
+          pageTitle: document.title || 'Untitled Page'
+        });
+      }
       
       return { success: true, count: screenshots.length };
     } catch (error) {

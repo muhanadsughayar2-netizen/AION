@@ -42,6 +42,10 @@ async function getSettings() {
 let isFullPageCaptureInProgress = false;
 let fullPageCapturePort = null; // Port to detect popup disconnect
 
+// Chunk buffer for large captures (70+ images sent in chunks of 15)
+let chunkBuffer = [];
+let chunkMetadata = null;
+
 // Listen for keyboard command (Ctrl+Shift+S)
 chrome.commands.onCommand.addListener((command) => {
   if (command === 'capture') {
@@ -89,6 +93,44 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === 'fullPageCaptureStep') {
     // Capture a single step during full page capture
     captureFullPageStep(request.tabId).then(sendResponse);
+    return true;
+  } else if (request.action === 'fullPageCaptureChunk') {
+    // Receive chunk of large capture (70+ images split into chunks of 15)
+    console.log(`[SnapToAI] Received chunk ${request.chunkIndex + 1}/${request.totalChunks}`);
+    
+    // Initialize buffer on first chunk
+    if (request.chunkIndex === 0) {
+      chunkBuffer = [];
+      chunkMetadata = {
+        viewportWidth: request.viewportWidth,
+        viewportHeight: request.viewportHeight,
+        isAIPlatform: request.isAIPlatform,
+        pageUrl: request.pageUrl,
+        pageTitle: request.pageTitle,
+        totalChunks: request.totalChunks
+      };
+    }
+    
+    // Add screenshots from this chunk
+    chunkBuffer.push(...request.screenshots);
+    
+    // If all chunks received, finalize
+    if (request.chunkIndex === request.totalChunks - 1) {
+      console.log(`[SnapToAI] All ${request.totalChunks} chunks received (${chunkBuffer.length} total images)`);
+      finalizeFullPageCapture(
+        chunkBuffer,
+        chunkMetadata.viewportWidth,
+        chunkMetadata.viewportHeight,
+        chunkMetadata.isAIPlatform,
+        chunkMetadata.pageUrl,
+        chunkMetadata.pageTitle
+      ).then(sendResponse);
+      // Clear buffer
+      chunkBuffer = [];
+      chunkMetadata = null;
+    } else {
+      sendResponse({ success: true, waiting: true });
+    }
     return true;
   } else if (request.action === 'fullPageCaptureComplete') {
     // Stitch and save full page capture (now includes page URL for browser frame)
