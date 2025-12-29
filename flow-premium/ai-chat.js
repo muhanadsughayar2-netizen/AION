@@ -382,8 +382,102 @@ async function handleSend() {
     }
     
     const userParts = [];
+    const MAX_IMAGES_PER_REQUEST = 20; // Safe limit for Gemini
+    
     if (contents.length === 0) {
-      // First message: include ALL images
+      // First message: handle images with batching for large captures
+      const totalImages = currentImages.length;
+      
+      if (totalImages > MAX_IMAGES_PER_REQUEST) {
+        // Large capture: process in batches
+        console.log(`[SnapToAI] Large capture detected: ${totalImages} images, processing in batches of ${MAX_IMAGES_PER_REQUEST}`);
+        
+        // Show batch processing message
+        removeLoading();
+        const batchInfo = document.createElement('div');
+        batchInfo.className = 'chat-bubble ai batch-progress';
+        batchInfo.innerHTML = `📊 <strong>Processing ${totalImages} screenshots in batches...</strong><br>This may take a moment for rate limiting.`;
+        thread.appendChild(batchInfo);
+        thread.scrollTop = thread.scrollHeight;
+        
+        // Process batches sequentially
+        let allBatchResults = [];
+        const numBatches = Math.ceil(totalImages / MAX_IMAGES_PER_REQUEST);
+        
+        for (let batchNum = 0; batchNum < numBatches; batchNum++) {
+          const start = batchNum * MAX_IMAGES_PER_REQUEST;
+          const end = Math.min(start + MAX_IMAGES_PER_REQUEST, totalImages);
+          const batchImages = currentImages.slice(start, end);
+          
+          // Update progress
+          batchInfo.innerHTML = `📊 <strong>Processing batch ${batchNum + 1}/${numBatches}</strong> (images ${start + 1}-${end} of ${totalImages})...<br>Please wait for rate limiting.`;
+          
+          // Build batch request
+          const batchParts = [];
+          for (const imgUrl of batchImages) {
+            const base64Data = imgUrl.split(',')[1];
+            const mimeType = imgUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+            batchParts.push({ inlineData: { mimeType: mimeType, data: base64Data } });
+          }
+          
+          const batchPrompt = batchNum === 0 
+            ? `[BATCH ${batchNum + 1}/${numBatches}: Images ${start + 1}-${end}]\n\n${prompt}\n\nNote: This is a large capture split into ${numBatches} batches. Analyze this batch and I'll combine results.`
+            : `[BATCH ${batchNum + 1}/${numBatches}: Images ${start + 1}-${end}]\n\nContinue analysis for this batch of the same capture. Focus on new details in these images.`;
+          
+          batchParts.push({ text: batchPrompt });
+          
+          try {
+            const batchResponse = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  systemInstruction: { parts: [{ text: MULTI_IMAGE_PROMPT }] },
+                  contents: [{ role: 'user', parts: batchParts }],
+                  generationConfig: { maxOutputTokens: 1500, temperature: 0.7 }
+                })
+              }
+            );
+            
+            if (batchResponse.ok) {
+              const batchData = await batchResponse.json();
+              const batchText = batchData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+              allBatchResults.push(`## Batch ${batchNum + 1} (Images ${start + 1}-${end})\n${batchText}`);
+            } else {
+              allBatchResults.push(`## Batch ${batchNum + 1}\n⚠️ Failed to process this batch.`);
+            }
+          } catch (batchError) {
+            allBatchResults.push(`## Batch ${batchNum + 1}\n⚠️ Error: ${batchError.message}`);
+          }
+          
+          // Rate limit delay between batches (except last)
+          if (batchNum < numBatches - 1) {
+            batchInfo.innerHTML = `📊 <strong>Batch ${batchNum + 1}/${numBatches} complete!</strong><br>Waiting 2s for rate limiting...`;
+            await new Promise(r => setTimeout(r, 2000));
+          }
+        }
+        
+        // Remove batch progress and show combined results
+        batchInfo.remove();
+        
+        const responseBubble = document.createElement('div');
+        responseBubble.className = 'chat-bubble ai';
+        const combinedResult = `# Full Page Analysis (${totalImages} screenshots)\n\n${allBatchResults.join('\n\n---\n\n')}`;
+        responseBubble.innerHTML = typeof marked !== 'undefined' ? marked.parse(combinedResult) : combinedResult;
+        thread.appendChild(responseBubble);
+        addBubbleActions(responseBubble, combinedResult);
+        thread.scrollTop = thread.scrollHeight;
+        
+        conversationHistory.push({ role: 'user', text: prompt });
+        conversationHistory.push({ role: 'model', text: combinedResult });
+        
+        sendBtn.disabled = false;
+        input.focus();
+        return; // Exit early - batch processing complete
+      }
+      
+      // Normal case: 20 or fewer images - send all at once
       for (const imgUrl of currentImages) {
         const base64Data = imgUrl.split(',')[1];
         const mimeType = imgUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
