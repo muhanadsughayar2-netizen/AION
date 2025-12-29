@@ -1131,18 +1131,18 @@ async function executeMagicButton(index) {
 CRITICAL RULES:
 - You have NO internet access. NEVER say "I can't search" or "I cannot browse"
 - Base ALL insights purely on the image content - prices, text, ratings, visuals
-- Be CONFIDENT and SPECIFIC. Extract numbers, compare values, spot patterns
+- Be EXTREMELY SPECIFIC with numbers. "$450" not "around four hundred". "7.5/10" not "moderate"
 - Give ACTIONABLE advice. No hedging, no excuses, no disclaimers
-- If you see prices, calculate savings. If you see ratings, interpret them
-- Pretend you're a helpful friend who knows everything about this topic
+- IMPORTANT: Follow the USER'S numbered requirements EXACTLY. Each numbered item = one entry in items array
 ${totalBatches > 1 ? `\nNOTE: This is batch ${batchIndex + 1} of ${totalBatches}. Focus on THIS batch of images.` : ''}
 
 USER'S REQUEST: "${btn.prompt}"
 ${chatContext ? `CONTEXT: ${chatContext.substring(0, 150)}\n` : ''}
 
-Analyze the image(s) deeply. Extract every useful detail. Output ONLY valid JSON:
-{"title":"Catchy 3-5 word title","tone":"gold|green|red","score":75,"highlight":"The #1 insight from these images","sections":[{"label":"What I Found","items":["Specific detail 1","Specific detail 2","Specific detail 3"]},{"label":"My Analysis","items":["Insight based on image","Value assessment"]},{"label":"Action Steps","items":["Do this first","Then do this"]}],"verdict":"Confident one-sentence recommendation","nextStep":"Specific next action"}
-(tone: gold=recommended, green=okay, red=avoid)`;
+RESPOND to EVERY point in the user's request. Use sections to organize. Put each numbered answer as a separate item.
+Output ONLY valid JSON:
+{"title":"Short descriptive title","tone":"gold|green|red","score":75,"highlight":"Key insight with SPECIFIC numbers","sections":[{"label":"Data Extracted","items":["Answer to point 1 with numbers","Answer to point 2 with specifics","Answer to point 3"]},{"label":"Analysis","items":["Your expert analysis with numbers","Risk assessment: X/10"]},{"label":"Recommendations","items":["[HIGH] Do this: $XXX","[MEDIUM] Consider this","Specific action with number"]}],"verdict":"Decisive recommendation with specific numbers","nextStep":"Exact next action","risk":"HIGH|MEDIUM|LOW"}
+(tone: gold=buy/recommended, green=okay/hold, red=avoid/sell)`;
 
       // Build parts with THIS BATCH of images only
       const parts = [{ text: magicPrompt }];
