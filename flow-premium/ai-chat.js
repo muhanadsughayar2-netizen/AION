@@ -1107,7 +1107,7 @@ Analyze the image(s) deeply. Extract every useful detail. Output ONLY valid JSON
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts }],
-            generationConfig: { maxOutputTokens: 450, temperature: 0.7 }
+            generationConfig: { maxOutputTokens: 800, temperature: 0.7 }
           })
         }
       );
@@ -1117,7 +1117,7 @@ Analyze the image(s) deeply. Extract every useful detail. Output ONLY valid JSON
       
       const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       
-      // Robust JSON parsing
+      // Robust JSON parsing with better error handling
       let cardData = null;
       try {
         let cleanedText = responseText.trim()
@@ -1125,9 +1125,13 @@ Analyze the image(s) deeply. Extract every useful detail. Output ONLY valid JSON
           .replace(/```\s*/g, '')
           .trim();
         const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) cardData = JSON.parse(jsonMatch[0]);
+        if (jsonMatch) {
+          cardData = JSON.parse(jsonMatch[0]);
+        } else {
+          console.log('Magic: No JSON found in response');
+        }
       } catch (e) {
-        console.log('Magic JSON parse failed:', e.message);
+        console.log('Magic JSON parse failed:', e.message, '- Response may be truncated');
         cardData = null;
       }
       
