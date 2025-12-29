@@ -675,7 +675,7 @@ function getChatContext() {
 
 document.getElementById('verdictBtn')?.addEventListener('click', async () => {
   const verdictBtn = document.getElementById('verdictBtn');
-  const verdictCard = document.getElementById('verdictCard');
+  const drawer = document.getElementById('verdictDrawer');
   
   if (!currentImages.length) {
     addBubble('Please capture a screenshot first!', 'ai');
@@ -689,27 +689,23 @@ document.getElementById('verdictBtn')?.addEventListener('click', async () => {
   }
   
   verdictBtn.disabled = true;
-  verdictBtn.textContent = '⏳ Analyzing...';
+  verdictBtn.textContent = '⏳ Thinking...';
   verdictBtn.classList.remove('gold', 'red', 'green');
+  verdictBtn.style.opacity = '0.6';
   if (navigator.vibrate) navigator.vibrate(100);
   
   try {
     const imageData = currentImages[0].replace(/^data:image\/\w+;base64,/, '');
     const chatContext = getChatContext();
     
-    // Universal prompt with chat context - ONE API call, cost-efficient
-    const verdictPrompt = `You are "The Verdict" - a universal decision engine.
-${chatContext ? `Chat context:\n${chatContext}\n` : ''}
-Analyze this screenshot. Auto-detect what it shows (product/menu/chart/stock/service) and provide:
-1. VERDICT: YES/BUY, NO/AVOID, or HOLD/WAIT
-2. INSIDER SECRET: One key insight most people miss
-3. PRICE CHECK: Is it worth it? Alternatives?
-4. QUALITY: Value/durability assessment
-5. CONFIDENCE: 0-100%
-6. GLOW COLOR: gold (positive/buy), green (safe/hold), red (warning/avoid)
+    // Cost-efficient prompt - ONE API call, 300 tokens max
+    const verdictPrompt = `You are "SnapToAI Verdict Engine".
+${chatContext ? `Context: ${chatContext.substring(0, 200)}\n` : ''}
+Analyze image. Auto-detect type (product/stock/menu/service). Be SPECIFIC to items seen.
 
-Output ONLY valid JSON (no markdown):
-{"verdict":"YES / BUY","header":"⚖️ THE VERDICT: YES","insiderSecret":"text","priceCrush":"text","qualityAudit":"text","confidenceScore":"85%","action":"BUY NOW","glowColor":"gold"}`;
+Output ONLY JSON:
+{"verdict":"BUY","header":"⚖️ THE VERDICT: BUY","insiderSecret":"One specific detail from image","priceCrush":"Short comparison vs market","qualityAudit":"Value assessment","confidenceScore":"90%","action":"ADD TO CART","glowColor":"gold"}
+(glowColor: gold=buy, red=avoid, green=hold)`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiResult.geminiApiKey}`,
@@ -721,7 +717,7 @@ Output ONLY valid JSON (no markdown):
             { text: verdictPrompt },
             { inlineData: { mimeType: 'image/png', data: imageData } }
           ]}],
-          generationConfig: { maxOutputTokens: 512, temperature: 0.7 }
+          generationConfig: { maxOutputTokens: 300, temperature: 0.7 }
         })
       }
     );
@@ -741,30 +737,56 @@ Output ONLY valid JSON (no markdown):
     
     if (!verdictData) {
       verdictData = {
-        verdict: "ANALYSIS COMPLETE", header: "⚖️ THE VERDICT",
-        insiderSecret: responseText.substring(0, 150) || "Could not parse response",
-        priceCrush: "See details", qualityAudit: "Analysis provided",
+        verdict: "ANALYZED", header: "⚖️ THE VERDICT",
+        insiderSecret: responseText.substring(0, 100) || "Analysis complete",
+        priceCrush: "See details", qualityAudit: "Reviewed",
         confidenceScore: "N/A", action: "REVIEW", glowColor: "green"
       };
     }
     
-    // Apply glow animation to button
+    // Apply glow to button
     verdictBtn.classList.add(verdictData.glowColor || 'green');
+    verdictBtn.style.opacity = '1';
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     
-    // Render card with ripple reveal animation
-    verdictCard.innerHTML = `
+    // Render drawer content
+    drawer.innerHTML = `
+      <div class="drawer-handle" id="closeDrawerHandle"></div>
       <div class="verdict-header">${verdictData.header || '⚖️ THE VERDICT'}</div>
-      <div class="verdict-icon">⚖️</div>
-      <div class="verdict-section"><strong>🔮 Insider Secret</strong>${verdictData.insiderSecret || 'N/A'}</div>
-      <div class="verdict-section"><strong>💰 Price Check</strong>${verdictData.priceCrush || 'N/A'}</div>
-      <div class="verdict-section"><strong>✅ Quality Audit</strong>${verdictData.qualityAudit || 'N/A'}</div>
-      <div class="verdict-confidence">${verdictData.confidenceScore || '??%'} CERTAINTY</div>
-      <button class="verdict-action-btn" onclick="this.textContent='✓ Noted!'; this.style.background='#555';">${verdictData.action || 'DECIDED!'}</button>
-      <div style="text-align:center;margin-top:8px"><button class="verdict-close-btn" onclick="document.getElementById('verdictCard').style.display='none'">Close</button></div>
+      
+      <div class="verdict-section gold">
+        <strong>🔮 Insider Secret</strong>
+        ${verdictData.insiderSecret || 'N/A'}
+      </div>
+      
+      <div class="verdict-section cyan">
+        <strong>💰 Price Analysis</strong>
+        ${verdictData.priceCrush || 'N/A'}
+      </div>
+      
+      <div class="verdict-section">
+        <strong>✅ Quality Audit</strong>
+        ${verdictData.qualityAudit || 'N/A'}
+      </div>
+      
+      <div class="verdict-footer">
+        <div>
+          <span class="verdict-confidence-label">CONFIDENCE</span>
+          <span class="verdict-confidence">${verdictData.confidenceScore || '??%'}</span>
+        </div>
+        <button class="verdict-action-btn" onclick="this.textContent='✓ Done!'; this.style.opacity='0.6';">
+          ${verdictData.action || 'DECIDED!'} ➡️
+        </button>
+      </div>
     `;
-    verdictCard.style.display = 'block';
-    verdictCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    
+    // Slide drawer up
+    setTimeout(() => drawer.classList.add('open'), 10);
+    
+    // Close on handle click
+    document.getElementById('closeDrawerHandle').onclick = () => {
+      drawer.classList.remove('open');
+    };
     
   } catch (error) {
     addBubble('Verdict failed: ' + error.message, 'ai');
@@ -772,5 +794,6 @@ Output ONLY valid JSON (no markdown):
   } finally {
     verdictBtn.disabled = false;
     verdictBtn.textContent = '⚖️ The Verdict';
+    verdictBtn.style.opacity = '1';
   }
 });
