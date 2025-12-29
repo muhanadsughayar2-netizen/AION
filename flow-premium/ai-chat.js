@@ -698,13 +698,14 @@ document.getElementById('verdictBtn')?.addEventListener('click', async () => {
     const chatContext = getChatContext();
     
     // Cost-efficient prompt - ONE API call, 300 tokens max
-    const verdictPrompt = `You are "SnapToAI Verdict Engine".
+    // OMNI-SCORE: The "Truth Engine" - expose traps and wins
+    const verdictPrompt = `You are the "Omni-Score Truth Engine". Analyze this image ruthlessly.
 ${chatContext ? `Context: ${chatContext.substring(0, 200)}\n` : ''}
-Analyze image. Auto-detect type (product/stock/menu/service). Be SPECIFIC to items seen.
+Auto-detect type (product/stock/menu/real estate/service). Be BRUTALLY honest.
 
 Output ONLY JSON:
-{"verdict":"BUY","header":"THE VERDICT: BUY","insiderSecret":"One specific detail","priceCrush":"Market comparison","qualityAudit":"Value assessment","confidenceScore":"90%","action":"ADD TO CART","glowColor":"gold"}
-(glowColor: gold=buy, red=avoid, green=hold)`;
+{"score":58,"checks":[{"label":"Rip-Off Radar","value":"22% markup detected","impact":"-15","positive":false},{"label":"Quality Gap","value":"Material costs $4, you pay $40","impact":"-12","positive":false},{"label":"Time Risk","value":"May miss deadline","impact":"-15","positive":false}],"verdict":"Wait 2 weeks - price drops 40% after holiday.","glowColor":"red"}
+(score 0-100, glowColor: gold=80+, green=60-79, red=<60)`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiResult.geminiApiKey}`,
@@ -736,37 +737,44 @@ Output ONLY JSON:
     
     if (!verdictData) {
       verdictData = {
-        verdict: "ANALYZED", header: "THE VERDICT",
-        insiderSecret: responseText.substring(0, 100) || "Analysis complete",
-        priceCrush: "See details", qualityAudit: "Reviewed",
-        confidenceScore: "N/A", action: "NOTED", glowColor: "green"
+        score: 50,
+        checks: [{ label: "Analysis", value: responseText.substring(0, 80) || "Complete", impact: "0", positive: true }],
+        verdict: "Review the details above.",
+        glowColor: "green"
       };
     }
     
-    // Apply glow to button
-    verdictBtn.classList.add(verdictData.glowColor || 'green');
+    // Determine glow color from score
+    const score = verdictData.score || 50;
+    const glowColor = score >= 80 ? 'gold' : score >= 60 ? 'green' : 'red';
+    const scoreColor = score >= 80 ? 'gold' : score >= 60 ? 'green' : 'red';
+    
+    verdictBtn.classList.add(glowColor);
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     
-    // Add verdict card INLINE in chat thread
+    // Build checks HTML
+    const checksHtml = (verdictData.checks || []).map(c => `
+      <div class="verdict-row">
+        <div class="verdict-label-block">
+          <span class="verdict-label">${c.label}</span>
+          <span class="verdict-value">${c.value}</span>
+        </div>
+        <span class="verdict-impact ${c.positive ? 'green' : 'red'}">${c.impact}</span>
+      </div>
+    `).join('');
+    
+    // Add OMNI-SCORE card INLINE in chat thread
     const card = document.createElement('div');
     card.className = 'verdict-card-inline';
     card.innerHTML = `
-      <div class="verdict-header">⚖️ ${verdictData.header || 'THE VERDICT'}</div>
-      <div class="verdict-row">
-        <span class="verdict-label">🔮 Insider Secret</span>
-        <span class="verdict-value gold">${verdictData.insiderSecret || 'N/A'}</span>
+      <div class="omni-score-header">
+        <span class="score-label">THE TRUTH SCORE</span>
+        <span class="score-value ${scoreColor}">${score}<span class="score-max">/100</span></span>
       </div>
-      <div class="verdict-row">
-        <span class="verdict-label">💰 Price Check</span>
-        <span class="verdict-value">${verdictData.priceCrush || 'N/A'}</span>
-      </div>
-      <div class="verdict-row">
-        <span class="verdict-label">✅ Quality</span>
-        <span class="verdict-value">${verdictData.qualityAudit || 'N/A'}</span>
-      </div>
-      <div class="verdict-footer">
-        <span class="confidence-badge">${verdictData.confidenceScore || '??%'}</span>
-        <span class="action-badge">${verdictData.action || 'DECIDED'}</span>
+      ${checksHtml}
+      <div class="verdict-bottom-line">
+        <span class="bottom-label">THE BOTTOM LINE</span>
+        <p class="bottom-verdict">${verdictData.verdict || 'Analysis complete.'}</p>
       </div>
     `;
     thread.appendChild(card);
