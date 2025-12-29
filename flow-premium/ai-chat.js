@@ -894,8 +894,8 @@ Analyze the image(s) and follow the user's instructions precisely. Be specific, 
     const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
     updateBubble(thinkingId, responseText);
     
-    conversationHistory.push({ role: 'user', parts: [{ text: `[${btn.emoji} ${btn.name}] Analyze image with: ${btn.prompt}` }] });
-    conversationHistory.push({ role: 'model', parts: [{ text: responseText }] });
+    conversationHistory.push({ role: 'user', text: `[${btn.emoji} ${btn.name}] Analyze image with: ${btn.prompt}` });
+    conversationHistory.push({ role: 'model', text: responseText });
     
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     
