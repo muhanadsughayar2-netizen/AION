@@ -1,6 +1,43 @@
 // AI Chat Window Script
 // Handles AI chat in a standalone window
 
+// ============ IndexedDB for unlimited image storage ============
+const SNAPTOAI_DB_NAME = 'SnapToAI_ImageDB';
+const SNAPTOAI_STORE_NAME = 'images';
+
+function openSnapDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(SNAPTOAI_DB_NAME, 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(SNAPTOAI_STORE_NAME)) {
+        db.createObjectStore(SNAPTOAI_STORE_NAME);
+      }
+    };
+  });
+}
+
+async function loadImagesFromIndexedDB() {
+  try {
+    const db = await openSnapDB();
+    const tx = db.transaction(SNAPTOAI_STORE_NAME, 'readonly');
+    const store = tx.objectStore(SNAPTOAI_STORE_NAME);
+    const request = store.get('selectedSnaps');
+    const result = await new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    return result;
+  } catch (e) {
+    console.error('[SnapToAI] IndexedDB load failed:', e);
+    return [];
+  }
+}
+// ============ End IndexedDB ============
+
 // === PREMIUM MULTI-LANGUAGE TTS ===
 let synth = window.speechSynthesis;
 let voices = [];
@@ -124,20 +161,31 @@ const SMART_SYSTEM_PROMPT = "You are a thorough, exhaustive AI assistant. I am p
 
 const MULTI_IMAGE_PROMPT = "You are a thorough, exhaustive AI assistant. I am providing you with multiple screenshots that together show the full picture. Please analyze ALL images together to understand the complete context. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never truncate. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.";
 
-// Get images from URL params or storage
+// Get images from IndexedDB (unlimited storage) or fallback to session storage
 async function initializeChat() {
   const urlParams = new URLSearchParams(window.location.search);
   const count = urlParams.get('count');
   
-  // Get images and page text from session storage
-  const result = await chrome.storage.session.get(['selectedSnaps', 'selectedSnap', 'snaps', 'pageText']);
+  // Get metadata from session storage
+  const result = await chrome.storage.session.get(['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap']);
   currentPageText = result.pageText || '';
   
-  // Use new selectedSnaps array, fallback to legacy selectedSnap
-  let imagesToUse = result.selectedSnaps || [];
-  if (imagesToUse.length === 0 && result.selectedSnap) {
-    imagesToUse = [result.selectedSnap];
+  // Load images from IndexedDB (primary) or session storage (fallback)
+  let imagesToUse = [];
+  if (result.useIndexedDB) {
+    console.log('[SnapToAI] Loading images from IndexedDB (unlimited storage)');
+    imagesToUse = await loadImagesFromIndexedDB();
   }
+  
+  // Fallback to session storage for backwards compatibility
+  if (imagesToUse.length === 0) {
+    imagesToUse = result.selectedSnaps || [];
+    if (imagesToUse.length === 0 && result.selectedSnap) {
+      imagesToUse = [result.selectedSnap];
+    }
+  }
+  
+  console.log('[SnapToAI] Loaded', imagesToUse.length, 'images for AI chat');
   
   if (imagesToUse.length > 0) {
     currentImages = imagesToUse;

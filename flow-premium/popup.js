@@ -1,6 +1,72 @@
 // Flow Popup Script
 // Handles UI interactions, thumbnail display, and communication with background
 
+// ============ IndexedDB for unlimited image storage ============
+const SNAPTOAI_DB_NAME = 'SnapToAI_ImageDB';
+const SNAPTOAI_STORE_NAME = 'images';
+
+function openSnapDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(SNAPTOAI_DB_NAME, 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(SNAPTOAI_STORE_NAME)) {
+        db.createObjectStore(SNAPTOAI_STORE_NAME);
+      }
+    };
+  });
+}
+
+async function saveImagesToIndexedDB(images) {
+  try {
+    const db = await openSnapDB();
+    const tx = db.transaction(SNAPTOAI_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(SNAPTOAI_STORE_NAME);
+    store.put(images, 'selectedSnaps');
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+    return true;
+  } catch (e) {
+    console.error('[SnapToAI] IndexedDB save failed:', e);
+    return false;
+  }
+}
+
+async function loadImagesFromIndexedDB() {
+  try {
+    const db = await openSnapDB();
+    const tx = db.transaction(SNAPTOAI_STORE_NAME, 'readonly');
+    const store = tx.objectStore(SNAPTOAI_STORE_NAME);
+    const request = store.get('selectedSnaps');
+    const result = await new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    return result;
+  } catch (e) {
+    console.error('[SnapToAI] IndexedDB load failed:', e);
+    return [];
+  }
+}
+
+async function clearIndexedDBImages() {
+  try {
+    const db = await openSnapDB();
+    const tx = db.transaction(SNAPTOAI_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(SNAPTOAI_STORE_NAME);
+    store.delete('selectedSnaps');
+    await new Promise((resolve) => { tx.oncomplete = resolve; });
+    db.close();
+  } catch (e) {}
+}
+// ============ End IndexedDB ============
+
 let currentSnaps = [];
 let currentSnapMetadata = []; // Stores chunk metadata (Part 1/7, etc.)
 let selectedSnapIds = new Set();
@@ -3164,41 +3230,33 @@ async function openAiChat(imageDataUrls) {
     console.log('[SnapToAI] Could not get page text:', e.message);
   }
   
-  // Clear old session data first to prevent quota errors
-  try {
-    await chrome.storage.session.remove(['snaps', 'snapMetadata', 'pageText', 'selectedSnap', 'selectedSnapMeta', 'selectedSnaps']);
-  } catch (e) {}
-  
-  // Limit pageText to 10KB to prevent quota issues
+  // Limit pageText to 10KB
   const limitedPageText = pageText.length > 10000 ? pageText.substring(0, 10000) : pageText;
   
-  // Try to store ORIGINAL high-quality images first (no compression for AI)
-  // Only compress as fallback if storage quota exceeded
+  // Use IndexedDB for unlimited image storage (no quota errors!)
+  const saved = await saveImagesToIndexedDB(images);
+  if (!saved) {
+    console.error('[SnapToAI] Failed to save images to IndexedDB');
+    if (aiButton) {
+      aiButton.style.opacity = '1';
+      aiButton.style.pointerEvents = 'auto';
+    }
+    alert('Failed to prepare images for AI chat. Please try again.');
+    return;
+  }
+  
+  // Store only small metadata in session storage
   try {
     await chrome.storage.session.set({ 
-      selectedSnaps: images,
-      pageText: limitedPageText
+      pageText: limitedPageText,
+      imageCount: images.length,
+      useIndexedDB: true
     });
   } catch (e) {
-    console.warn('[SnapToAI] Storage quota exceeded, compressing images...', e);
-    // Fallback: compress images to fit in session storage
-    const compressedSnaps = await Promise.all(images.map(img => compressForStorage(img)));
-    try {
-      await chrome.storage.session.set({ 
-        selectedSnaps: compressedSnaps,
-        pageText: limitedPageText
-      });
-      console.log('[SnapToAI] Stored compressed images (storage fallback)');
-    } catch (e2) {
-      console.error('[SnapToAI] Cannot store images even compressed:', e2);
-      if (aiButton) {
-        aiButton.style.opacity = '1';
-        aiButton.style.pointerEvents = 'auto';
-      }
-      alert('Images too large for AI chat. Try fewer or smaller captures.');
-      return;
-    }
+    console.log('[SnapToAI] Session storage for metadata failed, continuing anyway');
   }
+  
+  console.log('[SnapToAI] Images saved to IndexedDB:', images.length, 'images (no size limit!)');
   
   // Restore AI button
   if (aiButton) {
