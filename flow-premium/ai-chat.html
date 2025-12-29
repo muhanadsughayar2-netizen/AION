@@ -97,14 +97,19 @@
     
     .image-preview {
       flex: 1;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
+      display: block;
       overflow-y: auto;
       border-radius: 12px;
       background: #0a0a0a;
       border: 1px solid rgba(255, 255, 255, 0.05);
       min-height: 0;
+      max-height: calc(100vh - 150px);
+    }
+    
+    .image-preview.single-image {
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     .image-preview img {

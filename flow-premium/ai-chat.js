@@ -944,24 +944,38 @@ Analyze the image deeply. Extract every useful detail. Output ONLY valid JSON:
     
     const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
-    // Try to parse JSON for magic card
+    // Robust JSON parsing with multiple fallback attempts
     let cardData = null;
     try {
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) cardData = JSON.parse(jsonMatch[0]);
-    } catch { cardData = null; }
+      // Clean response: remove markdown code blocks, trim whitespace
+      let cleanedText = responseText.trim()
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+      
+      // Extract JSON object
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cardData = JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      console.log('Magic JSON parse failed:', e.message);
+      cardData = null;
+    }
     
-    // Remove thinking bubble
-    thinkingBubble.remove();
-    
-    if (cardData && cardData.title) {
-      // Render beautiful MAGIC CARD
+    // Update thinking bubble with result (don't remove, reuse it)
+    if (cardData && cardData.title && cardData.sections) {
+      // Render beautiful MAGIC CARD (replace thinking bubble)
+      thinkingBubble.remove();
       renderMagicCard(cardData, btn);
     } else {
-      // Fallback to plain text
-      const fallbackBubble = addBubble(responseText, 'ai');
-      fallbackBubble.innerHTML = marked.parse(responseText);
-      addBubbleActions(fallbackBubble, responseText);
+      // Fallback: show as regular markdown (clean up AI hedging)
+      let cleanResponse = responseText
+        .replace(/As an AI[^.]*\./gi, '')
+        .replace(/I cannot (browse|search)[^.]*\./gi, '')
+        .trim() || 'Analysis complete. Ask me a follow-up question!';
+      thinkingBubble.innerHTML = marked.parse(cleanResponse);
+      addBubbleActions(thinkingBubble, cleanResponse);
     }
     
     document.getElementById('chatThread').scrollTop = document.getElementById('chatThread').scrollHeight;
