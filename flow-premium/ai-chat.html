@@ -499,6 +499,42 @@
     .verdict-btn.gold { background: linear-gradient(45deg, #ffd700, #ffaa00); box-shadow: 0 0 20px rgba(255,215,0,0.6); }
     .verdict-btn.red { background: linear-gradient(45deg, #ff4444, #cc0000); box-shadow: 0 0 20px rgba(255,0,0,0.6); }
     .verdict-btn.green { background: linear-gradient(45deg, #00ff88, #00cc66); box-shadow: 0 0 20px rgba(0,255,0,0.6); }
+    
+    /* Magic Buttons */
+    .magic-buttons { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0; min-height: 0; }
+    .magic-btn { background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(139,92,246,0.3)); border: 1px solid rgba(139,92,246,0.5); border-radius: 20px; padding: 6px 12px; color: white; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; }
+    .magic-btn:hover { background: linear-gradient(135deg, rgba(99,102,241,0.5), rgba(139,92,246,0.5)); transform: scale(1.05); }
+    .magic-btn:active { transform: scale(0.95); }
+    .magic-btn .delete-magic { opacity: 0; margin-left: 4px; font-size: 10px; }
+    .magic-btn:hover .delete-magic { opacity: 0.7; }
+    .magic-add-btn { background: linear-gradient(45deg, #8b5cf6, #ec4899); border: none; border-radius: 12px; padding: 8px 14px; color: white; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .magic-add-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(139,92,246,0.5); }
+    
+    /* Magic Modal */
+    .magic-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; }
+    .magic-modal.open { display: flex; }
+    .magic-modal-content { background: linear-gradient(135deg, #1e1e2e, #2d2d44); border-radius: 20px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .magic-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .magic-modal-header span { font-size: 16px; font-weight: 700; color: white; }
+    .magic-close { background: none; border: none; color: #888; font-size: 18px; cursor: pointer; }
+    .magic-modal-body { padding: 20px; }
+    .magic-field { margin-bottom: 16px; }
+    .magic-field label { display: block; font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; margin-bottom: 6px; }
+    .magic-field input, .magic-field textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px 12px; color: white; font-size: 13px; resize: none; box-sizing: border-box; }
+    .magic-field input:focus, .magic-field textarea:focus { outline: none; border-color: #8b5cf6; }
+    .char-count { display: block; text-align: right; font-size: 10px; color: #666; margin-top: 4px; }
+    .emoji-picker { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0; }
+    .emoji-option { font-size: 20px; cursor: pointer; padding: 6px; border-radius: 8px; transition: all 0.2s; }
+    .emoji-option:hover { background: rgba(255,255,255,0.1); }
+    .emoji-option.selected { background: rgba(139,92,246,0.3); box-shadow: 0 0 0 2px #8b5cf6; }
+    .magic-templates { margin-top: 12px; }
+    .template-label { display: block; font-size: 10px; color: #666; margin-bottom: 8px; }
+    .template-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 10px; color: #aaa; font-size: 10px; cursor: pointer; margin-right: 6px; margin-bottom: 6px; }
+    .template-btn:hover { background: rgba(139,92,246,0.2); border-color: #8b5cf6; color: white; }
+    .magic-modal-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .magic-save-btn { width: 100%; background: linear-gradient(45deg, #8b5cf6, #ec4899); border: none; border-radius: 12px; padding: 12px; color: white; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .magic-save-btn:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(139,92,246,0.5); }
   </style>
 </head>
 <body>
@@ -530,12 +566,63 @@
         <button class="send-btn" id="sendBtn">Send</button>
       </div>
       
+      <div class="magic-buttons" id="magicButtons"></div>
       <div class="footer-actions">
+        <button class="magic-add-btn" id="addMagicBtn">✨ Create Magic</button>
         <button class="verdict-btn" id="verdictBtn">⚖️ The Verdict</button>
         <button class="action-btn continue-btn" id="continueBtn">▶ Continue</button>
         <button class="action-btn" id="summarizeBtn">📋 Summarize</button>
         <button class="action-btn" id="clearBtn">🗑 Clear</button>
         <button class="action-btn" id="exportBtn">📄 Export PDF</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Magic Button Creator Modal -->
+  <div id="magicModal" class="magic-modal">
+    <div class="magic-modal-content">
+      <div class="magic-modal-header">
+        <span>✨ Create Your Magic Button</span>
+        <button class="magic-close" id="closeMagicModal">✕</button>
+      </div>
+      <div class="magic-modal-body">
+        <div class="magic-field">
+          <label>Button Name</label>
+          <input type="text" id="magicName" placeholder="e.g., Price Hunter" maxlength="20">
+        </div>
+        <div class="magic-field">
+          <label>Emoji Icon</label>
+          <div class="emoji-picker" id="emojiPicker">
+            <span class="emoji-option" data-emoji="🛒">🛒</span>
+            <span class="emoji-option" data-emoji="📈">📈</span>
+            <span class="emoji-option" data-emoji="💊">💊</span>
+            <span class="emoji-option" data-emoji="🍔">🍔</span>
+            <span class="emoji-option" data-emoji="🏠">🏠</span>
+            <span class="emoji-option" data-emoji="✈️">✈️</span>
+            <span class="emoji-option" data-emoji="💡">💡</span>
+            <span class="emoji-option" data-emoji="🎯">🎯</span>
+            <span class="emoji-option" data-emoji="⚡">⚡</span>
+            <span class="emoji-option" data-emoji="🔍">🔍</span>
+            <span class="emoji-option" data-emoji="💰">💰</span>
+            <span class="emoji-option" data-emoji="📊">📊</span>
+          </div>
+          <input type="hidden" id="selectedEmoji" value="🎯">
+        </div>
+        <div class="magic-field">
+          <label>What should this button do? (Teach the AI)</label>
+          <textarea id="magicPrompt" placeholder="Example: Compare this product's price across Amazon, Walmart, and eBay. Show me the best deal and any hidden costs." rows="4" maxlength="300"></textarea>
+          <span class="char-count"><span id="promptCount">0</span>/300</span>
+        </div>
+        <div class="magic-templates">
+          <span class="template-label">Quick Templates:</span>
+          <button class="template-btn" data-template="Compare prices across all major stores. Find the cheapest option and show savings.">💰 Price Compare</button>
+          <button class="template-btn" data-template="Analyze this for health risks, side effects, and safer alternatives.">💊 Health Check</button>
+          <button class="template-btn" data-template="Rate this restaurant/food. Check reviews, hygiene scores, and recommend best dishes.">🍔 Food Critic</button>
+          <button class="template-btn" data-template="Analyze this stock/crypto. Give me entry point, risks, and 30-day prediction.">📈 Trade Advisor</button>
+        </div>
+      </div>
+      <div class="magic-modal-footer">
+        <button class="magic-save-btn" id="saveMagicBtn">✨ Create Button</button>
       </div>
     </div>
   </div>

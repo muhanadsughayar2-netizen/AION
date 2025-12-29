@@ -788,3 +788,163 @@ Output ONLY JSON:
     verdictBtn.textContent = '⚖️ The Verdict';
   }
 });
+
+// ============ MAGIC BUTTONS SYSTEM ============
+let magicButtons = [];
+
+async function loadMagicButtons() {
+  const result = await chrome.storage.local.get(['magicButtons']);
+  magicButtons = result.magicButtons || [];
+  renderMagicButtons();
+}
+
+function renderMagicButtons() {
+  const container = document.getElementById('magicButtons');
+  if (!container) return;
+  
+  container.innerHTML = magicButtons.map((btn, i) => `
+    <button class="magic-btn" data-index="${i}" title="${btn.prompt}">
+      ${btn.emoji} ${btn.name}
+      <span class="delete-magic" data-delete="${i}">✕</span>
+    </button>
+  `).join('');
+  
+  container.querySelectorAll('.magic-btn').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.classList.contains('delete-magic')) {
+        e.stopPropagation();
+        deleteMagicButton(parseInt(e.target.dataset.delete));
+      } else {
+        executeMagicButton(parseInt(el.dataset.index));
+      }
+    });
+  });
+}
+
+async function saveMagicButtons() {
+  await chrome.storage.local.set({ magicButtons });
+  renderMagicButtons();
+}
+
+function deleteMagicButton(index) {
+  if (confirm('Delete this magic button?')) {
+    magicButtons.splice(index, 1);
+    saveMagicButtons();
+  }
+}
+
+async function executeMagicButton(index) {
+  const btn = magicButtons[index];
+  if (!btn) return;
+  
+  if (!currentImages.length) {
+    addBubble('Please capture a screenshot first!', 'ai');
+    return;
+  }
+  
+  const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!apiResult.geminiApiKey) {
+    addBubble('Please add your Gemini API key first.', 'ai');
+    return;
+  }
+  
+  addBubble(`${btn.emoji} Using: ${btn.name}`, 'user');
+  const thinkingId = addBubble('✨ Magic in progress...', 'ai');
+  if (navigator.vibrate) navigator.vibrate(100);
+  
+  try {
+    const imageData = currentImages[0].replace(/^data:image\/\w+;base64,/, '');
+    const chatContext = getChatContext();
+    
+    const magicPrompt = `You are a helpful AI assistant. The user has created a custom "Magic Button" with these instructions:
+
+"${btn.prompt}"
+
+${chatContext ? `Recent chat context: ${chatContext.substring(0, 200)}\n` : ''}
+Analyze the image and follow the user's instructions precisely. Be specific, helpful, and actionable. Format your response clearly.`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiResult.geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [
+            { text: magicPrompt },
+            { inlineData: { mimeType: 'image/png', data: imageData } }
+          ]}],
+          generationConfig: { maxOutputTokens: 500, temperature: 0.7 }
+        })
+      }
+    );
+    
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+    
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+    updateBubble(thinkingId, responseText);
+    
+    chatHistory.push({ role: 'user', text: `[${btn.emoji} ${btn.name}] Analyze image with: ${btn.prompt}` });
+    chatHistory.push({ role: 'model', text: responseText });
+    
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+    
+  } catch (error) {
+    updateBubble(thinkingId, 'Magic failed: ' + error.message);
+  }
+}
+
+// Modal Controls
+document.getElementById('addMagicBtn')?.addEventListener('click', () => {
+  document.getElementById('magicModal').classList.add('open');
+  document.getElementById('magicName').value = '';
+  document.getElementById('magicPrompt').value = '';
+  document.getElementById('promptCount').textContent = '0';
+  document.querySelectorAll('.emoji-option').forEach(e => e.classList.remove('selected'));
+  document.querySelector('.emoji-option')?.classList.add('selected');
+  document.getElementById('selectedEmoji').value = '🎯';
+});
+
+document.getElementById('closeMagicModal')?.addEventListener('click', () => {
+  document.getElementById('magicModal').classList.remove('open');
+});
+
+document.getElementById('emojiPicker')?.addEventListener('click', (e) => {
+  if (e.target.classList.contains('emoji-option')) {
+    document.querySelectorAll('.emoji-option').forEach(el => el.classList.remove('selected'));
+    e.target.classList.add('selected');
+    document.getElementById('selectedEmoji').value = e.target.dataset.emoji;
+  }
+});
+
+document.getElementById('magicPrompt')?.addEventListener('input', (e) => {
+  document.getElementById('promptCount').textContent = e.target.value.length;
+});
+
+document.querySelectorAll('.template-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const template = btn.dataset.template;
+    document.getElementById('magicPrompt').value = template;
+    document.getElementById('promptCount').textContent = template.length;
+  });
+});
+
+document.getElementById('saveMagicBtn')?.addEventListener('click', async () => {
+  const name = document.getElementById('magicName').value.trim();
+  const emoji = document.getElementById('selectedEmoji').value;
+  const prompt = document.getElementById('magicPrompt').value.trim();
+  
+  if (!name) { alert('Please enter a button name'); return; }
+  if (!prompt) { alert('Please enter instructions for the AI'); return; }
+  if (magicButtons.length >= 8) { alert('Maximum 8 magic buttons allowed'); return; }
+  
+  magicButtons.push({ name, emoji, prompt });
+  await saveMagicButtons();
+  document.getElementById('magicModal').classList.remove('open');
+  
+  if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+  addBubble(`✨ Magic button "${emoji} ${name}" created! Click it anytime to use.`, 'ai');
+});
+
+// Load magic buttons on start
+loadMagicButtons();
