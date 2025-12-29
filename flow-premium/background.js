@@ -42,9 +42,9 @@ async function getSettings() {
 let isFullPageCaptureInProgress = false;
 let fullPageCapturePort = null; // Port to detect popup disconnect
 
-// Chunk buffer for large captures (70+ images sent in chunks of 15)
-let chunkBuffer = [];
-let chunkMetadata = null;
+// Batch buffer for large captures (images sent in batches of 30)
+let batchBuffer = [];
+let batchMetadata = null;
 
 // Listen for keyboard command (Ctrl+Shift+S)
 chrome.commands.onCommand.addListener((command) => {
@@ -94,40 +94,40 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Capture a single step during full page capture
     captureFullPageStep(request.tabId).then(sendResponse);
     return true;
-  } else if (request.action === 'fullPageCaptureChunk') {
-    // Receive chunk of large capture (70+ images split into chunks of 15)
-    console.log(`[SnapToAI] Received chunk ${request.chunkIndex + 1}/${request.totalChunks}`);
+  } else if (request.action === 'fullPageCaptureBatch') {
+    // Receive batch of large capture (images in batches of 30)
+    console.log(`[SnapToAI] Received batch ${request.batchIndex + 1}/${request.totalBatches}`);
     
-    // Initialize buffer on first chunk
-    if (request.chunkIndex === 0) {
-      chunkBuffer = [];
-      chunkMetadata = {
+    // Initialize buffer on first batch
+    if (request.batchIndex === 0) {
+      batchBuffer = [];
+      batchMetadata = {
         viewportWidth: request.viewportWidth,
         viewportHeight: request.viewportHeight,
         isAIPlatform: request.isAIPlatform,
         pageUrl: request.pageUrl,
         pageTitle: request.pageTitle,
-        totalChunks: request.totalChunks
+        totalBatches: request.totalBatches
       };
     }
     
-    // Add screenshots from this chunk
-    chunkBuffer.push(...request.screenshots);
+    // Add screenshots from this batch
+    batchBuffer.push(...request.screenshots);
     
-    // If all chunks received, finalize
-    if (request.chunkIndex === request.totalChunks - 1) {
-      console.log(`[SnapToAI] All ${request.totalChunks} chunks received (${chunkBuffer.length} total images)`);
+    // If all batches received, finalize
+    if (request.batchIndex === request.totalBatches - 1) {
+      console.log(`[SnapToAI] All ${request.totalBatches} batches received (${batchBuffer.length} total images)`);
       finalizeFullPageCapture(
-        chunkBuffer,
-        chunkMetadata.viewportWidth,
-        chunkMetadata.viewportHeight,
-        chunkMetadata.isAIPlatform,
-        chunkMetadata.pageUrl,
-        chunkMetadata.pageTitle
+        batchBuffer,
+        batchMetadata.viewportWidth,
+        batchMetadata.viewportHeight,
+        batchMetadata.isAIPlatform,
+        batchMetadata.pageUrl,
+        batchMetadata.pageTitle
       ).then(sendResponse);
       // Clear buffer
-      chunkBuffer = [];
-      chunkMetadata = null;
+      batchBuffer = [];
+      batchMetadata = null;
     } else {
       sendResponse({ success: true, waiting: true });
     }

@@ -3375,8 +3375,8 @@
       console.log(`[SnapToAI] Sending ${screenshots.length} screenshots for stitching`);
       
       let allScreenshots = screenshots.map(s => s.dataUrl);
-      const CHUNK_SIZE = 20; // Send 20 images per message (safe under 64MB)
-      const MAX_SCREENSHOTS = 90; // Max 90 images (3 batches of 30 for AI)
+      const BATCH_SIZE = 30; // Always 30 images (consistent everywhere)
+      const MAX_SCREENSHOTS = 90; // Max 90 images (3 batches of 30)
       
       // Limit to 90 images max
       if (allScreenshots.length > MAX_SCREENSHOTS) {
@@ -3384,22 +3384,22 @@
         allScreenshots = allScreenshots.slice(0, MAX_SCREENSHOTS);
       }
       
-      if (allScreenshots.length > CHUNK_SIZE) {
-        // Large capture: send in chunks
-        console.log(`[SnapToAI] Large capture - sending in chunks of ${CHUNK_SIZE}`);
+      if (allScreenshots.length > BATCH_SIZE) {
+        // Large capture: send in batches of 30
+        console.log(`[SnapToAI] Large capture - sending in batches of ${BATCH_SIZE}`);
         
-        const totalChunks = Math.ceil(allScreenshots.length / CHUNK_SIZE);
+        const totalBatches = Math.ceil(allScreenshots.length / BATCH_SIZE);
         
-        for (let i = 0; i < totalChunks; i++) {
-          const start = i * CHUNK_SIZE;
-          const end = Math.min(start + CHUNK_SIZE, allScreenshots.length);
-          const chunk = allScreenshots.slice(start, end);
+        for (let i = 0; i < totalBatches; i++) {
+          const start = i * BATCH_SIZE;
+          const end = Math.min(start + BATCH_SIZE, allScreenshots.length);
+          const batch = allScreenshots.slice(start, end);
           
           chrome.runtime.sendMessage({
-            action: 'fullPageCaptureChunk',
-            chunkIndex: i,
-            totalChunks: totalChunks,
-            screenshots: chunk,
+            action: 'fullPageCaptureBatch',
+            batchIndex: i,
+            totalBatches: totalBatches,
+            screenshots: batch,
             viewportWidth,
             viewportHeight,
             isAIPlatform: isAIPlatform,
@@ -3407,8 +3407,8 @@
             pageTitle: document.title || 'Untitled Page'
           });
           
-          // Small delay between chunks to avoid overwhelming
-          if (i < totalChunks - 1) {
+          // Small delay between batches
+          if (i < totalBatches - 1) {
             await new Promise(r => setTimeout(r, 100));
           }
         }
