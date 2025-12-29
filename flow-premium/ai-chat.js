@@ -856,7 +856,7 @@ async function executeMagicButton(index) {
   }
   
   addBubble(`${btn.emoji} Using: ${btn.name}`, 'user');
-  const thinkingId = addBubble('✨ Magic in progress...', 'ai');
+  const thinkingBubble = addBubble('✨ Magic in progress...', 'ai');
   if (navigator.vibrate) navigator.vibrate(100);
   
   try {
@@ -892,7 +892,11 @@ Analyze the image(s) and follow the user's instructions precisely. Be specific, 
     if (data.error) throw new Error(data.error.message);
     
     const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
-    updateBubble(thinkingId, responseText);
+    
+    // Update the thinking bubble with the actual response
+    thinkingBubble.innerHTML = marked.parse(responseText);
+    addBubbleActions(thinkingBubble, responseText);
+    document.getElementById('chatThread').scrollTop = document.getElementById('chatThread').scrollHeight;
     
     conversationHistory.push({ role: 'user', text: `[${btn.emoji} ${btn.name}] Analyze image with: ${btn.prompt}` });
     conversationHistory.push({ role: 'model', text: responseText });
@@ -900,7 +904,7 @@ Analyze the image(s) and follow the user's instructions precisely. Be specific, 
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     
   } catch (error) {
-    updateBubble(thinkingId, 'Magic failed: ' + error.message);
+    thinkingBubble.textContent = 'Magic failed: ' + error.message;
   }
 }
 
