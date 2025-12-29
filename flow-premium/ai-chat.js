@@ -853,7 +853,6 @@ async function executeMagicButton(index) {
   if (navigator.vibrate) navigator.vibrate(100);
   
   try {
-    const imageData = currentImages[0].replace(/^data:image\/\w+;base64,/, '');
     const chatContext = getChatContext();
     
     const magicPrompt = `You are a helpful AI assistant. The user has created a custom "Magic Button" with these instructions:
@@ -861,7 +860,14 @@ async function executeMagicButton(index) {
 "${btn.prompt}"
 
 ${chatContext ? `Recent chat context: ${chatContext.substring(0, 200)}\n` : ''}
-Analyze the image and follow the user's instructions precisely. Be specific, helpful, and actionable. Format your response clearly.`;
+Analyze the image(s) and follow the user's instructions precisely. Be specific, helpful, and actionable. Format your response clearly.`;
+
+    // Build parts with ALL images (like main chat does)
+    const parts = [{ text: magicPrompt }];
+    currentImages.forEach(img => {
+      const imageData = img.replace(/^data:image\/\w+;base64,/, '');
+      parts.push({ inlineData: { mimeType: 'image/png', data: imageData } });
+    });
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiResult.geminiApiKey}`,
@@ -869,10 +875,7 @@ Analyze the image and follow the user's instructions precisely. Be specific, hel
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ role: 'user', parts: [
-            { text: magicPrompt },
-            { inlineData: { mimeType: 'image/png', data: imageData } }
-          ]}],
+          contents: [{ role: 'user', parts }],
           generationConfig: { maxOutputTokens: 500, temperature: 0.7 }
         })
       }
