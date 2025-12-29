@@ -675,7 +675,7 @@ function getChatContext() {
 
 document.getElementById('verdictBtn')?.addEventListener('click', async () => {
   const verdictBtn = document.getElementById('verdictBtn');
-  const drawer = document.getElementById('verdictDrawer');
+  const thread = document.getElementById('chatThread');
   
   if (!currentImages.length) {
     addBubble('Please capture a screenshot first!', 'ai');
@@ -691,7 +691,6 @@ document.getElementById('verdictBtn')?.addEventListener('click', async () => {
   verdictBtn.disabled = true;
   verdictBtn.textContent = '⏳ Thinking...';
   verdictBtn.classList.remove('gold', 'red', 'green');
-  verdictBtn.style.opacity = '0.6';
   if (navigator.vibrate) navigator.vibrate(100);
   
   try {
@@ -704,7 +703,7 @@ ${chatContext ? `Context: ${chatContext.substring(0, 200)}\n` : ''}
 Analyze image. Auto-detect type (product/stock/menu/service). Be SPECIFIC to items seen.
 
 Output ONLY JSON:
-{"verdict":"BUY","header":"⚖️ THE VERDICT: BUY","insiderSecret":"One specific detail from image","priceCrush":"Short comparison vs market","qualityAudit":"Value assessment","confidenceScore":"90%","action":"ADD TO CART","glowColor":"gold"}
+{"verdict":"BUY","header":"THE VERDICT: BUY","insiderSecret":"One specific detail","priceCrush":"Market comparison","qualityAudit":"Value assessment","confidenceScore":"90%","action":"ADD TO CART","glowColor":"gold"}
 (glowColor: gold=buy, red=avoid, green=hold)`;
 
     const response = await fetch(
@@ -737,56 +736,41 @@ Output ONLY JSON:
     
     if (!verdictData) {
       verdictData = {
-        verdict: "ANALYZED", header: "⚖️ THE VERDICT",
+        verdict: "ANALYZED", header: "THE VERDICT",
         insiderSecret: responseText.substring(0, 100) || "Analysis complete",
         priceCrush: "See details", qualityAudit: "Reviewed",
-        confidenceScore: "N/A", action: "REVIEW", glowColor: "green"
+        confidenceScore: "N/A", action: "NOTED", glowColor: "green"
       };
     }
     
     // Apply glow to button
     verdictBtn.classList.add(verdictData.glowColor || 'green');
-    verdictBtn.style.opacity = '1';
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     
-    // Render drawer content
-    drawer.innerHTML = `
-      <div class="drawer-handle" id="closeDrawerHandle"></div>
-      <div class="verdict-header">${verdictData.header || '⚖️ THE VERDICT'}</div>
-      
-      <div class="verdict-section gold">
-        <strong>🔮 Insider Secret</strong>
-        ${verdictData.insiderSecret || 'N/A'}
+    // Add verdict card INLINE in chat thread
+    const card = document.createElement('div');
+    card.className = 'verdict-card-inline';
+    card.innerHTML = `
+      <div class="verdict-header">⚖️ ${verdictData.header || 'THE VERDICT'}</div>
+      <div class="verdict-row">
+        <span class="verdict-label">🔮 Insider Secret</span>
+        <span class="verdict-value gold">${verdictData.insiderSecret || 'N/A'}</span>
       </div>
-      
-      <div class="verdict-section cyan">
-        <strong>💰 Price Analysis</strong>
-        ${verdictData.priceCrush || 'N/A'}
+      <div class="verdict-row">
+        <span class="verdict-label">💰 Price Check</span>
+        <span class="verdict-value">${verdictData.priceCrush || 'N/A'}</span>
       </div>
-      
-      <div class="verdict-section">
-        <strong>✅ Quality Audit</strong>
-        ${verdictData.qualityAudit || 'N/A'}
+      <div class="verdict-row">
+        <span class="verdict-label">✅ Quality</span>
+        <span class="verdict-value">${verdictData.qualityAudit || 'N/A'}</span>
       </div>
-      
       <div class="verdict-footer">
-        <div>
-          <span class="verdict-confidence-label">CONFIDENCE</span>
-          <span class="verdict-confidence">${verdictData.confidenceScore || '??%'}</span>
-        </div>
-        <button class="verdict-action-btn" onclick="this.textContent='✓ Done!'; this.style.opacity='0.6';">
-          ${verdictData.action || 'DECIDED!'} ➡️
-        </button>
+        <span class="confidence-badge">${verdictData.confidenceScore || '??%'}</span>
+        <span class="action-badge">${verdictData.action || 'DECIDED'}</span>
       </div>
     `;
-    
-    // Slide drawer up
-    setTimeout(() => drawer.classList.add('open'), 10);
-    
-    // Close on handle click
-    document.getElementById('closeDrawerHandle').onclick = () => {
-      drawer.classList.remove('open');
-    };
+    thread.appendChild(card);
+    card.scrollIntoView({ behavior: 'smooth' });
     
   } catch (error) {
     addBubble('Verdict failed: ' + error.message, 'ai');
@@ -794,6 +778,5 @@ Output ONLY JSON:
   } finally {
     verdictBtn.disabled = false;
     verdictBtn.textContent = '⚖️ The Verdict';
-    verdictBtn.style.opacity = '1';
   }
 });

@@ -464,41 +464,27 @@
     @keyframes shake-warn { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-2px); } 40%, 80% { transform: translateX(2px); } }
     @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(0, 255, 136, 0); } }
     
-    /* Verdict Drawer - Bottom Sheet Style (No Squeezing!) */
-    .verdict-drawer {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 65%;
-      background: #121212;
-      border-top: 2px solid #00dbde;
-      border-radius: 20px 20px 0 0;
-      z-index: 10001;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 -10px 40px rgba(0,0,0,0.9);
-      transform: translateY(100%);
-      transition: transform 0.4s cubic-bezier(0.33, 1, 0.68, 1);
+    /* Verdict Card - Inline in Chat */
+    .verdict-card-inline {
+      background: linear-gradient(135deg, rgba(20,20,40,0.95), rgba(30,30,60,0.95));
+      border-left: 4px solid #00dbde;
+      border-radius: 16px;
+      padding: 16px;
+      margin: 12px 0;
       color: white;
-      padding: 0 20px 20px 20px;
-      overflow-y: auto;
+      animation: fadeIn 0.3s ease;
     }
-    .verdict-drawer.open { transform: translateY(0); }
-    .drawer-handle { width: 40px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin: 12px auto; cursor: pointer; }
-    .drawer-handle:hover { background: rgba(255,255,255,0.5); }
-    .verdict-header { font-size: 18px; font-weight: 800; text-align: center; margin-bottom: 15px; color: #00dbde; }
-    .verdict-icon { font-size: 32px; text-align: center; margin: 8px 0; }
-    .verdict-section { margin: 10px 0; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; font-size: 13px; line-height: 1.4; }
-    .verdict-section.gold { background: rgba(255,215,0,0.1); border-left: 4px solid #ffd700; }
-    .verdict-section.cyan { border-left: 4px solid #00dbde; }
-    .verdict-section strong { color: #ffd700; display: block; font-size: 10px; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px; }
-    .verdict-section.cyan strong { color: #00dbde; }
-    .verdict-footer { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
-    .verdict-confidence { font-size: 20px; font-weight: 800; color: #00ff88; }
-    .verdict-confidence-label { font-size: 9px; color: #888; display: block; }
-    .verdict-action-btn { background: linear-gradient(45deg, #00dbde, #fc00ff); border: none; padding: 10px 20px; border-radius: 12px; color: white; font-weight: 700; cursor: pointer; font-size: 13px; }
-    .verdict-action-btn:hover { transform: scale(1.05); }
+    .verdict-card-inline .verdict-header { font-size: 15px; font-weight: 800; color: #00dbde; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .verdict-card-inline .verdict-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 13px; }
+    .verdict-card-inline .verdict-row:last-of-type { border-bottom: none; }
+    .verdict-card-inline .verdict-label { color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .verdict-card-inline .verdict-value { color: #fff; font-weight: 600; text-align: right; max-width: 60%; }
+    .verdict-card-inline .verdict-value.gold { color: #ffd700; }
+    .verdict-card-inline .verdict-value.green { color: #00ff88; }
+    .verdict-card-inline .verdict-value.red { color: #ff5555; }
+    .verdict-card-inline .verdict-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .verdict-card-inline .confidence-badge { background: rgba(0,255,136,0.2); color: #00ff88; padding: 6px 12px; border-radius: 20px; font-weight: 800; font-size: 14px; }
+    .verdict-card-inline .action-badge { background: linear-gradient(45deg, #00dbde, #fc00ff); color: white; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 12px; }
     
     /* Button glow states */
     .verdict-btn.gold { background: linear-gradient(45deg, #ffd700, #ffaa00); box-shadow: 0 0 20px rgba(255,215,0,0.6); }
@@ -542,7 +528,6 @@
         <button class="action-btn" id="clearBtn">🗑 Clear</button>
         <button class="action-btn" id="exportBtn">📄 Export PDF</button>
       </div>
-      <div id="verdictDrawer" class="verdict-drawer"></div>
     </div>
   </div>
   
