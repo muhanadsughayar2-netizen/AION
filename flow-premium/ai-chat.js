@@ -382,7 +382,7 @@ async function handleSend() {
     }
     
     const userParts = [];
-    const MAX_IMAGES_PER_REQUEST = 20; // Safe limit for Gemini
+    const MAX_IMAGES_PER_REQUEST = 30; // Safe limit for Gemini (90 images = 3 batches)
     
     if (contents.length === 0) {
       // First message: handle images with batching for large captures

@@ -3374,8 +3374,15 @@
       // Chrome has 64MB message limit - chunk if needed
       console.log(`[SnapToAI] Sending ${screenshots.length} screenshots for stitching`);
       
-      const allScreenshots = screenshots.map(s => s.dataUrl);
-      const CHUNK_SIZE = 15; // Send 15 images per message (safe under 64MB)
+      let allScreenshots = screenshots.map(s => s.dataUrl);
+      const CHUNK_SIZE = 20; // Send 20 images per message (safe under 64MB)
+      const MAX_SCREENSHOTS = 90; // Max 90 images (3 batches of 30 for AI)
+      
+      // Limit to 90 images max
+      if (allScreenshots.length > MAX_SCREENSHOTS) {
+        console.log(`[SnapToAI] Limiting from ${allScreenshots.length} to ${MAX_SCREENSHOTS} images`);
+        allScreenshots = allScreenshots.slice(0, MAX_SCREENSHOTS);
+      }
       
       if (allScreenshots.length > CHUNK_SIZE) {
         // Large capture: send in chunks
