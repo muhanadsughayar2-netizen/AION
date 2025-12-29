@@ -792,8 +792,17 @@ Output ONLY JSON:
 // ============ MAGIC BUTTONS SYSTEM ============
 let magicButtons = [];
 
+// Split images into batches of max size
+function chunkImages(images, maxSize = 30) {
+  const batches = [];
+  for (let i = 0; i < images.length; i += maxSize) {
+    batches.push(images.slice(i, i + maxSize));
+  }
+  return batches;
+}
+
 // Render beautiful Magic Card
-function renderMagicCard(data, btn) {
+function renderMagicCard(data, btn, batchLabel = '') {
   const thread = document.getElementById('chatThread');
   const toneColors = { gold: '#fbbf24', green: '#34d399', red: '#f87171' };
   const toneColor = toneColors[data.tone] || toneColors.green;
@@ -813,7 +822,7 @@ function renderMagicCard(data, btn) {
   card.innerHTML = `
     <div class="magic-card-header">
       <span class="magic-emoji">${btn.emoji}</span>
-      <span class="magic-title">${data.title || 'Analysis Complete'}</span>
+      <span class="magic-title">${data.title || 'Analysis Complete'}${batchLabel ? ` <span style="opacity:0.6;font-size:12px">${batchLabel}</span>` : ''}</span>
     </div>
     <div class="magic-score-row">
       <div class="magic-score" style="color: ${toneColor}">${data.score || '??'}<span>/100</span></div>
@@ -895,15 +904,26 @@ async function executeMagicButton(index) {
     return;
   }
   
-  addBubble(`${btn.emoji} Using: ${btn.name}`, 'user');
-  const thinkingBubble = addBubble('✨ Magic in progress...', 'ai');
+  // Split images into batches of 30 max
+  const MAX_BATCH_SIZE = 30;
+  const batches = chunkImages(currentImages, MAX_BATCH_SIZE);
+  const totalBatches = batches.length;
+  
+  addBubble(`${btn.emoji} Using: ${btn.name}${totalBatches > 1 ? ` (${currentImages.length} images → ${totalBatches} batches)` : ''}`, 'user');
+  
   if (navigator.vibrate) navigator.vibrate(100);
   
-  try {
-    const chatContext = getChatContext();
+  // Process each batch
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+    const batch = batches[batchIndex];
+    const batchLabel = totalBatches > 1 ? `(Batch ${batchIndex + 1}/${totalBatches})` : '';
+    const thinkingBubble = addBubble(`✨ Analyzing${batchLabel}... ${batch.length} images`, 'ai');
     
-    // Structured prompt - CONFIDENT, NO EXCUSES, IMAGE-FOCUSED
-    const magicPrompt = `ROLE: Expert analyst who gives DECISIVE, HELPFUL advice.
+    try {
+      const chatContext = getChatContext();
+      
+      // Structured prompt - CONFIDENT, NO EXCUSES, IMAGE-FOCUSED
+      const magicPrompt = `ROLE: Expert analyst who gives DECISIVE, HELPFUL advice.
 
 CRITICAL RULES:
 - You have NO internet access. NEVER say "I can't search" or "I cannot browse"
@@ -912,81 +932,81 @@ CRITICAL RULES:
 - Give ACTIONABLE advice. No hedging, no excuses, no disclaimers
 - If you see prices, calculate savings. If you see ratings, interpret them
 - Pretend you're a helpful friend who knows everything about this topic
+${totalBatches > 1 ? `\nNOTE: This is batch ${batchIndex + 1} of ${totalBatches}. Focus on THIS batch of images.` : ''}
 
 USER'S REQUEST: "${btn.prompt}"
 ${chatContext ? `CONTEXT: ${chatContext.substring(0, 150)}\n` : ''}
 
-Analyze the image deeply. Extract every useful detail. Output ONLY valid JSON:
-{"title":"Catchy 3-5 word title","tone":"gold|green|red","score":75,"highlight":"The #1 insight from the image","sections":[{"label":"What I Found","items":["Specific detail 1","Specific detail 2","Specific detail 3"]},{"label":"My Analysis","items":["Insight based on image","Value assessment"]},{"label":"Action Steps","items":["Do this first","Then do this"]}],"verdict":"Confident one-sentence recommendation","nextStep":"Specific next action"}
+Analyze the image(s) deeply. Extract every useful detail. Output ONLY valid JSON:
+{"title":"Catchy 3-5 word title","tone":"gold|green|red","score":75,"highlight":"The #1 insight from these images","sections":[{"label":"What I Found","items":["Specific detail 1","Specific detail 2","Specific detail 3"]},{"label":"My Analysis","items":["Insight based on image","Value assessment"]},{"label":"Action Steps","items":["Do this first","Then do this"]}],"verdict":"Confident one-sentence recommendation","nextStep":"Specific next action"}
 (tone: gold=recommended, green=okay, red=avoid)`;
 
-    // Build parts with ALL images
-    const parts = [{ text: magicPrompt }];
-    currentImages.forEach(img => {
-      const imageData = img.replace(/^data:image\/\w+;base64,/, '');
-      parts.push({ inlineData: { mimeType: 'image/png', data: imageData } });
-    });
+      // Build parts with THIS BATCH of images only
+      const parts = [{ text: magicPrompt }];
+      batch.forEach(img => {
+        const imageData = img.replace(/^data:image\/\w+;base64,/, '');
+        parts.push({ inlineData: { mimeType: 'image/png', data: imageData } });
+      });
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiResult.geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts }],
-          generationConfig: { maxOutputTokens: 450, temperature: 0.7 }
-        })
-      }
-    );
-    
-    const data = await response.json();
-    if (data.error) throw new Error(data.error.message);
-    
-    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    // Robust JSON parsing with multiple fallback attempts
-    let cardData = null;
-    try {
-      // Clean response: remove markdown code blocks, trim whitespace
-      let cleanedText = responseText.trim()
-        .replace(/```json\s*/gi, '')
-        .replace(/```\s*/g, '')
-        .trim();
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiResult.geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts }],
+            generationConfig: { maxOutputTokens: 450, temperature: 0.7 }
+          })
+        }
+      );
       
-      // Extract JSON object
-      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        cardData = JSON.parse(jsonMatch[0]);
+      const data = await response.json();
+      if (data.error) throw new Error(data.error.message);
+      
+      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      
+      // Robust JSON parsing
+      let cardData = null;
+      try {
+        let cleanedText = responseText.trim()
+          .replace(/```json\s*/gi, '')
+          .replace(/```\s*/g, '')
+          .trim();
+        const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) cardData = JSON.parse(jsonMatch[0]);
+      } catch (e) {
+        console.log('Magic JSON parse failed:', e.message);
+        cardData = null;
       }
-    } catch (e) {
-      console.log('Magic JSON parse failed:', e.message);
-      cardData = null;
+      
+      // Render result
+      if (cardData && cardData.title && cardData.sections) {
+        thinkingBubble.remove();
+        renderMagicCard(cardData, btn, batchLabel);
+      } else {
+        let cleanResponse = responseText
+          .replace(/As an AI[^.]*\./gi, '')
+          .replace(/I cannot (browse|search)[^.]*\./gi, '')
+          .trim() || 'Analysis complete.';
+        thinkingBubble.innerHTML = `<strong>${batchLabel}</strong><br>` + marked.parse(cleanResponse);
+        addBubbleActions(thinkingBubble, cleanResponse);
+      }
+      
+      document.getElementById('chatThread').scrollTop = document.getElementById('chatThread').scrollHeight;
+      conversationHistory.push({ role: 'user', text: `[${btn.emoji} ${btn.name}] ${batchLabel} ${btn.prompt}` });
+      conversationHistory.push({ role: 'model', text: responseText });
+      
+      // Small delay between batches to respect rate limits
+      if (batchIndex < batches.length - 1) {
+        await new Promise(r => setTimeout(r, 1500));
+      }
+      
+    } catch (error) {
+      thinkingBubble.textContent = `✨ Magic failed ${batchLabel}: ` + error.message;
     }
-    
-    // Update thinking bubble with result (don't remove, reuse it)
-    if (cardData && cardData.title && cardData.sections) {
-      // Render beautiful MAGIC CARD (replace thinking bubble)
-      thinkingBubble.remove();
-      renderMagicCard(cardData, btn);
-    } else {
-      // Fallback: show as regular markdown (clean up AI hedging)
-      let cleanResponse = responseText
-        .replace(/As an AI[^.]*\./gi, '')
-        .replace(/I cannot (browse|search)[^.]*\./gi, '')
-        .trim() || 'Analysis complete. Ask me a follow-up question!';
-      thinkingBubble.innerHTML = marked.parse(cleanResponse);
-      addBubbleActions(thinkingBubble, cleanResponse);
-    }
-    
-    document.getElementById('chatThread').scrollTop = document.getElementById('chatThread').scrollHeight;
-    conversationHistory.push({ role: 'user', text: `[${btn.emoji} ${btn.name}] ${btn.prompt}` });
-    conversationHistory.push({ role: 'model', text: responseText });
-    
-    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-    
-  } catch (error) {
-    thinkingBubble.textContent = '✨ Magic failed: ' + error.message;
   }
+  
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 }
 
 // Modal Controls
