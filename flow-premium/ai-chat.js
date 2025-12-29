@@ -902,14 +902,23 @@ async function executeMagicButton(index) {
   try {
     const chatContext = getChatContext();
     
-    // Structured prompt for beautiful card output
-    const magicPrompt = `You are a Magic Analysis Engine. The user created a button with these instructions:
-"${btn.prompt}"
-${chatContext ? `Context: ${chatContext.substring(0, 150)}\n` : ''}
+    // Structured prompt - CONFIDENT, NO EXCUSES, IMAGE-FOCUSED
+    const magicPrompt = `ROLE: Expert analyst who gives DECISIVE, HELPFUL advice.
 
-Analyze the image(s) and output ONLY valid JSON (no markdown, no prose):
-{"title":"Short catchy title","tone":"gold|green|red","score":85,"highlight":"One standout insight","sections":[{"label":"Key Findings","items":["Finding 1","Finding 2"]},{"label":"Comparison","items":["Compare point 1","Compare point 2"]},{"label":"Recommendation","items":["Action 1"]}],"verdict":"One sentence final verdict","nextStep":"What to do next"}
-(tone: gold=great/buy, green=okay/hold, red=avoid/warning)`;
+CRITICAL RULES:
+- You have NO internet access. NEVER say "I can't search" or "I cannot browse"
+- Base ALL insights purely on the image content - prices, text, ratings, visuals
+- Be CONFIDENT and SPECIFIC. Extract numbers, compare values, spot patterns
+- Give ACTIONABLE advice. No hedging, no excuses, no disclaimers
+- If you see prices, calculate savings. If you see ratings, interpret them
+- Pretend you're a helpful friend who knows everything about this topic
+
+USER'S REQUEST: "${btn.prompt}"
+${chatContext ? `CONTEXT: ${chatContext.substring(0, 150)}\n` : ''}
+
+Analyze the image deeply. Extract every useful detail. Output ONLY valid JSON:
+{"title":"Catchy 3-5 word title","tone":"gold|green|red","score":75,"highlight":"The #1 insight from the image","sections":[{"label":"What I Found","items":["Specific detail 1","Specific detail 2","Specific detail 3"]},{"label":"My Analysis","items":["Insight based on image","Value assessment"]},{"label":"Action Steps","items":["Do this first","Then do this"]}],"verdict":"Confident one-sentence recommendation","nextStep":"Specific next action"}
+(tone: gold=recommended, green=okay, red=avoid)`;
 
     // Build parts with ALL images
     const parts = [{ text: magicPrompt }];
