@@ -953,20 +953,69 @@ function chunkImages(images, maxSize = 30) {
   return batches;
 }
 
-// Render beautiful Magic Card
+// Render beautiful Magic Card with enhanced sections
 function renderMagicCard(data, btn, batchLabel = '') {
   const thread = document.getElementById('chatThread');
-  const toneColors = { gold: '#fbbf24', green: '#34d399', red: '#f87171' };
+  const toneColors = { gold: '#fbbf24', green: '#34d399', red: '#f87171', blue: '#3b82f6', purple: '#8b5cf6' };
   const toneColor = toneColors[data.tone] || toneColors.green;
   
-  const sectionsHtml = (data.sections || []).map(section => `
-    <div class="magic-section">
-      <div class="magic-section-label">${section.label}</div>
-      <ul class="magic-items">
-        ${(section.items || []).map(item => `<li>${item}</li>`).join('')}
-      </ul>
+  // Enhanced sections with priority tag support
+  const sectionsHtml = (data.sections || []).map(section => {
+    const itemsHtml = (section.items || []).map(item => {
+      // Detect priority tags like [CRITICAL], [HIGH], [LOW]
+      let priorityClass = '';
+      let displayItem = item;
+      if (item.includes('[CRITICAL]') || item.includes('[URGENT]')) {
+        priorityClass = 'priority-critical';
+        displayItem = item.replace(/\[(CRITICAL|URGENT)\]/g, '<span class="priority-tag critical">$1</span>');
+      } else if (item.includes('[HIGH]') || item.includes('[IMPORTANT]')) {
+        priorityClass = 'priority-high';
+        displayItem = item.replace(/\[(HIGH|IMPORTANT)\]/g, '<span class="priority-tag high">$1</span>');
+      } else if (item.includes('[MEDIUM]')) {
+        priorityClass = 'priority-medium';
+        displayItem = item.replace(/\[MEDIUM\]/g, '<span class="priority-tag medium">MEDIUM</span>');
+      } else if (item.includes('[LOW]')) {
+        priorityClass = 'priority-low';
+        displayItem = item.replace(/\[LOW\]/g, '<span class="priority-tag low">LOW</span>');
+      }
+      return `<li class="${priorityClass}">${displayItem}</li>`;
+    }).join('');
+    
+    return `
+      <div class="magic-section">
+        <div class="magic-section-label">${section.label}</div>
+        <ul class="magic-items">${itemsHtml}</ul>
+      </div>
+    `;
+  }).join('');
+  
+  // Action items section if present (with safety checks)
+  let actionsHtml = '';
+  if (data.actions && Array.isArray(data.actions) && data.actions.length > 0) {
+    const safeActions = data.actions.map((action, i) => {
+      const safeText = String(action).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return `
+        <div class="action-item">
+          <span class="action-num">${i + 1}</span>
+          <span class="action-text">${safeText}</span>
+        </div>
+      `;
+    }).join('');
+    actionsHtml = `
+      <div class="magic-actions">
+        <div class="magic-section-label">ACTION ITEMS</div>
+        <div class="action-list">${safeActions}</div>
+      </div>
+    `;
+  }
+  
+  // Risk/confidence meter if present
+  const riskHtml = data.risk ? `
+    <div class="magic-risk">
+      <span class="risk-label">RISK LEVEL:</span>
+      <span class="risk-value risk-${data.risk.toLowerCase()}">${data.risk}</span>
     </div>
-  `).join('');
+  ` : '';
   
   const card = document.createElement('div');
   card.className = 'magic-card';
@@ -979,8 +1028,10 @@ function renderMagicCard(data, btn, batchLabel = '') {
     <div class="magic-score-row">
       <div class="magic-score" style="color: ${toneColor}">${data.score || '??'}<span>/100</span></div>
       <div class="magic-highlight">${data.highlight || ''}</div>
+      ${riskHtml}
     </div>
     ${sectionsHtml}
+    ${actionsHtml}
     <div class="magic-verdict">
       <div class="magic-verdict-label">THE VERDICT</div>
       <div class="magic-verdict-text">${data.verdict || 'Analysis complete.'}</div>
@@ -1208,6 +1259,20 @@ Analyze the image(s) deeply. Extract every useful detail. Output ONLY valid JSON
 }
 
 // Modal Controls
+// Template category switching
+function showTemplateCategory(category) {
+  document.querySelectorAll('.template-cat').forEach(c => c.classList.remove('active'));
+  document.querySelector(`.template-cat[data-cat="${category}"]`)?.classList.add('active');
+  document.querySelectorAll('.template-btn').forEach(btn => {
+    btn.classList.toggle('visible', btn.dataset.cat === category);
+  });
+}
+
+// Category click handlers
+document.querySelectorAll('.template-cat').forEach(cat => {
+  cat.addEventListener('click', () => showTemplateCategory(cat.dataset.cat));
+});
+
 document.getElementById('addMagicBtn')?.addEventListener('click', () => {
   document.getElementById('magicModal').classList.add('open');
   document.getElementById('magicName').value = '';
@@ -1216,6 +1281,8 @@ document.getElementById('addMagicBtn')?.addEventListener('click', () => {
   document.querySelectorAll('.emoji-option').forEach(e => e.classList.remove('selected'));
   document.querySelector('.emoji-option')?.classList.add('selected');
   document.getElementById('selectedEmoji').value = '🎯';
+  // Show first category by default
+  showTemplateCategory('money');
 });
 
 document.getElementById('closeMagicModal')?.addEventListener('click', () => {
