@@ -170,18 +170,28 @@ async function initializeChat() {
   const result = await chrome.storage.session.get(['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap']);
   currentPageText = result.pageText || '';
   
-  // Load images from IndexedDB (primary) or session storage (fallback)
+  // Load images with retry logic for race conditions
   let imagesToUse = [];
-  if (result.useIndexedDB) {
-    console.log('[SnapToAI] Loading images from IndexedDB (unlimited storage)');
-    imagesToUse = await loadImagesFromIndexedDB();
-  }
+  const maxRetries = 3;
   
-  // Fallback to session storage for backwards compatibility
-  if (imagesToUse.length === 0) {
-    imagesToUse = result.selectedSnaps || [];
-    if (imagesToUse.length === 0 && result.selectedSnap) {
-      imagesToUse = [result.selectedSnap];
+  for (let attempt = 0; attempt < maxRetries && imagesToUse.length === 0; attempt++) {
+    if (attempt > 0) {
+      console.log('[SnapToAI] Retry attempt', attempt + 1);
+      await new Promise(r => setTimeout(r, 200)); // Brief wait between retries
+    }
+    
+    // Try IndexedDB first (primary storage for large captures)
+    if (result.useIndexedDB) {
+      console.log('[SnapToAI] Loading images from IndexedDB (unlimited storage)');
+      imagesToUse = await loadImagesFromIndexedDB();
+    }
+    
+    // Fallback to session storage
+    if (imagesToUse.length === 0) {
+      imagesToUse = result.selectedSnaps || [];
+      if (imagesToUse.length === 0 && result.selectedSnap) {
+        imagesToUse = [result.selectedSnap];
+      }
     }
   }
   

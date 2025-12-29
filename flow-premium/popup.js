@@ -3233,30 +3233,46 @@ async function openAiChat(imageDataUrls) {
   // Limit pageText to 10KB
   const limitedPageText = pageText.length > 10000 ? pageText.substring(0, 10000) : pageText;
   
-  // Use IndexedDB for unlimited image storage (no quota errors!)
-  const saved = await saveImagesToIndexedDB(images);
-  if (!saved) {
-    console.error('[SnapToAI] Failed to save images to IndexedDB');
-    if (aiButton) {
-      aiButton.style.opacity = '1';
-      aiButton.style.pointerEvents = 'auto';
-    }
-    alert('Failed to prepare images for AI chat. Please try again.');
-    return;
-  }
+  // Clear old data first
+  await clearIndexedDBImages();
   
-  // Store only small metadata in session storage
+  // Save to IndexedDB (primary - unlimited storage)
+  const saved = await saveImagesToIndexedDB(images);
+  
+  // Also try session storage as fallback (may fail for large captures, that's OK)
+  let sessionFallbackOk = false;
   try {
     await chrome.storage.session.set({ 
       pageText: limitedPageText,
       imageCount: images.length,
-      useIndexedDB: true
+      useIndexedDB: saved,
+      selectedSnaps: images // Fallback for small captures
     });
+    sessionFallbackOk = true;
   } catch (e) {
-    console.log('[SnapToAI] Session storage for metadata failed, continuing anyway');
+    // Session storage quota exceeded - that's fine, we have IndexedDB
+    console.log('[SnapToAI] Session storage fallback failed (expected for large captures)');
+    try {
+      // At least save metadata
+      await chrome.storage.session.set({ 
+        pageText: limitedPageText,
+        imageCount: images.length,
+        useIndexedDB: saved
+      });
+    } catch (e2) {}
   }
   
-  console.log('[SnapToAI] Images saved to IndexedDB:', images.length, 'images (no size limit!)');
+  if (!saved && !sessionFallbackOk) {
+    console.error('[SnapToAI] Failed to save images anywhere');
+    if (aiButton) {
+      aiButton.style.opacity = '1';
+      aiButton.style.pointerEvents = 'auto';
+    }
+    alert('Failed to prepare images. Please try again.');
+    return;
+  }
+  
+  console.log('[SnapToAI] Images saved:', images.length, 'images (IndexedDB:', saved, ', Session:', sessionFallbackOk, ')');
   
   // Restore AI button
   if (aiButton) {
