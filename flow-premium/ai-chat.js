@@ -1107,7 +1107,7 @@ Analyze the image(s) deeply. Extract every useful detail. Output ONLY valid JSON
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts }],
-            generationConfig: { maxOutputTokens: 800, temperature: 0.7 }
+            generationConfig: { maxOutputTokens: 1200, temperature: 0.7 }
           })
         }
       );
@@ -1119,33 +1119,75 @@ Analyze the image(s) deeply. Extract every useful detail. Output ONLY valid JSON
       
       // Robust JSON parsing with better error handling
       let cardData = null;
+      let parseError = null;
       try {
         let cleanedText = responseText.trim()
           .replace(/```json\s*/gi, '')
           .replace(/```\s*/g, '')
           .trim();
+        
+        // Find the LAST complete JSON object (handles truncation better)
         const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          cardData = JSON.parse(jsonMatch[0]);
+          // Try to fix common truncation issues
+          let jsonStr = jsonMatch[0];
+          
+          // Count braces to detect truncation
+          const openBraces = (jsonStr.match(/\{/g) || []).length;
+          const closeBraces = (jsonStr.match(/\}/g) || []).length;
+          
+          // If truncated, try to close it
+          if (openBraces > closeBraces) {
+            // Find last complete section and close everything
+            const lastCompleteSection = jsonStr.lastIndexOf('"}');
+            if (lastCompleteSection > 0) {
+              jsonStr = jsonStr.substring(0, lastCompleteSection + 2);
+              // Close any open arrays and objects
+              const remainingOpen = (jsonStr.match(/\[/g) || []).length - (jsonStr.match(/\]/g) || []).length;
+              const remainingBraces = (jsonStr.match(/\{/g) || []).length - (jsonStr.match(/\}/g) || []).length;
+              jsonStr += ']'.repeat(Math.max(0, remainingOpen));
+              jsonStr += '}'.repeat(Math.max(0, remainingBraces));
+            }
+          }
+          
+          cardData = JSON.parse(jsonStr);
         } else {
-          console.log('Magic: No JSON found in response');
+          parseError = 'No JSON structure found';
         }
       } catch (e) {
-        console.log('Magic JSON parse failed:', e.message, '- Response may be truncated');
+        parseError = e.message;
+        console.log('Magic JSON parse failed:', e.message);
         cardData = null;
       }
       
       // Render result
-      if (cardData && cardData.title && cardData.sections) {
+      if (cardData && cardData.title) {
         thinkingBubble.remove();
+        // Ensure sections exists even if truncated
+        if (!cardData.sections) cardData.sections = [];
         renderMagicCard(cardData, btn, batchLabel);
       } else {
-        let cleanResponse = responseText
-          .replace(/As an AI[^.]*\./gi, '')
-          .replace(/I cannot (browse|search)[^.]*\./gi, '')
-          .trim() || 'Analysis complete.';
-        thinkingBubble.innerHTML = `<strong>${batchLabel}</strong><br>` + marked.parse(cleanResponse);
-        addBubbleActions(thinkingBubble, cleanResponse);
+        // DON'T show raw JSON! Show friendly error or extract what we can
+        let displayText = '';
+        
+        // Try to extract SOMETHING useful from truncated JSON
+        const titleMatch = responseText.match(/"title"\s*:\s*"([^"]+)"/);
+        const highlightMatch = responseText.match(/"highlight"\s*:\s*"([^"]+)"/);
+        const scoreMatch = responseText.match(/"score"\s*:\s*(\d+)/);
+        
+        if (titleMatch || highlightMatch) {
+          // We got partial data - show what we have
+          displayText = `**${titleMatch ? titleMatch[1] : 'Analysis'}**\n\n`;
+          if (scoreMatch) displayText += `Score: ${scoreMatch[1]}/100\n\n`;
+          if (highlightMatch) displayText += highlightMatch[1];
+          displayText += '\n\n*(Response was truncated - try with fewer images)*';
+        } else {
+          // Complete failure - don't show raw JSON
+          displayText = 'Analysis completed but response was incomplete. Try again with fewer images or a simpler prompt.';
+        }
+        
+        thinkingBubble.innerHTML = `<strong>${batchLabel}</strong><br>` + marked.parse(displayText);
+        addBubbleActions(thinkingBubble, displayText);
       }
       
       document.getElementById('chatThread').scrollTop = document.getElementById('chatThread').scrollHeight;
