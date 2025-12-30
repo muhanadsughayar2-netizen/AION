@@ -6,183 +6,412 @@
   <title>Welcome to Snap To AI</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: rgba(34, 211, 238, 0.2);
+      --primary: #22d3ee;
+      --primary-dim: rgba(34, 211, 238, 0.1);
+      --text: #cbd5e1;
+      --muted: #64748b;
+      --foreground: #f1f5f9;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0d1117;
-      color: #cbd5e1;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 16px;
+      overflow-x: hidden;
     }
-    .card {
-      max-width: 520px;
+
+    .glow-bg {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .glow-1 {
+      position: absolute;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 500px;
+      height: 500px;
+      background: rgba(34, 211, 238, 0.05);
+      border-radius: 50%;
+      filter: blur(80px);
+    }
+    .glow-2 {
+      position: absolute;
+      bottom: 0;
+      left: 25%;
+      width: 350px;
+      height: 350px;
+      background: rgba(34, 211, 238, 0.03);
+      border-radius: 50%;
+      filter: blur(80px);
+    }
+
+    main {
+      position: relative;
+      z-index: 10;
       width: 100%;
-      background: #161b22;
-      border: 1px solid rgba(34, 211, 238, 0.3);
-      border-radius: 20px;
-      padding: 32px;
-      text-align: center;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      animation: card-enter 0.5s ease-out forwards;
+      max-width: 480px;
     }
-    @keyframes card-enter {
-      0% { opacity: 0; transform: translateY(20px); }
+
+    .card {
+      background: linear-gradient(135deg, var(--card) 0%, rgba(22, 27, 34, 0.95) 100%);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+      animation: scaleIn 0.5s ease-out forwards;
+    }
+
+    @keyframes scaleIn {
+      0% { opacity: 0; transform: scale(0.95); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(16px); }
       100% { opacity: 1; transform: translateY(0); }
     }
-    .sparkle { font-size: 40px; margin-bottom: 12px; }
-    .title {
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .icon-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      background: var(--primary-dim);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 16px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .icon-box .sparkle {
       font-size: 28px;
-      font-weight: 700;
-      color: #22d3ee;
+    }
+
+    .title {
+      font-size: 26px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary) 0%, #67e8f9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       margin-bottom: 12px;
+      animation: fadeInUp 0.5s ease-out 0.1s both;
     }
+
     .subtitle {
-      font-size: 16px;
-      color: #94a3b8;
-      margin-bottom: 28px;
-      line-height: 1.5;
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.6;
+      animation: fadeInUp 0.5s ease-out 0.2s both;
     }
-    .examples {
+
+    .subtitle .highlight {
+      color: var(--text);
+    }
+
+    .features {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin: 28px 0;
+      gap: 10px;
+      margin-bottom: 20px;
     }
-    .example {
-      background: #0d1117;
+
+    .feature {
+      background: var(--primary-dim);
+      border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 12px;
-      border: 1px solid rgba(34, 211, 238, 0.2);
+      padding: 14px 12px;
+      text-align: center;
       transition: all 0.3s ease;
+      animation: fadeInUp 0.5s ease-out both;
     }
-    .example:hover {
-      border-color: rgba(34, 211, 238, 0.5);
+
+    .feature:nth-child(1) { animation-delay: 0.3s; }
+    .feature:nth-child(2) { animation-delay: 0.35s; }
+    .feature:nth-child(3) { animation-delay: 0.4s; }
+    .feature:nth-child(4) { animation-delay: 0.45s; }
+
+    .feature:hover {
+      border-color: rgba(34, 211, 238, 0.4);
       transform: translateY(-2px);
     }
-    .example-icon {
-      font-size: 32px;
-      margin-bottom: 8px;
+
+    .feature-icon {
+      font-size: 26px;
+      margin-bottom: 6px;
     }
-    .example p {
-      font-size: 14px;
-      color: #22d3ee;
+
+    .feature-title {
+      font-size: 13px;
       font-weight: 600;
+      color: var(--text);
     }
-    .video-btn {
-      display: block;
-      background: rgba(34, 211, 238, 0.1);
-      border: 1px solid rgba(34, 211, 238, 0.3);
+
+    .cta-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 14px;
+      background: var(--primary-dim);
+      border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 16px;
-      margin: 28px 0;
-      color: #22d3ee;
-      font-size: 17px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.3s ease;
-    }
-    .video-btn:hover { 
-      background: rgba(34, 211, 238, 0.2); 
-      transform: translateY(-2px);
-    }
-    .free-tier {
-      background: rgba(34, 211, 238, 0.1);
-      border: 1px solid rgba(34, 211, 238, 0.3);
-      border-radius: 12px;
-      padding: 16px;
-      margin: 28px 0;
-    }
-    .free-tier h3 {
-      color: #22d3ee;
-      font-size: 18px;
-      margin-bottom: 8px;
-    }
-    .free-tier p {
-      color: #94a3b8;
-      font-size: 14px;
-    }
-    .pro-note {
-      background: rgba(59, 130, 246, 0.08);
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      border-radius: 12px;
-      padding: 16px;
+      color: var(--primary);
       font-size: 15px;
-      color: #94a3b8;
-      line-height: 1.6;
-    }
-    .pro-note a {
-      color: #22d3ee;
       font-weight: 600;
       text-decoration: none;
+      margin-bottom: 20px;
+      transition: all 0.3s ease;
+      animation: fadeInUp 0.5s ease-out 0.5s both;
     }
-    .pro-note a:hover {
+
+    .cta-btn:hover {
+      background: rgba(34, 211, 238, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .glass-card {
+      background: var(--primary-dim);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      text-align: center;
+      animation: fadeInUp 0.5s ease-out 0.55s both;
+    }
+
+    .glass-card h3 {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--primary);
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .glass-card p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .glass-card .tip {
+      color: var(--text);
+    }
+
+    .glass-card .accent {
+      color: rgba(34, 211, 238, 0.8);
+    }
+
+    .pro-card {
+      animation-delay: 0.6s;
+    }
+
+    .pro-card .pro-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .pro-btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, var(--primary) 0%, #0891b2 100%);
+      border: none;
+      border-radius: 10px;
+      color: #0d1117;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .pro-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(34, 211, 238, 0.3);
+    }
+
+    .pro-note {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      animation: fadeInUp 0.5s ease-out 0.65s both;
+    }
+
+    .footer .ready {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--foreground);
+      margin-bottom: 6px;
+    }
+
+    .footer .steps {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .footer .help-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--primary);
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .footer .help-link:hover {
       text-decoration: underline;
     }
-    .footer {
-      margin-top: 28px;
-      font-size: 14px;
-      color: #64748b;
-      line-height: 1.6;
+
+    .trust-badge {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 20px;
+      animation: fadeInUp 0.5s ease-out 0.7s both;
     }
-    .footer a { color: #22d3ee; text-decoration: underline; }
-    .footer .ready { color: #cbd5e1; font-weight: 500; }
-    @media (max-width: 480px) {
-      .card { padding: 24px; }
-      .title { font-size: 24px; }
-      .examples { gap: 8px; }
+
+    @media (max-width: 420px) {
+      .card { padding: 22px; }
+      .title { font-size: 22px; }
+      .features { gap: 8px; }
+      .feature { padding: 12px 10px; }
+      .feature-icon { font-size: 22px; }
+      .feature-title { font-size: 12px; }
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="sparkle">✨</div>
-    <h1 class="title">Welcome to Snap To AI</h1>
-    <p class="subtitle">
-      Snap any screenshot → tap a magic button → get instant, pro-level AI insight.<br>
-      Stocks • Crypto • Shopping • Health • Learning — you control the AI.
-    </p>
-
-    <div class="examples">
-      <div class="example">
-        <div class="example-icon">📈</div>
-        <p>Deep Stock & Crypto Analysis</p>
-      </div>
-      <div class="example">
-        <div class="example-icon">📊</div>
-        <p>Bulk 8 Charts Ranked</p>
-      </div>
-      <div class="example">
-        <div class="example-icon">🛒</div>
-        <p>Best Deals & Hidden Fees</p>
-      </div>
-      <div class="example">
-        <div class="example-icon">⚡</div>
-        <p>Unlimited Custom Buttons</p>
-      </div>
-    </div>
-
-    <a href="https://snaptoai.com" target="_blank" class="video-btn">
-      ▶ Watch 2-Minute Demo — See the Magic in Action
-    </a>
-
-    <div class="free-tier">
-      <h3>Free Tier — 20 Powerful Prompts/Day</h3>
-      <p>Gemini Flash built-in • Multi-image • Full page capture • No card needed</p>
-    </div>
-
-    <div class="pro-note">
-      Want unlimited prompts + guided $300 free Gemini credits?<br>
-      <a href="https://snaptoai.com" target="_blank">Upgrade to Pro → $12/month or $99/year</a>
-    </div>
-
-    <p class="footer">
-      <span class="ready">Ready?</span><br>
-      Click the icon → Snap / Snip / Full Page → try your first magic button!<br><br>
-      Need help? Watch the video or visit <a href="https://snaptoai.com/#faq">FAQ</a>
-    </p>
+  <div class="glow-bg">
+    <div class="glow-1"></div>
+    <div class="glow-2"></div>
   </div>
+
+  <main>
+    <div class="card">
+      <div class="header">
+        <div class="icon-box">
+          <span class="sparkle">✨</span>
+        </div>
+        <h1 class="title">Welcome to Snap To AI</h1>
+        <p class="subtitle">
+          Turn any screenshot into instant AI-powered insights.<br>
+          <span class="highlight">Stocks • Crypto • Shopping • Health • Learning • Work</span>
+        </p>
+      </div>
+
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">📈</div>
+          <div class="feature-title">Deep Stock & Crypto Analysis</div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🛒</div>
+          <div class="feature-title">Best Deals & Hidden Fees</div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📚</div>
+          <div class="feature-title">Study Notes & Summaries</div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-title">Unlimited Custom Buttons</div>
+        </div>
+      </div>
+
+      <a href="https://snaptoai.com" target="_blank" class="cta-btn">
+        <span>▶</span>
+        <span>Watch 2-Minute Demo — See the Magic</span>
+      </a>
+
+      <div class="glass-card">
+        <h3>
+          <span>⚡</span>
+          Full AI Free for 30 Days
+        </h3>
+        <p>
+          Unlimited prompts • Magic buttons • Bulk snaps • Multi-image<br>
+          <span class="tip">No credit card needed</span>
+        </p>
+      </div>
+
+      <div class="glass-card" style="animation-delay: 0.58s;">
+        <p>
+          <span class="tip">Pro tip:</span> Paste your own Gemini API key anytime<br>
+          <span class="accent">Google gives $300 free credits — super cheap unlimited use</span>
+        </p>
+      </div>
+
+      <div class="glass-card pro-card">
+        <div class="pro-header">
+          <span>👑</span>
+          After 30 days, keep your magic buttons
+        </div>
+        <a href="https://snaptoai.com" target="_blank" class="pro-btn">
+          Upgrade to Pro — $12/month or $99/year
+        </a>
+        <p class="pro-note">Save 31% with yearly billing</p>
+      </div>
+
+      <div class="footer">
+        <p class="ready">Ready to start?</p>
+        <p class="steps">
+          Click the extension icon → Snap / Snip / Full Page<br>
+          Try your first magic button!
+        </p>
+        <a href="https://snaptoai.com/#faq" target="_blank" class="help-link">
+          <span>❓</span>
+          Need help? Visit FAQ
+        </a>
+      </div>
+    </div>
+
+    <p class="trust-badge">
+      🔒 Your screenshots stay private — processed securely
+    </p>
+  </main>
 
   <script src="welcome.js"></script>
 </body>
