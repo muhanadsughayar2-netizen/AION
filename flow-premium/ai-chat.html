@@ -6,128 +6,731 @@
   <title>SnapToAI - AI Chat</title>
   <script src="marked.min.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d0d0d; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-    .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%); border-bottom: 1px solid rgba(0, 217, 255, 0.3); }
-    .logo { color: #fff; font-size: 20px; font-weight: 600; }
-    .logo span { background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .main-content { flex: 1; display: flex; overflow: hidden; }
-    .image-panel { width: 25%; min-width: 180px; max-width: 280px; background: #151515; border-right: 1px solid rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; padding: 20px; }
-    .image-preview { flex: 1; overflow-y: auto; border-radius: 12px; background: #0a0a0a; border: 1px solid rgba(255, 255, 255, 0.05); }
-    .chat-panel { flex: 1; display: flex; flex-direction: column; background: #0d0d0d; }
-    .chat-thread { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-    .chat-bubble { max-width: 85%; padding: 16px 20px; border-radius: 16px; font-size: 15px; line-height: 1.6; animation: bubbleIn 0.3s ease; }
-    @keyframes bubbleIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .chat-bubble.user { align-self: flex-end; background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%); color: #000; border-bottom-right-radius: 4px; }
-    .chat-bubble.ai { align-self: flex-start; background: #1a1a1a; color: #e0e0e0; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     
-    /* PREMIUM MAGIC CARD FINAL */
-    .magic-card-final {
-      --glow: #00d9ff;
-      --rarity-glow: #fbbf24;
-      background: linear-gradient(165deg, rgba(20, 20, 30, 0.95), rgba(10, 10, 15, 0.98));
-      border-radius: 28px;
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0d0d0d;
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
+      border-bottom: 1px solid rgba(0, 217, 255, 0.3);
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logo {
+      color: #fff;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    .logo span {
+      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .close-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #888;
+      font-size: 20px;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+    
+    .main-content {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    
+    .image-panel {
+      width: 25%;
+      min-width: 180px;
+      max-width: 280px;
+      background: #151515;
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+    
+    .image-label {
+      color: #888;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    
+    .image-preview {
+      flex: 1;
+      display: block;
+      overflow-y: auto;
+      border-radius: 12px;
+      background: #0a0a0a;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      min-height: 0;
+      max-height: calc(100vh - 150px);
+    }
+    
+    .image-preview.single-image {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .image-preview img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+    
+    .multi-image-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+      width: 100%;
+      overflow-y: auto;
+    }
+    
+    .multi-image-grid .grid-image {
+      width: 100%;
+      height: auto;
+      min-height: 60px;
+      max-height: 120px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    
+    .multi-image-grid .grid-image:hover {
+      border-color: #00d9ff;
+      transform: scale(1.05);
+    }
+    
+    .multi-image-badge {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: linear-gradient(135deg, #00d9ff, #00b8d4);
+      color: #000;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .image-preview {
+      position: relative;
+    }
+    
+    .chat-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
+    }
+    
+    .chat-thread {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .welcome-message {
+      text-align: center;
+      color: #888;
+      font-size: 16px;
+      padding: 40px 20px;
+    }
+    
+    .chat-bubble {
+      max-width: 80%;
+      padding: 16px 20px;
+      border-radius: 16px;
+      font-size: 15px;
+      line-height: 1.6;
+      animation: bubbleIn 0.3s ease;
+    }
+    
+    @keyframes bubbleIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .chat-bubble.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
+      color: #000;
+      border-bottom-right-radius: 4px;
+    }
+    
+    .chat-bubble.ai {
+      align-self: flex-start;
+      background: #2a2a2a;
+      color: #e0e0e0;
+      border-bottom-left-radius: 4px;
+    }
+    
+    .chat-bubble.ai strong { color: #00d9ff; }
+    .chat-bubble.ai ul, .chat-bubble.ai ol { margin: 8px 0; padding-left: 20px; }
+    .chat-bubble.ai li { margin: 4px 0; }
+    .chat-bubble.ai code { background: #1a1a1a; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    .chat-bubble.ai pre { background: #1a1a1a; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 8px 0; }
+    .chat-bubble.ai p { margin: 8px 0; }
+    .chat-bubble.ai p:first-child { margin-top: 0; }
+    .chat-bubble.ai p:last-child { margin-bottom: 0; }
+    
+    .bubble-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .bubble-actions button {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px;
+      color: #aaa;
+      font-size: 11px;
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .bubble-actions button:hover {
+      background: rgba(0, 217, 255, 0.2);
+      border-color: rgba(0, 217, 255, 0.4);
+      color: #00d9ff;
+    }
+    
+    .continue-btn {
+      background: rgba(0, 217, 255, 0.15) !important;
+      border-color: rgba(0, 217, 255, 0.4) !important;
+      color: #00d9ff !important;
+    }
+    
+    .chat-bubble.loading {
+      background: #2a2a2a;
+      color: #00d9ff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .star {
+      width: 18px;
+      height: 18px;
+      background: linear-gradient(45deg, #4285f4, #9b72cb, #d96570, #00d9ff);
+      mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>');
+      -webkit-mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>');
+      animation: spin 2s infinite linear;
+    }
+    
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    .chat-bubble.error {
+      background: rgba(255, 82, 82, 0.2);
+      color: #ff5252;
+      border: 1px solid rgba(255, 82, 82, 0.3);
+    }
+    
+    .input-area {
+      display: flex;
+      gap: 12px;
+      padding: 20px 24px;
+      background: #0d0d0d;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .chat-input {
+      flex: 1;
+      padding: 16px 20px;
+      background: #1a1a1a;
+      border: 1px solid rgba(0, 217, 255, 0.3);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+      resize: none;
+      min-height: 52px;
+      max-height: 150px;
+      overflow-y: auto;
+      line-height: 1.4;
+    }
+    
+    .chat-input:focus {
+      border-color: #00d9ff;
+    }
+    
+    .chat-input::placeholder {
+      color: #555;
+    }
+    
+    .send-btn {
+      padding: 16px 28px;
+      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
+      border: none;
+      border-radius: 12px;
+      color: #000;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0, 217, 255, 0.3);
+    }
+    
+    .send-btn:hover {
+      background: linear-gradient(135deg, #00e8ff 0%, #00d9ff 100%);
+      box-shadow: 0 4px 15px rgba(0, 217, 255, 0.5);
+      transform: translateY(-1px);
+    }
+    
+    .send-btn:disabled {
+      background: #333;
+      color: #666;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+    
+    .footer-actions {
+      display: flex;
+      gap: 10px;
+      padding: 12px 24px;
+      background: #0d0d0d;
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    
+    .action-btn {
+      padding: 10px 18px;
+      background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 32px;
-      margin: 20px 0;
+      border-radius: 8px;
+      color: #888;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    
+    .test-btn {
+      background: rgba(0, 217, 255, 0.1);
+      border-color: rgba(0, 217, 255, 0.3);
+      color: #00d9ff;
+    }
+    
+    .test-btn:hover {
+      background: rgba(0, 217, 255, 0.2);
+    }
+    
+    .upload-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .upload-btn:hover {
+      background: rgba(0, 217, 255, 0.2);
+      border-color: rgba(0, 217, 255, 0.4);
+    }
+    
+    .file-preview-zone {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 0 24px 8px;
+      max-height: 80px;
+      overflow-y: auto;
+    }
+    
+    .file-card {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #ccc;
+      animation: fadeIn 0.2s ease;
+    }
+    
+    .file-card span {
+      max-width: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .file-card .remove-btn {
+      color: #ff5252;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      padding: 0 2px;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    
+    .file-card .remove-btn:hover {
+      opacity: 1;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* The Verdict Button */
+    .verdict-btn {
+      background: linear-gradient(45deg, #00dbde, #fc00ff);
+      border: none;
+      color: white;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 25px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(0, 219, 222, 0.5);
+      transition: 0.3s;
+      animation: verdict-breathe 3s infinite ease-in-out;
+    }
+    @keyframes verdict-breathe {
+      0%, 100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.02); opacity: 1; }
+    }
+    .verdict-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 25px rgba(252, 0, 255, 0.6);
+    }
+    .verdict-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      animation: none;
+    }
+    .verdict-btn.gold { background: linear-gradient(45deg, #ffd700, #ffaa00); animation: pulse-gold 2s infinite; }
+    .verdict-btn.red { background: linear-gradient(45deg, #ff4444, #cc0000); animation: shake-warn 0.8s infinite; }
+    .verdict-btn.green { background: linear-gradient(45deg, #00ff88, #00cc66); animation: pulse-green 2s infinite; }
+    @keyframes pulse-gold { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); } }
+    @keyframes shake-warn { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-2px); } 40%, 80% { transform: translateX(2px); } }
+    @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(0, 255, 136, 0); } }
+    
+    /* OMNI-SCORE Card - Inline in Chat */
+    .verdict-card-inline {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      border-radius: 24px;
+      padding: 20px;
+      margin: 12px 0;
+      color: white;
+      animation: fadeIn 0.3s ease;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    .omni-score-header { text-align: center; margin-bottom: 20px; }
+    .score-label { display: block; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 3px; color: #64748b; margin-bottom: 4px; }
+    .score-value { font-size: 48px; font-weight: 900; letter-spacing: -2px; }
+    .score-value.gold { color: #fbbf24; }
+    .score-value.green { color: #34d399; }
+    .score-value.red { color: #f87171; }
+    .score-max { font-size: 18px; opacity: 0.5; }
+    
+    .verdict-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(148,163,184,0.2); }
+    .verdict-row:last-of-type { border-bottom: none; }
+    .verdict-label-block { display: flex; flex-direction: column; }
+    .verdict-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 2px; }
+    .verdict-value { font-size: 12px; font-weight: 600; color: #e2e8f0; }
+    .verdict-impact { font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 8px; }
+    .verdict-impact.green { color: #34d399; background: rgba(52,211,153,0.15); }
+    .verdict-impact.red { color: #f87171; background: rgba(248,113,113,0.15); }
+    
+    .verdict-bottom-line { background: linear-gradient(135deg, #3b82f6, #6366f1); border-radius: 16px; padding: 14px; margin-top: 16px; }
+    .bottom-label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; opacity: 0.7; display: block; margin-bottom: 6px; }
+    .bottom-verdict { font-size: 13px; font-weight: 600; line-height: 1.4; margin: 0; }
+    
+    /* Button glow states */
+    .verdict-btn.gold { background: linear-gradient(45deg, #ffd700, #ffaa00); box-shadow: 0 0 20px rgba(255,215,0,0.6); }
+    .verdict-btn.red { background: linear-gradient(45deg, #ff4444, #cc0000); box-shadow: 0 0 20px rgba(255,0,0,0.6); }
+    .verdict-btn.green { background: linear-gradient(45deg, #00ff88, #00cc66); box-shadow: 0 0 20px rgba(0,255,0,0.6); }
+    
+    /* Magic Buttons */
+    .magic-buttons { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0; min-height: 0; }
+    .magic-btn { background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(139,92,246,0.3)); border: 1px solid rgba(139,92,246,0.5); border-radius: 20px; padding: 6px 12px; color: white; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; }
+    .magic-btn:hover { background: linear-gradient(135deg, rgba(99,102,241,0.5), rgba(139,92,246,0.5)); transform: scale(1.05); }
+    .magic-btn:active { transform: scale(0.95); }
+    .magic-btn .delete-magic { opacity: 0; margin-left: 4px; font-size: 10px; }
+    .magic-btn:hover .delete-magic { opacity: 0.7; }
+    .magic-add-btn { background: linear-gradient(45deg, #8b5cf6, #ec4899); border: none; border-radius: 12px; padding: 8px 14px; color: white; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .magic-add-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(139,92,246,0.5); }
+    
+    /* Magic Modal */
+    .magic-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; }
+    .magic-modal.open { display: flex; }
+    .magic-modal-content { background: linear-gradient(135deg, #1e1e2e, #2d2d44); border-radius: 20px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .magic-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .magic-modal-header span { font-size: 16px; font-weight: 700; color: white; }
+    .magic-close { background: none; border: none; color: #888; font-size: 18px; cursor: pointer; }
+    .magic-modal-body { padding: 20px; }
+    .magic-field { margin-bottom: 16px; }
+    .magic-field label { display: block; font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; margin-bottom: 6px; }
+    .magic-field input, .magic-field textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px 12px; color: white; font-size: 13px; resize: none; box-sizing: border-box; }
+    .magic-field input:focus, .magic-field textarea:focus { outline: none; border-color: #8b5cf6; }
+    .char-count { display: block; text-align: right; font-size: 10px; color: #666; margin-top: 4px; }
+    .emoji-picker { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0; }
+    .emoji-option { font-size: 20px; cursor: pointer; padding: 6px; border-radius: 8px; transition: all 0.2s; }
+    .emoji-option:hover { background: rgba(255,255,255,0.1); }
+    .emoji-option.selected { background: rgba(139,92,246,0.3); box-shadow: 0 0 0 2px #8b5cf6; }
+    .magic-templates { margin-top: 12px; }
+    .template-categories { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+    .template-cat { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 5px 12px; color: #888; font-size: 11px; cursor: pointer; transition: all 0.2s; }
+    .template-cat:hover { background: rgba(139,92,246,0.15); color: #fff; }
+    .template-cat.active { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border-color: transparent; }
+    .template-grid { display: flex; flex-wrap: wrap; gap: 6px; max-height: 120px; overflow-y: auto; padding: 4px; }
+    .template-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 10px; color: #aaa; font-size: 10px; cursor: pointer; transition: all 0.2s; display: none; }
+    .template-btn.visible { display: inline-block; }
+    .template-btn:hover { background: rgba(139,92,246,0.2); border-color: #8b5cf6; color: white; }
+    .magic-modal-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .magic-save-btn { width: 100%; background: linear-gradient(45deg, #8b5cf6, #ec4899); border: none; border-radius: 12px; padding: 12px; color: white; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .magic-save-btn:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(139,92,246,0.5); }
+    
+    /* MAGIC CARD - Beautiful Results */
+    .magic-card {
+      --tone-color: #34d399;
+      background: linear-gradient(165deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 24px;
+      margin: 16px 0;
+      color: white;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1);
+      animation: magicAppear 0.6s cubic-bezier(0.22, 1, 0.36, 1);
       position: relative;
       overflow: hidden;
-      box-shadow: 0 30px 60px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.1);
-      opacity: 0; transform: translateY(20px); transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      backdrop-filter: blur(12px);
     }
-    .magic-card-final.show { opacity: 1; transform: translateY(0); }
-    .magic-card-final::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, transparent, var(--glow), transparent); filter: blur(2px); }
+    .magic-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, var(--tone-color), transparent);
+    }
+    @keyframes magicAppear { from { transform: scale(0.98) translateY(10px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+    .magic-card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+    .magic-emoji { font-size: 32px; filter: drop-shadow(0 0 8px var(--tone-color)); }
+    .magic-title { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; color: #fff; }
+    .magic-score-row { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; padding: 16px; background: rgba(255,255,255,0.03); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); }
+    .magic-score { font-size: 42px; font-weight: 900; line-height: 1; letter-spacing: -2px; }
+    .magic-score span { font-size: 16px; opacity: 0.4; font-weight: 500; letter-spacing: 0; }
+    .magic-highlight { flex: 1; font-size: 14px; color: #fff; font-weight: 500; padding: 10px 14px; background: color-mix(in srgb, var(--tone-color) 20%, transparent); border-radius: 12px; border: 1px solid color-mix(in srgb, var(--tone-color) 30%, transparent); line-height: 1.4; }
+    .magic-section { margin-bottom: 16px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px solid rgba(255,255,255,0.03); }
+    .magic-section-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; margin-bottom: 10px; display: block; }
+    .magic-items { margin: 0; padding-left: 4px; list-style: none; font-size: 13px; color: #cbd5e1; line-height: 1.6; }
+    .magic-items li { margin-bottom: 8px; position: relative; padding-left: 20px; }
+    .magic-items li::before { content: '→'; position: absolute; left: 0; color: var(--tone-color); font-weight: 900; opacity: 0.7; }
+    .magic-verdict { background: linear-gradient(135deg, #2563eb, #7c3aed); border-radius: 16px; padding: 18px; margin-top: 20px; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2); }
+    .magic-verdict-label { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: rgba(255,255,255,0.6); margin-bottom: 6px; }
+    .magic-verdict-text { font-size: 15px; font-weight: 700; line-height: 1.5; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+    .magic-footer { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+    .magic-next { font-size: 12px; color: #64748b; font-weight: 500; }
+    .magic-risk-badge { font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; }
+    .magic-risk-badge.high { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .magic-risk-badge.medium { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .magic-risk-badge.low { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
     
-    .sparkles { position: absolute; inset: 0; pointer-events: none; }
-    .sparkle { position: absolute; width: 4px; height: 4px; background: white; border-radius: 50%; box-shadow: 0 0 10px white; animation: sparkleFloat 3s infinite linear; opacity: 0; }
-    @keyframes sparkleFloat { 0% { transform: translateY(100%) scale(0); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateY(-100%) scale(1.5); opacity: 0; } }
-
-    .header { text-align: center; margin-bottom: 24px; }
-    .emoji { font-size: 48px; margin-bottom: 12px; filter: drop-shadow(0 0 15px var(--glow)); animation: float 3s infinite ease-in-out; }
-    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-    .title { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; color: #fff; margin-bottom: 8px; }
-    .badge { display: inline-block; padding: 4px 12px; background: rgba(255,255,255,0.05); border-radius: 20px; font-size: 11px; color: #888; border: 1px solid rgba(255,255,255,0.1); }
-
-    .rarity { text-align: center; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 24px; text-shadow: 0 0 10px var(--rarity-glow); }
-
-    .score-ring { position: relative; width: 120px; height: 120px; margin: 0 auto 32px; border-radius: 50%; background: rgba(255,255,255,0.03); display: flex; flex-direction: column; align-items: center; justify-content: center; border: 4px solid rgba(255,255,255,0.05); }
-    .ring-fill { position: absolute; inset: -4px; border-radius: 50%; transition: all 1.5s cubic-bezier(0.22, 1, 0.36, 1); }
-    .score-value { font-size: 48px; font-weight: 950; letter-spacing: -2px; color: #fff; position: relative; z-index: 2; }
-    .score-max { font-size: 14px; color: #666; margin-top: -4px; position: relative; z-index: 2; }
-
-    .highlight { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; margin-bottom: 24px; font-size: 15px; line-height: 1.5; color: #cbd5e1; }
-    .highlight strong { color: var(--glow); text-transform: uppercase; font-size: 11px; letter-spacing: 1px; display: block; margin-bottom: 4px; }
-
-    .section { margin-bottom: 24px; padding: 20px; background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px solid rgba(255,255,255,0.03); }
-    .label { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: #64748b; margin-bottom: 16px; display: block; }
-    .list { list-style: none; }
-    .item { position: relative; padding-left: 24px; margin-bottom: 12px; font-size: 14px; color: #e2e8f0; line-height: 1.5; }
-    .item::before { content: ''; position: absolute; left: 0; top: 8px; width: 12px; height: 2px; background: var(--glow); opacity: 0.5; }
-    .item.high { color: #f87171; font-weight: 600; }
-    .item.high::before { background: #f87171; opacity: 1; box-shadow: 0 0 8px #f87171; }
-
-    .actions { margin-bottom: 24px; }
-    .action-grid { display: grid; gap: 12px; }
-    .action { display: flex; gap: 16px; align-items: center; padding: 16px; background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.1); border-radius: 16px; }
-    .num { width: 28px; height: 28px; background: linear-gradient(135deg, #3b82f6, #7c3aed); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; flex-shrink: 0; }
-    .action-text { font-size: 14px; font-weight: 500; color: #fff; }
-
-    .verdict { background: linear-gradient(135deg, #2563eb, #7c3aed); border-radius: 24px; padding: 24px; margin-bottom: 24px; box-shadow: 0 15px 30px rgba(37, 99, 235, 0.3); }
-    .verdict .label { color: rgba(255,255,255,0.6); margin-bottom: 8px; }
-    .verdict .text { font-size: 17px; font-weight: 800; color: #fff; line-height: 1.4; margin-bottom: 16px; }
-    .risk { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; background: rgba(0,0,0,0.2); }
-    .risk.high { background: #f87171; color: #fff; }
-    .risk.medium { background: #fbbf24; color: #000; }
-    .risk.low { background: #4ade80; color: #000; }
-
-    .next { text-align: center; font-size: 13px; font-weight: 600; color: #64748b; font-style: italic; margin-bottom: 24px; }
-
-    .progress { margin-bottom: 24px; }
-    .bar { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
-    .fill { height: 100%; background: linear-gradient(90deg, var(--glow), #7c3aed); transition: width 1s ease-out; }
-    .stats { font-size: 11px; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
-
-    .buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .btn { padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-    .btn:hover { background: rgba(255,255,255,0.1); border-color: var(--glow); transform: translateY(-2px); }
-
-    .input-area { padding: 24px; background: #0d0d0d; border-top: 1px solid rgba(255,255,255,0.05); display: flex; gap: 12px; }
-    .chat-input { flex: 1; padding: 16px 20px; background: #1a1a1a; border: 1px solid rgba(0, 217, 255, 0.3); border-radius: 16px; color: #fff; font-size: 15px; outline: none; resize: none; min-height: 56px; max-height: 150px; }
-    .send-btn { padding: 0 28px; background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%); border: none; border-radius: 16px; color: #000; font-weight: 700; cursor: pointer; }
+    /* Priority Tags */
+    .priority-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; margin-right: 6px; text-transform: uppercase; }
+    .priority-tag.critical { background: #dc2626; color: white; animation: pulse 1s infinite; }
+    .priority-tag.high { background: #f97316; color: white; }
+    .priority-tag.medium { background: #eab308; color: #000; }
+    .priority-tag.low { background: #22c55e; color: white; }
+    .priority-critical { border-left: 3px solid #dc2626; padding-left: 8px; }
+    .priority-high { border-left: 3px solid #f97316; padding-left: 8px; }
     
-    .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #fff; color: #000; padding: 10px 24px; border-radius: 20px; font-size: 13px; font-weight: 700; z-index: 10000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    /* Action Items */
+    .magic-actions { margin-top: 12px; padding: 12px; background: rgba(59,130,246,0.1); border-radius: 12px; border: 1px solid rgba(59,130,246,0.3); }
+    .action-list { margin-top: 8px; }
+    .action-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+    .action-num { background: linear-gradient(135deg, #3b82f6, #6366f1); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .action-text { font-size: 12px; color: #e2e8f0; line-height: 1.4; }
+    
+    /* Risk Meter */
+    .magic-risk { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+    .risk-label { font-size: 9px; color: #64748b; font-weight: 600; }
+    .risk-value { padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+    .risk-high { background: #dc2626; color: white; }
+    .risk-medium { background: #f97316; color: white; }
+    .risk-low { background: #22c55e; color: white; }
   </style>
 </head>
 <body>
   <div class="header">
-    <div class="logo">Snap<span>ToAI</span> 📸</div>
-    <button class="close-btn" onclick="window.close()">✕</button>
+    <div class="header-left">
+      <div class="logo">Gemini 3 <span>Flash</span></div>
+    </div>
+    <button class="close-btn" id="closeBtn">✕</button>
   </div>
-
+  
   <div class="main-content">
     <div class="image-panel">
       <div class="image-label">Analyzing Image</div>
-      <div class="image-preview" id="imagePreview">
-        <img id="previewImage" src="" alt="">
+      <div class="image-preview">
+        <img id="previewImage" src="" alt="Screenshot">
       </div>
-      <div class="magic-buttons" id="magicButtons"></div>
     </div>
-
+    
     <div class="chat-panel">
       <div class="chat-thread" id="chatThread">
-        <div class="welcome-message">
-          <h2>Ready for Magic? ✨</h2>
-          <p>Click a Magic Button above or ask anything below.</p>
-        </div>
+        <div class="welcome-message">I'm your AI partner. Ask me anything about this image!</div>
       </div>
-
+      
+      <div class="file-preview-zone" id="filePreviewZone"></div>
       <div class="input-area">
-        <textarea class="chat-input" id="chatInput" placeholder="Ask about your screenshot..."></textarea>
+        <input type="file" id="fileInput" accept="image/*,.pdf,.txt,.md,.json,.csv" multiple hidden>
+        <label for="fileInput" class="upload-btn" title="Attach files">+</label>
+        <textarea class="chat-input" id="chatInput" placeholder="Ask about your screenshot..." rows="1"></textarea>
         <button class="send-btn" id="sendBtn">Send</button>
+      </div>
+      
+      <div class="magic-buttons" id="magicButtons"></div>
+      <div class="footer-actions">
+        <button class="magic-add-btn" id="addMagicBtn">✨ Create Magic</button>
+        <button class="action-btn continue-btn" id="continueBtn">▶ Continue</button>
+        <button class="action-btn" id="summarizeBtn">📋 Summarize</button>
+        <button class="action-btn" id="clearBtn">🗑 Clear</button>
+        <button class="action-btn" id="exportBtn">📄 Export PDF</button>
       </div>
     </div>
   </div>
-
+  
+  <!-- Magic Button Creator Modal -->
+  <div id="magicModal" class="magic-modal">
+    <div class="magic-modal-content">
+      <div class="magic-modal-header">
+        <span>✨ Create Your Magic Button</span>
+        <button class="magic-close" id="closeMagicModal">✕</button>
+      </div>
+      <div class="magic-modal-body">
+        <div class="magic-field">
+          <label>Button Name</label>
+          <input type="text" id="magicName" placeholder="e.g., Price Hunter" maxlength="20">
+        </div>
+        <div class="magic-field">
+          <label>Emoji Icon</label>
+          <div class="emoji-picker" id="emojiPicker">
+            <span class="emoji-option" data-emoji="🛒">🛒</span>
+            <span class="emoji-option" data-emoji="📈">📈</span>
+            <span class="emoji-option" data-emoji="💊">💊</span>
+            <span class="emoji-option" data-emoji="🍔">🍔</span>
+            <span class="emoji-option" data-emoji="🏠">🏠</span>
+            <span class="emoji-option" data-emoji="✈️">✈️</span>
+            <span class="emoji-option" data-emoji="💡">💡</span>
+            <span class="emoji-option" data-emoji="🎯">🎯</span>
+            <span class="emoji-option" data-emoji="⚡">⚡</span>
+            <span class="emoji-option" data-emoji="🔍">🔍</span>
+            <span class="emoji-option" data-emoji="💰">💰</span>
+            <span class="emoji-option" data-emoji="📊">📊</span>
+          </div>
+          <input type="hidden" id="selectedEmoji" value="🎯">
+        </div>
+        <div class="magic-field">
+          <label>What should this button do? (Teach the AI)</label>
+          <textarea id="magicPrompt" placeholder="Example: Compare this product's price across Amazon, Walmart, and eBay. Show me the best deal and any hidden costs." rows="5" maxlength="3000"></textarea>
+          <span class="char-count"><span id="promptCount">0</span>/3000</span>
+        </div>
+        <div class="magic-templates">
+          <div class="template-categories">
+            <button class="template-cat active" data-cat="money">💰 Money</button>
+            <button class="template-cat" data-cat="work">💼 Work</button>
+            <button class="template-cat" data-cat="health">🏥 Health</button>
+            <button class="template-cat" data-cat="learn">📚 Learn</button>
+          </div>
+          <div class="template-grid" id="templateGrid">
+            <!-- Money Templates -->
+            <button class="template-btn" data-cat="money" data-template="DEEP STOCK ANALYSIS: 1) Extract ticker symbol, current price, and % change. 2) Identify support/resistance levels from the chart. 3) Read any visible news headlines and rate sentiment (bullish/bearish/neutral). 4) Check volume patterns for unusual activity. 5) Give me: a) Entry price recommendation b) Stop-loss level c) Take-profit target d) Risk score 1-10 e) 7-day price prediction with reasoning. Be specific with numbers, not vague.">📈 Stock Deep Dive</button>
+            <button class="template-btn" data-cat="money" data-template="DEAL HUNTER ANALYSIS: 1) Identify the product and exact model. 2) Note the current price and any discounts shown. 3) Check for hidden costs (shipping, taxes, subscriptions). 4) Rate the deal quality: STEAL / GOOD / FAIR / RIP-OFF. 5) Estimate typical price range for this item. 6) Red flags to watch for. 7) VERDICT: Buy now, wait for sale, or skip entirely. Include specific dollar amounts.">💰 Deal or No Deal</button>
+            <button class="template-btn" data-cat="money" data-template="CRYPTO SIGNAL ANALYSIS: 1) Identify coin/token and current price. 2) Read the chart pattern (head & shoulders, cup & handle, etc). 3) Check RSI/MACD if visible. 4) Whale activity indicators. 5) Give me: a) Short-term trend (24h) b) Entry zone c) Stop-loss d) Target prices (3 levels) e) Risk rating HIGH/MEDIUM/LOW. No disclaimers - just the analysis.">🪙 Crypto Scanner</button>
+            <button class="template-btn" data-cat="money" data-template="INVOICE/BILL AUDIT: 1) Extract all line items and amounts. 2) Verify math - do totals add up correctly? 3) Flag any suspicious charges, hidden fees, or duplicates. 4) Compare rates to typical market prices. 5) Calculate potential savings if overcharged. 6) Priority items to dispute. 7) Script for calling customer service to negotiate.">🧾 Bill Detective</button>
+            <!-- Work Templates -->
+            <button class="template-btn" data-cat="work" data-template="CODE REVIEW PRO: 1) Identify the programming language and framework. 2) Find bugs, logic errors, and edge cases. 3) Security vulnerabilities (SQL injection, XSS, etc). 4) Performance bottlenecks and optimization opportunities. 5) Code smell and maintainability issues. 6) Rate code quality 1-100. 7) Provide FIXED code snippets for each issue found. Priority: CRITICAL > HIGH > MEDIUM > LOW.">💻 Code Doctor</button>
+            <button class="template-btn" data-cat="work" data-template="UI/UX ROAST: 1) First impression score (1-10). 2) Visual hierarchy - where does eye go first? 3) Accessibility issues (contrast, font size, touch targets). 4) Mobile responsiveness concerns. 5) Conversion killers - what stops users from clicking? 6) 3 specific improvements with mockup descriptions. 7) Competitor comparison if recognizable. Be brutally honest but constructive.">🎨 UI/UX Roast</button>
+            <button class="template-btn" data-cat="work" data-template="ERROR DEBUGGER: 1) Parse the error message and stack trace. 2) Identify root cause (not just symptoms). 3) Explain WHY this error occurred in plain English. 4) Provide the exact fix with code. 5) How to prevent this in the future. 6) Related errors to watch for. 7) Test cases to verify the fix works.">🐛 Debug This</button>
+            <button class="template-btn" data-cat="work" data-template="CONTRACT SCANNER: 1) Identify document type (lease, NDA, employment, etc). 2) Extract key terms, dates, and amounts. 3) Flag concerning clauses in RED. 4) Unusual or non-standard terms. 5) What's missing that should be there. 6) Negotiation points ranked by importance. 7) Plain English summary of what you're agreeing to.">📜 Contract Red Flags</button>
+            <!-- Health Templates -->
+            <button class="template-btn" data-cat="health" data-template="MEDICATION ANALYZER: 1) Identify the medication name and dosage. 2) What it's commonly prescribed for. 3) Common side effects to watch for. 4) Serious side effects requiring immediate attention. 5) Drug interactions to avoid (especially common ones). 6) Food/drink restrictions. 7) Questions to ask your doctor. 8) Generic alternatives that could save money.">💊 Med Check</button>
+            <button class="template-btn" data-cat="health" data-template="NUTRITION DETECTIVE: 1) Identify the food product. 2) Parse the nutrition label completely. 3) Hidden sugars and unhealthy ingredients. 4) Marketing tricks vs reality. 5) Rate healthiness 1-100 for different goals (weight loss, muscle, heart). 6) Better alternatives in the same category. 7) VERDICT: Healthy choice, occasional treat, or avoid.">🥗 Food Label Truth</button>
+            <button class="template-btn" data-cat="health" data-template="SYMPTOM MAPPER (Educational Only): 1) List all visible symptoms or reported issues. 2) Possible conditions that match (most to least common). 3) Warning signs that need immediate attention. 4) Questions a doctor would likely ask. 5) Tests that might be recommended. 6) Self-care steps while waiting for appointment. Disclaimer: This is educational, not medical advice.">🩺 Symptom Guide</button>
+            <button class="template-btn" data-cat="health" data-template="FITNESS FORM CHECK: 1) Identify the exercise being performed. 2) Evaluate form and technique - what's correct and what's wrong. 3) Injury risks from improper form. 4) Muscles being targeted vs muscles that SHOULD be targeted. 5) Specific corrections with descriptions. 6) Easier and harder progressions. 7) Common mistakes people make with this exercise.">🏋️ Form Checker</button>
+            <!-- Learn Templates -->
+            <button class="template-btn" data-cat="learn" data-template="STUDY NOTES GENERATOR: 1) Identify the subject and topic. 2) Extract KEY CONCEPTS (bullet points). 3) Important formulas, dates, or facts to memorize. 4) Create 5 flashcard Q&As. 5) Mnemonic devices to remember complex info. 6) How this connects to related topics. 7) 3 practice questions with answers. 8) One-paragraph summary for quick review.">📚 Study Extractor</button>
+            <button class="template-btn" data-cat="learn" data-template="EXPLAIN LIKE I'M 5: 1) Identify what's confusing in this image. 2) Explain the core concept using simple analogies. 3) Real-world example anyone can understand. 4) Common misconceptions about this topic. 5) Why it matters in everyday life. 6) One sentence summary a child could understand.">🧒 ELI5 This</button>
+            <button class="template-btn" data-cat="learn" data-template="COMPARISON MATRIX: 1) Identify the items being compared. 2) Create a feature-by-feature comparison table. 3) Pros and cons of each option. 4) Best for different use cases (budget, performance, beginners). 5) Hidden differences most people miss. 6) WINNER for each category. 7) Overall recommendation with reasoning.">⚖️ Compare These</button>
+            <button class="template-btn" data-cat="learn" data-template="REVERSE ENGINEER: 1) What is this thing and how does it work? 2) Break down into components/steps. 3) Why was it designed this way? 4) How could you recreate or improve it? 5) Skills needed to build something similar. 6) Estimated time/cost to replicate. 7) Resources to learn more.">🔧 How It Works</button>
+          </div>
+        </div>
+      </div>
+      <div class="magic-modal-footer">
+        <button class="magic-save-btn" id="saveMagicBtn">✨ Create Button</button>
+      </div>
+    </div>
+  </div>
+  
   <script src="ai-chat.js"></script>
 </body>
 </html>
