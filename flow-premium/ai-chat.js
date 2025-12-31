@@ -1158,7 +1158,7 @@ Output ONLY valid JSON:
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts }],
-            generationConfig: { maxOutputTokens: 1200, temperature: 0.7 }
+            generationConfig: { maxOutputTokens: 2500, temperature: 0.7 }
           })
         }
       );
