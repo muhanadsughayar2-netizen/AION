@@ -974,8 +974,9 @@ Output ONLY JSON:
 // ============ MAGIC BUTTONS SYSTEM ============
 let magicButtons = [];
 
-// Split images into batches of max size
+// Split images into batches of 30 max
 function chunkImages(images, maxSize = 30) {
+  if (!images) return [];
   const batches = [];
   for (let i = 0; i < images.length; i += maxSize) {
     batches.push(images.slice(i, i + maxSize));
