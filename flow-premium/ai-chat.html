@@ -552,33 +552,47 @@
     /* MAGIC CARD - Beautiful Results */
     .magic-card {
       --tone-color: #34d399;
-      background: linear-gradient(135deg, #0f172a, #1e293b);
-      border-radius: 20px;
-      border: 2px solid var(--tone-color);
-      padding: 20px;
-      margin: 12px 0;
+      background: linear-gradient(165deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 24px;
+      margin: 16px 0;
       color: white;
-      box-shadow: 0 0 30px rgba(0,0,0,0.5), 0 0 15px color-mix(in srgb, var(--tone-color) 30%, transparent);
-      animation: magicAppear 0.4s ease;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1);
+      animation: magicAppear 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
     }
-    @keyframes magicAppear { from { transform: scale(0.9) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
-    .magic-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-    .magic-emoji { font-size: 28px; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-    .magic-title { font-size: 18px; font-weight: 800; background: linear-gradient(90deg, #fff, var(--tone-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .magic-score-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; }
-    .magic-score { font-size: 36px; font-weight: 900; }
-    .magic-score span { font-size: 14px; opacity: 0.5; }
-    .magic-highlight { flex: 1; font-size: 13px; color: var(--tone-color); font-weight: 600; padding: 8px 12px; background: color-mix(in srgb, var(--tone-color) 15%, transparent); border-radius: 8px; }
-    .magic-section { margin-bottom: 12px; }
-    .magic-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 6px; }
-    .magic-items { margin: 0; padding-left: 20px; font-size: 12px; color: #e2e8f0; line-height: 1.6; }
-    .magic-items li { margin-bottom: 4px; }
-    .magic-verdict { background: linear-gradient(135deg, #3b82f6, #6366f1); border-radius: 12px; padding: 14px; margin-top: 12px; }
-    .magic-verdict-label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; opacity: 0.7; margin-bottom: 4px; }
-    .magic-verdict-text { font-size: 13px; font-weight: 600; line-height: 1.4; }
-    .magic-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
-    .magic-next { font-size: 11px; color: #94a3b8; font-style: italic; }
+    .magic-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, var(--tone-color), transparent);
+    }
+    @keyframes magicAppear { from { transform: scale(0.98) translateY(10px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+    .magic-card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+    .magic-emoji { font-size: 32px; filter: drop-shadow(0 0 8px var(--tone-color)); }
+    .magic-title { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; color: #fff; }
+    .magic-score-row { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; padding: 16px; background: rgba(255,255,255,0.03); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); }
+    .magic-score { font-size: 42px; font-weight: 900; line-height: 1; letter-spacing: -2px; }
+    .magic-score span { font-size: 16px; opacity: 0.4; font-weight: 500; letter-spacing: 0; }
+    .magic-highlight { flex: 1; font-size: 14px; color: #fff; font-weight: 500; padding: 10px 14px; background: color-mix(in srgb, var(--tone-color) 20%, transparent); border-radius: 12px; border: 1px solid color-mix(in srgb, var(--tone-color) 30%, transparent); line-height: 1.4; }
+    .magic-section { margin-bottom: 16px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px solid rgba(255,255,255,0.03); }
+    .magic-section-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; margin-bottom: 10px; display: block; }
+    .magic-items { margin: 0; padding-left: 4px; list-style: none; font-size: 13px; color: #cbd5e1; line-height: 1.6; }
+    .magic-items li { margin-bottom: 8px; position: relative; padding-left: 20px; }
+    .magic-items li::before { content: '→'; position: absolute; left: 0; color: var(--tone-color); font-weight: 900; opacity: 0.7; }
+    .magic-verdict { background: linear-gradient(135deg, #2563eb, #7c3aed); border-radius: 16px; padding: 18px; margin-top: 20px; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2); }
+    .magic-verdict-label { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: rgba(255,255,255,0.6); margin-bottom: 6px; }
+    .magic-verdict-text { font-size: 15px; font-weight: 700; line-height: 1.5; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+    .magic-footer { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+    .magic-next { font-size: 12px; color: #64748b; font-weight: 500; }
+    .magic-risk-badge { font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; }
+    .magic-risk-badge.high { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .magic-risk-badge.medium { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .magic-risk-badge.low { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
     
     /* Priority Tags */
     .priority-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; margin-right: 6px; text-transform: uppercase; }

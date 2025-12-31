@@ -1009,37 +1009,42 @@ function renderMagicCard(data, btn, batchLabel = '') {
     `;
   }
   
-  // Risk/confidence meter if present
-  const riskHtml = data.risk ? `
-    <div class="magic-risk">
-      <span class="risk-label">RISK LEVEL:</span>
-      <span class="risk-value risk-${data.risk.toLowerCase()}">${data.risk}</span>
+  // Risk meter badge
+  const riskClass = data.risk ? data.risk.toLowerCase() : 'medium';
+  const riskHtml = `
+    <div class="magic-risk-badge ${riskClass}">
+      ${data.risk || 'MEDIUM'} RISK
     </div>
-  ` : '';
+  `;
   
   const card = document.createElement('div');
   card.className = 'magic-card';
   card.style.setProperty('--tone-color', toneColor);
   card.innerHTML = `
     <div class="magic-card-header">
-      <span class="magic-emoji">${btn.emoji}</span>
-      <span class="magic-title">${data.title || 'Analysis Complete'}${batchLabel ? ` <span style="opacity:0.6;font-size:12px">${batchLabel}</span>` : ''}</span>
+      <div class="magic-emoji">${btn.emoji}</div>
+      <div class="magic-title">${data.title || 'Analysis Complete'}${batchLabel ? ` <span style="opacity:0.6;font-size:12px">${batchLabel}</span>` : ''}</div>
     </div>
+    
     <div class="magic-score-row">
       <div class="magic-score" style="color: ${toneColor}">${data.score || '??'}<span>/100</span></div>
       <div class="magic-highlight">${data.highlight || ''}</div>
-      ${riskHtml}
     </div>
+    
     ${sectionsHtml}
     ${actionsHtml}
+    
     <div class="magic-verdict">
-      <div class="magic-verdict-label">THE VERDICT</div>
+      <div class="magic-verdict-label">FINAL VERDICT</div>
       <div class="magic-verdict-text">${data.verdict || 'Analysis complete.'}</div>
     </div>
+    
     <div class="magic-footer">
-      <span class="magic-next">${data.nextStep || ''}</span>
+      <div class="magic-next">NEXT: ${data.nextStep || 'Review insights'}</div>
+      ${riskHtml}
     </div>
   `;
+  
   thread.appendChild(card);
   card.scrollIntoView({ behavior: 'smooth' });
 }
