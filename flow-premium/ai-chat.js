@@ -153,7 +153,7 @@ function speakText(text, langCode = null) {
 let currentImages = []; // Support multiple images
 let currentPageText = '';
 let conversationHistory = [];
-let filesQueue = []; // Multi-file upload queue (Gemini-style)
+window.filesQueue = []; // Multi-file upload queue (Gemini-style)
 
 const SYSTEM_PROMPT = "You are a thorough, exhaustive AI assistant. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never ask the user if they want more—just give it all now. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.";
 
@@ -494,8 +494,8 @@ async function handleSend() {
     }
     
     // Attach all queued files (multi-file Gemini-style)
-    if (filesQueue && filesQueue.length > 0) {
-      filesQueue.forEach(f => {
+    if (window.filesQueue && window.filesQueue.length > 0) {
+      window.filesQueue.forEach(f => {
         userParts.push({ inlineData: { mimeType: f.mimeType, data: f.data } });
       });
       clearFilesQueue();
@@ -777,7 +777,7 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
         data: event.target.result.split(',')[1],
         name: file.name
       };
-      filesQueue.push(fileData);
+      window.filesQueue.push(fileData);
       
       // Create file card UI
       const card = document.createElement('div');
@@ -797,7 +797,7 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
 
 // Clear file queue after sending
 function clearFilesQueue() {
-  filesQueue = [];
+  window.filesQueue = [];
   document.getElementById('filePreviewZone').innerHTML = '';
 }
 
@@ -1096,8 +1096,18 @@ async function executeMagicButton(index) {
   const btn = magicButtons[index];
   if (!btn) return;
   
-  if (!currentImages.length) {
-    addBubble('Please capture a screenshot first!', 'ai');
+  // Combine current screenshots AND uploaded files for analysis
+  const allImages = [...currentImages];
+  if (window.filesQueue && window.filesQueue.length > 0) {
+    window.filesQueue.forEach(f => {
+      if (f.mimeType && f.mimeType.startsWith('image/')) {
+        allImages.push(`data:${f.mimeType};base64,${f.data}`);
+      }
+    });
+  }
+
+  if (allImages.length === 0) {
+    addBubble('Please capture a screenshot or upload an image first!', 'ai');
     return;
   }
   
@@ -1109,10 +1119,10 @@ async function executeMagicButton(index) {
   
   // Split images into batches of 30 max
   const MAX_BATCH_SIZE = 30;
-  const batches = chunkImages(currentImages, MAX_BATCH_SIZE);
+  const batches = chunkImages(allImages, MAX_BATCH_SIZE);
   const totalBatches = batches.length;
   
-  addBubble(`${btn.emoji} Using: ${btn.name}${totalBatches > 1 ? ` (${currentImages.length} images → ${totalBatches} batches)` : ''}`, 'user');
+  addBubble(`${btn.emoji} Using: ${btn.name}${totalBatches > 1 ? ` (${allImages.length} images → ${totalBatches} batches)` : ''}`, 'user');
   
   if (navigator.vibrate) navigator.vibrate(100);
   
