@@ -758,7 +758,37 @@ chatInput.addEventListener('keydown', (e) => {
 });
 chatInput.addEventListener('input', () => autoResize(chatInput));
 chatInput.addEventListener('paste', (e) => {
-  // Allow paste to complete, then auto-resize
+  // Allow paste to complete for text, but also check for files
+  const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+  
+  for (const item of items) {
+    if (item.type.indexOf('image') !== -1) {
+      const file = item.getAsFile();
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const fileData = {
+            mimeType: file.type || 'image/png',
+            data: event.target.result.split(',')[1],
+            name: `pasted-image-${Date.now()}.png`
+          };
+          window.filesQueue.push(fileData);
+          
+          // Create file card UI
+          const card = document.createElement('div');
+          card.className = 'file-card';
+          card.innerHTML = `🖼️ <span>Pasted Image</span> <div class="remove-btn">×</div>`;
+          card.querySelector('.remove-btn').onclick = () => {
+            window.filesQueue = window.filesQueue.filter(f => f !== fileData);
+            card.remove();
+          };
+          document.getElementById('filePreviewZone').appendChild(card);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  }
+  
   setTimeout(() => autoResize(chatInput), 0);
 });
 
