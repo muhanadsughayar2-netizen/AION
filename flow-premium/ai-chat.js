@@ -153,7 +153,7 @@ function speakText(text, langCode = null) {
 let currentImages = []; // Support multiple images
 let currentPageText = '';
 let conversationHistory = [];
-window.filesQueue = []; // Multi-file upload queue (Gemini-style)
+let filesQueue = []; // Multi-file upload queue (Gemini-style)
 
 const SYSTEM_PROMPT = "You are a thorough, exhaustive AI assistant. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never ask the user if they want more—just give it all now. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.";
 
@@ -494,8 +494,8 @@ async function handleSend() {
     }
     
     // Attach all queued files (multi-file Gemini-style)
-    if (window.filesQueue && window.filesQueue.length > 0) {
-      window.filesQueue.forEach(f => {
+    if (filesQueue && filesQueue.length > 0) {
+      filesQueue.forEach(f => {
         userParts.push({ inlineData: { mimeType: f.mimeType, data: f.data } });
       });
       clearFilesQueue();
@@ -758,37 +758,7 @@ chatInput.addEventListener('keydown', (e) => {
 });
 chatInput.addEventListener('input', () => autoResize(chatInput));
 chatInput.addEventListener('paste', (e) => {
-  // Allow paste to complete for text, but also check for files
-  const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-  
-  for (const item of items) {
-    if (item.type.indexOf('image') !== -1) {
-      const file = item.getAsFile();
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const fileData = {
-            mimeType: file.type || 'image/png',
-            data: event.target.result.split(',')[1],
-            name: `pasted-image-${Date.now()}.png`
-          };
-          window.filesQueue.push(fileData);
-          
-          // Create file card UI
-          const card = document.createElement('div');
-          card.className = 'file-card';
-          card.innerHTML = `🖼️ <span>Pasted Image</span> <div class="remove-btn">×</div>`;
-          card.querySelector('.remove-btn').onclick = () => {
-            window.filesQueue = window.filesQueue.filter(f => f !== fileData);
-            card.remove();
-          };
-          document.getElementById('filePreviewZone').appendChild(card);
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-  }
-  
+  // Allow paste to complete, then auto-resize
   setTimeout(() => autoResize(chatInput), 0);
 });
 
@@ -807,7 +777,7 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
         data: event.target.result.split(',')[1],
         name: file.name
       };
-      window.filesQueue.push(fileData);
+      filesQueue.push(fileData);
       
       // Create file card UI
       const card = document.createElement('div');
@@ -827,7 +797,7 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
 
 // Clear file queue after sending
 function clearFilesQueue() {
-  window.filesQueue = [];
+  filesQueue = [];
   document.getElementById('filePreviewZone').innerHTML = '';
 }
 
@@ -974,9 +944,8 @@ Output ONLY JSON:
 // ============ MAGIC BUTTONS SYSTEM ============
 let magicButtons = [];
 
-// Split images into batches of 30 max
+// Split images into batches of max size
 function chunkImages(images, maxSize = 30) {
-  if (!images) return [];
   const batches = [];
   for (let i = 0; i < images.length; i += maxSize) {
     batches.push(images.slice(i, i + maxSize));
@@ -1127,18 +1096,8 @@ async function executeMagicButton(index) {
   const btn = magicButtons[index];
   if (!btn) return;
   
-  // Combine current screenshots AND uploaded files for analysis
-  const allImages = [...currentImages];
-  if (window.filesQueue && window.filesQueue.length > 0) {
-    window.filesQueue.forEach(f => {
-      if (f.mimeType && f.mimeType.startsWith('image/')) {
-        allImages.push(`data:${f.mimeType};base64,${f.data}`);
-      }
-    });
-  }
-
-  if (allImages.length === 0) {
-    addBubble('Please capture a screenshot or upload an image first!', 'ai');
+  if (!currentImages.length) {
+    addBubble('Please capture a screenshot first!', 'ai');
     return;
   }
   
@@ -1150,10 +1109,10 @@ async function executeMagicButton(index) {
   
   // Split images into batches of 30 max
   const MAX_BATCH_SIZE = 30;
-  const batches = chunkImages(allImages, MAX_BATCH_SIZE);
+  const batches = chunkImages(currentImages, MAX_BATCH_SIZE);
   const totalBatches = batches.length;
   
-  addBubble(`${btn.emoji} Using: ${btn.name}${totalBatches > 1 ? ` (${allImages.length} images → ${totalBatches} batches)` : ''}`, 'user');
+  addBubble(`${btn.emoji} Using: ${btn.name}${totalBatches > 1 ? ` (${currentImages.length} images → ${totalBatches} batches)` : ''}`, 'user');
   
   if (navigator.vibrate) navigator.vibrate(100);
   
@@ -1199,7 +1158,7 @@ Output ONLY valid JSON:
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts }],
-            generationConfig: { maxOutputTokens: 8192, temperature: 0.7 }
+            generationConfig: { maxOutputTokens: 4096, temperature: 0.7 }
           })
         }
       );
@@ -1268,29 +1227,11 @@ Output ONLY valid JSON:
         const scoreMatch = responseText.match(/"score"\s*:\s*(\d+)/);
         
         if (titleMatch || highlightMatch) {
-          // Attempt to fix the truncated JSON manually
-          try {
-            let fixedJson = jsonStr;
-            // Add missing closing brackets/braces based on count
-            const openBraces = (fixedJson.match(/\{/g) || []).length;
-            const closeBraces = (fixedJson.match(/\}/g) || []).length;
-            const openBrackets = (fixedJson.match(/\[/g) || []).length;
-            const closeBrackets = (fixedJson.match(/\]/g) || []).length;
-            
-            fixedJson += ']'.repeat(Math.max(0, openBrackets - closeBrackets));
-            fixedJson += '}'.repeat(Math.max(0, openBraces - closeBraces));
-            
-            const repairedData = JSON.parse(fixedJson);
-            thinkingBubble.remove();
-            renderMagicCard(repairedData, btn, batchLabel);
-            return;
-          } catch (repairError) {
-            // If repair fails, show the clean extraction we had before
-            displayText = `**${titleMatch ? titleMatch[1] : 'Analysis'}**\n\n`;
-            if (scoreMatch) displayText += `**Score:** ${scoreMatch[1]}/100\n\n`;
-            if (highlightMatch) displayText += `${highlightMatch[1]}\n\n`;
-            displayText += `*AI response was complex - displaying core insights.*`;
-          }
+          // We got partial data - show what we extracted in a clean format
+          displayText = `**${titleMatch ? titleMatch[1] : 'Analysis'}**\n\n`;
+          if (scoreMatch) displayText += `**Score:** ${scoreMatch[1]}/100\n\n`;
+          if (highlightMatch) displayText += `${highlightMatch[1]}\n\n`;
+          displayText += `*AI response was long - showing key insights above.*`;
         } else {
           // Complete failure
           displayText = 'Analysis processing - please try again.';
@@ -1317,27 +1258,7 @@ Output ONLY valid JSON:
   if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 }
 
-// Export/Import Prompt functionality
-document.getElementById('exportPromptBtn')?.addEventListener('click', () => {
-  const prompt = document.getElementById('magicPrompt').value;
-  if (!prompt) return alert('Enter a prompt first!');
-  navigator.clipboard.writeText(prompt);
-  alert('Prompt copied to clipboard! Share it anywhere.');
-});
-
-document.getElementById('importPromptBtn')?.addEventListener('click', () => {
-  const prompt = prompt('Paste your prompt text here:');
-  if (prompt) {
-    document.getElementById('magicPrompt').value = prompt;
-    updateCharCount();
-  }
-});
-
-function updateCharCount() {
-  const count = document.getElementById('magicPrompt').value.length;
-  document.getElementById('promptCount').textContent = count;
-}
-document.getElementById('magicPrompt')?.addEventListener('input', updateCharCount);
+// Modal Controls
 // Template category switching
 function showTemplateCategory(category) {
   document.querySelectorAll('.template-cat').forEach(c => c.classList.remove('active'));
