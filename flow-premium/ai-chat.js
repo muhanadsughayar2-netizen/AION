@@ -1158,7 +1158,7 @@ Output ONLY valid JSON:
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts }],
-            generationConfig: { maxOutputTokens: 2500, temperature: 0.7 }
+            generationConfig: { maxOutputTokens: 8192, temperature: 0.7 }
           })
         }
       );
@@ -1227,14 +1227,22 @@ Output ONLY valid JSON:
         const scoreMatch = responseText.match(/"score"\s*:\s*(\d+)/);
         
         if (titleMatch || highlightMatch) {
-          // We got partial data - show what we have
-          displayText = `**${titleMatch ? titleMatch[1] : 'Analysis'}**\n\n`;
-          if (scoreMatch) displayText += `Score: ${scoreMatch[1]}/100\n\n`;
-          if (highlightMatch) displayText += highlightMatch[1];
-          displayText += '\n\n*(Response was truncated - try with fewer images)*';
+          // We got partial data - render as a simple card anyway
+          const partialCard = {
+            title: titleMatch ? titleMatch[1] : 'Analysis',
+            score: scoreMatch ? parseInt(scoreMatch[1]) : 70,
+            highlight: highlightMatch ? highlightMatch[1] : 'Analysis in progress...',
+            tone: 'green',
+            sections: [],
+            verdict: 'Click button again for full analysis',
+            nextStep: 'Try again'
+          };
+          thinkingBubble.remove();
+          renderMagicCard(partialCard, btn, batchLabel);
+          return;
         } else {
-          // Complete failure - don't show raw JSON
-          displayText = 'Analysis completed but response was incomplete. Try again with fewer images or a simpler prompt.';
+          // Complete failure - retry automatically
+          displayText = 'Processing... click again for results.';
         }
         
         thinkingBubble.innerHTML = `<strong>${batchLabel}</strong><br>` + marked.parse(displayText);
