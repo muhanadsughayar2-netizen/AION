@@ -677,6 +677,10 @@
         </div>
         <div class="magic-field">
           <label>What should this button do? (Teach the AI)</label>
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <button class="action-btn" id="exportPromptBtn" title="Export this prompt to share">📤 Export</button>
+            <button class="action-btn" id="importPromptBtn" title="Import a prompt">📥 Import</button>
+          </div>
           <textarea id="magicPrompt" placeholder="Example: Compare this product's price across Amazon, Walmart, and eBay. Show me the best deal and any hidden costs." rows="5" maxlength="3000"></textarea>
           <span class="char-count"><span id="promptCount">0</span>/3000</span>
         </div>

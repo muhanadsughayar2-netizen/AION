@@ -1158,7 +1158,7 @@ Output ONLY valid JSON:
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts }],
-            generationConfig: { maxOutputTokens: 4096, temperature: 0.7 }
+            generationConfig: { maxOutputTokens: 8192, temperature: 0.7 }
           })
         }
       );
@@ -1227,11 +1227,29 @@ Output ONLY valid JSON:
         const scoreMatch = responseText.match(/"score"\s*:\s*(\d+)/);
         
         if (titleMatch || highlightMatch) {
-          // We got partial data - show what we extracted in a clean format
-          displayText = `**${titleMatch ? titleMatch[1] : 'Analysis'}**\n\n`;
-          if (scoreMatch) displayText += `**Score:** ${scoreMatch[1]}/100\n\n`;
-          if (highlightMatch) displayText += `${highlightMatch[1]}\n\n`;
-          displayText += `*AI response was long - showing key insights above.*`;
+          // Attempt to fix the truncated JSON manually
+          try {
+            let fixedJson = jsonStr;
+            // Add missing closing brackets/braces based on count
+            const openBraces = (fixedJson.match(/\{/g) || []).length;
+            const closeBraces = (fixedJson.match(/\}/g) || []).length;
+            const openBrackets = (fixedJson.match(/\[/g) || []).length;
+            const closeBrackets = (fixedJson.match(/\]/g) || []).length;
+            
+            fixedJson += ']'.repeat(Math.max(0, openBrackets - closeBrackets));
+            fixedJson += '}'.repeat(Math.max(0, openBraces - closeBraces));
+            
+            const repairedData = JSON.parse(fixedJson);
+            thinkingBubble.remove();
+            renderMagicCard(repairedData, btn, batchLabel);
+            return;
+          } catch (repairError) {
+            // If repair fails, show the clean extraction we had before
+            displayText = `**${titleMatch ? titleMatch[1] : 'Analysis'}**\n\n`;
+            if (scoreMatch) displayText += `**Score:** ${scoreMatch[1]}/100\n\n`;
+            if (highlightMatch) displayText += `${highlightMatch[1]}\n\n`;
+            displayText += `*AI response was complex - displaying core insights.*`;
+          }
         } else {
           // Complete failure
           displayText = 'Analysis processing - please try again.';
@@ -1258,7 +1276,27 @@ Output ONLY valid JSON:
   if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 }
 
-// Modal Controls
+// Export/Import Prompt functionality
+document.getElementById('exportPromptBtn')?.addEventListener('click', () => {
+  const prompt = document.getElementById('magicPrompt').value;
+  if (!prompt) return alert('Enter a prompt first!');
+  navigator.clipboard.writeText(prompt);
+  alert('Prompt copied to clipboard! Share it anywhere.');
+});
+
+document.getElementById('importPromptBtn')?.addEventListener('click', () => {
+  const prompt = prompt('Paste your prompt text here:');
+  if (prompt) {
+    document.getElementById('magicPrompt').value = prompt;
+    updateCharCount();
+  }
+});
+
+function updateCharCount() {
+  const count = document.getElementById('magicPrompt').value.length;
+  document.getElementById('promptCount').textContent = count;
+}
+document.getElementById('magicPrompt')?.addEventListener('input', updateCharCount);
 // Template category switching
 function showTemplateCategory(category) {
   document.querySelectorAll('.template-cat').forEach(c => c.classList.remove('active'));
