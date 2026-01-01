@@ -241,20 +241,26 @@
     <div class="gemini-modal-content">
       <div class="gemini-modal-header">
         <span class="gemini-icon">✦</span>
-        <span class="gemini-title">Gemini API Key</span>
+        <span class="gemini-title">Get Your Free API Key</span>
         <span id="geminiStatus" class="gemini-status" style="display: none;">✓ Connected</span>
       </div>
-      <div class="gemini-help-section">
-        <span class="gemini-help-bulb" id="helpBulb">💡</span>
-        <p class="gemini-help-text">Click link below → Under the <span class="cyan-text">Key</span> column, Click blue code to COPY → Paste here. <span class="cyan-text">(...aEeg)</span></p>
+      <div class="gemini-promo-box">
+        <div class="promo-title">○ 20 FREE Prompts Daily</div>
+        <p class="promo-desc">No credit card required. Just sign in with Google and start using AI instantly!</p>
       </div>
-      <p class="gemini-desc"><span class="cyan-text">Free</span> tier: 20 prompts daily. Want more? Get <span class="cyan-text">$300 free</span> credits via Google Cloud.</p>
-      <input type="password" id="geminiKeyInput" class="gemini-input" placeholder="Enter your Gemini API key...">
+      <div class="gemini-steps">
+        <div class="steps-title">3 simple steps:</div>
+        <div class="step"><span class="step-num">1</span> Click the button below to open Google AI Studio</div>
+        <div class="step"><span class="step-num">2</span> Click the blue API key to <span class="cyan-text">copy it</span></div>
+        <div class="step"><span class="step-num">3</span> Paste it below and save!</div>
+      </div>
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="gemini-get-key-btn">Get Your Free API Key ↗</a>
+      <input type="password" id="geminiKeyInput" class="gemini-input" placeholder="🔑 Paste your API key here...">
       <div class="gemini-actions">
         <button id="geminiSaveBtn" class="gemini-btn-primary">Save Key</button>
         <button id="geminiClearBtn" class="gemini-btn-secondary">Clear</button>
       </div>
-      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="gemini-link">Get free API key ↗</a>
+      <p class="gemini-footer-note">Need more than 20 prompts? Google Cloud offers <span class="cyan-text">$300 free</span> credits for new users.</p>
     </div>
   </div>
 

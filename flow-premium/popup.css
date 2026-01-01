@@ -1429,11 +1429,94 @@ html[dir="rtl"] .logo-word {
   font-weight: 600;
 }
 
-.gemini-desc {
-  color: #888;
+.gemini-promo-box {
+  background: rgba(0, 217, 255, 0.08);
+  border: 1px solid rgba(0, 217, 255, 0.3);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.promo-title {
+  color: #00d9ff;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.promo-desc {
+  color: #a0a8b0;
   font-size: 12px;
   line-height: 1.4;
+  margin: 0;
+}
+
+.gemini-steps {
+  margin-bottom: 16px;
+}
+
+.steps-title {
+  color: #e0e0e0;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.step {
+  color: #a0a8b0;
+  font-size: 12px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: rgba(0, 217, 255, 0.2);
+  border: 1px solid rgba(0, 217, 255, 0.4);
+  border-radius: 50%;
+  color: #00d9ff;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.gemini-get-key-btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #00d9ff, #00b8d4);
+  border: none;
+  border-radius: 10px;
+  color: #000;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
   margin-bottom: 14px;
+  transition: all 0.2s;
+}
+
+.gemini-get-key-btn:hover {
+  background: linear-gradient(135deg, #00e8ff, #00c8e4);
+  box-shadow: 0 4px 20px rgba(0, 217, 255, 0.4);
+}
+
+.gemini-footer-note {
+  text-align: center;
+  color: #888;
+  font-size: 11px;
+  margin-top: 12px;
+  line-height: 1.4;
+}
+
+.gemini-footer-note .cyan-text {
+  color: #00d9ff;
+  font-weight: 600;
 }
 
 .gemini-input {
@@ -1498,44 +1581,9 @@ html[dir="rtl"] .logo-word {
   color: #fff;
 }
 
-.gemini-help-section {
-  display: block;
-  text-align: center;
-  background: rgba(0, 20, 30, 0.9);
-  border: 1px solid rgba(0, 217, 255, 0.5);
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 0 12px rgba(0, 217, 255, 0.15);
-}
-
-.gemini-help-bulb {
-  display: none;
-}
-
-.gemini-help-text {
-  font-size: 12px;
-  color: #b8c5cc;
-  line-height: 1.5;
-  margin: 0;
-}
-
-.gemini-help-text .cyan-text,
-.gemini-desc .cyan-text {
+.cyan-text {
   color: #00d9ff;
   font-weight: 600;
-}
-
-.gemini-link {
-  display: block;
-  text-align: center;
-  color: #00d9ff;
-  font-size: 12px;
-  text-decoration: underline;
-}
-
-.gemini-link:hover {
-  color: #00e8ff;
 }
 
 /* ===== AI ANALYSIS BUTTON ===== */
