@@ -66,6 +66,40 @@
       max-width: 480px;
     }
 
+    .tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      animation: fadeInUp 0.4s ease-out both;
+    }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      background: var(--primary-dim);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .tab.active {
+      background: var(--primary);
+      color: #0d1117;
+      border-color: var(--primary);
+    }
+
+    .tab:hover:not(.active) {
+      background: rgba(34, 211, 238, 0.15);
+      transform: translateY(-2px);
+    }
+
     .card {
       background: linear-gradient(135deg, var(--card) 0%, rgba(22, 27, 34, 0.95) 100%);
       border: 1px solid var(--border);
@@ -134,11 +168,122 @@
       color: var(--text);
     }
 
+    .extension-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 20px;
+      animation: fadeInUp 0.5s ease-out 0.25s both;
+    }
+
+    .extension-title {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--foreground);
+      margin-bottom: 14px;
+    }
+
+    .capture-icons {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 14px;
+    }
+
+    .capture-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .capture-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary-dim);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 18px;
+      transition: all 0.3s ease;
+    }
+
+    .capture-item:hover .capture-icon {
+      background: rgba(34, 211, 238, 0.2);
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    .capture-label {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .copy-text {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .copy-text .accent {
+      color: var(--primary);
+    }
+
+    .feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--primary-dim);
+      border: 1px solid transparent;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+    }
+
+    .feature-item:hover {
+      border-color: var(--border);
+      background: rgba(34, 211, 238, 0.12);
+    }
+
+    .feature-check {
+      color: var(--primary);
+      font-size: 14px;
+      margin-top: 2px;
+    }
+
+    .feature-content {
+      flex: 1;
+    }
+
+    .feature-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--foreground);
+      margin-bottom: 2px;
+    }
+
+    .feature-desc {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
     .features {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
       margin-bottom: 20px;
+      animation: fadeInUp 0.5s ease-out 0.35s both;
     }
 
     .feature {
@@ -148,13 +293,7 @@
       padding: 14px 12px;
       text-align: center;
       transition: all 0.3s ease;
-      animation: fadeInUp 0.5s ease-out both;
     }
-
-    .feature:nth-child(1) { animation-delay: 0.3s; }
-    .feature:nth-child(2) { animation-delay: 0.35s; }
-    .feature:nth-child(3) { animation-delay: 0.4s; }
-    .feature:nth-child(4) { animation-delay: 0.45s; }
 
     .feature:hover {
       border-color: rgba(34, 211, 238, 0.4);
@@ -188,12 +327,44 @@
       text-decoration: none;
       margin-bottom: 20px;
       transition: all 0.3s ease;
-      animation: fadeInUp 0.5s ease-out 0.5s both;
+      animation: fadeInUp 0.5s ease-out 0.4s both;
     }
 
     .cta-btn:hover {
       background: rgba(34, 211, 238, 0.15);
       transform: translateY(-2px);
+    }
+
+    .promo-box {
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.15) 0%, rgba(34, 211, 238, 0.08) 100%);
+      border: 1px solid var(--primary);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+      animation: fadeInUp 0.5s ease-out 0.45s both;
+    }
+
+    .promo-title {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .promo-desc {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .promo-desc .highlight {
+      color: var(--primary);
+      font-weight: 600;
     }
 
     .glass-card {
@@ -203,39 +374,10 @@
       padding: 16px;
       margin-bottom: 12px;
       text-align: center;
-      animation: fadeInUp 0.5s ease-out 0.55s both;
+      animation: fadeInUp 0.5s ease-out 0.5s both;
     }
 
-    .glass-card h3 {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      color: var(--primary);
-      font-size: 17px;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    .glass-card p {
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .glass-card .tip {
-      color: var(--text);
-    }
-
-    .glass-card .accent {
-      color: rgba(34, 211, 238, 0.8);
-    }
-
-    .pro-card {
-      animation-delay: 0.6s;
-    }
-
-    .pro-card .pro-header {
+    .glass-card .pro-header {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -272,44 +414,36 @@
     }
 
     .footer {
+      background: var(--primary-dim);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
       text-align: center;
-      margin-top: 20px;
-      animation: fadeInUp 0.5s ease-out 0.65s both;
+      animation: fadeInUp 0.5s ease-out 0.55s both;
     }
 
     .footer .ready {
-      font-size: 15px;
-      font-weight: 600;
+      font-size: 16px;
+      font-weight: 700;
       color: var(--foreground);
-      margin-bottom: 6px;
+      margin-bottom: 10px;
     }
 
     .footer .pin-hint {
-      font-size: 11px;
-      color: var(--muted);
-      margin-bottom: 10px;
-      opacity: 0.85;
+      font-size: 12px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .footer .pin-hint .accent {
+      color: var(--primary);
+      font-weight: 600;
     }
 
     .footer .steps {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--muted);
-      line-height: 1.6;
-      margin-bottom: 12px;
-    }
-
-    .footer .help-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      color: var(--primary);
-      text-decoration: none;
-      transition: all 0.2s ease;
-    }
-
-    .footer .help-link:hover {
-      text-decoration: underline;
+      line-height: 1.5;
     }
 
     .trust-badge {
@@ -317,7 +451,7 @@
       font-size: 12px;
       color: var(--muted);
       margin-top: 20px;
-      animation: fadeInUp 0.5s ease-out 0.7s both;
+      animation: fadeInUp 0.5s ease-out 0.6s both;
     }
 
     @media (max-width: 420px) {
@@ -327,6 +461,8 @@
       .feature { padding: 12px 10px; }
       .feature-icon { font-size: 22px; }
       .feature-title { font-size: 12px; }
+      .tabs { flex-wrap: wrap; gap: 8px; }
+      .tab { padding: 8px 12px; font-size: 12px; }
     }
   </style>
 </head>
@@ -337,6 +473,11 @@
   </div>
 
   <main>
+    <div class="tabs">
+      <div class="tab active">📸 Landing Page</div>
+      <div class="tab" id="apiKeyTab">🔑 API Key Setup</div>
+    </div>
+
     <div class="card">
       <div class="header">
         <div class="icon-box">
@@ -347,6 +488,48 @@
           Turn any screenshot into instant AI-powered insights.<br>
           <span class="highlight">Stocks • Crypto • Shopping • Health • Learning • Work</span>
         </p>
+      </div>
+
+      <div class="extension-box">
+        <div class="extension-title">One-of-a-Kind AI Extension</div>
+        <div class="capture-icons">
+          <div class="capture-item">
+            <div class="capture-icon">📷</div>
+            <span class="capture-label">Snap</span>
+          </div>
+          <div class="capture-item">
+            <div class="capture-icon">✂️</div>
+            <span class="capture-label">Snip</span>
+          </div>
+          <div class="capture-item">
+            <div class="capture-icon">📄</div>
+            <span class="capture-label">Full Page</span>
+          </div>
+        </div>
+        <p class="copy-text">Copy directly to <span class="accent">any AI</span> — ChatGPT, Gemini, Claude & more</p>
+        <div class="feature-list">
+          <div class="feature-item">
+            <span class="feature-check">✓</span>
+            <div class="feature-content">
+              <div class="feature-name">Magic AI Prompts</div>
+              <div class="feature-desc">Built-in AI creates smart prompts for you</div>
+            </div>
+          </div>
+          <div class="feature-item">
+            <span class="feature-check">✓</span>
+            <div class="feature-content">
+              <div class="feature-name">Multi-Image Analysis</div>
+              <div class="feature-desc">Analyze multiple snapshots at once with ease</div>
+            </div>
+          </div>
+          <div class="feature-item">
+            <span class="feature-check">✓</span>
+            <div class="feature-content">
+              <div class="feature-name">Configurable Magic Buttons</div>
+              <div class="feature-desc">Customize your AI buttons exactly how you want</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="features">
@@ -373,25 +556,17 @@
         <span>Watch 2-Minute Demo — See the Magic</span>
       </a>
 
+      <div class="promo-box">
+        <div class="promo-title">
+          <span>✨</span>
+          Need more than 20 prompts?
+        </div>
+        <p class="promo-desc">
+          Upgrade your API key in Chrome extension settings and get <span class="highlight">$300 USD free credit</span> from Google Cloud!
+        </p>
+      </div>
+
       <div class="glass-card">
-        <h3>
-          <span>⚡</span>
-          Full AI Free for 30 Days
-        </h3>
-        <p>
-          Unlimited prompts • Magic buttons • Bulk snaps • Multi-image<br>
-          <span class="tip">No credit card needed</span>
-        </p>
-      </div>
-
-      <div class="glass-card" style="animation-delay: 0.58s;">
-        <p>
-          <span class="tip">Pro tip:</span> Paste your own Gemini API key anytime<br>
-          <span class="accent">Google gives $300 free credits — super cheap unlimited use</span>
-        </p>
-      </div>
-
-      <div class="glass-card pro-card">
         <div class="pro-header">
           <span>👑</span>
           After 30 days, keep your magic buttons
@@ -404,15 +579,8 @@
 
       <div class="footer">
         <p class="ready">Ready to start?</p>
-        <p class="pin-hint">No icon? Click <span class="accent">🧩 Extensions</span> → Pin <span class="accent">📌 Snap To AI</span></p>
-        <p class="steps">
-          Click the extension icon → Snap / Snip / Full Page<br>
-          Try your first magic button!
-        </p>
-        <a href="https://snaptoai.com/#faq" target="_blank" class="help-link">
-          <span>❓</span>
-          Need help? Visit FAQ
-        </a>
+        <p class="pin-hint">Click <span class="accent">🧩 Extensions</span> → Pin <span class="accent">📌 Snap To AI</span></p>
+        <p class="steps">That's it! You're ready to snap.</p>
       </div>
     </div>
 
