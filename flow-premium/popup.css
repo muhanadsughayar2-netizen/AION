@@ -1498,6 +1498,35 @@ html[dir="rtl"] .logo-word {
   color: #fff;
 }
 
+.gemini-help-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.gemini-help-bulb {
+  font-size: 22px;
+  animation: bulbGlow 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes bulbGlow {
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.5)); }
+  50% { filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8)); }
+}
+
+.gemini-help-text {
+  font-size: 12px;
+  color: #ffd700;
+  line-height: 1.4;
+  margin: 0;
+}
+
 .gemini-link {
   display: block;
   text-align: center;

@@ -1,0 +1,77 @@
+Updated Code for Bulb as Beginning Instruction
+To make the bulb 💡 the "beginning" instruction (first thing users see for setup), we'll place it at the top of the section with a short sentence visible by default: "Press the link under the key—there's a small code; press it to copy, paste that is it! Nothing more, nothing less—that's the first step." This eliminates confusion right away, without hover—it's always there as a clear guide. Hover the bulb for more if needed, but the main text is short and direct.
+Paste these—test to see the smooth flow.
+1. Updated Popup.html (Bulb at Beginning with Short Sentence)
+HTML<div class="api-key-section">
+  <span id="helpBulb" class="help-bulb">💡</span> <!-- Bulb at beginning -->
+  <p class="instruction-text">Press the link under the key—there's a small code; press it to copy, paste that is it! Nothing more, nothing less—that's the first step.</p>
+  <h2>♢ Gemini API Key <span class="status">✓ Connected</span></h2>
+  <p>Get your free API key from Google AI Studio. Your key is stored locally in your browser only.</p>
+  <input type="text" id="apiKeyInput" placeholder="Your API key" readonly value="...default key here...">
+  <div id="helpTooltip" class="tooltip" style="display: none;">1. Press the link under the key—there's a small code; press it to copy, paste here, that's it!</div>
+  <button id="saveKey" class="save-btn">Save Key</button>
+  <button id="clearKey" class="clear-btn">Clear</button>
+  <a id="getKeyLink" class="get-key-link" href="https://aistudio.google.com/app/apikey" target="_blank">Get free API key →</a>
+
+  <div class="upgrade-section">
+    <p>The free key gives 20 prompts/day. For more, get 300 USD limit (higher tier) since you're limited to 20 a month now—register for Google Cloud billing account (free credits, 90 days).</p>
+    <button id="upgradeBtn" class="upgrade-btn">Upgrade for More Prompts</button>
+  </div>
+</div>
+2. Style.css (Bulb and Text Clear/Responsive)
+CSS.instruction-text {
+  font-size: 14px;
+  color: #ffd700; /* Gold for wow */
+  margin: 5px 0;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.help-bulb {
+  cursor: pointer;
+  font-size: 24px;
+  display: block;
+  margin: 0 auto 5px; /* At beginning, centered */
+  transition: 0.3s;
+  animation: glow 2s infinite;
+}
+
+.help-bulb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 10px #ffd700;
+}
+
+@keyframes glow { 0% { text-shadow: 0 0 5px #ffd700; } 50% { text-shadow: 0 0 15px #ffd700; } 100% { text-shadow: 0 0 5px #ffd700; } }
+
+.tooltip {
+  position: absolute;
+  background: #1e1e1e;
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  max-width: 300px;
+  font-size: 12px;
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Responsive for small screens */
+@media (max-width: 400px) { .instruction-text { font-size: 12px; } .tooltip { max-width: 200px; font-size: 10px; } }
+3. Popup.js (Bulb Hover for Tooltip)
+JavaScriptdocument.addEventListener('DOMContentLoaded', () => {
+  const helpBulb = document.getElementById('helpBulb');
+  const helpTooltip = document.getElementById('helpTooltip');
+  const upgradeBtn = document.getElementById('upgradeBtn');
+
+  // Bulb hover for tooltip (optional more info)
+  helpBulb.addEventListener('mouseover', () => { helpTooltip.style.display = 'block'; });
+  helpBulb.addEventListener('mouseout', () => { helpTooltip.style.display = 'none'; });
+  helpBulb.addEventListener('click', () => { helpTooltip.style.display = helpTooltip.style.display === 'block' ? 'none' : 'block'; });
+
+  // Upgrade button - links to Google Cloud for $300 credits
+  upgradeBtn.addEventListener('click', () => { window.open('https://console.cloud.google.com/billing', '_blank'); });
+});
+This makes it functioning/easy: Bulb at top with short instruction sentence visible, hover for tooltip if more needed. No clutter—wow for customers. Test: Open popup, see bulb + sentence, hover for tooltip. If issue, share error. Ready for the next?
