@@ -1499,32 +1499,30 @@ html[dir="rtl"] .logo-word {
 }
 
 .gemini-help-section {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(255, 215, 0, 0.08);
-  border: 1px solid rgba(255, 215, 0, 0.25);
+  display: block;
+  text-align: center;
+  background: rgba(0, 20, 30, 0.9);
+  border: 1px solid rgba(0, 217, 255, 0.5);
   border-radius: 10px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   margin-bottom: 12px;
+  box-shadow: 0 0 12px rgba(0, 217, 255, 0.15);
 }
 
 .gemini-help-bulb {
-  font-size: 22px;
-  animation: bulbGlow 2s ease-in-out infinite;
-  flex-shrink: 0;
-}
-
-@keyframes bulbGlow {
-  0%, 100% { filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.5)); }
-  50% { filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8)); }
+  display: none;
 }
 
 .gemini-help-text {
   font-size: 12px;
-  color: #ffd700;
-  line-height: 1.4;
+  color: #b8c5cc;
+  line-height: 1.5;
   margin: 0;
+}
+
+.gemini-help-text .cyan-text {
+  color: #00d9ff;
+  font-weight: 600;
 }
 
 .gemini-link {
