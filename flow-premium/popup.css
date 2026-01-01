@@ -1520,7 +1520,8 @@ html[dir="rtl"] .logo-word {
   margin: 0;
 }
 
-.gemini-help-text .cyan-text {
+.gemini-help-text .cyan-text,
+.gemini-desc .cyan-text {
   color: #00d9ff;
   font-weight: 600;
 }
