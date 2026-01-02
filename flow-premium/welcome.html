@@ -284,34 +284,23 @@
       -webkit-text-fill-color: transparent;
     }
 
-    .ai-boxes {
+    .ai-tags {
       display: flex;
       justify-content: center;
-      align-items: center;
-      gap: 20px;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
-    .ai-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .ai-color {
-      width: 56px;
-      height: 32px;
-      border-radius: 8px;
-    }
-
-    .ai-color.chatgpt { background: linear-gradient(135deg, #10b981, #3b82f6); }
-    .ai-color.grok { background: linear-gradient(135deg, #f97316, #ef4444); }
-    .ai-color.gemini { background: linear-gradient(135deg, #3b82f6, #a855f7); }
-
-    .ai-box span {
+    .ai-tag {
+      padding: 4px 12px;
+      border-radius: 20px;
       font-size: 11px;
-      color: var(--muted);
+      border: 1px solid;
     }
+
+    .ai-tag.chatgpt { background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: rgba(16, 185, 129, 0.2); }
+    .ai-tag.grok { background: rgba(249, 115, 22, 0.1); color: #f97316; border-color: rgba(249, 115, 22, 0.2); }
+    .ai-tag.gemini { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border-color: rgba(59, 130, 246, 0.2); }
 
     .features-list {
       display: flex;
@@ -645,19 +634,10 @@
         </div>
         <div class="ai-logos">
           <p>Copy directly to <span class="accent">any AI</span></p>
-          <div class="ai-boxes">
-            <div class="ai-box">
-              <div class="ai-color chatgpt"></div>
-              <span>ChatGPT</span>
-            </div>
-            <div class="ai-box">
-              <div class="ai-color grok"></div>
-              <span>Grok</span>
-            </div>
-            <div class="ai-box">
-              <div class="ai-color gemini"></div>
-              <span>Gemini</span>
-            </div>
+          <div class="ai-tags">
+            <span class="ai-tag chatgpt">ChatGPT</span>
+            <span class="ai-tag grok">Grok</span>
+            <span class="ai-tag gemini">Gemini</span>
           </div>
         </div>
       </div>
