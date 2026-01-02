@@ -3228,9 +3228,27 @@ if (geminiModal) geminiModal.addEventListener('click', (e) => {
 // Load key on popup open and check subscription
 document.addEventListener('DOMContentLoaded', async () => {
   // Initialize subscription check on popup open
+  const upgradeBtn = document.getElementById('upgradeBtn');
   if (window.SnapToAISubscription) {
     const status = await window.SnapToAISubscription.check();
     console.log('[SnapToAI] Subscription status:', status.status, status.canUseAI ? '(active)' : '(blocked)');
+    
+    // Update upgrade button based on status
+    if (upgradeBtn) {
+      if (status.status === 'subscribed') {
+        upgradeBtn.textContent = '✓ PRO';
+        upgradeBtn.classList.add('subscribed');
+      } else if (status.status === 'trial' && status.daysRemaining <= 7) {
+        upgradeBtn.textContent = `⭐ ${status.daysRemaining}d left`;
+      }
+    }
+  }
+  
+  // Upgrade button click handler
+  if (upgradeBtn) {
+    upgradeBtn.addEventListener('click', () => {
+      showSubscriptionModal('Upgrade to unlock unlimited AI analysis!');
+    });
   }
   
   const hasKey = await loadGeminiKey();
