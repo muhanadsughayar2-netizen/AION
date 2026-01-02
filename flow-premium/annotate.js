@@ -2650,12 +2650,14 @@ async function saveFullPageWithAnnotations() {
           const sourceHeight = pageCanvas.height - actualOverlap;
           
           // Draw seamlessly - skip the overlapped region at top of each page
+          // Destination is currentY (where previous image's unique content ends)
+          // We already skipped the overlap from SOURCE, so no subtraction needed for destination
           chunkCtx.drawImage(
             pageCanvas,
             0, sourceY, pageCanvas.width, sourceHeight,
-            0, currentY - actualOverlap, pageCanvas.width, sourceHeight
+            0, currentY, pageCanvas.width, sourceHeight
           );
-          currentY += pageCanvas.height - actualOverlap;
+          currentY += sourceHeight;
         }
         
         // Release temp canvas
