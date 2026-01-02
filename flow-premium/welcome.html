@@ -10,12 +10,15 @@
     :root {
       --bg: #0d1117;
       --card: #161b22;
-      --border: rgba(34, 211, 238, 0.2);
+      --secondary: #1c2128;
+      --border: rgba(48, 54, 61, 0.8);
       --primary: #22d3ee;
-      --primary-dim: rgba(34, 211, 238, 0.1);
-      --text: #cbd5e1;
-      --muted: #64748b;
-      --foreground: #f1f5f9;
+      --magic: #a855f7;
+      --snip: #10b981;
+      --ai: #3b82f6;
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --foreground: #f0f6fc;
     }
 
     body {
@@ -27,101 +30,82 @@
       align-items: center;
       justify-content: center;
       padding: 16px;
-      overflow-x: hidden;
     }
 
-    .glow-bg {
-      position: fixed;
-      inset: 0;
-      overflow: hidden;
-      pointer-events: none;
-      z-index: 0;
-    }
-    .glow-1 {
-      position: absolute;
-      top: 20%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 500px;
-      height: 500px;
-      background: rgba(34, 211, 238, 0.05);
-      border-radius: 50%;
-      filter: blur(80px);
-    }
-    .glow-2 {
-      position: absolute;
-      bottom: 0;
-      left: 25%;
-      width: 350px;
-      height: 350px;
-      background: rgba(34, 211, 238, 0.03);
-      border-radius: 50%;
-      filter: blur(80px);
-    }
-
-    main {
-      position: relative;
-      z-index: 10;
+    .container {
       width: 100%;
-      max-width: 480px;
+      max-width: 420px;
     }
 
     .tabs {
       display: flex;
-      gap: 12px;
+      justify-content: center;
+      gap: 8px;
       margin-bottom: 16px;
-      animation: fadeInUp 0.4s ease-out both;
     }
 
     .tab {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 10px 16px;
-      background: var(--primary-dim);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      color: var(--primary);
-      font-size: 13px;
-      font-weight: 600;
-      text-decoration: none;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .tab:hover {
+      color: var(--foreground);
+      background: var(--secondary);
     }
 
     .tab.active {
-      background: var(--primary);
-      color: #0d1117;
-      border-color: var(--primary);
+      background: rgba(34, 211, 238, 0.15);
+      color: var(--primary);
+      border-color: rgba(34, 211, 238, 0.3);
     }
 
-    .tab:hover:not(.active) {
-      background: rgba(34, 211, 238, 0.15);
-      transform: translateY(-2px);
+    .tab.api-tab.active {
+      background: rgba(168, 85, 247, 0.15);
+      color: var(--magic);
+      border-color: rgba(168, 85, 247, 0.3);
     }
 
     .card {
-      background: linear-gradient(135deg, var(--card) 0%, rgba(22, 27, 34, 0.95) 100%);
+      background: var(--card);
       border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .free-badge {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .free-badge span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
       border-radius: 20px;
-      padding: 28px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-      animation: scaleIn 0.5s ease-out forwards;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(168, 85, 247, 0.15));
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--primary);
+      animation: pulse 2s infinite;
     }
 
-    @keyframes scaleIn {
-      0% { opacity: 0; }
-      100% { opacity: 1; }
-    }
-
-    @keyframes fadeInUp {
-      0% { opacity: 0; transform: translateY(16px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
     }
 
     .header {
@@ -135,61 +119,81 @@
       justify-content: center;
       width: 56px;
       height: 56px;
-      background: var(--primary-dim);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      margin-bottom: 16px;
-      animation: float 3s ease-in-out infinite;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.25), rgba(168, 85, 247, 0.25));
+      border: 1px solid rgba(34, 211, 238, 0.4);
+      border-radius: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 8px 24px rgba(34, 211, 238, 0.15);
     }
 
     .icon-box .sparkle {
       font-size: 28px;
+      animation: pulse 2s infinite;
     }
 
-    .title {
-      font-size: 26px;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--primary) 0%, #67e8f9 100%);
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--foreground);
+      margin-bottom: 8px;
+    }
+
+    h1 .gradient {
+      background: linear-gradient(135deg, var(--primary), var(--magic));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 12px;
-      animation: fadeInUp 0.5s ease-out 0.1s both;
     }
 
     .subtitle {
-      font-size: 15px;
+      font-size: 14px;
       color: var(--muted);
-      line-height: 1.6;
-      animation: fadeInUp 0.5s ease-out 0.2s both;
+      line-height: 1.5;
+      margin-bottom: 12px;
     }
 
-    .subtitle .highlight {
-      color: var(--text);
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
     }
+
+    .tag {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      border: 1px solid;
+    }
+
+    .tag.snip { background: rgba(16, 185, 129, 0.1); color: var(--snip); border-color: rgba(16, 185, 129, 0.2); }
+    .tag.ai { background: rgba(59, 130, 246, 0.1); color: var(--ai); border-color: rgba(59, 130, 246, 0.2); }
+    .tag.magic { background: rgba(168, 85, 247, 0.1); color: var(--magic); border-color: rgba(168, 85, 247, 0.2); }
+    .tag.primary { background: rgba(34, 211, 238, 0.1); color: var(--primary); border-color: rgba(34, 211, 238, 0.2); }
 
     .extension-box {
-      background: var(--card);
+      background: rgba(28, 33, 40, 0.5);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 18px;
-      margin-bottom: 20px;
-      animation: fadeInUp 0.5s ease-out 0.25s both;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
     }
 
     .extension-title {
       text-align: center;
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--foreground);
-      margin-bottom: 14px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
     }
 
     .capture-icons {
       display: flex;
       justify-content: center;
-      gap: 24px;
-      margin-bottom: 14px;
+      gap: 16px;
+      margin-bottom: 16px;
     }
 
     .capture-item {
@@ -197,397 +201,526 @@
       flex-direction: column;
       align-items: center;
       gap: 6px;
+      cursor: pointer;
     }
 
     .capture-icon {
-      width: 40px;
-      height: 40px;
+      width: 48px;
+      height: 48px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--primary-dim);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 18px;
-      transition: all 0.3s ease;
+      border-radius: 12px;
+      font-size: 20px;
+      transition: all 0.2s;
     }
 
+    .capture-icon.snip { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .capture-icon.ai { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); }
+    .capture-icon.magic { background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); }
+
     .capture-item:hover .capture-icon {
-      background: rgba(34, 211, 238, 0.2);
-      border-color: var(--primary);
-      transform: translateY(-2px);
+      transform: scale(1.05);
     }
+
+    .capture-item:hover .capture-icon.snip { background: rgba(16, 185, 129, 0.2); }
+    .capture-item:hover .capture-icon.ai { background: rgba(59, 130, 246, 0.2); }
+    .capture-item:hover .capture-icon.magic { background: rgba(168, 85, 247, 0.2); }
 
     .capture-label {
       font-size: 11px;
       color: var(--muted);
     }
 
-    .copy-text {
+    .ai-logos {
       text-align: center;
-      font-size: 12px;
+    }
+
+    .ai-logos p {
+      font-size: 11px;
       color: var(--muted);
-      margin-bottom: 16px;
+      margin-bottom: 8px;
     }
 
-    .copy-text .accent {
+    .ai-logos p .accent {
       color: var(--primary);
+      font-weight: 500;
     }
 
-    .feature-list {
+    .ai-names {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ai-name {
+      font-size: 16px;
+      font-weight: 700;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .ai-name.chatgpt { background: linear-gradient(135deg, #10b981, #3b82f6); }
+    .ai-name.gemini { background: linear-gradient(135deg, #3b82f6, #a855f7); }
+    .ai-name.claude { background: linear-gradient(135deg, #f97316, #ef4444); }
+
+    .ai-names .dot {
+      color: var(--muted);
+      -webkit-text-fill-color: var(--muted);
+    }
+
+    .features-list {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+      margin-bottom: 16px;
     }
 
     .feature-item {
       display: flex;
       align-items: flex-start;
-      gap: 10px;
-      padding: 10px 12px;
-      background: var(--primary-dim);
-      border: 1px solid transparent;
-      border-radius: 10px;
-      transition: all 0.3s ease;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid;
     }
 
-    .feature-item:hover {
-      border-color: var(--border);
-      background: rgba(34, 211, 238, 0.12);
-    }
+    .feature-item.snip { background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2); }
+    .feature-item.ai { background: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.2); }
+    .feature-item.magic { background: rgba(168, 85, 247, 0.05); border-color: rgba(168, 85, 247, 0.2); }
 
     .feature-check {
-      color: var(--primary);
       font-size: 14px;
       margin-top: 2px;
     }
 
-    .feature-content {
-      flex: 1;
-    }
+    .feature-check.snip { color: var(--snip); }
+    .feature-check.ai { color: var(--ai); }
+    .feature-check.magic { color: var(--magic); }
 
-    .feature-name {
+    .feature-content .name {
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 500;
       color: var(--foreground);
       margin-bottom: 2px;
     }
 
-    .feature-desc {
+    .feature-content .desc {
       font-size: 11px;
       color: var(--muted);
     }
 
-    .features {
+    .use-cases {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 20px;
-      animation: fadeInUp 0.5s ease-out 0.35s both;
+      gap: 8px;
+      margin-bottom: 16px;
     }
 
-    .feature {
-      background: var(--primary-dim);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 12px;
-      text-align: center;
-      transition: all 0.3s ease;
-    }
-
-    .feature:hover {
-      border-color: rgba(34, 211, 238, 0.4);
-      transform: translateY(-2px);
-    }
-
-    .feature-icon {
-      font-size: 26px;
-      margin-bottom: 6px;
-    }
-
-    .feature-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .cta-btn {
+    .use-case {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 10px;
-      width: 100%;
-      padding: 14px;
-      background: var(--primary-dim);
+      gap: 8px;
+      padding: 12px;
+      border-radius: 8px;
       border: 1px solid var(--border);
-      border-radius: 12px;
-      color: var(--primary);
-      font-size: 15px;
+      background: rgba(22, 27, 34, 0.5);
+      transition: all 0.2s;
+    }
+
+    .use-case:hover {
+      border-color: rgba(34, 211, 238, 0.3);
+    }
+
+    .use-case .icon {
+      font-size: 16px;
+    }
+
+    .use-case .icon.snip { color: var(--snip); }
+    .use-case .icon.ai { color: var(--ai); }
+    .use-case .icon.magic { color: var(--magic); }
+    .use-case .icon.primary { color: var(--primary); }
+
+    .use-case .title {
+      font-size: 11px;
       font-weight: 600;
-      text-decoration: none;
-      margin-bottom: 20px;
-      transition: all 0.3s ease;
-      animation: fadeInUp 0.5s ease-out 0.4s both;
+      color: var(--foreground);
     }
 
-    .cta-btn:hover {
-      background: rgba(34, 211, 238, 0.15);
-      transform: translateY(-2px);
+    .use-case .subtitle {
+      font-size: 10px;
+      color: var(--muted);
+      margin: 0;
     }
 
-    .promo-box {
-      background: linear-gradient(135deg, rgba(34, 211, 238, 0.15) 0%, rgba(34, 211, 238, 0.08) 100%);
-      border: 1px solid var(--primary);
-      border-radius: 14px;
-      padding: 18px;
-      margin-bottom: 16px;
-      animation: fadeInUp 0.5s ease-out 0.45s both;
+    .use-case.special {
+      border: 2px solid rgba(34, 211, 238, 0.5);
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(168, 85, 247, 0.1));
+      box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1);
     }
 
-    .promo-title {
+    .use-case.special:hover {
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(168, 85, 247, 0.15));
+    }
+
+    .use-case.special .title {
+      color: var(--primary);
+    }
+
+    .demo-link {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      font-size: 16px;
-      font-weight: 700;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      background: rgba(34, 211, 238, 0.05);
       color: var(--primary);
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      margin-bottom: 16px;
+      transition: all 0.2s;
+    }
+
+    .demo-link:hover {
+      background: rgba(34, 211, 238, 0.1);
+    }
+
+    .demo-link .play {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(34, 211, 238, 0.2);
+      border-radius: 50%;
+      font-size: 10px;
+    }
+
+    .founder-banner {
+      position: relative;
+      border: 2px solid var(--primary);
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(168, 85, 247, 0.15), rgba(34, 211, 238, 0.15));
+      padding: 16px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .founder-banner .badge {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: var(--primary);
+      color: #0d1117;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 0 0 0 8px;
+    }
+
+    .founder-banner .title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       margin-bottom: 8px;
     }
 
-    .promo-desc {
-      text-align: center;
-      font-size: 12px;
-      color: var(--text);
-      line-height: 1.5;
+    .founder-banner .title-row .icon {
+      font-size: 18px;
     }
 
-    .promo-desc .highlight {
+    .founder-banner .title-row p {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--foreground);
+    }
+
+    .founder-banner .desc {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .founder-banner .desc .highlight {
       color: var(--primary);
       font-weight: 600;
     }
 
-    .glass-card {
-      background: var(--primary-dim);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
+    .pro-section {
       text-align: center;
-      animation: fadeInUp 0.5s ease-out 0.5s both;
+      margin-bottom: 16px;
     }
 
-    .glass-card .pro-header {
+    .pro-section .crown-text {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      font-size: 13px;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .pro-section .saves-text {
+      font-size: 10px;
       color: var(--muted);
       margin-bottom: 12px;
     }
 
     .pro-btn {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
       width: 100%;
-      padding: 12px;
-      background: linear-gradient(135deg, var(--primary) 0%, #0891b2 100%);
+      padding: 14px;
+      background: linear-gradient(135deg, var(--primary), #0891b2);
       border: none;
       border-radius: 10px;
       color: #0d1117;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
-      text-decoration: none;
-      text-align: center;
-      transition: all 0.3s ease;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: all 0.2s;
     }
 
     .pro-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(34, 211, 238, 0.3);
+      box-shadow: 0 8px 24px rgba(34, 211, 238, 0.3);
     }
 
-    .pro-note {
-      font-size: 12px;
+    .pro-section .yearly {
+      font-size: 11px;
       color: var(--muted);
-      margin-top: 8px;
     }
 
-    .footer {
-      background: var(--primary-dim);
+    .launch-cta {
+      background: linear-gradient(135deg, rgba(28, 33, 40, 0.5), rgba(34, 211, 238, 0.05));
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 18px;
+      padding: 16px;
       text-align: center;
-      animation: fadeInUp 0.5s ease-out 0.55s both;
     }
 
-    .footer .ready {
-      font-size: 16px;
-      font-weight: 700;
+    .launch-cta .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
       color: var(--foreground);
-      margin-bottom: 10px;
-    }
-
-    .footer .pin-hint {
-      font-size: 12px;
-      color: var(--text);
       margin-bottom: 8px;
     }
 
-    .footer .pin-hint .accent {
-      color: var(--primary);
-      font-weight: 600;
-    }
-
-    .footer .steps {
-      font-size: 12px;
+    .launch-cta .steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      font-size: 11px;
       color: var(--muted);
-      line-height: 1.5;
+      margin-bottom: 8px;
     }
 
-    .trust-badge {
+    .launch-cta .steps .snip { color: var(--snip); }
+    .launch-cta .steps .ai { color: var(--ai); }
+    .launch-cta .steps .magic { color: var(--magic); font-weight: 500; }
+
+    .launch-cta .ready {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .footer {
       text-align: center;
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted);
-      margin-top: 20px;
-      animation: fadeInUp 0.5s ease-out 0.6s both;
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
     }
 
     @media (max-width: 420px) {
-      .card { padding: 22px; }
-      .title { font-size: 22px; }
-      .features { gap: 8px; }
-      .feature { padding: 12px 10px; }
-      .feature-icon { font-size: 22px; }
-      .feature-title { font-size: 12px; }
-      .tabs { flex-wrap: wrap; gap: 8px; }
-      .tab { padding: 8px 12px; font-size: 12px; }
+      .card { padding: 20px; }
+      h1 { font-size: 20px; }
+      .use-cases { gap: 6px; }
+      .use-case { padding: 10px; }
     }
   </style>
 </head>
 <body>
-  <div class="glow-bg">
-    <div class="glow-1"></div>
-    <div class="glow-2"></div>
-  </div>
-
-  <main>
+  <div class="container">
     <div class="tabs">
-      <div class="tab active">📸 Landing Page</div>
-      <div class="tab" id="apiKeyTab">🔑 API Key Setup</div>
+      <button class="tab active" id="landingTab">
+        <span>✨</span>
+        Landing Page
+      </button>
+      <button class="tab api-tab" id="apiTab">
+        <span>🔑</span>
+        API Key Setup
+      </button>
     </div>
 
     <div class="card">
+      <div class="free-badge">
+        <span>🎁 20 FREE PROMPTS INCLUDED</span>
+      </div>
+
       <div class="header">
         <div class="icon-box">
           <span class="sparkle">✨</span>
         </div>
-        <h1 class="title">Welcome to Snap To AI</h1>
-        <p class="subtitle">
-          Turn any screenshot into instant AI-powered insights.<br>
-          <span class="highlight">Stocks • Crypto • Shopping • Health • Learning • Work</span>
-        </p>
+        <h1>Stop Typing. <span class="gradient">Start Snapping.</span></h1>
+        <p class="subtitle">Turn any visual on your screen into instant, custom AI intelligence. One click to analyze, code, or summarize.</p>
+        <div class="tags">
+          <span class="tag snip">📈 Stocks</span>
+          <span class="tag ai">💰 Crypto</span>
+          <span class="tag magic">🛍️ Shopping</span>
+          <span class="tag primary">💪 Health</span>
+          <span class="tag snip">📚 Learning</span>
+        </div>
       </div>
 
       <div class="extension-box">
-        <div class="extension-title">One-of-a-Kind AI Extension</div>
+        <p class="extension-title">One-of-a-Kind AI Extension</p>
         <div class="capture-icons">
           <div class="capture-item">
-            <div class="capture-icon">📷</div>
-            <span class="capture-label">Snap</span>
-          </div>
-          <div class="capture-item">
-            <div class="capture-icon">✂️</div>
+            <div class="capture-icon snip">✂️</div>
             <span class="capture-label">Snip</span>
           </div>
           <div class="capture-item">
-            <div class="capture-icon">📄</div>
+            <div class="capture-icon ai">📷</div>
+            <span class="capture-label">Snap</span>
+          </div>
+          <div class="capture-item">
+            <div class="capture-icon magic">🖥️</div>
             <span class="capture-label">Full Page</span>
           </div>
         </div>
-        <p class="copy-text">Copy directly to <span class="accent">any AI</span> — ChatGPT, Gemini, Claude & more</p>
-        <div class="feature-list">
-          <div class="feature-item">
-            <span class="feature-check">✓</span>
-            <div class="feature-content">
-              <div class="feature-name">Magic AI Prompts</div>
-              <div class="feature-desc">Built-in AI creates smart prompts for you</div>
-            </div>
-          </div>
-          <div class="feature-item">
-            <span class="feature-check">✓</span>
-            <div class="feature-content">
-              <div class="feature-name">Multi-Image Analysis</div>
-              <div class="feature-desc">Analyze multiple snapshots at once with ease</div>
-            </div>
-          </div>
-          <div class="feature-item">
-            <span class="feature-check">✓</span>
-            <div class="feature-content">
-              <div class="feature-name">Configurable Magic Buttons</div>
-              <div class="feature-desc">Customize your AI buttons exactly how you want</div>
-            </div>
+        <div class="ai-logos">
+          <p>Copy directly to <span class="accent">any AI</span></p>
+          <div class="ai-names">
+            <span class="ai-name chatgpt">ChatGPT</span>
+            <span class="dot">•</span>
+            <span class="ai-name gemini">Gemini</span>
+            <span class="dot">•</span>
+            <span class="ai-name claude">Claude</span>
           </div>
         </div>
       </div>
 
-      <div class="features">
-        <div class="feature">
-          <div class="feature-icon">📈</div>
-          <div class="feature-title">Deep Stock & Crypto Analysis</div>
+      <div class="features-list">
+        <div class="feature-item snip">
+          <span class="feature-check snip">✓</span>
+          <div class="feature-content">
+            <p class="name">Magic AI Prompts</p>
+            <p class="desc">Built-in AI creates smart prompts for you</p>
+          </div>
         </div>
-        <div class="feature">
-          <div class="feature-icon">🛒</div>
-          <div class="feature-title">Best Deals & Hidden Fees</div>
+        <div class="feature-item ai">
+          <span class="feature-check ai">✓</span>
+          <div class="feature-content">
+            <p class="name">Multi-Image Analysis</p>
+            <p class="desc">Analyze multiple screenshots at once with ease</p>
+          </div>
         </div>
-        <div class="feature">
-          <div class="feature-icon">📚</div>
-          <div class="feature-title">Study Notes & Summaries</div>
-        </div>
-        <div class="feature">
-          <div class="feature-icon">⚡</div>
-          <div class="feature-title">Unlimited Custom Buttons</div>
+        <div class="feature-item magic">
+          <span class="feature-check magic">✓</span>
+          <div class="feature-content">
+            <p class="name">Configurable Magic Buttons</p>
+            <p class="desc">Customize your AI buttons exactly how you want</p>
+          </div>
         </div>
       </div>
 
-      <a href="https://snaptoai.com" target="_blank" class="cta-btn">
-        <span>▶</span>
-        <span>Watch 2-Minute Demo — See the Magic</span>
+      <div class="use-cases">
+        <div class="use-case">
+          <span class="icon snip">📈</span>
+          <div>
+            <p class="title">Market Master</p>
+            <p class="subtitle">Instant Technical Analysis</p>
+          </div>
+        </div>
+        <div class="use-case">
+          <span class="icon ai">🛒</span>
+          <div>
+            <p class="title">Deal Hunter</p>
+            <p class="subtitle">Find Hidden Savings</p>
+          </div>
+        </div>
+        <div class="use-case">
+          <span class="icon magic">📚</span>
+          <div>
+            <p class="title">The Scholar</p>
+            <p class="subtitle">Summarize in Seconds</p>
+          </div>
+        </div>
+        <div class="use-case special">
+          <span class="icon primary">⚡</span>
+          <div>
+            <p class="title">Build Your Own</p>
+            <p class="subtitle">Your Workflow, Your Rules</p>
+          </div>
+        </div>
+      </div>
+
+      <a href="https://snaptoai.com" target="_blank" class="demo-link">
+        <span class="play">▶</span>
+        Watch 2-Minute Demo — See the Magic
       </a>
 
-      <div class="promo-box">
-        <div class="promo-title">
-          <span>✨</span>
-          Need more than 20 prompts?
+      <div class="founder-banner">
+        <div class="badge">LIMITED TIME</div>
+        <div class="title-row">
+          <span class="icon">🎁</span>
+          <p>FOUNDER'S SPECIAL: Get $300 in AI Credits FREE!</p>
         </div>
-        <p class="promo-desc">
-          Upgrade your API key in Chrome extension settings and get <span class="highlight">$300 USD free credit</span> from Google Cloud!
-        </p>
+        <p class="desc">Upgrade to Pro today and we'll cover your first <span class="highlight">$300 in Google Cloud AI costs</span>. Plus, get your first 20 prompts 100% free.</p>
       </div>
 
-      <div class="glass-card">
-        <div class="pro-header">
+      <div class="pro-section">
+        <p class="crown-text">
           <span>👑</span>
           After 30 days, keep your magic buttons
-        </div>
-        <a href="https://snaptoai.com" target="_blank" class="pro-btn">
-          Upgrade to Pro — $12/month or $99/year
-        </a>
-        <p class="pro-note">Save 31% with yearly billing</p>
+        </p>
+        <p class="saves-text">💡 Saves the average user 5+ hours of manual work per week</p>
+        <button class="pro-btn">
+          <span>🚀</span>
+          Unlock Unlimited Intelligence — $12/month
+        </button>
+        <p class="yearly">or $99/year (Save 31%)</p>
       </div>
 
-      <div class="footer">
-        <p class="ready">Ready to start?</p>
-        <p class="pin-hint">Click <span class="accent">🧩 Extensions</span> → Pin <span class="accent">📌 Snap To AI</span></p>
-        <p class="steps">That's it! You're ready to snap.</p>
+      <div class="launch-cta">
+        <div class="title-row">
+          <span>🚀</span>
+          Launch Your Intelligence Layer
+        </div>
+        <div class="steps">
+          <span>Click</span>
+          <span class="snip">⭐ Extensions</span>
+          <span>→ Pin</span>
+          <span class="ai">📌</span>
+          <span class="magic">Snap To AI</span>
+        </div>
+        <p class="ready">That's it! You're ready to snap.</p>
       </div>
     </div>
 
-    <p class="trust-badge">
+    <p class="footer">
       🔒 Your screenshots stay private — processed securely
     </p>
-  </main>
+  </div>
 
   <script src="welcome.js"></script>
 </body>
