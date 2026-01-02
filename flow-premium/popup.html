@@ -264,6 +264,34 @@
     </div>
   </div>
 
+  <!-- TEST PANEL - REMOVE BEFORE LAUNCH -->
+  <div id="testPanel" style="
+    background: linear-gradient(135deg, #ff6b00 0%, #ff0080 100%);
+    padding: 10px;
+    margin: 10px;
+    border-radius: 12px;
+    text-align: center;
+  ">
+    <div style="color: white; font-weight: bold; margin-bottom: 8px; font-size: 12px;">
+      🧪 TEST MODE (Remove before launch)
+    </div>
+    <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;">
+      <button onclick="window.SnapToAI_TEST.simulateExpired().then(()=>location.reload())" style="
+        background: #222; color: #ff5252; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 11px;
+      ">Trial Expired</button>
+      <button onclick="window.SnapToAI_TEST.simulateSubscribed().then(()=>location.reload())" style="
+        background: #222; color: #4caf50; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 11px;
+      ">Subscribed</button>
+      <button onclick="window.SnapToAI_TEST.simulateTrial(5).then(()=>location.reload())" style="
+        background: #222; color: #ffeb3b; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 11px;
+      ">5 Days Left</button>
+      <button onclick="window.SnapToAI_TEST.reset().then(()=>location.reload())" style="
+        background: #222; color: #00d9ff; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 11px;
+      ">Reset (30 Days)</button>
+    </div>
+  </div>
+  <!-- END TEST PANEL -->
+
   <!-- Subscription Expired Modal -->
   <div id="subscriptionModal" class="subscription-modal" style="display: none;">
     <div class="subscription-modal-content">
