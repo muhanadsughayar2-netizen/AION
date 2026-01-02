@@ -126,13 +126,22 @@
       box-shadow: 0 8px 24px rgba(34, 211, 238, 0.15);
     }
 
-    .icon-box .sparkle {
-      font-size: 28px;
-      background: linear-gradient(135deg, #60a5fa, #22d3ee, #a855f7);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: pulse 2s infinite;
+    .icon-box .stars {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .icon-box .star1 {
+      font-size: 14px;
+      color: #22d3ee;
+    }
+    .icon-box .star2 {
+      font-size: 24px;
+      color: #f59e0b;
+    }
+    .icon-box .star3 {
+      font-size: 18px;
+      color: #ec4899;
     }
 
     h1 {
@@ -266,13 +275,39 @@
       -webkit-text-fill-color: transparent;
     }
 
-    .ai-name.chatgpt { background: linear-gradient(135deg, #10b981, #3b82f6); }
-    .ai-name.grok { background: linear-gradient(135deg, #f97316, #ef4444); }
-    .ai-name.gemini { background: linear-gradient(135deg, #3b82f6, #a855f7); }
+    .ai-boxes {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
 
-    .ai-names .dot {
+    .ai-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ai-color {
+      width: 50px;
+      height: 28px;
+      border-radius: 6px;
+    }
+
+    .ai-color.chatgpt { background: linear-gradient(135deg, #10b981, #3b82f6); }
+    .ai-color.grok { background: linear-gradient(135deg, #f97316, #ef4444); }
+    .ai-color.gemini { background: linear-gradient(135deg, #3b82f6, #a855f7); }
+
+    .ai-box span {
+      font-size: 11px;
       color: var(--muted);
-      -webkit-text-fill-color: var(--muted);
+    }
+
+    .ai-boxes .dot {
+      color: var(--muted);
+      align-self: flex-start;
+      margin-top: 8px;
     }
 
     .features-list {
@@ -572,7 +607,11 @@
 
       <div class="header">
         <div class="icon-box">
-          <span class="sparkle">✨</span>
+          <div class="stars">
+            <span class="star1">✦</span>
+            <span class="star2">✦</span>
+            <span class="star3">✦</span>
+          </div>
         </div>
         <h1>Stop Typing. <span class="gradient">Start Snapping.</span></h1>
         <p class="subtitle">Turn any visual on your screen into instant, custom AI intelligence. One click to analyze, code, or summarize.</p>
@@ -603,12 +642,21 @@
         </div>
         <div class="ai-logos">
           <p>Copy directly to <span class="accent">any AI</span></p>
-          <div class="ai-names">
-            <span class="ai-name chatgpt">ChatGPT</span>
+          <div class="ai-boxes">
+            <div class="ai-box">
+              <div class="ai-color chatgpt"></div>
+              <span>ChatGPT</span>
+            </div>
             <span class="dot">•</span>
-            <span class="ai-name grok">Grok</span>
+            <div class="ai-box">
+              <div class="ai-color grok"></div>
+              <span>Grok</span>
+            </div>
             <span class="dot">•</span>
-            <span class="ai-name gemini">Gemini</span>
+            <div class="ai-box">
+              <div class="ai-color gemini"></div>
+              <span>Gemini</span>
+            </div>
           </div>
         </div>
       </div>
@@ -679,7 +727,7 @@
           <span class="icon">🎁</span>
           <p>FOUNDER'S SPECIAL: Get $300 in AI Credits FREE!</p>
         </div>
-        <p class="desc">Upgrade to Pro today and we'll cover your first <span class="highlight">$300 in Google Cloud AI costs</span>. Plus, get your first 20 prompts 100% free.</p>
+        <p class="desc">Add your own API key in settings to use <span class="highlight">Google's $300 free credit offer</span>. We help you utilize it!</p>
       </div>
 
       <div class="pro-section">
