@@ -128,6 +128,10 @@
 
     .icon-box .sparkle {
       font-size: 28px;
+      background: linear-gradient(135deg, #60a5fa, #22d3ee, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       animation: pulse 2s infinite;
     }
 
@@ -263,8 +267,8 @@
     }
 
     .ai-name.chatgpt { background: linear-gradient(135deg, #10b981, #3b82f6); }
+    .ai-name.grok { background: linear-gradient(135deg, #f97316, #ef4444); }
     .ai-name.gemini { background: linear-gradient(135deg, #3b82f6, #a855f7); }
-    .ai-name.claude { background: linear-gradient(135deg, #f97316, #ef4444); }
 
     .ai-names .dot {
       color: var(--muted);
@@ -560,16 +564,6 @@
 </head>
 <body>
   <div class="container">
-    <div class="tabs">
-      <button class="tab active" id="landingTab">
-        <span>✨</span>
-        Landing Page
-      </button>
-      <button class="tab api-tab" id="apiTab">
-        <span>🔑</span>
-        API Key Setup
-      </button>
-    </div>
 
     <div class="card">
       <div class="free-badge">
@@ -612,9 +606,9 @@
           <div class="ai-names">
             <span class="ai-name chatgpt">ChatGPT</span>
             <span class="dot">•</span>
-            <span class="ai-name gemini">Gemini</span>
+            <span class="ai-name grok">Grok</span>
             <span class="dot">•</span>
-            <span class="ai-name claude">Claude</span>
+            <span class="ai-name gemini">Gemini</span>
           </div>
         </div>
       </div>
