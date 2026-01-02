@@ -587,11 +587,38 @@ async function handleSend() {
     
   } catch (error) {
     removeLoading();
-    addBubble(error.message, 'error');
+    addBubble(getFriendlyErrorMessage(error.message), 'error');
   }
   
   sendBtn.disabled = false;
   input.focus();
+}
+
+// Convert scary API errors into friendly, helpful messages
+function getFriendlyErrorMessage(errorMsg) {
+  const lowerMsg = errorMsg.toLowerCase();
+  
+  // Quota/Rate limit errors - most common for free tier users
+  if (lowerMsg.includes('quota') || lowerMsg.includes('rate') || lowerMsg.includes('limit') || lowerMsg.includes('429') || lowerMsg.includes('exceeded')) {
+    return `🎯 You've used your 20 free prompts for today!\n\n` +
+           `Come back tomorrow for 20 more FREE prompts.\n\n` +
+           `💡 Want unlimited prompts? Google offers $300 FREE credit for new users!\n` +
+           `👉 Sign up at ai.google.dev and get your own API key in Settings.`;
+  }
+  
+  // API key errors
+  if (lowerMsg.includes('api key') || lowerMsg.includes('invalid') || lowerMsg.includes('unauthorized') || lowerMsg.includes('401')) {
+    return `🔑 API key issue detected.\n\n` +
+           `Please check your API key in Settings, or get a FREE one from ai.google.dev with $300 credit!`;
+  }
+  
+  // Network errors
+  if (lowerMsg.includes('network') || lowerMsg.includes('fetch') || lowerMsg.includes('connection')) {
+    return `📡 Connection issue. Please check your internet and try again.`;
+  }
+  
+  // Default: return original message
+  return errorMsg;
 }
 
 // Add action buttons under each AI response
@@ -933,7 +960,7 @@ Output ONLY JSON:
     card.scrollIntoView({ behavior: 'smooth' });
     
   } catch (error) {
-    addBubble('Verdict failed: ' + error.message, 'ai');
+    addBubble('Verdict: ' + getFriendlyErrorMessage(error.message), 'ai');
     verdictBtn.classList.add('red');
   } finally {
     verdictBtn.disabled = false;
@@ -1251,7 +1278,7 @@ Output ONLY valid JSON:
       }
       
     } catch (error) {
-      thinkingBubble.textContent = `✨ Magic failed ${batchLabel}: ` + error.message;
+      thinkingBubble.textContent = `✨ Magic ${batchLabel}: ` + getFriendlyErrorMessage(error.message);
     }
   }
   
