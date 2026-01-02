@@ -1,136 +1,210 @@
-// Flow Subscription Manager
-// Handles trial period and subscription logic
+// SnapToAI Subscription Manager
+// Handles trial period, Gumroad license verification, and subscription status
 
-const TRIAL_DAYS = 30; // 1 month free trial
-const SUBSCRIPTION_PRICE = 9.90; // USD per year
-const STRIPE_CHECKOUT_URL = 'https://buy.stripe.com/your_product_link'; // Will be replaced with your Stripe link
+const TRIAL_DAYS = 30;
+const GUMROAD_PRODUCT = 'YOUR_PRODUCT_PERMALINK'; // Replace with your Gumroad product permalink after setup
+const CHECKOUT_MONTHLY = 'https://gumroad.com/l/YOUR_MONTHLY_LINK'; // Replace with your Gumroad link
+const CHECKOUT_YEARLY = 'https://gumroad.com/l/YOUR_YEARLY_LINK';   // Replace with your Gumroad link
+const VERIFY_INTERVAL_HOURS = 24;
+const GRACE_PERIOD_HOURS = 48;
 
 // Check subscription status
 async function checkSubscription() {
-  const { installDate, subscriptionActive, trialUsed } = await chrome.storage.sync.get([
-    'installDate',
-    'subscriptionActive', 
-    'trialUsed'
-  ]);
+  const { installDate, subscriptionActive, licenseKey, planType, lastVerified, graceUntil } = 
+    await chrome.storage.local.get([
+      'installDate',
+      'subscriptionActive',
+      'licenseKey',
+      'planType',
+      'lastVerified',
+      'graceUntil'
+    ]);
 
-  // First time install
+  const now = Date.now();
+
+  // First time install - start trial
   if (!installDate) {
-    const now = Date.now();
-    await chrome.storage.sync.set({
+    await chrome.storage.local.set({
       installDate: now,
-      trialUsed: false,
-      subscriptionActive: false
+      subscriptionActive: false,
+      licenseKey: null,
+      planType: null
     });
     return {
       status: 'trial',
       daysRemaining: TRIAL_DAYS,
-      canUse: true
+      canUseAI: true
     };
   }
 
-  // Check if subscribed
-  if (subscriptionActive) {
-    return {
-      status: 'subscribed',
-      canUse: true
-    };
+  // Check if has valid subscription
+  if (licenseKey) {
+    // Check if re-verification is needed
+    const nextVerify = lastVerified ? lastVerified + (VERIFY_INTERVAL_HOURS * 60 * 60 * 1000) : 0;
+    
+    if (now > nextVerify) {
+      // Try to re-verify silently
+      const result = await verifyLicenseWithGumroad(licenseKey);
+      if (!result.valid) {
+        // Start grace period if not already
+        if (!graceUntil) {
+          const grace = now + (GRACE_PERIOD_HOURS * 60 * 60 * 1000);
+          await chrome.storage.local.set({ graceUntil: grace, subscriptionActive: true });
+          return { status: 'subscribed', planType: planType || 'monthly', canUseAI: true, warning: 'verification_pending' };
+        } else if (now > graceUntil) {
+          // Grace period expired - subscription no longer valid
+          await chrome.storage.local.set({ subscriptionActive: false });
+          return { status: 'subscription_expired', daysRemaining: 0, canUseAI: false };
+        }
+        // Still within grace period
+        return { status: 'subscribed', planType: planType || 'monthly', canUseAI: true, warning: 'grace_period' };
+      }
+    }
+    
+    // Valid subscription
+    if (subscriptionActive) {
+      return {
+        status: 'subscribed',
+        planType: planType || 'monthly',
+        canUseAI: true
+      };
+    }
   }
 
   // Check trial period
-  const daysSinceInstall = Math.floor((Date.now() - installDate) / (1000 * 60 * 60 * 24));
+  const daysSinceInstall = Math.floor((now - installDate) / (1000 * 60 * 60 * 24));
   const daysRemaining = Math.max(0, TRIAL_DAYS - daysSinceInstall);
 
   if (daysRemaining > 0) {
     return {
       status: 'trial',
       daysRemaining,
-      canUse: true
+      canUseAI: true
     };
   }
 
-  // Trial expired
+  // Trial expired, no license
   return {
     status: 'expired',
     daysRemaining: 0,
-    canUse: false
+    canUseAI: false
   };
 }
 
-// Verify subscription (would connect to your backend)
-async function verifySubscription(licenseKey) {
-  // In production, this would verify with your backend server
-  // For now, we'll simulate verification
-  
+// Verify license with Gumroad API
+async function verifyLicenseWithGumroad(licenseKey) {
   try {
-    // Example API call to your server:
-    // const response = await fetch('https://your-server.com/verify', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ licenseKey, extensionId: chrome.runtime.id })
-    // });
-    // const data = await response.json();
-    
-    // Simulated response
-    const isValid = licenseKey && licenseKey.length === 24; // Simple validation
-    
-    if (isValid) {
-      await chrome.storage.sync.set({
-        subscriptionActive: true,
-        licenseKey: licenseKey,
-        subscribedDate: Date.now()
-      });
-      return { success: true };
-    }
-    
-    return { success: false, error: 'Invalid license key' };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-}
-
-// Open Stripe checkout
-function openCheckout() {
-  chrome.tabs.create({ url: STRIPE_CHECKOUT_URL });
-}
-
-// Show upgrade prompt
-async function showUpgradePrompt() {
-  const status = await checkSubscription();
-  
-  if (status.status === 'expired') {
-    // Create notification
-    chrome.notifications.create('upgrade-prompt', {
-      type: 'basic',
-      iconUrl: 'icon-128.png',
-      title: chrome.i18n.getMessage('trialEnded'),
-      message: chrome.i18n.getMessage('upgradeNow'),
-      buttons: [
-        { title: 'Upgrade Now' },
-        { title: 'Enter License Key' }
-      ],
-      priority: 2
+    const response = await fetch('https://api.gumroad.com/v2/licenses/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        product_id: GUMROAD_PRODUCT,
+        license_key: licenseKey
+      })
     });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      const purchase = data.purchase;
+      
+      // Check if subscription ended
+      if (purchase.subscription_ended_at) {
+        return { valid: false, reason: 'subscription_ended' };
+      }
+      
+      // Determine plan type
+      let detectedPlan = 'monthly';
+      if (purchase.recurrence === 'yearly' || 
+          (purchase.variants && purchase.variants.toLowerCase().includes('year'))) {
+        detectedPlan = 'yearly';
+      }
+      
+      // Update local storage
+      await chrome.storage.local.set({
+        subscriptionActive: true,
+        planType: detectedPlan,
+        lastVerified: Date.now(),
+        graceUntil: null
+      });
+      
+      return { valid: true, planType: detectedPlan };
+    }
+    
+    return { valid: false, reason: data.message || 'invalid_license' };
+  } catch (error) {
+    console.log('[SnapToAI] Gumroad verification error:', error.message);
+    return { valid: false, reason: 'network_error' };
   }
 }
 
-// Handle notification clicks
-chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
-  if (notificationId === 'upgrade-prompt') {
-    if (buttonIndex === 0) {
-      openCheckout();
-    } else {
-      // Open popup to enter license key
-      chrome.action.openPopup();
-    }
+// Save and verify new license key
+async function saveLicenseKey(licenseKey) {
+  if (!licenseKey || licenseKey.trim().length < 8) {
+    return { success: false, error: 'Invalid license key format' };
   }
-});
+  
+  const result = await verifyLicenseWithGumroad(licenseKey.trim());
+  
+  if (result.valid) {
+    await chrome.storage.local.set({
+      licenseKey: licenseKey.trim(),
+      subscriptionActive: true,
+      planType: result.planType,
+      lastVerified: Date.now(),
+      graceUntil: null
+    });
+    return { success: true, planType: result.planType };
+  }
+  
+  return { success: false, error: result.reason };
+}
 
-// Export functions
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    checkSubscription,
-    verifySubscription,
+// Clear license key
+async function clearLicenseKey() {
+  await chrome.storage.local.set({
+    licenseKey: null,
+    subscriptionActive: false,
+    planType: null,
+    lastVerified: null,
+    graceUntil: null
+  });
+  return { success: true };
+}
+
+// Get license key (masked for display)
+async function getLicenseKey() {
+  const { licenseKey } = await chrome.storage.local.get('licenseKey');
+  if (licenseKey) {
+    // Show only last 4 characters
+    return '••••••••' + licenseKey.slice(-4);
+  }
+  return null;
+}
+
+// Open Gumroad checkout
+function openCheckout(plan = 'yearly') {
+  const url = plan === 'monthly' ? CHECKOUT_MONTHLY : CHECKOUT_YEARLY;
+  chrome.tabs.create({ url });
+}
+
+// Get checkout URLs for UI
+function getCheckoutUrls() {
+  return {
+    monthly: CHECKOUT_MONTHLY,
+    yearly: CHECKOUT_YEARLY
+  };
+}
+
+// Export for popup and ai-chat
+if (typeof window !== 'undefined') {
+  window.SnapToAISubscription = {
+    check: checkSubscription,
+    saveLicense: saveLicenseKey,
+    clearLicense: clearLicenseKey,
+    getLicense: getLicenseKey,
     openCheckout,
-    showUpgradePrompt
+    getCheckoutUrls,
+    TRIAL_DAYS
   };
 }

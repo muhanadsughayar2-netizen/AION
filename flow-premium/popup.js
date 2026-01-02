@@ -3129,16 +3129,110 @@ async function clearGeminiKey() {
   }
 }
 
+// ===== SUBSCRIPTION MANAGEMENT =====
+const subscriptionModal = document.getElementById('subscriptionModal');
+const subMonthlyBtn = document.getElementById('subMonthlyBtn');
+const subYearlyBtn = document.getElementById('subYearlyBtn');
+const licenseKeyInput = document.getElementById('licenseKeyInput');
+const licenseVerifyBtn = document.getElementById('licenseVerifyBtn');
+const licenseError = document.getElementById('licenseError');
+const subscriptionCloseBtn = document.getElementById('subscriptionCloseBtn');
+const subscriptionMessage = document.getElementById('subscriptionMessage');
+
+function showSubscriptionModal(message) {
+  if (!subscriptionModal) return;
+  if (message && subscriptionMessage) {
+    subscriptionMessage.textContent = message;
+  }
+  subscriptionModal.style.display = 'flex';
+}
+
+function hideSubscriptionModal() {
+  if (!subscriptionModal) return;
+  subscriptionModal.style.display = 'none';
+  if (licenseError) licenseError.style.display = 'none';
+}
+
+async function handleAIButtonClick() {
+  if (window.SnapToAISubscription) {
+    const status = await window.SnapToAISubscription.check();
+    if (!status.canUseAI) {
+      // Different messages for trial expired vs subscription expired
+      const message = status.status === 'subscription_expired'
+        ? 'Your subscription has expired. Please renew to continue.'
+        : 'Your 30-day free trial has ended.';
+      showSubscriptionModal(message);
+      return;
+    }
+  }
+  showGeminiModal();
+}
+
+async function handleLicenseVerify() {
+  if (!licenseKeyInput || !window.SnapToAISubscription) return;
+  const key = licenseKeyInput.value.trim();
+  if (!key) {
+    if (licenseError) {
+      licenseError.textContent = 'Please enter a license key';
+      licenseError.style.display = 'block';
+    }
+    return;
+  }
+  
+  if (licenseVerifyBtn) licenseVerifyBtn.textContent = 'Verifying...';
+  
+  const result = await window.SnapToAISubscription.saveLicense(key);
+  
+  if (result.success) {
+    hideSubscriptionModal();
+    showGeminiModal();
+  } else {
+    if (licenseError) {
+      licenseError.textContent = result.error === 'network_error' 
+        ? 'Network error. Please check your connection.'
+        : 'Invalid license key. Please check and try again.';
+      licenseError.style.display = 'block';
+    }
+  }
+  
+  if (licenseVerifyBtn) licenseVerifyBtn.textContent = 'Activate';
+}
+
+if (subMonthlyBtn) subMonthlyBtn.addEventListener('click', () => {
+  if (window.SnapToAISubscription) {
+    window.SnapToAISubscription.openCheckout('monthly');
+  }
+});
+
+if (subYearlyBtn) subYearlyBtn.addEventListener('click', () => {
+  if (window.SnapToAISubscription) {
+    window.SnapToAISubscription.openCheckout('yearly');
+  }
+});
+
+if (licenseVerifyBtn) licenseVerifyBtn.addEventListener('click', handleLicenseVerify);
+if (subscriptionCloseBtn) subscriptionCloseBtn.addEventListener('click', hideSubscriptionModal);
+
+if (subscriptionModal) subscriptionModal.addEventListener('click', (e) => {
+  if (e.target === subscriptionModal) hideSubscriptionModal();
+});
+
 // Event listeners
-if (aiButton) aiButton.addEventListener('click', showGeminiModal);
+if (aiButton) aiButton.addEventListener('click', handleAIButtonClick);
 if (geminiSaveBtn) geminiSaveBtn.addEventListener('click', saveGeminiKey);
 if (geminiClearBtn) geminiClearBtn.addEventListener('click', clearGeminiKey);
 if (geminiModal) geminiModal.addEventListener('click', (e) => {
   if (e.target === geminiModal) hideGeminiModal();
 });
 
-// Load key on popup open
+// Load key on popup open and check subscription
 document.addEventListener('DOMContentLoaded', async () => {
+  // Initialize subscription check on popup open
+  if (window.SnapToAISubscription) {
+    const status = await window.SnapToAISubscription.check();
+    console.log('[SnapToAI] Subscription status:', status.status, status.canUseAI ? '(active)' : '(blocked)');
+  }
+  
   const hasKey = await loadGeminiKey();
   if (!hasKey) {
     console.log('[SnapToAI] No Gemini key found, showing modal');

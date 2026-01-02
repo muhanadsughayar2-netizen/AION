@@ -25,10 +25,20 @@ const DEFAULT_SETTINGS = {
 // Track last capture time to prevent rate limiting
 let lastCaptureTime = 0;
 
-// Open welcome page on first install
-chrome.runtime.onInstalled.addListener((details) => {
+// Open welcome page on first install and initialize subscription
+chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
     chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') });
+    
+    // Initialize subscription trial on first install
+    const now = Date.now();
+    await chrome.storage.local.set({
+      installDate: now,
+      subscriptionActive: false,
+      licenseKey: null,
+      planType: null
+    });
+    console.log('[SnapToAI] Trial started:', new Date(now).toLocaleDateString());
   }
 });
 

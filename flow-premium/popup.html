@@ -264,6 +264,41 @@
     </div>
   </div>
 
+  <!-- Subscription Expired Modal -->
+  <div id="subscriptionModal" class="subscription-modal" style="display: none;">
+    <div class="subscription-modal-content">
+      <div class="subscription-modal-header">
+        <span class="subscription-icon">👑</span>
+        <span class="subscription-title">Unlock AI Features</span>
+      </div>
+      <div class="subscription-message">
+        <p id="subscriptionMessage">Your 30-day free trial has ended.</p>
+        <p class="subscription-note">All capture features still work! Subscribe to continue using AI analysis.</p>
+      </div>
+      <div class="subscription-pricing">
+        <button id="subMonthlyBtn" class="subscription-btn monthly">
+          <span class="plan-name">Monthly</span>
+          <span class="plan-price">$12/month</span>
+        </button>
+        <button id="subYearlyBtn" class="subscription-btn yearly">
+          <span class="plan-name">Yearly</span>
+          <span class="plan-price">$99/year</span>
+          <span class="plan-save">Save 31%</span>
+        </button>
+      </div>
+      <div class="subscription-divider">
+        <span>Already have a license?</span>
+      </div>
+      <div class="license-input-row">
+        <input type="text" id="licenseKeyInput" class="license-input" placeholder="Paste your Gumroad license key...">
+        <button id="licenseVerifyBtn" class="license-verify-btn">Activate</button>
+      </div>
+      <p id="licenseError" class="license-error" style="display: none;"></p>
+      <button id="subscriptionCloseBtn" class="subscription-close-btn">Continue with Capture Only</button>
+    </div>
+  </div>
+
+  <script src="subscription.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
