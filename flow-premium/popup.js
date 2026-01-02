@@ -3236,10 +3236,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Update upgrade button based on status
     if (upgradeBtn) {
       if (status.status === 'subscribed') {
-        upgradeBtn.textContent = '✓ PRO';
+        // Show days left based on plan type
+        const planDays = status.planType === 'yearly' ? 365 : 30;
+        upgradeBtn.textContent = `✓ ${planDays}d PRO`;
         upgradeBtn.classList.add('subscribed');
-      } else if (status.status === 'trial' && status.daysRemaining <= 7) {
-        upgradeBtn.textContent = `⭐ ${status.daysRemaining}d left`;
+      } else if (status.status === 'trial') {
+        // Always show days remaining during trial
+        upgradeBtn.textContent = `${status.daysRemaining}d FREE`;
+        if (status.daysRemaining <= 7) {
+          upgradeBtn.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%)';
+        }
+      } else {
+        // Expired
+        upgradeBtn.textContent = '⭐ UPGRADE';
+        upgradeBtn.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%)';
       }
     }
   }
