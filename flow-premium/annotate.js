@@ -2594,7 +2594,9 @@ async function saveFullPageWithAnnotations() {
       await yieldToUI();
       
       // Calculate chunk height (using DPR-scaled overlap)
+      // Add small buffer (30px per page) to prevent clipping when actualOverlap < overlapPx
       let chunkHeight = 0;
+      const pagesAfterFirst = Math.max(0, endPage - startPage - 1);
       for (let i = startPage; i < endPage; i++) {
         const img = pageImages[i];
         if (img) {
@@ -2605,6 +2607,7 @@ async function saveFullPageWithAnnotations() {
           }
         }
       }
+      chunkHeight += pagesAfterFirst * 30; // Safety buffer for overlap variance
       
       // Create chunk canvas
       const chunkCanvas = document.createElement('canvas');
@@ -2663,6 +2666,20 @@ async function saveFullPageWithAnnotations() {
         // Release temp canvas
         pageCanvas.width = 0;
         pageCanvas.height = 0;
+      }
+      
+      // Trim canvas to actual rendered height (removes buffer, ensures no clipping)
+      if (currentY < chunkHeight && currentY > 0) {
+        const trimmedCanvas = document.createElement('canvas');
+        trimmedCanvas.width = chunkCanvas.width;
+        trimmedCanvas.height = currentY;
+        const trimCtx = trimmedCanvas.getContext('2d');
+        trimCtx.drawImage(chunkCanvas, 0, 0);
+        chunkCanvas.width = trimmedCanvas.width;
+        chunkCanvas.height = trimmedCanvas.height;
+        chunkCtx.drawImage(trimmedCanvas, 0, 0);
+        trimmedCanvas.width = 0;
+        trimmedCanvas.height = 0;
       }
       
       // Add watermark to chunk
