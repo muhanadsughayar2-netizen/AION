@@ -35,6 +35,15 @@ The extension supports capturing, annotating, organizing (reordering, multi-sele
 6. Saves the stitched image to the queue
 Handles infinite-scroll sites with scroll settlement detection. Works on any web page regardless of length.
 
+**Subscription System (January 2026):** Client-side subscription with Gumroad integration:
+- 30-day free trial starting on install (tracked in chrome.storage.local)
+- After trial: Capture features remain FREE forever, only AI analysis requires subscription
+- Pricing: $12/month or $99/year (31% savings)
+- License verification via Gumroad API with 48-hour grace period for network issues
+- Subscription modal shown when AI button clicked after trial expires
+- License key input for activating purchased subscriptions
+- Placeholder URLs: Replace YOUR_PRODUCT_PERMALINK, YOUR_MONTHLY_LINK, YOUR_YEARLY_LINK after Gumroad setup
+
 ### System Design Choices
 The extension is built as a Manifest V3 Chrome Extension. It employs a Service Worker for background processes, a Content Script for in-page interactions and AI platform detection, and a Popup Interface for user interaction. Data is stored entirely client-side using Chrome's session and local storage APIs, ensuring privacy and eliminating the need for an external backend database. Screenshots are stored as base64 dataURL strings in a FIFO queue within session storage.
 
