@@ -3144,6 +3144,11 @@
       let consecutiveFails = 0;
       const MAX_CONSECUTIVE_FAILS = 5;
       
+      // === GLOBAL TIMEOUT - Never spin forever ===
+      const CAPTURE_TIMEOUT_MS = 60000; // 60 seconds max
+      const captureStartTime = Date.now();
+      let timedOut = false;
+      
       // Calculate total captures - for document viewers, use forced page height
       let estimatedMaxScroll = getMaxScroll();
       if (isDocViewer && estimatedMaxScroll < viewportHeight) {
@@ -3178,6 +3183,13 @@
         // Check if capture was aborted (timeout from popup)
         if (isFullPageCaptureAborted) {
           console.log('[SnapToAI] Full page capture aborted - stopping loop');
+          break;
+        }
+        
+        // === GLOBAL TIMEOUT CHECK - Never spin forever ===
+        if (Date.now() - captureStartTime > CAPTURE_TIMEOUT_MS) {
+          console.log('[SnapToAI] Capture timeout reached (60s) - stopping');
+          timedOut = true;
           break;
         }
         
@@ -3334,6 +3346,12 @@
       }
       
       console.log(`[SnapToAI] Full page capture complete: ${screenshots.length} images`);
+      
+      // === TIMEOUT MESSAGE - User-friendly notification ===
+      if (timedOut && screenshots.length > 0) {
+        showToast(`Page too long - captured first ${screenshots.length} sections`, 'warning');
+      }
+      
       updateOverlayProgress(100);
       
       // === RESTORE CANVAS / WEBGL / VIDEO ===
@@ -3360,6 +3378,7 @@
       safeScrollTo(0);
       
       if (screenshots.length === 0) {
+        showToast('This page cannot be fully captured. Try SNAP instead.', 'error');
         throw new Error('No screenshots captured');
       }
       
@@ -3387,6 +3406,7 @@
       if (allScreenshots.length > BATCH_SIZE) {
         // Large capture: send in batches of 30
         console.log(`[SnapToAI] Large capture - sending in batches of ${BATCH_SIZE}`);
+        showToast(`Long page captured in ${Math.ceil(allScreenshots.length / BATCH_SIZE)} parts`, 'success');
         
         const totalBatches = Math.ceil(allScreenshots.length / BATCH_SIZE);
         
