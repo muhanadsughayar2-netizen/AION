@@ -587,7 +587,9 @@ async function handleSend() {
     
   } catch (error) {
     removeLoading();
-    addBubble(getFriendlyErrorMessage(error.message), 'error');
+    const friendlyMsg = getFriendlyErrorMessage(error.message);
+    const isQuotaError = error.message.toLowerCase().match(/quota|rate|limit|429|exceeded/);
+    addBubble(friendlyMsg, isQuotaError ? 'ai' : 'error');
   }
   
   sendBtn.disabled = false;
