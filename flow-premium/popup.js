@@ -299,15 +299,19 @@ async function handleReeditChunkGroup(captureGroupId) {
       }
     });
     
-    // Open annotation editor in FULLPAGE mode
-    const w = Math.min(1400, screen.width - 100);
-    const h = Math.min(900, screen.height - 100);
+    // Open annotation editor in FULLPAGE mode (fixed size)
+    const w = 1100;
+    const h = 750;
+    const left = Math.round((screen.width - w) / 2);
+    const top = Math.round((screen.height - h) / 2);
     
     chrome.windows.create({
       url: chrome.runtime.getURL('annotate.html?mode=fullpage'),
       type: 'popup',
       width: w,
       height: h,
+      left: left,
+      top: top,
       focused: true
     });
     
@@ -399,8 +403,9 @@ async function handleReeditFullPage() {
     });
     
     // Open annotation window in FULLPAGE mode (with Page X/Y navigation)
-    const w = Math.min(1400, screen.width - 100);
-    const h = Math.min(900, screen.height - 100);
+    // Fixed size popup
+    const w = 1100;
+    const h = 750;
     const left = Math.round((screen.width - w) / 2);
     const top = Math.round((screen.height - h) / 2);
     
@@ -3402,9 +3407,9 @@ async function openAiChat(imageDataUrls) {
     aiButton.style.pointerEvents = 'auto';
   }
   
-  // Open AI chat in a separate window
-  const width = Math.min(900, Math.round(screen.width * 0.8));
-  const height = Math.min(650, Math.round(screen.height * 0.8));
+  // Open AI chat in a separate window (fixed size for consistent feel)
+  const width = 1000;
+  const height = 700;
   const left = Math.round((screen.width - width) / 2);
   const top = Math.round((screen.height - height) / 2);
   
