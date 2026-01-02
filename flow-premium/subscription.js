@@ -2,6 +2,52 @@
 // Handles trial period, Gumroad license verification, and subscription status
 
 const TRIAL_DAYS = 30;
+
+// ===========================================
+// TEST MODE - Open popup, right-click, Inspect, Console tab
+// Then type these commands to test different states:
+//
+//   SnapToAI_TEST.simulateTrial(25)    - 25 days left in trial
+//   SnapToAI_TEST.simulateExpired()    - Trial ended, shows modal
+//   SnapToAI_TEST.simulateSubscribed() - Paid user, full access
+//   SnapToAI_TEST.reset()              - Fresh install, 30 days
+//   SnapToAI_TEST.status()             - Show current state
+//
+// After each command, CLOSE and REOPEN the popup to see changes!
+// ===========================================
+window.SnapToAI_TEST = {
+  async simulateTrial(daysRemaining = 15) {
+    const now = Date.now();
+    const daysUsed = TRIAL_DAYS - daysRemaining;
+    const installDate = now - (daysUsed * 24 * 60 * 60 * 1000);
+    await chrome.storage.local.set({ installDate, subscriptionActive: false, licenseKey: null });
+    console.log('[TEST] Trial set to ' + daysRemaining + ' days remaining. Close & reopen popup.');
+    return 'Done! Close and reopen popup.';
+  },
+  async simulateExpired() {
+    const installDate = Date.now() - (35 * 24 * 60 * 60 * 1000);
+    await chrome.storage.local.set({ installDate, subscriptionActive: false, licenseKey: null });
+    console.log('[TEST] Trial EXPIRED. Close popup, reopen, click AI button to see modal.');
+    return 'Done! Close popup, reopen, click AI button.';
+  },
+  async simulateSubscribed() {
+    await chrome.storage.local.set({ subscriptionActive: true, licenseKey: 'TEST-KEY', planType: 'yearly', lastVerified: Date.now() });
+    console.log('[TEST] SUBSCRIBED user. Close & reopen popup - full AI access.');
+    return 'Done! Close and reopen popup.';
+  },
+  async reset() {
+    await chrome.storage.local.set({ installDate: Date.now(), subscriptionActive: false, licenseKey: null, planType: null, lastVerified: null, graceUntil: null });
+    console.log('[TEST] RESET to fresh install. 30 day trial started.');
+    return 'Done! Fresh 30-day trial.';
+  },
+  async status() {
+    const d = await chrome.storage.local.get(['installDate','subscriptionActive','licenseKey','planType']);
+    const days = d.installDate ? Math.floor((Date.now() - d.installDate) / 86400000) : 0;
+    console.table({ 'Days Used': days, 'Trial Left': Math.max(0, TRIAL_DAYS - days), 'Subscribed': d.subscriptionActive || false, 'License': d.licenseKey ? 'Yes' : 'No' });
+    return d;
+  }
+};
+// =========================================== END TEST MODE
 const GUMROAD_PRODUCT = 'YOUR_PRODUCT_PERMALINK'; // Replace with your Gumroad product permalink after setup
 const CHECKOUT_MONTHLY = 'https://gumroad.com/l/YOUR_MONTHLY_LINK'; // Replace with your Gumroad link
 const CHECKOUT_YEARLY = 'https://gumroad.com/l/YOUR_YEARLY_LINK';   // Replace with your Gumroad link
