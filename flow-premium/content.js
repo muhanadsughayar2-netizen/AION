@@ -291,8 +291,18 @@
           top: 0 !important;
           background: white !important;
         }
+        /* FULL PAGE FIX: Force editor containers to full width for complete capture */
+        div#kix-appview,
+        .kix-appview-editor-container,
+        div[id^="__FPSC_ID_"] {
+          width: 100% !important;
+          max-width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          box-sizing: border-box !important;
+        }
       `;
-      console.log('[SnapToAI] Google Docs UI Hidden - Preserving Engine Height');
+      console.log('[SnapToAI] Google Docs UI Hidden - Full Width Mode Enabled');
     } else if (isYouTube) {
       style.textContent = `
         /* Force full expansion for YouTube */
