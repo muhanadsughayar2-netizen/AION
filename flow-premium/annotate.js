@@ -650,13 +650,6 @@ function setupEventListeners() {
   
   // ESC key handler - cancel current action, return to select mode
   document.addEventListener('keydown', (e) => {
-    if (e.key === 't' || e.key === 'T') {
-      const workspace = document.getElementById('wowWorkspace');
-      if (workspace) {
-        workspace.style.display = workspace.style.display === 'none' ? 'block' : 'none';
-        updateWowInsights();
-      }
-    }
     if (e.key === 'Escape') {
       if (currentTool === 'crop') {
         exitCropMode();
@@ -982,17 +975,19 @@ function handleMouseDown(e) {
     isDrawing = true;
     // Store starting position for rectangle/arrow
   } else if (currentTool === 'callout') {
-    pushHistory(); // Save state before action
-    annotations.push({
-      tool: 'callout',
-      number: calloutNumber++,
-      text: '', // No prompt, empty by default
-      color: currentColor,
-      x: startX,
-      y: startY
-    });
-    updateWowInsights();
-    redraw();
+    const label = prompt('Enter your note:', 'Step ' + calloutNumber);
+    if (label) {
+      pushHistory(); // Save state before action
+      annotations.push({
+        tool: 'callout',
+        number: calloutNumber++,
+        text: label,
+        color: currentColor,
+        x: startX,
+        y: startY
+      });
+      redraw();
+    }
   }
 }
 
@@ -2111,37 +2106,6 @@ function updateHistoryButtons() {
     redoBtn.disabled = redoStack.length === 0;
     redoBtn.style.opacity = redoStack.length === 0 ? '0.4' : '1';
   }
-}
-
-function updateWowInsights() {
-  const container = document.getElementById('wowInsights');
-  if (!container) return;
-  
-  // Keep the label
-  container.innerHTML = '<h3 class="section-label">AI INSIGHTS</h3>';
-  
-  annotations.forEach((ann, idx) => {
-    if (ann.tool === 'callout') {
-      const card = document.createElement('div');
-      card.className = 'insight-card';
-      card.innerHTML = `
-        <div class="icon-glow">
-          <span style="font-size: 18px;">✨</span>
-        </div>
-        <div class="glass-note">
-          <textarea placeholder="Type your insight here...">${ann.text || ''}</textarea>
-        </div>
-      `;
-      
-      const textarea = card.querySelector('textarea');
-      textarea.oninput = () => {
-        ann.text = textarea.value;
-        redraw();
-      };
-      
-      container.appendChild(card);
-    }
-  });
 }
 
 function redraw() {
