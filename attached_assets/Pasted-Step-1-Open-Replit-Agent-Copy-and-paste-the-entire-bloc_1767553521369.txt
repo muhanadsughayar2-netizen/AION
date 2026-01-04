@@ -1,0 +1,74 @@
+Step 1: Open Replit Agent
+Copy and paste the entire block below into the Replit Agent prompt box.
+
+Copy from here:
+
+Task: Add Lossless PDF Optimization to SnapToAI
+
+Goal: Reduce PDF file size without changing a single pixel of the images (for AI vision compatibility).
+
+Instructions:
+
+Modify popup.html: Add this script tag before the popup.js script tag: <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+Update popup.js: Locate the handleExportPDFDirect function. Replace the export/save logic with this optimized version:
+
+JavaScript
+
+async function handleExportPDFDirect() {
+    console.log("Starting Optimized PDF Export...");
+    try {
+        // Capture the original bytes from jsPDF (assuming 'doc' is the jsPDF instance)
+        const originalBytes = doc.output('arraybuffer');
+        
+        // Load into pdf-lib for lossless structural compression
+        const { PDFDocument } = PDFLib;
+        const pdfDoc = await PDFDocument.load(originalBytes);
+    // Save with 'useObjectStreams' to shrink the file size losslessly
+    const optimizedBytes = await pdfDoc.save({
+        useObjectStreams: true,
+        addDefaultPage: false,
+        updateFieldAppearances: false
+    });
+    // Safe Download Trigger
+    const blob = new Blob([optimizedBytes], { type: 'application/pdf' });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `SnapToAI_Export_${Date.now()}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    // Delay revocation to prevent download failure
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 10000);
+    
+    console.log("Lossless PDF optimization complete.");
+} catch (error) {
+    console.error("Optimization failed, falling back to standard save:", error);
+    doc.save('SnapToAI_Standard.pdf');
+}
+}
+
+
+**Constraints:**
+Do NOT use any lossy compression or JPEG conversion.
+
+Keep 100% pixel-perfect quality for Gemini AI reading.
+
+Ensure pdf-lib is only called after jsPDF has finished building the document.
+
+Confirm when finished: "Lossless optimization is active."
+
+Step 2: Verification (The "Zero-Cost" Check)
+Once Replit says it is done, do this yourself to make sure you aren't charged for "re-fixes":
+
+Check the console: Right-click your extension popup -> Inspect -> Console.
+
+Look for the logs: When you export, you should see "Starting Optimized PDF Export..." and "Lossless PDF optimization complete."
+
+The File Test: Compare a PDF made with this new version against an old one. The new one should be significantly smaller (KB/MB), but when you zoom in on the text/images, they should be perfectly sharp.
+
+Final Tip for Replit
+If Replit asks to "Refactor" or "Improve" other parts of your code after doing this—say No. Stick only to this fix to keep your usage costs at the absolute minimum.
+
+Would you like me to show you how to check the PDF "Internal Code" once it's downloaded to prove it didn't use lossy compression?
