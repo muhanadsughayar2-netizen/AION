@@ -630,9 +630,35 @@ function addBubbleActions(bubble, text) {
   actions.innerHTML = `
     <button class="copy-single-btn">📋 Copy</button>
     <button class="read-aloud-btn">🔊 Read</button>
+    <button class="magic-card-btn">✨ Magic Card</button>
   `;
   bubble.appendChild(actions);
   
+  // Magic Card Button
+  actions.querySelector('.magic-card-btn').onclick = () => {
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    const cardContent = typeof marked !== 'undefined' ? marked.parse(text) : text;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>SnapToAI - Magic Card</title>
+          <style>
+            body { font-family: -apple-system, sans-serif; padding: 40px; background: #f0f4f8; }
+            .card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; border-top: 8px solid #00d2ff; }
+            h1, h2 { color: #0052cc; }
+            @media print { body { background: white; padding: 0; } .card { box-shadow: none; border: 1px solid #eee; } .no-print { display: none; } }
+            .no-print { text-align: center; margin-bottom: 20px; }
+            .btn { background: #00d2ff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+          </style>
+        </head>
+        <body>
+          <div class="no-print"><button class="btn" onclick="window.print()">Print / Save PDF</button></div>
+          <div class="card">${cardContent}</div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
   // Copy this response only
   actions.querySelector('.copy-single-btn').onclick = async () => {
     let html = bubble.innerHTML.replace(/<div class="bubble-actions">.*<\/div>/s, '');
