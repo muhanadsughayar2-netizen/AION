@@ -650,6 +650,13 @@ function setupEventListeners() {
   
   // ESC key handler - cancel current action, return to select mode
   document.addEventListener('keydown', (e) => {
+    if (e.key === 't' || e.key === 'T') {
+      const workspace = document.getElementById('wowWorkspace');
+      if (workspace) {
+        workspace.style.display = workspace.style.display === 'none' ? 'block' : 'none';
+        updateWowInsights();
+      }
+    }
     if (e.key === 'Escape') {
       if (currentTool === 'crop') {
         exitCropMode();
@@ -975,19 +982,17 @@ function handleMouseDown(e) {
     isDrawing = true;
     // Store starting position for rectangle/arrow
   } else if (currentTool === 'callout') {
-    const label = prompt('Label:', 'Step ' + calloutNumber);
-    if (label) {
-      pushHistory(); // Save state before action
-      annotations.push({
-        tool: 'callout',
-        number: calloutNumber++,
-        text: label,
-        color: currentColor,
-        x: startX,
-        y: startY
-      });
-      redraw();
-    }
+    pushHistory(); // Save state before action
+    annotations.push({
+      tool: 'callout',
+      number: calloutNumber++,
+      text: '', // No prompt, empty by default
+      color: currentColor,
+      x: startX,
+      y: startY
+    });
+    updateWowInsights();
+    redraw();
   }
 }
 
@@ -2108,6 +2113,37 @@ function updateHistoryButtons() {
   }
 }
 
+function updateWowInsights() {
+  const container = document.getElementById('wowInsights');
+  if (!container) return;
+  
+  // Keep the label
+  container.innerHTML = '<h3 class="section-label">AI INSIGHTS</h3>';
+  
+  annotations.forEach((ann, idx) => {
+    if (ann.tool === 'callout') {
+      const card = document.createElement('div');
+      card.className = 'insight-card';
+      card.innerHTML = `
+        <div class="icon-glow">
+          <span style="font-size: 18px;">✨</span>
+        </div>
+        <div class="glass-note">
+          <textarea placeholder="Type your insight here...">${ann.text || ''}</textarea>
+        </div>
+      `;
+      
+      const textarea = card.querySelector('textarea');
+      textarea.oninput = () => {
+        ann.text = textarea.value;
+        redraw();
+      };
+      
+      container.appendChild(card);
+    }
+  });
+}
+
 function redraw() {
   // Guard: Only redraw if we have image data
   if (!originalImage) {
@@ -2122,36 +2158,59 @@ function redraw() {
   // Draw annotations first
   annotations.forEach(ann => {
     if (ann.tool === 'callout') {
-      // Soft professional circle (Apple-style)
-      ctx.fillStyle = '#007AFF';
-      ctx.globalAlpha = 0.95;
-      ctx.beginPath();
-      ctx.arc(ann.x, ann.y, 32, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
+      // GOOGLE DOCS STYLE GLOWING ICON
+      const size = 64; // Bigger for retina
+      const x = ann.x - size/4;
+      const y = ann.y - size/4;
       
-      // Clean white number
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.save();
+      // Glow effect
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = 'rgba(0, 242, 255, 0.6)';
+      
+      // Glowing rounded box
+      const gradient = ctx.createLinearGradient(ann.x - 32, ann.y - 32, ann.x + 32, ann.y + 32);
+      gradient.addColorStop(0, '#00f2ff');
+      gradient.addColorStop(1, '#7000ff');
+      ctx.fillStyle = gradient;
+      
+      ctx.beginPath();
+      ctx.roundRect(ann.x - 32, ann.y - 32, 64, 64, 16);
+      ctx.fill();
+      
+      // Icon (Sparkle)
+      ctx.fillStyle = 'white';
+      ctx.font = '32px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(ann.number, ann.x, ann.y + 1);
+      ctx.fillText('✨', ann.x, ann.y);
+      ctx.restore();
       
-      // Label (if exists) - rounded pill style
+      // Label (if exists) - GLASSMORPHISM STYLE
       if (ann.text) {
-        const textY = ann.y + 55;
-        ctx.font = 'bold 17px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        const textY = ann.y + 80;
+        ctx.save();
+        ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
         const metrics = ctx.measureText(ann.text);
-        const padding = 14;
+        const padding = 20;
         const labelW = metrics.width + padding * 2;
         
-        ctx.fillStyle = '#007AFF';
+        // Glass background
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
         ctx.beginPath();
-        ctx.roundRect(ann.x - labelW/2, textY - 18, labelW, 36, 18);
+        ctx.roundRect(ann.x - labelW/2, textY - 25, labelW, 50, 15);
         ctx.fill();
+        
+        // Border
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
         
         ctx.fillStyle = '#FFFFFF';
         ctx.fillText(ann.text, ann.x, textY);
+        ctx.restore();
       }
     } else if (ann.tool === 'sticker') {
       // Sticky note - uses color picker, auto-contrast text
