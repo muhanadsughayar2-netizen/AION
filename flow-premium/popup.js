@@ -2536,31 +2536,7 @@ async function handleExportPDFDirect() {
       }
       
       const timestamp = new Date().toISOString().slice(0, 10);
-      
-      console.log("Starting Optimized PDF Export...");
-      try {
-        const originalBytes = pdf.output('arraybuffer');
-        const { PDFDocument } = PDFLib;
-        const pdfDoc = await PDFDocument.load(originalBytes);
-        const optimizedBytes = await pdfDoc.save({
-          useObjectStreams: true,
-          addDefaultPage: false,
-          updateFieldAppearances: false
-        });
-        const blob = new Blob([optimizedBytes], { type: 'application/pdf' });
-        const downloadUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = `SnapToAI_Export_${Date.now()}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(downloadUrl), 10000);
-        console.log("Lossless PDF optimization complete.");
-      } catch (error) {
-        console.error("Optimization failed, falling back to standard save:", error);
-        pdf.save(`snaptoai-stacked-${timestamp}.pdf`);
-      }
+      pdf.save(`snaptoai-stacked-${timestamp}.pdf`);
     } else {
       // Normal case: image fits in single page
       const pdf = new jsPDF({
@@ -2572,31 +2548,7 @@ async function handleExportPDFDirect() {
       pdf.addImage(stackedDataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
       
       const timestamp = new Date().toISOString().slice(0, 10);
-      
-      console.log("Starting Optimized PDF Export...");
-      try {
-        const originalBytes = pdf.output('arraybuffer');
-        const { PDFDocument } = PDFLib;
-        const pdfDoc = await PDFDocument.load(originalBytes);
-        const optimizedBytes = await pdfDoc.save({
-          useObjectStreams: true,
-          addDefaultPage: false,
-          updateFieldAppearances: false
-        });
-        const blob = new Blob([optimizedBytes], { type: 'application/pdf' });
-        const downloadUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = `SnapToAI_Export_${Date.now()}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(downloadUrl), 10000);
-        console.log("Lossless PDF optimization complete.");
-      } catch (error) {
-        console.error("Optimization failed, falling back to standard save:", error);
-        pdf.save(`snaptoai-stacked-${timestamp}.pdf`);
-      }
+      pdf.save(`snaptoai-stacked-${timestamp}.pdf`);
     }
     
     hideProcessingOverlay();
