@@ -19,14 +19,16 @@ window.SnapToAI_TEST = {
   async simulateTrial(daysRemaining = 15) {
     const now = Date.now();
     const daysUsed = TRIAL_DAYS - daysRemaining;
-    const installDate = now - (daysUsed * 24 * 60 * 60 * 1000);
-    await chrome.storage.local.set({ installDate, subscriptionActive: false, licenseKey: null });
+    const trialStartDate = now - (daysUsed * 24 * 60 * 60 * 1000);
+    await chrome.storage.sync.set({ trialStartDate });
+    await chrome.storage.local.set({ subscriptionActive: false, licenseKey: null });
     console.log('[TEST] Trial set to ' + daysRemaining + ' days remaining. Close & reopen popup.');
     return 'Done! Close and reopen popup.';
   },
   async simulateExpired() {
-    const installDate = Date.now() - (35 * 24 * 60 * 60 * 1000);
-    await chrome.storage.local.set({ installDate, subscriptionActive: false, licenseKey: null });
+    const trialStartDate = Date.now() - (35 * 24 * 60 * 60 * 1000);
+    await chrome.storage.sync.set({ trialStartDate });
+    await chrome.storage.local.set({ subscriptionActive: false, licenseKey: null });
     console.log('[TEST] Trial EXPIRED. Close popup, reopen, click AI button to see modal.');
     return 'Done! Close popup, reopen, click AI button.';
   },
@@ -36,15 +38,17 @@ window.SnapToAI_TEST = {
     return 'Done! Close and reopen popup.';
   },
   async reset() {
-    await chrome.storage.local.set({ installDate: Date.now(), subscriptionActive: false, licenseKey: null, planType: null, lastVerified: null, graceUntil: null });
+    await chrome.storage.sync.set({ trialStartDate: Date.now() });
+    await chrome.storage.local.set({ subscriptionActive: false, licenseKey: null, planType: null, lastVerified: null, graceUntil: null });
     console.log('[TEST] RESET to fresh install. 30 day trial started.');
     return 'Done! Fresh 30-day trial.';
   },
   async status() {
-    const d = await chrome.storage.local.get(['installDate','subscriptionActive','licenseKey','planType']);
-    const days = d.installDate ? Math.floor((Date.now() - d.installDate) / 86400000) : 0;
-    console.table({ 'Days Used': days, 'Trial Left': Math.max(0, TRIAL_DAYS - days), 'Subscribed': d.subscriptionActive || false, 'License': d.licenseKey ? 'Yes' : 'No' });
-    return d;
+    const sync = await chrome.storage.sync.get(['trialStartDate']);
+    const local = await chrome.storage.local.get(['subscriptionActive','licenseKey','planType']);
+    const days = sync.trialStartDate ? Math.floor((Date.now() - sync.trialStartDate) / 86400000) : 0;
+    console.table({ 'Days Used': days, 'Trial Left': Math.max(0, TRIAL_DAYS - days), 'Subscribed': local.subscriptionActive || false, 'License': local.licenseKey ? 'Yes' : 'No' });
+    return { ...sync, ...local };
   }
 };
 // =========================================== END TEST MODE
@@ -56,9 +60,11 @@ const GRACE_PERIOD_HOURS = 48;
 
 // Check subscription status
 async function checkSubscription() {
-  const { installDate, subscriptionActive, licenseKey, planType, lastVerified, graceUntil } = 
+  // Trial date in SYNC storage (tied to Google account, persists across reinstalls)
+  const { trialStartDate } = await chrome.storage.sync.get(['trialStartDate']);
+  // License/subscription in LOCAL storage
+  const { subscriptionActive, licenseKey, planType, lastVerified, graceUntil } = 
     await chrome.storage.local.get([
-      'installDate',
       'subscriptionActive',
       'licenseKey',
       'planType',
@@ -68,20 +74,24 @@ async function checkSubscription() {
 
   const now = Date.now();
 
-  // First time install - start trial
-  if (!installDate) {
+  // First time install - start trial (saved to sync = persists across reinstalls)
+  if (!trialStartDate) {
+    await chrome.storage.sync.set({ trialStartDate: now });
     await chrome.storage.local.set({
-      installDate: now,
       subscriptionActive: false,
       licenseKey: null,
       planType: null
     });
+    console.log('[SnapToAI] 🎉 First install! 30-day AI trial started.');
     return {
       status: 'trial',
       daysRemaining: TRIAL_DAYS,
       canUseAI: true
     };
   }
+  
+  // Use trialStartDate from sync storage
+  const installDate = trialStartDate;
 
   // Check if has valid subscription
   if (licenseKey) {
