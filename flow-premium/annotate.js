@@ -3,7 +3,7 @@
 let canvas, ctx;
 let currentTool = 'select';
 let currentColor = '#007AFF';
-let brushSize = 12;
+let brushSize = 4;
 let isDrawing = false;
 let startX, startY;
 let annotations = [];
@@ -14,6 +14,7 @@ let dragOffsetX = 0;
 let dragOffsetY = 0;
 let pendingStickerText = null;
 let pendingSpecialEmoji = null;
+let selectedAnnotation = null; // Track selected note for deletion
 
 // Crop/Snip mode variables
 let isSnipMode = false;
@@ -239,6 +240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners();
   loadCustomStickers();
   loadImage();
+  
   
   // Initialize border UI to reflect current settings
   initializeBorderUI();
@@ -648,9 +650,27 @@ function setupEventListeners() {
     });
   }
   
-  // ESC key handler - cancel current action, return to select mode
+  // Keyboard handler - ESC, Delete, Backspace
   document.addEventListener('keydown', (e) => {
+    // Delete/Backspace - remove selected annotation
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedAnnotation) {
+      e.preventDefault();
+      const idx = annotations.indexOf(selectedAnnotation);
+      if (idx > -1) {
+        pushHistory();
+        annotations.splice(idx, 1);
+        selectedAnnotation = null;
+        redraw();
+        updateStatus('Note deleted');
+      }
+      return;
+    }
+    
     if (e.key === 'Escape') {
+      // Clear selection
+      selectedAnnotation = null;
+      hideContextMenu();
+      
       if (currentTool === 'crop') {
         exitCropMode();
         return;
@@ -674,6 +694,93 @@ function setupEventListeners() {
   canvas.addEventListener('mousemove', handleMouseMove);
   canvas.addEventListener('mouseup', handleMouseUp);
   
+  // Right-click context menu for deletion
+  canvas.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    
+    const clicked = findAnnotation(x, y);
+    if (clicked) {
+      selectedAnnotation = clicked;
+      redraw();
+      showContextMenu(e.clientX, e.clientY, clicked);
+    } else {
+      hideContextMenu();
+    }
+  });
+  
+  // Hide context menu on click elsewhere
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#customContextMenu')) {
+      hideContextMenu();
+    }
+  });
+  
+  // Create context menu element
+  createContextMenu();
+}
+
+// Custom context menu for deleting notes
+function createContextMenu() {
+  const menu = document.createElement('div');
+  menu.id = 'customContextMenu';
+  menu.style.cssText = `
+    position: fixed;
+    background: rgba(30, 30, 30, 0.95);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 4px 0;
+    min-width: 100px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 10000;
+    display: none;
+  `;
+  menu.innerHTML = `
+    <button id="deleteNoteBtn" style="
+      display: block;
+      width: 100%;
+      padding: 8px 16px;
+      background: none;
+      border: none;
+      color: #ff4444;
+      font-size: 14px;
+      text-align: left;
+      cursor: pointer;
+    ">Delete</button>
+  `;
+  document.body.appendChild(menu);
+  
+  document.getElementById('deleteNoteBtn').addEventListener('click', () => {
+    if (selectedAnnotation) {
+      const idx = annotations.indexOf(selectedAnnotation);
+      if (idx > -1) {
+        pushHistory();
+        annotations.splice(idx, 1);
+        selectedAnnotation = null;
+        redraw();
+        updateStatus('Note deleted');
+      }
+    }
+    hideContextMenu();
+  });
+}
+
+function showContextMenu(x, y, annotation) {
+  const menu = document.getElementById('customContextMenu');
+  if (menu) {
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    menu.style.display = 'block';
+  }
+}
+
+function hideContextMenu() {
+  const menu = document.getElementById('customContextMenu');
+  if (menu) {
+    menu.style.display = 'none';
+  }
 }
 
 async function loadImage() {
@@ -736,6 +843,18 @@ async function loadImage() {
         pushHistory();
         updateHistoryButtons();
         
+        // Add preset sticky note for new captures (not re-edit)
+        if (mode !== 'reedit' && annotations.length === 0) {
+          annotations.push({
+            tool: 'sticker',
+            text: 'I Love Snap to AI',
+            color: '#4A90D9',
+            x: Math.min(150, canvas.width - 100),
+            y: Math.min(100, canvas.height - 50)
+          });
+          redraw();
+        }
+        
         if (mode === 'reedit') {
           updateStatus('Full page ready for editing');
         }
@@ -768,6 +887,18 @@ async function loadImage() {
       // Push initial state to history (enables undo)
       pushHistory();
       updateHistoryButtons();
+      
+      // Add preset sticky note (not in snip mode)
+      if (!isSnipMode && annotations.length === 0) {
+        annotations.push({
+          tool: 'sticker',
+          text: 'I Love Snap to AI',
+          color: '#4A90D9',
+          x: Math.min(150, canvas.width - 100),
+          y: Math.min(100, canvas.height - 50)
+        });
+        redraw();
+      }
       
       // Load real URL for browser frame (same as full-page)
       (async () => {
@@ -937,14 +1068,23 @@ function handleMouseDown(e) {
     return;
   }
   
-  // Check for drag
+  // Check for drag and selection
   const clicked = findAnnotation(startX, startY);
   if (clicked) {
+    selectedAnnotation = clicked; // Select for keyboard delete
     draggingAnnotation = clicked;
     dragOffsetX = startX - clicked.x;
     dragOffsetY = startY - clicked.y;
     canvas.style.cursor = 'grabbing';
+    redraw(); // Redraw to show selection highlight
+    updateStatus('Selected — press Delete or right-click to remove');
     return;
+  } else {
+    // Click on empty area clears selection
+    if (selectedAnnotation) {
+      selectedAnnotation = null;
+      redraw();
+    }
   }
   
   if (currentTool === 'special' && pendingSpecialEmoji) {
@@ -1166,7 +1306,9 @@ function handleMouseUp(e) {
   
   if (draggingAnnotation) {
     draggingAnnotation = null;
+    selectedAnnotation = null; // Clear selection after drag
     canvas.style.cursor = 'crosshair';
+    redraw();
     return;
   }
   
@@ -2199,9 +2341,14 @@ function redraw() {
       ctx.shadowOffsetY = 4;
       ctx.fillRect(-w/2, -h/2, w, h);
       
-      // Border
-      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-      ctx.lineWidth = 2;
+      // Border - highlight if selected
+      if (ann === selectedAnnotation) {
+        ctx.strokeStyle = '#00D4FF';
+        ctx.lineWidth = 3;
+      } else {
+        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+        ctx.lineWidth = 2;
+      }
       ctx.strokeRect(-w/2, -h/2, w, h);
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
@@ -2908,9 +3055,14 @@ function drawAnnotationsToContext(ctx, anns) {
       ctx.shadowOffsetY = 4;
       ctx.fillRect(-w/2, -h/2, w, h);
       
-      // Border
-      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-      ctx.lineWidth = 2;
+      // Border - highlight if selected
+      if (ann === selectedAnnotation) {
+        ctx.strokeStyle = '#00D4FF';
+        ctx.lineWidth = 3;
+      } else {
+        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+        ctx.lineWidth = 2;
+      }
       ctx.strokeRect(-w/2, -h/2, w, h);
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
