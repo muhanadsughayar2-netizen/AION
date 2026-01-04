@@ -3186,38 +3186,19 @@
       }
       let totalEstimatedCaptures = Math.ceil(estimatedMaxScroll / (viewportHeight * 0.8)) + 1;
       
-      // GOOGLE DOCS PAGE-AWARE CAPTURE SETUP
-      // Google Docs uses CSS transform: translate3d(0, Ypx, 0) to position pages
-      // offsetTop is always 0, so we parse the transform matrix for actual Y position
-      let docsPageTargets = [];
-      let currentDocsPageIndex = 0;
-      if (isGoogleDocsPage) {
-        const pages = document.querySelectorAll('.kix-page');
-        if (pages.length > 0) {
-          pages.forEach((page, idx) => {
-            // Parse transform: translate3d(0px, Ypx, 0px) to get Y position
-            let yPos = 0;
-            try {
-              const transform = getComputedStyle(page).transform;
-              if (transform && transform !== 'none') {
-                const matrix = new DOMMatrixReadOnly(transform);
-                yPos = matrix.m42; // Y translation value
-              }
-            } catch (e) {
-              // Fallback to bounding rect
-              yPos = page.getBoundingClientRect().top + (scrollContainer ? scrollContainer.scrollTop : 0);
-            }
-            docsPageTargets.push({
-              index: idx,
-              scrollTo: yPos,
-              pageNum: page.getAttribute('data-page-number') || idx
-            });
-          });
-          // Sort by Y position to ensure correct order
-          docsPageTargets.sort((a, b) => a.scrollTo - b.scrollTo);
-          totalEstimatedCaptures = docsPageTargets.length;
-          console.log(`[SnapToAI] Google Docs - found ${pages.length} pages, positions:`, docsPageTargets.map(p => p.scrollTo));
-        }
+      // GOOGLE DOCS HEIGHT-BASED CAPTURE (like GoFullPage)
+      // Don't rely on .kix-page elements - they're virtualized and recycled
+      // Instead, use scrollHeight / clientHeight to determine capture count
+      let docsScrollStep = 0;
+      let docsTotalCaptures = 0;
+      let currentDocsScrollIndex = 0;
+      if (isGoogleDocsPage && scrollContainer) {
+        const totalHeight = scrollContainer.scrollHeight;
+        const viewportH = scrollContainer.clientHeight;
+        docsTotalCaptures = Math.ceil(totalHeight / viewportH);
+        docsScrollStep = viewportH; // Scroll by full viewport each time
+        totalEstimatedCaptures = docsTotalCaptures;
+        console.log(`[SnapToAI] Google Docs - height: ${totalHeight}px, viewport: ${viewportH}px, captures needed: ${docsTotalCaptures}`);
       }
       
       // === SERVICE WORKER KEEP-ALIVE ===
@@ -3320,11 +3301,11 @@
         captureCount++;
         
         // Check if we've reached the bottom (scroll position didn't change)
-        // GOOGLE DOCS: Stop after capturing all pages
-        if (isGoogleDocsPage && docsPageTargets.length > 0) {
-          currentDocsPageIndex++;
-          if (currentDocsPageIndex >= docsPageTargets.length) {
-            console.log(`[SnapToAI] Google Docs - captured all ${docsPageTargets.length} pages`);
+        // GOOGLE DOCS: Stop after capturing all viewports
+        if (isGoogleDocsPage && docsTotalCaptures > 0) {
+          currentDocsScrollIndex++;
+          if (currentDocsScrollIndex >= docsTotalCaptures) {
+            console.log(`[SnapToAI] Google Docs - captured all ${docsTotalCaptures} viewports`);
             break;
           }
         } else if (isDocViewer) {
@@ -3350,11 +3331,11 @@
         
         lastScrollTop = currentScrollTop;
         
-        // GOOGLE DOCS: Scroll to next page's position directly
-        if (isGoogleDocsPage && docsPageTargets.length > 0 && currentDocsPageIndex < docsPageTargets.length) {
-          const nextPage = docsPageTargets[currentDocsPageIndex];
-          safeScrollTo(nextPage.scrollTo);
-          console.log(`[SnapToAI] Google Docs - scrolling to page ${currentDocsPageIndex + 1} (Y: ${nextPage.scrollTo}px)`);
+        // GOOGLE DOCS: Scroll by full viewport height (like GoFullPage)
+        if (isGoogleDocsPage && docsTotalCaptures > 0 && currentDocsScrollIndex < docsTotalCaptures) {
+          const scrollPos = currentDocsScrollIndex * docsScrollStep;
+          safeScrollTo(scrollPos);
+          console.log(`[SnapToAI] Google Docs - scrolling to position ${scrollPos}px (capture ${currentDocsScrollIndex + 1}/${docsTotalCaptures})`);
         } else {
           // Normal pages: scroll by step height
           safeScrollBy(stepHeight);
