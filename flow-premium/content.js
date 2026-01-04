@@ -2818,16 +2818,21 @@
       const forceWindowScroll = isGmail || isGoogleSearch; // Removed Google Docs from window scroll
       
       // GOOGLE DOCS SPECIAL HANDLING: Use .kix-appview-editor as scroll container
+      let docsEditorFound = false;
       if (isGoogleDocsPage) {
         const docsEditor = document.querySelector('.kix-appview-editor');
         if (docsEditor) {
           scrollContainer = docsEditor;
-          console.log('[SnapToAI] Google Docs - using .kix-appview-editor as scroll container');
+          docsEditorFound = true;
+          console.log('[SnapToAI] Google Docs - using .kix-appview-editor as scroll container, scrollHeight:', docsEditor.scrollHeight);
+        } else {
+          console.log('[SnapToAI] Google Docs - .kix-appview-editor NOT FOUND, falling back');
         }
       }
       
       // Initial scroll strategy - will auto-fallback to window if container doesn't work
-      let useContainerScroll = forceWindowScroll ? false : (isRealContainer || isGoogleDocsPage || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || docViewerHasScroll);
+      // FORCE container scroll for Google Docs when editor is found
+      let useContainerScroll = forceWindowScroll ? false : (docsEditorFound || isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || docViewerHasScroll);
       let hasTriedWindowFallback = forceWindowScroll; // Skip fallback test if already forcing window
       
       if (forceWindowScroll) {
