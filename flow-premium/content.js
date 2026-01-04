@@ -2810,15 +2810,24 @@
         return; // Exit early - no error, just graceful skip
       }
       
-      // FORCE WINDOW SCROLL for known problematic sites (Gmail, Google Docs, Google Search)
-      // These sites have fake scroll containers that don't work reliably
+      // FORCE WINDOW SCROLL for known problematic sites (Gmail, Google Search)
+      // NOTE: Google Docs uses its own container - handled separately below
       const isGmail = location.hostname.includes('mail.google.com');
       const isGoogleDocsPage = location.hostname.includes('docs.google.com');
       const isGoogleSearch = location.hostname.includes('google.') && location.pathname.includes('/search');
-      const forceWindowScroll = isGmail || isGoogleDocsPage || isGoogleSearch;
+      const forceWindowScroll = isGmail || isGoogleSearch; // Removed Google Docs from window scroll
+      
+      // GOOGLE DOCS SPECIAL HANDLING: Use .kix-appview-editor as scroll container
+      if (isGoogleDocsPage) {
+        const docsEditor = document.querySelector('.kix-appview-editor');
+        if (docsEditor) {
+          scrollContainer = docsEditor;
+          console.log('[SnapToAI] Google Docs - using .kix-appview-editor as scroll container');
+        }
+      }
       
       // Initial scroll strategy - will auto-fallback to window if container doesn't work
-      let useContainerScroll = forceWindowScroll ? false : (isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || docViewerHasScroll);
+      let useContainerScroll = forceWindowScroll ? false : (isRealContainer || isGoogleDocsPage || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || docViewerHasScroll);
       let hasTriedWindowFallback = forceWindowScroll; // Skip fallback test if already forcing window
       
       if (forceWindowScroll) {
