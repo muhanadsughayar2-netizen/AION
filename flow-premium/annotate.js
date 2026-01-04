@@ -2122,32 +2122,36 @@ function redraw() {
   // Draw annotations first
   annotations.forEach(ann => {
     if (ann.tool === 'callout') {
-      // GOOGLE DOCS STYLE GLOWING ICON
-      const size = 64; // Bigger for retina
-      const x = ann.x - size/4;
-      const y = ann.y - size/4;
+      // CLEAN NUMBERED CIRCLE
+      const radius = 20;
       
       ctx.save();
-      // Glow effect
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = 'rgba(0, 242, 255, 0.6)';
+      // Subtle shadow
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
       
-      // Glowing rounded box
-      const gradient = ctx.createLinearGradient(ann.x - 32, ann.y - 32, ann.x + 32, ann.y + 32);
-      gradient.addColorStop(0, '#00f2ff');
-      gradient.addColorStop(1, '#7000ff');
+      // Gradient circle
+      const gradient = ctx.createLinearGradient(ann.x - radius, ann.y - radius, ann.x + radius, ann.y + radius);
+      gradient.addColorStop(0, '#3b82f6');
+      gradient.addColorStop(1, '#1d4ed8');
       ctx.fillStyle = gradient;
       
       ctx.beginPath();
-      ctx.roundRect(ann.x - 32, ann.y - 32, 64, 64, 16);
+      ctx.arc(ann.x, ann.y, radius, 0, Math.PI * 2);
       ctx.fill();
       
-      // Icon (Sparkle)
+      // White border
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      // Number inside
+      ctx.shadowBlur = 0;
       ctx.fillStyle = 'white';
-      ctx.font = '32px sans-serif';
+      ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('✨', ann.x, ann.y);
+      ctx.fillText(ann.number.toString(), ann.x, ann.y);
       ctx.restore();
       
       // Label (if exists) - SOLID READABLE STYLE
