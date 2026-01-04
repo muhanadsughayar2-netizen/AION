@@ -292,8 +292,11 @@
           background: white !important;
         }
         /* FULL PAGE FIX: Force editor containers to full width for complete capture */
+        div#docs-editor,
+        div#docs-editor-container,
         div#kix-appview,
         .kix-appview-editor-container,
+        .kix-appview-editor,
         div[id^="__FPSC_ID_"] {
           width: 100% !important;
           max-width: 100% !important;
