@@ -2511,16 +2511,31 @@ async function saveOptimizedPDF(pdf, filename) {
     // Optimize with pdf-lib (lossless compression)
     const optimizedBytes = await optimizePDF(pdfBytes);
     
-    // Create blob and download
+    // Create blob and download using chrome.downloads API for reliability
     const blob = new Blob([optimizedBytes], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    
+    // Use chrome.downloads API if available (more reliable in extensions)
+    if (chrome.downloads && chrome.downloads.download) {
+      chrome.downloads.download({
+        url: url,
+        filename: filename,
+        saveAs: false
+      }, (downloadId) => {
+        // Revoke URL after download starts (with delay for safety)
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      });
+    } else {
+      // Fallback to anchor click with delayed revocation
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      // Delay revocation to give browser time to fetch the blob
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }
   } catch (error) {
     console.log('Optimized save failed, using standard save:', error.message);
     pdf.save(filename); // Fallback to standard jsPDF save
