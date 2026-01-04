@@ -843,17 +843,6 @@ async function loadImage() {
         pushHistory();
         updateHistoryButtons();
         
-        // Add preset sticky note for new captures (not re-edit)
-        if (mode !== 'reedit' && annotations.length === 0) {
-          annotations.push({
-            tool: 'sticker',
-            text: 'I Love Snap to AI',
-            color: '#4A90D9',
-            x: Math.min(150, canvas.width - 100),
-            y: Math.min(100, canvas.height - 50)
-          });
-          redraw();
-        }
         
         if (mode === 'reedit') {
           updateStatus('Full page ready for editing');
@@ -888,17 +877,6 @@ async function loadImage() {
       pushHistory();
       updateHistoryButtons();
       
-      // Add preset sticky note (not in snip mode)
-      if (!isSnipMode && annotations.length === 0) {
-        annotations.push({
-          tool: 'sticker',
-          text: 'I Love Snap to AI',
-          color: '#4A90D9',
-          x: Math.min(150, canvas.width - 100),
-          y: Math.min(100, canvas.height - 50)
-        });
-        redraw();
-      }
       
       // Load real URL for browser frame (same as full-page)
       (async () => {
