@@ -61,7 +61,20 @@ const GRACE_PERIOD_HOURS = 48;
 // Check subscription status
 async function checkSubscription() {
   // Trial date in SYNC storage (tied to Google account, persists across reinstalls)
-  const { trialStartDate } = await chrome.storage.sync.get(['trialStartDate']);
+  let { trialStartDate } = await chrome.storage.sync.get(['trialStartDate']);
+  
+  // MIGRATION: Check for legacy installDate in local storage (old users)
+  if (!trialStartDate) {
+    const { installDate: legacyDate } = await chrome.storage.local.get(['installDate']);
+    if (legacyDate) {
+      // Migrate to sync storage
+      trialStartDate = legacyDate;
+      await chrome.storage.sync.set({ trialStartDate: legacyDate });
+      await chrome.storage.local.remove('installDate');
+      console.log('[SnapToAI] Migrated trial date to sync storage.');
+    }
+  }
+  
   // License/subscription in LOCAL storage
   const { subscriptionActive, licenseKey, planType, lastVerified, graceUntil } = 
     await chrome.storage.local.get([
