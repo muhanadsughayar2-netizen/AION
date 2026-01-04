@@ -3181,6 +3181,24 @@
       }
       let totalEstimatedCaptures = Math.ceil(estimatedMaxScroll / (viewportHeight * 0.8)) + 1;
       
+      // GOOGLE DOCS PAGE-AWARE CAPTURE SETUP
+      // Get all pages upfront and scroll to each page's position once
+      let docsPageTargets = [];
+      let currentDocsPageIndex = 0;
+      if (isGoogleDocsPage) {
+        const pages = document.querySelectorAll('.kix-page');
+        if (pages.length > 0) {
+          pages.forEach((page, idx) => {
+            docsPageTargets.push({
+              index: idx,
+              offsetTop: page.offsetTop
+            });
+          });
+          totalEstimatedCaptures = pages.length;
+          console.log(`[SnapToAI] Google Docs - found ${pages.length} pages to capture`);
+        }
+      }
+      
       // === SERVICE WORKER KEEP-ALIVE ===
       // Ping service worker every 15 seconds to prevent it from going to sleep (MV3 issue)
       // Chrome 109+: API calls reset the 30-second inactivity timer
@@ -3281,8 +3299,14 @@
         captureCount++;
         
         // Check if we've reached the bottom (scroll position didn't change)
-        // For document viewers: use forced page height to determine when to stop
-        if (isDocViewer) {
+        // GOOGLE DOCS: Stop after capturing all pages
+        if (isGoogleDocsPage && docsPageTargets.length > 0) {
+          currentDocsPageIndex++;
+          if (currentDocsPageIndex >= docsPageTargets.length) {
+            console.log(`[SnapToAI] Google Docs - captured all ${docsPageTargets.length} pages`);
+            break;
+          }
+        } else if (isDocViewer) {
           // Document viewers: exit based on estimated captures, not scroll position
           if (captureCount >= totalEstimatedCaptures) {
             console.log('[SnapToAI] Document viewer - completed estimated captures:', captureCount);
@@ -3298,15 +3322,22 @@
         
         // Check if we're at max scroll (not for document viewers with forced height)
         // Only exit if we've actually scrolled (captureCount > 1) to prevent false early exits
-        if (!isDocViewer && captureCount > 1 && currentScrollTop >= getMaxScroll() - 20) {
+        if (!isDocViewer && !isGoogleDocsPage && captureCount > 1 && currentScrollTop >= getMaxScroll() - 20) {
           console.log('[SnapToAI] Reached max scroll position');
           break;
         }
         
         lastScrollTop = currentScrollTop;
         
-        // Scroll down by one viewport using safe scrollBy (never throws errors!)
-        safeScrollBy(stepHeight);
+        // GOOGLE DOCS: Scroll to next page's position directly
+        if (isGoogleDocsPage && docsPageTargets.length > 0 && currentDocsPageIndex < docsPageTargets.length) {
+          const nextPage = docsPageTargets[currentDocsPageIndex];
+          safeScrollTo(nextPage.offsetTop);
+          console.log(`[SnapToAI] Google Docs - scrolling to page ${currentDocsPageIndex + 1} at offset ${nextPage.offsetTop}`);
+        } else {
+          // Normal pages: scroll by step height
+          safeScrollBy(stepHeight);
+        }
         
         // === GOOGLE APPS FIX: Wait for Virtual DOM to Repaint ===
         if (location.hostname.includes('google.com')) {
