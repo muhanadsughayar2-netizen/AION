@@ -2150,28 +2150,28 @@ function redraw() {
       ctx.fillText('✨', ann.x, ann.y);
       ctx.restore();
       
-      // Label (if exists) - GLASSMORPHISM STYLE
+      // Label (if exists) - SOLID READABLE STYLE
       if (ann.text) {
-        const textY = ann.y + 80;
+        const textY = ann.y + 50;
         ctx.save();
-        ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
         const metrics = ctx.measureText(ann.text);
-        const padding = 20;
+        const padding = 16;
         const labelW = metrics.width + padding * 2;
+        const labelH = 32;
         
-        // Glass background
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+        // Solid dark background for readability
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
         ctx.beginPath();
-        ctx.roundRect(ann.x - labelW/2, textY - 25, labelW, 50, 15);
+        ctx.roundRect(ann.x - labelW/2, textY - labelH/2, labelW, labelH, 8);
         ctx.fill();
         
-        // Border
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        
+        // White text for contrast
+        ctx.shadowBlur = 0;
         ctx.fillStyle = '#FFFFFF';
         ctx.fillText(ann.text, ann.x, textY);
         ctx.restore();
