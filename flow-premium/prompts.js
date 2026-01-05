@@ -38,9 +38,9 @@ FORMAT: Start with key insight. Use bullet points. End with SCORE: X/100 and one
 // =====================================================
 window.SNAPTOAI_CHAINS = {
   "Investment Deep Dive": ["Stock Deep Dive", "6-Timeframe Quant Alpha", "Risk Analyzer"],
-  "Full Code Audit": ["Code Doctor", "Security Scanner", "Performance Optimizer"],
+  "Full Code Audit": ["Code Doctor", "Security Scanner", "Debug This"],
   "Health Complete": ["Symptom Guide", "Med Check", "Diagnostic Pathologist"],
-  "Deal Analysis": ["Deal or No Deal", "Price History", "Competitor Check"],
+  "Deal Analysis": ["Deal or No Deal", "Bill Detective", "Real Estate Scanner"],
   "Study Session": ["Study Extractor", "The Einstein Solver", "Quiz Generator"]
 };
 
