@@ -156,23 +156,7 @@ let conversationHistory = [];
 let filesQueue = []; // Multi-file upload queue (Gemini-style)
 
 // Get config from prompts.js (user-editable) or use defaults
-const getConfig = (key, defaultVal) => {
-  if (!window.SNAPTOAI_CONFIG) return defaultVal;
-  const val = window.SNAPTOAI_CONFIG[key];
-  // Handle TEMPERATURE specially - it's now an object with types
-  if (key === 'TEMPERATURE' && typeof val === 'object') {
-    return val.default || 0.1;
-  }
-  return val !== undefined ? val : defaultVal;
-};
-
-// Get temperature for specific prompt type
-const getSmartTemperature = (promptName) => {
-  if (window.getPromptTemperature) {
-    return window.getPromptTemperature(promptName);
-  }
-  return 0.1; // Default precision
-};
+const getConfig = (key, defaultVal) => (window.SNAPTOAI_CONFIG && window.SNAPTOAI_CONFIG[key]) || defaultVal;
 
 const SYSTEM_PROMPT = getConfig('SYSTEM_PROMPT', "You are a thorough, exhaustive AI assistant. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never ask the user if they want more—just give it all now. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.");
 
@@ -705,14 +689,12 @@ function addBubbleActions(bubble, text) {
           </style>
         </head>
         <body>
-          <div class="no-print"><button class="btn print-btn">Print / Save PDF</button></div>
+          <div class="no-print"><button class="btn" onclick="window.print()">Print / Save PDF</button></div>
           <div class="card">${cardContent}</div>
         </body>
       </html>
     `);
     printWindow.document.close();
-    // Add event listener without inline onclick (CSP compliant)
-    printWindow.document.querySelector('.print-btn').addEventListener('click', () => printWindow.print());
   };
   // Copy this response only
   actions.querySelector('.copy-single-btn').onclick = async () => {

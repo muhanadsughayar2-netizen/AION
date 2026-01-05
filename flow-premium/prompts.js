@@ -1,303 +1,141 @@
- ACTIVATION: Target vs. actual muscles engaged.
-3. FORM SCORECARD:
-   | Aspect | Score | Correction |
-   | :--- | :--- | :--- |
-   | Posture | [1-10] | [Fix] |
-   | Range of Motion | [1-10] | [Fix] |
-   | Control | [1-10] | [Fix] |
-4. PROGRESSIONS: Easier and harder variants.
-${FORMATTING_RULES}`,
+/**
+ * =====================================================
+ * SNAPTOAI MAGIC BUTTON PROMPTS - FULL CONTROL
+ * =====================================================
+ * 
+ * Edit ANY prompt below to customize AI behavior.
+ * Just change the text inside the quotes!
+ * 
+ * Format: "Button Name": "Your prompt text here"
+ * 
+ * Categories: MONEY | WORK | HEALTH | LEARN
+ * =====================================================
+ */
 
-  "Diagnostic Pathologist": `ELITE LAB ANALYST:
-1. MARKER EXTRACTION: All visible values in table.
-2. VELOCITY TRACKING: Moving toward Optimal or Danger?
-3. LAB MATRIX:
-   | Marker | Value | Range | Trend |
-   | :--- | :--- | :--- | :--- |
-   | [Marker] | [Value] | [Normal] | ↑/↓/→ |
-4. SYNERGY AUDIT: How markers interact.
-5. SPECIALIST SCRIPT: Exact question for your doctor.
-${FORMATTING_RULES}`,
+window.SNAPTOAI_PROMPTS = {
 
   // =====================================================
-  // 📚 LEARN SUITE (5 prompts)
+  // MONEY CATEGORY (4 templates)
   // =====================================================
   
-  "Study Extractor": `ELITE NOTES GENERATOR:
-1. CONCEPT COMPRESSION: 20% info = 80% results.
-2. KEY FACTS TABLE:
-   | Concept | Definition | Example |
-   | :--- | :--- | :--- |
-   | [Term] | [Meaning] | [Use case] |
-3. FLASHCARD GEN: 5 high-impact Q&As.
-4. MEMORY HOOKS: Mnemonics or visualizations.
-5. PRACTICE QUESTIONS: 3 with answers.
-${FORMATTING_RULES}`,
+  "Stock Deep Dive": "DEEP STOCK ANALYSIS: 1) Extract ticker symbol, current price, and % change. 2) Identify support/resistance levels from the chart. 3) Read any visible news headlines and rate sentiment (bullish/bearish/neutral). 4) Check volume patterns for unusual activity. 5) Give me: a) Entry price recommendation b) Stop-loss level c) Take-profit target d) Risk score 1-10 e) 7-day price prediction with reasoning. Be specific with numbers, not vague.",
 
-  "ELI5 This": `ELITE SIMPLIFIER:
-1. CORE CONCEPT: Simple analogy anyone understands.
-2. REAL-WORLD: Practical example from daily life.
-3. COMMON MISTAKES: What people get wrong.
-4. ONE-LINER: Summary a 5-year-old could repeat.
-${QUICK_FORMAT}`,
+  "Deal or No Deal": "DEAL HUNTER ANALYSIS: 1) Identify the product and exact model. 2) Note the current price and any discounts shown. 3) Check for hidden costs (shipping, taxes, subscriptions). 4) Rate the deal quality: STEAL / GOOD / FAIR / RIP-OFF. 5) Estimate typical price range for this item. 6) Red flags to watch for. 7) VERDICT: Buy now, wait for sale, or skip entirely. Include specific dollar amounts.",
 
-  "Compare These": `ELITE COMPARISON ENGINE:
-1. FEATURE MATRIX:
-   | Feature | Option A | Option B |
-   | :--- | :--- | :--- |
-   | [Feature 1] | [Value] | [Value] |
-   | [Feature 2] | [Value] | [Value] |
-2. USE CASE WINNERS: Best for budget, power users, beginners.
-3. HIDDEN DIFFERENCES: What most people miss.
-4. FINAL VERDICT: Clear winner with reasoning.
-${FORMATTING_RULES}`,
+  "Crypto Scanner": "CRYPTO SIGNAL ANALYSIS: 1) Identify coin/token and current price. 2) Read the chart pattern (head & shoulders, cup & handle, etc). 3) Check RSI/MACD if visible. 4) Whale activity indicators. 5) Give me: a) Short-term trend (24h) b) Entry zone c) Stop-loss d) Target prices (3 levels) e) Risk rating HIGH/MEDIUM/LOW. No disclaimers - just the analysis.",
 
-  "Language Helper": `ELITE POLYGLOT:
-1. TRANSLATION: Accurate English conversion.
-2. GRAMMAR TABLE:
-   | Element | Original | English Equivalent |
-   | :--- | :--- | :--- |
-   | [Word] | [Meaning] | [Usage] |
-3. PRONUNCIATION: Phonetic hints.
-4. CULTURAL CONTEXT: What natives actually say.
-5. RELATED PHRASES: Useful variations.
-${FORMATTING_RULES}`,
-
-  "The Einstein Solver": `ELITE SUPER-TUTOR:
-1. PROBLEM PARSE: Extract the exact question.
-2. FIRST PRINCIPLES: Underlying physics/logic/math.
-3. STEP-BY-STEP SOLUTION:
-   | Step | Action | Result |
-   | :--- | :--- | :--- |
-   | 1 | [Action] | [Result] |
-4. ZERO-GAP: No steps skipped. Beautiful derivation.
-5. MEMORY HOOK: Trick to remember forever.
-${FORMATTING_RULES}`,
+  "Bill Detective": "INVOICE/BILL AUDIT: 1) Extract all line items and amounts. 2) Verify math - do totals add up correctly? 3) Flag any suspicious charges, hidden fees, or duplicates. 4) Compare rates to typical market prices. 5) Calculate potential savings if overcharged. 6) Priority items to dispute. 7) Script for calling customer service to negotiate.",
 
   // =====================================================
-  // 🏠 LIFESTYLE SUITE (NEW - 3 prompts)
+  // WORK CATEGORY (4 templates)
   // =====================================================
+  
+  "Code Doctor": "CODE REVIEW PRO: 1) Identify the programming language and framework. 2) Find bugs, logic errors, and edge cases. 3) Security vulnerabilities (SQL injection, XSS, etc). 4) Performance bottlenecks and optimization opportunities. 5) Code smell and maintainability issues. 6) Rate code quality 1-100. 7) Provide FIXED code snippets for each issue found. Priority: CRITICAL > HIGH > MEDIUM > LOW.",
 
-  "Travel Optimizer": `ELITE TRAVEL PLANNER:
-1. DEAL ANALYSIS: Is this flight/hotel a good price?
-2. HIDDEN FEES: Baggage, resort fees, taxes.
-3. TRAVEL MATRIX:
-   | Factor | Analysis |
-   | :--- | :--- |
-   | Base Price | **[Amount]** |
-   | Hidden Fees | **[Amount]** |
-   | True Cost | **[Amount]** |
-   | vs Average | **[% above/below]** |
-4. BOOKING TIP: Best time/site to book.
-5. ALTERNATIVE: Cheaper options if available.
-${FORMATTING_RULES}`,
+  "UI/UX Roast": "UI/UX ROAST: 1) First impression score (1-10). 2) Visual hierarchy - where does eye go first? 3) Accessibility issues (contrast, font size, touch targets). 4) Mobile responsiveness concerns. 5) Conversion killers - what stops users from clicking? 6) 3 specific improvements with mockup descriptions. 7) Competitor comparison if recognizable. Be brutally honest but constructive.",
 
-  "Recipe Analyzer": `ELITE CHEF CONSULTANT:
-1. INGREDIENT CHECK: What you have vs. what's needed.
-2. SUBSTITUTIONS: Alternatives for missing items.
-3. NUTRITION BREAKDOWN: Calories, macros per serving.
-4. TECHNIQUE TIPS: Common mistakes to avoid.
-5. SCALING TABLE:
-   | Servings | Ingredient Amounts |
-   | :--- | :--- |
-   | Original | [Amounts] |
-   | Doubled | [Amounts] |
-${FORMATTING_RULES}`,
+  "Debug This": "ERROR DEBUGGER: 1) Parse the error message and stack trace. 2) Identify root cause (not just symptoms). 3) Explain WHY this error occurred in plain English. 4) Provide the exact fix with code. 5) How to prevent this in the future. 6) Related errors to watch for. 7) Test cases to verify the fix works.",
 
-  "Car Deal Scanner": `ELITE AUTO ANALYST:
-1. PRICE CHECK: Compare to KBB/market value.
-2. HIDDEN COSTS: Dealer fees, add-ons, financing traps.
-3. VEHICLE MATRIX:
-   | Factor | Analysis |
-   | :--- | :--- |
-   | Asking Price | **[Amount]** |
-   | Fair Value | **[Amount]** |
-   | Hidden Fees | **[Amount]** |
-   | Offer Price | **[Amount]** |
-4. RED FLAGS: Mileage, accident history, wear signs.
-5. NEGOTIATION SCRIPT: Exact words to lower price.
-${FORMATTING_RULES}`,
+  "Contract Red Flags": "CONTRACT SCANNER: 1) Identify document type (lease, NDA, employment, etc). 2) Extract key terms, dates, and amounts. 3) Flag concerning clauses in RED. 4) Unusual or non-standard terms. 5) What's missing that should be there. 6) Negotiation points ranked by importance. 7) Plain English summary of what you're agreeing to.",
 
   // =====================================================
-  // 🧠 META ENGINE (2 prompts)
+  // HEALTH CATEGORY (4 templates)
   // =====================================================
+  
+  "Med Check": "MEDICATION ANALYZER: 1) Identify the medication name and dosage. 2) What it's commonly prescribed for. 3) Common side effects to watch for. 4) Serious side effects requiring immediate attention. 5) Drug interactions to avoid (especially common ones). 6) Food/drink restrictions. 7) Questions to ask your doctor. 8) Generic alternatives that could save money.",
 
-  "Meta Evaluator": `ELITE PROMPT OPTIMIZER:
-1. INPUT AUDIT: Score confluence of provided images (1-100).
-2. DATA GAPS: What's missing for better analysis?
-3. REFINEMENT TABLE:
-   | Current Input | Improvement | Impact |
-   | :--- | :--- | :--- |
-   | [What you have] | [What to add] | [+X% accuracy] |
-4. CHAIN SUGGESTION: Which prompts to run in sequence.
-5. ADDICTIVE CLOSE: "Refine & rerun for elite gains."
-${FORMATTING_RULES}`,
+  "Food Label Truth": "NUTRITION DETECTIVE: 1) Identify the food product. 2) Parse the nutrition label completely. 3) Hidden sugars and unhealthy ingredients. 4) Marketing tricks vs reality. 5) Rate healthiness 1-100 for different goals (weight loss, muscle, heart). 6) Better alternatives in the same category. 7) VERDICT: Healthy choice, occasional treat, or avoid.",
 
-  "Quiz Generator": `ELITE TEST MAKER:
-1. CONTENT ANALYSIS: Key concepts from the material.
-2. QUIZ TABLE:
-   | # | Question | Answer | Difficulty |
-   | :--- | :--- | :--- | :--- |
-   | 1 | [Q] | [A] | Easy/Med/Hard |
-   | 2 | [Q] | [A] | Easy/Med/Hard |
-   | 3 | [Q] | [A] | Easy/Med/Hard |
-   | 4 | [Q] | [A] | Easy/Med/Hard |
-   | 5 | [Q] | [A] | Easy/Med/Hard |
-3. STUDY TIPS: Focus areas based on quiz.
-${FORMATTING_RULES}`
+  "Symptom Guide": "SYMPTOM MAPPER (Educational Only): 1) List all visible symptoms or reported issues. 2) Possible conditions that match (most to least common). 3) Warning signs that need immediate attention. 4) Questions a doctor would likely ask. 5) Tests that might be recommended. 6) Self-care steps while waiting for appointment. Disclaimer: This is educational, not medical advice.",
+
+  "Form Checker": "FITNESS FORM CHECK: 1) Identify the exercise being performed. 2) Evaluate form and technique - what's correct and what's wrong. 3) Injury risks from improper form. 4) Muscles being targeted vs muscles that SHOULD be targeted. 5) Specific corrections with descriptions. 6) Easier and harder progressions. 7) Common mistakes people make with this exercise.",
+
+  // =====================================================
+  // LEARN CATEGORY (4 templates)
+  // =====================================================
+  
+  "Study Extractor": "STUDY NOTES GENERATOR: 1) Identify the subject and topic. 2) Extract KEY CONCEPTS (bullet points). 3) Important formulas, dates, or facts to memorize. 4) Create 5 flashcard Q&As. 5) Mnemonic devices to remember complex info. 6) How this connects to related topics. 7) 3 practice questions with answers. 8) One-paragraph summary for quick review.",
+
+  "ELI5 This": "EXPLAIN LIKE I'M 5: 1) Identify what's confusing in this image. 2) Explain the core concept using simple analogies. 3) Real-world example anyone can understand. 4) Common misconceptions about this topic. 5) Why it matters in everyday life. 6) One sentence summary a child could understand.",
+
+  "Compare These": "COMPARISON MATRIX: 1) Identify the items being compared. 2) Create a feature-by-feature comparison table. 3) Pros and cons of each option. 4) Best for different use cases (budget, performance, beginners). 5) Hidden differences most people miss. 6) WINNER for each category. 7) Overall recommendation with reasoning.",
+
+  "Language Helper": "LANGUAGE LEARNING: 1) Identify the language and text. 2) Translate to English. 3) Break down grammar structure. 4) Key vocabulary with pronunciation hints. 5) Cultural context if relevant. 6) Similar phrases to learn. 7) Common mistakes English speakers make with this."
 
 };
 
 
 /**
  * =====================================================
- * AI BEHAVIOR & CARD SETTINGS (V5.0 ULTIMATE)
+ * AI BEHAVIOR & CARD SETTINGS
+ * =====================================================
+ * 
+ * Control how the AI responds and formats answers.
  * =====================================================
  */
 
 window.SNAPTOAI_CONFIG = {
 
-  // --- ELITE SYSTEM PROMPTS ---
-  SYSTEM_PROMPT: `You are SnapToAI Ultimate v5.0 - the world's most thorough AI analyst.
+  // --- SYSTEM PROMPTS (How the AI behaves) ---
+  
+  SYSTEM_PROMPT: "You are a thorough, exhaustive AI assistant. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never ask the user if they want more—just give it all now. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.",
 
-CORE DIRECTIVES:
-- Discrepancy Hunt: Contradictions = Opportunities. Find them.
-- Confluence Power: Multiple data points = Alpha insights.
-- Blunt Elite: "Data demands X with 90% confidence." No hedging.
-- Table Everything: Use markdown tables for ALL comparisons.
-- Score Everything: End with ELITE SCORE: X/100 | RISK: Low/Med/High.
-- Chain Suggest: End with "Next Elite Move: Try [Related Prompt] for deeper insight."
+  SMART_SYSTEM_PROMPT: "You are a thorough, exhaustive AI assistant. I am providing you with the raw text of a webpage for accuracy, and the screenshot of that page for visual context (charts, layout, images). Please use the text for your primary analysis and the images to confirm visual details. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never truncate. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.",
 
-Never truncate. Never ask "want more?" Just deliver the complete analysis.`,
+  MULTI_IMAGE_PROMPT: "You are a thorough, exhaustive AI assistant. I am providing you with multiple screenshots that together show the full picture. Please analyze ALL images together to understand the complete context. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never truncate. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.",
 
-  SMART_SYSTEM_PROMPT: `You are SnapToAI Ultimate v5.0. Analyzing webpage + screenshot.
-- Text = Primary data (accuracy).
-- Image = Visual confirmation (charts, layout, UI).
-- Cross-reference BOTH for confluence analysis.
-- Use tables for all comparisons.
-- Be exhaustive. Never truncate. Deliver complete.`,
+  // --- TOKEN LIMITS (How long AI responses can be) ---
+  // Gemini free tier max = 4096. Lower = cheaper/faster. Higher = more complete.
+  
+  MAX_OUTPUT_TOKENS: 2048,           // Normal chat responses
+  MAX_OUTPUT_TOKENS_MAGIC: 4096,     // Magic Button responses (full analysis)
+  MAX_OUTPUT_TOKENS_VERDICT: 300,    // Quick verdict responses
+  MAX_OUTPUT_TOKENS_BATCH: 1500,     // Batch processing (large captures)
 
-  MULTI_IMAGE_PROMPT: `You are SnapToAI Ultimate v5.0. Multiple screenshots = CONFLUENCE OPPORTUNITY.
-- Analyze ALL images together for hidden patterns.
-- Cross-reference data points across images.
-- Build comparison tables when relevant.
-- Be exhaustive. End with actionable steps and scores.`,
-
-  // --- SMART TEMPERATURE MAPPING ---
-  TEMPERATURE: {
-    quant: 0.0,        // Financial precision (stocks, crypto)
-    diagnostic: 0.0,   // Medical/legal precision
-    creative: 0.4,     // UX/pitch creativity allowed
-    learning: 0.2,     // Educational clarity
-    default: 0.1       // General precision-first
-  },
-
-  // --- TOKEN LIMITS ---
-  MAX_OUTPUT_TOKENS: 2048,
-  MAX_OUTPUT_TOKENS_MAGIC: 4096,
-  MAX_OUTPUT_TOKENS_VERDICT: 300,
-  MAX_OUTPUT_TOKENS_BATCH: 1500,
+  // --- AI CREATIVITY (Temperature: 0 = precise, 1 = creative) ---
+  
+  TEMPERATURE: 0.7,                  // Default creativity level
 
   // --- MAGIC CARD FORMATTING ---
+  // Instructions for how AI formats Magic Button responses
+  
   MAGIC_CARD_INSTRUCTIONS: `
-Respond with JSON object in this EXACT format (no markdown blocks):
+IMPORTANT: You must respond with a JSON object in this EXACT format (no markdown code blocks, just raw JSON):
 {
-  "title": "Brief analysis title",
+  "title": "Brief title of analysis",
   "emoji": "Single relevant emoji",
   "score": 85,
-  "scoreLabel": "ELITE SCORE",
+  "scoreLabel": "What the score means (e.g., 'Quality Score', 'Risk Level')",
   "tone": "green OR gold OR red",
-  "highlight": "ELITE INSIGHT: [One-line key pattern]",
+  "highlight": "One-line key insight",
   "sections": [
-    {"label": "Key Findings", "items": ["Point 1", "Point 2", "Point 3"]},
-    {"label": "Risk Factors", "items": ["Risk 1", "Risk 2"]},
-    {"label": "Data Matrix", "items": ["Metric 1: Value", "Metric 2: Value"]}
+    {
+      "label": "Section Name",
+      "items": ["Point 1", "Point 2", "Point 3"]
+    }
   ],
   "actions": [
-    {"num": 1, "text": "Immediate action"},
-    {"num": 2, "text": "Short-term action"},
-    {"num": 3, "text": "Long-term action"}
+    {"num": 1, "text": "First recommended action"},
+    {"num": 2, "text": "Second recommended action"},
+    {"num": 3, "text": "Third recommended action"}
   ],
-  "verdict": "ELITE SCORE: X/100 | RISK: Low/Med/High | TIP: [Quick win]",
-  "nextQuestion": "Next Elite Move: Try [Related Prompt] for 2x impact"
+  "verdict": "Final recommendation in 1-2 sentences",
+  "nextQuestion": "Follow-up question to ask"
 }
 
-Tone: "green" = positive/buy, "gold" = caution/hold, "red" = warning/avoid.
-Score: 0-100 based on quality/opportunity/safety.
+Use "green" tone for positive/good results, "gold" for neutral/caution, "red" for negative/warning.
+Score should be 0-100 where relevant.
 Include 2-4 sections with 2-5 items each.
-Include 2-4 prioritized actions.
+Include 2-4 action items.
 `,
 
-  VERDICT_PROMPT: "ELITE VERDICT: ONE WORD (BUY/SELL/HOLD/YES/NO/SKIP/STEAL/AVOID) + confidence % + one sentence reasoning. Be decisive and blunt.",
-
-  // --- RATE LIMITS ---
-  MAX_IMAGES_PER_REQUEST: 30,
-  BATCH_DELAY_MS: 2000
-};
-
-
-/**
- * =====================================================
- * TEMPERATURE MAPPING (Prompt → Temperature Type)
- * =====================================================
- */
-
-window.SNAPTOAI_TEMPERATURE_MAP = {
-  // MONEY (precision)
-  '6-Timeframe Quant Alpha': 'quant',
-  'Stock Deep Dive': 'quant',
-  'Crypto Scanner': 'quant',
-  'Risk Analyzer': 'quant',
-  'Deal or No Deal': 'default',
-  'Bill Detective': 'default',
-  'Real Estate Scanner': 'default',
+  // --- VERDICT BUTTON PROMPT ---
   
-  // WORK (mixed)
-  'Code Doctor': 'default',
-  'Debug This': 'default',
-  'Security Scanner': 'default',
-  'Contract Red Flags': 'diagnostic',
-  'UI/UX Roast': 'creative',
-  'VC Pitch Deck Auditor': 'creative',
-  
-  // HEALTH (precision)
-  'Med Check': 'diagnostic',
-  'Symptom Guide': 'diagnostic',
-  'Diagnostic Pathologist': 'diagnostic',
-  'Food Label Truth': 'default',
-  'Form Checker': 'default',
-  
-  // LEARN (clarity)
-  'Study Extractor': 'learning',
-  'ELI5 This': 'learning',
-  'Compare These': 'default',
-  'Language Helper': 'learning',
-  'The Einstein Solver': 'learning',
-  'Quiz Generator': 'learning',
-  
-  // LIFESTYLE
-  'Travel Optimizer': 'default',
-  'Recipe Analyzer': 'creative',
-  'Car Deal Scanner': 'default',
-  
-  // META
-  'Meta Evaluator': 'default'
-};
+  VERDICT_PROMPT: "Look at this screenshot and give me ONE WORD verdict (like BUY, SELL, HOLD, YES, NO, SKIP, or similar) followed by a confidence percentage and ONE sentence explanation. Be decisive.",
 
-// Helper functions
-window.getPromptTemperature = function(promptName) {
-  const type = window.SNAPTOAI_TEMPERATURE_MAP[promptName] || 'default';
-  return window.SNAPTOAI_CONFIG.TEMPERATURE[type];
-};
+  // --- RATE LIMIT SETTINGS (for large captures) ---
+  
+  MAX_IMAGES_PER_REQUEST: 30,        // How many images to send at once
+  BATCH_DELAY_MS: 2000               // Wait time between batches (ms)
 
-window.getPromptChain = function(chainName) {
-  return window.SNAPTOAI_CHAINS[chainName] || [];
-};
-
-window.listAllPrompts = function() {
-  return Object.keys(window.SNAPTOAI_PROMPTS);
-};
-
-window.listAllChains = function() {
-  return Object.keys(window.SNAPTOAI_CHAINS);
 };
