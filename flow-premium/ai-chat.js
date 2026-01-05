@@ -705,12 +705,14 @@ function addBubbleActions(bubble, text) {
           </style>
         </head>
         <body>
-          <div class="no-print"><button class="btn" onclick="window.print()">Print / Save PDF</button></div>
+          <div class="no-print"><button class="btn print-btn">Print / Save PDF</button></div>
           <div class="card">${cardContent}</div>
         </body>
       </html>
     `);
     printWindow.document.close();
+    // Add event listener without inline onclick (CSP compliant)
+    printWindow.document.querySelector('.print-btn').addEventListener('click', () => printWindow.print());
   };
   // Copy this response only
   actions.querySelector('.copy-single-btn').onclick = async () => {
