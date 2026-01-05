@@ -236,8 +236,37 @@ async function initializeChat() {
   }
 }
 
-// Add chat bubble
-function addBubble(text, type) {
+// Template logic for Magic Buttons
+function getPromptForTemplate(category, template) {
+  if (window.SNAPTOAI_PROMPTS && window.SNAPTOAI_PROMPTS[template]) {
+    return window.SNAPTOAI_PROMPTS[template];
+  }
+  
+  // Fallback to old logic if prompts.js fails to load
+  const fallbacks = {
+    "Price Comparison": "Analyze this product and find if it's a good deal.",
+    "Expense Audit": "Extract all items and prices from this receipt.",
+    "Code Review": "Review the code in this screenshot.",
+    "Explain This": "Explain the concept shown in this screenshot as if I am 10 years old."
+  };
+  return fallbacks[template] || `Analyze this ${category} screenshot and help me with ${template}.`;
+}
+
+// Add event listeners for magic buttons
+function setupMagicButtons() {
+  document.querySelectorAll('.category-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const category = item.closest('.category-group').querySelector('h4').textContent;
+      const template = item.querySelector('span').textContent;
+      const prompt = getPromptForTemplate(category, template);
+      
+      const input = document.getElementById('chatInput');
+      input.value = prompt;
+      handleSend();
+    });
+  });
+}
+
   const thread = document.getElementById('chatThread');
   const welcome = thread.querySelector('.welcome-message');
   if (welcome) welcome.remove();
