@@ -267,6 +267,8 @@ function setupMagicButtons() {
   });
 }
 
+// Add chat bubble
+function addBubble(text, type) {
   const thread = document.getElementById('chatThread');
   const welcome = thread.querySelector('.welcome-message');
   if (welcome) welcome.remove();
