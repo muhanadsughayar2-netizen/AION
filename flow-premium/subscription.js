@@ -15,42 +15,92 @@ const TRIAL_DAYS = 30;
 //
 // After each command, CLOSE and REOPEN the popup to see changes!
 // ===========================================
-window.SnapToAI_TEST = {
+// ⚠️ TEST MODE - For development ONLY. These functions modify trial data!
+// Set to false before publishing to Chrome Web Store!
+const ENABLE_TEST_MODE = false; // Set to true for development only
+
+window.SnapToAI_TEST = ENABLE_TEST_MODE ? {
+  // SAFETY: Store original date before any test modifications
+  _originalDate: null,
+  
+  async _backupOriginal() {
+    if (!this._originalDate) {
+      const { trialStartDate } = await chrome.storage.sync.get(['trialStartDate']);
+      this._originalDate = trialStartDate;
+      console.log('[TEST] Original trial date backed up:', new Date(trialStartDate).toLocaleDateString());
+    }
+  },
+  
   async simulateTrial(daysRemaining = 15) {
+    await this._backupOriginal();
     const now = Date.now();
     const daysUsed = TRIAL_DAYS - daysRemaining;
     const trialStartDate = now - (daysUsed * 24 * 60 * 60 * 1000);
     await chrome.storage.sync.set({ trialStartDate });
     await chrome.storage.local.set({ subscriptionActive: false, licenseKey: null });
     console.log('[TEST] Trial set to ' + daysRemaining + ' days remaining. Close & reopen popup.');
+    console.log('[TEST] Use SnapToAI_TEST.restore() to restore original trial date.');
     return 'Done! Close and reopen popup.';
   },
+  
   async simulateExpired() {
+    await this._backupOriginal();
     const trialStartDate = Date.now() - (35 * 24 * 60 * 60 * 1000);
     await chrome.storage.sync.set({ trialStartDate });
     await chrome.storage.local.set({ subscriptionActive: false, licenseKey: null });
     console.log('[TEST] Trial EXPIRED. Close popup, reopen, click AI button to see modal.');
+    console.log('[TEST] Use SnapToAI_TEST.restore() to restore original trial date.');
     return 'Done! Close popup, reopen, click AI button.';
   },
+  
   async simulateSubscribed() {
+    await this._backupOriginal();
     await chrome.storage.local.set({ subscriptionActive: true, licenseKey: 'TEST-KEY', planType: 'yearly', lastVerified: Date.now() });
     console.log('[TEST] SUBSCRIBED user. Close & reopen popup - full AI access.');
+    console.log('[TEST] Use SnapToAI_TEST.restore() to restore original state.');
     return 'Done! Close and reopen popup.';
   },
+  
+  // RESTORE original trial date (use this after testing!)
+  async restore() {
+    if (this._originalDate) {
+      await chrome.storage.sync.set({ trialStartDate: this._originalDate });
+      await chrome.storage.local.set({ subscriptionActive: false, licenseKey: null, planType: null, lastVerified: null, graceUntil: null });
+      console.log('[TEST] RESTORED original trial date:', new Date(this._originalDate).toLocaleDateString());
+      this._originalDate = null;
+      return 'Original trial restored! Close and reopen popup.';
+    } else {
+      console.log('[TEST] No backup found - trial date unchanged.');
+      return 'No backup to restore.';
+    }
+  },
+  
+  // DANGER: Only use for fresh testing - permanently resets trial
   async reset() {
+    console.warn('[TEST] ⚠️ WARNING: This permanently resets the trial to 30 days!');
+    console.warn('[TEST] This should NEVER be used in production!');
     await chrome.storage.sync.set({ trialStartDate: Date.now() });
     await chrome.storage.local.set({ subscriptionActive: false, licenseKey: null, planType: null, lastVerified: null, graceUntil: null });
+    this._originalDate = null; // Clear backup since this is intentional
     console.log('[TEST] RESET to fresh install. 30 day trial started.');
     return 'Done! Fresh 30-day trial.';
   },
+  
   async status() {
     const sync = await chrome.storage.sync.get(['trialStartDate']);
     const local = await chrome.storage.local.get(['subscriptionActive','licenseKey','planType']);
     const days = sync.trialStartDate ? Math.floor((Date.now() - sync.trialStartDate) / 86400000) : 0;
-    console.table({ 'Days Used': days, 'Trial Left': Math.max(0, TRIAL_DAYS - days), 'Subscribed': local.subscriptionActive || false, 'License': local.licenseKey ? 'Yes' : 'No' });
+    console.table({ 
+      'Trial Start': sync.trialStartDate ? new Date(sync.trialStartDate).toLocaleDateString() : 'Not set',
+      'Days Used': days, 
+      'Trial Left': Math.max(0, TRIAL_DAYS - days), 
+      'Subscribed': local.subscriptionActive || false, 
+      'License': local.licenseKey ? 'Yes' : 'No',
+      'Backup Saved': this._originalDate ? 'Yes' : 'No'
+    });
     return { ...sync, ...local };
   }
-};
+} : { disabled: () => console.log('[SnapToAI] Test mode disabled in production.') };
 // =========================================== END TEST MODE
 const GUMROAD_PRODUCT = 'YOUR_PRODUCT_PERMALINK'; // Replace with your Gumroad product permalink after setup
 const CHECKOUT_MONTHLY = 'https://gumroad.com/l/YOUR_MONTHLY_LINK'; // Replace with your Gumroad link
@@ -60,50 +110,64 @@ const GRACE_PERIOD_HOURS = 48;
 
 // Check subscription status
 async function checkSubscription() {
-  // Trial date in SYNC storage (tied to Google account, persists across reinstalls)
-  let { trialStartDate } = await chrome.storage.sync.get(['trialStartDate']);
+  // IMMUTABLE TIMESTAMP STRATEGY: Use initialInstallTimestamp as source of truth
+  // This timestamp is set ONCE on first install and NEVER overwritten
+  const { 
+    initialInstallTimestamp,
+    trialStartDate: localDate,
+    installDate: legacyDate,
+    subscriptionActive, 
+    licenseKey, 
+    planType, 
+    lastVerified, 
+    graceUntil 
+  } = await chrome.storage.local.get([
+    'initialInstallTimestamp',
+    'trialStartDate',
+    'installDate',
+    'subscriptionActive',
+    'licenseKey',
+    'planType',
+    'lastVerified',
+    'graceUntil'
+  ]);
   
-  // MIGRATION: Check for legacy installDate in local storage (old users)
-  if (!trialStartDate) {
-    const { installDate: legacyDate } = await chrome.storage.local.get(['installDate']);
-    if (legacyDate) {
-      // Migrate to sync storage
-      trialStartDate = legacyDate;
-      await chrome.storage.sync.set({ trialStartDate: legacyDate });
-      await chrome.storage.local.remove('installDate');
-      console.log('[SnapToAI] Migrated trial date to sync storage.');
+  const { trialStartDate: syncDate } = await chrome.storage.sync.get(['trialStartDate']);
+  
+  // Priority: immutable timestamp > earliest of other dates
+  const candidates = [initialInstallTimestamp, syncDate, localDate, legacyDate].filter(d => d && d > 0);
+  let trialStartDate = candidates.length > 0 ? Math.min(...candidates) : null;
+  
+  // Repair storage if needed (ensure consistency)
+  if (trialStartDate) {
+    const repairs = [];
+    if (!initialInstallTimestamp) repairs.push(chrome.storage.local.set({ initialInstallTimestamp: trialStartDate }));
+    if (localDate !== trialStartDate) repairs.push(chrome.storage.local.set({ trialStartDate }));
+    if (syncDate !== trialStartDate) repairs.push(chrome.storage.sync.set({ trialStartDate }));
+    if (legacyDate) repairs.push(chrome.storage.local.remove('installDate'));
+    if (repairs.length > 0) {
+      await Promise.all(repairs);
+      console.log('[SnapToAI] Storage repaired to canonical date:', new Date(trialStartDate).toLocaleDateString());
     }
   }
-  
-  // License/subscription in LOCAL storage
-  const { subscriptionActive, licenseKey, planType, lastVerified, graceUntil } = 
-    await chrome.storage.local.get([
-      'subscriptionActive',
-      'licenseKey',
-      'planType',
-      'lastVerified',
-      'graceUntil'
-    ]);
 
   const now = Date.now();
 
-  // First time install - start trial (saved to sync = persists across reinstalls)
+  // Handle missing trial date - NEVER reseed, return error
   if (!trialStartDate) {
-    await chrome.storage.sync.set({ trialStartDate: now });
-    await chrome.storage.local.set({
-      subscriptionActive: false,
-      licenseKey: null,
-      planType: null
-    });
-    console.log('[SnapToAI] 🎉 First install! 30-day AI trial started.');
+    // NO trial data anywhere - this is suspicious (corruption or tampering)
+    // DO NOT grant a new trial - require reinstall or support
+    console.error('[SnapToAI] ⚠️ Trial data missing! Possible corruption or tampering.');
+    console.error('[SnapToAI] User should reinstall extension or contact support.');
     return {
-      status: 'trial',
-      daysRemaining: TRIAL_DAYS,
-      canUseAI: true
+      status: 'data_error',
+      daysRemaining: 0,
+      canUseAI: false,
+      error: 'Trial data missing. Please reinstall the extension or contact support.'
     };
   }
   
-  // Use trialStartDate from sync storage
+  // Use the validated trialStartDate
   const installDate = trialStartDate;
 
   // Check if has valid subscription

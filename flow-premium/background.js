@@ -30,15 +30,49 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
     chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') });
     
-    // Initialize subscription trial on first install
-    const now = Date.now();
-    await chrome.storage.local.set({
-      installDate: now,
-      subscriptionActive: false,
-      licenseKey: null,
-      planType: null
-    });
-    console.log('[SnapToAI] Trial started:', new Date(now).toLocaleDateString());
+    // Check for existing immutable install timestamp (WRITE-ONCE, never overwritten)
+    const { initialInstallTimestamp: existingTimestamp } = await chrome.storage.local.get(['initialInstallTimestamp']);
+    
+    if (!existingTimestamp) {
+      // TRUE FIRST INSTALL - Create immutable timestamp
+      const now = Date.now();
+      await chrome.storage.local.set({
+        initialInstallTimestamp: now,  // IMMUTABLE - never overwrite this
+        trialStartDate: now,
+        subscriptionActive: false,
+        licenseKey: null,
+        planType: null
+      });
+      await chrome.storage.sync.set({ trialStartDate: now });
+      console.log('[SnapToAI] Trial started:', new Date(now).toLocaleDateString());
+    } else {
+      // Reinstall - preserve original timestamp
+      await chrome.storage.local.set({ trialStartDate: existingTimestamp });
+      await chrome.storage.sync.set({ trialStartDate: existingTimestamp });
+      console.log('[SnapToAI] Reinstall detected - trial preserved from:', new Date(existingTimestamp).toLocaleDateString());
+    }
+  } else if (details.reason === 'update') {
+    // On update: Verify trial date exists, repair from immutable timestamp if needed
+    const { initialInstallTimestamp, trialStartDate: localDate } = await chrome.storage.local.get(['initialInstallTimestamp', 'trialStartDate']);
+    const { trialStartDate: syncDate } = await chrome.storage.sync.get(['trialStartDate']);
+    
+    // Use the immutable timestamp as source of truth, fallback to earliest available
+    // CRITICAL: Guard against empty array (Math.min() returns Infinity on empty array)
+    const candidates = [initialInstallTimestamp, localDate, syncDate].filter(d => d && d > 0);
+    const canonicalDate = candidates.length > 0 ? Math.min(...candidates) : null;
+    
+    if (canonicalDate) {
+      // Repair any missing storage
+      if (!localDate) await chrome.storage.local.set({ trialStartDate: canonicalDate });
+      if (!syncDate) await chrome.storage.sync.set({ trialStartDate: canonicalDate });
+      // Ensure immutable timestamp exists
+      if (!initialInstallTimestamp) await chrome.storage.local.set({ initialInstallTimestamp: canonicalDate });
+      console.log('[SnapToAI] Extension updated - trial preserved from:', new Date(canonicalDate).toLocaleDateString());
+    } else {
+      // No trial data found anywhere - this is an error state
+      // DO NOT create new trial - checkSubscription will handle this
+      console.error('[SnapToAI] Extension updated but NO trial data found! User needs to reinstall.');
+    }
   }
 });
 
