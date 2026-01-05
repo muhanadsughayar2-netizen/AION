@@ -230,6 +230,9 @@ async function initializeChat() {
   // Focus input
   document.getElementById('chatInput').focus();
   
+  // Setup magic buttons
+  setupMagicButtons();
+  
   // Update verdict button visibility
   if (typeof updateVerdictButtonVisibility === 'function') {
     updateVerdictButtonVisibility();
