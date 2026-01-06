@@ -545,6 +545,22 @@
     .template-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 10px; color: #aaa; font-size: 10px; cursor: pointer; transition: all 0.2s; display: none; }
     .template-btn.visible { display: inline-block; }
     .template-btn:hover { background: rgba(139,92,246,0.2); border-color: #8b5cf6; color: white; }
+    .template-btn.selected { background: rgba(139,92,246,0.4); border-color: #8b5cf6; color: white; box-shadow: 0 0 10px rgba(139,92,246,0.3); }
+    
+    .template-detail { background: rgba(0,0,0,0.3); border: 1px solid rgba(139,92,246,0.3); border-radius: 12px; padding: 14px; margin-top: 12px; animation: fadeIn 0.2s ease; }
+    .template-detail-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .template-detail-icon { font-size: 24px; }
+    .template-detail-name { font-size: 15px; font-weight: 700; color: #fff; }
+    .template-detail-section { }
+    .template-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #8b5cf6; margin-bottom: 6px; }
+    .template-section-desc { font-size: 12px; color: #aaa; margin-bottom: 10px; }
+    .template-requirements { display: flex; flex-direction: column; gap: 8px; }
+    .template-req-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; }
+    .template-req-icon { color: #64748b; font-size: 14px; flex-shrink: 0; margin-top: 2px; }
+    .template-req-content { flex: 1; }
+    .template-req-name { font-size: 12px; font-weight: 600; color: #e2e8f0; }
+    .template-req-hint { font-size: 10px; color: #64748b; margin-top: 2px; }
+    .template-req-source { font-size: 9px; color: #8b5cf6; margin-top: 3px; font-style: italic; }
     .magic-modal-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); }
     .magic-save-btn { width: 100%; background: linear-gradient(45deg, #8b5cf6, #ec4899); border: none; border-radius: 12px; padding: 12px; color: white; font-size: 14px; font-weight: 700; cursor: pointer; }
     .magic-save-btn:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(139,92,246,0.5); }
@@ -708,6 +724,18 @@
             <button class="template-btn" data-cat="learn" data-template="EXPLAIN LIKE I'M 5: 1) Identify what's confusing in this image. 2) Explain the core concept using simple analogies. 3) Real-world example anyone can understand. 4) Common misconceptions about this topic. 5) Why it matters in everyday life. 6) One sentence summary a child could understand.">🧒 ELI5 This</button>
             <button class="template-btn" data-cat="learn" data-template="COMPARISON MATRIX: 1) Identify the items being compared. 2) Create a feature-by-feature comparison table. 3) Pros and cons of each option. 4) Best for different use cases (budget, performance, beginners). 5) Hidden differences most people miss. 6) WINNER for each category. 7) Overall recommendation with reasoning.">⚖️ Compare These</button>
             <button class="template-btn" data-cat="learn" data-template="REVERSE ENGINEER: 1) What is this thing and how does it work? 2) Break down into components/steps. 3) Why was it designed this way? 4) How could you recreate or improve it? 5) Skills needed to build something similar. 6) Estimated time/cost to replicate. 7) Resources to learn more.">🔧 How It Works</button>
+          </div>
+          
+          <div class="template-detail" id="templateDetail" style="display: none;">
+            <div class="template-detail-header">
+              <span class="template-detail-icon" id="templateDetailIcon">📈</span>
+              <span class="template-detail-name" id="templateDetailName">Stock Deep Dive</span>
+            </div>
+            <div class="template-detail-section">
+              <div class="template-section-label">REQUIRED SCREENSHOTS</div>
+              <div class="template-section-desc" id="templateDetailDesc">For the best analysis, capture:</div>
+              <div class="template-requirements" id="templateRequirements"></div>
+            </div>
           </div>
         </div>
       </div>

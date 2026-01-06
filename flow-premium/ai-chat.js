@@ -1357,7 +1357,10 @@ function showTemplateCategory(category) {
   document.querySelector(`.template-cat[data-cat="${category}"]`)?.classList.add('active');
   document.querySelectorAll('.template-btn').forEach(btn => {
     btn.classList.toggle('visible', btn.dataset.cat === category);
+    btn.classList.remove('selected');
   });
+  const detailPanel = document.getElementById('templateDetail');
+  if (detailPanel) detailPanel.style.display = 'none';
 }
 
 // Category click handlers
@@ -1396,10 +1399,47 @@ document.getElementById('magicPrompt')?.addEventListener('input', (e) => {
 document.querySelectorAll('.template-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const template = btn.dataset.template;
+    const buttonText = btn.textContent.trim();
+    const emoji = buttonText.split(' ')[0];
+    const name = buttonText.substring(emoji.length).trim();
+    
     document.getElementById('magicPrompt').value = template;
     document.getElementById('promptCount').textContent = template.length;
+    
+    document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    
+    showTemplateDetail(name, emoji);
   });
 });
+
+function showTemplateDetail(templateName, emoji) {
+  const detailPanel = document.getElementById('templateDetail');
+  const reqData = window.SNAPTOAI_REQUIRED_SCREENSHOTS?.[templateName];
+  
+  if (!reqData || !reqData.items || reqData.items.length === 0) {
+    detailPanel.style.display = 'none';
+    return;
+  }
+  
+  document.getElementById('templateDetailIcon').textContent = emoji;
+  document.getElementById('templateDetailName').textContent = templateName;
+  document.getElementById('templateDetailDesc').textContent = reqData.description || 'For best results, capture:';
+  
+  const reqContainer = document.getElementById('templateRequirements');
+  reqContainer.innerHTML = reqData.items.map(item => `
+    <div class="template-req-item">
+      <span class="template-req-icon">○</span>
+      <div class="template-req-content">
+        <div class="template-req-name">${item.name}</div>
+        ${item.hint ? `<div class="template-req-hint">${item.hint}</div>` : ''}
+        ${item.source ? `<div class="template-req-source">${item.source}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+  
+  detailPanel.style.display = 'block';
+}
 
 document.getElementById('saveMagicBtn')?.addEventListener('click', async () => {
   const name = document.getElementById('magicName').value.trim();

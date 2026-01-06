@@ -67,6 +67,127 @@ window.SNAPTOAI_PROMPTS = {
 
 /**
  * =====================================================
+ * REQUIRED SCREENSHOTS - What to Capture for Best Results
+ * =====================================================
+ * 
+ * Each template lists what screenshots users should take.
+ * Format: "Button Name": { description, items: [{name, hint, source}] }
+ * 
+ * - name: What to capture (e.g., "RSI Chart")
+ * - hint: Brief description of what it shows
+ * - source: Where to find it (optional navigation path)
+ * =====================================================
+ */
+
+window.SNAPTOAI_REQUIRED_SCREENSHOTS = {
+
+  // =====================================================
+  // MONEY CATEGORY
+  // =====================================================
+  
+  "Stock Deep Dive": {
+    description: "For the best technical analysis, capture these charts:",
+    items: [
+      { name: "Price Chart with Candlesticks", hint: "Daily or weekly view showing recent price action", source: "TradingView → Chart" },
+      { name: "RSI Indicator", hint: "Relative Strength Index (overbought/oversold)", source: "Indicators → RSI" },
+      { name: "MACD Chart", hint: "Moving Average Convergence Divergence", source: "Indicators → MACD" },
+      { name: "Moving Averages", hint: "50-day and 200-day MA on price chart", source: "Indicators → MA" },
+      { name: "Volume Bars", hint: "Trading volume below price chart", source: "Usually shown by default" }
+    ]
+  },
+
+  "Deal or No Deal": {
+    description: "Capture the product listing with these details visible:",
+    items: []
+  },
+
+  "Crypto Scanner": {
+    description: "For crypto analysis, capture:",
+    items: []
+  },
+
+  "Bill Detective": {
+    description: "Capture the full bill/invoice showing:",
+    items: []
+  },
+
+  // =====================================================
+  // WORK CATEGORY
+  // =====================================================
+  
+  "Code Doctor": {
+    description: "Capture the code you want reviewed:",
+    items: []
+  },
+
+  "UI/UX Roast": {
+    description: "Capture the UI screens you want analyzed:",
+    items: []
+  },
+
+  "Debug This": {
+    description: "Capture the error and surrounding code:",
+    items: []
+  },
+
+  "Contract Red Flags": {
+    description: "Capture the contract pages:",
+    items: []
+  },
+
+  // =====================================================
+  // HEALTH CATEGORY
+  // =====================================================
+  
+  "Med Check": {
+    description: "Capture the medication label/packaging:",
+    items: []
+  },
+
+  "Food Label Truth": {
+    description: "Capture the nutrition label:",
+    items: []
+  },
+
+  "Symptom Guide": {
+    description: "Capture any relevant images:",
+    items: []
+  },
+
+  "Form Checker": {
+    description: "Capture video frame or photo of the exercise:",
+    items: []
+  },
+
+  // =====================================================
+  // LEARN CATEGORY
+  // =====================================================
+  
+  "Study Extractor": {
+    description: "Capture the study material:",
+    items: []
+  },
+
+  "ELI5 This": {
+    description: "Capture what you want explained:",
+    items: []
+  },
+
+  "Compare These": {
+    description: "Capture screenshots of items to compare:",
+    items: []
+  },
+
+  "Language Helper": {
+    description: "Capture the text you want translated:",
+    items: []
+  }
+
+};
+
+
+/**
+ * =====================================================
  * AI BEHAVIOR & CARD SETTINGS
  * =====================================================
  * 
