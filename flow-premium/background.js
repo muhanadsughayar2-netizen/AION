@@ -30,12 +30,20 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
     chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') });
     
-    // Check for existing immutable install timestamp (WRITE-ONCE, never overwritten)
-    const { initialInstallTimestamp: existingTimestamp } = await chrome.storage.local.get(['initialInstallTimestamp']);
+    // CRITICAL: Check BOTH sync AND local storage for existing trial
+    // On reinstall: local is WIPED but sync SURVIVES (tied to Google account)
+    const { trialStartDate: syncDate } = await chrome.storage.sync.get(['trialStartDate']);
+    const { initialInstallTimestamp: localTimestamp, trialStartDate: localDate } = 
+      await chrome.storage.local.get(['initialInstallTimestamp', 'trialStartDate']);
+    
+    // Find the earliest valid timestamp from ANY source
+    const candidates = [syncDate, localTimestamp, localDate].filter(d => d && d > 0);
+    const existingTimestamp = candidates.length > 0 ? Math.min(...candidates) : null;
     
     if (!existingTimestamp) {
-      // TRUE FIRST INSTALL - Create immutable timestamp
+      // TRUE FIRST INSTALL - No trial data anywhere, create new trial
       const now = Date.now();
+      await chrome.storage.sync.set({ trialStartDate: now });
       await chrome.storage.local.set({
         initialInstallTimestamp: now,  // IMMUTABLE - never overwrite this
         trialStartDate: now,
@@ -43,12 +51,14 @@ chrome.runtime.onInstalled.addListener(async (details) => {
         licenseKey: null,
         planType: null
       });
-      await chrome.storage.sync.set({ trialStartDate: now });
       console.log('[SnapToAI] Trial started:', new Date(now).toLocaleDateString());
     } else {
-      // Reinstall - preserve original timestamp
-      await chrome.storage.local.set({ trialStartDate: existingTimestamp });
+      // REINSTALL - Found existing trial data, preserve it
       await chrome.storage.sync.set({ trialStartDate: existingTimestamp });
+      await chrome.storage.local.set({ 
+        initialInstallTimestamp: existingTimestamp,
+        trialStartDate: existingTimestamp 
+      });
       console.log('[SnapToAI] Reinstall detected - trial preserved from:', new Date(existingTimestamp).toLocaleDateString());
     }
   } else if (details.reason === 'update') {
