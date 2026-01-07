@@ -135,21 +135,34 @@ async function checkSubscription() {
   const { trialStartDate: syncDate } = await chrome.storage.sync.get(['trialStartDate']);
   
   // Priority: immutable timestamp > earliest of other dates
-  const candidates = [initialInstallTimestamp, syncDate, localDate, legacyDate].filter(d => d && d > 0);
+  // IMPORTANT: Convert any string values to numbers (legacy storage issue)
+  const toNum = (v) => {
+    if (typeof v === 'number' && v > 0) return v;
+    if (typeof v === 'string') {
+      const n = parseInt(v, 10) || Date.parse(v);
+      return n > 0 ? n : null;
+    }
+    return null;
+  };
+  const candidates = [initialInstallTimestamp, syncDate, localDate, legacyDate]
+    .map(toNum)
+    .filter(d => d && d > 0);
   let trialStartDate = candidates.length > 0 ? Math.min(...candidates) : null;
   
   // Repair storage if needed (ensure consistency)
   if (trialStartDate) {
     const repairs = [];
     if (!initialInstallTimestamp) repairs.push(chrome.storage.local.set({ initialInstallTimestamp: trialStartDate }));
-    if (localDate !== trialStartDate) repairs.push(chrome.storage.local.set({ trialStartDate }));
-    if (syncDate !== trialStartDate) repairs.push(chrome.storage.sync.set({ trialStartDate }));
+    if (toNum(localDate) !== trialStartDate) repairs.push(chrome.storage.local.set({ trialStartDate }));
+    if (toNum(syncDate) !== trialStartDate) repairs.push(chrome.storage.sync.set({ trialStartDate }));
     if (legacyDate) repairs.push(chrome.storage.local.remove('installDate'));
     if (repairs.length > 0) {
       await Promise.all(repairs);
       console.log('[SnapToAI] Storage repaired to canonical date:', new Date(trialStartDate).toLocaleDateString());
     }
   }
+  
+  console.log('[SnapToAI] Trial check - Start:', new Date(trialStartDate).toLocaleDateString(), 'Days elapsed:', Math.floor((Date.now() - trialStartDate) / 86400000));
 
   const now = Date.now();
 

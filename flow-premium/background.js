@@ -37,7 +37,16 @@ chrome.runtime.onInstalled.addListener(async (details) => {
       await chrome.storage.local.get(['initialInstallTimestamp', 'trialStartDate']);
     
     // Find the earliest valid timestamp from ANY source
-    const candidates = [syncDate, localTimestamp, localDate].filter(d => d && d > 0);
+    // IMPORTANT: Convert string values to numbers (legacy storage issue)
+    const toNum = (v) => {
+      if (typeof v === 'number' && v > 0) return v;
+      if (typeof v === 'string') {
+        const n = parseInt(v, 10) || Date.parse(v);
+        return n > 0 ? n : null;
+      }
+      return null;
+    };
+    const candidates = [syncDate, localTimestamp, localDate].map(toNum).filter(d => d && d > 0);
     const existingTimestamp = candidates.length > 0 ? Math.min(...candidates) : null;
     
     if (!existingTimestamp) {
@@ -68,7 +77,16 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     
     // Use the immutable timestamp as source of truth, fallback to earliest available
     // CRITICAL: Guard against empty array (Math.min() returns Infinity on empty array)
-    const candidates = [initialInstallTimestamp, localDate, syncDate].filter(d => d && d > 0);
+    // IMPORTANT: Convert string values to numbers (legacy storage issue)
+    const toNum = (v) => {
+      if (typeof v === 'number' && v > 0) return v;
+      if (typeof v === 'string') {
+        const n = parseInt(v, 10) || Date.parse(v);
+        return n > 0 ? n : null;
+      }
+      return null;
+    };
+    const candidates = [initialInstallTimestamp, localDate, syncDate].map(toNum).filter(d => d && d > 0);
     const canonicalDate = candidates.length > 0 ? Math.min(...candidates) : null;
     
     if (canonicalDate) {
