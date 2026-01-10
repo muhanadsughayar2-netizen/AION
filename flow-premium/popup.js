@@ -3233,14 +3233,14 @@ if (agentButton) {
   agentButton.addEventListener('click', async () => {
     console.log('[SnapToAI] Opening Agent Chat');
     
-    // Check if API key exists first
-    const { geminiApiKey } = await chrome.storage.local.get(['geminiApiKey']);
+    // Check if API key exists (uses same key as AI Chat - stored in sync)
+    const { geminiApiKey } = await chrome.storage.sync.get(['geminiApiKey']);
     if (!geminiApiKey) {
       showGeminiModal();
       return;
     }
     
-    // Open Agent Chat in a new window
+    // Open Agent Chat in a new window - NO API key prompt needed
     const width = 500;
     const height = 650;
     const left = Math.round((screen.width - width) / 2);
