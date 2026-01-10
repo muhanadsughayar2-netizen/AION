@@ -162,6 +162,66 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Start full page capture process
     startFullPageCapture().then(sendResponse);
     return true;
+  } else if (request.action === 'agentExecute') {
+    // Relay agent automation command to the target tab
+    const { tabId, executeAction, params } = request;
+    if (!tabId) {
+      sendResponse({ success: false, error: 'No tab ID provided' });
+      return;
+    }
+    chrome.tabs.sendMessage(tabId, {
+      action: 'agentExecute',
+      executeAction,
+      params
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        // Try injecting content script first, then retry
+        chrome.scripting.executeScript({
+          target: { tabId },
+          files: ['content.js']
+        }).then(() => {
+          chrome.tabs.sendMessage(tabId, {
+            action: 'agentExecute',
+            executeAction,
+            params
+          }, sendResponse);
+        }).catch(err => {
+          sendResponse({ success: false, error: err.message });
+        });
+      } else {
+        sendResponse(response);
+      }
+    });
+    return true;
+  } else if (request.action === 'agentCaptureTab') {
+    // Capture screenshot for agent automation
+    const { tabId } = request;
+    chrome.tabs.update(tabId, { active: true }, () => {
+      setTimeout(() => {
+        chrome.tabs.captureVisibleTab(null, { format: 'png' }, (dataUrl) => {
+          if (chrome.runtime.lastError) {
+            sendResponse({ success: false, error: chrome.runtime.lastError.message });
+          } else {
+            sendResponse({ success: true, dataUrl });
+          }
+        });
+      }, 300);
+    });
+    return true;
+  } else if (request.action === 'agentAddSnaps') {
+    // Add multiple snaps from agent automation
+    const { images } = request;
+    getSnaps().then(async (currentSnaps) => {
+      const newSnaps = [...(currentSnaps || [])];
+      for (const img of images) {
+        if (newSnaps.length < MAX_SNAPS) {
+          newSnaps.push(img);
+        }
+      }
+      await setSnaps(newSnaps);
+      sendResponse({ success: true, count: newSnaps.length });
+    });
+    return true;
   } else if (request.action === 'fullPageCaptureStep') {
     // Capture a single step during full page capture
     captureFullPageStep(request.tabId).then(sendResponse);

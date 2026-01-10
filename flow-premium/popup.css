@@ -365,6 +365,22 @@ body {
   /* No glow effect, just clean icon */
 }
 
+/* Agent Orb - Purple theme */
+.agent-orb {
+  background: linear-gradient(135deg, #2a1a4a 0%, #1a0a2e 100%);
+  border: 2px solid rgba(138, 43, 226, 0.4);
+  box-shadow: 0 0 15px rgba(138, 43, 226, 0.3), inset 0 0 10px rgba(138, 43, 226, 0.1);
+}
+
+.agent-orb:hover {
+  border-color: rgba(138, 43, 226, 0.6);
+  box-shadow: 0 0 25px rgba(138, 43, 226, 0.5), inset 0 0 15px rgba(138, 43, 226, 0.2);
+}
+
+.agent-orb .orb-inner {
+  color: #bb86fc;
+}
+
 /* Full Page Capture Overlay */
 .fullpage-overlay {
   position: fixed;

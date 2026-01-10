@@ -35,6 +35,16 @@ The extension supports capturing, annotating, organizing (reordering, multi-sele
 6. Saves the stitched image to the queue
 Handles infinite-scroll sites with scroll settlement detection. Works on any web page regardless of length.
 
+**Agent Chat Feature (January 2026):** Autonomous web automation agent:
+- New "Agent" button in popup (purple orb) opens Agent Chat interface
+- User describes tasks in natural language (e.g., "Go to TradingView, search AAPL, screenshot 5min and 15min charts")
+- Gemini AI plans automation steps (navigate, click, type, wait, screenshot)
+- Agent executes steps automatically while user watches
+- Screenshots captured and added to snap queue automatically
+- Progress UI shows live step completion with thumbnails
+- Integrates with existing AI analysis workflow
+- Files: agent-chat.html, agent-chat.js, content.js (handleAgentAction)
+
 **Subscription System (January 2026):** Client-side subscription with Gumroad integration:
 - 30-day free trial starting on install (tracked in chrome.storage.local)
 - After trial: Capture features remain FREE forever, only AI analysis requires subscription

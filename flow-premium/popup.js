@@ -3226,6 +3226,38 @@ if (subscriptionModal) subscriptionModal.addEventListener('click', (e) => {
 if (aiButton) aiButton.addEventListener('click', handleAIButtonClick);
 if (geminiSaveBtn) geminiSaveBtn.addEventListener('click', saveGeminiKey);
 if (geminiClearBtn) geminiClearBtn.addEventListener('click', clearGeminiKey);
+
+// Agent button - opens Agent Chat for automated capture
+const agentButton = document.getElementById('agentButton');
+if (agentButton) {
+  agentButton.addEventListener('click', async () => {
+    console.log('[SnapToAI] Opening Agent Chat');
+    
+    // Check if API key exists first
+    const { geminiApiKey } = await chrome.storage.local.get(['geminiApiKey']);
+    if (!geminiApiKey) {
+      showGeminiModal();
+      return;
+    }
+    
+    // Open Agent Chat in a new window
+    const width = 500;
+    const height = 650;
+    const left = Math.round((screen.width - width) / 2);
+    const top = Math.round((screen.height - height) / 2);
+    
+    chrome.windows.create({
+      url: chrome.runtime.getURL('agent-chat.html'),
+      type: 'popup',
+      width: width,
+      height: height,
+      left: left,
+      top: top
+    });
+    
+    window.close();
+  });
+}
 if (geminiModal) geminiModal.addEventListener('click', (e) => {
   if (e.target === geminiModal) hideGeminiModal();
 });

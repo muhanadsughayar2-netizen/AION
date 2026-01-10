@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI - Agent</title>
+  <script src="marked.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0d0d0d;
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
+      border-bottom: 1px solid rgba(138, 43, 226, 0.4);
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logo {
+      color: #fff;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    .logo span {
+      background: linear-gradient(135deg, #8a2be2 0%, #9932cc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .agent-badge {
+      background: linear-gradient(135deg, #8a2be2 0%, #9932cc 100%);
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .close-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #888;
+      font-size: 20px;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+    
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .message {
+      max-width: 85%;
+      padding: 14px 18px;
+      border-radius: 16px;
+      line-height: 1.5;
+      font-size: 14px;
+      animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .message.user {
+      background: linear-gradient(135deg, #8a2be2 0%, #7b1fa2 100%);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    
+    .message.agent {
+      background: rgba(138, 43, 226, 0.15);
+      border: 1px solid rgba(138, 43, 226, 0.3);
+      color: #e0e0e0;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    
+    .message.system {
+      background: rgba(255, 193, 7, 0.15);
+      border: 1px solid rgba(255, 193, 7, 0.3);
+      color: #ffc107;
+      align-self: center;
+      font-size: 13px;
+      text-align: center;
+    }
+    
+    .message.error {
+      background: rgba(244, 67, 54, 0.15);
+      border: 1px solid rgba(244, 67, 54, 0.3);
+      color: #f44336;
+      align-self: center;
+    }
+    
+    .progress-container {
+      background: rgba(138, 43, 226, 0.1);
+      border: 1px solid rgba(138, 43, 226, 0.3);
+      border-radius: 16px;
+      padding: 16px;
+      align-self: flex-start;
+      max-width: 90%;
+    }
+    
+    .progress-title {
+      font-weight: 600;
+      color: #bb86fc;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .progress-title .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(138, 43, 226, 0.3);
+      border-top-color: #bb86fc;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .step-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #999;
+      transition: all 0.3s;
+    }
+    
+    .step-item.active {
+      color: #bb86fc;
+    }
+    
+    .step-item.completed {
+      color: #4caf50;
+    }
+    
+    .step-item.failed {
+      color: #f44336;
+    }
+    
+    .step-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .step-item.completed .step-icon {
+      background: rgba(76, 175, 80, 0.2);
+    }
+    
+    .step-item.active .step-icon {
+      background: rgba(138, 43, 226, 0.3);
+    }
+    
+    .step-item.failed .step-icon {
+      background: rgba(244, 67, 54, 0.2);
+    }
+    
+    .captures-preview {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(138, 43, 226, 0.2);
+    }
+    
+    .capture-thumb {
+      width: 60px;
+      height: 45px;
+      border-radius: 6px;
+      object-fit: cover;
+      border: 2px solid rgba(138, 43, 226, 0.4);
+      animation: popIn 0.3s ease;
+    }
+    
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    
+    .input-container {
+      padding: 16px 20px;
+      background: linear-gradient(180deg, #121212 0%, #1a1a1a 100%);
+      border-top: 1px solid rgba(138, 43, 226, 0.2);
+    }
+    
+    .input-wrapper {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+    
+    .input-field {
+      flex: 1;
+      background: rgba(138, 43, 226, 0.1);
+      border: 1px solid rgba(138, 43, 226, 0.3);
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: #fff;
+      font-size: 14px;
+      resize: none;
+      min-height: 50px;
+      max-height: 120px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    
+    .input-field:focus {
+      outline: none;
+      border-color: rgba(138, 43, 226, 0.6);
+      background: rgba(138, 43, 226, 0.15);
+    }
+    
+    .input-field::placeholder {
+      color: #666;
+    }
+    
+    .send-btn {
+      background: linear-gradient(135deg, #8a2be2 0%, #7b1fa2 100%);
+      border: none;
+      color: white;
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    
+    .send-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
+    }
+    
+    .send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .send-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .quick-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .quick-action {
+      background: rgba(138, 43, 226, 0.15);
+      border: 1px solid rgba(138, 43, 226, 0.3);
+      color: #bb86fc;
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .quick-action:hover {
+      background: rgba(138, 43, 226, 0.25);
+      border-color: rgba(138, 43, 226, 0.5);
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    
+    .action-btn {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .action-btn.primary {
+      background: linear-gradient(135deg, #8a2be2 0%, #7b1fa2 100%);
+      border: none;
+      color: white;
+    }
+    
+    .action-btn.primary:hover {
+      box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
+    }
+    
+    .action-btn.secondary {
+      background: transparent;
+      border: 1px solid rgba(138, 43, 226, 0.4);
+      color: #bb86fc;
+    }
+    
+    .action-btn.secondary:hover {
+      background: rgba(138, 43, 226, 0.1);
+    }
+    
+    .welcome-message {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    
+    .welcome-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    
+    .welcome-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #bb86fc 0%, #8a2be2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .welcome-subtitle {
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    
+    .example-prompts {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    
+    .example-prompt {
+      background: rgba(138, 43, 226, 0.1);
+      border: 1px solid rgba(138, 43, 226, 0.2);
+      border-radius: 12px;
+      padding: 12px 16px;
+      text-align: left;
+      color: #ccc;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .example-prompt:hover {
+      background: rgba(138, 43, 226, 0.2);
+      border-color: rgba(138, 43, 226, 0.4);
+      color: #fff;
+    }
+    
+    .example-prompt strong {
+      color: #bb86fc;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">🤖 <span>Agent</span></div>
+      <div class="agent-badge">Auto-Capture</div>
+    </div>
+    <button class="close-btn" id="closeBtn">×</button>
+  </div>
+  
+  <div class="main-content">
+    <div class="chat-container" id="chatContainer">
+      <div class="welcome-message" id="welcomeMessage">
+        <div class="welcome-icon">🤖</div>
+        <div class="welcome-title">Agent Ready</div>
+        <div class="welcome-subtitle">
+          Tell me what data to gather and I'll automatically navigate, click, and capture screenshots for you.
+        </div>
+        <div class="example-prompts">
+          <div class="example-prompt" data-prompt="Go to TradingView, search for AAPL, add RSI indicator, and take screenshots of 5min, 15min, and 1hour charts">
+            <strong>📊 Stock Charts:</strong> "Go to TradingView, search AAPL, add RSI, screenshot 5min, 15min, 1hour charts"
+          </div>
+          <div class="example-prompt" data-prompt="Go to Yahoo Finance for TSLA and screenshot the Summary, Financials, and Analysis pages">
+            <strong>📈 Stock Analysis:</strong> "Go to Yahoo Finance for TSLA, screenshot Summary, Financials, Analysis"
+          </div>
+          <div class="example-prompt" data-prompt="Go to CoinGecko, search Bitcoin, and take a screenshot of the price chart and market data">
+            <strong>🪙 Crypto Data:</strong> "Go to CoinGecko, search Bitcoin, screenshot price chart and market data"
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="input-container">
+      <div class="quick-actions" id="quickActions">
+        <button class="quick-action" data-action="stop">⏹ Stop</button>
+        <button class="quick-action" data-action="retry">🔄 Retry</button>
+        <button class="quick-action" data-action="analyze">✨ Analyze Captures</button>
+      </div>
+      <div class="input-wrapper">
+        <textarea 
+          class="input-field" 
+          id="inputField" 
+          placeholder="Tell me what to capture... (e.g., 'Go to TradingView, search AAPL, screenshot the chart')"
+          rows="1"
+        ></textarea>
+        <button class="send-btn" id="sendBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <script src="subscription.js"></script>
+  <script src="prompts.js"></script>
+  <script src="agent-chat.js"></script>
+</body>
+</html>

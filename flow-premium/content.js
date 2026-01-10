@@ -253,6 +253,12 @@
         removeFullPageOverlay();
         sendResponse({ success: true });
         return;
+      } else if (request.action === 'agentExecute') {
+        // Agent automation commands
+        handleAgentAction(request.executeAction, request.params)
+          .then(result => sendResponse(result))
+          .catch(err => sendResponse({ success: false, error: err.message }));
+        return true;
       }
     } catch (err) {
       // NEVER let errors bubble up to Chrome
@@ -3541,6 +3547,131 @@
       // Always reset guard flag
       isFullPageCaptureRunning = false;
       console.log('[SnapToAI] Full page capture ended');
+    }
+  }
+
+  // === AGENT AUTOMATION HANDLER ===
+  // Handles click, type, scroll, checkElement actions from agent-chat.js
+  async function handleAgentAction(action, params) {
+    console.log('[SnapToAI Agent] Executing:', action, params);
+    
+    switch (action) {
+      case 'click': {
+        // Find element by selector or text content
+        let element = null;
+        
+        if (params.selector) {
+          element = document.querySelector(params.selector);
+        }
+        
+        // Fallback: find by text content
+        if (!element && params.text) {
+          const allClickable = document.querySelectorAll('button, a, [role="button"], [role="tab"], [role="menuitem"], .btn, input[type="button"], input[type="submit"]');
+          for (const el of allClickable) {
+            if (el.textContent.trim().toLowerCase().includes(params.text.toLowerCase())) {
+              element = el;
+              break;
+            }
+          }
+        }
+        
+        // Fallback: find any element containing text
+        if (!element && params.text) {
+          const xpath = `//*[contains(text(), '${params.text}')]`;
+          const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+          element = result.singleNodeValue;
+        }
+        
+        if (!element) {
+          throw new Error(`Element not found: ${params.selector || params.text}`);
+        }
+        
+        // Scroll into view and click
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        await new Promise(r => setTimeout(r, 300));
+        
+        // Try native click first, then dispatch events
+        if (typeof element.click === 'function') {
+          element.click();
+        } else {
+          element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+        }
+        
+        return { success: true };
+      }
+      
+      case 'type': {
+        let element = null;
+        
+        if (params.selector) {
+          element = document.querySelector(params.selector);
+        }
+        
+        // Fallback: find visible input/textarea
+        if (!element) {
+          const inputs = document.querySelectorAll('input[type="text"], input[type="search"], input:not([type]), textarea, [contenteditable="true"]');
+          for (const inp of inputs) {
+            if (inp.offsetParent !== null) { // visible
+              element = inp;
+              break;
+            }
+          }
+        }
+        
+        if (!element) {
+          throw new Error(`Input not found: ${params.selector}`);
+        }
+        
+        // Focus and type
+        element.focus();
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+          element.value = params.text;
+          element.dispatchEvent(new Event('input', { bubbles: true }));
+          element.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+          // Contenteditable
+          element.textContent = params.text;
+          element.dispatchEvent(new InputEvent('input', { bubbles: true, data: params.text }));
+        }
+        
+        // Press Enter if it looks like a search box
+        if (params.pressEnter || element.getAttribute('type') === 'search') {
+          await new Promise(r => setTimeout(r, 200));
+          element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+          element.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+          element.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+        }
+        
+        return { success: true };
+      }
+      
+      case 'scroll': {
+        if (params.selector) {
+          const el = document.querySelector(params.selector);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } else if (params.direction === 'down') {
+          window.scrollBy({ top: window.innerHeight * 0.8, behavior: 'smooth' });
+        } else if (params.direction === 'up') {
+          window.scrollBy({ top: -window.innerHeight * 0.8, behavior: 'smooth' });
+        } else if (params.direction === 'top') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (params.direction === 'bottom') {
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+        return { success: true };
+      }
+      
+      case 'checkElement': {
+        const element = document.querySelector(params.selector);
+        return { success: true, found: !!element };
+      }
+      
+      default:
+        throw new Error(`Unknown action: ${action}`);
     }
   }
 

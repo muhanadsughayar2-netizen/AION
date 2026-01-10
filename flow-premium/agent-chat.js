@@ -1,0 +1,511 @@
+// SnapToAI Agent Chat - Autonomous Web Automation
+// Allows users to describe tasks in natural language, AI plans steps, then executes them
+
+const GEMINI_API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
+let isAgentRunning = false;
+let currentSteps = [];
+let capturedImages = [];
+let abortController = null;
+
+// DOM Elements
+const chatContainer = document.getElementById('chatContainer');
+const welcomeMessage = document.getElementById('welcomeMessage');
+const inputField = document.getElementById('inputField');
+const sendBtn = document.getElementById('sendBtn');
+const closeBtn = document.getElementById('closeBtn');
+const quickActions = document.getElementById('quickActions');
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  setupEventListeners();
+  inputField.focus();
+});
+
+function setupEventListeners() {
+  // Send button
+  sendBtn.addEventListener('click', handleSend);
+  
+  // Enter to send (Shift+Enter for new line)
+  inputField.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  });
+  
+  // Auto-resize textarea
+  inputField.addEventListener('input', () => {
+    inputField.style.height = 'auto';
+    inputField.style.height = Math.min(inputField.scrollHeight, 120) + 'px';
+  });
+  
+  // Close button
+  closeBtn.addEventListener('click', () => window.close());
+  
+  // Example prompts
+  document.querySelectorAll('.example-prompt').forEach(el => {
+    el.addEventListener('click', () => {
+      inputField.value = el.dataset.prompt;
+      inputField.focus();
+    });
+  });
+  
+  // Quick actions
+  document.querySelectorAll('.quick-action').forEach(el => {
+    el.addEventListener('click', () => handleQuickAction(el.dataset.action));
+  });
+}
+
+async function handleSend() {
+  const message = inputField.value.trim();
+  if (!message || isAgentRunning) return;
+  
+  // Hide welcome message
+  if (welcomeMessage) {
+    welcomeMessage.style.display = 'none';
+  }
+  
+  // Add user message
+  addMessage(message, 'user');
+  inputField.value = '';
+  inputField.style.height = 'auto';
+  
+  // Disable input while processing
+  setInputEnabled(false);
+  
+  try {
+    // Step 1: Ask Gemini to plan the steps
+    addMessage('🤔 Planning automation steps...', 'system');
+    const plan = await planWithGemini(message);
+    
+    if (!plan || !plan.steps || plan.steps.length === 0) {
+      addMessage('I couldn\'t understand that request. Please try being more specific about which website to visit and what to capture.', 'agent');
+      setInputEnabled(true);
+      return;
+    }
+    
+    // Show the plan
+    addMessage(`📋 I'll execute ${plan.steps.length} steps:\n${plan.steps.map((s, i) => `${i + 1}. ${s.description}`).join('\n')}`, 'agent');
+    
+    // Step 2: Execute the plan
+    await executePlan(plan);
+    
+  } catch (error) {
+    console.error('Agent error:', error);
+    addMessage(`❌ Error: ${error.message}`, 'error');
+  }
+  
+  setInputEnabled(true);
+}
+
+async function planWithGemini(userRequest) {
+  const apiKey = await getApiKey();
+  if (!apiKey) {
+    throw new Error('Please set your Gemini API key in Settings first.');
+  }
+  
+  const systemPrompt = `You are an automation planning AI. The user will describe what data they want to gather from websites. Your job is to create a step-by-step plan that a browser automation script can execute.
+
+Available actions:
+- navigate: Go to a URL
+- click: Click an element (provide CSS selector or text content)
+- type: Type text into a field (provide selector and text)
+- wait: Wait for something to load (provide seconds or selector)
+- screenshot: Capture a screenshot of the current view
+- scroll: Scroll the page (up, down, or to element)
+
+Respond ONLY with a valid JSON object in this exact format:
+{
+  "steps": [
+    {"action": "navigate", "url": "https://example.com", "description": "Go to Example website"},
+    {"action": "wait", "seconds": 2, "description": "Wait for page to load"},
+    {"action": "click", "selector": "button.search", "text": "Search", "description": "Click search button"},
+    {"action": "type", "selector": "input#search", "text": "AAPL", "description": "Type search term"},
+    {"action": "wait", "seconds": 2, "description": "Wait for results"},
+    {"action": "screenshot", "description": "Capture search results"}
+  ],
+  "summary": "Brief description of what this automation does"
+}
+
+Important rules:
+1. Always start with a navigate action to go to the website
+2. Add wait actions after navigation and clicks to let content load
+3. Use specific, common CSS selectors or descriptive text for clicks
+4. End with screenshot actions to capture the desired data
+5. Keep it simple - aim for fewer, reliable steps
+6. For TradingView, Yahoo Finance, CoinGecko - use their public URLs
+7. If the user mentions a stock ticker, search for it on the site
+
+Example URLs:
+- TradingView chart: https://www.tradingview.com/chart/?symbol=AAPL
+- Yahoo Finance: https://finance.yahoo.com/quote/AAPL
+- CoinGecko: https://www.coingecko.com/en/coins/bitcoin`;
+
+  const response = await fetch(`${GEMINI_API_ENDPOINT}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          { text: systemPrompt },
+          { text: `User request: ${userRequest}\n\nRespond with ONLY the JSON plan, no markdown or explanation.` }
+        ]
+      }],
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 2000
+      }
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Failed to plan with AI');
+  }
+  
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  
+  // Extract JSON from response - try multiple approaches
+  let parsed = null;
+  
+  // Approach 1: Look for JSON code block
+  const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    try {
+      parsed = JSON.parse(codeBlockMatch[1].trim());
+    } catch (e) {
+      console.log('Code block JSON parse failed, trying other methods');
+    }
+  }
+  
+  // Approach 2: Look for raw JSON object
+  if (!parsed) {
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        parsed = JSON.parse(jsonMatch[0]);
+      } catch (e) {
+        console.log('Raw JSON parse failed');
+      }
+    }
+  }
+  
+  // Approach 3: Try the whole text
+  if (!parsed) {
+    try {
+      parsed = JSON.parse(text.trim());
+    } catch (e) {
+      console.log('Full text JSON parse failed');
+    }
+  }
+  
+  if (!parsed || !parsed.steps) {
+    console.error('Could not parse AI response:', text.substring(0, 500));
+    throw new Error('Could not understand the AI response. Please try rephrasing your request.');
+  }
+  
+  return parsed;
+}
+
+async function executePlan(plan) {
+  isAgentRunning = true;
+  currentSteps = plan.steps;
+  capturedImages = [];
+  abortController = new AbortController();
+  
+  // Create progress UI
+  const progressEl = createProgressUI(plan.steps);
+  chatContainer.appendChild(progressEl);
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+  
+  let targetTabId = null;
+  
+  try {
+    for (let i = 0; i < plan.steps.length; i++) {
+      if (abortController.signal.aborted) {
+        throw new Error('Automation stopped by user');
+      }
+      
+      const step = plan.steps[i];
+      updateStepStatus(progressEl, i, 'active');
+      
+      switch (step.action) {
+        case 'navigate':
+          // Create new tab or navigate existing one
+          if (!targetTabId) {
+            const tab = await chrome.tabs.create({ url: step.url, active: true });
+            targetTabId = tab.id;
+            await waitForTabLoad(targetTabId);
+          } else {
+            await chrome.tabs.update(targetTabId, { url: step.url });
+            await waitForTabLoad(targetTabId);
+          }
+          break;
+          
+        case 'wait':
+          if (step.seconds) {
+            await sleep(step.seconds * 1000);
+          } else if (step.selector) {
+            await waitForElement(targetTabId, step.selector);
+          }
+          break;
+          
+        case 'click':
+          await executeInTab(targetTabId, 'click', { selector: step.selector, text: step.text });
+          await sleep(500); // Brief pause after click
+          break;
+          
+        case 'type':
+          await executeInTab(targetTabId, 'type', { selector: step.selector, text: step.text });
+          break;
+          
+        case 'scroll':
+          await executeInTab(targetTabId, 'scroll', { direction: step.direction, selector: step.selector });
+          await sleep(300);
+          break;
+          
+        case 'screenshot':
+          const imageData = await captureTab(targetTabId);
+          if (imageData) {
+            capturedImages.push(imageData);
+            addCaptureThumb(progressEl, imageData);
+          }
+          break;
+      }
+      
+      updateStepStatus(progressEl, i, 'completed');
+      await sleep(300); // Brief pause between steps
+    }
+    
+    // Success!
+    addMessage(`✅ Done! Captured ${capturedImages.length} screenshot${capturedImages.length !== 1 ? 's' : ''}.`, 'agent');
+    
+    // Add captured images to snap queue
+    if (capturedImages.length > 0) {
+      await addToSnapQueue(capturedImages);
+      addActionButtons();
+    }
+    
+  } catch (error) {
+    // Mark current step as failed
+    const activeStep = progressEl.querySelector('.step-item.active');
+    if (activeStep) {
+      activeStep.classList.remove('active');
+      activeStep.classList.add('failed');
+      activeStep.querySelector('.step-icon').textContent = '✗';
+    }
+    
+    throw error;
+  } finally {
+    isAgentRunning = false;
+    abortController = null;
+  }
+}
+
+function createProgressUI(steps) {
+  const div = document.createElement('div');
+  div.className = 'progress-container';
+  div.innerHTML = `
+    <div class="progress-title">
+      <div class="spinner"></div>
+      <span>Executing automation...</span>
+    </div>
+    <ul class="step-list">
+      ${steps.map((step, i) => `
+        <li class="step-item" data-index="${i}">
+          <span class="step-icon">${i + 1}</span>
+          <span>${step.description}</span>
+        </li>
+      `).join('')}
+    </ul>
+    <div class="captures-preview"></div>
+  `;
+  return div;
+}
+
+function updateStepStatus(progressEl, index, status) {
+  const stepItem = progressEl.querySelector(`.step-item[data-index="${index}"]`);
+  if (!stepItem) return;
+  
+  stepItem.classList.remove('active', 'completed', 'failed');
+  stepItem.classList.add(status);
+  
+  const icon = stepItem.querySelector('.step-icon');
+  if (status === 'completed') {
+    icon.textContent = '✓';
+  } else if (status === 'failed') {
+    icon.textContent = '✗';
+  }
+  
+  // Update progress title if all done
+  if (status === 'completed' && index === currentSteps.length - 1) {
+    const title = progressEl.querySelector('.progress-title');
+    title.innerHTML = '<span>✅ Automation complete!</span>';
+  }
+}
+
+function addCaptureThumb(progressEl, imageData) {
+  const preview = progressEl.querySelector('.captures-preview');
+  const img = document.createElement('img');
+  img.className = 'capture-thumb';
+  img.src = imageData;
+  preview.appendChild(img);
+}
+
+function addActionButtons() {
+  const div = document.createElement('div');
+  div.className = 'action-buttons';
+  div.innerHTML = `
+    <button class="action-btn secondary" id="viewCapturesBtn">👁 View Captures</button>
+    <button class="action-btn primary" id="analyzeBtn">✨ Analyze with AI</button>
+  `;
+  chatContainer.appendChild(div);
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+  
+  document.getElementById('viewCapturesBtn').addEventListener('click', () => {
+    // Open popup to show captures
+    window.close();
+  });
+  
+  document.getElementById('analyzeBtn').addEventListener('click', () => {
+    // Open AI chat with captures ready
+    chrome.tabs.create({ url: chrome.runtime.getURL('ai-chat.html') });
+    window.close();
+  });
+}
+
+// Execute action in target tab via background script relay
+async function executeInTab(tabId, action, params) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ 
+      action: 'agentExecute',
+      tabId,
+      executeAction: action,
+      params 
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+      } else if (response?.success) {
+        resolve(response);
+      } else {
+        reject(new Error(response?.error || `Failed to ${action}`));
+      }
+    });
+  });
+}
+
+// Wait for element to appear in tab
+async function waitForElement(tabId, selector, timeout = 10000) {
+  const startTime = Date.now();
+  while (Date.now() - startTime < timeout) {
+    try {
+      const result = await executeInTab(tabId, 'checkElement', { selector });
+      if (result.found) return true;
+    } catch (e) {
+      // Element not found yet
+    }
+    await sleep(500);
+  }
+  throw new Error(`Timeout waiting for element: ${selector}`);
+}
+
+// Wait for tab to finish loading
+function waitForTabLoad(tabId) {
+  return new Promise((resolve) => {
+    const checkTab = () => {
+      chrome.tabs.get(tabId, (tab) => {
+        if (tab.status === 'complete') {
+          // Extra delay for dynamic content
+          setTimeout(resolve, 1500);
+        } else {
+          setTimeout(checkTab, 200);
+        }
+      });
+    };
+    checkTab();
+  });
+}
+
+// Capture screenshot of tab via background script
+async function captureTab(tabId) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ 
+      action: 'agentCaptureTab',
+      tabId 
+    }, (response) => {
+      if (chrome.runtime.lastError || !response?.success) {
+        console.error('Capture error:', chrome.runtime.lastError || response?.error);
+        resolve(null);
+      } else {
+        resolve(response.dataUrl);
+      }
+    });
+  });
+}
+
+// Add captures to snap queue via background script
+async function addToSnapQueue(images) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ 
+      action: 'agentAddSnaps',
+      images 
+    }, (response) => {
+      console.log('[Agent] Added snaps to queue:', response?.count || 0);
+      resolve();
+    });
+  });
+}
+
+// Get API key from storage
+async function getApiKey() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['geminiApiKey'], (result) => {
+      resolve(result.geminiApiKey || null);
+    });
+  });
+}
+
+// UI helpers
+function addMessage(text, type) {
+  const div = document.createElement('div');
+  div.className = `message ${type}`;
+  div.textContent = text;
+  chatContainer.appendChild(div);
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function setInputEnabled(enabled) {
+  inputField.disabled = !enabled;
+  sendBtn.disabled = !enabled;
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function handleQuickAction(action) {
+  switch (action) {
+    case 'stop':
+      if (abortController) {
+        abortController.abort();
+        addMessage('⏹ Automation stopped.', 'system');
+      }
+      break;
+    case 'retry':
+      // Re-run the last plan
+      if (currentSteps.length > 0) {
+        executePlan({ steps: currentSteps });
+      }
+      break;
+    case 'analyze':
+      if (capturedImages.length > 0) {
+        chrome.tabs.create({ url: chrome.runtime.getURL('ai-chat.html') });
+        window.close();
+      } else {
+        addMessage('No captures yet. Run an automation first.', 'system');
+      }
+      break;
+  }
+}
