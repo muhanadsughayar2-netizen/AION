@@ -528,7 +528,7 @@ async function addToSnapQueue(images) {
 // Get API key from storage
 async function getApiKey() {
   return new Promise((resolve) => {
-    chrome.storage.local.get(['geminiApiKey'], (result) => {
+    chrome.storage.sync.get(['geminiApiKey'], (result) => {
       resolve(result.geminiApiKey || null);
     });
   });
