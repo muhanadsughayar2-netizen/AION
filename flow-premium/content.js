@@ -3550,10 +3550,188 @@
     }
   }
 
+  // === GHOST CURSOR SYSTEM ===
+  // Creates a magical floating cursor that shows automation in action
+  let ghostCursor = null;
+  let ghostCursorStyle = null;
+  
+  function createGhostCursor() {
+    if (ghostCursor) return ghostCursor;
+    
+    // Inject styles once
+    if (!ghostCursorStyle) {
+      ghostCursorStyle = document.createElement('style');
+      ghostCursorStyle.textContent = `
+        @keyframes snaptoai-cursor-pulse {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 20px rgba(138, 43, 226, 0.6), 0 0 40px rgba(138, 43, 226, 0.3); }
+          50% { transform: translate(-50%, -50%) scale(1.2); box-shadow: 0 0 30px rgba(138, 43, 226, 0.8), 0 0 60px rgba(138, 43, 226, 0.4); }
+        }
+        @keyframes snaptoai-cursor-click {
+          0% { transform: translate(-50%, -50%) scale(1); }
+          50% { transform: translate(-50%, -50%) scale(0.6); }
+          100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        @keyframes snaptoai-ripple {
+          0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+        }
+        @keyframes snaptoai-type-glow {
+          0%, 100% { box-shadow: 0 0 0 2px rgba(138, 43, 226, 0.5), 0 0 15px rgba(138, 43, 226, 0.3); }
+          50% { box-shadow: 0 0 0 4px rgba(138, 43, 226, 0.8), 0 0 25px rgba(138, 43, 226, 0.5); }
+        }
+        @keyframes snaptoai-banner-slide {
+          0% { transform: translateY(-100%); opacity: 0; }
+          10% { transform: translateY(0); opacity: 1; }
+          90% { transform: translateY(0); opacity: 1; }
+          100% { transform: translateY(-100%); opacity: 0; }
+        }
+        .snaptoai-ghost-cursor {
+          position: fixed;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #8a2be2 0%, #9945ff 50%, #00d4ff 100%);
+          pointer-events: none;
+          z-index: 2147483647;
+          animation: snaptoai-cursor-pulse 1.5s ease-in-out infinite;
+          transition: left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .snaptoai-ghost-cursor::before {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 8px;
+          height: 8px;
+          background: white;
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+        }
+        .snaptoai-ghost-cursor::after {
+          content: '🤖';
+          position: absolute;
+          top: -30px;
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 20px;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+        .snaptoai-ghost-cursor.clicking {
+          animation: snaptoai-cursor-click 0.3s ease-out;
+        }
+        .snaptoai-click-ripple {
+          position: fixed;
+          width: 40px;
+          height: 40px;
+          border: 3px solid #8a2be2;
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 2147483646;
+          animation: snaptoai-ripple 0.6s ease-out forwards;
+        }
+        .snaptoai-element-highlight {
+          outline: 3px solid #8a2be2 !important;
+          outline-offset: 2px !important;
+          animation: snaptoai-type-glow 0.8s ease-in-out infinite !important;
+          transition: all 0.3s ease !important;
+        }
+        .snaptoai-agent-banner {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          background: linear-gradient(135deg, rgba(138, 43, 226, 0.95) 0%, rgba(75, 0, 130, 0.95) 100%);
+          color: white;
+          padding: 12px 20px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          font-size: 14px;
+          font-weight: 500;
+          text-align: center;
+          z-index: 2147483645;
+          backdrop-filter: blur(10px);
+          box-shadow: 0 4px 20px rgba(138, 43, 226, 0.4);
+          animation: snaptoai-banner-slide 4s ease-in-out forwards;
+        }
+        .snaptoai-agent-banner span {
+          margin-right: 8px;
+        }
+      `;
+      document.head.appendChild(ghostCursorStyle);
+    }
+    
+    ghostCursor = document.createElement('div');
+    ghostCursor.className = 'snaptoai-ghost-cursor';
+    ghostCursor.style.left = '50%';
+    ghostCursor.style.top = '50%';
+    document.body.appendChild(ghostCursor);
+    
+    return ghostCursor;
+  }
+  
+  function moveGhostCursor(x, y) {
+    if (!ghostCursor) createGhostCursor();
+    ghostCursor.style.left = x + 'px';
+    ghostCursor.style.top = y + 'px';
+  }
+  
+  function clickGhostCursor(x, y) {
+    if (!ghostCursor) createGhostCursor();
+    
+    // Move to position
+    ghostCursor.style.left = x + 'px';
+    ghostCursor.style.top = y + 'px';
+    
+    // Add click animation
+    ghostCursor.classList.add('clicking');
+    setTimeout(() => ghostCursor.classList.remove('clicking'), 300);
+    
+    // Create ripple effect
+    const ripple = document.createElement('div');
+    ripple.className = 'snaptoai-click-ripple';
+    ripple.style.left = x + 'px';
+    ripple.style.top = y + 'px';
+    document.body.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  }
+  
+  function highlightElement(element) {
+    element.classList.add('snaptoai-element-highlight');
+    setTimeout(() => element.classList.remove('snaptoai-element-highlight'), 2000);
+  }
+  
+  function showAgentBanner(message) {
+    const existing = document.querySelector('.snaptoai-agent-banner');
+    if (existing) existing.remove();
+    
+    const banner = document.createElement('div');
+    banner.className = 'snaptoai-agent-banner';
+    banner.innerHTML = `<span>🤖</span> SnapToAI Agent: ${message}`;
+    document.body.appendChild(banner);
+    setTimeout(() => banner.remove(), 4000);
+  }
+  
+  function removeGhostCursor() {
+    if (ghostCursor) {
+      ghostCursor.remove();
+      ghostCursor = null;
+    }
+  }
+  
+  function getElementCenter(element) {
+    const rect = element.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2
+    };
+  }
+
   // === AGENT AUTOMATION HANDLER ===
   // Handles click, type, scroll, checkElement actions from agent-chat.js
   async function handleAgentAction(action, params) {
     console.log('[SnapToAI Agent] Executing:', action, params);
+    
+    // Show ghost cursor for all actions
+    createGhostCursor();
     
     switch (action) {
       case 'click': {
@@ -3586,8 +3764,20 @@
           throw new Error(`Element not found: ${params.selector || params.text}`);
         }
         
-        // Scroll into view and click
+        // Scroll into view first
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        await new Promise(r => setTimeout(r, 400));
+        
+        // Move ghost cursor to element with smooth animation
+        const center = getElementCenter(element);
+        moveGhostCursor(center.x, center.y);
+        await new Promise(r => setTimeout(r, 500));
+        
+        // Show click effect
+        clickGhostCursor(center.x, center.y);
+        highlightElement(element);
+        showAgentBanner(`Clicking: ${params.text || params.selector}`);
+        
         await new Promise(r => setTimeout(r, 300));
         
         // Try native click first, then dispatch events
@@ -3622,13 +3812,31 @@
           throw new Error(`Input not found: ${params.selector}`);
         }
         
-        // Focus and type
-        element.focus();
+        // Scroll into view
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        await new Promise(r => setTimeout(r, 300));
+        
+        // Move ghost cursor to element
+        const center = getElementCenter(element);
+        moveGhostCursor(center.x, center.y);
+        await new Promise(r => setTimeout(r, 400));
+        
+        // Click on input
+        clickGhostCursor(center.x, center.y);
+        highlightElement(element);
+        showAgentBanner(`Typing: "${params.text.substring(0, 30)}${params.text.length > 30 ? '...' : ''}"`);
+        
+        // Focus and type with typing effect
+        element.focus();
         
         if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
-          element.value = params.text;
-          element.dispatchEvent(new Event('input', { bubbles: true }));
+          // Simulate typing character by character for effect
+          element.value = '';
+          for (let i = 0; i < params.text.length; i++) {
+            element.value += params.text[i];
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+            if (i < 20) await new Promise(r => setTimeout(r, 30)); // Fast typing effect for first 20 chars
+          }
           element.dispatchEvent(new Event('change', { bubbles: true }));
         } else {
           // Contenteditable
@@ -3638,7 +3846,8 @@
         
         // Press Enter if it looks like a search box
         if (params.pressEnter || element.getAttribute('type') === 'search') {
-          await new Promise(r => setTimeout(r, 200));
+          await new Promise(r => setTimeout(r, 300));
+          showAgentBanner('Pressing Enter...');
           element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
           element.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
           element.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
@@ -3648,26 +3857,44 @@
       }
       
       case 'scroll': {
+        showAgentBanner(`Scrolling ${params.direction || 'to element'}...`);
+        
         if (params.selector) {
           const el = document.querySelector(params.selector);
           if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const center = getElementCenter(el);
+            moveGhostCursor(center.x, center.y);
           }
         } else if (params.direction === 'down') {
           window.scrollBy({ top: window.innerHeight * 0.8, behavior: 'smooth' });
+          moveGhostCursor(window.innerWidth / 2, window.innerHeight / 2);
         } else if (params.direction === 'up') {
           window.scrollBy({ top: -window.innerHeight * 0.8, behavior: 'smooth' });
+          moveGhostCursor(window.innerWidth / 2, window.innerHeight / 2);
         } else if (params.direction === 'top') {
           window.scrollTo({ top: 0, behavior: 'smooth' });
+          moveGhostCursor(window.innerWidth / 2, 100);
         } else if (params.direction === 'bottom') {
           window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+          moveGhostCursor(window.innerWidth / 2, window.innerHeight - 100);
         }
         return { success: true };
       }
       
       case 'checkElement': {
         const element = document.querySelector(params.selector);
+        if (element) {
+          const center = getElementCenter(element);
+          moveGhostCursor(center.x, center.y);
+          highlightElement(element);
+        }
         return { success: true, found: !!element };
+      }
+      
+      case 'hideGhostCursor': {
+        removeGhostCursor();
+        return { success: true };
       }
       
       default:

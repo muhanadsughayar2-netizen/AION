@@ -279,8 +279,16 @@ async function executePlan(plan) {
       await sleep(300); // Brief pause between steps
     }
     
-    // Success!
-    addMessage(`✅ Done! Captured ${capturedImages.length} screenshot${capturedImages.length !== 1 ? 's' : ''}.`, 'agent');
+    // Hide ghost cursor (only if we have a valid tab)
+    if (targetTabId) {
+      try {
+        await executeInTab(targetTabId, 'hideGhostCursor', {});
+      } catch (e) {}
+    }
+    
+    // Success celebration with confetti!
+    celebrateSuccess();
+    addMessage(`🎉 Done! Captured ${capturedImages.length} screenshot${capturedImages.length !== 1 ? 's' : ''}. Your snaps are ready for AI analysis!`, 'agent');
     
     // Add captured images to snap queue
     if (capturedImages.length > 0) {
@@ -289,6 +297,13 @@ async function executePlan(plan) {
     }
     
   } catch (error) {
+    // Hide ghost cursor on error too
+    if (targetTabId) {
+      try {
+        await executeInTab(targetTabId, 'hideGhostCursor', {});
+      } catch (e) {}
+    }
+    
     // Mark current step as failed
     const activeStep = progressEl.querySelector('.step-item.active');
     if (activeStep) {
@@ -344,6 +359,58 @@ function updateStepStatus(progressEl, index, status) {
     const title = progressEl.querySelector('.progress-title');
     title.innerHTML = '<span>✅ Automation complete!</span>';
   }
+}
+
+let confettiStyleInjected = false;
+
+function celebrateSuccess() {
+  // Add confetti animation style once
+  if (!confettiStyleInjected) {
+    const style = document.createElement('style');
+    style.id = 'confetti-style';
+    style.textContent = `
+      @keyframes confettiFall {
+        0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+      }
+      .snaptoai-confetti {
+        position: fixed;
+        pointer-events: none;
+        z-index: 10000;
+      }
+    `;
+    document.head.appendChild(style);
+    confettiStyleInjected = true;
+  }
+  
+  // Create container for confetti
+  const container = document.createElement('div');
+  container.className = 'snaptoai-confetti-container';
+  document.body.appendChild(container);
+  
+  const colors = ['#8a2be2', '#9945ff', '#00d4ff', '#ff6b9d', '#ffd93d'];
+  const confettiCount = 40;
+  
+  for (let i = 0; i < confettiCount; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'snaptoai-confetti';
+    const size = Math.random() * 8 + 4;
+    const duration = Math.random() * 2 + 2;
+    confetti.style.cssText = `
+      width: ${size}px;
+      height: ${size}px;
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      left: ${Math.random() * 100}%;
+      top: -20px;
+      border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+      animation: confettiFall ${duration}s ease-out forwards;
+      transform: rotate(${Math.random() * 360}deg);
+    `;
+    container.appendChild(confetti);
+  }
+  
+  // Clean up entire container after animation
+  setTimeout(() => container.remove(), 4500);
 }
 
 function addCaptureThumb(progressEl, imageData) {
