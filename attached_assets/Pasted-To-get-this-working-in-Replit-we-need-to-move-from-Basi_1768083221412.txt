@@ -1,0 +1,83 @@
+To get this working in Replit, we need to move from "Basic Chat" to "Agentic Execution." You are building a system where the AI doesn't just talk—it works.
+
+Since you want the "Agent" button right next to your "Magic AI" button, you need a two-part setup:
+
+The Agent Button: This "scrapes" the data by moving the screen and taking snaps automatically.
+
+The Magic AI Button: This takes those saved snaps and does the "Super Analysis."
+
+Here is the high-level logic and code blocks to give to Replit.
+
+📍 UI Placement: The "Agent" Button
+In your popup.html, place the Agent button next to your Magic button. Give it a distinct "Robot" or "Radar" look so the user knows it's an automated process.
+
+HTML
+
+<div class="button-group">
+  <button id="agent-btn" class="btn-secondary">🤖 Run Agent Scraper</button>
+  <button id="magic-ai-btn" class="btn-primary">✨ AI Magic Analysis</button>
+</div>
+🧠 Part 1: The "Agent Scraper" Logic (The 1000-Word Directive)
+Give this prompt to Replit to build the Scraper Agent. This tells the AI how to "drive" Investing.com to get your 3 main screenshots.
+
+Prompt for Replit: > "I need a Chrome Extension script that acts as an Automated Data Agent. When the agent-btn is clicked, it must:
+
+Check if the current tab is an Investing.com stock page.
+
+Execute a sequence of 3 Snaps:
+
+Snap A: Click the 'Financials' tab -> 'Income Statement'. Wait 1s for load. Capture screenshot.
+
+Snap B: Click 'Balance Sheet'. Wait 1s. Capture screenshot.
+
+Snap C: Click 'Cash Flow'. Wait 1s. Capture screenshot.
+
+Store these 3 images in chrome.storage.local under the keys snap_income, snap_balance, and snap_cashflow.
+
+Update the UI to show a green checkmark next to each successfully gathered document."
+
+🛠️ Part 2: The "Magic AI" Code (The Agentic Analysis)
+Now, once the snapshots are saved, the user hits the "AI Magic" button. Give Replit this code for the Analysis Engine.
+
+The Replit Logic (background.js):
+
+JavaScript
+
+// This function pulls the 3 stored images and sends them to Gemini 3 Flash
+async function runSuperAnalysis() {
+  const data = await chrome.storage.local.get(['snap_income', 'snap_balance', 'snap_cashflow']);
+  
+  const systemPrompt = `
+    You are a Senior Wall Street Equity Analyst Agent. 
+    I am providing 3 images: Income Statement, Balance Sheet, and Cash Flow.
+    
+    TASK:
+    1. Extract all numbers from the images using your vision capabilities.
+    2. Perform a "Fundamental Analysis Report."
+    3. Calculate: P/E Ratio, Debt-to-Equity, and Free Cash Flow.
+    4. Provide a "SWOT Analysis" based on the data.
+    5. Final Verdict: Strong Buy, Buy, Hold, or Sell.
+  `;
+
+  // Send the images + prompt to Gemini
+  const response = await callGeminiAPI(systemPrompt, [
+    data.snap_income, 
+    data.snap_balance, 
+    data.snap_cashflow
+  ]);
+
+  return response;
+}
+📋 The "Secret Instruction" for the AI Agent
+To make it "Agentic," the AI needs to handle errors. If the user isn't on the right page, the Agent should tell them. Add this to your Replit system prompt:
+
+"If the user is not on a financial website, the Agent must display a message: 'Please navigate to a stock page on Investing.com so I can begin the audit.' If a popup ad blocks the view, the Agent should attempt to find the 'X' button and click it before snapping."
+
+💡 Why this works
+User Watches: The user clicks "Run Agent" and sees the website tabs clicking themselves. This is the "Watching" part you wanted.
+
+Data Persistence: The images are saved to the browser's memory (chrome.storage).
+
+One-Click Mastery: The "AI Magic" button doesn't have to "guess" what the user wants; it just looks at the 3 saved files and writes the report.
+
+Would you like me to give you the exact "CSS Selectors" (the IDs like #income_statement_tab) so the Replit Agent knows exactly which pixels to click?
