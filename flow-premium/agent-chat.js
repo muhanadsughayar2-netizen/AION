@@ -102,7 +102,7 @@ async function handleSend() {
 async function planWithGemini(userRequest) {
   const apiKey = await getApiKey();
   if (!apiKey) {
-    throw new Error('Please set your Gemini API key in Settings first.');
+    throw new Error('API key not found. Please open SnapToAI popup → Settings → add your Gemini API key, then try again.');
   }
   
   const systemPrompt = `You are an automation planning AI. The user will describe what data they want to gather from websites. Your job is to create a step-by-step plan that a browser automation script can execute.
