@@ -920,36 +920,33 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
       });
       return { success: true, pending: true };
     } catch (popupError) {
-      // Popup isn't open - stitch directly in background and add to queue
-      console.log('[SnapToAI] Popup not open, stitching in background...');
+      // Popup isn't open - use annotate.html with autoSave for high-quality stitching
+      console.log('[SnapToAI] Popup not open, using annotate.html with autoSave...');
       
       try {
-        // For agent/headless capture: stitch images directly and add to queue
-        const stitchedImage = await stitchImagesInBackground(screenshots, viewportWidth, viewportHeight, isAIPlatform);
+        // Store screenshots same way popup does (annotate.html reads from here)
+        await chrome.storage.local.set({ 
+          fullPageScreenshots: screenshots,
+          fullPageViewportWidth: viewportWidth,
+          fullPageViewportHeight: viewportHeight,
+          fullPageIsAIPlatform: isAIPlatform
+        });
         
-        if (stitchedImage) {
-          // Add to queue
-          const currentSnaps = await getSnaps();
-          if (currentSnaps.length < MAX_SNAPS) {
-            currentSnaps.push(stitchedImage);
-            await setSnaps(currentSnaps);
-            
-            // Update badge
-            chrome.action.setBadgeText({ text: currentSnaps.length.toString() });
-            chrome.action.setBadgeBackgroundColor({ color: '#6366f1' });
-            
-            isFullPageCaptureInProgress = false;
-            console.log('[SnapToAI] Full page stitched and added to queue directly');
-            return { success: true };
-          }
-        }
+        // Open annotate.html with autoSave flag - it will stitch and save automatically
+        chrome.windows.create({
+          url: 'annotate.html?mode=fullpage&autoSave=true',
+          type: 'popup',
+          width: 400,
+          height: 300,
+          left: -1000, // Off-screen so user doesn't see it
+          top: -1000
+        });
         
+        return { success: true, pending: true };
+      } catch (autoSaveError) {
+        console.log('[SnapToAI] AutoSave error:', autoSaveError.message);
         isFullPageCaptureInProgress = false;
-        return { success: false, error: 'Failed to stitch images' };
-      } catch (stitchError) {
-        console.log('[SnapToAI] Background stitch error:', stitchError.message);
-        isFullPageCaptureInProgress = false;
-        return { success: false, error: stitchError.message };
+        return { success: false, error: autoSaveError.message };
       }
     }
   } catch (error) {
@@ -962,64 +959,6 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
 // Reset full page capture state (called when stitch completes or fails)
 function resetFullPageCaptureState() {
   isFullPageCaptureInProgress = false;
-}
-
-// Stitch images directly in background (for agent/headless capture)
-async function stitchImagesInBackground(screenshots, viewportWidth, viewportHeight, isAIPlatform = false) {
-  if (!screenshots || screenshots.length === 0) {
-    throw new Error('No screenshots to stitch');
-  }
-  
-  // For single screenshot, return as-is
-  if (screenshots.length === 1) {
-    return screenshots[0];
-  }
-  
-  // Use OffscreenCanvas for stitching in service worker
-  const images = await Promise.all(screenshots.map(dataUrl => {
-    return createImageBitmap(dataURLtoBlob(dataUrl));
-  }));
-  
-  // Calculate overlap (10% for regular, 0% for AI platforms)
-  const overlapPercent = isAIPlatform ? 0 : 0.10;
-  const overlap = Math.round(viewportHeight * overlapPercent * (images[0].height / viewportHeight));
-  
-  // Calculate total height
-  let totalHeight = images[0].height;
-  for (let i = 1; i < images.length; i++) {
-    totalHeight += images[i].height - overlap;
-  }
-  
-  // Create OffscreenCanvas
-  const canvas = new OffscreenCanvas(images[0].width, totalHeight);
-  const ctx = canvas.getContext('2d');
-  
-  // Draw images
-  let y = 0;
-  for (let i = 0; i < images.length; i++) {
-    ctx.drawImage(images[i], 0, y);
-    y += images[i].height - (i < images.length - 1 ? overlap : 0);
-  }
-  
-  // Convert to data URL
-  const blob = await canvas.convertToBlob({ type: 'image/png' });
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.readAsDataURL(blob);
-  });
-}
-
-// Helper: Convert data URL to Blob
-function dataURLtoBlob(dataUrl) {
-  const parts = dataUrl.split(',');
-  const mime = parts[0].match(/:(.*?);/)[1];
-  const binary = atob(parts[1]);
-  const array = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    array[i] = binary.charCodeAt(i);
-  }
-  return new Blob([array], { type: mime });
 }
 
 // ============================================

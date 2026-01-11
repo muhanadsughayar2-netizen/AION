@@ -233,7 +233,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   
   if (isFullPageMode) {
-    document.title = 'Full Page Editor - SnapToAI';
+    const isAutoSave = urlParams.get('autoSave') === 'true';
+    window.isAutoSaveMode = isAutoSave;
+    
+    if (isAutoSave) {
+      // Agent-triggered: hide UI
+      document.body.style.opacity = '0';
+      document.title = 'Processing...';
+    } else {
+      document.title = 'Full Page Editor - SnapToAI';
+    }
     setupFullPageMode();
   }
   
@@ -962,9 +971,21 @@ async function loadFullPageImages() {
       updateStatus(`Page 1 of ${pages.length} - Use ◀ ▶ to navigate`);
     }
     
+    // Auto-save for Agent-triggered captures (skip editor UI)
+    if (window.isAutoSaveMode) {
+      console.log('[SnapToAI] AutoSave mode - saving and closing...');
+      try {
+        await saveFullPageWithAnnotations();
+      } catch (e) {
+        console.log('[SnapToAI] AutoSave error:', e);
+      }
+      window.close();
+    }
+    
   } catch (error) {
     console.error('Failed to load full page images:', error);
     updateStatus('Failed to load pages. Please try again.');
+    if (window.isAutoSaveMode) window.close();
   }
 }
 
