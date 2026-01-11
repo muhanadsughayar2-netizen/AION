@@ -906,22 +906,52 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
       lastCapturedPageTitle: pageTitle || 'Untitled Page'
     });
     
-    // Send to popup for stitching - popup will notify us when done
+    // Try to send to popup for stitching first
     // Pass isAIPlatform flag so stitching uses correct overlap (0% for AI, 10% for regular)
-    chrome.runtime.sendMessage({
-      action: 'stitchFullPage',
-      screenshots,
-      viewportWidth,
-      viewportHeight,
-      isAIPlatform,
-      pageUrl,
-      pageTitle
-    }).catch(() => {
-      // If popup isn't open, reset the flag
-      isFullPageCaptureInProgress = false;
-    });
-    
-    return { success: true, pending: true };
+    try {
+      await chrome.runtime.sendMessage({
+        action: 'stitchFullPage',
+        screenshots,
+        viewportWidth,
+        viewportHeight,
+        isAIPlatform,
+        pageUrl,
+        pageTitle
+      });
+      return { success: true, pending: true };
+    } catch (popupError) {
+      // Popup isn't open - stitch directly in background and add to queue
+      console.log('[SnapToAI] Popup not open, stitching in background...');
+      
+      try {
+        // For agent/headless capture: stitch images directly and add to queue
+        const stitchedImage = await stitchImagesInBackground(screenshots, viewportWidth, viewportHeight, isAIPlatform);
+        
+        if (stitchedImage) {
+          // Add to queue
+          const currentSnaps = await getSnaps();
+          if (currentSnaps.length < MAX_SNAPS) {
+            currentSnaps.push(stitchedImage);
+            await setSnaps(currentSnaps);
+            
+            // Update badge
+            chrome.action.setBadgeText({ text: currentSnaps.length.toString() });
+            chrome.action.setBadgeBackgroundColor({ color: '#6366f1' });
+            
+            isFullPageCaptureInProgress = false;
+            console.log('[SnapToAI] Full page stitched and added to queue directly');
+            return { success: true };
+          }
+        }
+        
+        isFullPageCaptureInProgress = false;
+        return { success: false, error: 'Failed to stitch images' };
+      } catch (stitchError) {
+        console.log('[SnapToAI] Background stitch error:', stitchError.message);
+        isFullPageCaptureInProgress = false;
+        return { success: false, error: stitchError.message };
+      }
+    }
   } catch (error) {
     console.log('[SnapToAI] Finalize:', error.message || error);
     isFullPageCaptureInProgress = false;
