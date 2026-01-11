@@ -40,6 +40,8 @@ Handles infinite-scroll sites with scroll settlement detection. Works on any web
 - User describes tasks in natural language (e.g., "Go to TradingView, search AAPL, screenshot 5min and 15min charts")
 - Gemini AI plans automation steps (navigate, click, type, wait, screenshot)
 - Agent executes steps automatically while user watches
+- **New rule:** For technical indicators (Moving Averages), agent clicks Indicators menu, types name, and selects result
+- **New capability:** Supports "fullPage": true parameter for screenshots (automatic page stitching)
 - Screenshots captured and added to snap queue automatically
 - Progress UI shows live step completion with thumbnails
 - Integrates with existing AI analysis workflow

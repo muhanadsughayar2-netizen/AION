@@ -112,7 +112,7 @@ Available actions:
 - click: Click an element (provide CSS selector or text content)
 - type: Type text into a field (provide selector and text)
 - wait: Wait for something to load (provide seconds or selector)
-- screenshot: Capture a screenshot of the current view
+- screenshot: Capture a screenshot. Set "fullPage": true for a complete page stitch (highly recommended for charts).
 - scroll: Scroll the page (up, down, or to element)
 
 Respond ONLY with a valid JSON object in this exact format:
@@ -123,7 +123,7 @@ Respond ONLY with a valid JSON object in this exact format:
     {"action": "click", "selector": "button.search", "text": "Search", "description": "Click search button"},
     {"action": "type", "selector": "input#search", "text": "AAPL", "description": "Type search term"},
     {"action": "wait", "seconds": 2, "description": "Wait for results"},
-    {"action": "screenshot", "description": "Capture search results"}
+    {"action": "screenshot", "fullPage": true, "description": "Capture results"}
   ],
   "summary": "Brief description of what this automation does"
 }
@@ -132,15 +132,11 @@ Important rules:
 1. Always start with a navigate action to go to the website
 2. Add wait actions after navigation and clicks to let content load
 3. Use specific, common CSS selectors or descriptive text for clicks
-4. End with screenshot actions to capture the desired data
+4. End with screenshot actions to capture the desired data. Use "fullPage": true if the content might be long.
 5. Keep it simple - aim for fewer, reliable steps
 6. For TradingView, Yahoo Finance, CoinGecko - use their public URLs
 7. If the user mentions a stock ticker, search for it on the site
-
-Example URLs:
-- TradingView chart: https://www.tradingview.com/chart/?symbol=AAPL
-- Yahoo Finance: https://finance.yahoo.com/quote/AAPL
-- CoinGecko: https://www.coingecko.com/en/coins/bitcoin`;
+8. For technical indicators (like Moving Averages), you MUST click the "Indicators" or "Studies" menu, type the name, and select the first result.`;
 
   const response = await fetch(`${GEMINI_API_ENDPOINT}?key=${apiKey}`, {
     method: 'POST',
