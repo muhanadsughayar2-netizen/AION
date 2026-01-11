@@ -193,6 +193,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     });
     return true;
+  } else if (request.action === 'agentSnap') {
+    // SNAP triggered by Agent automation - uses same pathway as SNAP button
+    const { tabId } = request;
+    if (!tabId) {
+      sendResponse({ success: false, error: 'No tab ID provided' });
+      return true;
+    }
+    
+    // Must focus BOTH the window AND the tab for captureVisibleTab to work
+    (async () => {
+      try {
+        // Get the tab to find its window
+        const tab = await chrome.tabs.get(tabId);
+        
+        // Focus the window first
+        await chrome.windows.update(tab.windowId, { focused: true });
+        
+        // Then activate the tab within that window
+        await chrome.tabs.update(tabId, { active: true });
+        
+        // Wait for window and tab to be fully focused
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        // Use captureScreenshot with explicit tabId
+        const result = await captureScreenshot(tabId);
+        sendResponse(result);
+      } catch (error) {
+        sendResponse({ success: false, error: error.message || 'Capture failed' });
+      }
+    })();
+    return true;
   } else if (request.action === 'agentCaptureTab') {
     // Capture screenshot for agent automation
     const { tabId } = request;
@@ -224,42 +255,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   } else if (request.action === 'agentFullPageCapture') {
     // Full page capture triggered by Agent automation
+    // Uses the same startFullPageCapture() function but with explicit tabId
     const { tabId } = request;
     if (!tabId) {
       sendResponse({ success: false, error: 'No tab ID provided' });
       return true;
     }
     
-    // Make sure the tab is active
-    chrome.tabs.update(tabId, { active: true }, () => {
-      // Inject content script if needed and start full page capture
-      chrome.tabs.sendMessage(tabId, { action: 'startFullPageCapture' }, (response) => {
-        if (chrome.runtime.lastError) {
-          // Content script might not be injected, try injecting it first
-          chrome.scripting.executeScript({
-            target: { tabId: tabId },
-            files: ['content.js']
-          }, () => {
-            if (chrome.runtime.lastError) {
-              sendResponse({ success: false, error: 'Cannot access this page' });
-            } else {
-              // Retry after injection
-              setTimeout(() => {
-                chrome.tabs.sendMessage(tabId, { action: 'startFullPageCapture' }, (response2) => {
-                  if (chrome.runtime.lastError) {
-                    sendResponse({ success: false, error: 'Full page capture not available' });
-                  } else {
-                    sendResponse({ success: true });
-                  }
-                });
-              }, 500);
-            }
-          });
-        } else {
-          sendResponse({ success: true });
-        }
-      });
-    });
+    // Must focus BOTH the window AND the tab for full page capture to work
+    (async () => {
+      try {
+        // Get the tab to find its window
+        const tab = await chrome.tabs.get(tabId);
+        
+        // Focus the window first
+        await chrome.windows.update(tab.windowId, { focused: true });
+        
+        // Then activate the tab within that window
+        await chrome.tabs.update(tabId, { active: true });
+        
+        // Wait for window and tab to be fully focused
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        // Pass tabId to startFullPageCapture so it uses the correct tab
+        const result = await startFullPageCapture(tabId);
+        sendResponse(result);
+      } catch (error) {
+        sendResponse({ success: false, error: error.message || 'Capture failed' });
+      }
+    })();
     return true;
   } else if (request.action === 'fullPageCaptureStep') {
     // Capture a single step during full page capture
@@ -367,7 +391,8 @@ chrome.runtime.onConnect.addListener((port) => {
 });
 
 // Capture screenshot of active tab
-async function captureScreenshot() {
+// Optional targetTabId parameter for agent automation
+async function captureScreenshot(targetTabId = null) {
   try {
     // Check cooldown to prevent Chrome rate limit
     const now = Date.now();
@@ -382,7 +407,14 @@ async function captureScreenshot() {
       };
     }
     
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    // Get tab - either the provided tabId or the active tab
+    let tab;
+    if (targetTabId) {
+      tab = await chrome.tabs.get(targetTabId);
+    } else {
+      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      tab = activeTab;
+    }
     
     // Update last capture time
     lastCaptureTime = now;
@@ -717,7 +749,8 @@ function isCapturableUrl(url) {
 }
 
 // Start full page capture process
-async function startFullPageCapture() {
+// Optional targetTabId parameter for agent automation
+async function startFullPageCapture(targetTabId = null) {
   try {
     // Check if capture already in progress
     if (isFullPageCaptureInProgress) {
@@ -738,8 +771,14 @@ async function startFullPageCapture() {
       };
     }
     
-    // Get active tab
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    // Get tab - either the provided tabId or the active tab
+    let tab;
+    if (targetTabId) {
+      tab = await chrome.tabs.get(targetTabId);
+    } else {
+      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      tab = activeTab;
+    }
     
     // Check if this is a capturable page
     if (!isCapturableUrl(tab.url)) {

@@ -320,45 +320,51 @@ async function executePlan(plan, retryCount = 0) {
           
         case 'screenshot':
         case 'snap':
-          // SNAP: Capture viewport and add to queue
+          // SNAP: Use SnapToAI's capture pathway (same as pressing SNAP button)
           addMessage(`📸 Triggering SNAP...`, 'system');
           
-          // Make sure the target tab is active before capture
-          await chrome.tabs.update(targetTabId, { active: true });
-          await sleep(1000);
-          
-          // Use agentCaptureTab to capture the tab (this is for agent use)
-          const snapImageData = await new Promise((resolve) => {
+          // Use agentSnap which triggers the proper capture pipeline with window focus
+          const snapResult = await new Promise((resolve) => {
             chrome.runtime.sendMessage({ 
-              action: 'agentCaptureTab',
+              action: 'agentSnap',
               tabId: targetTabId 
-            }, (response) => {
-              resolve(response?.success ? response.dataUrl : null);
-            });
+            }, resolve);
           });
           
-          if (snapImageData) {
-            // Add to snap queue via agentAddSnaps
-            await new Promise((resolve) => {
-              chrome.runtime.sendMessage({ 
-                action: 'agentAddSnaps',
-                images: [snapImageData]
-              }, resolve);
-            });
+          if (snapResult?.success) {
             capturedImages.push('SNAP_CAPTURED');
             addMessage(`✅ SNAP captured! Added to queue.`, 'system');
           } else {
-            addMessage(`⚠️ SNAP failed. The page may have restrictions.`, 'system');
+            // Show specific error (cooldown, queue full, etc.)
+            const errorMsg = snapResult?.error || 'Page may have restrictions';
+            addMessage(`⚠️ SNAP: ${errorMsg}`, 'system');
+            
+            // If cooldown, wait and retry automatically
+            if (errorMsg.includes('wait') && errorMsg.includes('second')) {
+              const waitMatch = errorMsg.match(/(\d+) second/);
+              if (waitMatch) {
+                const waitSecs = parseInt(waitMatch[1]) + 1;
+                addMessage(`⏳ Waiting ${waitSecs}s...`, 'system');
+                await sleep(waitSecs * 1000);
+                // Retry once
+                const retryResult = await new Promise((resolve) => {
+                  chrome.runtime.sendMessage({ 
+                    action: 'agentSnap',
+                    tabId: targetTabId 
+                  }, resolve);
+                });
+                if (retryResult?.success) {
+                  capturedImages.push('SNAP_CAPTURED');
+                  addMessage(`✅ SNAP captured on retry!`, 'system');
+                }
+              }
+            }
           }
           break;
           
         case 'fullpage':
           // FULL PAGE: Use the agent full page capture
           addMessage(`📜 Triggering FULL PAGE capture...`, 'system');
-          
-          // Make sure the target tab is active
-          await chrome.tabs.update(targetTabId, { active: true });
-          await sleep(800);
           
           // Get current snap count to detect when full page is added
           const beforeCount = await new Promise((resolve) => {
@@ -367,7 +373,7 @@ async function executePlan(plan, retryCount = 0) {
             });
           });
           
-          // Trigger full page capture for the specific tab
+          // Trigger full page capture for the specific tab (includes window focusing)
           const fullpageResult = await new Promise((resolve) => {
             chrome.runtime.sendMessage({ 
               action: 'agentFullPageCapture',
@@ -378,9 +384,9 @@ async function executePlan(plan, retryCount = 0) {
           if (fullpageResult?.success) {
             addMessage(`⏳ Full page capture in progress... please wait while page scrolls...`, 'system');
             
-            // Poll for completion (max 60 seconds)
+            // Poll for completion (max 90 seconds for long pages)
             let captured = false;
-            for (let i = 0; i < 60 && !captured; i++) {
+            for (let i = 0; i < 90 && !captured; i++) {
               await sleep(1000);
               const currentCount = await new Promise((resolve) => {
                 chrome.storage.session.get(['snaps'], (result) => {
@@ -399,7 +405,9 @@ async function executePlan(plan, retryCount = 0) {
               addMessage(`⚠️ FULL PAGE timed out. Try using SNAP instead.`, 'system');
             }
           } else {
-            addMessage(`⚠️ FULL PAGE failed: ${fullpageResult?.error || 'Not available on this page'}`, 'system');
+            // Show specific error (queue full, already in progress, etc.)
+            const errorMsg = fullpageResult?.error || 'Not available on this page';
+            addMessage(`⚠️ FULL PAGE: ${errorMsg}`, 'system');
           }
           break;
       }
