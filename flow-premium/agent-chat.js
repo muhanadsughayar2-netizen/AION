@@ -267,7 +267,22 @@ async function executePlan(plan) {
           break;
           
         case 'screenshot':
-          const imageData = await captureTab(targetTabId);
+          let imageData;
+          if (step.fullPage) {
+            // Trigger full page capture via background script
+            imageData = await new Promise((resolve) => {
+              chrome.runtime.sendMessage({ 
+                action: 'startFullPageCapture',
+                tabId: targetTabId 
+              }, (response) => {
+                // Background script adds to queue directly, but we need preview
+                resolve(response?.dataUrl || null);
+              });
+            });
+          } else {
+            imageData = await captureTab(targetTabId);
+          }
+          
           if (imageData) {
             capturedImages.push(imageData);
             addCaptureThumb(progressEl, imageData);
