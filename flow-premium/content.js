@@ -3735,33 +3735,75 @@
     
     switch (action) {
       case 'click': {
-        // Find element by selector or text content
+        // SMART SEARCH: Find element by multiple strategies
         let element = null;
+        const attemptedMethods = [];
         
+        // Plan A: Try the precise CSS Selector
         if (params.selector) {
+          attemptedMethods.push(`selector: ${params.selector}`);
           element = document.querySelector(params.selector);
         }
         
-        // Fallback: find by text content
+        // Plan B: Find by EXACT text match (for buttons like "1y", "Max", "Buy")
         if (!element && params.text) {
-          const allClickable = document.querySelectorAll('button, a, [role="button"], [role="tab"], [role="menuitem"], .btn, input[type="button"], input[type="submit"]');
+          attemptedMethods.push(`exact text: "${params.text}"`);
+          const allClickable = document.querySelectorAll('button, a, span, div[role="button"], [role="tab"], [role="menuitem"], .btn, input[type="button"], input[type="submit"]');
           for (const el of allClickable) {
-            if (el.textContent.trim().toLowerCase().includes(params.text.toLowerCase())) {
+            const elText = el.innerText?.trim().toLowerCase() || el.textContent?.trim().toLowerCase();
+            if (elText === params.text.toLowerCase()) {
               element = el;
+              showAgentBanner(`Found by exact text: "${params.text}"`);
               break;
             }
           }
         }
         
-        // Fallback: find any element containing text
+        // Plan C: Find by partial text content (broader search)
         if (!element && params.text) {
+          attemptedMethods.push(`partial text: "${params.text}"`);
+          const allClickable = document.querySelectorAll('button, a, span, div[role="button"], [role="tab"], [role="menuitem"], .btn, input[type="button"], input[type="submit"]');
+          for (const el of allClickable) {
+            if (el.textContent.trim().toLowerCase().includes(params.text.toLowerCase())) {
+              element = el;
+              showAgentBanner(`Found by partial text: "${params.text}"`);
+              break;
+            }
+          }
+        }
+        
+        // Plan D: XPath fallback for deeply nested text
+        if (!element && params.text) {
+          attemptedMethods.push('xpath search');
           const xpath = `//*[contains(text(), '${params.text}')]`;
           const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
           element = result.singleNodeValue;
+          if (element) showAgentBanner(`Found by xpath: "${params.text}"`);
+        }
+        
+        // Plan E: Try using description text as button label
+        if (!element && params.description) {
+          attemptedMethods.push(`description text`);
+          // Extract potential button text from description (e.g., "Click the 1y button" -> "1y")
+          const descWords = params.description.match(/["']([^"']+)["']|(\b\d+[ymdw]\b)|(\bMax\b|\bMin\b)/gi);
+          if (descWords) {
+            for (const word of descWords) {
+              const cleanWord = word.replace(/["']/g, '').trim();
+              const allClickable = document.querySelectorAll('button, a, span, div[role="button"]');
+              for (const el of allClickable) {
+                if (el.innerText?.trim().toLowerCase() === cleanWord.toLowerCase()) {
+                  element = el;
+                  showAgentBanner(`Found "${cleanWord}" from description`);
+                  break;
+                }
+              }
+              if (element) break;
+            }
+          }
         }
         
         if (!element) {
-          throw new Error(`Element not found: ${params.selector || params.text}`);
+          throw new Error(`Element not found. Tried: ${attemptedMethods.join(', ')}. Try describing the button text exactly.`);
         }
         
         // Scroll into view first

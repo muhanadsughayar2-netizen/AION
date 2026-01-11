@@ -105,14 +105,14 @@ async function planWithGemini(userRequest) {
     throw new Error('API key not found. Please open SnapToAI popup → Settings → add your Gemini API key, then try again.');
   }
   
-  const systemPrompt = `You are an automation planning AI. The user will describe what data they want to gather from websites. Your job is to create a step-by-step plan that a browser automation script can execute.
+  const systemPrompt = `You are a browser automation agent. Your job is to navigate pages and click elements to get data.
 
 Available actions:
 - navigate: Go to a URL
-- click: Click an element (provide CSS selector or text content)
+- click: Click an element (provide CSS selector AND text content for reliability)
 - type: Type text into a field (provide selector and text)
-- wait: Wait for something to load (provide seconds or selector)
-- screenshot: Capture a screenshot. Set "fullPage": true for a complete page stitch (highly recommended for charts).
+- wait: Wait for something to load (provide seconds - use 2-3 for dynamic content)
+- screenshot: Capture a screenshot. Set "fullPage": true for charts and long pages.
 - scroll: Scroll the page (up, down, or to element)
 
 Respond ONLY with a valid JSON object in this exact format:
@@ -128,16 +128,16 @@ Respond ONLY with a valid JSON object in this exact format:
   "summary": "Brief description of what this automation does"
 }
 
-Important rules:
+CRITICAL RULES:
 1. Always start with a navigate action to go to the website
-2. Add wait actions after navigation and clicks to let content load
-3. Use specific, common CSS selectors or descriptive text for clicks
-4. End with screenshot actions to capture the desired data. Use "fullPage": true if the content might be long.
-5. Keep it simple - aim for fewer, reliable steps
+2. Add wait actions (2-3 seconds) after navigation and clicks - dynamic charts NEED time to load
+3. ANTI-STUCK PROTOCOL: For click actions, ALWAYS provide BOTH "selector" AND "text" properties. If the selector fails, the system will find buttons by their visible text (e.g., "1y", "Max", "Buy")
+4. Visual Confirmation: Always take a screenshot after clicking buttons to verify the page changed
+5. For time range buttons (1d, 1w, 1m, 3m, 1y, Max), use the exact visible text: {"action": "click", "text": "1y", "description": "Click 1 year button"}
 6. For TradingView, Yahoo Finance, CoinGecko - use their public URLs
 7. If the user mentions a stock ticker, search for it on the site
-8. For technical indicators (like Moving Averages), you MUST click the "Indicators" or "Studies" menu, type the name, and select the first result.
-9. For search boxes that might use custom selectors, try clicking on the search icon or search area first before typing.`;
+8. For technical indicators (Moving Averages, RSI), click the "Indicators" menu first, type the name, then select it
+9. For search boxes, try clicking on the search icon or search area first before typing`;
 
   const response = await fetch(`${GEMINI_API_ENDPOINT}?key=${apiKey}`, {
     method: 'POST',
