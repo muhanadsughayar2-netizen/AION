@@ -105,39 +105,35 @@ async function planWithGemini(userRequest) {
     throw new Error('API key not found. Please open SnapToAI popup → Settings → add your Gemini API key, then try again.');
   }
   
-  const systemPrompt = `You are a browser automation agent. Your job is to navigate pages and click elements to get data.
+  const systemPrompt = `You are a simple data gathering assistant. Your job is to navigate to pages and trigger SnapToAI's capture buttons.
 
 Available actions:
 - navigate: Go to a URL
-- click: Click an element (provide CSS selector AND text content for reliability)
+- click: Click an element on the page (provide text to find)
 - type: Type text into a field (provide selector and text)
-- wait: Wait for something to load (provide seconds - use 2-3 for dynamic content)
-- screenshot: Capture a screenshot of the current viewport
-- scroll: Scroll the page (up, down, or to element)
+- wait: Wait for page to load (provide seconds)
+- snap: Take a viewport screenshot using SnapToAI's SNAP button
+- fullpage: Take a full page screenshot using SnapToAI's FULL PAGE button
+- scroll: Scroll the page (up, down, top, bottom)
 
 Respond ONLY with a valid JSON object in this exact format:
 {
   "steps": [
-    {"action": "navigate", "url": "https://example.com", "description": "Go to Example website"},
-    {"action": "wait", "seconds": 2, "description": "Wait for page to load"},
-    {"action": "click", "selector": "button.search", "text": "Search", "description": "Click search button"},
-    {"action": "type", "selector": "input#search", "text": "AAPL", "description": "Type search term"},
-    {"action": "wait", "seconds": 2, "description": "Wait for results"},
-    {"action": "screenshot", "description": "Capture the results"}
+    {"action": "navigate", "url": "https://example.com", "description": "Go to website"},
+    {"action": "wait", "seconds": 3, "description": "Wait for page to load"},
+    {"action": "snap", "description": "Take a screenshot"}
   ],
-  "summary": "Brief description of what this automation does"
+  "summary": "Brief description of what this does"
 }
 
-CRITICAL RULES:
-1. Always start with a navigate action to go to the website
-2. Add wait actions (2-3 seconds) after navigation and clicks - dynamic charts NEED time to load
-3. ANTI-STUCK PROTOCOL: For click actions, ALWAYS provide BOTH "selector" AND "text" properties. If the selector fails, the system will find buttons by their visible text (e.g., "1y", "Max", "Buy")
-4. Visual Confirmation: Always take a screenshot after clicking buttons to verify the page changed
-5. For time range buttons (1d, 1w, 1m, 3m, 1y, Max), use the exact visible text: {"action": "click", "text": "1y", "description": "Click 1 year button"}
-6. For TradingView, Yahoo Finance, CoinGecko - use their public URLs
-7. If the user mentions a stock ticker, search for it on the site
-8. For technical indicators (Moving Averages, RSI), click the "Indicators" menu first, type the name, then select it
-9. For search boxes, try clicking on the search icon or search area first before typing`;
+RULES:
+1. Always start with navigate to go to the URL
+2. Always add a wait (2-3 seconds) after navigation for page to load
+3. Use "snap" for quick viewport captures, "fullpage" for entire page captures
+4. If user says "screenshot" or "snap", use the snap action
+5. If user says "full page" or "capture whole page", use the fullpage action
+6. For clicking buttons like "1y", "Max", use: {"action": "click", "text": "1y"}
+7. Keep it simple - navigate, wait, capture. That's the core workflow.`;
 
   const response = await fetch(`${GEMINI_API_ENDPOINT}?key=${apiKey}`, {
     method: 'POST',
@@ -323,21 +319,87 @@ async function executePlan(plan, retryCount = 0) {
           break;
           
         case 'screenshot':
-          addMessage(`📸 Taking screenshot...`, 'system');
+        case 'snap':
+          // SNAP: Capture viewport and add to queue
+          addMessage(`📸 Triggering SNAP...`, 'system');
           
-          // Ensure tab is active and focused before capture
+          // Make sure the target tab is active before capture
           await chrome.tabs.update(targetTabId, { active: true });
-          await sleep(1000); // Wait for tab to be fully rendered
+          await sleep(1000);
           
-          // Capture the visible viewport
-          const imageData = await captureTab(targetTabId);
+          // Use agentCaptureTab to capture the tab (this is for agent use)
+          const snapImageData = await new Promise((resolve) => {
+            chrome.runtime.sendMessage({ 
+              action: 'agentCaptureTab',
+              tabId: targetTabId 
+            }, (response) => {
+              resolve(response?.success ? response.dataUrl : null);
+            });
+          });
           
-          if (imageData) {
-            capturedImages.push(imageData);
-            addCaptureThumb(progressEl, imageData);
-            addMessage(`✅ Screenshot captured!`, 'system');
+          if (snapImageData) {
+            // Add to snap queue via agentAddSnaps
+            await new Promise((resolve) => {
+              chrome.runtime.sendMessage({ 
+                action: 'agentAddSnaps',
+                images: [snapImageData]
+              }, resolve);
+            });
+            capturedImages.push('SNAP_CAPTURED');
+            addMessage(`✅ SNAP captured! Added to queue.`, 'system');
           } else {
-            addMessage(`⚠️ Could not capture screenshot. The page may have restrictions.`, 'system');
+            addMessage(`⚠️ SNAP failed. The page may have restrictions.`, 'system');
+          }
+          break;
+          
+        case 'fullpage':
+          // FULL PAGE: Use the agent full page capture
+          addMessage(`📜 Triggering FULL PAGE capture...`, 'system');
+          
+          // Make sure the target tab is active
+          await chrome.tabs.update(targetTabId, { active: true });
+          await sleep(800);
+          
+          // Get current snap count to detect when full page is added
+          const beforeCount = await new Promise((resolve) => {
+            chrome.storage.session.get(['snaps'], (result) => {
+              resolve((result.snaps || []).length);
+            });
+          });
+          
+          // Trigger full page capture for the specific tab
+          const fullpageResult = await new Promise((resolve) => {
+            chrome.runtime.sendMessage({ 
+              action: 'agentFullPageCapture',
+              tabId: targetTabId 
+            }, resolve);
+          });
+          
+          if (fullpageResult?.success) {
+            addMessage(`⏳ Full page capture in progress... please wait while page scrolls...`, 'system');
+            
+            // Poll for completion (max 60 seconds)
+            let captured = false;
+            for (let i = 0; i < 60 && !captured; i++) {
+              await sleep(1000);
+              const currentCount = await new Promise((resolve) => {
+                chrome.storage.session.get(['snaps'], (result) => {
+                  resolve((result.snaps || []).length);
+                });
+              });
+              if (currentCount > beforeCount) {
+                captured = true;
+              }
+            }
+            
+            if (captured) {
+              capturedImages.push('FULLPAGE_CAPTURED');
+              addMessage(`✅ FULL PAGE captured! Added to queue.`, 'system');
+            } else {
+              addMessage(`⚠️ FULL PAGE timed out. Try using SNAP instead.`, 'system');
+            }
+          } else {
+            addMessage(`⚠️ FULL PAGE failed: ${fullpageResult?.error || 'Not available on this page'}`, 'system');
           }
           break;
       }
@@ -356,13 +418,16 @@ async function executePlan(plan, retryCount = 0) {
     // Success celebration with confetti!
     celebrateSuccess();
     
-    addMessage(`🎉 Done! Captured ${capturedImages.length} screenshot${capturedImages.length !== 1 ? 's' : ''}. Your snaps are ready for AI analysis!`, 'agent');
+    // Count captures (they're already in the queue via SnapToAI buttons)
+    const snapCount = capturedImages.filter(img => img === 'SNAP_CAPTURED').length;
+    const fullpageCount = capturedImages.filter(img => img === 'FULLPAGE_CAPTURED').length;
+    const totalCaptures = snapCount + fullpageCount;
     
-    // Add screenshots to snap queue
-    if (capturedImages.length > 0) {
-      await addToSnapQueue(capturedImages);
+    if (totalCaptures > 0) {
+      addMessage(`🎉 Done! Captured ${totalCaptures} screenshot${totalCaptures !== 1 ? 's' : ''} (${snapCount} SNAP, ${fullpageCount} FULL PAGE). Check your SnapToAI queue!`, 'agent');
       addActionButtons();
-      addMessage(`💡 Tip: Need full page capture? Use the FULL PAGE button in the extension popup.`, 'system');
+    } else {
+      addMessage(`✅ Automation complete! No captures were requested.`, 'agent');
     }
     
   } catch (error) {

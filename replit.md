@@ -35,24 +35,20 @@ The extension supports capturing, annotating, organizing (reordering, multi-sele
 6. Saves the stitched image to the queue
 Handles infinite-scroll sites with scroll settlement detection. Works on any web page regardless of length.
 
-**Agent Chat Feature (January 2026):** Autonomous web automation agent:
+**Agent Chat Feature (January 2026):** Simple data gathering automation:
 - New "Agent" button in popup (purple orb) opens Agent Chat interface
-- User describes tasks in natural language (e.g., "Go to TradingView, search AAPL, screenshot 5min and 15min charts")
-- Gemini AI plans automation steps (navigate, click, type, wait, screenshot)
-- Agent executes steps automatically while user watches
-- **Smart Search (Anti-Stuck Protocol):** 5-level fallback for finding elements:
-  - Plan A: CSS Selector
-  - Plan B: Exact text match (for "1y", "Max", "Buy" buttons)
-  - Plan C: Partial text match
-  - Plan D: XPath search
-  - Plan E: Extract button text from description
+- User describes tasks in natural language (e.g., "Go to https://example.com and snap it")
+- Gemini AI plans simple automation steps (navigate, wait, snap, fullpage)
+- **Core actions:**
+  - `navigate` - Go to any URL
+  - `wait` - Wait for page to load
+  - `snap` - Triggers SnapToAI's SNAP button (viewport capture)
+  - `fullpage` - Triggers SnapToAI's FULL PAGE button (entire page capture)
+  - `click` - Click buttons by text (e.g., "1y", "Max")
+- **Smart Search:** 5-level fallback for clicking elements (CSS, exact text, partial text, XPath, description)
 - **AI-powered retry:** When a step fails, asks Gemini for an alternative approach (up to 2 retries)
-- **Live feedback:** Shows real-time status messages during automation ("Step 1: Navigating to Amazon...")
-- **Technical indicators rule:** For Moving Averages/RSI, agent clicks Indicators menu, types name, selects result
-- **Viewport screenshots:** Agent captures visible viewport; for full page, use the FULL PAGE button manually
-- Screenshots captured and added to snap queue automatically
-- Progress UI shows live step completion with thumbnails
-- Integrates with existing AI analysis workflow
+- **Live feedback:** Shows real-time status messages during automation
+- Screenshots are added to snap queue automatically via the existing SnapToAI capture system
 - Files: agent-chat.html, agent-chat.js, content.js (handleAgentAction)
 
 **Subscription System (January 2026):** Client-side subscription with Gumroad integration:

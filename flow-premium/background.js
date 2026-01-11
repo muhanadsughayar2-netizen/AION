@@ -222,6 +222,45 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success: true, count: newSnaps.length });
     });
     return true;
+  } else if (request.action === 'agentFullPageCapture') {
+    // Full page capture triggered by Agent automation
+    const { tabId } = request;
+    if (!tabId) {
+      sendResponse({ success: false, error: 'No tab ID provided' });
+      return true;
+    }
+    
+    // Make sure the tab is active
+    chrome.tabs.update(tabId, { active: true }, () => {
+      // Inject content script if needed and start full page capture
+      chrome.tabs.sendMessage(tabId, { action: 'startFullPageCapture' }, (response) => {
+        if (chrome.runtime.lastError) {
+          // Content script might not be injected, try injecting it first
+          chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            files: ['content.js']
+          }, () => {
+            if (chrome.runtime.lastError) {
+              sendResponse({ success: false, error: 'Cannot access this page' });
+            } else {
+              // Retry after injection
+              setTimeout(() => {
+                chrome.tabs.sendMessage(tabId, { action: 'startFullPageCapture' }, (response2) => {
+                  if (chrome.runtime.lastError) {
+                    sendResponse({ success: false, error: 'Full page capture not available' });
+                  } else {
+                    sendResponse({ success: true });
+                  }
+                });
+              }, 500);
+            }
+          });
+        } else {
+          sendResponse({ success: true });
+        }
+      });
+    });
+    return true;
   } else if (request.action === 'fullPageCaptureStep') {
     // Capture a single step during full page capture
     captureFullPageStep(request.tabId).then(sendResponse);
