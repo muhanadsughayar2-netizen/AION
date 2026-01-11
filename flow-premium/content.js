@@ -3792,24 +3792,63 @@
       
       case 'type': {
         let element = null;
+        const attemptedSelectors = [];
         
+        // Strategy 1: Try provided selector
         if (params.selector) {
+          attemptedSelectors.push(params.selector);
           element = document.querySelector(params.selector);
         }
         
-        // Fallback: find visible input/textarea
+        // Strategy 2: Common search box selectors for popular sites
         if (!element) {
+          const commonSearchSelectors = [
+            'input[name="q"]', 'input[name="search"]', 'input[name="field-keywords"]',
+            'input[type="search"]', 'input[placeholder*="Search"]', 'input[placeholder*="search"]',
+            'input[aria-label*="Search"]', 'input[aria-label*="search"]',
+            '#search-input', '#searchInput', '#search_input', '.search-input',
+            'input#twotabsearchtextbox', 'input.nav-input', // Amazon
+            'input[data-testid="search-input"]', 'input[data-testid="SearchBox"]'
+          ];
+          for (const sel of commonSearchSelectors) {
+            attemptedSelectors.push(sel);
+            const found = document.querySelector(sel);
+            if (found && found.offsetParent !== null) {
+              element = found;
+              showAgentBanner(`Found search box using: ${sel}`);
+              break;
+            }
+          }
+        }
+        
+        // Strategy 3: Find by placeholder text
+        if (!element && params.placeholder) {
+          attemptedSelectors.push(`placeholder:${params.placeholder}`);
+          const inputs = document.querySelectorAll('input, textarea');
+          for (const inp of inputs) {
+            if (inp.placeholder && inp.placeholder.toLowerCase().includes(params.placeholder.toLowerCase())) {
+              element = inp;
+              showAgentBanner(`Found by placeholder: "${inp.placeholder}"`);
+              break;
+            }
+          }
+        }
+        
+        // Strategy 4: Find first visible search/text input
+        if (!element) {
+          attemptedSelectors.push('visible text/search input');
           const inputs = document.querySelectorAll('input[type="text"], input[type="search"], input:not([type]), textarea, [contenteditable="true"]');
           for (const inp of inputs) {
-            if (inp.offsetParent !== null) { // visible
+            if (inp.offsetParent !== null && !inp.disabled && !inp.readOnly) {
               element = inp;
+              showAgentBanner('Using first visible input field');
               break;
             }
           }
         }
         
         if (!element) {
-          throw new Error(`Input not found: ${params.selector}`);
+          throw new Error(`Input not found. Tried: ${attemptedSelectors.slice(0, 5).join(', ')}. Page may have different structure.`);
         }
         
         // Scroll into view

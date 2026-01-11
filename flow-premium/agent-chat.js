@@ -136,7 +136,8 @@ Important rules:
 5. Keep it simple - aim for fewer, reliable steps
 6. For TradingView, Yahoo Finance, CoinGecko - use their public URLs
 7. If the user mentions a stock ticker, search for it on the site
-8. For technical indicators (like Moving Averages), you MUST click the "Indicators" or "Studies" menu, type the name, and select the first result.`;
+8. For technical indicators (like Moving Averages), you MUST click the "Indicators" or "Studies" menu, type the name, and select the first result.
+9. For search boxes that might use custom selectors, try clicking on the search icon or search area first before typing.`;
 
   const response = await fetch(`${GEMINI_API_ENDPOINT}?key=${apiKey}`, {
     method: 'POST',
@@ -205,7 +206,62 @@ Important rules:
   return parsed;
 }
 
-async function executePlan(plan) {
+// Ask Gemini for an alternative approach when a step fails
+async function askGeminiForFix(originalPlan, errorMessage, tabId) {
+  const apiKey = await getApiKey();
+  if (!apiKey) return null;
+  
+  addMessage('🔍 Analyzing what went wrong...', 'system');
+  
+  const retryPrompt = `The automation failed with this error: "${errorMessage}"
+
+Original plan was:
+${JSON.stringify(originalPlan, null, 2)}
+
+Please provide an ALTERNATIVE plan that avoids this error. Common fixes:
+- For "Input not found": Use different selectors or try clicking the search icon first
+- For "Element not found": Use text-based matching instead of CSS selectors
+- Try simpler, more universal approaches
+
+Respond with ONLY a valid JSON object with the same format (steps array + summary).
+Focus on completing the user's original goal with a different approach.`;
+
+  try {
+    const response = await fetch(`${GEMINI_API_ENDPOINT}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: retryPrompt }]
+        }],
+        generationConfig: {
+          temperature: 0.5,
+          maxOutputTokens: 2000
+        }
+      })
+    });
+    
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    // Extract JSON
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed.steps && parsed.steps.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Retry prompt failed:', e);
+  }
+  
+  return null;
+}
+
+async function executePlan(plan, retryCount = 0) {
   isAgentRunning = true;
   currentSteps = plan.steps;
   capturedImages = [];
@@ -217,6 +273,7 @@ async function executePlan(plan) {
   chatContainer.scrollTop = chatContainer.scrollHeight;
   
   let targetTabId = null;
+  const MAX_RETRIES = 2;
   
   try {
     for (let i = 0; i < plan.steps.length; i++) {
@@ -226,6 +283,9 @@ async function executePlan(plan) {
       
       const step = plan.steps[i];
       updateStepStatus(progressEl, i, 'active');
+      
+      // Show what we're doing
+      addMessage(`🔄 Step ${i + 1}: ${step.description}...`, 'system');
       
       switch (step.action) {
         case 'navigate':
@@ -323,7 +383,27 @@ async function executePlan(plan) {
       activeStep.querySelector('.step-icon').textContent = '✗';
     }
     
-    throw error;
+    // Try to recover with AI retry
+    if (retryCount < MAX_RETRIES && !error.message.includes('stopped by user')) {
+      addMessage(`⚠️ Step failed: ${error.message}`, 'system');
+      addMessage(`🤖 Let me try a different approach...`, 'agent');
+      
+      try {
+        const fixedPlan = await askGeminiForFix(plan, error.message, targetTabId);
+        if (fixedPlan && fixedPlan.steps && fixedPlan.steps.length > 0) {
+          addMessage(`💡 Found alternative: ${fixedPlan.summary || 'Retrying with different selectors'}`, 'agent');
+          isAgentRunning = false;
+          abortController = null;
+          return executePlan(fixedPlan, retryCount + 1);
+        }
+      } catch (retryError) {
+        console.error('Retry failed:', retryError);
+      }
+    }
+    
+    // If we get here, we've exhausted retries
+    addMessage(`❌ Automation failed: ${error.message}`, 'error');
+    addMessage(`💬 Tip: Try being more specific, like "search for offers on Amazon.com" or describe what you see on screen.`, 'agent');
   } finally {
     isAgentRunning = false;
     abortController = null;
