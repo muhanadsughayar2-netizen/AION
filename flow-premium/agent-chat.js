@@ -112,7 +112,7 @@ Available actions:
 - click: Click an element (provide CSS selector AND text content for reliability)
 - type: Type text into a field (provide selector and text)
 - wait: Wait for something to load (provide seconds - use 2-3 for dynamic content)
-- screenshot: Capture a screenshot. Set "fullPage": true for charts and long pages.
+- screenshot: Capture a screenshot of the current viewport
 - scroll: Scroll the page (up, down, or to element)
 
 Respond ONLY with a valid JSON object in this exact format:
@@ -123,7 +123,7 @@ Respond ONLY with a valid JSON object in this exact format:
     {"action": "click", "selector": "button.search", "text": "Search", "description": "Click search button"},
     {"action": "type", "selector": "input#search", "text": "AAPL", "description": "Type search term"},
     {"action": "wait", "seconds": 2, "description": "Wait for results"},
-    {"action": "screenshot", "fullPage": true, "description": "Capture results"}
+    {"action": "screenshot", "description": "Capture the results"}
   ],
   "summary": "Brief description of what this automation does"
 }
@@ -323,25 +323,21 @@ async function executePlan(plan, retryCount = 0) {
           break;
           
         case 'screenshot':
-          let imageData;
-          if (step.fullPage) {
-            // Trigger full page capture via background script
-            imageData = await new Promise((resolve) => {
-              chrome.runtime.sendMessage({ 
-                action: 'startFullPageCapture',
-                tabId: targetTabId 
-              }, (response) => {
-                // Background script adds to queue directly, but we need preview
-                resolve(response?.dataUrl || null);
-              });
-            });
-          } else {
-            imageData = await captureTab(targetTabId);
-          }
+          addMessage(`📸 Taking screenshot...`, 'system');
+          
+          // Ensure tab is active and focused before capture
+          await chrome.tabs.update(targetTabId, { active: true });
+          await sleep(1000); // Wait for tab to be fully rendered
+          
+          // Capture the visible viewport
+          const imageData = await captureTab(targetTabId);
           
           if (imageData) {
             capturedImages.push(imageData);
             addCaptureThumb(progressEl, imageData);
+            addMessage(`✅ Screenshot captured!`, 'system');
+          } else {
+            addMessage(`⚠️ Could not capture screenshot. The page may have restrictions.`, 'system');
           }
           break;
       }
@@ -359,12 +355,14 @@ async function executePlan(plan, retryCount = 0) {
     
     // Success celebration with confetti!
     celebrateSuccess();
+    
     addMessage(`🎉 Done! Captured ${capturedImages.length} screenshot${capturedImages.length !== 1 ? 's' : ''}. Your snaps are ready for AI analysis!`, 'agent');
     
-    // Add captured images to snap queue
+    // Add screenshots to snap queue
     if (capturedImages.length > 0) {
       await addToSnapQueue(capturedImages);
       addActionButtons();
+      addMessage(`💡 Tip: Need full page capture? Use the FULL PAGE button in the extension popup.`, 'system');
     }
     
   } catch (error) {
@@ -624,6 +622,7 @@ async function getApiKey() {
     });
   });
 }
+
 
 // UI helpers
 function addMessage(text, type) {
