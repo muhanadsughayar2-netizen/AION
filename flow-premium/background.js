@@ -964,6 +964,64 @@ function resetFullPageCaptureState() {
   isFullPageCaptureInProgress = false;
 }
 
+// Stitch images directly in background (for agent/headless capture)
+async function stitchImagesInBackground(screenshots, viewportWidth, viewportHeight, isAIPlatform = false) {
+  if (!screenshots || screenshots.length === 0) {
+    throw new Error('No screenshots to stitch');
+  }
+  
+  // For single screenshot, return as-is
+  if (screenshots.length === 1) {
+    return screenshots[0];
+  }
+  
+  // Use OffscreenCanvas for stitching in service worker
+  const images = await Promise.all(screenshots.map(dataUrl => {
+    return createImageBitmap(dataURLtoBlob(dataUrl));
+  }));
+  
+  // Calculate overlap (10% for regular, 0% for AI platforms)
+  const overlapPercent = isAIPlatform ? 0 : 0.10;
+  const overlap = Math.round(viewportHeight * overlapPercent * (images[0].height / viewportHeight));
+  
+  // Calculate total height
+  let totalHeight = images[0].height;
+  for (let i = 1; i < images.length; i++) {
+    totalHeight += images[i].height - overlap;
+  }
+  
+  // Create OffscreenCanvas
+  const canvas = new OffscreenCanvas(images[0].width, totalHeight);
+  const ctx = canvas.getContext('2d');
+  
+  // Draw images
+  let y = 0;
+  for (let i = 0; i < images.length; i++) {
+    ctx.drawImage(images[i], 0, y);
+    y += images[i].height - (i < images.length - 1 ? overlap : 0);
+  }
+  
+  // Convert to data URL
+  const blob = await canvas.convertToBlob({ type: 'image/png' });
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Helper: Convert data URL to Blob
+function dataURLtoBlob(dataUrl) {
+  const parts = dataUrl.split(',');
+  const mime = parts[0].match(/:(.*?);/)[1];
+  const binary = atob(parts[1]);
+  const array = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    array[i] = binary.charCodeAt(i);
+  }
+  return new Blob([array], { type: mime });
+}
+
 // ============================================
 // DOWNLOAD FUNCTIONS
 // ============================================
