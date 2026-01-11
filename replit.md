@@ -38,18 +38,19 @@ Handles infinite-scroll sites with scroll settlement detection. Works on any web
 **Agent Chat Feature (January 2026):** Simple data gathering automation:
 - New "Agent" button in popup (purple orb) opens Agent Chat interface
 - User describes tasks in natural language (e.g., "Go to https://example.com and snap it")
-- Gemini AI plans simple automation steps (navigate, wait, snap, fullpage)
+- Gemini AI plans simple automation steps (navigate, wait, snap, fullpage, click)
 - **Core actions:**
   - `navigate` - Go to any URL
-  - `wait` - Wait for page to load
-  - `snap` - Triggers SnapToAI's SNAP button (viewport capture)
-  - `fullpage` - Triggers SnapToAI's FULL PAGE button (entire page capture)
+  - `wait` - Wait for page to load  
+  - `snap` - Capture viewport screenshot (focuses window, captures, adds to queue)
+  - `fullpage` - Attempt full page capture (may have limitations in automation mode)
   - `click` - Click buttons by text (e.g., "1y", "Max")
 - **Smart Search:** 5-level fallback for clicking elements (CSS, exact text, partial text, XPath, description)
 - **AI-powered retry:** When a step fails, asks Gemini for an alternative approach (up to 2 retries)
 - **Live feedback:** Shows real-time status messages during automation
-- Screenshots are added to snap queue automatically via the existing SnapToAI capture system
-- Files: agent-chat.html, agent-chat.js, content.js (handleAgentAction)
+- **Queue management:** Checks for queue limits (max 10) before capturing
+- **Known limitations:** Full page capture may timeout in agent mode - use popup FULL PAGE button for guaranteed results
+- Files: agent-chat.html, agent-chat.js, background.js (agentCaptureTab, agentAddSnaps, agentFullPageCapture), content.js
 
 **Subscription System (January 2026):** Client-side subscription with Gumroad integration:
 - 30-day free trial starting on install (tracked in chrome.storage.local)

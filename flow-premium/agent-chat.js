@@ -320,45 +320,47 @@ async function executePlan(plan, retryCount = 0) {
           
         case 'screenshot':
         case 'snap':
-          // SNAP: Use SnapToAI's capture pathway (same as pressing SNAP button)
+          // SNAP: Capture viewport and add to queue
           addMessage(`📸 Triggering SNAP...`, 'system');
           
-          // Use agentSnap which triggers the proper capture pipeline with window focus
-          const snapResult = await new Promise((resolve) => {
-            chrome.runtime.sendMessage({ 
-              action: 'agentSnap',
-              tabId: targetTabId 
-            }, resolve);
+          // First check if queue has space
+          const snapQueueCheck = await new Promise((resolve) => {
+            chrome.storage.session.get(['snaps'], (result) => {
+              resolve((result.snaps || []).length);
+            });
           });
           
-          if (snapResult?.success) {
+          if (snapQueueCheck >= 10) {
+            addMessage(`⚠️ Queue full (10/10). Delete some images first.`, 'system');
+            break;
+          }
+          
+          // Make target tab active and focused
+          await chrome.tabs.update(targetTabId, { active: true });
+          await sleep(1000);
+          
+          // Capture the tab using agentCaptureTab (reliable tabId-based capture)
+          const snapImageData = await new Promise((resolve) => {
+            chrome.runtime.sendMessage({ 
+              action: 'agentCaptureTab',
+              tabId: targetTabId 
+            }, (response) => {
+              resolve(response?.success ? response.dataUrl : null);
+            });
+          });
+          
+          if (snapImageData) {
+            // Add to snap queue via agentAddSnaps
+            await new Promise((resolve) => {
+              chrome.runtime.sendMessage({ 
+                action: 'agentAddSnaps',
+                images: [snapImageData]
+              }, resolve);
+            });
             capturedImages.push('SNAP_CAPTURED');
             addMessage(`✅ SNAP captured! Added to queue.`, 'system');
           } else {
-            // Show specific error (cooldown, queue full, etc.)
-            const errorMsg = snapResult?.error || 'Page may have restrictions';
-            addMessage(`⚠️ SNAP: ${errorMsg}`, 'system');
-            
-            // If cooldown, wait and retry automatically
-            if (errorMsg.includes('wait') && errorMsg.includes('second')) {
-              const waitMatch = errorMsg.match(/(\d+) second/);
-              if (waitMatch) {
-                const waitSecs = parseInt(waitMatch[1]) + 1;
-                addMessage(`⏳ Waiting ${waitSecs}s...`, 'system');
-                await sleep(waitSecs * 1000);
-                // Retry once
-                const retryResult = await new Promise((resolve) => {
-                  chrome.runtime.sendMessage({ 
-                    action: 'agentSnap',
-                    tabId: targetTabId 
-                  }, resolve);
-                });
-                if (retryResult?.success) {
-                  capturedImages.push('SNAP_CAPTURED');
-                  addMessage(`✅ SNAP captured on retry!`, 'system');
-                }
-              }
-            }
+            addMessage(`⚠️ SNAP failed. Page may have restrictions.`, 'system');
           }
           break;
           

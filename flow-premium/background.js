@@ -225,19 +225,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     })();
     return true;
   } else if (request.action === 'agentCaptureTab') {
-    // Capture screenshot for agent automation
+    // Capture screenshot for agent automation - with proper window focusing
     const { tabId } = request;
-    chrome.tabs.update(tabId, { active: true }, () => {
-      setTimeout(() => {
-        chrome.tabs.captureVisibleTab(null, { format: 'png' }, (dataUrl) => {
+    (async () => {
+      try {
+        // Get the tab to find its window
+        const tab = await chrome.tabs.get(tabId);
+        
+        // Focus the window first
+        await chrome.windows.update(tab.windowId, { focused: true });
+        
+        // Then activate the tab
+        await chrome.tabs.update(tabId, { active: true });
+        
+        // Wait for focus to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Capture using the tab's windowId
+        chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' }, (dataUrl) => {
           if (chrome.runtime.lastError) {
             sendResponse({ success: false, error: chrome.runtime.lastError.message });
           } else {
             sendResponse({ success: true, dataUrl });
           }
         });
-      }, 300);
-    });
+      } catch (error) {
+        sendResponse({ success: false, error: error.message || 'Capture failed' });
+      }
+    })();
     return true;
   } else if (request.action === 'agentAddSnaps') {
     // Add multiple snaps from agent automation
