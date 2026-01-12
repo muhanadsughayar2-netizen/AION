@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateQueueInfo();
   loadPresets();
   setupModeToggles();
+  setupDeleteButtons();
   
   document.getElementById('captureBtn').addEventListener('click', startBatchCapture);
   document.getElementById('backBtn').addEventListener('click', () => window.close());
@@ -27,6 +28,31 @@ function setupModeToggles() {
       const row = btn.closest('.url-row');
       row.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      activePresetId = null;
+      document.querySelectorAll('.preset-btn').forEach(p => p.classList.remove('active'));
+    });
+  });
+}
+
+function setupDeleteButtons() {
+  document.querySelectorAll('.url-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const index = parseInt(btn.dataset.index);
+      const row = btn.closest('.url-row');
+      const input = row.querySelector('.url-input');
+      
+      // Clear the URL
+      input.value = '';
+      
+      // Reset mode to snap
+      row.querySelectorAll('.mode-btn').forEach(b => {
+        b.classList.remove('active');
+        if (b.dataset.mode === 'snap') {
+          b.classList.add('active');
+        }
+      });
+      
+      // Clear active preset
       activePresetId = null;
       document.querySelectorAll('.preset-btn').forEach(p => p.classList.remove('active'));
     });
