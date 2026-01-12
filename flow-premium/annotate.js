@@ -233,7 +233,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   
   if (isFullPageMode) {
-    const isAutoSave = urlParams.get('autoSave') === 'true';
+    // Check if we're in batch mode first - batch mode disables autoSave
+    let inBatchMode = false;
+    try {
+      const { batchContext } = await chrome.storage.session.get(['batchContext']);
+      if (batchContext) {
+        inBatchMode = true;
+      }
+    } catch (e) {}
+    
+    const isAutoSave = urlParams.get('autoSave') === 'true' && !inBatchMode;
     window.isAutoSaveMode = isAutoSave;
     
     if (isAutoSave) {
@@ -246,10 +255,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupFullPageMode();
   }
   
-  // Check for batch mode and show banner (from URL params or storage)
+  // Check for batch mode FIRST (synchronous from URL params)
+  // This MUST happen before setupEventListeners so handlers have correct state
   let batchCurrent = urlParams.get('batchCurrent');
   let batchTotal = urlParams.get('batchTotal');
   let batchUrl = urlParams.get('batchUrl');
+  
+  // Set batch mode immediately from URL params (synchronous)
+  // Also capture batchId from URL if present
+  if (batchCurrent && batchTotal) {
+    window.isBatchMode = true;
+    window.batchId = urlParams.get('batchId') || null;
+  }
   
   // Also check storage for batch context (used by fullpage captures)
   if (!batchCurrent) {
@@ -259,14 +276,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         batchCurrent = batchContext.current;
         batchTotal = batchContext.total;
         batchUrl = encodeURIComponent(batchContext.url || '');
+        window.batchId = batchContext.batchId; // Store for signaling
+        window.isBatchMode = true;
       }
     } catch (e) {
       console.log('No batch context:', e);
     }
   }
   
-  if (batchCurrent && batchTotal) {
-    window.isBatchMode = true;
+  // Show banner if in batch mode
+  if (window.isBatchMode && batchCurrent && batchTotal) {
     const banner = document.getElementById('batchBanner');
     if (banner) {
       banner.style.display = 'flex';
@@ -481,6 +500,35 @@ function updatePageIndicator() {
   document.getElementById('nextPage').disabled = currentPageIndex === pages.length - 1;
 }
 
+// Helper: Signal batch cancel and close window
+async function signalBatchCancelAndClose() {
+  if (window.isBatchMode && !window.batchResultSent) {
+    window.batchResultSent = true;
+    try {
+      const batchId = window.batchId;
+      if (batchId) {
+        await chrome.runtime.sendMessage({ action: 'batchCaptureResult', saved: false, batchId });
+      }
+    } catch (e) {}
+    await chrome.storage.session.remove(['batchContext', 'currentSnap']).catch(() => {});
+  }
+  window.close();
+}
+
+// Helper: Signal batch save success
+async function signalBatchSaveSuccess() {
+  if (window.isBatchMode && !window.batchResultSent) {
+    window.batchResultSent = true;
+    try {
+      const batchId = window.batchId;
+      if (batchId) {
+        await chrome.runtime.sendMessage({ action: 'batchCaptureResult', saved: true, batchId });
+      }
+    } catch (e) {}
+    await chrome.storage.session.remove(['batchContext', 'currentSnap']).catch(() => {});
+  }
+}
+
 function setupEventListeners() {
   // Zoom controls
   document.getElementById('zoomIn').addEventListener('click', () => {
@@ -675,7 +723,19 @@ function setupEventListeners() {
   });
   
   document.getElementById('saveBtn').addEventListener('click', save);
-  document.getElementById('cancelBtn').addEventListener('click', () => window.close());
+  document.getElementById('cancelBtn').addEventListener('click', () => signalBatchCancelAndClose());
+  
+  // Catch unexpected window closes (X button, etc) in batch mode
+  window.addEventListener('beforeunload', () => {
+    if (window.isBatchMode && !window.batchResultSent) {
+      // Fire and forget - can't await in beforeunload
+      const batchId = window.batchId;
+      if (batchId) {
+        chrome.runtime.sendMessage({ action: 'batchCaptureResult', saved: false, batchId }).catch(() => {});
+      }
+      chrome.storage.session.remove(['batchContext', 'currentSnap']).catch(() => {});
+    }
+  });
   
   // Crop Done/Cancel button handlers
   const doneCropBtn = document.getElementById('doneCropBtn');
@@ -2700,6 +2760,10 @@ async function save() {
         index
       });
     }
+    
+    // Signal batch capture that save completed
+    await signalBatchSaveSuccess();
+    
     window.close();
   } catch (error) {
     console.error('Save error:', error);
@@ -3018,6 +3082,9 @@ async function saveFullPageWithAnnotations() {
     
     // Notify background
     chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
+    
+    // Signal batch capture that save completed
+    await signalBatchSaveSuccess();
     
     setTimeout(() => window.close(), 2000);
     
