@@ -386,8 +386,151 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Copy image to clipboard with Google Docs limit check
     copyToClipboardWithLimit(request.dataUrl).then(sendResponse);
     return true;
+  } else if (request.action === 'startBatchCapture') {
+    // Batch URL capture - simple sequential capture without AI agent
+    startBatchCapture(request.urls, request.mode).then(sendResponse);
+    return true;
   }
 });
+
+// ============================================
+// BATCH URL CAPTURE (Simple, no AI)
+// ============================================
+
+async function startBatchCapture(urls, mode) {
+  const total = urls.length;
+  const results = { success: true, captured: 0, errors: [] };
+  
+  try {
+    for (let i = 0; i < urls.length; i++) {
+      const url = urls[i];
+      
+      // Notify progress
+      chrome.runtime.sendMessage({
+        action: 'batchProgress',
+        current: i + 1,
+        total: total,
+        status: `Opening ${url.substring(0, 40)}...`
+      }).catch(() => {});
+      
+      // Create new tab with the URL
+      let tab;
+      try {
+        tab = await chrome.tabs.create({ url, active: true });
+      } catch (e) {
+        results.errors.push(`Failed to open ${url}: ${e.message}`);
+        continue;
+      }
+      
+      // Wait for page to fully load
+      await waitForTabLoad(tab.id, 30000);
+      
+      // Extra wait for content to render
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Check queue before capture
+      const snaps = await getSnaps();
+      if (snaps.length >= MAX_SNAPS) {
+        chrome.tabs.remove(tab.id).catch(() => {});
+        chrome.runtime.sendMessage({
+          action: 'batchComplete',
+          success: false,
+          message: `Queue full after ${results.captured} captures. Stop.`
+        }).catch(() => {});
+        return results;
+      }
+      
+      // Capture based on mode
+      if (mode === 'snap' || mode === 'both') {
+        chrome.runtime.sendMessage({
+          action: 'batchProgress',
+          current: i + 1,
+          total: total,
+          status: `Taking screenshot ${i + 1}/${total}...`
+        }).catch(() => {});
+        
+        const snapResult = await captureScreenshot(tab.id);
+        if (snapResult.success) {
+          results.captured++;
+        } else {
+          results.errors.push(`Snap failed for ${url}: ${snapResult.error}`);
+        }
+      }
+      
+      if (mode === 'fullpage' || mode === 'both') {
+        chrome.runtime.sendMessage({
+          action: 'batchProgress',
+          current: i + 1,
+          total: total,
+          status: `Full page capture ${i + 1}/${total}...`
+        }).catch(() => {});
+        
+        // Start full page capture on this tab
+        const fpResult = await startFullPageCapture(tab.id);
+        if (fpResult.success || fpResult.pending) {
+          results.captured++;
+          // Wait for full page to complete (auto-save mode)
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        } else {
+          results.errors.push(`Full page failed for ${url}: ${fpResult.error}`);
+        }
+      }
+      
+      // Close the tab after capture
+      try {
+        await chrome.tabs.remove(tab.id);
+      } catch (e) {
+        // Tab may already be closed
+      }
+      
+      // Brief pause between URLs
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    // Complete
+    chrome.runtime.sendMessage({
+      action: 'batchComplete',
+      success: true,
+      message: `Captured ${results.captured} images from ${total} URLs`
+    }).catch(() => {});
+    
+    return results;
+    
+  } catch (error) {
+    chrome.runtime.sendMessage({
+      action: 'batchComplete',
+      success: false,
+      message: `Batch capture failed: ${error.message}`
+    }).catch(() => {});
+    return { success: false, error: error.message };
+  }
+}
+
+// Wait for tab to finish loading
+function waitForTabLoad(tabId, timeout = 30000) {
+  return new Promise((resolve) => {
+    const startTime = Date.now();
+    
+    const checkTab = async () => {
+      try {
+        const tab = await chrome.tabs.get(tabId);
+        if (tab.status === 'complete') {
+          resolve(true);
+          return;
+        }
+        if (Date.now() - startTime > timeout) {
+          resolve(false); // Timeout, continue anyway
+          return;
+        }
+        setTimeout(checkTab, 200);
+      } catch (e) {
+        resolve(false); // Tab closed or error
+      }
+    };
+    
+    checkTab();
+  });
+}
 
 // Listen for port connections from popup for full page capture
 chrome.runtime.onConnect.addListener((port) => {
