@@ -26,6 +26,64 @@ body {
   color: var(--text-primary);
 }
 
+/* ========== BATCH CAPTURE BANNER ========== */
+.batch-banner {
+  background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+  z-index: 1000;
+}
+
+.batch-icon {
+  font-size: 24px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.batch-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.batch-progress {
+  font-weight: 600;
+  font-size: 15px;
+  color: #fff;
+}
+
+.batch-url {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.batch-action {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #fff;
+  animation: glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 5px rgba(255, 255, 255, 0.3); }
+  to { box-shadow: 0 0 15px rgba(255, 255, 255, 0.6); }
+}
+
 .annotate-container {
   width: 100vw;
   height: 100vh;

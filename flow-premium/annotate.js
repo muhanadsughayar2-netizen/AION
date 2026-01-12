@@ -246,6 +246,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupFullPageMode();
   }
   
+  // Check for batch mode and show banner (from URL params or storage)
+  let batchCurrent = urlParams.get('batchCurrent');
+  let batchTotal = urlParams.get('batchTotal');
+  let batchUrl = urlParams.get('batchUrl');
+  
+  // Also check storage for batch context (used by fullpage captures)
+  if (!batchCurrent) {
+    try {
+      const { batchContext } = await chrome.storage.session.get(['batchContext']);
+      if (batchContext) {
+        batchCurrent = batchContext.current;
+        batchTotal = batchContext.total;
+        batchUrl = encodeURIComponent(batchContext.url || '');
+      }
+    } catch (e) {
+      console.log('No batch context:', e);
+    }
+  }
+  
+  if (batchCurrent && batchTotal) {
+    window.isBatchMode = true;
+    const banner = document.getElementById('batchBanner');
+    if (banner) {
+      banner.style.display = 'flex';
+      document.getElementById('batchCurrent').textContent = batchCurrent;
+      document.getElementById('batchTotal').textContent = batchTotal;
+      if (batchUrl) {
+        document.getElementById('batchUrl').textContent = decodeURIComponent(batchUrl);
+      }
+      document.title = `Batch ${batchCurrent}/${batchTotal} - SnapToAI`;
+    }
+  }
+  
   setupEventListeners();
   loadCustomStickers();
   loadImage();

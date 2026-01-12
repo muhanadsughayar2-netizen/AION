@@ -7,6 +7,16 @@
   <link rel="stylesheet" href="annotate.css">
 </head>
 <body>
+  <!-- Batch Capture Banner (shown when in batch mode) -->
+  <div id="batchBanner" class="batch-banner" style="display: none;">
+    <div class="batch-icon">📸</div>
+    <div class="batch-text">
+      <span class="batch-progress">Batch Capture: <span id="batchCurrent">1</span> of <span id="batchTotal">3</span></span>
+      <span class="batch-url" id="batchUrl"></span>
+    </div>
+    <div class="batch-action">Save to continue →</div>
+  </div>
+  
   <div class="annotate-container">
     <!-- Professional Top Toolbar -->
     <div class="editor-toolbar">

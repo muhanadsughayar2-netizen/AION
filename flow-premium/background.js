@@ -448,20 +448,47 @@ async function startBatchCapture(urlConfigs) {
           action: 'batchProgress',
           current: i + 1,
           total: total,
-          status: `Snap ${i + 1}/${total}...`
+          status: `Capturing ${i + 1}/${total}...`
         }).catch(() => {});
         
-        const snapResult = await captureScreenshot(tab.id);
-        if (snapResult.success) {
+        try {
+          // Capture screenshot and store temporarily
+          const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+          
+          // Store in session for editor to pick up
+          await chrome.storage.session.set({ 
+            currentSnap: dataUrl,
+            lastCapturedPageUrl: url,
+            lastCapturedPageTitle: tab.title || 'Untitled'
+          });
+          
+          // Open editor with batch info
+          const batchParams = `batchCurrent=${i + 1}&batchTotal=${total}&batchUrl=${encodeURIComponent(url)}`;
+          const editorWindow = await chrome.windows.create({
+            url: `annotate.html?${batchParams}`,
+            type: 'popup',
+            width: 1200,
+            height: 800,
+            focused: true
+          });
+          
+          // Wait for editor to close
+          await waitForWindowClose(editorWindow.id);
+          
+          // Check if capture was saved
+          const afterCount = (await getSnaps()).length;
+          const beforeCount = afterCount - 1; // Assume it was saved
+          
           results.captured++;
           chrome.runtime.sendMessage({
             action: 'batchProgress',
             current: i + 1,
             total: total,
-            status: `✓ Snap ${i + 1}/${total} complete`
+            status: `✓ Snap ${i + 1}/${total} saved`
           }).catch(() => {});
-        } else {
-          results.errors.push(`Snap failed for ${url}: ${snapResult.error}`);
+          
+        } catch (snapError) {
+          results.errors.push(`Snap failed for ${url}: ${snapError.message}`);
           chrome.runtime.sendMessage({
             action: 'batchProgress',
             current: i + 1,
@@ -474,56 +501,90 @@ async function startBatchCapture(urlConfigs) {
           action: 'batchProgress',
           current: i + 1,
           total: total,
-          status: `Full page ${i + 1}/${total} (may take 30-60s)...`
+          status: `Full page ${i + 1}/${total} - scrolling page...`
         }).catch(() => {});
         
         try {
+          // Store batch context for the editor
+          await chrome.storage.session.set({
+            batchContext: { current: i + 1, total, url }
+          });
+          
           const fpResult = await startFullPageCapture(tab.id);
           if (fpResult.success || fpResult.pending) {
-            const beforeCount = (await getSnaps()).length;
+            // Wait for editor window to appear and then close
+            let editorWindowId = null;
             let waited = 0;
-            const maxWait = 90000; // 90 seconds for long pages
-            let captureSuccess = false;
+            const maxWait = 120000; // 2 minutes
             
-            while (waited < maxWait) {
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              waited += 2000;
+            // Find the editor window
+            while (waited < 10000 && !editorWindowId) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+              waited += 500;
+              const windows = await chrome.windows.getAll({ populate: true });
+              for (const win of windows) {
+                for (const t of win.tabs || []) {
+                  if (t.url && t.url.includes('annotate.html')) {
+                    editorWindowId = win.id;
+                    break;
+                  }
+                }
+                if (editorWindowId) break;
+              }
+            }
+            
+            if (editorWindowId) {
+              chrome.runtime.sendMessage({
+                action: 'batchProgress',
+                current: i + 1,
+                total: total,
+                status: `Full page ${i + 1}/${total} - edit & save to continue`
+              }).catch(() => {});
               
-              // Update progress every 10 seconds
-              if (waited % 10000 === 0) {
-                chrome.runtime.sendMessage({
-                  action: 'batchProgress',
-                  current: i + 1,
-                  total: total,
-                  status: `Full page ${i + 1}/${total}: ${Math.round(waited/1000)}s elapsed...`
-                }).catch(() => {});
+              // Wait for editor to close
+              await waitForWindowClose(editorWindowId, 300000);
+              results.captured++;
+              
+              chrome.runtime.sendMessage({
+                action: 'batchProgress',
+                current: i + 1,
+                total: total,
+                status: `✓ Full page ${i + 1}/${total} saved`
+              }).catch(() => {});
+            } else {
+              // No editor appeared - check if auto-saved
+              const beforeCount = (await getSnaps()).length;
+              let captureSuccess = false;
+              
+              while (waited < maxWait) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                waited += 2000;
+                
+                const afterCount = (await getSnaps()).length;
+                if (afterCount > beforeCount) {
+                  results.captured++;
+                  captureSuccess = true;
+                  break;
+                }
+                if (!isFullPageCaptureInProgress && waited > 10000) break;
               }
               
-              const afterCount = (await getSnaps()).length;
-              if (afterCount > beforeCount) {
-                results.captured++;
-                captureSuccess = true;
+              if (captureSuccess) {
                 chrome.runtime.sendMessage({
                   action: 'batchProgress',
                   current: i + 1,
                   total: total,
                   status: `✓ Full page ${i + 1}/${total} complete`
                 }).catch(() => {});
-                break;
+              } else {
+                results.errors.push(`Full page timeout for ${url}`);
+                chrome.runtime.sendMessage({
+                  action: 'batchProgress',
+                  current: i + 1,
+                  total: total,
+                  status: `⚠ Full page ${i + 1}/${total} timeout`
+                }).catch(() => {});
               }
-              if (!isFullPageCaptureInProgress && waited > 10000) {
-                break;
-              }
-            }
-            
-            if (!captureSuccess) {
-              results.errors.push(`Full page timeout for ${url}`);
-              chrome.runtime.sendMessage({
-                action: 'batchProgress',
-                current: i + 1,
-                total: total,
-                status: `⚠ Full page ${i + 1}/${total} timeout - continuing...`
-              }).catch(() => {});
             }
           } else {
             results.errors.push(`Full page failed for ${url}: ${fpResult.error}`);
@@ -531,16 +592,20 @@ async function startBatchCapture(urlConfigs) {
               action: 'batchProgress',
               current: i + 1,
               total: total,
-              status: `✗ Full page ${i + 1}/${total} failed - continuing...`
+              status: `✗ Full page ${i + 1}/${total} failed`
             }).catch(() => {});
           }
+          
+          // Clear batch context
+          await chrome.storage.session.remove(['batchContext']);
+          
         } catch (fpError) {
           results.errors.push(`Full page error for ${url}: ${fpError.message}`);
           chrome.runtime.sendMessage({
             action: 'batchProgress',
             current: i + 1,
             total: total,
-            status: `✗ Full page ${i + 1}/${total} error - continuing...`
+            status: `✗ Full page ${i + 1}/${total} error`
           }).catch(() => {});
         }
       }
@@ -593,6 +658,32 @@ function waitForTabLoad(tabId, timeout = 30000) {
     };
     
     checkTab();
+  });
+}
+
+// Wait for window to close (used in batch capture)
+function waitForWindowClose(windowId, timeout = 300000) {
+  return new Promise((resolve) => {
+    const startTime = Date.now();
+    
+    const checkWindow = async () => {
+      try {
+        await chrome.windows.get(windowId);
+        // Window still exists
+        if (Date.now() - startTime > timeout) {
+          // Timeout - force close and continue
+          try { await chrome.windows.remove(windowId); } catch (e) {}
+          resolve(false);
+          return;
+        }
+        setTimeout(checkWindow, 500);
+      } catch (e) {
+        // Window closed (doesn't exist anymore)
+        resolve(true);
+      }
+    };
+    
+    checkWindow();
   });
 }
 
