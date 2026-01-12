@@ -3273,30 +3273,6 @@ if (directAiButton) {
   });
 }
 
-// Batch Capture button - opens simple URL batch capture
-const agentButton = document.getElementById('agentButton');
-if (agentButton) {
-  agentButton.addEventListener('click', () => {
-    console.log('[SnapToAI] Opening Batch Capture');
-    
-    // Open Batch Capture in a new window - no API key needed
-    const width = 450;
-    const height = 550;
-    const left = Math.round((screen.width - width) / 2);
-    const top = Math.round((screen.height - height) / 2);
-    
-    chrome.windows.create({
-      url: chrome.runtime.getURL('batch-capture.html'),
-      type: 'popup',
-      width: width,
-      height: height,
-      left: left,
-      top: top
-    });
-    
-    window.close();
-  });
-}
 if (geminiModal) geminiModal.addEventListener('click', (e) => {
   if (e.target === geminiModal) hideGeminiModal();
 });
