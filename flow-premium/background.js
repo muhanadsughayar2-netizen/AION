@@ -1088,7 +1088,7 @@ async function captureFullPageStep(tabId) {
 }
 
 // Finalize full page capture - stitch images and save to queue
-async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeight, isAIPlatform = false, pageUrl = '', pageTitle = '', batchMode = false) {
+async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeight, isAIPlatform = false, pageUrl = '', pageTitle = '') {
   try {
     if (!screenshots || screenshots.length === 0) {
       isFullPageCaptureInProgress = false;
@@ -1113,30 +1113,7 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
       lastCapturedPageTitle: pageTitle || 'Untitled Page'
     });
     
-    // BATCH MODE: Stitch directly in background and save without any editor
-    if (batchMode) {
-      console.log('[SnapToAI] Batch mode: Direct stitch and save (no editor)');
-      try {
-        const stitchedImage = await stitchImagesInBackground(screenshots, viewportHeight, isAIPlatform);
-        if (stitchedImage) {
-          const newSnap = stitchedImage;
-          const updatedSnaps = [...snaps, newSnap];
-          await setSnaps(updatedSnaps);
-          isFullPageCaptureInProgress = false;
-          console.log('[SnapToAI] Batch full page saved directly to queue');
-          return { success: true };
-        } else {
-          isFullPageCaptureInProgress = false;
-          return { success: false, error: 'Stitching failed' };
-        }
-      } catch (stitchError) {
-        console.log('[SnapToAI] Batch stitch error:', stitchError.message);
-        isFullPageCaptureInProgress = false;
-        return { success: false, error: stitchError.message };
-      }
-    }
-    
-    // NORMAL MODE: Try to send to popup for stitching first
+    // Try to send to popup for stitching first
     // Pass isAIPlatform flag so stitching uses correct overlap (0% for AI, 10% for regular)
     try {
       await chrome.runtime.sendMessage({
@@ -1184,26 +1161,6 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
     isFullPageCaptureInProgress = false;
     return { success: false, error: error.message };
   }
-}
-
-// Stitch images directly in background (for batch mode - no canvas, simpler approach)
-async function stitchImagesInBackground(screenshots, viewportHeight, isAIPlatform) {
-  // For batch mode, we use a simpler approach - save the first image with metadata
-  // This is faster and works without canvas (which isn't available in service worker)
-  // The full stitching happens when user views/edits in popup
-  
-  if (screenshots.length === 1) {
-    return screenshots[0];
-  }
-  
-  // For multiple screenshots, we need to use offscreen document for canvas
-  // But for speed in batch mode, we'll save just the first complete screenshot
-  // with a marker that it's a multi-part capture
-  console.log(`[SnapToAI] Batch mode: Saving ${screenshots.length} captures as single entry`);
-  
-  // Take the first screenshot as the representative image
-  // In a future enhancement, we could use offscreen document for full stitching
-  return screenshots[0];
 }
 
 // Reset full page capture state (called when stitch completes or fails)
