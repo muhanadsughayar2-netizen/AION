@@ -3227,27 +3227,20 @@ if (aiButton) aiButton.addEventListener('click', handleAIButtonClick);
 if (geminiSaveBtn) geminiSaveBtn.addEventListener('click', saveGeminiKey);
 if (geminiClearBtn) geminiClearBtn.addEventListener('click', clearGeminiKey);
 
-// Agent button - opens Agent Chat for automated capture
+// Batch Capture button - opens simple URL batch capture
 const agentButton = document.getElementById('agentButton');
 if (agentButton) {
-  agentButton.addEventListener('click', async () => {
-    console.log('[SnapToAI] Opening Agent Chat');
+  agentButton.addEventListener('click', () => {
+    console.log('[SnapToAI] Opening Batch Capture');
     
-    // Check if API key exists (uses same key as AI Chat - stored in sync)
-    const { geminiApiKey } = await chrome.storage.sync.get(['geminiApiKey']);
-    if (!geminiApiKey) {
-      showGeminiModal();
-      return;
-    }
-    
-    // Open Agent Chat in a new window - NO API key prompt needed
-    const width = 500;
-    const height = 650;
+    // Open Batch Capture in a new window - no API key needed
+    const width = 450;
+    const height = 550;
     const left = Math.round((screen.width - width) / 2);
     const top = Math.round((screen.height - height) / 2);
     
     chrome.windows.create({
-      url: chrome.runtime.getURL('agent-chat.html'),
+      url: chrome.runtime.getURL('batch-capture.html'),
       type: 'popup',
       width: width,
       height: height,
