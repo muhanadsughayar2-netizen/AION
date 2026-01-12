@@ -398,6 +398,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // ============================================
 
 async function startBatchCapture(urlConfigs) {
+  if (!Array.isArray(urlConfigs) || urlConfigs.length === 0) {
+    chrome.runtime.sendMessage({
+      action: 'batchComplete',
+      success: false,
+      message: 'No URLs provided'
+    }).catch(() => {});
+    return { success: false, error: 'No URLs provided' };
+  }
+  
   const total = urlConfigs.length;
   const results = { success: true, captured: 0, errors: [] };
   
