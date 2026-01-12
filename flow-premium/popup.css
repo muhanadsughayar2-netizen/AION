@@ -397,6 +397,28 @@ body {
   color: #aabbcc;
 }
 
+/* Setup Link - Subtle text button instead of orb */
+.setup-link-container {
+  text-align: center;
+  margin: 4px 0 8px 0;
+}
+
+.setup-text-link {
+  background: none;
+  border: none;
+  color: rgba(150, 150, 180, 0.6);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px 12px;
+  transition: all 0.2s;
+  border-radius: 12px;
+}
+
+.setup-text-link:hover {
+  color: rgba(150, 150, 180, 1);
+  background: rgba(150, 150, 180, 0.1);
+}
+
 /* Full Page Capture Overlay */
 .fullpage-overlay {
   position: fixed;
