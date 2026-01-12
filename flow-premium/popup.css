@@ -381,6 +381,22 @@ body {
   color: #bb86fc;
 }
 
+/* Setup Orb - Gray/neutral theme for settings */
+.setup-orb {
+  background: linear-gradient(135deg, #2a2a3a 0%, #1a1a2a 100%);
+  border: 2px solid rgba(150, 150, 180, 0.4);
+  box-shadow: 0 0 15px rgba(150, 150, 180, 0.2), inset 0 0 10px rgba(150, 150, 180, 0.1);
+}
+
+.setup-orb:hover {
+  border-color: rgba(150, 150, 180, 0.6);
+  box-shadow: 0 0 25px rgba(150, 150, 180, 0.4), inset 0 0 15px rgba(150, 150, 180, 0.2);
+}
+
+.setup-orb .orb-inner {
+  color: #aabbcc;
+}
+
 /* Full Page Capture Overlay */
 .fullpage-overlay {
   position: fixed;

@@ -168,10 +168,31 @@ const MULTI_IMAGE_PROMPT = getConfig('MULTI_IMAGE_PROMPT', "You are a thorough, 
 async function initializeChat() {
   const urlParams = new URLSearchParams(window.location.search);
   const count = urlParams.get('count');
+  const isDirect = urlParams.get('direct') === 'true';
   
   // Get metadata from session storage
   const result = await chrome.storage.session.get(['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap']);
   currentPageText = result.pageText || '';
+  
+  // Direct mode - no images needed
+  if (isDirect) {
+    console.log('[SnapToAI] Direct AI mode - no images');
+    currentImages = [];
+    const previewContainer = document.querySelector('.image-preview');
+    previewContainer.innerHTML = `
+      <div style="padding: 30px; text-align: center; color: #8899aa;">
+        <div style="font-size: 48px; margin-bottom: 10px;">✨</div>
+        <div style="font-size: 14px;">Direct AI Chat</div>
+        <div style="font-size: 11px; color: #667788; margin-top: 5px;">Ask anything or drop images here</div>
+      </div>
+    `;
+    document.getElementById('chatInput').focus();
+    setupMagicButtons();
+    if (typeof updateVerdictButtonVisibility === 'function') {
+      updateVerdictButtonVisibility();
+    }
+    return;
+  }
   
   // Load images with retry logic for race conditions
   let imagesToUse = [];

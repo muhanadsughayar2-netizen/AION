@@ -3227,6 +3227,39 @@ if (aiButton) aiButton.addEventListener('click', handleAIButtonClick);
 if (geminiSaveBtn) geminiSaveBtn.addEventListener('click', saveGeminiKey);
 if (geminiClearBtn) geminiClearBtn.addEventListener('click', clearGeminiKey);
 
+// Direct AI button - opens AI chat directly without image
+const directAiButton = document.getElementById('directAiButton');
+if (directAiButton) {
+  directAiButton.addEventListener('click', async () => {
+    console.log('[SnapToAI] Opening Direct AI Chat');
+    
+    // Check if API key exists
+    const { geminiApiKey } = await chrome.storage.sync.get(['geminiApiKey']);
+    if (!geminiApiKey) {
+      showGeminiModal();
+      return;
+    }
+    
+    // Open AI chat in a new window
+    const width = 1000;
+    const height = 700;
+    const left = Math.round((screen.width - width) / 2);
+    const top = Math.round((screen.height - height) / 2);
+    
+    chrome.windows.create({
+      url: chrome.runtime.getURL('ai-chat.html?direct=true'),
+      type: 'popup',
+      width: width,
+      height: height,
+      left: left,
+      top: top,
+      focused: true
+    });
+    
+    window.close();
+  });
+}
+
 // Batch Capture button - opens simple URL batch capture
 const agentButton = document.getElementById('agentButton');
 if (agentButton) {
@@ -3357,11 +3390,11 @@ async function openAiChat(imageDataUrls) {
   const images = Array.isArray(imageDataUrls) ? imageDataUrls : [imageDataUrls];
   console.log('[SnapToAI] Opening AI Chat with', images.length, 'image(s)');
   
-  // Show loading indicator on AI button
-  const aiButton = document.querySelector('.ai-orb, #aiOrbButton');
-  if (aiButton) {
-    aiButton.style.opacity = '0.5';
-    aiButton.style.pointerEvents = 'none';
+  // Show loading indicator on Direct AI button
+  const directAiBtn = document.getElementById('directAiButton');
+  if (directAiBtn) {
+    directAiBtn.style.opacity = '0.5';
+    directAiBtn.style.pointerEvents = 'none';
   }
   
   // Try to get page text for smart AI context (with 2s timeout to prevent freeze)
@@ -3416,9 +3449,9 @@ async function openAiChat(imageDataUrls) {
   
   if (!saved && !sessionFallbackOk) {
     console.error('[SnapToAI] Failed to save images anywhere');
-    if (aiButton) {
-      aiButton.style.opacity = '1';
-      aiButton.style.pointerEvents = 'auto';
+    if (directAiBtn) {
+      directAiBtn.style.opacity = '1';
+      directAiBtn.style.pointerEvents = 'auto';
     }
     alert('Failed to prepare images. Please try again.');
     return;
@@ -3426,10 +3459,10 @@ async function openAiChat(imageDataUrls) {
   
   console.log('[SnapToAI] Images saved:', images.length, 'images (IndexedDB:', saved, ', Session:', sessionFallbackOk, ')');
   
-  // Restore AI button
-  if (aiButton) {
-    aiButton.style.opacity = '1';
-    aiButton.style.pointerEvents = 'auto';
+  // Restore Direct AI button
+  if (directAiBtn) {
+    directAiBtn.style.opacity = '1';
+    directAiBtn.style.pointerEvents = 'auto';
   }
   
   // Open AI chat in a separate window (fixed size for consistent feel)
