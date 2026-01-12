@@ -180,10 +180,16 @@ async function initializeChat() {
     currentImages = [];
     const previewContainer = document.querySelector('.image-preview');
     previewContainer.innerHTML = `
-      <div style="padding: 30px; text-align: center; color: #8899aa;">
-        <div style="font-size: 48px; margin-bottom: 10px;">✨</div>
-        <div style="font-size: 14px;">Direct AI Chat</div>
-        <div style="font-size: 11px; color: #667788; margin-top: 5px;">Ask anything or drop images here</div>
+      <div style="padding: 20px; text-align: center; color: #8899aa;">
+        <div style="font-size: 42px; margin-bottom: 8px;">✨</div>
+        <div style="font-size: 14px; font-weight: 600; color: #00d9ff;">Analyze Images with AI</div>
+        <div style="font-size: 11px; color: #889999; margin-top: 8px; line-height: 1.5;">
+          Select <b>one or multiple</b> images<br>
+          from your queue, then click AI
+        </div>
+        <div style="font-size: 10px; color: #667788; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
+          Or drop images here • Ask anything
+        </div>
       </div>
     `;
     document.getElementById('chatInput').focus();
