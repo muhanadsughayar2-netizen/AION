@@ -454,37 +454,94 @@ async function startBatchCapture(urlConfigs) {
         const snapResult = await captureScreenshot(tab.id);
         if (snapResult.success) {
           results.captured++;
+          chrome.runtime.sendMessage({
+            action: 'batchProgress',
+            current: i + 1,
+            total: total,
+            status: `✓ Snap ${i + 1}/${total} complete`
+          }).catch(() => {});
         } else {
           results.errors.push(`Snap failed for ${url}: ${snapResult.error}`);
+          chrome.runtime.sendMessage({
+            action: 'batchProgress',
+            current: i + 1,
+            total: total,
+            status: `✗ Snap ${i + 1}/${total} failed - continuing...`
+          }).catch(() => {});
         }
       } else if (mode === 'fullpage') {
         chrome.runtime.sendMessage({
           action: 'batchProgress',
           current: i + 1,
           total: total,
-          status: `Full page ${i + 1}/${total}...`
+          status: `Full page ${i + 1}/${total} (may take 30-60s)...`
         }).catch(() => {});
         
-        const fpResult = await startFullPageCapture(tab.id);
-        if (fpResult.success || fpResult.pending) {
-          const beforeCount = (await getSnaps()).length;
-          let waited = 0;
-          const maxWait = 60000;
-          
-          while (waited < maxWait) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            waited += 1000;
-            const afterCount = (await getSnaps()).length;
-            if (afterCount > beforeCount) {
-              results.captured++;
-              break;
+        try {
+          const fpResult = await startFullPageCapture(tab.id);
+          if (fpResult.success || fpResult.pending) {
+            const beforeCount = (await getSnaps()).length;
+            let waited = 0;
+            const maxWait = 90000; // 90 seconds for long pages
+            let captureSuccess = false;
+            
+            while (waited < maxWait) {
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              waited += 2000;
+              
+              // Update progress every 10 seconds
+              if (waited % 10000 === 0) {
+                chrome.runtime.sendMessage({
+                  action: 'batchProgress',
+                  current: i + 1,
+                  total: total,
+                  status: `Full page ${i + 1}/${total}: ${Math.round(waited/1000)}s elapsed...`
+                }).catch(() => {});
+              }
+              
+              const afterCount = (await getSnaps()).length;
+              if (afterCount > beforeCount) {
+                results.captured++;
+                captureSuccess = true;
+                chrome.runtime.sendMessage({
+                  action: 'batchProgress',
+                  current: i + 1,
+                  total: total,
+                  status: `✓ Full page ${i + 1}/${total} complete`
+                }).catch(() => {});
+                break;
+              }
+              if (!isFullPageCaptureInProgress && waited > 10000) {
+                break;
+              }
             }
-            if (!isFullPageCaptureInProgress && waited > 5000) {
-              break;
+            
+            if (!captureSuccess) {
+              results.errors.push(`Full page timeout for ${url}`);
+              chrome.runtime.sendMessage({
+                action: 'batchProgress',
+                current: i + 1,
+                total: total,
+                status: `⚠ Full page ${i + 1}/${total} timeout - continuing...`
+              }).catch(() => {});
             }
+          } else {
+            results.errors.push(`Full page failed for ${url}: ${fpResult.error}`);
+            chrome.runtime.sendMessage({
+              action: 'batchProgress',
+              current: i + 1,
+              total: total,
+              status: `✗ Full page ${i + 1}/${total} failed - continuing...`
+            }).catch(() => {});
           }
-        } else {
-          results.errors.push(`Full page failed for ${url}: ${fpResult.error}`);
+        } catch (fpError) {
+          results.errors.push(`Full page error for ${url}: ${fpError.message}`);
+          chrome.runtime.sendMessage({
+            action: 'batchProgress',
+            current: i + 1,
+            total: total,
+            status: `✗ Full page ${i + 1}/${total} error - continuing...`
+          }).catch(() => {});
         }
       }
       
