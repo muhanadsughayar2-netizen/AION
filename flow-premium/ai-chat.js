@@ -424,7 +424,7 @@ async function handleSend() {
   const thread = document.getElementById('chatThread');
   const prompt = input.value.trim();
   
-  if (!prompt || currentImages.length === 0) return;
+  if (!prompt) return; // Allow text-only conversations without images
   
   input.value = '';
   sendBtn.disabled = true;
