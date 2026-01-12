@@ -697,11 +697,13 @@ async function startBatchCapture(urlConfigs) {
             }).catch(() => {});
           }
           
-          // Clear batch context
+          // Clear batch context and reset capture flag for next iteration
           await chrome.storage.session.remove(['batchContext']);
+          isFullPageCaptureInProgress = false;
           
         } catch (fpError) {
           await chrome.storage.session.remove(['batchContext']);
+          isFullPageCaptureInProgress = false;
           results.errors.push(`Full page error for ${url}: ${fpError.message}`);
           chrome.runtime.sendMessage({
             action: 'batchProgress',
