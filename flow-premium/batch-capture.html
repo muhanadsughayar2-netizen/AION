@@ -12,173 +12,347 @@
     }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0d1b2a 100%);
-      color: #e0e0e0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 50%, #0d1829 100%);
       min-height: 100vh;
-      padding: 20px;
+      color: #e0e8f0;
+      padding: 16px;
     }
     
     .container {
-      max-width: 400px;
+      max-width: 420px;
       margin: 0 auto;
     }
     
     .header {
       text-align: center;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
     }
     
     .header h1 {
-      font-size: 20px;
-      color: #00d4ff;
+      font-size: 1.4rem;
+      background: linear-gradient(135deg, #00d4ff, #00ff88);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
       margin-bottom: 4px;
     }
     
     .header p {
-      font-size: 12px;
-      color: #888;
+      color: #8899aa;
+      font-size: 0.85rem;
     }
     
-    .url-inputs {
+    .presets-section {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .presets-header {
       display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 20px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    
+    .presets-header h3 {
+      font-size: 0.9rem;
+      color: #00d4ff;
+    }
+    
+    .preset-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .preset-btn {
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(0,212,255,0.3);
+      background: rgba(0,212,255,0.1);
+      color: #00d4ff;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .preset-btn:hover {
+      background: rgba(0,212,255,0.2);
+      border-color: rgba(0,212,255,0.5);
+    }
+    
+    .preset-btn.active {
+      background: rgba(0,212,255,0.3);
+      border-color: #00d4ff;
+    }
+    
+    .preset-delete {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: rgba(255,100,100,0.3);
+      border: none;
+      color: #ff6666;
+      font-size: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .preset-delete:hover {
+      background: rgba(255,100,100,0.5);
+    }
+    
+    .no-presets {
+      color: #667788;
+      font-size: 0.8rem;
+      font-style: italic;
+    }
+    
+    .url-section {
+      margin-bottom: 16px;
     }
     
     .url-row {
       display: flex;
       align-items: center;
       gap: 8px;
+      margin-bottom: 10px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 10px;
+      padding: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
     }
     
     .url-number {
       width: 24px;
       height: 24px;
-      background: rgba(0, 212, 255, 0.2);
       border-radius: 50%;
+      background: linear-gradient(135deg, #00d4ff, #0088cc);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: bold;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
-      color: #00d4ff;
       flex-shrink: 0;
     }
     
     .url-input {
       flex: 1;
-      padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 12px;
       border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(0,0,0,0.3);
       color: #fff;
-      font-size: 13px;
-      transition: border-color 0.2s;
+      font-size: 0.85rem;
     }
     
     .url-input:focus {
       outline: none;
       border-color: #00d4ff;
+      box-shadow: 0 0 10px rgba(0,212,255,0.2);
     }
     
     .url-input::placeholder {
-      color: #666;
+      color: #556677;
     }
     
-    .capture-options {
+    .mode-toggle {
       display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
+      gap: 4px;
+      flex-shrink: 0;
     }
     
-    .option-btn {
-      flex: 1;
-      padding: 12px 8px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 2px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      color: #888;
-      font-size: 12px;
+    .mode-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(0,0,0,0.2);
+      color: #8899aa;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       transition: all 0.2s;
-      text-align: center;
+      font-size: 14px;
     }
     
-    .option-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
+    .mode-btn:hover {
+      border-color: rgba(255,255,255,0.4);
     }
     
-    .option-btn.active {
+    .mode-btn.active {
+      background: rgba(0,212,255,0.2);
       border-color: #00d4ff;
       color: #00d4ff;
-      background: rgba(0, 212, 255, 0.1);
     }
     
-    .option-btn .icon {
-      font-size: 20px;
-      display: block;
-      margin-bottom: 4px;
+    .mode-btn[data-mode="fullpage"].active {
+      background: rgba(255,136,0,0.2);
+      border-color: #ff8800;
+      color: #ff8800;
     }
     
-    .go-btn {
-      width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    .save-section {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .save-input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(0,0,0,0.3);
+      color: #fff;
+      font-size: 0.85rem;
+    }
+    
+    .save-input:focus {
+      outline: none;
+      border-color: #00ff88;
+    }
+    
+    .save-input::placeholder {
+      color: #556677;
+    }
+    
+    .save-btn {
+      padding: 10px 16px;
+      border-radius: 8px;
       border: none;
-      border-radius: 10px;
-      color: #000;
-      font-size: 16px;
+      background: linear-gradient(135deg, #00ff88, #00cc66);
+      color: #003322;
       font-weight: 600;
       cursor: pointer;
-      transition: transform 0.2s, opacity 0.2s;
-      margin-bottom: 12px;
+      transition: all 0.2s;
+      white-space: nowrap;
     }
     
-    .go-btn:hover:not(:disabled) {
+    .save-btn:hover {
       transform: scale(1.02);
+      box-shadow: 0 4px 15px rgba(0,255,136,0.3);
     }
     
-    .go-btn:disabled {
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .capture-btn {
+      padding: 14px 24px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #00d4ff, #0088ff);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .capture-btn:hover:not(:disabled) {
+      transform: scale(1.02);
+      box-shadow: 0 4px 20px rgba(0,212,255,0.4);
+    }
+    
+    .capture-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
     
     .back-btn {
-      width: 100%;
       padding: 10px;
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 8px;
-      color: #888;
-      font-size: 13px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: transparent;
+      color: #8899aa;
       cursor: pointer;
+      transition: all 0.2s;
     }
     
     .back-btn:hover {
-      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255,255,255,0.4);
+      color: #fff;
     }
     
     .status {
       text-align: center;
-      margin-top: 16px;
       padding: 12px;
-      background: rgba(0, 0, 0, 0.3);
       border-radius: 8px;
-      font-size: 13px;
+      margin-top: 12px;
       display: none;
     }
     
-    .status.visible {
+    .status.info {
       display: block;
-    }
-    
-    .status.error {
-      color: #ff6b6b;
+      background: rgba(0,212,255,0.1);
+      border: 1px solid rgba(0,212,255,0.3);
+      color: #00d4ff;
     }
     
     .status.success {
+      display: block;
+      background: rgba(0,255,136,0.1);
+      border: 1px solid rgba(0,255,136,0.3);
       color: #00ff88;
+    }
+    
+    .status.error {
+      display: block;
+      background: rgba(255,100,100,0.1);
+      border: 1px solid rgba(255,100,100,0.3);
+      color: #ff6666;
+    }
+    
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 12px;
+      font-size: 0.75rem;
+      color: #667788;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .legend-icon {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+    }
+    
+    .legend-icon.snap {
+      background: rgba(0,212,255,0.2);
+      color: #00d4ff;
+    }
+    
+    .legend-icon.full {
+      background: rgba(255,136,0,0.2);
+      color: #ff8800;
     }
     
     .progress-bar {
@@ -214,55 +388,88 @@
   <div class="container">
     <div class="header">
       <h1>📸 Batch URL Capture</h1>
-      <p>Enter up to 5 URLs to capture automatically</p>
+      <p>Configure URLs with individual capture modes</p>
     </div>
     
-    <div class="url-inputs">
-      <div class="url-row">
-        <span class="url-number">1</span>
-        <input type="url" class="url-input" id="url1" placeholder="https://example.com" autofocus>
+    <div class="presets-section">
+      <div class="presets-header">
+        <h3>📁 Saved Presets</h3>
       </div>
-      <div class="url-row">
-        <span class="url-number">2</span>
-        <input type="url" class="url-input" id="url2" placeholder="https://...">
-      </div>
-      <div class="url-row">
-        <span class="url-number">3</span>
-        <input type="url" class="url-input" id="url3" placeholder="https://...">
-      </div>
-      <div class="url-row">
-        <span class="url-number">4</span>
-        <input type="url" class="url-input" id="url4" placeholder="https://...">
-      </div>
-      <div class="url-row">
-        <span class="url-number">5</span>
-        <input type="url" class="url-input" id="url5" placeholder="https://...">
+      <div class="preset-list" id="presetList">
+        <span class="no-presets">No saved presets yet</span>
       </div>
     </div>
     
-    <div class="capture-options">
-      <button class="option-btn active" data-mode="snap">
-        <span class="icon">📷</span>
-        Snap Only
-      </button>
-      <button class="option-btn" data-mode="fullpage">
-        <span class="icon">📜</span>
-        Full Page
-      </button>
-      <button class="option-btn" data-mode="both">
-        <span class="icon">📷📜</span>
-        Both
-      </button>
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-icon snap">📷</div>
+        <span>Snap</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-icon full">📄</div>
+        <span>Full Page</span>
+      </div>
     </div>
     
-    <button class="go-btn" id="goBtn">🚀 Capture All URLs</button>
-    <button class="back-btn" id="backBtn">← Back to Popup</button>
+    <div class="url-section" id="urlSection">
+      <div class="url-row">
+        <div class="url-number">1</div>
+        <input type="url" class="url-input" placeholder="https://example.com" data-index="0">
+        <div class="mode-toggle">
+          <button class="mode-btn active" data-mode="snap" data-index="0" title="Snap">📷</button>
+          <button class="mode-btn" data-mode="fullpage" data-index="0" title="Full Page">📄</button>
+        </div>
+      </div>
+      <div class="url-row">
+        <div class="url-number">2</div>
+        <input type="url" class="url-input" placeholder="https://..." data-index="1">
+        <div class="mode-toggle">
+          <button class="mode-btn active" data-mode="snap" data-index="1" title="Snap">📷</button>
+          <button class="mode-btn" data-mode="fullpage" data-index="1" title="Full Page">📄</button>
+        </div>
+      </div>
+      <div class="url-row">
+        <div class="url-number">3</div>
+        <input type="url" class="url-input" placeholder="https://..." data-index="2">
+        <div class="mode-toggle">
+          <button class="mode-btn active" data-mode="snap" data-index="2" title="Snap">📷</button>
+          <button class="mode-btn" data-mode="fullpage" data-index="2" title="Full Page">📄</button>
+        </div>
+      </div>
+      <div class="url-row">
+        <div class="url-number">4</div>
+        <input type="url" class="url-input" placeholder="https://..." data-index="3">
+        <div class="mode-toggle">
+          <button class="mode-btn active" data-mode="snap" data-index="3" title="Snap">📷</button>
+          <button class="mode-btn" data-mode="fullpage" data-index="3" title="Full Page">📄</button>
+        </div>
+      </div>
+      <div class="url-row">
+        <div class="url-number">5</div>
+        <input type="url" class="url-input" placeholder="https://..." data-index="4">
+        <div class="mode-toggle">
+          <button class="mode-btn active" data-mode="snap" data-index="4" title="Snap">📷</button>
+          <button class="mode-btn" data-mode="fullpage" data-index="4" title="Full Page">📄</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="save-section">
+      <input type="text" class="save-input" id="presetName" placeholder="Preset name (e.g., Tesla Dashboard)">
+      <button class="save-btn" id="savePresetBtn">💾 Save</button>
+    </div>
+    
+    <div class="actions">
+      <button class="capture-btn" id="captureBtn">
+        ⚡ Capture All URLs
+      </button>
+      <button class="back-btn" id="backBtn">← Back to Popup</button>
+    </div>
     
     <div class="status" id="status"></div>
     <div class="progress-bar" id="progressBar">
       <div class="progress-fill" id="progressFill"></div>
     </div>
-    
     <div class="queue-info" id="queueInfo">Queue: 0/9</div>
   </div>
   

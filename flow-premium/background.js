@@ -387,8 +387,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     copyToClipboardWithLimit(request.dataUrl).then(sendResponse);
     return true;
   } else if (request.action === 'startBatchCapture') {
-    // Batch URL capture - simple sequential capture without AI agent
-    startBatchCapture(request.urls, request.mode).then(sendResponse);
+    // Batch URL capture - sequential capture with per-URL modes
+    startBatchCapture(request.urlConfigs).then(sendResponse);
     return true;
   }
 });
@@ -397,15 +397,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // BATCH URL CAPTURE (Simple, no AI)
 // ============================================
 
-async function startBatchCapture(urls, mode) {
-  const total = urls.length;
+async function startBatchCapture(urlConfigs) {
+  const total = urlConfigs.length;
   const results = { success: true, captured: 0, errors: [] };
   
   try {
-    for (let i = 0; i < urls.length; i++) {
-      const url = urls[i];
+    for (let i = 0; i < urlConfigs.length; i++) {
+      const { url, mode } = urlConfigs[i];
       
-      // Notify progress
       chrome.runtime.sendMessage({
         action: 'batchProgress',
         current: i + 1,
@@ -413,7 +412,6 @@ async function startBatchCapture(urls, mode) {
         status: `Opening ${url.substring(0, 40)}...`
       }).catch(() => {});
       
-      // Create new tab with the URL
       let tab;
       try {
         tab = await chrome.tabs.create({ url, active: true });
@@ -422,31 +420,26 @@ async function startBatchCapture(urls, mode) {
         continue;
       }
       
-      // Wait for page to fully load
       await waitForTabLoad(tab.id, 30000);
-      
-      // Extra wait for content to render
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Check queue before capture
       const snaps = await getSnaps();
       if (snaps.length >= MAX_SNAPS) {
         chrome.tabs.remove(tab.id).catch(() => {});
         chrome.runtime.sendMessage({
           action: 'batchComplete',
           success: false,
-          message: `Queue full after ${results.captured} captures. Stop.`
+          message: `Queue full after ${results.captured} captures`
         }).catch(() => {});
         return results;
       }
       
-      // Capture based on mode
-      if (mode === 'snap' || mode === 'both') {
+      if (mode === 'snap') {
         chrome.runtime.sendMessage({
           action: 'batchProgress',
           current: i + 1,
           total: total,
-          status: `Taking screenshot ${i + 1}/${total}...`
+          status: `Snap ${i + 1}/${total}...`
         }).catch(() => {});
         
         const snapResult = await captureScreenshot(tab.id);
@@ -455,24 +448,19 @@ async function startBatchCapture(urls, mode) {
         } else {
           results.errors.push(`Snap failed for ${url}: ${snapResult.error}`);
         }
-      }
-      
-      if (mode === 'fullpage' || mode === 'both') {
+      } else if (mode === 'fullpage') {
         chrome.runtime.sendMessage({
           action: 'batchProgress',
           current: i + 1,
           total: total,
-          status: `Full page capture ${i + 1}/${total}...`
+          status: `Full page ${i + 1}/${total}...`
         }).catch(() => {});
         
-        // Start full page capture on this tab
         const fpResult = await startFullPageCapture(tab.id);
         if (fpResult.success || fpResult.pending) {
-          // Wait for full page capture to actually complete
-          // Poll queue count to detect when new image is added
           const beforeCount = (await getSnaps()).length;
           let waited = 0;
-          const maxWait = 60000; // 60 seconds max
+          const maxWait = 60000;
           
           while (waited < maxWait) {
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -482,9 +470,8 @@ async function startBatchCapture(urls, mode) {
               results.captured++;
               break;
             }
-            // Also check if full page capture is still in progress
             if (!isFullPageCaptureInProgress && waited > 5000) {
-              break; // Capture finished (success or fail)
+              break;
             }
           }
         } else {
@@ -492,18 +479,13 @@ async function startBatchCapture(urls, mode) {
         }
       }
       
-      // Close the tab after capture
       try {
         await chrome.tabs.remove(tab.id);
-      } catch (e) {
-        // Tab may already be closed
-      }
+      } catch (e) {}
       
-      // Brief pause between URLs
       await new Promise(resolve => setTimeout(resolve, 500));
     }
     
-    // Complete
     chrome.runtime.sendMessage({
       action: 'batchComplete',
       success: true,
