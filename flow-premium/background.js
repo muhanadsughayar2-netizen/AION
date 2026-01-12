@@ -468,9 +468,25 @@ async function startBatchCapture(urls, mode) {
         // Start full page capture on this tab
         const fpResult = await startFullPageCapture(tab.id);
         if (fpResult.success || fpResult.pending) {
-          results.captured++;
-          // Wait for full page to complete (auto-save mode)
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          // Wait for full page capture to actually complete
+          // Poll queue count to detect when new image is added
+          const beforeCount = (await getSnaps()).length;
+          let waited = 0;
+          const maxWait = 60000; // 60 seconds max
+          
+          while (waited < maxWait) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            waited += 1000;
+            const afterCount = (await getSnaps()).length;
+            if (afterCount > beforeCount) {
+              results.captured++;
+              break;
+            }
+            // Also check if full page capture is still in progress
+            if (!isFullPageCaptureInProgress && waited > 5000) {
+              break; // Capture finished (success or fail)
+            }
+          }
         } else {
           results.errors.push(`Full page failed for ${url}: ${fpResult.error}`);
         }
