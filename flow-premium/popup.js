@@ -3134,6 +3134,22 @@ async function clearGeminiKey() {
   }
 }
 
+// Toggle API key visibility
+const toggleKeyVisibility = document.getElementById('toggleKeyVisibility');
+if (toggleKeyVisibility && geminiKeyInput) {
+  toggleKeyVisibility.addEventListener('click', function() {
+    if (geminiKeyInput.type === 'password') {
+      geminiKeyInput.type = 'text';
+      this.textContent = '🙈';
+      this.setAttribute('aria-label', 'Hide API key');
+    } else {
+      geminiKeyInput.type = 'password';
+      this.textContent = '👁️';
+      this.setAttribute('aria-label', 'Show API key');
+    }
+  });
+}
+
 // ===== SUBSCRIPTION MANAGEMENT =====
 const subscriptionModal = document.getElementById('subscriptionModal');
 const subMonthlyBtn = document.getElementById('subMonthlyBtn');
