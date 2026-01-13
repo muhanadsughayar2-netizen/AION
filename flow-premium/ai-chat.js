@@ -528,7 +528,7 @@ async function handleSend() {
         const responseBubble = document.createElement('div');
         responseBubble.className = 'chat-bubble ai';
         const combinedResult = `# Full Page Analysis (${totalImages} screenshots)\n\n${allBatchResults.join('\n\n---\n\n')}`;
-        responseBubble.innerHTML = typeof marked !== 'undefined' ? marked.parse(combinedResult) : combinedResult;
+        responseBubble.innerHTML = typeof marked !== 'undefined' ? DOMPurify.sanitize(marked.parse(combinedResult)) : combinedResult;
         thread.appendChild(responseBubble);
         addBubbleActions(responseBubble, combinedResult);
         thread.scrollTop = thread.scrollHeight;
@@ -626,7 +626,7 @@ async function handleSend() {
               fullText += text;
               // Render markdown
               if (typeof marked !== 'undefined') {
-                responseBubble.innerHTML = marked.parse(fullText);
+                responseBubble.innerHTML = DOMPurify.sanitize(marked.parse(fullText));
                 // Make all links open in new tabs
                 responseBubble.querySelectorAll('a').forEach(link => {
                   link.setAttribute('target', '_blank');
@@ -1356,7 +1356,7 @@ Output ONLY valid JSON:
           displayText = 'Analysis processing - please try again.';
         }
         
-        thinkingBubble.innerHTML = `<strong>${batchLabel}</strong><br>` + marked.parse(displayText);
+        thinkingBubble.innerHTML = DOMPurify.sanitize(`<strong>${batchLabel}</strong><br>` + marked.parse(displayText));
         addBubbleActions(thinkingBubble, displayText);
       }
       
