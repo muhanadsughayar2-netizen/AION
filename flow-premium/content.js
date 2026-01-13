@@ -3246,6 +3246,12 @@
         
         const currentScrollTop = getScrollTop();
         
+        // Guard against invalid scroll positions
+        if (isNaN(currentScrollTop) || currentScrollTop < 0) {
+          console.warn('[SnapToAI] Invalid scroll position, aborting capture');
+          break;
+        }
+        
         // Update progress with "X of Y" format
         const maxScroll = getMaxScroll();
         totalEstimatedCaptures = Math.max(totalEstimatedCaptures, Math.ceil(maxScroll / stepHeight) + 2);
@@ -3705,7 +3711,10 @@
     
     const banner = document.createElement('div');
     banner.className = 'snaptoai-agent-banner';
-    banner.innerHTML = `<span>🤖</span> SnapToAI Agent: ${message}`;
+    const icon = document.createElement('span');
+    icon.textContent = '🤖';
+    banner.appendChild(icon);
+    banner.appendChild(document.createTextNode(' SnapToAI Agent: ' + message));
     document.body.appendChild(banner);
     setTimeout(() => banner.remove(), 4000);
   }
