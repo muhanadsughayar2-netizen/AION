@@ -191,6 +191,9 @@
       font-size: 15px;
       line-height: 1.6;
       animation: bubbleIn 0.3s ease;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
     
     @keyframes bubbleIn {
@@ -215,8 +218,27 @@
     .chat-bubble.ai strong { color: #00d9ff; }
     .chat-bubble.ai ul, .chat-bubble.ai ol { margin: 8px 0; padding-left: 20px; }
     .chat-bubble.ai li { margin: 4px 0; }
-    .chat-bubble.ai code { background: #1a1a1a; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
-    .chat-bubble.ai pre { background: #1a1a1a; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 8px 0; }
+    .chat-bubble.ai code { 
+      background: #1a1a1a; 
+      padding: 2px 6px; 
+      border-radius: 4px; 
+      font-size: 13px; 
+      word-break: break-all;
+    }
+    .chat-bubble.ai pre { 
+      background: #1a1a1a; 
+      padding: 12px; 
+      border-radius: 8px; 
+      overflow-x: auto; 
+      margin: 8px 0; 
+      max-width: 100%;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .chat-bubble.ai pre code {
+      word-break: normal;
+      white-space: pre-wrap;
+    }
     .chat-bubble.ai p { margin: 8px 0; }
     .chat-bubble.ai p:first-child { margin-top: 0; }
     .chat-bubble.ai p:last-child { margin-bottom: 0; }
