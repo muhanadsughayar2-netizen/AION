@@ -3481,29 +3481,37 @@
       
       console.log(`[SnapToAI] Full page capture complete: ${screenshots.length} images`);
       
-      // === USER-FRIENDLY NOTIFICATIONS ===
-      // Always show what's happening so user knows extension is working
+      // === SEND STATUS TO POPUP (not toast on page) ===
+      // Messages appear in extension status bar, not on the webpage
       const numFiles = Math.ceil(screenshots.length / 30);
+      let statusMessage = '';
+      let statusType = 'success';
+      
       if (screenshots.length === 0) {
         // No screenshots - error already handled below
       } else if (userRequestedStop) {
-        // User clicked STOP - save what we have
-        showToast(`Stopped. Saved ${screenshots.length} capture${screenshots.length > 1 ? 's' : ''}.`, 'success');
+        statusMessage = `Stopped. Saved ${screenshots.length} capture${screenshots.length > 1 ? 's' : ''}.`;
       } else if (captureCount >= maxCaptures) {
-        // Hit the 90 screenshot limit
-        showToast(`Maximum reached. Saving as ${numFiles} files (${screenshots.length} captures).`, 'warning');
+        statusMessage = `Maximum reached. ${numFiles} files (${screenshots.length} captures).`;
+        statusType = 'warning';
       } else if (infiniteScrollDetected) {
-        // Infinite scroll site detected - stopped early
-        showToast(`Dynamic page detected. Saving as ${numFiles} file${numFiles > 1 ? 's' : ''} (${screenshots.length} captures).`, 'warning');
+        statusMessage = `Dynamic page. ${numFiles} file${numFiles > 1 ? 's' : ''} (${screenshots.length} captures).`;
       } else if (timedOut) {
-        // Timeout reached
-        showToast(`Large page captured. Saving as ${numFiles} file${numFiles > 1 ? 's' : ''}.`, 'warning');
+        statusMessage = `Large page. ${numFiles} file${numFiles > 1 ? 's' : ''}.`;
+        statusType = 'warning';
       } else if (numFiles > 1) {
-        // Normal completion but multiple files needed
-        showToast(`Page captured. Saving as ${numFiles} files.`, 'success');
+        statusMessage = `Captured ${numFiles} files.`;
       } else {
-        // Normal single-file completion
-        showToast(`Page captured successfully.`, 'success');
+        statusMessage = `Captured successfully.`;
+      }
+      
+      // Send to popup status bar (not toast)
+      if (statusMessage) {
+        chrome.runtime.sendMessage({ 
+          action: 'fullPageStatus', 
+          message: statusMessage,
+          type: statusType 
+        }).catch(() => {});
       }
       
       updateOverlayProgress(100);
@@ -3532,7 +3540,12 @@
       safeScrollTo(0);
       
       if (screenshots.length === 0) {
-        showToast('This page cannot be fully captured. Try SNAP instead.', 'error');
+        // Send error to popup status bar (not toast)
+        chrome.runtime.sendMessage({ 
+          action: 'fullPageStatus', 
+          message: 'Cannot capture this page. Try SNAP instead.',
+          type: 'error' 
+        }).catch(() => {});
         throw new Error('No screenshots captured');
       }
       

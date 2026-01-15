@@ -845,6 +845,20 @@ function setupEventListeners() {
       // Reset timeout on each progress update (page is responding)
       startFullPageTimeout();
     }
+    // Listen for full page capture status messages (shown in popup status bar, not toast)
+    if (request.action === 'fullPageStatus') {
+      const status = document.getElementById('status');
+      if (status) {
+        status.textContent = request.message;
+        status.className = request.type === 'error' ? 'status error' : 
+                          request.type === 'warning' ? 'status warning' : 'status active';
+        // Clear after 3 seconds
+        setTimeout(() => {
+          status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
+          status.className = 'status';
+        }, 3000);
+      }
+    }
     // Listen for full page capture completion
     if (request.action === 'fullPageComplete') {
       // Ignore late messages if capture was aborted
