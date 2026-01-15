@@ -669,12 +669,38 @@ function getCanvasImageData(canvas, bottomRows) {
 // END AUTO DUPLICATE-ROW REMOVAL
 // ============================================================
 
+// Show status message in popup status bar
+function showStatusMessage(message, type = 'success') {
+  const status = document.getElementById('status');
+  if (status) {
+    status.textContent = message;
+    status.className = type === 'error' ? 'status error' : 
+                      type === 'warning' ? 'status warning' : 'status active';
+    // Clear after 4 seconds
+    setTimeout(() => {
+      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
+      status.className = 'status';
+    }, 4000);
+  }
+}
+
 // Initialize popup on load
 document.addEventListener('DOMContentLoaded', async () => {
   translateUI(); // Add translation support
   await loadSnaps();
   setupEventListeners();
   updateUI();
+  
+  // Check for pending status message (from capture that finished while popup was closed)
+  try {
+    const result = await chrome.storage.local.get('pendingStatus');
+    if (result.pendingStatus && (Date.now() - result.pendingStatus.timestamp) < 30000) {
+      // Show if less than 30 seconds old
+      showStatusMessage(result.pendingStatus.message, result.pendingStatus.type);
+      // Clear it so it doesn't show again
+      chrome.storage.local.remove('pendingStatus');
+    }
+  } catch (e) {}
   
   // Check for existing lastFullPageCapture and show RE-EDIT button
   try {
@@ -847,17 +873,16 @@ function setupEventListeners() {
     }
     // Listen for full page capture status messages (shown in popup status bar, not toast)
     if (request.action === 'fullPageStatus') {
-      const status = document.getElementById('status');
-      if (status) {
-        status.textContent = request.message;
-        status.className = request.type === 'error' ? 'status error' : 
-                          request.type === 'warning' ? 'status warning' : 'status active';
-        // Clear after 3 seconds
-        setTimeout(() => {
-          status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
-          status.className = 'status';
-        }, 3000);
-      }
+      // Save to storage so it shows when popup reopens
+      chrome.storage.local.set({ 
+        pendingStatus: { 
+          message: request.message, 
+          type: request.type,
+          timestamp: Date.now()
+        } 
+      });
+      // Also show immediately if popup is open
+      showStatusMessage(request.message, request.type);
     }
     // Listen for full page capture completion
     if (request.action === 'fullPageComplete') {
