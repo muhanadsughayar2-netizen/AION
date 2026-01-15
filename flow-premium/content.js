@@ -20,6 +20,7 @@
   // Guard against concurrent full page captures in this content script instance
   let isFullPageCaptureRunning = false;
   let isFullPageCaptureAborted = false; // Flag to stop capture loop when aborted
+  let userRequestedStop = false; // Flag for user clicking STOP button
 
   // === INDEXEDDB HELPERS FOR LARGE CAPTURES ===
   // Chrome message passing has 64MB limit - use IndexedDB for 70+ screenshots
@@ -187,8 +188,9 @@
           sendResponse({ success: false, error: 'already_running' });
           return;
         }
-        // Reset abort flag for new capture
+        // Reset abort flags for new capture
         isFullPageCaptureAborted = false;
+        userRequestedStop = false;
         // Start full page capture with visible scrolling - WRAPPED IN SAFE HANDLER
         safeFullPageCapture(request.tabId)
           .then(sendResponse)
@@ -867,10 +869,25 @@
             border-radius: 50%;
             animation: snaptoai-spin 0.8s linear infinite;
           "></div>
-          <div>
+          <div style="flex: 1;">
             <div style="font-weight: 600; font-size: 14px; color: #00d9ff;">SnapToAI Full Page</div>
             <div id="snaptoai-progress-text" style="font-size: 12px; color: #aaa; margin-top: 4px;">Capturing... 0%</div>
           </div>
+          <button id="snaptoai-stop-btn" style="
+            background: rgba(255, 100, 100, 0.2);
+            border: 1px solid rgba(255, 100, 100, 0.5);
+            border-radius: 6px;
+            padding: 6px 12px;
+            color: #ff6b6b;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-left: 10px;
+          " onmouseover="this.style.background='rgba(255, 100, 100, 0.4)'; this.style.borderColor='#ff6b6b';"
+             onmouseout="this.style.background='rgba(255, 100, 100, 0.2)'; this.style.borderColor='rgba(255, 100, 100, 0.5)';">
+            ■ STOP
+          </button>
         </div>
       </div>
     `;
@@ -888,6 +905,19 @@
     }
     
     document.body.appendChild(overlay);
+    
+    // Wire up stop button
+    const stopBtn = document.getElementById('snaptoai-stop-btn');
+    if (stopBtn) {
+      stopBtn.addEventListener('click', () => {
+        console.log('[SnapToAI] User clicked STOP - saving current progress');
+        userRequestedStop = true;
+        stopBtn.textContent = '⏳ Saving...';
+        stopBtn.style.pointerEvents = 'none';
+        stopBtn.style.opacity = '0.5';
+      });
+    }
+    
     return overlay;
   }
   
@@ -3241,6 +3271,12 @@
           break;
         }
         
+        // Check if user clicked STOP button
+        if (userRequestedStop) {
+          console.log('[SnapToAI] User requested stop - saving current progress');
+          break;
+        }
+        
         // === GLOBAL TIMEOUT CHECK - Never spin forever ===
         if (Date.now() - captureStartTime > CAPTURE_TIMEOUT_MS) {
           console.log('[SnapToAI] Capture timeout reached (45s) - stopping');
@@ -3442,6 +3478,9 @@
       const numFiles = Math.ceil(screenshots.length / 30);
       if (screenshots.length === 0) {
         // No screenshots - error already handled below
+      } else if (userRequestedStop) {
+        // User clicked STOP - save what we have
+        showToast(`Stopped. Saved ${screenshots.length} capture${screenshots.length > 1 ? 's' : ''}.`, 'success');
       } else if (captureCount >= maxCaptures) {
         // Hit the 90 screenshot limit
         showToast(`Maximum reached. Saving as ${numFiles} files (${screenshots.length} captures).`, 'warning');
