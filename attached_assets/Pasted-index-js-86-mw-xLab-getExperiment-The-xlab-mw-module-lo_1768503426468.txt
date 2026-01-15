@@ -1,0 +1,89 @@
+index.js:86 mw.xLab.getExperiment(): The "xlab-mw-module-loaded-v2" experiment is not active or the current user is not enrolled in. Is the experiment configured and running?
+index.js:86 mw.testKitchen.getExperiment(): The "test-kitchen-mw-module-loaded-v2" experiment is not active or the current user is not enrolled in. Is the experiment configured and running?
+index.js:86 mw.xLab.getExperiment(): The "fy25-26-we-1-1-19-mobile-section-dead-end-phase-2" experiment is not active or the current user is not enrolled in. Is the experiment configured and running?
+index.js:86 mw.xLab.getExperiment(): The "logged-out-retention-round2" experiment is not active or the current user is not enrolled in. Is the experiment configured and running?
+index.js:86 mw.xLab.getExperiment(): The "synth-aa-test-traffic-impact" experiment is not active or the current user is not enrolled in. Is the experiment configured and running?
+content.js:10 [SnapToAI] Already loaded and healthy, skipping
+content.js:2680 [SnapToAI] Full page capture started
+content.js:2684 [SnapToAI] Pre-flight: Object
+content.js:2342 [SnapToAI] Finding scrollable container...
+content.js:1760 [SnapToAI] Tier 1: Using documentElement (height: 53379px)
+content.js:2782 [SnapToAI] Scroll container: HTML, height: 53379px
+content.js:2834 [SnapToAI] Initial document height: 53379px
+content.js:2662 [SnapToAI] Expanded 3 elements for full page capture
+content.js:2956 [SnapToAI] Starting capture - containerScroll: false, isAI: false
+content.js:1320 [SnapToAI] 🧊 Freezing DOM...
+content.js:1483 [SnapToAI] Paused 0 videos
+content.js:1518 [SnapToAI] Froze 0 animated images
+content.js:1569 [SnapToAI] Killed 4 loading spinners
+content.js:1574 [SnapToAI] 🧊 DOM frozen successfully
+content.js:1088 [SnapToAI] 🎬 Capturing canvas/WebGL/video elements...
+content.js:1149 [SnapToAI] Captured 0 canvas elements
+content.js:1205 [SnapToAI] Captured 0 video elements
+content.js:1208 [SnapToAI] 🎬 Canvas/WebGL/video capture complete
+content.js:3222 [SnapToAI] Capture timeout reached (60s) - stopping
+content.js:3398 [SnapToAI] Full page capture complete: 37 images
+content.js:1226 [SnapToAI] 🔄 Restoring canvas/WebGL/video elements...
+content.js:1262 [SnapToAI] 🔄 Canvas/WebGL/video restore complete
+content.js:1601 [SnapToAI] 🔥 Unfreezing DOM...
+content.js:1700 [SnapToAI] 🔥 DOM unfrozen successfully
+content.js:2673 [SnapToAI] Restored 2 element styles
+content.js:3444 [SnapToAI] Sending 37 screenshots for stitching
+content.js:3458 [SnapToAI] Large capture - sending in batches of 30
+content.js:3538 [SnapToAI] Full page capture ended
+content.js:10 [SnapToAI] Already loaded and healthy, skipping
+content.js:2680 [SnapToAI] Full page capture started
+content.js:2684 [SnapToAI] Pre-flight: Object
+content.js:2342 [SnapToAI] Finding scrollable container...
+content.js:1760 [SnapToAI] Tier 1: Using documentElement (height: 53379px)
+content.js:2782 [SnapToAI] Scroll container: HTML, height: 53379px
+content.js:2834 [SnapToAI] Initial document height: 53379px
+content.js:2662 [SnapToAI] Expanded 3 elements for full page capture
+content.js:2956 [SnapToAI] Starting capture - containerScroll: false, isAI: false
+content.js:1320 [SnapToAI] 🧊 Freezing DOM...
+content.js:1483 [SnapToAI] Paused 0 videos
+content.js:1518 [SnapToAI] Froze 0 animated images
+content.js:1569 [SnapToAI] Killed 4 loading spinners
+content.js:1574 [SnapToAI] 🧊 DOM frozen successfully
+content.js:1088 [SnapToAI] 🎬 Capturing canvas/WebGL/video elements...
+content.js:1149 [SnapToAI] Captured 0 canvas elements
+content.js:1205 [SnapToAI] Captured 0 video elements
+content.js:1208 [SnapToAI] 🎬 Canvas/WebGL/video capture complete
+content.js:3222 [SnapToAI] Capture timeout reached (60s) - stopping
+content.js:3398 [SnapToAI] Full page capture complete: 38 images
+content.js:1226 [SnapToAI] 🔄 Restoring canvas/WebGL/video elements...
+content.js:1262 [SnapToAI] 🔄 Canvas/WebGL/video restore complete
+content.js:1601 [SnapToAI] 🔥 Unfreezing DOM...
+content.js:1700 [SnapToAI] 🔥 DOM unfrozen successfully
+content.js:2673 [SnapToAI] Restored 2 element styles
+content.js:3444 [SnapToAI] Sending 38 screenshots for stitching
+content.js:3458 [SnapToAI] Large capture - sending in batches of 30
+content.js:3538 [SnapToAI] Full page capture ended
+ [SnapToAI] Already loaded and healthy, skipping
+content.js:2680 [SnapToAI] Full page capture started
+content.js:2684 [SnapToAI] Pre-flight: Object
+content.js:2342 [SnapToAI] Finding scrollable container...
+content.js:1760 [SnapToAI] Tier 1: Using documentElement (height: 53379px)
+content.js:2782 [SnapToAI] Scroll container: HTML, height: 53379px
+content.js:2834 [SnapToAI] Initial document height: 53379px
+content.js:2662 [SnapToAI] Expanded 3 elements for full page capture
+content.js:2956 [SnapToAI] Starting capture - containerScroll: false, isAI: false
+content.js:1320 [SnapToAI] 🧊 Freezing DOM...
+content.js:1483 [SnapToAI] Paused 0 videos
+content.js:1518 [SnapToAI] Froze 0 animated images
+content.js:1569 [SnapToAI] Killed 4 loading spinners
+content.js:1574 [SnapToAI] 🧊 DOM frozen successfully
+content.js:1088 [SnapToAI] 🎬 Capturing canvas/WebGL/video elements...
+content.js:1149 [SnapToAI] Captured 0 canvas elements
+content.js:1205 [SnapToAI] Captured 0 video elements
+content.js:1208 [SnapToAI] 🎬 Canvas/WebGL/video capture complete
+content.js:3222 [SnapToAI] Capture timeout reached (60s) - stopping
+content.js:3398 [SnapToAI] Full page capture complete: 38 images
+content.js:1226 [SnapToAI] 🔄 Restoring canvas/WebGL/video elements...
+content.js:1262 [SnapToAI] 🔄 Canvas/WebGL/video restore complete
+content.js:1601 [SnapToAI] 🔥 Unfreezing DOM...
+content.js:1700 [SnapToAI] 🔥 DOM unfrozen successfully
+content.js:2673 [SnapToAI] Restored 2 element styles
+content.js:3444 [SnapToAI] Sending 38 screenshots for stitching
+content.js:3458 [SnapToAI] Large capture - sending in batches of 30
+content.js:3538 [SnapToAI] Full page capture ended

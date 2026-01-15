@@ -3162,7 +3162,8 @@
       const MAX_CONSECUTIVE_FAILS = 5;
       
       // === GLOBAL TIMEOUT - Never spin forever ===
-      const CAPTURE_TIMEOUT_MS = 60000; // 60 seconds max
+      // Long pages like Wikipedia need more time (90 captures × ~1.5s each = ~135s)
+      const CAPTURE_TIMEOUT_MS = 180000; // 3 minutes max for very long pages
       const captureStartTime = Date.now();
       let timedOut = false;
       
