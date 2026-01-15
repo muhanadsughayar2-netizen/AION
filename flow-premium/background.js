@@ -139,6 +139,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === 'clearSnaps') {
     clearSnaps().then(sendResponse);
     return true;
+  } else if (request.action === 'deleteSnap') {
+    // Delete a single snap by index
+    deleteSnapByIndex(request.index).then(sendResponse);
+    return true;
   } else if (request.action === 'setSnaps') {
     setSnaps(request.snaps, request.metadata || null).then(sendResponse);
     return true;
@@ -615,6 +619,36 @@ async function setSnaps(snaps, metadata = null) {
   }
   await updateBadge(snaps.length);
   return { success: true };
+}
+
+// Delete a single snap by index
+async function deleteSnapByIndex(index) {
+  try {
+    const snaps = await getSnaps();
+    const result = await chrome.storage.local.get({ snapMetadata: [] });
+    const snapMetadata = result.snapMetadata || [];
+    
+    if (index < 0 || index >= snaps.length) {
+      return { success: false, error: 'Invalid index' };
+    }
+    
+    // Remove the snap at the specified index
+    snaps.splice(index, 1);
+    
+    // Also remove the metadata at the same index if it exists
+    if (snapMetadata.length > index) {
+      snapMetadata.splice(index, 1);
+    }
+    
+    // Save updated arrays
+    await chrome.storage.local.set({ snaps, snapMetadata });
+    await updateBadge(snaps.length);
+    
+    return { success: true, count: snaps.length };
+  } catch (error) {
+    console.log('[SnapToAI] Delete snap error:', error);
+    return { success: false, error: error.message };
+  }
 }
 
 // Track last saved image to prevent duplicates
