@@ -195,8 +195,8 @@ async function checkSubscription() {
     };
   }
   
-  // Check server for trial date (once per hour to avoid spamming)
-  const CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
+  // Check server for trial date (once per minute for faster updates)
+  const CHECK_INTERVAL = 60 * 1000; // 1 minute
   let trialStartDate = cachedTrialStartDate;
   
   // Also track which API key hash we cached for
