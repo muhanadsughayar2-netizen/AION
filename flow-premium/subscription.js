@@ -217,45 +217,19 @@ async function checkSubscription() {
     }
   }
   
-  // Fallback to local data if server unavailable
+  // No local fallback - server is the only source of truth
+  // If server unavailable, use cached data only (no new trials)
   if (!trialStartDate) {
-    const { trialStartDate: syncDate } = await chrome.storage.sync.get(['trialStartDate']);
-    const { initialInstallTimestamp, trialStartDate: localDate } = await chrome.storage.local.get(['initialInstallTimestamp', 'trialStartDate']);
-    
-    const toNum = (v) => {
-      if (typeof v === 'number' && v > 0) return v;
-      if (typeof v === 'string') {
-        const n = parseInt(v, 10) || Date.parse(v);
-        return n > 0 ? n : null;
-      }
-      return null;
+    console.log('[SnapToAI] Server unavailable, no cached trial data');
+    return {
+      status: 'server_unavailable',
+      daysRemaining: 0,
+      canUseAI: false,
+      serverDown: true
     };
-    const candidates = [initialInstallTimestamp, syncDate, localDate].map(toNum).filter(d => d && d > 0);
-    trialStartDate = candidates.length > 0 ? Math.min(...candidates) : null;
-    
-    // If we have local data but server failed, try to sync to server
-    if (trialStartDate) {
-      console.log('[SnapToAI] Using local trial date, server unavailable');
-    }
   }
 
-  console.log('[SnapToAI] Trial check - Start:', trialStartDate ? new Date(trialStartDate).toLocaleDateString() : 'none', 'Days elapsed:', trialStartDate ? Math.floor((now - trialStartDate) / 86400000) : 0);
-
-  // Handle missing trial date
-  if (!trialStartDate) {
-    // First time user - register with server
-    const serverDate = await getServerTrialDate(userId);
-    if (serverDate) {
-      trialStartDate = serverDate;
-      await chrome.storage.local.set({ cachedTrialStartDate: serverDate, lastServerCheck: now });
-    } else {
-      // Server unavailable - create local trial (will sync later)
-      trialStartDate = now;
-      await chrome.storage.local.set({ initialInstallTimestamp: trialStartDate, trialStartDate });
-      await chrome.storage.sync.set({ trialStartDate });
-      console.log('[SnapToAI] Created local trial, will sync to server later');
-    }
-  }
+  console.log('[SnapToAI] Trial check - Start:', new Date(trialStartDate).toLocaleDateString(), 'Days elapsed:', Math.floor((now - trialStartDate) / 86400000));
   
   const installDate = trialStartDate;
 
@@ -418,15 +392,46 @@ function getCheckoutUrls() {
   };
 }
 
+// Use one AI credit - call this BEFORE each AI request
+async function useCredit() {
+  const userId = await getUserId();
+  if (!userId) {
+    return { allowed: false, reason: 'no_api_key' };
+  }
+  
+  try {
+    const response = await fetch(TRIAL_SERVER_URL.replace('/trial', '/use-credit'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userHash: userId })
+    });
+    
+    if (!response.ok) {
+      if (response.status === 429) {
+        return { allowed: false, reason: 'rate_limited' };
+      }
+      return { allowed: false, reason: 'server_error' };
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.log('[SnapToAI] Use credit error:', error.message);
+    return { allowed: false, reason: 'network_error' };
+  }
+}
+
 // Export for popup and ai-chat
 if (typeof window !== 'undefined') {
   window.SnapToAISubscription = {
     check: checkSubscription,
+    useCredit,  // Call before each AI request
     saveLicense: saveLicenseKey,
     clearLicense: clearLicenseKey,
     getLicense: getLicenseKey,
     openCheckout,
     getCheckoutUrls,
-    TRIAL_DAYS
+    TRIAL_DAYS,
+    FREE_TIER_DAILY_CREDITS
   };
 }

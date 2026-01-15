@@ -429,6 +429,23 @@ async function handleSend() {
   input.value = '';
   sendBtn.disabled = true;
   
+  // Check credits BEFORE sending to AI
+  if (window.SnapToAISubscription && window.SnapToAISubscription.useCredit) {
+    const creditCheck = await window.SnapToAISubscription.useCredit();
+    if (!creditCheck.allowed) {
+      sendBtn.disabled = false;
+      if (creditCheck.reason === 'daily_limit') {
+        addBubble(`⚠️ Daily limit reached (${creditCheck.creditsLimit} credits). Subscribe for unlimited access or wait until tomorrow.`, 'ai');
+        if (window.showSubscriptionModal) window.showSubscriptionModal();
+      } else if (creditCheck.reason === 'no_api_key') {
+        addBubble('Please set your Gemini API key in Settings first.', 'ai');
+      } else {
+        addBubble('Unable to verify credits. Please try again later.', 'ai');
+      }
+      return;
+    }
+  }
+  
   // Add user message
   addBubble(prompt, 'user');
   addThinkingBubble();
