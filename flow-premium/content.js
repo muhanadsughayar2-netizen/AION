@@ -845,20 +845,22 @@
     
     const overlay = document.createElement('div');
     overlay.id = 'snaptoai-fullpage-overlay';
+    overlay.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; z-index: 2147483647 !important; pointer-events: none !important;';
     overlay.innerHTML = `
       <div style="
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: rgba(0, 0, 0, 0.9);
-        border: 2px solid rgba(0, 217, 255, 0.7);
-        border-radius: 12px;
-        padding: 20px 30px;
-        z-index: 2147483647;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        color: white;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 30px rgba(0, 217, 255, 0.3);
+        position: fixed !important;
+        top: 20px !important;
+        right: 20px !important;
+        background: rgba(0, 0, 0, 0.95) !important;
+        border: 3px solid #00d9ff !important;
+        border-radius: 12px !important;
+        padding: 20px 30px !important;
+        z-index: 2147483647 !important;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        color: white !important;
+        backdrop-filter: blur(10px) !important;
+        box-shadow: 0 4px 40px rgba(0, 217, 255, 0.5) !important;
+        pointer-events: all !important;
       ">
         <div style="display: flex; align-items: center; gap: 15px;">
           <div style="
@@ -874,19 +876,20 @@
             <div id="snaptoai-progress-text" style="font-size: 12px; color: #aaa; margin-top: 4px;">Capturing... 0%</div>
           </div>
           <button id="snaptoai-stop-btn" style="
-            background: rgba(255, 100, 100, 0.2);
-            border: 1px solid rgba(255, 100, 100, 0.5);
-            border-radius: 6px;
-            padding: 6px 12px;
-            color: #ff6b6b;
-            font-size: 11px;
-            font-weight: 600;
+            background: #ff4444;
+            border: 3px solid #ff0000;
+            border-radius: 8px;
+            padding: 12px 24px;
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease;
-            margin-left: 10px;
-          " onmouseover="this.style.background='rgba(255, 100, 100, 0.4)'; this.style.borderColor='#ff6b6b';"
-             onmouseout="this.style.background='rgba(255, 100, 100, 0.2)'; this.style.borderColor='rgba(255, 100, 100, 0.5)';">
-            ■ STOP
+            margin-left: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 20px rgba(255,0,0,0.5);
+          ">
+            ⏹ STOP
           </button>
         </div>
       </div>
