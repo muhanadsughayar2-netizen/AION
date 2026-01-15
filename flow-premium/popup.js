@@ -1422,14 +1422,18 @@ async function handleFullPageClick() {
   
   // If queue is completely full
   if (currentSnaps.length >= 9) {
-    showQueueFullModal(ESTIMATED_MAX_CHUNKS, availableSlots);
+    status.textContent = 'Queue full (9/9). Clear some snaps to capture full page.';
+    status.className = 'status error';
+    setTimeout(() => { status.textContent = 'Ready'; status.className = 'status'; }, 4000);
     fullPageButton.disabled = false;
     return;
   }
   
   // If queue might not have enough space for a long page
   if (availableSlots < ESTIMATED_MAX_CHUNKS && currentSnaps.length > 0) {
-    showQueueFullModal(ESTIMATED_MAX_CHUNKS, availableSlots);
+    status.textContent = `Need up to ${ESTIMATED_MAX_CHUNKS} slots, only ${availableSlots} available. Clear some snaps.`;
+    status.className = 'status error';
+    setTimeout(() => { status.textContent = 'Ready'; status.className = 'status'; }, 4000);
     fullPageButton.disabled = false;
     return;
   }
