@@ -3465,21 +3465,33 @@
           const end = Math.min(start + BATCH_SIZE, allScreenshots.length);
           const batch = allScreenshots.slice(start, end);
           
-          chrome.runtime.sendMessage({
-            action: 'fullPageCaptureBatch',
-            batchIndex: i,
-            totalBatches: totalBatches,
-            screenshots: batch,
-            viewportWidth,
-            viewportHeight,
-            isAIPlatform: isAIPlatform,
-            pageUrl: window.location.href,
-            pageTitle: document.title || 'Untitled Page'
-          });
+          // Wait for each batch to be confirmed before sending next
+          try {
+            await new Promise((resolve, reject) => {
+              chrome.runtime.sendMessage({
+                action: 'fullPageCaptureBatch',
+                batchIndex: i,
+                totalBatches: totalBatches,
+                screenshots: batch,
+                viewportWidth,
+                viewportHeight,
+                isAIPlatform: isAIPlatform,
+                pageUrl: window.location.href,
+                pageTitle: document.title || 'Untitled Page'
+              }, (response) => {
+                if (chrome.runtime.lastError) {
+                  console.warn('[SnapToAI] Batch send error:', chrome.runtime.lastError.message);
+                }
+                resolve(response);
+              });
+            });
+          } catch (e) {
+            console.warn('[SnapToAI] Batch', i + 1, 'error:', e.message);
+          }
           
-          // Small delay between batches
+          // Small delay between batches to let background process
           if (i < totalBatches - 1) {
-            await new Promise(r => setTimeout(r, 100));
+            await new Promise(r => setTimeout(r, 200));
           }
         }
       } else {
