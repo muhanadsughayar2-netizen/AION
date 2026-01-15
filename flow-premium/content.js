@@ -3438,17 +3438,25 @@
       console.log(`[SnapToAI] Full page capture complete: ${screenshots.length} images`);
       
       // === USER-FRIENDLY NOTIFICATIONS ===
-      // Explain what happened if we stopped early
+      // Always show what's happening so user knows extension is working
       const numFiles = Math.ceil(screenshots.length / 30);
-      if (captureCount >= maxCaptures && screenshots.length > 0) {
+      if (screenshots.length === 0) {
+        // No screenshots - error already handled below
+      } else if (captureCount >= maxCaptures) {
         // Hit the 90 screenshot limit
-        showToast(`Maximum reached. Saving as ${numFiles} files (${screenshots.length} captures).`, 'success');
-      } else if (infiniteScrollDetected && screenshots.length > 0) {
+        showToast(`Maximum reached. Saving as ${numFiles} files (${screenshots.length} captures).`, 'warning');
+      } else if (infiniteScrollDetected) {
         // Infinite scroll site detected - stopped early
-        showToast(`Dynamic page detected. Saving as ${numFiles} file${numFiles > 1 ? 's' : ''} (${screenshots.length} captures).`, 'success');
-      } else if (timedOut && screenshots.length > 0) {
+        showToast(`Dynamic page detected. Saving as ${numFiles} file${numFiles > 1 ? 's' : ''} (${screenshots.length} captures).`, 'warning');
+      } else if (timedOut) {
         // Timeout reached
-        showToast(`Large page captured. Saving as ${numFiles} file${numFiles > 1 ? 's' : ''}.`, 'success');
+        showToast(`Large page captured. Saving as ${numFiles} file${numFiles > 1 ? 's' : ''}.`, 'warning');
+      } else if (numFiles > 1) {
+        // Normal completion but multiple files needed
+        showToast(`Page captured. Saving as ${numFiles} files.`, 'success');
+      } else {
+        // Normal single-file completion
+        showToast(`Page captured successfully.`, 'success');
       }
       
       updateOverlayProgress(100);
