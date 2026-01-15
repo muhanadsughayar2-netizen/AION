@@ -3255,6 +3255,11 @@
           if (currentMaxScroll > lastMaxScrollCheck * 1.5) {
             infiniteScrollDetected = true;
             console.log('[SnapToAI] Infinite scroll detected - page keeps growing');
+            // Stop early if we have enough screenshots (at least 30 = 1 full slot)
+            if (screenshots.length >= 30) {
+              console.log('[SnapToAI] Stopping early - have enough content for 1+ files');
+              break;
+            }
           }
           lastMaxScrollCheck = currentMaxScroll;
         }
@@ -3434,15 +3439,16 @@
       
       // === USER-FRIENDLY NOTIFICATIONS ===
       // Explain what happened if we stopped early
+      const numFiles = Math.ceil(screenshots.length / 30);
       if (captureCount >= maxCaptures && screenshots.length > 0) {
         // Hit the 90 screenshot limit
-        showToast(`Max limit reached. Captured ${screenshots.length} screenshots (3 files max).`, 'warning');
+        showToast(`Maximum reached. Saving as ${numFiles} files (${screenshots.length} captures).`, 'success');
       } else if (infiniteScrollDetected && screenshots.length > 0) {
-        // Infinite scroll site detected
-        showToast(`Infinite scroll detected. Saved ${screenshots.length} screenshots.`, 'warning');
+        // Infinite scroll site detected - stopped early
+        showToast(`Dynamic page detected. Saving as ${numFiles} file${numFiles > 1 ? 's' : ''} (${screenshots.length} captures).`, 'success');
       } else if (timedOut && screenshots.length > 0) {
         // Timeout reached
-        showToast(`Large page! Captured ${screenshots.length} screenshots before timeout.`, 'warning');
+        showToast(`Large page captured. Saving as ${numFiles} file${numFiles > 1 ? 's' : ''}.`, 'success');
       }
       
       updateOverlayProgress(100);
@@ -3500,7 +3506,6 @@
         // Large capture: send in batches of 30
         const numParts = Math.ceil(allScreenshots.length / BATCH_SIZE);
         console.log(`[SnapToAI] Large capture - sending in batches of ${BATCH_SIZE}`);
-        showToast(`Long page! Saving as ${numParts} files (${allScreenshots.length} screenshots)`, 'success');
         
         const totalBatches = Math.ceil(allScreenshots.length / BATCH_SIZE);
         
