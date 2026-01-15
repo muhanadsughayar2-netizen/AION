@@ -718,7 +718,7 @@ function translateUI() {
   document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Copy Selected');
   document.getElementById('downloadSelectedBtn').textContent = getMessage('downloadAsPNG', 'Download as PNG');
   document.getElementById('exportPdfBtn').textContent = getMessage('exportAsPDF', 'Export as PDF');
-  document.getElementById('clearButton').textContent = getMessage('clearAll', 'Clear All');
+  document.getElementById('clearButton').textContent = getMessage('clearSelected', 'Clear Selected');
   
   // Translate PDF modal
   const pdfOptions = document.querySelectorAll('.pdf-option-text strong');
@@ -1509,19 +1509,29 @@ function showQueueFullModal(chunksNeeded, availableSlots) {
   }
 }
 
-// Handle clear all
+// Handle clear selected (only clears selected items, no confirmation)
 async function handleClear() {
-  if (currentSnaps.length > 0 && !confirm('Clear all snaps?')) {
+  if (selectedSnapIds.size === 0) {
+    setStatus('No snaps selected', 'error', 1500);
     return;
   }
+  
   try {
-    await chrome.runtime.sendMessage({ action: 'clearSnaps' });
+    // Delete selected snaps in reverse order (to preserve indices)
+    const indicesToDelete = Array.from(selectedSnapIds).sort((a, b) => b - a);
+    
+    for (const index of indicesToDelete) {
+      await chrome.runtime.sendMessage({ action: 'deleteSnap', index });
+    }
+    
+    // Clear selection after deleting
+    selectedSnapIds.clear();
     
     // Hide the last capture preview
     const preview = document.getElementById('lastCapturePreview');
     if (preview) preview.style.display = 'none';
     
-    statusCleared();
+    setStatus(`Cleared ${indicesToDelete.length} snap${indicesToDelete.length > 1 ? 's' : ''}`, 'success', 1500);
     
     await loadSnaps();
     updateUI();

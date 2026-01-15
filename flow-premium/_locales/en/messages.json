@@ -83,6 +83,10 @@
     "message": "Clear All",
     "description": "clearAll"
   },
+  "clearSelected": {
+    "message": "Clear Selected",
+    "description": "clearSelected"
+  },
   "cancel": {
     "message": "Cancel",
     "description": "cancel"
