@@ -81,7 +81,7 @@ let statusResetTimeout = null;
 // Full-page capture timeout (detects when page is inaccessible)
 let fullPageCaptureTimeout = null;
 let fullPageCaptureAborted = false; // Flag to ignore late progress messages after timeout
-const FULL_PAGE_TIMEOUT_MS = 60000; // 60 seconds - aligned with content script's 45s capture + stitching time
+const FULL_PAGE_TIMEOUT_MS = 180000; // 3 minutes - long pages with 90 images need ~90 seconds minimum
 
 // Handle full-page capture timeout - called when no progress received
 function handleFullPageTimeout() {
@@ -669,38 +669,12 @@ function getCanvasImageData(canvas, bottomRows) {
 // END AUTO DUPLICATE-ROW REMOVAL
 // ============================================================
 
-// Show status message in popup status bar
-function showStatusMessage(message, type = 'success') {
-  const status = document.getElementById('status');
-  if (status) {
-    status.textContent = message;
-    status.className = type === 'error' ? 'status error' : 
-                      type === 'warning' ? 'status warning' : 'status active';
-    // Clear after 4 seconds
-    setTimeout(() => {
-      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
-      status.className = 'status';
-    }, 4000);
-  }
-}
-
 // Initialize popup on load
 document.addEventListener('DOMContentLoaded', async () => {
   translateUI(); // Add translation support
   await loadSnaps();
   setupEventListeners();
   updateUI();
-  
-  // Check for pending status message (from capture that finished while popup was closed)
-  try {
-    const result = await chrome.storage.local.get('pendingStatus');
-    if (result.pendingStatus && (Date.now() - result.pendingStatus.timestamp) < 30000) {
-      // Show if less than 30 seconds old
-      showStatusMessage(result.pendingStatus.message, result.pendingStatus.type);
-      // Clear it so it doesn't show again
-      chrome.storage.local.remove('pendingStatus');
-    }
-  } catch (e) {}
   
   // Check for existing lastFullPageCapture and show RE-EDIT button
   try {
@@ -722,27 +696,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   } catch (e) {
     console.log('[SnapToAI] Could not load last capture:', e);
-  }
-  
-  // Wire up STOP button in popup overlay
-  const stopCaptureBtn = document.getElementById('stopCaptureBtn');
-  if (stopCaptureBtn) {
-    stopCaptureBtn.addEventListener('click', async () => {
-      console.log('[SnapToAI] User clicked STOP in popup');
-      stopCaptureBtn.textContent = 'Stopping...';
-      stopCaptureBtn.disabled = true;
-      
-      // Tell content script to stop
-      try {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tab?.id) {
-          await chrome.tabs.sendMessage(tab.id, { action: 'stopFullPageCapture' });
-        }
-      } catch (e) {}
-      
-      // Also notify background
-      chrome.runtime.sendMessage({ action: 'fullPageCaptureAborted' }).catch(() => {});
-    });
   }
 });
 
@@ -891,19 +844,6 @@ function setupEventListeners() {
       }
       // Reset timeout on each progress update (page is responding)
       startFullPageTimeout();
-    }
-    // Listen for full page capture status messages (shown in popup status bar, not toast)
-    if (request.action === 'fullPageStatus') {
-      // Save to storage so it shows when popup reopens
-      chrome.storage.local.set({ 
-        pendingStatus: { 
-          message: request.message, 
-          type: request.type,
-          timestamp: Date.now()
-        } 
-      });
-      // Also show immediately if popup is open
-      showStatusMessage(request.message, request.type);
     }
     // Listen for full page capture completion
     if (request.action === 'fullPageComplete') {
@@ -1474,28 +1414,24 @@ async function handleFullPageClick() {
   // Disable button during operation
   fullPageButton.disabled = true;
   
-  // Full page capture: 30 screenshots per slot (BATCH_SIZE = 30)
-  // Queue has 9 slots max (MAX_SNAPS = 9)
-  const SCREENSHOTS_PER_SLOT = 30;
-  const MAX_SLOTS = 9;
-  const availableSlots = MAX_SLOTS - currentSnaps.length;
+  // Estimate slots needed for full-page capture (typically 1-4 chunks)
+  // Worst case: very long page = 4 chunks (20+ viewport heights)
+  const ESTIMATED_MAX_CHUNKS = 4;
+  const PAGES_PER_CHUNK = 40;
+  const availableSlots = 9 - currentSnaps.length;
   
-  // If queue is completely full - cannot capture at all
-  if (currentSnaps.length >= MAX_SLOTS) {
-    status.textContent = 'Queue full (9/9). Clear snaps first to capture full page.';
-    status.className = 'status error';
-    setTimeout(() => { status.textContent = 'Ready'; status.className = 'status'; }, 4000);
+  // If queue is completely full
+  if (currentSnaps.length >= 9) {
+    showQueueFullModal(ESTIMATED_MAX_CHUNKS, availableSlots);
     fullPageButton.disabled = false;
     return;
   }
   
-  // Show how many slots available and what that means
-  if (availableSlots === 1) {
-    status.textContent = `1 slot free = up to 30 screenshots. Long pages may be split.`;
-    status.className = 'status';
-  } else if (availableSlots < 4) {
-    status.textContent = `${availableSlots} slots free = up to ${availableSlots * SCREENSHOTS_PER_SLOT} screenshots.`;
-    status.className = 'status';
+  // If queue might not have enough space for a long page
+  if (availableSlots < ESTIMATED_MAX_CHUNKS && currentSnaps.length > 0) {
+    showQueueFullModal(ESTIMATED_MAX_CHUNKS, availableSlots);
+    fullPageButton.disabled = false;
+    return;
   }
   
   try {
@@ -1575,6 +1511,9 @@ function showQueueFullModal(chunksNeeded, availableSlots) {
 
 // Handle clear all
 async function handleClear() {
+  if (currentSnaps.length > 0 && !confirm('Clear all snaps?')) {
+    return;
+  }
   try {
     await chrome.runtime.sendMessage({ action: 'clearSnaps' });
     

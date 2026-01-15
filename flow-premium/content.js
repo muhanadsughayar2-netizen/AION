@@ -20,7 +20,6 @@
   // Guard against concurrent full page captures in this content script instance
   let isFullPageCaptureRunning = false;
   let isFullPageCaptureAborted = false; // Flag to stop capture loop when aborted
-  let userRequestedStop = false; // Flag for user clicking STOP button
 
   // === INDEXEDDB HELPERS FOR LARGE CAPTURES ===
   // Chrome message passing has 64MB limit - use IndexedDB for 70+ screenshots
@@ -162,12 +161,10 @@
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     try {
       if (request.action === 'showToast') {
-        // Redirect to popup status bar - NO toast on page
-        chrome.runtime.sendMessage({ action: 'fullPageStatus', message: request.message, type: request.type || 'success' }).catch(() => {});
+        showToast(request.message, request.type || 'success');
         sendResponse({ success: true });
       } else if (request.action === 'captureComplete') {
-        // Redirect to popup status bar - NO toast on page
-        chrome.runtime.sendMessage({ action: 'fullPageStatus', message: request.message, type: 'success' }).catch(() => {});
+        showToast(request.message, 'success');
         sendResponse({ success: true });
       } else if (request.action === 'beginUpload') {
         uploadToAI(request.platform, request.useSelectedOnly)
@@ -190,24 +187,17 @@
           sendResponse({ success: false, error: 'already_running' });
           return;
         }
-        // Reset abort flags for new capture
+        // Reset abort flag for new capture
         isFullPageCaptureAborted = false;
-        userRequestedStop = false;
         // Start full page capture with visible scrolling - WRAPPED IN SAFE HANDLER
         safeFullPageCapture(request.tabId)
           .then(sendResponse)
           .catch(err => {
             console.warn('[SnapToAI] Full page capture failed safely:', err.message);
-            chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'Page not capturable. Try SNAP.', type: 'error' }).catch(() => {});
+            showToast('This page cannot be captured. Try SNAP instead.', 'error');
             sendResponse({ success: false, error: 'Page not capturable' });
           });
         return true;
-      } else if (request.action === 'stopFullPageCapture') {
-        // User clicked STOP button in popup
-        console.log('[SnapToAI] Received stop request from popup');
-        userRequestedStop = true;
-        sendResponse({ success: true });
-        return;
       } else if (request.action === 'get_page_text') {
         // Smart text extraction for AI context
         let pageText = '';
@@ -433,8 +423,8 @@
         chrome.runtime.sendMessage({ action: 'fullPageStitchFailed' });
       } catch (e) {}
       
-      // Show user-friendly message in popup status bar
-      chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'Page not capturable. Try SNAP.', type: 'error' }).catch(() => {});
+      // Show user-friendly message
+      showToast('This page cannot be captured. Try SNAP instead.', 'error');
       
       return { success: false, error: 'Page not capturable' };
     }
@@ -853,8 +843,37 @@
     
     const overlay = document.createElement('div');
     overlay.id = 'snaptoai-fullpage-overlay';
-    // NO UI on page - overlay is invisible, just used for tracking
-    overlay.style.cssText = 'display: none !important;';
+    overlay.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.9);
+        border: 2px solid rgba(0, 217, 255, 0.7);
+        border-radius: 12px;
+        padding: 20px 30px;
+        z-index: 2147483647;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: white;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 30px rgba(0, 217, 255, 0.3);
+      ">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <div style="
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(0, 217, 255, 0.3);
+            border-top-color: rgba(0, 217, 255, 0.9);
+            border-radius: 50%;
+            animation: snaptoai-spin 0.8s linear infinite;
+          "></div>
+          <div>
+            <div style="font-weight: 600; font-size: 14px; color: #00d9ff;">SnapToAI Full Page</div>
+            <div id="snaptoai-progress-text" style="font-size: 12px; color: #aaa; margin-top: 4px;">Capturing... 0%</div>
+          </div>
+        </div>
+      </div>
+    `;
     
     // Add animation style
     const style = document.createElement('style');
@@ -869,19 +888,6 @@
     }
     
     document.body.appendChild(overlay);
-    
-    // Wire up stop button
-    const stopBtn = document.getElementById('snaptoai-stop-btn');
-    if (stopBtn) {
-      stopBtn.addEventListener('click', () => {
-        console.log('[SnapToAI] User clicked STOP - saving current progress');
-        userRequestedStop = true;
-        stopBtn.textContent = '⏳ Saving...';
-        stopBtn.style.pointerEvents = 'none';
-        stopBtn.style.opacity = '0.5';
-      });
-    }
-    
     return overlay;
   }
   
@@ -2716,7 +2722,7 @@
     }
     
     if (!preflight.canCapture) {
-      chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'Cannot capture this page', type: 'error' }).catch(() => {});
+      showToast('Cannot capture this page: ' + preflight.errors.join(', '), 'error');
       isFullPageCaptureRunning = false;
       return { success: false, error: preflight.errors.join(', ') };
     }
@@ -2725,14 +2731,14 @@
     const maxSegments = 80;
     const totalSegments = Math.ceil(preflight.pageHeight / preflight.viewportHeight);
     if (totalSegments > maxSegments) {
-      chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'Page too long for full capture', type: 'error' }).catch(() => {});
+      showToast('Page too long for full capture (80+ pages)', 'error');
       isFullPageCaptureRunning = false;
       return { success: false, error: 'page_too_long' };
     }
     
     // COMPLEX APP DETECTION: Replit, Figma, etc. have fixed layouts that can't be scroll-captured
     if (preflight.isComplexApp) {
-      chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'App layout - capturing visible screen', type: 'success' }).catch(() => {});
+      showToast('App layout detected - capturing visible screen', 'success');
       isFullPageCaptureRunning = false;
       return await simpleViewportCapture(tabId);
     }
@@ -2743,7 +2749,7 @@
     const htmlClasses = document.documentElement.className || '';
     const isDocumentViewer = htmlClasses.includes('page-image') || htmlClasses.includes('can-zoom-in') || document.querySelector('#content .page-image, .document-page, .pdf-page');
     if (preflight.pageHeight <= preflight.viewportHeight + 50 && !preflight.isAIPlatform && !isSpecialScrollSite && !isDocumentViewer) {
-      chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'Short page - simple capture', type: 'success' }).catch(() => {});
+      showToast('Page is short - using simple capture', 'success');
       // Fall back to simple viewport capture
       isFullPageCaptureRunning = false;
       return await simpleViewportCapture(tabId);
@@ -2807,7 +2813,7 @@
       
       if (isNoFullPageSite) {
         console.log('[SnapToAI] Full-page capture disabled on this site:', location.hostname);
-        chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'Full-page not available. Use Snap instead.', type: 'warning' }).catch(() => {});
+        showToast('Full-page not available on this site. Use regular Snap instead.', 'warning');
         return; // Exit early - no error, just graceful skip
       }
       
@@ -3168,18 +3174,12 @@
       // Uses 700ms delay between captures to avoid quota errors (used by GoFullPage, FireShot)
       let lastScrollTop = -1;
       let captureCount = 0;
-      const maxCaptures = 90; // Hard limit = MAX_SCREENSHOTS (3 slots × 30)
+      const maxCaptures = 100; // Safety limit
       let consecutiveFails = 0;
       const MAX_CONSECUTIVE_FAILS = 5;
       
-      // === INFINITE SCROLL DETECTION ===
-      // Track if page keeps growing beyond initial estimate
-      const initialMaxScroll = getMaxScroll();
-      let infiniteScrollDetected = false;
-      let lastMaxScrollCheck = initialMaxScroll;
-      
       // === GLOBAL TIMEOUT - Never spin forever ===
-      const CAPTURE_TIMEOUT_MS = 45000; // 45 seconds max (reduced from 60)
+      const CAPTURE_TIMEOUT_MS = 60000; // 60 seconds max
       const captureStartTime = Date.now();
       let timedOut = false;
       
@@ -3235,23 +3235,9 @@
           break;
         }
         
-        // Check if user clicked STOP button
-        if (userRequestedStop) {
-          console.log('[SnapToAI] User requested stop - saving current progress');
-          break;
-        }
-        
-        // === SMART LIMIT - Virtual sites stop faster ===
-        const isVirtualSite = ['replit.com', 'specode.ai', 'figma.com', 'notion.so'].some(h => location.hostname.includes(h));
-        const captureLimit = isVirtualSite ? 8 : 12;
-        if (captureCount >= captureLimit) {
-          console.log(`[SnapToAI] Limit reached (${captureLimit} captures) - stopping`);
-          break;
-        }
-        
         // === GLOBAL TIMEOUT CHECK - Never spin forever ===
         if (Date.now() - captureStartTime > CAPTURE_TIMEOUT_MS) {
-          console.log('[SnapToAI] Capture timeout reached (45s) - stopping');
+          console.log('[SnapToAI] Capture timeout reached (60s) - stopping');
           timedOut = true;
           break;
         }
@@ -3269,30 +3255,6 @@
         
         // Update progress with "X of Y" format
         const maxScroll = getMaxScroll();
-        
-        // === INFINITE SCROLL DETECTION (VERY AGGRESSIVE) ===
-        // Check every 2 captures - stop FAST on infinite scroll sites
-        if (captureCount > 0 && captureCount % 2 === 0) {
-          // Detect if page grew at all since last check
-          if (maxScroll > lastMaxScrollCheck * 1.1) {
-            infiniteScrollDetected = true;
-            console.log('[SnapToAI] Infinite scroll detected - page growing');
-            // Stop immediately once we have 10+ screenshots (enough for meaningful content)
-            if (screenshots.length >= 10) {
-              console.log('[SnapToAI] Stopping - infinite scroll with 10+ captures');
-              break;
-            }
-          }
-          lastMaxScrollCheck = maxScroll;
-          
-          // Also: if 15+ captures and still <60% down, it's infinite - stop now
-          const scrollProgress = currentScrollTop / maxScroll;
-          if (screenshots.length >= 15 && scrollProgress < 0.6) {
-            infiniteScrollDetected = true;
-            console.log('[SnapToAI] Stopping - not reaching bottom after 15 captures');
-            break;
-          }
-        }
         totalEstimatedCaptures = Math.max(totalEstimatedCaptures, Math.ceil(maxScroll / stepHeight) + 2);
         const progress = maxScroll > 0 ? Math.min(99, Math.round((currentScrollTop / maxScroll) * 100)) : 50;
         updateOverlayProgress(progress, captureCount + 1, totalEstimatedCaptures);
@@ -3453,37 +3415,9 @@
       
       console.log(`[SnapToAI] Full page capture complete: ${screenshots.length} images`);
       
-      // === SEND STATUS TO POPUP (not toast on page) ===
-      // Messages appear in extension status bar, not on the webpage
-      const numFiles = Math.ceil(screenshots.length / 30);
-      let statusMessage = '';
-      let statusType = 'success';
-      
-      if (screenshots.length === 0) {
-        // No screenshots - error already handled below
-      } else if (userRequestedStop) {
-        statusMessage = `Stopped. Saved ${screenshots.length} capture${screenshots.length > 1 ? 's' : ''}.`;
-      } else if (captureCount >= maxCaptures) {
-        statusMessage = `Maximum reached. ${numFiles} files (${screenshots.length} captures).`;
-        statusType = 'warning';
-      } else if (infiniteScrollDetected) {
-        statusMessage = `Dynamic page. ${numFiles} file${numFiles > 1 ? 's' : ''} (${screenshots.length} captures).`;
-      } else if (timedOut) {
-        statusMessage = `Large page. ${numFiles} file${numFiles > 1 ? 's' : ''}.`;
-        statusType = 'warning';
-      } else if (numFiles > 1) {
-        statusMessage = `Captured ${numFiles} files.`;
-      } else {
-        statusMessage = `Captured successfully.`;
-      }
-      
-      // Send to popup status bar (not toast)
-      if (statusMessage) {
-        chrome.runtime.sendMessage({ 
-          action: 'fullPageStatus', 
-          message: statusMessage,
-          type: statusType 
-        }).catch(() => {});
+      // === TIMEOUT MESSAGE - User-friendly notification ===
+      if (timedOut && screenshots.length > 0) {
+        showToast(`Page too long - captured first ${screenshots.length} sections`, 'warning');
       }
       
       updateOverlayProgress(100);
@@ -3512,12 +3446,7 @@
       safeScrollTo(0);
       
       if (screenshots.length === 0) {
-        // Send error to popup status bar (not toast)
-        chrome.runtime.sendMessage({ 
-          action: 'fullPageStatus', 
-          message: 'Cannot capture this page. Try SNAP instead.',
-          type: 'error' 
-        }).catch(() => {});
+        showToast('This page cannot be fully captured. Try SNAP instead.', 'error');
         throw new Error('No screenshots captured');
       }
       
@@ -3544,8 +3473,8 @@
       
       if (allScreenshots.length > BATCH_SIZE) {
         // Large capture: send in batches of 30
-        const numParts = Math.ceil(allScreenshots.length / BATCH_SIZE);
         console.log(`[SnapToAI] Large capture - sending in batches of ${BATCH_SIZE}`);
+        showToast(`Long page captured in ${Math.ceil(allScreenshots.length / BATCH_SIZE)} parts`, 'success');
         
         const totalBatches = Math.ceil(allScreenshots.length / BATCH_SIZE);
         
@@ -3610,8 +3539,8 @@
         removeFullPageOverlay();
       } catch (e) {}
       
-      // Send error to popup status bar (not toast on page)
-      chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'Page not capturable. Try SNAP.', type: 'error' }).catch(() => {});
+      // SHOW USER-FRIENDLY ERROR MESSAGE - calm, not alarming
+      showToast('This page cannot be captured. Try SNAP instead.', 'error');
       
       // Notify background of failure so it can reset state - wrapped in try/catch
       try {
