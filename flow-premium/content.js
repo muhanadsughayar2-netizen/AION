@@ -3174,12 +3174,18 @@
       // Uses 700ms delay between captures to avoid quota errors (used by GoFullPage, FireShot)
       let lastScrollTop = -1;
       let captureCount = 0;
-      const maxCaptures = 100; // Safety limit
+      const maxCaptures = 90; // Hard limit = MAX_SCREENSHOTS (3 slots × 30)
       let consecutiveFails = 0;
       const MAX_CONSECUTIVE_FAILS = 5;
       
+      // === INFINITE SCROLL DETECTION ===
+      // Track if page keeps growing beyond initial estimate
+      const initialMaxScroll = getMaxScroll();
+      let infiniteScrollDetected = false;
+      let lastMaxScrollCheck = initialMaxScroll;
+      
       // === GLOBAL TIMEOUT - Never spin forever ===
-      const CAPTURE_TIMEOUT_MS = 60000; // 60 seconds max
+      const CAPTURE_TIMEOUT_MS = 45000; // 45 seconds max (reduced from 60)
       const captureStartTime = Date.now();
       let timedOut = false;
       
@@ -3237,9 +3243,20 @@
         
         // === GLOBAL TIMEOUT CHECK - Never spin forever ===
         if (Date.now() - captureStartTime > CAPTURE_TIMEOUT_MS) {
-          console.log('[SnapToAI] Capture timeout reached (60s) - stopping');
+          console.log('[SnapToAI] Capture timeout reached (45s) - stopping');
           timedOut = true;
           break;
+        }
+        
+        // === INFINITE SCROLL DETECTION ===
+        // Check every 10 captures if page is growing faster than we can scroll
+        if (captureCount > 0 && captureCount % 10 === 0) {
+          const currentMaxScroll = getMaxScroll();
+          if (currentMaxScroll > lastMaxScrollCheck * 1.5) {
+            infiniteScrollDetected = true;
+            console.log('[SnapToAI] Infinite scroll detected - page keeps growing');
+          }
+          lastMaxScrollCheck = currentMaxScroll;
         }
         
         // Keep service worker alive during long captures
@@ -3415,9 +3432,17 @@
       
       console.log(`[SnapToAI] Full page capture complete: ${screenshots.length} images`);
       
-      // === TIMEOUT MESSAGE - User-friendly notification ===
-      if (timedOut && screenshots.length > 0) {
-        showToast(`Page too long - captured first ${screenshots.length} sections`, 'warning');
+      // === USER-FRIENDLY NOTIFICATIONS ===
+      // Explain what happened if we stopped early
+      if (captureCount >= maxCaptures && screenshots.length > 0) {
+        // Hit the 90 screenshot limit
+        showToast(`Max limit reached. Captured ${screenshots.length} screenshots (3 files max).`, 'warning');
+      } else if (infiniteScrollDetected && screenshots.length > 0) {
+        // Infinite scroll site detected
+        showToast(`Infinite scroll detected. Saved ${screenshots.length} screenshots.`, 'warning');
+      } else if (timedOut && screenshots.length > 0) {
+        // Timeout reached
+        showToast(`Large page! Captured ${screenshots.length} screenshots before timeout.`, 'warning');
       }
       
       updateOverlayProgress(100);
