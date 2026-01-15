@@ -162,10 +162,12 @@
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     try {
       if (request.action === 'showToast') {
-        showToast(request.message, request.type || 'success');
+        // Redirect to popup status bar - NO toast on page
+        chrome.runtime.sendMessage({ action: 'fullPageStatus', message: request.message, type: request.type || 'success' }).catch(() => {});
         sendResponse({ success: true });
       } else if (request.action === 'captureComplete') {
-        showToast(request.message, 'success');
+        // Redirect to popup status bar - NO toast on page
+        chrome.runtime.sendMessage({ action: 'fullPageStatus', message: request.message, type: 'success' }).catch(() => {});
         sendResponse({ success: true });
       } else if (request.action === 'beginUpload') {
         uploadToAI(request.platform, request.useSelectedOnly)
