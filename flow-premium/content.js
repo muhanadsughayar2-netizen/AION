@@ -851,31 +851,8 @@
     
     const overlay = document.createElement('div');
     overlay.id = 'snaptoai-fullpage-overlay';
-    overlay.style.cssText = 'position: fixed !important; bottom: 20px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 2147483647 !important; pointer-events: none !important;';
-    overlay.innerHTML = `
-      <div style="
-        background: rgba(0, 0, 0, 0.7);
-        border-radius: 20px;
-        padding: 8px 16px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        color: rgba(255,255,255,0.8);
-        font-size: 12px;
-        backdrop-filter: blur(5px);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      ">
-        <div style="
-          width: 12px;
-          height: 12px;
-          border: 2px solid rgba(0, 217, 255, 0.3);
-          border-top-color: rgba(0, 217, 255, 0.9);
-          border-radius: 50%;
-          animation: snaptoai-spin 0.8s linear infinite;
-        "></div>
-        <span id="snaptoai-progress-text">Capturing...</span>
-      </div>
-    `;
+    // NO UI on page - overlay is invisible, just used for tracking
+    overlay.style.cssText = 'display: none !important;';
     
     // Add animation style
     const style = document.createElement('style');
@@ -3262,9 +3239,11 @@
           break;
         }
         
-        // === HARD LIMIT - Always stop at 15 captures (no exceptions) ===
-        if (captureCount >= 15) {
-          console.log('[SnapToAI] Hard limit reached (15 captures) - stopping');
+        // === SMART LIMIT - Virtual sites stop faster ===
+        const isVirtualSite = ['replit.com', 'specode.ai', 'figma.com', 'notion.so'].some(h => location.hostname.includes(h));
+        const captureLimit = isVirtualSite ? 8 : 12;
+        if (captureCount >= captureLimit) {
+          console.log(`[SnapToAI] Limit reached (${captureLimit} captures) - stopping`);
           break;
         }
         
