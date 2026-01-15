@@ -430,7 +430,7 @@
     }
   }
 
-  // Show floating toast notification near cursor
+  // Show floating toast notification - fixed position at top center
   function showToast(message, type = 'success') {
     const existingToast = document.getElementById('flow-toast');
     if (existingToast) {
@@ -441,29 +441,11 @@
     toast.id = 'flow-toast';
     toast.textContent = message;
     
-    const mousePos = getMousePos();
-    
-    const offsetX = 20;
-    const offsetY = -40;
-    let posX = mousePos.x + offsetX;
-    let posY = mousePos.y + offsetY;
-    
-    if (mousePos.x === window.innerWidth - 20 && mousePos.y === 20) {
-      posX = (window.innerWidth / 2) - 100;
-      posY = 20;
-    }
-    
-    if (posX + 200 > window.innerWidth) {
-      posX = mousePos.x - 220;
-    }
-    if (posY < 10) {
-      posY = 10;
-    }
-    
     Object.assign(toast.style, {
       position: 'fixed',
-      left: `${posX}px`,
-      top: `${posY}px`,
+      left: '50%',
+      top: '20px',
+      transform: 'translateX(-50%)',
       backgroundColor: type === 'success' ? 'rgba(0, 217, 255, 0.95)' : 'rgba(255, 59, 48, 0.95)',
       color: '#000',
       padding: '12px 24px',
