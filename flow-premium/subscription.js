@@ -392,46 +392,15 @@ function getCheckoutUrls() {
   };
 }
 
-// Use one AI credit - call this BEFORE each AI request
-async function useCredit() {
-  const userId = await getUserId();
-  if (!userId) {
-    return { allowed: false, reason: 'no_api_key' };
-  }
-  
-  try {
-    const response = await fetch(TRIAL_SERVER_URL.replace('/trial', '/use-credit'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userHash: userId })
-    });
-    
-    if (!response.ok) {
-      if (response.status === 429) {
-        return { allowed: false, reason: 'rate_limited' };
-      }
-      return { allowed: false, reason: 'server_error' };
-    }
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.log('[SnapToAI] Use credit error:', error.message);
-    return { allowed: false, reason: 'network_error' };
-  }
-}
-
 // Export for popup and ai-chat
 if (typeof window !== 'undefined') {
   window.SnapToAISubscription = {
     check: checkSubscription,
-    useCredit,  // Call before each AI request
     saveLicense: saveLicenseKey,
     clearLicense: clearLicenseKey,
     getLicense: getLicenseKey,
     openCheckout,
     getCheckoutUrls,
-    TRIAL_DAYS,
-    FREE_TIER_DAILY_CREDITS
+    TRIAL_DAYS
   };
 }
