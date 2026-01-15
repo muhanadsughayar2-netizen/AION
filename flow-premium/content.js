@@ -196,7 +196,7 @@
           .then(sendResponse)
           .catch(err => {
             console.warn('[SnapToAI] Full page capture failed safely:', err.message);
-            showToast('This page cannot be captured. Try SNAP instead.', 'error');
+            chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'Page not capturable. Try SNAP.', type: 'error' }).catch(() => {});
             sendResponse({ success: false, error: 'Page not capturable' });
           });
         return true;
@@ -425,8 +425,8 @@
         chrome.runtime.sendMessage({ action: 'fullPageStitchFailed' });
       } catch (e) {}
       
-      // Show user-friendly message
-      showToast('This page cannot be captured. Try SNAP instead.', 'error');
+      // Show user-friendly message in popup status bar
+      chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'Page not capturable. Try SNAP.', type: 'error' }).catch(() => {});
       
       return { success: false, error: 'Page not capturable' };
     }
@@ -2752,7 +2752,7 @@
     }
     
     if (!preflight.canCapture) {
-      showToast('Cannot capture this page: ' + preflight.errors.join(', '), 'error');
+      chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'Cannot capture this page', type: 'error' }).catch(() => {});
       isFullPageCaptureRunning = false;
       return { success: false, error: preflight.errors.join(', ') };
     }
@@ -2761,14 +2761,14 @@
     const maxSegments = 80;
     const totalSegments = Math.ceil(preflight.pageHeight / preflight.viewportHeight);
     if (totalSegments > maxSegments) {
-      showToast('Page too long for full capture (80+ pages)', 'error');
+      chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'Page too long for full capture', type: 'error' }).catch(() => {});
       isFullPageCaptureRunning = false;
       return { success: false, error: 'page_too_long' };
     }
     
     // COMPLEX APP DETECTION: Replit, Figma, etc. have fixed layouts that can't be scroll-captured
     if (preflight.isComplexApp) {
-      showToast('App layout detected - capturing visible screen', 'success');
+      chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'App layout - capturing visible screen', type: 'success' }).catch(() => {});
       isFullPageCaptureRunning = false;
       return await simpleViewportCapture(tabId);
     }
@@ -2779,7 +2779,7 @@
     const htmlClasses = document.documentElement.className || '';
     const isDocumentViewer = htmlClasses.includes('page-image') || htmlClasses.includes('can-zoom-in') || document.querySelector('#content .page-image, .document-page, .pdf-page');
     if (preflight.pageHeight <= preflight.viewportHeight + 50 && !preflight.isAIPlatform && !isSpecialScrollSite && !isDocumentViewer) {
-      showToast('Page is short - using simple capture', 'success');
+      chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'Short page - simple capture', type: 'success' }).catch(() => {});
       // Fall back to simple viewport capture
       isFullPageCaptureRunning = false;
       return await simpleViewportCapture(tabId);
@@ -2843,7 +2843,7 @@
       
       if (isNoFullPageSite) {
         console.log('[SnapToAI] Full-page capture disabled on this site:', location.hostname);
-        showToast('Full-page not available on this site. Use regular Snap instead.', 'warning');
+        chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'Full-page not available. Use Snap instead.', type: 'warning' }).catch(() => {});
         return; // Exit early - no error, just graceful skip
       }
       
@@ -3277,6 +3277,12 @@
           break;
         }
         
+        // === HARD LIMIT - Always stop at 15 captures (no exceptions) ===
+        if (captureCount >= 15) {
+          console.log('[SnapToAI] Hard limit reached (15 captures) - stopping');
+          break;
+        }
+        
         // === GLOBAL TIMEOUT CHECK - Never spin forever ===
         if (Date.now() - captureStartTime > CAPTURE_TIMEOUT_MS) {
           console.log('[SnapToAI] Capture timeout reached (45s) - stopping');
@@ -3638,8 +3644,8 @@
         removeFullPageOverlay();
       } catch (e) {}
       
-      // SHOW USER-FRIENDLY ERROR MESSAGE - calm, not alarming
-      showToast('This page cannot be captured. Try SNAP instead.', 'error');
+      // Send error to popup status bar (not toast on page)
+      chrome.runtime.sendMessage({ action: 'fullPageStatus', message: 'Page not capturable. Try SNAP.', type: 'error' }).catch(() => {});
       
       // Notify background of failure so it can reset state - wrapped in try/catch
       try {
