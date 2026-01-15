@@ -17,7 +17,7 @@ const TRIAL_DAYS = 30;
 // ===========================================
 // ⚠️ TEST MODE - For development ONLY. These functions modify trial data!
 // Set to false before publishing to Chrome Web Store!
-const ENABLE_TEST_MODE = true; // Set to false before publishing to Chrome Web Store
+const ENABLE_TEST_MODE = false; // PRODUCTION: Test mode disabled
 
 window.SnapToAI_TEST = ENABLE_TEST_MODE ? {
   // SAFETY: Store original date before any test modifications
