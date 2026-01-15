@@ -279,11 +279,13 @@ async function checkSubscription() {
     };
   }
 
-  // Trial expired, no license
+  // Trial expired but user has their own API key - let them use it!
+  // They're paying Google directly, not us
   return {
-    status: 'expired',
+    status: 'using_own_key',
     daysRemaining: 0,
-    canUseAI: false
+    canUseAI: true,
+    usingOwnKey: true
   };
 }
 
