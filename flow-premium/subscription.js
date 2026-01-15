@@ -17,7 +17,7 @@ const TRIAL_DAYS = 30;
 // ===========================================
 // ⚠️ TEST MODE - For development ONLY. These functions modify trial data!
 // Set to false before publishing to Chrome Web Store!
-const ENABLE_TEST_MODE = false; // PRODUCTION: Test mode disabled
+const ENABLE_TEST_MODE = true; // Set to false before publishing to Chrome Web Store
 
 window.SnapToAI_TEST = ENABLE_TEST_MODE ? {
   // SAFETY: Store original date before any test modifications
@@ -195,8 +195,8 @@ async function checkSubscription() {
     };
   }
   
-  // Check server for trial date (once per minute for faster updates)
-  const CHECK_INTERVAL = 60 * 1000; // 1 minute
+  // Check server for trial date (once per hour to avoid spamming)
+  const CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
   let trialStartDate = cachedTrialStartDate;
   
   // Also track which API key hash we cached for
@@ -217,19 +217,45 @@ async function checkSubscription() {
     }
   }
   
-  // No local fallback - server is the only source of truth
-  // If server unavailable, use cached data only (no new trials)
+  // Fallback to local data if server unavailable
   if (!trialStartDate) {
-    console.log('[SnapToAI] Server unavailable, no cached trial data');
-    return {
-      status: 'server_unavailable',
-      daysRemaining: 0,
-      canUseAI: false,
-      serverDown: true
+    const { trialStartDate: syncDate } = await chrome.storage.sync.get(['trialStartDate']);
+    const { initialInstallTimestamp, trialStartDate: localDate } = await chrome.storage.local.get(['initialInstallTimestamp', 'trialStartDate']);
+    
+    const toNum = (v) => {
+      if (typeof v === 'number' && v > 0) return v;
+      if (typeof v === 'string') {
+        const n = parseInt(v, 10) || Date.parse(v);
+        return n > 0 ? n : null;
+      }
+      return null;
     };
+    const candidates = [initialInstallTimestamp, syncDate, localDate].map(toNum).filter(d => d && d > 0);
+    trialStartDate = candidates.length > 0 ? Math.min(...candidates) : null;
+    
+    // If we have local data but server failed, try to sync to server
+    if (trialStartDate) {
+      console.log('[SnapToAI] Using local trial date, server unavailable');
+    }
   }
 
-  console.log('[SnapToAI] Trial check - Start:', new Date(trialStartDate).toLocaleDateString(), 'Days elapsed:', Math.floor((now - trialStartDate) / 86400000));
+  console.log('[SnapToAI] Trial check - Start:', trialStartDate ? new Date(trialStartDate).toLocaleDateString() : 'none', 'Days elapsed:', trialStartDate ? Math.floor((now - trialStartDate) / 86400000) : 0);
+
+  // Handle missing trial date
+  if (!trialStartDate) {
+    // First time user - register with server
+    const serverDate = await getServerTrialDate(userId);
+    if (serverDate) {
+      trialStartDate = serverDate;
+      await chrome.storage.local.set({ cachedTrialStartDate: serverDate, lastServerCheck: now });
+    } else {
+      // Server unavailable - create local trial (will sync later)
+      trialStartDate = now;
+      await chrome.storage.local.set({ initialInstallTimestamp: trialStartDate, trialStartDate });
+      await chrome.storage.sync.set({ trialStartDate });
+      console.log('[SnapToAI] Created local trial, will sync to server later');
+    }
+  }
   
   const installDate = trialStartDate;
 
@@ -279,7 +305,7 @@ async function checkSubscription() {
     };
   }
 
-  // Trial expired - must subscribe to continue using AI
+  // Trial expired, no license
   return {
     status: 'expired',
     daysRemaining: 0,
