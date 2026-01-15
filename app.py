@@ -1,9 +1,37 @@
-from flask import Flask, send_from_directory, request, redirect, Response
+from flask import Flask, send_from_directory, request, redirect, Response, jsonify
 import os
 import mimetypes
+import psycopg2
+from datetime import datetime
 
 # Disable automatic static folder - we'll handle all routing manually
 app = Flask(__name__, static_folder=None)
+
+# Database connection
+def get_db():
+    return psycopg2.connect(os.environ.get('DATABASE_URL'))
+
+# Initialize database table for trial tracking
+def init_db():
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS user_trials (
+                user_hash VARCHAR(64) PRIMARY KEY,
+                trial_start_date BIGINT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        cur.close()
+        conn.close()
+        print('✅ Database initialized')
+    except Exception as e:
+        print(f'Database init error: {e}')
+
+# Initialize on startup
+init_db()
 app.url_map.strict_slashes = False
 
 # Handle www redirect
@@ -60,6 +88,62 @@ def add_headers(response):
 def health():
     """Health check endpoint for deployment"""
     return Response("OK", status=200, mimetype='text/plain')
+
+# ============================================
+# TRIAL TRACKING API
+# ============================================
+
+@app.route('/api/trial', methods=['POST', 'OPTIONS'])
+def get_or_create_trial():
+    """Get or create trial for a user based on their hashed identifier"""
+    if request.method == 'OPTIONS':
+        response = Response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
+    
+    try:
+        data = request.get_json()
+        user_hash = data.get('userHash')
+        
+        if not user_hash or len(user_hash) < 16:
+            return jsonify({'error': 'Invalid user hash'}), 400
+        
+        conn = get_db()
+        cur = conn.cursor()
+        
+        # Check if user exists
+        cur.execute('SELECT trial_start_date FROM user_trials WHERE user_hash = %s', (user_hash,))
+        row = cur.fetchone()
+        
+        if row:
+            # User exists - return their original trial start date
+            trial_start = row[0]
+        else:
+            # New user - create trial record with current timestamp
+            trial_start = int(datetime.now().timestamp() * 1000)
+            cur.execute(
+                'INSERT INTO user_trials (user_hash, trial_start_date) VALUES (%s, %s)',
+                (user_hash, trial_start)
+            )
+            conn.commit()
+        
+        cur.close()
+        conn.close()
+        
+        response = jsonify({
+            'success': True,
+            'trialStartDate': trial_start
+        })
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
+        
+    except Exception as e:
+        print(f'Trial API error: {e}')
+        response = jsonify({'error': 'Server error', 'details': str(e)})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response, 500
 
 @app.route('/')
 def index():
