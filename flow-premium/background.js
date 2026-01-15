@@ -943,15 +943,20 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
             type: 'popup',
             width: 1200,
             height: 800,
+            left: 50,
+            top: 50,
             focused: true
           });
         } else {
           // Normal mode: Open small unfocused window for autoSave processing
+          // Use safe bounds (left/top) to avoid "Bounds must be 50% within visible screen" error
           chrome.windows.create({
             url: 'annotate.html?mode=fullpage&autoSave=true',
             type: 'popup',
             width: 400,
             height: 300,
+            left: 50,
+            top: 50,
             focused: false
           });
         }
