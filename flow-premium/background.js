@@ -946,13 +946,13 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
             focused: true
           });
         } else {
-          // Normal mode: Open minimized with autoSave
+          // Normal mode: Open small unfocused window for autoSave processing
           chrome.windows.create({
             url: 'annotate.html?mode=fullpage&autoSave=true',
             type: 'popup',
             width: 400,
             height: 300,
-            state: 'minimized'
+            focused: false
           });
         }
         

@@ -457,7 +457,8 @@
       zIndex: '2147483647',
       animation: 'flow-toast-fade-in 0.3s ease-out',
       backdropFilter: 'blur(10px)',
-      pointerEvents: 'none'
+      pointerEvents: 'none',
+      opacity: '1'
     });
     
     if (!document.getElementById('flow-toast-styles')) {
@@ -465,12 +466,12 @@
       style.id = 'flow-toast-styles';
       style.textContent = `
         @keyframes flow-toast-fade-in {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
         @keyframes flow-toast-fade-out {
-          from { opacity: 1; transform: scale(1); }
-          to { opacity: 0; transform: scale(0.9); }
+          from { opacity: 1; }
+          to { opacity: 0; }
         }
       `;
       document.head.appendChild(style);
@@ -3465,33 +3466,36 @@
           const end = Math.min(start + BATCH_SIZE, allScreenshots.length);
           const batch = allScreenshots.slice(start, end);
           
-          // Wait for each batch to be confirmed before sending next
+          // Wait for batch with timeout to prevent hanging
           try {
-            await new Promise((resolve, reject) => {
-              chrome.runtime.sendMessage({
-                action: 'fullPageCaptureBatch',
-                batchIndex: i,
-                totalBatches: totalBatches,
-                screenshots: batch,
-                viewportWidth,
-                viewportHeight,
-                isAIPlatform: isAIPlatform,
-                pageUrl: window.location.href,
-                pageTitle: document.title || 'Untitled Page'
-              }, (response) => {
-                if (chrome.runtime.lastError) {
-                  console.warn('[SnapToAI] Batch send error:', chrome.runtime.lastError.message);
-                }
-                resolve(response);
-              });
-            });
+            await Promise.race([
+              new Promise((resolve) => {
+                chrome.runtime.sendMessage({
+                  action: 'fullPageCaptureBatch',
+                  batchIndex: i,
+                  totalBatches: totalBatches,
+                  screenshots: batch,
+                  viewportWidth,
+                  viewportHeight,
+                  isAIPlatform: isAIPlatform,
+                  pageUrl: window.location.href,
+                  pageTitle: document.title || 'Untitled Page'
+                }, (response) => {
+                  if (chrome.runtime.lastError) {
+                    console.warn('[SnapToAI] Batch send error:', chrome.runtime.lastError.message);
+                  }
+                  resolve(response);
+                });
+              }),
+              new Promise(resolve => setTimeout(resolve, 3000)) // 3s timeout
+            ]);
           } catch (e) {
             console.warn('[SnapToAI] Batch', i + 1, 'error:', e.message);
           }
           
           // Small delay between batches to let background process
           if (i < totalBatches - 1) {
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise(r => setTimeout(r, 150));
           }
         }
       } else {
