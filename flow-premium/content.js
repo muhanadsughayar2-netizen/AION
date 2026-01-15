@@ -3284,31 +3284,6 @@
           break;
         }
         
-        // === INFINITE SCROLL DETECTION (AGGRESSIVE) ===
-        // Check frequently - infinite scroll sites waste user's time
-        if (captureCount > 0 && captureCount % 5 === 0) {
-          const currentMaxScroll = getMaxScroll();
-          // Detect if page grew by 20%+ since last check (was 50%)
-          if (currentMaxScroll > lastMaxScrollCheck * 1.2) {
-            infiniteScrollDetected = true;
-            console.log('[SnapToAI] Infinite scroll detected - page keeps growing');
-            // Stop early - just need enough for 1 file (15-20 screenshots = good coverage)
-            if (screenshots.length >= 20) {
-              console.log('[SnapToAI] Stopping early on infinite scroll - have enough content');
-              break;
-            }
-          }
-          lastMaxScrollCheck = currentMaxScroll;
-          
-          // Also check: if we've captured 25+ and still not near bottom, it's likely infinite
-          const scrollProgress = getScrollTop() / currentMaxScroll;
-          if (screenshots.length >= 25 && scrollProgress < 0.7) {
-            infiniteScrollDetected = true;
-            console.log('[SnapToAI] Infinite scroll detected - not reaching bottom after 25 captures');
-            break;
-          }
-        }
-        
         // Keep service worker alive during long captures
         await keepServiceWorkerAlive();
         
@@ -3322,6 +3297,30 @@
         
         // Update progress with "X of Y" format
         const maxScroll = getMaxScroll();
+        
+        // === INFINITE SCROLL DETECTION (AGGRESSIVE) ===
+        // Now runs AFTER scroll position is computed and validated
+        if (captureCount > 0 && captureCount % 5 === 0) {
+          // Detect if page grew by 20%+ since last check
+          if (maxScroll > lastMaxScrollCheck * 1.2) {
+            infiniteScrollDetected = true;
+            console.log('[SnapToAI] Infinite scroll detected - page keeps growing');
+            // Stop early - just need enough for 1 file (15-20 screenshots = good coverage)
+            if (screenshots.length >= 20) {
+              console.log('[SnapToAI] Stopping early on infinite scroll - have enough content');
+              break;
+            }
+          }
+          lastMaxScrollCheck = maxScroll;
+          
+          // Also check: if we've captured 25+ and still not near bottom, it's likely infinite
+          const scrollProgress = currentScrollTop / maxScroll;
+          if (screenshots.length >= 25 && scrollProgress < 0.7) {
+            infiniteScrollDetected = true;
+            console.log('[SnapToAI] Infinite scroll detected - not reaching bottom after 25 captures');
+            break;
+          }
+        }
         totalEstimatedCaptures = Math.max(totalEstimatedCaptures, Math.ceil(maxScroll / stepHeight) + 2);
         const progress = maxScroll > 0 ? Math.min(99, Math.round((currentScrollTop / maxScroll) * 100)) : 50;
         updateOverlayProgress(progress, captureCount + 1, totalEstimatedCaptures);
