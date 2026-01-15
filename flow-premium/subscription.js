@@ -111,24 +111,26 @@ const GRACE_PERIOD_HOURS = 48;
 // Server URL for trial tracking (replace with your production URL)
 const TRIAL_SERVER_URL = 'https://snaptoai.com/api/trial';
 
-// Generate a unique user ID (NOT based on API key - survives key changes)
-function generateUserId() {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+// Daily credit limit for users who change API keys (free tier)
+const FREE_TIER_DAILY_CREDITS = 20;
+
+// Hash the API key to create a unique identifier (never sends actual key)
+async function hashApiKey(apiKey) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(apiKey + 'snaptoai_salt_2024');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Get or create the user's unique ID
+// Get user ID from API key hash
 async function getUserId() {
-  const { snaptoaiUserId } = await chrome.storage.sync.get(['snaptoaiUserId']);
-  if (snaptoaiUserId) {
-    return snaptoaiUserId;
+  const { geminiApiKey } = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!geminiApiKey) {
+    return null; // No API key = no trial tracking
   }
-  // Generate new ID and store in sync (survives reinstall if Chrome sync enabled)
-  const newId = generateUserId();
-  await chrome.storage.sync.set({ snaptoaiUserId: newId });
-  console.log('[SnapToAI] Generated new user ID');
-  return newId;
+  // Hash the API key - this is the user's unique identifier
+  return await hashApiKey(geminiApiKey);
 }
 
 // Get trial start date from server (source of truth)
@@ -179,20 +181,37 @@ async function checkSubscription() {
 
   const now = Date.now();
   
-  // Get or create unique user ID
+  // Get user ID from API key hash
   const userId = await getUserId();
+  
+  // If no API key, user hasn't set up AI yet - no trial needed
+  if (!userId) {
+    console.log('[SnapToAI] No API key set - trial not started yet');
+    return {
+      status: 'no_api_key',
+      daysRemaining: TRIAL_DAYS,
+      canUseAI: false,
+      needsApiKey: true
+    };
+  }
   
   // Check server for trial date (once per hour to avoid spamming)
   const CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
   let trialStartDate = cachedTrialStartDate;
   
-  if (!lastServerCheck || (now - lastServerCheck) > CHECK_INTERVAL) {
+  // Also track which API key hash we cached for
+  const { cachedApiKeyHash } = await chrome.storage.local.get(['cachedApiKeyHash']);
+  const apiKeyChanged = cachedApiKeyHash && cachedApiKeyHash !== userId;
+  
+  // Force server check if API key changed
+  if (apiKeyChanged || !lastServerCheck || (now - lastServerCheck) > CHECK_INTERVAL) {
     const serverDate = await getServerTrialDate(userId);
     if (serverDate) {
       trialStartDate = serverDate;
       // Cache locally for offline/speed
       await chrome.storage.local.set({ 
         cachedTrialStartDate: serverDate,
+        cachedApiKeyHash: userId,
         lastServerCheck: now
       });
     }

@@ -141,7 +141,7 @@ def get_or_create_trial():
         
     except Exception as e:
         print(f'Trial API error: {e}')
-        response = jsonify({'error': 'Server error', 'details': str(e)})
+        response = jsonify({'error': 'Server error'})
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response, 500
 
