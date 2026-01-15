@@ -1414,28 +1414,28 @@ async function handleFullPageClick() {
   // Disable button during operation
   fullPageButton.disabled = true;
   
-  // Estimate slots needed for full-page capture (typically 1-4 chunks)
-  // Worst case: very long page = 4 chunks (20+ viewport heights)
-  const ESTIMATED_MAX_CHUNKS = 4;
-  const PAGES_PER_CHUNK = 40;
-  const availableSlots = 9 - currentSnaps.length;
+  // Full page capture: 30 screenshots per slot (BATCH_SIZE = 30)
+  // Queue has 9 slots max (MAX_SNAPS = 9)
+  const SCREENSHOTS_PER_SLOT = 30;
+  const MAX_SLOTS = 9;
+  const availableSlots = MAX_SLOTS - currentSnaps.length;
   
-  // If queue is completely full
-  if (currentSnaps.length >= 9) {
-    status.textContent = 'Queue full (9/9). Clear some snaps to capture full page.';
+  // If queue is completely full - cannot capture at all
+  if (currentSnaps.length >= MAX_SLOTS) {
+    status.textContent = 'Queue full (9/9). Clear snaps first to capture full page.';
     status.className = 'status error';
     setTimeout(() => { status.textContent = 'Ready'; status.className = 'status'; }, 4000);
     fullPageButton.disabled = false;
     return;
   }
   
-  // If queue might not have enough space for a long page
-  if (availableSlots < ESTIMATED_MAX_CHUNKS && currentSnaps.length > 0) {
-    status.textContent = `Need up to ${ESTIMATED_MAX_CHUNKS} slots, only ${availableSlots} available. Clear some snaps.`;
-    status.className = 'status error';
-    setTimeout(() => { status.textContent = 'Ready'; status.className = 'status'; }, 4000);
-    fullPageButton.disabled = false;
-    return;
+  // Show how many slots available and what that means
+  if (availableSlots === 1) {
+    status.textContent = `1 slot free = up to 30 screenshots. Long pages may be split.`;
+    status.className = 'status';
+  } else if (availableSlots < 4) {
+    status.textContent = `${availableSlots} slots free = up to ${availableSlots * SCREENSHOTS_PER_SLOT} screenshots.`;
+    status.className = 'status';
   }
   
   try {

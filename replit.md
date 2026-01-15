@@ -35,6 +35,13 @@ The extension supports capturing, annotating, organizing (reordering, multi-sele
 6. Saves the stitched image to the queue
 Handles infinite-scroll sites with scroll settlement detection. Works on any web page regardless of length.
 
+**Full Page Capture Constants (IMPORTANT - DO NOT CHANGE):**
+- `BATCH_SIZE = 30` - Each slot holds 30 viewport screenshots stitched together
+- `MAX_SNAPS = 9` - Queue has 9 slots total
+- `MAX_SCREENSHOTS = 90` - Maximum 90 screenshots per capture (3 slots × 30)
+- Long pages show message: "Long page! Saving as X files (Y screenshots)"
+- Queue full shows: "Queue full (9/9). Clear snaps first to capture full page."
+
 **Agent Chat Feature (January 2026):** Simple data gathering automation:
 - New "Agent" button in popup (purple orb) opens Agent Chat interface
 - User describes tasks in natural language (e.g., "Go to https://example.com and snap it")

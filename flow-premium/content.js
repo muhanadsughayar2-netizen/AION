@@ -3473,8 +3473,9 @@
       
       if (allScreenshots.length > BATCH_SIZE) {
         // Large capture: send in batches of 30
+        const numParts = Math.ceil(allScreenshots.length / BATCH_SIZE);
         console.log(`[SnapToAI] Large capture - sending in batches of ${BATCH_SIZE}`);
-        showToast(`Long page captured in ${Math.ceil(allScreenshots.length / BATCH_SIZE)} parts`, 'success');
+        showToast(`Long page! Saving as ${numParts} files (${allScreenshots.length} screenshots)`, 'success');
         
         const totalBatches = Math.ceil(allScreenshots.length / BATCH_SIZE);
         
