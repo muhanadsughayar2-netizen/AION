@@ -3298,26 +3298,26 @@
         // Update progress with "X of Y" format
         const maxScroll = getMaxScroll();
         
-        // === INFINITE SCROLL DETECTION (AGGRESSIVE) ===
-        // Now runs AFTER scroll position is computed and validated
-        if (captureCount > 0 && captureCount % 5 === 0) {
-          // Detect if page grew by 20%+ since last check
-          if (maxScroll > lastMaxScrollCheck * 1.2) {
+        // === INFINITE SCROLL DETECTION (VERY AGGRESSIVE) ===
+        // Check every 2 captures - stop FAST on infinite scroll sites
+        if (captureCount > 0 && captureCount % 2 === 0) {
+          // Detect if page grew at all since last check
+          if (maxScroll > lastMaxScrollCheck * 1.1) {
             infiniteScrollDetected = true;
-            console.log('[SnapToAI] Infinite scroll detected - page keeps growing');
-            // Stop early - just need enough for 1 file (15-20 screenshots = good coverage)
-            if (screenshots.length >= 20) {
-              console.log('[SnapToAI] Stopping early on infinite scroll - have enough content');
+            console.log('[SnapToAI] Infinite scroll detected - page growing');
+            // Stop immediately once we have 10+ screenshots (enough for meaningful content)
+            if (screenshots.length >= 10) {
+              console.log('[SnapToAI] Stopping - infinite scroll with 10+ captures');
               break;
             }
           }
           lastMaxScrollCheck = maxScroll;
           
-          // Also check: if we've captured 25+ and still not near bottom, it's likely infinite
+          // Also: if 15+ captures and still <60% down, it's infinite - stop now
           const scrollProgress = currentScrollTop / maxScroll;
-          if (screenshots.length >= 25 && scrollProgress < 0.7) {
+          if (screenshots.length >= 15 && scrollProgress < 0.6) {
             infiniteScrollDetected = true;
-            console.log('[SnapToAI] Infinite scroll detected - not reaching bottom after 25 captures');
+            console.log('[SnapToAI] Stopping - not reaching bottom after 15 captures');
             break;
           }
         }
