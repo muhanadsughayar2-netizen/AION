@@ -1,0 +1,157 @@
+Here are all the updates in one shot — bugs first, then UX improvements. Each has:
+
+Which file to put it in.
+Where to paste it (e.g., "at the top" or "replace this part").
+The exact code.
+
+Bug Fixes (Paste These to Stop Problems)
+
+Concurrent Capture Race (Makes snaps always work one after the other, no mix-ups)
+File: background.js
+Where: At the top of the file, before any capture code.
+Exact code:textlet captureQueue = [];
+let isProcessing = false;
+
+async function processQueue() {
+  if (isProcessing || captureQueue.length === 0) return;
+  isProcessing = true;
+  const nextCapture = captureQueue.shift();
+  try {
+    await nextCapture();  // Run the capture function
+  } catch (e) {
+    console.error('[SnapToAI Capture Error]', e);
+  }
+  isProcessing = false;
+  processQueue();  // Next
+}
+
+// Use this when starting a capture (replace your old capture start with this)
+captureQueue.push(async () => {
+  // Put your original capture code here (e.g., chrome.tabs.captureVisibleTab)
+});
+processQueue();
+
+IndexedDB Quota Failure (Saves big pictures even if storage is full)
+File: content.js
+Where: Inside the saveFPCScreenshots function, replace the catch block.
+Exact code:text} catch (e) {
+  console.warn('[SnapToAI] IndexedDB failed, falling back to sessionStorage');
+  sessionStorage.setItem('fpc_screenshots', JSON.stringify(screenshots.slice(0, 20)));  // Limit to avoid overflow
+  sessionStorage.setItem('fpc_metadata', JSON.stringify(metadata));
+  return true;
+}
+
+Mutation Observer Leak (Keeps the extension fast, no slowdowns over time)
+File: content.js
+Where: At the end of the file.
+Exact code:textwindow.addEventListener('unload', () => {
+  if (grokObserver) grokObserver.disconnect();
+});
+
+Auto-Paste Interval Not Cleared (Stops wasting battery on page changes)
+File: content.js
+Where: In the auto-paste section, after setting the interval.
+Exact code:textconst pasteInterval = setInterval(() => { /* your original code here */ }, 1000);
+window.addEventListener('beforeunload', () => clearInterval(pasteInterval));
+
+JPEG Quality Validation (Fixes bad numbers in settings for perfect pictures)
+File: popup.js (the options one)
+Where: Replace the jpegQuality input listener.
+Exact code:textdocument.getElementById('jpegQuality').addEventListener('input', (e) => {
+  let val = parseInt(e.target.value);
+  val = Math.max(1, Math.min(100, val || 90));  // Clamp 1-100, default 90
+  e.target.value = val;
+  document.getElementById('jpegQualityValue').textContent = val + '%';
+});
+
+
+UX Improvements (Paste These to Make It Feel Even Better)
+
+Thumbnail Grid Hover (Makes pictures glow and easy to delete)
+File: popup.css
+Where: At the end of the CSS.
+Exact code:text.thumbnail:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(0, 217, 255, 0.5);  // Cyan glow
+}
+.thumbnail::after {  // Add delete X on hover
+  content: '✕';
+  position: absolute;
+  top: 5px; right: 5px;
+  color: red;
+  display: none;
+}
+.thumbnail:hover::after { display: block; cursor: pointer; }
+In popup.js: Add this to handle delete clicks (at the end):textdocument.querySelectorAll('.thumbnail').forEach(thumb => {
+  thumb.addEventListener('click', (e) => {
+    if (e.target.textContent === '✕') {
+      // Your delete code here (remove the thumbnail)
+    }
+  });
+});
+
+Export Buttons Feedback (Shows "Copied!" message after click)
+File: popup.css
+Where: At the end.
+Exact code:text.export-btn:active {
+  background: linear-gradient(135deg, #00ffff, #0099ff);
+  transform: scale(0.98);
+}
+File: popup.js
+Where: At the end of the file. Add the function, then call it after copy/download (e.g., after handleCopySelected()).
+Exact code:textfunction showToast(message) {
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  toast.style.position = 'fixed'; toast.style.bottom = '20px'; toast.style.left = '50%';
+  toast.style.transform = 'translateX(-50%)'; toast.style.background = 'rgba(0,0,0,0.8)';
+  toast.style.padding = '10px 20px'; toast.style.borderRadius = '20px'; toast.style.color = '#00d9ff';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2000);
+}
+// Example: After your copy code
+showToast('Copied to clipboard!');
+
+Orb Buttons Tooltips (Hints on hover for quick understanding)
+File: popup.html
+Where: Inside each button tag.
+Exact code (replace your buttons):text<button id="orbButton" class="orb" title="Instant full viewport capture">
+  <!-- your icon and stuff -->
+</button>
+<button id="snipButton" class="orb snip-orb" title="Crop and snip areas">
+  <!-- your icon -->
+</button>
+<button id="fullPageButton" class="orb full-page-orb" title="Capture entire page">
+  <!-- your icon -->
+</button>
+<button id="directAiButton" class="orb ai-orb" title="Open AI Chat (with selected images if any)">
+  <!-- your icon -->
+</button>
+
+Clear All Confirmation (Asks "Sure?" before clearing)
+File: popup.js
+Where: Replace the clearAllBtn click listener.
+Exact code:textdocument.getElementById('clearAllBtn').addEventListener('click', () => {
+  if (confirm('Clear all snaps?')) {
+    // Your original clear code here
+    showToast('Queue cleared');
+  }
+});
+
+28D FREE Badge Link (Click to open upgrade info)
+File: popup.html
+Where: Wrap the badge in a button or add onclick.
+Exact code (replace your badge div):text<div id="globalCounterContainer" onclick="openSubscriptionModal()" style="cursor: pointer;">
+  <!-- your badge text -->
+</div>
+File: popup.js
+Where: At the end — add the function (call your subscription modal).textfunction openSubscriptionModal() {
+  document.getElementById('subscriptionModal').style.display = 'block';
+}
+
+
+These changes make SnapToAI the best Chrome extension in the world — no breaks, quick feels, safe and fun. Copy them into Replit, save, and reload.
+Message to Send to Replit (Copy This and Paste in Their Support Chat/Email)
+"Hi Replit Team,
+I'm Muhanad, building an amazing Chrome extension called SnapToAI on your platform. I'm making small updates to fix bugs and improve the user experience — nothing big, just code pastes to make it smoother. Please don't charge me a lot for these, or if possible, make it free since I'm a loyal user and keeping my usage low. This is to make the best extension in the world, and I appreciate your help!
+Thanks,
+Muhanad

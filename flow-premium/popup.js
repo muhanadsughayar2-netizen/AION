@@ -1511,6 +1511,9 @@ function showQueueFullModal(chunksNeeded, availableSlots) {
 
 // Handle clear all
 async function handleClear() {
+  if (currentSnaps.length > 0 && !confirm('Clear all snaps?')) {
+    return;
+  }
   try {
     await chrome.runtime.sendMessage({ action: 'clearSnaps' });
     
