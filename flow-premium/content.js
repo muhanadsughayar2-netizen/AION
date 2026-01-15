@@ -200,6 +200,12 @@
             sendResponse({ success: false, error: 'Page not capturable' });
           });
         return true;
+      } else if (request.action === 'stopFullPageCapture') {
+        // User clicked STOP button in popup
+        console.log('[SnapToAI] Received stop request from popup');
+        userRequestedStop = true;
+        sendResponse({ success: true });
+        return;
       } else if (request.action === 'get_page_text') {
         // Smart text extraction for AI context
         let pageText = '';
@@ -845,53 +851,29 @@
     
     const overlay = document.createElement('div');
     overlay.id = 'snaptoai-fullpage-overlay';
-    overlay.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; z-index: 2147483647 !important; pointer-events: none !important;';
+    overlay.style.cssText = 'position: fixed !important; bottom: 20px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 2147483647 !important; pointer-events: none !important;';
     overlay.innerHTML = `
       <div style="
-        position: fixed !important;
-        top: 20px !important;
-        right: 20px !important;
-        background: rgba(0, 0, 0, 0.95) !important;
-        border: 3px solid #00d9ff !important;
-        border-radius: 12px !important;
-        padding: 20px 30px !important;
-        z-index: 2147483647 !important;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-        color: white !important;
-        backdrop-filter: blur(10px) !important;
-        box-shadow: 0 4px 40px rgba(0, 217, 255, 0.5) !important;
-        pointer-events: all !important;
+        background: rgba(0, 0, 0, 0.7);
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: rgba(255,255,255,0.8);
+        font-size: 12px;
+        backdrop-filter: blur(5px);
+        display: flex;
+        align-items: center;
+        gap: 8px;
       ">
-        <div style="display: flex; align-items: center; gap: 15px;">
-          <div style="
-            width: 24px;
-            height: 24px;
-            border: 3px solid rgba(0, 217, 255, 0.3);
-            border-top-color: rgba(0, 217, 255, 0.9);
-            border-radius: 50%;
-            animation: snaptoai-spin 0.8s linear infinite;
-          "></div>
-          <div style="flex: 1;">
-            <div style="font-weight: 600; font-size: 14px; color: #00d9ff;">SnapToAI Full Page</div>
-            <div id="snaptoai-progress-text" style="font-size: 12px; color: #aaa; margin-top: 4px;">Capturing... 0%</div>
-          </div>
-          <button id="snaptoai-stop-btn" style="
-            background: #ff4444;
-            border: 3px solid #ff0000;
-            border-radius: 8px;
-            padding: 12px 24px;
-            color: white;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            margin-left: 15px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 0 20px rgba(255,0,0,0.5);
-          ">
-            ⏹ STOP
-          </button>
-        </div>
+        <div style="
+          width: 12px;
+          height: 12px;
+          border: 2px solid rgba(0, 217, 255, 0.3);
+          border-top-color: rgba(0, 217, 255, 0.9);
+          border-radius: 50%;
+          animation: snaptoai-spin 0.8s linear infinite;
+        "></div>
+        <span id="snaptoai-progress-text">Capturing...</span>
       </div>
     `;
     

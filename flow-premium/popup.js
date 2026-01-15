@@ -723,6 +723,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (e) {
     console.log('[SnapToAI] Could not load last capture:', e);
   }
+  
+  // Wire up STOP button in popup overlay
+  const stopCaptureBtn = document.getElementById('stopCaptureBtn');
+  if (stopCaptureBtn) {
+    stopCaptureBtn.addEventListener('click', async () => {
+      console.log('[SnapToAI] User clicked STOP in popup');
+      stopCaptureBtn.textContent = 'Stopping...';
+      stopCaptureBtn.disabled = true;
+      
+      // Tell content script to stop
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab?.id) {
+          await chrome.tabs.sendMessage(tab.id, { action: 'stopFullPageCapture' });
+        }
+      } catch (e) {}
+      
+      // Also notify background
+      chrome.runtime.sendMessage({ action: 'fullPageCaptureAborted' }).catch(() => {});
+    });
+  }
 });
 
 // Translate all UI elements
