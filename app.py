@@ -32,11 +32,20 @@ def init_db():
         cur.close()
         conn.close()
         print('✅ Database initialized')
+        return True
     except Exception as e:
         print(f'Database init error: {e}')
+        return False
 
-# Initialize on startup
-init_db()
+# Try to initialize on startup
+db_ready = init_db()
+
+# Ensure DB is ready before any request that needs it
+def ensure_db():
+    global db_ready
+    if not db_ready:
+        db_ready = init_db()
+    return db_ready
 app.url_map.strict_slashes = False
 
 # Handle www redirect
@@ -109,6 +118,10 @@ def admin_panel(password=None):
     
     if password != ADMIN_PASSWORD:
         return Response("Access denied. Add ?pw=yourpassword to URL", status=403)
+    
+    # Ensure database is ready
+    if not ensure_db():
+        return Response("Database not available", status=503)
     
     try:
         conn = get_db()
@@ -254,6 +267,12 @@ def get_or_create_trial():
         response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
         return response
+    
+    # Ensure database is ready
+    if not ensure_db():
+        response = jsonify({'error': 'Database not available'})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response, 503
     
     try:
         data = request.get_json()
