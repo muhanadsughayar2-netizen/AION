@@ -3,6 +3,7 @@ import os
 import mimetypes
 import psycopg2
 from datetime import datetime
+import requests
 
 # Disable automatic static folder - we'll handle all routing manually
 app = Flask(__name__, static_folder=None)
@@ -47,6 +48,10 @@ def init_db():
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS extension_version VARCHAR(20)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS last_active BIGINT')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0')
+        # Gumroad subscription columns
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS license_key VARCHAR(64)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS plan_type VARCHAR(20)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS subscription_expires BIGINT')
         conn.commit()
         cur.close()
         conn.close()
@@ -158,6 +163,101 @@ def db_status():
             result['error'] = str(e)
     
     return jsonify(result)
+
+# ============================================
+# GUMROAD LICENSE VERIFICATION
+# ============================================
+
+@app.route('/api/verify-license', methods=['POST', 'OPTIONS'])
+def verify_license():
+    """Verify a Gumroad license key and mark user as paid"""
+    if request.method == 'OPTIONS':
+        response = Response('', status=200)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
+    
+    data = request.get_json() or {}
+    license_key = data.get('licenseKey', '').strip()
+    user_hash = data.get('userHash', '').strip()
+    
+    if not license_key or not user_hash:
+        return jsonify({'success': False, 'error': 'Missing license key or user hash'}), 400
+    
+    # Verify with Gumroad API
+    try:
+        gumroad_response = requests.post(
+            'https://api.gumroad.com/v2/licenses/verify',
+            data={
+                'product_id': os.environ.get('GUMROAD_PRODUCT_ID', ''),
+                'license_key': license_key
+            },
+            timeout=10
+        )
+        
+        gumroad_data = gumroad_response.json()
+        
+        if not gumroad_data.get('success'):
+            return jsonify({
+                'success': False,
+                'error': 'Invalid license key'
+            }), 400
+        
+        # License is valid - extract details
+        purchase = gumroad_data.get('purchase', {})
+        product_name = purchase.get('product_name', '').lower()
+        
+        # Determine plan type from product name
+        if 'year' in product_name or 'annual' in product_name:
+            plan_type = 'yearly'
+            expires_ms = int(datetime.now().timestamp() * 1000) + (365 * 24 * 60 * 60 * 1000)
+        else:
+            plan_type = 'monthly'
+            expires_ms = int(datetime.now().timestamp() * 1000) + (30 * 24 * 60 * 60 * 1000)
+        
+        # Update database
+        if not ensure_db():
+            return jsonify({'success': False, 'error': 'Database unavailable'}), 503
+        
+        conn = get_db()
+        cur = conn.cursor()
+        
+        # Update user as paid
+        cur.execute('''
+            UPDATE user_trials 
+            SET is_paid = TRUE, 
+                license_key = %s, 
+                plan_type = %s, 
+                subscription_expires = %s
+            WHERE user_hash = %s
+        ''', (license_key[:64], plan_type, expires_ms, user_hash))
+        
+        # If user doesn't exist, create them
+        if cur.rowcount == 0:
+            now_ms = int(datetime.now().timestamp() * 1000)
+            cur.execute('''
+                INSERT INTO user_trials (user_hash, trial_start_date, is_paid, license_key, plan_type, subscription_expires)
+                VALUES (%s, %s, TRUE, %s, %s, %s)
+            ''', (user_hash, now_ms, license_key[:64], plan_type, expires_ms))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'isPaid': True,
+            'planType': plan_type,
+            'expiresAt': expires_ms,
+            'email': purchase.get('email', '')
+        })
+        
+    except requests.exceptions.Timeout:
+        return jsonify({'success': False, 'error': 'Gumroad verification timed out'}), 504
+    except Exception as e:
+        print(f'License verification error: {e}')
+        return jsonify({'success': False, 'error': 'Verification failed'}), 500
 
 # ============================================
 # ADMIN PANEL (Password Protected) - Enhanced with Search & Filters
