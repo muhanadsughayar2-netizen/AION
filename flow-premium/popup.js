@@ -3153,11 +3153,11 @@ if (toggleKeyVisibility && geminiKeyInput) {
   toggleKeyVisibility.addEventListener('click', function() {
     if (geminiKeyInput.type === 'password') {
       geminiKeyInput.type = 'text';
-      this.textContent = '🙈';
+      this.textContent = 'Hide';
       this.setAttribute('aria-label', 'Hide API key');
     } else {
       geminiKeyInput.type = 'password';
-      this.textContent = '👁️';
+      this.textContent = 'Show';
       this.setAttribute('aria-label', 'Show API key');
     }
   });

@@ -675,7 +675,7 @@ function getFriendlyErrorMessage(errorMsg) {
   
   // API key errors
   if (lowerMsg.includes('api key') || lowerMsg.includes('invalid') || lowerMsg.includes('unauthorized') || lowerMsg.includes('401')) {
-    return `🔑 API key issue detected.\n\n` +
+    return `API key issue detected.\n\n` +
            `Please check your API key in Settings, or get a FREE one from ai.google.dev with $300 credit!`;
   }
   
