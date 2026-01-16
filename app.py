@@ -287,10 +287,11 @@ def admin_panel(password=None):
         conn = get_db()
         cur = conn.cursor()
         
-        # Build query with all new fields
+        # Build query with all new fields including subscription data
         query = '''
             SELECT user_hash, trial_start_date, is_paid, created_at, 
-                   browser_language, extension_version, last_active, usage_count
+                   browser_language, extension_version, last_active, usage_count,
+                   plan_type, subscription_expires
             FROM user_trials 
         '''
         
@@ -333,6 +334,8 @@ def admin_panel(password=None):
             ext_version = row[5] or '-'
             last_active = row[6]
             usage_count = row[7] or 0
+            plan_type = row[8] or '-'
+            sub_expires = row[9]
             
             days_elapsed = (now_ms - trial_start) / (1000 * 60 * 60 * 24)
             days_remaining = max(0, 30 - int(days_elapsed))
@@ -369,7 +372,9 @@ def admin_panel(password=None):
                 'lang': browser_lang,
                 'version': ext_version,
                 'last_active': datetime.fromtimestamp(last_active / 1000).strftime('%Y-%m-%d %H:%M') if last_active else '-',
-                'usage': usage_count
+                'usage': usage_count,
+                'plan_type': plan_type.upper() if plan_type != '-' else '-',
+                'sub_expires': datetime.fromtimestamp(sub_expires / 1000).strftime('%Y-%m-%d') if sub_expires else '-'
             })
         
         # Build enhanced HTML
@@ -482,11 +487,11 @@ def admin_panel(password=None):
             <th>#</th>
             <th>User Hash</th>
             <th>Registered</th>
-            <th>Days Left</th>
+            <th>Trial Days</th>
             <th>Status</th>
-            <th>Language</th>
-            <th>Version</th>
-            <th>Last Active</th>
+            <th>Plan</th>
+            <th>Expires</th>
+            <th>Lang</th>
             <th>AI Uses</th>
         </tr>
 '''
@@ -497,6 +502,7 @@ def admin_panel(password=None):
             badge_class = f"badge-{r['status']}"
             status_text = r['status'].upper()
             usage_pct = min(100, (r['usage'] / max_usage) * 100)
+            plan_display = f'<span style="color: #ffd700;">{r["plan_type"]}</span>' if r['plan_type'] != '-' else '-'
             
             html += f'''
         <tr>
@@ -505,9 +511,9 @@ def admin_panel(password=None):
             <td>{r['start']}</td>
             <td>{r['days']}</td>
             <td><span class="badge {badge_class}">{status_text}</span></td>
+            <td>{plan_display}</td>
+            <td>{r['sub_expires']}</td>
             <td>{r['lang']}</td>
-            <td>{r['version']}</td>
-            <td>{r['last_active']}</td>
             <td>
                 {r['usage']}
                 <div class="usage-bar"><div class="usage-fill" style="width: {usage_pct}%"></div></div>
