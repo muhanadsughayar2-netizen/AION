@@ -203,8 +203,11 @@ async function checkSubscription() {
   const { cachedApiKeyHash } = await chrome.storage.local.get(['cachedApiKeyHash']);
   const apiKeyChanged = cachedApiKeyHash && cachedApiKeyHash !== userId;
   
-  // Force server check if API key changed
-  if (apiKeyChanged || !lastServerCheck || (now - lastServerCheck) > CHECK_INTERVAL) {
+  // Force server check if: API key changed, no cached data, or interval passed
+  const needsServerCheck = apiKeyChanged || !cachedTrialStartDate || !lastServerCheck || (now - lastServerCheck) > CHECK_INTERVAL;
+  
+  if (needsServerCheck) {
+    console.log('[SnapToAI] Checking server for trial status...');
     const serverDate = await getServerTrialDate(userId);
     if (serverDate) {
       trialStartDate = serverDate;
@@ -214,6 +217,7 @@ async function checkSubscription() {
         cachedApiKeyHash: userId,
         lastServerCheck: now
       });
+      console.log('[SnapToAI] Trial synced with server, days remaining:', Math.max(0, TRIAL_DAYS - Math.floor((now - serverDate) / 86400000)));
     }
   }
   

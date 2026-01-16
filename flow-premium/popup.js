@@ -3310,28 +3310,45 @@ if (geminiModal) geminiModal.addEventListener('click', (e) => {
 document.addEventListener('DOMContentLoaded', async () => {
   // Initialize subscription check on popup open
   const upgradeBtn = document.getElementById('upgradeBtn');
+  
+  // Keep button hidden until we know the status
+  if (upgradeBtn) {
+    upgradeBtn.style.opacity = '0.3';
+    upgradeBtn.textContent = '...';
+  }
+  
   if (window.SnapToAISubscription) {
     const status = await window.SnapToAISubscription.check();
     console.log('[SnapToAI] Subscription status:', status.status, status.canUseAI ? '(active)' : '(blocked)');
     
-    // Update upgrade button based on status
+    // Update upgrade button based on status - NOW show it
     if (upgradeBtn) {
+      upgradeBtn.style.opacity = '1'; // Show button now
+      
       if (status.status === 'subscribed') {
         // Show days left based on plan type
         const planDays = status.planType === 'yearly' ? 365 : 30;
         upgradeBtn.textContent = `✓ ${planDays}d PRO`;
         upgradeBtn.classList.add('subscribed');
+        upgradeBtn.style.background = 'linear-gradient(135deg, #00d4ff 0%, #00ff88 100%)';
       } else if (status.status === 'trial') {
-        // Always show days remaining during trial
+        // Always show days remaining during trial - GREEN
         upgradeBtn.textContent = `${status.daysRemaining}d FREE`;
+        upgradeBtn.style.background = 'linear-gradient(135deg, #00d4ff 0%, #00ff88 100%)';
         if (status.daysRemaining <= 7) {
           upgradeBtn.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%)';
         }
       } else {
-        // Expired
+        // Expired or no API key
         upgradeBtn.textContent = '⭐ UPGRADE';
         upgradeBtn.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%)';
       }
+    }
+  } else {
+    // No subscription module loaded - show upgrade
+    if (upgradeBtn) {
+      upgradeBtn.style.opacity = '1';
+      upgradeBtn.textContent = '⭐ UPGRADE';
     }
   }
   
