@@ -9,7 +9,10 @@ app = Flask(__name__, static_folder=None)
 
 # Database connection
 def get_db():
-    return psycopg2.connect(os.environ.get('DATABASE_URL'))
+    db_url = os.environ.get('DATABASE_URL')
+    if not db_url:
+        raise Exception("DATABASE_URL not set")
+    return psycopg2.connect(db_url)
 
 # Initialize database table for trial tracking
 def init_db():

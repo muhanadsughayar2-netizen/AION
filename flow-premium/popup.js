@@ -3190,8 +3190,17 @@ function hideSubscriptionModal() {
 async function handleAIButtonClick() {
   if (window.SnapToAISubscription) {
     const status = await window.SnapToAISubscription.check();
-    if (!status.canUseAI) {
-      // Different messages for trial expired vs subscription expired
+    console.log('[SnapToAI] AI button clicked, status:', status);
+    
+    // If no API key set, show Gemini modal to get key first (NOT subscription modal)
+    if (status.needsApiKey || status.status === 'no_api_key') {
+      console.log('[SnapToAI] No API key - showing Gemini setup modal');
+      showGeminiModal();
+      return;
+    }
+    
+    // Only show subscription modal if trial ACTUALLY expired (not just no API key)
+    if (!status.canUseAI && status.status !== 'no_api_key') {
       const message = status.status === 'subscription_expired'
         ? 'Your subscription has expired. Please renew to continue.'
         : 'Your 30-day free trial has ended.';
