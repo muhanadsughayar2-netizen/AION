@@ -17,6 +17,11 @@ def get_db():
 # Initialize database table for trial tracking
 def init_db():
     try:
+        db_url = os.environ.get('DATABASE_URL')
+        print(f'🔍 DATABASE_URL exists: {bool(db_url)}')
+        if not db_url:
+            print('❌ DATABASE_URL not set in environment')
+            return False
         conn = get_db()
         cur = conn.cursor()
         cur.execute('''
@@ -34,14 +39,16 @@ def init_db():
         conn.commit()
         cur.close()
         conn.close()
-        print('✅ Database initialized')
+        print('✅ Database initialized successfully')
         return True
     except Exception as e:
-        print(f'Database init error: {e}')
+        print(f'❌ Database init error: {type(e).__name__}: {e}')
         return False
 
 # Try to initialize on startup
+print('🚀 App starting, initializing database...')
 db_ready = init_db()
+print(f'📊 Database ready: {db_ready}')
 
 # Ensure DB is ready before any request that needs it
 def ensure_db():
