@@ -38,3 +38,8 @@ externalPort = 80
 deploymentTarget = "autoscale"
 run = ["gunicorn", "--bind=0.0.0.0:5000", "--workers=2", "app:app"]
 build = ["pip", "install", "-r", "requirements.txt"]
+
+[userenv]
+
+[userenv.shared]
+SUPABASE_DATABASE_URL = "postgresql://postgres.drzstffdumyqfbqyjlua:Xnu124yuXnu124yu%25%25@aws-0-us-west-2.pooler.supabase.com:5432/postgres"

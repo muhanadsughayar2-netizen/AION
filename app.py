@@ -7,20 +7,25 @@ from datetime import datetime
 # Disable automatic static folder - we'll handle all routing manually
 app = Flask(__name__, static_folder=None)
 
-# Database connection
+# Database connection - Use Supabase (external) if available, otherwise Replit DB
 def get_db():
-    db_url = os.environ.get('DATABASE_URL')
+    # Prefer Supabase for production reliability
+    db_url = os.environ.get('SUPABASE_DATABASE_URL') or os.environ.get('DATABASE_URL')
     if not db_url:
-        raise Exception("DATABASE_URL not set")
-    return psycopg2.connect(db_url)
+        raise Exception("No database URL set")
+    return psycopg2.connect(db_url, sslmode='require')
 
 # Initialize database table for trial tracking
 def init_db():
     try:
-        db_url = os.environ.get('DATABASE_URL')
-        print(f'🔍 DATABASE_URL exists: {bool(db_url)}')
+        supabase_url = os.environ.get('SUPABASE_DATABASE_URL')
+        replit_url = os.environ.get('DATABASE_URL')
+        db_url = supabase_url or replit_url
+        print(f'🔍 SUPABASE_DATABASE_URL exists: {bool(supabase_url)}')
+        print(f'🔍 DATABASE_URL exists: {bool(replit_url)}')
+        print(f'🔍 Using: {"Supabase" if supabase_url else "Replit DB" if replit_url else "None"}')
         if not db_url:
-            print('❌ DATABASE_URL not set in environment')
+            print('❌ No database URL set in environment')
             return False
         conn = get_db()
         cur = conn.cursor()
@@ -121,15 +126,20 @@ def health():
 @app.route('/api/db-status')
 def db_status():
     """Check database status - useful for debugging production"""
-    db_url = os.environ.get('DATABASE_URL')
+    supabase_url = os.environ.get('SUPABASE_DATABASE_URL')
+    replit_url = os.environ.get('DATABASE_URL')
+    db_url = supabase_url or replit_url
+    
     result = {
-        'has_database_url': bool(db_url),
+        'has_supabase_url': bool(supabase_url),
+        'has_replit_url': bool(replit_url),
+        'using': 'supabase' if supabase_url else 'replit' if replit_url else 'none',
         'db_ready': db_ready,
     }
     
     if db_url:
         try:
-            conn = psycopg2.connect(db_url)
+            conn = psycopg2.connect(db_url, sslmode='require')
             cur = conn.cursor()
             cur.execute("SELECT COUNT(*) FROM user_trials")
             count = cur.fetchone()[0]
