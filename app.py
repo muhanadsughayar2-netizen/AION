@@ -54,7 +54,12 @@ print(f'📊 Database ready: {db_ready}')
 def ensure_db():
     global db_ready
     if not db_ready:
+        print('🔄 Retrying database initialization...')
         db_ready = init_db()
+        if db_ready:
+            print('✅ Database retry successful!')
+        else:
+            print('❌ Database retry failed')
     return db_ready
 app.url_map.strict_slashes = False
 
@@ -112,6 +117,31 @@ def add_headers(response):
 def health():
     """Health check endpoint for deployment"""
     return Response("OK", status=200, mimetype='text/plain')
+
+@app.route('/api/db-status')
+def db_status():
+    """Check database status - useful for debugging production"""
+    db_url = os.environ.get('DATABASE_URL')
+    result = {
+        'has_database_url': bool(db_url),
+        'db_ready': db_ready,
+    }
+    
+    if db_url:
+        try:
+            conn = psycopg2.connect(db_url)
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM user_trials")
+            count = cur.fetchone()[0]
+            cur.close()
+            conn.close()
+            result['connected'] = True
+            result['user_count'] = count
+        except Exception as e:
+            result['connected'] = False
+            result['error'] = str(e)
+    
+    return jsonify(result)
 
 # ============================================
 # ADMIN PANEL (Password Protected)
