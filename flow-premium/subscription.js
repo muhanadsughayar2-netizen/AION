@@ -334,49 +334,43 @@ async function checkSubscription() {
   };
 }
 
-// Verify license with Gumroad API
-async function verifyLicenseWithGumroad(licenseKey) {
+// Verify license with our server (server calls Gumroad and updates database)
+async function verifyLicenseWithServer(licenseKey) {
   try {
-    const response = await fetch('https://api.gumroad.com/v2/licenses/verify', {
+    // Get user hash to link license to user
+    const userId = await getUserId();
+    if (!userId) {
+      return { valid: false, reason: 'no_api_key' };
+    }
+    
+    const response = await fetch(TRIAL_SERVER_URL.replace('/trial', '/verify-license'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        product_id: GUMROAD_PRODUCT,
-        license_key: licenseKey
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        licenseKey: licenseKey,
+        userHash: userId
       })
     });
     
     const data = await response.json();
     
     if (data.success) {
-      const purchase = data.purchase;
-      
-      // Check if subscription ended
-      if (purchase.subscription_ended_at) {
-        return { valid: false, reason: 'subscription_ended' };
-      }
-      
-      // Determine plan type
-      let detectedPlan = 'monthly';
-      if (purchase.recurrence === 'yearly' || 
-          (purchase.variants && purchase.variants.toLowerCase().includes('year'))) {
-        detectedPlan = 'yearly';
-      }
-      
-      // Update local storage
+      // Server verified and marked user as paid
       await chrome.storage.local.set({
         subscriptionActive: true,
-        planType: detectedPlan,
+        planType: data.planType,
         lastVerified: Date.now(),
-        graceUntil: null
+        graceUntil: null,
+        subscriptionExpires: data.expiresAt
       });
       
-      return { valid: true, planType: detectedPlan };
+      console.log('[SnapToAI] License verified! Plan:', data.planType);
+      return { valid: true, planType: data.planType };
     }
     
-    return { valid: false, reason: data.message || 'invalid_license' };
+    return { valid: false, reason: data.error || 'invalid_license' };
   } catch (error) {
-    console.log('[SnapToAI] Gumroad verification error:', error.message);
+    console.log('[SnapToAI] License verification error:', error.message);
     return { valid: false, reason: 'network_error' };
   }
 }
@@ -387,7 +381,8 @@ async function saveLicenseKey(licenseKey) {
     return { success: false, error: 'Invalid license key format' };
   }
   
-  const result = await verifyLicenseWithGumroad(licenseKey.trim());
+  // Verify via our server (which calls Gumroad and updates database)
+  const result = await verifyLicenseWithServer(licenseKey.trim());
   
   if (result.valid) {
     await chrome.storage.local.set({
