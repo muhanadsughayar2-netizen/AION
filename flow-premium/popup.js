@@ -3313,8 +3313,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Keep button hidden until we know the status
   if (upgradeBtn) {
-    upgradeBtn.style.opacity = '0.3';
-    upgradeBtn.textContent = '...';
+    upgradeBtn.style.visibility = 'hidden';
   }
   
   if (window.SnapToAISubscription) {
@@ -3323,7 +3322,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Update upgrade button based on status - NOW show it
     if (upgradeBtn) {
-      upgradeBtn.style.opacity = '1'; // Show button now
+      upgradeBtn.style.visibility = 'visible'; // Show button now
       
       if (status.status === 'subscribed') {
         // Show days left based on plan type
@@ -3347,7 +3346,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     // No subscription module loaded - show upgrade
     if (upgradeBtn) {
-      upgradeBtn.style.opacity = '1';
+      upgradeBtn.style.visibility = 'visible';
       upgradeBtn.textContent = '⭐ UPGRADE';
     }
   }
