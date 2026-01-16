@@ -20,8 +20,13 @@ def init_db():
             CREATE TABLE IF NOT EXISTS user_trials (
                 user_hash VARCHAR(64) PRIMARY KEY,
                 trial_start_date BIGINT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_paid BOOLEAN DEFAULT FALSE
             )
+        ''')
+        # Add is_paid column if missing (for existing tables)
+        cur.execute('''
+            ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE
         ''')
         conn.commit()
         cur.close()
