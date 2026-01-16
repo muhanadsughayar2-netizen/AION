@@ -34,13 +34,19 @@ def init_db():
                 user_hash VARCHAR(64) PRIMARY KEY,
                 trial_start_date BIGINT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_paid BOOLEAN DEFAULT FALSE
+                is_paid BOOLEAN DEFAULT FALSE,
+                browser_language VARCHAR(10),
+                extension_version VARCHAR(20),
+                last_active BIGINT,
+                usage_count INTEGER DEFAULT 0
             )
         ''')
-        # Add is_paid column if missing (for existing tables)
-        cur.execute('''
-            ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE
-        ''')
+        # Add columns if missing (for existing tables)
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS browser_language VARCHAR(10)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS extension_version VARCHAR(20)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS last_active BIGINT')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0')
         conn.commit()
         cur.close()
         conn.close()
@@ -327,6 +333,8 @@ def get_or_create_trial():
     try:
         data = request.get_json()
         user_hash = data.get('userHash')
+        browser_language = data.get('browserLanguage', '')[:10] if data.get('browserLanguage') else None
+        extension_version = data.get('extensionVersion', '')[:20] if data.get('extensionVersion') else None
         
         if not user_hash or len(user_hash) < 16:
             response = jsonify({'error': 'Invalid user hash'})
@@ -336,24 +344,35 @@ def get_or_create_trial():
         conn = get_db()
         cur = conn.cursor()
         
-        # Check if user exists
-        cur.execute('SELECT trial_start_date, is_paid FROM user_trials WHERE user_hash = %s', (user_hash,))
-        row = cur.fetchone()
-        
         now_ms = int(datetime.now().timestamp() * 1000)
         
+        # Check if user exists
+        cur.execute('SELECT trial_start_date, is_paid, usage_count FROM user_trials WHERE user_hash = %s', (user_hash,))
+        row = cur.fetchone()
+        
         if row:
-            # Existing user - return their original trial start date
+            # Existing user - update last_active and increment usage_count
             trial_start = row[0]
             is_paid = row[1] if row[1] else False
+            usage_count = (row[2] or 0) + 1
+            cur.execute('''
+                UPDATE user_trials 
+                SET last_active = %s, usage_count = %s, 
+                    browser_language = COALESCE(browser_language, %s),
+                    extension_version = COALESCE(%s, extension_version)
+                WHERE user_hash = %s
+            ''', (now_ms, usage_count, browser_language, extension_version, user_hash))
+            conn.commit()
         else:
-            # New user (new API key) - create trial record
+            # New user (new API key) - create trial record with all data
             trial_start = now_ms
             is_paid = False
-            cur.execute(
-                'INSERT INTO user_trials (user_hash, trial_start_date, is_paid) VALUES (%s, %s, %s)',
-                (user_hash, trial_start, False)
-            )
+            usage_count = 1
+            cur.execute('''
+                INSERT INTO user_trials 
+                (user_hash, trial_start_date, is_paid, browser_language, extension_version, last_active, usage_count) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ''', (user_hash, trial_start, False, browser_language, extension_version, now_ms, 1))
             conn.commit()
         
         cur.close()
