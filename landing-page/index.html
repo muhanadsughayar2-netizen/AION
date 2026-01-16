@@ -488,8 +488,17 @@
         <div class="footer-bottom">
             <p id="footerText">© 2025 SnapToAI. Built with precision for speed.</p>
             <p id="footerLanguages">Available in 55 languages</p>
+            <a href="#" id="adminLink" style="color: #333; font-size: 10px; text-decoration: none; margin-top: 10px; display: inline-block;">•</a>
         </div>
     </footer>
+    
+    <script>
+        document.getElementById('adminLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            const pw = prompt('Enter admin password:');
+            if (pw) window.location.href = '/admin-panel-7x9k2m?pw=' + encodeURIComponent(pw);
+        });
+    </script>
 
     <script src="translations.js"></script>
     <script>
