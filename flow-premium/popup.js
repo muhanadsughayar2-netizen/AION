@@ -3329,34 +3329,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     const status = await window.SnapToAISubscription.check();
     console.log('[SnapToAI] Subscription status:', status.status, status.canUseAI ? '(active)' : '(blocked)');
     
-    // Update upgrade button based on status - NOW show it
+    // Update upgrade button based on status
     if (upgradeBtn) {
-      upgradeBtn.style.visibility = 'visible'; // Show button now
-      
-      if (status.status === 'subscribed') {
-        // Show days left based on plan type
+      if (status.status === 'no_api_key') {
+        // NO API KEY = HIDE upgrade button completely
+        // User needs to set up API first, not upgrade
+        upgradeBtn.style.visibility = 'hidden';
+      } else if (status.status === 'subscribed') {
+        upgradeBtn.style.visibility = 'visible';
         const planDays = status.planType === 'yearly' ? 365 : 30;
         upgradeBtn.textContent = `✓ ${planDays}d PRO`;
         upgradeBtn.classList.add('subscribed');
         upgradeBtn.style.background = 'linear-gradient(135deg, #00d4ff 0%, #00ff88 100%)';
       } else if (status.status === 'trial') {
-        // Always show days remaining during trial - GREEN
+        upgradeBtn.style.visibility = 'visible';
         upgradeBtn.textContent = `${status.daysRemaining}d FREE`;
         upgradeBtn.style.background = 'linear-gradient(135deg, #00d4ff 0%, #00ff88 100%)';
         if (status.daysRemaining <= 7) {
           upgradeBtn.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%)';
         }
-      } else {
-        // Expired or no API key
+      } else if (status.status === 'expired') {
+        // ONLY show upgrade for truly expired trials
+        upgradeBtn.style.visibility = 'visible';
         upgradeBtn.textContent = '⭐ UPGRADE';
         upgradeBtn.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%)';
+      } else {
+        // Unknown status - keep hidden
+        upgradeBtn.style.visibility = 'hidden';
       }
     }
   } else {
-    // No subscription module loaded - show upgrade
+    // No subscription module - keep hidden
     if (upgradeBtn) {
-      upgradeBtn.style.visibility = 'visible';
-      upgradeBtn.textContent = '⭐ UPGRADE';
+      upgradeBtn.style.visibility = 'hidden';
     }
   }
   
