@@ -90,6 +90,148 @@ def health():
     return Response("OK", status=200, mimetype='text/plain')
 
 # ============================================
+# ADMIN PANEL (Password Protected)
+# ============================================
+
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'snaptoai2024')  # Change this!
+
+@app.route('/admin-panel-7x9k2m')
+def admin_panel():
+    """Secret admin panel - shows all users and trial status"""
+    password = request.args.get('pw', '')
+    
+    if password != ADMIN_PASSWORD:
+        return Response("Access denied. Add ?pw=yourpassword to URL", status=403)
+    
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT user_hash, trial_start_date, is_paid, created_at 
+            FROM user_trials 
+            ORDER BY created_at DESC
+            LIMIT 100
+        ''')
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        now_ms = int(datetime.now().timestamp() * 1000)
+        
+        # Build HTML table
+        html = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SnapToAI Admin Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; }
+        h1 { color: #00d4ff; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
+        th { background: #16213e; color: #00d4ff; }
+        tr:hover { background: #1f3460; }
+        .active { color: #00ff88; }
+        .expired { color: #ff4757; }
+        .paid { color: #ffd700; font-weight: bold; }
+        .stats { display: flex; gap: 30px; margin: 20px 0; }
+        .stat-box { background: #16213e; padding: 20px; border-radius: 10px; }
+        .stat-number { font-size: 36px; color: #00d4ff; }
+    </style>
+</head>
+<body>
+    <h1>📊 SnapToAI Admin Panel</h1>
+'''
+        
+        # Calculate stats
+        total_users = len(rows)
+        active_users = 0
+        expired_users = 0
+        paid_users = 0
+        
+        for row in rows:
+            trial_start = row[1]
+            is_paid = row[2] if row[2] else False
+            days_elapsed = (now_ms - trial_start) / (1000 * 60 * 60 * 24)
+            
+            if is_paid:
+                paid_users += 1
+            elif days_elapsed < 30:
+                active_users += 1
+            else:
+                expired_users += 1
+        
+        html += f'''
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-number">{total_users}</div>
+            <div>Total Users</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number active">{active_users}</div>
+            <div>Active Trials</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number expired">{expired_users}</div>
+            <div>Expired</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number paid">{paid_users}</div>
+            <div>Paid Users</div>
+        </div>
+    </div>
+    
+    <table>
+        <tr>
+            <th>#</th>
+            <th>User Hash (first 12 chars)</th>
+            <th>Trial Started</th>
+            <th>Days Remaining</th>
+            <th>Status</th>
+        </tr>
+'''
+        
+        for i, row in enumerate(rows, 1):
+            user_hash = row[0][:12] + '...'
+            trial_start = row[1]
+            is_paid = row[2] if row[2] else False
+            created_at = row[3]
+            
+            days_elapsed = (now_ms - trial_start) / (1000 * 60 * 60 * 24)
+            days_remaining = max(0, 30 - int(days_elapsed))
+            
+            if is_paid:
+                status = '<span class="paid">PAID ⭐</span>'
+            elif days_elapsed < 30:
+                status = f'<span class="active">Active ✓</span>'
+            else:
+                status = '<span class="expired">Expired ✗</span>'
+            
+            start_date = datetime.fromtimestamp(trial_start / 1000).strftime('%Y-%m-%d %H:%M')
+            
+            html += f'''
+        <tr>
+            <td>{i}</td>
+            <td>{user_hash}</td>
+            <td>{start_date}</td>
+            <td>{days_remaining} days</td>
+            <td>{status}</td>
+        </tr>
+'''
+        
+        html += '''
+    </table>
+    <p style="margin-top: 30px; color: #666;">Last 100 users shown. Refresh to update.</p>
+</body>
+</html>
+'''
+        return Response(html, mimetype='text/html')
+        
+    except Exception as e:
+        print(f'Admin panel error: {e}')
+        return Response(f"Error loading data", status=500)
+
+# ============================================
 # TRIAL TRACKING API (Simple: 30 days per API key)
 # ============================================
 
