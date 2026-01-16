@@ -101,9 +101,11 @@ def health():
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'snaptoai2024')  # Change this!
 
 @app.route('/admin-panel-7x9k2m')
-def admin_panel():
+@app.route('/admin/<password>')
+def admin_panel(password=None):
     """Secret admin panel - shows all users and trial status"""
-    password = request.args.get('pw', '')
+    if password is None:
+        password = request.args.get('pw', '')
     
     if password != ADMIN_PASSWORD:
         return Response("Access denied. Add ?pw=yourpassword to URL", status=403)
@@ -321,16 +323,20 @@ def index():
 @app.route('/<lang_code>')
 def language_page(lang_code):
     """Serve language-specific page"""
+    # Only handle known language codes - let other routes handle everything else
     if lang_code in SUPPORTED_LANGUAGES:
         lang_file = os.path.join(BASE_DIR, lang_code, 'index.html')
         if os.path.exists(lang_file):
             return serve_file(lang_file)
-    # Check if it's a static file
+        return serve_file(os.path.join(BASE_DIR, 'index.html'))
+    
+    # Check if it's a static file (like style.css)
     file_path = os.path.join(BASE_DIR, lang_code)
     if os.path.exists(file_path) and os.path.isfile(file_path):
         return serve_file(file_path)
-    # Fallback to English
-    return serve_file(os.path.join(BASE_DIR, 'index.html'))
+    
+    # Not a language or static file - return 404 to let other routes handle
+    return Response("Not found", status=404)
 
 @app.route('/<lang_code>/<path:subpath>')
 def language_assets(lang_code, subpath):
