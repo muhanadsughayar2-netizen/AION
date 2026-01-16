@@ -160,144 +160,264 @@ def db_status():
     return jsonify(result)
 
 # ============================================
-# ADMIN PANEL (Password Protected)
+# ADMIN PANEL (Password Protected) - Enhanced with Search & Filters
 # ============================================
 
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'snaptoai2024')  # Change this!
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'snaptoai2024')
 
-@app.route('/admin-panel-7x9k2m')
 @app.route('/admin/<password>')
 def admin_panel(password=None):
-    """Secret admin panel - shows all users and trial status"""
+    """Enhanced admin panel with search, filters, and sorting"""
     if password is None:
         password = request.args.get('pw', '')
     
     if password != ADMIN_PASSWORD:
-        return Response("Access denied. Add ?pw=yourpassword to URL", status=403)
+        return Response("Access denied", status=403)
     
-    # Ensure database is ready
     if not ensure_db():
         return Response("Database not available", status=503)
+    
+    # Get filter parameters
+    filter_status = request.args.get('status', 'all')
+    filter_lang = request.args.get('lang', '')
+    sort_by = request.args.get('sort', 'created_desc')
+    search = request.args.get('search', '')
     
     try:
         conn = get_db()
         cur = conn.cursor()
-        cur.execute('''
-            SELECT user_hash, trial_start_date, is_paid, created_at 
+        
+        # Build query with all new fields
+        query = '''
+            SELECT user_hash, trial_start_date, is_paid, created_at, 
+                   browser_language, extension_version, last_active, usage_count
             FROM user_trials 
-            ORDER BY created_at DESC
-            LIMIT 100
-        ''')
+        '''
+        
+        # Apply sorting
+        if sort_by == 'created_desc':
+            query += ' ORDER BY created_at DESC'
+        elif sort_by == 'created_asc':
+            query += ' ORDER BY created_at ASC'
+        elif sort_by == 'usage_desc':
+            query += ' ORDER BY usage_count DESC NULLS LAST'
+        elif sort_by == 'active_desc':
+            query += ' ORDER BY last_active DESC NULLS LAST'
+        else:
+            query += ' ORDER BY created_at DESC'
+        
+        query += ' LIMIT 500'
+        
+        cur.execute(query)
         rows = cur.fetchall()
         cur.close()
         conn.close()
         
         now_ms = int(datetime.now().timestamp() * 1000)
         
-        # Build HTML table
-        html = '''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>SnapToAI Admin Panel</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; }
-        h1 { color: #00d4ff; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
-        th { background: #16213e; color: #00d4ff; }
-        tr:hover { background: #1f3460; }
-        .active { color: #00ff88; }
-        .expired { color: #ff4757; }
-        .paid { color: #ffd700; font-weight: bold; }
-        .stats { display: flex; gap: 30px; margin: 20px 0; }
-        .stat-box { background: #16213e; padding: 20px; border-radius: 10px; }
-        .stat-number { font-size: 36px; color: #00d4ff; }
-    </style>
-</head>
-<body>
-    <h1>📊 SnapToAI Admin Panel</h1>
-'''
-        
-        # Calculate stats
-        total_users = len(rows)
+        # Process and filter rows
+        processed_rows = []
+        total_users = 0
         active_users = 0
         expired_users = 0
         paid_users = 0
+        total_usage = 0
+        languages = set()
         
         for row in rows:
-            trial_start = row[1]
-            is_paid = row[2] if row[2] else False
-            days_elapsed = (now_ms - trial_start) / (1000 * 60 * 60 * 24)
-            
-            if is_paid:
-                paid_users += 1
-            elif days_elapsed < 30:
-                active_users += 1
-            else:
-                expired_users += 1
-        
-        html += f'''
-    <div class="stats">
-        <div class="stat-box">
-            <div class="stat-number">{total_users}</div>
-            <div>Total Users</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-number active">{active_users}</div>
-            <div>Active Trials</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-number expired">{expired_users}</div>
-            <div>Expired</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-number paid">{paid_users}</div>
-            <div>Paid Users</div>
-        </div>
-    </div>
-    
-    <table>
-        <tr>
-            <th>#</th>
-            <th>User Hash (first 12 chars)</th>
-            <th>Trial Started</th>
-            <th>Days Remaining</th>
-            <th>Status</th>
-        </tr>
-'''
-        
-        for i, row in enumerate(rows, 1):
-            user_hash = row[0][:12] + '...'
+            user_hash = row[0]
             trial_start = row[1]
             is_paid = row[2] if row[2] else False
             created_at = row[3]
+            browser_lang = row[4] or 'Unknown'
+            ext_version = row[5] or '-'
+            last_active = row[6]
+            usage_count = row[7] or 0
             
             days_elapsed = (now_ms - trial_start) / (1000 * 60 * 60 * 24)
             days_remaining = max(0, 30 - int(days_elapsed))
             
             if is_paid:
-                status = '<span class="paid">PAID ⭐</span>'
+                status = 'paid'
+                paid_users += 1
             elif days_elapsed < 30:
-                status = f'<span class="active">Active ✓</span>'
+                status = 'active'
+                active_users += 1
             else:
-                status = '<span class="expired">Expired ✗</span>'
+                status = 'expired'
+                expired_users += 1
             
-            start_date = datetime.fromtimestamp(trial_start / 1000).strftime('%Y-%m-%d %H:%M')
+            total_users += 1
+            total_usage += usage_count
+            if browser_lang and browser_lang != 'Unknown':
+                languages.add(browser_lang)
+            
+            # Apply filters
+            if filter_status != 'all' and status != filter_status:
+                continue
+            if filter_lang and browser_lang != filter_lang:
+                continue
+            if search and search.lower() not in user_hash.lower():
+                continue
+            
+            processed_rows.append({
+                'hash': user_hash[:16] + '...',
+                'full_hash': user_hash,
+                'start': datetime.fromtimestamp(trial_start / 1000).strftime('%Y-%m-%d'),
+                'days': days_remaining,
+                'status': status,
+                'lang': browser_lang,
+                'version': ext_version,
+                'last_active': datetime.fromtimestamp(last_active / 1000).strftime('%Y-%m-%d %H:%M') if last_active else '-',
+                'usage': usage_count
+            })
+        
+        # Build enhanced HTML
+        html = f'''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SnapToAI Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * {{ box-sizing: border-box; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f1a; color: #e0e0e0; padding: 20px; margin: 0; }}
+        h1 {{ color: #00d4ff; margin-bottom: 5px; }}
+        .subtitle {{ color: #666; margin-bottom: 20px; }}
+        .stats {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 20px 0; }}
+        .stat-box {{ background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #2a2a4a; }}
+        .stat-number {{ font-size: 32px; font-weight: bold; }}
+        .stat-label {{ font-size: 12px; color: #888; margin-top: 5px; text-transform: uppercase; }}
+        .active {{ color: #00ff88; }}
+        .expired {{ color: #ff4757; }}
+        .paid {{ color: #ffd700; }}
+        .filters {{ background: #1a1a2e; padding: 15px; border-radius: 10px; margin: 20px 0; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }}
+        .filters label {{ color: #888; font-size: 12px; text-transform: uppercase; }}
+        .filters select, .filters input {{ background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px; }}
+        .filters button {{ background: #00d4ff; color: #000; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }}
+        .filters button:hover {{ background: #00b8e6; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }}
+        th {{ background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left; position: sticky; top: 0; }}
+        td {{ padding: 10px 8px; border-bottom: 1px solid #222; }}
+        tr:hover {{ background: #1a1a2e; }}
+        .badge {{ padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }}
+        .badge-active {{ background: #00ff8820; color: #00ff88; }}
+        .badge-expired {{ background: #ff475720; color: #ff4757; }}
+        .badge-paid {{ background: #ffd70020; color: #ffd700; }}
+        .usage-bar {{ background: #333; border-radius: 4px; height: 6px; width: 60px; display: inline-block; }}
+        .usage-fill {{ background: #00d4ff; height: 100%; border-radius: 4px; }}
+        .hash {{ font-family: monospace; font-size: 12px; color: #888; }}
+        .export-btn {{ background: #333; color: #fff; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-left: auto; }}
+    </style>
+</head>
+<body>
+    <h1>📊 SnapToAI Admin Dashboard</h1>
+    <p class="subtitle">Real-time user analytics and trial management</p>
+    
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-number" style="color: #00d4ff;">{total_users}</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number active">{active_users}</div>
+            <div class="stat-label">Active Trials</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number expired">{expired_users}</div>
+            <div class="stat-label">Expired</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number paid">{paid_users}</div>
+            <div class="stat-label">Paid Users</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number" style="color: #a855f7;">{total_usage}</div>
+            <div class="stat-label">Total AI Uses</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number" style="color: #f97316;">{len(languages)}</div>
+            <div class="stat-label">Countries</div>
+        </div>
+    </div>
+    
+    <form class="filters" method="GET" action="/admin/{password}">
+        <div>
+            <label>Status</label><br>
+            <select name="status">
+                <option value="all" {"selected" if filter_status == "all" else ""}>All</option>
+                <option value="active" {"selected" if filter_status == "active" else ""}>Active</option>
+                <option value="expired" {"selected" if filter_status == "expired" else ""}>Expired</option>
+                <option value="paid" {"selected" if filter_status == "paid" else ""}>Paid</option>
+            </select>
+        </div>
+        <div>
+            <label>Language</label><br>
+            <select name="lang">
+                <option value="">All Languages</option>
+                {"".join(f'<option value="{l}" {"selected" if filter_lang == l else ""}>{l}</option>' for l in sorted(languages))}
+            </select>
+        </div>
+        <div>
+            <label>Sort By</label><br>
+            <select name="sort">
+                <option value="created_desc" {"selected" if sort_by == "created_desc" else ""}>Newest First</option>
+                <option value="created_asc" {"selected" if sort_by == "created_asc" else ""}>Oldest First</option>
+                <option value="usage_desc" {"selected" if sort_by == "usage_desc" else ""}>Most Active</option>
+                <option value="active_desc" {"selected" if sort_by == "active_desc" else ""}>Recently Active</option>
+            </select>
+        </div>
+        <div>
+            <label>Search Hash</label><br>
+            <input type="text" name="search" value="{search}" placeholder="Search...">
+        </div>
+        <button type="submit">Apply Filters</button>
+        <a href="/admin/{password}" style="color: #888; text-decoration: none; margin-left: 10px;">Reset</a>
+    </form>
+    
+    <p style="color: #666;">Showing {len(processed_rows)} of {total_users} users</p>
+    
+    <table>
+        <tr>
+            <th>#</th>
+            <th>User Hash</th>
+            <th>Registered</th>
+            <th>Days Left</th>
+            <th>Status</th>
+            <th>Language</th>
+            <th>Version</th>
+            <th>Last Active</th>
+            <th>AI Uses</th>
+        </tr>
+'''
+        
+        max_usage = max((r['usage'] for r in processed_rows), default=1) or 1
+        
+        for i, r in enumerate(processed_rows, 1):
+            badge_class = f"badge-{r['status']}"
+            status_text = r['status'].upper()
+            usage_pct = min(100, (r['usage'] / max_usage) * 100)
             
             html += f'''
         <tr>
             <td>{i}</td>
-            <td>{user_hash}</td>
-            <td>{start_date}</td>
-            <td>{days_remaining} days</td>
-            <td>{status}</td>
+            <td class="hash" title="{r['full_hash']}">{r['hash']}</td>
+            <td>{r['start']}</td>
+            <td>{r['days']}</td>
+            <td><span class="badge {badge_class}">{status_text}</span></td>
+            <td>{r['lang']}</td>
+            <td>{r['version']}</td>
+            <td>{r['last_active']}</td>
+            <td>
+                {r['usage']}
+                <div class="usage-bar"><div class="usage-fill" style="width: {usage_pct}%"></div></div>
+            </td>
         </tr>
 '''
         
         html += '''
     </table>
-    <p style="margin-top: 30px; color: #666;">Last 100 users shown. Refresh to update.</p>
+    <p style="margin-top: 30px; color: #444;">Data refreshes on page reload. Max 500 users shown.</p>
 </body>
 </html>
 '''
@@ -305,7 +425,7 @@ def admin_panel(password=None):
         
     except Exception as e:
         print(f'Admin panel error: {e}')
-        return Response(f"Error loading data", status=500)
+        return Response(f"Error loading data: {e}", status=500)
 
 # ============================================
 # TRIAL TRACKING API (Simple: 30 days per API key)

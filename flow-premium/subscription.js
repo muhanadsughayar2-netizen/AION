@@ -133,13 +133,30 @@ async function getUserId() {
   return await hashApiKey(geminiApiKey);
 }
 
+// Get extension version from manifest
+function getExtensionVersion() {
+  try {
+    return chrome.runtime.getManifest().version || '1.0.0';
+  } catch (e) {
+    return '1.0.0';
+  }
+}
+
 // Get trial start date from server (source of truth)
 async function getServerTrialDate(userId) {
   try {
+    // Collect additional analytics data
+    const browserLanguage = navigator.language || navigator.userLanguage || 'en';
+    const extensionVersion = getExtensionVersion();
+    
     const response = await fetch(TRIAL_SERVER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userHash: userId })
+      body: JSON.stringify({ 
+        userHash: userId,
+        browserLanguage: browserLanguage,
+        extensionVersion: extensionVersion
+      })
     });
     
     if (!response.ok) {
