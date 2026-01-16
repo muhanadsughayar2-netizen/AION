@@ -265,6 +265,41 @@ def verify_license():
 
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'snaptoai2024')
 
+@app.route('/snap-admin')
+def admin_redirect():
+    """Easy-to-remember admin shortcut - redirects to login page"""
+    return '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SnapToAI Admin Login</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #0f0f1a; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .login-box { background: #1a1a2e; padding: 40px; border-radius: 16px; text-align: center; border: 1px solid #333; }
+        h1 { color: #00d4ff; margin-bottom: 20px; }
+        input { background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 16px; width: 200px; margin-bottom: 15px; }
+        button { background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%); color: #000; border: none; padding: 12px 30px; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; }
+        button:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h1>SnapToAI Admin</h1>
+        <form id="loginForm">
+            <input type="password" id="pw" placeholder="Password" autofocus><br>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+    <script>
+        document.getElementById('loginForm').onsubmit = function(e) {
+            e.preventDefault();
+            window.location.href = '/admin/' + document.getElementById('pw').value;
+        };
+    </script>
+</body>
+</html>
+'''
+
 @app.route('/admin/<password>')
 def admin_panel(password=None):
     """Enhanced admin panel with search, filters, and sorting"""
