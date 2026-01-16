@@ -90,16 +90,15 @@ def health():
     return Response("OK", status=200, mimetype='text/plain')
 
 # ============================================
-# TRIAL TRACKING API
+# TRIAL TRACKING API (Simple: 30 days per API key)
 # ============================================
 
 TRIAL_DAYS = 30
-FREE_TIER_DAILY_CREDITS = 20
 
 @app.route('/api/trial', methods=['POST', 'OPTIONS'])
 def get_or_create_trial():
-    """Get or create trial for a user based on their hashed identifier.
-    Returns trial status with clear expired flag - extension MUST respect this."""
+    """Simple trial tracking: API key hash → 30 day countdown.
+    Same API key = same trial. New API key = new 30 days."""
     if request.method == 'OPTIONS':
         response = Response()
         response.headers['Access-Control-Allow-Origin'] = '*'
@@ -110,7 +109,6 @@ def get_or_create_trial():
     try:
         data = request.get_json()
         user_hash = data.get('userHash')
-        license_key = data.get('licenseKey')  # Optional: for paid users
         
         if not user_hash or len(user_hash) < 16:
             response = jsonify({'error': 'Invalid user hash'})
@@ -121,33 +119,22 @@ def get_or_create_trial():
         cur = conn.cursor()
         
         # Check if user exists
-        cur.execute('SELECT trial_start_date, is_paid, daily_credits_used, last_credit_reset FROM user_trials WHERE user_hash = %s', (user_hash,))
+        cur.execute('SELECT trial_start_date, is_paid FROM user_trials WHERE user_hash = %s', (user_hash,))
         row = cur.fetchone()
         
         now_ms = int(datetime.now().timestamp() * 1000)
-        today_str = datetime.now().strftime('%Y-%m-%d')
         
         if row:
-            # Existing user
+            # Existing user - return their original trial start date
             trial_start = row[0]
             is_paid = row[1] if row[1] else False
-            daily_credits_used = row[2] if row[2] else 0
-            last_credit_reset = row[3] if row[3] else ''
-            
-            # Reset daily credits if new day
-            if last_credit_reset != today_str:
-                daily_credits_used = 0
-                cur.execute('UPDATE user_trials SET daily_credits_used = 0, last_credit_reset = %s WHERE user_hash = %s', 
-                           (today_str, user_hash))
-                conn.commit()
         else:
-            # New user - create trial record
+            # New user (new API key) - create trial record
             trial_start = now_ms
             is_paid = False
-            daily_credits_used = 0
             cur.execute(
-                'INSERT INTO user_trials (user_hash, trial_start_date, is_paid, daily_credits_used, last_credit_reset) VALUES (%s, %s, %s, %s, %s)',
-                (user_hash, trial_start, False, 0, today_str)
+                'INSERT INTO user_trials (user_hash, trial_start_date, is_paid) VALUES (%s, %s, %s)',
+                (user_hash, trial_start, False)
             )
             conn.commit()
         
@@ -159,16 +146,14 @@ def get_or_create_trial():
         days_remaining = max(0, TRIAL_DAYS - int(days_elapsed))
         is_expired = days_elapsed >= TRIAL_DAYS
         
-        # Build response with clear status
+        # Simple response
         result = {
             'success': True,
             'trialStartDate': trial_start,
             'daysRemaining': days_remaining,
             'expired': is_expired and not is_paid,
             'isPaid': is_paid,
-            'dailyCreditsUsed': daily_credits_used,
-            'dailyCreditsLimit': FREE_TIER_DAILY_CREDITS,
-            'canUseAI': (not is_expired) or is_paid  # THE KEY FLAG - extension must check this
+            'canUseAI': (not is_expired) or is_paid
         }
         
         response = jsonify(result)
@@ -178,95 +163,6 @@ def get_or_create_trial():
     except Exception as e:
         print(f'Trial API error: {e}')
         response = jsonify({'error': 'Server error'})
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        return response, 500
-
-@app.route('/api/use-credit', methods=['POST', 'OPTIONS'])
-def use_credit():
-    """Track credit usage. Call this when user makes an AI request."""
-    if request.method == 'OPTIONS':
-        response = Response()
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-        return response
-    
-    try:
-        data = request.get_json()
-        user_hash = data.get('userHash')
-        
-        if not user_hash or len(user_hash) < 16:
-            response = jsonify({'error': 'Invalid user hash'})
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            return response, 400
-        
-        conn = get_db()
-        cur = conn.cursor()
-        
-        today_str = datetime.now().strftime('%Y-%m-%d')
-        
-        # Get current user data
-        cur.execute('SELECT trial_start_date, is_paid, daily_credits_used, last_credit_reset FROM user_trials WHERE user_hash = %s', (user_hash,))
-        row = cur.fetchone()
-        
-        if not row:
-            cur.close()
-            conn.close()
-            response = jsonify({'error': 'User not found', 'allowed': False})
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            return response, 404
-        
-        trial_start = row[0]
-        is_paid = row[1] if row[1] else False
-        daily_credits_used = row[2] if row[2] else 0
-        last_credit_reset = row[3] if row[3] else ''
-        
-        # Reset daily credits if new day
-        if last_credit_reset != today_str:
-            daily_credits_used = 0
-        
-        # Check trial status
-        now_ms = int(datetime.now().timestamp() * 1000)
-        days_elapsed = (now_ms - trial_start) / (1000 * 60 * 60 * 24)
-        is_expired = days_elapsed >= TRIAL_DAYS
-        
-        # Determine if request is allowed
-        allowed = False
-        reason = ''
-        
-        if is_paid:
-            allowed = True
-            reason = 'paid'
-        elif not is_expired:
-            allowed = True
-            reason = 'trial'
-        elif daily_credits_used < FREE_TIER_DAILY_CREDITS:
-            allowed = True
-            reason = 'free_tier'
-            # Increment credit usage
-            daily_credits_used += 1
-            cur.execute('UPDATE user_trials SET daily_credits_used = %s, last_credit_reset = %s WHERE user_hash = %s',
-                       (daily_credits_used, today_str, user_hash))
-            conn.commit()
-        else:
-            allowed = False
-            reason = 'limit_reached'
-        
-        cur.close()
-        conn.close()
-        
-        response = jsonify({
-            'allowed': allowed,
-            'reason': reason,
-            'creditsUsed': daily_credits_used,
-            'creditsRemaining': max(0, FREE_TIER_DAILY_CREDITS - daily_credits_used)
-        })
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        return response
-        
-    except Exception as e:
-        print(f'Credit API error: {e}')
-        response = jsonify({'error': 'Server error', 'allowed': False})
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response, 500
 
