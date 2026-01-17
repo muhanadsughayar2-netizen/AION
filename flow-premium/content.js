@@ -2800,12 +2800,12 @@
         return; // Exit early - no error, just graceful skip
       }
       
-      // FORCE WINDOW SCROLL for known problematic sites (Google Search only)
-      // NOTE: Google Docs and Gmail use their own containers - handled separately below
+      // FORCE WINDOW SCROLL for known problematic sites
       const isGmail = location.hostname.includes('mail.google.com');
       const isGoogleDocsPage = location.hostname.includes('docs.google.com');
       const isGoogleSearch = location.hostname.includes('google.') && location.pathname.includes('/search');
-      const forceWindowScroll = isGoogleSearch; // Gmail and Google Docs use container scroll
+      // Gmail MUST use window scroll - container scroll does not work
+      const forceWindowScroll = isGoogleSearch || isGmail;
       
       // GOOGLE DOCS SPECIAL HANDLING: Use .kix-appview-editor as scroll container
       let docsEditorFound = false;
@@ -2940,16 +2940,12 @@
       
       // SAFE scrollTo - never throws errors
       const safeScrollTo = async (position) => {
-        // Gmail special handling - use window scroll which Gmail responds to
+        // Gmail: Force direct window scroll
         if (isGmail) {
-          try {
-            window.scrollTo({ top: position, left: 0, behavior: 'instant' });
-            await new Promise(r => setTimeout(r, 100));
-            // Also try container if found
-            if (scrollContainer) {
-              scrollContainer.scrollTop = position;
-            }
-          } catch (e) {}
+          window.scrollTo(0, position);
+          document.documentElement.scrollTop = position;
+          document.body.scrollTop = position;
+          await new Promise(r => setTimeout(r, 150));
           return;
         }
         
@@ -3010,20 +3006,15 @@
       
       // SAFE scrollBy - never throws errors
       const safeScrollBy = async (amount) => {
-        // Special Gmail handling
-        if (isGmail && gmailContainerFound) {
-          await gmailScroll(amount);
-          // Also try direct scrollTop as fallback
-          try {
-            if (scrollContainer) {
-              const before = scrollContainer.scrollTop;
-              scrollContainer.scrollTop += amount;
-              // If that didn't work, try window
-              if (scrollContainer.scrollTop === before) {
-                window.scrollBy(0, amount);
-              }
-            }
-          } catch (e) {}
+        // Gmail: Force direct window scroll
+        if (isGmail) {
+          const currentPos = window.scrollY || window.pageYOffset || 0;
+          const newPos = currentPos + amount;
+          window.scrollTo(0, newPos);
+          document.documentElement.scrollTop = newPos;
+          document.body.scrollTop = newPos;
+          await new Promise(r => setTimeout(r, 150));
+          console.log(`[SnapToAI] Gmail scroll: ${currentPos} -> ${newPos} (actual: ${window.scrollY})`);
           return;
         }
         
