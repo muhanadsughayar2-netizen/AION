@@ -104,7 +104,7 @@ body {
 
 .help-btn {
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 217, 255, 0.3);
   border-radius: 50%;
   width: 28px;
   height: 28px;
@@ -112,14 +112,19 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.5);
+  color: #00d9ff;
   transition: all 0.2s ease;
+  animation: glow-pulse 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 5px rgba(0, 217, 255, 0.25)) drop-shadow(0 0 10px rgba(0, 255, 255, 0.15));
+  text-shadow: 0 0 5px rgba(0, 217, 255, 0.3), 0 0 10px rgba(0, 255, 255, 0.2);
 }
 
 .help-btn:hover {
-  background: rgba(0, 212, 255, 0.15);
-  border-color: rgba(0, 212, 255, 0.3);
-  color: #00d4ff;
+  background: rgba(0, 212, 255, 0.2);
+  border-color: rgba(0, 212, 255, 0.6);
+  color: #00ffff;
+  filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.4)) drop-shadow(0 0 20px rgba(0, 255, 255, 0.3));
+  text-shadow: 0 0 10px rgba(0, 217, 255, 0.45), 0 0 20px rgba(0, 255, 255, 0.35);
 }
 
 .help-dropdown {
