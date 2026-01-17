@@ -856,18 +856,6 @@
             <div id="snaptoai-progress-text" style="font-size: 13px; color: #00d9ff;">Scrolling page... 0%</div>
           </div>
         </div>
-        <div id="snaptoai-stop-btn" style="
-          margin-top: 14px;
-          padding: 8px 20px;
-          color: #ff6b6b;
-          font-size: 12px;
-          font-weight: 500;
-          cursor: pointer;
-          border: 1px solid rgba(255, 107, 107, 0.4);
-          border-radius: 6px;
-          background: rgba(255, 107, 107, 0.1);
-          transition: all 0.2s ease;
-        ">STOP</div>
       </div>
     `;
     
@@ -878,30 +866,12 @@
       @keyframes snaptoai-spin {
         to { transform: rotate(360deg); }
       }
-      #snaptoai-stop-btn:hover {
-        color: #fff !important;
-        background: rgba(255, 107, 107, 0.3) !important;
-        border-color: #ff6b6b !important;
-      }
     `;
     if (!document.getElementById('snaptoai-fullpage-styles')) {
       document.head.appendChild(style);
     }
     
     document.body.appendChild(overlay);
-    
-    // Add click handler for STOP button
-    const stopBtn = document.getElementById('snaptoai-stop-btn');
-    if (stopBtn) {
-      stopBtn.addEventListener('click', () => {
-        console.log('[SnapToAI] STOP button clicked!');
-        isFullPageCaptureAborted = true;
-        isFullPageCaptureRunning = false;
-        removeFullPageOverlay();
-        // Notify background to clean up
-        chrome.runtime.sendMessage({ action: 'fullPageCaptureAborted' }).catch(() => {});
-      });
-    }
     
     return overlay;
   }
