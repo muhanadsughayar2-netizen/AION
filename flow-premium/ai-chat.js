@@ -879,7 +879,45 @@ chatInput.addEventListener('keydown', (e) => {
 });
 chatInput.addEventListener('input', () => autoResize(chatInput));
 chatInput.addEventListener('paste', (e) => {
-  // Allow paste to complete, then auto-resize
+  // Check for pasted images from clipboard
+  const items = e.clipboardData?.items;
+  if (items) {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        e.preventDefault(); // Prevent default paste behavior for images
+        
+        const blob = item.getAsFile();
+        if (blob) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const fileData = {
+              mimeType: blob.type || 'image/png',
+              data: event.target.result.split(',')[1],
+              name: 'Pasted Image'
+            };
+            filesQueue.push(fileData);
+            
+            // Create file card UI (same as file upload)
+            const card = document.createElement('div');
+            card.className = 'file-card';
+            card.innerHTML = `<span>Pasted Image</span> <div class="remove-btn">x</div>`;
+            card.querySelector('.remove-btn').onclick = () => {
+              filesQueue = filesQueue.filter(f => f !== fileData);
+              card.remove();
+            };
+            document.getElementById('filePreviewZone').appendChild(card);
+            
+            console.log('[SnapToAI] Image pasted into chat');
+          };
+          reader.readAsDataURL(blob);
+        }
+        return; // Image handled, exit
+      }
+    }
+  }
+  
+  // Allow text paste to complete, then auto-resize
   setTimeout(() => autoResize(chatInput), 0);
 });
 
