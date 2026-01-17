@@ -125,6 +125,31 @@ chrome.commands.onCommand.addListener((command) => {
   }
 });
 
+// Listen for extension icon click - ABORT full page capture if running
+chrome.action.onClicked.addListener(async (tab) => {
+  if (isFullPageCaptureInProgress) {
+    console.log('[SnapToAI] Icon clicked during capture - aborting...');
+    
+    // Send abort message to content script
+    try {
+      await chrome.tabs.sendMessage(tab.id, { action: 'abortFullPageCapture' });
+    } catch (e) {
+      console.log('[SnapToAI] Could not send abort to content script:', e.message);
+    }
+    
+    // Reset capture state
+    isFullPageCaptureInProgress = false;
+    batchBuffer = [];
+    batchMetadata = null;
+    
+    // Re-enable popup
+    await chrome.action.setPopup({ popup: 'popup.html' });
+    
+    console.log('[SnapToAI] Full page capture aborted by icon click');
+  }
+  // If not capturing, do nothing (popup handles normal clicks)
+});
+
 // Listen for messages from popup and content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'capture') {
