@@ -24,6 +24,40 @@
         <div class="counter">
           <span id="snapCount">0</span> / <span id="snapMax">9</span>
         </div>
+        <!-- Help/Tutorials Button -->
+        <div class="help-dropdown-container">
+          <button id="helpBtn" class="help-btn" title="Video Tutorials">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </button>
+          <div id="helpDropdown" class="help-dropdown">
+            <div class="help-dropdown-title">Video Tutorials</div>
+            <a href="#" class="help-item" data-video="snap">
+              <span class="help-icon">📸</span> How to Snap
+            </a>
+            <a href="#" class="help-item" data-video="snip">
+              <span class="help-icon">✂️</span> How to Snip
+            </a>
+            <a href="#" class="help-item" data-video="fullpage">
+              <span class="help-icon">📄</span> Full Page Capture
+            </a>
+            <a href="#" class="help-item" data-video="ai">
+              <span class="help-icon">✨</span> AI Chat Features
+            </a>
+            <a href="#" class="help-item" data-video="annotate">
+              <span class="help-icon">🖊️</span> Annotate & Edit
+            </a>
+            <a href="#" class="help-item" data-video="upload">
+              <span class="help-icon">📤</span> Upload to AI
+            </a>
+            <div class="help-dropdown-footer">
+              <a href="#" class="help-item" data-video="all">View All Tutorials</a>
+            </div>
+          </div>
+        </div>
         <button id="upgradeBtn" class="upgrade-btn" style="visibility: hidden;">...</button>
       </div>
     </div>

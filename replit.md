@@ -52,6 +52,14 @@ Handles infinite-scroll sites with scroll settlement detection. Works on any web
 - **Known limitations:** Full page capture may timeout in agent mode - use popup FULL PAGE button for guaranteed results
 - Files: agent-chat.html, agent-chat.js, background.js (agentCaptureTab, agentAddSnaps, agentFullPageCapture), content.js
 
+**Video Tutorials Feature (January 2026):** In-app help system:
+- Small "?" help button in popup header (subtle glassmorphism design)
+- Dropdown menu with 6 tutorial categories: Snap, Snip, Full Page, AI Chat, Annotate, Upload
+- Links to YouTube videos for each feature
+- "View All Tutorials" links to YouTube channel
+- Shows "Tutorial coming soon!" message if video not yet available
+- Placeholder URLs in popup.js - replace YOUR_VIDEO_ID with actual YouTube video IDs
+
 **Subscription System (January 2026):** Client-side subscription with Gumroad integration:
 - 30-day free trial starting on install (tracked in chrome.storage.local)
 - After trial: Capture features remain FREE forever, only AI analysis requires subscription

@@ -770,6 +770,56 @@ function setupEventListeners() {
     reeditBtn.addEventListener('click', handleReeditFullPage);
   }
   
+  // Help/Tutorials dropdown
+  const helpBtn = document.getElementById('helpBtn');
+  const helpDropdown = document.getElementById('helpDropdown');
+  if (helpBtn && helpDropdown) {
+    // Toggle dropdown on click
+    helpBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      helpDropdown.classList.toggle('show');
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!helpDropdown.contains(e.target) && !helpBtn.contains(e.target)) {
+        helpDropdown.classList.remove('show');
+      }
+    });
+    
+    // Handle video tutorial links
+    // PLACEHOLDER URLS - Replace with actual YouTube video URLs
+    const videoUrls = {
+      snap: 'https://www.youtube.com/watch?v=YOUR_SNAP_VIDEO_ID',
+      snip: 'https://www.youtube.com/watch?v=YOUR_SNIP_VIDEO_ID',
+      fullpage: 'https://www.youtube.com/watch?v=YOUR_FULLPAGE_VIDEO_ID',
+      ai: 'https://www.youtube.com/watch?v=YOUR_AI_VIDEO_ID',
+      annotate: 'https://www.youtube.com/watch?v=YOUR_ANNOTATE_VIDEO_ID',
+      upload: 'https://www.youtube.com/watch?v=YOUR_UPLOAD_VIDEO_ID',
+      all: 'https://www.youtube.com/channel/YOUR_CHANNEL_ID'
+    };
+    
+    helpDropdown.querySelectorAll('.help-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const videoKey = item.dataset.video;
+        const url = videoUrls[videoKey];
+        if (url && !url.includes('YOUR_')) {
+          chrome.tabs.create({ url: url });
+        } else {
+          // Show coming soon message
+          const status = document.getElementById('status');
+          status.textContent = 'Tutorial coming soon!';
+          status.className = 'status';
+          setTimeout(() => {
+            status.textContent = chrome.i18n.getMessage('flowReady') || 'SnapToAI: Ready';
+          }, 2000);
+        }
+        helpDropdown.classList.remove('show');
+      });
+    });
+  }
+  
   // Queue Full Modal buttons
   const queueClearBtn = document.getElementById('queueClearAndContinue');
   const queueCancelBtn = document.getElementById('queueCancelCapture');
