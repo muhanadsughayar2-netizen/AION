@@ -2047,16 +2047,25 @@ async function handleCopySelected() {
       });
     }
     
-    // Write to clipboard with explicit MIME type (most reliable for AI chats)
+    // Write to clipboard using the blob's actual MIME type (critical for AI chats)
+    const mimeType = blobToClip.type || 'image/png';
+    console.log('[SnapToAI] Writing to clipboard with MIME:', mimeType, 'size:', blobToClip.size);
+    
     try {
       await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blobToClip })
+        new ClipboardItem({ [mimeType]: blobToClip })
       ]);
     } catch (clipErr) {
-      // Fallback: try with the blob's actual type
-      console.warn('[SnapToAI] PNG clipboard failed, trying with blob type:', clipErr.message);
+      // Fallback: try with explicit image/png (some browsers prefer this)
+      console.warn('[SnapToAI] Clipboard failed with', mimeType, '- trying image/png:', clipErr.message);
+      const pngBlob = await new Promise((resolve, reject) => {
+        compositeCanvas.toBlob((b) => {
+          if (b) resolve(b);
+          else reject(new Error('PNG conversion failed'));
+        }, 'image/png');
+      });
       await navigator.clipboard.write([
-        new ClipboardItem({ [blobToClip.type]: blobToClip })
+        new ClipboardItem({ 'image/png': pngBlob })
       ]);
     }
     
