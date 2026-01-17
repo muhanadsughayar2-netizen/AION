@@ -25,16 +25,6 @@ const DEFAULT_SETTINGS = {
 // Track last capture time to prevent rate limiting
 let lastCaptureTime = 0;
 
-// Clean up AI chat window ID when window closes
-chrome.windows.onRemoved.addListener((windowId) => {
-  chrome.storage.session.get(['aiChatWindowId'], (result) => {
-    if (result.aiChatWindowId === windowId) {
-      chrome.storage.session.remove('aiChatWindowId');
-      console.log('[SnapToAI] AI Chat window closed, cleared ID');
-    }
-  });
-});
-
 // Open welcome page on first install and initialize subscription
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {

@@ -709,24 +709,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners();
   updateUI();
   
-  // Check if AI chat window is open and show "Add to Chat" button
-  try {
-    const { aiChatWindowId } = await chrome.storage.session.get(['aiChatWindowId']);
-    if (aiChatWindowId) {
-      // Verify window still exists
-      chrome.windows.get(aiChatWindowId, (win) => {
-        if (chrome.runtime.lastError || !win) {
-          // Window closed, clear the ID
-          chrome.storage.session.remove('aiChatWindowId');
-        } else {
-          showAddToChatButton();
-        }
-      });
-    }
-  } catch (e) {
-    console.log('[SnapToAI] Could not check AI chat status:', e);
-  }
-  
   // Check for existing lastFullPageCapture and show RE-EDIT button
   try {
     // Load both lastFullPageCapture and snapMetadata directly from storage
@@ -808,7 +790,6 @@ function setupEventListeners() {
   document.getElementById('copySelectedBtn').addEventListener('click', handleCopySelected);
   document.getElementById('downloadSelectedBtn').addEventListener('click', handleDownloadSelected);
   document.getElementById('exportPdfBtn').addEventListener('click', handleExportPDFDirect);
-  document.getElementById('addToChatBtn').addEventListener('click', handleAddToChat);
   
   // Preview modal
   document.getElementById('previewClose').addEventListener('click', closePreview);
@@ -3636,69 +3617,7 @@ async function openAiChat(imageDataUrls) {
     left: left,
     top: top,
     focused: true
-  }, (window) => {
-    // Track that AI chat is open
-    if (window) {
-      chrome.storage.session.set({ aiChatWindowId: window.id });
-      showAddToChatButton();
-    }
   });
-}
-
-// Show the "Add to Chat" button when AI chat is open
-function showAddToChatButton() {
-  const addToChatBtn = document.getElementById('addToChatBtn');
-  if (addToChatBtn) {
-    addToChatBtn.style.display = 'flex';
-  }
-}
-
-// Handle "Add to Chat" button click
-async function handleAddToChat() {
-  const selectedImages = Array.from(selectedSnapIds)
-    .sort((a, b) => a - b)
-    .map(index => currentSnaps[index])
-    .filter(Boolean);
-  
-  if (selectedImages.length === 0) {
-    setStatus('Select images first', 'error', 2000);
-    return;
-  }
-  
-  // Save new images to IndexedDB - append to existing queue to avoid data loss
-  try {
-    const db = await openSnapDB();
-    const tx = db.transaction(SNAPTOAI_STORE_NAME, 'readwrite');
-    const store = tx.objectStore(SNAPTOAI_STORE_NAME);
-    
-    // Read existing additional snaps first
-    const existingRequest = store.get('additionalSnaps');
-    const existing = await new Promise((resolve) => {
-      existingRequest.onsuccess = () => resolve(existingRequest.result || []);
-      existingRequest.onerror = () => resolve([]);
-    });
-    
-    // Append new images to existing queue
-    const combined = [...existing, ...selectedImages];
-    store.put(combined, 'additionalSnaps');
-    await new Promise((resolve) => { tx.oncomplete = resolve; });
-    db.close();
-    
-    // Send message directly via runtime (AI chat listens on runtime.onMessage)
-    chrome.runtime.sendMessage({ 
-      action: 'addImagesToChat', 
-      imageCount: selectedImages.length 
-    }).catch(() => {});
-    
-    setStatus(`${selectedImages.length} image(s) added to chat`, 'success', 2000);
-    
-    // Clear selection after adding
-    selectedSnapIds.clear();
-    updateThumbnails();
-  } catch (e) {
-    console.error('[SnapToAI] Failed to add images to chat:', e);
-    setStatus('Failed to add images', 'error', 2000);
-  }
 }
 
 function closeAiChat() {
