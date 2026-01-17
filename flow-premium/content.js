@@ -829,43 +829,44 @@
     overlay.innerHTML = `
       <div style="
         position: fixed;
-        top: 20px;
-        right: 20px;
-        background: rgba(0, 0, 0, 0.9);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.95);
         border: 2px solid rgba(0, 217, 255, 0.7);
-        border-radius: 12px;
-        padding: 20px 30px;
+        border-radius: 16px;
+        padding: 30px 40px;
         z-index: 2147483647;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         color: white;
         backdrop-filter: blur(10px);
         box-shadow: 0 4px 30px rgba(0, 217, 255, 0.3);
+        text-align: center;
       ">
-        <div style="display: flex; align-items: center; gap: 15px;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px;">
           <div style="
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             border: 3px solid rgba(0, 217, 255, 0.3);
             border-top-color: rgba(0, 217, 255, 0.9);
             border-radius: 50%;
             animation: snaptoai-spin 0.8s linear infinite;
           "></div>
           <div>
-            <div style="font-weight: 600; font-size: 14px; color: #00d9ff;">SnapToAI Full Page</div>
-            <div id="snaptoai-progress-text" style="font-size: 12px; color: #aaa; margin-top: 4px;">Capturing... 0%</div>
+            <div style="font-weight: 600; font-size: 16px; color: #00d9ff;">SnapToAI Full Page</div>
+            <div id="snaptoai-progress-text" style="font-size: 14px; color: #aaa; margin-top: 4px;">Capturing... 0%</div>
           </div>
         </div>
         <button id="snaptoai-stop-btn" style="
           display: block;
           width: 100%;
-          margin-top: 15px;
-          padding: 8px 16px;
-          background: rgba(239, 68, 68, 0.2);
-          border: 1px solid rgba(239, 68, 68, 0.6);
-          border-radius: 6px;
+          padding: 12px 24px;
+          background: rgba(239, 68, 68, 0.3);
+          border: 2px solid #ef4444;
+          border-radius: 8px;
           color: #ef4444;
-          font-size: 13px;
-          font-weight: 600;
+          font-size: 16px;
+          font-weight: 700;
           cursor: pointer;
           transition: all 0.2s ease;
         ">STOP</button>
