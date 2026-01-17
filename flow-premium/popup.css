@@ -1612,6 +1612,31 @@ html[dir="rtl"] .logo-word {
   font-weight: 600;
 }
 
+.gemini-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.gemini-modal-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.gemini-modal-content {
+  position: relative;
+}
+
 .gemini-promo-box {
   background: rgba(0, 217, 255, 0.08);
   border: 1px solid rgba(0, 217, 255, 0.3);

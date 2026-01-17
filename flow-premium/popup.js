@@ -3316,6 +3316,10 @@ if (aiButton) aiButton.addEventListener('click', handleAIButtonClick);
 if (geminiSaveBtn) geminiSaveBtn.addEventListener('click', saveGeminiKey);
 if (geminiClearBtn) geminiClearBtn.addEventListener('click', clearGeminiKey);
 
+// Close button for API Key modal
+const geminiModalClose = document.getElementById('geminiModalClose');
+if (geminiModalClose) geminiModalClose.addEventListener('click', hideGeminiModal);
+
 // Direct AI button - opens AI chat, auto-includes selected images if any
 const directAiButton = document.getElementById('directAiButton');
 if (directAiButton) {
