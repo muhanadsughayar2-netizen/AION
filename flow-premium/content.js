@@ -2909,6 +2909,10 @@
       // Helper to get scroll position (safe)
       const getScrollTop = () => {
         try {
+          // Gmail uses window scroll
+          if (isGmail) {
+            return window.scrollY || window.pageYOffset || 0;
+          }
           if (useContainerScroll && scrollContainer) {
             return scrollContainer.scrollTop || 0;
           }
@@ -2921,6 +2925,10 @@
       // Helper to get max scroll height (safe)
       const getMaxScroll = () => {
         try {
+          // Gmail uses window scroll
+          if (isGmail) {
+            return (document.documentElement.scrollHeight - window.innerHeight) || 0;
+          }
           if (useContainerScroll && scrollContainer) {
             return (scrollContainer.scrollHeight - scrollContainer.clientHeight) || 0;
           }
@@ -2931,7 +2939,20 @@
       };
       
       // SAFE scrollTo - never throws errors
-      const safeScrollTo = (position) => {
+      const safeScrollTo = async (position) => {
+        // Gmail special handling - use window scroll which Gmail responds to
+        if (isGmail) {
+          try {
+            window.scrollTo({ top: position, left: 0, behavior: 'instant' });
+            await new Promise(r => setTimeout(r, 100));
+            // Also try container if found
+            if (scrollContainer) {
+              scrollContainer.scrollTop = position;
+            }
+          } catch (e) {}
+          return;
+        }
+        
         try {
           if (useContainerScroll && scrollContainer) {
             scrollContainer.scrollTo({ top: position, left: 0, behavior: 'instant' });
@@ -2952,8 +2973,60 @@
         }
       };
       
+      // GMAIL SPECIAL SCROLL - uses wheel events which Gmail actually responds to
+      const gmailScroll = async (amount) => {
+        if (!isGmail) return false;
+        
+        try {
+          // Method 1: Wheel event on the container
+          const target = scrollContainer || document.querySelector('[role="main"]') || document.body;
+          const wheelEvent = new WheelEvent('wheel', {
+            deltaY: amount,
+            deltaMode: 0,
+            bubbles: true,
+            cancelable: true
+          });
+          target.dispatchEvent(wheelEvent);
+          await new Promise(r => setTimeout(r, 50));
+          
+          // Method 2: Also try keyboard scroll (Page Down)
+          if (amount > 0) {
+            const keyEvent = new KeyboardEvent('keydown', {
+              key: 'PageDown',
+              code: 'PageDown',
+              keyCode: 34,
+              which: 34,
+              bubbles: true
+            });
+            target.dispatchEvent(keyEvent);
+          }
+          
+          return true;
+        } catch (e) {
+          console.log('[SnapToAI] Gmail scroll error:', e.message);
+          return false;
+        }
+      };
+      
       // SAFE scrollBy - never throws errors
-      const safeScrollBy = (amount) => {
+      const safeScrollBy = async (amount) => {
+        // Special Gmail handling
+        if (isGmail && gmailContainerFound) {
+          await gmailScroll(amount);
+          // Also try direct scrollTop as fallback
+          try {
+            if (scrollContainer) {
+              const before = scrollContainer.scrollTop;
+              scrollContainer.scrollTop += amount;
+              // If that didn't work, try window
+              if (scrollContainer.scrollTop === before) {
+                window.scrollBy(0, amount);
+              }
+            }
+          } catch (e) {}
+          return;
+        }
+        
         try {
           if (useContainerScroll && scrollContainer) {
             scrollContainer.scrollBy({ top: amount, left: 0, behavior: 'instant' });
@@ -2975,14 +3048,14 @@
       };
       
       // Scroll to top first (using safe function)
-      safeScrollTo(0);
+      await safeScrollTo(0);
       await new Promise(resolve => setTimeout(resolve, 300));
       
       // === PRE-CAPTURE SCROLL TEST ===
       // Test if container scroll actually works BEFORE capturing anything
       if (useContainerScroll && !hasTriedWindowFallback) {
         const beforeTest = getScrollTop();
-        safeScrollBy(100); // Small test scroll
+        await safeScrollBy(100); // Small test scroll
         await new Promise(r => setTimeout(r, 100));
         const afterTest = getScrollTop();
         
@@ -2997,7 +3070,7 @@
         }
         
         // Scroll back to top with the (possibly new) scroll method
-        safeScrollTo(0);
+        await safeScrollTo(0);
         await new Promise(r => setTimeout(r, 200));
       }
       
@@ -3024,7 +3097,7 @@
           // Wait for images to load
           await new Promise(r => setTimeout(r, 500));
           // Scroll back to top
-          safeScrollTo(0);
+          await safeScrollTo(0);
           await new Promise(r => setTimeout(r, 200));
           console.log('[SnapToAI] Amazon lazy images preloaded');
         } catch (e) {
@@ -3378,11 +3451,11 @@
         // GOOGLE DOCS: Scroll by full viewport height (like GoFullPage)
         if (isGoogleDocsPage && docsTotalCaptures > 0 && currentDocsScrollIndex < docsTotalCaptures) {
           const scrollPos = currentDocsScrollIndex * docsScrollStep;
-          safeScrollTo(scrollPos);
+          await safeScrollTo(scrollPos);
           console.log(`[SnapToAI] Google Docs - scrolling to position ${scrollPos}px (capture ${currentDocsScrollIndex + 1}/${docsTotalCaptures})`);
         } else {
           // Normal pages: scroll by step height
-          safeScrollBy(stepHeight);
+          await safeScrollBy(stepHeight);
         }
         
         // === GOOGLE APPS FIX: Wait for Virtual DOM to Repaint ===
@@ -3474,7 +3547,7 @@
       removeFullPageOverlay();
       
       // Scroll back to top (using safe function - never throws errors!)
-      safeScrollTo(0);
+      await safeScrollTo(0);
       
       if (screenshots.length === 0) {
         showToast('This page cannot be fully captured. Try SNAP instead.', 'error');
