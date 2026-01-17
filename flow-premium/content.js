@@ -3389,6 +3389,12 @@
         // SHOW overlay again after capture
         overlay.style.visibility = 'visible';
         
+        // Check abort AGAIN after capture (user may have clicked during capture)
+        if (isFullPageCaptureAborted) {
+          console.log('[SnapToAI] Abort detected after capture step');
+          break;
+        }
+        
         // Only add if we got a real image
         if (response.success && response.dataUrl && response.dataUrl.length > 1000) {
           screenshots.push({
@@ -3506,6 +3512,12 @@
         // Chrome limits captureVisibleTab to ~2 calls/second
         // This prevents MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND quota errors
         await new Promise(r => setTimeout(r, 700));
+        
+        // Check abort AGAIN after scroll/wait (user may have clicked during delay)
+        if (isFullPageCaptureAborted) {
+          console.log('[SnapToAI] Abort detected after scroll step');
+          break;
+        }
       }
       
       console.log(`[SnapToAI] Full page capture complete: ${screenshots.length} images`);

@@ -126,28 +126,27 @@ chrome.commands.onCommand.addListener((command) => {
 });
 
 // Listen for extension icon click - ABORT full page capture if running
+// ALWAYS try to abort (don't check state - it might be stale after service worker restart)
 chrome.action.onClicked.addListener(async (tab) => {
-  if (isFullPageCaptureInProgress) {
-    console.log('[SnapToAI] Icon clicked during capture - aborting...');
-    
-    // Send abort message to content script
-    try {
-      await chrome.tabs.sendMessage(tab.id, { action: 'abortFullPageCapture' });
-    } catch (e) {
-      console.log('[SnapToAI] Could not send abort to content script:', e.message);
-    }
-    
-    // Reset capture state
-    isFullPageCaptureInProgress = false;
-    batchBuffer = [];
-    batchMetadata = null;
-    
-    // Re-enable popup
-    await chrome.action.setPopup({ popup: 'popup.html' });
-    
-    console.log('[SnapToAI] Full page capture aborted by icon click');
+  console.log('[SnapToAI] Icon clicked - attempting abort...');
+  
+  // Send abort message to content script (always try, even if state is stale)
+  try {
+    await chrome.tabs.sendMessage(tab.id, { action: 'abortFullPageCapture' });
+    console.log('[SnapToAI] Abort message sent to tab:', tab.id);
+  } catch (e) {
+    console.log('[SnapToAI] Could not send abort:', e.message);
   }
-  // If not capturing, do nothing (popup handles normal clicks)
+  
+  // Reset capture state (cleanup)
+  isFullPageCaptureInProgress = false;
+  batchBuffer = [];
+  batchMetadata = null;
+  
+  // Re-enable popup
+  await chrome.action.setPopup({ popup: 'popup.html' });
+  
+  console.log('[SnapToAI] Abort complete, popup re-enabled');
 });
 
 // Listen for messages from popup and content scripts
