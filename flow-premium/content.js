@@ -3684,7 +3684,18 @@
       } catch (e) {}
       
       // CHECK IF THIS WAS AN ABORT - if so, silently exit without error messages
-      if (isFullPageCaptureAborted) {
+      // Check both in-memory flag AND storage flag for reliability
+      let wasAborted = isFullPageCaptureAborted;
+      if (!wasAborted) {
+        try {
+          const { abortFullPageCapture } = await chrome.storage.session.get('abortFullPageCapture');
+          if (abortFullPageCapture && abortFullPageCapture > (Date.now() - 10000)) {
+            wasAborted = true; // Abort flag set within last 10 seconds
+          }
+        } catch (e) {}
+      }
+      
+      if (wasAborted) {
         console.log('[SnapToAI] Full page capture was stopped by user');
         try {
           chrome.runtime.sendMessage({ action: 'fullPageStitchFailed' });
