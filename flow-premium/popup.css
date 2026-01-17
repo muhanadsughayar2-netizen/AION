@@ -564,6 +564,24 @@ body {
   font-weight: 600;
 }
 
+.stop-fullpage-btn {
+  margin-top: 16px;
+  padding: 8px 24px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  border-radius: 6px;
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stop-fullpage-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: #ef4444;
+}
+
 /* Last Capture Preview - Shared for Snap and Snip */
 .last-capture-preview {
   margin: 12px 0;
@@ -1592,31 +1610,6 @@ html[dir="rtl"] .logo-word {
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
-  position: relative;
-}
-
-.gemini-close-btn {
-  position: absolute;
-  right: -8px;
-  top: -8px;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.gemini-close-btn:hover {
-  background: rgba(255, 107, 107, 0.2);
-  border-color: rgba(255, 107, 107, 0.5);
-  color: #ff6b6b;
 }
 
 .gemini-icon {
