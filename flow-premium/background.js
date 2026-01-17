@@ -403,6 +403,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
     console.log('[SnapToAI] Full page capture aborted (timeout or user cancel)');
     
+    // SET ABORT FLAG IN STORAGE (reliable even if message fails)
+    chrome.storage.session.set({ abortFullPageCapture: Date.now() }).catch(() => {});
+    
     // Try to notify content script to stop scrolling
     chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
       if (tab?.id) {

@@ -3662,9 +3662,6 @@
       
       return { success: true, count: screenshots.length };
     } catch (error) {
-      // Use console.warn, NEVER console.error - prevents Chrome extension warnings
-      console.warn('[SnapToAI] Full page capture issue:', error?.message || error);
-      
       // === ALWAYS RESTORE CANVAS/VIDEO ON ERROR ===
       try {
         restoreCanvasAndVideo();
@@ -3685,6 +3682,18 @@
       try {
         removeFullPageOverlay();
       } catch (e) {}
+      
+      // CHECK IF THIS WAS AN ABORT - if so, silently exit without error messages
+      if (isFullPageCaptureAborted) {
+        console.log('[SnapToAI] Full page capture was stopped by user');
+        try {
+          chrome.runtime.sendMessage({ action: 'fullPageStitchFailed' });
+        } catch (e) {}
+        return { success: false, error: 'Capture stopped' };
+      }
+      
+      // Only log and show error for REAL errors (not aborts)
+      console.log('[SnapToAI] Full page capture issue:', error?.message || error);
       
       // SHOW USER-FRIENDLY ERROR MESSAGE - calm, not alarming
       showToast('This page cannot be captured. Try SNAP instead.', 'error');
