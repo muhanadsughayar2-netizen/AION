@@ -3315,6 +3315,15 @@ if (aiButton) aiButton.addEventListener('click', handleAIButtonClick);
 if (geminiSaveBtn) geminiSaveBtn.addEventListener('click', saveGeminiKey);
 if (geminiClearBtn) geminiClearBtn.addEventListener('click', clearGeminiKey);
 
+// Close button for Gemini modal
+const geminiCloseBtn = document.getElementById('geminiCloseBtn');
+if (geminiCloseBtn) {
+  geminiCloseBtn.addEventListener('click', () => {
+    geminiModal.style.display = 'none';
+    geminiModal.classList.remove('show');
+  });
+}
+
 // Direct AI button - opens AI chat, auto-includes selected images if any
 const directAiButton = document.getElementById('directAiButton');
 if (directAiButton) {
