@@ -2820,11 +2820,51 @@
         }
       }
       
-      // GMAIL SPECIAL HANDLING: Use the email/inbox scroll container
+      // GMAIL SPECIAL HANDLING: Find the actual scrollable container
       let gmailContainerFound = false;
-      if (isGmail && scrollContainer && scrollContainer.scrollHeight > viewportHeight) {
-        gmailContainerFound = true;
-        console.log('[SnapToAI] Gmail - using detected container, scrollHeight:', scrollContainer.scrollHeight);
+      if (isGmail) {
+        // Gmail has nested scroll containers - need to find the right one
+        // Priority: Email thread view > Inbox list > Main container
+        const gmailSelectors = [
+          '.aeF',                    // Main inbox/thread scroll container
+          '.nH.bkK',                 // Thread view scroll container  
+          '.nH.aqK',                 // Alternative thread container
+          'div[role="main"] .nH',    // Main role container
+          '.AO',                     // Conversation view
+          '.bkK .nH',                // Nested inbox view
+          '[gh="tl"]',               // Thread list
+          '.Bs.nH .nH'               // Email body scroll
+        ];
+        
+        for (const selector of gmailSelectors) {
+          const el = document.querySelector(selector);
+          if (el && el.scrollHeight > viewportHeight + 50) {
+            scrollContainer = el;
+            gmailContainerFound = true;
+            console.log('[SnapToAI] Gmail - found scrollable container:', selector, 'scrollHeight:', el.scrollHeight);
+            break;
+          }
+        }
+        
+        // If no specific container found, try any scrollable div in main area
+        if (!gmailContainerFound) {
+          const mainArea = document.querySelector('[role="main"]');
+          if (mainArea) {
+            const scrollables = mainArea.querySelectorAll('div');
+            for (const el of scrollables) {
+              if (el.scrollHeight > el.clientHeight + 200 && el.clientHeight > 200) {
+                scrollContainer = el;
+                gmailContainerFound = true;
+                console.log('[SnapToAI] Gmail - found scrollable div in main area, scrollHeight:', el.scrollHeight);
+                break;
+              }
+            }
+          }
+        }
+        
+        if (!gmailContainerFound) {
+          console.log('[SnapToAI] Gmail - no scrollable container found, using window scroll');
+        }
       }
       
       // Initial scroll strategy - will auto-fallback to window if container doesn't work
