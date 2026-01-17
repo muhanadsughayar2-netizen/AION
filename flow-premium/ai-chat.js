@@ -965,7 +965,7 @@ initializeChat();
 
 // === RICH COPY ON MANUAL SELECTION ===
 // When user manually selects text and copies (Ctrl+C), preserve formatting
-document.getElementById('chatThread').addEventListener('copy', async (e) => {
+document.getElementById('chatThread').addEventListener('copy', (e) => {
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed) return;
   
@@ -997,18 +997,14 @@ document.getElementById('chatThread').addEventListener('copy', async (e) => {
   const styledHtml = `<div style="font-family: Arial, sans-serif; color: #000;">${html}</div>`;
   const plainText = selection.toString();
   
+  // Use SYNCHRONOUS clipboardData.setData (works reliably in copy events)
+  // Async clipboard.write is often blocked by browsers during copy events
   try {
-    await navigator.clipboard.write([
-      new ClipboardItem({
-        'text/html': new Blob([styledHtml], { type: 'text/html' }),
-        'text/plain': new Blob([plainText], { type: 'text/plain' })
-      })
-    ]);
-    console.log('[SnapToAI] Rich text copied with formatting');
+    e.clipboardData.setData('text/html', styledHtml);
+    e.clipboardData.setData('text/plain', plainText);
+    console.log('[SnapToAI] Rich text copied with formatting (sync)');
   } catch (err) {
-    // Fallback to plain text
-    await navigator.clipboard.writeText(plainText);
-    console.log('[SnapToAI] Copied as plain text (fallback)');
+    console.error('[SnapToAI] Clipboard setData failed:', err);
   }
 });
 
