@@ -2800,12 +2800,12 @@
         return; // Exit early - no error, just graceful skip
       }
       
-      // FORCE WINDOW SCROLL for known problematic sites (Gmail, Google Search)
-      // NOTE: Google Docs uses its own container - handled separately below
+      // FORCE WINDOW SCROLL for known problematic sites (Google Search only)
+      // NOTE: Google Docs and Gmail use their own containers - handled separately below
       const isGmail = location.hostname.includes('mail.google.com');
       const isGoogleDocsPage = location.hostname.includes('docs.google.com');
       const isGoogleSearch = location.hostname.includes('google.') && location.pathname.includes('/search');
-      const forceWindowScroll = isGmail || isGoogleSearch; // Removed Google Docs from window scroll
+      const forceWindowScroll = isGoogleSearch; // Gmail and Google Docs use container scroll
       
       // GOOGLE DOCS SPECIAL HANDLING: Use .kix-appview-editor as scroll container
       let docsEditorFound = false;
@@ -2820,9 +2820,16 @@
         }
       }
       
+      // GMAIL SPECIAL HANDLING: Use the email/inbox scroll container
+      let gmailContainerFound = false;
+      if (isGmail && scrollContainer && scrollContainer.scrollHeight > viewportHeight) {
+        gmailContainerFound = true;
+        console.log('[SnapToAI] Gmail - using detected container, scrollHeight:', scrollContainer.scrollHeight);
+      }
+      
       // Initial scroll strategy - will auto-fallback to window if container doesn't work
-      // FORCE container scroll for Google Docs when editor is found
-      let useContainerScroll = forceWindowScroll ? false : (docsEditorFound || isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || docViewerHasScroll);
+      // FORCE container scroll for Google Docs and Gmail when container is found
+      let useContainerScroll = forceWindowScroll ? false : (docsEditorFound || gmailContainerFound || isRealContainer || (isAIPlatform && scrollContainer && scrollContainer.scrollHeight > viewportHeight) || docViewerHasScroll);
       let hasTriedWindowFallback = forceWindowScroll; // Skip fallback test if already forcing window
       
       if (forceWindowScroll) {
@@ -2845,13 +2852,13 @@
       }
       
       // Scroll step size: varies by site type
-      // Google Docs uses absolute page positioning - needs 50% overlap to avoid stacking
+      // Google Docs and Gmail use special containers - needs 60% overlap for accuracy
       const isGoogleDocs = location.hostname.includes('docs.google.com');
-      const overlapRatio = isGoogleDocs ? 0.50 : 0.80; // 50% step for Docs, 80% for others
+      const overlapRatio = (isGoogleDocs || isGmail) ? 0.60 : 0.80; // 60% step for Docs/Gmail, 80% for others
       const stepHeight = Math.floor(viewportHeight * overlapRatio);
       
-      if (isGoogleDocs) {
-        console.log('[SnapToAI] Google Docs detected - using 50% overlap to prevent page stacking');
+      if (isGoogleDocs || isGmail) {
+        console.log('[SnapToAI] Google Docs/Gmail detected - using 60% overlap for accurate stitching');
       }
       
       // Get the scroll target

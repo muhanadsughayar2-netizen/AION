@@ -1,0 +1,94 @@
+content.js:10 [SnapToAI] Already loaded and healthy, skipping
+content.js:180 [SnapToAI] Ignoring full page capture in iframe
+content.js:180 [SnapToAI] Ignoring full page capture in iframe
+content.js:180 [SnapToAI] Ignoring full page capture in iframe
+content.js:373 [SnapToAI] Gmail styles injected
+content.js:2681 [SnapToAI] Full page capture started
+content.js:2519 [SnapToAI] mail.google.com detected - will attempt full capture
+content.js:2685 [SnapToAI] Pre-flight: Object
+content.js:2343 [SnapToAI] Finding scrollable container...
+content.js:2373 [SnapToAI TESTED] EMAIL INBOX DETECTED — scrolling the real message list!
+content.js:2783 [SnapToAI] Scroll container: DIV, height: 5572px
+content.js:2829 [SnapToAI] Forcing window scroll for: mail.google.com
+content.js:2844 [SnapToAI] AI platform detected - skipping style expansion to preserve scroll
+content.js:2957 [SnapToAI] Starting capture - containerScroll: false, isAI: false
+content.js:1321 [SnapToAI] 🧊 Freezing DOM...
+content.js:1484 [SnapToAI] Paused 0 videos
+content.js:1519 [SnapToAI] Froze 3 animated images
+content.js:1575 [SnapToAI] 🧊 DOM frozen successfully
+content.js:1089 [SnapToAI] 🎬 Capturing canvas/WebGL/video elements...
+content.js:1150 [SnapToAI] Captured 0 canvas elements
+content.js:1206 [SnapToAI] Captured 0 video elements
+content.js:1209 [SnapToAI] 🎬 Canvas/WebGL/video capture complete
+content.js:3325 [SnapToAI] Reached max scroll position
+content.js:3400 [SnapToAI] Full page capture complete: 2 images
+content.js:1227 [SnapToAI] 🔄 Restoring canvas/WebGL/video elements...
+content.js:1263 [SnapToAI] 🔄 Canvas/WebGL/video restore complete
+content.js:1602 [SnapToAI] 🔥 Unfreezing DOM...
+content.js:1701 [SnapToAI] 🔥 DOM unfrozen successfully
+content.js:3446 [SnapToAI] Sending 2 screenshots for stitching
+content.js:3555 [SnapToAI] Full page capture ended
+content.js:385 [SnapToAI] Site styles cleaned up
+index.js:1 Object
+$ @ index.js:1
+index.js:1 {"msg":"captureError","name":"ChromeRuntimeError","message":"Could not establish connection. Receiving end does not exist."}
+Dt @ index.js:1
+index.js:1 Cleanup timeout triggered
+$ @ index.js:1
+N.warn @ index.js:1
+(anonymous) @ index.js:1
+(anonymous) @ index.js:1
+index.js:1 Object
+$ @ index.js:1
+index.js:1 {"msg":"captureError","name":"ChromeRuntimeError","message":"A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received"}
+Dt @ index.js:1
+index.js:1 Cleanup timeout triggered
+$ @ index.js:1
+N.warn @ index.js:1
+(anonymous) @ index.js:1
+(anonymous) @ index.js:1
+index.js:1 Object
+$ @ index.js:1
+index.js:1 {"msg":"captureError","name":"ChromeRuntimeError","message":"Could not establish connection. Receiving end does not exist."}
+Dt @ index.js:1
+index.js:1 Cleanup timeout triggered
+$ @ index.js:1
+N.warn @ index.js:1
+(anonymous) @ index.js:1
+(anonymous) @ index.js:1
+index.js:1 Object
+$ @ index.js:1
+index.js:1 {"msg":"captureError","name":"ChromeRuntimeError","message":"A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received"}
+Dt @ index.js:1
+index.js:1 Cleanup timeout triggered
+$ @ index.js:1
+N.warn @ index.js:1
+(anonymous) @ index.js:1
+(anonymous) @ index.js:1
+index.js:1 Object
+$ @ index.js:1
+index.js:1 {"msg":"captureError","name":"ChromeRuntimeError","message":"Could not establish connection. Receiving end does not exist."}
+Dt @ index.js:1
+index.js:1 Cleanup timeout triggered
+$ @ index.js:1
+N.warn @ index.js:1
+(anonymous) @ index.js:1
+(anonymous) @ index.js:1
+index.js:1 Object
+$ @ index.js:1
+index.js:1 {"msg":"captureError","name":"ChromeRuntimeError","message":"A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received"}
+Dt @ index.js:1
+index.js:1 Cleanup timeout triggered
+$ @ index.js:1
+N.warn @ index.js:1
+(anonymous) @ index.js:1
+(anonymous) @ index.js:1
+index.js:1 Object
+$ @ index.js:1
+index.js:1 {"msg":"captureError","name":"ChromeRuntimeError","message":"A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received"}
+Dt @ index.js:1
+index.js:1 Cleanup timeout triggered
+$ @ index.js:1
+N.warn @ index.js:1
+(anonymous) @ index.js:1
+(anonymous) @ index.js:1
