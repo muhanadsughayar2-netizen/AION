@@ -3665,20 +3665,30 @@ async function handleAddToChat() {
     return;
   }
   
-  // Save new images to IndexedDB with special key
+  // Save new images to IndexedDB - append to existing queue to avoid data loss
   try {
     const db = await openSnapDB();
     const tx = db.transaction(SNAPTOAI_STORE_NAME, 'readwrite');
     const store = tx.objectStore(SNAPTOAI_STORE_NAME);
-    store.put(selectedImages, 'additionalSnaps');
+    
+    // Read existing additional snaps first
+    const existingRequest = store.get('additionalSnaps');
+    const existing = await new Promise((resolve) => {
+      existingRequest.onsuccess = () => resolve(existingRequest.result || []);
+      existingRequest.onerror = () => resolve([]);
+    });
+    
+    // Append new images to existing queue
+    const combined = [...existing, ...selectedImages];
+    store.put(combined, 'additionalSnaps');
     await new Promise((resolve) => { tx.oncomplete = resolve; });
     db.close();
     
-    // Send message to AI chat window
+    // Send message directly via runtime (AI chat listens on runtime.onMessage)
     chrome.runtime.sendMessage({ 
       action: 'addImagesToChat', 
       imageCount: selectedImages.length 
-    });
+    }).catch(() => {});
     
     setStatus(`${selectedImages.length} image(s) added to chat`, 'success', 2000);
     
