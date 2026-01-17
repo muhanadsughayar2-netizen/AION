@@ -963,6 +963,55 @@ function clearFilesQueue() {
 // Initialize
 initializeChat();
 
+// === RICH COPY ON MANUAL SELECTION ===
+// When user manually selects text and copies (Ctrl+C), preserve formatting
+document.getElementById('chatThread').addEventListener('copy', async (e) => {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) return;
+  
+  // Check if selection is within an AI bubble
+  const range = selection.getRangeAt(0);
+  const container = range.commonAncestorContainer;
+  const bubble = container.nodeType === 1 
+    ? container.closest('.chat-bubble.ai')
+    : container.parentElement?.closest('.chat-bubble.ai');
+  
+  if (!bubble) return; // Not in AI bubble, let browser handle it
+  
+  e.preventDefault();
+  
+  // Get selected HTML with formatting
+  const fragment = range.cloneContents();
+  const tempDiv = document.createElement('div');
+  tempDiv.appendChild(fragment);
+  
+  // Apply inline styles for email/docs compatibility
+  let html = tempDiv.innerHTML;
+  html = html.replace(/<strong>/g, '<strong style="color: #0066cc; font-weight: bold;">');
+  html = html.replace(/<a /g, '<a style="color: #0066cc; text-decoration: underline;" ');
+  html = html.replace(/<h1>/g, '<h1 style="color: #0066cc; font-size: 1.5em;">');
+  html = html.replace(/<h2>/g, '<h2 style="color: #0066cc; font-size: 1.3em;">');
+  html = html.replace(/<h3>/g, '<h3 style="color: #0066cc; font-size: 1.1em;">');
+  html = html.replace(/<li>/g, '<li style="margin: 4px 0;">');
+  
+  const styledHtml = `<div style="font-family: Arial, sans-serif; color: #000;">${html}</div>`;
+  const plainText = selection.toString();
+  
+  try {
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'text/html': new Blob([styledHtml], { type: 'text/html' }),
+        'text/plain': new Blob([plainText], { type: 'text/plain' })
+      })
+    ]);
+    console.log('[SnapToAI] Rich text copied with formatting');
+  } catch (err) {
+    // Fallback to plain text
+    await navigator.clipboard.writeText(plainText);
+    console.log('[SnapToAI] Copied as plain text (fallback)');
+  }
+});
+
 // === THE VERDICT FEATURE ===
 // Show/hide verdict button based on image availability
 function updateVerdictButtonVisibility() {
