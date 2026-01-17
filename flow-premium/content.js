@@ -818,7 +818,7 @@
   // FULL PAGE CAPTURE FUNCTIONS
   // ============================================
   
-  // Create full page capture overlay
+  // Create full page capture overlay with CANCEL button
   function createFullPageOverlay() {
     // Remove existing overlay if any
     const existing = document.getElementById('snaptoai-fullpage-overlay');
@@ -854,7 +854,19 @@
             <div style="font-weight: 600; font-size: 14px; color: #00d9ff;">SnapToAI Full Page</div>
             <div id="snaptoai-progress-text" style="font-size: 12px; color: #aaa; margin-top: 4px;">Capturing... 0%</div>
           </div>
+          <button id="snaptoai-cancel-btn" style="
+            margin-left: 15px;
+            background: #ff4444;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+          ">CANCEL</button>
         </div>
+        <div style="font-size: 10px; color: #666; margin-top: 8px; text-align: center;">Press ESC or click CANCEL to stop</div>
       </div>
     `;
     
@@ -865,12 +877,40 @@
       @keyframes snaptoai-spin {
         to { transform: rotate(360deg); }
       }
+      #snaptoai-cancel-btn:hover {
+        background: #ff6666 !important;
+      }
     `;
     if (!document.getElementById('snaptoai-fullpage-styles')) {
       document.head.appendChild(style);
     }
     
     document.body.appendChild(overlay);
+    
+    // Add CANCEL button click handler
+    const cancelBtn = document.getElementById('snaptoai-cancel-btn');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        console.log('[SnapToAI] CANCEL button clicked!');
+        isFullPageCaptureAborted = true;
+        removeFullPageOverlay();
+      });
+    }
+    
+    // Add ESC key handler
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        console.log('[SnapToAI] ESC key pressed - aborting!');
+        isFullPageCaptureAborted = true;
+        removeFullPageOverlay();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+    
+    // Store handler reference for cleanup
+    overlay._escHandler = escHandler;
+    
     return overlay;
   }
   
