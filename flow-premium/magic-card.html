@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SnapToAI - Magic Card</title>
+  <script src="jspdf.min.js"></script>
   <style>
     * { box-sizing: border-box; }
     body { 
@@ -110,8 +111,9 @@
 </head>
 <body>
   <div class="toolbar">
-    <button class="btn" id="printBtn">Print / Save PDF</button>
-    <button class="btn btn-secondary" id="copyBtn">Copy to Clipboard</button>
+    <button class="btn" id="saveBtn">Save PDF</button>
+    <button class="btn" id="printBtn">Print</button>
+    <button class="btn btn-secondary" id="copyBtn">Copy</button>
   </div>
   <div class="card" id="cardContent">
     <p>Loading content...</p>
