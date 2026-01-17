@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI - Magic Card</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      padding: 40px; 
+      background: linear-gradient(135deg, #e8f4fc 0%, #f0f4f8 100%);
+      min-height: 100vh;
+      margin: 0;
+    }
+    .toolbar {
+      text-align: center;
+      margin-bottom: 30px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      background: linear-gradient(135deg, #00d2ff 0%, #0099cc 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 210, 255, 0.4);
+    }
+    .btn-secondary {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+    .btn-secondary:hover {
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+    .card {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      max-width: 700px;
+      margin: 0 auto;
+      border-top: 6px solid #00d2ff;
+      line-height: 1.7;
+    }
+    .card h1, .card h2, .card h3 { 
+      color: #0052cc; 
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+    }
+    .card h1:first-child, .card h2:first-child, .card h3:first-child {
+      margin-top: 0;
+    }
+    .card p { margin: 1em 0; color: #333; }
+    .card ul, .card ol { margin: 1em 0; padding-left: 1.5em; color: #444; }
+    .card li { margin: 0.5em 0; }
+    .card code { 
+      background: #f1f5f9; 
+      padding: 2px 6px; 
+      border-radius: 4px; 
+      font-size: 0.9em;
+      color: #e11d48;
+    }
+    .card pre { 
+      background: #1e293b; 
+      color: #e2e8f0; 
+      padding: 16px; 
+      border-radius: 8px; 
+      overflow-x: auto;
+      font-size: 13px;
+    }
+    .card pre code { 
+      background: transparent; 
+      color: inherit; 
+      padding: 0;
+    }
+    .card blockquote {
+      border-left: 4px solid #00d2ff;
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      background: #f8fafc;
+      color: #475569;
+    }
+    .card strong { color: #1e293b; }
+    .card a { color: #0066cc; }
+    .branding {
+      text-align: center;
+      margin-top: 30px;
+      color: #94a3b8;
+      font-size: 12px;
+    }
+    @media print {
+      body { background: white; padding: 20px; }
+      .toolbar { display: none; }
+      .card { box-shadow: none; border: 1px solid #e2e8f0; }
+      .branding { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button class="btn" id="printBtn">Print / Save PDF</button>
+    <button class="btn btn-secondary" id="copyBtn">Copy to Clipboard</button>
+  </div>
+  <div class="card" id="cardContent">
+    <p>Loading content...</p>
+  </div>
+  <div class="branding">Created with SnapToAI</div>
+  <script src="magic-card.js"></script>
+</body>
+</html>

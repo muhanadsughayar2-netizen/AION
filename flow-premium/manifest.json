@@ -26,7 +26,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["content.js", "popup.html", "popup.css", "popup.js", "annotate.html", "annotate.css", "annotate.js", "options.html", "options.css", "options.js", "ai-chat.html", "ai-chat.js", "prompts.js", "agent-chat.html", "agent-chat.js"],
+      "resources": ["content.js", "popup.html", "popup.css", "popup.js", "annotate.html", "annotate.css", "annotate.js", "options.html", "options.css", "options.js", "ai-chat.html", "ai-chat.js", "prompts.js", "agent-chat.html", "agent-chat.js", "magic-card.html", "magic-card.js"],
       "matches": ["<all_urls>"]
     }
   ],
