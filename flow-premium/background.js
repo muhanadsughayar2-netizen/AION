@@ -225,6 +225,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     });
     return true;
+  } else if (request.action === 'addImagesToChat') {
+    // Relay to AI chat window
+    chrome.storage.session.get(['aiChatWindowId'], (result) => {
+      if (result.aiChatWindowId) {
+        // Send message to all tabs in that window
+        chrome.tabs.query({ windowId: result.aiChatWindowId }, (tabs) => {
+          tabs.forEach(tab => {
+            chrome.tabs.sendMessage(tab.id, { 
+              action: 'addImagesToChat', 
+              imageCount: request.imageCount 
+            }).catch(() => {});
+          });
+        });
+      }
+    });
+    sendResponse({ success: true });
+    return true;
   } else if (request.action === 'agentSnap') {
     // SNAP triggered by Agent automation - uses same pathway as SNAP button
     const { tabId } = request;

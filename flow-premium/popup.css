@@ -712,6 +712,18 @@ body {
   transform: scale(0.98);
 }
 
+.action-btn.add-to-chat {
+  background: rgba(138, 43, 226, 0.15);
+  border-color: rgba(138, 43, 226, 0.5);
+  color: #a855f7;
+}
+
+.action-btn.add-to-chat:hover {
+  background: rgba(138, 43, 226, 0.25);
+  border-color: #a855f7;
+  box-shadow: 0 0 8px rgba(138, 43, 226, 0.3);
+}
+
 /* Thumbnails Container */
 .thumbnails-container {
   flex: 1;
