@@ -3308,6 +3308,7 @@
       // Chrome 109+: API calls reset the 30-second inactivity timer
       let lastKeepAliveTime = Date.now();
       const KEEP_ALIVE_INTERVAL = 15000; // 15 seconds
+      const captureStartTimestamp = Date.now(); // Track when this capture started
       
       async function keepServiceWorkerAlive() {
         const now = Date.now();
@@ -3323,9 +3324,23 @@
         }
       }
       
+      // Check storage-based abort flag (reliable even if message fails)
+      async function checkStorageAbort() {
+        try {
+          const { abortFullPageCapture } = await chrome.storage.session.get('abortFullPageCapture');
+          // If abort timestamp exists AND is newer than when we started, abort
+          if (abortFullPageCapture && abortFullPageCapture > captureStartTimestamp) {
+            console.log('[SnapToAI] Storage abort flag detected!');
+            isFullPageCaptureAborted = true;
+            return true;
+          }
+        } catch (e) {}
+        return false;
+      }
+      
       while (captureCount < maxCaptures && consecutiveFails < MAX_CONSECUTIVE_FAILS) {
-        // Check if capture was aborted (timeout from popup)
-        if (isFullPageCaptureAborted) {
+        // Check if capture was aborted (in-memory flag OR storage flag)
+        if (isFullPageCaptureAborted || await checkStorageAbort()) {
           console.log('[SnapToAI] Full page capture aborted - stopping loop');
           break;
         }
@@ -3390,7 +3405,7 @@
         overlay.style.visibility = 'visible';
         
         // Check abort AGAIN after capture (user may have clicked during capture)
-        if (isFullPageCaptureAborted) {
+        if (isFullPageCaptureAborted || await checkStorageAbort()) {
           console.log('[SnapToAI] Abort detected after capture step');
           break;
         }
@@ -3514,7 +3529,7 @@
         await new Promise(r => setTimeout(r, 700));
         
         // Check abort AGAIN after scroll/wait (user may have clicked during delay)
-        if (isFullPageCaptureAborted) {
+        if (isFullPageCaptureAborted || await checkStorageAbort()) {
           console.log('[SnapToAI] Abort detected after scroll step');
           break;
         }

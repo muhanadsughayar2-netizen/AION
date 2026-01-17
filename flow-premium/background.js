@@ -128,7 +128,11 @@ chrome.commands.onCommand.addListener((command) => {
 // Listen for extension icon click - ABORT full page capture if running
 // ALWAYS try to abort (don't check state - it might be stale after service worker restart)
 chrome.action.onClicked.addListener(async (tab) => {
-  console.log('[SnapToAI] Icon clicked - attempting abort...');
+  console.log('[SnapToAI] ICON CLICKED - ABORT TRIGGERED');
+  
+  // SET ABORT FLAG IN STORAGE (survives service worker restart)
+  await chrome.storage.session.set({ abortFullPageCapture: Date.now() });
+  console.log('[SnapToAI] Abort flag set in storage');
   
   // Send abort message to content script (always try, even if state is stale)
   try {
