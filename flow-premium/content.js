@@ -832,44 +832,38 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: rgba(0, 0, 0, 0.95);
-        border: 2px solid rgba(0, 217, 255, 0.7);
-        border-radius: 16px;
-        padding: 30px 40px;
+        background: rgba(0, 0, 0, 0.85);
+        border: 1px solid rgba(0, 217, 255, 0.5);
+        border-radius: 12px;
+        padding: 20px 30px;
         z-index: 2147483647;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         color: white;
         backdrop-filter: blur(10px);
-        box-shadow: 0 4px 30px rgba(0, 217, 255, 0.3);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
         text-align: center;
       ">
-        <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
           <div style="
-            width: 28px;
-            height: 28px;
-            border: 3px solid rgba(0, 217, 255, 0.3);
+            width: 22px;
+            height: 22px;
+            border: 2px solid rgba(0, 217, 255, 0.3);
             border-top-color: rgba(0, 217, 255, 0.9);
             border-radius: 50%;
             animation: snaptoai-spin 0.8s linear infinite;
           "></div>
           <div>
-            <div style="font-weight: 600; font-size: 16px; color: #00d9ff;">SnapToAI Full Page</div>
-            <div id="snaptoai-progress-text" style="font-size: 14px; color: #aaa; margin-top: 4px;">Capturing... 0%</div>
+            <div id="snaptoai-progress-text" style="font-size: 13px; color: #00d9ff;">Scrolling page... 0%</div>
           </div>
         </div>
-        <button id="snaptoai-stop-btn" style="
-          display: block;
-          width: 100%;
-          padding: 12px 24px;
-          background: rgba(239, 68, 68, 0.3);
-          border: 2px solid #ef4444;
-          border-radius: 8px;
-          color: #ef4444;
-          font-size: 16px;
-          font-weight: 700;
+        <div id="snaptoai-stop-btn" style="
+          margin-top: 12px;
+          padding: 6px 0;
+          color: #888;
+          font-size: 11px;
           cursor: pointer;
-          transition: all 0.2s ease;
-        ">STOP</button>
+          transition: color 0.2s ease;
+        ">click to stop</div>
       </div>
     `;
     
@@ -881,8 +875,7 @@
         to { transform: rotate(360deg); }
       }
       #snaptoai-stop-btn:hover {
-        background: rgba(239, 68, 68, 0.4) !important;
-        border-color: #ef4444 !important;
+        color: #ef4444 !important;
       }
     `;
     if (!document.getElementById('snaptoai-fullpage-styles')) {
