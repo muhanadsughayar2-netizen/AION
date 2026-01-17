@@ -148,39 +148,6 @@ function resetFullPageCaptureState() {
   fullPageCaptureAborted = false;
 }
 
-// Handle STOP button click during full page capture
-function handleStopFullPage() {
-  console.log('[SnapToAI] STOP button clicked in popup');
-  
-  // Set abort flag
-  fullPageCaptureAborted = true;
-  
-  // Clear timeout
-  clearFullPageTimeout();
-  
-  // Hide overlay
-  const overlay = document.getElementById('fullPageOverlay');
-  if (overlay) overlay.style.display = 'none';
-  
-  // Re-enable button
-  const fullPageButton = document.getElementById('fullPageButton');
-  if (fullPageButton) fullPageButton.disabled = false;
-  
-  // Update status
-  const status = document.getElementById('status');
-  if (status) {
-    status.textContent = 'Capture stopped';
-    status.className = 'status';
-    setTimeout(() => {
-      status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
-      status.className = 'status';
-    }, 2000);
-  }
-  
-  // Notify background to stop capture
-  chrome.runtime.sendMessage({ action: 'fullPageCaptureAborted' }).catch(() => {});
-}
-
 // ===== ENHANCED STATUS SYSTEM =====
 // Updates status text and dot with proper styling
 function setStatus(message, type = 'default', duration = null) {
@@ -778,9 +745,6 @@ function setupEventListeners() {
   
   // Full Page button click (Full Page - scroll and capture entire page)
   document.getElementById('fullPageButton').addEventListener('click', handleFullPageClick);
-  
-  // Stop Full Page button click
-  document.getElementById('stopFullPageBtn').addEventListener('click', handleStopFullPage);
   
   // Clear button
   document.getElementById('clearButton').addEventListener('click', handleClear);
