@@ -810,7 +810,9 @@ function isCapturableUrl(url) {
   const restrictedDomains = [
     'chrome.google.com/webstore',
     'chromewebstore.google.com',
-    'addons.mozilla.org'
+    'addons.mozilla.org',
+    'youtube.com',
+    'www.youtube.com'
   ];
   
   const lowerUrl = url.toLowerCase();
