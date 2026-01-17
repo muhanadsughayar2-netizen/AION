@@ -855,6 +855,20 @@
             <div id="snaptoai-progress-text" style="font-size: 12px; color: #aaa; margin-top: 4px;">Capturing... 0%</div>
           </div>
         </div>
+        <button id="snaptoai-stop-btn" style="
+          display: block;
+          width: 100%;
+          margin-top: 15px;
+          padding: 8px 16px;
+          background: rgba(239, 68, 68, 0.2);
+          border: 1px solid rgba(239, 68, 68, 0.6);
+          border-radius: 6px;
+          color: #ef4444;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        ">STOP</button>
       </div>
     `;
     
@@ -865,12 +879,30 @@
       @keyframes snaptoai-spin {
         to { transform: rotate(360deg); }
       }
+      #snaptoai-stop-btn:hover {
+        background: rgba(239, 68, 68, 0.4) !important;
+        border-color: #ef4444 !important;
+      }
     `;
     if (!document.getElementById('snaptoai-fullpage-styles')) {
       document.head.appendChild(style);
     }
     
     document.body.appendChild(overlay);
+    
+    // Add click handler for STOP button
+    const stopBtn = document.getElementById('snaptoai-stop-btn');
+    if (stopBtn) {
+      stopBtn.addEventListener('click', () => {
+        console.log('[SnapToAI] STOP button clicked!');
+        isFullPageCaptureAborted = true;
+        isFullPageCaptureRunning = false;
+        removeFullPageOverlay();
+        // Notify background to clean up
+        chrome.runtime.sendMessage({ action: 'fullPageCaptureAborted' }).catch(() => {});
+      });
+    }
+    
     return overlay;
   }
   
