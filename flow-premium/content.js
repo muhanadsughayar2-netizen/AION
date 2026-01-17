@@ -3370,6 +3370,16 @@
         return false;
       }
       
+      // Cancellable delay - checks abort every 100ms for fast response
+      async function cancellableDelay(ms) {
+        const chunks = Math.ceil(ms / 100);
+        for (let i = 0; i < chunks; i++) {
+          if (isFullPageCaptureAborted) return false;
+          await new Promise(r => setTimeout(r, Math.min(100, ms - i * 100)));
+        }
+        return !isFullPageCaptureAborted;
+      }
+      
       while (captureCount < maxCaptures && consecutiveFails < MAX_CONSECUTIVE_FAILS) {
         // Check if capture was aborted (in-memory flag OR storage flag)
         if (isFullPageCaptureAborted || await checkStorageAbort()) {
@@ -3558,11 +3568,9 @@
         // === CRITICAL: 700ms DELAY TO RESPECT CHROME'S RATE LIMIT ===
         // Chrome limits captureVisibleTab to ~2 calls/second
         // This prevents MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND quota errors
-        await new Promise(r => setTimeout(r, 700));
-        
-        // Check abort AGAIN after scroll/wait (user may have clicked during delay)
-        if (isFullPageCaptureAborted || await checkStorageAbort()) {
-          console.log('[SnapToAI] Abort detected after scroll step');
+        // Uses cancellable delay so STOP button responds within 100ms
+        if (!await cancellableDelay(700)) {
+          console.log('[SnapToAI] Abort detected during rate limit delay');
           break;
         }
       }
