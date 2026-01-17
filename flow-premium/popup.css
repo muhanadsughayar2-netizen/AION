@@ -564,24 +564,6 @@ body {
   font-weight: 600;
 }
 
-.stop-fullpage-btn {
-  margin-top: 16px;
-  padding: 8px 24px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.5);
-  border-radius: 6px;
-  color: #ef4444;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.stop-fullpage-btn:hover {
-  background: rgba(239, 68, 68, 0.3);
-  border-color: #ef4444;
-}
-
 /* Last Capture Preview - Shared for Snap and Snip */
 .last-capture-preview {
   margin: 12px 0;
