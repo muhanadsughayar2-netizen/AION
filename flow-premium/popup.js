@@ -2022,41 +2022,41 @@ async function handleCopySelected() {
     
     statusCopying();
     
-    // Clipboard can only hold ONE image at a time!
-    // Solution: Combine all selected images into a single composite image
-    const compositeDataUrl = await createCompositeImage(selectedSnaps);
+    // Create composite canvas directly (more reliable than dataURL -> fetch -> blob)
+    const compositeCanvas = await createCompositeCanvas(selectedSnaps);
     
-    // Check if image is too large for clipboard (browsers have ~128MB limit)
-    // Estimate size: base64 is ~33% larger than binary, so divide by 1.33
-    const estimatedSize = (compositeDataUrl.length * 0.75);
+    // Convert canvas to blob directly (guaranteed correct MIME type)
+    const blob = await new Promise((resolve, reject) => {
+      compositeCanvas.toBlob((b) => {
+        if (b) resolve(b);
+        else reject(new Error('Failed to create blob'));
+      }, 'image/png');
+    });
+    
+    // Check if blob is too large (browsers have ~128MB limit)
     const MAX_CLIPBOARD_SIZE = 100 * 1024 * 1024; // 100MB safe limit
     
-    let blobToClip;
-    if (estimatedSize > MAX_CLIPBOARD_SIZE) {
-      // Image too large - compress to JPEG
+    let blobToClip = blob;
+    if (blob.size > MAX_CLIPBOARD_SIZE) {
       console.log('[SnapToAI] Large image detected, compressing for clipboard...');
-      const compressedDataUrl = await compressImageForClipboard(compositeDataUrl);
-      const res = await fetch(compressedDataUrl);
-      blobToClip = await res.blob();
-    } else {
-      // Normal size - use PNG
-      const res = await fetch(compositeDataUrl);
-      blobToClip = await res.blob();
+      blobToClip = await new Promise((resolve, reject) => {
+        compositeCanvas.toBlob((b) => {
+          if (b) resolve(b);
+          else reject(new Error('Failed to compress'));
+        }, 'image/jpeg', 0.85);
+      });
     }
     
-    // Try clipboard write with retry on failure
+    // Write to clipboard with explicit MIME type (most reliable for AI chats)
     try {
       await navigator.clipboard.write([
-        new ClipboardItem({ [blobToClip.type]: blobToClip })
+        new ClipboardItem({ 'image/png': blobToClip })
       ]);
     } catch (clipErr) {
-      // Clipboard failed - try with JPEG compression as fallback
-      console.warn('[SnapToAI] Clipboard write failed, trying compressed fallback:', clipErr.message);
-      const compressedDataUrl = await compressImageForClipboard(compositeDataUrl, 0.7);
-      const res = await fetch(compressedDataUrl);
-      const compressedBlob = await res.blob();
+      // Fallback: try with the blob's actual type
+      console.warn('[SnapToAI] PNG clipboard failed, trying with blob type:', clipErr.message);
       await navigator.clipboard.write([
-        new ClipboardItem({ [compressedBlob.type]: compressedBlob })
+        new ClipboardItem({ [blobToClip.type]: blobToClip })
       ]);
     }
     
@@ -2112,6 +2112,63 @@ async function compressImageForClipboard(dataUrl, quality = 0.85) {
 async function createCompositeImage(dataUrls) {
   // Use clean version with visible watermark for clipboard
   return await createCleanStackedImage(dataUrls, true);
+}
+
+// Create composite CANVAS from multiple snapshots (returns canvas, not dataURL)
+// More reliable for clipboard operations - avoids dataURL -> fetch -> blob conversion
+async function createCompositeCanvas(dataUrls) {
+  // Load all images first
+  const images = await Promise.all(dataUrls.map(url => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+  }));
+  
+  // Find max width
+  const maxWidth = Math.max(...images.map(img => img.width));
+  
+  // Calculate SCALED heights for each image (when scaled to maxWidth)
+  const scaledHeights = images.map(img => {
+    const scale = maxWidth / img.width;
+    return Math.round(img.height * scale);
+  });
+  
+  // Total height is sum of ALL scaled heights
+  const totalHeight = scaledHeights.reduce((sum, h) => sum + h, 0);
+  
+  // Create canvas - exact size, no extra space
+  const canvas = document.createElement('canvas');
+  canvas.width = maxWidth;
+  canvas.height = totalHeight;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  
+  // Fill with white background
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw each image vertically stacked - NO gaps, NO borders, NO labels
+  let currentY = 0;
+  images.forEach((img, index) => {
+    const scaledHeight = scaledHeights[index];
+    ctx.drawImage(img, 0, currentY, maxWidth, scaledHeight);
+    currentY += scaledHeight;
+  });
+  
+  // Add invisible watermark for AI detection
+  addInvisibleWatermark(canvas);
+  
+  // Add visible watermark for clipboard copy
+  ctx.font = '12px Arial';
+  ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('snapto.ai', canvas.width - 15, canvas.height - 8);
+  
+  // Return canvas directly (caller will use toBlob)
+  return canvas;
 }
 
 // Create CLEAN stacked image - no padding, no borders, white background
