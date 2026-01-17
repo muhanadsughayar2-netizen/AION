@@ -379,6 +379,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Full page capture cycle complete (success or failure) - reset the flag
     isFullPageCaptureInProgress = false;
     fullPageCapturePort = null;
+    chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
     console.log('[SnapToAI] Full page capture completed, flag reset');
     sendResponse({ success: true });
     return true;
@@ -386,6 +387,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Timeout/abort from popup - reset capture state and notify content script
     isFullPageCaptureInProgress = false;
     fullPageCapturePort = null;
+    chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
     console.log('[SnapToAI] Full page capture aborted (timeout or user cancel)');
     
     // Try to notify content script to stop scrolling
@@ -429,6 +431,7 @@ chrome.runtime.onConnect.addListener((port) => {
         console.log('[SnapToAI] Popup disconnected during full page capture - resetting flag');
         isFullPageCaptureInProgress = false;
         fullPageCapturePort = null;
+        chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
       }
     });
   }
@@ -867,6 +870,10 @@ async function startFullPageCapture(targetTabId = null) {
     // Set capture in progress flag
     isFullPageCaptureInProgress = true;
     
+    // DISABLE POPUP so icon click can abort capture
+    await chrome.action.setPopup({ popup: '' });
+    console.log('[SnapToAI] Popup disabled - click icon to abort capture');
+    
     // Check if this is an AI platform (Grok, ChatGPT, Claude, etc.)
     const isAIPlatform = AI_SITES.some(site => tab.url.includes(site));
     
@@ -893,6 +900,7 @@ async function startFullPageCapture(targetTabId = null) {
     } catch (msgError) {
       console.log('[SnapToAI] Cannot access this page');
       isFullPageCaptureInProgress = false;
+      chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
       return { 
         success: false, 
         error: 'Cannot capture this page. Works on regular websites only.',
@@ -904,6 +912,7 @@ async function startFullPageCapture(targetTabId = null) {
   } catch (error) {
     console.log('[SnapToAI] Capture not available:', error.message);
     isFullPageCaptureInProgress = false; // Reset on error
+    chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
     return { 
       success: false, 
       error: 'Cannot capture this page. Works on regular websites only.',
@@ -944,6 +953,7 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
   try {
     if (!screenshots || screenshots.length === 0) {
       isFullPageCaptureInProgress = false;
+      chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
       return { success: false, error: 'No screenshots to stitch' };
     }
     
@@ -953,6 +963,7 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
     // Block if queue is full
     if (snaps.length >= MAX_SNAPS) {
       isFullPageCaptureInProgress = false;
+      chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
       return { 
         success: false, 
         error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.` 
@@ -1024,19 +1035,23 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
       } catch (autoSaveError) {
         console.log('[SnapToAI] AutoSave error:', autoSaveError.message);
         isFullPageCaptureInProgress = false;
+        chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
         return { success: false, error: autoSaveError.message };
       }
     }
   } catch (error) {
     console.log('[SnapToAI] Finalize:', error.message || error);
     isFullPageCaptureInProgress = false;
+    chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
     return { success: false, error: error.message };
   }
 }
 
 // Reset full page capture state (called when stitch completes or fails)
-function resetFullPageCaptureState() {
+async function resetFullPageCaptureState() {
   isFullPageCaptureInProgress = false;
+  // Re-enable popup so normal clicks work again
+  await chrome.action.setPopup({ popup: 'popup.html' });
 }
 
 // ============================================
