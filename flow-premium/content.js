@@ -857,13 +857,17 @@
           </div>
         </div>
         <div id="snaptoai-stop-btn" style="
-          margin-top: 12px;
-          padding: 6px 0;
-          color: #888;
-          font-size: 11px;
+          margin-top: 14px;
+          padding: 8px 20px;
+          color: #ff6b6b;
+          font-size: 12px;
+          font-weight: 500;
           cursor: pointer;
-          transition: color 0.2s ease;
-        ">click to stop</div>
+          border: 1px solid rgba(255, 107, 107, 0.4);
+          border-radius: 6px;
+          background: rgba(255, 107, 107, 0.1);
+          transition: all 0.2s ease;
+        ">STOP</div>
       </div>
     `;
     
@@ -875,7 +879,9 @@
         to { transform: rotate(360deg); }
       }
       #snaptoai-stop-btn:hover {
-        color: #ef4444 !important;
+        color: #fff !important;
+        background: rgba(255, 107, 107, 0.3) !important;
+        border-color: #ff6b6b !important;
       }
     `;
     if (!document.getElementById('snaptoai-fullpage-styles')) {
