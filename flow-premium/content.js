@@ -818,7 +818,7 @@
   // FULL PAGE CAPTURE FUNCTIONS
   // ============================================
   
-  // Create full page capture overlay with CANCEL button
+  // Create full page capture overlay
   function createFullPageOverlay() {
     // Remove existing overlay if any
     const existing = document.getElementById('snaptoai-fullpage-overlay');
@@ -854,18 +854,6 @@
             <div style="font-weight: 600; font-size: 14px; color: #00d9ff;">SnapToAI Full Page</div>
             <div id="snaptoai-progress-text" style="font-size: 12px; color: #aaa; margin-top: 4px;">Capturing... 0%</div>
           </div>
-          <button id="snaptoai-cancel-btn" style="
-            background: #dc2626;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 16px;
-            color: white;
-            font-weight: 600;
-            font-size: 12px;
-            cursor: pointer;
-            margin-left: 10px;
-            transition: background 0.2s;
-          ">CANCEL</button>
         </div>
       </div>
     `;
@@ -877,29 +865,12 @@
       @keyframes snaptoai-spin {
         to { transform: rotate(360deg); }
       }
-      #snaptoai-cancel-btn:hover {
-        background: #b91c1c !important;
-      }
     `;
     if (!document.getElementById('snaptoai-fullpage-styles')) {
       document.head.appendChild(style);
     }
     
     document.body.appendChild(overlay);
-    
-    // Add cancel button click handler
-    const cancelBtn = document.getElementById('snaptoai-cancel-btn');
-    if (cancelBtn) {
-      cancelBtn.addEventListener('click', () => {
-        console.log('[SnapToAI] Cancel button clicked - aborting capture');
-        isFullPageCaptureAborted = true;
-        isFullPageCaptureRunning = false;
-        removeFullPageOverlay();
-        // Notify background
-        chrome.runtime.sendMessage({ action: 'fullPageCaptureAborted' }).catch(() => {});
-      });
-    }
-    
     return overlay;
   }
   
