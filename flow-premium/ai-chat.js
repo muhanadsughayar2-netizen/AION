@@ -965,12 +965,14 @@ initializeChat();
 
 // === RICH COPY ON MANUAL SELECTION ===
 // When user manually selects text and copies (Ctrl+C), preserve formatting
-document.getElementById('chatThread').addEventListener('copy', (e) => {
-  const selection = window.getSelection();
-  if (!selection || selection.isCollapsed) return;
-  
-  // Check if selection is within an AI bubble
-  const range = selection.getRangeAt(0);
+const chatThreadElement = document.getElementById('chatThread');
+if (chatThreadElement) {
+  chatThreadElement.addEventListener('copy', (e) => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.rangeCount) return;
+    
+    // Check if selection is within an AI bubble
+    const range = selection.getRangeAt(0);
   const container = range.commonAncestorContainer;
   const bubble = container.nodeType === 1 
     ? container.closest('.chat-bubble.ai')
@@ -1006,7 +1008,8 @@ document.getElementById('chatThread').addEventListener('copy', (e) => {
   } catch (err) {
     console.error('[SnapToAI] Clipboard setData failed:', err);
   }
-});
+  });
+}
 
 // === THE VERDICT FEATURE ===
 // Show/hide verdict button based on image availability
