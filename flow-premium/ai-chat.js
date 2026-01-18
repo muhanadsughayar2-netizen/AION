@@ -1430,7 +1430,7 @@ function renderMagicCard(data, btn, batchLabel = '') {
   card.scrollIntoView({ behavior: 'smooth' });
 }
 
-// Render dual output for Stock Deep Dive: Card + Analysis with separate print/share buttons
+// Render dual output for ALL magic buttons: Card + Analysis with separate print/share buttons
 function renderDualStockOutput(responseText, btn, batchLabel = '') {
   const thread = document.getElementById('chatThread');
   
@@ -1648,41 +1648,41 @@ async function executeMagicButton(index) {
       const chatContext = getChatContext();
       
       // Structured prompt - CONFIDENT, NO EXCUSES, IMAGE-FOCUSED
-      // Check if this is Stock Deep Dive - use special dual output mode
-      const isStockDeepDive = btn.name === 'Stock Deep Dive' || btn.prompt.includes('Hybrid Audit');
-      
-      let magicPrompt;
-      if (isStockDeepDive) {
-        // Use the user's custom prompt directly for dual output
-        magicPrompt = `ROLE: Expert analyst who gives DECISIVE, HELPFUL advice.
+      // ALL magic buttons now use dual output: Card + Analysis
+      const magicPrompt = `ROLE: Expert analyst who gives DECISIVE, HELPFUL advice.
 
 CRITICAL RULES:
 - You have NO internet access. Base ALL insights purely on the image content
-- Be EXTREMELY SPECIFIC with numbers
-- Give ACTIONABLE advice. No hedging, no excuses, no disclaimers
-${totalBatches > 1 ? `\nNOTE: This is batch ${batchIndex + 1} of ${totalBatches}. Focus on THIS batch of images.` : ''}
-${chatContext ? `CONTEXT: ${chatContext.substring(0, 150)}\n` : ''}
-
-${btn.prompt}`;
-      } else {
-        magicPrompt = `ROLE: Expert analyst who gives DECISIVE, HELPFUL advice.
-
-CRITICAL RULES:
-- You have NO internet access. NEVER say "I can't search" or "I cannot browse"
-- Base ALL insights purely on the image content - prices, text, ratings, visuals
 - Be EXTREMELY SPECIFIC with numbers. "$450" not "around four hundred". "7.5/10" not "moderate"
 - Give ACTIONABLE advice. No hedging, no excuses, no disclaimers
-- IMPORTANT: Follow the USER'S numbered requirements EXACTLY. Each numbered item = one entry in items array
 ${totalBatches > 1 ? `\nNOTE: This is batch ${batchIndex + 1} of ${totalBatches}. Focus on THIS batch of images.` : ''}
-
-USER'S REQUEST: "${btn.prompt}"
 ${chatContext ? `CONTEXT: ${chatContext.substring(0, 150)}\n` : ''}
 
-RESPOND to EVERY point in the user's request. Use sections to organize. Put each numbered answer as a separate item.
-Output ONLY valid JSON:
-{"title":"Short descriptive title","tone":"gold|green|red","score":75,"highlight":"Key insight with SPECIFIC numbers","sections":[{"label":"Data Extracted","items":["Answer to point 1 with numbers","Answer to point 2 with specifics","Answer to point 3"]},{"label":"Analysis","items":["Your expert analysis with numbers","Risk assessment: X/10"]},{"label":"Recommendations","items":["[HIGH] Do this: $XXX","[MEDIUM] Consider this","Specific action with number"]}],"verdict":"Decisive recommendation with specific numbers","nextStep":"Exact next action","risk":"HIGH|MEDIUM|LOW"}
-(tone: gold=buy/recommended, green=okay/hold, red=avoid/sell)`;
-      }
+USER'S REQUEST: "${btn.prompt}"
+
+===OUTPUT FORMAT (MANDATORY)===
+You MUST provide TWO parts in your response:
+
+PART 1 - THE CARD (JSON):
+Output this JSON block first:
+{"title":"Brief Title","score":75,"tone":"green","highlight":"One key insight with numbers","key_metrics":["Metric 1","Metric 2","Metric 3","Metric 4"],"verdict":"One sentence recommendation"}
+(tone: green=positive/buy, gold=strong/excellent, neutral=hold/caution, red=negative/avoid)
+
+PART 2 - THE ANALYSIS (MARKDOWN):
+Directly after the JSON, provide detailed analysis with:
+## Key Findings
+- Bullet points with specific data from the image
+
+## Deep Analysis
+Explain the logic, context, and implications
+
+## Recommendations
+Numbered action items with priority
+
+## Final Verdict
+Your decisive conclusion with reasoning
+
+Be exhaustive in Part 2. Never summarize.`;
 
       // Build parts with THIS BATCH of images only
       const parts = [{ text: magicPrompt }];
@@ -1751,16 +1751,11 @@ Output ONLY valid JSON:
         cardData = null;
       }
       
-      // Render result
-      if (isStockDeepDive) {
+      // Render result - ALL magic buttons now use dual output
+      if (responseText && responseText.length > 10) {
         // DUAL OUTPUT MODE: Card + Analysis with separate print/share buttons
         thinkingBubble.remove();
         renderDualStockOutput(responseText, btn, batchLabel);
-      } else if (cardData && cardData.title) {
-        thinkingBubble.remove();
-        // Ensure sections exists even if truncated
-        if (!cardData.sections) cardData.sections = [];
-        renderMagicCard(cardData, btn, batchLabel);
       } else {
         // DON'T show raw JSON! Show friendly error or extract what we can
         let displayText = '';
