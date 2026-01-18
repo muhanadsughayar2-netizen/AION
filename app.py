@@ -402,6 +402,7 @@ def admin_panel(password=None):
             processed_rows.append({
                 'hash': user_hash[:16] + '...',
                 'full_hash': user_hash,
+                'created': created_at.strftime('%Y-%m-%d %H:%M') if created_at else '-',
                 'start': datetime.fromtimestamp(trial_start / 1000).strftime('%Y-%m-%d'),
                 'days': days_remaining,
                 'status': status,
@@ -522,8 +523,9 @@ def admin_panel(password=None):
         <tr>
             <th>#</th>
             <th>User Hash</th>
-            <th>Registered</th>
-            <th>Trial Days</th>
+            <th>First Registered</th>
+            <th>Trial Start</th>
+            <th>Days Left</th>
             <th>Status</th>
             <th>Plan</th>
             <th>Expires</th>
@@ -544,6 +546,7 @@ def admin_panel(password=None):
         <tr>
             <td>{i}</td>
             <td class="hash" title="{r['full_hash']}">{r['hash']}</td>
+            <td style="color: #888; font-size: 12px;">{r['created']}</td>
             <td>{r['start']}</td>
             <td>{r['days']}</td>
             <td><span class="badge {badge_class}">{status_text}</span></td>
