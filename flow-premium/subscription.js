@@ -17,7 +17,7 @@ const TRIAL_DAYS = 30;
 // ===========================================
 // ⚠️ TEST MODE - For development ONLY. These functions modify trial data!
 // Set to false before publishing to Chrome Web Store!
-const ENABLE_TEST_MODE = true; // Set to false before publishing to Chrome Web Store
+const ENABLE_TEST_MODE = false; // DISABLED for production - prevents accidental trial resets
 
 window.SnapToAI_TEST = ENABLE_TEST_MODE ? {
   // SAFETY: Store original date before any test modifications
@@ -166,8 +166,9 @@ async function getServerTrialDate(userId) {
     
     const data = await response.json();
     if (data.success && data.trialStartDate) {
-      console.log('[SnapToAI] Server trial date:', new Date(data.trialStartDate).toLocaleDateString());
-      return data.trialStartDate;
+      console.log('[SnapToAI] Server trial date:', new Date(data.trialStartDate).toLocaleDateString(), 'Days remaining:', data.daysRemaining);
+      // Return both trial start date AND server-calculated days remaining
+      return { trialStartDate: data.trialStartDate, serverDaysRemaining: data.daysRemaining };
     }
     return null;
   } catch (error) {
@@ -185,6 +186,7 @@ async function checkSubscription() {
     lastVerified, 
     graceUntil,
     cachedTrialStartDate,
+    cachedServerDaysRemaining,
     lastServerCheck
   } = await chrome.storage.local.get([
     'subscriptionActive',
@@ -193,6 +195,7 @@ async function checkSubscription() {
     'lastVerified',
     'graceUntil',
     'cachedTrialStartDate',
+    'cachedServerDaysRemaining',
     'lastServerCheck'
   ]);
 
@@ -212,33 +215,58 @@ async function checkSubscription() {
     };
   }
   
-  // Check server for trial date (once per hour to avoid spamming)
-  const CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
-  let trialStartDate = cachedTrialStartDate;
+  // Check server for trial date - more aggressive freshness checks for accurate countdown
+  const CHECK_INTERVAL = 15 * 60 * 1000; // 15 minutes
+  const MAX_CACHE_AGE = 24 * 60 * 60 * 1000; // 24 hours - force refresh daily
+  let trialStartDate = null; // Don't trust cache blindly
   
   // Also track which API key hash we cached for
   const { cachedApiKeyHash } = await chrome.storage.local.get(['cachedApiKeyHash']);
   const apiKeyChanged = cachedApiKeyHash && cachedApiKeyHash !== userId;
   
-  // Force server check if: API key changed, no cached data, or interval passed
-  const needsServerCheck = apiKeyChanged || !cachedTrialStartDate || !lastServerCheck || (now - lastServerCheck) > CHECK_INTERVAL;
+  // Calculate if a day boundary has passed since last check
+  const lastCheckDay = lastServerCheck ? Math.floor(lastServerCheck / 86400000) : 0;
+  const currentDay = Math.floor(now / 86400000);
+  const dayBoundaryPassed = currentDay > lastCheckDay;
+  
+  // Cache is stale if: too old (24h), or a calendar day has passed
+  const cacheIsStale = !lastServerCheck || (now - lastServerCheck) > MAX_CACHE_AGE || dayBoundaryPassed;
+  
+  // Force server check if: API key changed, no cached data, interval passed, OR cache is stale
+  const needsServerCheck = apiKeyChanged || !cachedTrialStartDate || !lastServerCheck || (now - lastServerCheck) > CHECK_INTERVAL || cacheIsStale;
+  
+  // Track server-provided days remaining for accuracy
+  let serverDaysRemaining = null;
   
   if (needsServerCheck) {
     console.log('[SnapToAI] Checking server for trial status...');
-    const serverDate = await getServerTrialDate(userId);
-    if (serverDate) {
-      trialStartDate = serverDate;
-      // Cache locally for offline/speed
+    const serverResult = await getServerTrialDate(userId);
+    if (serverResult && serverResult.trialStartDate) {
+      trialStartDate = serverResult.trialStartDate;
+      serverDaysRemaining = serverResult.serverDaysRemaining;
+      // Cache locally for offline/speed - include server's calculated days
       await chrome.storage.local.set({ 
-        cachedTrialStartDate: serverDate,
+        cachedTrialStartDate: serverResult.trialStartDate,
+        cachedServerDaysRemaining: serverResult.serverDaysRemaining,
         cachedApiKeyHash: userId,
         lastServerCheck: now
       });
-      console.log('[SnapToAI] Trial synced with server, days remaining:', Math.max(0, TRIAL_DAYS - Math.floor((now - serverDate) / 86400000)));
+      console.log('[SnapToAI] Trial synced with server, days remaining:', serverResult.serverDaysRemaining);
     }
   }
   
-  // Fallback to local data if server unavailable
+  // Fallback to cached data if server unavailable (but only if cache is reasonably fresh)
+  if (!trialStartDate && cachedTrialStartDate && lastServerCheck && (now - lastServerCheck) < MAX_CACHE_AGE) {
+    trialStartDate = cachedTrialStartDate;
+    // Use cached server days, but adjust for time passed since last check
+    const hoursSinceCheck = (now - lastServerCheck) / (1000 * 60 * 60);
+    if (cachedServerDaysRemaining !== undefined && hoursSinceCheck < 24) {
+      serverDaysRemaining = cachedServerDaysRemaining;
+    }
+    console.log('[SnapToAI] Server unavailable, using cached trial date (cache age:', Math.floor((now - lastServerCheck) / 60000), 'minutes)');
+  }
+  
+  // Last resort fallback to local storage data
   if (!trialStartDate) {
     const { trialStartDate: syncDate } = await chrome.storage.sync.get(['trialStartDate']);
     const { initialInstallTimestamp, trialStartDate: localDate } = await chrome.storage.local.get(['initialInstallTimestamp', 'trialStartDate']);
@@ -265,10 +293,16 @@ async function checkSubscription() {
   // Handle missing trial date
   if (!trialStartDate) {
     // First time user - register with server
-    const serverDate = await getServerTrialDate(userId);
-    if (serverDate) {
-      trialStartDate = serverDate;
-      await chrome.storage.local.set({ cachedTrialStartDate: serverDate, lastServerCheck: now });
+    const serverResult = await getServerTrialDate(userId);
+    if (serverResult && serverResult.trialStartDate) {
+      trialStartDate = serverResult.trialStartDate;
+      serverDaysRemaining = serverResult.serverDaysRemaining;
+      await chrome.storage.local.set({ 
+        cachedTrialStartDate: serverResult.trialStartDate,
+        cachedServerDaysRemaining: serverResult.serverDaysRemaining,
+        cachedApiKeyHash: userId,
+        lastServerCheck: now 
+      });
     } else {
       // Server unavailable - create local trial (will sync later)
       trialStartDate = now;
@@ -314,9 +348,14 @@ async function checkSubscription() {
     }
   }
 
-  // Check trial period
+  // Check trial period - prefer server-calculated days for accuracy
   const daysSinceInstall = Math.floor((now - installDate) / (1000 * 60 * 60 * 24));
-  const daysRemaining = Math.max(0, TRIAL_DAYS - daysSinceInstall);
+  const localDaysRemaining = Math.max(0, TRIAL_DAYS - daysSinceInstall);
+  
+  // Use server's daysRemaining when available (more accurate), otherwise use local calculation
+  const daysRemaining = (serverDaysRemaining !== null && serverDaysRemaining !== undefined) 
+    ? serverDaysRemaining 
+    : localDaysRemaining;
 
   if (daysRemaining > 0) {
     return {

@@ -153,7 +153,8 @@ def db_status():
             conn = psycopg2.connect(db_url, sslmode='require')
             cur = conn.cursor()
             cur.execute("SELECT COUNT(*) FROM user_trials")
-            count = cur.fetchone()[0]
+            row = cur.fetchone()
+            count = row[0] if row else 0
             cur.close()
             conn.close()
             result['connected'] = True
