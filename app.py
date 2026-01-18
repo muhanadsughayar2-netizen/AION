@@ -261,54 +261,73 @@ def verify_license():
         return jsonify({'success': False, 'error': 'Verification failed'}), 500
 
 # ============================================
-# ADMIN PANEL (Password Protected) - Enhanced with Search & Filters
+# ADMIN PANEL (Session-Based Authentication)
 # ============================================
 
+import hashlib
+import secrets
+
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'snaptoai2024')
+ADMIN_SESSION_SECRET = os.environ.get('ADMIN_SESSION_SECRET', 'sn4pt0a1_s3cr3t_k3y_2024_pr0d')
 
-@app.route('/snap-admin')
-def admin_redirect():
-    """Easy-to-remember admin shortcut - redirects to login page"""
-    return '''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>SnapToAI Admin Login</title>
-    <style>
-        body { font-family: -apple-system, sans-serif; background: #0f0f1a; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .login-box { background: #1a1a2e; padding: 40px; border-radius: 16px; text-align: center; border: 1px solid #333; }
-        h1 { color: #00d4ff; margin-bottom: 20px; }
-        input { background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 16px; width: 200px; margin-bottom: 15px; }
-        button { background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%); color: #000; border: none; padding: 12px 30px; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; }
-        button:hover { opacity: 0.9; }
-    </style>
-</head>
-<body>
-    <div class="login-box">
-        <h1>SnapToAI Admin</h1>
-        <form id="loginForm">
-            <input type="password" id="pw" placeholder="Password" autofocus><br>
-            <button type="submit">Login</button>
-        </form>
-    </div>
-    <script>
-        document.getElementById('loginForm').onsubmit = function(e) {
-            e.preventDefault();
-            window.location.href = '/admin/' + document.getElementById('pw').value;
-        };
-    </script>
-</body>
-</html>
-'''
+def generate_admin_token(password):
+    """Generate a secure session token"""
+    return hashlib.sha256(f"{password}{ADMIN_SESSION_SECRET}".encode()).hexdigest()
 
-@app.route('/admin/<password>')
-def admin_panel(password=None):
-    """Enhanced admin panel with search, filters, and sorting"""
-    if password is None:
-        password = request.args.get('pw', '')
+def verify_admin_session():
+    """Check if request has valid admin session"""
+    token = request.cookies.get('admin_session')
+    if not token:
+        return False
+    expected_token = generate_admin_token(ADMIN_PASSWORD)
+    return token == expected_token
+
+@app.route('/admin-login', methods=['POST'])
+def admin_login():
+    """Handle admin login - only accepts POST from the website"""
+    # Check referrer to ensure request comes from our site
+    referrer = request.headers.get('Referer', '')
+    allowed_origins = ['snaptoai.com', 'localhost', '127.0.0.1', '.replit.dev', '.repl.co']
+    
+    # Require valid referrer - block requests without referrer or from unknown origins
+    if not referrer:
+        return jsonify({'success': False, 'error': 'Direct access not allowed'}), 403
+    
+    is_valid_referrer = any(origin in referrer for origin in allowed_origins)
+    if not is_valid_referrer:
+        return jsonify({'success': False, 'error': 'Invalid request origin'}), 403
+    
+    data = request.get_json() or {}
+    password = data.get('password', '')
     
     if password != ADMIN_PASSWORD:
-        return Response("Access denied", status=403)
+        return jsonify({'success': False, 'error': 'Invalid password'}), 401
+    
+    # Generate session token and set cookie
+    token = generate_admin_token(password)
+    response = jsonify({'success': True, 'redirect': '/admin-dashboard'})
+    response.set_cookie('admin_session', token, httponly=True, secure=True, samesite='Strict', max_age=3600)
+    return response
+
+@app.route('/admin-logout')
+def admin_logout():
+    """Clear admin session"""
+    response = redirect('/')
+    response.delete_cookie('admin_session')
+    return response
+
+@app.route('/admin/<path:anything>')
+def block_direct_admin_access(anything):
+    """Block direct URL access to admin - must login through website"""
+    return Response("Access denied. Admin access is only available through the website.", status=403)
+
+@app.route('/admin-dashboard')
+def admin_panel():
+    """Enhanced admin panel - requires valid session cookie"""
+    if not verify_admin_session():
+        return Response("Access denied. Please login through the website.", status=403)
+    
+    password = ADMIN_PASSWORD  # For filter links
     
     if not ensure_db():
         return Response("Database not available", status=503)
@@ -483,7 +502,7 @@ def admin_panel(password=None):
         </div>
     </div>
     
-    <form class="filters" method="GET" action="/admin/{password}">
+    <form class="filters" method="GET" action="/admin-dashboard">
         <div>
             <label>Status</label><br>
             <select name="status">
@@ -514,7 +533,8 @@ def admin_panel(password=None):
             <input type="text" name="search" value="{search}" placeholder="Search...">
         </div>
         <button type="submit">Apply Filters</button>
-        <a href="/admin/{password}" style="color: #888; text-decoration: none; margin-left: 10px;">Reset</a>
+        <a href="/admin-dashboard" style="color: #888; text-decoration: none; margin-left: 10px;">Reset</a>
+        <a href="/admin-logout" style="color: #ff4757; text-decoration: none; margin-left: 20px;">Logout</a>
     </form>
     
     <p style="color: #666;">Showing {len(processed_rows)} of {total_users} users</p>

@@ -496,7 +496,22 @@
         document.getElementById('adminLink').addEventListener('click', function(e) {
             e.preventDefault();
             const pw = prompt('Enter admin password:');
-            if (pw) window.location.href = '/admin/' + encodeURIComponent(pw);
+            if (pw) {
+                fetch('/admin-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: pw })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = data.redirect;
+                    } else {
+                        alert('Access denied');
+                    }
+                })
+                .catch(() => alert('Login failed'));
+            }
         });
     </script>
 
