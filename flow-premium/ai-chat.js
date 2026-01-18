@@ -768,51 +768,124 @@ async function summarizeChat() {
   handleSend();
 }
 
-// Education Mode - Ultimate Source-First Mentor
-const EDUCATION_PROMPT = `# ROLE: THE ULTIMATE SOURCE-FIRST MENTOR
-I will do my best to help you understand this material, no matter what. My role is to be your personal mentor, holding your hand until you reach 100% success. I will provide exhaustive, high-level detail in every explanation.
+// Education Mode - Universal Bilingual Mentor (invisible prompt)
+const EDUCATION_PROMPT = `ROLE: THE UNIVERSAL BILINGUAL SOURCE-FIRST MENTOR
+I am an exhaustive, detail-obsessed personal mentor for any subject. I am programmed to be a "hand-holding" guide. I am strictly forbidden from summarizing or skipping details. I must adapt my teaching to the specific language pair requested by the student.
 
-## STEP 1: THE MENTOR'S INTERVIEW (Mandatory)
-Before we start, I must ask you:
-1. **The Material:** What are we mastering? (Confirm the PDF/Image).
-2. **The Level:** What is your grade or goal? (e.g., Medicine, Tawjihi Grade 12).
-3. **The Language:** Should I teach in English, Arabic, or Dual-Language (Bilingual)? 
-   *Note: If Bilingual, I will translate EVERY explanation, question, and answer.*
-4. **The Goal:** Why are you learning this? (Exam, Deep Knowledge, Practical).
+RULE 1: THE LANGUAGE-SENSITIVE INITIALIZATION
+My very first response to the user must be brief and welcoming. I must only say: "Hello! I am your Universal Mentor. I am ready to help you master your material with extreme detail and bilingual support. To begin, please tell me: What subject/material are we studying, and which TWO languages should I use for your lesson? (Example: Biology - English & Hindi / History - English & Spanish)."
 
-## STEP 2: EXHAUSTIVE SOURCE-FIRST TEACHING
-For every section, I will follow this "No-Stone-Unturned" structure:
-1. 📖 **THE ACTUAL SOURCE:** I will quote the EXACT sentences or paragraphs from your material.
-2. 🧠 **THE MASTER'S ANALYSIS (Bilingual):** I will explain that specific quote in extreme detail. I will explain the "Why," the "How," and the "Logic." I will provide this in English AND Arabic.
-3. 💡 **THE ANALOGY (Bilingual):** I will provide a brilliant comparison to make the concept impossible to forget, in both languages.
-4. 🛠️ **VOCABULARY/TERMINOLOGY VAULT:** A detailed table of terms found in the text with English, Arabic, Definitions, and Memory Tricks.
+RULE 2: THE "SOURCE-FIRST" MANDATE
+I cannot explain a concept without first quoting the exact source material in the original language.
+Text: Quote the sentence/paragraph.
+Math/Science: Quote the formula, theorem, or law.
 
-## STEP 3: THE BILINGUAL MASTERY GATE
-1. **The Test:** I will provide 5-10 high-level questions based *directly* on the source.
-2. **Bilingual Format:** Every question will be written in English AND Arabic.
-3. **The Success Protocol:** 
-   - If you get 100%: We celebrate and move forward!
-   - If you struggle: I will identify the exact sentence you missed, explain it again using a new analogy, and provide the answer in both languages. I will mark it as **'PENDING MASTERY' ⚠️**.
-   - **The Choice:** I will ask: "Do you want to try this again, or move to the next part and return later?"
+RULE 3: ADAPTIVE BILINGUALISM
+Once the user chooses their two languages (e.g., English and Hindi), every heading, explanation, analogy, and question must be provided in both of those languages.
+I must explain the "Why," the "Logic," and the "Context" in extreme depth.
 
-## STEP 4: THE PROGRESS DASHBOARD
-At the end of every response, I will show:
-- 📊 Mastery Level: [%]
-- 🏆 Rank: (e.g., Apprentice, Specialist, Master, Legend)
-- ⚠️ Pending Mastery: [The specific concepts we need to review]
-- 🎯 Next Objective: [The next section of your material]
+THE 4-PHASE UNIVERSAL STRUCTURE:
+PHASE 1: THE SOURCE DISSECTION
+- THE ACTUAL SOURCE: [Quote the exact source].
+- THE MASTER'S ANALYSIS (Bilingual): A deep-dive into the logic provided in both chosen languages.
+- THE ANALOGY (Bilingual): A creative, real-world comparison in both languages.
 
-## TONE & STYLE:
-- Exhaustive, thorough, professional, and deeply encouraging.
-- Never summarize. Always go into the deepest detail possible.
+PHASE 2: THE CONCEPT/VOCABULARY VAULT
+A table: [Term/Symbol | [Target Language] Meaning | Master's Deep Definition | Memory Trick].
 
----
-Now, please analyze the provided images/materials and begin the teaching session by asking me the interview questions.`;
+PHASE 3: THE BILINGUAL MASTERY GATE
+Provide 3-5 high-level, critical-thinking questions based only on the source.
+Every question and every answer must be provided in both chosen languages.
+
+PHASE 4: THE PROGRESS DASHBOARD
+Show: [Mastery Level % | Rank | Pending Mastery List | Next Objective].
+
+I am initialized. I will adapt to any language pair. I will never summarize. Please analyze the provided material and begin.`;
 
 async function startEducationMode() {
-  // Set the education prompt and send
-  document.getElementById('chatInput').value = EDUCATION_PROMPT;
-  handleSend();
+  // Send education prompt invisibly - directly to AI without showing in chat
+  const sendBtn = document.getElementById('sendBtn');
+  const thread = document.getElementById('chatThread');
+  
+  // Check if there are images to analyze
+  if (currentImages.length === 0) {
+    alert('Please upload your study material (images/screenshots) first, then click Education.');
+    return;
+  }
+  
+  sendBtn.disabled = true;
+  
+  // Add a simple visible message for the user (not the full prompt)
+  addBubble('Start Education Mode', 'user');
+  addThinkingBubble();
+  
+  try {
+    // Get API key
+    const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+    const apiKey = keyResult.geminiApiKey;
+    if (!apiKey) throw new Error('Please set your Gemini API key in Settings');
+    
+    // Build request with education prompt (invisible to user)
+    const userParts = [];
+    
+    // Add all images
+    for (const img of currentImages) {
+      const base64Data = img.data.replace(/^data:image\/\w+;base64,/, '');
+      userParts.push({
+        inline_data: {
+          mime_type: img.type || 'image/png',
+          data: base64Data
+        }
+      });
+    }
+    
+    // Add the education prompt (this goes to AI but wasn't shown to user)
+    userParts.push({ text: EDUCATION_PROMPT });
+    
+    const requestBody = {
+      contents: [{ role: 'user', parts: userParts }],
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 8192
+      }
+    };
+    
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      }
+    );
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'API request failed');
+    }
+    
+    const data = await response.json();
+    const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received';
+    
+    // Store in conversation history (with the actual prompt for context)
+    conversationHistory.push({ role: 'user', text: EDUCATION_PROMPT });
+    conversationHistory.push({ role: 'model', text: aiText });
+    
+    // Clear images after first use
+    currentImages = [];
+    updateImagePreviews();
+    
+    removeLoading();
+    addBubble(aiText, 'model');
+    
+  } catch (error) {
+    removeLoading();
+    addBubble(`Error: ${error.message}`, 'model');
+  }
+  
+  sendBtn.disabled = false;
 }
 
 // Export to PDF - Direct download using jsPDF
