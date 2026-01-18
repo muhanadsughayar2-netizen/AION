@@ -236,7 +236,7 @@ def verify_license():
         
         # If user doesn't exist, create them
         if cur.rowcount == 0:
-            now_ms = int(datetime.now().timestamp() * 1000)
+            now_ms = int(datetime.utcnow().timestamp() * 1000)
             cur.execute('''
                 INSERT INTO user_trials (user_hash, trial_start_date, is_paid, license_key, plan_type, subscription_expires)
                 VALUES (%s, %s, TRUE, %s, %s, %s)
@@ -350,7 +350,7 @@ def admin_panel(password=None):
         cur.close()
         conn.close()
         
-        now_ms = int(datetime.now().timestamp() * 1000)
+        now_ms = int(datetime.utcnow().timestamp() * 1000)
         
         # Process and filter rows
         processed_rows = []
@@ -609,7 +609,7 @@ def get_or_create_trial():
         conn = get_db()
         cur = conn.cursor()
         
-        now_ms = int(datetime.now().timestamp() * 1000)
+        now_ms = int(datetime.utcnow().timestamp() * 1000)
         
         # Check if user exists
         cur.execute('SELECT trial_start_date, is_paid, usage_count FROM user_trials WHERE user_hash = %s', (user_hash,))
