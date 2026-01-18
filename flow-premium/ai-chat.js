@@ -1430,6 +1430,142 @@ function renderMagicCard(data, btn, batchLabel = '') {
   card.scrollIntoView({ behavior: 'smooth' });
 }
 
+// Render dual output for Stock Deep Dive: Card + Analysis with separate print/share buttons
+function renderDualStockOutput(responseText, btn, batchLabel = '') {
+  const thread = document.getElementById('chatThread');
+  
+  // Parse the dual output: JSON card + Markdown analysis
+  let cardData = null;
+  let analysisText = '';
+  
+  // Try to extract JSON block first
+  const jsonMatch = responseText.match(/\{[\s\S]*?\}(?=\s*\n|$)/);
+  if (jsonMatch) {
+    try {
+      cardData = JSON.parse(jsonMatch[0]);
+      // Get everything after the JSON as analysis
+      const jsonEndIndex = responseText.indexOf(jsonMatch[0]) + jsonMatch[0].length;
+      analysisText = responseText.substring(jsonEndIndex).trim();
+    } catch (e) {
+      // If JSON parse fails, try more aggressively
+      const altMatch = responseText.match(/\{[^{}]*"title"[^{}]*\}/);
+      if (altMatch) {
+        try {
+          cardData = JSON.parse(altMatch[0]);
+          const jsonEndIndex = responseText.indexOf(altMatch[0]) + altMatch[0].length;
+          analysisText = responseText.substring(jsonEndIndex).trim();
+        } catch (e2) {
+          analysisText = responseText;
+        }
+      } else {
+        analysisText = responseText;
+      }
+    }
+  } else {
+    analysisText = responseText;
+  }
+  
+  // Create container for dual output
+  const container = document.createElement('div');
+  container.className = 'dual-stock-output';
+  
+  // PART 1: Render the Card (if we have card data)
+  if (cardData && cardData.title) {
+    const toneColors = { gold: '#fbbf24', green: '#34d399', red: '#f87171', neutral: '#9ca3af' };
+    const toneColor = toneColors[cardData.tone] || toneColors.green;
+    
+    const cardSection = document.createElement('div');
+    cardSection.className = 'stock-card-section';
+    cardSection.innerHTML = `
+      <div class="magic-card" style="--tone-color: ${toneColor}; margin-bottom: 0;">
+        <div class="magic-card-header">
+          <span class="magic-emoji">${btn.emoji}</span>
+          <span class="magic-title">${cardData.title}${batchLabel ? ` <span style="opacity:0.6;font-size:12px">${batchLabel}</span>` : ''}</span>
+        </div>
+        <div class="magic-score-row">
+          <div class="magic-score" style="color: ${toneColor}">${cardData.score || '??'}<span>/100</span></div>
+          <div class="magic-highlight">${cardData.highlight || ''}</div>
+        </div>
+        ${cardData.key_metrics ? `
+          <div class="magic-section">
+            <div class="magic-section-label">KEY METRICS</div>
+            <ul class="magic-items">
+              ${cardData.key_metrics.map(m => `<li>${m}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+        <div class="magic-verdict">
+          <div class="magic-verdict-label">VERDICT</div>
+          <div class="magic-verdict-text">${cardData.verdict || ''}</div>
+        </div>
+      </div>
+      <div class="dual-actions">
+        <button class="dual-print-btn" data-type="card">Print Card</button>
+        <button class="dual-share-btn" data-type="card">Share Card</button>
+      </div>
+    `;
+    container.appendChild(cardSection);
+    
+    // Card action buttons
+    cardSection.querySelector('.dual-print-btn').onclick = async () => {
+      const cardHtml = cardSection.querySelector('.magic-card').outerHTML;
+      await chrome.storage.local.set({ magicCardContent: cardHtml });
+      chrome.tabs.create({ url: chrome.runtime.getURL('magic-card.html') });
+    };
+    
+    cardSection.querySelector('.dual-share-btn').onclick = async () => {
+      const cardText = `${cardData.title}\nScore: ${cardData.score}/100\n${cardData.highlight}\n\nKey Metrics:\n${(cardData.key_metrics || []).join('\n')}\n\nVerdict: ${cardData.verdict}`;
+      try {
+        await navigator.clipboard.writeText(cardText);
+        cardSection.querySelector('.dual-share-btn').textContent = 'Copied!';
+        setTimeout(() => cardSection.querySelector('.dual-share-btn').textContent = 'Share Card', 2000);
+      } catch (e) {
+        alert('Could not copy to clipboard');
+      }
+    };
+  }
+  
+  // PART 2: Render the Analysis (markdown)
+  if (analysisText) {
+    const analysisSection = document.createElement('div');
+    analysisSection.className = 'stock-analysis-section';
+    
+    const parsedAnalysis = typeof marked !== 'undefined' ? marked.parse(analysisText) : analysisText;
+    const sanitizedAnalysis = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedAnalysis) : parsedAnalysis;
+    
+    analysisSection.innerHTML = `
+      <div class="analysis-header">
+        <span>Strategic Analysis</span>
+      </div>
+      <div class="analysis-content">${sanitizedAnalysis}</div>
+      <div class="dual-actions">
+        <button class="dual-print-btn" data-type="analysis">Print Analysis</button>
+        <button class="dual-share-btn" data-type="analysis">Share Analysis</button>
+      </div>
+    `;
+    container.appendChild(analysisSection);
+    
+    // Analysis action buttons
+    analysisSection.querySelector('.dual-print-btn').onclick = async () => {
+      await chrome.storage.local.set({ magicCardContent: `<div class="analysis-print">${sanitizedAnalysis}</div>` });
+      chrome.tabs.create({ url: chrome.runtime.getURL('magic-card.html') });
+    };
+    
+    analysisSection.querySelector('.dual-share-btn').onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(analysisText);
+        analysisSection.querySelector('.dual-share-btn').textContent = 'Copied!';
+        setTimeout(() => analysisSection.querySelector('.dual-share-btn').textContent = 'Share Analysis', 2000);
+      } catch (e) {
+        alert('Could not copy to clipboard');
+      }
+    };
+  }
+  
+  thread.appendChild(container);
+  container.scrollIntoView({ behavior: 'smooth' });
+}
+
 async function loadMagicButtons() {
   const result = await chrome.storage.local.get(['magicButtons']);
   magicButtons = result.magicButtons || [];
@@ -1512,7 +1648,24 @@ async function executeMagicButton(index) {
       const chatContext = getChatContext();
       
       // Structured prompt - CONFIDENT, NO EXCUSES, IMAGE-FOCUSED
-      const magicPrompt = `ROLE: Expert analyst who gives DECISIVE, HELPFUL advice.
+      // Check if this is Stock Deep Dive - use special dual output mode
+      const isStockDeepDive = btn.name === 'Stock Deep Dive' || btn.prompt.includes('Hybrid Audit');
+      
+      let magicPrompt;
+      if (isStockDeepDive) {
+        // Use the user's custom prompt directly for dual output
+        magicPrompt = `ROLE: Expert analyst who gives DECISIVE, HELPFUL advice.
+
+CRITICAL RULES:
+- You have NO internet access. Base ALL insights purely on the image content
+- Be EXTREMELY SPECIFIC with numbers
+- Give ACTIONABLE advice. No hedging, no excuses, no disclaimers
+${totalBatches > 1 ? `\nNOTE: This is batch ${batchIndex + 1} of ${totalBatches}. Focus on THIS batch of images.` : ''}
+${chatContext ? `CONTEXT: ${chatContext.substring(0, 150)}\n` : ''}
+
+${btn.prompt}`;
+      } else {
+        magicPrompt = `ROLE: Expert analyst who gives DECISIVE, HELPFUL advice.
 
 CRITICAL RULES:
 - You have NO internet access. NEVER say "I can't search" or "I cannot browse"
@@ -1529,6 +1682,7 @@ RESPOND to EVERY point in the user's request. Use sections to organize. Put each
 Output ONLY valid JSON:
 {"title":"Short descriptive title","tone":"gold|green|red","score":75,"highlight":"Key insight with SPECIFIC numbers","sections":[{"label":"Data Extracted","items":["Answer to point 1 with numbers","Answer to point 2 with specifics","Answer to point 3"]},{"label":"Analysis","items":["Your expert analysis with numbers","Risk assessment: X/10"]},{"label":"Recommendations","items":["[HIGH] Do this: $XXX","[MEDIUM] Consider this","Specific action with number"]}],"verdict":"Decisive recommendation with specific numbers","nextStep":"Exact next action","risk":"HIGH|MEDIUM|LOW"}
 (tone: gold=buy/recommended, green=okay/hold, red=avoid/sell)`;
+      }
 
       // Build parts with THIS BATCH of images only
       const parts = [{ text: magicPrompt }];
@@ -1598,7 +1752,11 @@ Output ONLY valid JSON:
       }
       
       // Render result
-      if (cardData && cardData.title) {
+      if (isStockDeepDive) {
+        // DUAL OUTPUT MODE: Card + Analysis with separate print/share buttons
+        thinkingBubble.remove();
+        renderDualStockOutput(responseText, btn, batchLabel);
+      } else if (cardData && cardData.title) {
         thinkingBubble.remove();
         // Ensure sections exists even if truncated
         if (!cardData.sections) cardData.sections = [];

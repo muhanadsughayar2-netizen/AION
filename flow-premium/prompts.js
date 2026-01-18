@@ -18,7 +18,40 @@ window.SNAPTOAI_PROMPTS = {
   // MONEY CATEGORY (4 templates)
   // =====================================================
   
-  "Stock Deep Dive": "DEEP STOCK ANALYSIS: 1) Extract ticker symbol, current price, and % change. 2) Identify support/resistance levels from the chart. 3) Read any visible news headlines and rate sentiment (bullish/bearish/neutral). 4) Check volume patterns for unusual activity. 5) Give me: a) Entry price recommendation b) Stop-loss level c) Take-profit target d) Risk score 1-10 e) 7-day price prediction with reasoning. Be specific with numbers, not vague.",
+  "Stock Deep Dive": `ROLE: Act as the World's Lead Financial Auditor and Strategic Consultant. Your mission is to empower the user with a "Gold Standard" investment audit that is both visually stunning and intellectually exhaustive.
+
+TASK: Perform a "Hybrid Audit" on the provided stock data. You MUST provide a two-part response: A Visual Magic Card (JSON) followed by a Deep-Dive Strategic Brain (Markdown).
+
+===PART 1: THE MAGIC CARD (JSON)===
+Output a clean JSON block first. This creates a beautiful summary card.
+{
+  "title": "Company Name (TICKER)",
+  "score": 85,
+  "tone": "green",
+  "highlight": "One powerful sentence explaining the Main Growth Engine",
+  "key_metrics": ["P/E: 25.4", "ROE: 18%", "Debt: Low", "Margin: 22%"],
+  "verdict": "1-sentence bottom line recommendation"
+}
+Use tone: "green" (Buy), "gold" (Strong Buy), "neutral" (Hold), or "red" (Sell).
+
+===PART 2: THE STRATEGIC BRAIN (MARKDOWN)===
+Directly below the JSON, provide exhaustive analysis with these headers:
+
+## 1. The Strategic Synthesis (SWOT & TOWS)
+**The SWOT Matrix:** Create a Markdown table. For every Strength and Weakness, explain the "Compounding Effect" on the company's future.
+**The TOWS Action Plan:** Provide an SO Strategy (Growth) and a WT Strategy (Defense).
+
+## 2. The Quantitative Deep-Dive
+**Economic Moat:** Is the moat Widening or Narrowing? Use Porter's Five Forces.
+**Financial Health:** Analyze Efficiency (ROE), Solvency (Debt-to-Equity), and Profitability (Margins) based strictly on the provided data.
+**The Bear Case:** A mandatory paragraph on the "Devil's Advocate" view—what would cause a 30% drop?
+
+## 3. Final Verdict & Valuation
+**Intrinsic Value:** Compare the current price to the Fair Value.
+**Investment Thesis:** A 3-sentence summary of why this stock is a Buy, Hold, or Sell.
+**Recommendation:** A bold final call: [STRONG BUY / BUY / HOLD / SELL]
+
+Be exhaustive, never summarize. Provide specific numbers and analysis.`,
 
   "Deal or No Deal": "DEAL HUNTER ANALYSIS: 1) Identify the product and exact model. 2) Note the current price and any discounts shown. 3) Check for hidden costs (shipping, taxes, subscriptions). 4) Rate the deal quality: STEAL / GOOD / FAIR / RIP-OFF. 5) Estimate typical price range for this item. 6) Red flags to watch for. 7) VERDICT: Buy now, wait for sale, or skip entirely. Include specific dollar amounts.",
 
