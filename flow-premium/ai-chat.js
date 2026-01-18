@@ -807,16 +807,7 @@ async function startEducationMode() {
   const sendBtn = document.getElementById('sendBtn');
   const thread = document.getElementById('chatThread');
   
-  // Check if there are images to analyze
-  if (currentImages.length === 0) {
-    alert('Please upload your study material (images/screenshots) first, then click Education.');
-    return;
-  }
-  
   sendBtn.disabled = true;
-  
-  // Add a simple visible message for the user (not the full prompt)
-  addBubble('Start Education Mode', 'user');
   addThinkingBubble();
   
   try {
@@ -869,13 +860,15 @@ async function startEducationMode() {
     const data = await response.json();
     const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received';
     
-    // Store in conversation history (with the actual prompt for context)
-    conversationHistory.push({ role: 'user', text: EDUCATION_PROMPT });
+    // Store in conversation history (keep prompt internal)
+    conversationHistory.push({ role: 'user', text: '[Education Mode Activated]' });
     conversationHistory.push({ role: 'model', text: aiText });
     
-    // Clear images after first use
-    currentImages = [];
-    updateImagePreviews();
+    // Clear images after use if any were attached
+    if (currentImages.length > 0) {
+      currentImages = [];
+      updateImagePreviews();
+    }
     
     removeLoading();
     addBubble(aiText, 'model');
