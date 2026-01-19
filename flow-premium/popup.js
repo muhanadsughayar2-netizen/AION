@@ -1502,9 +1502,9 @@ async function handleFullPageClick() {
   
   // Only show warning when queue is COMPLETELY full (no slots at all)
   // Otherwise let capture proceed - FIFO queue handles overflow gracefully
-  const availableSlots = 10 - currentSnaps.length;
+  const availableSlots = 9 - currentSnaps.length;
   
-  if (availableSlots === 0) {
+  if (availableSlots <= 0) {
     showQueueFullModal(1, 0);
     fullPageButton.disabled = false;
     return;
@@ -1574,7 +1574,7 @@ function showQueueFullModal(chunksNeeded, availableSlots) {
   const messageEl = document.getElementById('queueModalMessage');
   
   if (modal && slotsNeededEl && slotsAvailableEl && messageEl) {
-    slotsNeededEl.textContent = 'Queue: 10/10';
+    slotsNeededEl.textContent = 'Queue: 9/9';
     slotsAvailableEl.textContent = 'No slots available';
     messageEl.textContent = 'Queue is full! Clear some snaps to capture a full page.';
     modal.style.display = 'flex';
