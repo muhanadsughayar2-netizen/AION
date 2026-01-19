@@ -1634,55 +1634,34 @@ async function executeMagicButton(index) {
   const batches = chunkImages(currentImages, MAX_BATCH_SIZE);
   const totalBatches = batches.length;
   
-  addBubble(`${btn.emoji} Using: ${btn.name}${totalBatches > 1 ? ` (${currentImages.length} images → ${totalBatches} batches)` : ''}`, 'user');
+  // User-created buttons: prompt stays HIDDEN (like Education mode)
+  // Only show a subtle indicator that button was activated
+  conversationHistory.push({ role: 'user', text: `[${btn.emoji} ${btn.name} activated]` });
   
   if (navigator.vibrate) navigator.vibrate(100);
   
   // Process each batch
   for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
     const batch = batches[batchIndex];
-    const batchLabel = totalBatches > 1 ? `(Batch ${batchIndex + 1}/${totalBatches})` : '';
-    const thinkingBubble = addBubble(`✨ Analyzing${batchLabel}... ${batch.length} images`, 'ai');
+    const batchLabel = totalBatches > 1 ? ` (${batchIndex + 1}/${totalBatches})` : '';
+    const thinkingBubble = addBubble(`${btn.emoji} ${btn.name}${batchLabel}...`, 'ai');
     
     try {
       const chatContext = getChatContext();
       
-      // Structured prompt - CONFIDENT, NO EXCUSES, IMAGE-FOCUSED
-      // ALL magic buttons now use dual output: Card + Analysis
+      // USER-CREATED BUTTONS: Simple Education-style output (no cards, no dual output)
       const magicPrompt = `ROLE: Expert analyst who gives DECISIVE, HELPFUL advice.
 
 CRITICAL RULES:
 - You have NO internet access. Base ALL insights purely on the image content
-- Be EXTREMELY SPECIFIC with numbers. "$450" not "around four hundred". "7.5/10" not "moderate"
+- Be EXTREMELY SPECIFIC with numbers
 - Give ACTIONABLE advice. No hedging, no excuses, no disclaimers
 ${totalBatches > 1 ? `\nNOTE: This is batch ${batchIndex + 1} of ${totalBatches}. Focus on THIS batch of images.` : ''}
 ${chatContext ? `CONTEXT: ${chatContext.substring(0, 150)}\n` : ''}
 
 USER'S REQUEST: "${btn.prompt}"
 
-===OUTPUT FORMAT (MANDATORY)===
-You MUST provide TWO parts in your response:
-
-PART 1 - THE CARD (JSON):
-Output this JSON block first:
-{"title":"Brief Title","score":75,"tone":"green","highlight":"One key insight with numbers","key_metrics":["Metric 1","Metric 2","Metric 3","Metric 4"],"verdict":"One sentence recommendation"}
-(tone: green=positive/buy, gold=strong/excellent, neutral=hold/caution, red=negative/avoid)
-
-PART 2 - THE ANALYSIS (MARKDOWN):
-Directly after the JSON, provide detailed analysis with:
-## Key Findings
-- Bullet points with specific data from the image
-
-## Deep Analysis
-Explain the logic, context, and implications
-
-## Recommendations
-Numbered action items with priority
-
-## Final Verdict
-Your decisive conclusion with reasoning
-
-Be exhaustive in Part 2. Never summarize.`;
+Respond naturally with clear, helpful analysis. Use markdown formatting (headers, bullets, bold) for readability.`;
 
       // Build parts with THIS BATCH of images only
       const parts = [{ text: magicPrompt }];
@@ -1708,81 +1687,17 @@ Be exhaustive in Part 2. Never summarize.`;
       
       const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       
-      // Robust JSON parsing with better error handling
-      let cardData = null;
-      let parseError = null;
-      try {
-        let cleanedText = responseText.trim()
-          .replace(/```json\s*/gi, '')
-          .replace(/```\s*/g, '')
-          .trim();
-        
-        // Find the LAST complete JSON object (handles truncation better)
-        const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          // Try to fix common truncation issues
-          let jsonStr = jsonMatch[0];
-          
-          // Count braces to detect truncation
-          const openBraces = (jsonStr.match(/\{/g) || []).length;
-          const closeBraces = (jsonStr.match(/\}/g) || []).length;
-          
-          // If truncated, try to close it
-          if (openBraces > closeBraces) {
-            // Find last complete section and close everything
-            const lastCompleteSection = jsonStr.lastIndexOf('"}');
-            if (lastCompleteSection > 0) {
-              jsonStr = jsonStr.substring(0, lastCompleteSection + 2);
-              // Close any open arrays and objects
-              const remainingOpen = (jsonStr.match(/\[/g) || []).length - (jsonStr.match(/\]/g) || []).length;
-              const remainingBraces = (jsonStr.match(/\{/g) || []).length - (jsonStr.match(/\}/g) || []).length;
-              jsonStr += ']'.repeat(Math.max(0, remainingOpen));
-              jsonStr += '}'.repeat(Math.max(0, remainingBraces));
-            }
-          }
-          
-          cardData = JSON.parse(jsonStr);
-        } else {
-          parseError = 'No JSON structure found';
-        }
-      } catch (e) {
-        parseError = e.message;
-        console.log('Magic JSON parse failed:', e.message);
-        cardData = null;
-      }
-      
-      // Render result - ALL magic buttons now use dual output
+      // USER-CREATED BUTTONS: Simple Education-style output (no cards, no dual output)
+      // Render as normal chat text, same style as Education mode
       if (responseText && responseText.length > 10) {
-        // DUAL OUTPUT MODE: Card + Analysis with separate print/share buttons
-        thinkingBubble.remove();
-        renderDualStockOutput(responseText, btn, batchLabel);
-      } else {
-        // DON'T show raw JSON! Show friendly error or extract what we can
-        let displayText = '';
-        
-        // Try to extract SOMETHING useful from truncated JSON
-        const titleMatch = responseText.match(/"title"\s*:\s*"([^"]+)"/);
-        const highlightMatch = responseText.match(/"highlight"\s*:\s*"([^"]+)"/);
-        const scoreMatch = responseText.match(/"score"\s*:\s*(\d+)/);
-        
-        if (titleMatch || highlightMatch) {
-          // We got partial data - show what we extracted in a clean format
-          displayText = `**${titleMatch ? titleMatch[1] : 'Analysis'}**\n\n`;
-          if (scoreMatch) displayText += `**Score:** ${scoreMatch[1]}/100\n\n`;
-          if (highlightMatch) displayText += `${highlightMatch[1]}\n\n`;
-          displayText += `*AI response was long - showing key insights above.*`;
-        } else {
-          // Complete failure
-          displayText = 'Analysis processing - please try again.';
-        }
-        
-        const parsedContent = `<strong>${batchLabel}</strong><br>` + marked.parse(displayText);
+        const parsedContent = marked.parse(responseText);
         thinkingBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedContent) : parsedContent;
-        addBubbleActions(thinkingBubble, displayText);
+        addBubbleActions(thinkingBubble, responseText);
+      } else {
+        thinkingBubble.textContent = 'Analysis processing - please try again.';
       }
       
       document.getElementById('chatThread').scrollTop = document.getElementById('chatThread').scrollHeight;
-      conversationHistory.push({ role: 'user', text: `[${btn.emoji} ${btn.name}] ${batchLabel} ${btn.prompt}` });
       conversationHistory.push({ role: 'model', text: responseText });
       
       // Small delay between batches to respect rate limits
