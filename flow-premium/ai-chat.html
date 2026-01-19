@@ -747,20 +747,14 @@
     .risk-medium { background: #f97316; color: white; }
     .risk-low { background: #22c55e; color: white; }
     
-    /* Snap Intelligence Tagline */
-    .snap-tagline {
-      text-align: center;
-      padding: 14px 20px;
-      background: linear-gradient(180deg, rgba(0, 217, 255, 0.06) 0%, transparent 100%);
-      border-bottom: 1px solid rgba(0, 217, 255, 0.12);
-    }
-    .snap-tagline-text {
+    /* Snap Intelligence Tagline - in header */
+    .header-tagline {
       font-size: 15px;
       font-weight: 500;
       letter-spacing: 0.3px;
       color: #fff;
     }
-    .snap-tagline-text span {
+    .header-tagline span {
       background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -773,6 +767,7 @@
     <div class="header-left">
       <div class="logo">Gemini 3.0 <span>Flash</span></div>
     </div>
+    <div class="header-tagline">✨ Snap Intelligence <span>Turn your screen into answers.</span></div>
     <button class="close-btn" id="closeBtn" aria-label="Close window">✕</button>
   </div>
   
@@ -785,9 +780,6 @@
     </div>
     
     <div class="chat-panel">
-      <div class="snap-tagline">
-        <div class="snap-tagline-text">✨ Snap Intelligence <span>Turn your screen into answers.</span></div>
-      </div>
       <div class="chat-thread" id="chatThread">
         <div class="welcome-message">I'm your AI partner. Ask me anything about this image!</div>
       </div>
