@@ -1500,25 +1500,17 @@ async function handleFullPageClick() {
   // Disable button during operation
   fullPageButton.disabled = true;
   
-  // Estimate slots needed for full-page capture (typically 1-4 chunks)
-  // Worst case: very long page = 4 chunks (20+ viewport heights)
-  const ESTIMATED_MAX_CHUNKS = 4;
-  const PAGES_PER_CHUNK = 40;
-  const availableSlots = 9 - currentSnaps.length;
+  // Only show warning when queue is COMPLETELY full (no slots at all)
+  // Otherwise let capture proceed - FIFO queue handles overflow gracefully
+  const availableSlots = 10 - currentSnaps.length;
   
-  // If queue is completely full
-  if (currentSnaps.length >= 9) {
-    showQueueFullModal(ESTIMATED_MAX_CHUNKS, availableSlots);
+  if (availableSlots === 0) {
+    showQueueFullModal(1, 0);
     fullPageButton.disabled = false;
     return;
   }
-  
-  // If queue might not have enough space for a long page
-  if (availableSlots < ESTIMATED_MAX_CHUNKS && currentSnaps.length > 0) {
-    showQueueFullModal(ESTIMATED_MAX_CHUNKS, availableSlots);
-    fullPageButton.disabled = false;
-    return;
-  }
+  // Proceed with capture - even if slots are limited, let the user capture
+  // The system will capture as much as possible within available slots
   
   try {
     // Get current tab info for smart naming
@@ -1574,7 +1566,7 @@ async function handleFullPageClick() {
   }
 }
 
-// Show queue full warning modal
+// Show queue full warning modal - ONLY shown when queue is completely full
 function showQueueFullModal(chunksNeeded, availableSlots) {
   const modal = document.getElementById('queueFullModal');
   const slotsNeededEl = document.getElementById('queueSlotsNeeded');
@@ -1582,15 +1574,9 @@ function showQueueFullModal(chunksNeeded, availableSlots) {
   const messageEl = document.getElementById('queueModalMessage');
   
   if (modal && slotsNeededEl && slotsAvailableEl && messageEl) {
-    slotsNeededEl.textContent = `Need: up to ${chunksNeeded} slots`;
-    slotsAvailableEl.textContent = `Available: ${availableSlots} slot${availableSlots !== 1 ? 's' : ''}`;
-    
-    if (availableSlots === 0) {
-      messageEl.textContent = 'Queue is full! Clear it to capture a full page.';
-    } else {
-      messageEl.textContent = `Full page capture may need more space. Clear queue to ensure all chunks are saved.`;
-    }
-    
+    slotsNeededEl.textContent = 'Queue: 10/10';
+    slotsAvailableEl.textContent = 'No slots available';
+    messageEl.textContent = 'Queue is full! Clear some snaps to capture a full page.';
     modal.style.display = 'flex';
   }
 }
