@@ -750,25 +750,21 @@
     /* Snap Intelligence Tagline */
     .snap-tagline {
       text-align: center;
-      padding: 16px 20px;
-      background: linear-gradient(180deg, rgba(0, 217, 255, 0.08) 0%, transparent 100%);
-      border-bottom: 1px solid rgba(0, 217, 255, 0.15);
+      padding: 14px 20px;
+      background: linear-gradient(180deg, rgba(0, 217, 255, 0.06) 0%, transparent 100%);
+      border-bottom: 1px solid rgba(0, 217, 255, 0.12);
     }
-    .snap-tagline-title {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      background: linear-gradient(135deg, #00d9ff 0%, #a855f7 50%, #00d9ff 100%);
+    .snap-tagline-text {
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      color: #fff;
+    }
+    .snap-tagline-text span {
+      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 4px;
-    }
-    .snap-tagline-sub {
-      font-size: 13px;
-      font-weight: 400;
-      letter-spacing: 0.3px;
-      color: rgba(255, 255, 255, 0.55);
     }
   </style>
 </head>
@@ -790,8 +786,7 @@
     
     <div class="chat-panel">
       <div class="snap-tagline">
-        <div class="snap-tagline-title">✨ Snap Intelligence</div>
-        <div class="snap-tagline-sub">Turn your screen into answers.</div>
+        <div class="snap-tagline-text">✨ Snap Intelligence <span>Turn your screen into answers.</span></div>
       </div>
       <div class="chat-thread" id="chatThread">
         <div class="welcome-message">I'm your AI partner. Ask me anything about this image!</div>
