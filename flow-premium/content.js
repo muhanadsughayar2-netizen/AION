@@ -174,6 +174,20 @@
             sendResponse({ success: false, error: 'Upload not available on this page' });
           });
         return true;
+      } else if (request.action === 'getPageDimensions') {
+        // Return page dimensions for pre-check before full page capture
+        const totalHeight = Math.max(
+          document.documentElement.scrollHeight,
+          document.body?.scrollHeight || 0
+        );
+        const viewportHeight = window.innerHeight;
+        sendResponse({ 
+          success: true, 
+          totalHeight, 
+          viewportHeight,
+          estimatedPages: Math.ceil(totalHeight / viewportHeight)
+        });
+        return;
       } else if (request.action === 'startFullPageScroll') {
         // Only run full page capture in main frame, not iframes
         if (window.self !== window.top) {

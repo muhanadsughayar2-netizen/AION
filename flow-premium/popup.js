@@ -1500,21 +1500,39 @@ async function handleFullPageClick() {
   // Disable button during operation
   fullPageButton.disabled = true;
   
-  // Only show warning when queue is COMPLETELY full (no slots at all)
-  // Otherwise let capture proceed - FIFO queue handles overflow gracefully
   const availableSlots = 9 - currentSnaps.length;
   
+  // If queue is completely full, show warning
   if (availableSlots <= 0) {
-    showQueueFullModal(1, 0);
+    showQueueFullModal(0, 0);
     fullPageButton.disabled = false;
     return;
   }
-  // Proceed with capture - even if slots are limited, let the user capture
-  // The system will capture as much as possible within available slots
   
   try {
     // Get current tab info for smart naming
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    // SMART PRE-CHECK: Get page dimensions to estimate chunks needed
+    // Only warn if page definitely won't fit in available slots
+    try {
+      const pageInfo = await chrome.tabs.sendMessage(tab.id, { action: 'getPageDimensions' });
+      if (pageInfo && pageInfo.totalHeight && pageInfo.viewportHeight) {
+        const PAGES_PER_CHUNK = 40; // Must match annotate.js
+        const totalPages = Math.ceil(pageInfo.totalHeight / pageInfo.viewportHeight);
+        const chunksNeeded = Math.ceil(totalPages / PAGES_PER_CHUNK);
+        
+        // Only warn if we DEFINITELY can't fit all chunks
+        if (chunksNeeded > availableSlots) {
+          showQueueFullModal(chunksNeeded, availableSlots);
+          fullPageButton.disabled = false;
+          return;
+        }
+      }
+    } catch (dimError) {
+      // Can't get dimensions - proceed anyway (content script may not be loaded yet)
+      console.log('[SnapToAI] Could not pre-check page dimensions, proceeding...');
+    }
     currentFullPageInfo = {
       url: tab?.url || '',
       title: tab?.title || ''
@@ -1566,7 +1584,7 @@ async function handleFullPageClick() {
   }
 }
 
-// Show queue full warning modal - ONLY shown when queue is completely full
+// Show queue full warning modal - shows actual slots needed vs available
 function showQueueFullModal(chunksNeeded, availableSlots) {
   const modal = document.getElementById('queueFullModal');
   const slotsNeededEl = document.getElementById('queueSlotsNeeded');
@@ -1574,9 +1592,17 @@ function showQueueFullModal(chunksNeeded, availableSlots) {
   const messageEl = document.getElementById('queueModalMessage');
   
   if (modal && slotsNeededEl && slotsAvailableEl && messageEl) {
-    slotsNeededEl.textContent = 'Queue: 9/9';
-    slotsAvailableEl.textContent = 'No slots available';
-    messageEl.textContent = 'Queue is full! Clear some snaps to capture a full page.';
+    if (availableSlots <= 0) {
+      // Queue completely full
+      slotsNeededEl.textContent = 'Queue: 9/9';
+      slotsAvailableEl.textContent = 'No slots available';
+      messageEl.textContent = 'Queue is full! Clear some snaps to capture.';
+    } else {
+      // Page too long for available slots
+      slotsNeededEl.textContent = `This page needs: ${chunksNeeded} slot${chunksNeeded > 1 ? 's' : ''}`;
+      slotsAvailableEl.textContent = `Available: ${availableSlots} slot${availableSlots > 1 ? 's' : ''}`;
+      messageEl.textContent = `Page is too long for available space. Clear ${chunksNeeded - availableSlots} more snap${chunksNeeded - availableSlots > 1 ? 's' : ''} to capture.`;
+    }
     modal.style.display = 'flex';
   }
 }
