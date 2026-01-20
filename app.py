@@ -586,8 +586,8 @@ def admin_panel():
             usage_pct = min(100, (r['usage'] / max_usage) * 100)
             plan_display = f'<span style="color: #ffd700;">{r["plan_type"]}</span>' if r['plan_type'] != '-' else '-'
             
-            # Build location string
-            location_str = f"{r['city']}, {r['country']}" if r['city'] != '-' and r['country'] != '-' else (r['country'] if r['country'] != '-' else r['ip'])
+            # Build location string with IP
+            location_str = f"{r['city']}, {r['country']}" if r['city'] != '-' and r['country'] != '-' else (r['country'] if r['country'] != '-' else '-')
             # Build device info
             device_str = f"{r['device']}"
             if r['platform'] != '-':
@@ -599,7 +599,7 @@ def admin_panel():
         <tr>
             <td>{i}</td>
             <td class="hash" title="{r['full_hash']}">{r['hash']}</td>
-            <td style="font-size: 11px;"><span style="color: #00d4ff;">{location_str}</span><br><span style="color:#666;font-size:10px;">{r['timezone']}</span></td>
+            <td style="font-size: 11px;"><span style="color: #00d4ff;">{location_str}</span><br><span style="color:#a855f7;font-size:10px;">{r['ip']}</span><br><span style="color:#666;font-size:10px;">{r['timezone']}</span></td>
             <td style="font-size: 11px;">{device_str}</td>
             <td><span class="badge {badge_class}">{status_text}</span></td>
             <td>{r['days']}</td>
