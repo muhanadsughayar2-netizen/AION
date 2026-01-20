@@ -52,6 +52,9 @@ def init_db():
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS license_key VARCHAR(64)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS plan_type VARCHAR(20)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS subscription_expires BIGINT')
+        # IP tracking
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS country VARCHAR(50)')
         conn.commit()
         cur.close()
         conn.close()
@@ -346,7 +349,7 @@ def admin_panel():
         query = '''
             SELECT user_hash, trial_start_date, is_paid, created_at, 
                    browser_language, extension_version, last_active, usage_count,
-                   plan_type, subscription_expires
+                   plan_type, subscription_expires, ip_address
             FROM user_trials 
         '''
         
@@ -391,6 +394,7 @@ def admin_panel():
             usage_count = row[7] or 0
             plan_type = row[8] or '-'
             sub_expires = row[9]
+            ip_addr = row[10] or '-'
             
             days_elapsed = (now_ms - trial_start) / (1000 * 60 * 60 * 24)
             days_remaining = max(0, 30 - int(days_elapsed))
@@ -430,7 +434,8 @@ def admin_panel():
                 'last_active': datetime.fromtimestamp(last_active / 1000).strftime('%Y-%m-%d %H:%M') if last_active else '-',
                 'usage': usage_count,
                 'plan_type': plan_type.upper() if plan_type != '-' else '-',
-                'sub_expires': datetime.fromtimestamp(sub_expires / 1000).strftime('%Y-%m-%d') if sub_expires else '-'
+                'sub_expires': datetime.fromtimestamp(sub_expires / 1000).strftime('%Y-%m-%d') if sub_expires else '-',
+                'ip': ip_addr
             })
         
         # Build enhanced HTML
@@ -543,6 +548,7 @@ def admin_panel():
         <tr>
             <th>#</th>
             <th>User Hash</th>
+            <th>IP Address</th>
             <th>First Registered</th>
             <th>Trial Start</th>
             <th>Days Left</th>
@@ -566,6 +572,7 @@ def admin_panel():
         <tr>
             <td>{i}</td>
             <td class="hash" title="{r['full_hash']}">{r['hash']}</td>
+            <td style="font-family: monospace; font-size: 11px; color: #a855f7;">{r['ip']}</td>
             <td style="color: #888; font-size: 12px;">{r['created']}</td>
             <td>{r['start']}</td>
             <td>{r['days']}</td>
@@ -621,6 +628,11 @@ def get_or_create_trial():
         browser_language = data.get('browserLanguage', '')[:10] if data.get('browserLanguage') else None
         extension_version = data.get('extensionVersion', '')[:20] if data.get('extensionVersion') else None
         
+        # Get IP address (handle proxies)
+        ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+        if ip_address and ',' in ip_address:
+            ip_address = ip_address.split(',')[0].strip()  # First IP is the client
+        
         if not user_hash or len(user_hash) < 16:
             response = jsonify({'error': 'Invalid user hash'})
             response.headers['Access-Control-Allow-Origin'] = '*'
@@ -644,9 +656,10 @@ def get_or_create_trial():
                 UPDATE user_trials 
                 SET last_active = %s, usage_count = %s, 
                     browser_language = COALESCE(browser_language, %s),
-                    extension_version = COALESCE(%s, extension_version)
+                    extension_version = COALESCE(%s, extension_version),
+                    ip_address = COALESCE(%s, ip_address)
                 WHERE user_hash = %s
-            ''', (now_ms, usage_count, browser_language, extension_version, user_hash))
+            ''', (now_ms, usage_count, browser_language, extension_version, ip_address, user_hash))
             conn.commit()
         else:
             # New user (new API key) - create trial record with all data
@@ -655,9 +668,9 @@ def get_or_create_trial():
             usage_count = 1
             cur.execute('''
                 INSERT INTO user_trials 
-                (user_hash, trial_start_date, is_paid, browser_language, extension_version, last_active, usage_count) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ''', (user_hash, trial_start, False, browser_language, extension_version, now_ms, 1))
+                (user_hash, trial_start_date, is_paid, browser_language, extension_version, last_active, usage_count, ip_address) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ''', (user_hash, trial_start, False, browser_language, extension_version, now_ms, 1, ip_address))
             conn.commit()
         
         cur.close()
