@@ -52,9 +52,15 @@ def init_db():
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS license_key VARCHAR(64)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS plan_type VARCHAR(20)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS subscription_expires BIGINT')
-        # IP tracking
+        # IP tracking and user data
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS country VARCHAR(50)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS city VARCHAR(100)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS timezone VARCHAR(50)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS user_agent TEXT')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS screen_resolution VARCHAR(20)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS platform VARCHAR(30)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS device_type VARCHAR(20)')
         conn.commit()
         cur.close()
         conn.close()
@@ -349,7 +355,8 @@ def admin_panel():
         query = '''
             SELECT user_hash, trial_start_date, is_paid, created_at, 
                    browser_language, extension_version, last_active, usage_count,
-                   plan_type, subscription_expires, ip_address
+                   plan_type, subscription_expires, ip_address, country, city, 
+                   timezone, device_type, screen_resolution, platform
             FROM user_trials 
         '''
         
@@ -395,6 +402,12 @@ def admin_panel():
             plan_type = row[8] or '-'
             sub_expires = row[9]
             ip_addr = row[10] or '-'
+            country = row[11] or '-'
+            city = row[12] or '-'
+            tz = row[13] or '-'
+            device = row[14] or '-'
+            screen = row[15] or '-'
+            plat = row[16] or '-'
             
             days_elapsed = (now_ms - trial_start) / (1000 * 60 * 60 * 24)
             days_remaining = max(0, 30 - int(days_elapsed))
@@ -435,7 +448,13 @@ def admin_panel():
                 'usage': usage_count,
                 'plan_type': plan_type.upper() if plan_type != '-' else '-',
                 'sub_expires': datetime.fromtimestamp(sub_expires / 1000).strftime('%Y-%m-%d') if sub_expires else '-',
-                'ip': ip_addr
+                'ip': ip_addr,
+                'country': country,
+                'city': city,
+                'timezone': tz,
+                'device': device,
+                'screen': screen,
+                'platform': plat
             })
         
         # Build enhanced HTML
@@ -548,15 +567,14 @@ def admin_panel():
         <tr>
             <th>#</th>
             <th>User Hash</th>
-            <th>IP Address</th>
-            <th>First Registered</th>
-            <th>Trial Start</th>
-            <th>Days Left</th>
+            <th>Location</th>
+            <th>Device</th>
             <th>Status</th>
+            <th>Days Left</th>
             <th>Plan</th>
-            <th>Expires</th>
-            <th>Lang</th>
             <th>AI Uses</th>
+            <th>Registered</th>
+            <th>Last Active</th>
         </tr>
 '''
         
@@ -568,22 +586,30 @@ def admin_panel():
             usage_pct = min(100, (r['usage'] / max_usage) * 100)
             plan_display = f'<span style="color: #ffd700;">{r["plan_type"]}</span>' if r['plan_type'] != '-' else '-'
             
+            # Build location string
+            location_str = f"{r['city']}, {r['country']}" if r['city'] != '-' and r['country'] != '-' else (r['country'] if r['country'] != '-' else r['ip'])
+            # Build device info
+            device_str = f"{r['device']}"
+            if r['platform'] != '-':
+                device_str += f"<br><span style='color:#666;font-size:10px;'>{r['platform']}</span>"
+            if r['screen'] != '-':
+                device_str += f"<br><span style='color:#666;font-size:10px;'>{r['screen']}</span>"
+            
             html += f'''
         <tr>
             <td>{i}</td>
             <td class="hash" title="{r['full_hash']}">{r['hash']}</td>
-            <td style="font-family: monospace; font-size: 11px; color: #a855f7;">{r['ip']}</td>
-            <td style="color: #888; font-size: 12px;">{r['created']}</td>
-            <td>{r['start']}</td>
-            <td>{r['days']}</td>
+            <td style="font-size: 11px;"><span style="color: #00d4ff;">{location_str}</span><br><span style="color:#666;font-size:10px;">{r['timezone']}</span></td>
+            <td style="font-size: 11px;">{device_str}</td>
             <td><span class="badge {badge_class}">{status_text}</span></td>
+            <td>{r['days']}</td>
             <td>{plan_display}</td>
-            <td>{r['sub_expires']}</td>
-            <td>{r['lang']}</td>
             <td>
                 {r['usage']}
                 <div class="usage-bar"><div class="usage-fill" style="width: {usage_pct}%"></div></div>
             </td>
+            <td style="color: #888; font-size: 11px;">{r['created']}</td>
+            <td style="color: #888; font-size: 11px;">{r['last_active']}</td>
         </tr>
 '''
         
@@ -628,10 +654,39 @@ def get_or_create_trial():
         browser_language = data.get('browserLanguage', '')[:10] if data.get('browserLanguage') else None
         extension_version = data.get('extensionVersion', '')[:20] if data.get('extensionVersion') else None
         
+        # Get additional user data from extension
+        screen_resolution = data.get('screenResolution', '')[:20] if data.get('screenResolution') else None
+        timezone = data.get('timezone', '')[:50] if data.get('timezone') else None
+        platform = data.get('platform', '')[:30] if data.get('platform') else None
+        
         # Get IP address (handle proxies)
         ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
         if ip_address and ',' in ip_address:
             ip_address = ip_address.split(',')[0].strip()  # First IP is the client
+        
+        # Get user agent from headers
+        user_agent = request.headers.get('User-Agent', '')[:500]
+        
+        # Determine device type from user agent
+        device_type = 'Desktop'
+        ua_lower = user_agent.lower()
+        if 'mobile' in ua_lower or 'android' in ua_lower or 'iphone' in ua_lower:
+            device_type = 'Mobile'
+        elif 'tablet' in ua_lower or 'ipad' in ua_lower:
+            device_type = 'Tablet'
+        
+        # Get location from IP (using free API, non-blocking)
+        country = None
+        city = None
+        try:
+            if ip_address and ip_address not in ['127.0.0.1', 'localhost']:
+                geo_resp = requests.get(f'http://ip-api.com/json/{ip_address}?fields=country,city', timeout=2)
+                if geo_resp.status_code == 200:
+                    geo_data = geo_resp.json()
+                    country = geo_data.get('country', '')[:50]
+                    city = geo_data.get('city', '')[:100]
+        except:
+            pass  # Don't fail if geolocation fails
         
         if not user_hash or len(user_hash) < 16:
             response = jsonify({'error': 'Invalid user hash'})
@@ -657,9 +712,17 @@ def get_or_create_trial():
                 SET last_active = %s, usage_count = %s, 
                     browser_language = COALESCE(browser_language, %s),
                     extension_version = COALESCE(%s, extension_version),
-                    ip_address = COALESCE(%s, ip_address)
+                    ip_address = COALESCE(%s, ip_address),
+                    country = COALESCE(%s, country),
+                    city = COALESCE(%s, city),
+                    timezone = COALESCE(%s, timezone),
+                    user_agent = COALESCE(%s, user_agent),
+                    screen_resolution = COALESCE(%s, screen_resolution),
+                    platform = COALESCE(%s, platform),
+                    device_type = COALESCE(%s, device_type)
                 WHERE user_hash = %s
-            ''', (now_ms, usage_count, browser_language, extension_version, ip_address, user_hash))
+            ''', (now_ms, usage_count, browser_language, extension_version, ip_address, 
+                  country, city, timezone, user_agent, screen_resolution, platform, device_type, user_hash))
             conn.commit()
         else:
             # New user (new API key) - create trial record with all data
@@ -668,9 +731,11 @@ def get_or_create_trial():
             usage_count = 1
             cur.execute('''
                 INSERT INTO user_trials 
-                (user_hash, trial_start_date, is_paid, browser_language, extension_version, last_active, usage_count, ip_address) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ''', (user_hash, trial_start, False, browser_language, extension_version, now_ms, 1, ip_address))
+                (user_hash, trial_start_date, is_paid, browser_language, extension_version, last_active, usage_count, 
+                 ip_address, country, city, timezone, user_agent, screen_resolution, platform, device_type) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ''', (user_hash, trial_start, False, browser_language, extension_version, now_ms, 1, 
+                  ip_address, country, city, timezone, user_agent, screen_resolution, platform, device_type))
             conn.commit()
         
         cur.close()

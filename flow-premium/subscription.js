@@ -149,13 +149,21 @@ async function getServerTrialDate(userId) {
     const browserLanguage = navigator.language || navigator.userLanguage || 'en';
     const extensionVersion = getExtensionVersion();
     
+    // Collect device info (non-personal, for analytics)
+    const screenResolution = `${window.screen.width}x${window.screen.height}`;
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    const platform = navigator.platform || navigator.userAgentData?.platform || '';
+    
     const response = await fetch(TRIAL_SERVER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         userHash: userId,
         browserLanguage: browserLanguage,
-        extensionVersion: extensionVersion
+        extensionVersion: extensionVersion,
+        screenResolution: screenResolution,
+        timezone: timezone,
+        platform: platform
       })
     });
     
