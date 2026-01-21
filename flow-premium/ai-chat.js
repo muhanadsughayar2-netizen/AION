@@ -305,7 +305,9 @@ function setupMagicButtons() {
 function addBubble(text, type) {
   const thread = document.getElementById('chatThread');
   const welcome = thread.querySelector('.welcome-message');
+  const creditsTip = thread.querySelector('.credits-tip');
   if (welcome) welcome.remove();
+  if (creditsTip) creditsTip.remove();
   
   const bubble = document.createElement('div');
   bubble.className = 'chat-bubble ' + type;
@@ -990,7 +992,18 @@ function exportToPDF() {
 // Clear chat
 function clearChat() {
   const thread = document.getElementById('chatThread');
-  thread.innerHTML = '<div class="welcome-message">I\'m your AI partner. Ask me anything about this image!</div>';
+  thread.innerHTML = `<div class="welcome-message">I'm your AI partner. Ask me anything about this image!</div>
+    <div class="credits-tip" id="creditsTip">
+      <div class="credits-tip-text">
+        <span class="highlight">New to Gemini?</span> Get <span class="amount">$300 FREE</span> credits from Google Cloud<br>for 90 days of unlimited AI prompts
+      </div>
+      <a href="https://aistudio.google.com/apikey" target="_blank" class="credits-btn">
+        Get Free Credits
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M7 17L17 7M17 7H7M17 7V17"/>
+        </svg>
+      </a>
+    </div>`;
   conversationHistory = [];
 }
 
