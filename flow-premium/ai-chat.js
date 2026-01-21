@@ -1105,23 +1105,6 @@ document.getElementById('educationBtn').addEventListener('click', startEducation
 document.getElementById('clearBtn').addEventListener('click', clearChat);
 document.getElementById('exportBtn').addEventListener('click', exportToPDF);
 
-// Credits banner - check if dismissed and handle close
-(async () => {
-  const banner = document.getElementById('creditsBanner');
-  if (banner) {
-    // Check if previously dismissed
-    const result = await chrome.storage.local.get('creditsBannerDismissed');
-    if (result.creditsBannerDismissed) {
-      banner.classList.add('hidden');
-    }
-    // Handle close button
-    document.getElementById('closeBanner')?.addEventListener('click', async () => {
-      banner.classList.add('hidden');
-      await chrome.storage.local.set({ creditsBannerDismissed: true });
-    });
-  }
-})();
-
 // Multi-file upload handling (Gemini-style)
 document.getElementById('fileInput').addEventListener('change', (e) => {
   Array.from(e.target.files).forEach(file => {
