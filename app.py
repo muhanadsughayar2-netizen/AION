@@ -408,6 +408,23 @@ def admin_panel():
         
         cur.execute(query)
         rows = cur.fetchall()
+        
+        # Also fetch ip_trials data for anti-cheat display
+        cur.execute('''
+            SELECT ip_address, trial_start_date, last_active, api_key_count
+            FROM ip_trials 
+            ORDER BY trial_start_date DESC
+            LIMIT 100
+        ''')
+        ip_trials_rows = cur.fetchall()
+        
+        # Get ip_trials stats
+        cur.execute('SELECT COUNT(*), SUM(api_key_count), MAX(api_key_count) FROM ip_trials')
+        ip_stats = cur.fetchone()
+        total_ips = ip_stats[0] if ip_stats and ip_stats[0] else 0
+        total_api_keys_tracked = ip_stats[1] if ip_stats and ip_stats[1] else 0
+        max_keys_per_ip = ip_stats[2] if ip_stats and ip_stats[2] else 0
+        
         cur.close()
         conn.close()
         
@@ -556,6 +573,26 @@ def admin_panel():
             <div class="stat-number" style="color: #f97316;">{len(languages)}</div>
             <div class="stat-label">Countries</div>
         </div>
+    </div>
+    
+    <!-- Anti-Cheat IP Tracking Stats -->
+    <div style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.1)); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 20px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: #a855f7;">🛡️ Anti-Cheat IP Tracking</h3>
+        <div class="stats" style="margin: 0;">
+            <div class="stat-box">
+                <div class="stat-number" style="color: #a855f7;">{total_ips}</div>
+                <div class="stat-label">Unique IPs</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" style="color: #06b6d4;">{total_api_keys_tracked}</div>
+                <div class="stat-label">API Keys Tracked</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" style="color: {"#ef4444" if max_keys_per_ip > 2 else "#22c55e"};">{max_keys_per_ip}</div>
+                <div class="stat-label">Max Keys/IP</div>
+            </div>
+        </div>
+        <p style="color: #888; font-size: 12px; margin: 10px 0 0 0;">Trial countdown is now tied to IP address. Users cannot reset trials by creating new API keys.</p>
     </div>
     
     <form class="filters" method="GET" action="/admin-dashboard">
