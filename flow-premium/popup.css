@@ -2309,6 +2309,17 @@ html[dir="rtl"] .logo-word {
   font-size: 12px !important;
 }
 
+.subscription-pitch {
+  text-align: center;
+  color: #00d9ff;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  padding: 8px 16px;
+  background: rgba(0, 217, 255, 0.1);
+  border-radius: 20px;
+}
+
 .subscription-pricing {
   display: flex;
   gap: 12px;
