@@ -3366,8 +3366,8 @@ async function handleAIButtonClick() {
     // Only show subscription modal if trial ACTUALLY expired (not just no API key)
     if (!status.canUseAI && status.status !== 'no_api_key') {
       const message = status.status === 'subscription_expired'
-        ? 'Your subscription has expired. Please renew to continue.'
-        : 'Your 30-day free trial has ended.';
+        ? 'Your subscription has expired. Renew to keep using AI tools.'
+        : 'Captures are free forever. Subscribe to use our pro AI tools.';
       showSubscriptionModal(message);
       return;
     }
@@ -3536,7 +3536,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Upgrade button click handler
   if (upgradeBtn) {
     upgradeBtn.addEventListener('click', () => {
-      showSubscriptionModal('Upgrade to unlock unlimited AI analysis!');
+      showSubscriptionModal('Go Pro to access all AI analysis tools!');
     });
   }
   
