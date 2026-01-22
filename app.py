@@ -52,6 +52,16 @@ def init_db():
                 api_key_count INTEGER DEFAULT 1
             )
         ''')
+        # Device-based trial tracking table - most reliable, persists across IP changes
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS device_trials (
+                device_id VARCHAR(60) PRIMARY KEY,
+                trial_start_date BIGINT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_active BIGINT,
+                api_key_count INTEGER DEFAULT 1
+            )
+        ''')
         # Add columns if missing (for existing tables)
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS browser_language VARCHAR(10)')
@@ -71,6 +81,7 @@ def init_db():
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS screen_resolution VARCHAR(20)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS platform VARCHAR(30)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS device_type VARCHAR(20)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS device_id VARCHAR(60)')
         conn.commit()
         
         # === MIGRATION: Seed ip_trials from existing user_trials ===
@@ -804,6 +815,9 @@ def get_or_create_trial():
         timezone = data.get('timezone', '')[:50] if data.get('timezone') else None
         platform = data.get('platform', '')[:30] if data.get('platform') else None
         
+        # Get device ID (most reliable trial tracking - persists across IP changes)
+        device_id = data.get('deviceId', '')[:60] if data.get('deviceId') else None
+        
         # Get IP address (handle proxies)
         ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
         if ip_address and ',' in ip_address:
@@ -843,8 +857,34 @@ def get_or_create_trial():
         
         now_ms = int(datetime.utcnow().timestamp() * 1000)
         
-        # === IP-BASED TRIAL TRACKING ===
-        # First, check/create IP trial record - this is the SOURCE OF TRUTH for trial start
+        # === DEVICE-BASED TRIAL TRACKING (most reliable) ===
+        # Device ID persists across IP changes - this is the PRIMARY source of truth
+        device_trial_start = now_ms  # Default to now if new device
+        device_is_new = False
+        
+        if device_id and device_id.startswith('dev_'):
+            # Check if this device already has a trial record
+            cur.execute('SELECT trial_start_date, api_key_count FROM device_trials WHERE device_id = %s', (device_id,))
+            device_row = cur.fetchone()
+            
+            if device_row:
+                # Device exists - use its original trial start date (most reliable anti-cheat!)
+                device_trial_start = device_row[0]
+                device_api_key_count = device_row[1] or 1
+                print(f'🔒 DEVICE TRACKING: Device {device_id[:20]}... found, using trial_start from {datetime.fromtimestamp(device_trial_start/1000).strftime("%Y-%m-%d %H:%M")} (api_key_count: {device_api_key_count})')
+                # Update last_active
+                cur.execute('UPDATE device_trials SET last_active = %s WHERE device_id = %s', (now_ms, device_id))
+            else:
+                # New device - create trial record
+                device_is_new = True
+                print(f'🆕 NEW DEVICE: {device_id[:20]}... - creating new device_trials record')
+                cur.execute('''
+                    INSERT INTO device_trials (device_id, trial_start_date, last_active, api_key_count)
+                    VALUES (%s, %s, %s, 1)
+                ''', (device_id, now_ms, now_ms))
+                device_trial_start = now_ms
+        
+        # === IP-BASED TRIAL TRACKING (fallback for older extensions without device ID) ===
         ip_trial_start = now_ms  # Default to now if new IP
         ip_is_new = False  # Track if this is a brand new IP (don't double-count api_key_count)
         
@@ -880,8 +920,8 @@ def get_or_create_trial():
             is_paid = row[1] if row[1] else False
             usage_count = (row[2] or 0) + 1
             
-            # Use the EARLIER of: their original date OR the IP's date (anti-cheat)
-            effective_trial_start = min(original_trial_start, ip_trial_start)
+            # Use the EARLIEST of: their original date, device date, OR IP date (anti-cheat)
+            effective_trial_start = min(original_trial_start, device_trial_start, ip_trial_start)
             
             cur.execute('''
                 UPDATE user_trials 
@@ -896,27 +936,39 @@ def get_or_create_trial():
                     user_agent = COALESCE(%s, user_agent),
                     screen_resolution = COALESCE(%s, screen_resolution),
                     platform = COALESCE(%s, platform),
-                    device_type = COALESCE(%s, device_type)
+                    device_type = COALESCE(%s, device_type),
+                    device_id = COALESCE(%s, device_id)
                 WHERE user_hash = %s
             ''', (now_ms, usage_count, effective_trial_start, browser_language, extension_version, ip_address, 
-                  country, city, timezone, user_agent, screen_resolution, platform, device_type, user_hash))
+                  country, city, timezone, user_agent, screen_resolution, platform, device_type, device_id, user_hash))
             
             # Use effective trial start for the response
             ip_trial_start = effective_trial_start
             # Don't increment api_key_count for existing users - they're not new API keys
         else:
-            # New user (new API key) - use IP-based trial start date
+            # New user (new API key) - use EARLIEST trial start date from device, IP, or now
             is_paid = False
             usage_count = 1
+            
+            # Use the earliest available trial start date
+            effective_trial_start = min(device_trial_start, ip_trial_start)
+            
             cur.execute('''
                 INSERT INTO user_trials 
                 (user_hash, trial_start_date, is_paid, browser_language, extension_version, last_active, usage_count, 
-                 ip_address, country, city, timezone, user_agent, screen_resolution, platform, device_type) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ''', (user_hash, ip_trial_start, False, browser_language, extension_version, now_ms, 1, 
-                  ip_address, country, city, timezone, user_agent, screen_resolution, platform, device_type))
+                 ip_address, country, city, timezone, user_agent, screen_resolution, platform, device_type, device_id) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ''', (user_hash, effective_trial_start, False, browser_language, extension_version, now_ms, 1, 
+                  ip_address, country, city, timezone, user_agent, screen_resolution, platform, device_type, device_id))
             
-            # Increment api_key_count for this IP (only if IP already existed - new API key on existing IP)
+            # Use effective trial start for the response
+            ip_trial_start = effective_trial_start
+            
+            # Increment api_key_count for device (only if device already existed - new API key on existing device)
+            if device_id and device_id.startswith('dev_') and not device_is_new:
+                cur.execute('UPDATE device_trials SET api_key_count = api_key_count + 1 WHERE device_id = %s', (device_id,))
+            
+            # Increment api_key_count for IP (only if IP already existed - new API key on existing IP)
             # Don't increment for brand new IPs since we already set count=1 during INSERT
             if ip_address and ip_address not in ['127.0.0.1', 'localhost', ''] and not ip_is_new:
                 cur.execute('UPDATE ip_trials SET api_key_count = api_key_count + 1 WHERE ip_address = %s', (ip_address,))
