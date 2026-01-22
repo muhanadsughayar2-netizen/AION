@@ -53,6 +53,7 @@ def init_db():
             )
         ''')
         # Device-based trial tracking table - most reliable, persists across IP changes
+        print('📦 Creating device_trials table if not exists...')
         cur.execute('''
             CREATE TABLE IF NOT EXISTS device_trials (
                 device_id VARCHAR(60) PRIMARY KEY,
@@ -62,6 +63,7 @@ def init_db():
                 api_key_count INTEGER DEFAULT 1
             )
         ''')
+        print('✅ device_trials table ready')
         # Add columns if missing (for existing tables)
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS browser_language VARCHAR(10)')
