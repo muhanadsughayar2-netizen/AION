@@ -733,6 +733,7 @@ def get_or_create_trial():
         # === IP-BASED TRIAL TRACKING ===
         # First, check/create IP trial record - this is the SOURCE OF TRUTH for trial start
         ip_trial_start = now_ms  # Default to now if new IP
+        ip_is_new = False  # Track if this is a brand new IP (don't double-count api_key_count)
         
         if ip_address and ip_address not in ['127.0.0.1', 'localhost', '']:
             # Check if this IP already has a trial record
@@ -743,10 +744,11 @@ def get_or_create_trial():
                 # IP exists - use its original trial start date (prevents cheating!)
                 ip_trial_start = ip_row[0]
                 api_key_count = ip_row[1] or 1
-                # Update last_active and increment API key count if this is a new user_hash
+                # Update last_active
                 cur.execute('UPDATE ip_trials SET last_active = %s WHERE ip_address = %s', (now_ms, ip_address))
             else:
-                # New IP - create trial record
+                # New IP - create trial record with count=1 (first API key)
+                ip_is_new = True
                 cur.execute('''
                     INSERT INTO ip_trials (ip_address, trial_start_date, last_active, api_key_count)
                     VALUES (%s, %s, %s, 1)
@@ -791,9 +793,10 @@ def get_or_create_trial():
             ''', (user_hash, ip_trial_start, False, browser_language, extension_version, now_ms, 1, 
                   ip_address, country, city, timezone, user_agent, screen_resolution, platform, device_type))
             
-            # Increment api_key_count for this IP (new API key registered)
-            if ip_address and ip_address not in ['127.0.0.1', 'localhost', '']:
-                cur.execute('UPDATE ip_trials SET api_key_count = api_key_count + 1 WHERE ip_address = %s AND api_key_count > 0', (ip_address,))
+            # Increment api_key_count for this IP (only if IP already existed - new API key on existing IP)
+            # Don't increment for brand new IPs since we already set count=1 during INSERT
+            if ip_address and ip_address not in ['127.0.0.1', 'localhost', ''] and not ip_is_new:
+                cur.execute('UPDATE ip_trials SET api_key_count = api_key_count + 1 WHERE ip_address = %s', (ip_address,))
         
         conn.commit()
         cur.close()
