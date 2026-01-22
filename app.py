@@ -107,6 +107,19 @@ def init_db():
             print(f'📦 Migrated {migrated_count} IP addresses to ip_trials table')
         conn.commit()
         
+        # === AUTO-FIX: Sync all user_trials to use their IP's earliest trial date ===
+        cur.execute('''
+            UPDATE user_trials ut
+            SET trial_start_date = ip.trial_start_date
+            FROM ip_trials ip
+            WHERE ut.ip_address = ip.ip_address
+              AND ut.trial_start_date > ip.trial_start_date
+        ''')
+        fixed_count = cur.rowcount
+        if fixed_count > 0:
+            print(f'🔧 Auto-fixed {fixed_count} users to use their IP earliest trial date')
+        conn.commit()
+        
         cur.close()
         conn.close()
         print('✅ Database initialized successfully')
