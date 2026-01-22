@@ -700,6 +700,39 @@ def admin_panel():
 
 TRIAL_DAYS = 30
 
+# Fix endpoint to sync user_trials with ip_trials dates
+@app.route('/api/fix-trial-dates')
+def fix_trial_dates():
+    """Fix user_trials trial_start_date to match ip_trials (anti-cheat sync)"""
+    if not ensure_db():
+        return jsonify({'error': 'Database not available'}), 503
+    
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        
+        # Update all user_trials to use their IP's trial_start_date from ip_trials
+        cur.execute('''
+            UPDATE user_trials ut
+            SET trial_start_date = ip.trial_start_date
+            FROM ip_trials ip
+            WHERE ut.ip_address = ip.ip_address
+              AND ut.trial_start_date > ip.trial_start_date
+        ''')
+        fixed_count = cur.rowcount
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'fixed_records': fixed_count,
+            'message': f'Fixed {fixed_count} user_trials records to use IP-based trial dates'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Debug endpoint to check ip_trials data
 @app.route('/api/debug-ip-trials')
 def debug_ip_trials():
@@ -824,11 +857,13 @@ def get_or_create_trial():
                 # IP exists - use its original trial start date (prevents cheating!)
                 ip_trial_start = ip_row[0]
                 api_key_count = ip_row[1] or 1
+                print(f'🛡️ ANTI-CHEAT: IP {ip_address} found in ip_trials, using trial_start from {datetime.fromtimestamp(ip_trial_start/1000).strftime("%Y-%m-%d %H:%M")} (api_key_count: {api_key_count})')
                 # Update last_active
                 cur.execute('UPDATE ip_trials SET last_active = %s WHERE ip_address = %s', (now_ms, ip_address))
             else:
                 # New IP - create trial record with count=1 (first API key)
                 ip_is_new = True
+                print(f'🆕 NEW IP: {ip_address} - creating new ip_trials record with trial_start = NOW')
                 cur.execute('''
                     INSERT INTO ip_trials (ip_address, trial_start_date, last_active, api_key_count)
                     VALUES (%s, %s, %s, 1)
