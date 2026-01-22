@@ -88,6 +88,7 @@ def init_db():
         
         # === MIGRATION: Seed ip_trials from existing user_trials ===
         # Get earliest trial_start_date for each IP from user_trials
+        # Use DO UPDATE to always use the EARLIEST date (anti-cheat fix)
         cur.execute('''
             INSERT INTO ip_trials (ip_address, trial_start_date, last_active, api_key_count)
             SELECT 
@@ -100,7 +101,9 @@ def init_db():
               AND ip_address != '' 
               AND ip_address != '127.0.0.1'
             GROUP BY ip_address
-            ON CONFLICT (ip_address) DO NOTHING
+            ON CONFLICT (ip_address) DO UPDATE SET
+                trial_start_date = LEAST(ip_trials.trial_start_date, EXCLUDED.trial_start_date),
+                api_key_count = GREATEST(ip_trials.api_key_count, EXCLUDED.api_key_count)
         ''')
         migrated_count = cur.rowcount
         if migrated_count > 0:
