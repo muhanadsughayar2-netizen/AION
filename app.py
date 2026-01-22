@@ -875,9 +875,14 @@ def get_or_create_trial():
         row = cur.fetchone()
         
         if row:
-            # Existing user - update last_active and increment usage_count
+            # Existing user - keep their ORIGINAL trial_start_date (don't change if IP changes)
+            original_trial_start = row[0]  # Keep their original date!
             is_paid = row[1] if row[1] else False
             usage_count = (row[2] or 0) + 1
+            
+            # Use the EARLIER of: their original date OR the IP's date (anti-cheat)
+            effective_trial_start = min(original_trial_start, ip_trial_start)
+            
             cur.execute('''
                 UPDATE user_trials 
                 SET last_active = %s, usage_count = %s, 
@@ -893,8 +898,11 @@ def get_or_create_trial():
                     platform = COALESCE(%s, platform),
                     device_type = COALESCE(%s, device_type)
                 WHERE user_hash = %s
-            ''', (now_ms, usage_count, ip_trial_start, browser_language, extension_version, ip_address, 
+            ''', (now_ms, usage_count, effective_trial_start, browser_language, extension_version, ip_address, 
                   country, city, timezone, user_agent, screen_resolution, platform, device_type, user_hash))
+            
+            # Use effective trial start for the response
+            ip_trial_start = effective_trial_start
             # Don't increment api_key_count for existing users - they're not new API keys
         else:
             # New user (new API key) - use IP-based trial start date
