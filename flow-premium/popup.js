@@ -3536,7 +3536,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Upgrade button click handler
   if (upgradeBtn) {
     upgradeBtn.addEventListener('click', () => {
-      showSubscriptionModal('Go Pro to access all AI analysis tools!');
+      showSubscriptionModal('We provide the interface; you provide your Google API key.');
     });
   }
   
