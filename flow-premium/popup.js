@@ -3846,7 +3846,7 @@ async function sendToGemini(prompt, isRetry = false) {
       }
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3975,7 +3975,7 @@ async function testGeminiAPI() {
     // Use queue to respect rate limits
     const data = await aiQueue.add(async () => {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${result.geminiApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${result.geminiApiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
