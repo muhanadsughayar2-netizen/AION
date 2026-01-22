@@ -123,6 +123,22 @@ async function hashApiKey(apiKey) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Generate or retrieve a unique device ID (persists across sessions)
+// This is more reliable than IP for trial tracking
+async function getDeviceId() {
+  const { snaptoai_device_id } = await chrome.storage.local.get(['snaptoai_device_id']);
+  
+  if (snaptoai_device_id) {
+    return snaptoai_device_id;
+  }
+  
+  // Generate a new device ID (UUID v4 format)
+  const newDeviceId = 'dev_' + crypto.randomUUID();
+  await chrome.storage.local.set({ snaptoai_device_id: newDeviceId });
+  console.log('[SnapToAI] New device ID generated:', newDeviceId);
+  return newDeviceId;
+}
+
 // Get user ID from API key hash
 async function getUserId() {
   const { geminiApiKey } = await chrome.storage.sync.get(['geminiApiKey']);
@@ -154,11 +170,15 @@ async function getServerTrialDate(userId) {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
     const platform = navigator.platform || navigator.userAgentData?.platform || '';
     
+    // Get device ID for reliable trial tracking (persists across IP changes)
+    const deviceId = await getDeviceId();
+    
     const response = await fetch(TRIAL_SERVER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         userHash: userId,
+        deviceId: deviceId,
         browserLanguage: browserLanguage,
         extensionVersion: extensionVersion,
         screenResolution: screenResolution,
