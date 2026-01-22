@@ -700,6 +700,49 @@ def admin_panel():
 
 TRIAL_DAYS = 30
 
+# Debug endpoint to check ip_trials data
+@app.route('/api/debug-ip-trials')
+def debug_ip_trials():
+    """Debug endpoint to check ip_trials table"""
+    if not ensure_db():
+        return jsonify({'error': 'Database not available'}), 503
+    
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        
+        # Get all ip_trials records
+        cur.execute('SELECT ip_address, trial_start_date, last_active, api_key_count FROM ip_trials ORDER BY trial_start_date DESC LIMIT 20')
+        ip_rows = cur.fetchall()
+        
+        # Get all user_trials IPs for comparison
+        cur.execute('SELECT DISTINCT ip_address FROM user_trials WHERE ip_address IS NOT NULL LIMIT 20')
+        user_ips = cur.fetchall()
+        
+        cur.close()
+        conn.close()
+        
+        now_ms = int(datetime.utcnow().timestamp() * 1000)
+        
+        ip_trials_data = []
+        for row in ip_rows:
+            days_elapsed = (now_ms - row[1]) / (1000 * 60 * 60 * 24)
+            ip_trials_data.append({
+                'ip': row[0],
+                'trial_start': datetime.fromtimestamp(row[1] / 1000).strftime('%Y-%m-%d %H:%M'),
+                'days_elapsed': int(days_elapsed),
+                'days_remaining': max(0, 30 - int(days_elapsed)),
+                'api_key_count': row[3]
+            })
+        
+        return jsonify({
+            'ip_trials': ip_trials_data,
+            'user_trials_ips': [r[0] for r in user_ips],
+            'total_ip_trials': len(ip_rows)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/trial', methods=['POST', 'OPTIONS'])
 def get_or_create_trial():
     """Simple trial tracking: API key hash → 30 day countdown.
