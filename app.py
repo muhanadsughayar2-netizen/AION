@@ -42,6 +42,16 @@ def init_db():
                 usage_count INTEGER DEFAULT 0
             )
         ''')
+        # IP-based trial tracking table - prevents trial abuse by tracking per IP
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS ip_trials (
+                ip_address VARCHAR(45) PRIMARY KEY,
+                trial_start_date BIGINT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_active BIGINT,
+                api_key_count INTEGER DEFAULT 1
+            )
+        ''')
         # Add columns if missing (for existing tables)
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS browser_language VARCHAR(10)')
@@ -698,18 +708,41 @@ def get_or_create_trial():
         
         now_ms = int(datetime.utcnow().timestamp() * 1000)
         
-        # Check if user exists
+        # === IP-BASED TRIAL TRACKING ===
+        # First, check/create IP trial record - this is the SOURCE OF TRUTH for trial start
+        ip_trial_start = now_ms  # Default to now if new IP
+        
+        if ip_address and ip_address not in ['127.0.0.1', 'localhost', '']:
+            # Check if this IP already has a trial record
+            cur.execute('SELECT trial_start_date, api_key_count FROM ip_trials WHERE ip_address = %s', (ip_address,))
+            ip_row = cur.fetchone()
+            
+            if ip_row:
+                # IP exists - use its original trial start date (prevents cheating!)
+                ip_trial_start = ip_row[0]
+                api_key_count = ip_row[1] or 1
+                # Update last_active and increment API key count if this is a new user_hash
+                cur.execute('UPDATE ip_trials SET last_active = %s WHERE ip_address = %s', (now_ms, ip_address))
+            else:
+                # New IP - create trial record
+                cur.execute('''
+                    INSERT INTO ip_trials (ip_address, trial_start_date, last_active, api_key_count)
+                    VALUES (%s, %s, %s, 1)
+                ''', (ip_address, now_ms, now_ms))
+                ip_trial_start = now_ms
+        
+        # Now handle user_trials (for subscription tracking and analytics)
         cur.execute('SELECT trial_start_date, is_paid, usage_count FROM user_trials WHERE user_hash = %s', (user_hash,))
         row = cur.fetchone()
         
         if row:
             # Existing user - update last_active and increment usage_count
-            trial_start = row[0]
             is_paid = row[1] if row[1] else False
             usage_count = (row[2] or 0) + 1
             cur.execute('''
                 UPDATE user_trials 
                 SET last_active = %s, usage_count = %s, 
+                    trial_start_date = %s,
                     browser_language = COALESCE(browser_language, %s),
                     extension_version = COALESCE(%s, extension_version),
                     ip_address = COALESCE(%s, ip_address),
@@ -721,12 +754,14 @@ def get_or_create_trial():
                     platform = COALESCE(%s, platform),
                     device_type = COALESCE(%s, device_type)
                 WHERE user_hash = %s
-            ''', (now_ms, usage_count, browser_language, extension_version, ip_address, 
+            ''', (now_ms, usage_count, ip_trial_start, browser_language, extension_version, ip_address, 
                   country, city, timezone, user_agent, screen_resolution, platform, device_type, user_hash))
-            conn.commit()
+            
+            # If this is a new API key for this IP, increment the count
+            if ip_address and ip_address not in ['127.0.0.1', 'localhost', '']:
+                cur.execute('UPDATE ip_trials SET api_key_count = api_key_count + 1 WHERE ip_address = %s', (ip_address,))
         else:
-            # New user (new API key) - create trial record with all data
-            trial_start = now_ms
+            # New user (new API key) - use IP-based trial start date
             is_paid = False
             usage_count = 1
             cur.execute('''
@@ -734,22 +769,22 @@ def get_or_create_trial():
                 (user_hash, trial_start_date, is_paid, browser_language, extension_version, last_active, usage_count, 
                  ip_address, country, city, timezone, user_agent, screen_resolution, platform, device_type) 
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ''', (user_hash, trial_start, False, browser_language, extension_version, now_ms, 1, 
+            ''', (user_hash, ip_trial_start, False, browser_language, extension_version, now_ms, 1, 
                   ip_address, country, city, timezone, user_agent, screen_resolution, platform, device_type))
-            conn.commit()
         
+        conn.commit()
         cur.close()
         conn.close()
         
-        # Calculate trial status
-        days_elapsed = (now_ms - trial_start) / (1000 * 60 * 60 * 24)
+        # Calculate trial status based on IP trial start (the anti-cheat date)
+        days_elapsed = (now_ms - ip_trial_start) / (1000 * 60 * 60 * 24)
         days_remaining = max(0, TRIAL_DAYS - int(days_elapsed))
         is_expired = days_elapsed >= TRIAL_DAYS
         
         # Simple response
         result = {
             'success': True,
-            'trialStartDate': trial_start,
+            'trialStartDate': ip_trial_start,
             'daysRemaining': days_remaining,
             'expired': is_expired and not is_paid,
             'isPaid': is_paid,
