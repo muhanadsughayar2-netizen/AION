@@ -67,11 +67,17 @@ Handles infinite-scroll sites with scroll settlement detection. Works on any web
 - License verification via Gumroad API with 48-hour grace period for network issues
 - Subscription modal shown when AI button clicked after trial expires
 - License key input for activating purchased subscriptions
-- **IP-Based Trial Tracking (January 2026):** 
-  - `ip_trials` table stores earliest trial_start_date per IP address
-  - Tracks api_key_count: how many different API keys used from same IP
-  - Prevents trial abuse: users can't reset trial by creating new Google API keys
-  - Migration auto-seeds from existing user_trials data on startup
+- **Multi-Tier Anti-Cheat Trial Tracking (January 2026):** 
+  - **Device ID (Primary):** Unique UUID generated on extension install, stored in chrome.storage.local
+    - Format: `dev_` + crypto.randomUUID()
+    - Persists across IP changes, network switches, VPN usage
+    - Only resets on full extension reinstall
+    - `device_trials` table stores earliest trial_start_date per device
+  - **IP Address (Secondary):** `ip_trials` table as fallback for older extensions without device ID
+    - Tracks api_key_count: how many different API keys used from same IP
+  - **API Key Hash (Tertiary):** User-level tracking in `user_trials` table
+  - **Anti-cheat logic:** Always uses the EARLIEST date from device ID, IP address, or API key hash
+  - Prevents trial abuse: users can't reset trial by creating new Google API keys or changing IPs
 
 ### System Design Choices
 The extension is built as a Manifest V3 Chrome Extension. It employs a Service Worker for background processes, a Content Script for in-page interactions and AI platform detection, and a Popup Interface for user interaction. Data is stored entirely client-side using Chrome's session and local storage APIs, ensuring privacy and eliminating the need for an external backend database. Screenshots are stored as base64 dataURL strings in a FIFO queue within session storage.

@@ -942,8 +942,6 @@ def get_or_create_trial():
             ''', (now_ms, usage_count, effective_trial_start, browser_language, extension_version, ip_address, 
                   country, city, timezone, user_agent, screen_resolution, platform, device_type, device_id, user_hash))
             
-            # Use effective trial start for the response
-            ip_trial_start = effective_trial_start
             # Don't increment api_key_count for existing users - they're not new API keys
         else:
             # New user (new API key) - use EARLIEST trial start date from device, IP, or now
@@ -961,9 +959,6 @@ def get_or_create_trial():
             ''', (user_hash, effective_trial_start, False, browser_language, extension_version, now_ms, 1, 
                   ip_address, country, city, timezone, user_agent, screen_resolution, platform, device_type, device_id))
             
-            # Use effective trial start for the response
-            ip_trial_start = effective_trial_start
-            
             # Increment api_key_count for device (only if device already existed - new API key on existing device)
             if device_id and device_id.startswith('dev_') and not device_is_new:
                 cur.execute('UPDATE device_trials SET api_key_count = api_key_count + 1 WHERE device_id = %s', (device_id,))
@@ -977,15 +972,15 @@ def get_or_create_trial():
         cur.close()
         conn.close()
         
-        # Calculate trial status based on IP trial start (the anti-cheat date)
-        days_elapsed = (now_ms - ip_trial_start) / (1000 * 60 * 60 * 24)
+        # Calculate trial status based on effective_trial_start (earliest of device, IP, or API key)
+        days_elapsed = (now_ms - effective_trial_start) / (1000 * 60 * 60 * 24)
         days_remaining = max(0, TRIAL_DAYS - int(days_elapsed))
         is_expired = days_elapsed >= TRIAL_DAYS
         
         # Simple response
         result = {
             'success': True,
-            'trialStartDate': ip_trial_start,
+            'trialStartDate': effective_trial_start,
             'daysRemaining': days_remaining,
             'expired': is_expired and not is_paid,
             'isPaid': is_paid,
