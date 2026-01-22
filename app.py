@@ -72,6 +72,28 @@ def init_db():
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS platform VARCHAR(30)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS device_type VARCHAR(20)')
         conn.commit()
+        
+        # === MIGRATION: Seed ip_trials from existing user_trials ===
+        # Get earliest trial_start_date for each IP from user_trials
+        cur.execute('''
+            INSERT INTO ip_trials (ip_address, trial_start_date, last_active, api_key_count)
+            SELECT 
+                ip_address,
+                MIN(trial_start_date) as trial_start_date,
+                MAX(last_active) as last_active,
+                COUNT(*) as api_key_count
+            FROM user_trials 
+            WHERE ip_address IS NOT NULL 
+              AND ip_address != '' 
+              AND ip_address != '127.0.0.1'
+            GROUP BY ip_address
+            ON CONFLICT (ip_address) DO NOTHING
+        ''')
+        migrated_count = cur.rowcount
+        if migrated_count > 0:
+            print(f'📦 Migrated {migrated_count} IP addresses to ip_trials table')
+        conn.commit()
+        
         cur.close()
         conn.close()
         print('✅ Database initialized successfully')
@@ -756,10 +778,7 @@ def get_or_create_trial():
                 WHERE user_hash = %s
             ''', (now_ms, usage_count, ip_trial_start, browser_language, extension_version, ip_address, 
                   country, city, timezone, user_agent, screen_resolution, platform, device_type, user_hash))
-            
-            # If this is a new API key for this IP, increment the count
-            if ip_address and ip_address not in ['127.0.0.1', 'localhost', '']:
-                cur.execute('UPDATE ip_trials SET api_key_count = api_key_count + 1 WHERE ip_address = %s', (ip_address,))
+            # Don't increment api_key_count for existing users - they're not new API keys
         else:
             # New user (new API key) - use IP-based trial start date
             is_paid = False
@@ -771,6 +790,10 @@ def get_or_create_trial():
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ''', (user_hash, ip_trial_start, False, browser_language, extension_version, now_ms, 1, 
                   ip_address, country, city, timezone, user_agent, screen_resolution, platform, device_type))
+            
+            # Increment api_key_count for this IP (new API key registered)
+            if ip_address and ip_address not in ['127.0.0.1', 'localhost', '']:
+                cur.execute('UPDATE ip_trials SET api_key_count = api_key_count + 1 WHERE ip_address = %s AND api_key_count > 0', (ip_address,))
         
         conn.commit()
         cur.close()
