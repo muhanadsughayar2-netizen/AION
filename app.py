@@ -606,6 +606,35 @@ def admin_panel():
             </div>
         </div>
         <p style="color: #888; font-size: 12px; margin: 10px 0 0 0;">Trial countdown is now tied to IP address. Users cannot reset trials by creating new API keys.</p>
+        <button onclick="fixTrialDates()" id="fix-btn" style="margin-top: 15px; padding: 10px 20px; background: linear-gradient(135deg, #a855f7, #7c3aed); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+            🔧 Sync Trial Dates (Fix Anti-Cheat)
+        </button>
+        <span id="fix-result" style="margin-left: 10px; color: #22c55e;"></span>
+        <script>
+        async function fixTrialDates() {{
+            var btn = document.getElementById('fix-btn');
+            var result = document.getElementById('fix-result');
+            btn.disabled = true;
+            btn.textContent = '⏳ Syncing...';
+            try {{
+                var resp = await fetch('/api/fix-trial-dates');
+                var data = await resp.json();
+                if (data.success) {{
+                    result.style.color = '#22c55e';
+                    result.textContent = '✅ ' + data.message;
+                    setTimeout(function() {{ location.reload(); }}, 2000);
+                }} else {{
+                    result.style.color = '#ef4444';
+                    result.textContent = '❌ ' + (data.error || 'Failed');
+                }}
+            }} catch (e) {{
+                result.style.color = '#ef4444';
+                result.textContent = '❌ Error: ' + e.message;
+            }}
+            btn.disabled = false;
+            btn.textContent = '🔧 Sync Trial Dates (Fix Anti-Cheat)';
+        }}
+        </script>
     </div>
     
     <form class="filters" method="GET" action="/admin-dashboard">
