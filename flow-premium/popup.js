@@ -3367,7 +3367,7 @@ async function handleAIButtonClick() {
     if (!status.canUseAI && status.status !== 'no_api_key') {
       const message = status.status === 'subscription_expired'
         ? 'Your subscription has expired. Renew to keep using AI tools.'
-        : 'Captures are free forever. Subscribe to use our pro AI tools.';
+        : 'We provide the interface; you provide your Google API key.';
       showSubscriptionModal(message);
       return;
     }
