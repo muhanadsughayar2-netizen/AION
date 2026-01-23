@@ -1771,6 +1771,47 @@ html[dir="rtl"] .logo-word {
   color: #555;
 }
 
+.gemini-compliance {
+  margin: 12px 0;
+}
+
+.compliance-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: #aaa;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.compliance-label input[type="checkbox"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: #00d9ff;
+}
+
+.compliance-label a {
+  color: #00d9ff;
+  text-decoration: none;
+}
+
+.compliance-label a:hover {
+  text-decoration: underline;
+}
+
+.gemini-btn-primary:disabled {
+  background: #444;
+  color: #888;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.gemini-btn-primary:disabled:hover {
+  background: #444;
+  box-shadow: none;
+}
+
 .gemini-actions {
   display: flex;
   gap: 10px;

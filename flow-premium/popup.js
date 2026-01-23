@@ -3247,6 +3247,14 @@ const geminiStatus = document.getElementById('geminiStatus');
 const geminiSaveBtn = document.getElementById('geminiSaveBtn');
 const geminiClearBtn = document.getElementById('geminiClearBtn');
 const aiButton = document.getElementById('aiButton');
+const geminiComplianceCheckbox = document.getElementById('geminiComplianceCheckbox');
+
+// Compliance checkbox controls Save button
+if (geminiComplianceCheckbox && geminiSaveBtn) {
+  geminiComplianceCheckbox.addEventListener('change', () => {
+    geminiSaveBtn.disabled = !geminiComplianceCheckbox.checked;
+  });
+}
 
 function showGeminiModal() {
   console.log('[SnapToAI] Opening Gemini modal');
