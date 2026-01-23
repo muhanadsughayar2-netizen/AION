@@ -18,7 +18,9 @@ window.SNAPTOAI_PROMPTS = {
   // MONEY CATEGORY (4 templates)
   // =====================================================
   
-  "Stock Deep Dive": `ROLE: Act as the World's Lead Financial Auditor and Strategic Consultant. Your mission is to empower the user with a "Gold Standard" investment audit that is both visually stunning and intellectually exhaustive.
+  "Stock Deep Dive": `IMPORTANT: Always start your response with this exact disclaimer: '⚠️ DISCLAIMER: This is a technical analysis of the data provided for educational purposes only. This is NOT financial advice. Always consult a licensed financial advisor before making investment decisions.'
+
+ROLE: Act as the World's Lead Financial Auditor and Strategic Consultant. Your mission is to empower the user with a "Gold Standard" investment audit that is both visually stunning and intellectually exhaustive.
 
 TASK: Perform a "Hybrid Audit" on the provided stock data. You MUST provide a two-part response: A Visual Magic Card (JSON) followed by a Deep-Dive Strategic Brain (Markdown).
 
@@ -55,7 +57,7 @@ Be exhaustive, never summarize. Provide specific numbers and analysis.`,
 
   "Deal or No Deal": "DEAL HUNTER ANALYSIS: 1) Identify the product and exact model. 2) Note the current price and any discounts shown. 3) Check for hidden costs (shipping, taxes, subscriptions). 4) Rate the deal quality: STEAL / GOOD / FAIR / RIP-OFF. 5) Estimate typical price range for this item. 6) Red flags to watch for. 7) VERDICT: Buy now, wait for sale, or skip entirely. Include specific dollar amounts.",
 
-  "Crypto Scanner": "CRYPTO SIGNAL ANALYSIS: 1) Identify coin/token and current price. 2) Read the chart pattern (head & shoulders, cup & handle, etc). 3) Check RSI/MACD if visible. 4) Whale activity indicators. 5) Give me: a) Short-term trend (24h) b) Entry zone c) Stop-loss d) Target prices (3 levels) e) Risk rating HIGH/MEDIUM/LOW. No disclaimers - just the analysis.",
+  "Crypto Scanner": "IMPORTANT: Always start your response with this exact disclaimer: '⚠️ DISCLAIMER: This is a technical analysis for educational purposes only. This is NOT financial advice. Cryptocurrency is highly volatile. Never invest more than you can afford to lose.'\n\nCRYPTO SIGNAL ANALYSIS: 1) Identify coin/token and current price. 2) Read the chart pattern (head & shoulders, cup & handle, etc). 3) Check RSI/MACD if visible. 4) Whale activity indicators. 5) Give me: a) Short-term trend (24h) b) Entry zone c) Stop-loss d) Target prices (3 levels) e) Risk rating HIGH/MEDIUM/LOW.",
 
   "Bill Detective": "INVOICE/BILL AUDIT: 1) Extract all line items and amounts. 2) Verify math - do totals add up correctly? 3) Flag any suspicious charges, hidden fees, or duplicates. 4) Compare rates to typical market prices. 5) Calculate potential savings if overcharged. 6) Priority items to dispute. 7) Script for calling customer service to negotiate.",
 
@@ -75,11 +77,11 @@ Be exhaustive, never summarize. Provide specific numbers and analysis.`,
   // HEALTH CATEGORY (4 templates)
   // =====================================================
   
-  "Med Check": "MEDICATION ANALYZER: 1) Identify the medication name and dosage. 2) What it's commonly prescribed for. 3) Common side effects to watch for. 4) Serious side effects requiring immediate attention. 5) Drug interactions to avoid (especially common ones). 6) Food/drink restrictions. 7) Questions to ask your doctor. 8) Generic alternatives that could save money.",
+  "Med Check": "IMPORTANT: Always start your response with this exact disclaimer: '⚠️ DISCLAIMER: This information is for educational context only. Always consult a doctor or pharmacist before making any medical decisions.'\n\nMEDICATION ANALYZER: 1) Identify the medication name and dosage. 2) What it's commonly prescribed for. 3) Common side effects to watch for. 4) Serious side effects requiring immediate attention. 5) Drug interactions to avoid (especially common ones). 6) Food/drink restrictions. 7) Questions to ask your doctor. 8) Generic alternatives that could save money.",
 
   "Food Label Truth": "NUTRITION DETECTIVE: 1) Identify the food product. 2) Parse the nutrition label completely. 3) Hidden sugars and unhealthy ingredients. 4) Marketing tricks vs reality. 5) Rate healthiness 1-100 for different goals (weight loss, muscle, heart). 6) Better alternatives in the same category. 7) VERDICT: Healthy choice, occasional treat, or avoid.",
 
-  "Symptom Guide": "SYMPTOM MAPPER (Educational Only): 1) List all visible symptoms or reported issues. 2) Possible conditions that match (most to least common). 3) Warning signs that need immediate attention. 4) Questions a doctor would likely ask. 5) Tests that might be recommended. 6) Self-care steps while waiting for appointment. Disclaimer: This is educational, not medical advice.",
+  "Symptom Guide": "IMPORTANT: Always start your response with this exact disclaimer: '⚠️ DISCLAIMER: This is for educational purposes only and is NOT medical advice. Please consult a healthcare professional for proper diagnosis and treatment.'\n\nSYMPTOM MAPPER (Educational Only): 1) List all visible symptoms or reported issues. 2) Possible conditions that match (most to least common). 3) Warning signs that need immediate attention. 4) Questions a doctor would likely ask. 5) Tests that might be recommended. 6) Self-care steps while waiting for appointment.",
 
   "Form Checker": "FITNESS FORM CHECK: 1) Identify the exercise being performed. 2) Evaluate form and technique - what's correct and what's wrong. 3) Injury risks from improper form. 4) Muscles being targeted vs muscles that SHOULD be targeted. 5) Specific corrections with descriptions. 6) Easier and harder progressions. 7) Common mistakes people make with this exercise.",
 
