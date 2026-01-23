@@ -1576,12 +1576,29 @@ function renderMagicButtons() {
   const container = document.getElementById('magicButtons');
   if (!container) return;
   
-  container.innerHTML = magicButtons.map((btn, i) => `
-    <button class="magic-btn" data-index="${i}" title="${btn.prompt}">
+  // Nice color gradients for buttons
+  const buttonColors = [
+    'linear-gradient(135deg, #667eea, #764ba2)', // Purple
+    'linear-gradient(135deg, #f093fb, #f5576c)', // Pink
+    'linear-gradient(135deg, #4facfe, #00f2fe)', // Blue
+    'linear-gradient(135deg, #43e97b, #38f9d7)', // Green
+    'linear-gradient(135deg, #fa709a, #fee140)', // Sunset
+    'linear-gradient(135deg, #a8edea, #fed6e3)', // Soft
+    'linear-gradient(135deg, #ff9a9e, #fecfef)', // Rose
+    'linear-gradient(135deg, #ffecd2, #fcb69f)', // Peach
+    'linear-gradient(135deg, #667eea, #f093fb)', // Purple-Pink
+    'linear-gradient(135deg, #11998e, #38ef7d)', // Teal
+  ];
+  
+  container.innerHTML = magicButtons.map((btn, i) => {
+    const colorIndex = (btn.colorIndex !== undefined) ? btn.colorIndex : (i % buttonColors.length);
+    const bgColor = buttonColors[colorIndex];
+    return `
+    <button class="magic-btn" data-index="${i}" title="${btn.prompt}" style="background: ${bgColor}; border: none;">
       ${btn.emoji} ${btn.name}
       <span class="delete-magic" data-delete="${i}">✕</span>
     </button>
-  `).join('');
+  `;}).join('');
   
   // Separate listeners for delete buttons
   container.querySelectorAll('.delete-magic').forEach(el => {
@@ -1813,7 +1830,9 @@ document.getElementById('saveMagicBtn')?.addEventListener('click', async () => {
   if (!prompt) { alert('Please enter instructions for the AI'); return; }
   if (magicButtons.length >= 8) { alert('Maximum 8 magic buttons allowed'); return; }
   
-  magicButtons.push({ name, emoji, prompt });
+  // Assign a random color index for nice gradient colors
+  const colorIndex = Math.floor(Math.random() * 10);
+  magicButtons.push({ name, emoji, prompt, colorIndex });
   await saveMagicButtons();
   document.getElementById('magicModal').classList.remove('open');
   
