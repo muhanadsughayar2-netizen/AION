@@ -609,17 +609,11 @@
     /* AI Disclaimer */
     .ai-disclaimer {
       text-align: center;
-      padding: 8px 16px;
+      padding: 6px 16px 0;
       background: transparent;
-      font-size: 11px;
-      color: #64748b;
-    }
-    .ai-disclaimer a {
-      color: #00b8d4;
-      text-decoration: none;
-    }
-    .ai-disclaimer a:hover {
-      text-decoration: underline;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.85);
+      font-weight: 400;
     }
     .magic-add-btn { background: linear-gradient(45deg, #8b5cf6, #ec4899); border: none; border-radius: 12px; padding: 8px 14px; color: white; font-size: 11px; font-weight: 700; cursor: pointer; }
     .magic-add-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(139,92,246,0.5); }
@@ -872,6 +866,7 @@
         <textarea class="chat-input" id="chatInput" placeholder="Ask about your screenshot..." rows="1"></textarea>
         <button class="send-btn" id="sendBtn">Send</button>
       </div>
+      <div class="ai-disclaimer">Gemini can make mistakes, so double-check it</div>
       
       <div class="magic-buttons" id="magicButtons"></div>
       <div class="footer-actions">
@@ -882,7 +877,6 @@
         <button class="action-btn" id="clearBtn">🗑 Clear</button>
         <button class="action-btn" id="exportBtn">💾 Save Full Chat</button>
       </div>
-      <div class="ai-disclaimer">Gemini can make mistakes, so double-check it</div>
     </div>
   </div>
   
