@@ -1148,6 +1148,40 @@ function clearFilesQueue() {
   document.getElementById('filePreviewZone').innerHTML = '';
 }
 
+function openMagicModal(editingAgent = null) {
+  const modal = document.getElementById('magicModal');
+  const nameInput = document.getElementById('magicName');
+  const promptInput = document.getElementById('magicPrompt');
+  const hintInput = document.getElementById('magicHint');
+  const shareBtn = document.getElementById('shareAgentBtn');
+  const saveBtn = document.getElementById('saveMagicBtn');
+  
+  modal.classList.add('open');
+  
+  if (editingAgent) {
+    nameInput.value = editingAgent.name || '';
+    promptInput.value = editingAgent.prompt || '';
+    hintInput.value = editingAgent.hint || '';
+    saveBtn.textContent = '⚡ Save Changes';
+    if (shareBtn) shareBtn.style.display = 'flex';
+    
+    // Set emoji
+    const emojiToSet = editingAgent.emoji || '⚡';
+    document.querySelectorAll('.emoji-option').forEach(opt => {
+      opt.classList.toggle('selected', opt.dataset.emoji === emojiToSet);
+    });
+    if (document.getElementById('selectedEmoji')) {
+      document.getElementById('selectedEmoji').value = emojiToSet;
+    }
+  } else {
+    nameInput.value = '';
+    promptInput.value = '';
+    hintInput.value = '';
+    saveBtn.textContent = '⚡ Create';
+    if (shareBtn) shareBtn.style.display = 'none';
+  }
+}
+
 // Share agent link
 document.getElementById('shareAgentBtn')?.addEventListener('click', () => {
   const name = document.getElementById('magicName').value;
@@ -1176,7 +1210,7 @@ document.getElementById('shareAgentBtn')?.addEventListener('click', () => {
 // Update initializeChat to check for shared agent in URL
 function initializeChat() {
   const urlParams = new URLSearchParams(window.location.search);
-  const sharedData = urlParams.get('data'); // Changed from agentData to data to match encoded link
+  const sharedData = urlParams.get('data');
   
   if (sharedData) {
     try {
