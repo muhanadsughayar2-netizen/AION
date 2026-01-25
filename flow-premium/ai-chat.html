@@ -429,18 +429,19 @@
     
     .action-btn {
       padding: 10px 18px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 217, 255, 0.15);
+      border: 1px solid rgba(0, 217, 255, 0.4);
       border-radius: 8px;
-      color: #888;
+      color: #00d9ff;
       font-size: 13px;
       cursor: pointer;
       transition: all 0.2s;
     }
     
     .action-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
+      background: rgba(0, 217, 255, 0.25);
+      color: #00ffff;
+      box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
     }
     
     .test-btn {
@@ -603,8 +604,9 @@
     .magic-btn { border: none; border-radius: 12px; padding: 8px 14px; color: white; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s; height: 33px; box-sizing: border-box; }
     .magic-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(139,92,246,0.5); }
     .magic-btn:active { transform: scale(0.95); }
-    .magic-btn .delete-magic { opacity: 0; margin-left: 4px; font-size: 10px; }
-    .magic-btn:hover .delete-magic { opacity: 0.7; }
+    .magic-btn .edit-magic, .magic-btn .delete-magic { opacity: 0; margin-left: 4px; font-size: 10px; }
+    .magic-btn:hover .edit-magic, .magic-btn:hover .delete-magic { opacity: 0.7; }
+    .magic-btn .edit-magic:hover, .magic-btn .delete-magic:hover { opacity: 1; }
     
     /* AI Disclaimer */
     .ai-disclaimer {
@@ -889,7 +891,7 @@
       <div class="magic-modal-body" style="max-height: none; overflow: visible;">
         <div class="magic-field">
           <label>Name</label>
-          <input type="text" id="magicName" placeholder="e.g., Price Check" maxlength="15">
+          <input type="text" id="magicName" placeholder="e.g., Price Check" maxlength="12">
         </div>
         <div class="magic-field">
           <label>Icon</label>

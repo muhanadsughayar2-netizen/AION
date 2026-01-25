@@ -1593,9 +1593,19 @@ function renderMagicButtons() {
     return `
     <button class="magic-btn" data-index="${i}" title="${btn.prompt}" style="background: ${bgColor}; border: none;">
       ${btn.emoji} ${btn.name}
+      <span class="edit-magic" data-edit="${i}">✎</span>
       <span class="delete-magic" data-delete="${i}">✕</span>
     </button>
   `;}).join('');
+  
+  // Separate listeners for edit buttons
+  container.querySelectorAll('.edit-magic').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      editMagicButton(parseInt(el.dataset.edit));
+    });
+  });
   
   // Separate listeners for delete buttons
   container.querySelectorAll('.delete-magic').forEach(el => {
@@ -1609,7 +1619,7 @@ function renderMagicButtons() {
   // Separate listeners for magic buttons (execute)
   container.querySelectorAll('.magic-btn').forEach(el => {
     el.addEventListener('click', (e) => {
-      if (!e.target.classList.contains('delete-magic')) {
+      if (!e.target.classList.contains('delete-magic') && !e.target.classList.contains('edit-magic')) {
         executeMagicButton(parseInt(el.dataset.index));
       }
     });
@@ -1626,6 +1636,26 @@ function deleteMagicButton(index) {
     magicButtons.splice(index, 1);
     saveMagicButtons();
   }
+}
+
+let editingMagicIndex = null;
+
+function editMagicButton(index) {
+  const btn = magicButtons[index];
+  if (!btn) return;
+  
+  editingMagicIndex = index;
+  document.getElementById('magicName').value = btn.name;
+  document.getElementById('magicPrompt').value = btn.prompt;
+  document.getElementById('selectedEmoji').value = btn.emoji;
+  document.getElementById('promptCount').textContent = btn.prompt.length;
+  
+  document.querySelectorAll('.emoji-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.emoji === btn.emoji);
+  });
+  
+  document.getElementById('saveMagicBtn').textContent = '🪄 Update';
+  document.getElementById('magicModal').classList.add('active');
 }
 
 async function executeMagicButton(index) {
@@ -1758,7 +1788,12 @@ document.getElementById('addMagicBtn')?.addEventListener('click', () => {
 });
 
 document.getElementById('closeMagicModal')?.addEventListener('click', () => {
-  document.getElementById('magicModal').classList.remove('open');
+  editingMagicIndex = null;
+  document.getElementById('saveMagicBtn').textContent = '🪄 Create';
+  document.getElementById('magicName').value = '';
+  document.getElementById('magicPrompt').value = '';
+  document.getElementById('promptCount').textContent = '0';
+  document.getElementById('magicModal').classList.remove('active');
 });
 
 document.getElementById('emojiPicker')?.addEventListener('click', (e) => {
@@ -1825,16 +1860,29 @@ document.getElementById('saveMagicBtn')?.addEventListener('click', async () => {
   
   if (!name) { alert('Please enter a button name'); return; }
   if (!prompt) { alert('Please enter instructions for the AI'); return; }
-  if (magicButtons.length >= 8) { alert('Maximum 8 magic buttons allowed'); return; }
   
-  // Assign a random color index for nice gradient colors
-  const colorIndex = Math.floor(Math.random() * 10);
-  magicButtons.push({ name, emoji, prompt, colorIndex });
+  if (editingMagicIndex !== null) {
+    magicButtons[editingMagicIndex] = { 
+      ...magicButtons[editingMagicIndex], 
+      name, emoji, prompt 
+    };
+    editingMagicIndex = null;
+    document.getElementById('saveMagicBtn').textContent = '🪄 Create';
+    addBubble(`✨ Magic button "${emoji} ${name}" updated!`, 'ai');
+  } else {
+    if (magicButtons.length >= 15) { alert('Maximum 15 magic buttons allowed'); return; }
+    const colorIndex = Math.floor(Math.random() * 8);
+    magicButtons.push({ name, emoji, prompt, colorIndex });
+    addBubble(`✨ Magic button "${emoji} ${name}" created! Click it anytime to use.`, 'ai');
+  }
+  
   await saveMagicButtons();
-  document.getElementById('magicModal').classList.remove('open');
+  document.getElementById('magicModal').classList.remove('active');
+  document.getElementById('magicName').value = '';
+  document.getElementById('magicPrompt').value = '';
+  document.getElementById('promptCount').textContent = '0';
   
   if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
-  addBubble(`✨ Magic button "${emoji} ${name}" created! Click it anytime to use.`, 'ai');
 });
 
 // Load magic buttons on start
