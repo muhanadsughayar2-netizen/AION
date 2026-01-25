@@ -1655,7 +1655,7 @@ function editMagicButton(index) {
   });
   
   document.getElementById('saveMagicBtn').textContent = '🪄 Update';
-  document.getElementById('magicModal').classList.add('active');
+  document.getElementById('magicModal').classList.add('open');
 }
 
 async function executeMagicButton(index) {
@@ -1793,7 +1793,7 @@ document.getElementById('closeMagicModal')?.addEventListener('click', () => {
   document.getElementById('magicName').value = '';
   document.getElementById('magicPrompt').value = '';
   document.getElementById('promptCount').textContent = '0';
-  document.getElementById('magicModal').classList.remove('active');
+  document.getElementById('magicModal').classList.remove('open');
 });
 
 document.getElementById('emojiPicker')?.addEventListener('click', (e) => {
@@ -1877,7 +1877,7 @@ document.getElementById('saveMagicBtn')?.addEventListener('click', async () => {
   }
   
   await saveMagicButtons();
-  document.getElementById('magicModal').classList.remove('active');
+  document.getElementById('magicModal').classList.remove('open');
   document.getElementById('magicName').value = '';
   document.getElementById('magicPrompt').value = '';
   document.getElementById('promptCount').textContent = '0';
