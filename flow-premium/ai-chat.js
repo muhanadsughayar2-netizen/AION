@@ -231,6 +231,10 @@ async function initializeChat() {
   if (imagesToUse.length > 0) {
     currentImages = imagesToUse;
     const previewContainer = document.querySelector('.image-preview');
+    const placeholder = document.getElementById('imagePlaceholder');
+    
+    // Hide placeholder when we have images
+    if (placeholder) placeholder.style.display = 'none';
     
     if (currentImages.length === 1) {
       // Single image - show as before
@@ -254,8 +258,10 @@ async function initializeChat() {
       previewContainer.appendChild(badge);
     }
   } else {
-    document.querySelector('.image-preview').innerHTML = '<div style="color: #ff5252; padding: 20px; text-align: center;">Images not found. Please try again.</div>';
-    addBubble('Could not load images. Please close and try again.', 'error');
+    // No images - show the placeholder (it's already in HTML)
+    const placeholder = document.getElementById('imagePlaceholder');
+    if (placeholder) placeholder.style.display = 'flex';
+    document.getElementById('previewImage').style.display = 'none';
   }
   
   // Focus input
