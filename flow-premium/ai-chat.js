@@ -1654,7 +1654,7 @@ function editMagicButton(index) {
     el.classList.toggle('selected', el.dataset.emoji === btn.emoji);
   });
   
-  document.getElementById('saveMagicBtn').textContent = '🪄 Update';
+  document.getElementById('saveMagicBtn').textContent = '⚡ Update';
   document.getElementById('magicModal').classList.add('open');
 }
 
@@ -1789,7 +1789,7 @@ document.getElementById('addMagicBtn')?.addEventListener('click', () => {
 
 document.getElementById('closeMagicModal')?.addEventListener('click', () => {
   editingMagicIndex = null;
-  document.getElementById('saveMagicBtn').textContent = '🪄 Create';
+  document.getElementById('saveMagicBtn').textContent = '⚡ Create';
   document.getElementById('magicName').value = '';
   document.getElementById('magicPrompt').value = '';
   document.getElementById('promptCount').textContent = '0';
@@ -1867,7 +1867,7 @@ document.getElementById('saveMagicBtn')?.addEventListener('click', async () => {
       name, emoji, prompt 
     };
     editingMagicIndex = null;
-    document.getElementById('saveMagicBtn').textContent = '🪄 Create';
+    document.getElementById('saveMagicBtn').textContent = '⚡ Create';
     addBubble(`✨ Magic button "${emoji} ${name}" updated!`, 'ai');
   } else {
     if (magicButtons.length >= 15) { alert('Maximum 15 magic buttons allowed'); return; }
