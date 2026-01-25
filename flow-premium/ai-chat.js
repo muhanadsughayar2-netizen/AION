@@ -1101,7 +1101,6 @@ chatInput.addEventListener('paste', (e) => {
 
 document.getElementById('continueBtn').addEventListener('click', continueResponse);
 document.getElementById('summarizeBtn').addEventListener('click', summarizeChat);
-document.getElementById('educationBtn').addEventListener('click', startEducationMode);
 document.getElementById('clearBtn').addEventListener('click', clearChat);
 document.getElementById('exportBtn').addEventListener('click', exportToPDF);
 
