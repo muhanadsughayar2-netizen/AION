@@ -1148,6 +1148,54 @@ function clearFilesQueue() {
   document.getElementById('filePreviewZone').innerHTML = '';
 }
 
+// Share agent link
+document.getElementById('shareAgentBtn')?.addEventListener('click', () => {
+  const name = document.getElementById('magicName').value;
+  const prompt = document.getElementById('magicPrompt').value;
+  const hint = document.getElementById('magicHint').value;
+  const emoji = document.querySelector('.emoji-option.selected')?.dataset.emoji || '⚡';
+  
+  if (!name || !prompt) {
+    alert('Name and Prompt are required to share!');
+    return;
+  }
+  
+  // Encode agent data into a URL
+  const agentData = { n: name, p: prompt, h: hint, e: emoji };
+  const encoded = btoa(encodeURIComponent(JSON.stringify(agentData)));
+  const shareUrl = `https://snaptoai.com/import-agent?data=${encoded}`;
+  
+  navigator.clipboard.writeText(shareUrl).then(() => {
+    const btn = document.getElementById('shareAgentBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span>✅ Copied!</span>';
+    setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+  });
+});
+
+// Update initializeChat to check for shared agent in URL
+function initializeChat() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const sharedData = urlParams.get('data'); // Changed from agentData to data to match encoded link
+  
+  if (sharedData) {
+    try {
+      const decoded = JSON.parse(decodeURIComponent(atob(sharedData)));
+      // Auto-open create modal with shared data
+      setTimeout(() => {
+        openMagicModal({
+          name: decoded.n,
+          prompt: decoded.p,
+          hint: decoded.h,
+          emoji: decoded.e
+        });
+      }, 500);
+    } catch (e) {
+      console.error('Failed to parse shared agent data', e);
+    }
+  }
+}
+
 // Initialize
 initializeChat();
 
