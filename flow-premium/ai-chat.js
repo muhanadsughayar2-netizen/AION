@@ -1328,6 +1328,43 @@ Output ONLY JSON:
 
 // ============ MAGIC BUTTONS SYSTEM ============
 let magicButtons = [];
+const DEFAULT_MAGIC_BUTTONS = [
+  { 
+    name: "Vision", 
+    emoji: "🔍", 
+    prompt: "Vision: Act as a master image analyst. Describe every detail in this screenshot with extreme precision. Identify objects, text, colors, and the overall mood. If it's a website, describe the UX/UI. If it's a photo, describe the scene. Provide a list of key insights.", 
+    hint: "Snap anything to understand it...", 
+    colorIndex: 1 
+  },
+  { 
+    name: "Market", 
+    emoji: "📈", 
+    prompt: "Market: Act as a professional financial analyst. Analyze this chart or data. Identify the trend, support/resistance levels, and key indicators. Evaluate the setup and provide a risk/reward assessment. Be decisive and specific with numbers.", 
+    hint: "Snap a chart for a trade setup...", 
+    colorIndex: 2 
+  },
+  { 
+    name: "Writer", 
+    emoji: "💡", 
+    prompt: "Writer: Act as a creative copywriter and communications expert. Analyze the content provided and help me draft a perfect reply, article, or post. Tone should be professional yet engaging. Provide 3 different versions based on the context.", 
+    hint: "Snap or Paste an email to get a reply...", 
+    colorIndex: 0 
+  },
+  { 
+    name: "Tutor", 
+    emoji: "🎯", 
+    prompt: "Tutor: Act as a world-class teacher. Analyze this problem, concept, or text. Break it down into simple, easy-to-understand steps. Explain the 'why' behind everything. If it's a question, guide me to the answer rather than just giving it.", 
+    hint: "Snap a problem to learn the solution...", 
+    colorIndex: 4 
+  },
+  { 
+    name: "Logic", 
+    emoji: "⚡", 
+    prompt: "Logic: Act as a senior software architect. Analyze this code snippet or technical error. Identify the bug, explain why it happened, and provide the exact fix. Suggest best practices to avoid this in the future.", 
+    hint: "Snap or Paste code to get the fix...", 
+    colorIndex: 3 
+  }
+];
 
 // Split images into batches of max size
 function chunkImages(images, maxSize = 30) {
@@ -1567,7 +1604,14 @@ function renderDualStockOutput(responseText, btn, batchLabel = '') {
 
 async function loadMagicButtons() {
   const result = await chrome.storage.local.get(['magicButtons']);
-  magicButtons = result.magicButtons || [];
+  const storedButtons = result.magicButtons || [];
+  
+  // Combine defaults with user-created ones
+  // We filter out any stored buttons that share names with defaults to avoid duplicates
+  const defaultNames = DEFAULT_MAGIC_BUTTONS.map(b => b.name);
+  const userButtons = storedButtons.filter(b => !defaultNames.includes(b.name));
+  
+  magicButtons = [...DEFAULT_MAGIC_BUTTONS, ...userButtons];
   renderMagicButtons();
 }
 
