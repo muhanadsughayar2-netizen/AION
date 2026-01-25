@@ -294,7 +294,17 @@ function setupMagicButtons() {
       const template = item.querySelector('span').textContent;
       const prompt = getPromptForTemplate(category, template);
       
+      // Look for a hint in default buttons or user buttons
+      const btnData = magicButtons.find(b => b.name === template);
+      const hint = btnData?.hint || "";
+      
       const input = document.getElementById('chatInput');
+      if (hint) {
+        input.placeholder = hint;
+      } else {
+        input.placeholder = "Ask about your screenshot...";
+      }
+      
       input.value = prompt;
       handleSend();
     });
