@@ -1576,18 +1576,16 @@ function renderMagicButtons() {
   const container = document.getElementById('magicButtons');
   if (!container) return;
   
-  // Nice color gradients for buttons
+  // Dark color gradients for readable text (no bright colors)
   const buttonColors = [
-    'linear-gradient(135deg, #667eea, #764ba2)', // Purple
-    'linear-gradient(135deg, #f093fb, #f5576c)', // Pink
-    'linear-gradient(135deg, #4facfe, #00f2fe)', // Blue
-    'linear-gradient(135deg, #43e97b, #38f9d7)', // Green
-    'linear-gradient(135deg, #fa709a, #fee140)', // Sunset
-    'linear-gradient(135deg, #a8edea, #fed6e3)', // Soft
-    'linear-gradient(135deg, #ff9a9e, #fecfef)', // Rose
-    'linear-gradient(135deg, #ffecd2, #fcb69f)', // Peach
-    'linear-gradient(135deg, #667eea, #f093fb)', // Purple-Pink
-    'linear-gradient(135deg, #11998e, #38ef7d)', // Teal
+    'linear-gradient(45deg, #8b5cf6, #ec4899)', // Purple-Pink (same as + Magic Agents)
+    'linear-gradient(45deg, #6366f1, #8b5cf6)', // Indigo-Purple
+    'linear-gradient(45deg, #ec4899, #f43f5e)', // Pink-Red
+    'linear-gradient(45deg, #8b5cf6, #6366f1)', // Purple-Indigo
+    'linear-gradient(45deg, #f43f5e, #ec4899)', // Red-Pink
+    'linear-gradient(45deg, #7c3aed, #c026d3)', // Violet-Fuchsia
+    'linear-gradient(45deg, #db2777, #9333ea)', // Pink-Purple
+    'linear-gradient(45deg, #c026d3, #7c3aed)', // Fuchsia-Violet
   ];
   
   container.innerHTML = magicButtons.map((btn, i) => {
