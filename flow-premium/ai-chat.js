@@ -312,6 +312,8 @@ function setupMagicButtons() {
       }
       
       input.value = prompt;
+      // Show thinking bubble when magic button is clicked
+      addThinkingBubble();
       handleSend();
     });
   });
