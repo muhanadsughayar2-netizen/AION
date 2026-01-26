@@ -451,6 +451,9 @@ async function handleSend() {
   addBubble(prompt, 'user');
   addThinkingBubble();
   
+  // CRITICAL: Allow browser to paint the thinking bubble before heavy processing
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  
   try {
     // Get API key
     const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
