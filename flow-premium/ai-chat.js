@@ -1758,7 +1758,12 @@ async function executeMagicButton(index) {
   for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
     const batch = batches[batchIndex];
     const batchLabel = totalBatches > 1 ? ` (${batchIndex + 1}/${totalBatches})` : '';
-    const thinkingBubble = addBubble(`${btn.emoji} ${btn.name}${batchLabel}...`, 'ai');
+    
+    // Show animated thinking bubble instead of static text
+    addThinkingBubble();
+    
+    // Allow browser to paint the thinking animation before heavy processing
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     
     try {
       const chatContext = getChatContext();
@@ -1801,17 +1806,27 @@ Respond naturally with clear, helpful analysis. Use markdown formatting (headers
       
       const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       
+      // Remove the thinking bubble
+      removeLoading();
+      
       // USER-CREATED BUTTONS: Simple Education-style output (no cards, no dual output)
       // Render as normal chat text, same style as Education mode
+      const thread = document.getElementById('chatThread');
       if (responseText && responseText.length > 10) {
+        const responseBubble = document.createElement('div');
+        responseBubble.className = 'chat-bubble ai';
         const parsedContent = marked.parse(responseText);
-        thinkingBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedContent) : parsedContent;
-        addBubbleActions(thinkingBubble, responseText);
+        responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedContent) : parsedContent;
+        thread.appendChild(responseBubble);
+        addBubbleActions(responseBubble, responseText);
       } else {
-        thinkingBubble.textContent = 'Analysis processing - please try again.';
+        const errorBubble = document.createElement('div');
+        errorBubble.className = 'chat-bubble ai';
+        errorBubble.textContent = 'Analysis processing - please try again.';
+        thread.appendChild(errorBubble);
       }
       
-      document.getElementById('chatThread').scrollTop = document.getElementById('chatThread').scrollHeight;
+      thread.scrollTop = thread.scrollHeight;
       conversationHistory.push({ role: 'model', text: responseText });
       
       // Small delay between batches to respect rate limits
@@ -1820,7 +1835,11 @@ Respond naturally with clear, helpful analysis. Use markdown formatting (headers
       }
       
     } catch (error) {
-      thinkingBubble.textContent = `✨ Magic ${batchLabel}: ` + getFriendlyErrorMessage(error.message);
+      removeLoading();
+      const errorBubble = document.createElement('div');
+      errorBubble.className = 'chat-bubble ai';
+      errorBubble.textContent = `${btn.emoji} ${btn.name}${batchLabel}: ` + getFriendlyErrorMessage(error.message);
+      document.getElementById('chatThread').appendChild(errorBubble);
     }
   }
   
