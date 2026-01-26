@@ -312,8 +312,7 @@ function setupMagicButtons() {
       }
       
       input.value = prompt;
-      // Show thinking bubble when magic button is clicked
-      addThinkingBubble();
+      // handleSend() already adds the thinking bubble, so we just call it directly
       handleSend();
     });
   });
