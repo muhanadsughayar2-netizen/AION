@@ -730,19 +730,20 @@ async function handleSend() {
 
 // Convert scary API errors into friendly, helpful messages
 async function getFriendlyErrorMessage(errorMsg) {
+  // ALWAYS show the real error from Google for debugging
+  console.log('[SnapToAI] REAL API ERROR:', errorMsg);
+  
   const lowerMsg = errorMsg.toLowerCase();
   
   // Check if user has their own API key
   const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
   const hasOwnApiKey = apiResult.geminiApiKey && apiResult.geminiApiKey.length > 20;
   
-  // Quota/Rate limit errors
-  if (lowerMsg.includes('quota') || lowerMsg.includes('rate') || lowerMsg.includes('limit') || lowerMsg.includes('429') || lowerMsg.includes('exceeded')) {
+  // Quota/Rate limit errors - ONLY for actual 429 errors
+  if (lowerMsg.includes('429') || lowerMsg.includes('resource exhausted') || lowerMsg.includes('quota exceeded')) {
     if (hasOwnApiKey) {
-      // User has their own API key - show technical error
-      return `⚠️ API rate limit reached.\n\n` +
-             `This is a temporary limit from Google. Please wait a few seconds and try again.\n\n` +
-             `If this persists, check your Google AI Studio dashboard for quota details.`;
+      // User has their own API key - show technical error with real message
+      return `⚠️ Google API Error: ${errorMsg}\n\nPlease wait a moment and try again.`;
     } else {
       // User is on shared/free tier
       return `🎯 You've used your 20 free prompts for today!\n\n` +
@@ -754,13 +755,12 @@ async function getFriendlyErrorMessage(errorMsg) {
   
   // API key errors
   if (lowerMsg.includes('api key') || lowerMsg.includes('invalid') || lowerMsg.includes('unauthorized') || lowerMsg.includes('401')) {
-    return `API key issue detected.\n\n` +
-           `Please check your API key in Settings, or get a FREE one from ai.google.dev with $300 credit!`;
+    return `API key issue: ${errorMsg}\n\nPlease check your API key in Settings.`;
   }
   
   // Network errors
   if (lowerMsg.includes('network') || lowerMsg.includes('fetch') || lowerMsg.includes('connection')) {
-    return `📡 Connection issue. Please check your internet and try again.`;
+    return `📡 Connection issue: ${errorMsg}`;
   }
   
   // Default: return original message
