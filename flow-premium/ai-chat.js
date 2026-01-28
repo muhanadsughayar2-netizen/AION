@@ -423,6 +423,9 @@ async function sendToGemini(prompt, imageDataUrls) {
   // Use multi-image prompt if multiple images
   const systemPrompt = images.length > 1 ? MULTI_IMAGE_PROMPT : SYSTEM_PROMPT;
   
+  // Wait for rate limit before making request
+  await waitForRateLimit();
+  
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
     {
@@ -547,6 +550,9 @@ async function handleSend() {
           batchParts.push({ text: batchPrompt });
           
           try {
+            // Wait for rate limit before batch request
+            await waitForRateLimit();
+            
             const batchResponse = await fetch(
               `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
               {
@@ -630,6 +636,9 @@ async function handleSend() {
     } else if (currentPageText && currentPageText.length > 800) {
       systemPrompt = SMART_SYSTEM_PROMPT;
     }
+    
+    // Wait for rate limit before streaming request
+    await waitForRateLimit();
     
     // Stream request
     const response = await fetch(
@@ -911,6 +920,9 @@ async function startEducationMode() {
         maxOutputTokens: 8192
       }
     };
+    
+    // Wait for rate limit before request
+    await waitForRateLimit();
     
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
@@ -1313,6 +1325,9 @@ Output ONLY JSON:
 {"score":58,"checks":[{"label":"Rip-Off Radar","value":"22% markup detected","impact":"-15","positive":false},{"label":"Quality Gap","value":"Material costs $4, you pay $40","impact":"-12","positive":false},{"label":"Time Risk","value":"May miss deadline","impact":"-15","positive":false}],"verdict":"Wait 2 weeks - price drops 40% after holiday.","glowColor":"red"}
 (score 0-100, glowColor: gold=80+, green=60-79, red=<60)`;
 
+    // Wait for rate limit before Verdict request
+    await waitForRateLimit();
+    
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiResult.geminiApiKey}`,
       {
@@ -1847,6 +1862,9 @@ Respond naturally with clear, helpful analysis. Use markdown formatting (headers
         parts.push({ inlineData: { mimeType: 'image/png', data: imageData } });
       });
 
+      // Wait for rate limit before Magic button request
+      await waitForRateLimit();
+      
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiResult.geminiApiKey}`,
         {
