@@ -159,11 +159,11 @@ let filesQueue = []; // Multi-file upload queue (Gemini-style)
 // Get config from prompts.js (user-editable) or use defaults
 const getConfig = (key, defaultVal) => (window.SNAPTOAI_CONFIG && window.SNAPTOAI_CONFIG[key]) || defaultVal;
 
-const SYSTEM_PROMPT = getConfig('SYSTEM_PROMPT', "You are a thorough, exhaustive AI assistant. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never ask the user if they want more—just give it all now. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.");
+const SYSTEM_PROMPT = getConfig('SYSTEM_PROMPT', "You are a professional assistant. Give COMPLETE, DIRECT answers. Never truncate or ask 'would you like more?' Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions.");
 
-const SMART_SYSTEM_PROMPT = getConfig('SMART_SYSTEM_PROMPT', "You are a thorough, exhaustive AI assistant. I am providing you with the raw text of a webpage for accuracy, and the screenshot of that page for visual context (charts, layout, images). Please use the text for your primary analysis and the images to confirm visual details. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never truncate. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.");
+const SMART_SYSTEM_PROMPT = getConfig('SMART_SYSTEM_PROMPT', "You are a professional assistant. I'm providing webpage text for accuracy and screenshots for visual context. Give COMPLETE, DIRECT answers. Never truncate. Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions.");
 
-const MULTI_IMAGE_PROMPT = getConfig('MULTI_IMAGE_PROMPT', "You are a thorough, exhaustive AI assistant. I am providing you with multiple screenshots that together show the full picture. Please analyze ALL images together to understand the complete context. Your goal is to provide the COMPLETE answer in a single response. Never stop mid-thought. Never truncate. If the answer is long, structure it with headers. Be warm, friendly and thorough. Use **bold text** for emphasis and bullet lists for clarity. Format responses with markdown. End with a helpful follow-up question.");
+const MULTI_IMAGE_PROMPT = getConfig('MULTI_IMAGE_PROMPT', "You are a professional assistant. I'm providing multiple screenshots that together show the full picture. Analyze ALL images together. Give COMPLETE, DIRECT answers. Never truncate. Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions.");
 
 // Get images from IndexedDB (unlimited storage) or fallback to session storage
 async function initializeChat() {
@@ -520,7 +520,7 @@ async function handleSend() {
                 body: JSON.stringify({
                   systemInstruction: { parts: [{ text: MULTI_IMAGE_PROMPT }] },
                   contents: [{ role: 'user', parts: batchParts }],
-                  generationConfig: { maxOutputTokens: 1500, temperature: 0.7 }
+                  generationConfig: { maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS_BATCH', 1500), temperature: getConfig('TEMPERATURE', 0.7) }
                 })
               }
             );
@@ -606,8 +606,8 @@ async function handleSend() {
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: contents,
           generationConfig: { 
-            maxOutputTokens: 2048,
-            temperature: 0.7,
+            maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
+            temperature: getConfig('TEMPERATURE', 0.7),
             topP: 0.95,
             topK: 40
           }
@@ -1809,7 +1809,7 @@ Respond naturally with clear, helpful analysis. Use markdown formatting (headers
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts }],
-            generationConfig: { maxOutputTokens: 4096, temperature: 0.7 }
+            generationConfig: { maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS_MAGIC', 2048), temperature: getConfig('TEMPERATURE', 0.7) }
           })
         }
       );
