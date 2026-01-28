@@ -1,6 +1,35 @@
 // AI Chat Window Script
 // Handles AI chat in a standalone window
 
+// ============ GLOBAL RATE LIMITER ============
+// Prevents multiple simultaneous API calls that cause rate limit errors
+let isRequestInProgress = false;
+let lastRequestTime = 0;
+const MIN_REQUEST_INTERVAL = 3000; // 3 seconds between requests minimum
+
+async function waitForRateLimit() {
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+    const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
+    await new Promise(r => setTimeout(r, waitTime));
+  }
+  lastRequestTime = Date.now();
+}
+
+function acquireRequestLock() {
+  if (isRequestInProgress) {
+    return false; // Another request is in progress
+  }
+  isRequestInProgress = true;
+  return true;
+}
+
+function releaseRequestLock() {
+  isRequestInProgress = false;
+}
+// ============ END RATE LIMITER ============
+
 // ============ IndexedDB for unlimited image storage ============
 const SNAPTOAI_DB_NAME = 'SnapToAI_ImageDB';
 const SNAPTOAI_STORE_NAME = 'images';
@@ -444,6 +473,12 @@ async function handleSend() {
   
   if (!prompt) return; // Allow text-only conversations without images
   
+  // Prevent duplicate/parallel requests that cause rate limits
+  if (!acquireRequestLock()) {
+    addBubble('Please wait for the current request to complete...', 'ai');
+    return;
+  }
+  
   input.value = '';
   sendBtn.disabled = true;
   
@@ -536,10 +571,10 @@ async function handleSend() {
             allBatchResults.push(`## Batch ${batchNum + 1}\n⚠️ Error: ${batchError.message}`);
           }
           
-          // Rate limit delay between batches (except last)
+          // Rate limit delay between batches (except last) - 6s to respect API limits
           if (batchNum < numBatches - 1) {
-            batchInfo.innerHTML = `📊 <strong>Batch ${batchNum + 1}/${numBatches} complete!</strong><br>Waiting 2s for rate limiting...`;
-            await new Promise(r => setTimeout(r, 2000));
+            batchInfo.innerHTML = `📊 <strong>Batch ${batchNum + 1}/${numBatches} complete!</strong><br>Waiting for rate limit...`;
+            await new Promise(r => setTimeout(r, 6000));
           }
         }
         
@@ -676,6 +711,8 @@ async function handleSend() {
     const friendlyMsg = await getFriendlyErrorMessage(error.message);
     const isQuotaError = error.message.toLowerCase().match(/quota|rate|limit|429|exceeded/);
     addBubble(friendlyMsg, isQuotaError ? 'ai' : 'error');
+  } finally {
+    releaseRequestLock(); // Always release the lock
   }
   
   sendBtn.disabled = false;
@@ -1745,14 +1782,22 @@ async function executeMagicButton(index) {
     input.placeholder = btn.hint;
   }
   
+  // Prevent duplicate/parallel requests that cause rate limits
+  if (!acquireRequestLock()) {
+    addBubble('Please wait for the current request to complete...', 'ai');
+    return;
+  }
+  
   if (!currentImages.length) {
     addBubble('Please capture a screenshot first!', 'ai');
+    releaseRequestLock();
     return;
   }
   
   const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
   if (!apiResult.geminiApiKey) {
     addBubble('Please add your Gemini API key first.', 'ai');
+    releaseRequestLock();
     return;
   }
   
@@ -1842,9 +1887,9 @@ Respond naturally with clear, helpful analysis. Use markdown formatting (headers
       thread.scrollTop = thread.scrollHeight;
       conversationHistory.push({ role: 'model', text: responseText });
       
-      // Small delay between batches to respect rate limits
+      // Delay between batches to respect rate limits (6s minimum)
       if (batchIndex < batches.length - 1) {
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, 6000));
       }
       
     } catch (error) {
@@ -1857,6 +1902,7 @@ Respond naturally with clear, helpful analysis. Use markdown formatting (headers
     }
   }
   
+  releaseRequestLock(); // Always release the lock when done
   if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 }
 
