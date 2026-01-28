@@ -673,7 +673,7 @@ async function handleSend() {
     
   } catch (error) {
     removeLoading();
-    const friendlyMsg = getFriendlyErrorMessage(error.message);
+    const friendlyMsg = await getFriendlyErrorMessage(error.message);
     const isQuotaError = error.message.toLowerCase().match(/quota|rate|limit|429|exceeded/);
     addBubble(friendlyMsg, isQuotaError ? 'ai' : 'error');
   }
@@ -683,15 +683,27 @@ async function handleSend() {
 }
 
 // Convert scary API errors into friendly, helpful messages
-function getFriendlyErrorMessage(errorMsg) {
+async function getFriendlyErrorMessage(errorMsg) {
   const lowerMsg = errorMsg.toLowerCase();
   
-  // Quota/Rate limit errors - most common for free tier users
+  // Check if user has their own API key
+  const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
+  const hasOwnApiKey = apiResult.geminiApiKey && apiResult.geminiApiKey.length > 20;
+  
+  // Quota/Rate limit errors
   if (lowerMsg.includes('quota') || lowerMsg.includes('rate') || lowerMsg.includes('limit') || lowerMsg.includes('429') || lowerMsg.includes('exceeded')) {
-    return `🎯 You've used your 20 free prompts for today!\n\n` +
-           `Come back tomorrow for 20 more FREE prompts.\n\n` +
-           `💡 Want unlimited prompts? Google offers $300 FREE credit for new users!\n` +
-           `👉 Sign up at ai.google.dev and get your own API key in Settings.`;
+    if (hasOwnApiKey) {
+      // User has their own API key - show technical error
+      return `⚠️ API rate limit reached.\n\n` +
+             `This is a temporary limit from Google. Please wait a few seconds and try again.\n\n` +
+             `If this persists, check your Google AI Studio dashboard for quota details.`;
+    } else {
+      // User is on shared/free tier
+      return `🎯 You've used your 20 free prompts for today!\n\n` +
+             `Come back tomorrow for 20 more FREE prompts.\n\n` +
+             `💡 Want unlimited prompts? Google offers $300 FREE credit for new users!\n` +
+             `👉 Sign up at ai.google.dev and get your own API key in Settings.`;
+    }
   }
   
   // API key errors
@@ -1338,7 +1350,8 @@ Output ONLY JSON:
     card.scrollIntoView({ behavior: 'smooth' });
     
   } catch (error) {
-    addBubble('Verdict: ' + getFriendlyErrorMessage(error.message), 'ai');
+    const errorMsg = await getFriendlyErrorMessage(error.message);
+    addBubble('Verdict: ' + errorMsg, 'ai');
     verdictBtn.classList.add('red');
   } finally {
     verdictBtn.disabled = false;
@@ -1836,9 +1849,10 @@ Respond naturally with clear, helpful analysis. Use markdown formatting (headers
       
     } catch (error) {
       removeLoading();
+      const errorMsg = await getFriendlyErrorMessage(error.message);
       const errorBubble = document.createElement('div');
       errorBubble.className = 'chat-bubble ai';
-      errorBubble.textContent = `${btn.emoji} ${btn.name}${batchLabel}: ` + getFriendlyErrorMessage(error.message);
+      errorBubble.textContent = `${btn.emoji} ${btn.name}${batchLabel}: ` + errorMsg;
       document.getElementById('chatThread').appendChild(errorBubble);
     }
   }
