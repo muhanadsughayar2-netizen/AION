@@ -1598,12 +1598,28 @@ html[dir="rtl"] .logo-word {
 .gemini-modal-content {
   background: #1e1e1e;
   border-radius: 10px;
-  padding: 20px;
+  padding: 16px;
   width: 90%;
   max-width: 320px;
+  max-height: 90vh;
+  overflow-y: auto;
   border: 1px solid rgba(0, 217, 255, 0.3);
   transform: scale(0.95);
   transition: transform 0.3s ease;
+  position: relative;
+}
+
+.gemini-modal-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.gemini-modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gemini-modal-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 217, 255, 0.2);
+  border-radius: 2px;
 }
 
 .gemini-modal.show .gemini-modal-content {
@@ -1614,7 +1630,7 @@ html[dir="rtl"] .logo-word {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .gemini-icon {
@@ -1656,16 +1672,12 @@ html[dir="rtl"] .logo-word {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.gemini-modal-content {
-  position: relative;
-}
-
 .gemini-promo-box {
   background: rgba(0, 217, 255, 0.08);
   border: 1px solid rgba(0, 217, 255, 0.3);
-  border-radius: 10px;
-  padding: 14px;
-  margin-bottom: 16px;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 12px;
 }
 
 .promo-title {
@@ -1683,7 +1695,7 @@ html[dir="rtl"] .logo-word {
 }
 
 .gemini-steps {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .steps-title {
@@ -1719,16 +1731,16 @@ html[dir="rtl"] .logo-word {
 .gemini-get-key-btn {
   display: block;
   width: 100%;
-  padding: 14px;
+  padding: 10px;
   background: linear-gradient(135deg, #00d9ff, #00b8d4);
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   color: #000;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   text-align: center;
   text-decoration: none;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   transition: all 0.2s;
 }
 
@@ -1741,7 +1753,7 @@ html[dir="rtl"] .logo-word {
   text-align: center;
   color: #888;
   font-size: 11px;
-  margin-top: 12px;
+  margin-top: 10px;
   line-height: 1.4;
 }
 
@@ -1752,13 +1764,13 @@ html[dir="rtl"] .logo-word {
 
 .gemini-input {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: #121212;
   border: 1px dashed rgba(0, 217, 255, 0.4);
   border-radius: 6px;
   color: #fff;
-  font-size: 13px;
-  margin-bottom: 14px;
+  font-size: 12px;
+  margin-bottom: 10px;
 }
 
 .gemini-input:focus {
@@ -1772,7 +1784,7 @@ html[dir="rtl"] .logo-word {
 }
 
 .gemini-compliance {
-  margin: 12px 0;
+  margin: 8px 0;
 }
 
 .compliance-label {
@@ -1814,8 +1826,8 @@ html[dir="rtl"] .logo-word {
 
 .gemini-actions {
   display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .gemini-btn-primary {
