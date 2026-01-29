@@ -72,12 +72,12 @@ CORE OPERATING RULES:
 
 Analyze the user's request now.`,
 
-  // --- TOKEN LIMITS (Optimized for Deep-Dive) ---
+  // --- TOKEN LIMITS (Balanced for Speed & Depth) ---
   
-  MAX_OUTPUT_TOKENS: 4096,             // Increased for long-form analysis
+  MAX_OUTPUT_TOKENS: 2500,             // Optimized: Enough for 2 pages, but faster than 4k
   MAX_OUTPUT_TOKENS_MAGIC: 2048,       // Magic Button responses (JSON structured)
   MAX_OUTPUT_TOKENS_VERDICT: 500,      // Detailed quick verdicts
-  MAX_OUTPUT_TOKENS_BATCH: 4096,       // Max depth for batch processing
+  MAX_OUTPUT_TOKENS_BATCH: 2500,       // Optimized for batch
 
   // --- AI CREATIVITY (Temperature: 0 = precise, 1 = creative) ---
   
