@@ -1830,6 +1830,31 @@ html[dir="rtl"] .logo-word {
   margin-bottom: 8px;
 }
 
+.gemini-usage-row {
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.gemini-usage-link {
+  display: inline-block;
+  color: rgba(0, 217, 255, 0.7);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(0, 217, 255, 0.05);
+  border: 1px solid rgba(0, 217, 255, 0.15);
+  transition: all 0.2s ease;
+}
+
+.gemini-usage-link:hover {
+  color: #00d9ff;
+  background: rgba(0, 217, 255, 0.1);
+  border-color: rgba(0, 217, 255, 0.4);
+  transform: translateY(-1px);
+}
+
 .gemini-btn-primary {
   flex: 1;
   padding: 10px;
