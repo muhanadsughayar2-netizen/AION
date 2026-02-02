@@ -1,0 +1,37 @@
+Privacy Policy for SnapToAI
+Effective Date: May 22, 2024
+Developer: Muhanad Sughayar
+Location: Amman, Jordan
+
+At SnapToAI, we are committed to protecting your privacy. This Privacy Policy outlines how we handle your data when you use the SnapToAI Chrome Extension.
+
+1. Single Purpose
+SnapToAI is designed for the single purpose of allowing users to capture screenshots of webpage content and interact with an integrated AI to analyze, summarize, or explain that visual information through a chat interface.
+
+2. Information We Collect
+To provide our service and manage your 30-day trial and subscription, we collect the following data:
+
+Personally Identifiable Information: We collect your email address (muhanadsughayar@gmail.com) to manage your account and track your trial/subscription status.
+Authentication Information: We collect secure login credentials (tokens or passwords) to allow you to access your account.
+Website Content: When you capture a screenshot, the extension processes the visible area of your browser. This image/text is sent to our AI provider for analysis.
+Personal Communications: We collect the text of the chat messages you send to the AI to generate responses and maintain your interaction history.
+3. How We Use Your Data
+We use your data strictly for the following purposes:
+
+To provide the core functionality of screenshot analysis and AI chatting.
+To manage your account and identify your trial/subscription status.
+To improve the accuracy and performance of the AI responses.
+4. Data Sharing and Third Parties
+Payments: All financial transactions are handled securely by LemonSqueezy, our Merchant of Record. We do not see, collect, or store your credit card or financial details.
+AI Processing: Your captured screenshots and chat text are sent to a third-party AI provider (such as OpenAI or Google Gemini) via an encrypted API solely to generate a response.
+No Sale of Data: We never sell, rent, or trade your personal data to third parties for marketing or advertising purposes.
+5. Data Retention and Deletion
+We retain your information only as long as necessary to provide the service. You may request the deletion of your account and all associated data at any time by contacting us at the email provided below.
+
+6. Security
+We implement industry-standard security measures, including HTTPS encryption, to protect your data during transmission and processing.
+
+7. Contact Us
+If you have any questions about this Privacy Policy or your data, please contact: Muhanad Sughayar
+Amman, Jordan
+Email: muhanadsughayar@gmail.com

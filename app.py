@@ -1108,6 +1108,18 @@ def robots():
 def not_found(e):
     return serve_file(os.path.join(BASE_DIR, 'index.html'))
 
+@app.route('/privacy-policy')
+def privacy_policy_route():
+    mime_type = 'text/html'
+    try:
+        with open('templates/privacy-policy.html', 'r', encoding='utf-8') as f:
+            content = f.read()
+        response = Response(content, mimetype=mime_type)
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        return response
+    except FileNotFoundError:
+        return serve_file(os.path.join(BASE_DIR, 'index.html'))
+
 if __name__ == '__main__':
     print('✅ Landing page live at: 0.0.0.0:5000')
     print('🌍 54 languages available:')
