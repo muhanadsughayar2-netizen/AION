@@ -85,7 +85,9 @@
 
     .free-badge {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
       margin-bottom: 20px;
     }
 
@@ -101,6 +103,14 @@
       font-weight: 600;
       color: var(--primary);
       animation: pulse 2s infinite;
+    }
+
+    .free-badge .gemini-credit {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(16, 185, 129, 0.15));
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #10b981;
+      font-size: 12px;
+      padding: 6px 14px;
     }
 
     @keyframes pulse {
@@ -599,7 +609,8 @@
 
     <div class="card">
       <div class="free-badge">
-        <span>🎁 20 FREE PROMPTS INCLUDED</span>
+        <span>🎁 GET 20 FREE DAILY PROMPTS</span>
+        <span class="gemini-credit">🎁 New to Gemini? Get $300 FREE credits for 90 days</span>
       </div>
 
       <div class="header">
