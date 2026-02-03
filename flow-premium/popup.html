@@ -19,132 +19,63 @@
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <div class="logo"><span class="logo-word">Snap</span> <span class="logo-word">To</span> <span class="logo-word">AI</span></div>
+      <div class="logo">
+        <div class="logo-icon-wrapper">📸</div>
+        <span class="logo-text">Snap<span class="logo-highlight">ToAI</span></span>
+      </div>
       <div class="header-right">
-        <div class="counter">
-          <span id="snapCount">0</span> / <span id="snapMax">9</span>
-        </div>
-        <!-- Help/Tutorials Button -->
         <div class="help-dropdown-container">
-          <button id="helpBtn" class="help-btn" title="Video Tutorials">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00d9ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 18h6"/>
-              <path d="M10 22h4"/>
-              <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
-              <path d="M12 2v1"/>
-            </svg>
-          </button>
+          <button id="helpBtn" class="help-btn" title="Tutorials">?</button>
           <div id="helpDropdown" class="help-dropdown">
-            <div class="help-dropdown-title">Video Tutorials</div>
-            <a href="#" class="help-item" data-video="snap">
-              <span class="help-icon">📸</span> How to Snap
-            </a>
-            <a href="#" class="help-item" data-video="snip">
-              <span class="help-icon">✂️</span> How to Snip
-            </a>
-            <a href="#" class="help-item" data-video="fullpage">
-              <span class="help-icon">📄</span> Full Page Capture
-            </a>
-            <a href="#" class="help-item" data-video="ai">
-              <span class="help-icon">✨</span> AI Chat Features
-            </a>
-            <a href="#" class="help-item" data-video="annotate">
-              <span class="help-icon">🖊️</span> Annotate & Edit
-            </a>
-            <a href="#" class="help-item" data-video="upload">
-              <span class="help-icon">📤</span> Upload to AI
-            </a>
-            <div class="help-dropdown-footer">
-              <a href="#" class="help-item" data-video="all">View All Tutorials</a>
-            </div>
+            <div class="help-dropdown-title">Tutorials</div>
+            <a href="#" class="help-item" data-video="snap">📸 How to Snap</a>
+            <a href="#" class="help-item" data-video="snip">✂️ How to Snip</a>
+            <a href="#" class="help-item" data-video="fullpage">📄 Full Page</a>
+            <a href="#" class="help-item" data-video="ai">✨ AI Chat</a>
           </div>
         </div>
-        <button id="upgradeBtn" class="upgrade-btn" style="visibility: hidden;">...</button>
       </div>
     </div>
 
-    <!-- GLOBAL COUNTER - Right under logo -->
-    <div id="globalCounterContainer" style="
-      text-align: center;
-      margin: 4px 0 10px 0;
-      font-size: 13px;
-      color: rgba(0, 255, 255, 0.7);
-    ">
-      Snap it. Snip it. Ship it to ANY AI. 🔥
-      <br>
-      <div id="globalCounter" style="margin-top: 6px; min-height: 24px;">
-        Loading counter...
-      </div>
+    <!-- Main Instructions (Loom Style) -->
+    <div class="loom-hero">
+      <h1 class="loom-title">Stop Typing. Start Snapping.</h1>
+      <p class="loom-subtitle">Capture any visual and Ship it to ANY AI instantly.</p>
     </div>
-    <!-- END GLOBAL COUNTER -->
 
-    <!-- Triple Orb Buttons: Snap, Snip & Full Page -->
+    <!-- Primary Action: Triple Orb Buttons -->
     <div class="orb-triple-container">
       <div class="orb-wrapper">
-        <span class="orb-label">Snap</span>
         <button id="orbButton" class="orb" title="Capture full screenshot">
-          <div class="orb-glow"></div>
-          <div class="orb-inner">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
+          <div class="orb-inner">📸</div>
         </button>
+        <span class="orb-label">Snap</span>
       </div>
       <div class="orb-wrapper">
-        <span class="orb-label">Snip</span>
         <button id="snipButton" class="orb snip-orb" title="Crop and snip areas">
-          <div class="orb-glow"></div>
-          <div class="orb-inner">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="6" cy="6" r="3" stroke="currentColor" stroke-width="2"/>
-              <circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="2"/>
-              <line x1="20" y1="4" x2="8.12" y2="15.88" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="14.47" y1="14.48" x2="20" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="8.12" y1="8.12" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </div>
+          <div class="orb-inner">✂️</div>
         </button>
+        <span class="orb-label">Snip</span>
       </div>
       <div class="orb-wrapper">
-        <span class="orb-label">Full Page</span>
         <button id="fullPageButton" class="orb full-page-orb" title="Capture entire page">
-          <div class="orb-glow"></div>
-          <div class="orb-inner">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
-              <line x1="9" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="9" y1="13" x2="15" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="9" y1="17" x2="15" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </div>
+          <div class="orb-inner">📄</div>
         </button>
+        <span class="orb-label">Full Page</span>
       </div>
       <div class="orb-wrapper">
-        <span class="orb-label">AI</span>
-        <button id="directAiButton" class="orb ai-orb" title="Open AI Chat (with selected images if any)">
-          <div class="orb-glow"></div>
-          <div class="orb-inner">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <polygon points="12,2 15,9 22,9 16.5,14 18.5,21 12,17 5.5,21 7.5,14 2,9 9,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
+        <button id="directAiButton" class="orb ai-orb" title="Open AI Chat">
+          <div class="orb-inner">✨</div>
         </button>
+        <span class="orb-label">AI Chat</span>
       </div>
     </div>
 
-    <!-- Setup Link (subtle, not dominant) -->
-    <div class="setup-link-container">
-      <button id="aiButton" class="setup-text-link" title="Configure Gemini API Key">
-        ⚙️ API Setup
-      </button>
-    </div>
-
-    <!-- Status Line with Activity Indicator (STICKY) -->
+    <!-- Status Row (Subtle) -->
     <div class="status-row">
       <span class="status-dot" id="statusDot"></span>
-      <span class="status" id="status" data-i18n="flowReady">SnapToAI: Ready</span>
+      <span class="status" id="status">Ready to snap</span>
+      <span class="counter" id="snapCountWrapper"><span id="snapCount">0</span>/9</span>
     </div>
 
     <!-- Full Page Capture Overlay -->
