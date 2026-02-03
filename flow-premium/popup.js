@@ -809,8 +809,6 @@ function setupEventListeners() {
     if (e.key === 'Escape') closePreview();
   });
 }
-    if (e.key === 'Escape') closePreview();
-  });
   
   // RE-EDIT Full Page button
   const reeditBtn = document.getElementById('reeditFullPageBtn');
@@ -1043,10 +1041,12 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
     );
     
     // Hide overlay and update UI
-    overlay.style.display = 'none';
-    fullPageButton.disabled = false;
-    status.textContent = chrome.i18n.getMessage('statusFullPageCaptured') || `Full page: ${screenshots.length} pages ready to edit`;
-    status.className = 'status active';
+    if (overlay) overlay.style.display = 'none';
+    if (fullPageButton) fullPageButton.disabled = false;
+    if (status) {
+        status.textContent = chrome.i18n.getMessage('statusFullPageCaptured') || `Full page: ${screenshots.length} pages ready to edit`;
+        status.className = 'status active';
+    }
     
     setTimeout(() => {
       status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
