@@ -254,3 +254,49 @@ body {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* Pin Extension Tip */
+.pin-tip {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 12px;
+    padding: 16px 20px;
+    text-align: center;
+    margin-top: 8px;
+}
+
+.pin-tip-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #ffffff;
+    margin-bottom: 10px;
+}
+
+.pin-tip-text {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 8px;
+}
+
+.pin-tip-text .star {
+    color: #facc15;
+}
+
+.pin-tip-text .green {
+    color: #22c55e;
+    font-weight: 600;
+}
+
+.pin-tip-text .pin {
+    font-size: 12px;
+}
+
+.pin-tip-text .purple {
+    color: #a78bfa;
+    font-weight: 600;
+}
+
+.pin-tip-done {
+    font-size: 12px;
+    color: #64748b;
+}
