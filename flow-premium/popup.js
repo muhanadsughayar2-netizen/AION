@@ -768,35 +768,47 @@ function translateUI() {
   }
 }
 
-// Setup event listeners
 function setupEventListeners() {
-  // Orb button click (Snap - full screenshot)
-  document.getElementById('orbButton').addEventListener('click', handleOrbClick);
+  // Primary capture buttons
+  const orbButton = document.getElementById('orbButton');
+  const snipButton = document.getElementById('snipButton');
+  const fullPageButton = document.getElementById('fullPageButton');
+  const directAiButton = document.getElementById('directAiButton');
+  const clearButton = document.getElementById('clearButton');
   
-  // Snip button click (Snip - open cropping tool)
-  document.getElementById('snipButton').addEventListener('click', handleSnipClick);
+  if (orbButton) orbButton.addEventListener('click', handleOrbClick);
+  if (snipButton) snipButton.addEventListener('click', handleSnipClick);
+  if (fullPageButton) fullPageButton.addEventListener('click', handleFullPageClick);
+  if (directAiButton) directAiButton.addEventListener('click', openAiChat);
+  if (clearButton) clearButton.addEventListener('click', handleClear);
   
-  // Full Page button click (Full Page - scroll and capture entire page)
-  document.getElementById('fullPageButton').addEventListener('click', handleFullPageClick);
-  
-  // Stop Full Page button click
-  document.getElementById('stopFullPageBtn').addEventListener('click', handleStopFullPage);
-  
-  // Clear button
-  document.getElementById('clearButton').addEventListener('click', handleClear);
-  
-  // Selection controls
-  document.getElementById('selectAllBtn').addEventListener('click', handleSelectAll);
-  document.getElementById('copySelectedBtn').addEventListener('click', handleCopySelected);
-  document.getElementById('downloadSelectedBtn').addEventListener('click', handleDownloadSelected);
-  document.getElementById('exportPdfBtn').addEventListener('click', handleExportPDFDirect);
-  
-  // Preview modal
-  document.getElementById('previewClose').addEventListener('click', closePreview);
-  document.getElementById('previewModal').addEventListener('click', (e) => {
+  // Existing functionality for other UI elements
+  const stopFullPageBtn = document.getElementById('stopFullPageBtn');
+  const helpBtn = document.getElementById('helpBtn');
+  const selectAllBtn = document.getElementById('selectAllBtn');
+  const copySelectedBtn = document.getElementById('copySelectedBtn');
+  const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
+  const exportPdfBtn = document.getElementById('exportPdfBtn');
+  const previewClose = document.getElementById('previewClose');
+  const reeditFullPageBtn = document.getElementById('reeditFullPageBtn');
+
+  if (stopFullPageBtn) stopFullPageBtn.addEventListener('click', handleStopFullPage);
+  if (helpBtn) helpBtn.addEventListener('click', toggleHelpDropdown);
+  if (selectAllBtn) selectAllBtn.addEventListener('click', handleSelectAll);
+  if (copySelectedBtn) copySelectedBtn.addEventListener('click', handleCopySelected);
+  if (downloadSelectedBtn) downloadSelectedBtn.addEventListener('click', handleDownloadSelected);
+  if (exportPdfBtn) exportPdfBtn.addEventListener('click', handleExportPDFDirect);
+  if (previewClose) previewClose.addEventListener('click', closePreview);
+  if (reeditFullPageBtn) reeditFullPageBtn.addEventListener('click', handleReeditFullPage);
+
+  document.getElementById('previewModal')?.addEventListener('click', (e) => {
     if (e.target.id === 'previewModal') closePreview();
   });
+
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closePreview();
+  });
+}
     if (e.key === 'Escape') closePreview();
   });
   
