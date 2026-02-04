@@ -1700,6 +1700,16 @@ async function loadMagicButtons() {
   renderMagicButtons();
 }
 
+// Escape HTML special characters to prevent XSS and broken HTML
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+}
+
 function renderMagicButtons() {
   const container = document.getElementById('magicButtons');
   if (!container) return;
@@ -1719,9 +1729,14 @@ function renderMagicButtons() {
   container.innerHTML = magicButtons.map((btn, i) => {
     const colorIndex = (btn.colorIndex !== undefined) ? btn.colorIndex : (i % buttonColors.length);
     const bgColor = buttonColors[colorIndex];
+    // Escape title to prevent broken HTML from quotes in user prompts
+    const safeTitle = escapeHtml(btn.hint || btn.prompt);
+    const safeName = escapeHtml(btn.name);
+    // Also escape emoji in case of storage tampering
+    const safeEmoji = escapeHtml(btn.emoji);
     return `
-    <button class="magic-btn" data-index="${i}" title="${btn.hint || btn.prompt}" style="background: ${bgColor}; border: none;">
-      ${btn.emoji} ${btn.name}
+    <button class="magic-btn" data-index="${i}" title="${safeTitle}" style="background: ${bgColor}; border: none;">
+      ${safeEmoji} ${safeName}
       <span class="edit-magic" data-edit="${i}">✎</span>
       <span class="delete-magic" data-delete="${i}">✕</span>
     </button>
