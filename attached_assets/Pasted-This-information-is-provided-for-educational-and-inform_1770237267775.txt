@@ -1,0 +1,70 @@
+This information is provided for **educational and informational context only** regarding **SaaS monetization and payment gateway integration**.
+
+To get Replit AI to execute this transition perfectly, you need to provide it with a **"High-Context Prompt."** This tells the AI not just *what* to do, but *how* it fits into your existing architecture.
+
+Below is the exhaustive, master-level prompt you should copy and paste into your Replit AI chat.
+
+***
+
+### ### 1. The Master Replit AI Prompt
+**Copy and paste the text below into your Replit AI Chat:**
+
+> "I am building **SnapToAI**, a Chrome Extension and Web App. I am moving my payment system from Gumroad to **LemonSqueezy** because I need a Merchant of Record that works in Jordan. 
+>
+> **Current Setup:** I have the Chrome Extension files (manifest.json, popup.html/js, options.html/js) and a backend on Replit.
+>
+> **Task:** Please help me refactor the code to integrate LemonSqueezy License Key validation. 
+>
+> **Requirements:**
+> 1. **UI Update:** Add a 'License Key' input field and an 'Activate' button in the `options.html` (or settings) page.
+> 2. **Storage:** Use `chrome.storage.local` to securely save the License Key and the 'Pro Status' (true/false).
+> 3. **Logic:** Create a JavaScript function called `validateLicense(key)` that:
+>    - Sends a POST request to `https://api.lemonsqueezy.com/v1/licenses/validate`.
+>    - Handles the JSON response to check if `json.valid` is true and `json.meta.status` is 'active'.
+> 4. **Feature Gating:** In the main extension logic, add a check: if the user is not 'Pro', limit them to 5 'Stacks' per day. If 'Pro', allow unlimited.
+> 5. **Checkout Link:** Add a button labeled 'Upgrade to Pro' that opens my LemonSqueezy Checkout URL in a new tab.
+>
+> **Please provide the updated code for the Options page and the background/content script logic to enforce these limits.**"
+
+***
+
+### ### 2. First Principles: The "Why" Behind This Prompt
+The reason we structure the prompt this way is to ensure **State Management**. 
+*   **The Problem:** Most AI tools will just give you a snippet of code. 
+*   **The Solution:** By telling Replit to use `chrome.storage.local`, you ensure that once a user enters their key, they don't have to re-enter it every time they open the browser. 
+*   **The "Gatekeeper" Logic:** We aren't just adding a payment button; we are creating a **Feature Gate**. This is what turns your "Project" into a "Business."
+
+### ### 3. Technical Mechanics: How the Validation Works
+When Replit generates this code, it will likely use the **LemonSqueezy License API**. Here is the technical flow it will implement:
+1.  **The Fetch Request:** Your extension will send the user's key to LemonSqueezy.
+2.  **The API Key:** You will need a "Public API Key" from your LemonSqueezy dashboard (Settings > API). **Note:** Never put your *Secret* API key in the extension code; use the *License Validation* endpoint which is designed for this.
+3.  **The Response:**
+    *   `valid: true` + `status: active` = **Green Light** (Unlock features).
+    *   `valid: false` or `status: disabled` = **Red Light** (Show the "Upgrade" button).
+
+### ### 4. Edge Cases: What Could Go Wrong?
+*   **CORS Errors:** Chrome Extensions sometimes block requests to external APIs. Your Replit AI might need to add permissions to your `manifest.json` under `"host_permissions": ["https://api.lemonsqueezy.com/*"]`.
+*   **Offline Access:** If the user is on a plane with no Wi-Fi, the API check will fail. 
+    *   **Solution:** The code should check the "last validated" timestamp. If they were validated within the last 7 days, let them keep using Pro features even if they are offline.
+*   **Key Sharing:** One person buys a key and gives it to 10 friends.
+    *   **Solution:** LemonSqueezy allows you to set a **"License Limit"** (e.g., 1 or 2 devices). The API will automatically return `false` if too many people use the same key.
+
+### ### 5. Actionable Steps: Your Next Move
+1.  **Open Replit:** Go to your SnapToAI project.
+2.  **Paste the Prompt:** Use the prompt I provided above in the AI chat.
+3.  **Get the API Link:** Go to your LemonSqueezy Dashboard > Products > [Your Product] and copy the **Checkout Link**.
+4.  **Insert the Link:** When Replit gives you the code, replace `"YOUR_LEMON_SQUEEZY_URL"` with your actual link.
+5.  **Test:** Buy your own product using a "Test Mode" card in LemonSqueezy to make sure the license key unlocks the extension.
+
+### ### 6. Deep-Dive: The "Cup of Coffee" Strategy
+Since you are in Jordan and targeting a global audience, remember that **$4.99** is the "Sweet Spot." 
+*   In Jordan, $4.99 is a meal. 
+*   In New York or London, $4.99 is less than a Starbucks Latte. 
+*   **Strategy:** Use this in your marketing. "For the price of one coffee, get AI-powered investment vision for a whole month." This psychological framing converts much higher than a flat "Subscription" fee.
+
+### ### 7. Visual Structure: The New Workflow
+*   **User Flow:** Install Extension -> Reach Limit (5 Stacks) -> Click "Upgrade" -> Pay on LemonSqueezy -> Receive Email Key -> Paste Key in Extension -> **UNLOCKED.**
+
+This is a professional, enterprise-grade workflow that will satisfy your investors and provide a smooth experience for your users.
+
+**Would you like me to explain how to set up the "Webhook" in Replit so your database automatically knows when someone cancels their subscription?**

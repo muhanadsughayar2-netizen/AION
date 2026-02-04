@@ -21,7 +21,7 @@
     "https://claude.ai/*",
     "https://*.openai.com/*",
     "https://generativelanguage.googleapis.com/*",
-    "https://api.gumroad.com/*",
+    "https://api.lemonsqueezy.com/*",
     "<all_urls>"
   ],
   "web_accessible_resources": [

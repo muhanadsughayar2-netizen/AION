@@ -102,11 +102,13 @@ window.SnapToAI_TEST = ENABLE_TEST_MODE ? {
   }
 } : { disabled: () => console.log('[SnapToAI] Test mode disabled in production.') };
 // =========================================== END TEST MODE
-const GUMROAD_PRODUCT = 'YOUR_PRODUCT_PERMALINK'; // Replace with your Gumroad product permalink after setup
-const CHECKOUT_MONTHLY = 'https://gumroad.com/l/YOUR_MONTHLY_LINK'; // Replace with your Gumroad link
-const CHECKOUT_YEARLY = 'https://gumroad.com/l/YOUR_YEARLY_LINK';   // Replace with your Gumroad link
+// LemonSqueezy Configuration
+const LEMONSQUEEZY_STORE_ID = 'YOUR_STORE_ID'; // Replace with your LemonSqueezy store ID
+const CHECKOUT_MONTHLY = 'YOUR_MONTHLY_CHECKOUT_URL'; // Replace with your LemonSqueezy monthly checkout URL
+const CHECKOUT_YEARLY = 'YOUR_YEARLY_CHECKOUT_URL';   // Replace with your LemonSqueezy yearly checkout URL
 const VERIFY_INTERVAL_HOURS = 24;
 const GRACE_PERIOD_HOURS = 48;
+const OFFLINE_GRACE_DAYS = 7; // Allow 7 days offline access for validated licenses
 
 // Server URL for trial tracking (replace with your production URL)
 const TRIAL_SERVER_URL = 'https://snaptoai.com/api/trial';
@@ -349,7 +351,7 @@ async function checkSubscription() {
     
     if (now > nextVerify) {
       // Try to re-verify silently
-      const result = await verifyLicenseWithGumroad(licenseKey);
+      const result = await verifyLicenseWithLemonSqueezy(licenseKey);
       if (!result.valid) {
         // Start grace period if not already
         if (!graceUntil) {
@@ -401,7 +403,81 @@ async function checkSubscription() {
   };
 }
 
-// Verify license with our server (server calls Gumroad and updates database)
+// Validate license directly with LemonSqueezy API (client-side validation)
+async function verifyLicenseWithLemonSqueezy(licenseKey) {
+  try {
+    // Check offline grace period first
+    const { lastVerified, offlineGraceUntil } = await chrome.storage.local.get(['lastVerified', 'offlineGraceUntil']);
+    const now = Date.now();
+    
+    // Try LemonSqueezy API validation
+    const response = await fetch('https://api.lemonsqueezy.com/v1/licenses/validate', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        license_key: licenseKey
+      })
+    });
+    
+    if (!response.ok) {
+      // Network error - check offline grace period
+      if (lastVerified && offlineGraceUntil && now < offlineGraceUntil) {
+        console.log('[SnapToAI] Network error, using offline grace period');
+        return { valid: true, offline: true };
+      }
+      return { valid: false, reason: 'network_error' };
+    }
+    
+    const data = await response.json();
+    
+    // Check if license is valid and active
+    if (data.valid === true && data.meta && data.meta.status === 'active') {
+      // Determine plan type from variant name or product
+      let planType = 'monthly';
+      if (data.meta.variant_name) {
+        planType = data.meta.variant_name.toLowerCase().includes('year') ? 'yearly' : 'monthly';
+      }
+      
+      // Update local storage with validation info
+      const newOfflineGraceUntil = now + (OFFLINE_GRACE_DAYS * 24 * 60 * 60 * 1000);
+      await chrome.storage.local.set({
+        subscriptionActive: true,
+        planType: planType,
+        lastVerified: now,
+        offlineGraceUntil: newOfflineGraceUntil,
+        graceUntil: null,
+        licenseInstance: data.instance?.id || null,
+        licenseStatus: data.meta.status
+      });
+      
+      console.log('[SnapToAI] LemonSqueezy license valid! Plan:', planType, 'Status:', data.meta.status);
+      return { valid: true, planType, status: data.meta.status };
+    }
+    
+    // License is invalid or inactive
+    console.log('[SnapToAI] License invalid or inactive:', data.meta?.status || 'unknown');
+    return { valid: false, reason: data.meta?.status || 'invalid' };
+    
+  } catch (error) {
+    console.log('[SnapToAI] LemonSqueezy validation error:', error.message);
+    
+    // Check offline grace period on network error
+    const { lastVerified, offlineGraceUntil } = await chrome.storage.local.get(['lastVerified', 'offlineGraceUntil']);
+    const now = Date.now();
+    
+    if (lastVerified && offlineGraceUntil && now < offlineGraceUntil) {
+      console.log('[SnapToAI] Offline mode - grace period valid for', Math.ceil((offlineGraceUntil - now) / 86400000), 'more days');
+      return { valid: true, offline: true };
+    }
+    
+    return { valid: false, reason: 'network_error' };
+  }
+}
+
+// Verify license with our server (server calls LemonSqueezy and updates database)
 async function verifyLicenseWithServer(licenseKey) {
   try {
     // Get user hash to link license to user
