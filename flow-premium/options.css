@@ -228,6 +228,142 @@ footer a:hover {
   text-decoration: underline;
 }
 
+/* Subscription / License Section */
+.subscription-status {
+  margin-bottom: 16px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.status-badge.trial {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.status-badge.pro {
+  background: rgba(40, 200, 64, 0.2);
+  color: #28c840;
+  border: 1px solid rgba(40, 200, 64, 0.3);
+}
+
+.status-badge.expired {
+  background: rgba(255, 95, 87, 0.2);
+  color: #ff5f57;
+  border: 1px solid rgba(255, 95, 87, 0.3);
+}
+
+.license-input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.license-input-group input {
+  flex: 1;
+}
+
+.activate-btn {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #28c840 0%, #1e8e3e 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.activate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(40, 200, 64, 0.4);
+}
+
+.activate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.license-info {
+  background: rgba(40, 200, 64, 0.1);
+  border: 1px solid rgba(40, 200, 64, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.license-info p {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.license-info p:last-of-type {
+  margin-bottom: 12px;
+}
+
+.upgrade-section {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.upgrade-text {
+  color: #888;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.pricing-options {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.upgrade-btn {
+  padding: 14px 24px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.upgrade-btn.monthly {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.upgrade-btn.monthly:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.upgrade-btn.yearly {
+  background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+  color: #fff;
+}
+
+.upgrade-btn.yearly:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4);
+}
+
+.savings {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
 @media (max-width: 500px) {
   .container {
     padding: 20px 15px;
@@ -238,6 +374,14 @@ footer a:hover {
   }
   
   .actions {
+    flex-direction: column;
+  }
+  
+  .license-input-group {
+    flex-direction: column;
+  }
+  
+  .pricing-options {
     flex-direction: column;
   }
 }

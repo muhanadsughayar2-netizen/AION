@@ -236,12 +236,12 @@ def db_status():
     return jsonify(result)
 
 # ============================================
-# GUMROAD LICENSE VERIFICATION
+# LEMONSQUEEZY LICENSE VERIFICATION
 # ============================================
 
 @app.route('/api/verify-license', methods=['POST', 'OPTIONS'])
 def verify_license():
-    """Verify a Gumroad license key and mark user as paid"""
+    """Verify a LemonSqueezy license key and mark user as paid"""
     if request.method == 'OPTIONS':
         response = Response('', status=200)
         response.headers['Access-Control-Allow-Origin'] = '*'
@@ -256,31 +256,35 @@ def verify_license():
     if not license_key or not user_hash:
         return jsonify({'success': False, 'error': 'Missing license key or user hash'}), 400
     
-    # Verify with Gumroad API
+    # Verify with LemonSqueezy API (public validation endpoint - no auth required)
     try:
-        gumroad_response = requests.post(
-            'https://api.gumroad.com/v2/licenses/verify',
-            data={
-                'product_id': os.environ.get('GUMROAD_PRODUCT_ID', ''),
+        ls_response = requests.post(
+            'https://api.lemonsqueezy.com/v1/licenses/validate',
+            json={
                 'license_key': license_key
+            },
+            headers={
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
             },
             timeout=10
         )
         
-        gumroad_data = gumroad_response.json()
+        ls_data = ls_response.json()
         
-        if not gumroad_data.get('success'):
+        # Check if license is valid and active
+        if not ls_data.get('valid') or not ls_data.get('meta', {}).get('status') == 'active':
             return jsonify({
                 'success': False,
-                'error': 'Invalid license key'
+                'error': 'Invalid or inactive license key'
             }), 400
         
-        # License is valid - extract details
-        purchase = gumroad_data.get('purchase', {})
-        product_name = purchase.get('product_name', '').lower()
+        # License is valid - extract details from meta
+        meta = ls_data.get('meta', {})
+        variant_name = (meta.get('variant_name') or '').lower()
         
-        # Determine plan type from product name
-        if 'year' in product_name or 'annual' in product_name:
+        # Determine plan type from variant name
+        if 'year' in variant_name or 'annual' in variant_name:
             plan_type = 'yearly'
             expires_ms = int(datetime.now().timestamp() * 1000) + (365 * 24 * 60 * 60 * 1000)
         else:
@@ -321,11 +325,12 @@ def verify_license():
             'isPaid': True,
             'planType': plan_type,
             'expiresAt': expires_ms,
-            'email': purchase.get('email', '')
+            'licenseStatus': meta.get('status'),
+            'productName': meta.get('product_name', '')
         })
         
     except requests.exceptions.Timeout:
-        return jsonify({'success': False, 'error': 'Gumroad verification timed out'}), 504
+        return jsonify({'success': False, 'error': 'LemonSqueezy verification timed out'}), 504
     except Exception as e:
         print(f'License verification error: {e}')
         return jsonify({'success': False, 'error': 'Verification failed'}), 500
