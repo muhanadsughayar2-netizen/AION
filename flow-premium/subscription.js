@@ -1,5 +1,5 @@
 // SnapToAI Subscription Manager
-// Handles trial period, Gumroad license verification, and subscription status
+// Handles trial period, LemonSqueezy license verification, and subscription status
 
 const TRIAL_DAYS = 30;
 
@@ -524,7 +524,7 @@ async function saveLicenseKey(licenseKey) {
     return { success: false, error: 'Invalid license key format' };
   }
   
-  // Verify via our server (which calls Gumroad and updates database)
+  // Verify via our server (which calls LemonSqueezy and updates database)
   const result = await verifyLicenseWithServer(licenseKey.trim());
   
   if (result.valid) {
@@ -563,7 +563,7 @@ async function getLicenseKey() {
   return null;
 }
 
-// Open Gumroad checkout
+// Open LemonSqueezy checkout
 function openCheckout(plan = 'yearly') {
   const url = plan === 'monthly' ? CHECKOUT_MONTHLY : CHECKOUT_YEARLY;
   chrome.tabs.create({ url });

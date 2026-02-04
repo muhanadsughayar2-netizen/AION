@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const unlockBtn = document.getElementById('unlockProBtn');
   if (unlockBtn) {
     unlockBtn.addEventListener('click', () => {
-      window.open('https://gumroad.com/l/YOUR_YEARLY_LINK', '_blank');
+      window.open('YOUR_YEARLY_CHECKOUT_URL', '_blank');
     });
   }
 });
