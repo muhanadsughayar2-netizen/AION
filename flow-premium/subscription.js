@@ -103,9 +103,8 @@ window.SnapToAI_TEST = ENABLE_TEST_MODE ? {
 } : { disabled: () => console.log('[SnapToAI] Test mode disabled in production.') };
 // =========================================== END TEST MODE
 // LemonSqueezy Configuration
-const LEMONSQUEEZY_STORE_ID = 'YOUR_STORE_ID'; // Replace with your LemonSqueezy store ID
-const CHECKOUT_MONTHLY = 'YOUR_MONTHLY_CHECKOUT_URL'; // Replace with your LemonSqueezy monthly checkout URL
-const CHECKOUT_YEARLY = 'YOUR_YEARLY_CHECKOUT_URL';   // Replace with your LemonSqueezy yearly checkout URL
+const CHECKOUT_MONTHLY = 'https://snaptoai.lemonsqueezy.com/buy/monthly';
+const CHECKOUT_YEARLY = 'https://snaptoai.lemonsqueezy.com/buy/yearly';
 const VERIFY_INTERVAL_HOURS = 24;
 const GRACE_PERIOD_HOURS = 48;
 const OFFLINE_GRACE_DAYS = 7; // Allow 7 days offline access for validated licenses

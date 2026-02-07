@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const unlockBtn = document.getElementById('unlockProBtn');
   if (unlockBtn) {
     unlockBtn.addEventListener('click', () => {
-      window.open('YOUR_YEARLY_CHECKOUT_URL', '_blank');
+      window.open('https://snaptoai.lemonsqueezy.com/buy/yearly', '_blank');
     });
   }
 });

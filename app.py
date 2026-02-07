@@ -70,7 +70,7 @@ def init_db():
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS extension_version VARCHAR(20)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS last_active BIGINT')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0')
-        # Gumroad subscription columns
+        # LemonSqueezy subscription columns
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS license_key VARCHAR(64)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS plan_type VARCHAR(20)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS subscription_expires BIGINT')
@@ -235,6 +235,19 @@ def db_status():
     
     return jsonify(result)
 
+@app.route('/api/ls-status')
+def ls_status():
+    """Check if LemonSqueezy API key is configured"""
+    has_key = bool(os.environ.get('LEMON_SQUEEZY_API_KEY'))
+    return jsonify({
+        'configured': has_key,
+        'provider': 'LemonSqueezy',
+        'endpoints': {
+            'validate': '/api/verify-license',
+            'trial': '/api/trial'
+        }
+    })
+
 # ============================================
 # LEMONSQUEEZY LICENSE VERIFICATION
 # ============================================
@@ -254,9 +267,17 @@ def verify_license():
     user_hash = data.get('userHash', '').strip()
     
     if not license_key or not user_hash:
-        return jsonify({'success': False, 'error': 'Missing license key or user hash'}), 400
+        resp = jsonify({'success': False, 'error': 'Missing license key or user hash'})
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp, 400
     
-    # Verify with LemonSqueezy API (public validation endpoint - no auth required)
+    ls_api_key = os.environ.get('LEMON_SQUEEZY_API_KEY')
+    if not ls_api_key:
+        print('❌ LEMON_SQUEEZY_API_KEY not set in environment')
+        resp = jsonify({'success': False, 'error': 'Server configuration error'})
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp, 500
+    
     try:
         ls_response = requests.post(
             'https://api.lemonsqueezy.com/v1/licenses/validate',
@@ -265,22 +286,30 @@ def verify_license():
             },
             headers={
                 'Accept': 'application/json',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {ls_api_key}'
             },
             timeout=10
         )
         
+        print(f'🔍 LemonSqueezy response status: {ls_response.status_code}')
         ls_data = ls_response.json()
+        print(f'🔍 LemonSqueezy response: valid={ls_data.get("valid")}, meta={ls_data.get("meta", {})}')
         
-        # Check if license is valid and active
-        if not ls_data.get('valid') or not ls_data.get('meta', {}).get('status') == 'active':
-            return jsonify({
-                'success': False,
-                'error': 'Invalid or inactive license key'
-            }), 400
+        if ls_response.status_code == 404 or not ls_data.get('valid'):
+            error_msg = ls_data.get('error', 'Invalid or inactive license key')
+            resp = jsonify({'success': False, 'error': error_msg})
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp, 400
         
-        # License is valid - extract details from meta
         meta = ls_data.get('meta', {})
+        license_status = meta.get('status', '')
+        
+        if license_status not in ['active', 'inactive']:
+            resp = jsonify({'success': False, 'error': f'License status: {license_status}. Please check your subscription.'})
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp, 400
+        
         variant_name = (meta.get('variant_name') or '').lower()
         
         # Determine plan type from variant name
@@ -320,20 +349,29 @@ def verify_license():
         cur.close()
         conn.close()
         
-        return jsonify({
+        result = {
             'success': True,
             'isPaid': True,
             'planType': plan_type,
             'expiresAt': expires_ms,
-            'licenseStatus': meta.get('status'),
+            'licenseStatus': license_status,
             'productName': meta.get('product_name', '')
-        })
+        }
+        print(f'✅ License verified for user {user_hash[:8]}... Plan: {plan_type}')
+        
+        response = jsonify(result)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
         
     except requests.exceptions.Timeout:
-        return jsonify({'success': False, 'error': 'LemonSqueezy verification timed out'}), 504
+        resp = jsonify({'success': False, 'error': 'LemonSqueezy verification timed out'})
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp, 504
     except Exception as e:
-        print(f'License verification error: {e}')
-        return jsonify({'success': False, 'error': 'Verification failed'}), 500
+        print(f'❌ License verification error: {type(e).__name__}: {e}')
+        resp = jsonify({'success': False, 'error': 'Verification failed'})
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp, 500
 
 # ============================================
 # ADMIN PANEL (Session-Based Authentication)
