@@ -624,7 +624,7 @@ def generate_html_for_language(lang_code, translations, hreflang_tags):
             <div class="footer-section">
                 <h4 id="footerLegalTitle">{t("footerLegalTitle", "Legal")}</h4>
                 <ul>
-                    <li><a href="#">{t("footerPrivacy", "Privacy Policy")}</a></li>
+                    <li><a href="/privacy-policy">{t("footerPrivacy", "Privacy Policy")}</a></li>
                     <li><a href="#">{t("footerTerms", "Terms of Service")}</a></li>
                     <li><a href="#">{t("footerCookie", "Cookie Policy")}</a></li>
                     <li><a href="#">{t("footerDisclosure", "Disclosure")}</a></li>
