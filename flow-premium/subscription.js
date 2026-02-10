@@ -1,7 +1,7 @@
 // SnapToAI Subscription Manager
-// Handles trial period, LemonSqueezy license verification, and subscription status
+// Handles trial period and Early Access status
 
-const TRIAL_DAYS = 30;
+const TRIAL_DAYS = 999; // Unlimited trial for early access
 
 // ===========================================
 // TEST MODE - Open popup, right-click, Inspect, Console tab
@@ -428,45 +428,9 @@ async function verifyLicenseWithLemonSqueezy(licenseKey) {
   }
 }
 
-// Verify license with our server (server calls LemonSqueezy and updates database)
+// Verify license with our server
 async function verifyLicenseWithServer(licenseKey) {
-  try {
-    // Get user hash to link license to user
-    const userId = await getUserId();
-    if (!userId) {
-      return { valid: false, reason: 'no_api_key' };
-    }
-    
-    const response = await fetch(TRIAL_SERVER_URL.replace('/trial', '/verify-license'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        licenseKey: licenseKey,
-        userHash: userId
-      })
-    });
-    
-    const data = await response.json();
-    
-    if (data.success) {
-      // Server verified and marked user as paid
-      await chrome.storage.local.set({
-        subscriptionActive: true,
-        planType: data.planType,
-        lastVerified: Date.now(),
-        graceUntil: null,
-        subscriptionExpires: data.expiresAt
-      });
-      
-      console.log('[SnapToAI] License verified! Plan:', data.planType);
-      return { valid: true, planType: data.planType };
-    }
-    
-    return { valid: false, reason: data.error || 'invalid_license' };
-  } catch (error) {
-    console.log('[SnapToAI] License verification error:', error.message);
-    return { valid: false, reason: 'network_error' };
-  }
+  return { valid: true, planType: 'early_access' };
 }
 
 // Save and verify new license key
