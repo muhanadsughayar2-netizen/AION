@@ -102,12 +102,11 @@ window.SnapToAI_TEST = ENABLE_TEST_MODE ? {
   }
 } : { disabled: () => console.log('[SnapToAI] Test mode disabled in production.') };
 // =========================================== END TEST MODE
-// LemonSqueezy Configuration
-const CHECKOUT_MONTHLY = 'https://snaptoai.lemonsqueezy.com/buy/monthly';
-const CHECKOUT_YEARLY = 'https://snaptoai.lemonsqueezy.com/buy/yearly';
+// Early Access Mode - All Pro features are free
+const EARLY_ACCESS_MODE = true;
 const VERIFY_INTERVAL_HOURS = 24;
 const GRACE_PERIOD_HOURS = 48;
-const OFFLINE_GRACE_DAYS = 7; // Allow 7 days offline access for validated licenses
+const OFFLINE_GRACE_DAYS = 7;
 
 // Server URL for trial tracking (replace with your production URL)
 const TRIAL_SERVER_URL = 'https://snaptoai.com/api/trial';
@@ -206,240 +205,33 @@ async function getServerTrialDate(userId) {
   }
 }
 
-// Check subscription status
+// Check subscription status - Early Access Mode: all users get Pro
 async function checkSubscription() {
-  const { 
-    subscriptionActive, 
-    licenseKey, 
-    planType, 
-    lastVerified, 
-    graceUntil,
-    cachedTrialStartDate,
-    cachedServerDaysRemaining,
-    lastServerCheck
-  } = await chrome.storage.local.get([
-    'subscriptionActive',
-    'licenseKey',
-    'planType',
-    'lastVerified',
-    'graceUntil',
-    'cachedTrialStartDate',
-    'cachedServerDaysRemaining',
-    'lastServerCheck'
-  ]);
-
-  const now = Date.now();
-  
-  // Get user ID from API key hash
-  const userId = await getUserId();
-  
-  // If no API key, user hasn't set up AI yet - no trial needed
-  if (!userId) {
-    console.log('[SnapToAI] No API key set - trial not started yet');
-    return {
-      status: 'no_api_key',
-      daysRemaining: TRIAL_DAYS,
-      canUseAI: false,
-      needsApiKey: true
-    };
-  }
-  
-  // Check server for trial date - more aggressive freshness checks for accurate countdown
-  const CHECK_INTERVAL = 15 * 60 * 1000; // 15 minutes
-  const MAX_CACHE_AGE = 24 * 60 * 60 * 1000; // 24 hours - force refresh daily
-  let trialStartDate = null; // Don't trust cache blindly
-  
-  // Also track which API key hash we cached for
-  const { cachedApiKeyHash } = await chrome.storage.local.get(['cachedApiKeyHash']);
-  const apiKeyChanged = cachedApiKeyHash && cachedApiKeyHash !== userId;
-  
-  // Calculate if a day boundary has passed since last check
-  const lastCheckDay = lastServerCheck ? Math.floor(lastServerCheck / 86400000) : 0;
-  const currentDay = Math.floor(now / 86400000);
-  const dayBoundaryPassed = currentDay > lastCheckDay;
-  
-  // Cache is stale if: too old (24h), or a calendar day has passed
-  const cacheIsStale = !lastServerCheck || (now - lastServerCheck) > MAX_CACHE_AGE || dayBoundaryPassed;
-  
-  // Force server check if: API key changed, no cached data, interval passed, OR cache is stale
-  const needsServerCheck = apiKeyChanged || !cachedTrialStartDate || !lastServerCheck || (now - lastServerCheck) > CHECK_INTERVAL || cacheIsStale;
-  
-  // Track server-provided days remaining for accuracy
-  let serverDaysRemaining = null;
-  
-  if (needsServerCheck) {
-    console.log('[SnapToAI] Checking server for trial status...');
-    const serverResult = await getServerTrialDate(userId);
-    if (serverResult && serverResult.trialStartDate) {
-      trialStartDate = serverResult.trialStartDate;
-      serverDaysRemaining = serverResult.serverDaysRemaining;
-      // Cache locally for offline/speed - include server's calculated days
-      await chrome.storage.local.set({ 
-        cachedTrialStartDate: serverResult.trialStartDate,
-        cachedServerDaysRemaining: serverResult.serverDaysRemaining,
-        cachedApiKeyHash: userId,
-        lastServerCheck: now
-      });
-      console.log('[SnapToAI] Trial synced with server, days remaining:', serverResult.serverDaysRemaining);
-    }
-  }
-  
-  // Fallback to cached data if server unavailable (but only if cache is reasonably fresh)
-  if (!trialStartDate && cachedTrialStartDate && lastServerCheck && (now - lastServerCheck) < MAX_CACHE_AGE) {
-    trialStartDate = cachedTrialStartDate;
-    // Use cached server days, but adjust for time passed since last check
-    const hoursSinceCheck = (now - lastServerCheck) / (1000 * 60 * 60);
-    if (cachedServerDaysRemaining !== undefined && hoursSinceCheck < 24) {
-      serverDaysRemaining = cachedServerDaysRemaining;
-    }
-    console.log('[SnapToAI] Server unavailable, using cached trial date (cache age:', Math.floor((now - lastServerCheck) / 60000), 'minutes)');
-  }
-  
-  // Last resort fallback to local storage data
-  if (!trialStartDate) {
-    const { trialStartDate: syncDate } = await chrome.storage.sync.get(['trialStartDate']);
-    const { initialInstallTimestamp, trialStartDate: localDate } = await chrome.storage.local.get(['initialInstallTimestamp', 'trialStartDate']);
-    
-    const toNum = (v) => {
-      if (typeof v === 'number' && v > 0) return v;
-      if (typeof v === 'string') {
-        const n = parseInt(v, 10) || Date.parse(v);
-        return n > 0 ? n : null;
-      }
-      return null;
-    };
-    const candidates = [initialInstallTimestamp, syncDate, localDate].map(toNum).filter(d => d && d > 0);
-    trialStartDate = candidates.length > 0 ? Math.min(...candidates) : null;
-    
-    // If we have local data but server failed, try to sync to server
-    if (trialStartDate) {
-      console.log('[SnapToAI] Using local trial date, server unavailable');
-    }
-  }
-
-  console.log('[SnapToAI] Trial check - Start:', trialStartDate ? new Date(trialStartDate).toLocaleDateString() : 'none', 'Days elapsed:', trialStartDate ? Math.floor((now - trialStartDate) / 86400000) : 0);
-
-  // Handle missing trial date
-  if (!trialStartDate) {
-    // First time user - register with server
-    const serverResult = await getServerTrialDate(userId);
-    if (serverResult && serverResult.trialStartDate) {
-      trialStartDate = serverResult.trialStartDate;
-      serverDaysRemaining = serverResult.serverDaysRemaining;
-      await chrome.storage.local.set({ 
-        cachedTrialStartDate: serverResult.trialStartDate,
-        cachedServerDaysRemaining: serverResult.serverDaysRemaining,
-        cachedApiKeyHash: userId,
-        lastServerCheck: now 
-      });
-    } else {
-      // Server unavailable - create local trial (will sync later)
-      trialStartDate = now;
-      await chrome.storage.local.set({ initialInstallTimestamp: trialStartDate, trialStartDate });
-      await chrome.storage.sync.set({ trialStartDate });
-      console.log('[SnapToAI] Created local trial, will sync to server later');
-    }
-  }
-  
-  const installDate = trialStartDate;
-
-  // Always return subscribed/pro status for early access
+  // EARLY ACCESS MODE: Grant Pro access to everyone
+  // No trial gating, no server calls, no payment checks
+  // When payment provider is added later, restore the full trial/license logic
+  console.log('[SnapToAI] Early Access Mode - All features unlocked');
   return {
     status: 'subscribed',
     planType: 'early_access',
     canUseAI: true,
-    isEarlyAccess: true
+    isEarlyAccess: true,
+    daysRemaining: 999,
+    needsApiKey: false
   };
 }
 
-// Keep the rest of the file structure but we've bypassed the trial/license logic for now
-
-// Validate license directly with LemonSqueezy API (client-side validation)
-async function verifyLicenseWithLemonSqueezy(licenseKey) {
-  try {
-    // Check offline grace period first
-    const { lastVerified, offlineGraceUntil } = await chrome.storage.local.get(['lastVerified', 'offlineGraceUntil']);
-    const now = Date.now();
-    
-    // Try LemonSqueezy API validation
-    const response = await fetch('https://api.lemonsqueezy.com/v1/licenses/validate', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        license_key: licenseKey
-      })
-    });
-    
-    if (!response.ok) {
-      // Network error - check offline grace period
-      if (lastVerified && offlineGraceUntil && now < offlineGraceUntil) {
-        console.log('[SnapToAI] Network error, using offline grace period');
-        return { valid: true, offline: true };
-      }
-      return { valid: false, reason: 'network_error' };
-    }
-    
-    const data = await response.json();
-    
-    // Check if license is valid and active
-    if (data.valid === true && data.meta && data.meta.status === 'active') {
-      // Determine plan type from variant name or product
-      let planType = 'monthly';
-      if (data.meta.variant_name) {
-        planType = data.meta.variant_name.toLowerCase().includes('year') ? 'yearly' : 'monthly';
-      }
-      
-      // Update local storage with validation info
-      const newOfflineGraceUntil = now + (OFFLINE_GRACE_DAYS * 24 * 60 * 60 * 1000);
-      await chrome.storage.local.set({
-        subscriptionActive: true,
-        planType: planType,
-        lastVerified: now,
-        offlineGraceUntil: newOfflineGraceUntil,
-        graceUntil: null,
-        licenseInstance: data.instance?.id || null,
-        licenseStatus: data.meta.status
-      });
-      
-      console.log('[SnapToAI] LemonSqueezy license valid! Plan:', planType, 'Status:', data.meta.status);
-      return { valid: true, planType, status: data.meta.status };
-    }
-    
-    // License is invalid or inactive
-    console.log('[SnapToAI] License invalid or inactive:', data.meta?.status || 'unknown');
-    return { valid: false, reason: data.meta?.status || 'invalid' };
-    
-  } catch (error) {
-    console.log('[SnapToAI] LemonSqueezy validation error:', error.message);
-    
-    // Check offline grace period on network error
-    const { lastVerified, offlineGraceUntil } = await chrome.storage.local.get(['lastVerified', 'offlineGraceUntil']);
-    const now = Date.now();
-    
-    if (lastVerified && offlineGraceUntil && now < offlineGraceUntil) {
-      console.log('[SnapToAI] Offline mode - grace period valid for', Math.ceil((offlineGraceUntil - now) / 86400000), 'more days');
-      return { valid: true, offline: true };
-    }
-    
-    return { valid: false, reason: 'network_error' };
-  }
-}
-
-// Verify license with our server
+// License validation placeholder for future payment provider
 async function verifyLicenseWithServer(licenseKey) {
   return { valid: true, planType: 'early_access' };
 }
 
-// Save and verify new license key
+// Save and verify new license key (placeholder for future use)
 async function saveLicenseKey(licenseKey) {
   if (!licenseKey || licenseKey.trim().length < 8) {
     return { success: false, error: 'Invalid license key format' };
   }
   
-  // Verify via our server (which calls LemonSqueezy and updates database)
   const result = await verifyLicenseWithServer(licenseKey.trim());
   
   if (result.valid) {
@@ -478,17 +270,16 @@ async function getLicenseKey() {
   return null;
 }
 
-// Open LemonSqueezy checkout
+// Open checkout (placeholder for future payment provider)
 function openCheckout(plan = 'yearly') {
-  const url = plan === 'monthly' ? CHECKOUT_MONTHLY : CHECKOUT_YEARLY;
-  chrome.tabs.create({ url });
+  chrome.tabs.create({ url: 'https://snaptoai.com' });
 }
 
 // Get checkout URLs for UI
 function getCheckoutUrls() {
   return {
-    monthly: CHECKOUT_MONTHLY,
-    yearly: CHECKOUT_YEARLY
+    monthly: 'https://snaptoai.com',
+    yearly: 'https://snaptoai.com'
   };
 }
 
