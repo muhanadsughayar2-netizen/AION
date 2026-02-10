@@ -107,8 +107,8 @@ function showStatus(message, type) {
 }
 
 // LemonSqueezy Checkout URLs (replace with your actual URLs)
-const CHECKOUT_MONTHLY = 'YOUR_MONTHLY_CHECKOUT_URL';
-const CHECKOUT_YEARLY = 'YOUR_YEARLY_CHECKOUT_URL';
+const CHECKOUT_MONTHLY = 'https://snaptoai.lemonsqueezy.com/buy/monthly';
+const CHECKOUT_YEARLY = 'https://snaptoai.lemonsqueezy.com/buy/yearly';
 
 // Load subscription status
 async function loadSubscriptionStatus() {
