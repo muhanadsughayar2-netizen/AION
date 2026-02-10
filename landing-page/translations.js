@@ -2,7 +2,7 @@ const translations = {
   "en": {
     "tagline": "Screenshots to AI in One Click",
     "subtitle": "Select All → Copy → Paste. All 9 screenshots drop as ONE stacked image.",
-    "downloadBtn": "Add to Chrome – Free Forever",
+    "downloadBtn": "Add to Chrome – Free Early Access",
     "heroProof": "Trusted by 10,000+ developers, designers, and researchers worldwide.",
     "alsoAvailable": "Also available on:",
     "statLanguages": "Languages",
@@ -80,7 +80,7 @@ const translations = {
   "pt": {
     "tagline": "Capturas de Ecrã para IA num Clique",
     "subtitle": "Selecionar Tudo → Copiar → Colar. Todas as 9 capturas de ecrã caem como UMA imagem empilhada.",
-    "downloadBtn": "Adicionar ao Chrome – Grátis Para Sempre",
+    "downloadBtn": "Adicionar ao Chrome – Acesso Antecipado Gratuito",
     "heroProof": "Confiado por mais de 10.000 desenvolvedores, designers e investigadores em todo o mundo.",
     "alsoAvailable": "Também disponível em:",
     "statLanguages": "Idiomas",
@@ -158,7 +158,7 @@ const translations = {
   "pt_BR": {
     "tagline": "Screenshots para IA em Um Clique",
     "subtitle": "Selecionar Tudo → Copiar → Colar. Todas as 9 screenshots viram UMA imagem empilhada.",
-    "downloadBtn": "Adicionar ao Chrome – Grátis Para Sempre",
+    "downloadBtn": "Adicionar ao Chrome – Acesso Antecipado Gratuito",
     "heroProof": "Confiado por mais de 10.000 desenvolvedores, designers e pesquisadores no mundo todo.",
     "alsoAvailable": "Também disponível em:",
     "statLanguages": "Idiomas",
@@ -237,7 +237,7 @@ const translations = {
   "ar": {
     "tagline": "لقطات الشاشة إلى الذكاء الاصطناعي بنقرة واحدة",
     "subtitle": "تحديد الكل ← نسخ ← لصق. كل 9 لقطات شاشة تصبح صورة واحدة مكدسة.",
-    "downloadBtn": "أضف إلى Chrome – مجاني للأبد",
+    "downloadBtn": "أضف إلى Chrome – وصول مبكر مجاني",
     "heroProof": "موثوق به من قبل أكثر من 10,000 مطور ومصمم وباحث حول العالم.",
     "alsoAvailable": "متوفر أيضاً على:",
     "statLanguages": "لغة",
@@ -315,7 +315,7 @@ const translations = {
   "he": {
     "tagline": "צילומי מסך ל-AI בלחיצה אחת",
     "subtitle": "בחר הכל ← העתק ← הדבק. כל 9 צילומי המסך הופכים לתמונה אחת מוערמת.",
-    "downloadBtn": "הוסף ל-Chrome – חינם לנצח",
+    "downloadBtn": "הוסף ל-Chrome – גישה מוקדמת חינם",
     "heroProof": "נבחר על ידי יותר מ-10,000 מפתחים, מעצבים וחוקרים ברחבי העולם.",
     "alsoAvailable": "זמין גם ב:",
     "statLanguages": "שפות",
@@ -393,7 +393,7 @@ const translations = {
   "fr": {
     "tagline": "Les captures d'écran vers l'IA en un clic",
     "subtitle": "Tout sélectionner → Copier → Coller. Les 9 captures deviennent UNE image empilée.",
-    "downloadBtn": "Ajouter à Chrome – Gratuit pour toujours",
+    "downloadBtn": "Ajouter à Chrome – Accès Anticipé Gratuit",
     "heroProof": "Approuvé par plus de 10 000 développeurs, designers et chercheurs dans le monde.",
     "alsoAvailable": "Également disponible sur :",
     "statLanguages": "Langues",
@@ -471,7 +471,7 @@ const translations = {
   "de": {
     "tagline": "Screenshots zu KI in einem Klick",
     "subtitle": "Alle auswählen → Kopieren → Einfügen. Alle 9 Screenshots werden zu EINEM gestapelten Bild.",
-    "downloadBtn": "Zu Chrome hinzufügen – Für immer kostenlos",
+    "downloadBtn": "Zu Chrome hinzufügen – Früher Zugang Kostenlos",
     "heroProof": "Vertraut von über 10.000 Entwicklern, Designern und Forschern weltweit.",
     "alsoAvailable": "Auch verfügbar auf:",
     "statLanguages": "Sprachen",
@@ -549,7 +549,7 @@ const translations = {
   "es": {
     "tagline": "Capturas de pantalla a IA en un clic",
     "subtitle": "Seleccionar todo → Copiar → Pegar. Las 9 capturas se convierten en UNA imagen apilada.",
-    "downloadBtn": "Añadir a Chrome – Gratis para siempre",
+    "downloadBtn": "Añadir a Chrome – Acceso Anticipado Gratis",
     "heroProof": "Confiado por más de 10,000 desarrolladores, diseñadores e investigadores en todo el mundo.",
     "alsoAvailable": "También disponible en:",
     "statLanguages": "Idiomas",
@@ -627,7 +627,7 @@ const translations = {
   "it": {
     "tagline": "Screenshot verso l'IA in un clic",
     "subtitle": "Seleziona tutto → Copia → Incolla. Tutte le 9 schermate diventano UN'immagine impilata.",
-    "downloadBtn": "Aggiungi a Chrome – Gratis per sempre",
+    "downloadBtn": "Aggiungi a Chrome – Accés Anticipat Gratuït",
     "heroProof": "Scelto da oltre 10.000 sviluppatori, designer e ricercatori in tutto il mondo.",
     "alsoAvailable": "Disponibile anche su:",
     "statLanguages": "Lingue",
@@ -705,7 +705,7 @@ const translations = {
   "pt_BR": {
     "tagline": "Capturas de tela para IA em um clique",
     "subtitle": "Selecionar tudo → Copiar → Colar. As 9 capturas se tornam UM arquivo empilhado.",
-    "downloadBtn": "Adicionar ao Chrome – Gratuito para sempre",
+    "downloadBtn": "Adicionar ao Chrome – Acesso Antecipado Gratuito",
     "heroProof": "Confiança de 10.000+ desenvolvedores, designers e pesquisadores em todo o mundo.",
     "alsoAvailable": "Também disponível em:",
     "statLanguages": "Idiomas",
@@ -783,7 +783,7 @@ const translations = {
   "ja": {
     "tagline": "スクリーンショットをAIへ、ワンクリック",
     "subtitle": "すべて選択 → コピー → 貼り付け。9枚のスクリーンショットが1枚の積み重ね画像に。",
-    "downloadBtn": "Chromeに追加 – 永久無料",
+    "downloadBtn": "Chromeに追加 – 早期アクセス無料",
     "heroProof": "世界中の10,000人以上の開発者、デザイナー、研究者に信頼されています。",
     "alsoAvailable": "こちらでも利用可能：",
     "statLanguages": "言語",
@@ -861,7 +861,7 @@ const translations = {
   "zh": {
     "tagline": "屏幕截图到AI，一键操作",
     "subtitle": "全选 → 复制 → 粘贴。9张截图合成为一张堆叠图片。",
-    "downloadBtn": "添加到Chrome – 永久免费",
+    "downloadBtn": "添加到Chrome – 免费早期体验",
     "heroProof": "全球10,000+开发者、设计师和研究人员的信赖之选。",
     "alsoAvailable": "也可在以下平台使用：",
     "statLanguages": "种语言",
@@ -939,7 +939,7 @@ const translations = {
   "nl": {
     "tagline": "Eén klik. Eén schermafbeelding.",
     "subtitle": "Alles selecteren → Kopiëren → Plakken. Alle 9 screenshots worden ÉÉN gestapelde afbeelding.",
-    "downloadBtn": "Toevoegen aan Chrome – Voor altijd gratis",
+    "downloadBtn": "Toevoegen aan Chrome – Vroege Toegang Gratis",
     "heroProof": "Vertrouwd door 10.000+ ontwikkelaars, ontwerpers en onderzoekers wereldwijd.",
     "alsoAvailable": "Ook beschikbaar op:",
     "statLanguages": "Talen",
@@ -1017,7 +1017,7 @@ const translations = {
   "pl": {
     "tagline": "Jeden klik. Jeden zrzut ekranu.",
     "subtitle": "Zaznacz wszystko → Kopiuj → Wklej. Wszystkie 9 zrzutów ekranu staje się JEDNYM obrazem.",
-    "downloadBtn": "Dodaj do Chrome – Na zawsze za darmo",
+    "downloadBtn": "Dodaj do Chrome – Wczesny Dostęp Za Darmo",
     "heroProof": "Zaufany przez 10 000+ programistów, projektantów i badaczy na całym świecie.",
     "alsoAvailable": "Dostępny również na:",
     "statLanguages": "Języki",
@@ -1095,7 +1095,7 @@ const translations = {
   "ru": {
     "tagline": "Один клик. Одна скриншот.",
     "subtitle": "Выбрать всё → Копировать → Вставить. Все 9 скриншотов становятся ОДНИМ изображением.",
-    "downloadBtn": "Добавить в Chrome – Бесплатно навсегда",
+    "downloadBtn": "Добавить в Chrome – Ранний Доступ Бесплатно",
     "heroProof": "Доверяют более 10 000 разработчиков, дизайнеров и исследователей по всему миру.",
     "alsoAvailable": "Также доступно на:",
     "statLanguages": "Языки",
@@ -1173,7 +1173,7 @@ const translations = {
   "tr": {
     "tagline": "Bir tık. Bir ekran görüntüsü.",
     "subtitle": "Tümünü Seç → Kopyala → Yapıştır. 9 ekran görüntüsü TEK yığılmış resim olur.",
-    "downloadBtn": "Chrome'a Ekle – Sonsuza Kadar Ücretsiz",
+    "downloadBtn": "Chrome'a Ekle – Erken Erişim Ücretsiz",
     "heroProof": "Dünya çapında 10.000+ geliştirici, tasarımcı ve araştırmacı tarafından güveniliyor.",
     "alsoAvailable": "Ayrıca şurada mevcut:",
     "statLanguages": "Diller",
@@ -1251,7 +1251,7 @@ const translations = {
   "vi": {
     "tagline": "Một cú nhấp. Một ảnh chụp màn hình.",
     "subtitle": "Chọn tất cả → Sao chép → Dán. Tất cả 9 ảnh chụp màn hình trở thành MỘT hình ảnh xếp chồng.",
-    "downloadBtn": "Thêm vào Chrome – Miễn phí mãi mãi",
+    "downloadBtn": "Thêm vào Chrome – Truy Cập Sớm Miễn Phí",
     "heroProof": "Được tin tưởng bởi hơn 10.000 nhà phát triển, nhà thiết kế và nhà nghiên cứu trên toàn thế giới.",
     "alsoAvailable": "Cũng có sẵn trên:",
     "statLanguages": "Ngôn ngữ",
@@ -1329,7 +1329,7 @@ const translations = {
   "th": {
     "tagline": "คลิกเดียว รูปเดียว",
     "subtitle": "เลือกทั้งหมด → คัดลอก → วาง ภาพหน้าจอ 9 ภาพกลายเป็นภาพเดียวที่ซ้อนกัน",
-    "downloadBtn": "เพิ่มใน Chrome – ฟรีตลอดไป",
+    "downloadBtn": "เพิ่มใน Chrome – เข้าถึงก่อนใคร ฟรี",
     "heroProof": "ได้รับความไว้วางใจจากนักพัฒนา นักออกแบบ และนักวิจัยกว่า 10,000 คนทั่วโลก",
     "alsoAvailable": "มีให้บริการบน:",
     "statLanguages": "ภาษา",
@@ -1407,7 +1407,7 @@ const translations = {
   "ko": {
     "tagline": "한 번 클릭. 한 번의 스냅샷.",
     "subtitle": "전체 선택 → 복사 → 붙여넣기. 9개의 스크린샷이 하나의 스택 이미지로.",
-    "downloadBtn": "Chrome에 추가 – 영원히 무료",
+    "downloadBtn": "Chrome에 추가 – 얼리 액세스 무료",
     "heroProof": "전 세계 10,000명 이상의 개발자, 디자이너, 연구자가 신뢰합니다.",
     "alsoAvailable": "다음에서도 사용 가능:",
     "statLanguages": "언어",
@@ -1485,7 +1485,7 @@ const translations = {
   "hi": {
     "tagline": "एक क्लिक। एक स्क्रीनशॉट।",
     "subtitle": "सभी चुनें → कॉपी करें → पेस्ट करें। सभी 9 स्क्रीनशॉट एक स्टैक्ड इमेज बन जाते हैं।",
-    "downloadBtn": "Chrome में जोड़ें – हमेशा के लिए मुफ्त",
+    "downloadBtn": "Chrome में जोड़ें – अर्ली एक्सेस मुफ्त",
     "heroProof": "दुनिया भर में 10,000+ डेवलपर्स, डिजाइनर्स और शोधकर्ताओं द्वारा विश्वसनीय।",
     "alsoAvailable": "यहाँ भी उपलब्ध:",
     "statLanguages": "भाषाएं",
@@ -1563,7 +1563,7 @@ const translations = {
   "bn": {
     "tagline": "এক ক্লিক। এক স্ক্রিনশট।",
     "subtitle": "সব নির্বাচন করুন → কপি → পেস্ট। সব ৯টি স্ক্রিনশট একটি স্ট্যাক করা ছবিতে পরিণত হয়।",
-    "downloadBtn": "Chrome এ যোগ করুন – চিরকালের জন্য বিনামূল্যে",
+    "downloadBtn": "Chrome এ যোগ করুন – আর্লি অ্যাক্সেস বিনামূল্যে",
     "heroProof": "বিশ্বব্যাপী 10,000+ ডেভেলপার, ডিজাইনার এবং গবেষকদের দ্বারা বিশ্বস্ত।",
     "alsoAvailable": "এখানেও উপলব্ধ:",
     "statLanguages": "ভাষা",
@@ -1641,7 +1641,7 @@ const translations = {
   "gu": {
     "tagline": "એક ક્લિક. એક સ્ક્રીનશૉટ.",
     "subtitle": "બધું પસંદ કરો → કોપી → પેસ્ટ. બધા 9 સ્ક્રીનશોટ એક સ્ટેક્ડ ઇમેજ બને છે.",
-    "downloadBtn": "Chrome માં ઉમેરો – હંમેશા માટે મફત",
+    "downloadBtn": "Chrome માં ઉમેરો – અર્લી એક્સેસ મફત",
     "heroProof": "વિશ્વભરમાં 10,000+ વિકાસકર્તાઓ, ડિઝાઇનર્સ અને સંશોધકો દ્વારા વિશ્વસનીય।",
     "alsoAvailable": "અહીં પણ ઉપલબ્ધ:",
     "statLanguages": "ભાષાઓ",
@@ -1719,7 +1719,7 @@ const translations = {
   "ta": {
     "tagline": "ஒரு கிளிக். ஒரு ஸ்க்রீன்ஷாட்.",
     "subtitle": "அனைத்தையும் தேர்ந்தெடு → நகலெடு → ஒட்டு. அனைத்து 9 திரைப்பிடிப்புகளும் ஒரு அடுக்கப்பட்ட படமாக மாறும்.",
-    "downloadBtn": "Chrome இல் சேர்க்கவும் – என்றென்றும் இலவசம்",
+    "downloadBtn": "Chrome இல் சேர்க்கவும் – ஆர்லி ஆக்சஸ் இலவசம்",
     "heroProof": "உலகெங்கிலும் 10,000+ டெவலப்பர்கள், வடிவமைப்பாளர்கள் மற்றும் ஆராய்ச்சியாளர்களால் நம்பப்படுகிறது.",
     "alsoAvailable": "இங்கும் கிடைக்கும்:",
     "statLanguages": "மொழிகள்",
@@ -1797,7 +1797,7 @@ const translations = {
   "te": {
     "tagline": "ఒక క్లిక్. ఒక స్క్రీన్‌షాట్.",
     "subtitle": "అన్నీ ఎంచుకోండి → కాపీ → పేస్ట్. అన్ని 9 స్క్రీన్‌షాట్‌లు ఒక స్టాక్డ్ ఇమేజ్ అవుతాయి.",
-    "downloadBtn": "Chrome కు జోడించండి – శాశ్వతంగా ఉచితం",
+    "downloadBtn": "Chrome కు జోడించండి – ఎర్లీ యాక్సెస్ ఉచితం",
     "heroProof": "ప్రపంచవ్యాప్తంగా 10,000+ డెవలపర్లు, డిజైనర్లు మరియు పరిశోధకులు విశ్వసిస్తారు.",
     "alsoAvailable": "ఇక్కడ కూడా అందుబాటులో:",
     "statLanguages": "భాషలు",
@@ -1875,7 +1875,7 @@ const translations = {
   "kn": {
     "tagline": "ಒಂದು ಕ್ಲಿಕ್. ಒಂದು ಸ್ಕ್ರೀನ್‌ಶಾಟ್.",
     "subtitle": "ಎಲ್ಲಾ ಆಯ್ಕೆಮಾಡಿ → ನಕಲಿಸಿ → ಅಂಟಿಸಿ. ಎಲ್ಲಾ 9 ಸ್ಕ್ರೀನ್‌ಶಾಟ್‌ಗಳು ಒಂದು ಸ್ಟಾಕ್ಡ್ ಇಮೇಜ್ ಆಗುತ್ತವೆ.",
-    "downloadBtn": "Chrome ಗೆ ಸೇರಿಸಿ – ಶಾಶ್ವತವಾಗಿ ಉಚಿತ",
+    "downloadBtn": "Chrome ಗೆ ಸೇರಿಸಿ – ಅರ್ಲಿ ಆಕ್ಸೆಸ್ ಉಚಿತ",
     "heroProof": "ಪ್ರಪಂಚದಾದ್ಯಂತ 10,000+ ಡೆವಲಪರ್‌ಗಳು, ವಿನ್ಯಾಸಕರು ಮತ್ತು ಸಂಶೋಧಕರು ನಂಬುತ್ತಾರೆ.",
     "alsoAvailable": "ಇಲ್ಲಿಯೂ ಲಭ್ಯ:",
     "statLanguages": "ಭಾಷೆಗಳು",
@@ -1953,7 +1953,7 @@ const translations = {
   "ml": {
     "tagline": "ഒരു ക്ലിക്കിൽ. ഒരു സ്ക്രീൻഷോട്ട്.",
     "subtitle": "എല്ലാം തിരഞ്ഞെടുക്കുക → പകർത്തുക → ഒട്ടിക്കുക. എല്ലാ 9 സ്ക്രീൻഷോട്ടുകളും ഒരു സ്റ്റാക്ക്ഡ് ഇമേജായി മാറുന്നു.",
-    "downloadBtn": "Chrome-ൽ ചേർക്കുക – എന്നെന്നേക്കുമായി സൗജന്യം",
+    "downloadBtn": "Chrome-ൽ ചേർക്കുക – ഏർലി ആക്സസ് സൗജന്യം",
     "heroProof": "ലോകമെമ്പാടുമുള്ള 10,000+ ഡെവലപ്പർമാർ, ഡിസൈനർമാർ, ഗവേഷകർ എന്നിവർ വിശ്വസിക്കുന്നു.",
     "alsoAvailable": "ഇവിടെയും ലഭ്യമാണ്:",
     "statLanguages": "ഭാഷകൾ",
@@ -2031,7 +2031,7 @@ const translations = {
   "mr": {
     "tagline": "एक क्लिक. एक स्क्रीनशॉट.",
     "subtitle": "सर्व निवडा → कॉपी करा → पेस्ट करा. सर्व 9 स्क्रीनशॉट एक स्टॅक्ड इमेज बनतात.",
-    "downloadBtn": "Chrome मध्ये जोडा – कायमचे मोफत",
+    "downloadBtn": "Chrome मध्ये जोडा – अर्ली ऍक्सेस मोफत",
     "heroProof": "जगभरातील 10,000+ डेव्हलपर्स, डिझायनर्स आणि संशोधकांद्वारे विश्वसनीय.",
     "alsoAvailable": "येथेही उपलब्ध:",
     "statLanguages": "भाषा",
@@ -2109,7 +2109,7 @@ const translations = {
   "or": {
     "tagline": "ଗୋଟିଏ କ୍ଲିକ୍। ଗୋଟିଏ ସ୍କ୍ରିନ୍‌ଶଟ୍।",
     "subtitle": "ସମସ୍ତ ଚୟନ କରନ୍ତୁ → କପି → ପେଷ୍ଟ। ସମସ୍ତ 9 ଟି ସ୍କ୍ରିନସଟ୍ ଗୋଟିଏ ଷ୍ଟାକ୍ଡ ଇମେଜ ହୁଏ।",
-    "downloadBtn": "Chrome ରେ ଯୋଡ଼ନ୍ତୁ – ସବୁଦିନ ପାଇଁ ମାଗଣା",
+    "downloadBtn": "Chrome ରେ ଯୋଡ଼ନ୍ତୁ – ଅର୍ଲି ଆକ୍ସେସ ମାଗଣା",
     "heroProof": "ବିଶ୍ୱବ୍ୟାପୀ 10,000+ ଡେଭଲପର୍, ଡିଜାଇନର୍ ଏବଂ ଗବେଷକମାନଙ୍କ ଦ୍ୱାରା ବିଶ୍ୱସ୍ତ।",
     "alsoAvailable": "ଏଠାରେ ମଧ୍ୟ ଉପಲବ୍ଧ:",
     "statLanguages": "ଭାଷା",
@@ -2187,7 +2187,7 @@ const translations = {
   "bg": {
     "tagline": "Един клик. Един екран.",
     "subtitle": "Избери всичко → Копирай → Постави. Всички 9 екранни снимки стават ЕДНО наслоено изображение.",
-    "downloadBtn": "Добави в Chrome – Завинаги безплатно",
+    "downloadBtn": "Добави в Chrome – Ранен Достъп Безплатно",
     "heroProof": "Доверен от над 10 000 разработчици, дизайнери и изследователи по целия свят.",
     "alsoAvailable": "Наличен също на:",
     "statLanguages": "Езици",
@@ -2265,7 +2265,7 @@ const translations = {
   "cs": {
     "tagline": "Jeden klik. Jeden snímek.",
     "subtitle": "Vybrat vše → Kopírovat → Vložit. Všech 9 snímků se stane JEDNÍM vrstveným obrázkem.",
-    "downloadBtn": "Přidat do Chrome – Navždy zdarma",
+    "downloadBtn": "Přidat do Chrome – Předběžný Přístup Zdarma",
     "heroProof": "Důvěřuje více než 10 000 vývojářů, designérů a výzkumníků po celém světě.",
     "alsoAvailable": "Dostupné také na:",
     "statLanguages": "Jazyky",
@@ -2343,7 +2343,7 @@ const translations = {
   "da": {
     "tagline": "Et klik. Et skærmbillede.",
     "subtitle": "Vælg alt → Kopier → Indsæt. Alle 9 skærmbilleder bliver til ÉT stablet billede.",
-    "downloadBtn": "Tilføj til Chrome – Gratis for altid",
+    "downloadBtn": "Tilføj til Chrome – Tidlig Adgang Gratis",
     "heroProof": "Betroet af 10.000+ udviklere, designere og forskere verden over.",
     "alsoAvailable": "Også tilgængelig på:",
     "statLanguages": "Sprog",
@@ -2421,7 +2421,7 @@ const translations = {
   "el": {
     "tagline": "Ένα κλικ. Ένα στιγμιότυπο.",
     "subtitle": "Επιλογή όλων → Αντιγραφή → Επικόλληση. Και τα 9 στιγμιότυπα γίνονται ΜΙΑ στοιβαγμένη εικόνα.",
-    "downloadBtn": "Προσθήκη στο Chrome – Δωρεάν για πάντα",
+    "downloadBtn": "Προσθήκη στο Chrome – Πρώιμη Πρόσβαση Δωρεάν",
     "heroProof": "Εμπιστεύονται 10.000+ προγραμματιστές, σχεδιαστές και ερευνητές παγκοσμίως.",
     "alsoAvailable": "Επίσης διαθέσιμο σε:",
     "statLanguages": "Γλώσσες",
@@ -2499,7 +2499,7 @@ const translations = {
   "et": {
     "tagline": "Üks klõps. Üks kuvatõmmis.",
     "subtitle": "Vali kõik → Kopeeri → Kleebi. Kõik 9 ekraanipilti muutuvad ÜHEKS virnastatud pildiks.",
-    "downloadBtn": "Lisa Chrome'i – Igavesti tasuta",
+    "downloadBtn": "Lisa Chrome'i – Varajane Juurdepääs Tasuta",
     "heroProof": "Usaldab üle 10 000 arendaja, disaineri ja teadlase üle maailma.",
     "alsoAvailable": "Saadaval ka:",
     "statLanguages": "Keeled",
@@ -2577,7 +2577,7 @@ const translations = {
   "fi": {
     "tagline": "Yksi napsautus. Yksi kuvakaappaus.",
     "subtitle": "Valitse kaikki → Kopioi → Liitä. Kaikki 9 kuvakaappausta yhdistyvät YHDEKSI pinottuksi kuvaksi.",
-    "downloadBtn": "Lisää Chromeen – Ilmaiseksi ikuisesti",
+    "downloadBtn": "Lisää Chromeen – Aikainen Pääsy Ilmaiseksi",
     "heroProof": "Yli 10 000 kehittäjää, suunnittelijaa ja tutkijaa luottaa meihin maailmanlaajuisesti.",
     "alsoAvailable": "Saatavilla myös:",
     "statLanguages": "Kielet",
@@ -2655,7 +2655,7 @@ const translations = {
   "hu": {
     "tagline": "Egy kattintás. Egy képernyőkép.",
     "subtitle": "Mindent kijelöl → Másolás → Beillesztés. Mind a 9 képernyőkép EGY halmozott képpé válik.",
-    "downloadBtn": "Hozzáadás a Chrome-hoz – Örökre ingyenes",
+    "downloadBtn": "Hozzáadás a Chrome-hoz – Korai Hozzáférés Ingyenes",
     "heroProof": "Világszerte 10 000+ fejlesztő, tervező és kutató bízik benne.",
     "alsoAvailable": "Elérhető még:",
     "statLanguages": "Nyelvek",
@@ -2733,7 +2733,7 @@ const translations = {
   "id": {
     "tagline": "Satu klik. Satu tangkapan layar.",
     "subtitle": "Pilih Semua → Salin → Tempel. Semua 9 tangkapan layar menjadi SATU gambar bertumpuk.",
-    "downloadBtn": "Tambahkan ke Chrome – Gratis Selamanya",
+    "downloadBtn": "Tambahkan ke Chrome – Akses Awal Gratis",
     "heroProof": "Dipercaya oleh 10.000+ pengembang, desainer, dan peneliti di seluruh dunia.",
     "alsoAvailable": "Juga tersedia di:",
     "statLanguages": "Bahasa",
@@ -2811,7 +2811,7 @@ const translations = {
   "lt": {
     "tagline": "Vienas spustelėjimas. Vienas kadrą.",
     "subtitle": "Pasirinkti viską → Kopijuoti → Įklijuoti. Visos 9 ekrano nuotraukos tampa VIENU sukrautu atvaizdu.",
-    "downloadBtn": "Pridėti prie Chrome – Nemokamai visam laikui",
+    "downloadBtn": "Pridėti prie Chrome – Ankstyvoji Prieiga Nemokamai",
     "heroProof": "Pasitiki daugiau nei 10 000 kūrėjų, dizainerių ir tyrėjų visame pasaulyje.",
     "alsoAvailable": "Taip pat galima:",
     "statLanguages": "Kalbos",
@@ -2889,7 +2889,7 @@ const translations = {
   "lv": {
     "tagline": "Viena klikšķi. Viens attēls.",
     "subtitle": "Atlasīt visu → Kopēt → Ielīmēt. Visi 9 ekrānuzņēmumi kļūst par VIENU sakrautu attēlu.",
-    "downloadBtn": "Pievienot Chrome – Mūžīgi bezmaksas",
+    "downloadBtn": "Pievienot Chrome – Agrīnā Piekļuve Bezmaksas",
     "heroProof": "Uzticas vairāk nekā 10 000 izstrādātāju, dizaineru un pētnieku visā pasaulē.",
     "alsoAvailable": "Pieejams arī:",
     "statLanguages": "Valodas",
@@ -2967,7 +2967,7 @@ const translations = {
   "nb": {
     "tagline": "Ett klikk. Ett øyeblikk.",
     "subtitle": "Velg alt → Kopier → Lim inn. Alle 9 skjermbilder blir til ETT stablet bilde.",
-    "downloadBtn": "Legg til i Chrome – Gratis for alltid",
+    "downloadBtn": "Legg til i Chrome – Tidlig Tilgang Gratis",
     "heroProof": "Betrodd av 10 000+ utviklere, designere og forskere verden over.",
     "alsoAvailable": "Også tilgjengelig på:",
     "statLanguages": "Språk",
@@ -3045,7 +3045,7 @@ const translations = {
   "ro": {
     "tagline": "Un clic. O captură de ecran.",
     "subtitle": "Selectați tot → Copiați → Lipiți. Toate cele 9 capturi de ecran devin O imagine stivuită.",
-    "downloadBtn": "Adăugați în Chrome – Gratuit pentru totdeauna",
+    "downloadBtn": "Adăugați în Chrome – Acces Anticipat Gratuit",
     "heroProof": "De încredere pentru peste 10.000 de dezvoltatori, designeri și cercetători din întreaga lume.",
     "alsoAvailable": "De asemenea disponibil pe:",
     "statLanguages": "Limbi",
@@ -3123,7 +3123,7 @@ const translations = {
   "sk": {
     "tagline": "Jeden klik. Jeden záber.",
     "subtitle": "Vybrať všetko → Kopírovať → Vložiť. Všetkých 9 snímok sa stane JEDNÝM vrstveným obrázkom.",
-    "downloadBtn": "Pridať do Chrome – Navždy zadarmo",
+    "downloadBtn": "Pridať do Chrome – Skorý Prístup Zadarmo",
     "heroProof": "Dôveruje viac ako 10 000 vývojárov, dizajnérov a výskumníkov po celom svete.",
     "alsoAvailable": "Dostupné aj na:",
     "statLanguages": "Jazyky",
@@ -3201,7 +3201,7 @@ const translations = {
   "sl": {
     "tagline": "En klik. En posnetek.",
     "subtitle": "Izberi vse → Kopiraj → Prilepi. Vseh 9 posnetkov zaslona postane ENA naložena slika.",
-    "downloadBtn": "Dodaj v Chrome – Za vedno brezplačno",
+    "downloadBtn": "Dodaj v Chrome – Zgodnji Dostop Brezplačno",
     "heroProof": "Zaupa mu več kot 10.000 razvijalcev, oblikovalcev in raziskovalcev po vsem svetu.",
     "alsoAvailable": "Na voljo tudi na:",
     "statLanguages": "Jeziki",
@@ -3279,7 +3279,7 @@ const translations = {
   "sr": {
     "tagline": "Један клик. Једна слика.",
     "subtitle": "Изабери све → Копирај → Налепи. Свих 9 снимака екрана постаје ЈЕДНА наслагана слика.",
-    "downloadBtn": "Додај у Chrome – Заувек бесплатно",
+    "downloadBtn": "Додај у Chrome – Рани Приступ Бесплатно",
     "heroProof": "Верује више од 10.000 програмера, дизајнера и истраживача широм света.",
     "alsoAvailable": "Такође доступно на:",
     "statLanguages": "Језици",
@@ -3357,7 +3357,7 @@ const translations = {
   "sv": {
     "tagline": "Ett klick. En bild.",
     "subtitle": "Markera allt → Kopiera → Klistra in. Alla 9 skärmdumpar blir EN staplad bild.",
-    "downloadBtn": "Lägg till i Chrome – Gratis för alltid",
+    "downloadBtn": "Lägg till i Chrome – Tidig Tillgång Gratis",
     "heroProof": "Betrodd av 10 000+ utvecklare, designers och forskare världen över.",
     "alsoAvailable": "Finns även på:",
     "statLanguages": "Språk",
@@ -3435,7 +3435,7 @@ const translations = {
   "uk": {
     "tagline": "Один клік. Один знімок.",
     "subtitle": "Вибрати все → Копіювати → Вставити. Усі 9 знімків екрана стають ОДНИМ накладеним зображенням.",
-    "downloadBtn": "Додати до Chrome – Безкоштовно назавжди",
+    "downloadBtn": "Додати до Chrome – Ранній Доступ Безкоштовно",
     "heroProof": "Довіряють понад 10 000 розробників, дизайнерів та дослідників по всьому світу.",
     "alsoAvailable": "Також доступно на:",
     "statLanguages": "Мови",
@@ -3513,7 +3513,7 @@ const translations = {
   "hr": {
     "tagline": "Jedan klik. Jedan snimak.",
     "subtitle": "Odaberi sve → Kopiraj → Zalijepi. Svih 9 snimaka zaslona postaje JEDNA složena slika.",
-    "downloadBtn": "Dodaj u Chrome – Zauvijek besplatno",
+    "downloadBtn": "Dodaj u Chrome – Rani Pristup Besplatno",
     "heroProof": "Povjerenje više od 10.000 programera, dizajnera i istraživača diljem svijeta.",
     "alsoAvailable": "Također dostupno na:",
     "statLanguages": "Jezici",
@@ -3591,7 +3591,7 @@ const translations = {
   "ca": {
     "tagline": "Un clic. Una captura.",
     "subtitle": "Seleccionar tot → Copiar → Enganxar. Les 9 captures de pantalla es converteixen en UNA imatge apilada.",
-    "downloadBtn": "Afegir a Chrome – Gratis per sempre",
+    "downloadBtn": "Afegir a Chrome – Accés Anticipat Gratuït",
     "heroProof": "Confiat per més de 10.000 desenvolupadors, dissenyadors i investigadors a tot el món.",
     "alsoAvailable": "També disponible a:",
     "statLanguages": "Idiomes",
@@ -3669,7 +3669,7 @@ const translations = {
   "sw": {
     "tagline": "Bofya moja. Picha moja.",
     "subtitle": "Chagua Zote → Nakili → Bandika. Picha za skrini 9 zote zinakuwa picha MOJA iliyorundikwa.",
-    "downloadBtn": "Ongeza kwenye Chrome – Bure Milele",
+    "downloadBtn": "Ongeza kwenye Chrome – Ufikiaji wa Mapema Bure",
     "heroProof": "Wanatuamini wasanidi programu 10,000+, wabunifu, na watafiti duniani kote.",
     "alsoAvailable": "Inapatikana pia kwenye:",
     "statLanguages": "Lugha",
@@ -3747,7 +3747,7 @@ const translations = {
   "fil": {
     "tagline": "Isang click. Isang screenshot.",
     "subtitle": "Piliin Lahat → Kopyahin → I-paste. Ang lahat ng 9 na screenshot ay nagiging ISANG nakasalansan na larawan.",
-    "downloadBtn": "Idagdag sa Chrome – Libre Magpakailanman",
+    "downloadBtn": "Idagdag sa Chrome – Libreng Maagang Access",
     "heroProof": "Pinagkakatiwalaan ng 10,000+ developers, designers, at researchers sa buong mundo.",
     "alsoAvailable": "Available din sa:",
     "statLanguages": "Mga Wika",
@@ -3825,7 +3825,7 @@ const translations = {
   "en_GB": {
     "tagline": "One click. One screenshot.",
     "subtitle": "Select All → Copy → Paste. All 9 screenshots drop as ONE stacked image.",
-    "downloadBtn": "Add to Chrome – Free Forever",
+    "downloadBtn": "Add to Chrome – Free Early Access",
     "heroProof": "Trusted by 10,000+ developers, designers, and researchers worldwide.",
     "alsoAvailable": "Also available on:",
     "statLanguages": "Languages",
@@ -3903,7 +3903,7 @@ const translations = {
   "en_US": {
     "tagline": "One click. One screenshot.",
     "subtitle": "Select All → Copy → Paste. All 9 screenshots drop as ONE stacked image.",
-    "downloadBtn": "Add to Chrome – Free Forever",
+    "downloadBtn": "Add to Chrome – Free Early Access",
     "heroProof": "Trusted by 10,000+ developers, designers, and researchers worldwide.",
     "alsoAvailable": "Also available on:",
     "statLanguages": "Languages",
@@ -3981,7 +3981,7 @@ const translations = {
   "es_419": {
     "tagline": "Un clic. Una captura de pantalla.",
     "subtitle": "Select All → Copy → Paste. All 9 screenshots drop as ONE stacked image.",
-    "downloadBtn": "Add to Chrome – Free Forever",
+    "downloadBtn": "Add to Chrome – Free Early Access",
     "heroProof": "Trusted by 10,000+ developers, designers, and researchers worldwide.",
     "alsoAvailable": "Also available on:",
     "statLanguages": "Languages",
@@ -4059,7 +4059,7 @@ const translations = {
   "zh_TW": {
     "tagline": "一鍵點擊。一個截圖。",
     "subtitle": "Select All → Copy → Paste. All 9 screenshots drop as ONE stacked image.",
-    "downloadBtn": "Add to Chrome – Free Forever",
+    "downloadBtn": "Add to Chrome – Free Early Access",
     "heroProof": "Trusted by 10,000+ developers, designers, and researchers worldwide.",
     "alsoAvailable": "Also available on:",
     "statLanguages": "Languages",
@@ -4137,7 +4137,7 @@ const translations = {
   "pt_PT": {
     "tagline": "Um clique. Uma captura.",
     "subtitle": "Select All → Copy → Paste. All 9 screenshots drop as ONE stacked image.",
-    "downloadBtn": "Add to Chrome – Free Forever",
+    "downloadBtn": "Add to Chrome – Free Early Access",
     "heroProof": "Trusted by 10,000+ developers, designers, and researchers worldwide.",
     "alsoAvailable": "Also available on:",
     "statLanguages": "Languages",
@@ -4215,7 +4215,7 @@ const translations = {
   "am": {
     "tagline": "አንድ ጠቅ። አንድ ስክሪንሼት።",
     "subtitle": "ሁሉንም ምረጥ → ቅዳ → ለጥፍ። ሁሉም 9 ስክሪንሾቶች አንድ የተደራረበ ምስል ይሆናሉ።",
-    "downloadBtn": "ወደ Chrome ጨምር – ለዘላለም ነፃ",
+    "downloadBtn": "ወደ Chrome ጨምር – ቀደምት ተደራሽነት ነፃ",
     "heroProof": "በመላው ዓለም ከ10,000+ ዲቬሎፐሮች፣ ዲዛይነሮች እና ተመራማሪዎች ታምነዋል።",
     "alsoAvailable": "እንዲሁም ይገኛል በ:",
     "statLanguages": "ቋንቋዎች",

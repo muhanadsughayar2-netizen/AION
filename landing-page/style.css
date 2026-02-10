@@ -1845,3 +1845,229 @@ html[lang="he"] .hero-proof {
         grid-template-columns: repeat(3, 1fr);
     }
 }
+
+/* ==========================================
+   AI SUPERPOWERS SECTION
+   ========================================== */
+
+.ai-superpowers-section {
+    padding: 6rem 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.ai-superpowers-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(ellipse at 30% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 50%, rgba(6, 182, 212, 0.08) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+.ai-superpowers-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+.ai-superpowers-subtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    margin-top: -1rem;
+    margin-bottom: 3.5rem;
+    opacity: 0.85;
+}
+
+.superpowers-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.superpower-card {
+    position: relative;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 2.5rem 2rem 2rem;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.superpower-card:hover {
+    transform: translateY(-8px);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.superpower-glow {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+}
+
+.superpower-card:hover .superpower-glow {
+    opacity: 1;
+}
+
+.superpower-vision .superpower-glow {
+    background: radial-gradient(circle at center, rgba(139, 92, 246, 0.12) 0%, transparent 50%);
+}
+
+.superpower-vision:hover {
+    border-color: rgba(139, 92, 246, 0.3);
+    box-shadow: 0 20px 60px rgba(139, 92, 246, 0.15), 0 0 40px rgba(139, 92, 246, 0.1);
+}
+
+.superpower-agents .superpower-glow {
+    background: radial-gradient(circle at center, rgba(6, 182, 212, 0.12) 0%, transparent 50%);
+}
+
+.superpower-agents:hover {
+    border-color: rgba(6, 182, 212, 0.3);
+    box-shadow: 0 20px 60px rgba(6, 182, 212, 0.15), 0 0 40px rgba(6, 182, 212, 0.1);
+}
+
+.superpower-credit .superpower-glow {
+    background: radial-gradient(circle at center, rgba(234, 179, 8, 0.12) 0%, transparent 50%);
+}
+
+.superpower-credit:hover {
+    border-color: rgba(234, 179, 8, 0.3);
+    box-shadow: 0 20px 60px rgba(234, 179, 8, 0.15), 0 0 40px rgba(234, 179, 8, 0.1);
+}
+
+.superpower-icon-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.superpower-icon {
+    font-size: 2.8rem;
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.2));
+}
+
+.superpower-badge-new {
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    color: #fff;
+    text-transform: uppercase;
+    animation: badgePulse 2s ease-in-out infinite;
+}
+
+.superpower-badge-free {
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    background: linear-gradient(135deg, #eab308, #ca8a04);
+    color: #000;
+    text-transform: uppercase;
+    animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.05); }
+}
+
+.superpower-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #f1f5f9;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.3px;
+}
+
+.superpower-desc {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+}
+
+.superpower-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.sp-feat {
+    display: inline-block;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+}
+
+.superpower-card:hover .sp-feat {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.superpowers-cta {
+    text-align: center;
+    padding: 2.5rem 0 0;
+}
+
+.superpowers-cta-text {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+}
+
+.superpowers-cta-text::before {
+    content: '✨ ';
+}
+
+.superpowers-cta-text::after {
+    content: ' ✨';
+}
+
+.cta-small {
+    display: inline-flex;
+    padding: 0.85rem 2.5rem;
+    font-size: 1rem;
+}
+
+@media (max-width: 900px) {
+    .superpowers-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .superpower-card {
+        padding: 2rem 1.5rem;
+    }
+    
+    .ai-superpowers-subtitle {
+        font-size: 1rem;
+    }
+}

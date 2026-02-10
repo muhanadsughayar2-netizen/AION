@@ -156,7 +156,7 @@ def generate_schema_markup(lang_code):
                         "name": "Is SnapToAI really free?",
                         "acceptedAnswer": {
                             "@type": "Answer",
-                            "text": "Yes! SnapToAI is 100% free forever. No premium tiers, no hidden costs. We believe everyone deserves access to better AI tools."
+                            "text": "Yes! SnapToAI is currently free during Early Access. All Pro features including AI Vision and Magic Agents are unlocked for everyone."
                         }
                     },
                     {
@@ -198,7 +198,7 @@ def generate_schema_markup(lang_code):
                 "@id": current_url,
                 "url": current_url,
                 "name": "SnapToAI - Screenshots to AI in One Click",
-                "description": "Convert screenshots to AI context instantly. Free forever. 55+ languages. Privacy-first Chrome extension.",
+                "description": "Capture screenshots, analyze with AI Vision, automate with Magic Agents. Free Early Access. 55+ languages.",
                 "isPartOf": {
                     "@id": "https://snaptoai.com"
                 }
@@ -245,13 +245,13 @@ def generate_html_for_language(lang_code, translations, hreflang_tags):
     <link rel="canonical" href="https://snaptoai.com{'/' + lang_code + '/' if lang_code != 'en' else '/'}">
 {hreflang_tags}
     <meta property="og:title" content="SnapToAI – Screenshots to AI in One Click" />
-    <meta property="og:description" content="9 screenshots → 1 file for ChatGPT, Claude, Grok. Free forever." />
+    <meta property="og:description" content="Capture, analyze with AI Vision, and automate with Magic Agents. Free early access." />
     <meta property="og:image" content="https://snaptoai.com/og-image.jpg" />
     <meta property="og:url" content="{current_url}" />
     <meta property="og:type" content="website" />
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:title" content="SnapToAI – Screenshots to AI in One Click" />
-    <meta property="twitter:description" content="9 screenshots → 1 file for ChatGPT, Claude, Grok. Free forever." />
+    <meta property="twitter:description" content="Capture, analyze with AI Vision, and automate with Magic Agents. Free early access." />
     <meta property="twitter:image" content="https://snaptoai.com/og-image.jpg" />
     <script type="application/ld+json">
 {schema_markup}
@@ -267,7 +267,7 @@ def generate_html_for_language(lang_code, translations, hreflang_tags):
                 <div class="logo-icon">📸</div>
                 <span class="logo-text">Snap<span class="logo-highlight">ToAI</span></span>
                 <div class="logo-free">
-                    <span style="font-size: 0.7rem;">FREE FOREVER</span>
+                    <span style="font-size: 0.7rem;">EARLY ACCESS</span>
                 </div>
             </div>
             <div class="nav-links">
@@ -463,6 +463,71 @@ def generate_html_for_language(lang_code, translations, hreflang_tags):
                     <p id="problemItem4Desc">{t("problemItem4Desc", "Upload 90 screenshots in one shot. No file size limits. Pure power.")}</p>
                     <div class="advantage-badge" id="badge4">{t("badge4", "UNLIMITED SCALE")}</div>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Superpowers Section -->
+    <section class="ai-superpowers-section">
+        <div class="ai-superpowers-container">
+            <h2 class="section-title">More Than Screenshots</h2>
+            <p class="ai-superpowers-subtitle">SnapToAI is a full AI productivity suite built into your browser</p>
+            
+            <div class="superpowers-grid">
+                <div class="superpower-card superpower-vision">
+                    <div class="superpower-glow"></div>
+                    <div class="superpower-icon-wrap">
+                        <span class="superpower-icon">👁️</span>
+                        <span class="superpower-badge-new">PRO</span>
+                    </div>
+                    <h3 class="superpower-title">AI Vision Analysis</h3>
+                    <p class="superpower-desc">Snap any screen and let Gemini AI analyze it instantly. Get code explanations, bug detection, UI feedback, data extraction — all from a screenshot. Like having a senior developer looking over your shoulder.</p>
+                    <div class="superpower-features">
+                        <span class="sp-feat">Code Review</span>
+                        <span class="sp-feat">Bug Detection</span>
+                        <span class="sp-feat">Data Extraction</span>
+                        <span class="sp-feat">UI Analysis</span>
+                    </div>
+                </div>
+
+                <div class="superpower-card superpower-agents">
+                    <div class="superpower-glow"></div>
+                    <div class="superpower-icon-wrap">
+                        <span class="superpower-icon">🤖</span>
+                        <span class="superpower-badge-new">NEW</span>
+                    </div>
+                    <h3 class="superpower-title">Magic Agents</h3>
+                    <p class="superpower-desc">5 built-in professional AI agents that automate your workflow. Navigate pages, click buttons, capture screenshots — all hands-free. Plus create your own custom agents for any repetitive task.</p>
+                    <div class="superpower-features">
+                        <span class="sp-feat">Stock Tracker</span>
+                        <span class="sp-feat">News Scanner</span>
+                        <span class="sp-feat">Site Auditor</span>
+                        <span class="sp-feat">Custom Agents</span>
+                    </div>
+                </div>
+
+                <div class="superpower-card superpower-credit">
+                    <div class="superpower-glow"></div>
+                    <div class="superpower-icon-wrap">
+                        <span class="superpower-icon">💎</span>
+                        <span class="superpower-badge-free">FREE</span>
+                    </div>
+                    <h3 class="superpower-title">$300 Free AI Credit</h3>
+                    <p class="superpower-desc">Google gives every new user $300 in free API credit. That means thousands of AI analyses completely free. We show you exactly how to set it up in 2 minutes — no credit card required to start.</p>
+                    <div class="superpower-features">
+                        <span class="sp-feat">$300 Credit</span>
+                        <span class="sp-feat">2-Min Setup</span>
+                        <span class="sp-feat">No Card Needed</span>
+                        <span class="sp-feat">Thousands of Uses</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="superpowers-cta">
+                <p class="superpowers-cta-text">All Pro features unlocked during Early Access — no payment required</p>
+                <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="cta-button cta-small">
+                    <span class="cta-text">Get Started Free</span>
+                </a>
             </div>
         </div>
     </section>
