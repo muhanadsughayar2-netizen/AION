@@ -392,12 +392,12 @@ def generate_html_for_language(lang_code, translations, hreflang_tags):
                         <span class="superpower-badge-new">NEW</span>
                     </div>
                     <h3 class="superpower-title">Magic Agents</h3>
-                    <p class="superpower-desc">5 built-in professional AI agents that automate your workflow. Navigate pages, click buttons, capture screenshots — all hands-free. Plus create your own custom agents for any repetitive task.</p>
+                    <p class="superpower-desc">Create your own AI agents that automate any workflow. Navigate pages, click buttons, capture screenshots — all hands-free. Build custom agents for stock tracking, news scanning, site auditing, or any repetitive task you can imagine.</p>
                     <div class="superpower-features">
-                        <span class="sp-feat">Stock Tracker</span>
-                        <span class="sp-feat">News Scanner</span>
-                        <span class="sp-feat">Site Auditor</span>
-                        <span class="sp-feat">Custom Agents</span>
+                        <span class="sp-feat">Build Your Own</span>
+                        <span class="sp-feat">Fully Custom</span>
+                        <span class="sp-feat">Automate Anything</span>
+                        <span class="sp-feat">Hands-Free</span>
                     </div>
                 </div>
 
