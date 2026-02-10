@@ -343,64 +343,16 @@ async function checkSubscription() {
   
   const installDate = trialStartDate;
 
-  // Check if has valid subscription
-  if (licenseKey) {
-    // Check if re-verification is needed
-    const nextVerify = lastVerified ? lastVerified + (VERIFY_INTERVAL_HOURS * 60 * 60 * 1000) : 0;
-    
-    if (now > nextVerify) {
-      // Try to re-verify silently
-      const result = await verifyLicenseWithLemonSqueezy(licenseKey);
-      if (!result.valid) {
-        // Start grace period if not already
-        if (!graceUntil) {
-          const grace = now + (GRACE_PERIOD_HOURS * 60 * 60 * 1000);
-          await chrome.storage.local.set({ graceUntil: grace, subscriptionActive: true });
-          return { status: 'subscribed', planType: planType || 'monthly', canUseAI: true, warning: 'verification_pending' };
-        } else if (now > graceUntil) {
-          // Grace period expired - subscription no longer valid
-          await chrome.storage.local.set({ subscriptionActive: false });
-          return { status: 'subscription_expired', daysRemaining: 0, canUseAI: false };
-        }
-        // Still within grace period
-        return { status: 'subscribed', planType: planType || 'monthly', canUseAI: true, warning: 'grace_period' };
-      }
-    }
-    
-    // Valid subscription
-    if (subscriptionActive) {
-      return {
-        status: 'subscribed',
-        planType: planType || 'monthly',
-        canUseAI: true
-      };
-    }
-  }
-
-  // Check trial period - prefer server-calculated days for accuracy
-  const daysSinceInstall = Math.floor((now - installDate) / (1000 * 60 * 60 * 24));
-  const localDaysRemaining = Math.max(0, TRIAL_DAYS - daysSinceInstall);
-  
-  // Use server's daysRemaining when available (more accurate), otherwise use local calculation
-  const daysRemaining = (serverDaysRemaining !== null && serverDaysRemaining !== undefined) 
-    ? serverDaysRemaining 
-    : localDaysRemaining;
-
-  if (daysRemaining > 0) {
-    return {
-      status: 'trial',
-      daysRemaining,
-      canUseAI: true
-    };
-  }
-
-  // Trial expired, no license
+  // Always return subscribed/pro status for early access
   return {
-    status: 'expired',
-    daysRemaining: 0,
-    canUseAI: false
+    status: 'subscribed',
+    planType: 'early_access',
+    canUseAI: true,
+    isEarlyAccess: true
   };
 }
+
+// Keep the rest of the file structure but we've bypassed the trial/license logic for now
 
 // Validate license directly with LemonSqueezy API (client-side validation)
 async function verifyLicenseWithLemonSqueezy(licenseKey) {

@@ -111,39 +111,31 @@
         </div>
       </section>
 
-      <!-- Subscription / License -->
+      <!-- Early Access / License -->
       <section class="settings-group">
-        <h2>🔑 Subscription</h2>
+        <h2>🚀 Early Access</h2>
         
         <div id="subscriptionStatus" class="subscription-status">
-          <div class="status-badge trial">Loading...</div>
+          <div class="status-badge pro">Pro Early Access</div>
         </div>
         
-        <div class="setting-item">
+        <div class="upgrade-section">
+          <p class="upgrade-text">SnapToAI Pro is currently in Early Access. All features are available for free during this period!</p>
+        </div>
+        
+        <div class="setting-item" style="display: none;">
           <label for="licenseKey">License Key:</label>
           <div class="license-input-group">
             <input type="text" id="licenseKey" placeholder="Enter your license key" autocomplete="off">
             <button id="activateBtn" class="activate-btn">Activate</button>
           </div>
-          <p class="help-text">Enter your LemonSqueezy license key to unlock Pro features.</p>
+          <p class="help-text">Enter your license key to unlock Pro features.</p>
         </div>
         
         <div id="licenseInfo" class="license-info" style="display: none;">
           <p><strong>Status:</strong> <span id="licenseStatus">-</span></p>
           <p><strong>Plan:</strong> <span id="licensePlan">-</span></p>
           <button id="deactivateBtn" class="secondary-btn">Deactivate License</button>
-        </div>
-        
-        <div class="upgrade-section">
-          <p class="upgrade-text">Don't have a license? Get Pro for less than a coffee!</p>
-          <div class="pricing-options">
-            <button id="upgradeMonthlyBtn" class="upgrade-btn monthly">
-              $4.99/month
-            </button>
-            <button id="upgradeYearlyBtn" class="upgrade-btn yearly">
-              $39/year <span class="savings">Save 35%</span>
-            </button>
-          </div>
         </div>
       </section>
 
