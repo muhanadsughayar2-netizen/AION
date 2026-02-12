@@ -8,13 +8,7 @@
  * =====================================================
  */
 
-window.SNAPTOAI_PROMPTS = {
-  "Vision": "Vision: Act as a master image analyst. Describe every detail in this screenshot with extreme precision. Identify objects, text, colors, and the overall mood. If it's a website, describe the UX/UI. If it's a photo, describe the scene. Provide a complete list of key insights. Give me the full answer directly.",
-  "Market": "Market: Act as a professional financial analyst. Analyze this chart or data. Identify the trend, support/resistance levels, and key indicators. Evaluate the setup and provide a risk/reward assessment. Be decisive and specific with numbers. Give me your complete analysis.",
-  "Writer": "Writer: Act as a creative copywriter and communications expert. Analyze the content provided and help me draft a perfect reply, article, or post. Tone should be professional yet engaging. Provide 3 different versions based on the context. Deliver all versions now.",
-  "Tutor": "Tutor: Act as a world-class teacher. Analyze this problem, concept, or text. Break it down into simple, easy-to-understand steps. Explain the 'why' behind everything. Give me the complete answer with full explanation.",
-  "Logic": "Logic: Act as a senior software architect. Analyze this code snippet or technical error. Identify the bug, explain why it happened, and provide the exact fix. Suggest best practices to avoid this in the future. Give me the complete solution."
-};
+window.SNAPTOAI_PROMPTS = {};
 
 window.SNAPTOAI_REQUIRED_SCREENSHOTS = {};
 
@@ -115,14 +109,5 @@ Include 2-4 sections with 2-5 items each.
 Include 2-4 action items.
 `,
 
-  // --- DEFAULT MAGIC BUTTONS ---
-  // These are built into SnapToAI
-  
-  DEFAULT_MAGIC_BUTTONS: [
-    { name: "Vision", emoji: "👁️", prompt: "Vision", hint: "Snap anything to understand it...", colorIndex: 0 },
-    { name: "Market", emoji: "📊", prompt: "Market", hint: "Snap charts for instant analysis...", colorIndex: 1 },
-    { name: "Writer", emoji: "✍️", prompt: "Writer", hint: "Snap content for perfect drafts...", colorIndex: 2 },
-    { name: "Tutor", emoji: "🎓", prompt: "Tutor", hint: "Snap problems to master them...", colorIndex: 3 },
-    { name: "Logic", emoji: "🧠", prompt: "Logic", hint: "Snap code for instant fixes...", colorIndex: 4 }
-  ]
+  DEFAULT_MAGIC_BUTTONS: []
 };
