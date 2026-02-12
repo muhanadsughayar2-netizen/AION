@@ -1,0 +1,242 @@
+{
+  "extensionName": {
+    "message": "SnapToAI - Italian",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Screenshot and batch upload to AI",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "Un clic. Uno scatto.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Your pages ready for AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Click camera to capture",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "Seleziona tutto",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "Seleziona tutto",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "Copia selezionato",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "Scarica selezionato",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Export PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF Options",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Combine all into one PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Download each as separate PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Combine selected as one PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Download each selected as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "Cancella tutto",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "Annulla",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Trial Ended",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "Screenshot verso l'IA in un clic",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Seleziona tutto → Copia → Incolla.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Tutte le 9 schermate diventano UN'immagine impilata",
+    "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Pronto",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Acquisizione schermata...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Acquisizione ritaglio...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Acquisizione pagina intera...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Scorrimento pagina...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Schermata acquisita! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Pagina intera acquisita! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Pagina salvata in $COUNT$ parti! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Editor ritaglio aperto! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ schermate selezionate → verranno combinate in UN'immagine impilata",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Combinazione e copia...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ schermate combinate e copiate! 👉 Incolla nell'IA ora!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Scaricamento...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "PNG impilato pulito esportato! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "Generazione PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "PDF impilato pulito esportato! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Eliminato",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Tutto cancellato",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Impossibile accedere a questa pagina - prova un altro sito",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Impossibile acquisire questa pagina",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Acquisizione fallita",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Qualcosa è andato storto",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Apertura editor...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Ricerca di tutte le parti...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Impossibile aprire l'editor",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "Nessuna acquisizione pagina intera trovata",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Schermata copiata",
+    "description": "Status: single copy done"
+  }
+}

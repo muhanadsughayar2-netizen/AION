@@ -1,0 +1,242 @@
+{
+  "extensionName": {
+    "message": "SnapToAI - Malayalam",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Screenshot and batch upload to AI",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "ഒരു ക്ലിക്കിൽ. ഒരു സ്ന്യാപ്പ്.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Your pages ready for AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Click camera to capture",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "എല്ലാം തിരഞ്ഞെടുക്കുക",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "എല്ലാം തിരഞ്ഞെടുക്കുക",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "തിരഞ്ഞെടുത്തവ പകർത്തുക",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "തിരഞ്ഞെടുത്തവ ഡൗൺലോഡ് ചെയ്യുക",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Export PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF Options",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Combine all into one PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Download each as separate PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Combine selected as one PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Download each selected as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "എല്ലാം മായ്‌ക്കുക",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "റദ്ദാക്കുക",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Trial Ended",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "ഒരു ക്ലിക്കിൽ. ഒരു സ്ക്രീൻഷോട്ട്.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "എല്ലാം തിരഞ്ഞെടുക്കുക → പകർത്തുക → ഒട്ടിക്കുക.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "എല്ലാ 9 സ്ക്രീൻഷോട്ടുകളും ഒരു സ്റ്റാക്ക്ഡ് ഇമേജായി മാറുന്നു",
+    "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "തയ്യാറാണ്",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "സ്ക്രീൻഷോട്ട് എടുക്കുന്നു...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "സ്നിപ്പ് എടുക്കുന്നു...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "മുഴുവൻ പേജ് എടുക്കുന്നു...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "പേജ് സ്ക്രോൾ ചെയ്യുന്നു...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "സ്ക്രീൻഷോട്ട് എടുത്തു! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "മുഴുവൻ പേജ് എടുത്തു! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "മുഴുവൻ പേജ് $COUNT$ ഭാഗങ്ങളായി സേവ് ചെയ്തു! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "സ്നിപ്പ് എഡിറ്റർ തുറന്നു! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ സ്ക്രീൻഷോട്ടുകൾ തിരഞ്ഞെടുത്തു → ഒരു സ്റ്റാക്ക്ഡ് ഇമേജ് ആകും",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "സംയോജിപ്പിക്കുകയും പകർത്തുകയും ചെയ്യുന്നു...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ സ്ക്രീൻഷോട്ടുകൾ സംയോജിപ്പിച്ച് പകർത്തി! 👉 ഇപ്പോൾ AI-ൽ ഒട്ടിക്കുക!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "ഡൗൺലോഡ് ചെയ്യുന്നു...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "ക്ലീൻ സ്റ്റാക്ക്ഡ് PNG എക്സ്പോർട്ട് ചെയ്തു! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "PDF ഉണ്ടാക്കുന്നു...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "ക്ലീൻ സ്റ്റാക്ക്ഡ് PDF എക്സ്പോർട്ട് ചെയ്തു! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "ഇല്ലാതാക്കി",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "എല്ലാം മായ്ച്ചു",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "ഈ പേജ് ആക്സസ് ചെയ്യാൻ കഴിയുന്നില്ല - മറ്റൊരു പേജ് പരീക്ഷിക്കുക",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "ഈ പേജ് ക്യാപ്ചർ ചെയ്യാൻ കഴിയില്ല",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "ക്യാപ്ചർ പരാജയപ്പെട്ടു",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "എന്തോ തെറ്റായി",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "എഡിറ്റർ തുറക്കുന്നു...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "എല്ലാ ഭാഗങ്ങളും കണ്ടെത്തുന്നു...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "എഡിറ്റർ തുറക്കാൻ കഴിഞ്ഞില്ല",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "മുഴുവൻ പേജ് ക്യാപ്ചർ കണ്ടെത്തിയില്ല",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "സ്ക്രീൻഷോട്ട് പകർത്തി",
+    "description": "Status: single copy done"
+  }
+}

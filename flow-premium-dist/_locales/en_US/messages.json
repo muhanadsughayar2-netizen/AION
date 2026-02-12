@@ -1,0 +1,242 @@
+{
+  "extensionName": {
+    "message": "SnapToAI - English (US)",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Screenshot and batch upload to AI",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "One click. One snap.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Your pages ready for AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Click camera to capture",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "Select All",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "Select All",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "Copy Selected",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "Download Selected",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Export PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF Options",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Combine all into one PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Download each as separate PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Combine selected as one PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Download each selected as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "Clear All",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "Cancel",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Trial Ended",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "One click. One screenshot.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Select All → Copy → Paste.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "All 9 screenshots drop as ONE stacked image",
+    "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Ready",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Capturing screenshot...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Capturing snip...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Capturing full page...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Scrolling page...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Screenshot captured! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Full page captured! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Full page saved as $COUNT$ parts! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Snip editor opened! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ screenshots selected → become ONE stacked image",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Combining & copying...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ screenshots combined & copied! 👉 Paste into AI now!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Downloading...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "Clean stacked PNG exported! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "Generating PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "Clean stacked PDF exported! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Deleted",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "All cleared",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Can't access this page - try another page",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Cannot capture this page",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Capture failed",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Something went wrong",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Opening editor...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Finding parts...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Failed to open editor",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "No full page capture found",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Screenshot copied",
+    "description": "Status: single copy done"
+  }
+}

@@ -1,0 +1,242 @@
+{
+  "extensionName": {
+    "message": "SnapToAI - Chinese",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Screenshot and batch upload to AI",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "一键。一张快照。",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Your pages ready for AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Click camera to capture",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "全选",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "全选",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "复制已选择",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "下载已选择",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Export PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF Options",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Combine all into one PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Download each as separate PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Combine selected as one PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Download each selected as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "全部清除",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "取消",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Trial Ended",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "屏幕截图到AI，一键操作",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "全选 → 复制 → 粘贴。9张截图合成为一张堆叠图片。",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "所有9张截图合并为一张堆叠图片",
+    "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "就绪",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "正在截图...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "正在裁剪...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "正在捕获整个页面...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "正在滚动页面...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "截图完成！ ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "整页捕获完成！ ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "整页已保存为$COUNT$部分！ ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "裁剪编辑器已打开！ ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "已选择$COUNT$张截图 → 将合并为一张堆叠图片",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "正在合并和复制...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$张截图已合并并复制！ 👉 现在粘贴到AI！",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "正在下载...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "干净的堆叠PNG已导出！ 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "正在生成PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "干净的堆叠PDF已导出！ 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "已删除",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "全部清除",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "无法访问此页面 - 请尝试其他网站",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "无法捕获此页面",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "捕获失败",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "出了点问题",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "正在打开编辑器...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "正在查找所有部分...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "无法打开编辑器",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "未找到整页捕获",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "截图已复制",
+    "description": "Status: single copy done"
+  }
+}

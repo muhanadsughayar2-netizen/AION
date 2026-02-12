@@ -1,0 +1,242 @@
+{
+  "extensionName": {
+    "message": "SnapToAI - Kuvakaappaus tekoälylle",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Tee kuvakaappauksia ja lataa ne joukkoina tekoälyalustoille",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Valmis",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "Yksi napsautus. Yksi kuva.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Sivusi ovat valmiita tekoälylle",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Napsauta kameraa kuvakaappauksen ottamiseksi",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "Valitse kaikki",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "Poista kaikki valinnat",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "Kopioi valitut",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "Lataa valitut",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Vie PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF-asetukset",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "Kaikki yhdeksi PDF:ksi",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Yhdistä kaikki kuvakaappaukset yhdeksi PDF:ksi",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "Kaikki erillisinä PDF-tiedostoina",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Lataa jokainen kuvakaappaus erillisenä PDF-tiedostona",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Valitut yhdeksi PDF:ksi",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Yhdistä valitut yhdeksi PDF:ksi",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Valitut erillisinä PDF-tiedostoina",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Lataa jokainen valittu erillisenä PDF-tiedostona",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "Tyhjennä kaikki",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "Peruuta",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Kokeiluversio päättyi",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Päivitä nyt - $9.90/vuosi",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ päivää jäljellä",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "Yksi napsautus. Yksi kuvakaappaus.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Valitse kaikki → Kopioi → Liitä.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Kaikki 9 kuvakaappausta yhdistyvät YHDEKSI pinottuksi kuvaksi",
+    "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Valmis",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Otetaan kuvakaappaus...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Otetaan leike...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Tallennetaan koko sivu...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Vieritetään sivua...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Kuvakaappaus otettu! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Koko sivu tallennettu! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Koko sivu tallennettu $COUNT$ osana! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Leikemuokkain avattu! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ kuvakaappausta valittu → yhdistyvät YHDEKSI pinotuksi kuvaksi",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Yhdistetään ja kopioidaan...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ kuvakaappausta yhdistetty ja kopioitu! 👉 Liitä tekoälyyn nyt!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Ladataan...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "Puhdas pinottu PNG viety! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "Luodaan PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "Puhdas pinottu PDF viety! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Poistettu",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Kaikki tyhjennetty",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Tälle sivulle ei pääse - kokeile toista sivua",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Tätä sivua ei voi kaapata",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Kaappaus epäonnistui",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Jokin meni pieleen",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Avataan muokkainta...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Etsitään osia...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Muokkaimen avaaminen epäonnistui",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "Koko sivun kaappausta ei löytynyt",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Kuvakaappaus kopioitu",
+    "description": "Status: single copy done"
+  }
+}

@@ -1,0 +1,242 @@
+{
+  "extensionName": {
+    "message": "SnapToAI - Oriya",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Screenshot and batch upload to AI",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "ଗୋଟିଏ କ୍ଲିକ୍। ଗୋଟିଏ ସ୍ନ୍ୟାପ୍।",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Your pages ready for AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Click camera to capture",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "ସବୁକିଛି ନିର୍ବାଚନ କରନ୍ତୁ",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "ସବୁକିଛି ନିର୍ବାଚନ କରନ୍ତୁ",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "ଚୟନିତ ନକଲ କରନ୍ତୁ",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "ଚୟନିତ ଡାଉନଲୋଡ୍ କରନ୍ତୁ",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Export PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF Options",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Combine all into one PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Download each as separate PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Combine selected as one PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Download each selected as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "ସବୁକିଛି ଲିଭାଇଦିନ୍ତୁ",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "ଜଞ୍ଜାବା",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Trial Ended",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "ଗୋଟିଏ କ୍ଲିକ୍। ଗୋଟିଏ ସ୍କ୍ରିନ୍‌ଶଟ୍।",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "ସମସ୍ତ ଚୟନ କରନ୍ତୁ → କପି → ପେଷ୍ଟ। ସମସ୍ତ 9 ଟି ସ୍କ୍ରିନସଟ୍ ଗୋଟିଏ ଷ୍ଟାକ୍ଡ ଇମେଜ ହୁଏ।",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "ସମସ୍ତ 9 ସ୍କ୍ରିନସଟ୍ ଗୋଟିଏ ଛବି ଭାବରେ ପଡ଼ିଥାଏ",
+    "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "ପ୍ରସ୍ତୁତ",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "ସ୍କ୍ରିନ୍‌ଶଟ୍ ନେଉଛି...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "ସ୍ନିପ୍ ନେଉଛି...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "ପୂର୍ଣ୍ଣ ପୃଷ୍ଠା ନେଉଛି...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "ପୃଷ୍ଠା ସ୍କ୍ରୋଲ୍ କରୁଛି...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "ସ୍କ୍ରିନ୍‌ଶଟ୍ ନିଆଗଲା! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "ପୂର୍ଣ୍ଣ ପୃଷ୍ଠା ନିଆଗଲା! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "ପୂର୍ଣ୍ଣ ପୃଷ୍ଠା $COUNT$ ଭାଗରେ ସଞ୍ଚିତ! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "ସ୍ନିପ୍ ଏଡିଟର୍ ଖୋଲିଲା! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ ସ୍କ୍ରିନ୍‌ଶଟ୍ ଚୟନ → ଗୋଟିଏ ଷ୍ଟାକ୍ ଇମେଜ୍ ହେବ",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "ମିଶାଉଛି ଓ କପି କରୁଛି...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ ସ୍କ୍ରିନ୍‌ଶଟ୍ ମିଶିଗଲା ଓ କପି ହେଲା! 👉 AI ରେ ପେଷ୍ଟ କରନ୍ତୁ!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "ଡାଉନଲୋଡ୍ ହେଉଛି...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "ସଫା ଷ୍ଟାକ୍ PNG ରପ୍ତାନି ହେଲା! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "PDF ତିଆରି ହେଉଛି...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "ସଫା ଷ୍ଟାକ୍ PDF ରପ୍ତାନି ହେଲା! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "ଲିଭିଗଲା",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "ସବୁ ଲିଭିଗଲା",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "ଏହି ପୃଷ୍ଠାକୁ ଆକ୍ସେସ୍ କରିହେଲା ନାହିଁ - ଅନ୍ୟ ପୃଷ୍ଠା ଚେଷ୍ଟା କରନ୍ତୁ",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "ଏହି ପୃଷ୍ଠା ନିଆଯାଇ ପାରିବ ନାହିଁ",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "କ୍ୟାପଚର୍ ବିଫଳ ହେଲା",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "କିଛି ଭୁଲ ହେଲା",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "ଏଡିଟର୍ ଖୋଲୁଛି...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "ସବୁ ଭାଗ ଖୋଜୁଛି...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "ଏଡିଟର୍ ଖୋଲିହେଲା ନାହିଁ",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "ପୂର୍ଣ୍ଣ ପୃଷ୍ଠା କ୍ୟାପଚର୍ ମିଳିଲା ନାହିଁ",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "ସ୍କ୍ରିନ୍‌ଶଟ୍ କପି ହେଲା",
+    "description": "Status: single copy done"
+  }
+}

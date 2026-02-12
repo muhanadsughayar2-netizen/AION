@@ -1,0 +1,242 @@
+{
+  "extensionName": {
+    "message": "SnapToAI - Dutch",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Screenshot and batch upload to AI",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "Eén klik. Eén afbeelding.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Your pages ready for AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Click camera to capture",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "Alles selecteren",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "Alles selecteren",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "Geselecteerde kopiëren",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "Geselecteerde downloaden",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Export PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF Options",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Combine all into one PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Download each as separate PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Combine selected as one PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Download each selected as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "Alles wissen",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "Annuleren",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Trial Ended",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "Eén klik. Eén schermafbeelding.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Alles selecteren → Kopiëren → Plakken.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Alle 9 screenshots worden ÉÉN gestapelde afbeelding",
+    "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Klaar",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Screenshot vastleggen...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Knipsel vastleggen...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Volledige pagina vastleggen...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Pagina scrollen...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Screenshot vastgelegd! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Volledige pagina vastgelegd! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Volledige pagina opgeslagen als $COUNT$ delen! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Knipsel-editor geopend! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ screenshots geselecteerd → worden gecombineerd tot ÉÉN gestapelde afbeelding",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Combineren & kopiëren...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ screenshots gecombineerd & gekopieerd! 👉 Plak nu in AI!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Downloaden...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "Schone gestapelde PNG geëxporteerd! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "PDF genereren...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "Schone gestapelde PDF geëxporteerd! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Verwijderd",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Alles gewist",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Kan deze pagina niet openen - probeer een andere site",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Kan deze pagina niet vastleggen",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Vastleggen mislukt",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Er ging iets mis",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Editor openen...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Alle delen zoeken...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Kan editor niet openen",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "Geen volledige pagina-opname gevonden",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Screenshot gekopieerd",
+    "description": "Status: single copy done"
+  }
+}

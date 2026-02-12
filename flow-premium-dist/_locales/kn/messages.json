@@ -1,0 +1,242 @@
+{
+  "extensionName": {
+    "message": "SnapToAI - Kannada",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Screenshot and batch upload to AI",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "ಒಂದು ಕ್ಲಿಕ್. ಒಂದು ಸ್ನ್ಯಾಪ್.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Your pages ready for AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Click camera to capture",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "ಎಲ್ಲವನ್ನು ಆರಿಸಿ",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "ಎಲ್ಲವನ್ನು ಆರಿಸಿ",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "ಆಯ್ದವನ್ನು ನಕಲಿಸಿ",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "ಆಯ್ದವನ್ನು ಡೌನ್ಲೋಡ್ ಮಾಡಿ",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Export PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF Options",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Combine all into one PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Download each as separate PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Combine selected as one PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Download each selected as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "ಎಲ್ಲವನ್ನು ಸಾಫ್ ಮಾಡಿ",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "ರದ್ದುಹಾಕಿ",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Trial Ended",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "ಒಂದು ಕ್ಲಿಕ್. ಒಂದು ಸ್ಕ್ರೀನ್‌ಶಾಟ್.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "ಎಲ್ಲಾ ಆಯ್ಕೆಮಾಡಿ → ನಕಲಿಸಿ → ಅಂಟಿಸಿ.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "ಎಲ್ಲಾ 9 ಸ್ಕ್ರೀನ್‌ಶಾಟ್‌ಗಳು ಒಂದು ಸ್ಟಾಕ್ಡ್ ಇಮೇಜ್ ಆಗುತ್ತವೆ",
+    "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "ಸಿದ್ಧ",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "ಸ್ಕ್ರೀನ್‌ಶಾಟ್ ತೆಗೆಯಲಾಗುತ್ತಿದೆ...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "ಸ್ನಿಪ್ ತೆಗೆಯಲಾಗುತ್ತಿದೆ...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "ಪೂರ್ಣ ಪುಟ ತೆಗೆಯಲಾಗುತ್ತಿದೆ...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "ಪುಟ ಸ್ಕ್ರೋಲ್ ಆಗುತ್ತಿದೆ...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "ಸ್ಕ್ರೀನ್‌ಶಾಟ್ ತೆಗೆಯಲಾಯಿತು! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "ಪೂರ್ಣ ಪುಟ ತೆಗೆಯಲಾಯಿತು! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "ಪೂರ್ಣ ಪುಟ $COUNT$ ಭಾಗಗಳಾಗಿ ಉಳಿಸಲಾಯಿತು! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "ಸ್ನಿಪ್ ಸಂಪಾದಕ ತೆರೆಯಲಾಯಿತು! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ ಸ್ಕ್ರೀನ್‌ಶಾಟ್‌ಗಳು ಆಯ್ಕೆಯಾಗಿವೆ → ಒಂದು ಸ್ಟಾಕ್ಡ್ ಇಮೇಜ್ ಆಗುತ್ತವೆ",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "ಸಂಯೋಜಿಸಲಾಗುತ್ತಿದೆ ಮತ್ತು ನಕಲಿಸಲಾಗುತ್ತಿದೆ...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ ಸ್ಕ್ರೀನ್‌ಶಾಟ್‌ಗಳು ಸಂಯೋಜಿಸಿ ನಕಲಿಸಲಾಗಿದೆ! 👉 ಈಗ AI ಗೆ ಅಂಟಿಸಿ!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "ಡೌನ್ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "ಸ್ವಚ್ಛ ಸ್ಟಾಕ್ಡ್ PNG ರಫ್ತು ಆಯಿತು! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "PDF ರಚಿಸಲಾಗುತ್ತಿದೆ...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "ಸ್ವಚ್ಛ ಸ್ಟಾಕ್ಡ್ PDF ರಫ್ತು ಆಯಿತು! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "ಅಳಿಸಲಾಗಿದೆ",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "ಎಲ್ಲವೂ ತೆರವುಗೊಳಿಸಲಾಗಿದೆ",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "ಈ ಪುಟವನ್ನು ಪ್ರವೇಶಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ - ಬೇರೆ ಪುಟ ಪ್ರಯತ್ನಿಸಿ",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "ಈ ಪುಟವನ್ನು ತೆಗೆಯಲು ಸಾಧ್ಯವಿಲ್ಲ",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "ತೆಗೆಯುವಿಕೆ ವಿಫಲವಾಯಿತು",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "ಏನೋ ತಪ್ಪಾಗಿದೆ",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "ಸಂಪಾದಕ ತೆರೆಯಲಾಗುತ್ತಿದೆ...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "ಎಲ್ಲಾ ಭಾಗಗಳನ್ನು ಹುಡುಕಲಾಗುತ್ತಿದೆ...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "ಸಂಪಾದಕವನ್ನು ತೆರೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "ಪೂರ್ಣ ಪುಟ ತೆಗೆಯುವಿಕೆ ಕಂಡುಬಂದಿಲ್ಲ",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "ಸ್ಕ್ರೀನ್‌ಶಾಟ್ ನಕಲಿಸಲಾಗಿದೆ",
+    "description": "Status: single copy done"
+  }
+}

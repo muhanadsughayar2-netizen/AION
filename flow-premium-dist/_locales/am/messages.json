@@ -1,0 +1,242 @@
+{
+  "extensionName": {
+    "message": "SnapToAI - ስክሪንቅዱ ወደ AI",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "ስክሪንショቶችን ያስቀምጡ እና ወደ AI ሌሎች ሩብ ማዋቅር",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: ዝግጁ",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "ጠቅ አንድ። ስክሪንショት አንድ።",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "ገጾችህ AI ዋጋ ያላቸው።",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "ስክሪንsherman ለመያዝ ጥቅሉ ጠቅ ያድርጉ",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "ሁሉንም ምረጥ",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "ሁሉንም ምረጥ",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "የተመረጠውን ቅዳ",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "የተመረጠውን ያውርዱ",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "PDF ወደ ላክ",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF አማራጮች",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "ሁሉም ወደ ሙሉ PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "ሁሉንም ስክሪንशოಟ ወደ አንድ PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "ሁሉም እንደ ነጠላ PDF",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "እያንዳንዱን ስክሪንशოॉт ወደ PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "የተመረጠ ወደ ሙሉ PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "የተመረጠውን ወደ አንድ PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "የተመረጠ እንደ ነጠላ PDF",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "የተመረጠውን ወደ ነጠላ PDF",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "ሁሉንም ጥፋ",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "ይቅር",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "ሙከራ ተጠናቀቀ",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "አሁን ያሻሽሉ - $9.90/ዓመት",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ ቀናት ይቀራሉ",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "አንድ ጠቅ። አንድ ስክሪንሼት።",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "ሁሉንም ምረጥ → ቅዳ → ለጥፍ። ሁሉም 9 ስክሪንሾቶች አንድ የተደራረበ ምስል ይሆናሉ።",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "ሁሉም 9 ቅጽበታዊ ገጽ እይታዎች እንደ አንድ ምስል ይወድቃሉ",
+    "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "ዝግጁ",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "ስክሪንሾት በመያዝ ላይ...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "ቁራጭ በመያዝ ላይ...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "ሙሉ ገጽ በመያዝ ላይ...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "ገጽ በማሸብለል ላይ...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "ስክሪንሾት ተይዟል! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "ሙሉ ገጽ ተይዟል! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "ሙሉ ገጽ በ$COUNT$ ክፍሎች ተቀምጧል! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "የቁራጭ አርታኢ ተከፍቷል! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ ስክሪንሾቶች ተመርጠዋል → አንድ የተደራረበ ምስል ይሆናሉ",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "በማዋሀድ እና በመቅዳት ላይ...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ ስክሪንሾቶች ተዋህደው ተቀድተዋል! 👉 አሁን ወደ AI ለጥፍ!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "በማውረድ ላይ...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "ንፁህ የተደራረበ PNG ወጥቷል! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "PDF በመፍጠር ላይ...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "ንፁህ የተደራረበ PDF ወጥቷል! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "ተሰርዟል",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "ሁሉም ተጽዷል",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "ይህን ገጽ መድረስ አልተቻለም - ሌላ ገጽ ይሞክሩ",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "ይህን ገጽ መያዝ አይቻልም",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "መያዝ አልተሳካም",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "የሆነ ችግር ተፈጥሯል",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "አርታኢ በመክፈት ላይ...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "ክፍሎች በመፈለግ ላይ...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "አርታኢ መክፈት አልተቻለም",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "ሙሉ ገጽ ምስል አልተገኘም",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "ስክሪንሾት ተቀድቷል",
+    "description": "Status: single copy done"
+  }
+}

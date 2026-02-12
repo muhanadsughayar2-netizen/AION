@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Snap To AI</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --secondary: #1c2128;
+      --border: rgba(48, 54, 61, 0.8);
+      --primary: #22d3ee;
+      --magic: #a855f7;
+      --snip: #10b981;
+      --ai: #3b82f6;
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --foreground: #f0f6fc;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .tab:hover {
+      color: var(--foreground);
+      background: var(--secondary);
+    }
+
+    .tab.active {
+      background: rgba(34, 211, 238, 0.15);
+      color: var(--primary);
+      border-color: rgba(34, 211, 238, 0.3);
+    }
+
+    .tab.api-tab.active {
+      background: rgba(168, 85, 247, 0.15);
+      color: var(--magic);
+      border-color: rgba(168, 85, 247, 0.3);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+    }
+
+    .free-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .free-badge span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(168, 85, 247, 0.15));
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--primary);
+      animation: pulse 2s infinite;
+    }
+
+    .free-badge .gemini-credit {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(16, 185, 129, 0.15));
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #10b981;
+      font-size: 12px;
+      padding: 6px 14px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .icon-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.25), rgba(168, 85, 247, 0.25));
+      border: 1px solid rgba(34, 211, 238, 0.4);
+      border-radius: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 30px rgba(34, 211, 238, 0.15);
+    }
+
+    .icon-box .stars {
+      position: relative;
+      width: 48px;
+      height: 48px;
+    }
+    .icon-box .star1 {
+      position: absolute;
+      top: 0;
+      left: 5px;
+      font-size: 16px;
+      color: #22d3ee;
+    }
+    .icon-box .star2 {
+      position: absolute;
+      top: 8px;
+      right: 0;
+      font-size: 26px;
+      color: #f59e0b;
+    }
+    .icon-box .star3 {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      font-size: 20px;
+      color: #ec4899;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--foreground);
+      margin-bottom: 10px;
+    }
+
+    h1 .gradient {
+      background: linear-gradient(135deg, var(--primary), var(--magic));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .tag {
+      padding: 6px 14px;
+      border-radius: 24px;
+      font-size: 14px;
+      border: 1px solid;
+    }
+
+    .tag.snip { background: rgba(16, 185, 129, 0.1); color: var(--snip); border-color: rgba(16, 185, 129, 0.2); }
+    .tag.ai { background: rgba(59, 130, 246, 0.1); color: var(--ai); border-color: rgba(59, 130, 246, 0.2); }
+    .tag.magic { background: rgba(168, 85, 247, 0.1); color: var(--magic); border-color: rgba(168, 85, 247, 0.2); }
+    .tag.primary { background: rgba(34, 211, 238, 0.1); color: var(--primary); border-color: rgba(34, 211, 238, 0.2); }
+
+    .extension-box {
+      background: rgba(28, 33, 40, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .extension-title {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .capture-icons {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .capture-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .capture-icon {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      font-size: 20px;
+      transition: all 0.2s;
+    }
+
+    .capture-icon.snip { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .capture-icon.ai { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); }
+    .capture-icon.magic { background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); }
+
+    .capture-item:hover .capture-icon {
+      transform: scale(1.05);
+    }
+
+    .capture-item:hover .capture-icon.snip { background: rgba(16, 185, 129, 0.2); }
+    .capture-item:hover .capture-icon.ai { background: rgba(59, 130, 246, 0.2); }
+    .capture-item:hover .capture-icon.magic { background: rgba(168, 85, 247, 0.2); }
+
+    .capture-label {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .ai-logos {
+      text-align: center;
+    }
+
+    .ai-logos p {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .ai-logos p .accent {
+      color: var(--primary);
+      font-weight: 500;
+    }
+
+    .ai-names {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ai-name {
+      font-size: 16px;
+      font-weight: 700;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .ai-tags {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .ai-tag {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      border: 1px solid;
+    }
+
+    .ai-tag.chatgpt { background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: rgba(16, 185, 129, 0.2); }
+    .ai-tag.grok { background: rgba(249, 115, 22, 0.1); color: #f97316; border-color: rgba(249, 115, 22, 0.2); }
+    .ai-tag.gemini { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border-color: rgba(59, 130, 246, 0.2); }
+
+    .features-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid;
+    }
+
+    .feature-item.snip { background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2); }
+    .feature-item.ai { background: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.2); }
+    .feature-item.magic { background: rgba(168, 85, 247, 0.05); border-color: rgba(168, 85, 247, 0.2); }
+
+    .feature-check {
+      font-size: 14px;
+      margin-top: 2px;
+    }
+
+    .feature-check.snip { color: var(--snip); }
+    .feature-check.ai { color: var(--ai); }
+    .feature-check.magic { color: var(--magic); }
+
+    .feature-content .name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--foreground);
+      margin-bottom: 2px;
+    }
+
+    .feature-content .desc {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .use-cases {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .use-case {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(22, 27, 34, 0.5);
+      transition: all 0.2s;
+    }
+
+    .use-case:hover {
+      border-color: rgba(34, 211, 238, 0.3);
+    }
+
+    .use-case .icon {
+      font-size: 16px;
+    }
+
+    .use-case .icon.snip { color: var(--snip); }
+    .use-case .icon.ai { color: var(--ai); }
+    .use-case .icon.magic { color: var(--magic); }
+    .use-case .icon.primary { color: var(--primary); }
+
+    .use-case .title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--foreground);
+    }
+
+    .use-case .subtitle {
+      font-size: 10px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .use-case.special {
+      border: 2px solid rgba(34, 211, 238, 0.5);
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(168, 85, 247, 0.1));
+      box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1);
+    }
+
+    .use-case.special:hover {
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(168, 85, 247, 0.15));
+    }
+
+    .use-case.special .title {
+      color: var(--primary);
+    }
+
+    .demo-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      background: rgba(34, 211, 238, 0.05);
+      color: var(--primary);
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      margin-bottom: 16px;
+      transition: all 0.2s;
+    }
+
+    .demo-link:hover {
+      background: rgba(34, 211, 238, 0.1);
+    }
+
+    .demo-link .play {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(34, 211, 238, 0.2);
+      border-radius: 50%;
+      font-size: 10px;
+    }
+
+    .founder-banner {
+      position: relative;
+      border: 2px solid var(--primary);
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(168, 85, 247, 0.15), rgba(34, 211, 238, 0.15));
+      padding: 16px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .founder-banner .badge {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: var(--primary);
+      color: #0d1117;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 0 0 0 8px;
+    }
+
+    .founder-banner .title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .founder-banner .title-row .icon {
+      font-size: 18px;
+    }
+
+    .founder-banner .title-row p {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--foreground);
+    }
+
+    .founder-banner .desc {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .founder-banner .desc .highlight {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .pro-section {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .pro-section .crown-text {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .pro-section .saves-text {
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .pro-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--primary), #0891b2);
+      border: none;
+      border-radius: 10px;
+      color: #0d1117;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: all 0.2s;
+    }
+
+    .pro-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(34, 211, 238, 0.3);
+    }
+
+    .pro-section .yearly {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .launch-cta {
+      background: linear-gradient(135deg, rgba(28, 33, 40, 0.5), rgba(34, 211, 238, 0.05));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .launch-cta .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--foreground);
+      margin-bottom: 10px;
+    }
+
+    .launch-cta .steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .launch-cta .steps .snip { color: var(--snip); }
+    .launch-cta .steps .ai { color: var(--ai); }
+    .launch-cta .steps .magic { color: var(--magic); font-weight: 500; }
+
+    .launch-cta .ready {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    @media (max-width: 560px) {
+      .card { padding: 24px; }
+      h1 { font-size: 26px; }
+      .subtitle { font-size: 15px; }
+      .tag { font-size: 12px; padding: 5px 12px; }
+      .free-badge span { font-size: 12px; }
+      .launch-cta .title-row { font-size: 16px; }
+      .launch-cta .steps { font-size: 12px; }
+      .launch-cta .ready { font-size: 12px; }
+      .footer { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="card">
+      <div class="free-badge">
+        <span>🎁 GET 20 FREE DAILY PROMPTS</span>
+        <span class="gemini-credit">🎁 New to Gemini? Get $300 FREE credits for 90 days</span>
+      </div>
+
+      <div class="header">
+        <div class="icon-box">
+          <div class="stars">
+            <span class="star1">✦</span>
+            <span class="star2">✦</span>
+            <span class="star3">✦</span>
+          </div>
+        </div>
+        <h1>Stop Typing. <span class="gradient">Start Snapping.</span></h1>
+        <p class="subtitle">Turn any visual on your screen into instant, custom AI intelligence. One click to analyze, code, or summarize.</p>
+        <div class="tags">
+          <span class="tag snip">📈 Stocks</span>
+          <span class="tag ai">💰 Crypto</span>
+          <span class="tag magic">🛍️ Shopping</span>
+          <span class="tag primary">💪 Health</span>
+          <span class="tag snip">📚 Learning</span>
+        </div>
+      </div>
+
+      <div class="launch-cta">
+        <div class="title-row">
+          <span>🚀</span>
+          Launch Your Intelligence Layer
+        </div>
+        <div class="steps">
+          <span>Click</span>
+          <span class="snip">⭐ Extensions</span>
+          <span>→ Pin</span>
+          <span class="ai">📌</span>
+          <span class="magic">Snap To AI</span>
+        </div>
+        <p class="ready">That's it! You're ready to snap.</p>
+      </div>
+    </div>
+
+    <p class="footer">
+      🔒 Your screenshots stay private — processed securely
+    </p>
+  </div>
+
+  <script src="welcome.js"></script>
+</body>
+</html>

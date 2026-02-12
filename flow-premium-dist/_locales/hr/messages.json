@@ -1,0 +1,242 @@
+{
+  "extensionName": {
+    "message": "SnapToAI - Croatian",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Screenshot and batch upload to AI",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "Jedan klik. Jedan snimak.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Your pages ready for AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Click camera to capture",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "Odaberi sve",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "Odaberi sve",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "Kopiraj odabrano",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "Preuzmi odabrano",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Export PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF Options",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Combine all into one PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Download each as separate PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Combine selected as one PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Download each selected as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "Očisti sve",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "Otkaži",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Trial Ended",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "Jedan klik. Jedan snimak.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Odaberi sve → Kopiraj → Zalijepi.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Svih 9 snimaka zaslona postaje JEDNA složena slika",
+    "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Spremno",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Snimanje zaslona...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Snimanje izrezka...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Snimanje cijele stranice...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Pomicanje stranice...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Snimak zaslona snimljen! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Cijela stranica snimljena! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Cijela stranica spremljena kao $COUNT$ dijelova! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Uređivač izrezka otvoren! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ snimaka zaslona odabrano → postaju JEDNA složena slika",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Kombiniranje i kopiranje...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ snimaka zaslona kombinirano i kopirano! 👉 Zalijepi u AI sada!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Preuzimanje...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "Čist složeni PNG izvezen! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "Generiranje PDF-a...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "Čist složeni PDF izvezen! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Izbrisano",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Sve obrisano",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Nije moguće pristupiti ovoj stranici - pokušajte drugu stranicu",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Nije moguće snimiti ovu stranicu",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Snimanje nije uspjelo",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Nešto je pošlo po zlu",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Otvaranje uređivača...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Pronalaženje svih dijelova...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Nije moguće otvoriti uređivač",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "Nije pronađen snimak cijele stranice",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Snimak zaslona kopiran",
+    "description": "Status: single copy done"
+  }
+}

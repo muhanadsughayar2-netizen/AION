@@ -1,0 +1,242 @@
+{
+  "extensionName": {
+    "message": "SnapToAI - Chụp Ảnh Màn Hình sang AI",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Chụp ảnh màn hình và tải hàng loạt lên các nền tảng AI",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Sẵn sàng",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "Một cú nhấp. Một ảnh chụp.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Các trang của bạn đã sẵn sàng cho AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Nhấp vào máy ảnh để chụp ảnh màn hình",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "Chọn tất cả",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "Bỏ chọn tất cả",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "Sao chép đã chọn",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "Tải xuống đã chọn",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Xuất PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "Tùy chọn PDF",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "Tất cả dưới dạng một PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Kết hợp tất cả ảnh chụp thành một PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "Tất cả dưới dạng các PDF riêng biệt",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Tải xuống từng ảnh chụp dưới dạng PDF riêng biệt",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Đã chọn dưới dạng một PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Kết hợp đã chọn thành một PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Đã chọn dưới dạng các PDF riêng biệt",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Tải xuống từng mục đã chọn dưới dạng PDF riêng biệt",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "Xóa tất cả",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "Hủy bỏ",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Dùng thử kết thúc",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Nâng cấp ngay - $9.90/năm",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ ngày còn lại",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "Một cú nhấp. Một ảnh chụp màn hình.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Chọn tất cả → Sao chép → Dán.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Tất cả 9 ảnh chụp màn hình trở thành MỘT hình ảnh xếp chồng",
+    "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Sẵn sàng",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Đang chụp ảnh màn hình...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Đang chụp vùng...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Đang chụp toàn trang...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Đang cuộn trang...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Đã chụp ảnh màn hình! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Đã chụp toàn trang! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Toàn trang đã lưu thành $COUNT$ phần! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Trình chỉnh sửa vùng đã mở! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ ảnh chụp màn hình đã chọn → trở thành MỘT hình ảnh xếp chồng",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Đang kết hợp và sao chép...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ ảnh chụp màn hình đã kết hợp và sao chép! 👉 Dán vào AI ngay!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Đang tải xuống...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "PNG xếp chồng sạch đã xuất! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "Đang tạo PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "PDF xếp chồng sạch đã xuất! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Đã xóa",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Đã xóa tất cả",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Không thể truy cập trang này - hãy thử trang khác",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Không thể chụp trang này",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Chụp thất bại",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Đã xảy ra lỗi",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Đang mở trình chỉnh sửa...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Đang tìm tất cả các phần...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Không thể mở trình chỉnh sửa",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "Không tìm thấy ảnh chụp toàn trang",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Đã sao chép ảnh chụp màn hình",
+    "description": "Status: single copy done"
+  }
+}

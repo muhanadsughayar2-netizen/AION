@@ -1,0 +1,242 @@
+{
+  "extensionName": {
+    "message": "SnapToAI - Indonesian",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Screenshot and batch upload to AI",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "Satu klik. Satu tangkapan.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Your pages ready for AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Click camera to capture",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "Pilih Semua",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "Pilih Semua",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "Salin Dipilih",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "Unduh Dipilih",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Export PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF Options",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Combine all into one PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Download each as separate PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Combine selected as one PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Download each selected as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "Hapus Semua",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "Batal",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Trial Ended",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "Satu klik. Satu tangkapan layar.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Pilih Semua → Salin → Tempel.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Semua 9 tangkapan layar menjadi SATU gambar bertumpuk",
+    "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Siap",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Mengambil tangkapan layar...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Mengambil potongan...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Mengambil halaman penuh...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Menggulir halaman...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Tangkapan layar berhasil! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Halaman penuh berhasil! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Halaman penuh disimpan sebagai $COUNT$ bagian! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Editor potongan dibuka! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ tangkapan layar dipilih → menjadi SATU gambar bertumpuk",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Menggabungkan & menyalin...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ tangkapan layar digabung & disalin! 👉 Tempel ke AI sekarang!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Mengunduh...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "PNG bertumpuk bersih diekspor! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "Membuat PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "PDF bertumpuk bersih diekspor! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Dihapus",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Semua dihapus",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Tidak dapat mengakses halaman ini - coba halaman lain",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Tidak dapat menangkap halaman ini",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Tangkapan gagal",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "Terjadi kesalahan",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Membuka editor...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Mencari semua bagian...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Tidak dapat membuka editor",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "Tidak ditemukan tangkapan halaman penuh",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Tangkapan layar disalin",
+    "description": "Status: single copy done"
+  }
+}

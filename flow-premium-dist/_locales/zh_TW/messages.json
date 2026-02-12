@@ -1,0 +1,242 @@
+{
+  "extensionName": {
+    "message": "SnapToAI - 螢幕截圖到AI",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "捕獲螢幕截圖並批量上傳到AI平台",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: 就緒",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "一鍵。一張快照。",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "您的頁面已準備好用於AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "點擊攝像頭以捕獲螢幕截圖",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "全選",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "全不選",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "複製已選擇",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "下載已選擇",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "匯出PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF選項",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "全部為一個PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "將所有截圖合併為一個PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "全部為單獨的PDF",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "將每個截圖下載為單獨的PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "已選擇為一個PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "將已選擇的合併為一個PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "已選擇為單獨的PDF",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "將每個已選擇的下載為單獨的PDF",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "全部清除",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "取消",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "試用期已結束",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "立即升級 - $9.90/年",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "剩餘 $DAYS$ 天",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "一鍵點擊。一個截圖。",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Select All → Copy → Paste.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "所有9張螢幕截圖成為一張堆疊圖片",
+    "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "就緒",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "正在截圖...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "正在裁剪...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "正在捕獲整個頁面...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "正在滾動頁面...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "截圖完成！ ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "整頁捕獲完成！ ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "整頁已儲存為$COUNT$部分！ ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "裁剪編輯器已開啟！ ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "已選擇$COUNT$張截圖 → 將合併為一張堆疊圖片",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "正在合併和複製...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$張截圖已合併並複製！ 👉 現在貼上到AI！",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "正在下載...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "乾淨的堆疊PNG已匯出！ 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "正在生成PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "乾淨的堆疊PDF已匯出！ 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "已刪除",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "全部清除",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "無法訪問此頁面 - 請嘗試其他網站",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "無法捕獲此頁面",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "捕獲失敗",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "出了點問題",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "正在開啟編輯器...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "正在尋找所有部分...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "無法開啟編輯器",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "未找到整頁捕獲",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "截圖已複製",
+    "description": "Status: single copy done"
+  }
+}

@@ -1,0 +1,242 @@
+{
+  "extensionName": {
+    "message": "SnapToAI - Filipino",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "Screenshot and batch upload to AI",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: Ready",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "Isang click. Isang larawan.",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "Your pages ready for AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "Click camera to capture",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "Piliin Lahat",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "Piliin Lahat",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "Kopyahin ang Pinili",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "I-download ang Pinili",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "Export PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "PDF Options",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "All as One PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "Combine all into one PDF",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "All as Separate PDFs",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "Download each as separate PDF",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "Selected as One PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "Combine selected as one PDF",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "Selected as Separate PDFs",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "Download each selected as PDF",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "Likhain ang Lahat",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "Kanselahin",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "Trial Ended",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "Upgrade Now - $9.90/year",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "$DAYS$ days remaining",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "Isang click. Isang screenshot.",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "Piliin Lahat → Kopyahin → I-paste.",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "Ang lahat ng 9 na screenshot ay nagiging ISANG nakasalansan na larawan",
+    "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "Handa na",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "Kumukuha ng screenshot...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "Kumukuha ng snip...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "Kumukuha ng buong pahina...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "Nag-i-scroll ng pahina...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "Nakuha ang screenshot! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "Nakuha ang buong pahina! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "Buong pahina nai-save bilang $COUNT$ bahagi! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "Nabuksan ang snip editor! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "$COUNT$ screenshots pinili → magiging ISANG nakasalansan na larawan",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "Pinagsasama at kinokopya...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "$COUNT$ screenshots pinagsama at kinopya! 👉 I-paste sa AI ngayon!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "Dina-download...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "Malinis na nakasalansan na PNG na-export! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "Ginagawa ang PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "Malinis na nakasalansan na PDF na-export! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "Nabura na",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "Lahat nalinis",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "Hindi ma-access ang pahinang ito - subukan ang ibang pahina",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "Hindi makuha ang pahinang ito",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "Nabigo ang pagkuha",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "May nangyaring mali",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "Binubuksan ang editor...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "Hinahanap ang lahat ng bahagi...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "Hindi mabuksan ang editor",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "Walang nahanap na buong pahina na capture",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "Nakopya ang screenshot",
+    "description": "Status: single copy done"
+  }
+}

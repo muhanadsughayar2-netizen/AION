@@ -1,0 +1,242 @@
+{
+  "extensionName": {
+    "message": "SnapToAI - ภาพหน้าจอ ต่อ AI",
+    "description": "extensionName"
+  },
+  "extensionDescription": {
+    "message": "จับภาพหน้าจออพลوดเป็นกลุ่มไปยังแพลตฟอร์ม AI",
+    "description": "extensionDescription"
+  },
+  "flowReady": {
+    "message": "SnapToAI: พร้อม",
+    "description": "flowReady"
+  },
+  "oneClickOneFlow": {
+    "message": "คลิกเดียว แตะเดียว",
+    "description": "oneClickOneFlow"
+  },
+  "pagesReadyForAI": {
+    "message": "หน้าของคุณพร้อมสำหรับ AI",
+    "description": "pagesReadyForAI"
+  },
+  "clickCameraButton": {
+    "message": "คลิกกล้องเพื่อจับภาพหน้าจอ",
+    "description": "clickCameraButton"
+  },
+  "selectAll": {
+    "message": "เลือกทั้งหมด",
+    "description": "selectAll"
+  },
+  "deselectAll": {
+    "message": "ยกเลิกการเลือกทั้งหมด",
+    "description": "deselectAll"
+  },
+  "copySelected": {
+    "message": "คัดลอกที่เลือก",
+    "description": "copySelected"
+  },
+  "downloadSelected": {
+    "message": "ดาวน์โหลดที่เลือก",
+    "description": "downloadSelected"
+  },
+  "exportPDF": {
+    "message": "ส่งออก PDF",
+    "description": "exportPDF"
+  },
+  "exportPDFOptions": {
+    "message": "ตัวเลือก PDF",
+    "description": "exportPDFOptions"
+  },
+  "allAsOnePDF": {
+    "message": "ทั้งหมดเป็นหนึ่งไฟล์ PDF",
+    "description": "allAsOnePDF"
+  },
+  "allAsOnePDFDesc": {
+    "message": "รวมภาพหน้าจอทั้งหมดเป็นไฟล์ PDF เดียว",
+    "description": "allAsOnePDFDesc"
+  },
+  "allAsSeparatePDFs": {
+    "message": "ทั้งหมดเป็นไฟล์ PDF แยกต่างหาก",
+    "description": "allAsSeparatePDFs"
+  },
+  "allAsSeparatePDFsDesc": {
+    "message": "ดาวน์โหลดแต่ละภาพหน้าจอเป็นไฟล์ PDF แยกต่างหาก",
+    "description": "allAsSeparatePDFsDesc"
+  },
+  "selectedAsOnePDF": {
+    "message": "ที่เลือกเป็นหนึ่งไฟล์ PDF",
+    "description": "selectedAsOnePDF"
+  },
+  "selectedAsOnePDFDesc": {
+    "message": "รวมที่เลือกเป็นไฟล์ PDF เดียว",
+    "description": "selectedAsOnePDFDesc"
+  },
+  "selectedAsSeparatePDFs": {
+    "message": "ที่เลือกเป็นไฟล์ PDF แยกต่างหาก",
+    "description": "selectedAsSeparatePDFs"
+  },
+  "selectedAsSeparatePDFsDesc": {
+    "message": "ดาวน์โหลดแต่ละที่เลือกเป็นไฟล์ PDF แยกต่างหาก",
+    "description": "selectedAsSeparatePDFsDesc"
+  },
+  "clearAll": {
+    "message": "ล้างทั้งหมด",
+    "description": "clearAll"
+  },
+  "cancel": {
+    "message": "ยกเลิก",
+    "description": "cancel"
+  },
+  "trialEnded": {
+    "message": "ทดลองสิ้นสุดแล้ว",
+    "description": "trialEnded"
+  },
+  "upgradeNow": {
+    "message": "อัปเกรดเดี๋ยวนี้ - $9.90/ปี",
+    "description": "upgradeNow"
+  },
+  "daysRemaining": {
+    "message": "เหลือ $DAYS$ วัน",
+    "description": "daysRemaining",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "emptyHeading": {
+    "message": "คลิกเดียว รูปเดียว",
+    "description": "Empty state heading"
+  },
+  "emptySubheading1": {
+    "message": "เลือกทั้งหมด → คัดลอก → วาง ภาพหน้าจอ 9 ภาพกลายเป็นภาพเดียวที่ซ้อนกัน",
+    "description": "Empty state subheading 1"
+  },
+  "emptySubheading2": {
+    "message": "ภาพหน้าจอทั้ง 9 ภาพจะรวมเป็นภาพเดียว",
+    "description": "Empty state subheading 2"
+  },
+  "statusReady": {
+    "message": "พร้อม",
+    "description": "Status: idle state"
+  },
+  "statusCapturingScreenshot": {
+    "message": "กำลังจับภาพหน้าจอ...",
+    "description": "Status: taking a snap"
+  },
+  "statusCapturingSnip": {
+    "message": "กำลังจับภาพส่วน...",
+    "description": "Status: starting snip"
+  },
+  "statusCapturingFullPage": {
+    "message": "กำลังจับภาพเต็มหน้า...",
+    "description": "Status: full page started"
+  },
+  "statusScrollingPage": {
+    "message": "กำลังเลื่อนหน้า...",
+    "description": "Status: full page progress"
+  },
+  "statusSnapCaptured": {
+    "message": "จับภาพหน้าจอแล้ว! ✓",
+    "description": "Status: snap success"
+  },
+  "statusFullPageCaptured": {
+    "message": "จับภาพเต็มหน้าแล้ว! ✓",
+    "description": "Status: full page success"
+  },
+  "statusFullPageSavedParts": {
+    "message": "บันทึกหน้าเต็มเป็น $COUNT$ ส่วน! ✓",
+    "description": "Status: chunked save success",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusSnipEditorOpened": {
+    "message": "เปิดตัวแก้ไขส่วนแล้ว! ✓",
+    "description": "Status: snip ready"
+  },
+  "statusScreenshotsSelected": {
+    "message": "เลือก $COUNT$ ภาพหน้าจอ → กลายเป็นภาพเดียวที่ซ้อนกัน",
+    "description": "Status: selection made",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCombiningCopying": {
+    "message": "กำลังรวมและคัดลอก...",
+    "description": "Status: clipboard processing"
+  },
+  "statusCopiedPasteNow": {
+    "message": "รวมและคัดลอก $COUNT$ ภาพหน้าจอแล้ว! 👉 วางใน AI เลย!",
+    "description": "Status: ready to paste",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusDownloading": {
+    "message": "กำลังดาวน์โหลด...",
+    "description": "Status: PNG export"
+  },
+  "statusPngExported": {
+    "message": "ส่งออก PNG ซ้อนกันสะอาดแล้ว! 🔥",
+    "description": "Status: PNG done"
+  },
+  "statusGeneratingPdf": {
+    "message": "กำลังสร้าง PDF...",
+    "description": "Status: PDF export"
+  },
+  "statusPdfExported": {
+    "message": "ส่งออก PDF ซ้อนกันสะอาดแล้ว! 🔥",
+    "description": "Status: PDF done"
+  },
+  "statusDeleted": {
+    "message": "ลบแล้ว",
+    "description": "Status: item removed"
+  },
+  "statusAllCleared": {
+    "message": "ลบทั้งหมดแล้ว",
+    "description": "Status: queue emptied"
+  },
+  "statusCantAccessPage": {
+    "message": "ไม่สามารถเข้าถึงหน้านี้ - ลองหน้าอื่น",
+    "description": "Status: timeout error"
+  },
+  "statusCannotCapture": {
+    "message": "ไม่สามารถจับภาพหน้านี้ได้",
+    "description": "Status: restricted page"
+  },
+  "statusCaptureFailed": {
+    "message": "การจับภาพล้มเหลว",
+    "description": "Status: general error"
+  },
+  "statusSomethingWrong": {
+    "message": "มีบางอย่างผิดพลาด",
+    "description": "Status: generic error"
+  },
+  "statusOpeningEditor": {
+    "message": "กำลังเปิดตัวแก้ไข...",
+    "description": "Status: launching editor"
+  },
+  "statusFindingParts": {
+    "message": "กำลังค้นหาส่วนทั้งหมด...",
+    "description": "Status: locating chunks"
+  },
+  "statusEditorFailed": {
+    "message": "ไม่สามารถเปิดตัวแก้ไขได้",
+    "description": "Status: editor error"
+  },
+  "statusNoCapture": {
+    "message": "ไม่พบการจับภาพเต็มหน้า",
+    "description": "Status: missing capture"
+  },
+  "statusSnapCopied": {
+    "message": "คัดลอกภาพหน้าจอแล้ว",
+    "description": "Status: single copy done"
+  }
+}
