@@ -294,42 +294,6 @@ def generate_html_for_language(lang_code, translations, hreflang_tags):
             
             <p class="hero-proof" id="heroProof">{t("heroProof", "Trusted by 10,000+ developers, designers, and researchers worldwide.")}</p>
 
-            <div class="browser-bar">
-                <span class="browser-bar-label" id="alsoAvailable">{t("alsoAvailable", "Also available on:")}</span>
-                <div class="browser-buttons">
-                    <a href="https://microsoftedge.microsoft.com/addons" target="_blank" class="browser-btn" title="Edge">
-                        <span class="browser-btn-icon edge-icon">E</span>
-                        <span class="browser-btn-name">Edge</span>
-                    </a>
-                    <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="browser-btn" title="Brave">
-                        <span class="browser-btn-icon brave-icon">B</span>
-                        <span class="browser-btn-name">Brave</span>
-                    </a>
-                    <a href="https://addons.opera.com" target="_blank" class="browser-btn" title="Opera">
-                        <span class="browser-btn-icon opera-icon">O</span>
-                        <span class="browser-btn-name">Opera</span>
-                    </a>
-                    <a href="https://chrome.google.com/webstore/detail/snaptoai" target="_blank" class="browser-btn" title="Vivaldi">
-                        <span class="browser-btn-icon vivaldi-icon">V</span>
-                        <span class="browser-btn-name">Vivaldi</span>
-                    </a>
-                </div>
-            </div>
-
-            <div class="quick-stats">
-                <div class="stat-item">
-                    <span class="stat-number">55+</span>
-                    <span class="stat-label" id="statLanguages">{t("statLanguages", "Languages")}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number">∞</span>
-                    <span class="stat-label" id="statScreenshots">{t("statScreenshots", "Unlimited Screenshots")}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number">2s</span>
-                    <span class="stat-label" id="statSpeed">{t("statSpeed", "Lightning Fast")}</span>
-                </div>
-            </div>
         </div>
 
         <div class="hero-visual">
@@ -569,11 +533,11 @@ def generate_html_for_language(lang_code, translations, hreflang_tags):
 
             <div class="faq-item">
                 <button class="faq-question">
-                    <span>{t("faqQ4", "How many browsers does it support?")}</span>
+                    <span>{t("faqQ4", "Which browser does it support?")}</span>
                     <span class="faq-toggle">+</span>
                 </button>
                 <div class="faq-answer">
-                    <span>{t("faqA4", "All Chromium-based browsers: Chrome, Edge, Brave, Opera, Vivaldi.")}</span>
+                    <span>{t("faqA4", "Google Chrome.")}</span>
                 </div>
             </div>
 
