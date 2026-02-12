@@ -326,6 +326,15 @@ def generate_html_for_language(lang_code, translations, hreflang_tags):
         </div>
     </section>
 
+    <!-- Snap Snip Flip Banner -->
+    <section class="snap-banner">
+        <div class="snap-banner-inner">
+            <span class="snap-word">Snap it.</span>
+            <span class="snap-word">Snip it.</span>
+            <span class="snap-word snap-highlight">Flip it to AI.</span>
+        </div>
+    </section>
+
     <!-- AI Superpowers Section -->
     <section class="ai-superpowers-section">
         <div class="ai-superpowers-container">
