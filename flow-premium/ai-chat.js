@@ -1655,10 +1655,12 @@ async function loadMagicButtons() {
   const result = await chrome.storage.local.get(['magicButtons']);
   const storedButtons = result.magicButtons || [];
   
-  // Combine defaults with user-created ones
-  // We filter out any stored buttons that share names with defaults to avoid duplicates
-  const defaultNames = DEFAULT_MAGIC_BUTTONS.map(b => b.name);
-  const userButtons = storedButtons.filter(b => !defaultNames.includes(b.name));
+  const oldPresetNames = ['Vision', 'Market', 'Writer', 'Tutor', 'Logic'];
+  const userButtons = storedButtons.filter(b => !oldPresetNames.includes(b.name));
+  
+  if (userButtons.length !== storedButtons.length) {
+    await chrome.storage.local.set({ magicButtons: userButtons });
+  }
   
   magicButtons = [...DEFAULT_MAGIC_BUTTONS, ...userButtons];
   renderMagicButtons();
