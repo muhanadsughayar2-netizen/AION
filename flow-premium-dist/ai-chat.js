@@ -1119,10 +1119,7 @@ async function copyChat() {
   }
 }
 
-// Auto-resize textarea
 function autoResize(textarea) {
-  textarea.style.height = 'auto';
-  textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
 }
 
 // Event listeners
