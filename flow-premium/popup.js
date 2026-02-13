@@ -829,7 +829,7 @@ function setupEventListeners() {
       about: 'https://youtu.be/AC8Wt2NG6pk?si=aYPsJoRown8ZCI5Z',
       aiagent: 'https://youtu.be/v_ttEY4k9c4?si=MwSiLioZOvmGclMm',
       crypto: 'https://youtube.com/shorts/zzr_gkgkMzw?si=b-TBh4o4Mdg-vDzh',
-      ai: 'https://www.youtube.com/watch?v=YOUR_AI_VIDEO_ID',
+      workflow: 'https://youtu.be/yMYdCVz5w5w?si=ki1_HDEYvp8Lxwb2',
       annotate: 'https://www.youtube.com/watch?v=YOUR_ANNOTATE_VIDEO_ID',
       upload: 'https://www.youtube.com/watch?v=YOUR_UPLOAD_VIDEO_ID',
       all: 'https://www.youtube.com/channel/YOUR_CHANNEL_ID'
