@@ -270,10 +270,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Then activate the tab
         await chrome.tabs.update(tabId, { active: true });
         
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Wait for focus to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Capture using the tab's windowId
-        chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 92 }, (dataUrl) => {
+        chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' }, (dataUrl) => {
           if (chrome.runtime.lastError) {
             sendResponse({ success: false, error: chrome.runtime.lastError.message });
           } else {
@@ -486,7 +487,8 @@ async function captureScreenshot(targetTabId = null) {
     // Small delay to let DOM be ready after injection
     await new Promise(resolve => setTimeout(resolve, 50));
     
-    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 92 });
+    // Capture visible tab as PNG
+    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
     
     // Get current snaps
     const snaps = await getSnaps();
@@ -940,10 +942,11 @@ async function captureFullPageStep(tabId) {
     // Capture using the tab's windowId - with retry logic for permission issues
     let dataUrl;
     try {
-      dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 92 });
+      dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
     } catch (captureError) {
+      // If first attempt fails, retry with null windowId (current window)
       console.log('[SnapToAI] Retrying capture with current window...');
-      dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 92 });
+      dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png' });
     }
     
     return { success: true, dataUrl };
