@@ -3526,8 +3526,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (status.daysRemaining <= 7) {
           upgradeBtn.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%)';
         }
-      } else if (status.status === 'expired') {
-        // ONLY show upgrade for truly expired trials
+      } else if (status.status === 'trial_expired' || status.status === 'subscription_expired' || status.status === 'expired') {
         upgradeBtn.style.visibility = 'visible';
         upgradeBtn.textContent = '⭐ UPGRADE';
         upgradeBtn.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%)';
