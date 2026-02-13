@@ -1,7 +1,7 @@
 // SnapToAI Subscription Manager
 // Handles trial period and Early Access status
 
-const TRIAL_DAYS = 999; // Unlimited trial for early access
+const TRIAL_DAYS = 30;
 
 // ===========================================
 // TEST MODE - Open popup, right-click, Inspect, Console tab
@@ -102,8 +102,7 @@ window.SnapToAI_TEST = ENABLE_TEST_MODE ? {
   }
 } : { disabled: () => console.log('[SnapToAI] Test mode disabled in production.') };
 // =========================================== END TEST MODE
-// Early Access Mode - All Pro features are free
-const EARLY_ACCESS_MODE = true;
+const EARLY_ACCESS_MODE = false;
 const VERIFY_INTERVAL_HOURS = 24;
 const GRACE_PERIOD_HOURS = 48;
 const OFFLINE_GRACE_DAYS = 7;
@@ -205,25 +204,103 @@ async function getServerTrialDate(userId) {
   }
 }
 
-// Check subscription status - Early Access Mode: all users get Pro
 async function checkSubscription() {
-  // EARLY ACCESS MODE: Grant Pro access to everyone
-  // No trial gating, no server calls, no payment checks
-  // When payment provider is added later, restore the full trial/license logic
-  console.log('[SnapToAI] Early Access Mode - All features unlocked');
-  return {
-    status: 'subscribed',
-    planType: 'early_access',
-    canUseAI: true,
-    isEarlyAccess: true,
-    daysRemaining: 999,
-    needsApiKey: false
-  };
+  if (EARLY_ACCESS_MODE) {
+    console.log('[SnapToAI] Early Access Mode - All features unlocked');
+    return {
+      status: 'subscribed',
+      planType: 'early_access',
+      canUseAI: true,
+      isEarlyAccess: true,
+      daysRemaining: 999,
+      needsApiKey: false
+    };
+  }
+
+  const local = await chrome.storage.local.get(['subscriptionActive', 'licenseKey', 'planType', 'lastVerified', 'graceUntil']);
+
+  if (local.subscriptionActive && local.licenseKey) {
+    const hoursSinceVerify = local.lastVerified ? (Date.now() - local.lastVerified) / 3600000 : 999;
+
+    if (hoursSinceVerify < VERIFY_INTERVAL_HOURS) {
+      return { status: 'subscribed', planType: local.planType, canUseAI: true, isEarlyAccess: false, daysRemaining: null, needsApiKey: false };
+    }
+
+    const result = await verifyLicenseWithServer(local.licenseKey);
+    if (result.valid) {
+      await chrome.storage.local.set({ lastVerified: Date.now(), graceUntil: null });
+      return { status: 'subscribed', planType: result.planType, canUseAI: true, isEarlyAccess: false, daysRemaining: null, needsApiKey: false };
+    }
+
+    if (local.graceUntil && Date.now() < local.graceUntil) {
+      console.log('[SnapToAI] License verification failed, using grace period');
+      return { status: 'subscribed', planType: local.planType, canUseAI: true, isEarlyAccess: false, daysRemaining: null, needsApiKey: false };
+    }
+
+    const offlineDays = local.lastVerified ? (Date.now() - local.lastVerified) / 86400000 : 999;
+    if (offlineDays <= OFFLINE_GRACE_DAYS) {
+      console.log('[SnapToAI] Offline grace - last verified', Math.round(offlineDays), 'days ago');
+      return { status: 'subscribed', planType: local.planType, canUseAI: true, isEarlyAccess: false, daysRemaining: null, needsApiKey: false };
+    }
+
+    return { status: 'subscription_expired', planType: null, canUseAI: false, isEarlyAccess: false, daysRemaining: 0, needsApiKey: false };
+  }
+
+  const userId = await getUserId();
+  if (!userId) {
+    return { status: 'no_api_key', planType: null, canUseAI: false, isEarlyAccess: false, daysRemaining: TRIAL_DAYS, needsApiKey: true };
+  }
+
+  let { trialStartDate } = await chrome.storage.sync.get(['trialStartDate']);
+
+  if (!trialStartDate) {
+    trialStartDate = Date.now();
+    await chrome.storage.sync.set({ trialStartDate });
+  }
+
+  const serverData = await getServerTrialDate(userId);
+  let daysRemaining;
+
+  if (serverData && serverData.serverDaysRemaining !== undefined) {
+    daysRemaining = serverData.serverDaysRemaining;
+    if (serverData.trialStartDate < trialStartDate) {
+      await chrome.storage.sync.set({ trialStartDate: serverData.trialStartDate });
+    }
+  } else {
+    const daysUsed = Math.floor((Date.now() - trialStartDate) / 86400000);
+    daysRemaining = Math.max(0, TRIAL_DAYS - daysUsed);
+  }
+
+  if (daysRemaining <= 0) {
+    return { status: 'trial_expired', planType: null, canUseAI: false, isEarlyAccess: false, daysRemaining: 0, needsApiKey: false };
+  }
+
+  return { status: 'trial', planType: 'trial', canUseAI: true, isEarlyAccess: false, daysRemaining, needsApiKey: false };
 }
 
-// License validation placeholder for future payment provider
 async function verifyLicenseWithServer(licenseKey) {
-  return { valid: true, planType: 'early_access' };
+  try {
+    const userId = await getUserId();
+    const response = await fetch(TRIAL_SERVER_URL.replace('/trial', '/verify-license'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ licenseKey, userHash: userId })
+    });
+
+    if (!response.ok) {
+      console.log('[SnapToAI] License verification failed:', response.status);
+      return { valid: false, reason: 'Server error' };
+    }
+
+    const data = await response.json();
+    if (data.success) {
+      return { valid: true, planType: data.planType || 'pro' };
+    }
+    return { valid: false, reason: data.error || 'Invalid license' };
+  } catch (error) {
+    console.log('[SnapToAI] License verification error:', error.message);
+    return { valid: false, reason: 'Connection error' };
+  }
 }
 
 // Save and verify new license key (placeholder for future use)
@@ -270,16 +347,16 @@ async function getLicenseKey() {
   return null;
 }
 
-// Open checkout (placeholder for future payment provider)
 function openCheckout(plan = 'yearly') {
-  chrome.tabs.create({ url: 'https://snaptoai.com' });
+  const urls = getCheckoutUrls();
+  const url = plan === 'monthly' ? urls.monthly : urls.yearly;
+  chrome.tabs.create({ url });
 }
 
-// Get checkout URLs for UI
 function getCheckoutUrls() {
   return {
-    monthly: 'https://snaptoai.com',
-    yearly: 'https://snaptoai.com'
+    monthly: 'https://snaptoai.lemonsqueezy.com/buy/monthly',
+    yearly: 'https://snaptoai.lemonsqueezy.com/buy/yearly'
   };
 }
 

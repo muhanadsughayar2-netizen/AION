@@ -111,25 +111,25 @@
         </div>
       </section>
 
-      <!-- Early Access / License -->
+      <!-- Subscription / License -->
       <section class="settings-group">
-        <h2>🚀 Early Access</h2>
+        <h2>👑 Subscription</h2>
         
         <div id="subscriptionStatus" class="subscription-status">
-          <div class="status-badge pro">Pro Early Access</div>
+          <div class="status-badge" id="statusBadge">Checking...</div>
         </div>
         
-        <div class="upgrade-section">
-          <p class="upgrade-text">SnapToAI Pro is currently in Early Access. All features are available for free during this period!</p>
+        <div id="trialInfo" class="upgrade-section">
+          <p class="upgrade-text" id="trialMessage">Checking subscription status...</p>
         </div>
         
-        <div class="setting-item" style="display: none;">
+        <div class="setting-item" id="licenseSection">
           <label for="licenseKey">License Key:</label>
           <div class="license-input-group">
             <input type="text" id="licenseKey" placeholder="Enter your license key" autocomplete="off">
             <button id="activateBtn" class="activate-btn">Activate</button>
           </div>
-          <p class="help-text">Enter your license key to unlock Pro features.</p>
+          <p class="help-text">Purchase a subscription at <a href="https://snaptoai.com" target="_blank">snaptoai.com</a> and enter your license key here.</p>
         </div>
         
         <div id="licenseInfo" class="license-info" style="display: none;">
@@ -192,6 +192,7 @@
     </footer>
   </div>
 
+  <script src="subscription.js"></script>
   <script src="options.js"></script>
 </body>
 </html>
