@@ -245,13 +245,13 @@ def generate_html_for_language(lang_code, translations, hreflang_tags):
     <link rel="canonical" href="https://snaptoai.com{'/' + lang_code + '/' if lang_code != 'en' else '/'}">
 {hreflang_tags}
     <meta property="og:title" content="SnapToAI – Screenshots to AI in One Click" />
-    <meta property="og:description" content="Capture, analyze with AI Vision, and automate with Magic Agents. Free early access." />
+    <meta property="og:description" content="Capture, analyze with AI Vision, and automate with Magic Agents. Snap it. Snip it. Flip it to AI." />
     <meta property="og:image" content="https://snaptoai.com/og-image.jpg" />
     <meta property="og:url" content="{current_url}" />
     <meta property="og:type" content="website" />
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:title" content="SnapToAI – Screenshots to AI in One Click" />
-    <meta property="twitter:description" content="Capture, analyze with AI Vision, and automate with Magic Agents. Free early access." />
+    <meta property="twitter:description" content="Capture, analyze with AI Vision, and automate with Magic Agents. Snap it. Snip it. Flip it to AI." />
     <meta property="twitter:image" content="https://snaptoai.com/og-image.jpg" />
     <script type="application/ld+json">
 {schema_markup}
@@ -266,9 +266,6 @@ def generate_html_for_language(lang_code, translations, hreflang_tags):
             <div class="logo-wrapper">
                 <div class="logo-icon">📸</div>
                 <span class="logo-text">Snap<span class="logo-highlight">ToAI</span></span>
-                <div class="logo-free">
-                    <span style="font-size: 0.7rem;">EARLY ACCESS</span>
-                </div>
             </div>
             <div class="nav-links">
                 <button class="lang-switch" id="langSwitch" title="Change Language">{lang_data["name"]}</button>
