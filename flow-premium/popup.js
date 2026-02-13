@@ -830,9 +830,7 @@ function setupEventListeners() {
       aiagent: 'https://youtu.be/v_ttEY4k9c4?si=MwSiLioZOvmGclMm',
       crypto: 'https://youtube.com/shorts/zzr_gkgkMzw?si=b-TBh4o4Mdg-vDzh',
       workflow: 'https://youtu.be/yMYdCVz5w5w?si=ki1_HDEYvp8Lxwb2',
-      annotate: 'https://www.youtube.com/watch?v=YOUR_ANNOTATE_VIDEO_ID',
-      upload: 'https://www.youtube.com/watch?v=YOUR_UPLOAD_VIDEO_ID',
-      all: 'https://www.youtube.com/channel/YOUR_CHANNEL_ID'
+      productivity: 'https://youtube.com/shorts/7f90Wn1mWjI?si=AaNLzgcA4M1oBhfx'
     };
     
     helpDropdown.querySelectorAll('.help-item').forEach(item => {
