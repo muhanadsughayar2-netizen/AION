@@ -483,6 +483,7 @@ async function handleSend() {
   }
   
   input.value = '';
+  resetInputSize(input);
   sendBtn.disabled = true;
   
   // Add user message
@@ -1120,6 +1121,15 @@ async function copyChat() {
 }
 
 function autoResize(textarea) {
+  textarea.style.height = '52px';
+  const newHeight = Math.min(textarea.scrollHeight, 140);
+  textarea.style.height = newHeight + 'px';
+  textarea.style.overflowY = newHeight >= 140 ? 'auto' : 'hidden';
+}
+
+function resetInputSize(textarea) {
+  textarea.style.height = '52px';
+  textarea.style.overflowY = 'hidden';
 }
 
 // Event listeners
