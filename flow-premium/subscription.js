@@ -232,6 +232,13 @@ async function checkSubscription() {
       return { status: 'subscribed', planType: result.planType, canUseAI: true, isEarlyAccess: false, daysRemaining: null, needsApiKey: false };
     }
 
+    if (!local.graceUntil) {
+      const graceUntil = Date.now() + (GRACE_PERIOD_HOURS * 3600000);
+      await chrome.storage.local.set({ graceUntil });
+      console.log('[SnapToAI] License verification failed, starting grace period until', new Date(graceUntil).toLocaleString());
+      return { status: 'subscribed', planType: local.planType, canUseAI: true, isEarlyAccess: false, daysRemaining: null, needsApiKey: false };
+    }
+
     if (local.graceUntil && Date.now() < local.graceUntil) {
       console.log('[SnapToAI] License verification failed, using grace period');
       return { status: 'subscribed', planType: local.planType, canUseAI: true, isEarlyAccess: false, daysRemaining: null, needsApiKey: false };

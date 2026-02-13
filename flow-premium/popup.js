@@ -3403,9 +3403,11 @@ async function handleLicenseVerify() {
     showGeminiModal();
   } else {
     if (licenseError) {
-      licenseError.textContent = result.error === 'network_error' 
-        ? 'Network error. Please check your connection.'
-        : 'Invalid license key. Please check and try again.';
+      const err = (result.error || '').toLowerCase();
+      const isNetworkError = err.includes('connection') || err.includes('server error') || err.includes('timeout');
+      licenseError.textContent = isNetworkError
+        ? 'Network error. Please check your connection and try again.'
+        : (result.error || 'Invalid license key. Please check and try again.');
       licenseError.style.display = 'block';
     }
   }
