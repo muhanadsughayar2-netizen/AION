@@ -1455,7 +1455,7 @@ async function handleSnipClick() {
     
     // Capture screenshot WITHOUT saving to queue (just get the dataUrl)
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 92 });
     
     if (dataUrl) {
       setStatus('Opening snip editor...', 'active');
