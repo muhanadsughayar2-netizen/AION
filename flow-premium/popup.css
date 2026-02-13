@@ -22,11 +22,11 @@ body {
   color: #ffffff;
   overflow: visible;
   transition: height 0.3s ease;
-  padding-bottom: 20px;
+  padding-bottom: 12px;
 }
 
 .container {
-  padding: 12px 16px;
+  padding: 10px 14px;
   position: relative;
   height: auto;
   min-height: 100%;
@@ -39,7 +39,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .logo {
@@ -236,8 +236,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-bottom: 8px;
-  padding: 8px 12px;
+  margin-bottom: 6px;
+  padding: 6px 12px;
   background: rgba(10, 10, 20, 0.95);
   border-radius: 20px;
   transition: all 0.3s ease;
@@ -407,8 +407,8 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  gap: 16px;
-  margin: 8px 0;
+  gap: 12px;
+  margin: 4px 0;
   flex-wrap: wrap;
 }
 
@@ -416,7 +416,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .orb-label {
@@ -429,8 +429,8 @@ body {
 
 /* Main Orb Button - Clean, comfortable style */
 .orb {
-  width: 70px;
-  height: 70px;
+  width: 62px;
+  height: 62px;
   border-radius: 50%;
   border: 2px solid rgba(0, 217, 255, 0.3);
   background: rgba(0, 217, 255, 0.1);
@@ -506,7 +506,7 @@ body {
 /* Setup Link - Subtle text button instead of orb */
 .setup-link-container {
   text-align: center;
-  margin: 4px 0 8px 0;
+  margin: 2px 0 4px 0;
 }
 
 .setup-text-link {
@@ -589,8 +589,8 @@ body {
 
 /* Last Capture Preview - Shared for Snap and Snip */
 .last-capture-preview {
-  margin: 12px 0;
-  padding: 8px;
+  margin: 6px 0;
+  padding: 6px;
   background: rgba(0, 0, 0, 0.3);
   border-radius: 10px;
   border: 1px solid rgba(0, 217, 255, 0.2);
@@ -609,7 +609,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 16px 0;
+  margin: 8px 0;
   font-size: 12px;
 }
 
@@ -649,8 +649,8 @@ body {
 .selection-bar {
   display: flex;
   gap: 6px;
-  margin: 12px 0 8px 0;
-  padding: 8px;
+  margin: 6px 0 6px 0;
+  padding: 6px;
   background: rgba(0, 0, 0, 0.3);
   border-radius: 8px;
   backdrop-filter: blur(10px);
