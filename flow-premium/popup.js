@@ -806,6 +806,22 @@ function setupEventListeners() {
     reeditBtn.addEventListener('click', handleReeditFullPage);
   }
   
+  // Music button - opens SnapToAI theme song
+  const musicBtn = document.getElementById('musicBtn');
+  if (musicBtn) {
+    musicBtn.addEventListener('click', () => {
+      const width = 480;
+      const height = 360;
+      const left = Math.round((screen.width - width) / 2);
+      const top = Math.round((screen.height - height) / 2);
+      window.open(
+        'https://www.loom.com/embed/14b73c47e72e4a64afa1fc28058ae60d?autoplay=1',
+        'snaptoai-music',
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes`
+      );
+    });
+  }
+
   // Help/Tutorials dropdown
   const helpBtn = document.getElementById('helpBtn');
   const helpDropdown = document.getElementById('helpDropdown');
