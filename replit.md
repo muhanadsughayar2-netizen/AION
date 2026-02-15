@@ -60,16 +60,18 @@ Handles infinite-scroll sites with scroll settlement detection. Works on any web
 - Shows "Tutorial coming soon!" message if video not yet available
 - Placeholder URLs in popup.js - replace YOUR_VIDEO_ID with actual YouTube video IDs
 
-**Subscription System (February 2026 - LemonSqueezy Migration):**
-- **Payment Provider:** LemonSqueezy (Merchant of Record) - migrated from Gumroad
+**Subscription System (February 2026 - Whop.com Migration):**
+- **Payment Provider:** Whop.com (Merchant of Record) - migrated from LemonSqueezy/Gumroad
 - 30-day free trial tracked per IP address (anti-cheat: prevents trial reset by creating new API keys)
 - After trial: Capture features remain FREE forever, only AI analysis requires subscription
 - Pricing: $4.99/month or $39/year (35% savings) - "Less than a coffee" pitch
-- License verification via LemonSqueezy API with 48-hour grace period + 7-day offline access
+- License verification via Whop API (v2/memberships/{id}/validate_license) with device_id binding (HWID protection)
 - **Offline Grace Period:** Validated licenses work offline for up to 7 days
 - Subscription modal shown when AI button clicked after trial expires
 - License key input in Settings page (options.html) for activating purchased subscriptions
-- **Files:** subscription.js (LemonSqueezy validation), options.js/html (license UI)
+- **Checkout URL:** https://whop.com/snaptoai/
+- **Backend:** WHOP_API_KEY environment secret required for server-side validation
+- **Files:** subscription.js (Whop validation), options.js/html (license UI), app.py (/api/verify-license)
 - **Multi-Tier Anti-Cheat Trial Tracking (January 2026):** 
   - **Device ID (Primary):** Unique UUID generated on extension install, stored in chrome.storage.local
     - Format: `dev_` + crypto.randomUUID()
