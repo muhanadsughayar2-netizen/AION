@@ -16,8 +16,8 @@ const TRIAL_DAYS = 30;
 // After each command, CLOSE and REOPEN the popup to see changes!
 // ===========================================
 // ⚠️ TEST MODE - For development ONLY. These functions modify trial data!
-// Set to false before publishing to Chrome Web Store!
-const ENABLE_TEST_MODE = false; // DISABLED for production - prevents accidental trial resets
+// Set to true to bypass trial limits during testing
+const ENABLE_TEST_MODE = true; 
 
 window.SnapToAI_TEST = ENABLE_TEST_MODE ? {
   // SAFETY: Store original date before any test modifications
@@ -227,9 +227,9 @@ async function checkSubscription() {
     }
 
     const result = await verifyLicenseWithServer(local.licenseKey);
-    if (result.valid) {
+    if (result.valid || ENABLE_TEST_MODE) {
       await chrome.storage.local.set({ lastVerified: Date.now(), graceUntil: null });
-      return { status: 'subscribed', planType: result.planType, canUseAI: true, isEarlyAccess: false, daysRemaining: null, needsApiKey: false };
+      return { status: 'subscribed', planType: result.planType || 'pro', canUseAI: true, isEarlyAccess: false, daysRemaining: null, needsApiKey: false };
     }
 
     if (!local.graceUntil) {
@@ -278,11 +278,11 @@ async function checkSubscription() {
     daysRemaining = Math.max(0, TRIAL_DAYS - daysUsed);
   }
 
-  if (daysRemaining <= 0) {
+  if (daysRemaining <= 0 && !ENABLE_TEST_MODE) {
     return { status: 'trial_expired', planType: null, canUseAI: false, isEarlyAccess: false, daysRemaining: 0, needsApiKey: false };
   }
 
-  return { status: 'trial', planType: 'trial', canUseAI: true, isEarlyAccess: false, daysRemaining, needsApiKey: false };
+  return { status: 'trial', planType: 'trial', canUseAI: true, isEarlyAccess: false, daysRemaining: ENABLE_TEST_MODE ? 999 : daysRemaining, needsApiKey: false };
 }
 
 async function verifyLicenseWithServer(licenseKey) {
