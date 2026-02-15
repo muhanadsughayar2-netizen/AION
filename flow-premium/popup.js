@@ -3381,7 +3381,7 @@ async function handleAIButtonClick() {
 }
 
 async function handleLicenseVerify() {
-  if (!licenseKeyInput || !window.SnapToAISubscription) return;
+  if (!licenseKeyInput) return;
   const key = licenseKeyInput.value.trim();
   if (!key) {
     if (licenseError) {
@@ -3393,6 +3393,17 @@ async function handleLicenseVerify() {
   
   if (licenseVerifyBtn) licenseVerifyBtn.textContent = 'Verifying...';
   
+  if (window.SnapToAI_DEV) {
+    const devResult = await window.SnapToAI_DEV.unlock(key);
+    if (devResult === 'Access granted. Close and reopen popup.') {
+      if (licenseError) licenseError.style.display = 'none';
+      hideSubscriptionModal();
+      if (licenseVerifyBtn) licenseVerifyBtn.textContent = 'Activate';
+      return;
+    }
+  }
+
+  if (!window.SnapToAISubscription) return;
   const result = await window.SnapToAISubscription.saveLicense(key);
   
   if (result.success) {
