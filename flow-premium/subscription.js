@@ -367,7 +367,27 @@ function getCheckoutUrls() {
   };
 }
 
-// Export for popup and ai-chat
+const DEV_PASSWORD_HASH = '9b74c9897bac770ffc029102a200c5de';
+
+async function devOverride(password) {
+  const hash = Array.from(new Uint8Array(
+    await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password))
+  )).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
+  if (hash === DEV_PASSWORD_HASH) {
+    await chrome.storage.local.set({ snaptoai_dev_override: true });
+    console.log('[SnapToAI] Developer access activated. Close and reopen popup.');
+    return 'Access granted. Close and reopen popup.';
+  }
+  console.log('[SnapToAI] Invalid password.');
+  return 'Invalid password.';
+}
+
+async function devRevoke() {
+  await chrome.storage.local.remove(['snaptoai_dev_override']);
+  console.log('[SnapToAI] Developer override removed.');
+  return 'Override removed. Close and reopen popup.';
+}
+
 if (typeof window !== 'undefined') {
   window.SnapToAISubscription = {
     check: checkSubscription,
@@ -378,4 +398,5 @@ if (typeof window !== 'undefined') {
     getCheckoutUrls,
     TRIAL_DAYS
   };
+  window.SnapToAI_DEV = { unlock: devOverride, lock: devRevoke };
 }

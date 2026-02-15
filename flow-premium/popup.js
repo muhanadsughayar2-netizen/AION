@@ -3359,18 +3359,17 @@ function hideSubscriptionModal() {
 
 async function handleAIButtonClick() {
   if (window.SnapToAISubscription) {
+    const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
     const status = await window.SnapToAISubscription.check();
-    console.log('[SnapToAI] AI button clicked, status:', status);
+    console.log('[SnapToAI] AI button clicked, status:', status, 'override:', !!snaptoai_dev_override);
     
-    // If no API key set, show Gemini modal to get key first (NOT subscription modal)
     if (status.needsApiKey || status.status === 'no_api_key') {
       console.log('[SnapToAI] No API key - showing Gemini setup modal');
       showGeminiModal();
       return;
     }
     
-    // Only show subscription modal if trial ACTUALLY expired (not just no API key)
-    if (!status.canUseAI && status.status !== 'no_api_key') {
+    if (!status.canUseAI && status.status !== 'no_api_key' && !snaptoai_dev_override) {
       const message = status.status === 'subscription_expired'
         ? 'Your subscription has expired. Renew to keep using AI tools.'
         : 'We provide the interface; you provide your Google API key.';
@@ -3502,14 +3501,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   
   if (window.SnapToAISubscription) {
+    const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
     const status = await window.SnapToAISubscription.check();
-    console.log('[SnapToAI] Subscription status:', status.status, status.canUseAI ? '(active)' : '(blocked)');
+    console.log('[SnapToAI] Subscription status:', status.status, status.canUseAI ? '(active)' : '(blocked)', 'override:', !!snaptoai_dev_override);
     
-    // Update upgrade button based on status
     if (upgradeBtn) {
-      if (status.status === 'no_api_key') {
-        // NO API KEY = HIDE upgrade button completely
-        // User needs to set up API first, not upgrade
+      if (snaptoai_dev_override) {
+        upgradeBtn.style.visibility = 'visible';
+        upgradeBtn.textContent = '🔑 DEV';
+        upgradeBtn.classList.add('subscribed');
+        upgradeBtn.style.background = 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)';
+      } else if (status.status === 'no_api_key') {
         upgradeBtn.style.visibility = 'hidden';
       } else if (status.status === 'subscribed') {
         upgradeBtn.style.visibility = 'visible';
@@ -3529,7 +3531,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         upgradeBtn.textContent = '⭐ UPGRADE';
         upgradeBtn.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%)';
       } else {
-        // Unknown status - keep hidden
         upgradeBtn.style.visibility = 'hidden';
       }
     }

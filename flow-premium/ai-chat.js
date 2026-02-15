@@ -380,10 +380,18 @@ function removeLoading() {
 
 // Send message to Gemini API (supports multiple images)
 async function sendToGemini(prompt, imageDataUrls) {
-  // Accept array of images
   const images = Array.isArray(imageDataUrls) ? imageDataUrls : [imageDataUrls];
   
-  // Get API key from sync storage (same as popup.js)
+  if (window.SnapToAISubscription) {
+    const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
+    if (!snaptoai_dev_override) {
+      const sub = await window.SnapToAISubscription.check();
+      if (!sub.canUseAI && sub.status !== 'no_api_key') {
+        throw new Error('Your free trial has ended. Please upgrade to continue using AI analysis.');
+      }
+    }
+  }
+  
   const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
   const apiKey = keyResult.geminiApiKey;
   
@@ -474,9 +482,19 @@ async function handleSend() {
   const thread = document.getElementById('chatThread');
   const prompt = input.value.trim();
   
-  if (!prompt) return; // Allow text-only conversations without images
-  
-  // Prevent duplicate/parallel requests that cause rate limits
+  if (!prompt) return;
+
+  if (window.SnapToAISubscription) {
+    const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
+    if (!snaptoai_dev_override) {
+      const sub = await window.SnapToAISubscription.check();
+      if (!sub.canUseAI && sub.status !== 'no_api_key') {
+        addBubble('Your free trial has ended. Please upgrade to continue using AI analysis.', 'ai');
+        return;
+      }
+    }
+  }
+
   if (!acquireRequestLock()) {
     addBubble('Please wait for the current request to complete...', 'ai');
     return;
