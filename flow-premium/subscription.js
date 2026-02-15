@@ -288,15 +288,17 @@ async function checkSubscription() {
 async function verifyLicenseWithServer(licenseKey) {
   try {
     const userId = await getUserId();
+    const deviceId = await getDeviceId();
     const response = await fetch(TRIAL_SERVER_URL.replace('/trial', '/verify-license'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ licenseKey, userHash: userId })
+      body: JSON.stringify({ licenseKey, userHash: userId, deviceId })
     });
 
     if (!response.ok) {
-      console.log('[SnapToAI] License verification failed:', response.status);
-      return { valid: false, reason: 'Server error' };
+      const errData = await response.json().catch(() => ({}));
+      console.log('[SnapToAI] License verification failed:', response.status, errData.error);
+      return { valid: false, reason: errData.error || 'Server error' };
     }
 
     const data = await response.json();
@@ -362,8 +364,8 @@ function openCheckout(plan = 'yearly') {
 
 function getCheckoutUrls() {
   return {
-    monthly: 'https://snaptoai.lemonsqueezy.com/buy/monthly',
-    yearly: 'https://snaptoai.lemonsqueezy.com/buy/yearly'
+    monthly: 'https://whop.com/snaptoai/',
+    yearly: 'https://whop.com/snaptoai/'
   };
 }
 

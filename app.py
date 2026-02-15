@@ -237,11 +237,11 @@ def db_status():
 
 @app.route('/api/ls-status')
 def ls_status():
-    """Check if LemonSqueezy API key is configured"""
-    has_key = bool(os.environ.get('LEMON_SQUEEZY_API_KEY'))
+    """Check if Whop API key is configured"""
+    has_key = bool(os.environ.get('WHOP_API_KEY'))
     return jsonify({
         'configured': has_key,
-        'provider': 'LemonSqueezy',
+        'provider': 'Whop',
         'endpoints': {
             'validate': '/api/verify-license',
             'trial': '/api/trial'
@@ -249,12 +249,12 @@ def ls_status():
     })
 
 # ============================================
-# LEMONSQUEEZY LICENSE VERIFICATION
+# WHOP LICENSE VERIFICATION
 # ============================================
 
 @app.route('/api/verify-license', methods=['POST', 'OPTIONS'])
 def verify_license():
-    """Verify a LemonSqueezy license key and mark user as paid"""
+    """Verify a Whop license key and mark user as paid"""
     if request.method == 'OPTIONS':
         response = Response('', status=200)
         response.headers['Access-Control-Allow-Origin'] = '*'
@@ -265,69 +265,68 @@ def verify_license():
     data = request.get_json() or {}
     license_key = data.get('licenseKey', '').strip()
     user_hash = data.get('userHash', '').strip()
+    device_id = data.get('deviceId', '').strip()
     
     if not license_key or not user_hash:
         resp = jsonify({'success': False, 'error': 'Missing license key or user hash'})
         resp.headers['Access-Control-Allow-Origin'] = '*'
         return resp, 400
     
-    ls_api_key = os.environ.get('LEMON_SQUEEZY_API_KEY')
-    if not ls_api_key:
-        print('❌ LEMON_SQUEEZY_API_KEY not set in environment')
+    whop_api_key = os.environ.get('WHOP_API_KEY')
+    if not whop_api_key:
+        print('❌ WHOP_API_KEY not set in environment')
         resp = jsonify({'success': False, 'error': 'Server configuration error'})
         resp.headers['Access-Control-Allow-Origin'] = '*'
         return resp, 500
     
     try:
-        ls_response = requests.post(
-            'https://api.lemonsqueezy.com/v1/licenses/validate',
+        whop_response = requests.post(
+            f'https://api.whop.com/api/v2/memberships/{license_key}/validate_license',
             json={
-                'license_key': license_key
+                'metadata': {
+                    'device_id': device_id or user_hash[:16]
+                }
             },
             headers={
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {ls_api_key}'
+                'Authorization': f'Bearer {whop_api_key}',
+                'Content-Type': 'application/json'
             },
             timeout=10
         )
         
-        print(f'🔍 LemonSqueezy response status: {ls_response.status_code}')
-        ls_data = ls_response.json()
-        print(f'🔍 LemonSqueezy response: valid={ls_data.get("valid")}, meta={ls_data.get("meta", {})}')
+        print(f'🔍 Whop response status: {whop_response.status_code}')
+        whop_data = whop_response.json()
+        print(f'🔍 Whop response: valid={whop_data.get("valid")}, status={whop_data.get("status")}')
         
-        if ls_response.status_code == 404 or not ls_data.get('valid'):
-            error_msg = ls_data.get('error', 'Invalid or inactive license key')
+        if whop_response.status_code not in [200, 201] or not whop_data.get('valid'):
+            error_msg = whop_data.get('message', 'Invalid or inactive license key')
             resp = jsonify({'success': False, 'error': error_msg})
             resp.headers['Access-Control-Allow-Origin'] = '*'
             return resp, 400
         
-        meta = ls_data.get('meta', {})
-        license_status = meta.get('status', '')
-        
-        if license_status not in ['active', 'inactive']:
-            resp = jsonify({'success': False, 'error': f'License status: {license_status}. Please check your subscription.'})
+        membership_status = whop_data.get('status', '')
+        if membership_status not in ['active', 'trialing', 'completed']:
+            resp = jsonify({'success': False, 'error': f'Membership status: {membership_status}. Please check your subscription.'})
             resp.headers['Access-Control-Allow-Origin'] = '*'
             return resp, 400
         
-        variant_name = (meta.get('variant_name') or '').lower()
+        plan_name = (whop_data.get('plan', '') or '').lower()
+        product_name = (whop_data.get('product', '') or '').lower()
+        expires_at = whop_data.get('expires_at')
         
-        # Determine plan type from variant name
-        if 'year' in variant_name or 'annual' in variant_name:
+        if 'year' in plan_name or 'annual' in plan_name or 'year' in product_name:
             plan_type = 'yearly'
-            expires_ms = int(datetime.now().timestamp() * 1000) + (365 * 24 * 60 * 60 * 1000)
+            expires_ms = (expires_at * 1000) if expires_at else int(datetime.now().timestamp() * 1000) + (365 * 24 * 60 * 60 * 1000)
         else:
             plan_type = 'monthly'
-            expires_ms = int(datetime.now().timestamp() * 1000) + (30 * 24 * 60 * 60 * 1000)
+            expires_ms = (expires_at * 1000) if expires_at else int(datetime.now().timestamp() * 1000) + (30 * 24 * 60 * 60 * 1000)
         
-        # Update database
         if not ensure_db():
             return jsonify({'success': False, 'error': 'Database unavailable'}), 503
         
         conn = get_db()
         cur = conn.cursor()
         
-        # Update user as paid
         cur.execute('''
             UPDATE user_trials 
             SET is_paid = TRUE, 
@@ -337,7 +336,6 @@ def verify_license():
             WHERE user_hash = %s
         ''', (license_key[:64], plan_type, expires_ms, user_hash))
         
-        # If user doesn't exist, create them
         if cur.rowcount == 0:
             now_ms = int(datetime.utcnow().timestamp() * 1000)
             cur.execute('''
@@ -354,17 +352,16 @@ def verify_license():
             'isPaid': True,
             'planType': plan_type,
             'expiresAt': expires_ms,
-            'licenseStatus': license_status,
-            'productName': meta.get('product_name', '')
+            'licenseStatus': membership_status
         }
-        print(f'✅ License verified for user {user_hash[:8]}... Plan: {plan_type}')
+        print(f'✅ Whop license verified for user {user_hash[:8]}... Plan: {plan_type}')
         
         response = jsonify(result)
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response
         
     except requests.exceptions.Timeout:
-        resp = jsonify({'success': False, 'error': 'LemonSqueezy verification timed out'})
+        resp = jsonify({'success': False, 'error': 'Whop verification timed out'})
         resp.headers['Access-Control-Allow-Origin'] = '*'
         return resp, 504
     except Exception as e:
