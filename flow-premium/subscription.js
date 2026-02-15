@@ -367,19 +367,22 @@ function getCheckoutUrls() {
   };
 }
 
-const DEV_PASSWORD_HASH = '9b74c9897bac770ffc029102a200c5de';
+const DEV_PASSWORD_HASH = '85bfe6364f8612f84c121ef2075abcbc';
 
 async function devOverride(password) {
-  const hash = Array.from(new Uint8Array(
-    await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password))
-  )).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
-  if (hash === DEV_PASSWORD_HASH) {
-    await chrome.storage.local.set({ snaptoai_dev_override: true });
-    console.log('[SnapToAI] Developer access activated. Close and reopen popup.');
-    return 'Access granted. Close and reopen popup.';
+  try {
+    const hash = Array.from(new Uint8Array(
+      await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password))
+    )).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
+    if (hash === DEV_PASSWORD_HASH) {
+      await chrome.storage.local.set({ snaptoai_dev_override: true });
+      console.log('[SnapToAI] Developer access activated. Close and reopen popup.');
+      return { success: true, message: 'Access granted. Close and reopen popup.' };
+    }
+  } catch (e) {
+    console.log('[SnapToAI] Dev override error:', e);
   }
-  console.log('[SnapToAI] Invalid password.');
-  return 'Invalid password.';
+  return { success: false, message: 'Invalid password.' };
 }
 
 async function devRevoke() {

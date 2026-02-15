@@ -3395,7 +3395,7 @@ async function handleLicenseVerify() {
   
   if (window.SnapToAI_DEV) {
     const devResult = await window.SnapToAI_DEV.unlock(key);
-    if (devResult === 'Access granted. Close and reopen popup.') {
+    if (devResult && devResult.success) {
       if (licenseError) licenseError.style.display = 'none';
       hideSubscriptionModal();
       if (licenseVerifyBtn) licenseVerifyBtn.textContent = 'Activate';
