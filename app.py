@@ -1,3 +1,374 @@
+from flask import Flask, send_from_directory, request, redirect, Response, jsonify
+import os
+import mimetypes
+import psycopg2
+from datetime import datetime
+import requests
+
+# Disable automatic static folder - we'll handle all routing manually
+app = Flask(__name__, static_folder=None)
+
+# Database connection - Use Supabase (external) if available, otherwise Replit DB
+def get_db():
+    # Prefer Supabase for production reliability
+    db_url = os.environ.get('SUPABASE_DATABASE_URL') or os.environ.get('DATABASE_URL')
+    if not db_url:
+        raise Exception("No database URL set")
+    return psycopg2.connect(db_url, sslmode='require')
+
+# Initialize database table for trial tracking
+def init_db():
+    try:
+        supabase_url = os.environ.get('SUPABASE_DATABASE_URL')
+        replit_url = os.environ.get('DATABASE_URL')
+        db_url = supabase_url or replit_url
+        print(f'🔍 SUPABASE_DATABASE_URL exists: {bool(supabase_url)}')
+        print(f'🔍 DATABASE_URL exists: {bool(replit_url)}')
+        print(f'🔍 Using: {"Supabase" if supabase_url else "Replit DB" if replit_url else "None"}')
+        if not db_url:
+            print('❌ No database URL set in environment')
+            return False
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS user_trials (
+                user_hash VARCHAR(64) PRIMARY KEY,
+                trial_start_date BIGINT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_paid BOOLEAN DEFAULT FALSE,
+                browser_language VARCHAR(10),
+                extension_version VARCHAR(20),
+                last_active BIGINT,
+                usage_count INTEGER DEFAULT 0
+            )
+        ''')
+        # IP-based trial tracking table - prevents trial abuse by tracking per IP
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS ip_trials (
+                ip_address VARCHAR(45) PRIMARY KEY,
+                trial_start_date BIGINT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_active BIGINT,
+                api_key_count INTEGER DEFAULT 1
+            )
+        ''')
+        # Device-based trial tracking table - most reliable, persists across IP changes
+        print('📦 Creating device_trials table if not exists...')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS device_trials (
+                device_id VARCHAR(60) PRIMARY KEY,
+                trial_start_date BIGINT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_active BIGINT,
+                api_key_count INTEGER DEFAULT 1
+            )
+        ''')
+        print('✅ device_trials table ready')
+        # Add columns if missing (for existing tables)
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS browser_language VARCHAR(10)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS extension_version VARCHAR(20)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS last_active BIGINT')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0')
+        # Whop subscription columns
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS license_key VARCHAR(64)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS plan_type VARCHAR(20)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS subscription_expires BIGINT')
+        # IP tracking and user data
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS country VARCHAR(50)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS city VARCHAR(100)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS timezone VARCHAR(50)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS user_agent TEXT')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS screen_resolution VARCHAR(20)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS platform VARCHAR(30)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS device_type VARCHAR(20)')
+        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS device_id VARCHAR(60)')
+        conn.commit()
+        
+        # === MIGRATION: Seed ip_trials from existing user_trials ===
+        # Get earliest trial_start_date for each IP from user_trials
+        # Use DO UPDATE to always use the EARLIEST date (anti-cheat fix)
+        cur.execute('''
+            INSERT INTO ip_trials (ip_address, trial_start_date, last_active, api_key_count)
+            SELECT 
+                ip_address,
+                MIN(trial_start_date) as trial_start_date,
+                MAX(last_active) as last_active,
+                COUNT(*) as api_key_count
+            FROM user_trials 
+            WHERE ip_address IS NOT NULL 
+              AND ip_address != '' 
+              AND ip_address != '127.0.0.1'
+            GROUP BY ip_address
+            ON CONFLICT (ip_address) DO UPDATE SET
+                trial_start_date = LEAST(ip_trials.trial_start_date, EXCLUDED.trial_start_date),
+                api_key_count = GREATEST(ip_trials.api_key_count, EXCLUDED.api_key_count)
+        ''')
+        migrated_count = cur.rowcount
+        if migrated_count > 0:
+            print(f'📦 Migrated {migrated_count} IP addresses to ip_trials table')
+        conn.commit()
+        
+        # === AUTO-FIX: Sync all user_trials to use their IP's earliest trial date ===
+        cur.execute('''
+            UPDATE user_trials ut
+            SET trial_start_date = ip.trial_start_date
+            FROM ip_trials ip
+            WHERE ut.ip_address = ip.ip_address
+              AND ut.trial_start_date > ip.trial_start_date
+        ''')
+        fixed_count = cur.rowcount
+        if fixed_count > 0:
+            print(f'🔧 Auto-fixed {fixed_count} users to use their IP earliest trial date')
+        conn.commit()
+        
+        cur.close()
+        conn.close()
+        print('✅ Database initialized successfully')
+        return True
+    except Exception as e:
+        print(f'❌ Database init error: {type(e).__name__}: {e}')
+        return False
+
+# Try to initialize on startup
+print('🚀 App starting, initializing database...')
+db_ready = init_db()
+print(f'📊 Database ready: {db_ready}')
+
+# Ensure DB is ready before any request that needs it
+def ensure_db():
+    global db_ready
+    if not db_ready:
+        print('🔄 Retrying database initialization...')
+        db_ready = init_db()
+        if db_ready:
+            print('✅ Database retry successful!')
+        else:
+            print('❌ Database retry failed')
+    return db_ready
+app.url_map.strict_slashes = False
+
+# Handle www redirect
+@app.before_request
+def redirect_www():
+    """Redirect www.snaptoai.com to snaptoai.com"""
+    if request.host.startswith('www.'):
+        return redirect(request.url.replace('www.', '', 1), code=301)
+
+# Supported languages
+SUPPORTED_LANGUAGES = {
+    "en", "ar", "he", "fr", "de", "es", "es_419", "it", "pt", "pt_BR", "pt_PT",
+    "ja", "zh", "zh_TW", "nl", "pl", "ru", "tr", "vi", "th", "ko",
+    "hi", "bn", "gu", "ta", "te", "kn", "ml", "mr", "or", "bg",
+    "cs", "da", "el", "et", "fi", "hu", "id", "lt", "lv", "nb",
+    "ro", "sk", "sl", "sr", "sv", "uk", "hr", "ca", "sw", "fil",
+    "en_GB", "en_US", "am"
+}
+
+BASE_DIR = 'landing-page'
+
+def serve_file(filepath):
+    """Read file from disk and serve directly to bypass caching"""
+    try:
+        mime_type, _ = mimetypes.guess_type(filepath)
+        
+        # Binary files (images, etc.) need binary mode
+        binary_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp', '.svg', '.woff', '.woff2', '.ttf', '.eot'}
+        is_binary = any(filepath.lower().endswith(ext) for ext in binary_extensions)
+        
+        if is_binary:
+            with open(filepath, 'rb') as f:
+                content = f.read()
+        else:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                content = f.read()
+        
+        response = Response(content, mimetype=mime_type or 'text/html')
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
+    except FileNotFoundError:
+        return serve_file(os.path.join(BASE_DIR, 'index.html'))
+
+@app.after_request
+def add_headers(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+@app.route('/health')
+def health():
+    """Health check endpoint for deployment"""
+    return Response("OK", status=200, mimetype='text/plain')
+
+@app.route('/api/db-status')
+def db_status():
+    """Check database status - useful for debugging production"""
+    supabase_url = os.environ.get('SUPABASE_DATABASE_URL')
+    replit_url = os.environ.get('DATABASE_URL')
+    db_url = supabase_url or replit_url
+    
+    result = {
+        'has_supabase_url': bool(supabase_url),
+        'has_replit_url': bool(replit_url),
+        'using': 'supabase' if supabase_url else 'replit' if replit_url else 'none',
+        'db_ready': db_ready,
+    }
+    
+    if db_url:
+        try:
+            conn = psycopg2.connect(db_url, sslmode='require')
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM user_trials")
+            row = cur.fetchone()
+            count = row[0] if row else 0
+            cur.close()
+            conn.close()
+            result['connected'] = True
+            result['user_count'] = count
+        except Exception as e:
+            result['connected'] = False
+            result['error'] = str(e)
+    
+    return jsonify(result)
+
+@app.route('/api/ls-status')
+def ls_status():
+    """Check if Whop API key is configured"""
+    has_key = bool(os.environ.get('WHOP_API_KEY'))
+    return jsonify({
+        'configured': has_key,
+        'provider': 'Whop',
+        'endpoints': {
+            'validate': '/api/verify-license',
+            'trial': '/api/trial'
+        }
+    })
+
+# ============================================
+# WHOP LICENSE VERIFICATION
+# ============================================
+
+@app.route('/api/verify-license', methods=['POST', 'OPTIONS'])
+def verify_license():
+    """Verify a Whop license key and mark user as paid"""
+    if request.method == 'OPTIONS':
+        response = Response('', status=200)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
+    
+    data = request.get_json() or {}
+    license_key = data.get('licenseKey', '').strip()
+    user_hash = data.get('userHash', '').strip()
+    device_id = data.get('deviceId', '').strip()
+    
+    if not license_key or not user_hash:
+        resp = jsonify({'success': False, 'error': 'Missing license key or user hash'})
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp, 400
+    
+    whop_api_key = os.environ.get('WHOP_API_KEY')
+    if not whop_api_key:
+        print('❌ WHOP_API_KEY not set in environment')
+        resp = jsonify({'success': False, 'error': 'Server configuration error'})
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp, 500
+    
+    try:
+        whop_response = requests.post(
+            f'https://api.whop.com/api/v2/memberships/{license_key}/validate_license',
+            json={
+                'metadata': {
+                    'device_id': device_id or user_hash[:16]
+                }
+            },
+            headers={
+                'Authorization': f'Bearer {whop_api_key}',
+                'Content-Type': 'application/json'
+            },
+            timeout=10
+        )
+        
+        print(f'🔍 Whop response status: {whop_response.status_code}')
+        whop_data = whop_response.json()
+        print(f'🔍 Whop response: valid={whop_data.get("valid")}, status={whop_data.get("status")}')
+        
+        if whop_response.status_code not in [200, 201] or not whop_data.get('valid'):
+            error_msg = whop_data.get('message', 'Invalid or inactive license key')
+            resp = jsonify({'success': False, 'error': error_msg})
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp, 400
+        
+        membership_status = whop_data.get('status', '')
+        if membership_status not in ['active', 'trialing', 'completed']:
+            resp = jsonify({'success': False, 'error': f'Membership status: {membership_status}. Please check your subscription.'})
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp, 400
+        
+        plan_name = (whop_data.get('plan', '') or '').lower()
+        product_name = (whop_data.get('product', '') or '').lower()
+        expires_at = whop_data.get('expires_at')
+        
+        if 'year' in plan_name or 'annual' in plan_name or 'year' in product_name:
+            plan_type = 'yearly'
+            expires_ms = (expires_at * 1000) if expires_at else int(datetime.now().timestamp() * 1000) + (365 * 24 * 60 * 60 * 1000)
+        else:
+            plan_type = 'monthly'
+            expires_ms = (expires_at * 1000) if expires_at else int(datetime.now().timestamp() * 1000) + (30 * 24 * 60 * 60 * 1000)
+        
+        if not ensure_db():
+            return jsonify({'success': False, 'error': 'Database unavailable'}), 503
+        
+        conn = get_db()
+        cur = conn.cursor()
+        
+        cur.execute('''
+            UPDATE user_trials 
+            SET is_paid = TRUE, 
+                license_key = %s, 
+                plan_type = %s, 
+                subscription_expires = %s
+            WHERE user_hash = %s
+        ''', (license_key[:64], plan_type, expires_ms, user_hash))
+        
+        if cur.rowcount == 0:
+            now_ms = int(datetime.utcnow().timestamp() * 1000)
+            cur.execute('''
+                INSERT INTO user_trials (user_hash, trial_start_date, is_paid, license_key, plan_type, subscription_expires)
+                VALUES (%s, %s, TRUE, %s, %s, %s)
+            ''', (user_hash, now_ms, license_key[:64], plan_type, expires_ms))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        result = {
+            'success': True,
+            'isPaid': True,
+            'planType': plan_type,
+            'expiresAt': expires_ms,
+            'licenseStatus': membership_status
+        }
+        print(f'✅ Whop license verified for user {user_hash[:8]}... Plan: {plan_type}')
+        
+        response = jsonify(result)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
+        
+    except requests.exceptions.Timeout:
+        resp = jsonify({'success': False, 'error': 'Whop verification timed out'})
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp, 504
+    except Exception as e:
+        print(f'❌ License verification error: {type(e).__name__}: {e}')
+        resp = jsonify({'success': False, 'error': 'Verification failed'})
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp, 500
 
 # ============================================
 # ADMIN PANEL (Session-Based Authentication)
