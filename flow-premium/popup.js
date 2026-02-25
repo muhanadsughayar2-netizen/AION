@@ -748,7 +748,7 @@ function translateUI() {
   
   document.querySelector('.status').textContent = getMessage('flowReady', 'Flow: Ready');
   document.getElementById('selectAllBtn').textContent = getMessage('selectAll', 'Select All');
-  document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Combine & Copy');
+  document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Copy Selected');
   document.getElementById('downloadSelectedBtn').textContent = getMessage('downloadAsPNG', 'Download as PNG');
   document.getElementById('exportPdfBtn').textContent = getMessage('exportAsPDF', 'Export as PDF');
   document.getElementById('clearButton').textContent = getMessage('deleteSelected', 'Delete Selected');
@@ -3568,10 +3568,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ===== AI CHAT PORTAL =====
 let aiChatCurrentImage = null;
-let aiChatImages = [];
 let aiChatHistory = [];
-let aiChatSessionId = 0;
-let aiCloseTimer = null;
 
 const aiChatPortal = document.getElementById('aiChatPortal');
 const aiChatThread = document.getElementById('aiChatThread');
@@ -3627,45 +3624,103 @@ async function openAiChat(imageDataUrls) {
   // Accept array of images (multi-select support)
   const images = Array.isArray(imageDataUrls) ? imageDataUrls : [imageDataUrls];
   console.log('[SnapToAI] Opening AI Chat with', images.length, 'image(s)');
-
-  // Cancel any pending close timer (prevents race when rapidly reopening)
-  if (aiCloseTimer) { clearTimeout(aiCloseTimer); aiCloseTimer = null; }
-
-  // Show AI chat as an in-popup panel (open and closeable without leaving the popup)
-  aiChatSessionId++;
-  aiChatCurrentImage = images[0];
-  aiChatImages = images;
-  aiCompressedImage = null;
-  aiChatHistory = [];
-  aiThoughtSignature = null;
-
-  aiChatThread.innerHTML = '<div class="ai-welcome">I\'m your AI partner. Ask me anything about this image!</div>';
-
-  if (images.length > 1) {
-    const note = document.createElement('div');
-    note.className = 'ai-image-count';
-    note.textContent = `📎 ${images.length} images loaded — analyzing the first one`;
-    aiChatThread.appendChild(note);
+  
+  // Show loading indicator on Direct AI button
+  const directAiBtn = document.getElementById('directAiButton');
+  if (directAiBtn) {
+    directAiBtn.style.opacity = '0.5';
+    directAiBtn.style.pointerEvents = 'none';
   }
-
-  aiChatPortal.style.display = 'flex';
-  setTimeout(() => aiChatPortal.classList.add('show'), 10);
-  aiChatInput.focus();
+  
+  // Try to get page text for smart AI context (with 2s timeout to prevent freeze)
+  let pageText = '';
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
+      const response = await Promise.race([
+        chrome.tabs.sendMessage(tab.id, { action: 'get_page_text' }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
+      ]);
+      if (response?.text && response.text.length > 800) {
+        pageText = response.text;
+        console.log('[SnapToAI] Got page text for AI context:', pageText.length, 'chars');
+      }
+    }
+  } catch (e) {
+    console.log('[SnapToAI] Could not get page text:', e.message);
+  }
+  
+  // Limit pageText to 10KB
+  const limitedPageText = pageText.length > 10000 ? pageText.substring(0, 10000) : pageText;
+  
+  // Clear old data first
+  await clearIndexedDBImages();
+  
+  // Save to IndexedDB (primary - unlimited storage)
+  const saved = await saveImagesToIndexedDB(images);
+  
+  // Also try session storage as fallback (may fail for large captures, that's OK)
+  let sessionFallbackOk = false;
+  try {
+    await chrome.storage.session.set({ 
+      pageText: limitedPageText,
+      imageCount: images.length,
+      useIndexedDB: saved,
+      selectedSnaps: images // Fallback for small captures
+    });
+    sessionFallbackOk = true;
+  } catch (e) {
+    // Session storage quota exceeded - that's fine, we have IndexedDB
+    console.log('[SnapToAI] Session storage fallback failed (expected for large captures)');
+    try {
+      // At least save metadata
+      await chrome.storage.session.set({ 
+        pageText: limitedPageText,
+        imageCount: images.length,
+        useIndexedDB: saved
+      });
+    } catch (e2) {}
+  }
+  
+  if (!saved && !sessionFallbackOk) {
+    console.error('[SnapToAI] Failed to save images anywhere');
+    if (directAiBtn) {
+      directAiBtn.style.opacity = '1';
+      directAiBtn.style.pointerEvents = 'auto';
+    }
+    alert('Failed to prepare images. Please try again.');
+    return;
+  }
+  
+  console.log('[SnapToAI] Images saved:', images.length, 'images (IndexedDB:', saved, ', Session:', sessionFallbackOk, ')');
+  
+  // Restore Direct AI button
+  if (directAiBtn) {
+    directAiBtn.style.opacity = '1';
+    directAiBtn.style.pointerEvents = 'auto';
+  }
+  
+  // Open AI chat in a separate window (fixed size for consistent feel)
+  const width = 1000;
+  const height = 700;
+  const left = Math.round((screen.width - width) / 2);
+  const top = Math.round((screen.height - height) / 2);
+  
+  chrome.windows.create({
+    url: chrome.runtime.getURL(`ai-chat.html?count=${images.length}`),
+    type: 'popup',
+    width: width,
+    height: height,
+    left: left,
+    top: top,
+    focused: true
+  });
 }
 
 function closeAiChat() {
   console.log('[SnapToAI] Closing AI Chat Portal');
   aiChatPortal.classList.remove('show');
-  aiCloseTimer = setTimeout(() => {
-    aiCloseTimer = null;
-    aiChatPortal.style.display = 'none';
-    aiChatCurrentImage = null;
-    aiChatImages = [];
-    aiChatHistory = [];
-    aiCompressedImage = null;
-    aiThoughtSignature = null;
-    aiRetryCount = 0;
-  }, 300);
+  setTimeout(() => aiChatPortal.style.display = 'none', 300);
 }
 
 function addChatBubble(text, type) {
@@ -3755,17 +3810,13 @@ async function compressImageForAI(dataUrl) {
 }
 
 async function sendToGemini(prompt, isRetry = false) {
-  const sessionAtStart = aiChatSessionId;
-
   const result = await chrome.storage.sync.get(['geminiApiKey']);
   if (!result.geminiApiKey) {
-    if (aiChatSessionId !== sessionAtStart) return;
     addChatBubble('Please set your Gemini API key first! Click the AI button in the top row.', 'ai');
     return;
   }
   
   if (!aiChatCurrentImage) {
-    if (aiChatSessionId !== sessionAtStart) return;
     addChatBubble('No image loaded. Please try again.', 'ai');
     return;
   }
@@ -3826,12 +3877,6 @@ async function sendToGemini(prompt, isRetry = false) {
 
     loadingBubble.remove();
 
-    // Guard: if the chat was closed/reopened since this request started, discard the response
-    if (aiChatSessionId !== sessionAtStart) {
-      console.log('[SnapToAI] Discarding stale Gemini response (session changed)');
-      return;
-    }
-
     // Handle rate limit errors
     if (data.error && data.error.message && data.error.message.includes('quota')) {
       const retryMatch = data.error?.message?.match(/retry in ([\d.]+)s/i);
@@ -3868,16 +3913,12 @@ async function sendToGemini(prompt, isRetry = false) {
       console.log('[SnapToAI] Empty Gemini response:', data);
     }
   } catch (error) {
-    if (aiChatSessionId === sessionAtStart) {
-      loadingBubble.remove();
-      addChatBubble('Connection error. Check your internet and try again.', 'ai');
-    }
+    loadingBubble.remove();
+    addChatBubble('Connection error. Check your internet and try again.', 'ai');
     console.error('[SnapToAI] Fetch error:', error);
   }
 
-  if (aiChatSessionId === sessionAtStart) {
-    aiSendBtn.disabled = false;
-  }
+  aiSendBtn.disabled = false;
 }
 
 function startCooldown(seconds) {
