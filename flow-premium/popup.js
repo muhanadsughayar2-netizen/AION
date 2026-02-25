@@ -748,7 +748,7 @@ function translateUI() {
   
   document.querySelector('.status').textContent = getMessage('flowReady', 'Flow: Ready');
   document.getElementById('selectAllBtn').textContent = getMessage('selectAll', 'Select All');
-  document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Copy Selected');
+  document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Combine & Copy');
   document.getElementById('downloadSelectedBtn').textContent = getMessage('downloadAsPNG', 'Download as PNG');
   document.getElementById('exportPdfBtn').textContent = getMessage('exportAsPDF', 'Export as PDF');
   document.getElementById('clearButton').textContent = getMessage('deleteSelected', 'Delete Selected');
@@ -3570,6 +3570,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 let aiChatCurrentImage = null;
 let aiChatImages = [];
 let aiChatHistory = [];
+let aiChatSessionId = 0;
+let aiCloseTimer = null;
 
 const aiChatPortal = document.getElementById('aiChatPortal');
 const aiChatThread = document.getElementById('aiChatThread');
@@ -3626,7 +3628,11 @@ async function openAiChat(imageDataUrls) {
   const images = Array.isArray(imageDataUrls) ? imageDataUrls : [imageDataUrls];
   console.log('[SnapToAI] Opening AI Chat with', images.length, 'image(s)');
 
+  // Cancel any pending close timer (prevents race when rapidly reopening)
+  if (aiCloseTimer) { clearTimeout(aiCloseTimer); aiCloseTimer = null; }
+
   // Show AI chat as an in-popup panel (open and closeable without leaving the popup)
+  aiChatSessionId++;
   aiChatCurrentImage = images[0];
   aiChatImages = images;
   aiCompressedImage = null;
@@ -3650,7 +3656,16 @@ async function openAiChat(imageDataUrls) {
 function closeAiChat() {
   console.log('[SnapToAI] Closing AI Chat Portal');
   aiChatPortal.classList.remove('show');
-  setTimeout(() => aiChatPortal.style.display = 'none', 300);
+  aiCloseTimer = setTimeout(() => {
+    aiCloseTimer = null;
+    aiChatPortal.style.display = 'none';
+    aiChatCurrentImage = null;
+    aiChatImages = [];
+    aiChatHistory = [];
+    aiCompressedImage = null;
+    aiThoughtSignature = null;
+    aiRetryCount = 0;
+  }, 300);
 }
 
 function addChatBubble(text, type) {
@@ -3740,13 +3755,17 @@ async function compressImageForAI(dataUrl) {
 }
 
 async function sendToGemini(prompt, isRetry = false) {
+  const sessionAtStart = aiChatSessionId;
+
   const result = await chrome.storage.sync.get(['geminiApiKey']);
   if (!result.geminiApiKey) {
+    if (aiChatSessionId !== sessionAtStart) return;
     addChatBubble('Please set your Gemini API key first! Click the AI button in the top row.', 'ai');
     return;
   }
   
   if (!aiChatCurrentImage) {
+    if (aiChatSessionId !== sessionAtStart) return;
     addChatBubble('No image loaded. Please try again.', 'ai');
     return;
   }
@@ -3807,6 +3826,12 @@ async function sendToGemini(prompt, isRetry = false) {
 
     loadingBubble.remove();
 
+    // Guard: if the chat was closed/reopened since this request started, discard the response
+    if (aiChatSessionId !== sessionAtStart) {
+      console.log('[SnapToAI] Discarding stale Gemini response (session changed)');
+      return;
+    }
+
     // Handle rate limit errors
     if (data.error && data.error.message && data.error.message.includes('quota')) {
       const retryMatch = data.error?.message?.match(/retry in ([\d.]+)s/i);
@@ -3843,12 +3868,16 @@ async function sendToGemini(prompt, isRetry = false) {
       console.log('[SnapToAI] Empty Gemini response:', data);
     }
   } catch (error) {
-    loadingBubble.remove();
-    addChatBubble('Connection error. Check your internet and try again.', 'ai');
+    if (aiChatSessionId === sessionAtStart) {
+      loadingBubble.remove();
+      addChatBubble('Connection error. Check your internet and try again.', 'ai');
+    }
     console.error('[SnapToAI] Fetch error:', error);
   }
 
-  aiSendBtn.disabled = false;
+  if (aiChatSessionId === sessionAtStart) {
+    aiSendBtn.disabled = false;
+  }
 }
 
 function startCooldown(seconds) {
