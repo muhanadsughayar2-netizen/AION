@@ -5,14 +5,18 @@ import psycopg2
 from datetime import datetime
 import requests
 
+# Disable automatic static folder - we'll handle all routing manually
 app = Flask(__name__, static_folder=None)
 
+# Database connection - Use Supabase (external) if available, otherwise Replit DB
 def get_db():
+    # Prefer Supabase for production reliability
     db_url = os.environ.get('SUPABASE_DATABASE_URL') or os.environ.get('DATABASE_URL')
     if not db_url:
         raise Exception("No database URL set")
     return psycopg2.connect(db_url, sslmode='require')
 
+# Initialize database table for trial tracking
 def init_db():
     try:
         supabase_url = os.environ.get('SUPABASE_DATABASE_URL')
@@ -38,6 +42,7 @@ def init_db():
                 usage_count INTEGER DEFAULT 0
             )
         ''')
+        # IP-based trial tracking table - prevents trial abuse by tracking per IP
         cur.execute('''
             CREATE TABLE IF NOT EXISTS ip_trials (
                 ip_address VARCHAR(45) PRIMARY KEY,
@@ -47,6 +52,7 @@ def init_db():
                 api_key_count INTEGER DEFAULT 1
             )
         ''')
+        # Device-based trial tracking table - most reliable, persists across IP changes
         print('📦 Creating device_trials table if not exists...')
         cur.execute('''
             CREATE TABLE IF NOT EXISTS device_trials (
@@ -58,6 +64,7 @@ def init_db():
             )
         ''')
         print('✅ device_trials table ready')
+        # Add columns if missing (for existing tables)
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS browser_language VARCHAR(10)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS extension_version VARCHAR(20)')
@@ -67,6 +74,7 @@ def init_db():
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS license_key VARCHAR(64)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS plan_type VARCHAR(20)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS subscription_expires BIGINT')
+        # IP tracking and user data
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS country VARCHAR(50)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS city VARCHAR(100)')
@@ -78,6 +86,9 @@ def init_db():
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS device_id VARCHAR(60)')
         conn.commit()
         
+        # === MIGRATION: Seed ip_trials from existing user_trials ===
+        # Get earliest trial_start_date for each IP from user_trials
+        # Use DO UPDATE to always use the EARLIEST date (anti-cheat fix)
         cur.execute('''
             INSERT INTO ip_trials (ip_address, trial_start_date, last_active, api_key_count)
             SELECT 
@@ -99,6 +110,7 @@ def init_db():
             print(f'📦 Migrated {migrated_count} IP addresses to ip_trials table')
         conn.commit()
         
+        # === AUTO-FIX: Sync all user_trials to use their IP's earliest trial date ===
         cur.execute('''
             UPDATE user_trials ut
             SET trial_start_date = ip.trial_start_date
@@ -119,10 +131,12 @@ def init_db():
         print(f'❌ Database init error: {type(e).__name__}: {e}')
         return False
 
+# Try to initialize on startup
 print('🚀 App starting, initializing database...')
 db_ready = init_db()
 print(f'📊 Database ready: {db_ready}')
 
+# Ensure DB is ready before any request that needs it
 def ensure_db():
     global db_ready
     if not db_ready:
@@ -133,14 +147,16 @@ def ensure_db():
         else:
             print('❌ Database retry failed')
     return db_ready
-
 app.url_map.strict_slashes = False
 
+# Handle www redirect
 @app.before_request
 def redirect_www():
+    """Redirect www.snaptoai.com to snaptoai.com"""
     if request.host.startswith('www.'):
         return redirect(request.url.replace('www.', '', 1), code=301)
 
+# Supported languages
 SUPPORTED_LANGUAGES = {
     "en", "ar", "he", "fr", "de", "es", "es_419", "it", "pt", "pt_BR", "pt_PT",
     "ja", "zh", "zh_TW", "nl", "pl", "ru", "tr", "vi", "th", "ko",
@@ -153,16 +169,21 @@ SUPPORTED_LANGUAGES = {
 BASE_DIR = 'landing-page'
 
 def serve_file(filepath):
+    """Read file from disk and serve directly to bypass caching"""
     try:
         mime_type, _ = mimetypes.guess_type(filepath)
+        
+        # Binary files (images, etc.) need binary mode
         binary_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp', '.svg', '.woff', '.woff2', '.ttf', '.eot'}
         is_binary = any(filepath.lower().endswith(ext) for ext in binary_extensions)
+        
         if is_binary:
             with open(filepath, 'rb') as f:
                 content = f.read()
         else:
             with open(filepath, 'r', encoding='utf-8') as f:
                 content = f.read()
+        
         response = Response(content, mimetype=mime_type or 'text/html')
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
         response.headers['Pragma'] = 'no-cache'
@@ -180,19 +201,23 @@ def add_headers(response):
 
 @app.route('/health')
 def health():
+    """Health check endpoint for deployment"""
     return Response("OK", status=200, mimetype='text/plain')
 
 @app.route('/api/db-status')
 def db_status():
+    """Check database status - useful for debugging production"""
     supabase_url = os.environ.get('SUPABASE_DATABASE_URL')
     replit_url = os.environ.get('DATABASE_URL')
     db_url = supabase_url or replit_url
+    
     result = {
         'has_supabase_url': bool(supabase_url),
         'has_replit_url': bool(replit_url),
         'using': 'supabase' if supabase_url else 'replit' if replit_url else 'none',
         'db_ready': db_ready,
     }
+    
     if db_url:
         try:
             conn = psycopg2.connect(db_url, sslmode='require')
@@ -207,10 +232,12 @@ def db_status():
         except Exception as e:
             result['connected'] = False
             result['error'] = str(e)
+    
     return jsonify(result)
 
 @app.route('/api/ls-status')
 def ls_status():
+    """Check if Whop API key is configured"""
     has_key = bool(os.environ.get('WHOP_API_KEY'))
     return jsonify({
         'configured': has_key,
@@ -227,6 +254,7 @@ def ls_status():
 
 @app.route('/api/verify-license', methods=['POST', 'OPTIONS'])
 def verify_license():
+    """Verify a Whop license key and mark user as paid"""
     if request.method == 'OPTIONS':
         response = Response('', status=200)
         response.headers['Access-Control-Allow-Origin'] = '*'
