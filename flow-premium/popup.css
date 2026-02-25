@@ -2007,6 +2007,16 @@ html[dir="rtl"] .logo-word {
   background: rgba(255, 255, 255, 0.1);
 }
 
+.ai-image-count {
+  font-size: 11px;
+  color: #00d9ff;
+  background: rgba(0, 217, 255, 0.08);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  border-radius: 6px;
+  padding: 6px 10px;
+  text-align: center;
+}
+
 .ai-chat-thread {
   flex: 1;
   overflow-y: auto;
