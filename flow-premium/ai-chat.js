@@ -1150,6 +1150,15 @@ function resetInputSize(textarea) {
   textarea.style.overflowY = 'hidden';
 }
 
+// Sidebar toggle
+const sidebarToggle = document.getElementById('sidebarToggle');
+const imagePanel = document.getElementById('imagePanel');
+sidebarToggle.addEventListener('click', () => {
+  const collapsed = imagePanel.classList.toggle('collapsed');
+  sidebarToggle.textContent = collapsed ? '▶' : '◀';
+  sidebarToggle.title = collapsed ? 'Show sidebar' : 'Hide sidebar';
+});
+
 // Event listeners
 document.getElementById('closeBtn').addEventListener('click', () => window.close());
 document.getElementById('sendBtn').addEventListener('click', handleSend);
