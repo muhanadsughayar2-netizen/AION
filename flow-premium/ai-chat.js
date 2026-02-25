@@ -299,10 +299,25 @@ async function initializeChat() {
   // Setup magic buttons
   setupMagicButtons();
   
+  // Setup image panel toggle
+  setupPanelToggle();
+  
   // Update verdict button visibility
   if (typeof updateVerdictButtonVisibility === 'function') {
     updateVerdictButtonVisibility();
   }
+}
+
+function setupPanelToggle() {
+  const toggleBtn = document.getElementById('panelToggleBtn');
+  const imagePanel = document.getElementById('imagePanel');
+  if (!toggleBtn || !imagePanel) return;
+  
+  toggleBtn.addEventListener('click', () => {
+    const isCollapsed = imagePanel.classList.toggle('collapsed');
+    toggleBtn.textContent = isCollapsed ? '▶' : '◀';
+    toggleBtn.title = isCollapsed ? 'Show image panel' : 'Hide image panel';
+  });
 }
 
 // Template logic for Magic Buttons
