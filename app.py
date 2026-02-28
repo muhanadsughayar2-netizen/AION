@@ -154,14 +154,6 @@ def lazy_init_db():
 
 app.url_map.strict_slashes = False
 
-@app.before_request
-def redirect_www():
-    """Redirect www.snaptoai.com to snaptoai.com"""
-    try:
-        if request.host.startswith('www.'):
-            return redirect(request.url.replace('www.', '', 1), code=301)
-    except Exception:
-        pass
 
 # Supported languages
 SUPPORTED_LANGUAGES = {
