@@ -25,10 +25,39 @@ const DEFAULT_SETTINGS = {
 // Track last capture time to prevent rate limiting
 let lastCaptureTime = 0;
 
+// Ping server to register this device (no API key required)
+// This tracks ALL users, not just those who use AI
+async function pingInstallServer(reason) {
+  try {
+    const { snaptoai_device_id } = await chrome.storage.local.get(['snaptoai_device_id']);
+    let deviceId = snaptoai_device_id;
+    if (!deviceId) {
+      deviceId = 'dev_' + crypto.randomUUID();
+      await chrome.storage.local.set({ snaptoai_device_id: deviceId });
+    }
+    const manifest = chrome.runtime.getManifest();
+    await fetch('https://snaptoai.com/api/ping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        deviceId,
+        reason,
+        extensionVersion: manifest.version,
+        browserLanguage: navigator.language || 'en',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+        platform: navigator.platform || ''
+      })
+    });
+  } catch (e) {
+    // Silent - server might be unavailable, that's OK
+  }
+}
+
 // Open welcome page on first install and initialize subscription
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
     chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') });
+    pingInstallServer('install');
     
     // CRITICAL: Check BOTH sync AND local storage for existing trial
     // On reinstall: local is WIPED but sync SURVIVES (tied to Google account)
@@ -71,6 +100,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
       console.log('[SnapToAI] Reinstall detected - trial preserved from:', new Date(existingTimestamp).toLocaleDateString());
     }
   } else if (details.reason === 'update') {
+    pingInstallServer('update');
     // On update: Verify trial date exists, repair from immutable timestamp if needed
     const { initialInstallTimestamp, trialStartDate: localDate } = await chrome.storage.local.get(['initialInstallTimestamp', 'trialStartDate']);
     const { trialStartDate: syncDate } = await chrome.storage.sync.get(['trialStartDate']);
