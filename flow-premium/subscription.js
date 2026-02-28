@@ -287,25 +287,7 @@ async function checkSubscription() {
 
 async function verifyLicenseWithServer(licenseKey) {
   try {
-    const userId = await getUserId();
-    const deviceId = await getDeviceId();
-    const response = await fetch(TRIAL_SERVER_URL.replace('/trial', '/verify-license'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ licenseKey, userHash: userId, deviceId })
-    });
-
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      console.log('[SnapToAI] License verification failed:', response.status, errData.error);
-      return { valid: false, reason: errData.error || 'Server error' };
-    }
-
-    const data = await response.json();
-    if (data.success) {
-      return { valid: true, planType: data.planType || 'pro' };
-    }
-    return { valid: false, reason: data.error || 'Invalid license' };
+    return { valid: false, reason: 'License verification not available' };
   } catch (error) {
     console.log('[SnapToAI] License verification error:', error.message);
     return { valid: false, reason: 'Connection error' };
@@ -364,8 +346,8 @@ function openCheckout(plan = 'yearly') {
 
 function getCheckoutUrls() {
   return {
-    monthly: 'https://whop.com/snaptoai/',
-    yearly: 'https://whop.com/snaptoai/'
+    monthly: '',
+    yearly: ''
   };
 }
 
