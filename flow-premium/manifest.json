@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "__MSG_extensionDescription__",
   "default_locale": "en",
   "permissions": [
@@ -20,8 +20,7 @@
     "https://chatgpt.com/*",
     "https://claude.ai/*",
     "https://*.openai.com/*",
-    "https://generativelanguage.googleapis.com/*",
-    "<all_urls>"
+    "https://generativelanguage.googleapis.com/*"
   ],
   "web_accessible_resources": [
     {
@@ -45,7 +44,13 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://*.openai.com/*",
+        "https://claude.ai/*",
+        "https://grok.com/*",
+        "https://grok.x.ai/*"
+      ],
       "js": ["content.js"],
       "run_at": "document_start",
       "all_frames": true
