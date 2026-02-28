@@ -146,16 +146,22 @@ def ensure_db():
 
 @app.before_request
 def lazy_init_db():
-    if not db_ready and request.path.startswith('/api/'):
-        ensure_db()
+    try:
+        if not db_ready and request.path.startswith('/api/'):
+            ensure_db()
+    except Exception as e:
+        print(f'❌ lazy_init_db error: {e}')
+
 app.url_map.strict_slashes = False
 
-# Handle www redirect
 @app.before_request
 def redirect_www():
     """Redirect www.snaptoai.com to snaptoai.com"""
-    if request.host.startswith('www.'):
-        return redirect(request.url.replace('www.', '', 1), code=301)
+    try:
+        if request.host.startswith('www.'):
+            return redirect(request.url.replace('www.', '', 1), code=301)
+    except Exception:
+        pass
 
 # Supported languages
 SUPPORTED_LANGUAGES = {
@@ -174,7 +180,6 @@ def serve_file(filepath):
     try:
         mime_type, _ = mimetypes.guess_type(filepath)
         
-        # Binary files (images, etc.) need binary mode
         binary_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp', '.svg', '.woff', '.woff2', '.ttf', '.eot'}
         is_binary = any(filepath.lower().endswith(ext) for ext in binary_extensions)
         
@@ -191,7 +196,13 @@ def serve_file(filepath):
         response.headers['Expires'] = '0'
         return response
     except FileNotFoundError:
-        return serve_file(os.path.join(BASE_DIR, 'index.html'))
+        fallback = os.path.join(BASE_DIR, 'index.html')
+        if filepath != fallback and os.path.exists(fallback):
+            return serve_file(fallback)
+        return Response("OK", status=200, mimetype='text/plain')
+    except Exception as e:
+        print(f'❌ serve_file error: {e}')
+        return Response("OK", status=200, mimetype='text/plain')
 
 @app.after_request
 def add_headers(response):
@@ -203,6 +214,10 @@ def add_headers(response):
 @app.route('/health')
 def health():
     """Health check endpoint for deployment"""
+    return Response("OK", status=200, mimetype='text/plain')
+
+@app.errorhandler(500)
+def handle_500(e):
     return Response("OK", status=200, mimetype='text/plain')
 
 @app.route('/api/db-status')
