@@ -46,9 +46,17 @@ externalPort = 3001
 localPort = 5003
 externalPort = 3002
 
+[[ports]]
+localPort = 5004
+externalPort = 3003
+
+[[ports]]
+localPort = 5005
+externalPort = 4200
+
 [deployment]
 deploymentTarget = "vm"
-run = ["python3", "app.py"]
+run = ["waitress-serve", "--port=5000", "--threads=4", "app:app"]
 build = ["pip", "install", "-r", "requirements.txt"]
 
 [userenv]
