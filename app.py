@@ -521,7 +521,7 @@ def admin_panel():
         </div>
         <div class="stat-box">
             <div class="stat-number active">{active_users}</div>
-            <div class="stat-label">Active Trials</div>
+            <div class="stat-label">On Trial (30 days)</div>
         </div>
         <div class="stat-box">
             <div class="stat-number expired">{expired_users}</div>
@@ -647,7 +647,7 @@ def admin_panel():
         
         for i, r in enumerate(processed_rows, 1):
             badge_class = f"badge-{r['status']}"
-            status_text = r['status'].upper()
+            status_text = 'ON TRIAL' if r['status'] == 'active' else r['status'].upper()
             usage_pct = min(100, (r['usage'] / max_usage) * 100)
             plan_display = f'<span style="color: #ffd700;">{r["plan_type"]}</span>' if r['plan_type'] != '-' else '-'
             type_badge = '<span class="badge badge-install">Install</span>' if r['user_type'] == 'install' else '<span class="badge badge-ai">AI User</span>'
