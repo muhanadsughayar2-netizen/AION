@@ -1,12 +1,4 @@
-import socket
 import threading
-
-# Bind port 5000 BEFORE any other imports - happens in milliseconds
-_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-_sock.bind(('0.0.0.0', 5000))
-_sock.listen(128)
-print('PORT 5000 OPEN', flush=True)
 
 _real_app = None
 _app_ready = threading.Event()
@@ -27,4 +19,5 @@ def load_real_app():
 threading.Thread(target=load_real_app, daemon=True).start()
 
 from waitress import serve
-serve(proxy, sockets=[_sock], threads=8)
+print('PORT 5000 OPEN', flush=True)
+serve(proxy, host='0.0.0.0', port=5000, threads=8)
