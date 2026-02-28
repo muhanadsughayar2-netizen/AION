@@ -175,7 +175,7 @@ SUPPORTED_LANGUAGES = {
 
 BASE_DIR = 'landing-page'
 
-# Lazy cache for index.html - loaded on first request, not at startup
+# Cache for index.html - warmed by background thread after startup
 _index_html_cache = None
 def get_index_html():
     global _index_html_cache
@@ -187,6 +187,15 @@ def get_index_html():
             print(f'⚠️ Could not load index.html: {e}')
             _index_html_cache = '<html><body><h1>SnapToAI</h1></body></html>'
     return _index_html_cache
+
+def _prewarm_cache():
+    import time
+    time.sleep(0.5)
+    get_index_html()
+    print('✅ index.html cache warmed')
+
+import threading
+threading.Thread(target=_prewarm_cache, daemon=True).start()
 
 def serve_file(filepath):
     """Read file from disk and serve directly to bypass caching"""
@@ -1115,7 +1124,18 @@ def get_or_create_trial():
 
 @app.route('/')
 def index():
-    """Serve English landing page from memory cache - instant response"""
+    """Serve landing page - instant OK for health checks, full page for browsers"""
+    ua = request.headers.get('User-Agent', '')
+    accept = request.headers.get('Accept', '')
+    is_health_check = (
+        not ua or
+        'python-requests' in ua.lower() or
+        'kube-probe' in ua.lower() or
+        'googlehc' in ua.lower() or
+        ('text/html' not in accept and 'application/json' not in accept and '*/*' not in accept)
+    )
+    if is_health_check and not accept:
+        return Response('OK', mimetype='text/plain', status=200)
     response = Response(get_index_html(), mimetype='text/html')
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     return response
