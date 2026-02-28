@@ -42,9 +42,13 @@ externalPort = 3000
 localPort = 5002
 externalPort = 3001
 
+[[ports]]
+localPort = 5003
+externalPort = 3002
+
 [deployment]
 deploymentTarget = "vm"
-run = ["gunicorn", "--bind=0.0.0.0:5000", "--workers", "1", "--timeout", "120", "--preload", "app:app"]
+run = ["python3", "app.py"]
 build = ["pip", "install", "-r", "requirements.txt"]
 
 [userenv]
