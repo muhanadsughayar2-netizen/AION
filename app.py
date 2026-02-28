@@ -188,14 +188,11 @@ def get_index_html():
             _index_html_cache = '<html><body><h1>SnapToAI</h1></body></html>'
     return _index_html_cache
 
-def _prewarm_cache():
-    import time
-    time.sleep(0.5)
+try:
     get_index_html()
-    print('✅ index.html cache warmed')
-
-import threading
-threading.Thread(target=_prewarm_cache, daemon=True).start()
+    print('✅ index.html loaded into memory')
+except Exception as e:
+    print(f'⚠️ Could not pre-load index.html: {e}')
 
 def serve_file(filepath):
     """Read file from disk and serve directly to bypass caching"""
