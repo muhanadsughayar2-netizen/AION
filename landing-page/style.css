@@ -7,10 +7,10 @@
 :root {
     --primary: #06b6d4;
     --primary-dark: #0891b2;
-    --bg-dark: #2d3748;
-    --bg-darker: #1a202c;
-    --bg-card: rgba(45, 55, 72, 0.8);
-    --bg-glass: rgba(45, 55, 72, 0.4);
+    --bg-dark: #0f172a;
+    --bg-darker: #0a0f1b;
+    --bg-card: rgba(15, 23, 42, 0.8);
+    --bg-glass: rgba(15, 23, 42, 0.4);
     --text-primary: #f1f5f9;
     --text-secondary: #cbd5e1;
     --border-color: rgba(6, 182, 212, 0.2);
@@ -31,7 +31,7 @@ html[lang="he"] {
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background: linear-gradient(135deg, #2d3748 0%, #374151 50%, #1a202c 100%);
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0a0f1b 100%);
     color: var(--text-primary);
     line-height: 1.6;
     overflow-x: hidden;
