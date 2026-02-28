@@ -175,7 +175,7 @@ SUPPORTED_LANGUAGES = {
 
 BASE_DIR = 'landing-page'
 
-# Pre-load index.html into memory at startup for instant responses
+# Lazy cache for index.html - loaded on first request, not at startup
 _index_html_cache = None
 def get_index_html():
     global _index_html_cache
@@ -184,13 +184,9 @@ def get_index_html():
             with open(os.path.join(BASE_DIR, 'index.html'), 'r', encoding='utf-8') as f:
                 _index_html_cache = f.read()
         except Exception as e:
-            print(f'⚠️ Could not pre-load index.html: {e}')
+            print(f'⚠️ Could not load index.html: {e}')
             _index_html_cache = '<html><body><h1>SnapToAI</h1></body></html>'
     return _index_html_cache
-
-# Pre-load on startup
-get_index_html()
-print('✅ index.html pre-loaded into memory')
 
 def serve_file(filepath):
     """Read file from disk and serve directly to bypass caching"""
