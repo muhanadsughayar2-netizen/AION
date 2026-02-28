@@ -54,6 +54,14 @@ externalPort = 3003
 localPort = 5005
 externalPort = 4200
 
+[[ports]]
+localPort = 5006
+externalPort = 5000
+
+[[ports]]
+localPort = 5007
+externalPort = 5173
+
 [deployment]
 deploymentTarget = "vm"
 run = ["waitress-serve", "--port=5000", "--threads=4", "app:app"]
