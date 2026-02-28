@@ -1103,7 +1103,10 @@ def get_or_create_trial():
 @app.route('/')
 def index():
     """Serve English landing page (default) - read directly from disk"""
-    return serve_file(os.path.join(BASE_DIR, 'index.html'))
+    try:
+        return serve_file(os.path.join(BASE_DIR, 'index.html'))
+    except Exception:
+        return Response("OK", status=200, mimetype='text/plain')
 
 @app.route('/<lang_code>')
 def language_page(lang_code):
