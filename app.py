@@ -175,6 +175,23 @@ SUPPORTED_LANGUAGES = {
 
 BASE_DIR = 'landing-page'
 
+# Pre-load index.html into memory at startup for instant responses
+_index_html_cache = None
+def get_index_html():
+    global _index_html_cache
+    if _index_html_cache is None:
+        try:
+            with open(os.path.join(BASE_DIR, 'index.html'), 'r', encoding='utf-8') as f:
+                _index_html_cache = f.read()
+        except Exception as e:
+            print(f'⚠️ Could not pre-load index.html: {e}')
+            _index_html_cache = '<html><body><h1>SnapToAI</h1></body></html>'
+    return _index_html_cache
+
+# Pre-load on startup
+get_index_html()
+print('✅ index.html pre-loaded into memory')
+
 def serve_file(filepath):
     """Read file from disk and serve directly to bypass caching"""
     try:
@@ -1102,11 +1119,10 @@ def get_or_create_trial():
 
 @app.route('/')
 def index():
-    """Serve English landing page (default) - read directly from disk"""
-    try:
-        return serve_file(os.path.join(BASE_DIR, 'index.html'))
-    except Exception:
-        return Response("OK", status=200, mimetype='text/plain')
+    """Serve English landing page from memory cache - instant response"""
+    response = Response(get_index_html(), mimetype='text/html')
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return response
 
 @app.route('/<lang_code>')
 def language_page(lang_code):
