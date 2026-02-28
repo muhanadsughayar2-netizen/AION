@@ -131,22 +131,23 @@ def init_db():
         print(f'❌ Database init error: {type(e).__name__}: {e}')
         return False
 
-# Try to initialize on startup
-print('🚀 App starting, initializing database...')
-db_ready = init_db()
-print(f'📊 Database ready: {db_ready}')
+db_ready = False
 
-# Ensure DB is ready before any request that needs it
 def ensure_db():
     global db_ready
     if not db_ready:
-        print('🔄 Retrying database initialization...')
+        print('🔄 Initializing database...')
         db_ready = init_db()
         if db_ready:
-            print('✅ Database retry successful!')
+            print('✅ Database initialized successfully!')
         else:
-            print('❌ Database retry failed')
+            print('❌ Database initialization failed')
     return db_ready
+
+@app.before_request
+def lazy_init_db():
+    if not db_ready and request.path.startswith('/api/'):
+        ensure_db()
 app.url_map.strict_slashes = False
 
 # Handle www redirect
