@@ -445,12 +445,9 @@ def admin_panel():
             if search and search.lower() not in user_hash.lower():
                 continue
             
-            user_type = 'install' if user_hash.startswith('device_') else 'ai_user'
-
             processed_rows.append({
                 'hash': user_hash[:16] + '...',
                 'full_hash': user_hash,
-                'user_type': user_type,
                 'created': created_at.strftime('%Y-%m-%d %H:%M') if created_at else '-',
                 'start': datetime.fromtimestamp(trial_start / 1000).strftime('%Y-%m-%d'),
                 'days': days_remaining,
@@ -502,8 +499,6 @@ def admin_panel():
         .badge-active {{ background: #00ff8820; color: #00ff88; }}
         .badge-expired {{ background: #ff475720; color: #ff4757; }}
         .badge-paid {{ background: #ffd70020; color: #ffd700; }}
-        .badge-install {{ background: #a855f720; color: #a855f7; }}
-        .badge-ai {{ background: #00d4ff20; color: #00d4ff; }}
         .usage-bar {{ background: #333; border-radius: 4px; height: 6px; width: 60px; display: inline-block; }}
         .usage-fill {{ background: #00d4ff; height: 100%; border-radius: 4px; }}
         .hash {{ font-family: monospace; font-size: 12px; color: #888; }}
@@ -521,7 +516,7 @@ def admin_panel():
         </div>
         <div class="stat-box">
             <div class="stat-number active">{active_users}</div>
-            <div class="stat-label">On Trial (30 days)</div>
+            <div class="stat-label">Active Trials</div>
         </div>
         <div class="stat-box">
             <div class="stat-number expired">{expired_users}</div>
@@ -630,7 +625,6 @@ def admin_panel():
     <table>
         <tr>
             <th>#</th>
-            <th>Type</th>
             <th>User Hash</th>
             <th>Location</th>
             <th>Device</th>
@@ -647,10 +641,9 @@ def admin_panel():
         
         for i, r in enumerate(processed_rows, 1):
             badge_class = f"badge-{r['status']}"
-            status_text = 'ON TRIAL' if r['status'] == 'active' else r['status'].upper()
+            status_text = r['status'].upper()
             usage_pct = min(100, (r['usage'] / max_usage) * 100)
             plan_display = f'<span style="color: #ffd700;">{r["plan_type"]}</span>' if r['plan_type'] != '-' else '-'
-            type_badge = '<span class="badge badge-install">Install</span>' if r['user_type'] == 'install' else '<span class="badge badge-ai">AI User</span>'
             
             # Build location string with IP
             location_str = f"{r['city']}, {r['country']}" if r['city'] != '-' and r['country'] != '-' else (r['country'] if r['country'] != '-' else '-')
@@ -664,7 +657,6 @@ def admin_panel():
             html += f'''
         <tr>
             <td>{i}</td>
-            <td>{type_badge}</td>
             <td class="hash" title="{r['full_hash']}">{r['hash']}</td>
             <td style="font-size: 11px;"><span style="color: #00d4ff;">{location_str}</span><br><span style="color:#a855f7;font-size:10px;">{r['ip']}</span><br><span style="color:#666;font-size:10px;">{r['timezone']}</span></td>
             <td style="font-size: 11px;">{device_str}</td>
@@ -773,92 +765,6 @@ def debug_ip_trials():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-@app.route('/api/ping', methods=['POST', 'OPTIONS'])
-def ping_install():
-    """Track every install/update — no API key required. Uses device_id as identifier."""
-    if request.method == 'OPTIONS':
-        response = Response()
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-        return response
-
-    if not ensure_db():
-        response = jsonify({'ok': False})
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        return response, 503
-
-    try:
-        data = request.get_json() or {}
-        device_id = (data.get('deviceId') or '')[:60]
-        reason = (data.get('reason') or 'ping')[:20]
-        extension_version = (data.get('extensionVersion') or '')[:20]
-        browser_language = (data.get('browserLanguage') or '')[:10]
-        timezone = (data.get('timezone') or '')[:50]
-        platform = (data.get('platform') or '')[:30]
-
-        if not device_id or not device_id.startswith('dev_'):
-            response = jsonify({'ok': False, 'error': 'no device id'})
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            return response, 400
-
-        ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
-        if ip_address and ',' in ip_address:
-            ip_address = ip_address.split(',')[0].strip()
-
-        country = city = None
-        try:
-            if ip_address and ip_address not in ['127.0.0.1', 'localhost']:
-                geo_resp = requests.get(f'http://ip-api.com/json/{ip_address}?fields=country,city', timeout=2)
-                if geo_resp.status_code == 200:
-                    geo_data = geo_resp.json()
-                    country = (geo_data.get('country') or '')[:50]
-                    city = (geo_data.get('city') or '')[:100]
-        except:
-            pass
-
-        import hashlib
-        user_hash = 'device_' + hashlib.sha256(device_id.encode()).hexdigest()[:57]
-
-        now_ms = int(datetime.utcnow().timestamp() * 1000)
-        conn = get_db()
-        cur = conn.cursor()
-
-        cur.execute('''
-            INSERT INTO user_trials (user_hash, trial_start_date, created_at, browser_language,
-                extension_version, last_active, usage_count, ip_address, country, city, timezone,
-                device_type, platform)
-            VALUES (%s, %s, NOW(), %s, %s, %s, 0, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (user_hash) DO UPDATE SET
-                last_active = EXCLUDED.last_active,
-                extension_version = COALESCE(EXCLUDED.extension_version, user_trials.extension_version),
-                ip_address = COALESCE(EXCLUDED.ip_address, user_trials.ip_address),
-                country = COALESCE(EXCLUDED.country, user_trials.country),
-                city = COALESCE(EXCLUDED.city, user_trials.city)
-        ''', (user_hash, now_ms, browser_language, extension_version, now_ms,
-              ip_address, country, city, timezone, 'Desktop', platform))
-
-        cur.execute('''
-            INSERT INTO device_trials (device_id, trial_start_date, created_at, last_active, api_key_count)
-            VALUES (%s, %s, NOW(), %s, 1)
-            ON CONFLICT (device_id) DO UPDATE SET
-                last_active = EXCLUDED.last_active
-        ''', (device_id, now_ms, now_ms))
-
-        conn.commit()
-        cur.close()
-        conn.close()
-
-        response = jsonify({'ok': True, 'reason': reason})
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        return response
-
-    except Exception as e:
-        response = jsonify({'ok': False, 'error': str(e)})
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        return response, 500
-
 
 @app.route('/api/trial', methods=['POST', 'OPTIONS'])
 def get_or_create_trial():
