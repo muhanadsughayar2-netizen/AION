@@ -67,8 +67,8 @@ localPort = 5009
 externalPort = 6000
 
 [deployment]
-deploymentTarget = "vm"
-run = ["python3", "start.py"]
+deploymentTarget = "autoscale"
+run = ["gunicorn", "--bind=0.0.0.0:5000", "--reuse-port", "--timeout=120", "app:app"]
 build = ["pip", "install", "-r", "requirements.txt"]
 
 [userenv]
