@@ -70,7 +70,7 @@ window.SnapToAI_TEST = ENABLE_TEST_MODE ? {
 const EARLY_ACCESS_MODE = false;
 const VERIFY_INTERVAL_HOURS = 24;
 const OFFLINE_GRACE_DAYS = 7;
-const BACKEND_URL = 'https://snaptoai.com';
+const BACKEND_URL = 'https://www.snaptoai.com';
 
 async function getSignedInEmail() {
   try {
