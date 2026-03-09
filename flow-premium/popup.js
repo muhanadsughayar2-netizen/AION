@@ -100,9 +100,16 @@ async function handleGoogleSignIn() {
   } catch (error) {
     console.error('[SnapToAI] Google Sign-In failed:', error);
     if (authError) {
-      authError.textContent = error.message === 'The user did not approve access.' 
-        ? 'Sign-in was cancelled. Please try again.'
-        : 'Sign-in failed. Please try again.';
+      const msg = error.message || String(error);
+      if (msg === 'The user did not approve access.') {
+        authError.textContent = 'Sign-in was cancelled. Please try again.';
+      } else if (msg.includes('OAuth2 not granted')) {
+        authError.textContent = 'Google permissions not granted. Check your Google Cloud OAuth setup.';
+      } else if (msg.includes('invalid_client') || msg.includes('client_id')) {
+        authError.textContent = 'OAuth configuration error. Verify Client ID in Google Cloud Console.';
+      } else {
+        authError.textContent = msg;
+      }
       authError.style.display = 'block';
     }
   } finally {

@@ -22,7 +22,6 @@
       "openid"
     ]
   },
-  "key": "oojjcoiimphlplollpgjckcjejlamhjh",
   "options_page": "options.html",
   "host_permissions": [
     "https://grok.x.ai/*",
