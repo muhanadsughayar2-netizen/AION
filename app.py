@@ -1263,6 +1263,9 @@ def whop_webhook():
         whop_api_key = os.environ.get('WHOP_API_KEY', '')
         membership_id = resource.get('id', '') or resource.get('membership_id', '') or data.get('membership_id', '')
 
+        verified_email = None
+        is_verified = False
+
         if whop_api_key and membership_id:
             try:
                 verify_resp = requests.get(
@@ -1270,26 +1273,37 @@ def whop_webhook():
                     headers={'Authorization': f'Bearer {whop_api_key}'},
                     timeout=5
                 )
-                if verify_resp.status_code != 200:
-                    print(f'Whop webhook: membership verification failed (status {verify_resp.status_code})')
-                else:
+                if verify_resp.status_code == 200:
                     verified_data = verify_resp.json()
                     verified_email = verified_data.get('email', '').strip().lower()
                     if verified_email:
-                        resource['email'] = verified_email
-                    print(f'Whop webhook: membership {membership_id} verified via API')
+                        is_verified = True
+                        print(f'Whop webhook: membership {membership_id} VERIFIED, email={verified_email}')
+                    else:
+                        print(f'Whop webhook: membership verified but no email in response')
+                else:
+                    print(f'Whop webhook: membership verification failed (status {verify_resp.status_code})')
             except Exception as ve:
                 print(f'Whop webhook: API verification error: {ve}')
 
-        print(f'Whop webhook received: action={action}, data_keys={list(resource.keys()) if resource else "none"}')
+        if not is_verified:
+            payload_email = resource.get('email', '').strip().lower()
+            if not payload_email:
+                metadata = resource.get('metadata', {})
+                payload_email = metadata.get('email', '').strip().lower() if metadata else ''
+            if not payload_email:
+                user_data = resource.get('user', {})
+                payload_email = user_data.get('email', '').strip().lower() if user_data else ''
 
-        email = resource.get('email', '').strip().lower()
-        if not email:
-            metadata = resource.get('metadata', {})
-            email = metadata.get('email', '').strip().lower() if metadata else ''
-        if not email:
-            user_data = resource.get('user', {})
-            email = user_data.get('email', '').strip().lower() if user_data else ''
+            if payload_email:
+                print(f'Whop webhook: UNVERIFIED request for {payload_email}, logging only (no DB update)')
+                return jsonify({'received': True, 'warning': 'unverified, no action taken'}), 200
+            else:
+                print(f'Whop webhook: no email and no verification, ignoring')
+                return jsonify({'received': True, 'warning': 'no email found'}), 200
+
+        email = verified_email
+        print(f'Whop webhook processing: action={action}, verified_email={email}')
 
         whop_user_id = resource.get('user_id', '') or resource.get('user', {}).get('id', '')
         membership_id = resource.get('id', '') or resource.get('membership_id', '')
