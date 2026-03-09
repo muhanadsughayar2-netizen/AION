@@ -3457,7 +3457,7 @@ function loadGlobalCounter() {
 
 setInterval(loadGlobalCounter, 30000);
 
-document.addEventListener('DOMContentLoaded', loadGlobalCounter);
+document.addEventListener('DOMContentLoaded', () => setTimeout(loadGlobalCounter, 500));
 
 function incrementGlobalCounter() {
   const img = new Image();
