@@ -366,14 +366,19 @@ def auth_register():
         return response, 503
 
     try:
-        data = request.get_json() or {}
-        name = data.get('name', '')
-        email = data.get('email', '')
-        picture = data.get('picture', '')
-        device_id = data.get('deviceId', '')
+        data = request.get_json(silent=True)
+        if not data:
+            response = jsonify({'success': False, 'error': 'Invalid request body'})
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            return response, 400
 
-        if not email:
-            response = jsonify({'success': False, 'error': 'Email is required'})
+        name = str(data.get('name', ''))[:200]
+        email = str(data.get('email', ''))[:200].strip().lower()
+        picture = str(data.get('picture', ''))[:500]
+        device_id = str(data.get('deviceId', ''))[:100]
+
+        if not email or '@' not in email:
+            response = jsonify({'success': False, 'error': 'Valid email is required'})
             response.headers['Access-Control-Allow-Origin'] = '*'
             return response, 400
 
@@ -399,7 +404,7 @@ def auth_register():
         return response
     except Exception as e:
         print(f'❌ auth/register error: {e}')
-        response = jsonify({'success': False, 'error': str(e)})
+        response = jsonify({'success': False, 'error': 'Registration failed'})
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response, 500
 
@@ -419,13 +424,24 @@ def auth_activity():
         return response, 503
 
     try:
-        data = request.get_json() or {}
-        email = data.get('email', '')
-        action = data.get('action', '')
-        details = data.get('details', '')
+        data = request.get_json(silent=True)
+        if not data:
+            response = jsonify({'success': False, 'error': 'Invalid request body'})
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            return response, 400
 
-        if not email or not action:
-            response = jsonify({'success': False, 'error': 'Email and action are required'})
+        email = str(data.get('email', ''))[:200].strip().lower()
+        action = str(data.get('action', ''))[:100]
+        details = str(data.get('details', ''))[:500]
+
+        valid_actions = ['capture_snap', 'capture_snip', 'capture_fullpage', 'ai_chat', 'review_prompt_shown', 'review_clicked']
+        if not email or '@' not in email or not action:
+            response = jsonify({'success': False, 'error': 'Valid email and action are required'})
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            return response, 400
+
+        if action not in valid_actions:
+            response = jsonify({'success': False, 'error': 'Invalid action'})
             response.headers['Access-Control-Allow-Origin'] = '*'
             return response, 400
 
@@ -451,7 +467,7 @@ def auth_activity():
         return response
     except Exception as e:
         print(f'❌ auth/activity error: {e}')
-        response = jsonify({'success': False, 'error': str(e)})
+        response = jsonify({'success': False, 'error': 'Activity logging failed'})
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response, 500
 
