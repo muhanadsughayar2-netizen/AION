@@ -2475,41 +2475,24 @@ html[dir="rtl"] .logo-word {
   background: #1a1a2e;
 }
 
-.license-input-row {
-  display: flex;
-  gap: 8px;
+.refresh-subscription-btn {
+  width: 100%;
+  padding: 12px;
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  color: #00ffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
   margin-bottom: 12px;
 }
 
-.license-input {
-  flex: 1;
-  padding: 10px 12px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  color: #fff;
-  font-size: 12px;
-}
-
-.license-input:focus {
-  outline: none;
+.refresh-subscription-btn:hover {
+  background: rgba(0, 255, 255, 0.2);
   border-color: #00ffff;
-}
-
-.license-verify-btn {
-  padding: 10px 16px;
-  background: linear-gradient(135deg, #00ffff, #0099ff);
-  border: none;
-  border-radius: 8px;
-  color: #000;
-  font-weight: 700;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.license-verify-btn:hover {
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 
 .license-error {

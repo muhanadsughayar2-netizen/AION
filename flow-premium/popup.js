@@ -3612,9 +3612,8 @@ if (toggleKeyVisibility && geminiKeyInput) {
 const subscriptionModal = document.getElementById('subscriptionModal');
 const subMonthlyBtn = document.getElementById('subMonthlyBtn');
 const subYearlyBtn = document.getElementById('subYearlyBtn');
-const licenseKeyInput = document.getElementById('licenseKeyInput');
-const licenseVerifyBtn = document.getElementById('licenseVerifyBtn');
-const licenseError = document.getElementById('licenseError');
+const refreshSubscriptionBtn = document.getElementById('refreshSubscriptionBtn');
+const subscriptionError = document.getElementById('subscriptionError');
 const subscriptionCloseBtn = document.getElementById('subscriptionCloseBtn');
 const subscriptionMessage = document.getElementById('subscriptionMessage');
 
@@ -3623,13 +3622,14 @@ function showSubscriptionModal(message) {
   if (message && subscriptionMessage) {
     subscriptionMessage.textContent = message;
   }
+  if (subscriptionError) subscriptionError.style.display = 'none';
   subscriptionModal.style.display = 'flex';
 }
 
 function hideSubscriptionModal() {
   if (!subscriptionModal) return;
   subscriptionModal.style.display = 'none';
-  if (licenseError) licenseError.style.display = 'none';
+  if (subscriptionError) subscriptionError.style.display = 'none';
 }
 
 async function handleAIButtonClick() {
@@ -3638,16 +3638,19 @@ async function handleAIButtonClick() {
     const status = await window.SnapToAISubscription.check();
     console.log('[SnapToAI] AI button clicked, status:', status, 'override:', !!snaptoai_dev_override);
     
+    if (status.needsSignIn) {
+      return;
+    }
+    
     if (status.needsApiKey || status.status === 'no_api_key') {
-      console.log('[SnapToAI] No API key - showing Gemini setup modal');
       showGeminiModal();
       return;
     }
     
-    if (!status.canUseAI && status.status !== 'no_api_key' && !snaptoai_dev_override) {
+    if (!status.canUseAI && !snaptoai_dev_override) {
       const message = status.status === 'subscription_expired'
         ? 'Your subscription has expired. Renew to keep using AI tools.'
-        : 'We provide the interface; you provide your Google API key.';
+        : 'Your free trial has ended. Subscribe to keep using AI analysis features.';
       showSubscriptionModal(message);
       return;
     }
@@ -3655,47 +3658,24 @@ async function handleAIButtonClick() {
   showGeminiModal();
 }
 
-async function handleLicenseVerify() {
-  if (!licenseKeyInput) return;
-  const key = licenseKeyInput.value.trim();
-  if (!key) {
-    if (licenseError) {
-      licenseError.textContent = 'Please enter a license key';
-      licenseError.style.display = 'block';
-    }
-    return;
-  }
-  
-  if (licenseVerifyBtn) licenseVerifyBtn.textContent = 'Verifying...';
-  
-  if (window.SnapToAI_DEV) {
-    const devResult = await window.SnapToAI_DEV.unlock(key);
-    if (devResult && devResult.success) {
-      if (licenseError) licenseError.style.display = 'none';
-      hideSubscriptionModal();
-      if (licenseVerifyBtn) licenseVerifyBtn.textContent = 'Activate';
-      return;
-    }
-  }
-
+async function handleRefreshSubscription() {
   if (!window.SnapToAISubscription) return;
-  const result = await window.SnapToAISubscription.saveLicense(key);
-  
-  if (result.success) {
+  if (refreshSubscriptionBtn) refreshSubscriptionBtn.textContent = '⏳ Checking...';
+  if (subscriptionError) subscriptionError.style.display = 'none';
+
+  const result = await window.SnapToAISubscription.refresh();
+
+  if (result.success && result.status === 'subscribed') {
     hideSubscriptionModal();
     showGeminiModal();
   } else {
-    if (licenseError) {
-      const err = (result.error || '').toLowerCase();
-      const isNetworkError = err.includes('connection') || err.includes('server error') || err.includes('timeout');
-      licenseError.textContent = isNetworkError
-        ? 'Network error. Please check your connection and try again.'
-        : (result.error || 'Invalid license key. Please check and try again.');
-      licenseError.style.display = 'block';
+    if (subscriptionError) {
+      subscriptionError.textContent = result.error || 'No active subscription found.';
+      subscriptionError.style.display = 'block';
     }
   }
-  
-  if (licenseVerifyBtn) licenseVerifyBtn.textContent = 'Activate';
+
+  if (refreshSubscriptionBtn) refreshSubscriptionBtn.textContent = '🔄 I\'ve subscribed — Refresh';
 }
 
 if (subMonthlyBtn) subMonthlyBtn.addEventListener('click', () => {
@@ -3710,7 +3690,7 @@ if (subYearlyBtn) subYearlyBtn.addEventListener('click', () => {
   }
 });
 
-if (licenseVerifyBtn) licenseVerifyBtn.addEventListener('click', handleLicenseVerify);
+if (refreshSubscriptionBtn) refreshSubscriptionBtn.addEventListener('click', handleRefreshSubscription);
 if (subscriptionCloseBtn) subscriptionCloseBtn.addEventListener('click', hideSubscriptionModal);
 
 if (subscriptionModal) subscriptionModal.addEventListener('click', (e) => {
@@ -3732,7 +3712,19 @@ if (directAiButton) {
   directAiButton.addEventListener('click', async () => {
     console.log('[SnapToAI] Opening AI Chat');
     
-    // Check if API key exists
+    if (window.SnapToAISubscription) {
+      const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
+      const status = await window.SnapToAISubscription.check();
+      if (status.needsSignIn) return;
+      if (!status.canUseAI && !snaptoai_dev_override) {
+        const message = status.status === 'subscription_expired'
+          ? 'Your subscription has expired. Renew to keep using AI tools.'
+          : 'Your free trial has ended. Subscribe to keep using AI analysis features.';
+        showSubscriptionModal(message);
+        return;
+      }
+    }
+    
     const { geminiApiKey } = await chrome.storage.sync.get(['geminiApiKey']);
     if (!geminiApiKey) {
       showGeminiModal();

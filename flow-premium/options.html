@@ -111,7 +111,7 @@
         </div>
       </section>
 
-      <!-- Subscription / License -->
+      <!-- Subscription -->
       <section class="settings-group">
         <h2>👑 Subscription</h2>
         
@@ -123,19 +123,14 @@
           <p class="upgrade-text" id="trialMessage">Checking subscription status...</p>
         </div>
         
-        <div class="setting-item" id="licenseSection">
-          <label for="licenseKey">License Key:</label>
-          <div class="license-input-group">
-            <input type="text" id="licenseKey" placeholder="Enter your license key" autocomplete="off">
-            <button id="activateBtn" class="activate-btn">Activate</button>
-          </div>
-          <p class="help-text">Purchase a subscription at <a href="https://snaptoai.com" target="_blank">snaptoai.com</a> and enter your license key here.</p>
+        <div id="subscribeSection" class="setting-item" style="display: none;">
+          <p class="help-text">Subscribe at <a href="https://whop.com/snaptoai/" target="_blank">whop.com/snaptoai</a> to unlock AI features.</p>
+          <button id="refreshSubBtn" class="activate-btn">🔄 Refresh Subscription Status</button>
         </div>
         
-        <div id="licenseInfo" class="license-info" style="display: none;">
-          <p><strong>Status:</strong> <span id="licenseStatus">-</span></p>
-          <p><strong>Plan:</strong> <span id="licensePlan">-</span></p>
-          <button id="deactivateBtn" class="secondary-btn">Deactivate License</button>
+        <div id="proInfo" class="license-info" style="display: none;">
+          <p><strong>Status:</strong> <span id="proStatus">Active</span></p>
+          <p><strong>Plan:</strong> <span id="proPlan">-</span></p>
         </div>
       </section>
 

@@ -109,8 +109,8 @@ function showStatus(message, type) {
 async function loadSubscriptionStatus() {
   const badge = document.getElementById('statusBadge');
   const message = document.getElementById('trialMessage');
-  const licenseSection = document.getElementById('licenseSection');
-  const licenseInfo = document.getElementById('licenseInfo');
+  const subscribeSection = document.getElementById('subscribeSection');
+  const proInfo = document.getElementById('proInfo');
 
   if (!window.SnapToAISubscription) {
     if (badge) { badge.textContent = 'Loading...'; badge.className = 'status-badge'; }
@@ -123,34 +123,34 @@ async function loadSubscriptionStatus() {
     if (status.isEarlyAccess) {
       if (badge) { badge.textContent = 'Pro Early Access'; badge.className = 'status-badge pro'; }
       if (message) message.textContent = 'All features are free during Early Access!';
-      if (licenseSection) licenseSection.style.display = 'none';
+      if (subscribeSection) subscribeSection.style.display = 'none';
       return;
     }
 
     if (status.status === 'subscribed') {
       if (badge) { badge.textContent = 'Pro Active'; badge.className = 'status-badge pro'; }
       if (message) message.textContent = 'Your subscription is active. All features unlocked.';
-      if (licenseSection) licenseSection.style.display = 'none';
-      if (licenseInfo) {
-        licenseInfo.style.display = 'block';
-        document.getElementById('licenseStatus').textContent = 'Active';
-        document.getElementById('licensePlan').textContent = (status.planType || 'pro').charAt(0).toUpperCase() + (status.planType || 'pro').slice(1);
+      if (subscribeSection) subscribeSection.style.display = 'none';
+      if (proInfo) {
+        proInfo.style.display = 'block';
+        document.getElementById('proStatus').textContent = 'Active';
+        document.getElementById('proPlan').textContent = (status.planType || 'pro').charAt(0).toUpperCase() + (status.planType || 'pro').slice(1);
       }
     } else if (status.status === 'trial') {
       if (badge) { badge.textContent = 'Free Trial'; badge.className = 'status-badge trial'; }
       if (message) message.textContent = 'You have ' + status.daysRemaining + ' days remaining in your free trial.';
-      if (licenseSection) licenseSection.style.display = 'block';
-      if (licenseInfo) licenseInfo.style.display = 'none';
+      if (subscribeSection) subscribeSection.style.display = 'none';
+      if (proInfo) proInfo.style.display = 'none';
     } else if (status.status === 'trial_expired' || status.status === 'subscription_expired') {
       if (badge) { badge.textContent = 'Expired'; badge.className = 'status-badge expired'; }
       if (message) message.textContent = 'Your trial has ended. Subscribe to continue using AI features.';
-      if (licenseSection) licenseSection.style.display = 'block';
-      if (licenseInfo) licenseInfo.style.display = 'none';
+      if (subscribeSection) subscribeSection.style.display = 'block';
+      if (proInfo) proInfo.style.display = 'none';
     } else {
       if (badge) { badge.textContent = 'Free'; badge.className = 'status-badge'; }
-      if (message) message.textContent = 'Set up your API key to start your 30-day free trial.';
-      if (licenseSection) licenseSection.style.display = 'block';
-      if (licenseInfo) licenseInfo.style.display = 'none';
+      if (message) message.textContent = 'Sign in with Google to start your 30-day free trial.';
+      if (subscribeSection) subscribeSection.style.display = 'none';
+      if (proInfo) proInfo.style.display = 'none';
     }
   } catch (e) {
     console.error('Failed to load subscription status:', e);
@@ -158,43 +158,24 @@ async function loadSubscriptionStatus() {
   }
 }
 
-async function activateLicense() {
-  const input = document.getElementById('licenseKey');
-  const key = input ? input.value.trim() : '';
-  if (!key) {
-    showStatus('Please enter a license key.', 'error');
-    return;
-  }
-  if (!window.SnapToAISubscription) {
-    showStatus('Subscription system not loaded.', 'error');
-    return;
-  }
-
-  const btn = document.getElementById('activateBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Verifying...'; }
+async function refreshSubscription() {
+  if (!window.SnapToAISubscription) return;
+  const btn = document.getElementById('refreshSubBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Checking...'; }
 
   try {
-    const result = await window.SnapToAISubscription.saveLicense(key);
-    if (result.success) {
-      showStatus('License activated! Enjoy Pro features.', 'success');
-      loadSubscriptionStatus();
+    const result = await window.SnapToAISubscription.refresh();
+    if (result.success && result.status === 'subscribed') {
+      showStatus('Subscription verified! All features unlocked.', 'success');
     } else {
-      showStatus(result.error || 'Invalid license key.', 'error');
+      showStatus(result.error || 'No active subscription found.', 'error');
     }
+    loadSubscriptionStatus();
   } catch (e) {
-    showStatus('Failed to verify license. Please try again.', 'error');
+    showStatus('Could not check subscription. Please try again.', 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Activate'; }
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 Refresh Subscription Status'; }
   }
-}
-
-async function deactivateLicense() {
-  if (!confirm('Are you sure you want to deactivate your license?')) return;
-  if (!window.SnapToAISubscription) return;
-
-  await window.SnapToAISubscription.clearLicense();
-  showStatus('License deactivated.', 'success');
-  loadSubscriptionStatus();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -212,8 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('saveBtn').addEventListener('click', saveSettings);
   document.getElementById('resetBtn').addEventListener('click', resetSettings);
   
-  const activateBtn = document.getElementById('activateBtn');
-  if (activateBtn) activateBtn.addEventListener('click', activateLicense);
-  const deactivateBtn = document.getElementById('deactivateBtn');
-  if (deactivateBtn) deactivateBtn.addEventListener('click', deactivateLicense);
+  const refreshSubBtn = document.getElementById('refreshSubBtn');
+  if (refreshSubBtn) refreshSubBtn.addEventListener('click', refreshSubscription);
 });

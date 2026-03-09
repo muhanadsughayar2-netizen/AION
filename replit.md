@@ -60,29 +60,24 @@ Handles infinite-scroll sites with scroll settlement detection. Works on any web
 - Shows "Tutorial coming soon!" message if video not yet available
 - Placeholder URLs in popup.js - replace YOUR_VIDEO_ID with actual YouTube video IDs
 
-**Subscription System (February 2026 - Whop.com Migration):**
-- **Payment Provider:** Whop.com (Merchant of Record) - migrated from LemonSqueezy/Gumroad
-- 30-day free trial tracked per IP address (anti-cheat: prevents trial reset by creating new API keys)
+**Subscription System (March 2026 - Email-Based via Whop.com):**
+- **Payment Provider:** Whop.com (Merchant of Record)
+- **No license keys** — subscription tied to Google Sign-In email
+- 30-day free trial starts when user signs in with Google (tracked by email in `subscriptions` table)
 - After trial: Capture features remain FREE forever, only AI analysis requires subscription
 - Pricing: $4.99/month or $39/year (35% savings) - "Less than a coffee" pitch
-- License verification via Whop API (v2/memberships/{id}/validate_license) with device_id binding (HWID protection)
-- **Offline Grace Period:** Validated licenses work offline for up to 7 days
-- Subscription modal shown when AI button clicked after trial expires
-- License key input in Settings page (options.html) for activating purchased subscriptions
+- **Offline Grace Period:** Validated subscriptions work offline for up to 7 days
+- Subscription modal shown when AI button clicked after trial expires (both AI button AND Direct AI button are gated)
+- Settings page (options.html) shows subscription status with "Refresh" button (no license key input)
 - **Checkout URL:** https://whop.com/snaptoai/
-- **Backend:** WHOP_API_KEY environment secret required for server-side validation
-- **Files:** subscription.js (Whop validation), options.js/html (license UI), app.py (/api/verify-license)
-- **Multi-Tier Anti-Cheat Trial Tracking (January 2026):** 
-  - **Device ID (Primary):** Unique UUID generated on extension install, stored in chrome.storage.local
-    - Format: `dev_` + crypto.randomUUID()
-    - Persists across IP changes, network switches, VPN usage
-    - Only resets on full extension reinstall
-    - `device_trials` table stores earliest trial_start_date per device
-  - **IP Address (Secondary):** `ip_trials` table as fallback for older extensions without device ID
-    - Tracks api_key_count: how many different API keys used from same IP
-  - **API Key Hash (Tertiary):** User-level tracking in `user_trials` table
-  - **Anti-cheat logic:** Always uses the EARLIEST date from device ID, IP address, or API key hash
-  - Prevents trial abuse: users can't reset trial by creating new Google API keys or changing IPs
+- **Backend Endpoints:**
+  - `POST /api/subscription/status` — checks trial/subscription by email, returns canUseAI status
+  - `POST /api/whop/webhook` — receives Whop payment events, updates subscription status
+- **Whop Webhook Events:** membership.went_valid, membership.renewed, payment.succeeded → activate; membership.went_invalid, membership.expired → expire; membership.canceled → cancel
+- **DB Table:** `subscriptions` (email, whop_user_id, whop_membership_id, plan_type, status, trial_start, trial_end, subscription_start, subscription_end)
+- **Anti-Cheat:** Trial start uses earliest date from email record, device ID, or IP address
+- **Files:** subscription.js (email-based check), options.js/html (status UI), app.py (/api/subscription/status, /api/whop/webhook)
+- **Environment Secrets:** WHOP_API_KEY, MONTHLY_PLAN_ID, YEARLY_PLAN_ID
 
 **Google Sign-In System (March 2026):**
 - Sign-in gate on first extension open via `chrome.identity` + Google OAuth

@@ -54,11 +54,10 @@ chrome.runtime.onInstalled.addListener(async (details) => {
       const now = Date.now();
       await chrome.storage.sync.set({ trialStartDate: now });
       await chrome.storage.local.set({
-        initialInstallTimestamp: now,  // IMMUTABLE - never overwrite this
+        initialInstallTimestamp: now,
         trialStartDate: now,
         subscriptionActive: false,
-        licenseKey: null,
-        planType: null
+        subscriptionPlan: null
       });
       console.log('[SnapToAI] Trial started:', new Date(now).toLocaleDateString());
     } else {

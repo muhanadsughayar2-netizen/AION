@@ -87,7 +87,24 @@ def init_db():
                 created_at TIMESTAMP DEFAULT NOW()
             )
         ''')
-        print('✅ users and user_activity tables ready')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS subscriptions (
+                id SERIAL PRIMARY KEY,
+                email TEXT UNIQUE NOT NULL,
+                whop_user_id TEXT,
+                whop_membership_id TEXT,
+                plan_type VARCHAR(20),
+                status VARCHAR(20) DEFAULT 'inactive',
+                trial_start BIGINT,
+                trial_end BIGINT,
+                subscription_start TIMESTAMP,
+                subscription_end TIMESTAMP,
+                last_verified TIMESTAMP DEFAULT NOW(),
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        ''')
+        print('✅ users, user_activity, subscriptions tables ready')
         # Add columns if missing (for existing tables)
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS browser_language VARCHAR(10)')
@@ -485,15 +502,26 @@ def admin_users():
         conn = get_db()
         cur = conn.cursor()
         cur.execute('''
-            SELECT id, email, name, picture, device_id, first_seen, last_seen, capture_count
-            FROM users ORDER BY last_seen DESC LIMIT 500
+            SELECT u.id, u.email, u.name, u.picture, u.device_id, u.first_seen, u.last_seen, u.capture_count,
+                   s.status, s.plan_type, s.trial_start, s.trial_end, s.subscription_start, s.subscription_end
+            FROM users u
+            LEFT JOIN subscriptions s ON LOWER(u.email) = LOWER(s.email)
+            ORDER BY u.last_seen DESC LIMIT 500
         ''')
         rows = cur.fetchall()
         cur.close()
         conn.close()
 
+        now_ms = int(datetime.utcnow().timestamp() * 1000)
         users_list = []
         for row in rows:
+            sub_status = row[8] or 'none'
+            plan_type = row[9]
+            trial_start = row[10]
+            trial_end = row[11]
+            trial_days_left = None
+            if trial_start and trial_end:
+                trial_days_left = max(0, int((trial_end - now_ms) / 86400000))
             users_list.append({
                 'id': row[0],
                 'email': row[1],
@@ -502,7 +530,12 @@ def admin_users():
                 'deviceId': row[4],
                 'firstSeen': row[5].isoformat() if row[5] else None,
                 'lastSeen': row[6].isoformat() if row[6] else None,
-                'captureCount': row[7] or 0
+                'captureCount': row[7] or 0,
+                'subscriptionStatus': sub_status,
+                'planType': plan_type,
+                'trialDaysLeft': trial_days_left,
+                'subscriptionStart': row[12].isoformat() if row[12] else None,
+                'subscriptionEnd': row[13].isoformat() if row[13] else None
             })
 
         return jsonify({'success': True, 'users': users_list, 'total': len(users_list)})
@@ -1087,6 +1120,250 @@ def debug_ip_trials():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/subscription/status', methods=['POST', 'OPTIONS'])
+def subscription_status():
+    if request.method == 'OPTIONS':
+        response = Response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
+
+    if not ensure_db():
+        response = jsonify({'error': 'Database not available'})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response, 503
+
+    try:
+        data = request.get_json(silent=True)
+        if not data:
+            response = jsonify({'success': False, 'error': 'Invalid request'})
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            return response, 400
+
+        email = str(data.get('email', '')).strip().lower()[:200]
+        device_id = str(data.get('deviceId', ''))[:100]
+
+        if not email or '@' not in email:
+            response = jsonify({'success': False, 'error': 'Valid email required'})
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            return response, 400
+
+        conn = get_db()
+        cur = conn.cursor()
+        now_ms = int(datetime.utcnow().timestamp() * 1000)
+
+        cur.execute('SELECT plan_type, status, trial_start, trial_end, subscription_end FROM subscriptions WHERE email = %s', (email,))
+        sub_row = cur.fetchone()
+
+        if sub_row:
+            plan_type = sub_row[0]
+            status = sub_row[1]
+            trial_start = sub_row[2]
+            trial_end = sub_row[3]
+            subscription_end = sub_row[4]
+
+            cur.execute('UPDATE subscriptions SET last_verified = NOW(), updated_at = NOW() WHERE email = %s', (email,))
+            conn.commit()
+
+            if status == 'active':
+                cur.close()
+                conn.close()
+                result = {'success': True, 'canUseAI': True, 'status': 'subscribed', 'planType': plan_type, 'daysRemaining': None}
+                response = jsonify(result)
+                response.headers['Access-Control-Allow-Origin'] = '*'
+                return response
+
+            if status == 'canceled' and subscription_end:
+                if subscription_end > datetime.utcnow():
+                    cur.close()
+                    conn.close()
+                    result = {'success': True, 'canUseAI': True, 'status': 'subscribed', 'planType': plan_type, 'daysRemaining': None}
+                    response = jsonify(result)
+                    response.headers['Access-Control-Allow-Origin'] = '*'
+                    return response
+                else:
+                    cur.close()
+                    conn.close()
+                    result = {'success': True, 'canUseAI': False, 'status': 'subscription_expired', 'planType': None, 'daysRemaining': 0}
+                    response = jsonify(result)
+                    response.headers['Access-Control-Allow-Origin'] = '*'
+                    return response
+
+            if trial_start and trial_end:
+                days_remaining = max(0, int((trial_end - now_ms) / 86400000))
+                can_use = days_remaining > 0
+                cur.close()
+                conn.close()
+                result = {'success': True, 'canUseAI': can_use, 'status': 'trial' if can_use else 'trial_expired', 'planType': 'trial' if can_use else None, 'daysRemaining': days_remaining}
+                response = jsonify(result)
+                response.headers['Access-Control-Allow-Origin'] = '*'
+                return response
+
+        trial_start = now_ms
+        trial_end = now_ms + (TRIAL_DAYS * 86400000)
+
+        cur.execute('SELECT trial_start_date FROM device_trials WHERE device_id = %s', (device_id,)) if device_id else None
+        device_row = cur.fetchone() if device_id else None
+        if device_row:
+            trial_start = min(trial_start, device_row[0])
+            trial_end = trial_start + (TRIAL_DAYS * 86400000)
+
+        ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+        if ip_address and ',' in ip_address:
+            ip_address = ip_address.split(',')[0].strip()
+        if ip_address and ip_address not in ['127.0.0.1', 'localhost', '']:
+            cur.execute('SELECT trial_start_date FROM ip_trials WHERE ip_address = %s', (ip_address,))
+            ip_row = cur.fetchone()
+            if ip_row:
+                trial_start = min(trial_start, ip_row[0])
+                trial_end = trial_start + (TRIAL_DAYS * 86400000)
+
+        cur.execute('''
+            INSERT INTO subscriptions (email, status, trial_start, trial_end, created_at, updated_at, last_verified)
+            VALUES (%s, 'trial', %s, %s, NOW(), NOW(), NOW())
+            ON CONFLICT (email) DO UPDATE SET
+                trial_start = COALESCE(LEAST(subscriptions.trial_start, EXCLUDED.trial_start), EXCLUDED.trial_start),
+                trial_end = COALESCE(LEAST(subscriptions.trial_start, EXCLUDED.trial_start), EXCLUDED.trial_start) + %s,
+                last_verified = NOW(),
+                updated_at = NOW()
+            WHERE subscriptions.status NOT IN ('active')
+        ''', (email, trial_start, trial_end, TRIAL_DAYS * 86400000))
+        conn.commit()
+
+        days_remaining = max(0, int((trial_end - now_ms) / 86400000))
+        can_use = days_remaining > 0
+
+        cur.close()
+        conn.close()
+
+        result = {'success': True, 'canUseAI': can_use, 'status': 'trial' if can_use else 'trial_expired', 'planType': 'trial' if can_use else None, 'daysRemaining': days_remaining}
+        response = jsonify(result)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
+
+    except Exception as e:
+        print(f'Subscription status error: {e}')
+        response = jsonify({'error': 'Server error'})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response, 500
+
+
+@app.route('/api/whop/webhook', methods=['POST'])
+def whop_webhook():
+    try:
+        whop_api_key = os.environ.get('WHOP_API_KEY', '')
+        auth_header = request.headers.get('Authorization', '')
+        whop_signature = request.headers.get('X-Whop-Signature', '') or request.headers.get('Whop-Signature', '')
+
+        is_authenticated = False
+        if whop_api_key:
+            if auth_header and whop_api_key in auth_header:
+                is_authenticated = True
+            if whop_signature:
+                import hmac as hmac_mod
+                raw_body = request.get_data()
+                expected = hmac_mod.new(whop_api_key.encode(), raw_body, 'sha256').hexdigest()
+                if hmac_mod.compare_digest(expected, whop_signature):
+                    is_authenticated = True
+
+        if whop_api_key and not is_authenticated:
+            print(f'Whop webhook: authentication failed')
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({'error': 'Invalid payload'}), 400
+
+        action = data.get('action', '')
+        resource = data.get('data', {})
+
+        email = resource.get('email', '').strip().lower()
+        if not email:
+            metadata = resource.get('metadata', {})
+            email = metadata.get('email', '').strip().lower() if metadata else ''
+        if not email:
+            user_data = resource.get('user', {})
+            email = user_data.get('email', '').strip().lower() if user_data else ''
+
+        whop_user_id = resource.get('user_id', '') or resource.get('user', {}).get('id', '')
+        membership_id = resource.get('id', '') or resource.get('membership_id', '')
+        plan = resource.get('plan_id', '') or resource.get('plan', {}).get('id', '')
+
+        plan_type = 'unknown'
+        monthly_plan_id = os.environ.get('MONTHLY_PLAN_ID', '')
+        yearly_plan_id = os.environ.get('YEARLY_PLAN_ID', '')
+        if plan == monthly_plan_id:
+            plan_type = 'monthly'
+        elif plan == yearly_plan_id:
+            plan_type = 'yearly'
+
+        print(f'Whop webhook: action={action}, email={email}, membership={membership_id}, plan={plan_type}')
+
+        if not email:
+            print('Whop webhook: no email found in payload')
+            return jsonify({'received': True, 'warning': 'no email'}), 200
+
+        if not ensure_db():
+            return jsonify({'error': 'Database not available'}), 503
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        if action in ['membership.went_valid', 'membership.renewed', 'payment.succeeded']:
+            cur.execute('''
+                INSERT INTO subscriptions (email, whop_user_id, whop_membership_id, plan_type, status, subscription_start, updated_at, last_verified)
+                VALUES (%s, %s, %s, %s, 'active', NOW(), NOW(), NOW())
+                ON CONFLICT (email) DO UPDATE SET
+                    whop_user_id = COALESCE(EXCLUDED.whop_user_id, subscriptions.whop_user_id),
+                    whop_membership_id = COALESCE(EXCLUDED.whop_membership_id, subscriptions.whop_membership_id),
+                    plan_type = EXCLUDED.plan_type,
+                    status = 'active',
+                    subscription_start = COALESCE(subscriptions.subscription_start, NOW()),
+                    subscription_end = NULL,
+                    updated_at = NOW(),
+                    last_verified = NOW()
+            ''', (email, whop_user_id, membership_id, plan_type))
+
+        elif action in ['membership.went_invalid', 'membership.expired']:
+            cur.execute('''
+                UPDATE subscriptions SET status = 'expired', subscription_end = NOW(), updated_at = NOW()
+                WHERE email = %s
+            ''', (email,))
+
+        elif action == 'membership.canceled':
+            cancel_at = resource.get('canceled_at') or resource.get('current_period_end')
+            if cancel_at:
+                try:
+                    from datetime import timezone as tz
+                    cancel_dt = datetime.fromtimestamp(int(cancel_at), tz=tz.utc) if str(cancel_at).isdigit() else datetime.fromisoformat(str(cancel_at).replace('Z', '+00:00'))
+                except Exception:
+                    cancel_dt = None
+            else:
+                cancel_dt = None
+
+            if cancel_dt:
+                cur.execute('''
+                    UPDATE subscriptions SET status = 'canceled', subscription_end = %s, updated_at = NOW()
+                    WHERE email = %s
+                ''', (cancel_dt, email))
+            else:
+                cur.execute('''
+                    UPDATE subscriptions SET status = 'canceled', subscription_end = NOW() + interval '30 days', updated_at = NOW()
+                    WHERE email = %s
+                ''', (email,))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({'received': True, 'action': action}), 200
+
+    except Exception as e:
+        print(f'Whop webhook error: {e}')
+        return jsonify({'error': 'Server error'}), 500
+
 
 @app.route('/api/trial', methods=['POST', 'OPTIONS'])
 def get_or_create_trial():
