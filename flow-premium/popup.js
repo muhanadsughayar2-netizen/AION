@@ -3639,6 +3639,8 @@ async function handleAIButtonClick() {
     console.log('[SnapToAI] AI button clicked, status:', status, 'override:', !!snaptoai_dev_override);
     
     if (status.needsSignIn) {
+      const authOverlay = document.getElementById('authOverlay');
+      if (authOverlay) authOverlay.style.display = 'flex';
       return;
     }
     
@@ -3715,7 +3717,11 @@ if (directAiButton) {
     if (window.SnapToAISubscription) {
       const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
       const status = await window.SnapToAISubscription.check();
-      if (status.needsSignIn) return;
+      if (status.needsSignIn) {
+        const authOverlay = document.getElementById('authOverlay');
+        if (authOverlay) authOverlay.style.display = 'flex';
+        return;
+      }
       if (!status.canUseAI && !snaptoai_dev_override) {
         const message = status.status === 'subscription_expired'
           ? 'Your subscription has expired. Renew to keep using AI tools.'
