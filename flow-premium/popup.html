@@ -41,18 +41,9 @@
     <div class="header">
       <div class="logo"><span class="logo-word">Snap</span> <span class="logo-word">To</span> <span class="logo-word">AI</span></div>
       <div class="header-right">
-        <div class="counter">
-          <span id="snapCount">0</span> / <span id="snapMax">9</span>
-        </div>
-        <!-- Help/Tutorials Button -->
         <div class="help-dropdown-container">
-          <button id="helpBtn" class="help-btn" title="Video Tutorials">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00d9ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 18h6"/>
-              <path d="M10 22h4"/>
-              <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
-              <path d="M12 2v1"/>
-            </svg>
+          <button id="helpBtn" class="help-btn" title="Help & Tutorials">
+            <span style="font-size: 14px; font-weight: 700;">?</span>
           </button>
           <div id="helpDropdown" class="help-dropdown">
             <div class="help-dropdown-title">Video Tutorials</div>
@@ -73,20 +64,23 @@
             </a>
           </div>
         </div>
-        <button id="upgradeBtn" class="upgrade-btn" style="visibility: hidden;">Pro</button>
         <div id="userAvatarContainer" class="user-avatar-container" style="display: none;">
           <img id="userAvatar" class="user-avatar" src="" alt="User">
-          <span id="userFirstName" class="user-first-name"></span>
         </div>
         <div id="accountPopover" class="account-popover" style="display: none;">
           <div class="account-popover-email" id="accountEmail"></div>
-          <a href="#" class="account-popover-item" id="manageApiKeyLink">Manage API Key</a>
           <button class="account-popover-signout" id="signOutBtn">Sign Out</button>
         </div>
       </div>
     </div>
 
-    <!-- GLOBAL COUNTER - Right under logo -->
+    <div class="header-sub">
+      <div class="counter-chip">
+        <span id="snapCount">0</span> / <span id="snapMax">9</span>
+      </div>
+      <button id="upgradeBtn" class="upgrade-btn" style="visibility: hidden;">Pro</button>
+    </div>
+
     <div id="globalCounterContainer" style="
       text-align: center;
       margin: 2px 0 4px 0;
@@ -99,7 +93,6 @@
         Loading counter...
       </div>
     </div>
-    <!-- END GLOBAL COUNTER -->
 
     <!-- Triple Orb Buttons: Snap, Snip & Full Page -->
     <div class="orb-triple-container">

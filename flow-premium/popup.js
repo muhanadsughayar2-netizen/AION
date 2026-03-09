@@ -10,7 +10,6 @@ async function checkAuthState() {
   const upgradeBtn = document.getElementById('upgradeBtn');
   const userAvatarContainer = document.getElementById('userAvatarContainer');
   const userAvatar = document.getElementById('userAvatar');
-  const userFirstName = document.getElementById('userFirstName');
 
   if (result.snaptoai_user) {
     if (authOverlay) authOverlay.style.display = 'none';
@@ -18,7 +17,6 @@ async function checkAuthState() {
     if (userAvatarContainer) {
       userAvatarContainer.style.display = 'flex';
       if (userAvatar) userAvatar.src = result.snaptoai_user.picture || '';
-      if (userFirstName) userFirstName.textContent = (result.snaptoai_user.name || '').split(' ')[0];
     }
     const accountEmail = document.getElementById('accountEmail');
     if (accountEmail) accountEmail.textContent = result.snaptoai_user.email || '';
