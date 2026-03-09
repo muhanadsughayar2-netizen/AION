@@ -39,22 +39,8 @@ async function handleGoogleSignIn() {
     }
     if (authError) authError.style.display = 'none';
 
-    const result = await new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({ action: 'googleSignIn' }, (response) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
-        } else {
-          resolve(response);
-        }
-      });
-    });
+    chrome.runtime.sendMessage({ action: 'googleSignIn' });
 
-    if (result && result.success) {
-      await checkAuthState();
-    } else {
-      const msg = (result && result.error) || 'Sign-in failed';
-      throw new Error(msg);
-    }
   } catch (error) {
     console.error('[SnapToAI] Google Sign-In failed:', error);
     if (authError) {
@@ -69,11 +55,6 @@ async function handleGoogleSignIn() {
         authError.textContent = msg;
       }
       authError.style.display = 'block';
-    }
-  } finally {
-    if (signInBtn) {
-      signInBtn.disabled = false;
-      signInBtn.querySelector('.google-btn-text') && (signInBtn.querySelector('.google-btn-text').textContent = 'Continue with Google');
     }
   }
 }
