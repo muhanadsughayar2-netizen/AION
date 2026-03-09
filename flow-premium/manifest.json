@@ -29,7 +29,8 @@
     "https://chatgpt.com/*",
     "https://claude.ai/*",
     "https://*.openai.com/*",
-    "https://generativelanguage.googleapis.com/*"
+    "https://generativelanguage.googleapis.com/*",
+    "https://www.googleapis.com/*"
   ],
   "web_accessible_resources": [
     {
