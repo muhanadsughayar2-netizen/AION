@@ -1,6 +1,160 @@
 // Flow Popup Script
 // Handles UI interactions, thumbnail display, and communication with background
 
+const BACKEND_URL = 'https://snaptoai.com';
+const REVIEW_MILESTONES = [5, 15, 30];
+const CHROME_STORE_REVIEW_URL = 'https://chromewebstore.google.com/detail/snaptoai/EXTENSION_ID/reviews';
+
+async function checkAuthState() {
+  const result = await chrome.storage.local.get(['snaptoai_user']);
+  const authOverlay = document.getElementById('authOverlay');
+  const upgradeBtn = document.getElementById('upgradeBtn');
+  const userAvatarContainer = document.getElementById('userAvatarContainer');
+  const userAvatar = document.getElementById('userAvatar');
+  const userFirstName = document.getElementById('userFirstName');
+
+  if (result.snaptoai_user) {
+    if (authOverlay) authOverlay.style.display = 'none';
+    if (upgradeBtn) upgradeBtn.style.visibility = 'hidden';
+    if (userAvatarContainer) {
+      userAvatarContainer.style.display = 'flex';
+      if (userAvatar) userAvatar.src = result.snaptoai_user.picture || '';
+      if (userFirstName) userFirstName.textContent = (result.snaptoai_user.name || '').split(' ')[0];
+    }
+    const accountEmail = document.getElementById('accountEmail');
+    if (accountEmail) accountEmail.textContent = result.snaptoai_user.email || '';
+  } else {
+    if (authOverlay) authOverlay.style.display = 'flex';
+    if (userAvatarContainer) userAvatarContainer.style.display = 'none';
+  }
+}
+
+async function handleGoogleSignIn() {
+  try {
+    const token = await new Promise((resolve, reject) => {
+      chrome.identity.getAuthToken({ interactive: true }, (token) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else {
+          resolve(token);
+        }
+      });
+    });
+
+    const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const userInfo = await response.json();
+
+    const userData = {
+      name: userInfo.name || '',
+      email: userInfo.email || '',
+      picture: userInfo.picture || '',
+      signedInAt: Date.now()
+    };
+
+    await chrome.storage.local.set({ snaptoai_user: userData });
+
+    try {
+      await fetch(BACKEND_URL + '/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: userData.name,
+          email: userData.email,
+          picture: userData.picture,
+          deviceId: chrome.runtime.id
+        })
+      });
+    } catch (e) {
+      console.log('[SnapToAI] Backend registration failed:', e.message);
+    }
+
+    await checkAuthState();
+  } catch (error) {
+    console.error('[SnapToAI] Google Sign-In failed:', error);
+  }
+}
+
+async function handleSignOut() {
+  try {
+    const result = await chrome.storage.local.get(['snaptoai_user']);
+    if (result.snaptoai_user) {
+      chrome.identity.getAuthToken({ interactive: false }, (token) => {
+        if (token) {
+          chrome.identity.removeCachedAuthToken({ token }, () => {});
+        }
+      });
+    }
+    await chrome.storage.local.remove('snaptoai_user');
+    const accountPopover = document.getElementById('accountPopover');
+    if (accountPopover) accountPopover.style.display = 'none';
+    await checkAuthState();
+  } catch (error) {
+    console.error('[SnapToAI] Sign-out error:', error);
+  }
+}
+
+function setupAuthListeners() {
+  const googleSignInBtn = document.getElementById('googleSignInBtn');
+  if (googleSignInBtn) googleSignInBtn.addEventListener('click', handleGoogleSignIn);
+
+  const signOutBtn = document.getElementById('signOutBtn');
+  if (signOutBtn) signOutBtn.addEventListener('click', handleSignOut);
+
+  const userAvatarContainer = document.getElementById('userAvatarContainer');
+  const accountPopover = document.getElementById('accountPopover');
+  if (userAvatarContainer && accountPopover) {
+    userAvatarContainer.addEventListener('click', (e) => {
+      e.stopPropagation();
+      accountPopover.style.display = accountPopover.style.display === 'none' ? 'block' : 'none';
+    });
+    document.addEventListener('click', (e) => {
+      if (!accountPopover.contains(e.target) && !userAvatarContainer.contains(e.target)) {
+        accountPopover.style.display = 'none';
+      }
+    });
+  }
+
+  const manageApiKeyLink = document.getElementById('manageApiKeyLink');
+  if (manageApiKeyLink) {
+    manageApiKeyLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (accountPopover) accountPopover.style.display = 'none';
+      showGeminiModal();
+    });
+  }
+}
+
+async function incrementCaptureCount(captureType) {
+  try {
+    const reviewData = await chrome.storage.local.get(['snaptoai_capture_count', 'snaptoai_reviewed', 'snaptoai_review_dismissed_count']);
+    const newCount = (reviewData.snaptoai_capture_count || 0) + 1;
+    await chrome.storage.local.set({ snaptoai_capture_count: newCount });
+
+    if (!reviewData.snaptoai_reviewed && (reviewData.snaptoai_review_dismissed_count || 0) < 3) {
+      if (REVIEW_MILESTONES.includes(newCount)) {
+        showReviewModal();
+      }
+    }
+
+    const userData = await chrome.storage.local.get(['snaptoai_user']);
+    if (userData.snaptoai_user && userData.snaptoai_user.email) {
+      fetch(BACKEND_URL + '/api/auth/activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userData.snaptoai_user.email,
+          action: captureType,
+          details: JSON.stringify({ count: newCount })
+        })
+      }).catch(() => {});
+    }
+  } catch (e) {
+    console.log('[SnapToAI] Capture count error:', e);
+  }
+}
+
 // ============ IndexedDB for unlimited image storage ============
 const SNAPTOAI_DB_NAME = 'SnapToAI_ImageDB';
 const SNAPTOAI_STORE_NAME = 'images';
@@ -952,6 +1106,7 @@ function setupEventListeners() {
         status.textContent = chrome.i18n.getMessage('statusFullPageCaptured') || 'Full page captured! ✓';
         status.className = 'status active';
         incrementGlobalCounter();
+        incrementCaptureCount('capture_fullpage');
       } else {
         status.textContent = request.error || chrome.i18n.getMessage('statusCaptureFailed') || 'Full page capture failed';
         status.className = 'status error';
@@ -1339,6 +1494,7 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
       }
       status.className = 'status active';
       incrementGlobalCounter();
+      incrementCaptureCount('capture_fullpage');
     } else {
       throw new Error('Failed to save full page capture');
     }
@@ -1422,6 +1578,8 @@ async function handleOrbClick() {
       
       setStatus(`Snap ${response.count} captured! ✓`, 'success', 2500);
       
+      incrementCaptureCount('capture_snap');
+      
       // Reload snaps
       await loadSnaps();
       updateUI();
@@ -1457,6 +1615,8 @@ async function handleSnipClick() {
     
     if (dataUrl) {
       setStatus('Opening snip editor...', 'active');
+      
+      incrementCaptureCount('capture_snip');
       
       // Open annotation window in SNIP MODE (crop mode)
       const width = 1200;
@@ -3238,6 +3398,57 @@ async function incrementGlobalCounter() {
   } catch (e) {}
 }
 
+// ===== REVIEW PROMPTING SYSTEM =====
+function showReviewModal() {
+  const modal = document.getElementById('reviewModal');
+  if (modal) modal.style.display = 'flex';
+  chrome.storage.local.get('snaptoai_user', (result) => {
+    if (result.snaptoai_user) {
+      fetch(BACKEND_URL + '/api/auth/activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: result.snaptoai_user.email, action: 'review_prompt_shown', details: 'Review modal displayed' })
+      }).catch(() => {});
+    }
+  });
+}
+
+function hideReviewModal() {
+  const modal = document.getElementById('reviewModal');
+  if (modal) modal.style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const leaveReviewBtn = document.getElementById('leaveReviewBtn');
+  const maybeLaterBtn = document.getElementById('maybeLaterBtn');
+
+  if (leaveReviewBtn) {
+    leaveReviewBtn.addEventListener('click', async () => {
+      await chrome.storage.local.set({ snaptoai_reviewed: true });
+      window.open(CHROME_STORE_REVIEW_URL, '_blank');
+      chrome.storage.local.get('snaptoai_user', (result) => {
+        if (result.snaptoai_user) {
+          fetch(BACKEND_URL + '/api/auth/activity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: result.snaptoai_user.email, action: 'review_clicked', details: 'User clicked Leave a Review' })
+          }).catch(() => {});
+        }
+      });
+      hideReviewModal();
+    });
+  }
+
+  if (maybeLaterBtn) {
+    maybeLaterBtn.addEventListener('click', async () => {
+      const result = await chrome.storage.local.get('snaptoai_review_dismissed_count');
+      const dismissCount = (result.snaptoai_review_dismissed_count || 0) + 1;
+      await chrome.storage.local.set({ snaptoai_review_dismissed_count: dismissCount });
+      hideReviewModal();
+    });
+  }
+});
+
 // ===== GEMINI API KEY MODAL =====
 const geminiModal = document.getElementById('geminiModal');
 const geminiKeyInput = document.getElementById('geminiKeyInput');
@@ -3503,6 +3714,9 @@ if (geminiModal) geminiModal.addEventListener('click', (e) => {
 
 // Load key on popup open and check subscription
 document.addEventListener('DOMContentLoaded', async () => {
+  await checkAuthState();
+  setupAuthListeners();
+
   // Initialize subscription check on popup open
   const upgradeBtn = document.getElementById('upgradeBtn');
   
@@ -3559,11 +3773,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
   
-  const hasKey = await loadGeminiKey();
-  if (!hasKey) {
-    console.log('[SnapToAI] No Gemini key found, showing modal');
-    showGeminiModal();
-  }
+  await loadGeminiKey();
 });
 
 // ===== AI CHAT PORTAL =====

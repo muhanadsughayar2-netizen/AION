@@ -84,13 +84,35 @@ Handles infinite-scroll sites with scroll settlement detection. Works on any web
   - **Anti-cheat logic:** Always uses the EARLIEST date from device ID, IP address, or API key hash
   - Prevents trial abuse: users can't reset trial by creating new Google API keys or changing IPs
 
+**Google Sign-In System (March 2026):**
+- Sign-in gate on first extension open via `chrome.identity` + Google OAuth
+- Full-screen glassmorphic welcome overlay with "Continue with Google" button
+- User data (name, email, profile photo) sent to backend and stored in PostgreSQL `users` table
+- Signed-in state shows circular avatar + first name in popup header
+- Account popover on avatar click: email, manage API key, sign out
+- Backend tracks: user registrations, capture activity, review prompts
+- API endpoints: POST /api/auth/register, POST /api/auth/activity
+- Admin monitoring: GET /api/admin/users, GET /api/admin/activity (password-protected)
+- Admin dashboard includes "Registered Users" and "Recent Activity" sections
+- Placeholder OAuth client_id in manifest.json — replace with real one from Google Cloud Console
+- Files: popup.html, popup.js, popup.css (overlay + header), manifest.json (identity + oauth2), app.py (API + DB)
+
+**Review Prompting System (March 2026):**
+- Triggers after 5, 15, and 30 successful captures
+- Glassmorphic modal: "Enjoying SnapToAI?" with star emojis
+- "Leave a Review" opens Chrome Web Store review page
+- "Maybe Later" dismisses (max 3 dismissals, then stops)
+- Tracks reviewed/dismissed state in chrome.storage.local
+- Reports review_prompt_shown and review_clicked to backend activity log
+- Placeholder EXTENSION_ID in review URL — replace with real Chrome Web Store extension ID
+
 ### System Design Choices
-The extension is built as a Manifest V3 Chrome Extension. It employs a Service Worker for background processes, a Content Script for in-page interactions and AI platform detection, and a Popup Interface for user interaction. Data is stored entirely client-side using Chrome's session and local storage APIs, ensuring privacy and eliminating the need for an external backend database. Screenshots are stored as base64 dataURL strings in a FIFO queue within session storage.
+The extension is built as a Manifest V3 Chrome Extension. It employs a Service Worker for background processes, a Content Script for in-page interactions and AI platform detection, and a Popup Interface for user interaction. Data is stored client-side using Chrome's session and local storage APIs for screenshots (privacy-first). User identity is managed via Google Sign-In through chrome.identity API, with user data stored server-side in PostgreSQL for monitoring.
 
 ## External Dependencies
 
 ### Browser APIs
-- **Chrome Extensions API**: `chrome.tabs`, `chrome.storage.session`, `chrome.storage.local`, `chrome.runtime`, `chrome.action`, `chrome.commands`.
+- **Chrome Extensions API**: `chrome.tabs`, `chrome.storage.session`, `chrome.storage.local`, `chrome.runtime`, `chrome.action`, `chrome.commands`, `chrome.identity`.
 - **Clipboard API**: `navigator.clipboard.write()`.
 - **FileReader API**.
 - **DataTransfer API**.

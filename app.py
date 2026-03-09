@@ -1,4 +1,5 @@
 from flask import Flask, send_from_directory, request, redirect, Response, jsonify
+import html as html_escape_module
 import os
 import mimetypes
 import psycopg2
@@ -11,20 +12,21 @@ app = Flask(__name__, static_folder=None)
 # Database connection - Use Supabase (external) if available, otherwise Replit DB
 def get_db():
     # Prefer Supabase for production reliability
-    db_url = os.environ.get('SUPABASE_DATABASE_URL') or os.environ.get('DATABASE_URL')
+    db_url = os.environ.get('DATABASE_URL')
     if not db_url:
         raise Exception("No database URL set")
-    return psycopg2.connect(db_url, sslmode='require')
+    try:
+        return psycopg2.connect(db_url, sslmode='require')
+    except Exception:
+        return psycopg2.connect(db_url, sslmode='disable')
 
 # Initialize database table for trial tracking
 def init_db():
     try:
-        supabase_url = os.environ.get('SUPABASE_DATABASE_URL')
         replit_url = os.environ.get('DATABASE_URL')
-        db_url = supabase_url or replit_url
-        print(f'🔍 SUPABASE_DATABASE_URL exists: {bool(supabase_url)}')
+        db_url = replit_url
         print(f'🔍 DATABASE_URL exists: {bool(replit_url)}')
-        print(f'🔍 Using: {"Supabase" if supabase_url else "Replit DB" if replit_url else "None"}')
+        print(f'🔍 Using: {"Replit DB" if replit_url else "None"}')
         if not db_url:
             print('❌ No database URL set in environment')
             return False
@@ -64,6 +66,28 @@ def init_db():
             )
         ''')
         print('✅ device_trials table ready')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                email TEXT UNIQUE NOT NULL,
+                name TEXT,
+                picture TEXT,
+                device_id TEXT,
+                first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                capture_count INTEGER DEFAULT 0
+            )
+        ''')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS user_activity (
+                id SERIAL PRIMARY KEY,
+                email TEXT,
+                action TEXT,
+                details TEXT,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        ''')
+        print('✅ users and user_activity tables ready')
         # Add columns if missing (for existing tables)
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS browser_language VARCHAR(10)')
@@ -219,6 +243,11 @@ def add_headers(response):
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
+    origin = request.headers.get('Origin', '')
+    if origin.startswith('chrome-extension://'):
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     return response
 
 @app.route('/health')
@@ -233,14 +262,12 @@ def handle_500(e):
 @app.route('/api/db-status')
 def db_status():
     """Check database status - useful for debugging production"""
-    supabase_url = os.environ.get('SUPABASE_DATABASE_URL')
     replit_url = os.environ.get('DATABASE_URL')
-    db_url = supabase_url or replit_url
+    db_url = replit_url
     
     result = {
-        'has_supabase_url': bool(supabase_url),
         'has_replit_url': bool(replit_url),
-        'using': 'supabase' if supabase_url else 'replit' if replit_url else 'none',
+        'using': 'replit' if replit_url else 'none',
         'db_ready': db_ready,
     }
     
@@ -323,6 +350,186 @@ def block_direct_admin_access(anything):
     """Block direct URL access to admin - must login through website"""
     return Response("Access denied. Admin access is only available through the website.", status=403)
 
+
+@app.route('/api/auth/register', methods=['POST', 'OPTIONS'])
+def auth_register():
+    if request.method == 'OPTIONS':
+        response = Response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
+
+    if not ensure_db():
+        response = jsonify({'error': 'Database not available'})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response, 503
+
+    try:
+        data = request.get_json() or {}
+        name = data.get('name', '')
+        email = data.get('email', '')
+        picture = data.get('picture', '')
+        device_id = data.get('deviceId', '')
+
+        if not email:
+            response = jsonify({'success': False, 'error': 'Email is required'})
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            return response, 400
+
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute('''
+            INSERT INTO users (email, name, picture, device_id, first_seen, last_seen)
+            VALUES (%s, %s, %s, %s, NOW(), NOW())
+            ON CONFLICT (email) DO UPDATE SET
+                name = EXCLUDED.name,
+                picture = EXCLUDED.picture,
+                device_id = COALESCE(EXCLUDED.device_id, users.device_id),
+                last_seen = NOW()
+            RETURNING id
+        ''', (email, name, picture, device_id))
+        user_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        response = jsonify({'success': True, 'userId': user_id})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
+    except Exception as e:
+        print(f'❌ auth/register error: {e}')
+        response = jsonify({'success': False, 'error': str(e)})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response, 500
+
+
+@app.route('/api/auth/activity', methods=['POST', 'OPTIONS'])
+def auth_activity():
+    if request.method == 'OPTIONS':
+        response = Response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
+
+    if not ensure_db():
+        response = jsonify({'error': 'Database not available'})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response, 503
+
+    try:
+        data = request.get_json() or {}
+        email = data.get('email', '')
+        action = data.get('action', '')
+        details = data.get('details', '')
+
+        if not email or not action:
+            response = jsonify({'success': False, 'error': 'Email and action are required'})
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            return response, 400
+
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute('''
+            INSERT INTO user_activity (email, action, details, created_at)
+            VALUES (%s, %s, %s, NOW())
+        ''', (email, action, details))
+
+        if action in ('capture_snap', 'capture_snip', 'capture_fullpage'):
+            cur.execute('''
+                UPDATE users SET capture_count = capture_count + 1, last_seen = NOW()
+                WHERE email = %s
+            ''', (email,))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        response = jsonify({'success': True})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
+    except Exception as e:
+        print(f'❌ auth/activity error: {e}')
+        response = jsonify({'success': False, 'error': str(e)})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response, 500
+
+
+@app.route('/api/admin/users')
+def admin_users():
+    password = request.args.get('password', '')
+    if password != ADMIN_PASSWORD and not verify_admin_session():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if not ensure_db():
+        return jsonify({'error': 'Database not available'}), 503
+
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, email, name, picture, device_id, first_seen, last_seen, capture_count
+            FROM users ORDER BY last_seen DESC LIMIT 500
+        ''')
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        users_list = []
+        for row in rows:
+            users_list.append({
+                'id': row[0],
+                'email': row[1],
+                'name': row[2],
+                'picture': row[3],
+                'deviceId': row[4],
+                'firstSeen': row[5].isoformat() if row[5] else None,
+                'lastSeen': row[6].isoformat() if row[6] else None,
+                'captureCount': row[7] or 0
+            })
+
+        return jsonify({'success': True, 'users': users_list, 'total': len(users_list)})
+    except Exception as e:
+        print(f'❌ admin/users error: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/admin/activity')
+def admin_activity():
+    password = request.args.get('password', '')
+    if password != ADMIN_PASSWORD and not verify_admin_session():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if not ensure_db():
+        return jsonify({'error': 'Database not available'}), 503
+
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, email, action, details, created_at
+            FROM user_activity ORDER BY created_at DESC LIMIT 200
+        ''')
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        activity_list = []
+        for row in rows:
+            activity_list.append({
+                'id': row[0],
+                'email': row[1],
+                'action': row[2],
+                'details': row[3],
+                'createdAt': row[4].isoformat() if row[4] else None
+            })
+
+        return jsonify({'success': True, 'activity': activity_list, 'total': len(activity_list)})
+    except Exception as e:
+        print(f'❌ admin/activity error: {e}')
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/admin-dashboard')
 def admin_panel():
     """Enhanced admin panel - requires valid session cookie"""
@@ -385,6 +592,18 @@ def admin_panel():
         total_ips = ip_stats[0] if ip_stats and ip_stats[0] else 0
         total_api_keys_tracked = ip_stats[1] if ip_stats and ip_stats[1] else 0
         max_keys_per_ip = ip_stats[2] if ip_stats and ip_stats[2] else 0
+
+        cur.execute('''
+            SELECT id, email, name, picture, device_id, first_seen, last_seen, capture_count
+            FROM users ORDER BY last_seen DESC LIMIT 500
+        ''')
+        registered_users_rows = cur.fetchall()
+
+        cur.execute('''
+            SELECT id, email, action, details, created_at
+            FROM user_activity ORDER BY created_at DESC LIMIT 50
+        ''')
+        recent_activity_rows = cur.fetchall()
         
         cur.close()
         conn.close()
@@ -675,6 +894,93 @@ def admin_panel():
         html += '''
     </table>
     <p style="margin-top: 30px; color: #444;">Data refreshes on page reload. Max 500 users shown.</p>
+'''
+
+        html += f'''
+    <div style="background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 150, 200, 0.08)); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 12px; padding: 20px; margin: 30px 0;">
+        <h2 style="color: #00d4ff; margin: 0 0 5px 0;">👥 Registered Users</h2>
+        <p style="color: #888; font-size: 12px; margin: 0 0 15px 0;">Users who signed in with Google — {len(registered_users_rows)} total</p>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <tr>
+                <th style="background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left;">#</th>
+                <th style="background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left;">Photo</th>
+                <th style="background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left;">Name</th>
+                <th style="background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left;">Email</th>
+                <th style="background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left;">Captures</th>
+                <th style="background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left;">First Seen</th>
+                <th style="background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left;">Last Seen</th>
+            </tr>
+'''
+
+        for idx, urow in enumerate(registered_users_rows, 1):
+            u_id = urow[0]
+            u_email = html_escape_module.escape(str(urow[1] or '-'))
+            u_name = html_escape_module.escape(str(urow[2] or '-'))
+            u_picture = html_escape_module.escape(str(urow[3] or ''))
+            u_device = html_escape_module.escape(str(urow[4] or '-'))
+            u_first = urow[5].strftime('%Y-%m-%d %H:%M') if urow[5] else '-'
+            u_last = urow[6].strftime('%Y-%m-%d %H:%M') if urow[6] else '-'
+            u_captures = urow[7] or 0
+            photo_html = f'<img src="{u_picture}" style="width:28px;height:28px;border-radius:50%;border:1px solid #333;" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">' if u_picture else '<div style="width:28px;height:28px;border-radius:50%;background:#333;display:inline-block;"></div>'
+            html += f'''
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #222;">{idx}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #222;">{photo_html}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #222; color: #e0e0e0;">{u_name}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #222; color: #888; font-size: 12px;">{u_email}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #222; color: #00ff88; font-weight: bold;">{u_captures}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #222; color: #888; font-size: 11px;">{u_first}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #222; color: #888; font-size: 11px;">{u_last}</td>
+            </tr>
+'''
+
+        html += '''
+        </table>
+    </div>
+'''
+
+        action_colors = {
+            'capture_snap': '#00ff88',
+            'capture_snip': '#06b6d4',
+            'capture_fullpage': '#a855f7',
+            'ai_chat': '#ffd700',
+            'review_prompt_shown': '#f97316',
+            'review_clicked': '#22c55e',
+        }
+
+        html += f'''
+    <div style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(200, 80, 10, 0.08)); border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 12px; padding: 20px; margin: 30px 0;">
+        <h2 style="color: #f97316; margin: 0 0 5px 0;">📋 Recent Activity</h2>
+        <p style="color: #888; font-size: 12px; margin: 0 0 15px 0;">Last 50 user actions</p>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <tr>
+                <th style="background: #16213e; color: #f97316; padding: 12px 8px; text-align: left;">#</th>
+                <th style="background: #16213e; color: #f97316; padding: 12px 8px; text-align: left;">Email</th>
+                <th style="background: #16213e; color: #f97316; padding: 12px 8px; text-align: left;">Action</th>
+                <th style="background: #16213e; color: #f97316; padding: 12px 8px; text-align: left;">Details</th>
+                <th style="background: #16213e; color: #f97316; padding: 12px 8px; text-align: left;">Timestamp</th>
+            </tr>
+'''
+
+        for aidx, arow in enumerate(recent_activity_rows, 1):
+            a_email = html_escape_module.escape(str(arow[1] or '-'))
+            a_action = html_escape_module.escape(str(arow[2] or '-'))
+            a_details = html_escape_module.escape(str(arow[3] or '-'))
+            a_time = arow[4].strftime('%Y-%m-%d %H:%M:%S') if arow[4] else '-'
+            a_color = action_colors.get(a_action, '#888')
+            html += f'''
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #222;">{aidx}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #222; color: #888; font-size: 12px;">{a_email}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #222;"><span style="color: {a_color}; font-weight: bold; font-size: 12px;">{a_action}</span></td>
+                <td style="padding: 8px; border-bottom: 1px solid #222; color: #666; font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{a_details}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #222; color: #888; font-size: 11px;">{a_time}</td>
+            </tr>
+'''
+
+        html += '''
+        </table>
+    </div>
 </body>
 </html>
 '''

@@ -11,8 +11,13 @@
     "unlimitedStorage",
     "scripting",
     "clipboardWrite",
-    "downloads"
+    "downloads",
+    "identity"
   ],
+  "oauth2": {
+    "client_id": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+    "scopes": ["openid", "email", "profile"]
+  },
   "options_page": "options.html",
   "host_permissions": [
     "https://grok.x.ai/*",
