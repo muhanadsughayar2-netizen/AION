@@ -3417,29 +3417,29 @@ async function handleDeleteSnap(index) {
   }
 }
 
-// === GLOBAL COUNTER - Hits.sh (fetch SVG as text and inject) ===
-async function loadGlobalCounter() {
-  try {
-    const response = await fetch('https://hits.sh/snaptoai.com/screenshots.svg?label=&color=00FFFF&style=flat&extraCount=10000');
-    const svgText = await response.text();
-    document.getElementById('globalCounter').innerHTML = svgText;
-  } catch (error) {
-    document.getElementById('globalCounter').innerHTML = '<span style="color:#00FFFF;">10,000+ shipped worldwide</span>';
-  }
+// === GLOBAL COUNTER - Hits.sh (load as image to avoid CORS) ===
+function loadGlobalCounter() {
+  const container = document.getElementById('globalCounter');
+  if (!container) return;
+  const img = document.createElement('img');
+  img.src = 'https://hits.sh/snaptoai.com/screenshots.svg?label=&color=00FFFF&style=flat&extraCount=10000&_t=' + Date.now();
+  img.alt = 'Global counter';
+  img.style.height = '20px';
+  img.onerror = () => {
+    container.innerHTML = '<span style="color:#00FFFF;">10,000+ shipped worldwide</span>';
+  };
+  container.innerHTML = '';
+  container.appendChild(img);
 }
 
-// Refresh every 30 seconds
 setInterval(loadGlobalCounter, 30000);
 
-// On popup open
 document.addEventListener('DOMContentLoaded', loadGlobalCounter);
 
-// Increment counter
-async function incrementGlobalCounter() {
-  try {
-    await fetch('https://hits.sh/snaptoai.com/screenshots/');
-    loadGlobalCounter(); // Refresh immediately
-  } catch (e) {}
+function incrementGlobalCounter() {
+  const img = new Image();
+  img.src = 'https://hits.sh/snaptoai.com/screenshots/?_t=' + Date.now();
+  setTimeout(loadGlobalCounter, 1000);
 }
 
 // ===== REVIEW PROMPTING SYSTEM =====
