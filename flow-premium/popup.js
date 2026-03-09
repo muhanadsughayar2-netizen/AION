@@ -39,8 +39,70 @@ async function handleGoogleSignIn() {
     }
     if (authError) authError.style.display = 'none';
 
-    chrome.runtime.sendMessage({ action: 'googleSignIn' });
+    console.log('[SnapToAI] Starting Google Sign-In from popup...');
+    console.log('[SnapToAI] Extension ID:', chrome.runtime.id);
 
+    const token = await new Promise((resolve, reject) => {
+      chrome.identity.getAuthToken({ interactive: true }, (token) => {
+        console.log('[SnapToAI] getAuthToken result:', !!token, 'error:', chrome.runtime.lastError?.message);
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else if (!token) {
+          reject(new Error('No token received'));
+        } else {
+          resolve(token);
+        }
+      });
+    });
+
+    console.log('[SnapToAI] Got token, fetching user info...');
+    const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get user info from Google');
+    }
+
+    const userInfo = await response.json();
+    console.log('[SnapToAI] Got user info:', userInfo.email);
+
+    if (!userInfo.email) {
+      throw new Error('No email returned from Google account');
+    }
+
+    const userData = {
+      name: userInfo.name || '',
+      email: userInfo.email,
+      picture: userInfo.picture || '',
+      signedInAt: Date.now()
+    };
+
+    await chrome.storage.local.set({ snaptoai_user: userData });
+
+    const deviceResult = await chrome.storage.local.get('snaptoai_device_id');
+    let deviceId = deviceResult.snaptoai_device_id;
+    if (!deviceId) {
+      deviceId = 'dev_' + crypto.randomUUID();
+      await chrome.storage.local.set({ snaptoai_device_id: deviceId });
+    }
+
+    try {
+      await fetch(BACKEND_URL + '/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: userData.name,
+          email: userData.email,
+          picture: userData.picture,
+          deviceId: deviceId
+        })
+      });
+    } catch (e) {
+      console.log('[SnapToAI] Backend registration failed (offline?):', e.message);
+    }
+
+    await checkAuthState();
   } catch (error) {
     console.error('[SnapToAI] Google Sign-In failed:', error);
     if (authError) {
@@ -55,6 +117,11 @@ async function handleGoogleSignIn() {
         authError.textContent = msg;
       }
       authError.style.display = 'block';
+    }
+  } finally {
+    if (signInBtn) {
+      signInBtn.disabled = false;
+      signInBtn.querySelector('.google-btn-text') && (signInBtn.querySelector('.google-btn-text').textContent = 'Continue with Google');
     }
   }
 }
