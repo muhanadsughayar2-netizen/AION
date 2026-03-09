@@ -145,15 +145,10 @@ async function handleGoogleSignIn() {
 
 async function handleSignOut() {
   try {
-    const result = await chrome.storage.local.get(['snaptoai_user']);
-    if (result.snaptoai_user) {
-      chrome.identity.getAuthToken({ interactive: false }, (token) => {
-        if (token) {
-          chrome.identity.removeCachedAuthToken({ token }, () => {});
-        }
-      });
-    }
     await chrome.storage.local.remove('snaptoai_user');
+    try {
+      await chrome.identity.clearAllCachedAuthTokens();
+    } catch (e) {}
     const accountPopover = document.getElementById('accountPopover');
     if (accountPopover) accountPopover.style.display = 'none';
     await checkAuthState();
@@ -3782,18 +3777,17 @@ if (geminiModal) geminiModal.addEventListener('click', (e) => {
 });
 
 // Load key on popup open and check subscription
-document.addEventListener('DOMContentLoaded', async () => {
-  await checkAuthState();
+document.addEventListener('DOMContentLoaded', () => {
+  checkAuthState();
   setupAuthListeners();
 
-  // Initialize subscription check on popup open
   const upgradeBtn = document.getElementById('upgradeBtn');
   
-  // Keep button hidden until we know the status
   if (upgradeBtn) {
     upgradeBtn.style.visibility = 'hidden';
   }
   
+  setTimeout(async () => {
   if (window.SnapToAISubscription) {
     const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
     const status = await window.SnapToAISubscription.check();
@@ -3829,20 +3823,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
   } else {
-    // No subscription module - keep hidden
     if (upgradeBtn) {
       upgradeBtn.style.visibility = 'hidden';
     }
   }
+  }, 200);
   
-  // Upgrade button click handler
   if (upgradeBtn) {
     upgradeBtn.addEventListener('click', () => {
       showSubscriptionModal('We provide the interface; you provide your Google API key.');
     });
   }
   
-  await loadGeminiKey();
+  loadGeminiKey();
 });
 
 // ===== AI CHAT PORTAL =====
