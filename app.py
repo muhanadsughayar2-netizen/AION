@@ -1311,7 +1311,7 @@ def whop_webhook():
         conn = get_db()
         cur = conn.cursor()
 
-        if action in ['membership.went_valid', 'membership.renewed', 'payment.succeeded']:
+        if action in ['membership.went_valid', 'membership.renewed', 'payment.succeeded', 'membership_activated', 'payment_succeeded']:
             cur.execute('''
                 INSERT INTO subscriptions (email, whop_user_id, whop_membership_id, plan_type, status, subscription_start, updated_at, last_verified)
                 VALUES (%s, %s, %s, %s, 'active', NOW(), NOW(), NOW())
@@ -1326,13 +1326,13 @@ def whop_webhook():
                     last_verified = NOW()
             ''', (email, whop_user_id, membership_id, plan_type))
 
-        elif action in ['membership.went_invalid', 'membership.expired']:
+        elif action in ['membership.went_invalid', 'membership.expired', 'membership_deactivated']:
             cur.execute('''
                 UPDATE subscriptions SET status = 'expired', subscription_end = NOW(), updated_at = NOW()
                 WHERE email = %s
             ''', (email,))
 
-        elif action == 'membership.canceled':
+        elif action in ['membership.canceled', 'membership_cancel_at_period_end_changed']:
             cancel_at = resource.get('canceled_at') or resource.get('current_period_end')
             if cancel_at:
                 try:
