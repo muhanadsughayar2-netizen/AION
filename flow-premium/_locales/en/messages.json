@@ -32,7 +32,7 @@
     "description": "deselectAll"
   },
   "copySelected": {
-    "message": "Copy Selected",
+    "message": "Copy Combined",
     "description": "copySelected"
   },
   "downloadSelected": {

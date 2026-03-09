@@ -961,7 +961,7 @@ function translateUI() {
   
   document.querySelector('.status').textContent = getMessage('flowReady', 'Flow: Ready');
   document.getElementById('selectAllBtn').textContent = getMessage('selectAll', 'Select All');
-  document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Select & Combine');
+  document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Copy Combined');
   document.getElementById('downloadSelectedBtn').textContent = getMessage('downloadAsPNG', 'Download as PNG');
   document.getElementById('exportPdfBtn').textContent = getMessage('exportAsPDF', 'Export as PDF');
   document.getElementById('clearButton').textContent = getMessage('deleteSelected', 'Delete Selected');
