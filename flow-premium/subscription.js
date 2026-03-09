@@ -222,8 +222,8 @@ function openCheckout(plan = 'yearly') {
 
 function getCheckoutUrls() {
   return {
-    monthly: 'https://whop.com/snaptoai/?plan=monthly',
-    yearly: 'https://whop.com/snaptoai/?plan=yearly'
+    monthly: 'https://whop.com/snaptoai/',
+    yearly: 'https://whop.com/snaptoai/'
   };
 }
 
