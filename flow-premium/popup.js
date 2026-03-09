@@ -3798,21 +3798,22 @@ document.addEventListener('DOMContentLoaded', () => {
         upgradeBtn.style.visibility = 'hidden';
       } else if (status.status === 'subscribed') {
         upgradeBtn.style.visibility = 'visible';
-        const planDays = status.planType === 'yearly' ? 365 : 30;
-        upgradeBtn.textContent = `✓ ${planDays}d PRO`;
+        upgradeBtn.textContent = '✓ Pro Active';
         upgradeBtn.classList.add('subscribed');
-        upgradeBtn.style.background = 'linear-gradient(135deg, #00d4ff 0%, #00ff88 100%)';
-      } else if (status.status === 'trial') {
+        upgradeBtn.className = 'upgrade-btn upgrade-btn-pro';
+      } else if (status.status === 'trial' && status.daysRemaining > 0) {
         upgradeBtn.style.visibility = 'visible';
-        upgradeBtn.textContent = `${status.daysRemaining}d FREE`;
-        upgradeBtn.style.background = 'linear-gradient(135deg, #00d4ff 0%, #00ff88 100%)';
         if (status.daysRemaining <= 7) {
-          upgradeBtn.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%)';
+          upgradeBtn.textContent = `Trial ending in ${status.daysRemaining} day${status.daysRemaining === 1 ? '' : 's'}`;
+          upgradeBtn.className = 'upgrade-btn upgrade-btn-urgent';
+        } else {
+          upgradeBtn.textContent = `Free trial · ${status.daysRemaining} days left`;
+          upgradeBtn.className = 'upgrade-btn upgrade-btn-trial';
         }
-      } else if (status.status === 'trial_expired' || status.status === 'subscription_expired' || status.status === 'expired') {
+      } else if (status.status === 'trial_expired' || status.status === 'subscription_expired' || status.status === 'expired' || (status.status === 'trial' && status.daysRemaining <= 0)) {
         upgradeBtn.style.visibility = 'visible';
-        upgradeBtn.textContent = '⭐ UPGRADE';
-        upgradeBtn.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%)';
+        upgradeBtn.textContent = 'Trial ended · Upgrade for AI';
+        upgradeBtn.className = 'upgrade-btn upgrade-btn-expired';
       } else {
         upgradeBtn.style.visibility = 'hidden';
       }
