@@ -3549,7 +3549,7 @@ async function loadGeminiKey() {
     console.log('[SnapToAI] Loaded Gemini key:', result.geminiApiKey ? 'exists' : 'none');
     if (result.geminiApiKey) {
       if (geminiKeyInput) geminiKeyInput.value = result.geminiApiKey;
-      if (geminiStatus) geminiStatus.style.display = 'inline';
+      if (geminiStatus) geminiStatus.style.display = 'flex';
     } else {
       if (geminiKeyInput) geminiKeyInput.value = '';
       if (geminiStatus) geminiStatus.style.display = 'none';
@@ -3571,7 +3571,7 @@ async function saveGeminiKey() {
   try {
     await chrome.storage.sync.set({ geminiApiKey: key });
     console.log('[SnapToAI] Gemini key saved');
-    if (geminiStatus) geminiStatus.style.display = 'inline';
+    if (geminiStatus) geminiStatus.style.display = 'flex';
     updateAiButtonState();
     hideGeminiModal();
   } catch (e) {

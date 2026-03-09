@@ -302,10 +302,19 @@
   <div id="geminiModal" class="gemini-modal" style="display: none;">
     <div class="gemini-modal-content">
       <div class="gemini-modal-header">
-        <span class="gemini-icon">✦</span>
-        <span class="gemini-title">Get Your Free API Key</span>
-        <span id="geminiStatus" class="gemini-status" style="display: none;">✓ Connected</span>
-        <span id="geminiModalClose" class="gemini-modal-close">✕</span>
+        <div class="gemini-header-left">
+          <span class="gemini-icon">✦</span>
+          <span class="gemini-title">Get Your Free API Key</span>
+        </div>
+        <span id="geminiModalClose" class="gemini-modal-close" title="Close">✕</span>
+      </div>
+      <div id="geminiStatus" class="gemini-status-bar" style="display: none;">
+        <span class="gemini-status-dot"></span>
+        <span>Connected</span>
+      </div>
+      <div class="gemini-bonus-banner">
+        <span class="bonus-badge">BONUS</span>
+        <span>New Google Cloud users get <strong>$300 free credits</strong> for even more prompts</span>
       </div>
       <div class="gemini-promo-box">
         <div class="promo-title">○ 20 FREE Prompts Daily</div>
@@ -337,7 +346,6 @@
           📊 View API Usage & Limits
         </a>
       </div>
-      <p class="gemini-footer-note">Need more than 20 prompts? Google Cloud offers <span class="cyan-text">$300 free</span> credits for new users.</p>
     </div>
   </div>
 
