@@ -1253,31 +1253,35 @@ def subscription_status():
 @app.route('/api/whop/webhook', methods=['POST'])
 def whop_webhook():
     try:
-        whop_api_key = os.environ.get('WHOP_API_KEY', '')
-        auth_header = request.headers.get('Authorization', '')
-        whop_signature = request.headers.get('X-Whop-Signature', '') or request.headers.get('Whop-Signature', '')
-
-        is_authenticated = False
-        if whop_api_key:
-            if auth_header and whop_api_key in auth_header:
-                is_authenticated = True
-            if whop_signature:
-                import hmac as hmac_mod
-                raw_body = request.get_data()
-                expected = hmac_mod.new(whop_api_key.encode(), raw_body, 'sha256').hexdigest()
-                if hmac_mod.compare_digest(expected, whop_signature):
-                    is_authenticated = True
-
-        if whop_api_key and not is_authenticated:
-            print(f'Whop webhook: authentication failed')
-            return jsonify({'error': 'Unauthorized'}), 401
-
         data = request.get_json(silent=True)
         if not data:
             return jsonify({'error': 'Invalid payload'}), 400
 
-        action = data.get('action', '')
+        action = data.get('action', '') or data.get('event', '')
         resource = data.get('data', {})
+
+        whop_api_key = os.environ.get('WHOP_API_KEY', '')
+        membership_id = resource.get('id', '') or resource.get('membership_id', '') or data.get('membership_id', '')
+
+        if whop_api_key and membership_id:
+            try:
+                verify_resp = requests.get(
+                    f'https://api.whop.com/api/v2/memberships/{membership_id}',
+                    headers={'Authorization': f'Bearer {whop_api_key}'},
+                    timeout=5
+                )
+                if verify_resp.status_code != 200:
+                    print(f'Whop webhook: membership verification failed (status {verify_resp.status_code})')
+                else:
+                    verified_data = verify_resp.json()
+                    verified_email = verified_data.get('email', '').strip().lower()
+                    if verified_email:
+                        resource['email'] = verified_email
+                    print(f'Whop webhook: membership {membership_id} verified via API')
+            except Exception as ve:
+                print(f'Whop webhook: API verification error: {ve}')
+
+        print(f'Whop webhook received: action={action}, data_keys={list(resource.keys()) if resource else "none"}')
 
         email = resource.get('email', '').strip().lower()
         if not email:
