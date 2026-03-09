@@ -2854,22 +2854,6 @@ html[dir="rtl"] .logo-word {
   white-space: nowrap;
 }
 
-.account-popover-item {
-  display: block;
-  padding: 8px;
-  color: rgba(255, 255, 255, 0.8);
-  text-decoration: none;
-  font-size: 12px;
-  border-radius: 6px;
-  transition: all 0.15s ease;
-  cursor: pointer;
-}
-
-.account-popover-item:hover {
-  background: rgba(0, 212, 255, 0.1);
-  color: #00d4ff;
-}
-
 .account-popover-signout {
   display: block;
   width: 100%;

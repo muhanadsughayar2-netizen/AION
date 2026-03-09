@@ -149,6 +149,8 @@ async function handleSignOut() {
     const accountPopover = document.getElementById('accountPopover');
     if (accountPopover) accountPopover.style.display = 'none';
     await checkAuthState();
+    await refreshSubscriptionUI();
+    updateAiButtonState();
   } catch (error) {
     console.error('[SnapToAI] Sign-out error:', error);
   }
@@ -175,14 +177,6 @@ function setupAuthListeners() {
     });
   }
 
-  const manageApiKeyLink = document.getElementById('manageApiKeyLink');
-  if (manageApiKeyLink) {
-    manageApiKeyLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (accountPopover) accountPopover.style.display = 'none';
-      showGeminiModal();
-    });
-  }
 }
 
 async function incrementCaptureCount(captureType) {
@@ -1082,8 +1076,6 @@ function setupEventListeners() {
         // Clear queue and wait for completion
         status.textContent = chrome.i18n.getMessage('statusAllCleared') || 'Clearing queue...';
         await chrome.runtime.sendMessage({ action: 'clearSnaps' });
-        const preview = document.getElementById('lastCapturePreview');
-        if (preview) preview.style.display = 'none';
         await loadSnaps();
         updateUI();
         
@@ -1841,10 +1833,6 @@ async function handleClear() {
     
     // Clear selection after deleting
     selectedSnapIds.clear();
-    
-    // Hide the last capture preview
-    const preview = document.getElementById('lastCapturePreview');
-    if (preview) preview.style.display = 'none';
     
     setStatus(`Cleared ${indicesToDelete.length} snap${indicesToDelete.length > 1 ? 's' : ''}`, 'success', 1500);
     
@@ -3585,7 +3573,7 @@ async function clearGeminiKey() {
     console.log('[SnapToAI] Gemini key cleared');
     geminiKeyInput.value = '';
     updateAiButtonState();
-    geminiStatus.style.display = 'none';
+    if (geminiStatus) geminiStatus.style.display = 'none';
   } catch (e) {
     console.error('[SnapToAI] Error clearing Gemini key:', e);
   }
