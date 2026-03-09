@@ -560,6 +560,32 @@ body {
   margin: 2px 0 4px 0;
 }
 
+.setup-cta {
+  background: rgba(0, 217, 255, 0.06);
+  border: 1px dashed rgba(0, 217, 255, 0.25);
+  color: #00d9ff;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 6px 16px;
+  transition: all 0.2s;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.setup-cta-main {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.setup-cta-sub {
+  font-size: 9px;
+  color: rgba(0, 217, 255, 0.5);
+  font-weight: 400;
+}
+
 .setup-text-link {
   background: none;
   border: none;
@@ -569,6 +595,31 @@ body {
   padding: 4px 12px;
   transition: all 0.2s;
   border-radius: 12px;
+}
+
+.setup-cta:hover {
+  background: rgba(0, 217, 255, 0.12);
+  border-color: rgba(0, 217, 255, 0.45);
+  transform: scale(1.02);
+}
+
+.setup-cta-connected {
+  border-style: solid;
+  border-color: rgba(0, 255, 136, 0.25);
+  background: rgba(0, 255, 136, 0.06);
+}
+
+.setup-cta-connected .setup-cta-main {
+  color: #00ff88;
+}
+
+.setup-cta-connected .setup-cta-sub {
+  color: rgba(0, 255, 136, 0.5);
+}
+
+.setup-cta-connected:hover {
+  background: rgba(0, 255, 136, 0.12);
+  border-color: rgba(0, 255, 136, 0.45);
 }
 
 .setup-text-link:hover {

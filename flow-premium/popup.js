@@ -3572,6 +3572,7 @@ async function saveGeminiKey() {
     await chrome.storage.sync.set({ geminiApiKey: key });
     console.log('[SnapToAI] Gemini key saved');
     if (geminiStatus) geminiStatus.style.display = 'inline';
+    updateAiButtonState();
     hideGeminiModal();
   } catch (e) {
     console.error('[SnapToAI] Error saving Gemini key:', e);
@@ -3583,6 +3584,7 @@ async function clearGeminiKey() {
     await chrome.storage.sync.remove('geminiApiKey');
     console.log('[SnapToAI] Gemini key cleared');
     geminiKeyInput.value = '';
+    updateAiButtonState();
     geminiStatus.style.display = 'none';
   } catch (e) {
     console.error('[SnapToAI] Error clearing Gemini key:', e);
@@ -3832,7 +3834,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   loadGeminiKey();
+  updateAiButtonState();
 });
+
+function updateAiButtonState() {
+  chrome.storage.sync.get(['geminiApiKey'], (result) => {
+    const aiButton = document.getElementById('aiButton');
+    if (!aiButton) return;
+    if (result.geminiApiKey) {
+      aiButton.innerHTML = '<span class="setup-cta-main">✨ AI Ready</span><span class="setup-cta-sub">Gemini connected</span>';
+      aiButton.className = 'setup-cta setup-cta-connected';
+    } else {
+      aiButton.innerHTML = '<span class="setup-cta-main">✨ Connect Free Gemini Key</span><span class="setup-cta-sub">20 free prompts/day</span>';
+      aiButton.className = 'setup-cta';
+    }
+  });
+}
 
 // ===== AI CHAT PORTAL =====
 let aiChatCurrentImage = null;
