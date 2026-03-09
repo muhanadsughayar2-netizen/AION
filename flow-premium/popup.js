@@ -39,25 +39,40 @@ async function handleGoogleSignIn() {
     }
     if (authError) authError.style.display = 'none';
 
-    console.log('[SnapToAI] Starting Google Sign-In from popup...');
+    console.log('[SnapToAI] Starting Google Sign-In via launchWebAuthFlow...');
     console.log('[SnapToAI] Extension ID:', chrome.runtime.id);
 
-    const token = await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error('Sign-in timed out. Please check: 1) Your Google Cloud OAuth consent screen has your email as a test user, 2) The Item ID matches this extension ID: ' + chrome.runtime.id));
-      }, 30000);
-      chrome.identity.getAuthToken({ interactive: true }, (token) => {
-        clearTimeout(timeout);
-        console.log('[SnapToAI] getAuthToken result:', !!token, 'error:', chrome.runtime.lastError?.message);
+    const clientId = chrome.runtime.getManifest().oauth2.client_id;
+    const redirectUrl = chrome.identity.getRedirectURL();
+    const scopes = 'openid email profile';
+    const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
+      '?client_id=' + encodeURIComponent(clientId) +
+      '&response_type=token' +
+      '&redirect_uri=' + encodeURIComponent(redirectUrl) +
+      '&scope=' + encodeURIComponent(scopes);
+
+    console.log('[SnapToAI] Redirect URL:', redirectUrl);
+    console.log('[SnapToAI] Auth URL constructed, launching...');
+
+    const responseUrl = await new Promise((resolve, reject) => {
+      chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, (responseUrl) => {
         if (chrome.runtime.lastError) {
+          console.error('[SnapToAI] launchWebAuthFlow error:', chrome.runtime.lastError.message);
           reject(new Error(chrome.runtime.lastError.message));
-        } else if (!token) {
-          reject(new Error('No token received'));
+        } else if (!responseUrl) {
+          reject(new Error('No response from Google sign-in'));
         } else {
-          resolve(token);
+          resolve(responseUrl);
         }
       });
     });
+
+    console.log('[SnapToAI] Got response URL, extracting token...');
+    const tokenMatch = responseUrl.match(/access_token=([^&]+)/);
+    if (!tokenMatch) {
+      throw new Error('No access token in response');
+    }
+    const token = tokenMatch[1];
 
     console.log('[SnapToAI] Got token, fetching user info...');
     const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
@@ -111,12 +126,10 @@ async function handleGoogleSignIn() {
     console.error('[SnapToAI] Google Sign-In failed:', error);
     if (authError) {
       const msg = error.message || String(error);
-      if (msg === 'The user did not approve access.') {
+      if (msg === 'The user did not approve access.' || msg.includes('canceled') || msg.includes('cancelled')) {
         authError.textContent = 'Sign-in was cancelled. Please try again.';
-      } else if (msg.includes('OAuth2 not granted')) {
-        authError.textContent = 'Google permissions not granted. Check your Google Cloud OAuth setup.';
       } else if (msg.includes('invalid_client') || msg.includes('client_id')) {
-        authError.textContent = 'OAuth configuration error. Verify Client ID in Google Cloud Console.';
+        authError.textContent = 'OAuth configuration error. Check Google Cloud Console.';
       } else {
         authError.textContent = msg;
       }
