@@ -125,19 +125,33 @@ body {
 
 .help-btn {
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(0, 217, 255, 0.3);
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  border-radius: 14px;
+  padding: 4px 10px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 4px;
   cursor: pointer;
   color: #00d9ff;
   transition: all 0.2s ease;
-  animation: glow-pulse 2s ease-in-out infinite;
-  filter: drop-shadow(0 0 5px rgba(0, 217, 255, 0.25)) drop-shadow(0 0 10px rgba(0, 255, 255, 0.15));
-  text-shadow: 0 0 5px rgba(0, 217, 255, 0.3), 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.help-btn-icon {
+  font-size: 12px;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(0, 217, 255, 0.15);
+}
+
+.help-btn-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
 
 .help-btn:hover {
