@@ -1,7 +1,7 @@
 // Flow Popup Script
 // Handles UI interactions, thumbnail display, and communication with background
 
-const BACKEND_URL = 'https://snaptoai.com';
+const BACKEND_URL = 'https://www.snaptoai.com';
 const REVIEW_MILESTONES = [5, 15, 30];
 const CHROME_STORE_REVIEW_URL = 'https://chromewebstore.google.com/detail/snaptoai/oojjcoiimphlplollpgjckcjejlamhjh/reviews';
 
