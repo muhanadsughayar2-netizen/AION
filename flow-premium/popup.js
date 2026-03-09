@@ -7,13 +7,11 @@ const CHROME_STORE_REVIEW_URL = 'https://chromewebstore.google.com/detail/snapto
 async function checkAuthState() {
   const result = await chrome.storage.local.get(['snaptoai_user']);
   const authOverlay = document.getElementById('authOverlay');
-  const upgradeBtn = document.getElementById('upgradeBtn');
   const userAvatarContainer = document.getElementById('userAvatarContainer');
   const userAvatar = document.getElementById('userAvatar');
 
   if (result.snaptoai_user) {
     if (authOverlay) authOverlay.style.display = 'none';
-    if (upgradeBtn) upgradeBtn.style.visibility = 'hidden';
     if (userAvatarContainer) {
       userAvatarContainer.style.display = 'flex';
       if (userAvatar) userAvatar.src = result.snaptoai_user.picture || '';
@@ -119,6 +117,8 @@ async function handleGoogleSignIn() {
     }
 
     await checkAuthState();
+    await refreshSubscriptionUI();
+    updateAiButtonState();
   } catch (error) {
     console.error('[SnapToAI] Google Sign-In failed:', error);
     if (authError) {
@@ -3773,19 +3773,13 @@ if (geminiModal) geminiModal.addEventListener('click', (e) => {
   if (e.target === geminiModal) hideGeminiModal();
 });
 
-// Load key on popup open and check subscription
-document.addEventListener('DOMContentLoaded', () => {
-  checkAuthState();
-  setupAuthListeners();
-
+async function refreshSubscriptionUI() {
   const upgradeBtn = document.getElementById('upgradeBtn');
-  
-  if (upgradeBtn) {
-    upgradeBtn.style.visibility = 'hidden';
+  if (!window.SnapToAISubscription) {
+    if (upgradeBtn) upgradeBtn.style.visibility = 'hidden';
+    return;
   }
-  
-  setTimeout(async () => {
-  if (window.SnapToAISubscription) {
+  try {
     const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
     const status = await window.SnapToAISubscription.check();
     console.log('[SnapToAI] Subscription status:', status.status, status.canUseAI ? '(active)' : '(blocked)', 'override:', !!snaptoai_dev_override);
@@ -3801,7 +3795,6 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (status.status === 'subscribed') {
         upgradeBtn.style.visibility = 'visible';
         upgradeBtn.textContent = '✓ Pro Active';
-        upgradeBtn.classList.add('subscribed');
         upgradeBtn.className = 'upgrade-btn upgrade-btn-pro';
       } else if (status.status === 'trial' && status.daysRemaining > 0) {
         upgradeBtn.style.visibility = 'visible';
@@ -3820,18 +3813,26 @@ document.addEventListener('DOMContentLoaded', () => {
         upgradeBtn.style.visibility = 'hidden';
       }
     }
-  } else {
-    if (upgradeBtn) {
-      upgradeBtn.style.visibility = 'hidden';
-    }
+  } catch (e) {
+    console.error('[SnapToAI] Subscription UI refresh error:', e);
+    if (upgradeBtn) upgradeBtn.style.visibility = 'hidden';
   }
-  }, 200);
+}
+
+// Load key on popup open and check subscription
+document.addEventListener('DOMContentLoaded', async () => {
+  await checkAuthState();
+  setupAuthListeners();
+
+  const upgradeBtn = document.getElementById('upgradeBtn');
   
   if (upgradeBtn) {
     upgradeBtn.addEventListener('click', () => {
       showSubscriptionModal('We provide the interface; you provide your Google API key.');
     });
   }
+  
+  await refreshSubscriptionUI();
   
   loadGeminiKey();
   updateAiButtonState();
