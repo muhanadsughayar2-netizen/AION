@@ -43,7 +43,11 @@ async function handleGoogleSignIn() {
     console.log('[SnapToAI] Extension ID:', chrome.runtime.id);
 
     const token = await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Sign-in timed out. Please check: 1) Your Google Cloud OAuth consent screen has your email as a test user, 2) The Item ID matches this extension ID: ' + chrome.runtime.id));
+      }, 30000);
       chrome.identity.getAuthToken({ interactive: true }, (token) => {
+        clearTimeout(timeout);
         console.log('[SnapToAI] getAuthToken result:', !!token, 'error:', chrome.runtime.lastError?.message);
         if (chrome.runtime.lastError) {
           reject(new Error(chrome.runtime.lastError.message));
