@@ -15,9 +15,14 @@
     "identity"
   ],
   "oauth2": {
-    "client_id": "YOUR_CLIENT_ID.apps.googleusercontent.com",
-    "scopes": ["openid", "email", "profile"]
+    "client_id": "114083338605-korq2uv92b42hgh6t44f05s307q68akm.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile",
+      "openid"
+    ]
   },
+  "key": "oojjcoiimphlplollpgjckcjejlamhjh",
   "options_page": "options.html",
   "host_permissions": [
     "https://grok.x.ai/*",

@@ -3,7 +3,7 @@
 
 const BACKEND_URL = 'https://snaptoai.com';
 const REVIEW_MILESTONES = [5, 15, 30];
-const CHROME_STORE_REVIEW_URL = 'https://chromewebstore.google.com/detail/snaptoai/EXTENSION_ID/reviews';
+const CHROME_STORE_REVIEW_URL = 'https://chromewebstore.google.com/detail/snaptoai/oojjcoiimphlplollpgjckcjejlamhjh/reviews';
 
 async function checkAuthState() {
   const result = await chrome.storage.local.get(['snaptoai_user']);
