@@ -228,8 +228,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === 'googleSignIn') {
     (async () => {
       try {
+        console.log('[SnapToAI] Google Sign-In started from background worker');
+        console.log('[SnapToAI] Extension ID:', chrome.runtime.id);
         const token = await new Promise((resolve, reject) => {
           chrome.identity.getAuthToken({ interactive: true }, (token) => {
+            console.log('[SnapToAI] getAuthToken callback, token:', !!token, 'lastError:', chrome.runtime.lastError?.message);
             if (chrome.runtime.lastError) {
               reject(new Error(chrome.runtime.lastError.message));
             } else if (!token) {

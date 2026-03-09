@@ -39,7 +39,7 @@
     }
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline';"
+    "extension_pages": "script-src 'self'; object-src 'self'; img-src 'self' data: blob: https://hits.sh; font-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://www.googleapis.com https://hits.sh https://snaptoai.com;"
   },
   "background": {
     "service_worker": "background.js"
