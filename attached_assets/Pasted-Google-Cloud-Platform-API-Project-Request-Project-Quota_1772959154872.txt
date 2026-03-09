@@ -1,0 +1,45 @@
+Google Cloud Platform/API Project: Request Project Quota Increase
+Use this form to submit a request for an increase to the project quota for your Google Cloud Platform or Google API services.
+If you are looking to increase OAuth quota or resource quota this is not the correct process, please see the following:
+
+OAuth Rate Limits
+Resource quota
+Projects are allocated to customers based on a variety of factors, including resources that legitimate customers use including customer’s previous usage and history with Google Cloud, and previous abuse penalties. 
+
+ 
+Projects can be for free/non-billable Cloud Services that do not require a billing account or for paid/billable Cloud Services which require a billing account. 
+
+
+You can find more details on the process and the difference between free vs paid services on the Project Quota Request FAQ’s page (or go to https://support.google.com/cloud/answer/6330231). Thanks for your patience while we review your request. 
+* Required field
+
+Name *
+muhanad sughayar
+First and last name
+Company name or website
+Email addresses that will be used to create projects *
+Email addresses that will be used to create projects
+Additional quota granted will be accessed by logging in to the Developer Console though this email id. Please separate email addresses with commas. (https://console.developers.google.com/project)
+Make sure you monitor the email addresses you provide for further communication.
+How many projects are being requested? (ex. 5, 10, 20, 50, etc.) *
+If more than 50 projects are needed, please note that this might require additional review.
+What kind of services will these projects use? *
+Examples of Paid Services include Compute Engine, BigQuery, Cloud SQL, Cloud Storage, MAPs API etc.
+
+An example of a Free Service is Firebase Cloud Messaging.
+
+For further information regarding free vs paid services please see the Project Quota Request FAQ’s page
+
+
+Both free and paid services
+
+Free Services
+
+Paid Services
+Please select the best option for why you require more projects. You can use the “Other Information” text box to provide additional details to explain your use case. *
+Any other things we need to be aware of to help us understand the request? *
+Include any information that will help us with verification, like why you need additional quota, the Project IDs of any other projects where you made payments, or a Google sales contact.
+This form is only for project quota increase requests. Please make sure all information is entered accurately (especially email and account IDs).
+Some account and system information will be sent to Google, and support calls and chats may be recorded. We will use this information to improve support quality and training, to help address technical issues, and to improve our products and services, subject to our Privacy Policy and Terms of Service. Translation services may be used in chats and email.
+©2026 Google  Privacy Policy  Terms of Service
+
