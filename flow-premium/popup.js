@@ -3831,7 +3831,7 @@ function updateAiButtonState() {
     const aiButton = document.getElementById('aiButton');
     if (!aiButton) return;
     if (result.geminiApiKey) {
-      aiButton.innerHTML = '<span class="setup-cta-main">✨ AI Ready</span><span class="setup-cta-sub">Gemini connected</span>';
+      aiButton.innerHTML = '<span class="setup-cta-main">● AI Ready</span><span class="setup-cta-sub">Manage</span>';
       aiButton.className = 'setup-cta setup-cta-connected';
     } else {
       aiButton.innerHTML = '<span class="setup-cta-main">✨ Connect Free Gemini Key</span><span class="setup-cta-sub">20 free prompts/day</span>';

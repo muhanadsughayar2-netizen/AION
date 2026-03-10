@@ -619,22 +619,28 @@ body {
 }
 
 .setup-cta-connected {
-  border-style: solid;
-  border-color: rgba(0, 255, 136, 0.25);
-  background: rgba(0, 255, 136, 0.06);
+  width: auto;
+  padding: 4px 14px;
+  border: 1px solid rgba(0, 255, 136, 0.15);
+  background: rgba(0, 255, 136, 0.04);
+  flex-direction: row;
+  gap: 6px;
 }
 
 .setup-cta-connected .setup-cta-main {
-  color: #00ff88;
+  color: rgba(0, 255, 136, 0.7);
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .setup-cta-connected .setup-cta-sub {
-  color: rgba(0, 255, 136, 0.5);
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 9px;
 }
 
 .setup-cta-connected:hover {
-  background: rgba(0, 255, 136, 0.12);
-  border-color: rgba(0, 255, 136, 0.45);
+  background: rgba(0, 255, 136, 0.08);
+  border-color: rgba(0, 255, 136, 0.3);
 }
 
 .setup-text-link:hover {
