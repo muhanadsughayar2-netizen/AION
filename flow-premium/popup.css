@@ -567,12 +567,9 @@ body {
 
 /* Setup Link - Subtle text button instead of orb */
 .setup-link-container {
+  width: 100%;
   text-align: center;
   margin: 2px 0 4px 0;
-}
-
-.setup-link-container {
-  width: 100%;
 }
 
 .setup-cta {
