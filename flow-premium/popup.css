@@ -39,7 +39,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: 10px;
 }
 
 .logo {
@@ -92,7 +92,7 @@ body {
   justify-content: center;
   align-items: center;
   gap: 10px;
-  margin: 2px 0 4px 0;
+  margin: 0 0 6px 0;
 }
 
 .counter-chip {
