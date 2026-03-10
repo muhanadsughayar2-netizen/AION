@@ -3761,6 +3761,37 @@ if (geminiModal) geminiModal.addEventListener('click', (e) => {
   if (e.target === geminiModal) hideGeminiModal();
 });
 
+function applySubscriptionBadge(upgradeBtn, status, snaptoai_dev_override) {
+  if (!upgradeBtn) return;
+  if (snaptoai_dev_override) {
+    upgradeBtn.style.visibility = 'visible';
+    upgradeBtn.textContent = '🔑 DEV';
+    upgradeBtn.classList.add('subscribed');
+    upgradeBtn.style.background = 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)';
+  } else if (status.status === 'no_api_key' || status.status === 'no_sign_in') {
+    upgradeBtn.style.visibility = 'hidden';
+  } else if (status.status === 'subscribed') {
+    upgradeBtn.style.visibility = 'visible';
+    upgradeBtn.textContent = '✓ Pro Active';
+    upgradeBtn.className = 'upgrade-btn upgrade-btn-pro';
+  } else if (status.status === 'trial' && status.daysRemaining > 0) {
+    upgradeBtn.style.visibility = 'visible';
+    if (status.daysRemaining <= 7) {
+      upgradeBtn.textContent = `Trial ending in ${status.daysRemaining} day${status.daysRemaining === 1 ? '' : 's'}`;
+      upgradeBtn.className = 'upgrade-btn upgrade-btn-urgent';
+    } else {
+      upgradeBtn.textContent = `Free trial · ${status.daysRemaining} days left`;
+      upgradeBtn.className = 'upgrade-btn upgrade-btn-trial';
+    }
+  } else if (status.status === 'trial_expired' || status.status === 'subscription_expired' || status.status === 'expired' || (status.status === 'trial' && status.daysRemaining <= 0)) {
+    upgradeBtn.style.visibility = 'visible';
+    upgradeBtn.textContent = 'Trial ended · Upgrade for AI';
+    upgradeBtn.className = 'upgrade-btn upgrade-btn-expired';
+  } else {
+    upgradeBtn.style.visibility = 'hidden';
+  }
+}
+
 async function refreshSubscriptionUI() {
   const upgradeBtn = document.getElementById('upgradeBtn');
   if (!window.SnapToAISubscription) {
@@ -3768,39 +3799,18 @@ async function refreshSubscriptionUI() {
     return;
   }
   try {
-    const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
+    const { snaptoai_dev_override, cachedSubStatus } = await chrome.storage.local.get(['snaptoai_dev_override', 'cachedSubStatus']);
+
+    if (cachedSubStatus && upgradeBtn) {
+      applySubscriptionBadge(upgradeBtn, cachedSubStatus, snaptoai_dev_override);
+    }
+
     const status = await window.SnapToAISubscription.check();
     console.log('[SnapToAI] Subscription status:', status.status, status.canUseAI ? '(active)' : '(blocked)', 'override:', !!snaptoai_dev_override);
-    
-    if (upgradeBtn) {
-      if (snaptoai_dev_override) {
-        upgradeBtn.style.visibility = 'visible';
-        upgradeBtn.textContent = '🔑 DEV';
-        upgradeBtn.classList.add('subscribed');
-        upgradeBtn.style.background = 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)';
-      } else if (status.status === 'no_api_key') {
-        upgradeBtn.style.visibility = 'hidden';
-      } else if (status.status === 'subscribed') {
-        upgradeBtn.style.visibility = 'visible';
-        upgradeBtn.textContent = '✓ Pro Active';
-        upgradeBtn.className = 'upgrade-btn upgrade-btn-pro';
-      } else if (status.status === 'trial' && status.daysRemaining > 0) {
-        upgradeBtn.style.visibility = 'visible';
-        if (status.daysRemaining <= 7) {
-          upgradeBtn.textContent = `Trial ending in ${status.daysRemaining} day${status.daysRemaining === 1 ? '' : 's'}`;
-          upgradeBtn.className = 'upgrade-btn upgrade-btn-urgent';
-        } else {
-          upgradeBtn.textContent = `Free trial · ${status.daysRemaining} days left`;
-          upgradeBtn.className = 'upgrade-btn upgrade-btn-trial';
-        }
-      } else if (status.status === 'trial_expired' || status.status === 'subscription_expired' || status.status === 'expired' || (status.status === 'trial' && status.daysRemaining <= 0)) {
-        upgradeBtn.style.visibility = 'visible';
-        upgradeBtn.textContent = 'Trial ended · Upgrade for AI';
-        upgradeBtn.className = 'upgrade-btn upgrade-btn-expired';
-      } else {
-        upgradeBtn.style.visibility = 'hidden';
-      }
-    }
+
+    await chrome.storage.local.set({ cachedSubStatus: { status: status.status, daysRemaining: status.daysRemaining, canUseAI: status.canUseAI } });
+
+    applySubscriptionBadge(upgradeBtn, status, snaptoai_dev_override);
   } catch (e) {
     console.error('[SnapToAI] Subscription UI refresh error:', e);
     if (upgradeBtn) upgradeBtn.style.visibility = 'hidden';
