@@ -53,16 +53,12 @@ body {
   align-items: center;
 }
 
-.logo-word {
-  background: linear-gradient(90deg, #00ffff, #0099ff, #00ffff);
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: glow-pulse 2s ease-in-out infinite;
-  position: relative;
-  text-shadow: 0 0 5px rgba(0, 217, 255, 0.3), 0 0 10px rgba(0, 255, 255, 0.2);
-  filter: drop-shadow(0 0 5px rgba(0, 217, 255, 0.25)) drop-shadow(0 0 10px rgba(0, 255, 255, 0.15));
+.logo-snap {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.logo-highlight {
+  color: #00d9ff;
 }
 
 @keyframes glow-pulse {
@@ -1512,7 +1508,8 @@ html[dir="rtl"] .logo {
   unicode-bidi: bidi-override;
 }
 
-html[dir="rtl"] .logo-word {
+html[dir="rtl"] .logo-snap,
+html[dir="rtl"] .logo-highlight {
   direction: ltr;
   unicode-bidi: bidi-override;
 }
