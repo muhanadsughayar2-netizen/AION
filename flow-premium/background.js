@@ -767,14 +767,9 @@ async function addSnip(dataUrl, metadata = null) {
   }
 }
 
-// Update extension badge
+// Update extension badge (disabled for cleaner icon look)
 async function updateBadge(count) {
-  if (count > 0) {
-    await chrome.action.setBadgeText({ text: `●${count}` });
-    await chrome.action.setBadgeBackgroundColor({ color: '#00d9ff' }); // Cyan
-  } else {
-    await chrome.action.setBadgeText({ text: '' });
-  }
+  await chrome.action.setBadgeText({ text: '' });
 }
 
 // Initialize badge on startup
