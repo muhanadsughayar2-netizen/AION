@@ -766,7 +766,7 @@ async function getFriendlyErrorMessage(errorMsg) {
       // User is on shared/free tier
       return `🎯 You've used your 20 prompts for today!\n\n` +
              `Come back tomorrow for 20 more prompts.\n\n` +
-             `💡 Want unlimited prompts? Google offers $300 in credits for new users!\n` +
+             `💡 Want unlimited prompts? Google offers $300 in credits when you sign up!\n` +
              `👉 Sign up at ai.google.dev and get your own API key in Settings.`;
     }
   }

@@ -4242,7 +4242,7 @@ function startCooldown(seconds) {
 function clearAiChat() {
   aiChatHistory = [];
   aiThoughtSignature = null; // Reset for new conversation
-  aiChatThread.innerHTML = '<div class="ai-welcome">Chat cleared! Ask a new question ✨</div>';
+  aiChatThread.innerHTML = '<div class="ai-welcome">Chat cleared! Ask another question ✨</div>';
   console.log('[SnapToAI] Chat cleared');
 }
 
