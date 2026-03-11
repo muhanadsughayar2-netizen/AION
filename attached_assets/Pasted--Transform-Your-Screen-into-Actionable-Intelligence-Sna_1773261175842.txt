@@ -1,0 +1,35 @@
+ Transform Your Screen into Actionable Intelligence SnapToAI is a high-performance productivity framework that bridges the gap between your browser and the power of Google Gemini. Stop manual data entry—start capturing context. SnapToAI allows you to capture high-fidelity visual data and process it through Custom AI Agents that you build and control.
+
+Precision Capture Suite SnapToAI uses native browser-level capturing (PNG) to ensure the AI sees exactly what you see. No messy HTML scraping—just pure visual accuracy.
+
+SNAP: Capture your immediate viewport in one click.
+SNIP: Precision-select any specific area, chart, or code block.
+FULL PAGE: Automatically scroll and stitch entire web pages into one image.
+Pro Shortcuts: Trigger captures instantly with Ctrl+Shift+S (Windows) or Cmd+Shift+S (Mac).
+ Fully Customizable "Magic Agents" SnapToAI provides a blank canvas for your AI workflows. You are the architect of your AI.
+
+Build Your Own Library: Create specialized personas for your specific job (Coding, Research, Translation, etc.).
+Custom Prompt Templates: Define exactly how the AI should behave (e.g., "Summarize this chart" or "Explain this error code").
+Name & Deploy: Save your agents and switch between them instantly to match your current task.
+Unlimited Creation: There is no limit to the number of custom agents you can create and manage.
+ Direct-to-Google Architecture (BYOK) SnapToAI is a Bring Your Own Key (BYOK) extension, ensuring maximum privacy and cost-efficiency.
+
+No Middleman: Your screenshots are sent directly from your browser to the Google Gemini API. We never see your data.
+Full Transparency: Use your own Gemini API key to stay in control of your usage and costs.
+The $300 Advantage: We provide a step-by-step guide on how new Google Cloud users can activate their $300 free credit tier from Google to power their SnapToAI experience.
+Privacy-First & Local-Only We prioritize your data security with a Zero-Persistence policy:
+
+Session-Only Memory: Your capture queue (up to 9 images) is stored in temporary browser memory. Closing Chrome wipes the images clean.
+No Background Tracking: SnapToAI only functions when you click the icon or use the shortcut.
+Local Storage: Your API keys and custom agent prompts are stored locally on your device, not on our servers.
+ Technical Mechanics & Permissions Disclosure SnapToAI requires the following permissions to function as a high-performance productivity tool:
+
+activeTab: To capture the screen of your currently active page.
+storage: To securely save your custom agent definitions and API preferences on your device.
+scripting: To enable the optional "One-Click Upload" feature to AI chat interfaces.
+clipboardWrite: To allow you to instantly copy AI-generated insights for use in other apps.
+Usage Notes
+
+API Requirement: An active Google Gemini API key is required to use the AI analysis features.
+Manual Setup: Users create their own agents and prompts; the extension provides the framework, while the user provides the instructions.
+Reversibility: You can modify your agents, delete your history, or remove the extension at any time with a single click.
