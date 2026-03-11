@@ -29,6 +29,10 @@
     "https://chatgpt.com/*",
     "https://claude.ai/*",
     "https://*.openai.com/*",
+    "https://gemini.google.com/*",
+    "https://perplexity.ai/*",
+    "https://www.perplexity.ai/*",
+    "https://x.com/*",
     "https://generativelanguage.googleapis.com/*",
     "https://www.googleapis.com/*"
   ],
@@ -59,7 +63,11 @@
         "https://*.openai.com/*",
         "https://claude.ai/*",
         "https://grok.com/*",
-        "https://grok.x.ai/*"
+        "https://grok.x.ai/*",
+        "https://gemini.google.com/*",
+        "https://perplexity.ai/*",
+        "https://www.perplexity.ai/*",
+        "https://x.com/*"
       ],
       "js": ["content.js"],
       "run_at": "document_start",
