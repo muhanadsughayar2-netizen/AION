@@ -387,7 +387,7 @@ async function sendToGemini(prompt, imageDataUrls) {
     if (!snaptoai_dev_override) {
       const sub = await window.SnapToAISubscription.check();
       if (!sub.canUseAI && sub.status !== 'no_api_key') {
-        throw new Error('Your free trial has ended. Please upgrade to continue using AI analysis.');
+        throw new Error('Your trial has ended. Please upgrade to continue using AI analysis.');
       }
     }
   }
@@ -489,7 +489,7 @@ async function handleSend() {
     if (!snaptoai_dev_override) {
       const sub = await window.SnapToAISubscription.check();
       if (!sub.canUseAI && sub.status !== 'no_api_key') {
-        addBubble('Your free trial has ended. Please upgrade to continue using AI analysis.', 'ai');
+        addBubble('Your trial has ended. Please upgrade to continue using AI analysis.', 'ai');
         return;
       }
     }
@@ -764,9 +764,9 @@ async function getFriendlyErrorMessage(errorMsg) {
              `If this persists, check your Google AI Studio dashboard for quota details.`;
     } else {
       // User is on shared/free tier
-      return `🎯 You've used your 20 free prompts for today!\n\n` +
-             `Come back tomorrow for 20 more FREE prompts.\n\n` +
-             `💡 Want unlimited prompts? Google offers $300 FREE credit for new users!\n` +
+      return `🎯 You've used your 20 prompts for today!\n\n` +
+             `Come back tomorrow for 20 more prompts.\n\n` +
+             `💡 Want unlimited prompts? Google offers $300 in credits for new users!\n` +
              `👉 Sign up at ai.google.dev and get your own API key in Settings.`;
     }
   }
@@ -774,7 +774,7 @@ async function getFriendlyErrorMessage(errorMsg) {
   // API key errors
   if (lowerMsg.includes('api key') || lowerMsg.includes('invalid') || lowerMsg.includes('unauthorized') || lowerMsg.includes('401')) {
     return `API key issue detected.\n\n` +
-           `Please check your API key in Settings, or get a FREE one from ai.google.dev with $300 credit!`;
+           `Please check your API key in Settings, or get one from ai.google.dev with $300 in credits!`;
   }
   
   // Network errors

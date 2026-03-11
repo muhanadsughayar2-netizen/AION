@@ -3658,7 +3658,7 @@ async function handleAIButtonClick() {
     if (!status.canUseAI && !snaptoai_dev_override) {
       const message = status.status === 'subscription_expired'
         ? 'Your subscription has expired. Renew to keep using AI tools.'
-        : 'Your free trial has ended. Subscribe to keep using AI analysis features.';
+        : 'Your trial has ended. Subscribe to keep using AI analysis features.';
       showSubscriptionModal(message);
       return;
     }
@@ -3731,7 +3731,7 @@ if (directAiButton) {
       if (!status.canUseAI && !snaptoai_dev_override) {
         const message = status.status === 'subscription_expired'
           ? 'Your subscription has expired. Renew to keep using AI tools.'
-          : 'Your free trial has ended. Subscribe to keep using AI analysis features.';
+          : 'Your trial has ended. Subscribe to keep using AI analysis features.';
         showSubscriptionModal(message);
         return;
       }
@@ -3799,7 +3799,7 @@ function applySubscriptionBadge(upgradeBtn, status, snaptoai_dev_override) {
       upgradeBtn.textContent = `Trial ending in ${status.daysRemaining} day${status.daysRemaining === 1 ? '' : 's'}`;
       upgradeBtn.className = 'upgrade-btn upgrade-btn-urgent';
     } else {
-      upgradeBtn.textContent = `Free trial · ${status.daysRemaining} days left`;
+      upgradeBtn.textContent = `Trial · ${status.daysRemaining} days left`;
       upgradeBtn.className = 'upgrade-btn upgrade-btn-trial';
     }
   } else if (status.status === 'trial_expired' || status.status === 'subscription_expired' || status.status === 'expired' || (status.status === 'trial' && status.daysRemaining <= 0)) {
@@ -3863,7 +3863,7 @@ function updateAiButtonState() {
       aiButton.innerHTML = '<span class="setup-cta-main">● AI Ready</span><span class="setup-cta-sub">Manage</span>';
       aiButton.className = 'setup-cta setup-cta-connected';
     } else {
-      aiButton.innerHTML = '<span class="setup-cta-main">✨ Connect Free Gemini Key</span><span class="setup-cta-sub">20 free prompts/day</span>';
+      aiButton.innerHTML = '<span class="setup-cta-main">✨ Connect Gemini Key</span><span class="setup-cta-sub">20 prompts/day included</span>';
       aiButton.className = 'setup-cta';
     }
   });
@@ -4191,7 +4191,7 @@ async function sendToGemini(prompt, isRetry = false) {
         startCooldown(retrySeconds);
         setTimeout(() => sendToGemini(prompt, true), retrySeconds * 1000);
       } else {
-        addChatBubble('🚫 Free limit reached for now. Try again in a minute, or copy your image to use with another AI!', 'ai');
+        addChatBubble('🚫 Limit reached for now. Try again in a minute, or copy your image to use with another AI!', 'ai');
         aiSendBtn.disabled = false;
       }
       console.log('[SnapToAI] Rate limit hit, retry:', aiRetryCount);
