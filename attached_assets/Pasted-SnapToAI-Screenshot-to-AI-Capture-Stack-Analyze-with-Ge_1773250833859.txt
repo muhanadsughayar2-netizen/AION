@@ -1,0 +1,25 @@
+SnapToAI: Screenshot to AI — Capture, Stack & Analyze with Gemini
+Stop Typing. Start Snapping. Transform your screen into instant intelligence.
+
+SnapToAI is the ultimate productivity bridge that connects your browser directly to the world’s most powerful AI. Whether you are a developer debugging code, a student tackling complex charts, or a researcher analyzing data, SnapToAI turns any visual on your screen into a conversation.
+
+🚀 Why SnapToAI is Different:
+📸 Instant Visual Intelligence: Don't just take a screenshot—understand it. Capture any part of your screen and get instant explanations, summaries, or translations.
+📚 The "Stack & Conquer" Feature (Unique!): Why analyze one image when you can analyze ten? Combine multiple screenshots into a single dataset for the AI to find patterns, summarize whole workflows, or compare data across different tabs.
+🧙 Magic Agent Army: Choose your specialist! Use custom-tuned AI agents like the Tutor (for learning), the Market Analyst (for charts), the Coder (for snippets), or the Writer (for content).
+⚡ Powered by Gemini 3.0 Flash (Preview) : Leverage Google’s cutting-edge Vision models for industry-leading accuracy in OCR and image reasoning.
+💰 Maximize Your Value: We show you how to leverage the $300 Google Cloud Credit to power your own AI journey for free!
+🛠 Perfect For:
+Developers: Snap an error message or a code block and get a fix instantly.
+Students: Capture lecture slides or diagrams and have the "Tutor Agent" explain them.
+Business Pros: Snap market charts and let the "Analyst Agent" find the trends.
+Language Learners: Translate and explain text from images in seconds.
+🎁 Pricing & Trial:
+Start your journey with 20 FREE daily prompts and a 30-day trial of all premium features!
+
+No Credit Card Required to start.
+Simple, transparent subscription via LemonSqueezy to keep your productivity at 100%.
+🔒 Privacy & Security First:
+Your data is yours. We use enterprise-grade encrypted APIs to process your requests. We never sell your data or store your screenshots longer than necessary to provide your AI response.
+
+Stop wasting time manually transcribing data. Download SnapToAI today and let your screen talk back!
