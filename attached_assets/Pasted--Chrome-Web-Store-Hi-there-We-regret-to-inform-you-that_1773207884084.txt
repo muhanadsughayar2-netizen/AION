@@ -1,0 +1,69 @@
+
+Chrome Web Store
+ 
+Hi there,
+
+We regret to inform you that the most recent submission of your item was rejected. Please find the details below.
+
+
+Item name: SnapToAI - Screenshot to AI
+
+Item ID: oojjcoiimphlplollpgjckcjejlamhjh.
+
+Violation(s):
+
+Violation reference ID: Blue Argon
+
+Technical Requirements - Additional Requirements for Manifest V3:
+
+Violation:
+Including remotely hosted code in a Manifest V3 item.
+Violating Content:
+Code snippet: jspdf.min.js: var o = "https://cdnjs.cloudflare.com/ajax/libs/pdfobject/2.1.1/pdfobject.min.js", s = ' integrity="sha512-4ze/a9/4jqu+tX9dfOqJYSvyYd5M6qum/3HpCLr+/Jqf0whc37VUbkpNGHR7/8pSnCFw47T1fmIpwBV7UySh3g==" crossorigin="anonymous"'; e.pdfObjectUrl && (o = e.pdfObjectUrl, s = ""); var c = '<html><style>html, body { padding: 0; margin: 0; } iframe { width: 100%; height: 100%; border: 0;} </style><body><script src="' + o + '"' + s + '><\/script><script >PDFObject.embed("' + this.output("dataurlstring") + '", ' + JSON.stringify(e) + ");<\/script></body></html>",
+How to rectify: Ensure that all logic related to the extensions operation is included in the extension package. For more information please refer to the documentation on removing remotely hosted code & migration checklist on Manifest V3 version.
+Relevant section of the program policy:
+Extensions using Manifest V3 must meet additional requirements related to the extension's code. Specifically, the full functionality of an extension must be easily discernible from its submitted code. (learn more)
+
+
+Inaccurate Description - Non functional:
+
+Violation reference ID: Red Potassium
+Violation:
+The following functionality stated in the item's description are not working or were not reproducible in our review:
+"Capture screenshots of webpage content"
+How to rectify: Ensure the above functionality is working or remove the corresponding source code from the package.
+Relevant section of the program policy:
+If any of your Product's content, title, icon, description or screenshots contains false or misleading information, we may remove it. (learn more)
+
+
+This violation was detected as a result of an internal review. Learn more about enforcement here.
+
+Do you believe this was a mistake?
+
+If you believe that this decision was made in error, you may submit an appeal using this form.
+
+If you are located in the EU, you can also learn about additional redress options that may be available to you here.
+
+Routing ID: FZSL
+
+
+We value developer contributions to the Chrome Web Store, and look forward to helping you bring your item into compliance with our policies.
+
+Thanks,
+
+Chrome Web Store Developer Support
+
+------------------------------------------------------
+Developer Terms of Service
+Program Policies
+Branding Guidelines
+
+ 
+ 
+ 
+ 
+Google
+© 2026 Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043 , USA
+Email Preferences: You have received this mandatory email service announcement to update you about important changes to your Chrome Web Store developer account.
+The English language version of the Developer Program Policies will control and translations, if any, are non-binding and for reference only.
+

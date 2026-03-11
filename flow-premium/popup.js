@@ -10,8 +10,9 @@ async function checkAuthState() {
   const userAvatarContainer = document.getElementById('userAvatarContainer');
   const userAvatar = document.getElementById('userAvatar');
 
+  if (authOverlay) authOverlay.style.display = 'none';
+
   if (result.snaptoai_user) {
-    if (authOverlay) authOverlay.style.display = 'none';
     if (userAvatarContainer) {
       userAvatarContainer.style.display = 'flex';
       if (userAvatar) userAvatar.src = result.snaptoai_user.picture || '';
@@ -19,7 +20,6 @@ async function checkAuthState() {
     const accountEmail = document.getElementById('accountEmail');
     if (accountEmail) accountEmail.textContent = result.snaptoai_user.email || '';
   } else {
-    if (authOverlay) authOverlay.style.display = 'flex';
     if (userAvatarContainer) userAvatarContainer.style.display = 'none';
   }
 }
