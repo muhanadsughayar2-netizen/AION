@@ -9,10 +9,12 @@ async function checkAuthState() {
   const authOverlay = document.getElementById('authOverlay');
   const userAvatarContainer = document.getElementById('userAvatarContainer');
   const userAvatar = document.getElementById('userAvatar');
+  const signInHeaderBtn = document.getElementById('signInHeaderBtn');
 
   if (authOverlay) authOverlay.style.display = 'none';
 
   if (result.snaptoai_user) {
+    if (signInHeaderBtn) signInHeaderBtn.style.display = 'none';
     if (userAvatarContainer) {
       userAvatarContainer.style.display = 'flex';
       if (userAvatar) userAvatar.src = result.snaptoai_user.picture || '';
@@ -20,6 +22,7 @@ async function checkAuthState() {
     const accountEmail = document.getElementById('accountEmail');
     if (accountEmail) accountEmail.textContent = result.snaptoai_user.email || '';
   } else {
+    if (signInHeaderBtn) signInHeaderBtn.style.display = 'inline-flex';
     if (userAvatarContainer) userAvatarContainer.style.display = 'none';
   }
 }
@@ -162,6 +165,22 @@ function setupAuthListeners() {
 
   const signOutBtn = document.getElementById('signOutBtn');
   if (signOutBtn) signOutBtn.addEventListener('click', handleSignOut);
+
+  const signInHeaderBtn = document.getElementById('signInHeaderBtn');
+  if (signInHeaderBtn) {
+    signInHeaderBtn.addEventListener('click', () => {
+      const authOverlay = document.getElementById('authOverlay');
+      if (authOverlay) authOverlay.style.display = 'flex';
+    });
+  }
+
+  const authCloseBtn = document.getElementById('authCloseBtn');
+  if (authCloseBtn) {
+    authCloseBtn.addEventListener('click', () => {
+      const authOverlay = document.getElementById('authOverlay');
+      if (authOverlay) authOverlay.style.display = 'none';
+    });
+  }
 
   const userAvatarContainer = document.getElementById('userAvatarContainer');
   const accountPopover = document.getElementById('accountPopover');
@@ -3830,7 +3849,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
   
-  await refreshSubscriptionUI();
+  refreshSubscriptionUI();
   
   loadGeminiKey();
   updateAiButtonState();
