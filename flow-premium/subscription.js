@@ -214,10 +214,45 @@ async function refreshSubscription() {
   return { success: false, error: result ? 'No active subscription found for this account' : 'Could not reach server. Please check your connection.' };
 }
 
+let checkoutPollTimer = null;
+let checkoutPollCount = 0;
+const CHECKOUT_POLL_INTERVAL = 4000;
+const CHECKOUT_POLL_MAX = 90;
+
 function openCheckout(plan = 'yearly') {
   const urls = getCheckoutUrls();
   const url = plan === 'monthly' ? urls.monthly : urls.yearly;
   chrome.tabs.create({ url });
+  startCheckoutPolling();
+}
+
+function startCheckoutPolling() {
+  stopCheckoutPolling();
+  checkoutPollCount = 0;
+  checkoutPollTimer = setInterval(async () => {
+    checkoutPollCount++;
+    if (checkoutPollCount > CHECKOUT_POLL_MAX) {
+      stopCheckoutPolling();
+      return;
+    }
+    const email = await getSignedInEmail();
+    if (!email) return;
+    const result = await checkSubscriptionWithServer(email);
+    if (result && result.canUseAI && result.status === 'subscribed') {
+      stopCheckoutPolling();
+      if (typeof window !== 'undefined' && window.onSubscriptionActivated) {
+        window.onSubscriptionActivated(result);
+      }
+    }
+  }, CHECKOUT_POLL_INTERVAL);
+}
+
+function stopCheckoutPolling() {
+  if (checkoutPollTimer) {
+    clearInterval(checkoutPollTimer);
+    checkoutPollTimer = null;
+  }
+  checkoutPollCount = 0;
 }
 
 function getCheckoutUrls() {

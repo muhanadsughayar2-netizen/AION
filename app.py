@@ -1121,6 +1121,39 @@ def debug_ip_trials():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+def _check_whop_api_for_email(email):
+    """Direct Whop API check - finds active membership by email.
+    Returns dict with plan_type and membership_id if found, None otherwise."""
+    whop_api_key = os.environ.get('WHOP_API_KEY', '')
+    if not whop_api_key:
+        return None
+    try:
+        resp = requests.get(
+            'https://api.whop.com/api/v2/memberships',
+            headers={'Authorization': f'Bearer {whop_api_key}'},
+            params={'email': email, 'valid': 'true'},
+            timeout=8
+        )
+        if resp.status_code != 200:
+            print(f'Whop API check failed: status {resp.status_code}')
+            return None
+        data = resp.json()
+        memberships = data.get('data', [])
+        if not memberships:
+            return None
+        m = memberships[0]
+        plan_id = m.get('plan_id', '') or m.get('plan', {}).get('id', '')
+        monthly_plan_id = os.environ.get('MONTHLY_PLAN_ID', '')
+        yearly_plan_id = os.environ.get('YEARLY_PLAN_ID', '')
+        plan_type = 'monthly' if plan_id == monthly_plan_id else ('yearly' if plan_id == yearly_plan_id else 'unknown')
+        membership_id = m.get('id', '')
+        print(f'Whop API: found active membership for {email}, plan={plan_type}, id={membership_id}')
+        return {'plan_type': plan_type, 'membership_id': membership_id}
+    except Exception as e:
+        print(f'Whop API check error: {e}')
+        return None
+
+
 @app.route('/api/subscription/status', methods=['POST', 'OPTIONS'])
 def subscription_status():
     if request.method == 'OPTIONS':
@@ -1191,6 +1224,29 @@ def subscription_status():
                     response.headers['Access-Control-Allow-Origin'] = '*'
                     return response
 
+        whop_result = _check_whop_api_for_email(email)
+        if whop_result:
+            cur.execute('''
+                INSERT INTO subscriptions (email, whop_membership_id, plan_type, status, subscription_start, updated_at, last_verified)
+                VALUES (%s, %s, %s, 'active', NOW(), NOW(), NOW())
+                ON CONFLICT (email) DO UPDATE SET
+                    whop_membership_id = COALESCE(EXCLUDED.whop_membership_id, subscriptions.whop_membership_id),
+                    plan_type = EXCLUDED.plan_type,
+                    status = 'active',
+                    subscription_start = COALESCE(subscriptions.subscription_start, NOW()),
+                    subscription_end = NULL,
+                    updated_at = NOW(),
+                    last_verified = NOW()
+            ''', (email, whop_result.get('membership_id', ''), whop_result.get('plan_type', 'unknown')))
+            conn.commit()
+            cur.close()
+            conn.close()
+            result = {'success': True, 'canUseAI': True, 'status': 'subscribed', 'planType': whop_result.get('plan_type', 'unknown'), 'daysRemaining': None}
+            response = jsonify(result)
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            return response
+
+        if sub_row:
             if trial_start and trial_end:
                 days_remaining = max(0, int((trial_end - now_ms) / 86400000))
                 can_use = days_remaining > 0

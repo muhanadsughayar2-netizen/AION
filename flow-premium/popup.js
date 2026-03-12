@@ -3644,20 +3644,28 @@ async function handleRefreshSubscription() {
     }
   }
 
-  if (refreshSubscriptionBtn) refreshSubscriptionBtn.textContent = '🔄 I\'ve subscribed — Refresh';
+  if (refreshSubscriptionBtn) refreshSubscriptionBtn.textContent = '🔄 Check subscription status';
 }
 
 if (subMonthlyBtn) subMonthlyBtn.addEventListener('click', () => {
   if (window.SnapToAISubscription) {
     window.SnapToAISubscription.openCheckout('monthly');
+    if (refreshSubscriptionBtn) refreshSubscriptionBtn.textContent = '⏳ Waiting for payment...';
   }
 });
 
 if (subYearlyBtn) subYearlyBtn.addEventListener('click', () => {
   if (window.SnapToAISubscription) {
     window.SnapToAISubscription.openCheckout('yearly');
+    if (refreshSubscriptionBtn) refreshSubscriptionBtn.textContent = '⏳ Waiting for payment...';
   }
 });
+
+window.onSubscriptionActivated = (result) => {
+  hideSubscriptionModal();
+  refreshSubscriptionUI();
+  showGeminiModal();
+};
 
 if (refreshSubscriptionBtn) refreshSubscriptionBtn.addEventListener('click', handleRefreshSubscription);
 if (subscriptionCloseBtn) subscriptionCloseBtn.addEventListener('click', hideSubscriptionModal);
