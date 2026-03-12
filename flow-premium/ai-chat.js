@@ -1338,7 +1338,7 @@ if (chatThreadElement) {
 function updateVerdictButtonVisibility() {
   const verdictBtn = document.getElementById('verdictBtn');
   if (verdictBtn) {
-    verdictBtn.style.display = currentImages.length > 0 ? 'inline-block' : 'none';
+    verdictBtn.style.display = 'none';
   }
 }
 
