@@ -48,6 +48,11 @@
   perspective: 1000px;
 }
 
+.text-stroke-dark {
+  -webkit-text-stroke: 1px rgba(0,0,0,0.3);
+  paint-order: stroke fill;
+}
+
 .font-display {
   font-family: var(--font-display);
 }

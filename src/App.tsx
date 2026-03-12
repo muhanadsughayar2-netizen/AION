@@ -32,12 +32,15 @@ export default function App() {
 
   return (
     <div className="w-full h-screen bg-[#0a0a1a] overflow-hidden text-white font-body relative">
-      {/* Persistent Background */}
+      {/* Persistent Background - subtle animated gradient */}
+      <div className="absolute inset-0 z-0" style={{
+        background: 'radial-gradient(ellipse at 50% 50%, #0d1b2a 0%, #0a0a1a 60%, #050510 100%)'
+      }} />
       <motion.div 
-        className="absolute inset-0 opacity-40 z-0"
+        className="absolute inset-0 z-[1] opacity-10"
         animate={{
-          scale: [1, 1.1, 1],
-          rotate: [0, 2, 0]
+          scale: [1, 1.05, 1],
+          rotate: [0, 1, 0]
         }}
         transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
       >
@@ -46,25 +49,25 @@ export default function App() {
       
       {/* Floating Orbs */}
       <motion.div
-        className="absolute top-1/4 left-1/4 w-[40vw] h-[40vw] rounded-full bg-[#00d9ff] blur-[120px] mix-blend-screen z-0"
+        className="absolute top-[60%] left-[10%] w-[30vw] h-[30vw] rounded-full bg-[#00d9ff] blur-[120px] mix-blend-screen z-[2]"
         animate={{
-          x: currentScene % 2 === 0 ? '10vw' : '-10vw',
-          y: currentScene % 3 === 0 ? '10vh' : '-10vh',
-          opacity: currentScene === 1 ? 0.1 : 0.3,
+          x: currentScene % 2 === 0 ? '5vw' : '-5vw',
+          y: currentScene % 3 === 0 ? '5vh' : '-5vh',
+          opacity: currentScene === 1 ? 0.05 : 0.1,
           scale: currentScene === 6 ? 1.5 : 1
         }}
         transition={{ duration: 3, ease: "easeInOut" }}
       />
       <motion.div
-        className="absolute bottom-1/4 right-1/4 w-[30vw] h-[30vw] rounded-full bg-blue-600 blur-[100px] mix-blend-screen z-0"
+        className="absolute top-[10%] right-[10%] w-[25vw] h-[25vw] rounded-full bg-blue-600 blur-[100px] mix-blend-screen z-[2]"
         animate={{
-          x: currentScene % 2 === 0 ? '-10vw' : '10vw',
-          opacity: currentScene === 1 ? 0.2 : 0.4
+          x: currentScene % 2 === 0 ? '-5vw' : '5vw',
+          opacity: currentScene === 1 ? 0.05 : 0.1
         }}
         transition={{ duration: 4, ease: "easeInOut" }}
       />
 
-      <div className="absolute inset-0 z-10 perspective-1000">
+      <div className="absolute inset-0 z-[10] perspective-1000">
         <AnimatePresence mode="wait">
           {currentScene === 0 && <Scene1Hook key="scene1" />}
           {currentScene === 1 && <Scene2Problem key="scene2" />}
@@ -90,7 +93,8 @@ function Scene1Hook() {
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
     >
       <motion.h2 
-        className="text-[3vw] font-display text-gray-400 mb-[4vh] tracking-widest uppercase"
+        className="text-[3.5vw] font-display text-white/80 mb-[4vh] tracking-widest uppercase"
+        style={{ textShadow: '0 0 40px rgba(0,217,255,0.3)' }}
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.8 }}
@@ -99,15 +103,15 @@ function Scene1Hook() {
       </motion.h2>
 
       <motion.div 
-        className="flex items-center gap-4 text-[8vw] font-display font-bold leading-none"
+        className="flex items-center gap-6 text-[10vw] font-display font-bold leading-none"
         initial={{ scale: 0.5, opacity: 0, rotateX: 45 }}
         animate={{ scale: 1, opacity: 1, rotateX: 0 }}
         transition={{ delay: 0.5, type: "spring", stiffness: 100, damping: 20 }}
       >
-        <span className="text-white">SNAP</span>
-        <span className="text-[#00d9ff] text-glow">TO AI</span>
+        <span className="text-white" style={{ textShadow: '0 0 30px rgba(255,255,255,0.3)' }}>SNAP</span>
+        <span className="text-[#00d9ff]" style={{ textShadow: '0 0 60px rgba(0,217,255,0.8), 0 0 120px rgba(0,217,255,0.4)' }}>TO AI</span>
         <motion.span 
-          className="text-[6vw]"
+          className="text-[7vw]"
           animate={{ rotate: [0, 15, -15, 0] }}
           transition={{ delay: 1.5, duration: 0.5, ease: "easeInOut" }}
         >
@@ -116,7 +120,8 @@ function Scene1Hook() {
       </motion.div>
 
       <motion.p 
-        className="mt-[6vh] text-[2.5vw] font-display tracking-widest text-cyan-200"
+        className="mt-[6vh] text-[2.8vw] font-display tracking-widest text-white"
+        style={{ textShadow: '0 0 30px rgba(0,217,255,0.5)' }}
         initial={{ clipPath: "polygon(0 0, 0 0, 0 100%, 0% 100%)" }}
         animate={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 0% 100%)" }}
         transition={{ delay: 1.5, duration: 1, ease: "circOut" }}
@@ -151,7 +156,8 @@ function Scene2Problem() {
 
       <motion.div className="z-10 text-center">
         <motion.h2 
-          className="text-[5vw] font-display font-bold uppercase tracking-tight"
+          className="text-[6vw] font-display font-bold uppercase tracking-tight text-white"
+          style={{ textShadow: '0 0 40px rgba(0,0,0,0.8), 0 0 80px rgba(0,217,255,0.3)' }}
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.8 }}
@@ -263,13 +269,14 @@ function Scene4Analysis() {
       transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
     >
       <motion.h2 
-        className="text-[4vw] font-display font-bold uppercase text-center mb-[4vh]"
+        className="text-[4.5vw] font-display font-bold uppercase text-center mb-[4vh] text-white"
+        style={{ textShadow: '0 0 40px rgba(0,0,0,0.5)' }}
         initial={{ y: -30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.5 }}
       >
         Instant AI analysis<br/>
-        <span className="text-[#00d9ff]">powered by Google Gemini</span>
+        <span className="text-[#00d9ff]" style={{ textShadow: '0 0 40px rgba(0,217,255,0.6)' }}>powered by Google Gemini</span>
       </motion.h2>
 
       <div className="w-[70vw] h-[50vh] glass rounded-2xl p-[2vw] relative overflow-hidden flex flex-col">
@@ -337,13 +344,14 @@ function Scene5Agents() {
       transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
     >
       <motion.h2 
-        className="text-[5vw] font-display font-bold uppercase text-center"
+        className="text-[6vw] font-display font-bold uppercase text-center text-white"
+        style={{ textShadow: '0 0 40px rgba(0,0,0,0.5)' }}
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.5 }}
       >
         Build your own<br/>
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00d9ff] to-purple-400">AI Agents</span>
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00d9ff] to-purple-400" style={{ filter: 'drop-shadow(0 0 20px rgba(0,217,255,0.5))' }}>AI Agents</span>
       </motion.h2>
 
       <motion.p 
@@ -399,13 +407,14 @@ function Scene6Privacy() {
       </motion.div>
 
       <motion.h2 
-        className="text-[4vw] font-display font-bold uppercase text-center leading-tight"
+        className="text-[5vw] font-display font-bold uppercase text-center leading-tight text-white"
+        style={{ textShadow: '0 0 40px rgba(0,0,0,0.5)' }}
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 1 }}
       >
         Your data stays<br/>
-        <span className="text-[#00d9ff]">in your browser</span>
+        <span className="text-[#00d9ff]" style={{ textShadow: '0 0 40px rgba(0,217,255,0.6)' }}>in your browser</span>
       </motion.h2>
 
       <motion.div 
@@ -464,17 +473,18 @@ function Scene7Closing() {
       transition={{ duration: 1 }}
     >
       <motion.div 
-        className="text-[12vw] font-display font-bold leading-none flex items-center gap-4 mb-[4vh]"
+        className="text-[12vw] font-display font-bold leading-none flex items-center gap-6 mb-[4vh]"
         initial={{ scale: 1.5, filter: "blur(20px)" }}
         animate={{ scale: 1, filter: "blur(0px)" }}
         transition={{ duration: 1.5, ease: "circOut" }}
       >
-        <span className="text-white">SNAP</span>
-        <span className="text-[#00d9ff] text-glow">TO AI</span>
+        <span className="text-white" style={{ textShadow: '0 0 40px rgba(255,255,255,0.4)' }}>SNAP</span>
+        <span className="text-[#00d9ff]" style={{ textShadow: '0 0 80px rgba(0,217,255,0.8), 0 0 150px rgba(0,217,255,0.4)' }}>TO AI</span>
       </motion.div>
 
       <motion.h2 
-        className="text-[3vw] font-display tracking-widest text-cyan-100 uppercase text-center"
+        className="text-[3.5vw] font-display tracking-widest text-white uppercase text-center"
+        style={{ textShadow: '0 0 30px rgba(0,217,255,0.4)' }}
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 1 }}
