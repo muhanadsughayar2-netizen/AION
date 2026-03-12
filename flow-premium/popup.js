@@ -1673,13 +1673,11 @@ async function handleOrbClick() {
 async function handleSnipClick() {
   const snipButton = document.getElementById('snipButton');
   
-  // Disable button during operation
   snipButton.disabled = true;
   
   try {
     setStatus('Capturing for snip...', 'active');
     
-    // Capture screenshot WITHOUT saving to queue (just get the dataUrl)
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
     
@@ -1688,14 +1686,17 @@ async function handleSnipClick() {
       
       incrementCaptureCount('capture_snip');
       
-      // Open annotation window in SNIP MODE (crop mode)
+      // Store image in chrome.storage with unique ID (URL params fail on large/high-DPI screenshots)
+      const snipId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      await chrome.storage.local.set({ ['snipImage_' + snipId]: dataUrl });
+      
       const width = 1200;
       const height = 800;
       const left = (screen.width - width) / 2;
       const top = (screen.height - height) / 2;
       
       window.open(
-        `annotate.html?mode=snip&img=${encodeURIComponent(dataUrl)}`,
+        `annotate.html?mode=snip&snipId=${snipId}`,
         'Snip',
         `width=${width},height=${height},left=${left},top=${top}`
       );

@@ -961,9 +961,11 @@ async function loadImage() {
     return;
   }
   
-  // Legacy mode - load from URL param (for small images/snip mode)
-  const imageUrl = urlParams.get('img');
-  if (imageUrl) {
+  // Snip mode: load from chrome.storage (preferred) or URL param (legacy fallback)
+  const snipId = urlParams.get('snipId');
+  let snipImageUrl = urlParams.get('img') || null;
+  
+  const loadSnipImage = (imageUrl, storageKey) => {
     const img = new Image();
     img.onload = () => {
       canvas.width = img.width;
@@ -971,16 +973,17 @@ async function loadImage() {
       ctx.drawImage(img, 0, 0);
       originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
       
-      // Redraw immediately to apply default border styling
-      redraw();
-      updateCssBorder(); // Apply CSS border on wrapper
+      // Clean up storage only after successful decode
+      if (storageKey) {
+        chrome.storage.local.remove([storageKey]);
+      }
       
-      // Push initial state to history (enables undo)
+      redraw();
+      updateCssBorder();
+      
       pushHistory();
       updateHistoryButtons();
       
-      
-      // Load real URL for browser frame (same as full-page)
       (async () => {
         try {
           const stored = await chrome.storage.session.get(['lastCapturedPageUrl']);
@@ -996,7 +999,27 @@ async function loadImage() {
         }
       })();
     };
+    img.onerror = () => {
+      updateStatus('Failed to load snip image. Please try capturing again.');
+    };
     img.src = imageUrl;
+  };
+  
+  if (isSnipMode && snipId) {
+    const storageKey = 'snipImage_' + snipId;
+    try {
+      const stored = await chrome.storage.local.get([storageKey]);
+      if (stored[storageKey]) {
+        loadSnipImage(stored[storageKey], storageKey);
+        return;
+      }
+    } catch (e) {}
+  }
+  
+  if (snipImageUrl) {
+    loadSnipImage(snipImageUrl, null);
+  } else if (isSnipMode) {
+    updateStatus('Snip image expired. Please capture again.');
   }
 }
 
