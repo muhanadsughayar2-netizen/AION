@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "DZyebs5ayRflrM55AJABE"
+uri = "file://snaptoai-video.tar.gz"
+type = "unspecified"
+title = "SnapToAI Video (Website Package)"
