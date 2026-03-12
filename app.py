@@ -1231,6 +1231,13 @@ def subscription_status():
                     response.headers['Access-Control-Allow-Origin'] = '*'
                     return response
 
+            if status == 'expired':
+                was_subscriber = True
+            else:
+                was_subscriber = False
+        else:
+            was_subscriber = False
+
         whop_result = _check_whop_api_for_email(email)
         if whop_result:
             cur.execute('''
@@ -1254,6 +1261,14 @@ def subscription_status():
             return response
 
         if sub_row:
+            if was_subscriber:
+                cur.close()
+                conn.close()
+                result = {'success': True, 'canUseAI': False, 'status': 'subscription_expired', 'planType': None, 'daysRemaining': 0}
+                response = jsonify(result)
+                response.headers['Access-Control-Allow-Origin'] = '*'
+                return response
+
             if trial_start and trial_end:
                 days_remaining = max(0, int((trial_end - now_ms) / 86400000))
                 can_use = days_remaining > 0
