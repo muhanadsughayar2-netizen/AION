@@ -16,15 +16,15 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "SnapToAI Video"
+args = "Landing Page"
 
 [[workflows.workflow]]
-name = "SnapToAI Video"
+name = "Landing Page"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npx serve dist -l 5000 -s"
+args = "python3 app.py"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
