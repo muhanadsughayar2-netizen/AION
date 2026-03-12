@@ -16,35 +16,19 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Landing Page"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "SnapToAI Video"
-
-[[workflows.workflow]]
-name = "Landing Page"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python3 app.py"
-waitForPort = 5000
-
-[workflows.workflow.metadata]
-outputType = "webview"
 
 [[workflows.workflow]]
 name = "SnapToAI Video"
 author = "agent"
 
-[workflows.workflow.metadata]
-outputType = "console"
-
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npx vite --config vite.config.ts --port 5173"
-waitForPort = 5173
+args = "npx vite --config vite.config.ts --port 5000"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
 
 [[ports]]
 localPort = 5000
