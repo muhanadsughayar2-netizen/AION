@@ -2378,16 +2378,17 @@
       }
     }
     
-    // GMAIL / OUTLOOK / ANY EMAIL APP — TESTED & WORKING DEC 2025
-    const emailContainer = document.querySelector('[role="main"]') ||
-                          document.querySelector('.aDP') ||
-                          document.querySelector('[jscontroller="eI9zEe"]') ||
-                          document.querySelector('.nH.aqK') ||
-                          document.querySelector('[gh="tm"]') ||
-                          document.querySelector('.AD');
-    if (emailContainer && emailContainer.scrollHeight > window.innerHeight + 1000) {
-      console.log('[SnapToAI TESTED] EMAIL INBOX DETECTED — scrolling the real message list!');
-      return emailContainer;
+    // GMAIL / OUTLOOK — Only check email-specific selectors on actual email domains
+    const isEmailDomain = host.includes('mail.google.com') || host.includes('outlook.office.com') || host.includes('outlook.live.com');
+    if (isEmailDomain) {
+      const emailSelectors = ['.aDP', '[jscontroller="eI9zEe"]', '.nH.aqK', '[gh="tm"]', '.AD', '.aeF'];
+      for (const sel of emailSelectors) {
+        const el = document.querySelector(sel);
+        if (el && el.scrollHeight > window.innerHeight + 200) {
+          console.log('[SnapToAI] Email container found:', sel, 'scrollHeight:', el.scrollHeight);
+          return el;
+        }
+      }
     }
     
     // Platforms with internal scroll containers (check Tier-0 first)
@@ -2647,36 +2648,20 @@
   function expandForFullPage(scrollContainer) {
     const originalStyles = new Map();
     
-    // Build list: html, body, scrollContainer, and all ancestors
+    // Only expand html and body — NOT all ancestors (breaks modern CSS layouts)
     const elementsToExpand = [document.documentElement, document.body];
     
-    if (scrollContainer) {
-      elementsToExpand.push(scrollContainer);
-      // Add all ancestors
-      let parent = scrollContainer.parentElement;
-      while (parent && parent !== document.documentElement) {
-        elementsToExpand.push(parent);
-        parent = parent.parentElement;
-      }
-    }
-    
-    // Expand each element
     for (const el of elementsToExpand) {
-      saveAndSetStyle(el, 'overflow', 'visible', originalStyles);
-      saveAndSetStyle(el, 'overflowX', 'visible', originalStyles);
-      saveAndSetStyle(el, 'overflowY', 'visible', originalStyles);
-      saveAndSetStyle(el, 'height', 'auto', originalStyles);
+      if (!el) continue;
+      const computed = window.getComputedStyle(el);
+      // Only change overflow if it's actually hidden (don't touch visible/auto/scroll)
+      if (computed.overflow === 'hidden' || computed.overflowY === 'hidden') {
+        saveAndSetStyle(el, 'overflowY', 'visible', originalStyles);
+      }
       saveAndSetStyle(el, 'maxHeight', 'none', originalStyles);
-      saveAndSetStyle(el, 'position', 'static', originalStyles);
     }
     
-    // Force scrollContainer to show full content
-    if (scrollContainer) {
-      saveAndSetStyle(scrollContainer, 'height', scrollContainer.scrollHeight + 'px', originalStyles);
-      saveAndSetStyle(scrollContainer, 'minHeight', '100vh', originalStyles);
-    }
-    
-    console.log(`[SnapToAI] Expanded ${elementsToExpand.length} elements for full page capture`);
+    console.log(`[SnapToAI] Expanded ${originalStyles.size} element styles for full page capture`);
     return originalStyles;
   }
   
@@ -2723,6 +2708,7 @@
     if (!preflight.canCapture) {
       showToast('Cannot capture this page: ' + preflight.errors.join(', '), 'error');
       isFullPageCaptureRunning = false;
+      try { chrome.runtime.sendMessage({ action: 'fullPageStitchFailed' }); } catch (e) {}
       return { success: false, error: preflight.errors.join(', ') };
     }
     
@@ -2732,6 +2718,7 @@
     if (totalSegments > maxSegments) {
       showToast('Page too long for full capture (80+ pages)', 'error');
       isFullPageCaptureRunning = false;
+      try { chrome.runtime.sendMessage({ action: 'fullPageStitchFailed' }); } catch (e) {}
       return { success: false, error: 'page_too_long' };
     }
     
@@ -2813,15 +2800,17 @@
       if (isNoFullPageSite) {
         console.log('[SnapToAI] Full-page capture disabled on this site:', location.hostname);
         showToast('Full-page not available on this site. Use regular Snap instead.', 'warning');
-        return; // Exit early - no error, just graceful skip
+        isFullPageCaptureRunning = false;
+        try { chrome.runtime.sendMessage({ action: 'fullPageStitchFailed' }); } catch (e) {}
+        return { success: false, error: 'site_not_supported' };
       }
       
       // FORCE WINDOW SCROLL for known problematic sites
       const isGmail = location.hostname.includes('mail.google.com');
       const isGoogleDocsPage = location.hostname.includes('docs.google.com');
       const isGoogleSearch = location.hostname.includes('google.') && location.pathname.includes('/search');
-      // Gmail MUST use window scroll - container scroll does not work
-      const forceWindowScroll = isGoogleSearch || isGmail;
+      // Only force window scroll for Google Search - Gmail uses internal containers
+      const forceWindowScroll = isGoogleSearch;
       
       // GOOGLE DOCS SPECIAL HANDLING: Use .kix-appview-editor as scroll container
       let docsEditorFound = false;
@@ -2836,51 +2825,11 @@
         }
       }
       
-      // GMAIL SPECIAL HANDLING: Find the actual scrollable container
+      // GMAIL: Use the container already found by findScrollableContainer (which checks email-specific selectors)
       let gmailContainerFound = false;
-      if (isGmail) {
-        // Gmail has nested scroll containers - need to find the right one
-        // Priority: Email thread view > Inbox list > Main container
-        const gmailSelectors = [
-          '.aeF',                    // Main inbox/thread scroll container
-          '.nH.bkK',                 // Thread view scroll container  
-          '.nH.aqK',                 // Alternative thread container
-          'div[role="main"] .nH',    // Main role container
-          '.AO',                     // Conversation view
-          '.bkK .nH',                // Nested inbox view
-          '[gh="tl"]',               // Thread list
-          '.Bs.nH .nH'               // Email body scroll
-        ];
-        
-        for (const selector of gmailSelectors) {
-          const el = document.querySelector(selector);
-          if (el && el.scrollHeight > viewportHeight + 50) {
-            scrollContainer = el;
-            gmailContainerFound = true;
-            console.log('[SnapToAI] Gmail - found scrollable container:', selector, 'scrollHeight:', el.scrollHeight);
-            break;
-          }
-        }
-        
-        // If no specific container found, try any scrollable div in main area
-        if (!gmailContainerFound) {
-          const mainArea = document.querySelector('[role="main"]');
-          if (mainArea) {
-            const scrollables = mainArea.querySelectorAll('div');
-            for (const el of scrollables) {
-              if (el.scrollHeight > el.clientHeight + 200 && el.clientHeight > 200) {
-                scrollContainer = el;
-                gmailContainerFound = true;
-                console.log('[SnapToAI] Gmail - found scrollable div in main area, scrollHeight:', el.scrollHeight);
-                break;
-              }
-            }
-          }
-        }
-        
-        if (!gmailContainerFound) {
-          console.log('[SnapToAI] Gmail - no scrollable container found, using window scroll');
-        }
+      if (isGmail && scrollContainer && scrollContainer.scrollHeight > viewportHeight + 50) {
+        gmailContainerFound = true;
+        console.log('[SnapToAI] Gmail - using container from findScrollableContainer, scrollHeight:', scrollContainer.scrollHeight);
       }
       
       // Initial scroll strategy - will auto-fallback to window if container doesn't work
@@ -2925,10 +2874,6 @@
       // Helper to get scroll position (safe)
       const getScrollTop = () => {
         try {
-          // Gmail uses window scroll
-          if (isGmail) {
-            return window.scrollY || window.pageYOffset || 0;
-          }
           if (useContainerScroll && scrollContainer) {
             return scrollContainer.scrollTop || 0;
           }
@@ -2941,10 +2886,6 @@
       // Helper to get max scroll height (safe)
       const getMaxScroll = () => {
         try {
-          // Gmail uses window scroll
-          if (isGmail) {
-            return (document.documentElement.scrollHeight - window.innerHeight) || 0;
-          }
           if (useContainerScroll && scrollContainer) {
             return (scrollContainer.scrollHeight - scrollContainer.clientHeight) || 0;
           }
@@ -2956,15 +2897,6 @@
       
       // SAFE scrollTo - never throws errors
       const safeScrollTo = async (position) => {
-        // Gmail: Force direct window scroll
-        if (isGmail) {
-          window.scrollTo(0, position);
-          document.documentElement.scrollTop = position;
-          document.body.scrollTop = position;
-          await new Promise(r => setTimeout(r, 150));
-          return;
-        }
-        
         try {
           if (useContainerScroll && scrollContainer) {
             scrollContainer.scrollTo({ top: position, left: 0, behavior: 'instant' });
@@ -2972,68 +2904,19 @@
             window.scrollTo({ top: position, left: 0, behavior: 'instant' });
           }
         } catch (e) {
-          // Silent fallback - try alternative syntax
           try {
             if (useContainerScroll && scrollContainer) {
               scrollContainer.scrollTop = position;
             } else {
               window.scroll(0, position);
             }
-          } catch (e2) {
-            // Completely silent - do nothing
-          }
+          } catch (e2) {}
         }
-      };
-      
-      // GMAIL SPECIAL SCROLL - uses wheel events which Gmail actually responds to
-      const gmailScroll = async (amount) => {
-        if (!isGmail) return false;
-        
-        try {
-          // Method 1: Wheel event on the container
-          const target = scrollContainer || document.querySelector('[role="main"]') || document.body;
-          const wheelEvent = new WheelEvent('wheel', {
-            deltaY: amount,
-            deltaMode: 0,
-            bubbles: true,
-            cancelable: true
-          });
-          target.dispatchEvent(wheelEvent);
-          await new Promise(r => setTimeout(r, 50));
-          
-          // Method 2: Also try keyboard scroll (Page Down)
-          if (amount > 0) {
-            const keyEvent = new KeyboardEvent('keydown', {
-              key: 'PageDown',
-              code: 'PageDown',
-              keyCode: 34,
-              which: 34,
-              bubbles: true
-            });
-            target.dispatchEvent(keyEvent);
-          }
-          
-          return true;
-        } catch (e) {
-          console.log('[SnapToAI] Gmail scroll error:', e.message);
-          return false;
-        }
+        await new Promise(r => setTimeout(r, 50));
       };
       
       // SAFE scrollBy - never throws errors
       const safeScrollBy = async (amount) => {
-        // Gmail: Force direct window scroll
-        if (isGmail) {
-          const currentPos = window.scrollY || window.pageYOffset || 0;
-          const newPos = currentPos + amount;
-          window.scrollTo(0, newPos);
-          document.documentElement.scrollTop = newPos;
-          document.body.scrollTop = newPos;
-          await new Promise(r => setTimeout(r, 150));
-          console.log(`[SnapToAI] Gmail scroll: ${currentPos} -> ${newPos} (actual: ${window.scrollY})`);
-          return;
-        }
-        
         try {
           if (useContainerScroll && scrollContainer) {
             scrollContainer.scrollBy({ top: amount, left: 0, behavior: 'instant' });
@@ -3041,17 +2924,15 @@
             window.scrollBy({ top: amount, left: 0, behavior: 'instant' });
           }
         } catch (e) {
-          // Silent fallback
           try {
             if (useContainerScroll && scrollContainer) {
               scrollContainer.scrollTop += amount;
             } else {
               window.scrollBy(0, amount);
             }
-          } catch (e2) {
-            // Completely silent - do nothing
-          }
+          } catch (e2) {}
         }
+        await new Promise(r => setTimeout(r, 50));
       };
       
       // Scroll to top first (using safe function)
@@ -3117,12 +2998,19 @@
       const hiddenFixedElements = [];
       
       const hideFixedElements = () => {
-        const shouldHideFixed = isAIPlatform || isAmazon;
-        if (!shouldHideFixed) return;
         try {
-          // Find all fixed/sticky positioned elements
-          const allElements = document.querySelectorAll('*');
-          allElements.forEach(el => {
+          // Hide fixed/sticky elements on ALL sites (they appear in every screenshot and ruin stitching)
+          // Use targeted selectors instead of querySelectorAll('*') for performance
+          const fixedSelectors = 'header, footer, nav, [role="banner"], [role="navigation"], [role="contentinfo"]';
+          const candidates = document.querySelectorAll(fixedSelectors);
+          const checkList = [...candidates];
+          // Also check direct children of body (common pattern for fixed headers/footers)
+          if (document.body) {
+            for (const child of document.body.children) {
+              if (!checkList.includes(child)) checkList.push(child);
+            }
+          }
+          checkList.forEach(el => {
             try {
               const style = window.getComputedStyle(el);
               const position = style.position;
@@ -3130,7 +3018,6 @@
               const isOurOverlay = el.id === 'snaptoai-fullpage-overlay';
               
               if (isFixed && !isOurOverlay && el.offsetHeight > 0) {
-                // Store original visibility and hide
                 hiddenFixedElements.push({
                   element: el,
                   originalVisibility: el.style.visibility,
