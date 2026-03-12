@@ -226,26 +226,38 @@ function openCheckout(plan = 'yearly') {
   startCheckoutPolling();
 }
 
+let checkoutPollInFlight = false;
+
 function startCheckoutPolling() {
   stopCheckoutPolling();
   checkoutPollCount = 0;
+  checkoutPollInFlight = false;
   checkoutPollTimer = setInterval(async () => {
+    if (checkoutPollInFlight) return;
     checkoutPollCount++;
     if (checkoutPollCount > CHECKOUT_POLL_MAX) {
       stopCheckoutPolling();
       return;
     }
-    const email = await getSignedInEmail();
-    if (!email) return;
-    const result = await checkSubscriptionWithServer(email);
-    if (result && result.canUseAI && result.status === 'subscribed') {
-      stopCheckoutPolling();
-      if (typeof window !== 'undefined' && window.onSubscriptionActivated) {
-        window.onSubscriptionActivated(result);
+    checkoutPollInFlight = true;
+    try {
+      const email = await getSignedInEmail();
+      if (!email) return;
+      const result = await checkSubscriptionWithServer(email);
+      if (result && result.canUseAI && result.status === 'subscribed') {
+        stopCheckoutPolling();
+        if (typeof window !== 'undefined' && window.onSubscriptionActivated) {
+          window.onSubscriptionActivated(result);
+        }
       }
+    } catch (e) {
+    } finally {
+      checkoutPollInFlight = false;
     }
   }, CHECKOUT_POLL_INTERVAL);
 }
+
+window.addEventListener('unload', stopCheckoutPolling);
 
 function stopCheckoutPolling() {
   if (checkoutPollTimer) {
