@@ -24,7 +24,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npx vite --config vite.config.ts --port 5000"
+args = "npx serve dist -l 5000 -s"
 waitForPort = 5000
 
 [workflows.workflow.metadata]

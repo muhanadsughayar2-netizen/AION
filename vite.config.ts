@@ -8,17 +8,13 @@ export default defineConfig({
   root: '.',
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 5000,
     allowedHosts: true,
+    hmr: false,
   },
   resolve: {
     alias: {
       '@assets': path.resolve(__dirname, 'attached_assets'),
-    },
-  },
-  build: {
-    rollupOptions: {
-      input: path.resolve(__dirname, 'index-video.html'),
     },
   },
 });
