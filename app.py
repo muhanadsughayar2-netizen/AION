@@ -1121,6 +1121,13 @@ def debug_ip_trials():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+def _get_plan_id(env_key, fallback):
+    """Get plan ID from env var, stripping URL prefixes if accidentally set as full URLs."""
+    val = os.environ.get(env_key, '') or fallback
+    if 'whop.com/checkout/' in val:
+        val = val.rstrip('/').split('/')[-1]
+    return val if val.startswith('plan_') else fallback
+
 def _check_whop_api_for_email(email):
     """Direct Whop API check - finds active membership by email.
     Returns dict with plan_type and membership_id if found, None otherwise."""
@@ -1143,8 +1150,8 @@ def _check_whop_api_for_email(email):
             return None
         m = memberships[0]
         plan_id = m.get('plan_id', '') or m.get('plan', {}).get('id', '')
-        monthly_plan_id = os.environ.get('MONTHLY_PLAN_ID', '')
-        yearly_plan_id = os.environ.get('YEARLY_PLAN_ID', '')
+        monthly_plan_id = _get_plan_id('MONTHLY_PLAN_ID', 'plan_hmWCOg7IaSal9')
+        yearly_plan_id = _get_plan_id('YEARLY_PLAN_ID', 'plan_XSjtJu7RnYLW8')
         plan_type = 'monthly' if plan_id == monthly_plan_id else ('yearly' if plan_id == yearly_plan_id else 'unknown')
         membership_id = m.get('id', '')
         print(f'Whop API: found active membership for {email}, plan={plan_type}, id={membership_id}')
@@ -1366,8 +1373,8 @@ def whop_webhook():
         plan = resource.get('plan_id', '') or resource.get('plan', {}).get('id', '')
 
         plan_type = 'unknown'
-        monthly_plan_id = os.environ.get('MONTHLY_PLAN_ID', '')
-        yearly_plan_id = os.environ.get('YEARLY_PLAN_ID', '')
+        monthly_plan_id = _get_plan_id('MONTHLY_PLAN_ID', 'plan_hmWCOg7IaSal9')
+        yearly_plan_id = _get_plan_id('YEARLY_PLAN_ID', 'plan_XSjtJu7RnYLW8')
         if plan == monthly_plan_id:
             plan_type = 'monthly'
         elif plan == yearly_plan_id:
