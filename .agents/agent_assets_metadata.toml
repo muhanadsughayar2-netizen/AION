@@ -6,3 +6,9 @@ id = "DZyebs5ayRflrM55AJABE"
 uri = "file://snaptoai-video.tar.gz"
 type = "unspecified"
 title = "SnapToAI Video (Website Package)"
+
+[[outputs]]
+id = "gCsESgqAOzb5kEQva70_l"
+uri = "file://snaptoai-video.zip"
+type = "unspecified"
+title = "SnapToAI Video - Download & Open in Browser"
