@@ -138,13 +138,16 @@ body {
   border: none;
   padding: 1px;
   cursor: pointer;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
   opacity: 0.5;
-  margin-left: 5px;
-  vertical-align: middle;
+}
+
+.youtube-btn svg {
+  width: 12px;
+  height: auto;
 }
 
 .youtube-btn:hover {
