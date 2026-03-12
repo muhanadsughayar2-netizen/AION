@@ -402,27 +402,24 @@ async function sendToGemini(prompt, imageDataUrls) {
   // Build conversation
   const contents = [];
   
-  // Add conversation history
   for (const msg of conversationHistory) {
-    contents.push({
-      role: msg.role,
-      parts: [{ text: msg.text }]
-    });
+    const msgParts = [{ text: msg.text }];
+    if (msg.images) {
+      for (const imgUrl of msg.images) {
+        const base64Data = imgUrl.split(',')[1];
+        const mimeType = imgUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+        msgParts.unshift({ inlineData: { mimeType, data: base64Data } });
+      }
+    }
+    contents.push({ role: msg.role, parts: msgParts });
   }
   
-  // Add current message with images (on first message only)
   const userParts = [];
-  if (contents.length === 0) {
-    // Add ALL images to the first message
+  if (images.length > 0 && images[0]) {
     for (const imageDataUrl of images) {
       const base64Data = imageDataUrl.split(',')[1];
       const mimeType = imageDataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
-      userParts.push({
-        inlineData: {
-          mimeType: mimeType,
-          data: base64Data
-        }
-      });
+      userParts.push({ inlineData: { mimeType, data: base64Data } });
     }
   }
   userParts.push({ text: prompt });
@@ -468,8 +465,11 @@ async function sendToGemini(prompt, imageDataUrls) {
     throw new Error('No response from AI');
   }
   
-  // Update conversation history
-  conversationHistory.push({ role: 'user', text: prompt });
+  const historyEntry = { role: 'user', text: prompt };
+  if (conversationHistory.length === 0 && images.length > 0 && images[0]) {
+    historyEntry.images = images;
+  }
+  conversationHistory.push(historyEntry);
   conversationHistory.push({ role: 'model', text: text });
   
   return text;
@@ -517,17 +517,24 @@ async function handleSend() {
     const apiKey = keyResult.geminiApiKey;
     if (!apiKey) throw new Error('Please set your Gemini API key in Settings');
     
-    // Build request
     const contents = [];
     for (const msg of conversationHistory) {
-      contents.push({ role: msg.role, parts: [{ text: msg.text }] });
+      const msgParts = [{ text: msg.text }];
+      if (msg.images) {
+        for (const imgUrl of msg.images) {
+          const base64Data = imgUrl.split(',')[1];
+          const mimeType = imgUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+          msgParts.unshift({ inlineData: { mimeType, data: base64Data } });
+        }
+      }
+      contents.push({ role: msg.role, parts: msgParts });
     }
     
     const userParts = [];
-    const MAX_IMAGES_PER_REQUEST = getConfig('MAX_IMAGES_PER_REQUEST', 30); // Safe limit for Gemini
+    const MAX_IMAGES_PER_REQUEST = getConfig('MAX_IMAGES_PER_REQUEST', 30);
+    const isFirstMessage = contents.length === 0;
     
-    if (contents.length === 0) {
-      // First message: handle images with batching for large captures
+    if (isFirstMessage) {
       const totalImages = currentImages.length;
       
       if (totalImages > MAX_IMAGES_PER_REQUEST) {
@@ -614,12 +621,14 @@ async function handleSend() {
         addBubbleActions(responseBubble, combinedResult);
         thread.scrollTop = thread.scrollHeight;
         
-        conversationHistory.push({ role: 'user', text: prompt });
+        const batchHistoryEntry = { role: 'user', text: prompt };
+        if (currentImages.length > 0) batchHistoryEntry.images = currentImages;
+        conversationHistory.push(batchHistoryEntry);
         conversationHistory.push({ role: 'model', text: combinedResult });
         
         sendBtn.disabled = false;
         input.focus();
-        return; // Exit early - batch processing complete
+        return;
       }
       
       // Normal case: 20 or fewer images - send all at once
@@ -730,8 +739,11 @@ async function handleSend() {
     // Add action buttons to this response
     addBubbleActions(responseBubble, fullText);
     
-    // Update conversation history
-    conversationHistory.push({ role: 'user', text: prompt });
+    const userHistoryEntry = { role: 'user', text: prompt };
+    if (isFirstMessage && currentImages.length > 0) {
+      userHistoryEntry.images = currentImages;
+    }
+    conversationHistory.push(userHistoryEntry);
     conversationHistory.push({ role: 'model', text: fullText });
     
   } catch (error) {
@@ -1182,6 +1194,14 @@ chatInput.addEventListener('paste', (e) => {
         
         const blob = item.getAsFile();
         if (blob) {
+          if (blob.size > MAX_FILE_SIZE) {
+            addBubble(`Pasted image is too large (${(blob.size / 1024 / 1024).toFixed(1)}MB). Max size is 10MB.`, 'error');
+            return;
+          }
+          if (filesQueue.length >= MAX_FILES) {
+            addBubble(`Maximum ${MAX_FILES} files can be attached at once.`, 'error');
+            return;
+          }
           const reader = new FileReader();
           reader.onload = (event) => {
             const fileData = {
@@ -1191,7 +1211,6 @@ chatInput.addEventListener('paste', (e) => {
             };
             filesQueue.push(fileData);
             
-            // Create file card UI (same as file upload)
             const card = document.createElement('div');
             card.className = 'file-card';
             card.innerHTML = `<span>Pasted Image</span> <div class="remove-btn">x</div>`;
@@ -1219,9 +1238,20 @@ document.getElementById('summarizeBtn').addEventListener('click', summarizeChat)
 document.getElementById('clearBtn').addEventListener('click', clearChat);
 document.getElementById('exportBtn').addEventListener('click', exportToPDF);
 
-// Multi-file upload handling (Gemini-style)
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILES = 20;
+
 document.getElementById('fileInput').addEventListener('change', (e) => {
-  Array.from(e.target.files).forEach(file => {
+  const files = Array.from(e.target.files);
+  const slotsAvailable = MAX_FILES - filesQueue.length;
+  if (files.length > slotsAvailable) {
+    addBubble(`Can only attach ${slotsAvailable} more file(s). Maximum is ${MAX_FILES}.`, 'error');
+  }
+  files.slice(0, Math.max(0, slotsAvailable)).forEach(file => {
+    if (file.size > MAX_FILE_SIZE) {
+      addBubble(`"${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max file size is 10MB.`, 'error');
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (event) => {
       const fileData = {
@@ -1231,7 +1261,6 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
       };
       filesQueue.push(fileData);
       
-      // Create file card UI
       const card = document.createElement('div');
       card.className = 'file-card';
       const icon = file.type.startsWith('image/') ? '🖼️' : file.type.includes('pdf') ? '📄' : '📎';
@@ -1384,13 +1413,32 @@ Output ONLY JSON:
     const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     try {
-      const jsonMatch = responseText.match(/\{[\s\S]*?\}/);
-      verdictData = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+      let jsonStr = '';
+      const codeBlockMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (codeBlockMatch) {
+        jsonStr = codeBlockMatch[1].trim();
+      } else {
+        let braceDepth = 0;
+        let startIdx = -1;
+        for (let i = 0; i < responseText.length; i++) {
+          if (responseText[i] === '{') {
+            if (braceDepth === 0) startIdx = i;
+            braceDepth++;
+          } else if (responseText[i] === '}') {
+            braceDepth--;
+            if (braceDepth === 0 && startIdx !== -1) {
+              jsonStr = responseText.substring(startIdx, i + 1);
+              break;
+            }
+          }
+        }
+      }
+      verdictData = jsonStr ? JSON.parse(jsonStr) : null;
     } catch {
       verdictData = null;
     }
     
-    if (!verdictData) {
+    if (!verdictData || typeof verdictData.score === 'undefined') {
       verdictData = {
         score: 50,
         checks: [{ label: "Analysis", value: responseText.substring(0, 80) || "Complete", impact: "0", positive: true }],
@@ -1407,16 +1455,19 @@ Output ONLY JSON:
     verdictBtn.classList.add(glowColor);
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     
-    // Build checks HTML
-    const checksHtml = (verdictData.checks || []).map(c => `
+    const checksHtml = (verdictData.checks || []).map(c => {
+      const safeLabel = escapeHtml(String(c.label || ''));
+      const safeValue = escapeHtml(String(c.value || ''));
+      const safeImpact = escapeHtml(String(c.impact || '0'));
+      return `
       <div class="verdict-row">
         <div class="verdict-label-block">
-          <span class="verdict-label">${c.label}</span>
-          <span class="verdict-value">${c.value}</span>
+          <span class="verdict-label">${safeLabel}</span>
+          <span class="verdict-value">${safeValue}</span>
         </div>
-        <span class="verdict-impact ${c.positive ? 'green' : 'red'}">${c.impact}</span>
+        <span class="verdict-impact ${c.positive ? 'green' : 'red'}">${safeImpact}</span>
       </div>
-    `).join('');
+    `;}).join('');
     
     // Add OMNI-SCORE card INLINE in chat thread
     const card = document.createElement('div');
@@ -1429,7 +1480,7 @@ Output ONLY JSON:
       ${checksHtml}
       <div class="verdict-bottom-line">
         <span class="bottom-label">THE BOTTOM LINE</span>
-        <p class="bottom-verdict">${verdictData.verdict || 'Analysis complete.'}</p>
+        <p class="bottom-verdict">${escapeHtml(verdictData.verdict || 'Analysis complete.')}</p>
       </div>
     `;
     thread.appendChild(card);
@@ -1467,28 +1518,28 @@ function renderMagicCard(data, btn, batchLabel = '') {
   // Enhanced sections with priority tag support
   const sectionsHtml = (data.sections || []).map(section => {
     const itemsHtml = (section.items || []).map(item => {
-      // Detect priority tags like [CRITICAL], [HIGH], [LOW]
+      const safeItem = escapeHtml(String(item));
       let priorityClass = '';
-      let displayItem = item;
-      if (item.includes('[CRITICAL]') || item.includes('[URGENT]')) {
+      let displayItem = safeItem;
+      if (safeItem.includes('[CRITICAL]') || safeItem.includes('[URGENT]')) {
         priorityClass = 'priority-critical';
-        displayItem = item.replace(/\[(CRITICAL|URGENT)\]/g, '<span class="priority-tag critical">$1</span>');
-      } else if (item.includes('[HIGH]') || item.includes('[IMPORTANT]')) {
+        displayItem = safeItem.replace(/\[(CRITICAL|URGENT)\]/g, '<span class="priority-tag critical">$1</span>');
+      } else if (safeItem.includes('[HIGH]') || safeItem.includes('[IMPORTANT]')) {
         priorityClass = 'priority-high';
-        displayItem = item.replace(/\[(HIGH|IMPORTANT)\]/g, '<span class="priority-tag high">$1</span>');
-      } else if (item.includes('[MEDIUM]')) {
+        displayItem = safeItem.replace(/\[(HIGH|IMPORTANT)\]/g, '<span class="priority-tag high">$1</span>');
+      } else if (safeItem.includes('[MEDIUM]')) {
         priorityClass = 'priority-medium';
-        displayItem = item.replace(/\[MEDIUM\]/g, '<span class="priority-tag medium">MEDIUM</span>');
-      } else if (item.includes('[LOW]')) {
+        displayItem = safeItem.replace(/\[MEDIUM\]/g, '<span class="priority-tag medium">MEDIUM</span>');
+      } else if (safeItem.includes('[LOW]')) {
         priorityClass = 'priority-low';
-        displayItem = item.replace(/\[LOW\]/g, '<span class="priority-tag low">LOW</span>');
+        displayItem = safeItem.replace(/\[LOW\]/g, '<span class="priority-tag low">LOW</span>');
       }
       return `<li class="${priorityClass}">${displayItem}</li>`;
     }).join('');
     
     return `
       <div class="magic-section">
-        <div class="magic-section-label">${section.label}</div>
+        <div class="magic-section-label">${escapeHtml(section.label || '')}</div>
         <ul class="magic-items">${itemsHtml}</ul>
       </div>
     `;
@@ -1514,11 +1565,10 @@ function renderMagicCard(data, btn, batchLabel = '') {
     `;
   }
   
-  // Risk/confidence meter if present
   const riskHtml = data.risk ? `
     <div class="magic-risk">
       <span class="risk-label">RISK LEVEL:</span>
-      <span class="risk-value risk-${data.risk.toLowerCase()}">${data.risk}</span>
+      <span class="risk-value risk-${escapeHtml(String(data.risk).toLowerCase())}">${escapeHtml(String(data.risk))}</span>
     </div>
   ` : '';
   
@@ -1527,22 +1577,22 @@ function renderMagicCard(data, btn, batchLabel = '') {
   card.style.setProperty('--tone-color', toneColor);
   card.innerHTML = `
     <div class="magic-card-header">
-      <span class="magic-emoji">${btn.emoji}</span>
-      <span class="magic-title">${data.title || 'Analysis Complete'}${batchLabel ? ` <span style="opacity:0.6;font-size:12px">${batchLabel}</span>` : ''}</span>
+      <span class="magic-emoji">${escapeHtml(btn.emoji)}</span>
+      <span class="magic-title">${escapeHtml(data.title || 'Analysis Complete')}${batchLabel ? ` <span style="opacity:0.6;font-size:12px">${escapeHtml(batchLabel)}</span>` : ''}</span>
     </div>
     <div class="magic-score-row">
-      <div class="magic-score" style="color: ${toneColor}">${data.score || '??'}<span>/100</span></div>
-      <div class="magic-highlight">${data.highlight || ''}</div>
+      <div class="magic-score" style="color: ${toneColor}">${escapeHtml(String(data.score || '??'))}<span>/100</span></div>
+      <div class="magic-highlight">${escapeHtml(data.highlight || '')}</div>
       ${riskHtml}
     </div>
     ${sectionsHtml}
     ${actionsHtml}
     <div class="magic-verdict">
       <div class="magic-verdict-label">THE VERDICT</div>
-      <div class="magic-verdict-text">${data.verdict || 'Analysis complete.'}</div>
+      <div class="magic-verdict-text">${escapeHtml(data.verdict || 'Analysis complete.')}</div>
     </div>
     <div class="magic-footer">
-      <span class="magic-next">${data.nextStep || ''}</span>
+      <span class="magic-next">${escapeHtml(data.nextStep || '')}</span>
     </div>
   `;
   thread.appendChild(card);
@@ -1557,31 +1607,30 @@ function renderDualStockOutput(responseText, btn, batchLabel = '') {
   let cardData = null;
   let analysisText = '';
   
-  // Try to extract JSON block first
-  const jsonMatch = responseText.match(/\{[\s\S]*?\}(?=\s*\n|$)/);
-  if (jsonMatch) {
+  const codeBlockMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
     try {
-      cardData = JSON.parse(jsonMatch[0]);
-      // Get everything after the JSON as analysis
-      const jsonEndIndex = responseText.indexOf(jsonMatch[0]) + jsonMatch[0].length;
+      cardData = JSON.parse(codeBlockMatch[1].trim());
+      const jsonEndIndex = responseText.indexOf(codeBlockMatch[0]) + codeBlockMatch[0].length;
       analysisText = responseText.substring(jsonEndIndex).trim();
     } catch (e) {
-      // If JSON parse fails, try more aggressively
-      const altMatch = responseText.match(/\{[^{}]*"title"[^{}]*\}/);
-      if (altMatch) {
-        try {
-          cardData = JSON.parse(altMatch[0]);
-          const jsonEndIndex = responseText.indexOf(altMatch[0]) + altMatch[0].length;
-          analysisText = responseText.substring(jsonEndIndex).trim();
-        } catch (e2) {
-          analysisText = responseText;
-        }
-      } else {
-        analysisText = responseText;
-      }
+      analysisText = responseText;
     }
   } else {
-    analysisText = responseText;
+    let braceDepth = 0, startIdx = -1, jsonStr = '';
+    for (let i = 0; i < responseText.length; i++) {
+      if (responseText[i] === '{') { if (braceDepth === 0) startIdx = i; braceDepth++; }
+      else if (responseText[i] === '}') { braceDepth--; if (braceDepth === 0 && startIdx !== -1) { jsonStr = responseText.substring(startIdx, i + 1); break; } }
+    }
+    if (jsonStr) {
+      try {
+        cardData = JSON.parse(jsonStr);
+        const jsonEndIndex = responseText.indexOf(jsonStr) + jsonStr.length;
+        analysisText = responseText.substring(jsonEndIndex).trim();
+      } catch (e) { analysisText = responseText; }
+    } else {
+      analysisText = responseText;
+    }
   }
   
   // Create container for dual output
@@ -1598,24 +1647,24 @@ function renderDualStockOutput(responseText, btn, batchLabel = '') {
     cardSection.innerHTML = `
       <div class="magic-card" style="--tone-color: ${toneColor}; margin-bottom: 0;">
         <div class="magic-card-header">
-          <span class="magic-emoji">${btn.emoji}</span>
-          <span class="magic-title">${cardData.title}${batchLabel ? ` <span style="opacity:0.6;font-size:12px">${batchLabel}</span>` : ''}</span>
+          <span class="magic-emoji">${escapeHtml(btn.emoji)}</span>
+          <span class="magic-title">${escapeHtml(cardData.title)}${batchLabel ? ` <span style="opacity:0.6;font-size:12px">${escapeHtml(batchLabel)}</span>` : ''}</span>
         </div>
         <div class="magic-score-row">
-          <div class="magic-score" style="color: ${toneColor}">${cardData.score || '??'}<span>/100</span></div>
-          <div class="magic-highlight">${cardData.highlight || ''}</div>
+          <div class="magic-score" style="color: ${toneColor}">${escapeHtml(String(cardData.score || '??'))}<span>/100</span></div>
+          <div class="magic-highlight">${escapeHtml(cardData.highlight || '')}</div>
         </div>
         ${cardData.key_metrics ? `
           <div class="magic-section">
             <div class="magic-section-label">KEY METRICS</div>
             <ul class="magic-items">
-              ${cardData.key_metrics.map(m => `<li>${m}</li>`).join('')}
+              ${cardData.key_metrics.map(m => `<li>${escapeHtml(String(m))}</li>`).join('')}
             </ul>
           </div>
         ` : ''}
         <div class="magic-verdict">
           <div class="magic-verdict-label">VERDICT</div>
-          <div class="magic-verdict-text">${cardData.verdict || ''}</div>
+          <div class="magic-verdict-text">${escapeHtml(cardData.verdict || '')}</div>
         </div>
       </div>
       <div class="dual-actions">
@@ -1900,16 +1949,19 @@ Respond naturally with clear, helpful analysis. Use markdown formatting (headers
       // Remove the thinking bubble
       removeLoading();
       
-      // USER-CREATED BUTTONS: Simple Education-style output (no cards, no dual output)
-      // Render as normal chat text, same style as Education mode
       const thread = document.getElementById('chatThread');
       if (responseText && responseText.length > 10) {
-        const responseBubble = document.createElement('div');
-        responseBubble.className = 'chat-bubble ai';
-        const parsedContent = marked.parse(responseText);
-        responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedContent) : parsedContent;
-        thread.appendChild(responseBubble);
-        addBubbleActions(responseBubble, responseText);
+        const hasJsonBlock = responseText.match(/```(?:json)?\s*[\s\S]*?```/) || responseText.match(/\{[\s\S]*"title"[\s\S]*\}/);
+        if (hasJsonBlock) {
+          renderDualStockOutput(responseText, btn, batchLabel);
+        } else {
+          const responseBubble = document.createElement('div');
+          responseBubble.className = 'chat-bubble ai';
+          const parsedContent = marked.parse(responseText);
+          responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedContent) : parsedContent;
+          thread.appendChild(responseBubble);
+          addBubbleActions(responseBubble, responseText);
+        }
       } else {
         const errorBubble = document.createElement('div');
         errorBubble.className = 'chat-bubble ai';
