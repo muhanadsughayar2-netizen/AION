@@ -791,10 +791,11 @@ function setupEventListeners() {
     }
   });
   
-  // Canvas
+  // Canvas - mousedown on canvas, but mousemove/mouseup on document
+  // so drags that go outside the canvas still complete properly
   canvas.addEventListener('mousedown', handleMouseDown);
-  canvas.addEventListener('mousemove', handleMouseMove);
-  canvas.addEventListener('mouseup', handleMouseUp);
+  document.addEventListener('mousemove', handleMouseMove);
+  document.addEventListener('mouseup', handleMouseUp);
   
   // Right-click context menu for deletion
   canvas.addEventListener('contextmenu', (e) => {
@@ -1248,8 +1249,12 @@ function handleMouseDown(e) {
 
 function handleMouseMove(e) {
   const rect = canvas.getBoundingClientRect();
-  const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-  const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+  let x = (e.clientX - rect.left) * (canvas.width / rect.width);
+  let y = (e.clientY - rect.top) * (canvas.height / rect.height);
+  
+  // Clamp to canvas bounds (mouse may be outside canvas during drag)
+  x = Math.max(0, Math.min(canvas.width, x));
+  y = Math.max(0, Math.min(canvas.height, y));
   
   // Handle visual crop handle dragging
   if (currentTool === 'crop' && cropHandle && cropRect) {
@@ -1408,13 +1413,13 @@ function handleMouseUp(e) {
     const width = x2 - x1;
     const height = y2 - y1;
     
-    // Only create crop if it's a valid size
-    if (width > 50 && height > 50) {
+    // Only create crop if it's a valid size (20px min accounts for high-DPI scaling)
+    if (width > 20 && height > 20) {
       cropRect = { x: x1, y: y1, width, height };
       redraw();
       updateStatus(`Crop: ${Math.round(width)} × ${Math.round(height)}. Drag handles to adjust.`);
     } else {
-      updateStatus('Crop area too small (min 50x50)');
+      updateStatus('Crop area too small — drag a larger rectangle');
     }
     return;
   }
@@ -1429,10 +1434,12 @@ function handleMouseUp(e) {
   
   if (!isDrawing) return;
   
-  // Get end position for rectangle/arrow using the passed event parameter
+  // Get end position for rectangle/arrow (clamped to canvas bounds)
   const rect = canvas.getBoundingClientRect();
-  const endX = e ? (e.clientX - rect.left) * (canvas.width / rect.width) : startX;
-  const endY = e ? (e.clientY - rect.top) * (canvas.height / rect.height) : startY;
+  let endX = e ? (e.clientX - rect.left) * (canvas.width / rect.width) : startX;
+  let endY = e ? (e.clientY - rect.top) * (canvas.height / rect.height) : startY;
+  endX = Math.max(0, Math.min(canvas.width, endX));
+  endY = Math.max(0, Math.min(canvas.height, endY));
   
   if (currentTool === 'rectangle') {
     const x1 = Math.min(startX, endX);
@@ -2691,18 +2698,24 @@ async function save() {
       // Extract the cropped region from original image
       const { x, y, width, height } = cropRect;
       
-      // Create temporary canvas for crop
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = width;
-      tempCanvas.height = height;
-      const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+      // Round coordinates for pixel-perfect crop
+      const cx = Math.round(x);
+      const cy = Math.round(y);
+      const cw = Math.round(width);
+      const ch = Math.round(height);
       
-      // Draw the cropped region from original image
-      tempCtx.putImageData(
-        originalImage,
-        -x, -y,
-        x, y, width, height
-      );
+      // Create source canvas from originalImage, then drawImage to crop
+      // (drawImage is more reliable than putImageData with negative offsets)
+      const srcCanvas = document.createElement('canvas');
+      srcCanvas.width = originalImage.width;
+      srcCanvas.height = originalImage.height;
+      srcCanvas.getContext('2d').putImageData(originalImage, 0, 0);
+      
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = cw;
+      tempCanvas.height = ch;
+      const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+      tempCtx.drawImage(srcCanvas, cx, cy, cw, ch, 0, 0, cw, ch);
       
       // Apply border and browser frame decoration if enabled
       let cropDataUrl;
@@ -3295,8 +3308,8 @@ function exitCropMode() {
 }
 
 function applyVisualCrop() {
-  if (!cropRect || cropRect.width < 50 || cropRect.height < 50) {
-    updateStatus('Crop area too small (min 50x50)');
+  if (!cropRect || cropRect.width < 20 || cropRect.height < 20) {
+    updateStatus('Crop area too small — drag a larger rectangle');
     return;
   }
   
