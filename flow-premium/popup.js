@@ -1032,51 +1032,11 @@ function setupEventListeners() {
     reeditBtn.addEventListener('click', handleReeditFullPage);
   }
   
-  // Help/Tutorials dropdown
-  const helpBtn = document.getElementById('helpBtn');
-  const helpDropdown = document.getElementById('helpDropdown');
-  if (helpBtn && helpDropdown) {
-    // Toggle dropdown on click
-    helpBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      helpDropdown.classList.toggle('show');
-    });
-    
-    // Close dropdown when clicking outside
-    document.addEventListener('click', (e) => {
-      if (!helpDropdown.contains(e.target) && !helpBtn.contains(e.target)) {
-        helpDropdown.classList.remove('show');
-      }
-    });
-    
-    // Handle video tutorial links
-    // PLACEHOLDER URLS - Replace with actual YouTube video URLs
-    const videoUrls = {
-      about: 'https://youtu.be/AC8Wt2NG6pk?si=aYPsJoRown8ZCI5Z',
-      aiagent: 'https://youtu.be/v_ttEY4k9c4?si=MwSiLioZOvmGclMm',
-      crypto: 'https://youtube.com/shorts/zzr_gkgkMzw?si=b-TBh4o4Mdg-vDzh',
-      workflow: 'https://youtu.be/yMYdCVz5w5w?si=ki1_HDEYvp8Lxwb2',
-      productivity: 'https://youtube.com/shorts/7f90Wn1mWjI?si=AaNLzgcA4M1oBhfx'
-    };
-    
-    helpDropdown.querySelectorAll('.help-item').forEach(item => {
-      item.addEventListener('click', (e) => {
-        e.preventDefault();
-        const videoKey = item.dataset.video;
-        const url = videoUrls[videoKey];
-        if (url && !url.includes('YOUR_')) {
-          chrome.tabs.create({ url: url });
-        } else {
-          // Show coming soon message
-          const status = document.getElementById('status');
-          status.textContent = 'Tutorial coming soon!';
-          status.className = 'status';
-          setTimeout(() => {
-            status.textContent = chrome.i18n.getMessage('flowReady') || 'SnapToAI: Ready';
-          }, 2000);
-        }
-        helpDropdown.classList.remove('show');
-      });
+  // YouTube channel button
+  const youtubeBtn = document.getElementById('youtubeBtn');
+  if (youtubeBtn) {
+    youtubeBtn.addEventListener('click', () => {
+      chrome.tabs.create({ url: 'https://youtube.com/@snaptoai-q9m' });
     });
   }
   

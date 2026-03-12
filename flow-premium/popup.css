@@ -133,123 +133,23 @@ body {
 }
 
 /* Help/Tutorials Dropdown */
-.help-dropdown-container {
-  position: relative;
-}
-
-.help-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(0, 217, 255, 0.2);
-  border-radius: 14px;
-  padding: 4px 10px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.youtube-btn {
+  background: none;
+  border: none;
+  padding: 4px;
   cursor: pointer;
-  color: #00d9ff;
-  transition: all 0.2s ease;
-}
-
-.help-btn-icon {
-  font-size: 12px;
-  font-weight: 700;
-  width: 18px;
-  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(0, 217, 255, 0.15);
+  transition: all 0.2s ease;
+  opacity: 0.75;
 }
 
-.help-btn-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-}
-
-.help-btn:hover {
-  background: rgba(0, 212, 255, 0.2);
-  border-color: rgba(0, 212, 255, 0.6);
-  color: #00ffff;
-  filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.4)) drop-shadow(0 0 20px rgba(0, 255, 255, 0.3));
-  text-shadow: 0 0 10px rgba(0, 217, 255, 0.45), 0 0 20px rgba(0, 255, 255, 0.35);
-}
-
-.help-dropdown {
-  display: none;
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 8px;
-  background: rgba(20, 20, 35, 0.98);
-  border: 1px solid rgba(0, 212, 255, 0.2);
-  border-radius: 12px;
-  padding: 8px 0;
-  min-width: 200px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 212, 255, 0.1);
-  z-index: 1000;
-  backdrop-filter: blur(20px);
-}
-
-.help-dropdown.show {
-  display: block;
-  animation: dropdownFade 0.2s ease;
-}
-
-@keyframes dropdownFade {
-  from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.help-dropdown-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(0, 212, 255, 0.7);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  padding: 8px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  margin-bottom: 4px;
-}
-
-.help-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  color: rgba(255, 255, 255, 0.8);
-  text-decoration: none;
-  font-size: 13px;
-  transition: all 0.15s ease;
-  cursor: pointer;
-}
-
-.help-item:hover {
-  background: rgba(0, 212, 255, 0.1);
-  color: #00d4ff;
-}
-
-.help-icon {
-  font-size: 14px;
-  width: 20px;
-  text-align: center;
-}
-
-.help-dropdown-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  margin-top: 4px;
-  padding-top: 4px;
-}
-
-.help-dropdown-footer .help-item {
-  font-size: 12px;
-  color: rgba(0, 212, 255, 0.6);
-  justify-content: center;
-}
-
-.help-dropdown-footer .help-item:hover {
-  color: #00d4ff;
+.youtube-btn:hover {
+  opacity: 1;
+  filter: drop-shadow(0 0 6px rgba(255, 0, 0, 0.5));
+  transform: scale(1.1);
 }
 
 .upgrade-btn {
