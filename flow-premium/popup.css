@@ -136,19 +136,20 @@ body {
 .youtube-btn {
   background: none;
   border: none;
-  padding: 2px;
+  padding: 1px;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  opacity: 0.6;
-  margin-right: -2px;
+  opacity: 0.5;
+  margin-left: 5px;
+  vertical-align: middle;
 }
 
 .youtube-btn:hover {
   opacity: 1;
-  filter: drop-shadow(0 0 4px rgba(255, 0, 0, 0.4));
+  filter: drop-shadow(0 0 4px rgba(255, 0, 0, 0.5));
 }
 
 .upgrade-btn {
