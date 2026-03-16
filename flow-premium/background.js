@@ -159,75 +159,20 @@ async function handleAskSnapToAI(info, tab) {
           const sel = window.getSelection();
           const selectedText = sel ? sel.toString() : '';
 
-          let clickedElementInfo = '';
-          const active = document.activeElement;
-          if (active && active !== document.body) {
-            const tag = active.tagName || '';
-            const text = (active.textContent || '').substring(0, 500);
-            clickedElementInfo = `<${tag}> ${text}`;
-          }
-
-          let clickedCodeBlock = null;
-          let codeIsTruncated = false;
-
-          const rightClickTarget = document.elementFromPoint(
-            window.__snaptoai_clickX || 0,
-            window.__snaptoai_clickY || 0
-          ) || document.activeElement;
-
-          let codeAncestor = rightClickTarget;
-          for (let i = 0; i < 10 && codeAncestor; i++) {
-            const tag = (codeAncestor.tagName || '').toLowerCase();
-            if (tag === 'pre' || tag === 'code' || 
-                codeAncestor.classList?.contains('highlight') ||
-                codeAncestor.classList?.contains('code-block') ||
-                codeAncestor.classList?.contains('CodeMirror') ||
-                codeAncestor.classList?.contains('monaco-editor') ||
-                codeAncestor.getAttribute?.('role') === 'code') {
-              const fullText = (codeAncestor.textContent || '').trim();
-              if (fullText.length > 5) {
-                clickedCodeBlock = fullText.substring(0, 15000);
-                const style = window.getComputedStyle(codeAncestor);
-                const hasOverflowHidden = style.overflow === 'hidden' || style.overflowY === 'hidden';
-                const isScrollable = codeAncestor.scrollHeight > codeAncestor.clientHeight + 20;
-                const hasCollapsed = codeAncestor.querySelector('[class*="collapse"], [class*="fold"], [class*="expand"], [aria-expanded="false"], [class*="truncat"]');
-                codeIsTruncated = hasOverflowHidden || isScrollable || !!hasCollapsed || fullText.length >= 15000;
+          let hasCodeOnPage = false;
+          const codeEls = document.querySelectorAll('pre, code, [role="code"], .CodeMirror, .monaco-editor, .highlight, .code-block');
+          if (codeEls.length > 0) {
+            for (const el of codeEls) {
+              if ((el.textContent || '').trim().length > 20) {
+                hasCodeOnPage = true;
                 break;
               }
             }
-            codeAncestor = codeAncestor.parentElement;
           }
-
-          if (!clickedCodeBlock) {
-            const allCode = document.querySelectorAll('pre, code, [role="code"]');
-            for (const el of allCode) {
-              const rect = el.getBoundingClientRect();
-              if (rect.width > 50 && rect.height > 20) {
-                const text = (el.textContent || '').trim();
-                if (text.length > 20) {
-                  if (!clickedCodeBlock || text.length > clickedCodeBlock.length) {
-                    clickedCodeBlock = text.substring(0, 15000);
-                    codeIsTruncated = text.length >= 15000 || el.scrollHeight > el.clientHeight + 20;
-                  }
-                }
-              }
-            }
-          }
-
-          const codeBlocks = [];
-          document.querySelectorAll('pre, code').forEach(el => {
-            const text = (el.textContent || '').trim();
-            if (text.length > 10 && text.length < 5000) {
-              codeBlocks.push(text.substring(0, 2000));
-            }
-          });
 
           return {
             selectedText: selectedText,
-            clickedElement: clickedElementInfo,
-            clickedCodeBlock: clickedCodeBlock,
-            codeIsTruncated: codeIsTruncated,
-            visibleCodeBlocks: codeBlocks.slice(0, 3),
+            hasCodeOnPage: hasCodeOnPage,
             pageText: document.title
           };
         }
@@ -237,8 +182,7 @@ async function handleAskSnapToAI(info, tab) {
         if (result.result.selectedText && result.result.selectedText.length > (pageContext.selectedText || '').length) {
           pageContext.selectedText = result.result.selectedText;
         }
-        pageContext.clickedElement = result.result.clickedElement || '';
-        pageContext.visibleCodeBlocks = result.result.visibleCodeBlocks || [];
+        pageContext.hasCodeOnPage = result.result.hasCodeOnPage || false;
       }
     } catch (e) {
       console.log('[SnapToAI] Context extraction failed (page may be restricted):', e.message);
