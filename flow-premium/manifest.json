@@ -12,7 +12,8 @@
     "scripting",
     "clipboardWrite",
     "downloads",
-    "identity"
+    "identity",
+    "contextMenus"
   ],
   "oauth2": {
     "client_id": "114083338605-8l3tglcrm0npscg721jd4tkjhlltujsm.apps.googleusercontent.com",
