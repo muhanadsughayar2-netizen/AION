@@ -209,16 +209,19 @@ async function initializeChat() {
   currentPageText = result.pageText || '';
   
   if (isContextMenu) {
-    const storageError = urlParams.get('error');
-    if (storageError === 'storage') {
+    const errorType = urlParams.get('error');
+    if (errorType === 'storage' || errorType === 'restricted') {
       currentImages = [];
       const previewContainer = document.querySelector('.image-preview');
+      const errorMsg = errorType === 'restricted' 
+        ? { icon: '🔒', title: "Can't analyze this page", desc: 'Chrome blocks extensions from accessing<br>internal pages like Settings, Extensions, and Web Store.<br><br>Navigate to a regular webpage and try again.' }
+        : { icon: '⚠️', title: "Couldn't load page context", desc: 'Storage limit reached. Try right-clicking again<br>or use the AI button in the popup instead.' };
       previewContainer.innerHTML = `
         <div style="padding: 20px; text-align: center; color: #ff6b6b;">
-          <div style="font-size: 42px; margin-bottom: 8px;">⚠️</div>
-          <div style="font-size: 14px; font-weight: 600;">Couldn't load page context</div>
+          <div style="font-size: 42px; margin-bottom: 8px;">${errorMsg.icon}</div>
+          <div style="font-size: 14px; font-weight: 600;">${errorMsg.title}</div>
           <div style="font-size: 11px; color: #889999; margin-top: 8px; line-height: 1.5;">
-            Storage limit reached. Try right-clicking again<br>or use the AI button in the popup instead.
+            ${errorMsg.desc}
           </div>
         </div>
       `;

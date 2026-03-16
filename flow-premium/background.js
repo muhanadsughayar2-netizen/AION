@@ -137,6 +137,13 @@ async function handleAskSnapToAI(info, tab) {
       url.includes('addons.mozilla.org') || url.includes('microsoftedge.microsoft.com/addons');
     if (!tab || isRestricted) {
       console.log('[SnapToAI] Cannot analyze restricted page:', url);
+      chrome.windows.create({
+        url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&error=restricted'),
+        type: 'popup',
+        width: 1000,
+        height: 700,
+        focused: true
+      });
       return;
     }
 
@@ -243,6 +250,17 @@ async function handleAskSnapToAI(info, tab) {
 
   } catch (err) {
     console.error('[SnapToAI] Ask AI error:', err);
+    try {
+      chrome.windows.create({
+        url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&error=storage'),
+        type: 'popup',
+        width: 1000,
+        height: 700,
+        focused: true
+      });
+    } catch (e) {
+      console.error('[SnapToAI] Could not open fallback chat:', e);
+    }
   }
 }
 
