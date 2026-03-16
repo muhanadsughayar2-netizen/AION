@@ -253,22 +253,18 @@ async function initializeChat() {
       document.getElementById('previewImage').src = payload.screenshot;
     }
 
-    let contextInfo = '';
-    if (ctx.url) contextInfo += `**Page:** ${ctx.title || ctx.url}\n`;
-    if (ctx.selectedText) contextInfo += `**Selected text:** ${ctx.selectedText.substring(0, 3000)}\n`;
-    if (ctx.linkUrl) contextInfo += `**Link:** ${ctx.linkUrl}\n`;
-    if (ctx.srcUrl) contextInfo += `**Image source:** ${ctx.srcUrl}\n`;
-
-    let codeContext = '';
-    if (ctx.visibleCodeBlocks && ctx.visibleCodeBlocks.length > 0 && !ctx.selectedText) {
-      codeContext = '\n\n**Code visible on page:**\n```\n' + ctx.visibleCodeBlocks.join('\n---\n').substring(0, 4000) + '\n```';
-    }
-
     let autoPrompt = '';
-    if (ctx.selectedText && ctx.selectedText.length > 100) {
-      autoPrompt = `Analyze the following content from ${ctx.url || 'this page'}.\n\n${contextInfo}${codeContext}\n\nProvide a clear, helpful analysis. If it's code, explain what it does and identify any issues. If it's text, summarize and explain the key points. If it's an error, explain the cause and how to fix it.`;
+    const pageLabel = ctx.title || ctx.url || 'this page';
+
+    if (ctx.codeText && ctx.codeText.length > 20) {
+      autoPrompt = `I right-clicked on code from **${pageLabel}**.\n\nHere is the full code:\n\n\`\`\`\n${ctx.codeText}\n\`\`\`\n\nAnalyze this code. Explain what it does, identify any bugs or issues, and suggest improvements. Be direct and practical.`;
+    } else if (ctx.selectedText && ctx.selectedText.length > 50) {
+      autoPrompt = `I selected this text from **${pageLabel}**:\n\n${ctx.selectedText.substring(0, 5000)}\n\nAnalyze this content. If it's code, explain what it does and identify issues. If it's text, summarize the key points. If it's an error, explain the cause and fix.`;
     } else {
-      autoPrompt = `Analyze this screenshot from ${ctx.title || ctx.url || 'this page'}.\n\n${contextInfo}${codeContext}\n\nLook at the screenshot and provide a clear, helpful analysis. Identify what's shown and give useful insights. If you see code or errors, explain them. If you see a UI, give feedback. If you see a chart or data, interpret it. Be direct and practical.`;
+      let extra = '';
+      if (ctx.linkUrl) extra += `\n**Link:** ${ctx.linkUrl}`;
+      if (ctx.srcUrl) extra += `\n**Image:** ${ctx.srcUrl}`;
+      autoPrompt = `Analyze this screenshot from **${pageLabel}**.${extra}\n\nLook at the screenshot and provide a clear, helpful analysis. Identify what's shown and give useful insights. Be direct and practical.`;
     }
 
     setupMagicButtons();

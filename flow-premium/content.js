@@ -16,6 +16,7 @@
   // Track last mouse position for toast placement
   let lastMouseX = window.innerWidth - 20;
   let lastMouseY = 20;
+
   
   // Guard against concurrent full page captures in this content script instance
   let isFullPageCaptureRunning = false;

@@ -159,21 +159,31 @@ async function handleAskSnapToAI(info, tab) {
           const sel = window.getSelection();
           const selectedText = sel ? sel.toString() : '';
 
-          let hasCodeOnPage = false;
-          const codeEls = document.querySelectorAll('pre, code, [role="code"], .CodeMirror, .monaco-editor, .highlight, .code-block');
-          if (codeEls.length > 0) {
-            for (const el of codeEls) {
-              if ((el.textContent || '').trim().length > 20) {
-                hasCodeOnPage = true;
-                break;
-              }
-            }
+          let codeText = '';
+          const codeSelectors = [
+            'pre', 'code',
+            '[role="code"]',
+            '.CodeMirror', '.monaco-editor', '.cm-content', '.view-lines',
+            '.highlight', '.code-block', '.hljs', '.prism-code',
+            '.blob-code-content', '.react-code-lines', '.react-file-line',
+            '.file-code', '.js-file-line-container',
+            '.markdown-body pre', '.post-text pre', '.answer pre',
+            '.code-container', '.sourceCode'
+          ].join(', ');
+
+          const allCode = document.querySelectorAll(codeSelectors);
+          let biggest = '';
+          for (const el of allCode) {
+            const t = (el.textContent || '').trim();
+            if (t.length > biggest.length) biggest = t;
           }
+          if (biggest.length > 20) codeText = biggest;
+
+          if (codeText.length > 30000) codeText = codeText.substring(0, 30000);
 
           return {
             selectedText: selectedText,
-            hasCodeOnPage: hasCodeOnPage,
-            pageText: document.title
+            codeText: codeText
           };
         }
       });
@@ -182,7 +192,7 @@ async function handleAskSnapToAI(info, tab) {
         if (result.result.selectedText && result.result.selectedText.length > (pageContext.selectedText || '').length) {
           pageContext.selectedText = result.result.selectedText;
         }
-        pageContext.hasCodeOnPage = result.result.hasCodeOnPage || false;
+        pageContext.codeText = result.result.codeText || '';
       }
     } catch (e) {
       console.log('[SnapToAI] Context extraction failed (page may be restricted):', e.message);
