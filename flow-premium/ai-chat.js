@@ -276,7 +276,7 @@ async function initializeChat() {
       updateVerdictButtonVisibility();
     }
 
-    await chrome.storage.session.remove('askAiPayload');
+    try { await chrome.storage.session.remove('askAiPayload'); } catch (e) { console.log('[SnapToAI] Cleanup note:', e.message); }
 
     setTimeout(() => {
       const chatInput = document.getElementById('chatInput');
