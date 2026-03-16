@@ -210,12 +210,15 @@ async function initializeChat() {
   
   if (isContextMenu) {
     const errorType = urlParams.get('error');
-    if (errorType === 'storage' || errorType === 'restricted') {
+    if (errorType === 'storage' || errorType === 'restricted' || errorType === 'failed') {
       currentImages = [];
       const previewContainer = document.querySelector('.image-preview');
-      const errorMsg = errorType === 'restricted' 
-        ? { icon: '🔒', title: "Can't analyze this page", desc: 'Chrome blocks extensions from accessing<br>internal pages like Settings, Extensions, and Web Store.<br><br>Navigate to a regular webpage and try again.' }
-        : { icon: '⚠️', title: "Couldn't load page context", desc: 'Storage limit reached. Try right-clicking again<br>or use the AI button in the popup instead.' };
+      const errorMessages = {
+        restricted: { icon: '🔒', title: "Can't analyze this page", desc: 'Chrome blocks extensions from accessing<br>internal pages like Settings, Extensions, and Web Store.<br><br>Navigate to a regular webpage and try again.' },
+        storage: { icon: '⚠️', title: "Couldn't load page context", desc: 'Storage limit reached. Try right-clicking again<br>or use the AI button in the popup instead.' },
+        failed: { icon: '❌', title: 'Something went wrong', desc: 'Could not capture the page content.<br>Try right-clicking again or use the AI button in the popup.' }
+      };
+      const errorMsg = errorMessages[errorType] || errorMessages.failed;
       previewContainer.innerHTML = `
         <div style="padding: 20px; text-align: center; color: #ff6b6b;">
           <div style="font-size: 42px; margin-bottom: 8px;">${errorMsg.icon}</div>

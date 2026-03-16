@@ -167,48 +167,92 @@ async function handleAskSnapToAI(info, tab) {
       mediaType: info.mediaType || ''
     };
 
-    try {
-      const [result] = await chrome.scripting.executeScript({
-        target: { tabId: tab.id, frameIds: [info.frameId || 0] },
-        func: () => {
-          const sel = window.getSelection();
-          const selectedText = sel ? sel.toString() : '';
+    const extractCodeFunc = () => {
+      const sel = window.getSelection();
+      const userSelectedText = sel ? sel.toString() : '';
 
-          let codeText = '';
-          const codeSelectors = [
-            'pre', 'code',
-            '[role="code"]',
-            '.CodeMirror', '.monaco-editor', '.cm-content', '.view-lines',
-            '.highlight', '.code-block', '.hljs', '.prism-code',
-            '.blob-code-content', '.react-code-lines', '.react-file-line',
-            '.file-code', '.js-file-line-container',
-            '.markdown-body pre', '.post-text pre', '.answer pre',
-            '.code-container', '.sourceCode'
-          ].join(', ');
+      let codeText = '';
+      const codeSelectors = [
+        'pre', 'code',
+        '[role="code"]',
+        '.CodeMirror', '.monaco-editor', '.cm-content', '.view-lines',
+        '.highlight', '.code-block', '.hljs', '.prism-code',
+        '.blob-code-content', '.react-code-lines', '.react-file-line',
+        '.file-code', '.js-file-line-container',
+        '.markdown-body pre', '.post-text pre', '.answer pre',
+        '.code-container', '.sourceCode',
+        'textarea', '.ace_editor', '.cm-editor'
+      ].join(', ');
 
-          const allCode = document.querySelectorAll(codeSelectors);
-          let biggest = '';
-          for (const el of allCode) {
-            const t = (el.textContent || '').trim();
-            if (t.length > biggest.length) biggest = t;
-          }
-          if (biggest.length > 20) codeText = biggest;
-
-          if (codeText.length > 30000) codeText = codeText.substring(0, 30000);
-
-          return {
-            selectedText: selectedText,
-            codeText: codeText
-          };
+      const allCode = document.querySelectorAll(codeSelectors);
+      let biggest = '';
+      for (const el of allCode) {
+        let t = '';
+        if (el.tagName === 'TEXTAREA') {
+          t = (el.value || '').trim();
+        } else {
+          t = (el.textContent || '').trim();
         }
-      });
-
-      if (result && result.result) {
-        if (result.result.selectedText && result.result.selectedText.length > (pageContext.selectedText || '').length) {
-          pageContext.selectedText = result.result.selectedText;
-        }
-        pageContext.codeText = result.result.codeText || '';
+        if (t.length > biggest.length) biggest = t;
       }
+      if (biggest.length > 20) codeText = biggest;
+
+      if (!codeText && !userSelectedText) {
+        const body = document.body;
+        if (body) {
+          const fullText = (body.innerText || '').trim();
+          const lines = fullText.split('\n');
+          let indentedLines = 0;
+          let bracketLines = 0;
+          for (const line of lines.slice(0, 100)) {
+            if (line.match(/^[\s\t]{2,}/)) indentedLines++;
+            if (line.match(/[{};()=>]/)) bracketLines++;
+          }
+          const ratio = lines.length > 0 ? (indentedLines + bracketLines) / Math.min(lines.length, 100) : 0;
+          if (ratio > 0.3 && lines.length >= 5 && fullText.length > 100) {
+            codeText = fullText;
+          }
+        }
+      }
+
+      if (codeText.length > 30000) codeText = codeText.substring(0, 30000);
+
+      return {
+        selectedText: userSelectedText,
+        codeText: codeText
+      };
+    };
+
+    try {
+      let extracted = null;
+      const frameId = info.frameId || 0;
+
+      if (frameId > 0) {
+        try {
+          const [frameResult] = await chrome.scripting.executeScript({
+            target: { tabId: tab.id, frameIds: [frameId] },
+            func: extractCodeFunc
+          });
+          if (frameResult?.result?.codeText || frameResult?.result?.selectedText) {
+            extracted = frameResult.result;
+          }
+        } catch (e) {
+          console.log('[SnapToAI] Frame extraction failed, trying main frame:', e.message);
+        }
+      }
+
+      if (!extracted) {
+        const [mainResult] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: extractCodeFunc
+        });
+        extracted = mainResult?.result || {};
+      }
+
+      if (extracted.selectedText && extracted.selectedText.length > (pageContext.selectedText || '').length) {
+        pageContext.selectedText = extracted.selectedText;
+      }
+      pageContext.codeText = extracted.codeText || '';
     } catch (e) {
       console.log('[SnapToAI] Context extraction failed (page may be restricted):', e.message);
     }
@@ -252,7 +296,7 @@ async function handleAskSnapToAI(info, tab) {
     console.error('[SnapToAI] Ask AI error:', err);
     try {
       chrome.windows.create({
-        url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&error=storage'),
+        url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&error=failed'),
         type: 'popup',
         width: 1000,
         height: 700,
