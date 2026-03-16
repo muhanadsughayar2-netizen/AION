@@ -215,31 +215,65 @@ async function initializeChat() {
       const previewContainer = document.querySelector('.image-preview');
 
       if (errorType === 'restricted') {
+        const sourceTab = urlParams.get('sourceTab') || '0';
         previewContainer.innerHTML = `
           <div style="padding: 16px; text-align: center;">
             <div style="font-size: 36px; margin-bottom: 6px;">📋</div>
             <div style="font-size: 13px; font-weight: 600; color: #00d9ff; margin-bottom: 10px;">Can't auto-capture this page</div>
-            <div style="font-size: 11px; color: #889999; line-height: 1.6; margin-bottom: 14px;">
-              Chrome blocks auto-capture on internal pages.<br>
-              Copy the code yourself in 2 seconds:
+            <div style="font-size: 11px; color: #889999; line-height: 1.4; margin-bottom: 12px;">
+              Chrome blocks auto-capture on this page.<br>
+              Grab the code manually with one click:
             </div>
-            <div style="background: rgba(0,217,255,0.08); border: 1px solid rgba(0,217,255,0.2); border-radius: 10px; padding: 12px; text-align: left; margin-bottom: 12px;">
-              <div style="font-size: 11px; color: #aabbcc; margin-bottom: 6px;">
-                <b style="color: #00d9ff;">1.</b> Go back to your code page
-              </div>
-              <div style="font-size: 11px; color: #aabbcc; margin-bottom: 6px;">
-                <b style="color: #00d9ff;">2.</b> Press <kbd style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 1px 5px; font-size: 10px; color: #fff;">Ctrl+A</kbd> to select all
-              </div>
-              <div style="font-size: 11px; color: #aabbcc; margin-bottom: 6px;">
-                <b style="color: #00d9ff;">3.</b> Press <kbd style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 1px 5px; font-size: 10px; color: #fff;">Ctrl+C</kbd> to copy
-              </div>
-              <div style="font-size: 11px; color: #aabbcc;">
-                <b style="color: #00d9ff;">4.</b> Come back here and <kbd style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 1px 5px; font-size: 10px; color: #fff;">Ctrl+V</kbd> paste below 👇
-              </div>
+            <button id="grabCodeBtn" data-tab="${sourceTab}" style="
+              background: linear-gradient(135deg, #00d9ff 0%, #0088ff 100%);
+              border: none; border-radius: 8px; color: #fff;
+              padding: 10px 20px; font-size: 13px; font-weight: 700;
+              cursor: pointer; width: 100%; margin-bottom: 10px;
+              transition: opacity 0.2s;
+            ">📋 Grab Code from Page</button>
+            <div style="font-size: 10px; color: #667788; line-height: 1.5;">
+              Or manually: <kbd style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 3px; padding: 1px 4px; font-size: 9px; color: #fff;">Ctrl+A</kbd> → <kbd style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 3px; padding: 1px 4px; font-size: 9px; color: #fff;">Ctrl+C</kbd> → paste below
             </div>
-            <div style="font-size: 10px; color: #667788;">Then just ask your question — the AI will analyze your code</div>
           </div>
         `;
+
+        const grabBtn = document.getElementById('grabCodeBtn');
+        if (grabBtn) {
+          grabBtn.addEventListener('click', async () => {
+            const tabId = parseInt(grabBtn.dataset.tab);
+            if (!tabId) {
+              addBubble('Could not find the source page. Please copy the code manually (Ctrl+A → Ctrl+C) and paste it below.', 'ai');
+              return;
+            }
+            grabBtn.textContent = '⏳ Grabbing code...';
+            grabBtn.style.opacity = '0.6';
+            grabBtn.style.pointerEvents = 'none';
+
+            try {
+              const response = await chrome.runtime.sendMessage({ action: 'grabCodeFromTab', tabId: tabId });
+              if (response && response.success && response.codeText) {
+                const chatInput = document.getElementById('chatInput');
+                chatInput.value = response.codeText;
+                chatInput.focus();
+                grabBtn.textContent = '✅ Code grabbed! Ask your question above';
+                grabBtn.style.background = 'linear-gradient(135deg, #00cc66 0%, #009944 100%)';
+                addBubble('Code grabbed from the page! I pasted it in the input box. Type your question and hit send, or just send it as-is and I\'ll analyze it.', 'ai');
+              } else {
+                grabBtn.textContent = '📋 Grab Code from Page';
+                grabBtn.style.opacity = '1';
+                grabBtn.style.pointerEvents = 'auto';
+                addBubble('Could not grab code from that page. Try copying it manually: go to the page, press Ctrl+A then Ctrl+C, come back here, and Ctrl+V paste into the input below.', 'ai');
+              }
+            } catch (err) {
+              grabBtn.textContent = '📋 Grab Code from Page';
+              grabBtn.style.opacity = '1';
+              grabBtn.style.pointerEvents = 'auto';
+              addBubble('Could not reach the page. Copy the code manually: Ctrl+A → Ctrl+C on the code page, then Ctrl+V paste below.', 'ai');
+            }
+          });
+          grabBtn.addEventListener('mouseenter', () => { if (grabBtn.style.pointerEvents !== 'none') grabBtn.style.opacity = '0.85'; });
+          grabBtn.addEventListener('mouseleave', () => { if (grabBtn.style.pointerEvents !== 'none') grabBtn.style.opacity = '1'; });
+        }
       } else {
         const errorMsg = errorType === 'storage'
           ? { icon: '⚠️', title: "Couldn't load page context", desc: 'Storage limit reached. Try right-clicking again<br>or use the AI button in the popup instead.' }
@@ -322,7 +356,47 @@ async function initializeChat() {
       }, 500);
     } else {
       document.getElementById('chatInput').focus();
-      addBubble('Could not capture content from that page. Try selecting text first, or use the Snap button in the popup instead.', 'ai');
+      const sourceTabId = payload.sourceTabId;
+      if (sourceTabId) {
+        addBubble('Could not auto-capture code from that page. Click the button below to grab it, or paste your code directly into the input.', 'ai');
+        const grabHtml = document.createElement('div');
+        grabHtml.style.cssText = 'padding: 8px 0;';
+        grabHtml.innerHTML = `<button id="grabCodeBtnFallback" style="
+          background: linear-gradient(135deg, #00d9ff 0%, #0088ff 100%);
+          border: none; border-radius: 8px; color: #fff;
+          padding: 8px 16px; font-size: 12px; font-weight: 700;
+          cursor: pointer; transition: opacity 0.2s;
+        ">📋 Grab Code from Page</button>`;
+        document.getElementById('chatThread').appendChild(grabHtml);
+        const fallbackBtn = document.getElementById('grabCodeBtnFallback');
+        fallbackBtn.addEventListener('click', async () => {
+          fallbackBtn.textContent = '⏳ Grabbing...';
+          fallbackBtn.style.opacity = '0.6';
+          fallbackBtn.style.pointerEvents = 'none';
+          try {
+            const resp = await chrome.runtime.sendMessage({ action: 'grabCodeFromTab', tabId: sourceTabId });
+            if (resp && resp.success && resp.codeText) {
+              document.getElementById('chatInput').value = resp.codeText;
+              document.getElementById('chatInput').focus();
+              fallbackBtn.textContent = '✅ Code grabbed!';
+              fallbackBtn.style.background = 'linear-gradient(135deg, #00cc66 0%, #009944 100%)';
+              addBubble('Code grabbed! Hit send or type a question first.', 'ai');
+            } else {
+              fallbackBtn.textContent = '📋 Grab Code from Page';
+              fallbackBtn.style.opacity = '1';
+              fallbackBtn.style.pointerEvents = 'auto';
+              addBubble('Could not grab code. Try Ctrl+A → Ctrl+C on the code page, then paste here.', 'ai');
+            }
+          } catch (e) {
+            fallbackBtn.textContent = '📋 Grab Code from Page';
+            fallbackBtn.style.opacity = '1';
+            fallbackBtn.style.pointerEvents = 'auto';
+            addBubble('Something went wrong. Copy code manually: Ctrl+A → Ctrl+C, then paste below.', 'ai');
+          }
+        });
+      } else {
+        addBubble('Could not capture content from that page. Try selecting text first, or use the Snap button in the popup instead.', 'ai');
+      }
     }
     return;
   }

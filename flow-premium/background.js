@@ -138,7 +138,7 @@ async function handleAskSnapToAI(info, tab) {
     if (!tab || isRestricted) {
       console.log('[SnapToAI] Cannot analyze restricted page:', url);
       chrome.windows.create({
-        url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&error=restricted'),
+        url: chrome.runtime.getURL(`ai-chat.html?source=contextmenu&error=restricted&sourceTab=${tab?.id || 0}`),
         type: 'popup',
         width: 1000,
         height: 700,
@@ -261,6 +261,7 @@ async function handleAskSnapToAI(info, tab) {
     const payload = {
       screenshot: screenshot,
       context: pageContext,
+      sourceTabId: tab.id,
       timestamp: Date.now()
     };
 
@@ -307,6 +308,71 @@ async function handleAskSnapToAI(info, tab) {
     }
   }
 }
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.action === 'grabCodeFromTab') {
+    (async () => {
+      try {
+        const sourceTabId = msg.tabId;
+        if (!sourceTabId) { sendResponse({ success: false, error: 'No source tab' }); return; }
+
+        await chrome.windows.update((await chrome.tabs.get(sourceTabId)).windowId, { focused: true });
+        await chrome.tabs.update(sourceTabId, { active: true });
+        await new Promise(r => setTimeout(r, 300));
+
+        const [result] = await chrome.scripting.executeScript({
+          target: { tabId: sourceTabId },
+          func: () => {
+            let codeText = '';
+            const codeSelectors = [
+              'pre', 'code', '[role="code"]',
+              '.CodeMirror', '.monaco-editor', '.cm-content', '.view-lines',
+              '.highlight', '.code-block', '.hljs', '.prism-code',
+              '.blob-code-content', '.react-code-lines', '.react-file-line',
+              '.file-code', '.js-file-line-container',
+              '.code-container', '.sourceCode',
+              'textarea', '.ace_editor', '.cm-editor'
+            ].join(', ');
+
+            const allCode = document.querySelectorAll(codeSelectors);
+            let biggest = '';
+            for (const el of allCode) {
+              const t = el.tagName === 'TEXTAREA' ? (el.value || '').trim() : (el.textContent || '').trim();
+              if (t.length > biggest.length) biggest = t;
+            }
+            if (biggest.length > 20) codeText = biggest;
+
+            if (!codeText) {
+              const sel = window.getSelection();
+              sel.selectAllChildren(document.body);
+              codeText = sel.toString().trim();
+              sel.removeAllRanges();
+            }
+
+            if (codeText.length > 30000) codeText = codeText.substring(0, 30000);
+            return { codeText };
+          }
+        });
+
+        const code = result?.result?.codeText || '';
+        if (sender.tab) {
+          await chrome.windows.update(sender.tab.windowId, { focused: true });
+          await chrome.tabs.update(sender.tab.id, { active: true });
+        }
+        sendResponse({ success: true, codeText: code });
+      } catch (err) {
+        console.error('[SnapToAI] grabCodeFromTab error:', err);
+        if (sender.tab) {
+          try {
+            await chrome.windows.update(sender.tab.windowId, { focused: true });
+          } catch (e) {}
+        }
+        sendResponse({ success: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+});
 
 // ============================================
 // END ASK SNAPTOAI
