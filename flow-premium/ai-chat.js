@@ -213,21 +213,48 @@ async function initializeChat() {
     if (errorType === 'storage' || errorType === 'restricted' || errorType === 'failed') {
       currentImages = [];
       const previewContainer = document.querySelector('.image-preview');
-      const errorMessages = {
-        restricted: { icon: '🔒', title: "Can't analyze this page", desc: 'Chrome blocks extensions from accessing<br>internal pages like Settings, Extensions, and Web Store.<br><br>Navigate to a regular webpage and try again.' },
-        storage: { icon: '⚠️', title: "Couldn't load page context", desc: 'Storage limit reached. Try right-clicking again<br>or use the AI button in the popup instead.' },
-        failed: { icon: '❌', title: 'Something went wrong', desc: 'Could not capture the page content.<br>Try right-clicking again or use the AI button in the popup.' }
-      };
-      const errorMsg = errorMessages[errorType] || errorMessages.failed;
-      previewContainer.innerHTML = `
-        <div style="padding: 20px; text-align: center; color: #ff6b6b;">
-          <div style="font-size: 42px; margin-bottom: 8px;">${errorMsg.icon}</div>
-          <div style="font-size: 14px; font-weight: 600;">${errorMsg.title}</div>
-          <div style="font-size: 11px; color: #889999; margin-top: 8px; line-height: 1.5;">
-            ${errorMsg.desc}
+
+      if (errorType === 'restricted') {
+        previewContainer.innerHTML = `
+          <div style="padding: 16px; text-align: center;">
+            <div style="font-size: 36px; margin-bottom: 6px;">📋</div>
+            <div style="font-size: 13px; font-weight: 600; color: #00d9ff; margin-bottom: 10px;">Can't auto-capture this page</div>
+            <div style="font-size: 11px; color: #889999; line-height: 1.6; margin-bottom: 14px;">
+              Chrome blocks auto-capture on internal pages.<br>
+              Copy the code yourself in 2 seconds:
+            </div>
+            <div style="background: rgba(0,217,255,0.08); border: 1px solid rgba(0,217,255,0.2); border-radius: 10px; padding: 12px; text-align: left; margin-bottom: 12px;">
+              <div style="font-size: 11px; color: #aabbcc; margin-bottom: 6px;">
+                <b style="color: #00d9ff;">1.</b> Go back to your code page
+              </div>
+              <div style="font-size: 11px; color: #aabbcc; margin-bottom: 6px;">
+                <b style="color: #00d9ff;">2.</b> Press <kbd style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 1px 5px; font-size: 10px; color: #fff;">Ctrl+A</kbd> to select all
+              </div>
+              <div style="font-size: 11px; color: #aabbcc; margin-bottom: 6px;">
+                <b style="color: #00d9ff;">3.</b> Press <kbd style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 1px 5px; font-size: 10px; color: #fff;">Ctrl+C</kbd> to copy
+              </div>
+              <div style="font-size: 11px; color: #aabbcc;">
+                <b style="color: #00d9ff;">4.</b> Come back here and <kbd style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 1px 5px; font-size: 10px; color: #fff;">Ctrl+V</kbd> paste below 👇
+              </div>
+            </div>
+            <div style="font-size: 10px; color: #667788;">Then just ask your question — the AI will analyze your code</div>
           </div>
-        </div>
-      `;
+        `;
+      } else {
+        const errorMsg = errorType === 'storage'
+          ? { icon: '⚠️', title: "Couldn't load page context", desc: 'Storage limit reached. Try right-clicking again<br>or use the AI button in the popup instead.' }
+          : { icon: '❌', title: 'Something went wrong', desc: 'Could not capture the page content.<br>Try right-clicking again or use the AI button in the popup.' };
+        previewContainer.innerHTML = `
+          <div style="padding: 20px; text-align: center; color: #ff6b6b;">
+            <div style="font-size: 42px; margin-bottom: 8px;">${errorMsg.icon}</div>
+            <div style="font-size: 14px; font-weight: 600;">${errorMsg.title}</div>
+            <div style="font-size: 11px; color: #889999; margin-top: 8px; line-height: 1.5;">
+              ${errorMsg.desc}
+            </div>
+          </div>
+        `;
+      }
+
       setupMagicButtons();
       document.getElementById('chatInput').focus();
       return;
