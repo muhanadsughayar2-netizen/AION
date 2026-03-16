@@ -52,6 +52,16 @@ Handles infinite-scroll sites with scroll settlement detection. Works on any web
 - **Known limitations:** Full page capture may timeout in agent mode - use popup FULL PAGE button for guaranteed results
 - Files: agent-chat.html, agent-chat.js, background.js (agentCaptureTab, agentAddSnaps, agentFullPageCapture), content.js
 
+**Ask SnapToAI Context Menu (March 2026):** Right-click any page to analyze with AI:
+- Right-click context menu "Ask SnapToAI" on any page
+- Keyboard shortcut: Ctrl+Shift+A (Cmd+Shift+A on Mac)
+- Captures screenshot + page context (selected text, code blocks, URLs)
+- Smart analysis: long selected text → text-focused analysis; otherwise → screenshot-focused analysis
+- Opens ai-chat.html with source=contextmenu, auto-sends analysis prompt
+- Restricted page guard (chrome://, about://, edge:// pages blocked)
+- Context extraction via chrome.scripting.executeScript: selected text, code blocks, clicked element
+- Files: manifest.json (contextMenus permission, ask-ai command), background.js (registerAskAIContextMenu, handleAskSnapToAI), ai-chat.js (isContextMenu branch in initializeChat)
+
 **Video Tutorials Feature (January 2026):** In-app help system:
 - Small "?" help button in popup header (subtle glassmorphism design)
 - Dropdown menu with 6 tutorial categories: Snap, Snip, Full Page, AI Chat, Annotate, Upload

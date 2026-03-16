@@ -103,6 +103,136 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 });
 
+// ============================================
+// ASK SNAPTOAI - Right-Click Context Menu
+// ============================================
+
+function registerAskAIContextMenu() {
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: 'ask-snaptoai',
+      title: 'Ask SnapToAI',
+      contexts: ['all']
+    });
+  });
+}
+
+registerAskAIContextMenu();
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId === 'ask-snaptoai') {
+    await handleAskSnapToAI(info, tab);
+  }
+});
+
+async function handleAskSnapToAI(info, tab) {
+  try {
+    if (!tab || !tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('about:') || tab.url.startsWith('edge://') || tab.url.startsWith('devtools://') || tab.url.startsWith('chrome-search://') || tab.url.startsWith('view-source:')) {
+      console.log('[SnapToAI] Cannot analyze restricted page');
+      return;
+    }
+
+    await chrome.windows.update(tab.windowId, { focused: true });
+    await chrome.tabs.update(tab.id, { active: true });
+    await new Promise(r => setTimeout(r, 150));
+
+    let screenshot = null;
+    try {
+      screenshot = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    } catch (e) {
+      console.error('[SnapToAI] Screenshot capture failed:', e);
+    }
+
+    let pageContext = {
+      url: tab.url || '',
+      title: tab.title || '',
+      selectedText: info.selectionText || '',
+      linkUrl: info.linkUrl || '',
+      srcUrl: info.srcUrl || '',
+      mediaType: info.mediaType || ''
+    };
+
+    try {
+      const [result] = await chrome.scripting.executeScript({
+        target: { tabId: tab.id, frameIds: [info.frameId || 0] },
+        func: () => {
+          const sel = window.getSelection();
+          const selectedText = sel ? sel.toString() : '';
+
+          let clickedElementInfo = '';
+          const active = document.activeElement;
+          if (active && active !== document.body) {
+            const tag = active.tagName || '';
+            const text = (active.textContent || '').substring(0, 500);
+            clickedElementInfo = `<${tag}> ${text}`;
+          }
+
+          const codeBlocks = [];
+          document.querySelectorAll('pre, code').forEach(el => {
+            const text = (el.textContent || '').trim();
+            if (text.length > 10 && text.length < 5000) {
+              codeBlocks.push(text.substring(0, 2000));
+            }
+          });
+
+          return {
+            selectedText: selectedText,
+            clickedElement: clickedElementInfo,
+            visibleCodeBlocks: codeBlocks.slice(0, 3),
+            pageText: document.title
+          };
+        }
+      });
+
+      if (result && result.result) {
+        if (result.result.selectedText && result.result.selectedText.length > (pageContext.selectedText || '').length) {
+          pageContext.selectedText = result.result.selectedText;
+        }
+        pageContext.clickedElement = result.result.clickedElement || '';
+        pageContext.visibleCodeBlocks = result.result.visibleCodeBlocks || [];
+      }
+    } catch (e) {
+      console.log('[SnapToAI] Context extraction failed (page may be restricted):', e.message);
+    }
+
+    const payload = {
+      screenshot: screenshot,
+      context: pageContext,
+      timestamp: Date.now()
+    };
+
+    await chrome.storage.session.set({ askAiPayload: payload });
+
+    if (screenshot) {
+      await chrome.storage.session.set({
+        selectedSnaps: [screenshot],
+        useIndexedDB: false
+      });
+    }
+
+    chrome.windows.create({
+      url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&count=1'),
+      type: 'popup',
+      width: 1000,
+      height: 700,
+      focused: true
+    });
+
+    console.log('[SnapToAI] Ask AI launched with context:', {
+      hasScreenshot: !!screenshot,
+      selectedTextLength: (pageContext.selectedText || '').length,
+      url: pageContext.url
+    });
+
+  } catch (err) {
+    console.error('[SnapToAI] Ask AI error:', err);
+  }
+}
+
+// ============================================
+// END ASK SNAPTOAI
+// ============================================
+
 // Get current settings
 async function getSettings() {
   const result = await chrome.storage.local.get('snaptoaiSettings');
@@ -118,9 +248,14 @@ let batchBuffer = [];
 let batchMetadata = null;
 
 // Listen for keyboard command (Ctrl+Shift+S)
-chrome.commands.onCommand.addListener((command) => {
+chrome.commands.onCommand.addListener(async (command) => {
   if (command === 'capture') {
     captureScreenshot();
+  } else if (command === 'ask-ai') {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab) {
+      await handleAskSnapToAI({ selectionText: '', frameId: 0 }, tab);
+    }
   }
 });
 

@@ -199,11 +199,60 @@ async function initializeChat() {
   const urlParams = new URLSearchParams(window.location.search);
   const count = urlParams.get('count');
   const isDirect = urlParams.get('direct') === 'true';
+  const isContextMenu = urlParams.get('source') === 'contextmenu';
   
   // Get metadata from session storage
-  const result = await chrome.storage.session.get(['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap']);
+  const result = await chrome.storage.session.get(['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap', 'askAiPayload']);
   currentPageText = result.pageText || '';
   
+  if (isContextMenu && result.askAiPayload) {
+    console.log('[SnapToAI] Context menu mode - auto-analyzing');
+    const payload = result.askAiPayload;
+    const ctx = payload.context || {};
+
+    if (payload.screenshot) {
+      currentImages = [payload.screenshot];
+      const previewContainer = document.querySelector('.image-preview');
+      const placeholder = document.getElementById('imagePlaceholder');
+      if (placeholder) placeholder.style.display = 'none';
+      document.getElementById('previewImage').src = payload.screenshot;
+    }
+
+    let contextInfo = '';
+    if (ctx.url) contextInfo += `**Page:** ${ctx.title || ctx.url}\n`;
+    if (ctx.selectedText) contextInfo += `**Selected text:** ${ctx.selectedText.substring(0, 3000)}\n`;
+    if (ctx.linkUrl) contextInfo += `**Link:** ${ctx.linkUrl}\n`;
+    if (ctx.srcUrl) contextInfo += `**Image source:** ${ctx.srcUrl}\n`;
+
+    let codeContext = '';
+    if (ctx.visibleCodeBlocks && ctx.visibleCodeBlocks.length > 0 && !ctx.selectedText) {
+      codeContext = '\n\n**Code visible on page:**\n```\n' + ctx.visibleCodeBlocks.join('\n---\n').substring(0, 4000) + '\n```';
+    }
+
+    let autoPrompt = '';
+    if (ctx.selectedText && ctx.selectedText.length > 100) {
+      autoPrompt = `Analyze the following content from ${ctx.url || 'this page'}.\n\n${contextInfo}${codeContext}\n\nProvide a clear, helpful analysis. If it's code, explain what it does and identify any issues. If it's text, summarize and explain the key points. If it's an error, explain the cause and how to fix it.`;
+    } else {
+      autoPrompt = `Analyze this screenshot from ${ctx.title || ctx.url || 'this page'}.\n\n${contextInfo}${codeContext}\n\nLook at the screenshot and provide a clear, helpful analysis. Identify what's shown and give useful insights. If you see code or errors, explain them. If you see a UI, give feedback. If you see a chart or data, interpret it. Be direct and practical.`;
+    }
+
+    setupMagicButtons();
+    if (typeof updateVerdictButtonVisibility === 'function') {
+      updateVerdictButtonVisibility();
+    }
+
+    await chrome.storage.session.remove(['askAiPayload', 'selectedSnaps', 'useIndexedDB']);
+
+    setTimeout(() => {
+      const chatInput = document.getElementById('chatInput');
+      if (chatInput) {
+        chatInput.value = autoPrompt;
+        handleSend();
+      }
+    }, 500);
+    return;
+  }
+
   // Direct mode - no images needed
   if (isDirect) {
     console.log('[SnapToAI] Direct AI mode - no images');

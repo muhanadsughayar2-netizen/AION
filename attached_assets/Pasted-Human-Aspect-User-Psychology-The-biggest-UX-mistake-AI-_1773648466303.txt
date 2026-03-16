@@ -1,0 +1,240 @@
+Human Aspect (User Psychology)
+
+The biggest UX mistake AI tools make is forcing users to choose modes.
+
+Bad UX example:
+
+Explain code
+Debug error
+Summarize page
+Analyze chart
+Translate
+
+Users pause and think:
+
+“Which one should I choose?”
+
+That friction reduces usage.
+
+Your architect’s idea — one action:
+
+Ask AI about this
+
+is correct because it follows the “Zero-Decision UX principle.”
+
+The user only needs to think:
+
+I want help with this thing
+
+Then AI decides what to do.
+
+This is exactly how tools like ChatGPT succeeded:
+single input → smart interpretation.
+
+2. The Correct Interaction Model
+
+The recommended flow is:
+
+Right-click → Ask AI about this
+↓
+Side panel opens instantly
+↓
+AI analyzes context
+↓
+User can ask follow-up questions
+
+This removes three major friction points:
+
+No prompt writing required
+
+No choosing AI mode
+
+No leaving the page
+
+That is excellent UX.
+
+3. Why the Side Panel Is the Right Choice
+
+Using the Chrome Side Panel API instead of popups is the right architecture.
+
+Benefits:
+
+Persistent conversation
+
+Users can ask follow-up questions.
+
+Page visibility
+
+The user still sees the page they’re analyzing.
+
+Context continuity
+
+AI can reference the page as they scroll.
+
+This is how modern browser tools behave in the Chrome Web Store ecosystem.
+
+4. Smart Context Detection (Best Implementation)
+
+Your detection rules should be structured like this:
+
+Step 1 — Detect selected text
+
+If selection exists:
+
+selection.length > 0
+
+Send:
+
+selected text
++ screenshot
++ page URL
+
+This solves long code blocks perfectly.
+
+Step 2 — Detect element type
+
+If the user right-clicked an element:
+
+Capture:
+
+element HTML
+element text
+element type
+
+Example element types:
+
+IMG
+A
+PRE
+CODE
+TABLE
+SVG
+Step 3 — Always capture screenshot
+
+Screenshots provide visual context.
+
+But screenshots alone are never enough.
+
+5. Handling Long Code (Correct Approach)
+
+Your current idea is correct.
+
+The system should behave like this:
+
+If code is selected
+
+Send:
+
+selected code
++ screenshot
+
+This allows thousands of lines to be analyzed.
+
+If no code is selected
+
+Send:
+
+visible screenshot
++ detected code block HTML
+
+Example detection:
+
+document.querySelectorAll("pre, code")
+6. The Architect's Idea That Needs One Small Improvement
+
+The architect said:
+
+Always show one menu item.
+
+That’s correct.
+
+But the menu label matters a lot.
+
+Instead of:
+
+Ask AI about this
+
+I strongly recommend:
+
+Ask SnapToAI
+
+Why?
+
+Because it builds brand memory.
+
+Users remember the product name.
+
+7. Optimal UX Flow (Final Design)
+
+Right-click menu:
+
+Ask SnapToAI
+
+User clicks.
+
+Side panel opens instantly:
+
+Analyzing page...
+
+Panel shows preview:
+
+Captured:
+✓ Screenshot
+✓ Selected text (200 lines)
+✓ Page URL
+
+AI begins streaming response.
+
+8. Follow-up Chat (Critical Feature)
+
+After the first response:
+
+Allow conversation:
+
+User:
+Why is this error happening?
+
+AI:
+Because the variable is undefined...
+
+This turns the tool into a page-aware AI assistant.
+
+9. The One UX Feature You Should Add
+
+A quick capture shortcut:
+
+Ctrl + Shift + A
+
+Which instantly runs:
+
+Ask SnapToAI about current page
+
+Without right-clicking.
+
+Power users love shortcuts.
+
+10. Final Architect Recommendation
+
+Yes — build it with:
+
+✔ Single menu item
+✔ Smart auto-detection
+✔ Screenshot + structured context
+✔ Side panel conversation
+✔ Follow-up chat
+
+That architecture is correct and scalable.
+
+One Last Strategic Insight
+
+If you build this correctly, SnapToAI - Screenshot to AI stops being:
+
+Screenshot tool
+
+and becomes:
+
+Browser AI copilot
+
+That’s a much bigger category.
+
+If you'd like, I can also show you the exact Chrome extension architecture (files + event flow) used by successful AI extensions, which will save you a lot of development time.

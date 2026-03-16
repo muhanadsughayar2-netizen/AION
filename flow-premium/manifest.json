@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "2.1.5",
+  "version": "2.2.0",
   "description": "__MSG_extensionDescription__",
   "default_locale": "en",
   "permissions": [
@@ -82,6 +82,13 @@
         "mac": "Command+Shift+S"
       },
       "description": "Capture screenshot"
+    },
+    "ask-ai": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+A",
+        "mac": "Command+Shift+A"
+      },
+      "description": "Ask SnapToAI about current page"
     }
   },
   "icons": {
