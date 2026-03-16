@@ -201,101 +201,30 @@ async function initializeChat() {
   const isDirect = urlParams.get('direct') === 'true';
   const isContextMenu = urlParams.get('source') === 'contextmenu';
   
-  const payloadId = urlParams.get('payloadId');
-  const payloadKey = payloadId ? 'askAi_' + payloadId : null;
-  const keysToGet = ['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap'];
-  if (payloadKey) keysToGet.push(payloadKey);
-  const result = await chrome.storage.session.get(keysToGet);
+  // Get metadata from session storage
+  const result = await chrome.storage.session.get(['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap', 'askAiPayload']);
   currentPageText = result.pageText || '';
   
   if (isContextMenu) {
-    const errorType = urlParams.get('error');
-    if (errorType === 'storage' || errorType === 'restricted' || errorType === 'failed') {
+    const storageError = urlParams.get('error');
+    if (storageError === 'storage') {
       currentImages = [];
       const previewContainer = document.querySelector('.image-preview');
-
-      if (errorType === 'restricted') {
-        const sourceTab = urlParams.get('sourceTab') || '0';
-        previewContainer.innerHTML = `
-          <div style="padding: 16px; text-align: center;">
-            <div style="font-size: 36px; margin-bottom: 6px;">📋</div>
-            <div style="font-size: 13px; font-weight: 600; color: #00d9ff; margin-bottom: 10px;">Can't auto-capture this page</div>
-            <div style="font-size: 11px; color: #889999; line-height: 1.4; margin-bottom: 12px;">
-              Chrome blocks auto-capture on this page.<br>
-              Grab the code manually with one click:
-            </div>
-            <button id="grabCodeBtn" data-tab="${sourceTab}" style="
-              background: linear-gradient(135deg, #00d9ff 0%, #0088ff 100%);
-              border: none; border-radius: 8px; color: #fff;
-              padding: 10px 20px; font-size: 13px; font-weight: 700;
-              cursor: pointer; width: 100%; margin-bottom: 10px;
-              transition: opacity 0.2s;
-            ">📋 Grab Code from Page</button>
-            <div style="font-size: 10px; color: #667788; line-height: 1.5;">
-              Or manually: <kbd style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 3px; padding: 1px 4px; font-size: 9px; color: #fff;">Ctrl+A</kbd> → <kbd style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 3px; padding: 1px 4px; font-size: 9px; color: #fff;">Ctrl+C</kbd> → paste below
-            </div>
+      previewContainer.innerHTML = `
+        <div style="padding: 20px; text-align: center; color: #ff6b6b;">
+          <div style="font-size: 42px; margin-bottom: 8px;">⚠️</div>
+          <div style="font-size: 14px; font-weight: 600;">Couldn't load page context</div>
+          <div style="font-size: 11px; color: #889999; margin-top: 8px; line-height: 1.5;">
+            Storage limit reached. Try right-clicking again<br>or use the AI button in the popup instead.
           </div>
-        `;
-
-        const grabBtn = document.getElementById('grabCodeBtn');
-        if (grabBtn) {
-          grabBtn.addEventListener('click', async () => {
-            const tabId = parseInt(grabBtn.dataset.tab);
-            if (!tabId) {
-              addBubble('Could not find the source page. Please copy the code manually (Ctrl+A → Ctrl+C) and paste it below.', 'ai');
-              return;
-            }
-            grabBtn.textContent = '⏳ Grabbing code...';
-            grabBtn.style.opacity = '0.6';
-            grabBtn.style.pointerEvents = 'none';
-
-            try {
-              const response = await chrome.runtime.sendMessage({ action: 'grabCodeFromTab', tabId: tabId });
-              if (response && response.success && response.codeText) {
-                const chatInput = document.getElementById('chatInput');
-                chatInput.value = response.codeText;
-                chatInput.focus();
-                grabBtn.textContent = '✅ Code grabbed! Ask your question above';
-                grabBtn.style.background = 'linear-gradient(135deg, #00cc66 0%, #009944 100%)';
-                addBubble('Code grabbed from the page! I pasted it in the input box. Type your question and hit send, or just send it as-is and I\'ll analyze it.', 'ai');
-              } else {
-                grabBtn.textContent = '📋 Grab Code from Page';
-                grabBtn.style.opacity = '1';
-                grabBtn.style.pointerEvents = 'auto';
-                addBubble('Could not grab code from that page. Try copying it manually: go to the page, press Ctrl+A then Ctrl+C, come back here, and Ctrl+V paste into the input below.', 'ai');
-              }
-            } catch (err) {
-              grabBtn.textContent = '📋 Grab Code from Page';
-              grabBtn.style.opacity = '1';
-              grabBtn.style.pointerEvents = 'auto';
-              addBubble('Could not reach the page. Copy the code manually: Ctrl+A → Ctrl+C on the code page, then Ctrl+V paste below.', 'ai');
-            }
-          });
-          grabBtn.addEventListener('mouseenter', () => { if (grabBtn.style.pointerEvents !== 'none') grabBtn.style.opacity = '0.85'; });
-          grabBtn.addEventListener('mouseleave', () => { if (grabBtn.style.pointerEvents !== 'none') grabBtn.style.opacity = '1'; });
-        }
-      } else {
-        const errorMsg = errorType === 'storage'
-          ? { icon: '⚠️', title: "Couldn't load page context", desc: 'Storage limit reached. Try right-clicking again<br>or use the AI button in the popup instead.' }
-          : { icon: '❌', title: 'Something went wrong', desc: 'Could not capture the page content.<br>Try right-clicking again or use the AI button in the popup.' };
-        previewContainer.innerHTML = `
-          <div style="padding: 20px; text-align: center; color: #ff6b6b;">
-            <div style="font-size: 42px; margin-bottom: 8px;">${errorMsg.icon}</div>
-            <div style="font-size: 14px; font-weight: 600;">${errorMsg.title}</div>
-            <div style="font-size: 11px; color: #889999; margin-top: 8px; line-height: 1.5;">
-              ${errorMsg.desc}
-            </div>
-          </div>
-        `;
-      }
-
+        </div>
+      `;
       setupMagicButtons();
       document.getElementById('chatInput').focus();
       return;
     }
 
-    const askAiPayload = payloadKey ? result[payloadKey] : null;
-    if (!askAiPayload) {
+    if (!result.askAiPayload) {
       currentImages = [];
       const previewContainer = document.querySelector('.image-preview');
       previewContainer.innerHTML = `
@@ -313,7 +242,7 @@ async function initializeChat() {
     }
 
     console.log('[SnapToAI] Context menu mode - auto-analyzing');
-    const payload = askAiPayload;
+    const payload = result.askAiPayload;
     const ctx = payload.context || {};
 
     if (payload.screenshot) {
@@ -324,18 +253,22 @@ async function initializeChat() {
       document.getElementById('previewImage').src = payload.screenshot;
     }
 
-    let autoPrompt = '';
-    const pageLabel = ctx.title || ctx.url || 'this page';
+    let contextInfo = '';
+    if (ctx.url) contextInfo += `**Page:** ${ctx.title || ctx.url}\n`;
+    if (ctx.selectedText) contextInfo += `**Selected text:** ${ctx.selectedText.substring(0, 3000)}\n`;
+    if (ctx.linkUrl) contextInfo += `**Link:** ${ctx.linkUrl}\n`;
+    if (ctx.srcUrl) contextInfo += `**Image source:** ${ctx.srcUrl}\n`;
 
-    if (ctx.codeText && ctx.codeText.length > 20) {
-      autoPrompt = `I right-clicked on code from **${pageLabel}**.\n\nHere is the full code:\n\n\`\`\`\n${ctx.codeText}\n\`\`\`\n\nAnalyze this code. Explain what it does, identify any bugs or issues, and suggest improvements. Be direct and practical.`;
-    } else if (ctx.selectedText && ctx.selectedText.length > 50) {
-      autoPrompt = `I selected this text from **${pageLabel}**:\n\n${ctx.selectedText.substring(0, 5000)}\n\nAnalyze this content. If it's code, explain what it does and identify issues. If it's text, summarize the key points. If it's an error, explain the cause and fix.`;
+    let codeContext = '';
+    if (ctx.visibleCodeBlocks && ctx.visibleCodeBlocks.length > 0 && !ctx.selectedText) {
+      codeContext = '\n\n**Code visible on page:**\n```\n' + ctx.visibleCodeBlocks.join('\n---\n').substring(0, 4000) + '\n```';
+    }
+
+    let autoPrompt = '';
+    if (ctx.selectedText && ctx.selectedText.length > 100) {
+      autoPrompt = `Analyze the following content from ${ctx.url || 'this page'}.\n\n${contextInfo}${codeContext}\n\nProvide a clear, helpful analysis. If it's code, explain what it does and identify any issues. If it's text, summarize and explain the key points. If it's an error, explain the cause and how to fix it.`;
     } else {
-      let extra = '';
-      if (ctx.linkUrl) extra += `\n**Link:** ${ctx.linkUrl}`;
-      if (ctx.srcUrl) extra += `\n**Image:** ${ctx.srcUrl}`;
-      autoPrompt = `Analyze this screenshot from **${pageLabel}**.${extra}\n\nLook at the screenshot and provide a clear, helpful analysis. Identify what's shown and give useful insights. Be direct and practical.`;
+      autoPrompt = `Analyze this screenshot from ${ctx.title || ctx.url || 'this page'}.\n\n${contextInfo}${codeContext}\n\nLook at the screenshot and provide a clear, helpful analysis. Identify what's shown and give useful insights. If you see code or errors, explain them. If you see a UI, give feedback. If you see a chart or data, interpret it. Be direct and practical.`;
     }
 
     setupMagicButtons();
@@ -343,61 +276,15 @@ async function initializeChat() {
       updateVerdictButtonVisibility();
     }
 
-    if (payloadKey) { try { await chrome.storage.session.remove(payloadKey); } catch (e) { console.log('[SnapToAI] Cleanup note:', e.message); } }
+    try { await chrome.storage.session.remove('askAiPayload'); } catch (e) { console.log('[SnapToAI] Cleanup note:', e.message); }
 
-    const hasContent = (currentImages.length > 0) || (ctx.codeText && ctx.codeText.length > 20) || (ctx.selectedText && ctx.selectedText.length > 20);
-    if (hasContent) {
-      setTimeout(() => {
-        const chatInput = document.getElementById('chatInput');
-        if (chatInput) {
-          chatInput.value = autoPrompt;
-          handleSend();
-        }
-      }, 500);
-    } else {
-      document.getElementById('chatInput').focus();
-      const sourceTabId = payload.sourceTabId;
-      if (sourceTabId) {
-        addBubble('Could not auto-capture code from that page. Click the button below to grab it, or paste your code directly into the input.', 'ai');
-        const grabHtml = document.createElement('div');
-        grabHtml.style.cssText = 'padding: 8px 0;';
-        grabHtml.innerHTML = `<button id="grabCodeBtnFallback" style="
-          background: linear-gradient(135deg, #00d9ff 0%, #0088ff 100%);
-          border: none; border-radius: 8px; color: #fff;
-          padding: 8px 16px; font-size: 12px; font-weight: 700;
-          cursor: pointer; transition: opacity 0.2s;
-        ">📋 Grab Code from Page</button>`;
-        document.getElementById('chatThread').appendChild(grabHtml);
-        const fallbackBtn = document.getElementById('grabCodeBtnFallback');
-        fallbackBtn.addEventListener('click', async () => {
-          fallbackBtn.textContent = '⏳ Grabbing...';
-          fallbackBtn.style.opacity = '0.6';
-          fallbackBtn.style.pointerEvents = 'none';
-          try {
-            const resp = await chrome.runtime.sendMessage({ action: 'grabCodeFromTab', tabId: sourceTabId });
-            if (resp && resp.success && resp.codeText) {
-              document.getElementById('chatInput').value = resp.codeText;
-              document.getElementById('chatInput').focus();
-              fallbackBtn.textContent = '✅ Code grabbed!';
-              fallbackBtn.style.background = 'linear-gradient(135deg, #00cc66 0%, #009944 100%)';
-              addBubble('Code grabbed! Hit send or type a question first.', 'ai');
-            } else {
-              fallbackBtn.textContent = '📋 Grab Code from Page';
-              fallbackBtn.style.opacity = '1';
-              fallbackBtn.style.pointerEvents = 'auto';
-              addBubble('Could not grab code. Try Ctrl+A → Ctrl+C on the code page, then paste here.', 'ai');
-            }
-          } catch (e) {
-            fallbackBtn.textContent = '📋 Grab Code from Page';
-            fallbackBtn.style.opacity = '1';
-            fallbackBtn.style.pointerEvents = 'auto';
-            addBubble('Something went wrong. Copy code manually: Ctrl+A → Ctrl+C, then paste below.', 'ai');
-          }
-        });
-      } else {
-        addBubble('Could not capture content from that page. Try selecting text first, or use the Snap button in the popup instead.', 'ai');
+    setTimeout(() => {
+      const chatInput = document.getElementById('chatInput');
+      if (chatInput) {
+        chatInput.value = autoPrompt;
+        handleSend();
       }
-    }
+    }, 500);
     return;
   }
 

@@ -127,23 +127,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
 async function handleAskSnapToAI(info, tab) {
   try {
-    const url = tab?.url || '';
-    const isRestricted = !url || 
-      url.startsWith('chrome://') || url.startsWith('chrome-extension://') || 
-      url.startsWith('about:') || url.startsWith('edge://') || 
-      url.startsWith('devtools://') || url.startsWith('chrome-search://') || 
-      url.startsWith('view-source:') || url.startsWith('data:') ||
-      url.includes('chromewebstore.google.com') || url.includes('chrome.google.com/webstore') ||
-      url.includes('addons.mozilla.org') || url.includes('microsoftedge.microsoft.com/addons');
-    if (!tab || isRestricted) {
-      console.log('[SnapToAI] Cannot analyze restricted page:', url);
-      chrome.windows.create({
-        url: chrome.runtime.getURL(`ai-chat.html?source=contextmenu&error=restricted&sourceTab=${tab?.id || 0}`),
-        type: 'popup',
-        width: 1000,
-        height: 700,
-        focused: true
-      });
+    if (!tab || !tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('about:') || tab.url.startsWith('edge://') || tab.url.startsWith('devtools://') || tab.url.startsWith('chrome-search://') || tab.url.startsWith('view-source:')) {
+      console.log('[SnapToAI] Cannot analyze restricted page');
       return;
     }
 
@@ -167,106 +152,57 @@ async function handleAskSnapToAI(info, tab) {
       mediaType: info.mediaType || ''
     };
 
-    const extractCodeFunc = () => {
-      const sel = window.getSelection();
-      const userSelectedText = sel ? sel.toString() : '';
-
-      let codeText = '';
-      const codeSelectors = [
-        'pre', 'code',
-        '[role="code"]',
-        '.CodeMirror', '.monaco-editor', '.cm-content', '.view-lines',
-        '.highlight', '.code-block', '.hljs', '.prism-code',
-        '.blob-code-content', '.react-code-lines', '.react-file-line',
-        '.file-code', '.js-file-line-container',
-        '.markdown-body pre', '.post-text pre', '.answer pre',
-        '.code-container', '.sourceCode',
-        'textarea', '.ace_editor', '.cm-editor'
-      ].join(', ');
-
-      const allCode = document.querySelectorAll(codeSelectors);
-      let biggest = '';
-      for (const el of allCode) {
-        let t = '';
-        if (el.tagName === 'TEXTAREA') {
-          t = (el.value || '').trim();
-        } else {
-          t = (el.textContent || '').trim();
-        }
-        if (t.length > biggest.length) biggest = t;
-      }
-      if (biggest.length > 20) codeText = biggest;
-
-      if (!codeText && !userSelectedText) {
-        const body = document.body;
-        if (body) {
-          const fullText = (body.innerText || '').trim();
-          const lines = fullText.split('\n');
-          let indentedLines = 0;
-          let bracketLines = 0;
-          for (const line of lines.slice(0, 100)) {
-            if (line.match(/^[\s\t]{2,}/)) indentedLines++;
-            if (line.match(/[{};()=>]/)) bracketLines++;
-          }
-          const ratio = lines.length > 0 ? (indentedLines + bracketLines) / Math.min(lines.length, 100) : 0;
-          if (ratio > 0.3 && lines.length >= 5 && fullText.length > 100) {
-            codeText = fullText;
-          }
-        }
-      }
-
-      if (codeText.length > 30000) codeText = codeText.substring(0, 30000);
-
-      return {
-        selectedText: userSelectedText,
-        codeText: codeText
-      };
-    };
-
     try {
-      let extracted = null;
-      const frameId = info.frameId || 0;
+      const [result] = await chrome.scripting.executeScript({
+        target: { tabId: tab.id, frameIds: [info.frameId || 0] },
+        func: () => {
+          const sel = window.getSelection();
+          const selectedText = sel ? sel.toString() : '';
 
-      if (frameId > 0) {
-        try {
-          const [frameResult] = await chrome.scripting.executeScript({
-            target: { tabId: tab.id, frameIds: [frameId] },
-            func: extractCodeFunc
-          });
-          if (frameResult?.result?.codeText || frameResult?.result?.selectedText) {
-            extracted = frameResult.result;
+          let clickedElementInfo = '';
+          const active = document.activeElement;
+          if (active && active !== document.body) {
+            const tag = active.tagName || '';
+            const text = (active.textContent || '').substring(0, 500);
+            clickedElementInfo = `<${tag}> ${text}`;
           }
-        } catch (e) {
-          console.log('[SnapToAI] Frame extraction failed, trying main frame:', e.message);
+
+          const codeBlocks = [];
+          document.querySelectorAll('pre, code').forEach(el => {
+            const text = (el.textContent || '').trim();
+            if (text.length > 10 && text.length < 5000) {
+              codeBlocks.push(text.substring(0, 2000));
+            }
+          });
+
+          return {
+            selectedText: selectedText,
+            clickedElement: clickedElementInfo,
+            visibleCodeBlocks: codeBlocks.slice(0, 3),
+            pageText: document.title
+          };
         }
-      }
+      });
 
-      if (!extracted) {
-        const [mainResult] = await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: extractCodeFunc
-        });
-        extracted = mainResult?.result || {};
+      if (result && result.result) {
+        if (result.result.selectedText && result.result.selectedText.length > (pageContext.selectedText || '').length) {
+          pageContext.selectedText = result.result.selectedText;
+        }
+        pageContext.clickedElement = result.result.clickedElement || '';
+        pageContext.visibleCodeBlocks = result.result.visibleCodeBlocks || [];
       }
-
-      if (extracted.selectedText && extracted.selectedText.length > (pageContext.selectedText || '').length) {
-        pageContext.selectedText = extracted.selectedText;
-      }
-      pageContext.codeText = extracted.codeText || '';
     } catch (e) {
       console.log('[SnapToAI] Context extraction failed (page may be restricted):', e.message);
     }
 
-    const payloadId = Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
     const payload = {
       screenshot: screenshot,
       context: pageContext,
-      sourceTabId: tab.id,
       timestamp: Date.now()
     };
 
     try {
-      await chrome.storage.session.set({ ['askAi_' + payloadId]: payload });
+      await chrome.storage.session.set({ askAiPayload: payload });
     } catch (storageErr) {
       console.error('[SnapToAI] Failed to store Ask AI payload:', storageErr);
       chrome.windows.create({
@@ -280,7 +216,7 @@ async function handleAskSnapToAI(info, tab) {
     }
 
     chrome.windows.create({
-      url: chrome.runtime.getURL(`ai-chat.html?source=contextmenu&payloadId=${payloadId}&count=1`),
+      url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&count=1'),
       type: 'popup',
       width: 1000,
       height: 700,
@@ -295,84 +231,8 @@ async function handleAskSnapToAI(info, tab) {
 
   } catch (err) {
     console.error('[SnapToAI] Ask AI error:', err);
-    try {
-      chrome.windows.create({
-        url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&error=failed'),
-        type: 'popup',
-        width: 1000,
-        height: 700,
-        focused: true
-      });
-    } catch (e) {
-      console.error('[SnapToAI] Could not open fallback chat:', e);
-    }
   }
 }
-
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg.action === 'grabCodeFromTab') {
-    (async () => {
-      try {
-        const sourceTabId = msg.tabId;
-        if (!sourceTabId) { sendResponse({ success: false, error: 'No source tab' }); return; }
-
-        await chrome.windows.update((await chrome.tabs.get(sourceTabId)).windowId, { focused: true });
-        await chrome.tabs.update(sourceTabId, { active: true });
-        await new Promise(r => setTimeout(r, 300));
-
-        const [result] = await chrome.scripting.executeScript({
-          target: { tabId: sourceTabId },
-          func: () => {
-            let codeText = '';
-            const codeSelectors = [
-              'pre', 'code', '[role="code"]',
-              '.CodeMirror', '.monaco-editor', '.cm-content', '.view-lines',
-              '.highlight', '.code-block', '.hljs', '.prism-code',
-              '.blob-code-content', '.react-code-lines', '.react-file-line',
-              '.file-code', '.js-file-line-container',
-              '.code-container', '.sourceCode',
-              'textarea', '.ace_editor', '.cm-editor'
-            ].join(', ');
-
-            const allCode = document.querySelectorAll(codeSelectors);
-            let biggest = '';
-            for (const el of allCode) {
-              const t = el.tagName === 'TEXTAREA' ? (el.value || '').trim() : (el.textContent || '').trim();
-              if (t.length > biggest.length) biggest = t;
-            }
-            if (biggest.length > 20) codeText = biggest;
-
-            if (!codeText) {
-              const sel = window.getSelection();
-              sel.selectAllChildren(document.body);
-              codeText = sel.toString().trim();
-              sel.removeAllRanges();
-            }
-
-            if (codeText.length > 30000) codeText = codeText.substring(0, 30000);
-            return { codeText };
-          }
-        });
-
-        const code = result?.result?.codeText || '';
-        if (sender.tab) {
-          await chrome.windows.update(sender.tab.windowId, { focused: true });
-          await chrome.tabs.update(sender.tab.id, { active: true });
-        }
-        sendResponse({ success: true, codeText: code });
-      } catch (err) {
-        console.error('[SnapToAI] grabCodeFromTab error:', err);
-        if (sender.tab) {
-          try {
-            await chrome.windows.update(sender.tab.windowId, { focused: true });
-          } catch (e) {}
-        }
-        sendResponse({ success: false, error: err.message });
-      }
-    })();
-    return true;
-  }
-});
 
 // ============================================
 // END ASK SNAPTOAI
