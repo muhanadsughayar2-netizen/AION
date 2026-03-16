@@ -201,13 +201,18 @@ async function handleAskSnapToAI(info, tab) {
       timestamp: Date.now()
     };
 
-    await chrome.storage.session.set({ askAiPayload: payload });
-
-    if (screenshot) {
-      await chrome.storage.session.set({
-        selectedSnaps: [screenshot],
-        useIndexedDB: false
+    try {
+      await chrome.storage.session.set({ askAiPayload: payload });
+    } catch (storageErr) {
+      console.error('[SnapToAI] Failed to store Ask AI payload:', storageErr);
+      chrome.windows.create({
+        url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&error=storage'),
+        type: 'popup',
+        width: 1000,
+        height: 700,
+        focused: true
       });
+      return;
     }
 
     chrome.windows.create({

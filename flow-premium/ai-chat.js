@@ -205,7 +205,42 @@ async function initializeChat() {
   const result = await chrome.storage.session.get(['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap', 'askAiPayload']);
   currentPageText = result.pageText || '';
   
-  if (isContextMenu && result.askAiPayload) {
+  if (isContextMenu) {
+    const storageError = urlParams.get('error');
+    if (storageError === 'storage') {
+      currentImages = [];
+      const previewContainer = document.querySelector('.image-preview');
+      previewContainer.innerHTML = `
+        <div style="padding: 20px; text-align: center; color: #ff6b6b;">
+          <div style="font-size: 42px; margin-bottom: 8px;">⚠️</div>
+          <div style="font-size: 14px; font-weight: 600;">Couldn't load page context</div>
+          <div style="font-size: 11px; color: #889999; margin-top: 8px; line-height: 1.5;">
+            Storage limit reached. Try right-clicking again<br>or use the AI button in the popup instead.
+          </div>
+        </div>
+      `;
+      setupMagicButtons();
+      document.getElementById('chatInput').focus();
+      return;
+    }
+
+    if (!result.askAiPayload) {
+      currentImages = [];
+      const previewContainer = document.querySelector('.image-preview');
+      previewContainer.innerHTML = `
+        <div style="padding: 20px; text-align: center; color: #ff6b6b;">
+          <div style="font-size: 42px; margin-bottom: 8px;">⚠️</div>
+          <div style="font-size: 14px; font-weight: 600;">Context not found</div>
+          <div style="font-size: 11px; color: #889999; margin-top: 8px; line-height: 1.5;">
+            Page context expired or failed to load.<br>Please right-click the page again to retry.
+          </div>
+        </div>
+      `;
+      setupMagicButtons();
+      document.getElementById('chatInput').focus();
+      return;
+    }
+
     console.log('[SnapToAI] Context menu mode - auto-analyzing');
     const payload = result.askAiPayload;
     const ctx = payload.context || {};
@@ -241,7 +276,7 @@ async function initializeChat() {
       updateVerdictButtonVisibility();
     }
 
-    await chrome.storage.session.remove(['askAiPayload', 'selectedSnaps', 'useIndexedDB']);
+    await chrome.storage.session.remove('askAiPayload');
 
     setTimeout(() => {
       const chatInput = document.getElementById('chatInput');
