@@ -201,8 +201,11 @@ async function initializeChat() {
   const isDirect = urlParams.get('direct') === 'true';
   const isContextMenu = urlParams.get('source') === 'contextmenu';
   
-  // Get metadata from session storage
-  const result = await chrome.storage.session.get(['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap', 'askAiPayload']);
+  const payloadId = urlParams.get('payloadId');
+  const payloadKey = payloadId ? 'askAi_' + payloadId : null;
+  const keysToGet = ['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap'];
+  if (payloadKey) keysToGet.push(payloadKey);
+  const result = await chrome.storage.session.get(keysToGet);
   currentPageText = result.pageText || '';
   
   if (isContextMenu) {
@@ -224,7 +227,8 @@ async function initializeChat() {
       return;
     }
 
-    if (!result.askAiPayload) {
+    const askAiPayload = payloadKey ? result[payloadKey] : null;
+    if (!askAiPayload) {
       currentImages = [];
       const previewContainer = document.querySelector('.image-preview');
       previewContainer.innerHTML = `
@@ -242,7 +246,7 @@ async function initializeChat() {
     }
 
     console.log('[SnapToAI] Context menu mode - auto-analyzing');
-    const payload = result.askAiPayload;
+    const payload = askAiPayload;
     const ctx = payload.context || {};
 
     if (payload.screenshot) {
@@ -272,15 +276,21 @@ async function initializeChat() {
       updateVerdictButtonVisibility();
     }
 
-    try { await chrome.storage.session.remove('askAiPayload'); } catch (e) { console.log('[SnapToAI] Cleanup note:', e.message); }
+    if (payloadKey) { try { await chrome.storage.session.remove(payloadKey); } catch (e) { console.log('[SnapToAI] Cleanup note:', e.message); } }
 
-    setTimeout(() => {
-      const chatInput = document.getElementById('chatInput');
-      if (chatInput) {
-        chatInput.value = autoPrompt;
-        handleSend();
-      }
-    }, 500);
+    const hasContent = (currentImages.length > 0) || (ctx.codeText && ctx.codeText.length > 20) || (ctx.selectedText && ctx.selectedText.length > 20);
+    if (hasContent) {
+      setTimeout(() => {
+        const chatInput = document.getElementById('chatInput');
+        if (chatInput) {
+          chatInput.value = autoPrompt;
+          handleSend();
+        }
+      }, 500);
+    } else {
+      document.getElementById('chatInput').focus();
+      addBubble('Could not capture content from that page. Try selecting text first, or use the Snap button in the popup instead.', 'ai');
+    }
     return;
   }
 

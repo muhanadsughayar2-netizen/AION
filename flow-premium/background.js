@@ -127,8 +127,16 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
 async function handleAskSnapToAI(info, tab) {
   try {
-    if (!tab || !tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('about:') || tab.url.startsWith('edge://') || tab.url.startsWith('devtools://') || tab.url.startsWith('chrome-search://') || tab.url.startsWith('view-source:')) {
-      console.log('[SnapToAI] Cannot analyze restricted page');
+    const url = tab?.url || '';
+    const isRestricted = !url || 
+      url.startsWith('chrome://') || url.startsWith('chrome-extension://') || 
+      url.startsWith('about:') || url.startsWith('edge://') || 
+      url.startsWith('devtools://') || url.startsWith('chrome-search://') || 
+      url.startsWith('view-source:') || url.startsWith('data:') ||
+      url.includes('chromewebstore.google.com') || url.includes('chrome.google.com/webstore') ||
+      url.includes('addons.mozilla.org') || url.includes('microsoftedge.microsoft.com/addons');
+    if (!tab || isRestricted) {
+      console.log('[SnapToAI] Cannot analyze restricted page:', url);
       return;
     }
 
@@ -198,6 +206,7 @@ async function handleAskSnapToAI(info, tab) {
       console.log('[SnapToAI] Context extraction failed (page may be restricted):', e.message);
     }
 
+    const payloadId = Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
     const payload = {
       screenshot: screenshot,
       context: pageContext,
@@ -205,7 +214,7 @@ async function handleAskSnapToAI(info, tab) {
     };
 
     try {
-      await chrome.storage.session.set({ askAiPayload: payload });
+      await chrome.storage.session.set({ ['askAi_' + payloadId]: payload });
     } catch (storageErr) {
       console.error('[SnapToAI] Failed to store Ask AI payload:', storageErr);
       chrome.windows.create({
@@ -219,7 +228,7 @@ async function handleAskSnapToAI(info, tab) {
     }
 
     chrome.windows.create({
-      url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&count=1'),
+      url: chrome.runtime.getURL(`ai-chat.html?source=contextmenu&payloadId=${payloadId}&count=1`),
       type: 'popup',
       width: 1000,
       height: 700,
