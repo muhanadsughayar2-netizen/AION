@@ -42,7 +42,7 @@ async function handleGoogleSignIn() {
 
     const clientId = chrome.runtime.getManifest().oauth2.client_id;
     const redirectUrl = chrome.identity.getRedirectURL();
-    const scopes = 'openid email profile https://www.googleapis.com/auth/generative-language';
+    const scopes = 'openid email profile';
     const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
       '?client_id=' + encodeURIComponent(clientId) +
       '&response_type=token' +
@@ -96,11 +96,6 @@ async function handleGoogleSignIn() {
     };
 
     await chrome.storage.local.set({ snaptoai_user: userData });
-
-    await chrome.storage.local.set({
-      snaptoai_oauth_token: token,
-      snaptoai_oauth_token_time: Date.now()
-    });
 
     const deviceResult = await chrome.storage.local.get('snaptoai_device_id');
     let deviceId = deviceResult.snaptoai_device_id;

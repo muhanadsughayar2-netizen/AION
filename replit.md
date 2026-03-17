@@ -89,18 +89,17 @@ Handles infinite-scroll sites with scroll settlement detection. Works on any web
 - **Files:** subscription.js (email-based check), options.js/html (status UI), app.py (/api/subscription/status, /api/whop/webhook)
 - **Environment Secrets:** WHOP_API_KEY, MONTHLY_PLAN_ID, YEARLY_PLAN_ID
 
-**OAuth-Based Gemini Access (March 2026):**
-- Google Sign-In now includes `generative-language` scope for automatic Gemini API access
-- Users no longer need to manually copy-paste a Gemini API key — it works automatically after sign-in
-- OAuth token stored in chrome.storage.local (snaptoai_oauth_token, snaptoai_oauth_token_time)
-- Silent token refresh via non-interactive launchWebAuthFlow (tokens expire after ~60 min)
+**Centralized Gemini Credential System (March 2026):**
 - Centralized credential helper: `gemini-auth.js` (window.SnapToAIGeminiAuth)
   - `getCredential()` returns { type, token, makeUrl(), makeStreamUrl(), makeHeaders() }
-  - Tries OAuth token first, falls back to manual API key (geminiApiKey in chrome.storage.sync)
+  - Tries OAuth token first (if generative-language scope granted), falls back to manual API key
   - `hasAnyCredential()` checks if either OAuth or manual key exists
-- Manual API key still supported as fallback in Settings UI
+  - `requestGeminiAccess()` triggers interactive OAuth consent for generative-language scope
+- Manual API key is the primary method (geminiApiKey in chrome.storage.sync)
+- OAuth Gemini access available when GCP project has generative-language scope configured
+- Sign-in flow does NOT request generative-language scope (avoids invalid_scope error)
 - OAuth uses Bearer token in Authorization header; API key uses ?key= query param
-- Files: gemini-auth.js (new), manifest.json (scope added), popup.js (token storage), ai-chat.js (all API calls updated), popup.html/ai-chat.html (script include)
+- Files: gemini-auth.js (new), ai-chat.js (all API calls updated), popup.js (API calls updated), popup.html/ai-chat.html (script include)
 
 **Google Sign-In System (March 2026):**
 - Sign-in gate on first extension open via `chrome.identity` + Google OAuth

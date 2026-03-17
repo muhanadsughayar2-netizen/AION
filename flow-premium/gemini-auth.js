@@ -1,7 +1,7 @@
 window.SnapToAIGeminiAuth = (function() {
   const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview';
-  const TOKEN_MAX_AGE = 50 * 60 * 1000;
   const REQUIRED_SCOPE = 'https://www.googleapis.com/auth/generative-language';
+  const TOKEN_MAX_AGE = 50 * 60 * 1000;
 
   let refreshInFlight = null;
 
@@ -12,15 +12,13 @@ window.SnapToAIGeminiAuth = (function() {
     const age = Date.now() - (result.snaptoai_oauth_token_time || 0);
     if (age > TOKEN_MAX_AGE) {
       const refreshed = await deduplicatedRefresh();
-      if (refreshed) return refreshed;
-      return null;
+      return refreshed || null;
     }
 
     const valid = await validateToken(result.snaptoai_oauth_token);
     if (!valid) {
       const refreshed = await deduplicatedRefresh();
-      if (refreshed) return refreshed;
-      return null;
+      return refreshed || null;
     }
 
     return result.snaptoai_oauth_token;
@@ -74,7 +72,7 @@ window.SnapToAIGeminiAuth = (function() {
         snaptoai_oauth_token: newToken,
         snaptoai_oauth_token_time: Date.now()
       });
-      console.log('[SnapToAI] OAuth token refreshed silently');
+      console.log('[SnapToAI] OAuth token refreshed with Gemini scope');
       return newToken;
     } catch (e) {
       console.log('[SnapToAI] Silent token refresh failed:', e.message);
@@ -82,7 +80,7 @@ window.SnapToAIGeminiAuth = (function() {
     }
   }
 
-  async function interactiveReauth() {
+  async function requestGeminiAccess() {
     try {
       const clientId = chrome.runtime.getManifest().oauth2.client_id;
       const redirectUrl = chrome.identity.getRedirectURL();
@@ -97,7 +95,7 @@ window.SnapToAIGeminiAuth = (function() {
       const responseUrl = await new Promise((resolve, reject) => {
         chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, (url) => {
           if (chrome.runtime.lastError || !url) {
-            reject(new Error(chrome.runtime.lastError?.message || 'Re-auth failed'));
+            reject(new Error(chrome.runtime.lastError?.message || 'Access request failed'));
           } else {
             resolve(url);
           }
@@ -112,10 +110,10 @@ window.SnapToAIGeminiAuth = (function() {
         snaptoai_oauth_token: newToken,
         snaptoai_oauth_token_time: Date.now()
       });
-      console.log('[SnapToAI] OAuth re-auth completed with full scopes');
+      console.log('[SnapToAI] Gemini access granted via OAuth');
       return newToken;
     } catch (e) {
-      console.log('[SnapToAI] Interactive re-auth failed:', e.message);
+      console.log('[SnapToAI] Gemini access request failed:', e.message);
       return null;
     }
   }
@@ -173,6 +171,6 @@ window.SnapToAIGeminiAuth = (function() {
     getCredential: getCredential,
     hasAnyCredential: hasAnyCredential,
     refreshOAuthToken: refreshOAuthToken,
-    interactiveReauth: interactiveReauth
+    requestGeminiAccess: requestGeminiAccess
   };
 })();
