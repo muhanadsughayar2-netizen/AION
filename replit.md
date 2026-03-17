@@ -89,18 +89,6 @@ Handles infinite-scroll sites with scroll settlement detection. Works on any web
 - **Files:** subscription.js (email-based check), options.js/html (status UI), app.py (/api/subscription/status, /api/whop/webhook)
 - **Environment Secrets:** WHOP_API_KEY, MONTHLY_PLAN_ID, YEARLY_PLAN_ID
 
-**Centralized Gemini Credential System (March 2026):**
-- Centralized credential helper: `gemini-auth.js` (window.SnapToAIGeminiAuth)
-  - `getCredential()` returns { type, token, makeUrl(), makeStreamUrl(), makeHeaders() }
-  - Tries OAuth token first (if generative-language scope granted), falls back to manual API key
-  - `hasAnyCredential()` checks if either OAuth or manual key exists
-  - `requestGeminiAccess()` triggers interactive OAuth consent for generative-language scope
-- Manual API key is the primary method (geminiApiKey in chrome.storage.sync)
-- OAuth Gemini access available when GCP project has generative-language scope configured
-- Sign-in flow does NOT request generative-language scope (avoids invalid_scope error)
-- OAuth uses Bearer token in Authorization header; API key uses ?key= query param
-- Files: gemini-auth.js (new), ai-chat.js (all API calls updated), popup.js (API calls updated), popup.html/ai-chat.html (script include)
-
 **Google Sign-In System (March 2026):**
 - Sign-in gate on first extension open via `chrome.identity` + Google OAuth
 - Full-screen glassmorphic welcome overlay with "Continue with Google" button

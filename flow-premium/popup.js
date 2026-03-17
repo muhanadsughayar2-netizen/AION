@@ -145,7 +145,7 @@ async function handleGoogleSignIn() {
 
 async function handleSignOut() {
   try {
-    await chrome.storage.local.remove(['snaptoai_user', 'snaptoai_oauth_token', 'snaptoai_oauth_token_time']);
+    await chrome.storage.local.remove('snaptoai_user');
     try {
       await chrome.identity.clearAllCachedAuthTokens();
     } catch (e) {}
@@ -3706,8 +3706,8 @@ if (directAiButton) {
       }
     }
     
-    const hasCredential = window.SnapToAIGeminiAuth ? await window.SnapToAIGeminiAuth.hasAnyCredential() : false;
-    if (!hasCredential) {
+    const { geminiApiKey } = await chrome.storage.sync.get(['geminiApiKey']);
+    if (!geminiApiKey) {
       showGeminiModal();
       return;
     }
@@ -4082,9 +4082,9 @@ async function compressImageForAI(dataUrl) {
 }
 
 async function sendToGemini(prompt, isRetry = false) {
-  const popupCred = window.SnapToAIGeminiAuth ? await window.SnapToAIGeminiAuth.getCredential() : null;
-  if (!popupCred) {
-    addChatBubble('Please sign in with Google or set your Gemini API key in Settings.', 'ai');
+  const result = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!result.geminiApiKey) {
+    addChatBubble('Please set your Gemini API key first! Click the AI button in the top row.', 'ai');
     return;
   }
   
@@ -4104,12 +4104,15 @@ async function sendToGemini(prompt, isRetry = false) {
   aiChatInput.value = '';
 
   try {
+    // Compress image to save tokens (only compress once per session)
     if (!aiCompressedImage) {
       aiCompressedImage = await compressImageForAI(aiChatCurrentImage);
     }
     
     const base64Data = aiCompressedImage.split(',')[1];
+    const apiKey = result.geminiApiKey;
     
+    // Queue request to respect free tier limits (5 RPM)
     const data = await aiQueue.add(async () => {
       const requestBody = {
         systemInstruction: {
@@ -4128,15 +4131,16 @@ async function sendToGemini(prompt, isRetry = false) {
         }
       };
       
+      // Include thoughtSignature for multi-turn conversations (Gemini 3)
       if (aiThoughtSignature) {
         requestBody.thoughtSignature = aiThoughtSignature;
       }
 
       const response = await fetch(
-        popupCred.makeUrl('generateContent'),
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
         {
           method: 'POST',
-          headers: popupCred.makeHeaders(),
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody)
         }
       );
@@ -4249,9 +4253,9 @@ document.querySelectorAll('.ai-preset-btn').forEach(btn => {
 
 // Test API without image (uses queue like everything else)
 async function testGeminiAPI() {
-  const testCred = window.SnapToAIGeminiAuth ? await window.SnapToAIGeminiAuth.getCredential() : null;
-  if (!testCred) {
-    addChatBubble('No API access. Sign in with Google or add your API key in Settings.', 'ai');
+  const result = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!result.geminiApiKey) {
+    addChatBubble('No API key set! Click the ✦ button in the top menu to add one.', 'ai');
     return;
   }
   
@@ -4259,12 +4263,13 @@ async function testGeminiAPI() {
   const loadingBubble = addChatBubble('Checking... ⏳', 'ai loading');
   
   try {
+    // Use queue to respect rate limits
     const data = await aiQueue.add(async () => {
       const response = await fetch(
-        testCred.makeUrl('generateContent'),
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${result.geminiApiKey}`,
         {
           method: 'POST',
-          headers: testCred.makeHeaders(),
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: 'Say "API Working!" in 2 words only.' }] }]
           })

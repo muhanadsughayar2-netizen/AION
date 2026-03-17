@@ -476,9 +476,11 @@ async function sendToGemini(prompt, imageDataUrls) {
     }
   }
   
-  const cred = window.SnapToAIGeminiAuth ? await window.SnapToAIGeminiAuth.getCredential() : null;
-  if (!cred) {
-    throw new Error('Please sign in with Google or set your Gemini API key in Settings');
+  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+  const apiKey = keyResult.geminiApiKey;
+  
+  if (!apiKey) {
+    throw new Error('Please set your Gemini API key in Settings');
   }
   
   // Build conversation
@@ -514,10 +516,10 @@ async function sendToGemini(prompt, imageDataUrls) {
   await waitForRateLimit();
   
   const response = await fetch(
-    cred.makeUrl('generateContent'),
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
     {
       method: 'POST',
-      headers: cred.makeHeaders(),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         systemInstruction: {
           parts: [{
@@ -594,8 +596,10 @@ async function handleSend() {
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   
   try {
-    const cred = window.SnapToAIGeminiAuth ? await window.SnapToAIGeminiAuth.getCredential() : null;
-    if (!cred) throw new Error('Please sign in with Google or set your Gemini API key in Settings');
+    // Get API key
+    const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+    const apiKey = keyResult.geminiApiKey;
+    if (!apiKey) throw new Error('Please set your Gemini API key in Settings');
     
     const contents = [];
     for (const msg of conversationHistory) {
@@ -660,10 +664,10 @@ async function handleSend() {
             await waitForRateLimit();
             
             const batchResponse = await fetch(
-              cred.makeUrl('generateContent'),
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
               {
                 method: 'POST',
-                headers: cred.makeHeaders(),
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   systemInstruction: { parts: [{ text: MULTI_IMAGE_PROMPT }] },
                   contents: [{ role: 'user', parts: batchParts }],
@@ -750,10 +754,10 @@ async function handleSend() {
     
     // Stream request
     const response = await fetch(
-      cred.makeStreamUrl(),
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent?alt=sse&key=${apiKey}`,
       {
         method: 'POST',
-        headers: cred.makeHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: contents,
@@ -843,7 +847,9 @@ async function handleSend() {
 async function getFriendlyErrorMessage(errorMsg) {
   const lowerMsg = errorMsg.toLowerCase();
   
-  const hasOwnApiKey = window.SnapToAIGeminiAuth ? await window.SnapToAIGeminiAuth.hasAnyCredential() : false;
+  // Check if user has their own API key
+  const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
+  const hasOwnApiKey = apiResult.geminiApiKey && apiResult.geminiApiKey.length > 20;
   
   // Quota/Rate limit errors
   if (lowerMsg.includes('quota') || lowerMsg.includes('rate') || lowerMsg.includes('limit') || lowerMsg.includes('429') || lowerMsg.includes('exceeded')) {
@@ -998,8 +1004,10 @@ async function startEducationMode() {
   addThinkingBubble();
   
   try {
-    const cred = window.SnapToAIGeminiAuth ? await window.SnapToAIGeminiAuth.getCredential() : null;
-    if (!cred) throw new Error('Please sign in with Google or set your Gemini API key in Settings');
+    // Get API key
+    const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+    const apiKey = keyResult.geminiApiKey;
+    if (!apiKey) throw new Error('Please set your Gemini API key in Settings');
     
     // Build request with education prompt (invisible to user)
     const userParts = [];
@@ -1032,10 +1040,10 @@ async function startEducationMode() {
     await waitForRateLimit();
     
     const response = await fetch(
-      cred.makeUrl('generateContent'),
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
       {
         method: 'POST',
-        headers: cred.makeHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)
       }
     );
@@ -1439,9 +1447,9 @@ document.getElementById('verdictBtn')?.addEventListener('click', async () => {
     return;
   }
   
-  const verdictCred = window.SnapToAIGeminiAuth ? await window.SnapToAIGeminiAuth.getCredential() : null;
-  if (!verdictCred) {
-    addBubble('Please sign in with Google or add your Gemini API key in Settings.', 'ai');
+  const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!apiResult.geminiApiKey) {
+    addBubble('Please add your Gemini API key first.', 'ai');
     return;
   }
   
@@ -1454,6 +1462,8 @@ document.getElementById('verdictBtn')?.addEventListener('click', async () => {
     const imageData = currentImages[0].replace(/^data:image\/\w+;base64,/, '');
     const chatContext = getChatContext();
     
+    // Cost-efficient prompt - ONE API call, 300 tokens max
+    // OMNI-SCORE: The "Truth Engine" - expose traps and wins
     const verdictPrompt = `You are the "Omni-Score Truth Engine". Analyze this image ruthlessly.
 ${chatContext ? `Context: ${chatContext.substring(0, 200)}\n` : ''}
 Auto-detect type (product/stock/menu/real estate/service). Be BRUTALLY honest.
@@ -1462,13 +1472,14 @@ Output ONLY JSON:
 {"score":58,"checks":[{"label":"Rip-Off Radar","value":"22% markup detected","impact":"-15","positive":false},{"label":"Quality Gap","value":"Material costs $4, you pay $40","impact":"-12","positive":false},{"label":"Time Risk","value":"May miss deadline","impact":"-15","positive":false}],"verdict":"Wait 2 weeks - price drops 40% after holiday.","glowColor":"red"}
 (score 0-100, glowColor: gold=80+, green=60-79, red=<60)`;
 
+    // Wait for rate limit before Verdict request
     await waitForRateLimit();
     
     const response = await fetch(
-      verdictCred.makeUrl('generateContent'),
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiResult.geminiApiKey}`,
       {
         method: 'POST',
-        headers: verdictCred.makeHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [
             { text: verdictPrompt },
@@ -1946,9 +1957,9 @@ async function executeMagicButton(index) {
     return;
   }
   
-  const magicCred = window.SnapToAIGeminiAuth ? await window.SnapToAIGeminiAuth.getCredential() : null;
-  if (!magicCred) {
-    addBubble('Please sign in with Google or add your Gemini API key in Settings.', 'ai');
+  const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!apiResult.geminiApiKey) {
+    addBubble('Please add your Gemini API key first.', 'ai');
     releaseRequestLock();
     return;
   }
@@ -2003,10 +2014,10 @@ Respond naturally with clear, helpful analysis. Use markdown formatting (headers
       await waitForRateLimit();
       
       const response = await fetch(
-        magicCred.makeUrl('generateContent'),
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiResult.geminiApiKey}`,
         {
           method: 'POST',
-          headers: magicCred.makeHeaders(),
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts }],
             generationConfig: { maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS_MAGIC', 2048), temperature: getConfig('TEMPERATURE', 0.7) }
