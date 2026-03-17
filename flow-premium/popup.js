@@ -42,7 +42,7 @@ async function handleGoogleSignIn() {
 
     const clientId = chrome.runtime.getManifest().oauth2.client_id;
     const redirectUrl = chrome.identity.getRedirectURL();
-    const scopes = 'openid email profile';
+    const scopes = 'openid email profile https://www.googleapis.com/auth/generative-language';
     const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
       '?client_id=' + encodeURIComponent(clientId) +
       '&response_type=token' +
@@ -97,6 +97,11 @@ async function handleGoogleSignIn() {
 
     await chrome.storage.local.set({ snaptoai_user: userData });
 
+    await chrome.storage.local.set({
+      snaptoai_oauth_token: token,
+      snaptoai_oauth_token_time: Date.now()
+    });
+
     const deviceResult = await chrome.storage.local.get('snaptoai_device_id');
     let deviceId = deviceResult.snaptoai_device_id;
     if (!deviceId) {
@@ -145,7 +150,7 @@ async function handleGoogleSignIn() {
 
 async function handleSignOut() {
   try {
-    await chrome.storage.local.remove('snaptoai_user');
+    await chrome.storage.local.remove(['snaptoai_user', 'snaptoai_oauth_token', 'snaptoai_oauth_token_time']);
     try {
       await chrome.identity.clearAllCachedAuthTokens();
     } catch (e) {}
@@ -3706,8 +3711,8 @@ if (directAiButton) {
       }
     }
     
-    const { geminiApiKey } = await chrome.storage.sync.get(['geminiApiKey']);
-    if (!geminiApiKey) {
+    const hasCredential = window.SnapToAIGeminiAuth ? await window.SnapToAIGeminiAuth.hasAnyCredential() : false;
+    if (!hasCredential) {
       showGeminiModal();
       return;
     }
@@ -4082,9 +4087,9 @@ async function compressImageForAI(dataUrl) {
 }
 
 async function sendToGemini(prompt, isRetry = false) {
-  const result = await chrome.storage.sync.get(['geminiApiKey']);
-  if (!result.geminiApiKey) {
-    addChatBubble('Please set your Gemini API key first! Click the AI button in the top row.', 'ai');
+  const popupCred = window.SnapToAIGeminiAuth ? await window.SnapToAIGeminiAuth.getCredential() : null;
+  if (!popupCred) {
+    addChatBubble('Please sign in with Google or set your Gemini API key in Settings.', 'ai');
     return;
   }
   
@@ -4104,15 +4109,12 @@ async function sendToGemini(prompt, isRetry = false) {
   aiChatInput.value = '';
 
   try {
-    // Compress image to save tokens (only compress once per session)
     if (!aiCompressedImage) {
       aiCompressedImage = await compressImageForAI(aiChatCurrentImage);
     }
     
     const base64Data = aiCompressedImage.split(',')[1];
-    const apiKey = result.geminiApiKey;
     
-    // Queue request to respect free tier limits (5 RPM)
     const data = await aiQueue.add(async () => {
       const requestBody = {
         systemInstruction: {
@@ -4131,16 +4133,15 @@ async function sendToGemini(prompt, isRetry = false) {
         }
       };
       
-      // Include thoughtSignature for multi-turn conversations (Gemini 3)
       if (aiThoughtSignature) {
         requestBody.thoughtSignature = aiThoughtSignature;
       }
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+        popupCred.makeUrl('generateContent'),
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: popupCred.makeHeaders(),
           body: JSON.stringify(requestBody)
         }
       );
@@ -4253,9 +4254,9 @@ document.querySelectorAll('.ai-preset-btn').forEach(btn => {
 
 // Test API without image (uses queue like everything else)
 async function testGeminiAPI() {
-  const result = await chrome.storage.sync.get(['geminiApiKey']);
-  if (!result.geminiApiKey) {
-    addChatBubble('No API key set! Click the ✦ button in the top menu to add one.', 'ai');
+  const testCred = window.SnapToAIGeminiAuth ? await window.SnapToAIGeminiAuth.getCredential() : null;
+  if (!testCred) {
+    addChatBubble('No API access. Sign in with Google or add your API key in Settings.', 'ai');
     return;
   }
   
@@ -4263,13 +4264,12 @@ async function testGeminiAPI() {
   const loadingBubble = addChatBubble('Checking... ⏳', 'ai loading');
   
   try {
-    // Use queue to respect rate limits
     const data = await aiQueue.add(async () => {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${result.geminiApiKey}`,
+        testCred.makeUrl('generateContent'),
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: testCred.makeHeaders(),
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: 'Say "API Working!" in 2 words only.' }] }]
           })
