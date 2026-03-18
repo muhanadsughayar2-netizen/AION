@@ -52,15 +52,15 @@ Handles infinite-scroll sites with scroll settlement detection. Works on any web
 - **Known limitations:** Full page capture may timeout in agent mode - use popup FULL PAGE button for guaranteed results
 - Files: agent-chat.html, agent-chat.js, background.js (agentCaptureTab, agentAddSnaps, agentFullPageCapture), content.js
 
-**Ask SnapToAI Context Menu (March 2026):** Right-click any page to analyze with AI:
-- Right-click context menu "Ask SnapToAI" on any page
-- Keyboard shortcut: Ctrl+Shift+A (Cmd+Shift+A on Mac)
-- Captures screenshot + page context (selected text, code blocks, URLs)
-- Smart analysis: long selected text → text-focused analysis; otherwise → screenshot-focused analysis
-- Opens ai-chat.html with source=contextmenu, auto-sends analysis prompt
-- Restricted page guard (chrome://, about://, edge:// pages blocked)
+**SnapToAI Mouse Wand Menu (March 2026):** Full right-click context menu with ALL core features:
+- Parent menu "SnapToAI" with submenu items for every core action
+- **Capture actions:** Snap Viewport (captureScreenshot with tab.id), Snip Region (captureVisibleTab → annotate.html?mode=snip), Full Page Capture (startFullPageCapture with tab.id)
+- **AI actions:** Ask AI About This (screenshot + context → auto-analysis), Explain Selected Text (selection context only), Analyze This Image (image context only)
+- **Queue/Chat actions:** Send Queue to AI (loads all snaps → ai-chat with count), Open AI Chat (direct mode), View Queue (opens popup.html in window with source tab tracking)
+- Keyboard shortcut: Ctrl+Shift+A (Cmd+Shift+A on Mac) for Ask AI
+- Restricted page guard (chrome://, about://, edge://, devtools:// pages blocked)
 - Context extraction via chrome.scripting.executeScript: selected text, code blocks, clicked element
-- Files: manifest.json (contextMenus permission, ask-ai command), background.js (registerAskAIContextMenu, handleAskSnapToAI), ai-chat.js (isContextMenu branch in initializeChat)
+- Files: manifest.json (contextMenus permission, ask-ai command), background.js (registerSnapToAIMenu, handleAskSnapToAI), ai-chat.js (isContextMenu branch in initializeChat)
 
 **Video Tutorials Feature (January 2026):** In-app help system:
 - Small "?" help button in popup header (subtle glassmorphism design)
