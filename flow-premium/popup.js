@@ -1710,14 +1710,17 @@ async function handleSnipClick() {
       
       const width = 1200;
       const height = 800;
-      const left = (screen.width - width) / 2;
-      const top = (screen.height - height) / 2;
+      const left = Math.round((screen.width - width) / 2);
+      const top = Math.round((screen.height - height) / 2);
       
-      window.open(
-        `annotate.html?mode=snip&snipId=${snipId}`,
-        'Snip',
-        `width=${width},height=${height},left=${left},top=${top}`
-      );
+      chrome.windows.create({
+        url: chrome.runtime.getURL(`annotate.html?mode=snip&snipId=${snipId}`),
+        type: 'popup',
+        width: width,
+        height: height,
+        left: left,
+        top: top
+      });
       
       setStatus('Snip editor opened! ✓', 'success', 2000);
     } else {
@@ -3736,6 +3739,9 @@ if (aiButton) aiButton.addEventListener('click', handleAIButtonClick);
 if (geminiSaveBtn) geminiSaveBtn.addEventListener('click', saveGeminiKey);
 if (geminiClearBtn) geminiClearBtn.addEventListener('click', clearGeminiKey);
 
+const aiManageLink = document.getElementById('aiManageLink');
+if (aiManageLink) aiManageLink.addEventListener('click', handleAIButtonClick);
+
 // Close button for API Key modal
 const geminiModalClose = document.getElementById('geminiModalClose');
 if (geminiModalClose) geminiModalClose.addEventListener('click', hideGeminiModal);
@@ -3914,13 +3920,22 @@ async function showTrialCountdownToast() {
 function updateAiButtonState() {
   chrome.storage.sync.get(['geminiApiKey'], (result) => {
     const aiButton = document.getElementById('aiButton');
-    if (!aiButton) return;
-    if (result.geminiApiKey) {
-      aiButton.innerHTML = '<span class="hero-key-main">● AI Ready</span><span class="hero-key-sub">Manage key</span>';
-      aiButton.className = 'hero-key-btn connected';
-    } else {
-      aiButton.innerHTML = '<span class="hero-key-main">✨ Activate AI Analysis</span><span class="hero-key-sub">20 prompts/day included</span>';
-      aiButton.className = 'hero-key-btn';
+    const aiStatusText = document.getElementById('aiStatusText');
+    const aiStatusDot = document.querySelector('.ai-status-dot');
+    if (aiButton) {
+      if (result.geminiApiKey) {
+        aiButton.innerHTML = '<span class="hero-key-main">● AI Ready</span><span class="hero-key-sub">Manage key</span>';
+        aiButton.className = 'hero-key-btn connected';
+      } else {
+        aiButton.innerHTML = '<span class="hero-key-main">✨ Activate AI Analysis</span><span class="hero-key-sub">20 prompts/day included</span>';
+        aiButton.className = 'hero-key-btn';
+      }
+    }
+    if (aiStatusText) {
+      aiStatusText.textContent = result.geminiApiKey ? 'AI Ready' : 'AI: 3 prompts included';
+    }
+    if (aiStatusDot) {
+      aiStatusDot.style.background = result.geminiApiKey ? '#00ff88' : '#ffaa00';
     }
   });
 }

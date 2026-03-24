@@ -3276,49 +3276,82 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .hero-actions {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
   margin-bottom: 8px;
 }
 
-.hero-action-btn {
+.hero-action-col {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 10px 4px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  color: #fff;
+  gap: 6px;
+}
+
+.hero-action-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #00d9ff;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.hero-action-btn {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 217, 255, 0.06);
+  border: 1.5px solid rgba(0, 217, 255, 0.25);
+  border-radius: 50%;
+  color: #00d9ff;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 }
 
 .hero-action-btn:hover {
-  background: rgba(0, 217, 255, 0.1);
-  border-color: rgba(0, 217, 255, 0.3);
-  transform: translateY(-1px);
+  background: rgba(0, 217, 255, 0.15);
+  border-color: rgba(0, 217, 255, 0.5);
+  transform: scale(1.08);
+  box-shadow: 0 0 16px rgba(0, 217, 255, 0.2);
 }
 
 .hero-action-btn:active {
-  transform: translateY(0);
+  transform: scale(0.95);
 }
 
-.hero-action-btn .action-icon {
-  font-size: 20px;
-  line-height: 1;
+.hero-action-btn svg {
+  width: 22px;
+  height: 22px;
 }
 
-.hero-action-btn .action-label {
+.ai-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 0 2px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.ai-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00ff88;
+}
+
+.ai-manage-link {
+  color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
   font-size: 10px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.6);
-  letter-spacing: 0.3px;
+  margin-left: 4px;
 }
 
-.hero-action-btn:hover .action-label {
+.ai-manage-link:hover {
   color: #00d9ff;
 }
 
