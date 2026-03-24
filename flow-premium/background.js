@@ -140,7 +140,7 @@ async function updateQueueMenuTitle() {
   try {
     const result = await chrome.storage.local.get('snaps');
     const count = (result.snaps || []).length;
-    const title = count > 0 ? `📤 Send ${count} Snap${count === 1 ? '' : 's'} to AI` : '📤 Send Snaps to AI';
+    const title = `📤 Send ${count} Snap${count === 1 ? '' : 's'} to AI`;
     chrome.contextMenus.update('send-queue-ai', { title });
   } catch (e) {}
 }
