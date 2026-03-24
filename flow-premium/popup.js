@@ -1661,7 +1661,7 @@ async function handleSnapClick() {
     chrome.runtime.sendMessage({ action: 'capture' }, (response) => {
       if (snapButton) snapButton.disabled = false;
       if (response && response.success) {
-        loadScreenshots();
+        loadSnaps();
         setStatus('Captured! ✓', 'active');
       } else {
         setStatus(response?.error || 'Capture failed', 'error');
