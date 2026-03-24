@@ -30,7 +30,7 @@ function releaseRequestLock() {
 }
 // ============ END RATE LIMITER ============
 
-// ============ BACKEND PROXY (10 free prompts) ============
+// ============ BACKEND PROXY (3 free prompts) ============
 const PROXY_BACKEND_URL = 'https://www.snaptoai.com';
 let freePromptsRemaining = null;
 

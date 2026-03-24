@@ -1760,7 +1760,7 @@ def privacy_policy_route():
 
 import time as _time
 
-FREE_PROMPT_LIMIT = 10
+FREE_PROMPT_LIMIT = 3
 GEMINI_OWNER_KEY = os.environ.get('GEMINI_OWNER_KEY', '')
 _rate_limit_cache = {}
 
