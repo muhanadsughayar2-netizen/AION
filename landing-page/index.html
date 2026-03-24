@@ -168,68 +168,64 @@
     <link rel="stylesheet" href="ai-testimonials.css">
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo-wrapper">
-                <div class="logo-icon">📸</div>
-                <span class="logo-text">Snap<span class="logo-highlight">ToAI</span></span>
+    <div class="welcome-page">
+        <div class="welcome-content">
+            <div class="welcome-logo">
+                <span class="welcome-camera">📸</span>
+                <h1 class="welcome-title">Snap <span class="welcome-highlight">To AI</span></h1>
             </div>
-            <div class="nav-links">
-                <button class="lang-switch" id="langSwitch" title="Change Language">English</button>
+            <p class="welcome-tagline">Snap it. Snip it. Flip it to AI.</p>
+            <p class="welcome-sub">Right-click any page to capture, analyze, and send screenshots to AI instantly.</p>
+
+            <div class="pin-guide">
+                <h2 class="pin-title">Pin it to get started</h2>
+                <div class="pin-animation">
+                    <div class="pin-step pin-step-1">
+                        <div class="pin-browser-bar">
+                            <div class="pin-puzzle-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00d9ff" stroke-width="2"><path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 01-.837.276c-.47-.07-.802-.48-.968-.925a2.501 2.501 0 10-3.214 3.214c.446.166.855.497.925.968a.979.979 0 01-.276.837l-1.61 1.61a2.404 2.404 0 01-1.705.707 2.402 2.402 0 01-1.704-.706l-1.568-1.568a1.026 1.026 0 00-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 11-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 00-.289-.877l-1.568-1.568A2.402 2.402 0 011.998 12c0-.617.236-1.234.706-1.704L4.23 8.77c.24-.24.581-.353.917-.303.515.077.877.528 1.073 1.01a2.5 2.5 0 103.259-3.259c-.482-.196-.933-.558-1.01-1.073-.05-.336.062-.676.303-.917l1.525-1.525A2.402 2.402 0 0112 2c.617 0 1.234.236 1.704.706l1.568 1.568c.23.23.556.338.877.29.493-.074.84-.504 1.02-.968a2.5 2.5 0 113.237 3.237c-.464.18-.894.527-.967 1.02z"/></svg>
+                                <div class="pin-click-ring"></div>
+                            </div>
+                            <span class="pin-label">Click the puzzle icon</span>
+                        </div>
+                    </div>
+
+                    <div class="pin-arrow">→</div>
+
+                    <div class="pin-step pin-step-2">
+                        <div class="pin-dropdown">
+                            <div class="pin-ext-row">
+                                <span class="pin-ext-icon">📸</span>
+                                <span class="pin-ext-name">SnapToAI</span>
+                                <div class="pin-pin-icon">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v8m0 0l4-4m-4 4L8 6m4 14v-4m0 0l4 4m-4-4l-4 4"/></svg>
+                                    <div class="pin-click-ring ring-2"></div>
+                                </div>
+                            </div>
+                            <span class="pin-label">Click the pin</span>
+                        </div>
+                    </div>
+
+                    <div class="pin-arrow">→</div>
+
+                    <div class="pin-step pin-step-3">
+                        <div class="pin-done">
+                            <span class="pin-done-icon">✓</span>
+                            <span class="pin-done-text">Ready to snap!</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </nav>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <div class="animated-logo">
-                <span class="logo-word word-1">Snap</span>
-                <span class="logo-word word-2">To</span>
-                <span class="logo-word word-3">AI</span>
-            </div>
-
-            <h1 class="main-tagline" id="tagline">Screenshots to AI in One Click</h1>
-            <p class="main-subtitle" id="subtitle">Select All → Copy → Paste. All 9 screenshots drop as ONE stacked image.</p>
-
-            <a href="https://chromewebstore.google.com/detail/snaptoai/oojjcoiimphlplollpgjckcjejlamhjh" target="_blank" class="cta-button">
-                <span class="cta-text" id="downloadBtn">Add to Chrome – Free Early Access</span>
+            <a href="https://chromewebstore.google.com/detail/snaptoai/oojjcoiimphlplollpgjckcjejlamhjh" target="_blank" class="welcome-cta">
+                <span class="cta-text" id="downloadBtn">Add to Chrome</span>
             </a>
-            
-            <p class="hero-proof" id="heroProof">Trusted by 10,000+ developers, designers, and researchers worldwide.</p>
-
         </div>
 
-        <div class="hero-visual">
-            <div class="workflow-container">
-                <div class="workflow-card big-card">
-                    <div class="big-number">1</div>
-                    <div class="big-icon">📸</div>
-                    <h3 class="big-title" id="card1">Snap</h3>
-                    <p class="big-description" id="card1Desc">Press the camera button. It takes images automatically.</p>
-                </div>
-                
-                <div class="big-arrow">↓</div>
-                
-                <div class="workflow-card big-card">
-                    <div class="big-number">3</div>
-                    <div class="big-icon">📤</div>
-                    <h3 class="big-title" id="card3">Send to AI</h3>
-                    <p class="big-description" id="card3Desc">Bulk upload one file with all 9 screenshots to ChatGPT, Claude, Grok, Gemini</p>
-                </div>
-                
-                <div class="big-arrow">↓</div>
-                
-                <div class="workflow-card big-card success-card">
-                    <div class="big-number">4</div>
-                    <div class="big-icon">⚡</div>
-                    <h3 class="big-title" id="card4">Result: AI Works Better</h3>
-                    <p class="big-description" id="card4Desc">9x faster. 10x more accurate. 100% game-changing.</p>
-                </div>
-            </div>
+        <div class="welcome-footer" id="footerText">
+            <span class="welcome-privacy">Your screenshots never leave your browser.</span>
         </div>
-    </section>
+    </div>
 
     <!-- Snap Snip Flip Banner -->
     <section class="snap-banner">
