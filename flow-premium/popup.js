@@ -1657,33 +1657,19 @@ async function handleSnapClick() {
 
   try {
     setStatus('Capturing...', 'active');
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab) throw new Error('No active tab');
-
-    await chrome.windows.update(tab.windowId, { focused: true });
-    await new Promise(r => setTimeout(r, 150));
-
-    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
-    const result = await chrome.storage.session.get(['screenshots']);
-    const snaps = result.screenshots || [];
-
-    if (snaps.length >= 9) {
-      setStatus('Queue full (9/9)', 'error');
+    incrementCaptureCount('capture_snap');
+    chrome.runtime.sendMessage({ action: 'capture' }, (response) => {
       if (snapButton) snapButton.disabled = false;
-      return;
-    }
-
-    snaps.push(dataUrl);
-    await chrome.storage.session.set({ screenshots: snaps });
-    currentSnaps = snaps;
-    renderThumbnails();
-    updateCounter();
-    setStatus(`Captured! (${snaps.length}/9)`, 'active');
-    showLastCapturePreview(dataUrl);
+      if (response && response.success) {
+        loadScreenshots();
+        setStatus('Captured! ✓', 'active');
+      } else {
+        setStatus(response?.error || 'Capture failed', 'error');
+      }
+    });
   } catch (err) {
     console.error('[SnapToAI] Snap error:', err);
     setStatus('Capture failed', 'error');
-  } finally {
     if (snapButton) snapButton.disabled = false;
   }
 }
