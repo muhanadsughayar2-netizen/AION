@@ -3875,11 +3875,11 @@ function updateAiButtonState() {
     const aiButton = document.getElementById('aiButton');
     if (!aiButton) return;
     if (result.geminiApiKey) {
-      aiButton.innerHTML = '<span class="setup-cta-main">● AI Ready</span><span class="setup-cta-sub">Manage</span>';
-      aiButton.className = 'setup-cta setup-cta-connected';
+      aiButton.innerHTML = '<span class="hero-key-main">● AI Ready</span><span class="hero-key-sub">Manage key</span>';
+      aiButton.className = 'hero-key-btn connected';
     } else {
-      aiButton.innerHTML = '<span class="setup-cta-main">✨ Connect Gemini Key</span><span class="setup-cta-sub">20 prompts/day included</span>';
-      aiButton.className = 'setup-cta';
+      aiButton.innerHTML = '<span class="hero-key-main">✨ Activate AI Analysis</span><span class="hero-key-sub">20 prompts/day included</span>';
+      aiButton.className = 'hero-key-btn';
     }
   });
 }
