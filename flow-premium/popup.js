@@ -3843,17 +3843,17 @@ async function showTrialCountdownToast() {
     if (status.status !== 'trial' || !status.daysRemaining) return;
     
     const days = status.daysRemaining;
-    if (days > 7) return;
+    if (days !== 7 && days !== 3) return;
     
     const { trialToastDismissed } = await chrome.storage.local.get('trialToastDismissed');
     const dismissedDay = trialToastDismissed || 0;
     if (dismissedDay === days) return;
     
-    if (days <= 3) {
-      toastText.textContent = `⚠️ Trial ends in ${days} day${days === 1 ? '' : 's'} — upgrade to keep AI access`;
+    if (days === 3) {
+      toastText.textContent = `⚠️ Trial ends in 3 days — upgrade to keep AI access`;
       toast.classList.add('urgent');
     } else {
-      toastText.textContent = `Trial: ${days} days left — upgrade anytime for uninterrupted AI`;
+      toastText.textContent = `Trial: 7 days left — upgrade anytime for uninterrupted AI`;
     }
     toast.style.display = 'flex';
     

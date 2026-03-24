@@ -76,37 +76,41 @@ async function sendViaProxy(prompt, imageBase64) {
   return { text: data.response, remaining: data.remaining, used: data.used, limit: data.limit };
 }
 function showProxyKeyPrompt() {
-  const thread = document.getElementById('chatThread');
-  if (!thread) return;
+  const modal = document.getElementById('geminiKeyModal');
+  if (!modal) return;
+  modal.classList.add('open');
   
-  const container = document.createElement('div');
-  container.className = 'chat-bubble system key-prompt';
-  container.innerHTML = `
-    <div style="margin-bottom: 8px; font-weight: 600; color: #00d9ff;">Add Your Gemini API Key</div>
-    <div style="margin-bottom: 8px; font-size: 12px; color: rgba(255,255,255,0.7);">
-      <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #00d9ff; text-decoration: underline;">Get your key from Google AI Studio</a>
-      — Google provides $300 in Cloud credits when you enable billing.
-    </div>
-    <div style="display: flex; gap: 8px;">
-      <input type="password" id="proxyKeyInput" placeholder="Paste API key here..." 
-        style="flex:1; padding: 8px; background: rgba(0,0,0,0.3); border: 1px dashed rgba(0,217,255,0.4); border-radius: 6px; color: #fff; font-size: 12px; outline: none;">
-      <button id="proxyKeySave" style="padding: 8px 16px; background: linear-gradient(135deg, #00d9ff, #00b8d4); border: none; border-radius: 6px; color: #000; font-weight: 700; cursor: pointer; font-size: 12px;">Save</button>
-    </div>
-  `;
-  thread.appendChild(container);
-  thread.scrollTop = thread.scrollHeight;
+  const closeBtn = document.getElementById('closeGeminiKeyModal');
+  const cancelBtn = document.getElementById('geminiKeyModalCancel');
+  const saveBtn = document.getElementById('geminiKeyModalSave');
+  const input = document.getElementById('geminiKeyModalInput');
   
-  const saveBtn = container.querySelector('#proxyKeySave');
-  const input = container.querySelector('#proxyKeyInput');
+  const closeModal = () => modal.classList.remove('open');
+  if (closeBtn) closeBtn.onclick = closeModal;
+  if (cancelBtn) cancelBtn.onclick = closeModal;
+  if (modal) modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+  
   if (saveBtn && input) {
-    saveBtn.addEventListener('click', async () => {
+    saveBtn.onclick = async () => {
       const key = input.value.trim();
       if (!key) return;
       await chrome.storage.sync.set({ geminiApiKey: key });
-      container.innerHTML = '<div style="color: #00ff88; font-weight: 600;">Key saved! You now have unlimited AI access.</div>';
       freePromptsRemaining = null;
-    });
+      closeModal();
+      showPromptToast('Key saved! You now have unlimited AI access.', 3000);
+    };
   }
+}
+
+let _toastTimeout = null;
+function showPromptToast(message, duration = 4000, urgent = false) {
+  const toast = document.getElementById('promptToast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.className = urgent ? 'prompt-toast-urgent' : '';
+  toast.style.display = 'block';
+  if (_toastTimeout) clearTimeout(_toastTimeout);
+  _toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, duration);
 }
 // ============ END BACKEND PROXY ============
 
@@ -697,16 +701,16 @@ async function handleSend() {
           const limit = proxyResult.limit || 10;
           
           if (remaining === 0) {
-            addBubble('That was your last complimentary prompt! Add your own Gemini API key below for unlimited access — Google gives you $300 in Cloud credits.', 'system');
-            showProxyKeyPrompt();
+            showPromptToast('Last prompt used! Add your Gemini key for unlimited access.', 5000, true);
+            setTimeout(() => showProxyKeyPrompt(), 1500);
           } else if (remaining === 1) {
-            addBubble(`⚠️ 1 prompt remaining — add your Gemini key soon for uninterrupted access.`, 'system');
+            showPromptToast('⚠️ 1 prompt remaining — add your Gemini key soon', 5000, true);
           } else if (remaining === 3) {
-            addBubble(`📊 3 of ${limit} prompts remaining. Get your own Gemini key for unlimited access — Google gives you $300 in Cloud credits!`, 'system');
+            showPromptToast(`📊 3 of ${limit} prompts left. Get your own key for unlimited access + $300 Cloud credits!`, 5000);
           } else if (remaining === 5) {
-            addBubble(`📊 ${remaining} of ${limit} prompts remaining. Tip: add your own Gemini key for unlimited prompts.`, 'system');
+            showPromptToast(`📊 ${remaining} of ${limit} prompts remaining. Tip: add your own Gemini key for unlimited prompts.`, 4000);
           } else {
-            addBubble(`📊 ${remaining} of ${limit} prompts remaining`, 'system');
+            showPromptToast(`📊 ${remaining} of ${limit} prompts remaining`, 3000);
           }
         }
         sendBtn.disabled = false;
@@ -715,9 +719,9 @@ async function handleSend() {
       } catch (proxyErr) {
         if (proxyErr.message === 'FREE_PROMPTS_EXHAUSTED') {
           removeLoading();
-          addBubble('You\'ve used all 10 complimentary prompts.', 'ai');
-          addBubble('Add your own Gemini API key for unlimited access — Google gives you $300 in Cloud credits to get started!', 'system');
-          showProxyKeyPrompt();
+          addBubble('You\'ve used all 10 complimentary prompts. Add your own Gemini API key for unlimited access.', 'ai');
+          showPromptToast('Prompts exhausted — add your Gemini key for unlimited access', 5000, true);
+          setTimeout(() => showProxyKeyPrompt(), 1000);
           sendBtn.disabled = false;
           releaseRequestLock();
           return;
