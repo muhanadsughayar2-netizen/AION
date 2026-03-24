@@ -30,6 +30,53 @@ function releaseRequestLock() {
 }
 // ============ END RATE LIMITER ============
 
+// ============ BACKEND PROXY (10 free prompts) ============
+const PROXY_BACKEND_URL = 'https://www.snaptoai.com';
+let freePromptsRemaining = null;
+
+async function getProxyIdentifier() {
+  try {
+    const result = await chrome.storage.local.get('snaptoai_user');
+    if (result.snaptoai_user?.email) return result.snaptoai_user.email;
+  } catch (e) {}
+  try {
+    let { snaptoai_device_id } = await chrome.storage.local.get('snaptoai_device_id');
+    if (!snaptoai_device_id) {
+      snaptoai_device_id = 'dev_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      await chrome.storage.local.set({ snaptoai_device_id });
+    }
+    return snaptoai_device_id;
+  } catch (e) {}
+  return '';
+}
+
+async function sendViaProxy(prompt, imageBase64) {
+  const identifier = await getProxyIdentifier();
+  if (!identifier) throw new Error('Could not identify user for proxy');
+
+  const body = { prompt, email: identifier.includes('@') ? identifier : undefined, deviceId: identifier.includes('@') ? undefined : identifier };
+  if (imageBase64) body.imageData = imageBase64;
+
+  const resp = await fetch(PROXY_BACKEND_URL + '/api/ai/proxy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  const data = await resp.json();
+
+  if (data.error === 'limit_reached') {
+    freePromptsRemaining = 0;
+    throw new Error('FREE_PROMPTS_EXHAUSTED');
+  }
+
+  if (data.error) throw new Error(data.error);
+
+  freePromptsRemaining = data.remaining;
+  return { text: data.response, remaining: data.remaining, used: data.used, limit: data.limit };
+}
+// ============ END BACKEND PROXY ============
+
 // ============ IndexedDB for unlimited image storage ============
 const SNAPTOAI_DB_NAME = 'SnapToAI_ImageDB';
 const SNAPTOAI_STORE_NAME = 'images';
@@ -596,10 +643,41 @@ async function handleSend() {
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   
   try {
-    // Get API key
     const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
     const apiKey = keyResult.geminiApiKey;
-    if (!apiKey) throw new Error('Please set your Gemini API key in Settings');
+    
+    if (!apiKey) {
+      try {
+        let imageBase64 = '';
+        if (currentImages.length > 0 && currentImages[0]) {
+          imageBase64 = currentImages[0].split(',')[1] || '';
+        }
+        const proxyResult = await sendViaProxy(prompt, imageBase64);
+        removeLoading();
+        const aiText = proxyResult.text || 'No response';
+        addBubble(aiText, 'ai');
+        conversationHistory.push({ role: 'user', text: prompt });
+        conversationHistory.push({ role: 'model', text: aiText });
+        if (proxyResult.remaining !== undefined) {
+          const note = proxyResult.remaining > 0
+            ? `${proxyResult.remaining} of ${proxyResult.limit} prompts remaining`
+            : 'Last prompt used! Add your own Gemini key for unlimited access.';
+          addBubble(`📊 ${note}`, 'system');
+        }
+        sendBtn.disabled = false;
+        releaseRequestLock();
+        return;
+      } catch (proxyErr) {
+        if (proxyErr.message === 'FREE_PROMPTS_EXHAUSTED') {
+          removeLoading();
+          addBubble('You\'ve used all 10 complimentary prompts. Add your own Gemini API key for unlimited access — Google gives you $300 in Cloud credits to get started!', 'ai');
+          sendBtn.disabled = false;
+          releaseRequestLock();
+          return;
+        }
+        throw new Error('No API key set. Add your Gemini key in Settings for unlimited access.');
+      }
+    }
     
     const contents = [];
     for (const msg of conversationHistory) {

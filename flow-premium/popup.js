@@ -996,26 +996,44 @@ function translateUI() {
 
 // Setup event listeners
 function setupEventListeners() {
-  // Orb button click (Snap - full screenshot)
-  document.getElementById('orbButton').addEventListener('click', handleOrbClick);
+  const orbButton = document.getElementById('orbButton');
+  if (orbButton) orbButton.addEventListener('click', handleOrbClick);
   
-  // Snip button click (Snip - open cropping tool)
-  document.getElementById('snipButton').addEventListener('click', handleSnipClick);
+  const snipButton = document.getElementById('snipButton');
+  if (snipButton) snipButton.addEventListener('click', handleSnipClick);
   
-  // Full Page button click (Full Page - scroll and capture entire page)
-  document.getElementById('fullPageButton').addEventListener('click', handleFullPageClick);
+  const fullPageButton = document.getElementById('fullPageButton');
+  if (fullPageButton) fullPageButton.addEventListener('click', handleFullPageClick);
   
-  // Stop Full Page button click
-  document.getElementById('stopFullPageBtn').addEventListener('click', handleStopFullPage);
+  const stopFullPageBtn = document.getElementById('stopFullPageBtn');
+  if (stopFullPageBtn) stopFullPageBtn.addEventListener('click', handleStopFullPage);
   
-  // Clear button
-  document.getElementById('clearButton').addEventListener('click', handleClear);
+  const clearButton = document.getElementById('clearButton');
+  if (clearButton) clearButton.addEventListener('click', handleClear);
   
-  // Selection controls
-  document.getElementById('selectAllBtn').addEventListener('click', handleSelectAll);
-  document.getElementById('copySelectedBtn').addEventListener('click', handleCopySelected);
-  document.getElementById('downloadSelectedBtn').addEventListener('click', handleDownloadSelected);
-  document.getElementById('exportPdfBtn').addEventListener('click', handleExportPDFDirect);
+  const selectAllBtn = document.getElementById('selectAllBtn');
+  if (selectAllBtn) selectAllBtn.addEventListener('click', handleSelectAll);
+  const copySelectedBtn = document.getElementById('copySelectedBtn');
+  if (copySelectedBtn) copySelectedBtn.addEventListener('click', handleCopySelected);
+  const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
+  if (downloadSelectedBtn) downloadSelectedBtn.addEventListener('click', handleDownloadSelected);
+  const exportPdfBtn = document.getElementById('exportPdfBtn');
+  if (exportPdfBtn) exportPdfBtn.addEventListener('click', handleExportPDFDirect);
+  
+  const sendSelectedAiBtn = document.getElementById('sendSelectedAiBtn');
+  if (sendSelectedAiBtn) {
+    sendSelectedAiBtn.addEventListener('click', async () => {
+      const selectedImages = Array.from(selectedSnapIds)
+        .sort((a, b) => a - b)
+        .map(index => currentSnaps[index])
+        .filter(Boolean);
+      if (selectedImages.length === 0) {
+        setStatus('Select snaps first', 'error', 1500);
+        return;
+      }
+      await openAiChat(selectedImages);
+    });
+  }
   
   // Preview modal
   document.getElementById('previewClose').addEventListener('click', closePreview);
@@ -1068,13 +1086,13 @@ function setupEventListeners() {
           // Queue still has items - something went wrong
           status.textContent = chrome.i18n.getMessage('statusCaptureFailed') || 'Could not clear queue. Try again.';
           status.className = 'status error';
-          fullPageButton.disabled = false;
+          if (fullPageButton) fullPageButton.disabled = false;
         }
       } catch (error) {
         console.log('[SnapToAI] Clear and capture error:', error);
         status.textContent = chrome.i18n.getMessage('statusSomethingWrong') || 'Error clearing queue';
         status.className = 'status error';
-        fullPageButton.disabled = false;
+        if (fullPageButton) fullPageButton.disabled = false;
       }
     });
   }
@@ -1128,7 +1146,7 @@ function setupEventListeners() {
       const fullPageButton = document.getElementById('fullPageButton');
       
       overlay.style.display = 'none';
-      fullPageButton.disabled = false;
+      if (fullPageButton) fullPageButton.disabled = false;
       
       if (request.success) {
         showLastCapturePreview(request.dataUrl);
@@ -1215,7 +1233,7 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
     
     // Hide overlay and update UI
     overlay.style.display = 'none';
-    fullPageButton.disabled = false;
+    if (fullPageButton) fullPageButton.disabled = false;
     status.textContent = chrome.i18n.getMessage('statusFullPageCaptured') || `Full page: ${screenshots.length} pages ready to edit`;
     status.className = 'status active';
     
@@ -1245,7 +1263,7 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
       fullPageCapturePort = null;
     }
     overlay.style.display = 'none';
-    fullPageButton.disabled = false;
+    if (fullPageButton) fullPageButton.disabled = false;
   }
 }
 
@@ -1488,7 +1506,7 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
     
     // Hide overlay and update UI
     overlay.style.display = 'none';
-    fullPageButton.disabled = false;
+    if (fullPageButton) fullPageButton.disabled = false;
     
     if (savedCount > 0) {
       showLastCapturePreview(lastDataUrl);
@@ -1555,7 +1573,7 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
     
     // ALWAYS reset UI state
     overlay.style.display = 'none';
-    fullPageButton.disabled = false;
+    if (fullPageButton) fullPageButton.disabled = false;
   }
 }
 
@@ -1569,8 +1587,7 @@ function showLastCapturePreview(dataUrl) {
 async function handleOrbClick() {
   const orbButton = document.getElementById('orbButton');
   
-  // Disable button during operation
-  orbButton.disabled = true;
+  if (orbButton) orbButton.disabled = true;
   
   try {
     // Snap button ALWAYS captures - never auto-uploads
@@ -1625,15 +1642,14 @@ async function handleOrbClick() {
     console.log('[SnapToAI] Capture:', error.message || error);
     statusError('Cannot capture this page');
   } finally {
-    orbButton.disabled = false;
+    if (orbButton) orbButton.disabled = false;
   }
 }
 
-// Handle snip button click - capture and open in crop mode
 async function handleSnipClick() {
   const snipButton = document.getElementById('snipButton');
   
-  snipButton.disabled = true;
+  if (snipButton) snipButton.disabled = true;
   
   try {
     setStatus('Capturing for snip...', 'active');
@@ -1669,7 +1685,7 @@ async function handleSnipClick() {
     console.log('[SnapToAI] Snip:', error.message || error);
     statusError('Cannot capture this page');
   } finally {
-    snipButton.disabled = false;
+    if (snipButton) snipButton.disabled = false;
   }
 }
 
@@ -1686,15 +1702,13 @@ async function handleFullPageClick() {
   // Reset abort flag and clear any stale timeout from previous captures
   resetFullPageCaptureState();
   
-  // Disable button during operation
-  fullPageButton.disabled = true;
+  if (fullPageButton) fullPageButton.disabled = true;
   
   const availableSlots = 9 - currentSnaps.length;
   
-  // If queue is completely full, show warning
   if (availableSlots <= 0) {
     showQueueFullModal(0, 0);
-    fullPageButton.disabled = false;
+    if (fullPageButton) fullPageButton.disabled = false;
     return;
   }
   
@@ -1714,7 +1728,7 @@ async function handleFullPageClick() {
         // Only warn if we DEFINITELY can't fit all chunks
         if (chunksNeeded > availableSlots) {
           showQueueFullModal(chunksNeeded, availableSlots);
-          fullPageButton.disabled = false;
+          if (fullPageButton) fullPageButton.disabled = false;
           return;
         }
       }
@@ -1769,7 +1783,7 @@ async function handleFullPageClick() {
       status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 3000);
-    fullPageButton.disabled = false;
+    if (fullPageButton) fullPageButton.disabled = false;
   }
 }
 
@@ -1857,9 +1871,9 @@ function updateUI() {
   updateClearButton();
 }
 
-// Update snap counter
 function updateCounter() {
-  document.getElementById('snapCount').textContent = currentSnaps.length;
+  const el = document.getElementById('snapCount');
+  if (el) el.textContent = currentSnaps.length;
 }
 
 // Dynamically adjust popup height based on number of screenshots
@@ -3706,13 +3720,6 @@ if (directAiButton) {
       }
     }
     
-    const { geminiApiKey } = await chrome.storage.sync.get(['geminiApiKey']);
-    if (!geminiApiKey) {
-      showGeminiModal();
-      return;
-    }
-    
-    // Check for selected images
     const selectedImages = Array.from(selectedSnapIds)
       .sort((a, b) => a - b)
       .map(index => currentSnaps[index])
@@ -3822,7 +3829,44 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   loadGeminiKey();
   updateAiButtonState();
+  showTrialCountdownToast();
 });
+
+async function showTrialCountdownToast() {
+  const toast = document.getElementById('trialCountdownToast');
+  const toastText = document.getElementById('trialCountdownText');
+  const dismissBtn = document.getElementById('trialCountdownDismiss');
+  if (!toast || !toastText || !window.SnapToAISubscription) return;
+  
+  try {
+    const status = await window.SnapToAISubscription.check();
+    if (status.status !== 'trial' || !status.daysRemaining) return;
+    
+    const days = status.daysRemaining;
+    if (days > 7) return;
+    
+    const { trialToastDismissed } = await chrome.storage.local.get('trialToastDismissed');
+    const dismissedDay = trialToastDismissed || 0;
+    if (dismissedDay === days) return;
+    
+    if (days <= 3) {
+      toastText.textContent = `⚠️ Trial ends in ${days} day${days === 1 ? '' : 's'} — upgrade to keep AI access`;
+      toast.classList.add('urgent');
+    } else {
+      toastText.textContent = `Trial: ${days} days left — upgrade anytime for uninterrupted AI`;
+    }
+    toast.style.display = 'flex';
+    
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', async () => {
+        toast.style.display = 'none';
+        await chrome.storage.local.set({ trialToastDismissed: days });
+      });
+    }
+  } catch (e) {
+    console.log('[SnapToAI] Trial toast error:', e);
+  }
+}
 
 function updateAiButtonState() {
   chrome.storage.sync.get(['geminiApiKey'], (result) => {

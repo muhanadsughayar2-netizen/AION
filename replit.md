@@ -102,6 +102,26 @@ Handles infinite-scroll sites with scroll settlement detection. Works on any web
 - Placeholder OAuth client_id in manifest.json — replace with real one from Google Cloud Console
 - Files: popup.html, popup.js, popup.css (overlay + header), manifest.json (identity + oauth2), app.py (API + DB)
 
+**Right-Click Hero Redesign (March 2026):**
+- Popup stripped to queue-only view: hero panel shows right-click tip instead of capture buttons
+- All capture actions accessed via right-click context menu (SnapToAI Mouse Wand)
+- Hero panel has "Open AI Chat" and "Add Gemini Key" buttons
+- Counter chip shows current queue count (X/9)
+- Selection bar includes "Send to AI" button for quick multi-select AI analysis
+- Dynamic right-click menu: "Send X Snaps to AI" updates count automatically via storage listener
+- Files: popup.html, popup.css, popup.js, background.js
+
+**Monetization Funnel (March 2026):**
+- 10 complimentary backend-proxied AI prompts (no API key needed)
+- Backend `/api/ai/proxy` endpoint: tracks usage per email/deviceId, 3 req/min rate limit
+- DB table: `free_prompts` (identifier, usage_count, last_used, created_at)
+- After 10 prompts: shows $300 Google Cloud credit pitch to encourage own Gemini key
+- Gemini key modal enhanced with green $300 credit banner
+- Trial countdown toast: appears at 7 and 3 days remaining, dismissible
+- Flow: 10 free prompts → $300 pitch → own Gemini key → 30-day trial → Whop subscription
+- Environment secret needed: GEMINI_OWNER_KEY (for backend proxy)
+- Files: app.py, ai-chat.js, popup.html, popup.css, popup.js
+
 **Review Prompting System (March 2026):**
 - Triggers after 5, 15, and 30 successful captures
 - Glassmorphic modal: "Enjoying SnapToAI?" with star emojis

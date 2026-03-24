@@ -62,17 +62,26 @@
     </div>
 
     <div class="header-sub">
+      <div class="counter-chip">
+        <span id="snapCount">0</span><span>/9</span>
+      </div>
       <button id="upgradeBtn" class="upgrade-btn" style="visibility: hidden;">Pro</button>
     </div>
 
     <div class="hero-panel">
-      <div class="hero-kicker">One click. One right click.</div>
-      <div class="hero-title">Capture, select, and ask AI without opening a busy popup.</div>
-      <div class="hero-copy">Use the menu for everything: snap, snip, full page, chat, and queue.</div>
+      <div class="hero-tip">
+        <span class="hero-tip-icon">🖱️</span>
+        <span class="hero-tip-text">Right-click any page for all actions</span>
+      </div>
       <div class="hero-actions">
-        <button id="directAiButton" class="hero-primary-btn">Open AI Chat</button>
+        <button id="directAiButton" class="hero-primary-btn">✨ Open AI Chat</button>
         <button id="aiButton" class="hero-secondary-btn">Add Gemini Key</button>
       </div>
+    </div>
+
+    <div id="trialCountdownToast" class="trial-countdown-toast" style="display: none;">
+      <span id="trialCountdownText"></span>
+      <button id="trialCountdownDismiss" class="trial-toast-dismiss">&times;</button>
     </div>
 
     <!-- Status Line with Activity Indicator (STICKY) -->
@@ -95,6 +104,7 @@
     <!-- Selection Controls -->
     <div class="selection-bar" id="selectionBar" style="display: none;">
       <button id="selectAllBtn" class="select-all-btn">Select All</button>
+      <button id="sendSelectedAiBtn" class="action-btn ai-action">✨ Send to AI</button>
       <button id="copySelectedBtn" class="action-btn">Copy Combined</button>
       <button id="downloadSelectedBtn" class="action-btn">Download as PNG</button>
       <button id="exportPdfBtn" class="action-btn premium">Export as PDF</button>
@@ -230,13 +240,13 @@
         <span class="gemini-status-dot"></span>
         <span>Connected</span>
       </div>
-      <div class="gemini-bonus-banner">
-        <span class="bonus-badge">BONUS</span>
-        <span>Enable Google Cloud billing → Google provides <strong>$300 in credits</strong></span>
+      <div class="gemini-bonus-banner credit-pitch">
+        <span class="bonus-badge">$300</span>
+        <span>Google gives you <strong>$300 in Cloud credits</strong> when you enable billing — that's thousands of AI prompts, on Google.</span>
       </div>
       <div class="gemini-promo-box">
-        <div class="promo-title">○ 20 Prompts Daily</div>
-        <p class="promo-desc">No credit card needed to start. Enable Google Cloud billing → Google provides $300 in credits.</p>
+        <div class="promo-title">Your own key = unlimited AI</div>
+        <p class="promo-desc">Google's Gemini API has a generous tier. Add billing and Google hands you $300 in credits — enough for months of heavy use.</p>
       </div>
       <div class="gemini-steps">
         <div class="steps-title">3 simple steps:</div>

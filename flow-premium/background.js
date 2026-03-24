@@ -128,13 +128,30 @@ function registerSnapToAIMenu() {
 
     chrome.contextMenus.create({ id: 'sep2', type: 'separator', parentId: 'snaptoai-parent' });
 
-    chrome.contextMenus.create({ id: 'send-queue-ai', title: '📤 Send Queue to AI', parentId: 'snaptoai-parent', contexts: ['all'] });
+    chrome.contextMenus.create({ id: 'send-queue-ai', title: '📤 Send 0 Snaps to AI', parentId: 'snaptoai-parent', contexts: ['all'] });
     chrome.contextMenus.create({ id: 'open-ai-chat', title: '💬 Open AI Chat', parentId: 'snaptoai-parent', contexts: ['all'] });
     chrome.contextMenus.create({ id: 'view-queue', title: '👀 View Queue', parentId: 'snaptoai-parent', contexts: ['all'] });
   });
 }
 
 registerSnapToAIMenu();
+
+async function updateQueueMenuTitle() {
+  try {
+    const result = await chrome.storage.local.get('snaps');
+    const count = (result.snaps || []).length;
+    const title = count > 0 ? `📤 Send ${count} Snap${count === 1 ? '' : 's'} to AI` : '📤 Send Snaps to AI';
+    chrome.contextMenus.update('send-queue-ai', { title });
+  } catch (e) {}
+}
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.snaps) {
+    updateQueueMenuTitle();
+  }
+});
+
+setTimeout(updateQueueMenuTitle, 1000);
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (!tab?.id) return;
