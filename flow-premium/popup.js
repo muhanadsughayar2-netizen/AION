@@ -1018,32 +1018,9 @@ function setupEventListeners() {
   const copySelectedBtn = document.getElementById('copySelectedBtn');
   if (copySelectedBtn) copySelectedBtn.addEventListener('click', handleCopySelected);
   const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
-  if (downloadSelectedBtn) downloadSelectedBtn.addEventListener('click', () => {
-    const menu = document.getElementById('saveDropdownMenu');
-    if (menu) menu.classList.remove('open');
-    handleDownloadSelected();
-  });
+  if (downloadSelectedBtn) downloadSelectedBtn.addEventListener('click', handleDownloadSelected);
   const exportPdfBtn = document.getElementById('exportPdfBtn');
-  if (exportPdfBtn) exportPdfBtn.addEventListener('click', () => {
-    const menu = document.getElementById('saveDropdownMenu');
-    if (menu) menu.classList.remove('open');
-    handleExportPDFDirect();
-  });
-  const saveDropdownBtn = document.getElementById('saveDropdownBtn');
-  if (saveDropdownBtn) {
-    saveDropdownBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const menu = document.getElementById('saveDropdownMenu');
-      if (menu) menu.classList.toggle('open');
-    });
-  }
-  document.addEventListener('click', (e) => {
-    const dropdown = document.getElementById('saveDropdown');
-    const menu = document.getElementById('saveDropdownMenu');
-    if (menu && dropdown && !dropdown.contains(e.target)) {
-      menu.classList.remove('open');
-    }
-  });
+  if (exportPdfBtn) exportPdfBtn.addEventListener('click', handleExportPDFDirect);
   
   const sendSelectedAiBtn = document.getElementById('sendSelectedAiBtn');
   if (sendSelectedAiBtn) {
@@ -1903,12 +1880,10 @@ function updateCounter() {
 
 // Dynamically adjust popup height based on number of screenshots
 function adjustPopupHeight(snapCount) {
-  // Base height for empty state
-  let height = 380;
+  let height = 280;
   
   if (snapCount === 0) {
-    // Empty state: small and compact
-    height = 380;
+    height = 280;
   } else if (snapCount <= 3) {
     // 1 row of screenshots
     height = 430;
@@ -1934,37 +1909,20 @@ function updateThumbnails() {
   adjustPopupHeight(currentSnaps.length);
 
   if (currentSnaps.length === 0) {
-    const emptyState = document.createElement('div');
-    emptyState.className = 'empty-state';
-   
-    // Get translated messages
-    const getMessage = (key, fallback) => {
-      const msg = chrome.i18n.getMessage(key);
-      return msg || fallback;
-    };
-   
-    const heading = chrome.i18n.getMessage('emptyHeading') || 'One click. One screenshot.';
-    const sub1 = chrome.i18n.getMessage('emptySubheading1') || 'Select All → Copy → Paste.';
-    const sub2 = chrome.i18n.getMessage('emptySubheading2') || 'All 9 screenshots drop as ONE stacked image';
-   
-    emptyState.innerHTML = `
-      <div class="empty-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="empty-heading">${heading}</div>
-      <div class="empty-subheading">${sub1}</div>
-      <div class="empty-subheading highlight">${sub2}</div>
-    `;
-    container.appendChild(emptyState);
     selectionBar.style.display = 'none';
+    const bottomSaveBar = document.getElementById('bottomSaveBar');
+    if (bottomSaveBar) bottomSaveBar.style.display = 'none';
+    const clearBtn = document.getElementById('clearButton');
+    if (clearBtn) clearBtn.style.display = 'none';
     return;
   }
 
-  // Show selection bar when snaps exist
+  // Show selection bar and bottom actions when snaps exist
   selectionBar.style.display = 'flex';
+  const bottomSaveBar = document.getElementById('bottomSaveBar');
+  if (bottomSaveBar) bottomSaveBar.style.display = 'flex';
+  const clearBtn = document.getElementById('clearButton');
+  if (clearBtn) clearBtn.style.display = 'block';
 
   // First, group chunks by captureGroupId (or consecutive if old format)
   const groups = [];

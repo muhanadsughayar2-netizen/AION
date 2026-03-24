@@ -1186,6 +1186,32 @@ body {
   transform: none;
 }
 
+.bottom-save-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 0 2px;
+}
+
+.bottom-save-btn {
+  flex: 1;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bottom-save-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
 /* Fade Transitions */
 .fade-in {
   animation: fadeIn 0.3s ease-in;

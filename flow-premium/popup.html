@@ -103,27 +103,19 @@
       <button id="selectAllBtn" class="select-all-btn">Select All</button>
       <button id="sendSelectedAiBtn" class="action-btn ai-action">✨ Send to AI</button>
       <button id="copySelectedBtn" class="action-btn">Copy</button>
-      <div class="save-dropdown" id="saveDropdown">
-        <button id="saveDropdownBtn" class="action-btn save-trigger">Save ▾</button>
-        <div class="save-dropdown-menu" id="saveDropdownMenu">
-          <button id="downloadSelectedBtn" class="save-option">📸 Download as PNG</button>
-          <button id="exportPdfBtn" class="save-option">📄 Export as PDF</button>
-        </div>
-      </div>
     </div>
 
     <!-- Thumbnails Grid -->
     <div class="thumbnails-container">
       <div id="thumbnails" class="thumbnails"></div>
     </div>
-    
-    <!-- RE-EDIT Full Page Button - PERMANENTLY HIDDEN -->
-    <!-- <button id="reeditFullPageBtn" class="reedit-fullpage-btn" style="display:none;">
-      RE-EDIT: <span id="reeditCaptureName">Full Page</span>
-    </button> -->
 
-    <!-- Clear All Button -->
-    <button id="clearButton" class="clear-button">Clear All</button>
+    <!-- Bottom Actions -->
+    <button id="clearButton" class="clear-button">Delete Selected</button>
+    <div class="bottom-save-bar" id="bottomSaveBar" style="display: none;">
+      <button id="downloadSelectedBtn" class="bottom-save-btn">📸 PNG</button>
+      <button id="exportPdfBtn" class="bottom-save-btn">📄 PDF</button>
+    </div>
   </div>
 
   <!-- Full-Size Preview Modal -->
