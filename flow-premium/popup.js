@@ -974,9 +974,11 @@ function translateUI() {
   
   document.querySelector('.status').textContent = getMessage('flowReady', 'Flow: Ready');
   document.getElementById('selectAllBtn').textContent = getMessage('selectAll', 'Select All');
-  document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Copy Combined');
-  document.getElementById('downloadSelectedBtn').textContent = getMessage('downloadAsPNG', 'Download as PNG');
-  document.getElementById('exportPdfBtn').textContent = getMessage('exportAsPDF', 'Export as PDF');
+  document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Copy');
+  const _dlBtn = document.getElementById('downloadSelectedBtn');
+  if (_dlBtn) _dlBtn.textContent = '📸 ' + getMessage('downloadAsPNG', 'Download as PNG');
+  const _pdfBtn = document.getElementById('exportPdfBtn');
+  if (_pdfBtn) _pdfBtn.textContent = '📄 ' + getMessage('exportAsPDF', 'Export as PDF');
   document.getElementById('clearButton').textContent = getMessage('deleteSelected', 'Delete Selected');
   
   // Translate PDF modal
@@ -1016,9 +1018,32 @@ function setupEventListeners() {
   const copySelectedBtn = document.getElementById('copySelectedBtn');
   if (copySelectedBtn) copySelectedBtn.addEventListener('click', handleCopySelected);
   const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
-  if (downloadSelectedBtn) downloadSelectedBtn.addEventListener('click', handleDownloadSelected);
+  if (downloadSelectedBtn) downloadSelectedBtn.addEventListener('click', () => {
+    const menu = document.getElementById('saveDropdownMenu');
+    if (menu) menu.classList.remove('open');
+    handleDownloadSelected();
+  });
   const exportPdfBtn = document.getElementById('exportPdfBtn');
-  if (exportPdfBtn) exportPdfBtn.addEventListener('click', handleExportPDFDirect);
+  if (exportPdfBtn) exportPdfBtn.addEventListener('click', () => {
+    const menu = document.getElementById('saveDropdownMenu');
+    if (menu) menu.classList.remove('open');
+    handleExportPDFDirect();
+  });
+  const saveDropdownBtn = document.getElementById('saveDropdownBtn');
+  if (saveDropdownBtn) {
+    saveDropdownBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const menu = document.getElementById('saveDropdownMenu');
+      if (menu) menu.classList.toggle('open');
+    });
+  }
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('saveDropdown');
+    const menu = document.getElementById('saveDropdownMenu');
+    if (menu && dropdown && !dropdown.contains(e.target)) {
+      menu.classList.remove('open');
+    }
+  });
   
   const sendSelectedAiBtn = document.getElementById('sendSelectedAiBtn');
   if (sendSelectedAiBtn) {

@@ -105,9 +105,14 @@
     <div class="selection-bar" id="selectionBar" style="display: none;">
       <button id="selectAllBtn" class="select-all-btn">Select All</button>
       <button id="sendSelectedAiBtn" class="action-btn ai-action">✨ Send to AI</button>
-      <button id="copySelectedBtn" class="action-btn">Copy Combined</button>
-      <button id="downloadSelectedBtn" class="action-btn">Download as PNG</button>
-      <button id="exportPdfBtn" class="action-btn premium">Export as PDF</button>
+      <button id="copySelectedBtn" class="action-btn">Copy</button>
+      <div class="save-dropdown" id="saveDropdown">
+        <button id="saveDropdownBtn" class="action-btn save-trigger">Save ▾</button>
+        <div class="save-dropdown-menu" id="saveDropdownMenu">
+          <button id="downloadSelectedBtn" class="save-option">📸 Download as PNG</button>
+          <button id="exportPdfBtn" class="save-option">📄 Export as PDF</button>
+        </div>
+      </div>
     </div>
 
     <!-- Thumbnails Grid -->
