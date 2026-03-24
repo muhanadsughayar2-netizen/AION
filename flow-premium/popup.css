@@ -3298,13 +3298,13 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .hero-action-btn {
-  width: 52px;
-  height: 52px;
+  width: 62px;
+  height: 62px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(0, 217, 255, 0.06);
-  border: 1.5px solid rgba(0, 217, 255, 0.25);
+  border: 2px solid rgba(0, 217, 255, 0.25);
   border-radius: 50%;
   color: #00d9ff;
   cursor: pointer;
@@ -3314,17 +3314,17 @@ html[dir="rtl"] .logo-highlight {
 .hero-action-btn:hover {
   background: rgba(0, 217, 255, 0.15);
   border-color: rgba(0, 217, 255, 0.5);
-  transform: scale(1.08);
-  box-shadow: 0 0 16px rgba(0, 217, 255, 0.2);
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.25);
 }
 
 .hero-action-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.93);
 }
 
 .hero-action-btn svg {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
 }
 
 .ai-status-row {
