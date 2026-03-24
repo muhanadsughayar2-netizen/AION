@@ -84,14 +84,28 @@ function showProxyKeyPrompt() {
   const cancelBtn = document.getElementById('geminiKeyModalCancel');
   const saveBtn = document.getElementById('geminiKeyModalSave');
   const input = document.getElementById('geminiKeyModalInput');
+  const checkbox = document.getElementById('geminiKeyModalCompliance');
   
   const closeModal = () => modal.classList.remove('open');
   if (closeBtn) closeBtn.onclick = closeModal;
   if (cancelBtn) cancelBtn.onclick = closeModal;
   if (modal) modal.onclick = (e) => { if (e.target === modal) closeModal(); };
   
+  if (checkbox && saveBtn) {
+    checkbox.checked = false;
+    saveBtn.disabled = true;
+    saveBtn.style.opacity = '0.5';
+    saveBtn.style.cursor = 'not-allowed';
+    checkbox.onchange = () => {
+      saveBtn.disabled = !checkbox.checked;
+      saveBtn.style.opacity = checkbox.checked ? '1' : '0.5';
+      saveBtn.style.cursor = checkbox.checked ? 'pointer' : 'not-allowed';
+    };
+  }
+  
   if (saveBtn && input) {
     saveBtn.onclick = async () => {
+      if (saveBtn.disabled) return;
       const key = input.value.trim();
       if (!key) return;
       await chrome.storage.sync.set({ geminiApiKey: key });

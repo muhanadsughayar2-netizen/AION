@@ -1840,7 +1840,19 @@ def ai_proxy():
         import requests as http_requests
         parts = [{'text': prompt}] if prompt else [{'text': 'Describe this image'}]
         if image_data:
-            parts.append({'inline_data': {'mime_type': 'image/jpeg', 'data': image_data}})
+            img_mime = 'image/png'
+            if image_data.startswith('data:'):
+                header_end = image_data.find(',')
+                if header_end > 0:
+                    header = image_data[:header_end]
+                    if 'image/jpeg' in header:
+                        img_mime = 'image/jpeg'
+                    elif 'image/webp' in header:
+                        img_mime = 'image/webp'
+                    elif 'image/gif' in header:
+                        img_mime = 'image/gif'
+                    image_data = image_data[header_end + 1:]
+            parts.append({'inline_data': {'mime_type': img_mime, 'data': image_data}})
 
         gemini_body = {
             'contents': [{'role': 'user', 'parts': parts}],
