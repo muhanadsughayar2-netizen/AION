@@ -283,7 +283,8 @@ def health():
 
 @app.errorhandler(500)
 def handle_500(e):
-    return Response("OK", status=200, mimetype='text/plain')
+    print(f'❌ 500 error: {e}')
+    return Response("Internal Server Error", status=500, mimetype='text/plain')
 
 @app.route('/api/db-status')
 def db_status():
@@ -1807,6 +1808,8 @@ def ai_proxy():
         r.headers['Access-Control-Allow-Origin'] = '*'
         return r, 503
 
+    conn = None
+    cur = None
     try:
         conn = get_db()
         cur = conn.cursor()
@@ -1822,8 +1825,6 @@ def ai_proxy():
         usage_count = row[0] if row else 0
 
         if usage_count >= FREE_PROMPT_LIMIT:
-            cur.close()
-            conn.close()
             r = jsonify({'error': 'limit_reached', 'remaining': 0, 'limit': FREE_PROMPT_LIMIT})
             r.headers['Access-Control-Allow-Origin'] = '*'
             return r, 403
@@ -1831,8 +1832,6 @@ def ai_proxy():
         prompt = str(data.get('prompt', ''))[:2000]
         image_data = str(data.get('imageData', ''))
         if len(image_data) > 5 * 1024 * 1024:
-            cur.close()
-            conn.close()
             r = jsonify({'error': 'Image too large'})
             r.headers['Access-Control-Allow-Origin'] = '*'
             return r, 400
@@ -1867,8 +1866,6 @@ def ai_proxy():
         gemini_data = gemini_resp.json()
 
         if 'error' in gemini_data:
-            cur.close()
-            conn.close()
             r = jsonify({'error': gemini_data['error'].get('message', 'AI error'), 'remaining': FREE_PROMPT_LIMIT - usage_count})
             r.headers['Access-Control-Allow-Origin'] = '*'
             return r, 502
@@ -1886,9 +1883,6 @@ def ai_proxy():
         if gemini_data.get('candidates') and gemini_data['candidates'][0].get('content', {}).get('parts'):
             ai_text = gemini_data['candidates'][0]['content']['parts'][0].get('text', '')
 
-        cur.close()
-        conn.close()
-
         r = jsonify({
             'response': ai_text,
             'remaining': remaining,
@@ -1903,6 +1897,13 @@ def ai_proxy():
         r = jsonify({'error': 'Proxy request failed'})
         r.headers['Access-Control-Allow-Origin'] = '*'
         return r, 500
+    finally:
+        if cur:
+            try: cur.close()
+            except: pass
+        if conn:
+            try: conn.close()
+            except: pass
 
 
 if __name__ == '__main__':
