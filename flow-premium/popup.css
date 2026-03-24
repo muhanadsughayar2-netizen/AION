@@ -2004,12 +2004,122 @@ html[dir="rtl"] .logo-highlight {
   color: rgba(255, 255, 255, 0.8);
 }
 
-.gemini-reassurance {
-  text-align: center;
-  font-size: 10px;
-  color: rgba(0, 255, 136, 0.6);
-  margin-top: 8px;
+.step-demo {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 10px;
+  margin: 2px 0 6px;
+  overflow: hidden;
+}
+
+.demo-btn-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.demo-create-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #4285f4;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.3px;
+}
+
+.demo-btn-icon {
+  font-size: 13px;
+}
+
+.demo-cursor {
+  position: absolute;
+  bottom: -2px;
+  right: 4px;
+  opacity: 0;
+  animation: cursorMove 4s ease-in-out infinite;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+}
+
+.demo-click-flash {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.4);
+  opacity: 0;
+  animation: clickFlash 4s ease-in-out infinite;
+}
+
+.demo-key-appear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  opacity: 0;
+  animation: keyAppear 4s ease-in-out infinite;
+}
+
+.demo-key-text {
+  font-family: monospace;
+  font-size: 12px;
+  color: #00d9ff;
+  background: rgba(0, 217, 255, 0.08);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px dashed rgba(0, 217, 255, 0.3);
+  letter-spacing: 0.5px;
+}
+
+.demo-copy-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.demo-copied-badge {
+  position: absolute;
+  left: 18px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #00ff88;
+  white-space: nowrap;
+  opacity: 0;
+  animation: copiedPop 4s ease-in-out infinite;
+}
+
+@keyframes cursorMove {
+  0%, 15% { opacity: 0; transform: translate(10px, 10px); }
+  25% { opacity: 1; transform: translate(0, 0); }
+  35% { opacity: 1; transform: translate(0, 0); }
+  40% { opacity: 0; transform: translate(0, -4px); }
+  100% { opacity: 0; }
+}
+
+@keyframes clickFlash {
+  0%, 32% { opacity: 0; }
+  35% { opacity: 0.6; }
+  40% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes keyAppear {
+  0%, 42% { opacity: 0; transform: translateY(6px); }
+  50% { opacity: 1; transform: translateY(0); }
+  85% { opacity: 1; transform: translateY(0); }
+  95%, 100% { opacity: 0; transform: translateY(0); }
+}
+
+@keyframes copiedPop {
+  0%, 55% { opacity: 0; transform: scale(0.5); }
+  62% { opacity: 1; transform: scale(1.1); }
+  68% { opacity: 1; transform: scale(1); }
+  85% { opacity: 1; transform: scale(1); }
+  95%, 100% { opacity: 0; transform: scale(1); }
 }
 
 .gemini-get-key-btn {
