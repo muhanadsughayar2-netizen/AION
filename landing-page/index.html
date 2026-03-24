@@ -164,8 +164,47 @@
   ]
 }
     </script>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="ai-testimonials.css">
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { background: #0a0e1a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; overflow-x: hidden; }
+      .welcome-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; position: relative; }
+      .welcome-page::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at 50% 50%, rgba(0,217,255,0.04) 0%, transparent 50%); pointer-events: none; }
+      .welcome-content { max-width: 520px; text-align: center; z-index: 1; }
+      .welcome-logo { margin-bottom: 16px; }
+      .welcome-camera { font-size: 48px; display: block; margin-bottom: 8px; }
+      .welcome-title { font-size: 42px; font-weight: 800; letter-spacing: -1px; color: #fff; }
+      .welcome-highlight { color: #00d9ff; }
+      .welcome-tagline { font-size: 18px; font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 8px; letter-spacing: 0.5px; }
+      .welcome-sub { font-size: 14px; color: rgba(255,255,255,0.4); margin-bottom: 40px; line-height: 1.5; }
+      .pin-guide { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 28px 24px; margin-bottom: 32px; }
+      .pin-title { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 20px; letter-spacing: 0.3px; }
+      .pin-animation { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+      .pin-step { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+      .pin-browser-bar, .pin-dropdown, .pin-done { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+      .pin-puzzle-icon { position: relative; width: 40px; height: 40px; background: rgba(0,217,255,0.08); border: 1px solid rgba(0,217,255,0.25); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+      .pin-click-ring { position: absolute; inset: -4px; border: 2px solid rgba(0,217,255,0.4); border-radius: 14px; animation: pinPulse 2.5s ease-in-out infinite; }
+      .ring-2 { animation-delay: 0.5s !important; }
+      .pin-label { font-size: 11px; color: rgba(255,255,255,0.4); }
+      .pin-ext-row { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 12px; }
+      .pin-ext-icon { font-size: 16px; }
+      .pin-ext-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8); }
+      .pin-pin-icon { position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: rgba(0,217,255,0.7); cursor: pointer; }
+      .pin-arrow { font-size: 20px; color: rgba(0,217,255,0.3); font-weight: 300; }
+      .pin-done { animation: pinDoneAppear 2.5s ease-in-out infinite; }
+      .pin-done-icon { width: 36px; height: 36px; background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #00ff88; font-size: 16px; font-weight: 700; }
+      .pin-done-text { font-size: 12px; font-weight: 600; color: #00ff88; }
+      .welcome-cta { display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, #00d9ff, #00b8d4); border-radius: 12px; color: #000; font-size: 15px; font-weight: 700; text-decoration: none; transition: all 0.2s; }
+      .welcome-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,217,255,0.3); }
+      .welcome-footer { position: absolute; bottom: 24px; z-index: 1; }
+      .welcome-privacy { font-size: 11px; color: rgba(255,255,255,0.25); cursor: default; }
+      @keyframes pinPulse { 0%, 100% { opacity: 0; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.1); } }
+      @keyframes pinDoneAppear { 0%, 40% { opacity: 0.3; } 60%, 90% { opacity: 1; } }
+      @media (max-width: 480px) {
+        .welcome-title { font-size: 32px; }
+        .pin-animation { flex-direction: column; gap: 12px; }
+        .pin-arrow { transform: rotate(90deg); }
+      }
+    </style>
 </head>
 <body>
     <div class="welcome-page">
@@ -227,300 +266,6 @@
         </div>
     </div>
 
-    <!-- Snap Snip Flip Banner -->
-    <section class="snap-banner">
-        <div class="snap-banner-inner">
-            <span class="snap-word">Snap it.</span>
-            <span class="snap-word">Snip it.</span>
-            <span class="snap-word snap-highlight">Flip it to AI.</span>
-        </div>
-    </section>
-
-    <!-- AI Superpowers Section -->
-    <section class="ai-superpowers-section">
-        <div class="ai-superpowers-container">
-            <h2 class="section-title">More Than Screenshots</h2>
-            <p class="ai-superpowers-subtitle">SnapToAI is a full AI productivity suite built into your browser</p>
-            
-            <div class="superpowers-grid">
-                <div class="superpower-card superpower-vision">
-                    <div class="superpower-glow"></div>
-                    <div class="superpower-icon-wrap">
-                        <span class="superpower-icon">👁️</span>
-                        <span class="superpower-badge-new">PRO</span>
-                    </div>
-                    <h3 class="superpower-title">AI Vision Analysis</h3>
-                    <p class="superpower-desc">Snap any screen and let Gemini AI analyze it instantly. Get code explanations, bug detection, UI feedback, data extraction — all from a screenshot. Like having a senior developer looking over your shoulder.</p>
-                    <div class="superpower-features">
-                        <span class="sp-feat">Code Review</span>
-                        <span class="sp-feat">Bug Detection</span>
-                        <span class="sp-feat">Data Extraction</span>
-                        <span class="sp-feat">UI Analysis</span>
-                    </div>
-                </div>
-
-                <div class="superpower-card superpower-agents">
-                    <div class="superpower-glow"></div>
-                    <div class="superpower-icon-wrap">
-                        <span class="superpower-icon">🤖</span>
-                        <span class="superpower-badge-new">NEW</span>
-                    </div>
-                    <h3 class="superpower-title">Magic Agents</h3>
-                    <p class="superpower-desc">Create your own AI agents that automate any workflow. Navigate pages, click buttons, capture screenshots — all hands-free. Build custom agents for stock tracking, news scanning, site auditing, or any repetitive task you can imagine.</p>
-                    <div class="superpower-features">
-                        <span class="sp-feat">Build Your Own</span>
-                        <span class="sp-feat">Fully Custom</span>
-                        <span class="sp-feat">Automate Anything</span>
-                        <span class="sp-feat">Hands-Free</span>
-                    </div>
-                </div>
-
-                <div class="superpower-card superpower-credit">
-                    <div class="superpower-glow"></div>
-                    <div class="superpower-icon-wrap">
-                        <span class="superpower-icon">💎</span>
-                        <span class="superpower-badge-free">FREE</span>
-                    </div>
-                    <h3 class="superpower-title">$300 Free AI Credit</h3>
-                    <p class="superpower-desc">Google gives every new user $300 in free API credit. That means thousands of AI analyses completely free. We show you exactly how to set it up in 2 minutes — no credit card required to start.</p>
-                    <div class="superpower-features">
-                        <span class="sp-feat">$300 Credit</span>
-                        <span class="sp-feat">2-Min Setup</span>
-                        <span class="sp-feat">No Card Needed</span>
-                        <span class="sp-feat">Thousands of Uses</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="superpowers-cta">
-                <p class="superpowers-cta-text">All Pro features unlocked during Early Access — no payment required</p>
-                <a href="https://chromewebstore.google.com/detail/snaptoai/oojjcoiimphlplollpgjckcjejlamhjh" target="_blank" class="cta-button cta-small">
-                    <span class="cta-text">Get Started Free</span>
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- How It Works -->
-    <section class="how-it-works">
-        <h2 class="section-title" id="howTitle">How It Works</h2>
-        <p class="workflow-subtitle" id="workflowSubtitle">Snap → Pack → Send to AI</p>
-        
-        <div class="steps-container">
-            <div class="step step-1">
-                <div class="step-glow"></div>
-                <div class="step-icon-large">📸</div>
-                <div class="step-number">1</div>
-                <div class="step-label" id="step1">Snap</div>
-                <p id="step1Desc">Press the camera button. It takes images automatically.</p>
-            </div>
-
-            <div class="step-arrow animated-arrow">→</div>
-
-            <div class="step step-2">
-                <div class="step-glow"></div>
-                <div class="step-icon-large">📦</div>
-                <div class="step-number">2</div>
-                <div class="step-label" id="step2">Pack</div>
-                <p id="step2Desc">Bulk upload one file with all 9 screenshots to ChatGPT, Claude, Grok, Gemini</p>
-            </div>
-
-            <div class="step-arrow animated-arrow">→</div>
-
-            <div class="step step-3">
-                <div class="step-glow"></div>
-                <div class="step-icon-large">🚀</div>
-                <div class="step-number">3</div>
-                <div class="step-label" id="step3">Send to AI</div>
-                <p id="step3Desc">Sees data clearly. Save 10+ mins per session. 100% efficiency improvement. Faster results. Clean outcomes.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- What the AIs Say Section -->
-    <section class="ai-testimonials-section">
-        <div class="ai-testimonials-container">
-            <h2 class="ai-testimonials-title" id="aiTestimonialsTitle">This is what AIs actually say when you give them the full context</h2>
-            
-            <div class="ai-testimonials-grid">
-                <div class="ai-card">
-                    <img src="chatgpt-logo.png" alt="ChatGPT" class="ai-logo">
-                    <p class="ai-quote" id="aiQuote1">"Thanks for the complete, well-structured screenshots — I can now answer accurately on the first try."</p>
-                </div>
-
-                <div class="ai-card">
-                    <img src="claude-logo.png" alt="Claude" class="ai-logo">
-                    <p class="ai-quote" id="aiQuote2">"Perfect! Having all 9 screenshots in one clean file removes any ambiguity."</p>
-                </div>
-
-                <div class="ai-card">
-                    <img src="grok-logo.png" alt="Grok" class="ai-logo">
-                    <p class="ai-quote" id="aiQuote3">"Finally someone who knows how to feed me context properly. Zero hallucination risk."</p>
-                </div>
-
-                <div class="ai-card">
-                    <img src="gemini-logo.png" alt="Gemini" class="ai-logo">
-                    <p class="ai-quote" id="aiQuote4">"Excellent structured input. I can now analyze the full page with 100% confidence."</p>
-                </div>
-            </div>
-
-            <p class="ai-cta" id="aiCTA">Install SnapToAI → Stop wasting time uploading. Get AI answers that actually matter.</p>
-        </div>
-    </section>
-
-    <!-- The Advantage Section -->
-    <section class="advantage-section">
-        <div class="advantage-content">
-            <h2 class="section-title" id="advantageTitle">Your Competitive Edge</h2>
-            <p class="advantage-intro" id="advantageIntro">9x faster. 10x more accurate. 100% game-changing.</p>
-            <div class="advantage-grid">
-                <div class="advantage-item advantage-highlight-1">
-                    <div class="advantage-glow"></div>
-                    <div class="advantage-icon">⚡</div>
-                    <h3 id="advantage1">9x Faster Results</h3>
-                    <p id="problemItem1Desc">9 screenshots stacked = 9x more context in one paste. AI sees everything instantly. No hunting. No uploading.</p>
-                    <div class="advantage-badge" id="badge1">9x SPEED</div>
-                </div>
-                <div class="advantage-item advantage-highlight-2">
-                    <div class="advantage-glow"></div>
-                    <div class="advantage-icon">🎯</div>
-                    <h3 id="advantage2">100% Accuracy</h3>
-                    <p id="problemItem2Desc">All context in one file = zero ambiguity. AI understands exactly what you need. No hallucinations. Zero confusion.</p>
-                    <div class="advantage-badge" id="badge2">PERFECT ACCURACY</div>
-                </div>
-                <div class="advantage-item advantage-highlight-3">
-                    <div class="advantage-glow"></div>
-                    <div class="advantage-icon">🚀</div>
-                    <h3 id="advantage3">10x Preparation Speed</h3>
-                    <p id="problemItem3Desc">Select All → Copy → Done. What used to take 10 minutes now takes 60 seconds. Every single time.</p>
-                    <div class="advantage-badge" id="badge3">10x FASTER PREP</div>
-                </div>
-                <div class="advantage-item advantage-highlight-4">
-                    <div class="advantage-glow"></div>
-                    <div class="advantage-icon">♾️</div>
-                    <h3 id="advantage4">Scale to 90+ Images</h3>
-                    <p id="problemItem4Desc">Upload 90 screenshots in one shot. No file size limits. No manual organizing. Pure power. Pure scale.</p>
-                    <div class="advantage-badge" id="badge4">UNLIMITED SCALE</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- FAQ Section -->
-    <section class="faq">
-        <h2 class="section-title" id="faqTitle">Frequently Asked</h2>
-        
-        <div class="faq-container">
-            <div class="faq-item">
-                <button class="faq-question">
-                    <span>How much speed do I actually save?</span>
-                    <span class="faq-toggle">+</span>
-                </button>
-                <div class="faq-answer">
-                    <span>Most users report 5-10 minutes saved per session. Instead of manual capture → search → rename → upload → explain, it's one click.</span>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question">
-                    <span>Is my privacy actually protected?</span>
-                    <span class="faq-toggle">+</span>
-                </button>
-                <div class="faq-answer">
-                    <span>100% yes. SnapToAI is completely client-side. Your screenshots exist only on your computer, never on our servers. Zero data collection, zero tracking.</span>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question">
-                    <span>Which AI platforms does it work with?</span>
-                    <span class="faq-toggle">+</span>
-                </button>
-                <div class="faq-answer">
-                    <span>ChatGPT, Claude, Grok, Gemini, and any AI platform with file upload. If it accepts images, SnapToAI works with it.</span>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question">
-                    <span>How many browsers does it support?</span>
-                    <span class="faq-toggle">+</span>
-                </button>
-                <div class="faq-answer">
-                    <span>All Chromium-based browsers: Chrome, Edge, Brave, Opera, Vivaldi. Install from their respective stores.</span>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question">
-                    <span>What file formats and sizes are supported?</span>
-                    <span class="faq-toggle">+</span>
-                </button>
-                <div class="faq-answer">
-                    <span>PNG, JPG, WebP up to 10MB each. Screenshots are stored temporarily in your browser session and cleared on restart.</span>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Language Selector Modal -->
-    <div class="language-modal" id="languageModal">
-        <div class="language-modal-content">
-            <button class="close-modal" id="closeModal">&times;</button>
-            <h3 id="selectLanguageTitle">Select Your Language</h3>
-            <div class="language-grid" id="languageGrid"></div>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-container">
-            <div class="footer-section">
-                <h4 id="footerProductTitle">Product</h4>
-                <ul>
-                    <li><a href="#">Features</a></li>
-                    <li><a href="#">Pricing</a></li>
-                    <li><a href="#">Roadmap</a></li>
-                    <li><a href="#">Support</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-section">
-                <h4 id="footerCompanyTitle">Company</h4>
-                <ul>
-                    <li><a href="#">About</a></li>
-                    <li><a href="#">Blog</a></li>
-                    <li><a href="#">Community</a></li>
-                    <li><a href="#">Contact</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-section">
-                <h4 id="footerLegalTitle">Legal</h4>
-                <ul>
-                    <li><a href="/privacy-policy">Privacy Policy</a></li>
-                    <li><a href="#">Terms of Service</a></li>
-                    <li><a href="#">Cookie Policy</a></li>
-                    <li><a href="#">Disclosure</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-section">
-                <h4 id="footerConnectTitle">Connect</h4>
-                <ul>
-                    <li><a href="#">Twitter/X</a></li>
-                    <li><a href="#">Discord</a></li>
-                    <li><a href="#">GitHub</a></li>
-                    <li><a href="#">LinkedIn</a></li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="footer-bottom">
-            <p id="footerText" style="cursor: default;">© 2025 SnapToAI. Built with precision for speed.</p>
-            <p id="footerLanguages">Available in 55 languages</p>
-        </div>
-    </footer>
 
     <div id="adminModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; align-items:center; justify-content:center;">
         <div style="background:rgba(15,23,42,0.95); border:1px solid rgba(6,182,212,0.3); border-radius:16px; padding:40px; max-width:400px; width:90%; text-align:center; backdrop-filter:blur(20px);">
