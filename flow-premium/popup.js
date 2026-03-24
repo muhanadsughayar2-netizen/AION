@@ -1914,6 +1914,25 @@ function updateThumbnails() {
     if (bottomSaveBar) bottomSaveBar.style.display = 'none';
     const clearBtn = document.getElementById('clearButton');
     if (clearBtn) clearBtn.style.display = 'none';
+    
+    const emptyWow = document.createElement('div');
+    emptyWow.className = 'empty-wow';
+    emptyWow.innerHTML = `
+      <div class="wow-mouse">
+        <div class="wow-mouse-body">
+          <div class="wow-mouse-left"></div>
+          <div class="wow-mouse-right">
+            <div class="wow-click-ring"></div>
+            <div class="wow-click-ring ring2"></div>
+          </div>
+          <div class="wow-mouse-divider"></div>
+          <div class="wow-mouse-scroll"></div>
+        </div>
+        <div class="wow-glow"></div>
+      </div>
+      <div class="wow-text">Right-click to begin</div>
+    `;
+    container.appendChild(emptyWow);
     return;
   }
 
