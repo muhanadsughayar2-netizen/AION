@@ -122,7 +122,13 @@ async function handleGoogleSignIn() {
     await checkAuthState();
     await refreshSubscriptionUI();
     updateAiButtonState();
+
+    if (pendingAfterSignIn === 'geminiModal') {
+      pendingAfterSignIn = null;
+      setTimeout(() => showGeminiModal(), 300);
+    }
   } catch (error) {
+    pendingAfterSignIn = null;
     console.error('[SnapToAI] Google Sign-In failed:', error);
     if (authError) {
       const msg = error.message || String(error);
@@ -3645,6 +3651,8 @@ function hideSubscriptionModal() {
   if (subscriptionError) subscriptionError.style.display = 'none';
 }
 
+let pendingAfterSignIn = null;
+
 async function handleAIButtonClick() {
   if (window.SnapToAISubscription) {
     const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
@@ -3652,6 +3660,7 @@ async function handleAIButtonClick() {
     console.log('[SnapToAI] AI button clicked, status:', status, 'override:', !!snaptoai_dev_override);
     
     if (status.needsSignIn) {
+      pendingAfterSignIn = 'geminiModal';
       const authOverlay = document.getElementById('authOverlay');
       if (authOverlay) authOverlay.style.display = 'flex';
       return;
