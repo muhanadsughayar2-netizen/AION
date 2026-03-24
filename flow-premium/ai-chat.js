@@ -733,8 +733,8 @@ async function handleSend() {
       } catch (proxyErr) {
         if (proxyErr.message === 'FREE_PROMPTS_EXHAUSTED') {
           removeLoading();
-          addBubble('You\'ve used all 10 complimentary prompts. Add your own Gemini API key for unlimited access.', 'ai');
-          showPromptToast('Prompts exhausted — add your Gemini key for unlimited access', 5000, true);
+          addBubble('You\'ve used your complimentary prompts. To continue, connect your own Gemini API key — it takes about 1 minute at aistudio.google.com.', 'ai');
+          showPromptToast('Connect your Gemini key for unlimited AI prompts', 5000, true);
           setTimeout(() => showProxyKeyPrompt(), 1000);
           sendBtn.disabled = false;
           releaseRequestLock();
@@ -1002,18 +1002,19 @@ async function getFriendlyErrorMessage(errorMsg) {
              `This is a temporary limit from Google. Please wait a few seconds and try again.\n\n` +
              `If this persists, check your Google AI Studio dashboard for quota details.`;
     } else {
-      // User is on shared/free tier
-      return `🎯 You've used your 20 prompts for today!\n\n` +
-             `Come back tomorrow for 20 more prompts.\n\n` +
-             `💡 Want unlimited prompts? Google offers $300 in credits when you sign up!\n` +
-             `👉 Sign up at ai.google.dev and get your own API key in Settings.`;
+      return `✨ To use AI analysis, connect your Gemini API key.\n\n` +
+             `It takes about 1 minute:\n` +
+             `1. Go to aistudio.google.com\n` +
+             `2. Click "Create API key"\n` +
+             `3. Copy the key and paste it in Settings\n\n` +
+             `That's it — you'll get unlimited AI prompts!`;
     }
   }
   
   // API key errors
   if (lowerMsg.includes('api key') || lowerMsg.includes('invalid') || lowerMsg.includes('unauthorized') || lowerMsg.includes('401')) {
     return `API key issue detected.\n\n` +
-           `Please check your API key in Settings, or get one from ai.google.dev with $300 in credits!`;
+           `Please check your API key in Settings. You can get a new one at aistudio.google.com — it takes about a minute.`;
   }
   
   // Network errors
