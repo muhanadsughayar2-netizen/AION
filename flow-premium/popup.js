@@ -1000,6 +1000,9 @@ function translateUI() {
 function setupEventListeners() {
   const orbButton = document.getElementById('orbButton');
   if (orbButton) orbButton.addEventListener('click', handleOrbClick);
+
+  const snapButton = document.getElementById('snapButton');
+  if (snapButton) snapButton.addEventListener('click', handleSnapClick);
   
   const snipButton = document.getElementById('snipButton');
   if (snipButton) snipButton.addEventListener('click', handleSnipClick);
@@ -1648,6 +1651,43 @@ async function handleOrbClick() {
   }
 }
 
+async function handleSnapClick() {
+  const snapButton = document.getElementById('snapButton');
+  if (snapButton) snapButton.disabled = true;
+
+  try {
+    setStatus('Capturing...', 'active');
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab) throw new Error('No active tab');
+
+    await chrome.windows.update(tab.windowId, { focused: true });
+    await new Promise(r => setTimeout(r, 150));
+
+    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    const result = await chrome.storage.session.get(['screenshots']);
+    const snaps = result.screenshots || [];
+
+    if (snaps.length >= 9) {
+      setStatus('Queue full (9/9)', 'error');
+      if (snapButton) snapButton.disabled = false;
+      return;
+    }
+
+    snaps.push(dataUrl);
+    await chrome.storage.session.set({ screenshots: snaps });
+    currentSnaps = snaps;
+    renderThumbnails();
+    updateCounter();
+    setStatus(`Captured! (${snaps.length}/9)`, 'active');
+    showLastCapturePreview(dataUrl);
+  } catch (err) {
+    console.error('[SnapToAI] Snap error:', err);
+    setStatus('Capture failed', 'error');
+  } finally {
+    if (snapButton) snapButton.disabled = false;
+  }
+}
+
 async function handleSnipClick() {
   const snipButton = document.getElementById('snipButton');
   
@@ -1931,6 +1971,7 @@ function updateThumbnails() {
         <div class="wow-glow"></div>
       </div>
       <div class="wow-text">Right-click to begin</div>
+      <div class="wow-hint">or use the buttons above ☝️</div>
     `;
     container.appendChild(emptyWow);
     return;

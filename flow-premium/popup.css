@@ -1313,6 +1313,12 @@ body {
   60% { opacity: 0.8; }
 }
 
+.wow-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  margin-top: 4px;
+}
+
 .bottom-save-bar {
   display: flex;
   gap: 8px;
@@ -3267,6 +3273,53 @@ html[dir="rtl"] .logo-highlight {
 .hero-actions {
   display: flex;
   gap: 8px;
+}
+
+.hero-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.hero-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hero-action-btn:hover {
+  background: rgba(0, 217, 255, 0.1);
+  border-color: rgba(0, 217, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.hero-action-btn:active {
+  transform: translateY(0);
+}
+
+.hero-action-btn .action-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.hero-action-btn .action-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.3px;
+}
+
+.hero-action-btn:hover .action-label {
+  color: #00d9ff;
 }
 
 .hero-key-btn {
