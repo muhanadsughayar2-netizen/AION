@@ -62,85 +62,17 @@
     </div>
 
     <div class="header-sub">
-      <div class="counter-chip">
-        <span id="snapCount">0</span> / <span id="snapMax">9</span>
-      </div>
       <button id="upgradeBtn" class="upgrade-btn" style="visibility: hidden;">Pro</button>
     </div>
 
-    <div id="globalCounterContainer" style="
-      text-align: center;
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.45);
-      letter-spacing: 0.3px;
-    ">
-      <div style="margin-bottom: 8px;">Snap it. Snip it. Flip it to AI. 🔥</div>
-      <div id="globalCounter" style="margin-bottom: 8px; min-height: 20px;">
-        Loading counter...
+    <div class="hero-panel">
+      <div class="hero-kicker">One click. One right click.</div>
+      <div class="hero-title">Capture, select, and ask AI without opening a busy popup.</div>
+      <div class="hero-copy">Use the menu for everything: snap, snip, full page, chat, and queue.</div>
+      <div class="hero-actions">
+        <button id="directAiButton" class="hero-primary-btn">Open AI Chat</button>
+        <button id="aiButton" class="hero-secondary-btn">Add Gemini Key</button>
       </div>
-    </div>
-
-    <!-- Triple Orb Buttons: Snap, Snip & Full Page -->
-    <div class="orb-triple-container">
-      <div class="orb-wrapper">
-        <span class="orb-label">Snap</span>
-        <button id="orbButton" class="orb" title="Capture full screenshot">
-          <div class="orb-glow"></div>
-          <div class="orb-inner">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-        </button>
-      </div>
-      <div class="orb-wrapper">
-        <span class="orb-label">Snip</span>
-        <button id="snipButton" class="orb snip-orb" title="Crop and snip areas">
-          <div class="orb-glow"></div>
-          <div class="orb-inner">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="6" cy="6" r="3" stroke="currentColor" stroke-width="2"/>
-              <circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="2"/>
-              <line x1="20" y1="4" x2="8.12" y2="15.88" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="14.47" y1="14.48" x2="20" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="8.12" y1="8.12" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </div>
-        </button>
-      </div>
-      <div class="orb-wrapper">
-        <span class="orb-label">Full Page</span>
-        <button id="fullPageButton" class="orb full-page-orb" title="Capture entire page">
-          <div class="orb-glow"></div>
-          <div class="orb-inner">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
-              <line x1="9" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="9" y1="13" x2="15" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="9" y1="17" x2="15" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </div>
-        </button>
-      </div>
-      <div class="orb-wrapper">
-        <span class="orb-label">AI</span>
-        <button id="directAiButton" class="orb ai-orb" title="Open AI Chat (with selected images if any)">
-          <div class="orb-glow"></div>
-          <div class="orb-inner">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <polygon points="12,2 15,9 22,9 16.5,14 18.5,21 12,17 5.5,21 7.5,14 2,9 9,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-        </button>
-      </div>
-    </div>
-
-    <div class="setup-link-container">
-      <button id="aiButton" class="setup-cta" title="Connect your Gemini API key">
-        <span class="setup-cta-main">✨ Connect Gemini Key</span>
-        <span class="setup-cta-sub">20 prompts/day included</span>
-      </button>
     </div>
 
     <!-- Status Line with Activity Indicator (STICKY) -->

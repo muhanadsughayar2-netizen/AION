@@ -112,25 +112,25 @@ function registerSnapToAIMenu() {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: 'snaptoai-parent',
-      title: 'SnapToAI',
+      title: 'SnapToAI ✨',
       contexts: ['all']
     });
 
-    chrome.contextMenus.create({ id: 'snap-viewport', title: 'Snap Viewport', parentId: 'snaptoai-parent', contexts: ['all'] });
-    chrome.contextMenus.create({ id: 'snip-region', title: 'Snip Region', parentId: 'snaptoai-parent', contexts: ['all'] });
-    chrome.contextMenus.create({ id: 'full-page', title: 'Full Page Capture', parentId: 'snaptoai-parent', contexts: ['all'] });
+    chrome.contextMenus.create({ id: 'snap-viewport', title: '📸 Snap Viewport', parentId: 'snaptoai-parent', contexts: ['all'] });
+    chrome.contextMenus.create({ id: 'snip-region', title: '✂️ Snip Region', parentId: 'snaptoai-parent', contexts: ['all'] });
+    chrome.contextMenus.create({ id: 'full-page', title: '🧩 Full Page Capture', parentId: 'snaptoai-parent', contexts: ['all'] });
 
     chrome.contextMenus.create({ id: 'sep1', type: 'separator', parentId: 'snaptoai-parent' });
 
-    chrome.contextMenus.create({ id: 'ask-ai-this', title: 'Ask AI About This', parentId: 'snaptoai-parent', contexts: ['all'] });
-    chrome.contextMenus.create({ id: 'explain-text', title: 'Explain Selected Text', parentId: 'snaptoai-parent', contexts: ['selection'] });
-    chrome.contextMenus.create({ id: 'analyze-image', title: 'Analyze This Image', parentId: 'snaptoai-parent', contexts: ['image'] });
+    chrome.contextMenus.create({ id: 'ask-ai-this', title: '✨ Ask AI About This', parentId: 'snaptoai-parent', contexts: ['all'] });
+    chrome.contextMenus.create({ id: 'explain-text', title: '📝 Explain Selected Text', parentId: 'snaptoai-parent', contexts: ['selection'] });
+    chrome.contextMenus.create({ id: 'analyze-image', title: '🖼️ Analyze This Image', parentId: 'snaptoai-parent', contexts: ['image'] });
 
     chrome.contextMenus.create({ id: 'sep2', type: 'separator', parentId: 'snaptoai-parent' });
 
-    chrome.contextMenus.create({ id: 'send-queue-ai', title: 'Send Queue to AI', parentId: 'snaptoai-parent', contexts: ['all'] });
-    chrome.contextMenus.create({ id: 'open-ai-chat', title: 'Open AI Chat', parentId: 'snaptoai-parent', contexts: ['all'] });
-    chrome.contextMenus.create({ id: 'view-queue', title: 'View Queue', parentId: 'snaptoai-parent', contexts: ['all'] });
+    chrome.contextMenus.create({ id: 'send-queue-ai', title: '📤 Send Queue to AI', parentId: 'snaptoai-parent', contexts: ['all'] });
+    chrome.contextMenus.create({ id: 'open-ai-chat', title: '💬 Open AI Chat', parentId: 'snaptoai-parent', contexts: ['all'] });
+    chrome.contextMenus.create({ id: 'view-queue', title: '👀 View Queue', parentId: 'snaptoai-parent', contexts: ['all'] });
   });
 }
 
