@@ -1835,10 +1835,10 @@ Output ONLY JSON:
 let magicButtons = [];
 const DEFAULT_MAGIC_BUTTONS = [
   {
-    name: 'Summarize',
-    emoji: '📝',
-    prompt: 'Summarize everything you see in this image. Give me the key points in short bullet points. Be concise and clear.',
-    hint: 'Get a quick summary of any page or document',
+    name: 'Analyze',
+    emoji: '⚡',
+    prompt: 'Look at this image carefully and give me a complete analysis. What is it? What are the key details? Summarize the important information in short bullet points. If you see code, explain it. If you see text, summarize it. If you see a UI or design, give feedback. If you see data or charts, interpret them. If you see an error, explain the fix. Be clear, concise, and useful.',
+    hint: 'Smart all-in-one analysis — works on anything',
     colorIndex: 0,
     isDefault: true
   },
