@@ -426,5 +426,9 @@
   "reviewMessage": {
     "message": "Yapay zeka ekran görüntülerini basit ve güçlü hale getirmek için çok çalıştık. SnapToAI size zaman kazandırdıysa, lütfen bir değerlendirme bırakın.",
     "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "AI'a Sor",
+    "description": "askAi"
   }
 }

@@ -426,5 +426,9 @@
   "reviewMessage": {
     "message": "Wir haben hart daran gearbeitet, KI-Screenshots einfach und leistungsstark zu machen. Wenn SnapToAI Ihnen Zeit gespart hat, hinterlassen Sie bitte eine Bewertung.",
     "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "KI fragen",
+    "description": "askAi"
   }
 }

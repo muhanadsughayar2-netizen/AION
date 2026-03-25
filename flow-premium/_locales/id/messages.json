@@ -426,5 +426,9 @@
   "reviewMessage": {
     "message": "Kami bekerja keras membuat tangkapan layar AI sederhana dan kuat. Jika SnapToAI menghemat waktu Anda, silakan tinggalkan ulasan.",
     "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "Tanya AI",
+    "description": "askAi"
   }
 }

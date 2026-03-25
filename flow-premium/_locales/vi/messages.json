@@ -426,5 +426,9 @@
   "reviewMessage": {
     "message": "Chúng tôi đã nỗ lực để làm cho ảnh chụp AI đơn giản và mạnh mẽ. Nếu SnapToAI giúp bạn tiết kiệm thời gian, hãy để lại đánh giá.",
     "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "Hỏi AI",
+    "description": "askAi"
   }
 }

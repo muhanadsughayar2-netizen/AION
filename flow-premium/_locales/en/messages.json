@@ -411,6 +411,10 @@
     "message": "Copied!",
     "description": "copied"
   },
+  "askAi": {
+    "message": "Ask AI",
+    "description": "askAi"
+  },
   "openGoogleAiStudio": {
     "message": "Open Google AI Studio",
     "description": "openGoogleAiStudio"

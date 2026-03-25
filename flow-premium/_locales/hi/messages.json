@@ -426,5 +426,9 @@
   "reviewMessage": {
     "message": "हमने AI स्क्रीनशॉट को सरल और शक्तिशाली बनाने के लिए कड़ी मेहनत की है। अगर SnapToAI ने आपका समय बचाया है, तो कृपया समीक्षा छोड़ें।",
     "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "AI से पूछें",
+    "description": "askAi"
   }
 }

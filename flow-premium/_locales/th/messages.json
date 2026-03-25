@@ -426,5 +426,9 @@
   "reviewMessage": {
     "message": "เราทำงานหนักเพื่อทำให้ภาพหน้าจอ AI เรียบง่ายและทรงพลัง หาก SnapToAI ช่วยประหยัดเวลาของคุณ กรุณาเขียนรีวิว",
     "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "ถาม AI",
+    "description": "askAi"
   }
 }

@@ -1911,7 +1911,9 @@ function updateUI() {
 
 function updateCounter() {
   const el = document.getElementById('snapCount');
+  const chip = document.querySelector('.counter-chip');
   if (el) el.textContent = currentSnaps.length;
+  if (chip) chip.style.display = currentSnaps.length > 0 ? 'inline-flex' : 'none';
 }
 
 // Dynamically adjust popup height based on number of screenshots
@@ -4187,6 +4189,9 @@ async function compressImageForAI(dataUrl) {
 }
 
 async function sendToGemini(prompt, isRetry = false) {
+  const quickActions = document.getElementById('aiQuickActions');
+  if (quickActions) quickActions.style.display = 'none';
+
   const result = await chrome.storage.sync.get(['geminiApiKey']);
   if (!result.geminiApiKey) {
     addChatBubble('Please set your Gemini API key first! Click the AI button in the top row.', 'ai');
@@ -4315,8 +4320,10 @@ function startCooldown(seconds) {
 
 function clearAiChat() {
   aiChatHistory = [];
-  aiThoughtSignature = null; // Reset for new conversation
+  aiThoughtSignature = null;
   aiChatThread.innerHTML = '<div class="ai-welcome">Chat cleared! Ask another question ✨</div>';
+  const quickActions = document.getElementById('aiQuickActions');
+  if (quickActions) quickActions.style.display = 'grid';
   console.log('[SnapToAI] Chat cleared');
 }
 
@@ -4342,6 +4349,17 @@ if (aiChatInput) aiChatInput.addEventListener('keypress', (e) => {
     const prompt = aiChatInput.value.trim();
     if (prompt) sendToGemini(prompt);
   }
+});
+
+document.querySelectorAll('.ai-quick-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const prompt = btn.dataset.prompt;
+    if (prompt) {
+      sendToGemini(prompt);
+      const quickActions = document.getElementById('aiQuickActions');
+      if (quickActions) quickActions.style.display = 'none';
+    }
+  });
 });
 
 // Preset buttons

@@ -426,5 +426,9 @@
   "reviewMessage": {
     "message": "Ciężko pracowaliśmy, aby zrzuty ekranu AI były proste i potężne. Jeśli SnapToAI zaoszczędził Ci czas, zostaw opinię.",
     "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "Zapytaj AI",
+    "description": "askAi"
   }
 }

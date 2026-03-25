@@ -426,5 +426,9 @@
   "reviewMessage": {
     "message": "AIスクリーンショットをシンプルかつ強力にするために努力してきました。SnapToAIで時間が節約できたら、レビューをお願いします。",
     "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "AIに聞く",
+    "description": "askAi"
   }
 }

@@ -3349,6 +3349,66 @@ html[dir="rtl"] .logo-highlight {
   height: 28px;
 }
 
+.ai-hero-col {
+  margin-left: 4px;
+}
+
+.ai-label {
+  color: #ffd700 !important;
+}
+
+.ai-btn {
+  width: 76px !important;
+  height: 76px !important;
+  background: rgba(255, 215, 0, 0.08) !important;
+  border-color: rgba(255, 215, 0, 0.35) !important;
+  color: #ffd700 !important;
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.15), 0 0 40px rgba(255, 215, 0, 0.06);
+  animation: aiGlow 2.5s ease-in-out infinite;
+}
+
+.ai-btn:hover {
+  background: rgba(255, 215, 0, 0.18) !important;
+  border-color: rgba(255, 215, 0, 0.6) !important;
+  box-shadow: 0 0 28px rgba(255, 215, 0, 0.3), 0 0 50px rgba(255, 215, 0, 0.1);
+}
+
+.ai-btn svg {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+@keyframes aiGlow {
+  0%, 100% { box-shadow: 0 0 18px rgba(255, 215, 0, 0.15), 0 0 40px rgba(255, 215, 0, 0.06); }
+  50% { box-shadow: 0 0 24px rgba(255, 215, 0, 0.25), 0 0 50px rgba(255, 215, 0, 0.1); }
+}
+
+.ai-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 8px 12px 4px;
+}
+
+.ai-quick-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+  padding: 10px 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.ai-quick-btn:hover {
+  background: rgba(0, 217, 255, 0.1);
+  border-color: rgba(0, 217, 255, 0.3);
+  color: #fff;
+}
+
 .ai-status-row {
   display: flex;
   align-items: center;

@@ -426,5 +426,9 @@
   "reviewMessage": {
     "message": "আমরা AI স্ক্রিনশটগুলিকে সহজ এবং শক্তিশালী করতে কঠোর পরিশ্রম করেছি। যদি SnapToAI আপনার সময় বাঁচিয়ে থাকে, দয়া করে একটি রিভিউ দিন।",
     "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "AI কে জিজ্ঞাসা করুন",
+    "description": "askAi"
   }
 }

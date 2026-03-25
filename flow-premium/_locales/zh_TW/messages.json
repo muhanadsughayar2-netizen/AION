@@ -426,5 +426,9 @@
   "reviewMessage": {
     "message": "我們努力使AI截圖變得簡單而強大。如果SnapToAI為您節省了時間，請花一點時間留下評價。這對我們意義重大。",
     "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "問AI",
+    "description": "askAi"
   }
 }

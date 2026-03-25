@@ -426,5 +426,9 @@
   "reviewMessage": {
     "message": "عملنا بجد لجعل لقطات الشاشة بالذكاء الاصطناعي بسيطة وقوية. إذا وفر لك SnapToAI الوقت، يرجى ترك تقييم.",
     "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "اسأل AI",
+    "description": "askAi"
   }
 }

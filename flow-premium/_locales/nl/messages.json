@@ -426,5 +426,9 @@
   "reviewMessage": {
     "message": "We hebben hard gewerkt om AI-screenshots eenvoudig en krachtig te maken. Als SnapToAI u tijd heeft bespaard, laat dan een beoordeling achter.",
     "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "Vraag AI",
+    "description": "askAi"
   }
 }

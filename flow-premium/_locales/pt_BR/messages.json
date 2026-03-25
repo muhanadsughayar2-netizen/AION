@@ -426,5 +426,9 @@
   "reviewMessage": {
     "message": "Trabalhamos duro para tornar as capturas com IA simples e poderosas. Se o SnapToAI economizou seu tempo, por favor deixe uma avaliação.",
     "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "Perguntar IA",
+    "description": "askAi"
   }
 }

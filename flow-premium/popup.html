@@ -89,10 +89,10 @@
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/></svg>
           </button>
         </div>
-        <div class="hero-action-col">
-          <span class="hero-action-label">AI</span>
+        <div class="hero-action-col ai-hero-col">
+          <span class="hero-action-label ai-label" data-i18n="askAi">Ask AI</span>
           <button id="directAiButton" class="hero-action-btn ai-btn" title="Ask AI about this page">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           </button>
         </div>
       </div>
@@ -232,6 +232,12 @@
       </div>
       <div id="aiChatThread" class="ai-chat-thread">
         <div class="ai-welcome" data-i18n="aiPartnerGreeting">I'm your AI partner. Ask me anything about this image!</div>
+      </div>
+      <div id="aiQuickActions" class="ai-quick-actions">
+        <button class="ai-quick-btn" data-prompt="Summarize this page">📝 Summarize this page</button>
+        <button class="ai-quick-btn" data-prompt="What's the main point?">🎯 What's the main point?</button>
+        <button class="ai-quick-btn" data-prompt="Explain like I'm 15">💡 Explain like I'm 15</button>
+        <button class="ai-quick-btn" data-prompt="Turn into a Twitter thread">🐦 Turn into Twitter thread</button>
       </div>
       <div class="ai-presets">
         <button class="ai-preset-btn" id="aiTestBtn" data-test="true">🔌 Test API</button>

@@ -426,5 +426,9 @@
   "reviewMessage": {
     "message": "Abbiamo lavorato sodo per rendere gli screenshot AI semplici e potenti. Se SnapToAI ti ha fatto risparmiare tempo, lascia una recensione.",
     "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "Chiedi all'IA",
+    "description": "askAi"
   }
 }
