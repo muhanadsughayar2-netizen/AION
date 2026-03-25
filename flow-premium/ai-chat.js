@@ -782,7 +782,21 @@ async function handleSend() {
         const proxyResult = await sendViaProxy(prompt, imageBase64);
         removeLoading();
         const aiText = proxyResult.text || 'No response';
-        addBubble(aiText, 'ai');
+        const proxyBubble = document.createElement('div');
+        proxyBubble.className = 'chat-bubble ai';
+        if (typeof marked !== 'undefined') {
+          const parsed = marked.parse(aiText);
+          proxyBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsed) : parsed;
+          proxyBubble.querySelectorAll('a').forEach(link => {
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer');
+          });
+        } else {
+          proxyBubble.textContent = aiText;
+        }
+        thread.appendChild(proxyBubble);
+        addBubbleActions(proxyBubble, aiText);
+        thread.scrollTop = thread.scrollHeight;
         conversationHistory.push({ role: 'user', text: prompt });
         conversationHistory.push({ role: 'model', text: aiText });
         
@@ -814,11 +828,15 @@ async function handleSend() {
           setTimeout(() => showProxyKeyPrompt(), 400);
           return;
         }
-        // Proxy failed for another reason — show modal if user has no key
         removeLoading();
+        const msg = proxyErr.message || '';
+        if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('wait')) {
+          addBubble('⏳ Too many requests — please wait a moment and try again.', 'ai');
+        } else {
+          addBubble('Something went wrong. Please try again in a moment.', 'error');
+        }
         sendBtn.disabled = false;
         releaseRequestLock();
-        setTimeout(() => showProxyKeyPrompt(), 400);
         return;
       }
     }
