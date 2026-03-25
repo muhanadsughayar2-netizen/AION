@@ -1174,6 +1174,43 @@
     }
   </style>
 
+  <!-- Trial Ended Modal -->
+  <div id="trialEndedModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(8px); z-index:9999; align-items:center; justify-content:center; animation:trialOverlayIn 0.25s ease;">
+    <div id="trialEndedCard" style="background:linear-gradient(160deg,#0d1520 0%,#0a1118 100%); border:1px solid rgba(0,217,255,0.2); border-radius:20px; padding:28px 24px; max-width:340px; width:90%; box-shadow:0 0 40px rgba(0,217,255,0.08), 0 20px 60px rgba(0,0,0,0.6); text-align:center; animation:trialCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1);">
+      <div id="trialEndedEmoji" style="font-size:44px; margin-bottom:4px; display:block; animation:trialBounce 0.6s 0.2s cubic-bezier(0.34,1.56,0.64,1) both;">🎯</div>
+      <h2 style="font-size:18px; font-weight:800; margin:8px 0 6px; background:linear-gradient(135deg,#00d9ff,#7c5cfc); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Trial Complete!</h2>
+      <p id="trialEndedMessage" style="font-size:13px; color:rgba(255,255,255,0.65); margin:0 0 16px; line-height:1.6;">Your 30-day trial was amazing — you clearly love SnapToAI! Keep the momentum going with a Pro plan.</p>
+      <div style="background:rgba(0,217,255,0.06); border:1px solid rgba(0,217,255,0.15); border-radius:10px; padding:10px 14px; font-size:12px; color:rgba(0,217,255,0.85); margin-bottom:16px; font-weight:600;">🚀 Less than a coffee per month for unlimited AI</div>
+      <div style="display:flex; gap:10px; margin-bottom:14px;">
+        <button id="trialMonthlyBtn" style="flex:1; padding:14px 8px; background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.12); border-radius:12px; cursor:pointer; color:#fff; transition:all 0.2s;">
+          <div style="font-size:11px; color:rgba(255,255,255,0.5); margin-bottom:4px;">Monthly</div>
+          <div style="font-size:18px; font-weight:800;">$4.99</div>
+          <div style="font-size:10px; color:rgba(255,255,255,0.4);">per month</div>
+        </button>
+        <button id="trialYearlyBtn" style="flex:1; padding:14px 8px; background:rgba(0,217,255,0.06); border:2px solid rgba(0,217,255,0.45); border-radius:12px; cursor:pointer; color:#fff; transition:all 0.2s; position:relative;">
+          <div style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg,#00d9ff,#7c5cfc); color:#000; font-size:9px; font-weight:800; padding:2px 8px; border-radius:20px; white-space:nowrap;">BEST VALUE</div>
+          <div style="font-size:11px; color:rgba(0,217,255,0.7); margin-bottom:4px;">Yearly</div>
+          <div style="font-size:18px; font-weight:800; color:#00d9ff;">$39</div>
+          <div style="font-size:10px; color:rgba(0,217,255,0.6);">~$3.25/mo · save 35%</div>
+        </button>
+      </div>
+      <div style="font-size:10px; color:rgba(255,255,255,0.25); margin-bottom:12px;">Subscription activates automatically after payment</div>
+      <button id="trialCheckStatusBtn" style="width:100%; padding:11px; background:rgba(0,217,255,0.08); border:1.5px solid rgba(0,217,255,0.3); border-radius:10px; color:#00d9ff; font-size:13px; font-weight:600; cursor:pointer; margin-bottom:8px; transition:all 0.2s;">🔄 Check subscription status</button>
+      <p id="trialStatusMsg" style="font-size:11px; color:#ff6b6b; display:none; margin:0 0 8px;"></p>
+      <button id="trialContinueCaptureBtn" style="width:100%; padding:9px; background:transparent; border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:rgba(255,255,255,0.35); font-size:12px; cursor:pointer; transition:all 0.2s;">Continue with Capture Only</button>
+    </div>
+  </div>
+
+  <style>
+    @keyframes trialOverlayIn { from { opacity:0; } to { opacity:1; } }
+    @keyframes trialCardIn { from { opacity:0; transform:scale(0.85) translateY(20px); } to { opacity:1; transform:scale(1) translateY(0); } }
+    @keyframes trialBounce { 0% { transform:scale(0) rotate(-15deg); } 60% { transform:scale(1.2) rotate(8deg); } 80% { transform:scale(0.95) rotate(-3deg); } 100% { transform:scale(1) rotate(0); } }
+    #trialMonthlyBtn:hover { background:rgba(255,255,255,0.08) !important; border-color:rgba(255,255,255,0.25) !important; }
+    #trialYearlyBtn:hover { background:rgba(0,217,255,0.12) !important; }
+    #trialCheckStatusBtn:hover { background:rgba(0,217,255,0.15) !important; }
+    #trialContinueCaptureBtn:hover { color:rgba(255,255,255,0.6) !important; border-color:rgba(255,255,255,0.2) !important; }
+  </style>
+
   <script src="purify.min.js"></script>
   <script src="subscription.js"></script>
   <script src="prompts.js"></script>

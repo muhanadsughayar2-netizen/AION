@@ -75,6 +75,67 @@ async function sendViaProxy(prompt, imageBase64) {
   freePromptsRemaining = data.remaining;
   return { text: data.response, remaining: data.remaining, used: data.used, limit: data.limit };
 }
+// ============ TRIAL ENDED MODAL ============
+function showTrialEndedModal(reason) {
+  const modal = document.getElementById('trialEndedModal');
+  if (!modal) return;
+
+  const messages = {
+    expired: 'Your 30-day trial was amazing — you clearly love SnapToAI! Keep the momentum going with a Pro plan.',
+    subscription_expired: 'Your subscription has lapsed. Renew to keep all your AI superpowers active.'
+  };
+  const emojis = { expired: '🎯', subscription_expired: '⚡' };
+
+  const msgEl = document.getElementById('trialEndedMessage');
+  const emojiEl = document.getElementById('trialEndedEmoji');
+  if (msgEl) msgEl.textContent = messages[reason] || messages.expired;
+  if (emojiEl) {
+    emojiEl.textContent = emojis[reason] || '🎯';
+    // Re-trigger animation
+    emojiEl.style.animation = 'none';
+    emojiEl.offsetHeight;
+    emojiEl.style.animation = '';
+  }
+
+  modal.style.display = 'flex';
+
+  // Wire buttons
+  const monthlyBtn = document.getElementById('trialMonthlyBtn');
+  const yearlyBtn = document.getElementById('trialYearlyBtn');
+  const checkBtn = document.getElementById('trialCheckStatusBtn');
+  const continueBtn = document.getElementById('trialContinueCaptureBtn');
+  const statusMsg = document.getElementById('trialStatusMsg');
+
+  if (monthlyBtn) monthlyBtn.onclick = () => {
+    if (window.SnapToAISubscription) window.SnapToAISubscription.openCheckout('monthly');
+    if (checkBtn) checkBtn.textContent = '⏳ Waiting for payment...';
+  };
+  if (yearlyBtn) yearlyBtn.onclick = () => {
+    if (window.SnapToAISubscription) window.SnapToAISubscription.openCheckout('yearly');
+    if (checkBtn) checkBtn.textContent = '⏳ Waiting for payment...';
+  };
+  if (checkBtn) checkBtn.onclick = async () => {
+    checkBtn.textContent = '⏳ Checking...';
+    if (statusMsg) statusMsg.style.display = 'none';
+    try {
+      if (window.SnapToAISubscription) {
+        const sub = await window.SnapToAISubscription.refresh();
+        if (sub.success && sub.canUseAI) {
+          modal.style.display = 'none';
+          showPromptToast('🎉 Subscription active! AI is ready.', 3000);
+        } else {
+          if (statusMsg) { statusMsg.textContent = 'No active subscription found. Complete payment first.'; statusMsg.style.display = 'block'; }
+          checkBtn.textContent = '🔄 Check subscription status';
+        }
+      }
+    } catch (e) {
+      if (statusMsg) { statusMsg.textContent = 'Could not reach server. Try again.'; statusMsg.style.display = 'block'; }
+      checkBtn.textContent = '🔄 Check subscription status';
+    }
+  };
+  if (continueBtn) continueBtn.onclick = () => { modal.style.display = 'none'; };
+}
+
 function showProxyKeyPrompt() {
   const modal = document.getElementById('geminiKeyModal');
   if (!modal) return;
@@ -485,6 +546,17 @@ async function initializeChat() {
   if (typeof updateVerdictButtonVisibility === 'function') {
     updateVerdictButtonVisibility();
   }
+
+  // Check trial status — show upgrade modal if expired (non-blocking)
+  setTimeout(async () => {
+    if (!window.SnapToAISubscription) return;
+    const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
+    if (snaptoai_dev_override) return;
+    const sub = await window.SnapToAISubscription.check();
+    if (!sub.canUseAI && sub.status !== 'no_api_key') {
+      showTrialEndedModal(sub.status);
+    }
+  }, 600);
 }
 
 // Template logic for Magic Buttons
@@ -569,7 +641,8 @@ async function sendToGemini(prompt, imageDataUrls) {
     if (!snaptoai_dev_override) {
       const sub = await window.SnapToAISubscription.check();
       if (!sub.canUseAI && sub.status !== 'no_api_key') {
-        throw new Error('Your trial has ended. Please upgrade to continue using AI analysis.');
+        showTrialEndedModal(sub.status);
+        throw new Error('__trial_ended__');
       }
     }
   }
@@ -683,9 +756,9 @@ async function handleSend() {
     if (!snaptoai_dev_override) {
       const sub = await window.SnapToAISubscription.check();
       if (!sub.canUseAI && sub.status !== 'no_api_key') {
-        addBubble('Your trial has ended. Please upgrade to continue using AI analysis.', 'ai');
         releaseRequestLock();
         sendBtn.disabled = false;
+        showTrialEndedModal(sub.status);
         return;
       }
     }
@@ -978,9 +1051,13 @@ async function handleSend() {
     
   } catch (error) {
     removeLoading();
-    const friendlyMsg = await getFriendlyErrorMessage(error.message);
-    const isQuotaError = error.message.toLowerCase().match(/quota|rate|limit|429|exceeded/);
-    addBubble(friendlyMsg, isQuotaError ? 'ai' : 'error');
+    if (error.message === '__trial_ended__') {
+      // Modal already shown — don't add an error bubble
+    } else {
+      const friendlyMsg = await getFriendlyErrorMessage(error.message);
+      const isQuotaError = error.message.toLowerCase().match(/quota|rate|limit|429|exceeded/);
+      addBubble(friendlyMsg, isQuotaError ? 'ai' : 'error');
+    }
   } finally {
     releaseRequestLock(); // Always release the lock
   }
