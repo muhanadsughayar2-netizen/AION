@@ -429,11 +429,16 @@ async function initializeChat() {
       codeContext = '\n\n**Code visible on page:**\n```\n' + ctx.visibleCodeBlocks.join('\n---\n').substring(0, 4000) + '\n```';
     }
 
-    let autoPrompt = '';
-    if (ctx.selectedText && ctx.selectedText.length > 100) {
-      autoPrompt = `Analyze the following content from ${ctx.url || 'this page'}.\n\n${contextInfo}${codeContext}\n\nProvide a clear, helpful analysis. If it's code, explain what it does and identify any issues. If it's text, summarize and explain the key points. If it's an error, explain the cause and how to fix it.`;
-    } else {
-      autoPrompt = `Analyze this screenshot from ${ctx.title || ctx.url || 'this page'}.\n\n${contextInfo}${codeContext}\n\nLook at the screenshot and provide a clear, helpful analysis. Identify what's shown and give useful insights. If you see code or errors, explain them. If you see a UI, give feedback. If you see a chart or data, interpret it. Be direct and practical.`;
+    const fallback = DEFAULT_MAGIC_BUTTONS.find(b => b.isFallback) || DEFAULT_MAGIC_BUTTONS[0];
+    let autoPrompt = fallback.prompt;
+    if (ctx.selectedText) {
+      autoPrompt += `\n\nSelected text: ${ctx.selectedText.substring(0, 3000)}`;
+    }
+    if (contextInfo) {
+      autoPrompt += `\n\n${contextInfo}`;
+    }
+    if (codeContext) {
+      autoPrompt += codeContext;
     }
 
     setupMagicButtons();
@@ -1837,32 +1842,33 @@ const DEFAULT_MAGIC_BUTTONS = [
   {
     name: 'Analyze',
     emoji: '⚡',
-    prompt: 'Look at this image carefully and give me a complete analysis. What is it? What are the key details? Summarize the important information in short bullet points. If you see code, explain it. If you see text, summarize it. If you see a UI or design, give feedback. If you see data or charts, interpret them. If you see an error, explain the fix. Be clear, concise, and useful.',
-    hint: 'Smart all-in-one analysis — works on anything',
+    prompt: 'What is this? Give me the key points.',
+    hint: 'Smart analysis — works on anything',
     colorIndex: 0,
-    isDefault: true
+    isDefault: true,
+    isFallback: true
   },
   {
     name: 'Explain',
     emoji: '💡',
-    prompt: 'Explain what\'s happening in this image like I\'m 15 years old. Use simple words, real-world examples, and make it interesting. No jargon.',
-    hint: 'Simple explanation anyone can understand',
+    prompt: 'Explain this simply like I\'m 15.',
+    hint: 'Simple explanation',
     colorIndex: 1,
     isDefault: true
   },
   {
     name: 'Extract',
     emoji: '🔍',
-    prompt: 'Extract ALL text, data, numbers, and key information from this image. Organize it neatly. If there are tables, recreate them. If there are prices, list them. Miss nothing.',
-    hint: 'Pull out every piece of data from an image',
+    prompt: 'Extract all text and data from this image.',
+    hint: 'Pull out all data',
     colorIndex: 2,
     isDefault: true
   },
   {
     name: 'Roast It',
     emoji: '🔥',
-    prompt: 'Give me a brutally honest, constructive review of what you see. What\'s good? What\'s bad? What would you change? Be specific and direct. Rate it out of 10.',
-    hint: 'Honest feedback and rating on anything',
+    prompt: 'Honest review. What\'s good, what\'s bad? Rate it /10.',
+    hint: 'Brutally honest feedback',
     colorIndex: 3,
     isDefault: true
   }
@@ -2227,138 +2233,9 @@ async function executeMagicButton(index) {
   if (!btn) return;
   
   const input = document.getElementById('chatInput');
-  if (btn.hint) {
-    input.placeholder = btn.hint;
-  }
-  
-  // Prevent duplicate/parallel requests that cause rate limits
-  if (!acquireRequestLock()) {
-    addBubble('Please wait for the current request to complete...', 'ai');
-    return;
-  }
-  
-  if (!currentImages.length) {
-    addBubble('Please capture a screenshot first!', 'ai');
-    releaseRequestLock();
-    return;
-  }
-  
-  const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
-  if (!apiResult.geminiApiKey) {
-    addBubble('Please add your Gemini API key first.', 'ai');
-    releaseRequestLock();
-    return;
-  }
-  
-  // Split images into batches of 30 max
-  const MAX_BATCH_SIZE = 30;
-  const batches = chunkImages(currentImages, MAX_BATCH_SIZE);
-  const totalBatches = batches.length;
-  
-  // User-created buttons: prompt stays HIDDEN (like Education mode)
-  // Only show a subtle indicator that button was activated
-  conversationHistory.push({ role: 'user', text: `[${btn.emoji} ${btn.name} activated]` });
-  
-  if (navigator.vibrate) navigator.vibrate(100);
-  
-  // Process each batch
-  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-    const batch = batches[batchIndex];
-    const batchLabel = totalBatches > 1 ? ` (${batchIndex + 1}/${totalBatches})` : '';
-    
-    // Show animated thinking bubble instead of static text
-    addThinkingBubble();
-    
-    // Allow browser to paint the thinking animation before heavy processing
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    
-    try {
-      const chatContext = getChatContext();
-      
-      // USER-CREATED BUTTONS: Simple Education-style output (no cards, no dual output)
-      const magicPrompt = `ROLE: Expert analyst who gives DECISIVE, HELPFUL advice.
-
-CRITICAL RULES:
-- You have NO internet access. Base ALL insights purely on the image content
-- Be EXTREMELY SPECIFIC with numbers
-- Give ACTIONABLE advice. No hedging, no excuses, no disclaimers
-${totalBatches > 1 ? `\nNOTE: This is batch ${batchIndex + 1} of ${totalBatches}. Focus on THIS batch of images.` : ''}
-${chatContext ? `CONTEXT: ${chatContext.substring(0, 150)}\n` : ''}
-
-USER'S REQUEST: "${btn.prompt}"
-
-Respond naturally with clear, helpful analysis. Use markdown formatting (headers, bullets, bold) for readability.`;
-
-      // Build parts with THIS BATCH of images only
-      const parts = [{ text: magicPrompt }];
-      batch.forEach(img => {
-        const imageData = img.replace(/^data:image\/\w+;base64,/, '');
-        parts.push({ inlineData: { mimeType: 'image/png', data: imageData } });
-      });
-
-      // Wait for rate limit before Magic button request
-      await waitForRateLimit();
-      
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiResult.geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts }],
-            generationConfig: { maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS_MAGIC', 2048), temperature: getConfig('TEMPERATURE', 0.7) }
-          })
-        }
-      );
-      
-      const data = await response.json();
-      if (data.error) throw new Error(data.error.message);
-      
-      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      
-      // Remove the thinking bubble
-      removeLoading();
-      
-      const thread = document.getElementById('chatThread');
-      if (responseText && responseText.length > 10) {
-        const hasJsonBlock = responseText.match(/```(?:json)?\s*[\s\S]*?```/) || responseText.match(/\{[\s\S]*"title"[\s\S]*\}/);
-        if (hasJsonBlock) {
-          renderDualStockOutput(responseText, btn, batchLabel);
-        } else {
-          const responseBubble = document.createElement('div');
-          responseBubble.className = 'chat-bubble ai';
-          const parsedContent = marked.parse(responseText);
-          responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedContent) : parsedContent;
-          thread.appendChild(responseBubble);
-          addBubbleActions(responseBubble, responseText);
-        }
-      } else {
-        const errorBubble = document.createElement('div');
-        errorBubble.className = 'chat-bubble ai';
-        errorBubble.textContent = 'Analysis processing - please try again.';
-        thread.appendChild(errorBubble);
-      }
-      
-      thread.scrollTop = thread.scrollHeight;
-      conversationHistory.push({ role: 'model', text: responseText });
-      
-      // Delay between batches to respect rate limits (6s minimum)
-      if (batchIndex < batches.length - 1) {
-        await new Promise(r => setTimeout(r, 6000));
-      }
-      
-    } catch (error) {
-      removeLoading();
-      const errorMsg = await getFriendlyErrorMessage(error.message);
-      const errorBubble = document.createElement('div');
-      errorBubble.className = 'chat-bubble ai';
-      errorBubble.textContent = `${btn.emoji} ${btn.name}${batchLabel}: ` + errorMsg;
-      document.getElementById('chatThread').appendChild(errorBubble);
-    }
-  }
-  
-  releaseRequestLock(); // Always release the lock when done
-  if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+  input.value = btn.prompt;
+  if (navigator.vibrate) navigator.vibrate(50);
+  handleSend();
 }
 
 // Modal Controls
