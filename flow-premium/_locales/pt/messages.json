@@ -262,5 +262,13 @@
   "askAi": {
     "message": "Ask AI",
     "description": "askAi"
+  },
+  "downloadAsPNG": {
+    "message": "PNG",
+    "description": "downloadAsPNG"
+  },
+  "exportAsPDF": {
+    "message": "PDF",
+    "description": "exportAsPDF"
   }
 }

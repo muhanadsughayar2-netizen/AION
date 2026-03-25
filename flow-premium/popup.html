@@ -63,7 +63,7 @@
     </div>
 
     <div class="header-sub">
-      <div class="counter-chip">
+      <div class="counter-chip" style="display: none;">
         <span id="snapCount">0</span><span>/9</span>
       </div>
       <button id="upgradeBtn" class="upgrade-btn" style="visibility: hidden;">Pro</button>
@@ -128,7 +128,7 @@
     <!-- Selection Controls -->
     <div class="selection-bar" id="selectionBar" style="display: none;">
       <button id="selectAllBtn" class="select-all-btn" data-i18n="selectAll">Select All</button>
-      <button id="sendSelectedAiBtn" class="action-btn ai-action" data-i18n="sendToAi">✨ Send to AI</button>
+      <button id="sendSelectedAiBtn" class="action-btn ai-action">✨ <span data-i18n="sendToAi">Send to AI</span></button>
       <button id="copySelectedBtn" class="action-btn" data-i18n="copy">Copy</button>
     </div>
 
@@ -227,7 +227,7 @@
   <div id="aiChatPortal" class="ai-portal" style="display: none;">
     <div class="ai-portal-content">
       <div class="ai-portal-header">
-        <span class="ai-portal-title" data-i18n="aiChat">✦ AI Chat</span>
+        <span class="ai-portal-title">✦ <span data-i18n="aiChat">AI Chat</span></span>
         <span id="aiChatClose" class="ai-portal-close">✕</span>
       </div>
       <div id="aiChatThread" class="ai-chat-thread">
@@ -327,7 +327,7 @@
       <div class="subscription-message">
         <p id="subscriptionMessage" data-i18n="trialEndedMessage">Your trial has ended. Subscribe to keep using AI analysis features.</p>
       </div>
-      <div class="subscription-pitch" data-i18n="lessThanCoffee">🚀 Less than a coffee per month for professional AI tools</div>
+      <div class="subscription-pitch">🚀 <span data-i18n="lessThanCoffee">Less than a coffee per month for professional AI tools</span></div>
       <div class="subscription-pricing">
         <button id="subMonthlyBtn" class="subscription-btn monthly">
           <span class="plan-name" data-i18n="monthly">Monthly</span>
@@ -342,7 +342,7 @@
       <div class="subscription-divider">
         <span data-i18n="subscriptionActivatesAuto">Subscription activates automatically</span>
       </div>
-      <button id="refreshSubscriptionBtn" class="refresh-subscription-btn" data-i18n="checkSubscriptionStatus">🔄 Check subscription status</button>
+      <button id="refreshSubscriptionBtn" class="refresh-subscription-btn">🔄 <span data-i18n="checkSubscriptionStatus">Check subscription status</span></button>
       <p id="subscriptionError" class="license-error" style="display: none;"></p>
       <button id="subscriptionCloseBtn" class="subscription-close-btn" data-i18n="continueWithCaptureOnly">Continue with Capture Only</button>
     </div>
