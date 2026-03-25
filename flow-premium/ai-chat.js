@@ -136,6 +136,12 @@ function showTrialEndedModal(reason) {
   if (continueBtn) continueBtn.onclick = () => { modal.style.display = 'none'; };
 }
 
+window.onSubscriptionActivated = (result) => {
+  const modal = document.getElementById('trialEndedModal');
+  if (modal) modal.style.display = 'none';
+  showPromptToast('🎉 Subscription active! AI is ready.', 3000);
+};
+
 function showProxyKeyPrompt() {
   const modal = document.getElementById('geminiKeyModal');
   if (!modal) return;
