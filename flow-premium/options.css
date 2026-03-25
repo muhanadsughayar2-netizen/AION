@@ -391,10 +391,6 @@ footer a:hover {
   transform: translateX(4px);
 }
 
-.sub-action-link.refund-link:hover {
-  border-color: rgba(255, 193, 7, 0.4);
-}
-
 .sub-action-icon {
   font-size: 20px;
   flex-shrink: 0;
@@ -427,10 +423,6 @@ footer a:hover {
 .sub-action-link:hover .sub-action-arrow {
   transform: translateX(4px);
   color: #00bcd4;
-}
-
-.sub-action-link.refund-link:hover .sub-action-arrow {
-  color: #ffc107;
 }
 
 @media (max-width: 500px) {
