@@ -405,6 +405,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'capture') {
     captureScreenshot().then(sendResponse);
     return true;
+  } else if (request.action === 'askAiDirect') {
+    (async () => {
+      try {
+        const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+        let tab = tabs.find(t => t.url && !t.url.startsWith('chrome-extension://'));
+        if (!tab) {
+          const allTabs = await chrome.tabs.query({ lastFocusedWindow: true });
+          tab = allTabs.filter(t => t.url && !t.url.startsWith('chrome-extension://')).sort((a, b) => b.lastAccessed - a.lastAccessed)[0];
+        }
+        if (tab) {
+          await handleAskSnapToAI({ selectionText: '', frameId: 0 }, tab);
+        }
+        sendResponse({ success: true });
+      } catch (e) {
+        console.error('[SnapToAI] askAiDirect error:', e);
+        sendResponse({ success: false });
+      }
+    })();
+    return true;
   } else if (request.action === 'upload') {
     handleUpload(request.preferredPlatform, request.selectedSnaps).then(sendResponse);
     return true;

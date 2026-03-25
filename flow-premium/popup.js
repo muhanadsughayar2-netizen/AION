@@ -3771,27 +3771,11 @@ if (directAiButton) {
       .filter(Boolean);
     
     if (selectedImages.length > 0) {
-      // Has selected images - send them to AI chat
       console.log('[SnapToAI] Opening AI with', selectedImages.length, 'selected images');
       await openAiChat(selectedImages);
     } else {
-      // No selection - open direct mode
-      console.log('[SnapToAI] Opening Direct AI Chat (no images)');
-      const width = 1000;
-      const height = 700;
-      const left = Math.round((screen.width - width) / 2);
-      const top = Math.round((screen.height - height) / 2);
-      
-      chrome.windows.create({
-        url: chrome.runtime.getURL('ai-chat.html?direct=true'),
-        type: 'popup',
-        width: width,
-        height: height,
-        left: left,
-        top: top,
-        focused: true
-      });
-      
+      console.log('[SnapToAI] Ask AI Direct - capturing and analyzing');
+      chrome.runtime.sendMessage({ action: 'askAiDirect' });
       window.close();
     }
   });
