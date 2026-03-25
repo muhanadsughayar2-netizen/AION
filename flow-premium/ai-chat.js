@@ -809,14 +809,17 @@ async function handleSend() {
       } catch (proxyErr) {
         if (proxyErr.message === 'FREE_PROMPTS_EXHAUSTED') {
           removeLoading();
-          addBubble('You\'ve used your complimentary prompts. To continue, connect your own Gemini API key — it takes about 1 minute at aistudio.google.com.', 'ai');
-          showPromptToast('Connect your Gemini key for unlimited AI prompts', 5000, true);
-          setTimeout(() => showProxyKeyPrompt(), 1000);
           sendBtn.disabled = false;
           releaseRequestLock();
+          setTimeout(() => showProxyKeyPrompt(), 400);
           return;
         }
-        throw new Error('No API key set. Add your Gemini key in Settings for unlimited access.');
+        // Proxy failed for another reason — show modal if user has no key
+        removeLoading();
+        sendBtn.disabled = false;
+        releaseRequestLock();
+        setTimeout(() => showProxyKeyPrompt(), 400);
+        return;
       }
     }
     
