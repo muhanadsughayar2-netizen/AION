@@ -1668,7 +1668,7 @@ async function handleSnapClick() {
       if (snapButton) snapButton.disabled = false;
       if (response && response.success) {
         await loadSnaps();
-        renderThumbnails();
+        updateThumbnails();
         updateCounter();
         setStatus('Captured! ✓', 'active');
       } else {
