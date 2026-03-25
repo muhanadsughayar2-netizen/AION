@@ -1833,7 +1833,40 @@ Output ONLY JSON:
 
 // ============ MAGIC BUTTONS SYSTEM ============
 let magicButtons = [];
-const DEFAULT_MAGIC_BUTTONS = [];
+const DEFAULT_MAGIC_BUTTONS = [
+  {
+    name: 'Summarize',
+    emoji: '📝',
+    prompt: 'Summarize everything you see in this image. Give me the key points in short bullet points. Be concise and clear.',
+    hint: 'Get a quick summary of any page or document',
+    colorIndex: 0,
+    isDefault: true
+  },
+  {
+    name: 'Explain',
+    emoji: '💡',
+    prompt: 'Explain what\'s happening in this image like I\'m 15 years old. Use simple words, real-world examples, and make it interesting. No jargon.',
+    hint: 'Simple explanation anyone can understand',
+    colorIndex: 1,
+    isDefault: true
+  },
+  {
+    name: 'Extract',
+    emoji: '🔍',
+    prompt: 'Extract ALL text, data, numbers, and key information from this image. Organize it neatly. If there are tables, recreate them. If there are prices, list them. Miss nothing.',
+    hint: 'Pull out every piece of data from an image',
+    colorIndex: 2,
+    isDefault: true
+  },
+  {
+    name: 'Roast It',
+    emoji: '🔥',
+    prompt: 'Give me a brutally honest, constructive review of what you see. What\'s good? What\'s bad? What would you change? Be specific and direct. Rate it out of 10.',
+    hint: 'Honest feedback and rating on anything',
+    colorIndex: 3,
+    isDefault: true
+  }
+];
 
 // Split images into batches of max size
 function chunkImages(images, maxSize = 30) {
@@ -2118,11 +2151,11 @@ function renderMagicButtons() {
     const safeName = escapeHtml(btn.name);
     // Also escape emoji in case of storage tampering
     const safeEmoji = escapeHtml(btn.emoji);
+    const controls = btn.isDefault ? '' : `<span class="edit-magic" data-edit="${i}">✎</span><span class="delete-magic" data-delete="${i}">✕</span>`;
     return `
     <button class="magic-btn" data-index="${i}" title="${safeTitle}" style="background: ${bgColor}; border: none;">
       ${safeEmoji} ${safeName}
-      <span class="edit-magic" data-edit="${i}">✎</span>
-      <span class="delete-magic" data-delete="${i}">✕</span>
+      ${controls}
     </button>
   `;}).join('');
   
@@ -2155,11 +2188,13 @@ function renderMagicButtons() {
 }
 
 async function saveMagicButtons() {
-  await chrome.storage.local.set({ magicButtons });
+  const userOnly = magicButtons.filter(b => !b.isDefault);
+  await chrome.storage.local.set({ magicButtons: userOnly });
   renderMagicButtons();
 }
 
 function deleteMagicButton(index) {
+  if (magicButtons[index]?.isDefault) return;
   if (confirm('Delete this magic button?')) {
     magicButtons.splice(index, 1);
     saveMagicButtons();
@@ -2170,7 +2205,7 @@ let editingMagicIndex = null;
 
 function editMagicButton(index) {
   const btn = magicButtons[index];
-  if (!btn) return;
+  if (!btn || btn.isDefault) return;
   
   editingMagicIndex = index;
   document.getElementById('magicName').value = btn.name;

@@ -1911,9 +1911,7 @@ function updateUI() {
 
 function updateCounter() {
   const el = document.getElementById('snapCount');
-  const chip = document.querySelector('.counter-chip');
   if (el) el.textContent = currentSnaps.length;
-  if (chip) chip.style.display = currentSnaps.length > 0 ? 'inline-flex' : 'none';
 }
 
 // Dynamically adjust popup height based on number of screenshots
