@@ -3804,17 +3804,21 @@ if (geminiModal) geminiModal.addEventListener('click', (e) => {
 
 function applySubscriptionBadge(upgradeBtn, status, snaptoai_dev_override) {
   if (!upgradeBtn) return;
+  const manageLink = document.getElementById('manageSubPopoverLink');
   if (snaptoai_dev_override) {
     upgradeBtn.style.visibility = 'visible';
     upgradeBtn.textContent = '🔑 DEV';
     upgradeBtn.classList.add('subscribed');
     upgradeBtn.style.background = 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)';
+    if (manageLink) manageLink.style.display = 'none';
   } else if (status.status === 'no_api_key' || status.status === 'no_sign_in') {
     upgradeBtn.style.visibility = 'hidden';
+    if (manageLink) manageLink.style.display = 'none';
   } else if (status.status === 'subscribed') {
     upgradeBtn.style.visibility = 'visible';
     upgradeBtn.textContent = '✓ Pro Active';
     upgradeBtn.className = 'upgrade-btn upgrade-btn-pro';
+    if (manageLink) manageLink.style.display = 'block';
   } else if (status.status === 'trial' && status.daysRemaining > 0) {
     upgradeBtn.style.visibility = 'visible';
     if (status.daysRemaining <= 7) {
@@ -3824,12 +3828,15 @@ function applySubscriptionBadge(upgradeBtn, status, snaptoai_dev_override) {
       upgradeBtn.textContent = `Trial · ${status.daysRemaining} days left`;
       upgradeBtn.className = 'upgrade-btn upgrade-btn-trial';
     }
+    if (manageLink) manageLink.style.display = 'none';
   } else if (status.status === 'trial_expired' || status.status === 'subscription_expired' || status.status === 'expired' || (status.status === 'trial' && status.daysRemaining <= 0)) {
     upgradeBtn.style.visibility = 'visible';
     upgradeBtn.textContent = 'Trial ended · Upgrade for AI';
     upgradeBtn.className = 'upgrade-btn upgrade-btn-expired';
+    if (manageLink) manageLink.style.display = status.status === 'subscription_expired' ? 'block' : 'none';
   } else {
     upgradeBtn.style.visibility = 'hidden';
+    if (manageLink) manageLink.style.display = 'none';
   }
 }
 

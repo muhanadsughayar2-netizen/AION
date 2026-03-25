@@ -3132,6 +3132,28 @@ html[dir="rtl"] .logo-highlight {
   border-color: rgba(255, 59, 48, 0.4);
 }
 
+.account-popover-manage {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  background: rgba(0, 188, 212, 0.1);
+  border: 1px solid rgba(0, 188, 212, 0.2);
+  border-radius: 6px;
+  color: #00bcd4;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.account-popover-manage:hover {
+  background: rgba(0, 188, 212, 0.2);
+  border-color: rgba(0, 188, 212, 0.4);
+}
+
 .review-modal {
   position: fixed;
   top: 0;
