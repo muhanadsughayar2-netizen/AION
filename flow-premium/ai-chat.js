@@ -666,32 +666,35 @@ async function handleSend() {
   
   if (!prompt) return;
 
+  if (!acquireRequestLock()) {
+    addBubble('Please wait for the current request to complete...', 'ai');
+    return;
+  }
+
+  // Immediately clear input and show user message — no waiting
+  input.value = '';
+  resetInputSize(input);
+  sendBtn.disabled = true;
+  addBubble(prompt, 'user');
+
+  // Subscription check after visual feedback so UI feels instant
   if (window.SnapToAISubscription) {
     const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
     if (!snaptoai_dev_override) {
       const sub = await window.SnapToAISubscription.check();
       if (!sub.canUseAI && sub.status !== 'no_api_key') {
         addBubble('Your trial has ended. Please upgrade to continue using AI analysis.', 'ai');
+        releaseRequestLock();
+        sendBtn.disabled = false;
         return;
       }
     }
   }
 
-  if (!acquireRequestLock()) {
-    addBubble('Please wait for the current request to complete...', 'ai');
-    return;
-  }
-  
-  input.value = '';
-  resetInputSize(input);
-  sendBtn.disabled = true;
-  
-  // Add user message
-  addBubble(prompt, 'user');
   addThinkingBubble();
-  
-  // CRITICAL: Allow browser to paint the thinking bubble before heavy processing
-  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+  // Allow browser to paint before heavy processing
+  await new Promise(r => requestAnimationFrame(r));
   
   try {
     const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
