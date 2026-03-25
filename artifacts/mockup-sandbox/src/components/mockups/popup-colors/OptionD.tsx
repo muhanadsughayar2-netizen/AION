@@ -83,26 +83,26 @@ export function OptionD() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: btn.active ? 'rgba(0,229,204,0.1)' : 'rgba(0,229,204,0.03)',
-                border: `1.5px solid ${btn.active ? 'rgba(0,229,204,0.5)' : 'rgba(0,229,204,0.15)'}`,
+                background: btn.active ? 'rgba(0,229,204,0.12)' : 'rgba(0,229,204,0.05)',
+                border: `1.5px solid ${btn.active ? 'rgba(0,229,204,0.7)' : 'rgba(0,229,204,0.35)'}`,
                 borderRadius: '50%',
-                color: btn.active ? cyan : 'rgba(0,229,204,0.5)',
-                boxShadow: btn.active ? glowMd : 'none',
+                color: cyan,
+                boxShadow: btn.active ? glowMd : `0 0 6px rgba(0,229,204,0.08)`,
                 transition: 'all 0.3s ease'
               }}>
-                {btn.icon === 'camera' && <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>}
-                {btn.icon === 'scissors' && <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>}
-                {btn.icon === 'doc' && <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/></svg>}
-                {btn.icon === 'star' && <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>}
+                {btn.icon === 'camera' && <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>}
+                {btn.icon === 'scissors' && <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>}
+                {btn.icon === 'doc' && <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/></svg>}
+                {btn.icon === 'star' && <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>}
               </div>
               <span style={{
-                fontSize: '8px',
+                fontSize: '9px',
                 fontWeight: 600,
-                color: btn.active ? cyan : textMuted,
+                color: cyan,
                 letterSpacing: '1.5px',
                 fontFamily: "'Space Grotesk', sans-serif",
                 textTransform: 'uppercase',
-                textShadow: btn.active ? `0 0 8px rgba(0,229,204,0.3)` : 'none'
+                textShadow: `0 0 8px rgba(0,229,204,0.25)`
               }}>{btn.label}</span>
             </div>
           ))}
@@ -152,10 +152,10 @@ export function OptionD() {
           <button key={i} style={{
             flex: 1,
             padding: '10px 4px',
-            background: i === 2 ? 'rgba(0,229,204,0.12)' : 'rgba(0,229,204,0.03)',
-            border: `1px solid ${i === 2 ? 'rgba(0,229,204,0.4)' : 'rgba(0,229,204,0.1)'}`,
+            background: i === 2 ? 'rgba(0,229,204,0.15)' : 'rgba(0,229,204,0.05)',
+            border: `1px solid ${i === 2 ? 'rgba(0,229,204,0.5)' : 'rgba(0,229,204,0.2)'}`,
             borderRadius: '8px',
-            color: i === 2 ? cyan : textMuted,
+            color: i === 2 ? cyan : 'rgba(0,229,204,0.7)',
             fontSize: '9px',
             fontWeight: 600,
             cursor: 'pointer',
