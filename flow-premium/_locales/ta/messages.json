@@ -238,5 +238,25 @@
   "statusSnapCopied": {
     "message": "திரைப்பிடிப்பு நகலெடுக்கப்பட்டது",
     "description": "Status: single copy done"
+  },
+  "deleteSelected": {
+    "message": "Delete Selected",
+    "description": "deleteSelected"
+  },
+  "openGoogleAiStudio": {
+    "message": "Open Google AI Studio",
+    "description": "openGoogleAiStudio"
+  },
+  "fullPageNeedsSpace": {
+    "message": "Full page capture needs more space than available.",
+    "description": "fullPageNeedsSpace"
+  },
+  "reviewHeader": {
+    "message": "We love Snap To AI",
+    "description": "reviewHeader"
+  },
+  "reviewMessage": {
+    "message": "We've worked hard to make AI-powered screenshots simple and powerful. If SnapToAI has saved you time, please take a moment to leave a review. It means the world to us.",
+    "description": "reviewMessage"
   }
 }

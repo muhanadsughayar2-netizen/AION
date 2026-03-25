@@ -238,5 +238,193 @@
   "statusSnapCopied": {
     "message": "Screenshot gekopieerd",
     "description": "Status: single copy done"
+  },
+  "signIn": {
+    "message": "Inloggen",
+    "description": "signIn"
+  },
+  "signOut": {
+    "message": "Uitloggen",
+    "description": "signOut"
+  },
+  "signInToUnlock": {
+    "message": "Log in om AI-functies te ontgrendelen",
+    "description": "signInToUnlock"
+  },
+  "continueWithGoogle": {
+    "message": "Doorgaan met Google",
+    "description": "continueWithGoogle"
+  },
+  "privacyNote": {
+    "message": "Uw privacy is belangrijk - we zien alleen uw naam en e-mail",
+    "description": "privacyNote"
+  },
+  "manageSubscription": {
+    "message": "Abonnement beheren",
+    "description": "manageSubscription"
+  },
+  "fullPage": {
+    "message": "HELE PAGINA",
+    "description": "fullPage"
+  },
+  "aiReady": {
+    "message": "AI gereed",
+    "description": "aiReady"
+  },
+  "manage": {
+    "message": "Beheren",
+    "description": "manage"
+  },
+  "aiChat": {
+    "message": "AI-chat",
+    "description": "aiChat"
+  },
+  "aiPartnerGreeting": {
+    "message": "Ik ben uw AI-assistent. Vraag me alles over deze afbeelding!",
+    "description": "aiPartnerGreeting"
+  },
+  "testApi": {
+    "message": "API testen",
+    "description": "testApi"
+  },
+  "send": {
+    "message": "Versturen",
+    "description": "send"
+  },
+  "clearChat": {
+    "message": "Chat wissen",
+    "description": "clearChat"
+  },
+  "copyChat": {
+    "message": "Chat kopiëren",
+    "description": "copyChat"
+  },
+  "activateAiAnalysis": {
+    "message": "AI-analyse activeren",
+    "description": "activateAiAnalysis"
+  },
+  "connected": {
+    "message": "Verbonden",
+    "description": "connected"
+  },
+  "goToAiStudio": {
+    "message": "Ga naar AI Studio",
+    "description": "goToAiStudio"
+  },
+  "createApiKeyCopy": {
+    "message": "Klik op \"API-sleutel maken\" en kopieer",
+    "description": "createApiKeyCopy"
+  },
+  "pasteItBelow": {
+    "message": "Plak hieronder",
+    "description": "pasteItBelow"
+  },
+  "show": {
+    "message": "Tonen",
+    "description": "show"
+  },
+  "ageTermsAgree": {
+    "message": "Ik ben 18+ en ga akkoord met",
+    "description": "ageTermsAgree"
+  },
+  "activate": {
+    "message": "Activeren",
+    "description": "activate"
+  },
+  "clear": {
+    "message": "Wissen",
+    "description": "clear"
+  },
+  "goProForAi": {
+    "message": "Ga Pro voor AI-analyse",
+    "description": "goProForAi"
+  },
+  "trialEndedMessage": {
+    "message": "Uw proefperiode is verlopen. Abonneer u om AI-analyse te blijven gebruiken.",
+    "description": "trialEndedMessage"
+  },
+  "lessThanCoffee": {
+    "message": "Minder dan een koffie per maand voor professionele AI-tools",
+    "description": "lessThanCoffee"
+  },
+  "monthly": {
+    "message": "Maandelijks",
+    "description": "monthly"
+  },
+  "yearly": {
+    "message": "Jaarlijks",
+    "description": "yearly"
+  },
+  "subscriptionActivatesAuto": {
+    "message": "Abonnement wordt automatisch geactiveerd",
+    "description": "subscriptionActivatesAuto"
+  },
+  "checkSubscriptionStatus": {
+    "message": "Abonnementsstatus controleren",
+    "description": "checkSubscriptionStatus"
+  },
+  "continueWithCaptureOnly": {
+    "message": "Doorgaan met alleen vastleggen",
+    "description": "continueWithCaptureOnly"
+  },
+  "leaveAReview": {
+    "message": "Review achterlaten",
+    "description": "leaveAReview"
+  },
+  "maybeLater": {
+    "message": "Misschien later",
+    "description": "maybeLater"
+  },
+  "processing": {
+    "message": "Verwerken...",
+    "description": "processing"
+  },
+  "pleaseWait": {
+    "message": "Even geduld",
+    "description": "pleaseWait"
+  },
+  "queueSpaceNeeded": {
+    "message": "Wachtrijruimte nodig",
+    "description": "queueSpaceNeeded"
+  },
+  "clearQueueCapture": {
+    "message": "Wachtrij wissen en vastleggen",
+    "description": "clearQueueCapture"
+  },
+  "sendToAi": {
+    "message": "Naar AI sturen",
+    "description": "sendToAi"
+  },
+  "copy": {
+    "message": "Kopiëren",
+    "description": "copy"
+  },
+  "stop": {
+    "message": "STOP",
+    "description": "stop"
+  },
+  "deleteSelected": {
+    "message": "Selectie verwijderen",
+    "description": "deleteSelected"
+  },
+  "copied": {
+    "message": "Gekopieerd!",
+    "description": "copied"
+  },
+  "openGoogleAiStudio": {
+    "message": "Open Google AI Studio",
+    "description": "openGoogleAiStudio"
+  },
+  "fullPageNeedsSpace": {
+    "message": "Volledige pagina-opname heeft meer ruimte nodig.",
+    "description": "fullPageNeedsSpace"
+  },
+  "reviewHeader": {
+    "message": "We houden van Snap To AI",
+    "description": "reviewHeader"
+  },
+  "reviewMessage": {
+    "message": "We hebben hard gewerkt om AI-screenshots eenvoudig en krachtig te maken. Als SnapToAI u tijd heeft bespaard, laat dan een beoordeling achter.",
+    "description": "reviewMessage"
   }
 }

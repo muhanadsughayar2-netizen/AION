@@ -238,5 +238,193 @@
   "statusSnapCopied": {
     "message": "Скриншот скопирован",
     "description": "Status: single copy done"
+  },
+  "signIn": {
+    "message": "Войти",
+    "description": "signIn"
+  },
+  "signOut": {
+    "message": "Выйти",
+    "description": "signOut"
+  },
+  "signInToUnlock": {
+    "message": "Войдите, чтобы разблокировать функции ИИ",
+    "description": "signInToUnlock"
+  },
+  "continueWithGoogle": {
+    "message": "Продолжить с Google",
+    "description": "continueWithGoogle"
+  },
+  "privacyNote": {
+    "message": "Ваша конфиденциальность важна - мы видим только ваше имя и email",
+    "description": "privacyNote"
+  },
+  "manageSubscription": {
+    "message": "Управление подпиской",
+    "description": "manageSubscription"
+  },
+  "fullPage": {
+    "message": "ВСЯ СТРАНИЦА",
+    "description": "fullPage"
+  },
+  "aiReady": {
+    "message": "ИИ готов",
+    "description": "aiReady"
+  },
+  "manage": {
+    "message": "Настройки",
+    "description": "manage"
+  },
+  "aiChat": {
+    "message": "Чат с ИИ",
+    "description": "aiChat"
+  },
+  "aiPartnerGreeting": {
+    "message": "Я ваш ИИ-помощник. Спрашивайте что угодно об этом изображении!",
+    "description": "aiPartnerGreeting"
+  },
+  "testApi": {
+    "message": "Тест API",
+    "description": "testApi"
+  },
+  "send": {
+    "message": "Отправить",
+    "description": "send"
+  },
+  "clearChat": {
+    "message": "Очистить чат",
+    "description": "clearChat"
+  },
+  "copyChat": {
+    "message": "Копировать чат",
+    "description": "copyChat"
+  },
+  "activateAiAnalysis": {
+    "message": "Активировать анализ ИИ",
+    "description": "activateAiAnalysis"
+  },
+  "connected": {
+    "message": "Подключено",
+    "description": "connected"
+  },
+  "goToAiStudio": {
+    "message": "Перейти в AI Studio",
+    "description": "goToAiStudio"
+  },
+  "createApiKeyCopy": {
+    "message": "Нажмите \"Создать API-ключ\" и скопируйте",
+    "description": "createApiKeyCopy"
+  },
+  "pasteItBelow": {
+    "message": "Вставьте ниже",
+    "description": "pasteItBelow"
+  },
+  "show": {
+    "message": "Показать",
+    "description": "show"
+  },
+  "ageTermsAgree": {
+    "message": "Мне 18+ и я согласен с",
+    "description": "ageTermsAgree"
+  },
+  "activate": {
+    "message": "Активировать",
+    "description": "activate"
+  },
+  "clear": {
+    "message": "Очистить",
+    "description": "clear"
+  },
+  "goProForAi": {
+    "message": "Перейдите на Pro для анализа ИИ",
+    "description": "goProForAi"
+  },
+  "trialEndedMessage": {
+    "message": "Пробный период закончился. Подпишитесь для доступа к функциям анализа ИИ.",
+    "description": "trialEndedMessage"
+  },
+  "lessThanCoffee": {
+    "message": "Дешевле чашки кофе в месяц за профессиональные инструменты ИИ",
+    "description": "lessThanCoffee"
+  },
+  "monthly": {
+    "message": "Ежемесячно",
+    "description": "monthly"
+  },
+  "yearly": {
+    "message": "Ежегодно",
+    "description": "yearly"
+  },
+  "subscriptionActivatesAuto": {
+    "message": "Подписка активируется автоматически",
+    "description": "subscriptionActivatesAuto"
+  },
+  "checkSubscriptionStatus": {
+    "message": "Проверить статус подписки",
+    "description": "checkSubscriptionStatus"
+  },
+  "continueWithCaptureOnly": {
+    "message": "Продолжить только со скриншотами",
+    "description": "continueWithCaptureOnly"
+  },
+  "leaveAReview": {
+    "message": "Оставить отзыв",
+    "description": "leaveAReview"
+  },
+  "maybeLater": {
+    "message": "Может позже",
+    "description": "maybeLater"
+  },
+  "processing": {
+    "message": "Обработка...",
+    "description": "processing"
+  },
+  "pleaseWait": {
+    "message": "Пожалуйста, подождите",
+    "description": "pleaseWait"
+  },
+  "queueSpaceNeeded": {
+    "message": "Требуется место в очереди",
+    "description": "queueSpaceNeeded"
+  },
+  "clearQueueCapture": {
+    "message": "Очистить очередь и захватить",
+    "description": "clearQueueCapture"
+  },
+  "sendToAi": {
+    "message": "Отправить в ИИ",
+    "description": "sendToAi"
+  },
+  "copy": {
+    "message": "Копировать",
+    "description": "copy"
+  },
+  "stop": {
+    "message": "СТОП",
+    "description": "stop"
+  },
+  "deleteSelected": {
+    "message": "Удалить выбранное",
+    "description": "deleteSelected"
+  },
+  "copied": {
+    "message": "Скопировано!",
+    "description": "copied"
+  },
+  "openGoogleAiStudio": {
+    "message": "Открыть Google AI Studio",
+    "description": "openGoogleAiStudio"
+  },
+  "fullPageNeedsSpace": {
+    "message": "Для полностраничного захвата нужно больше места.",
+    "description": "fullPageNeedsSpace"
+  },
+  "reviewHeader": {
+    "message": "Мы любим Snap To AI",
+    "description": "reviewHeader"
+  },
+  "reviewMessage": {
+    "message": "Мы усердно работали, чтобы сделать AI-скриншоты простыми и мощными. Если SnapToAI сэкономил вам время, оставьте отзыв.",
+    "description": "reviewMessage"
   }
 }

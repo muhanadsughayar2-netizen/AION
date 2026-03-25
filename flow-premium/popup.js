@@ -966,39 +966,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Translate all UI elements
 function translateUI() {
-  // Check if language is RTL (Arabic)
   const uiLang = chrome.i18n.getUILanguage();
   if (uiLang.startsWith('ar')) {
     document.documentElement.setAttribute('dir', 'rtl');
   }
-  
-  // Translate text content with fallbacks
-  const getMessage = (key, fallback) => {
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
     const msg = chrome.i18n.getMessage(key);
-    return msg || fallback;
-  };
-  
-  document.querySelector('.status').textContent = getMessage('flowReady', 'Flow: Ready');
-  document.getElementById('selectAllBtn').textContent = getMessage('selectAll', 'Select All');
-  document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Copy');
+    if (msg) el.textContent = msg;
+  });
+
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.dataset.i18nPlaceholder;
+    const msg = chrome.i18n.getMessage(key);
+    if (msg) el.placeholder = msg;
+  });
+
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.dataset.i18nTitle;
+    const msg = chrome.i18n.getMessage(key);
+    if (msg) el.title = msg;
+  });
+
   const _dlBtn = document.getElementById('downloadSelectedBtn');
-  if (_dlBtn) _dlBtn.textContent = '📸 ' + getMessage('downloadAsPNG', 'Download as PNG');
-  const _pdfBtn = document.getElementById('exportPdfBtn');
-  if (_pdfBtn) _pdfBtn.textContent = '📄 ' + getMessage('exportAsPDF', 'Export as PDF');
-  document.getElementById('clearButton').textContent = getMessage('deleteSelected', 'Delete Selected');
-  
-  // Translate PDF modal
-  const pdfOptions = document.querySelectorAll('.pdf-option-text strong');
-  if (pdfOptions.length >= 4) {
-    pdfOptions[0].textContent = getMessage('allAsOnePDF', 'All as One PDF');
-    pdfOptions[1].textContent = getMessage('allAsSeparatePDFs', 'All as Separate PDFs');
-    pdfOptions[2].textContent = getMessage('selectedAsOnePDF', 'Selected as One PDF');
-    pdfOptions[3].textContent = getMessage('selectedAsSeparatePDFs', 'Selected as Separate PDFs');
+  if (_dlBtn) {
+    const msg = chrome.i18n.getMessage('downloadAsPNG');
+    if (msg) _dlBtn.textContent = '📸 ' + msg;
   }
-  
-  const cancelBtn = document.getElementById('pdfCancelBtn');
-  if (cancelBtn) {
-    cancelBtn.textContent = getMessage('cancel', 'Cancel');
+  const _pdfBtn = document.getElementById('exportPdfBtn');
+  if (_pdfBtn) {
+    const msg = chrome.i18n.getMessage('exportAsPDF');
+    if (msg) _pdfBtn.textContent = '📄 ' + msg;
   }
 }
 

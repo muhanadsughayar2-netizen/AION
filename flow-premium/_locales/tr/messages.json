@@ -238,5 +238,193 @@
   "statusSnapCopied": {
     "message": "Ekran görüntüsü kopyalandı",
     "description": "Status: single copy done"
+  },
+  "signIn": {
+    "message": "Giriş yap",
+    "description": "signIn"
+  },
+  "signOut": {
+    "message": "Çıkış yap",
+    "description": "signOut"
+  },
+  "signInToUnlock": {
+    "message": "AI özelliklerini açmak için giriş yapın",
+    "description": "signInToUnlock"
+  },
+  "continueWithGoogle": {
+    "message": "Google ile devam et",
+    "description": "continueWithGoogle"
+  },
+  "privacyNote": {
+    "message": "Gizliliğiniz önemli - sadece adınızı ve e-postanızı görüyoruz",
+    "description": "privacyNote"
+  },
+  "manageSubscription": {
+    "message": "Abonelik yönet",
+    "description": "manageSubscription"
+  },
+  "fullPage": {
+    "message": "TÜM SAYFA",
+    "description": "fullPage"
+  },
+  "aiReady": {
+    "message": "AI hazır",
+    "description": "aiReady"
+  },
+  "manage": {
+    "message": "Yönet",
+    "description": "manage"
+  },
+  "aiChat": {
+    "message": "AI Sohbet",
+    "description": "aiChat"
+  },
+  "aiPartnerGreeting": {
+    "message": "AI asistanınızım. Bu görsel hakkında bana her şeyi sorun!",
+    "description": "aiPartnerGreeting"
+  },
+  "testApi": {
+    "message": "API test et",
+    "description": "testApi"
+  },
+  "send": {
+    "message": "Gönder",
+    "description": "send"
+  },
+  "clearChat": {
+    "message": "Sohbeti temizle",
+    "description": "clearChat"
+  },
+  "copyChat": {
+    "message": "Sohbeti kopyala",
+    "description": "copyChat"
+  },
+  "activateAiAnalysis": {
+    "message": "AI analizini etkinleştir",
+    "description": "activateAiAnalysis"
+  },
+  "connected": {
+    "message": "Bağlandı",
+    "description": "connected"
+  },
+  "goToAiStudio": {
+    "message": "AI Studio'ya git",
+    "description": "goToAiStudio"
+  },
+  "createApiKeyCopy": {
+    "message": "\"API anahtarı oluştur\" tıklayın ve kopyalayın",
+    "description": "createApiKeyCopy"
+  },
+  "pasteItBelow": {
+    "message": "Aşağıya yapıştır",
+    "description": "pasteItBelow"
+  },
+  "show": {
+    "message": "Göster",
+    "description": "show"
+  },
+  "ageTermsAgree": {
+    "message": "18 yaşındayım ve kabul ediyorum",
+    "description": "ageTermsAgree"
+  },
+  "activate": {
+    "message": "Etkinleştir",
+    "description": "activate"
+  },
+  "clear": {
+    "message": "Temizle",
+    "description": "clear"
+  },
+  "goProForAi": {
+    "message": "AI analizi için Pro'ya geçin",
+    "description": "goProForAi"
+  },
+  "trialEndedMessage": {
+    "message": "Deneme süreniz sona erdi. AI analiz özelliklerini kullanmaya devam etmek için abone olun.",
+    "description": "trialEndedMessage"
+  },
+  "lessThanCoffee": {
+    "message": "Profesyonel AI araçları için ayda bir kahveden ucuz",
+    "description": "lessThanCoffee"
+  },
+  "monthly": {
+    "message": "Aylık",
+    "description": "monthly"
+  },
+  "yearly": {
+    "message": "Yıllık",
+    "description": "yearly"
+  },
+  "subscriptionActivatesAuto": {
+    "message": "Abonelik otomatik olarak etkinleşir",
+    "description": "subscriptionActivatesAuto"
+  },
+  "checkSubscriptionStatus": {
+    "message": "Abonelik durumunu kontrol et",
+    "description": "checkSubscriptionStatus"
+  },
+  "continueWithCaptureOnly": {
+    "message": "Yalnızca yakalama ile devam et",
+    "description": "continueWithCaptureOnly"
+  },
+  "leaveAReview": {
+    "message": "Değerlendirme bırak",
+    "description": "leaveAReview"
+  },
+  "maybeLater": {
+    "message": "Belki sonra",
+    "description": "maybeLater"
+  },
+  "processing": {
+    "message": "İşleniyor...",
+    "description": "processing"
+  },
+  "pleaseWait": {
+    "message": "Lütfen bekleyin",
+    "description": "pleaseWait"
+  },
+  "queueSpaceNeeded": {
+    "message": "Kuyruk alanı gerekli",
+    "description": "queueSpaceNeeded"
+  },
+  "clearQueueCapture": {
+    "message": "Kuyruğu temizle ve yakala",
+    "description": "clearQueueCapture"
+  },
+  "sendToAi": {
+    "message": "AI'ya gönder",
+    "description": "sendToAi"
+  },
+  "copy": {
+    "message": "Kopyala",
+    "description": "copy"
+  },
+  "stop": {
+    "message": "DUR",
+    "description": "stop"
+  },
+  "deleteSelected": {
+    "message": "Seçilenleri sil",
+    "description": "deleteSelected"
+  },
+  "copied": {
+    "message": "Kopyalandı!",
+    "description": "copied"
+  },
+  "openGoogleAiStudio": {
+    "message": "Google AI Studio'yu Aç",
+    "description": "openGoogleAiStudio"
+  },
+  "fullPageNeedsSpace": {
+    "message": "Tam sayfa yakalama için daha fazla alan gerekiyor.",
+    "description": "fullPageNeedsSpace"
+  },
+  "reviewHeader": {
+    "message": "Snap To AI'ı Seviyoruz",
+    "description": "reviewHeader"
+  },
+  "reviewMessage": {
+    "message": "Yapay zeka ekran görüntülerini basit ve güçlü hale getirmek için çok çalıştık. SnapToAI size zaman kazandırdıysa, lütfen bir değerlendirme bırakın.",
+    "description": "reviewMessage"
   }
 }

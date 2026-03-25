@@ -238,5 +238,193 @@
   "statusSnapCopied": {
     "message": "截图已复制",
     "description": "Status: single copy done"
+  },
+  "signIn": {
+    "message": "登录",
+    "description": "signIn"
+  },
+  "signOut": {
+    "message": "退出",
+    "description": "signOut"
+  },
+  "signInToUnlock": {
+    "message": "登录以解锁AI功能",
+    "description": "signInToUnlock"
+  },
+  "continueWithGoogle": {
+    "message": "使用Google继续",
+    "description": "continueWithGoogle"
+  },
+  "privacyNote": {
+    "message": "您的隐私很重要 - 我们只能看到您的姓名和邮箱",
+    "description": "privacyNote"
+  },
+  "manageSubscription": {
+    "message": "管理订阅",
+    "description": "manageSubscription"
+  },
+  "fullPage": {
+    "message": "整页",
+    "description": "fullPage"
+  },
+  "aiReady": {
+    "message": "AI就绪",
+    "description": "aiReady"
+  },
+  "manage": {
+    "message": "管理",
+    "description": "manage"
+  },
+  "aiChat": {
+    "message": "AI聊天",
+    "description": "aiChat"
+  },
+  "aiPartnerGreeting": {
+    "message": "我是您的AI助手。可以问我关于这张图片的任何问题！",
+    "description": "aiPartnerGreeting"
+  },
+  "testApi": {
+    "message": "测试API",
+    "description": "testApi"
+  },
+  "send": {
+    "message": "发送",
+    "description": "send"
+  },
+  "clearChat": {
+    "message": "清除聊天",
+    "description": "clearChat"
+  },
+  "copyChat": {
+    "message": "复制聊天",
+    "description": "copyChat"
+  },
+  "activateAiAnalysis": {
+    "message": "激活AI分析",
+    "description": "activateAiAnalysis"
+  },
+  "connected": {
+    "message": "已连接",
+    "description": "connected"
+  },
+  "goToAiStudio": {
+    "message": "前往AI Studio",
+    "description": "goToAiStudio"
+  },
+  "createApiKeyCopy": {
+    "message": "点击「创建API密钥」并复制",
+    "description": "createApiKeyCopy"
+  },
+  "pasteItBelow": {
+    "message": "粘贴到下方",
+    "description": "pasteItBelow"
+  },
+  "show": {
+    "message": "显示",
+    "description": "show"
+  },
+  "ageTermsAgree": {
+    "message": "我已年满18岁并同意",
+    "description": "ageTermsAgree"
+  },
+  "activate": {
+    "message": "激活",
+    "description": "activate"
+  },
+  "clear": {
+    "message": "清除",
+    "description": "clear"
+  },
+  "goProForAi": {
+    "message": "升级Pro以使用AI分析",
+    "description": "goProForAi"
+  },
+  "trialEndedMessage": {
+    "message": "您的试用期已结束。订阅以继续使用AI分析功能。",
+    "description": "trialEndedMessage"
+  },
+  "lessThanCoffee": {
+    "message": "每月不到一杯咖啡的价格，享受专业AI工具",
+    "description": "lessThanCoffee"
+  },
+  "monthly": {
+    "message": "月付",
+    "description": "monthly"
+  },
+  "yearly": {
+    "message": "年付",
+    "description": "yearly"
+  },
+  "subscriptionActivatesAuto": {
+    "message": "订阅自动激活",
+    "description": "subscriptionActivatesAuto"
+  },
+  "checkSubscriptionStatus": {
+    "message": "检查订阅状态",
+    "description": "checkSubscriptionStatus"
+  },
+  "continueWithCaptureOnly": {
+    "message": "仅使用截图功能",
+    "description": "continueWithCaptureOnly"
+  },
+  "leaveAReview": {
+    "message": "留下评价",
+    "description": "leaveAReview"
+  },
+  "maybeLater": {
+    "message": "以后再说",
+    "description": "maybeLater"
+  },
+  "processing": {
+    "message": "处理中...",
+    "description": "processing"
+  },
+  "pleaseWait": {
+    "message": "请稍候",
+    "description": "pleaseWait"
+  },
+  "queueSpaceNeeded": {
+    "message": "需要队列空间",
+    "description": "queueSpaceNeeded"
+  },
+  "clearQueueCapture": {
+    "message": "清除队列并截图",
+    "description": "clearQueueCapture"
+  },
+  "sendToAi": {
+    "message": "发送到AI",
+    "description": "sendToAi"
+  },
+  "copy": {
+    "message": "复制",
+    "description": "copy"
+  },
+  "stop": {
+    "message": "停止",
+    "description": "stop"
+  },
+  "deleteSelected": {
+    "message": "删除所选",
+    "description": "deleteSelected"
+  },
+  "copied": {
+    "message": "已复制！",
+    "description": "copied"
+  },
+  "openGoogleAiStudio": {
+    "message": "打开 Google AI Studio",
+    "description": "openGoogleAiStudio"
+  },
+  "fullPageNeedsSpace": {
+    "message": "全页截图需要更多空间。",
+    "description": "fullPageNeedsSpace"
+  },
+  "reviewHeader": {
+    "message": "我们热爱 Snap To AI",
+    "description": "reviewHeader"
+  },
+  "reviewMessage": {
+    "message": "我们努力使AI截图变得简单而强大。如果SnapToAI为您节省了时间，请花一点时间留下评价。这对我们意义重大。",
+    "description": "reviewMessage"
   }
 }

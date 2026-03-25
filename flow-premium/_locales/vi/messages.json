@@ -238,5 +238,193 @@
   "statusSnapCopied": {
     "message": "Đã sao chép ảnh chụp màn hình",
     "description": "Status: single copy done"
+  },
+  "signIn": {
+    "message": "Đăng nhập",
+    "description": "signIn"
+  },
+  "signOut": {
+    "message": "Đăng xuất",
+    "description": "signOut"
+  },
+  "signInToUnlock": {
+    "message": "Đăng nhập để mở khóa tính năng AI",
+    "description": "signInToUnlock"
+  },
+  "continueWithGoogle": {
+    "message": "Tiếp tục với Google",
+    "description": "continueWithGoogle"
+  },
+  "privacyNote": {
+    "message": "Quyền riêng tư của bạn rất quan trọng - chúng tôi chỉ thấy tên và email",
+    "description": "privacyNote"
+  },
+  "manageSubscription": {
+    "message": "Quản lý đăng ký",
+    "description": "manageSubscription"
+  },
+  "fullPage": {
+    "message": "TOÀN TRANG",
+    "description": "fullPage"
+  },
+  "aiReady": {
+    "message": "AI sẵn sàng",
+    "description": "aiReady"
+  },
+  "manage": {
+    "message": "Quản lý",
+    "description": "manage"
+  },
+  "aiChat": {
+    "message": "Trò chuyện AI",
+    "description": "aiChat"
+  },
+  "aiPartnerGreeting": {
+    "message": "Tôi là trợ lý AI của bạn. Hãy hỏi tôi bất cứ điều gì về hình ảnh này!",
+    "description": "aiPartnerGreeting"
+  },
+  "testApi": {
+    "message": "Kiểm tra API",
+    "description": "testApi"
+  },
+  "send": {
+    "message": "Gửi",
+    "description": "send"
+  },
+  "clearChat": {
+    "message": "Xóa trò chuyện",
+    "description": "clearChat"
+  },
+  "copyChat": {
+    "message": "Sao chép trò chuyện",
+    "description": "copyChat"
+  },
+  "activateAiAnalysis": {
+    "message": "Kích hoạt phân tích AI",
+    "description": "activateAiAnalysis"
+  },
+  "connected": {
+    "message": "Đã kết nối",
+    "description": "connected"
+  },
+  "goToAiStudio": {
+    "message": "Đi đến AI Studio",
+    "description": "goToAiStudio"
+  },
+  "createApiKeyCopy": {
+    "message": "Nhấp \"Tạo khóa API\" và sao chép",
+    "description": "createApiKeyCopy"
+  },
+  "pasteItBelow": {
+    "message": "Dán vào bên dưới",
+    "description": "pasteItBelow"
+  },
+  "show": {
+    "message": "Hiện",
+    "description": "show"
+  },
+  "ageTermsAgree": {
+    "message": "Tôi từ 18 tuổi trở lên và đồng ý với",
+    "description": "ageTermsAgree"
+  },
+  "activate": {
+    "message": "Kích hoạt",
+    "description": "activate"
+  },
+  "clear": {
+    "message": "Xóa",
+    "description": "clear"
+  },
+  "goProForAi": {
+    "message": "Nâng cấp Pro để phân tích AI",
+    "description": "goProForAi"
+  },
+  "trialEndedMessage": {
+    "message": "Bản dùng thử đã kết thúc. Đăng ký để tiếp tục sử dụng tính năng phân tích AI.",
+    "description": "trialEndedMessage"
+  },
+  "lessThanCoffee": {
+    "message": "Rẻ hơn một ly cà phê mỗi tháng cho công cụ AI chuyên nghiệp",
+    "description": "lessThanCoffee"
+  },
+  "monthly": {
+    "message": "Hàng tháng",
+    "description": "monthly"
+  },
+  "yearly": {
+    "message": "Hàng năm",
+    "description": "yearly"
+  },
+  "subscriptionActivatesAuto": {
+    "message": "Đăng ký sẽ được kích hoạt tự động",
+    "description": "subscriptionActivatesAuto"
+  },
+  "checkSubscriptionStatus": {
+    "message": "Kiểm tra trạng thái đăng ký",
+    "description": "checkSubscriptionStatus"
+  },
+  "continueWithCaptureOnly": {
+    "message": "Tiếp tục chỉ với chụp ảnh",
+    "description": "continueWithCaptureOnly"
+  },
+  "leaveAReview": {
+    "message": "Để lại đánh giá",
+    "description": "leaveAReview"
+  },
+  "maybeLater": {
+    "message": "Để sau",
+    "description": "maybeLater"
+  },
+  "processing": {
+    "message": "Đang xử lý...",
+    "description": "processing"
+  },
+  "pleaseWait": {
+    "message": "Vui lòng đợi",
+    "description": "pleaseWait"
+  },
+  "queueSpaceNeeded": {
+    "message": "Cần không gian hàng đợi",
+    "description": "queueSpaceNeeded"
+  },
+  "clearQueueCapture": {
+    "message": "Xóa hàng đợi và chụp",
+    "description": "clearQueueCapture"
+  },
+  "sendToAi": {
+    "message": "Gửi đến AI",
+    "description": "sendToAi"
+  },
+  "copy": {
+    "message": "Sao chép",
+    "description": "copy"
+  },
+  "stop": {
+    "message": "DỪNG",
+    "description": "stop"
+  },
+  "deleteSelected": {
+    "message": "Xóa đã chọn",
+    "description": "deleteSelected"
+  },
+  "copied": {
+    "message": "Đã sao chép!",
+    "description": "copied"
+  },
+  "openGoogleAiStudio": {
+    "message": "Mở Google AI Studio",
+    "description": "openGoogleAiStudio"
+  },
+  "fullPageNeedsSpace": {
+    "message": "Chụp toàn trang cần nhiều không gian hơn.",
+    "description": "fullPageNeedsSpace"
+  },
+  "reviewHeader": {
+    "message": "Chúng tôi yêu Snap To AI",
+    "description": "reviewHeader"
+  },
+  "reviewMessage": {
+    "message": "Chúng tôi đã nỗ lực để làm cho ảnh chụp AI đơn giản và mạnh mẽ. Nếu SnapToAI giúp bạn tiết kiệm thời gian, hãy để lại đánh giá.",
+    "description": "reviewMessage"
   }
 }
