@@ -933,7 +933,7 @@ body {
   justify-content: center;
   transition: opacity 0.15s ease, transform 0.15s ease;
   z-index: 10;
-  opacity: 0.35;
+  opacity: 0;
 }
 
 .thumbnail:hover .thumbnail-delete {
