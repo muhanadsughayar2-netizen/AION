@@ -319,26 +319,18 @@ async function handleAskSnapToAI(info, tab) {
     try {
       await chrome.storage.session.set({ askAiPayload: payload });
     } catch (storageErr) {
-      if (screenshot) {
-        try {
-          const canvas = await createOffscreenCanvas(screenshot, 0.6);
-          payload.screenshot = canvas;
-          await chrome.storage.session.set({ askAiPayload: payload });
-        } catch (e2) {
-          payload.screenshot = null;
-          try { await chrome.storage.session.set({ askAiPayload: payload }); } catch (e3) {}
-        }
+      console.warn('[SnapToAI] Storage failed, retrying without screenshot:', storageErr.message);
+      payload.screenshot = null;
+      try { await chrome.storage.session.set({ askAiPayload: payload }); } catch (e2) {
+        console.error('[SnapToAI] Storage retry also failed:', e2.message);
       }
     }
 
-    const width = 1000;
-    const height = 700;
-    const left = Math.round((screen.availWidth - width) / 2);
-    const top = Math.round((screen.availHeight - height) / 2);
     chrome.windows.create({
       url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&count=1'),
       type: 'popup',
-      width, height, left, top,
+      width: 1000,
+      height: 700,
       focused: true
     });
 
