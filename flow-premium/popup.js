@@ -3775,7 +3775,9 @@ if (directAiButton) {
       await openAiChat(selectedImages);
     } else {
       console.log('[SnapToAI] Ask AI Direct - capturing and analyzing');
-      chrome.runtime.sendMessage({ action: 'askAiDirect' });
+      const [sourceTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      const sourceTabId = sourceTab && !sourceTab.url?.startsWith('chrome-extension://') ? sourceTab.id : null;
+      chrome.runtime.sendMessage({ action: 'askAiDirect', sourceTabId });
       window.close();
     }
   });

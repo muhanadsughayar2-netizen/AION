@@ -240,13 +240,17 @@ async function handleAskSnapToAI(info, tab) {
       return;
     }
 
-    await chrome.windows.update(tab.windowId, { focused: true });
-    await chrome.tabs.update(tab.id, { active: true });
-    await new Promise(r => setTimeout(r, 150));
+    try {
+      await chrome.windows.update(tab.windowId, { focused: true });
+      await chrome.tabs.update(tab.id, { active: true });
+    } catch (e) {
+      console.log('[SnapToAI] Tab focus failed:', e.message);
+    }
+    await new Promise(r => setTimeout(r, 80));
 
     let screenshot = null;
     try {
-      screenshot = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+      screenshot = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 85 });
     } catch (e) {
       console.error('[SnapToAI] Screenshot capture failed:', e);
     }
@@ -260,47 +264,50 @@ async function handleAskSnapToAI(info, tab) {
       mediaType: info.mediaType || ''
     };
 
-    try {
-      const [result] = await chrome.scripting.executeScript({
-        target: { tabId: tab.id, frameIds: [info.frameId || 0] },
-        func: () => {
-          const sel = window.getSelection();
-          const selectedText = sel ? sel.toString() : '';
-
-          let clickedElementInfo = '';
-          const active = document.activeElement;
-          if (active && active !== document.body) {
-            const tag = active.tagName || '';
-            const text = (active.textContent || '').substring(0, 500);
-            clickedElementInfo = `<${tag}> ${text}`;
-          }
-
-          const codeBlocks = [];
-          document.querySelectorAll('pre, code').forEach(el => {
-            const text = (el.textContent || '').trim();
-            if (text.length > 10 && text.length < 5000) {
-              codeBlocks.push(text.substring(0, 2000));
+    const contextPromise = new Promise(async (resolve) => {
+      try {
+        const [result] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id, frameIds: [info.frameId || 0] },
+          func: () => {
+            const sel = window.getSelection();
+            const selectedText = sel ? sel.toString() : '';
+            let clickedElementInfo = '';
+            const active = document.activeElement;
+            if (active && active !== document.body) {
+              const tag = active.tagName || '';
+              const text = (active.textContent || '').substring(0, 500);
+              clickedElementInfo = `<${tag}> ${text}`;
             }
-          });
-
-          return {
-            selectedText: selectedText,
-            clickedElement: clickedElementInfo,
-            visibleCodeBlocks: codeBlocks.slice(0, 3),
-            pageText: document.title
-          };
-        }
-      });
-
-      if (result && result.result) {
-        if (result.result.selectedText && result.result.selectedText.length > (pageContext.selectedText || '').length) {
-          pageContext.selectedText = result.result.selectedText;
-        }
-        pageContext.clickedElement = result.result.clickedElement || '';
-        pageContext.visibleCodeBlocks = result.result.visibleCodeBlocks || [];
+            const codeBlocks = [];
+            document.querySelectorAll('pre, code').forEach(el => {
+              const text = (el.textContent || '').trim();
+              if (text.length > 10 && text.length < 5000) {
+                codeBlocks.push(text.substring(0, 2000));
+              }
+            });
+            return {
+              selectedText,
+              clickedElement: clickedElementInfo,
+              visibleCodeBlocks: codeBlocks.slice(0, 3),
+              pageText: document.title
+            };
+          }
+        });
+        resolve(result?.result || null);
+      } catch (e) {
+        resolve(null);
       }
-    } catch (e) {
-      console.log('[SnapToAI] Context extraction failed (page may be restricted):', e.message);
+    });
+
+    const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 1500));
+    const contextResult = await Promise.race([contextPromise, timeoutPromise]);
+
+    if (contextResult) {
+      if (contextResult.selectedText && contextResult.selectedText.length > (pageContext.selectedText || '').length) {
+        pageContext.selectedText = contextResult.selectedText;
+      }
+      pageContext.clickedElement = contextResult.clickedElement || '';
+      pageContext.visibleCodeBlocks = contextResult.visibleCodeBlocks || [];
     }
 
     const payload = {
@@ -312,33 +319,37 @@ async function handleAskSnapToAI(info, tab) {
     try {
       await chrome.storage.session.set({ askAiPayload: payload });
     } catch (storageErr) {
-      console.error('[SnapToAI] Failed to store Ask AI payload:', storageErr);
-      chrome.windows.create({
-        url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&error=storage'),
-        type: 'popup',
-        width: 1000,
-        height: 700,
-        focused: true
-      });
-      return;
+      if (screenshot) {
+        try {
+          const canvas = await createOffscreenCanvas(screenshot, 0.6);
+          payload.screenshot = canvas;
+          await chrome.storage.session.set({ askAiPayload: payload });
+        } catch (e2) {
+          payload.screenshot = null;
+          try { await chrome.storage.session.set({ askAiPayload: payload }); } catch (e3) {}
+        }
+      }
     }
 
+    const width = 1000;
+    const height = 700;
+    const left = Math.round((screen.availWidth - width) / 2);
+    const top = Math.round((screen.availHeight - height) / 2);
     chrome.windows.create({
       url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&count=1'),
       type: 'popup',
-      width: 1000,
-      height: 700,
+      width, height, left, top,
       focused: true
-    });
-
-    console.log('[SnapToAI] Ask AI launched with context:', {
-      hasScreenshot: !!screenshot,
-      selectedTextLength: (pageContext.selectedText || '').length,
-      url: pageContext.url
     });
 
   } catch (err) {
     console.error('[SnapToAI] Ask AI error:', err);
+    chrome.windows.create({
+      url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&error=storage'),
+      type: 'popup',
+      width: 1000, height: 700,
+      focused: true
+    });
   }
 }
 
@@ -406,20 +417,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     captureScreenshot().then(sendResponse);
     return true;
   } else if (request.action === 'askAiDirect') {
+    const sourceTabId = request.sourceTabId;
     (async () => {
       try {
-        const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-        let tab = tabs.find(t => t.url && !t.url.startsWith('chrome-extension://'));
+        let tab = null;
+        if (sourceTabId) {
+          try { tab = await chrome.tabs.get(sourceTabId); } catch (e) {}
+        }
         if (!tab) {
-          const allTabs = await chrome.tabs.query({ lastFocusedWindow: true });
-          tab = allTabs.filter(t => t.url && !t.url.startsWith('chrome-extension://')).sort((a, b) => b.lastAccessed - a.lastAccessed)[0];
+          const allTabs = await chrome.tabs.query({});
+          tab = allTabs
+            .filter(t => t.url && !t.url.startsWith('chrome-extension://') && !t.url.startsWith('chrome://') && !t.url.startsWith('about:'))
+            .sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0))[0];
         }
         if (tab) {
           await handleAskSnapToAI({ selectionText: '', frameId: 0 }, tab);
+        } else {
+          chrome.windows.create({
+            url: chrome.runtime.getURL('ai-chat.html?direct=true'),
+            type: 'popup', width: 1000, height: 700, focused: true
+          });
         }
         sendResponse({ success: true });
       } catch (e) {
         console.error('[SnapToAI] askAiDirect error:', e);
+        chrome.windows.create({
+          url: chrome.runtime.getURL('ai-chat.html?direct=true'),
+          type: 'popup', width: 1000, height: 700, focused: true
+        });
         sendResponse({ success: false });
       }
     })();
