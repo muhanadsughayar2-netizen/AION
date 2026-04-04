@@ -203,13 +203,11 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
             if (active && active.value) {
               return active.value;
             }
-            if (active && active.textContent && (active.contentEditable === 'true' || active.closest('[contenteditable="true"]'))) {
+            if (active && active.textContent && active.contentEditable === 'true') {
               return active.textContent;
             }
-            const codeEl = document.querySelector('.view-lines, .CodeMirror, .monaco-editor, .ace_editor, pre > code, .code-area, .editor-container');
-            if (codeEl) {
-              return codeEl.textContent;
-            }
+            const editorEl = document.querySelector('.view-lines, .CodeMirror-code, .ace_text-layer, .monaco-editor .lines-content');
+            if (editorEl) return editorEl.textContent;
             const preBlocks = document.querySelectorAll('pre, code');
             if (preBlocks.length > 0) {
               return Array.from(preBlocks).map(el => el.textContent).join('\n\n');
@@ -221,13 +219,13 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       } catch (e) {
         console.log('[SnapToAI] Grab all code failed:', e.message);
       }
-      if (allText.length > 50000) {
-        allText = allText.substring(0, 50000);
-      }
+      if (allText.length > 50000) allText = allText.substring(0, 50000);
       if (allText) {
-        await handleAskSnapToAI({ selectionText: allText, frameId: 0 }, tab);
-      } else {
-        await handleAskSnapToAI(info, tab);
+        await chrome.storage.session.set({ grabCodeText: allText });
+        chrome.windows.create({
+          url: chrome.runtime.getURL('ai-chat.html?source=grabcode'),
+          type: 'popup', width: 1000, height: 700, focused: true
+        });
       }
       break;
     }
@@ -505,22 +503,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       try {
         const data = await chrome.storage.session.get('lastCopiedText');
         const copiedText = data.lastCopiedText || '';
-        let tab = sender.tab;
-        if (!tab) {
-          const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-          tab = activeTab;
-        }
-        if (tab && copiedText) {
-          await handleAskSnapToAI({ selectionText: copiedText, frameId: 0 }, tab);
-        } else if (copiedText) {
-          const payload = {
-            screenshot: null,
-            context: { url: '', title: '', selectedText: copiedText },
-            timestamp: Date.now()
-          };
-          await chrome.storage.session.set({ askAiPayload: payload });
+        if (copiedText) {
+          await chrome.storage.session.set({ grabCodeText: copiedText });
           chrome.windows.create({
-            url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&count=1'),
+            url: chrome.runtime.getURL('ai-chat.html?source=grabcode'),
             type: 'popup', width: 1000, height: 700, focused: true
           });
         }
