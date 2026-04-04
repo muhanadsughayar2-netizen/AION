@@ -238,5 +238,205 @@
   "statusSnapCopied": {
     "message": "স্ক্রিনশট কপি হয়েছে",
     "description": "Status: single copy done"
+  },
+  "signIn": {
+    "message": "সাইন ইন করুন",
+    "description": "signIn"
+  },
+  "signOut": {
+    "message": "সাইন আউট",
+    "description": "signOut"
+  },
+  "signInToUnlock": {
+    "message": "AI ফিচার আনলক করতে সাইন ইন করুন",
+    "description": "signInToUnlock"
+  },
+  "continueWithGoogle": {
+    "message": "Google দিয়ে চালিয়ে যান",
+    "description": "continueWithGoogle"
+  },
+  "privacyNote": {
+    "message": "আপনার গোপনীয়তা গুরুত্বপূর্ণ - আমরা শুধু আপনার নাম ও ইমেইল দেখি",
+    "description": "privacyNote"
+  },
+  "manageSubscription": {
+    "message": "সাবস্ক্রিপশন পরিচালনা করুন",
+    "description": "manageSubscription"
+  },
+  "fullPage": {
+    "message": "সম্পূর্ণ পৃষ্ঠা",
+    "description": "fullPage"
+  },
+  "aiReady": {
+    "message": "AI প্রস্তুত",
+    "description": "aiReady"
+  },
+  "manage": {
+    "message": "পরিচালনা করুন",
+    "description": "manage"
+  },
+  "aiChat": {
+    "message": "AI চ্যাট",
+    "description": "aiChat"
+  },
+  "aiPartnerGreeting": {
+    "message": "আমি আপনার AI সহকারী। এই ছবি সম্পর্কে যেকোনো কিছু জিজ্ঞাসা করুন!",
+    "description": "aiPartnerGreeting"
+  },
+  "testApi": {
+    "message": "API পরীক্ষা",
+    "description": "testApi"
+  },
+  "send": {
+    "message": "পাঠান",
+    "description": "send"
+  },
+  "clearChat": {
+    "message": "চ্যাট মুছুন",
+    "description": "clearChat"
+  },
+  "copyChat": {
+    "message": "চ্যাট কপি করুন",
+    "description": "copyChat"
+  },
+  "activateAiAnalysis": {
+    "message": "AI বিশ্লেষণ সক্রিয় করুন",
+    "description": "activateAiAnalysis"
+  },
+  "connected": {
+    "message": "সংযুক্ত",
+    "description": "connected"
+  },
+  "goToAiStudio": {
+    "message": "AI Studio-তে যান",
+    "description": "goToAiStudio"
+  },
+  "createApiKeyCopy": {
+    "message": "\"API কী তৈরি করুন\" ক্লিক করুন এবং কপি করুন",
+    "description": "createApiKeyCopy"
+  },
+  "pasteItBelow": {
+    "message": "নিচে পেস্ট করুন",
+    "description": "pasteItBelow"
+  },
+  "show": {
+    "message": "দেখান",
+    "description": "show"
+  },
+  "ageTermsAgree": {
+    "message": "আমি ১৮+ এবং সম্মত",
+    "description": "ageTermsAgree"
+  },
+  "activate": {
+    "message": "সক্রিয় করুন",
+    "description": "activate"
+  },
+  "clear": {
+    "message": "মুছুন",
+    "description": "clear"
+  },
+  "goProForAi": {
+    "message": "AI বিশ্লেষণের জন্য Pro নিন",
+    "description": "goProForAi"
+  },
+  "trialEndedMessage": {
+    "message": "আপনার ট্রায়াল শেষ হয়েছে। AI বিশ্লেষণ ফিচার ব্যবহার চালিয়ে যেতে সাবস্ক্রাইব করুন।",
+    "description": "trialEndedMessage"
+  },
+  "lessThanCoffee": {
+    "message": "পেশাদার AI সরঞ্জামের জন্য মাসে একটি কফির চেয়েও কম",
+    "description": "lessThanCoffee"
+  },
+  "monthly": {
+    "message": "মাসিক",
+    "description": "monthly"
+  },
+  "yearly": {
+    "message": "বার্ষিক",
+    "description": "yearly"
+  },
+  "subscriptionActivatesAuto": {
+    "message": "সাবস্ক্রিপশন স্বয়ংক্রিয়ভাবে সক্রিয় হয়",
+    "description": "subscriptionActivatesAuto"
+  },
+  "checkSubscriptionStatus": {
+    "message": "সাবস্ক্রিপশন স্ট্যাটাস চেক করুন",
+    "description": "checkSubscriptionStatus"
+  },
+  "continueWithCaptureOnly": {
+    "message": "শুধু ক্যাপচার দিয়ে চালিয়ে যান",
+    "description": "continueWithCaptureOnly"
+  },
+  "leaveAReview": {
+    "message": "রিভিউ দিন",
+    "description": "leaveAReview"
+  },
+  "maybeLater": {
+    "message": "পরে হয়তো",
+    "description": "maybeLater"
+  },
+  "processing": {
+    "message": "প্রসেসিং...",
+    "description": "processing"
+  },
+  "pleaseWait": {
+    "message": "অনুগ্রহ করে অপেক্ষা করুন",
+    "description": "pleaseWait"
+  },
+  "queueSpaceNeeded": {
+    "message": "কিউ স্পেস প্রয়োজন",
+    "description": "queueSpaceNeeded"
+  },
+  "clearQueueCapture": {
+    "message": "কিউ মুছুন এবং ক্যাপচার করুন",
+    "description": "clearQueueCapture"
+  },
+  "sendToAi": {
+    "message": "AI-তে পাঠান",
+    "description": "sendToAi"
+  },
+  "copy": {
+    "message": "কপি করুন",
+    "description": "copy"
+  },
+  "stop": {
+    "message": "থামান",
+    "description": "stop"
+  },
+  "deleteSelected": {
+    "message": "নির্বাচিত মুছুন",
+    "description": "deleteSelected"
+  },
+  "copied": {
+    "message": "কপি হয়েছে!",
+    "description": "copied"
+  },
+  "openGoogleAiStudio": {
+    "message": "Google AI Studio খুলুন",
+    "description": "openGoogleAiStudio"
+  },
+  "fullPageNeedsSpace": {
+    "message": "পূর্ণ পৃষ্ঠা ক্যাপচারের জন্য আরও জায়গা প্রয়োজন।",
+    "description": "fullPageNeedsSpace"
+  },
+  "reviewHeader": {
+    "message": "আমরা Snap To AI ভালোবাসি",
+    "description": "reviewHeader"
+  },
+  "reviewMessage": {
+    "message": "আমরা AI স্ক্রিনশটগুলিকে সহজ এবং শক্তিশালী করতে কঠোর পরিশ্রম করেছি। যদি SnapToAI আপনার সময় বাঁচিয়ে থাকে, দয়া করে একটি রিভিউ দিন।",
+    "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "AI কে জিজ্ঞাসা করুন",
+    "description": "askAi"
+  },
+  "downloadAsPNG": {
+    "message": "PNG",
+    "description": "downloadAsPNG"
+  },
+  "exportAsPDF": {
+    "message": "PDF",
+    "description": "exportAsPDF"
   }
 }

@@ -4109,4 +4109,64 @@
     setTimeout(() => clearInterval(pasteInterval), 30000);
   }
 
+  if (!isAISite) {
+    let ctrlAGrabCooldown = false;
+
+    function hasCodeOnPage() {
+      if (document.querySelector('.view-lines, .CodeMirror, .CodeMirror-code, .monaco-editor, .ace_editor, .ace_text-layer')) return true;
+      const codeEls = document.querySelectorAll('pre, code, .highlight, .code-block, [class*="code"], [class*="syntax"], [class*="editor"]');
+      if (codeEls.length > 0) return true;
+      const host = location.hostname;
+      const codeSites = ['github.com', 'gitlab.com', 'bitbucket.org', 'codepen.io', 'jsfiddle.net', 'codesandbox.io', 'replit.com', 'stackblitz.com', 'stackoverflow.com', 'pastebin.com', 'gist.github.com'];
+      if (codeSites.some(s => host.includes(s))) return true;
+      return false;
+    }
+
+    function grabCodeFromPage() {
+      let text = '';
+      const active = document.activeElement;
+      if (active && active.value && active.value.trim().length > 10) {
+        text = active.value.trim();
+      }
+      if (!text) {
+        const sel = window.getSelection();
+        if (sel && sel.toString().trim().length > 10) {
+          text = sel.toString().trim();
+        }
+      }
+      if (!text) {
+        const editorEl = document.querySelector('.view-lines, .CodeMirror-code, .ace_text-layer, .monaco-editor .lines-content');
+        if (editorEl) text = editorEl.textContent.trim();
+      }
+      if (!text) {
+        const codeBlocks = document.querySelectorAll('pre, code');
+        if (codeBlocks.length > 0) {
+          text = Array.from(codeBlocks).map(el => el.textContent.trim()).filter(t => t.length > 5).join('\n\n');
+        }
+      }
+      if (text && text.length > 50000) text = text.substring(0, 50000);
+      return text;
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        if (ctrlAGrabCooldown) return;
+        if (!hasCodeOnPage()) return;
+
+        ctrlAGrabCooldown = true;
+        setTimeout(() => { ctrlAGrabCooldown = false; }, 5000);
+
+        setTimeout(() => {
+          const text = grabCodeFromPage();
+          if (!text || text.length < 5) return;
+
+          try {
+            chrome.storage.session.set({ lastCopiedText: text });
+          } catch (e) {}
+          chrome.runtime.sendMessage({ action: 'analyzeClipboardText' });
+        }, 200);
+      }
+    }, true);
+  }
+
 })();

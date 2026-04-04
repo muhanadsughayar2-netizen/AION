@@ -122,7 +122,13 @@ async function handleGoogleSignIn() {
     await checkAuthState();
     await refreshSubscriptionUI();
     updateAiButtonState();
+
+    if (pendingAfterSignIn === 'geminiModal') {
+      pendingAfterSignIn = null;
+      setTimeout(() => showGeminiModal(), 300);
+    }
   } catch (error) {
+    pendingAfterSignIn = null;
     console.error('[SnapToAI] Google Sign-In failed:', error);
     if (authError) {
       const msg = error.message || String(error);
@@ -960,62 +966,84 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Translate all UI elements
 function translateUI() {
-  // Check if language is RTL (Arabic)
   const uiLang = chrome.i18n.getUILanguage();
   if (uiLang.startsWith('ar')) {
     document.documentElement.setAttribute('dir', 'rtl');
   }
-  
-  // Translate text content with fallbacks
-  const getMessage = (key, fallback) => {
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
     const msg = chrome.i18n.getMessage(key);
-    return msg || fallback;
-  };
-  
-  document.querySelector('.status').textContent = getMessage('flowReady', 'Flow: Ready');
-  document.getElementById('selectAllBtn').textContent = getMessage('selectAll', 'Select All');
-  document.getElementById('copySelectedBtn').textContent = getMessage('copySelected', 'Copy Combined');
-  document.getElementById('downloadSelectedBtn').textContent = getMessage('downloadAsPNG', 'Download as PNG');
-  document.getElementById('exportPdfBtn').textContent = getMessage('exportAsPDF', 'Export as PDF');
-  document.getElementById('clearButton').textContent = getMessage('deleteSelected', 'Delete Selected');
-  
-  // Translate PDF modal
-  const pdfOptions = document.querySelectorAll('.pdf-option-text strong');
-  if (pdfOptions.length >= 4) {
-    pdfOptions[0].textContent = getMessage('allAsOnePDF', 'All as One PDF');
-    pdfOptions[1].textContent = getMessage('allAsSeparatePDFs', 'All as Separate PDFs');
-    pdfOptions[2].textContent = getMessage('selectedAsOnePDF', 'Selected as One PDF');
-    pdfOptions[3].textContent = getMessage('selectedAsSeparatePDFs', 'Selected as Separate PDFs');
+    if (msg) el.textContent = msg;
+  });
+
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.dataset.i18nPlaceholder;
+    const msg = chrome.i18n.getMessage(key);
+    if (msg) el.placeholder = msg;
+  });
+
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.dataset.i18nTitle;
+    const msg = chrome.i18n.getMessage(key);
+    if (msg) el.title = msg;
+  });
+
+  const _dlBtn = document.getElementById('downloadSelectedBtn');
+  if (_dlBtn) {
+    const msg = chrome.i18n.getMessage('downloadAsPNG');
+    if (msg) _dlBtn.textContent = '📸 ' + msg;
   }
-  
-  const cancelBtn = document.getElementById('pdfCancelBtn');
-  if (cancelBtn) {
-    cancelBtn.textContent = getMessage('cancel', 'Cancel');
+  const _pdfBtn = document.getElementById('exportPdfBtn');
+  if (_pdfBtn) {
+    const msg = chrome.i18n.getMessage('exportAsPDF');
+    if (msg) _pdfBtn.textContent = '📄 ' + msg;
   }
 }
 
 // Setup event listeners
 function setupEventListeners() {
-  // Orb button click (Snap - full screenshot)
-  document.getElementById('orbButton').addEventListener('click', handleOrbClick);
+  const orbButton = document.getElementById('orbButton');
+  if (orbButton) orbButton.addEventListener('click', handleOrbClick);
+
+  const snapButton = document.getElementById('snapButton');
+  if (snapButton) snapButton.addEventListener('click', handleSnapClick);
   
-  // Snip button click (Snip - open cropping tool)
-  document.getElementById('snipButton').addEventListener('click', handleSnipClick);
+  const snipButton = document.getElementById('snipButton');
+  if (snipButton) snipButton.addEventListener('click', handleSnipClick);
   
-  // Full Page button click (Full Page - scroll and capture entire page)
-  document.getElementById('fullPageButton').addEventListener('click', handleFullPageClick);
+  const fullPageButton = document.getElementById('fullPageButton');
+  if (fullPageButton) fullPageButton.addEventListener('click', handleFullPageClick);
   
-  // Stop Full Page button click
-  document.getElementById('stopFullPageBtn').addEventListener('click', handleStopFullPage);
+  const stopFullPageBtn = document.getElementById('stopFullPageBtn');
+  if (stopFullPageBtn) stopFullPageBtn.addEventListener('click', handleStopFullPage);
   
-  // Clear button
-  document.getElementById('clearButton').addEventListener('click', handleClear);
+  const clearButton = document.getElementById('clearButton');
+  if (clearButton) clearButton.addEventListener('click', handleClear);
   
-  // Selection controls
-  document.getElementById('selectAllBtn').addEventListener('click', handleSelectAll);
-  document.getElementById('copySelectedBtn').addEventListener('click', handleCopySelected);
-  document.getElementById('downloadSelectedBtn').addEventListener('click', handleDownloadSelected);
-  document.getElementById('exportPdfBtn').addEventListener('click', handleExportPDFDirect);
+  const selectAllBtn = document.getElementById('selectAllBtn');
+  if (selectAllBtn) selectAllBtn.addEventListener('click', handleSelectAll);
+  const copySelectedBtn = document.getElementById('copySelectedBtn');
+  if (copySelectedBtn) copySelectedBtn.addEventListener('click', handleCopySelected);
+  const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
+  if (downloadSelectedBtn) downloadSelectedBtn.addEventListener('click', handleDownloadSelected);
+  const exportPdfBtn = document.getElementById('exportPdfBtn');
+  if (exportPdfBtn) exportPdfBtn.addEventListener('click', handleExportPDFDirect);
+  
+  const sendSelectedAiBtn = document.getElementById('sendSelectedAiBtn');
+  if (sendSelectedAiBtn) {
+    sendSelectedAiBtn.addEventListener('click', async () => {
+      const selectedImages = Array.from(selectedSnapIds)
+        .sort((a, b) => a - b)
+        .map(index => currentSnaps[index])
+        .filter(Boolean);
+      if (selectedImages.length === 0) {
+        setStatus('Select snaps first', 'error', 1500);
+        return;
+      }
+      await openAiChat(selectedImages);
+    });
+  }
   
   // Preview modal
   document.getElementById('previewClose').addEventListener('click', closePreview);
@@ -1068,13 +1096,13 @@ function setupEventListeners() {
           // Queue still has items - something went wrong
           status.textContent = chrome.i18n.getMessage('statusCaptureFailed') || 'Could not clear queue. Try again.';
           status.className = 'status error';
-          fullPageButton.disabled = false;
+          if (fullPageButton) fullPageButton.disabled = false;
         }
       } catch (error) {
         console.log('[SnapToAI] Clear and capture error:', error);
         status.textContent = chrome.i18n.getMessage('statusSomethingWrong') || 'Error clearing queue';
         status.className = 'status error';
-        fullPageButton.disabled = false;
+        if (fullPageButton) fullPageButton.disabled = false;
       }
     });
   }
@@ -1128,7 +1156,7 @@ function setupEventListeners() {
       const fullPageButton = document.getElementById('fullPageButton');
       
       overlay.style.display = 'none';
-      fullPageButton.disabled = false;
+      if (fullPageButton) fullPageButton.disabled = false;
       
       if (request.success) {
         showLastCapturePreview(request.dataUrl);
@@ -1215,7 +1243,7 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
     
     // Hide overlay and update UI
     overlay.style.display = 'none';
-    fullPageButton.disabled = false;
+    if (fullPageButton) fullPageButton.disabled = false;
     status.textContent = chrome.i18n.getMessage('statusFullPageCaptured') || `Full page: ${screenshots.length} pages ready to edit`;
     status.className = 'status active';
     
@@ -1245,7 +1273,7 @@ async function stitchFullPageImages(screenshots, viewportWidth, viewportHeight, 
       fullPageCapturePort = null;
     }
     overlay.style.display = 'none';
-    fullPageButton.disabled = false;
+    if (fullPageButton) fullPageButton.disabled = false;
   }
 }
 
@@ -1488,7 +1516,7 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
     
     // Hide overlay and update UI
     overlay.style.display = 'none';
-    fullPageButton.disabled = false;
+    if (fullPageButton) fullPageButton.disabled = false;
     
     if (savedCount > 0) {
       showLastCapturePreview(lastDataUrl);
@@ -1555,7 +1583,7 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
     
     // ALWAYS reset UI state
     overlay.style.display = 'none';
-    fullPageButton.disabled = false;
+    if (fullPageButton) fullPageButton.disabled = false;
   }
 }
 
@@ -1569,8 +1597,7 @@ function showLastCapturePreview(dataUrl) {
 async function handleOrbClick() {
   const orbButton = document.getElementById('orbButton');
   
-  // Disable button during operation
-  orbButton.disabled = true;
+  if (orbButton) orbButton.disabled = true;
   
   try {
     // Snap button ALWAYS captures - never auto-uploads
@@ -1625,15 +1652,39 @@ async function handleOrbClick() {
     console.log('[SnapToAI] Capture:', error.message || error);
     statusError('Cannot capture this page');
   } finally {
-    orbButton.disabled = false;
+    if (orbButton) orbButton.disabled = false;
   }
 }
 
-// Handle snip button click - capture and open in crop mode
+async function handleSnapClick() {
+  const snapButton = document.getElementById('snapButton');
+  if (snapButton) snapButton.disabled = true;
+
+  try {
+    setStatus('Capturing...', 'active');
+    incrementCaptureCount('capture_snap');
+    chrome.runtime.sendMessage({ action: 'capture' }, async (response) => {
+      if (snapButton) snapButton.disabled = false;
+      if (response && response.success) {
+        await loadSnaps();
+        updateThumbnails();
+        updateCounter();
+        setStatus('Captured! ✓', 'active');
+      } else {
+        setStatus(response?.error || 'Capture failed', 'error');
+      }
+    });
+  } catch (err) {
+    console.error('[SnapToAI] Snap error:', err);
+    setStatus('Capture failed', 'error');
+    if (snapButton) snapButton.disabled = false;
+  }
+}
+
 async function handleSnipClick() {
   const snipButton = document.getElementById('snipButton');
   
-  snipButton.disabled = true;
+  if (snipButton) snipButton.disabled = true;
   
   try {
     setStatus('Capturing for snip...', 'active');
@@ -1652,14 +1703,17 @@ async function handleSnipClick() {
       
       const width = 1200;
       const height = 800;
-      const left = (screen.width - width) / 2;
-      const top = (screen.height - height) / 2;
+      const left = Math.round((screen.width - width) / 2);
+      const top = Math.round((screen.height - height) / 2);
       
-      window.open(
-        `annotate.html?mode=snip&snipId=${snipId}`,
-        'Snip',
-        `width=${width},height=${height},left=${left},top=${top}`
-      );
+      chrome.windows.create({
+        url: chrome.runtime.getURL(`annotate.html?mode=snip&snipId=${snipId}`),
+        type: 'popup',
+        width: width,
+        height: height,
+        left: left,
+        top: top
+      });
       
       setStatus('Snip editor opened! ✓', 'success', 2000);
     } else {
@@ -1669,7 +1723,7 @@ async function handleSnipClick() {
     console.log('[SnapToAI] Snip:', error.message || error);
     statusError('Cannot capture this page');
   } finally {
-    snipButton.disabled = false;
+    if (snipButton) snipButton.disabled = false;
   }
 }
 
@@ -1686,15 +1740,13 @@ async function handleFullPageClick() {
   // Reset abort flag and clear any stale timeout from previous captures
   resetFullPageCaptureState();
   
-  // Disable button during operation
-  fullPageButton.disabled = true;
+  if (fullPageButton) fullPageButton.disabled = true;
   
   const availableSlots = 9 - currentSnaps.length;
   
-  // If queue is completely full, show warning
   if (availableSlots <= 0) {
     showQueueFullModal(0, 0);
-    fullPageButton.disabled = false;
+    if (fullPageButton) fullPageButton.disabled = false;
     return;
   }
   
@@ -1714,7 +1766,7 @@ async function handleFullPageClick() {
         // Only warn if we DEFINITELY can't fit all chunks
         if (chunksNeeded > availableSlots) {
           showQueueFullModal(chunksNeeded, availableSlots);
-          fullPageButton.disabled = false;
+          if (fullPageButton) fullPageButton.disabled = false;
           return;
         }
       }
@@ -1769,7 +1821,7 @@ async function handleFullPageClick() {
       status.textContent = chrome.i18n.getMessage('statusReady') || 'Ready';
       status.className = 'status';
     }, 3000);
-    fullPageButton.disabled = false;
+    if (fullPageButton) fullPageButton.disabled = false;
   }
 }
 
@@ -1857,19 +1909,17 @@ function updateUI() {
   updateClearButton();
 }
 
-// Update snap counter
 function updateCounter() {
-  document.getElementById('snapCount').textContent = currentSnaps.length;
+  const el = document.getElementById('snapCount');
+  if (el) el.textContent = currentSnaps.length;
 }
 
 // Dynamically adjust popup height based on number of screenshots
 function adjustPopupHeight(snapCount) {
-  // Base height for empty state
-  let height = 380;
+  let height = 280;
   
   if (snapCount === 0) {
-    // Empty state: small and compact
-    height = 380;
+    height = 280;
   } else if (snapCount <= 3) {
     // 1 row of screenshots
     height = 430;
@@ -1895,37 +1945,40 @@ function updateThumbnails() {
   adjustPopupHeight(currentSnaps.length);
 
   if (currentSnaps.length === 0) {
-    const emptyState = document.createElement('div');
-    emptyState.className = 'empty-state';
-   
-    // Get translated messages
-    const getMessage = (key, fallback) => {
-      const msg = chrome.i18n.getMessage(key);
-      return msg || fallback;
-    };
-   
-    const heading = chrome.i18n.getMessage('emptyHeading') || 'One click. One screenshot.';
-    const sub1 = chrome.i18n.getMessage('emptySubheading1') || 'Select All → Copy → Paste.';
-    const sub2 = chrome.i18n.getMessage('emptySubheading2') || 'All 9 screenshots drop as ONE stacked image';
-   
-    emptyState.innerHTML = `
-      <div class="empty-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="empty-heading">${heading}</div>
-      <div class="empty-subheading">${sub1}</div>
-      <div class="empty-subheading highlight">${sub2}</div>
-    `;
-    container.appendChild(emptyState);
     selectionBar.style.display = 'none';
+    const bottomSaveBar = document.getElementById('bottomSaveBar');
+    if (bottomSaveBar) bottomSaveBar.style.display = 'none';
+    const clearBtn = document.getElementById('clearButton');
+    if (clearBtn) clearBtn.style.display = 'none';
+    
+    const emptyWow = document.createElement('div');
+    emptyWow.className = 'empty-wow';
+    emptyWow.innerHTML = `
+      <div class="wow-mouse">
+        <div class="wow-mouse-body">
+          <div class="wow-mouse-left"></div>
+          <div class="wow-mouse-right">
+            <div class="wow-click-ring"></div>
+            <div class="wow-click-ring ring2"></div>
+          </div>
+          <div class="wow-mouse-divider"></div>
+          <div class="wow-mouse-scroll"></div>
+        </div>
+        <div class="wow-glow"></div>
+      </div>
+      <div class="wow-text">Right-click to begin</div>
+      <div class="wow-hint">or use the buttons above ☝️</div>
+    `;
+    container.appendChild(emptyWow);
     return;
   }
 
-  // Show selection bar when snaps exist
+  // Show selection bar and bottom actions when snaps exist
   selectionBar.style.display = 'flex';
+  const bottomSaveBar = document.getElementById('bottomSaveBar');
+  if (bottomSaveBar) bottomSaveBar.style.display = 'flex';
+  const clearBtn = document.getElementById('clearButton');
+  if (clearBtn) clearBtn.style.display = 'block';
 
   // First, group chunks by captureGroupId (or consecutive if old format)
   const groups = [];
@@ -3599,6 +3652,8 @@ function hideSubscriptionModal() {
   if (subscriptionError) subscriptionError.style.display = 'none';
 }
 
+let pendingAfterSignIn = null;
+
 async function handleAIButtonClick() {
   if (window.SnapToAISubscription) {
     const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
@@ -3606,6 +3661,7 @@ async function handleAIButtonClick() {
     console.log('[SnapToAI] AI button clicked, status:', status, 'override:', !!snaptoai_dev_override);
     
     if (status.needsSignIn) {
+      pendingAfterSignIn = 'geminiModal';
       const authOverlay = document.getElementById('authOverlay');
       if (authOverlay) authOverlay.style.display = 'flex';
       return;
@@ -3679,6 +3735,9 @@ if (aiButton) aiButton.addEventListener('click', handleAIButtonClick);
 if (geminiSaveBtn) geminiSaveBtn.addEventListener('click', saveGeminiKey);
 if (geminiClearBtn) geminiClearBtn.addEventListener('click', clearGeminiKey);
 
+const aiManageLink = document.getElementById('aiManageLink');
+if (aiManageLink) aiManageLink.addEventListener('click', handleAIButtonClick);
+
 // Close button for API Key modal
 const geminiModalClose = document.getElementById('geminiModalClose');
 if (geminiModalClose) geminiModalClose.addEventListener('click', hideGeminiModal);
@@ -3706,40 +3765,19 @@ if (directAiButton) {
       }
     }
     
-    const { geminiApiKey } = await chrome.storage.sync.get(['geminiApiKey']);
-    if (!geminiApiKey) {
-      showGeminiModal();
-      return;
-    }
-    
-    // Check for selected images
     const selectedImages = Array.from(selectedSnapIds)
       .sort((a, b) => a - b)
       .map(index => currentSnaps[index])
       .filter(Boolean);
     
     if (selectedImages.length > 0) {
-      // Has selected images - send them to AI chat
       console.log('[SnapToAI] Opening AI with', selectedImages.length, 'selected images');
       await openAiChat(selectedImages);
     } else {
-      // No selection - open direct mode
-      console.log('[SnapToAI] Opening Direct AI Chat (no images)');
-      const width = 1000;
-      const height = 700;
-      const left = Math.round((screen.width - width) / 2);
-      const top = Math.round((screen.height - height) / 2);
-      
-      chrome.windows.create({
-        url: chrome.runtime.getURL('ai-chat.html?direct=true'),
-        type: 'popup',
-        width: width,
-        height: height,
-        left: left,
-        top: top,
-        focused: true
-      });
-      
+      console.log('[SnapToAI] Ask AI Direct - capturing and analyzing');
+      const [sourceTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      const sourceTabId = sourceTab && !sourceTab.url?.startsWith('chrome-extension://') ? sourceTab.id : null;
+      chrome.runtime.sendMessage({ action: 'askAiDirect', sourceTabId });
       window.close();
     }
   });
@@ -3751,17 +3789,21 @@ if (geminiModal) geminiModal.addEventListener('click', (e) => {
 
 function applySubscriptionBadge(upgradeBtn, status, snaptoai_dev_override) {
   if (!upgradeBtn) return;
+  const manageLink = document.getElementById('manageSubPopoverLink');
   if (snaptoai_dev_override) {
     upgradeBtn.style.visibility = 'visible';
     upgradeBtn.textContent = '🔑 DEV';
     upgradeBtn.classList.add('subscribed');
     upgradeBtn.style.background = 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)';
+    if (manageLink) manageLink.style.display = 'none';
   } else if (status.status === 'no_api_key' || status.status === 'no_sign_in') {
     upgradeBtn.style.visibility = 'hidden';
+    if (manageLink) manageLink.style.display = 'none';
   } else if (status.status === 'subscribed') {
     upgradeBtn.style.visibility = 'visible';
     upgradeBtn.textContent = '✓ Pro Active';
     upgradeBtn.className = 'upgrade-btn upgrade-btn-pro';
+    if (manageLink) manageLink.style.display = 'block';
   } else if (status.status === 'trial' && status.daysRemaining > 0) {
     upgradeBtn.style.visibility = 'visible';
     if (status.daysRemaining <= 7) {
@@ -3771,12 +3813,15 @@ function applySubscriptionBadge(upgradeBtn, status, snaptoai_dev_override) {
       upgradeBtn.textContent = `Trial · ${status.daysRemaining} days left`;
       upgradeBtn.className = 'upgrade-btn upgrade-btn-trial';
     }
+    if (manageLink) manageLink.style.display = 'none';
   } else if (status.status === 'trial_expired' || status.status === 'subscription_expired' || status.status === 'expired' || (status.status === 'trial' && status.daysRemaining <= 0)) {
     upgradeBtn.style.visibility = 'visible';
     upgradeBtn.textContent = 'Trial ended · Upgrade for AI';
     upgradeBtn.className = 'upgrade-btn upgrade-btn-expired';
+    if (manageLink) manageLink.style.display = status.status === 'subscription_expired' ? 'block' : 'none';
   } else {
     upgradeBtn.style.visibility = 'hidden';
+    if (manageLink) manageLink.style.display = 'none';
   }
 }
 
@@ -3822,18 +3867,64 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   loadGeminiKey();
   updateAiButtonState();
+  showTrialCountdownToast();
 });
+
+async function showTrialCountdownToast() {
+  const toast = document.getElementById('trialCountdownToast');
+  const toastText = document.getElementById('trialCountdownText');
+  const dismissBtn = document.getElementById('trialCountdownDismiss');
+  if (!toast || !toastText || !window.SnapToAISubscription) return;
+  
+  try {
+    const status = await window.SnapToAISubscription.check();
+    if (status.status !== 'trial' || !status.daysRemaining) return;
+    
+    const days = status.daysRemaining;
+    if (days !== 7 && days !== 3) return;
+    
+    const { trialToastDismissed } = await chrome.storage.local.get('trialToastDismissed');
+    const dismissedDay = trialToastDismissed || 0;
+    if (dismissedDay === days) return;
+    
+    if (days === 3) {
+      toastText.textContent = `⚠️ Trial ends in 3 days — upgrade to keep AI access`;
+      toast.classList.add('urgent');
+    } else {
+      toastText.textContent = `Trial: 7 days left — upgrade anytime for uninterrupted AI`;
+    }
+    toast.style.display = 'flex';
+    
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', async () => {
+        toast.style.display = 'none';
+        await chrome.storage.local.set({ trialToastDismissed: days });
+      });
+    }
+  } catch (e) {
+    console.log('[SnapToAI] Trial toast error:', e);
+  }
+}
 
 function updateAiButtonState() {
   chrome.storage.sync.get(['geminiApiKey'], (result) => {
     const aiButton = document.getElementById('aiButton');
-    if (!aiButton) return;
-    if (result.geminiApiKey) {
-      aiButton.innerHTML = '<span class="setup-cta-main">● AI Ready</span><span class="setup-cta-sub">Manage</span>';
-      aiButton.className = 'setup-cta setup-cta-connected';
-    } else {
-      aiButton.innerHTML = '<span class="setup-cta-main">✨ Connect Gemini Key</span><span class="setup-cta-sub">20 prompts/day included</span>';
-      aiButton.className = 'setup-cta';
+    const aiStatusText = document.getElementById('aiStatusText');
+    const aiStatusDot = document.querySelector('.ai-status-dot');
+    if (aiButton) {
+      if (result.geminiApiKey) {
+        aiButton.innerHTML = '<span class="hero-key-main">● AI Ready</span><span class="hero-key-sub">Manage key</span>';
+        aiButton.className = 'hero-key-btn connected';
+      } else {
+        aiButton.innerHTML = '<span class="hero-key-main">✨ Activate AI Analysis</span><span class="hero-key-sub">20 prompts/day included</span>';
+        aiButton.className = 'hero-key-btn';
+      }
+    }
+    if (aiStatusText) {
+      aiStatusText.textContent = result.geminiApiKey ? 'AI Ready' : 'AI: 3 prompts included';
+    }
+    if (aiStatusDot) {
+      aiStatusDot.style.background = result.geminiApiKey ? '#00ff88' : '#ffaa00';
     }
   });
 }
@@ -4082,6 +4173,9 @@ async function compressImageForAI(dataUrl) {
 }
 
 async function sendToGemini(prompt, isRetry = false) {
+  const quickActions = document.getElementById('aiQuickActions');
+  if (quickActions) quickActions.style.display = 'none';
+
   const result = await chrome.storage.sync.get(['geminiApiKey']);
   if (!result.geminiApiKey) {
     addChatBubble('Please set your Gemini API key first! Click the AI button in the top row.', 'ai');
@@ -4210,8 +4304,10 @@ function startCooldown(seconds) {
 
 function clearAiChat() {
   aiChatHistory = [];
-  aiThoughtSignature = null; // Reset for new conversation
+  aiThoughtSignature = null;
   aiChatThread.innerHTML = '<div class="ai-welcome">Chat cleared! Ask another question ✨</div>';
+  const quickActions = document.getElementById('aiQuickActions');
+  if (quickActions) quickActions.style.display = 'grid';
   console.log('[SnapToAI] Chat cleared');
 }
 
@@ -4237,6 +4333,17 @@ if (aiChatInput) aiChatInput.addEventListener('keypress', (e) => {
     const prompt = aiChatInput.value.trim();
     if (prompt) sendToGemini(prompt);
   }
+});
+
+document.querySelectorAll('.ai-quick-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const prompt = btn.dataset.prompt;
+    if (prompt) {
+      sendToGemini(prompt);
+      const quickActions = document.getElementById('aiQuickActions');
+      if (quickActions) quickActions.style.display = 'none';
+    }
+  });
 });
 
 // Preset buttons

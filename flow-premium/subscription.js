@@ -204,14 +204,14 @@ async function refreshSubscription() {
   const result = await checkSubscriptionWithServer(email);
 
   if (result && result.canUseAI && result.status === 'subscribed') {
-    return { success: true, status: 'subscribed', planType: result.planType };
+    return { success: true, canUseAI: true, status: 'subscribed', planType: result.planType };
   }
 
   if (result && result.canUseAI) {
-    return { success: true, status: 'trial', daysRemaining: result.daysRemaining };
+    return { success: true, canUseAI: true, status: 'trial', daysRemaining: result.daysRemaining };
   }
 
-  return { success: false, error: result ? 'No active subscription found for this account' : 'Could not reach server. Please check your connection.' };
+  return { success: false, canUseAI: false, error: result ? 'No active subscription found for this account' : 'Could not reach server. Please check your connection.' };
 }
 
 let checkoutPollTimer = null;

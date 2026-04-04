@@ -364,6 +364,67 @@ footer a:hover {
   margin-top: 2px;
 }
 
+.subscription-actions {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sub-action-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #e0e0e0;
+  text-decoration: none;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.sub-action-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(0, 188, 212, 0.4);
+  transform: translateX(4px);
+}
+
+.sub-action-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.sub-action-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 2px;
+}
+
+.sub-action-text strong {
+  font-size: 14px;
+  color: #fff;
+}
+
+.sub-action-text small {
+  font-size: 11px;
+  color: #888;
+}
+
+.sub-action-arrow {
+  font-size: 16px;
+  color: #666;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.sub-action-link:hover .sub-action-arrow {
+  transform: translateX(4px);
+  color: #00bcd4;
+}
+
 @media (max-width: 500px) {
   .container {
     padding: 20px 15px;

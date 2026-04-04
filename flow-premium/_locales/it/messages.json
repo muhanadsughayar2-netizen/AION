@@ -238,5 +238,205 @@
   "statusSnapCopied": {
     "message": "Schermata copiata",
     "description": "Status: single copy done"
+  },
+  "signIn": {
+    "message": "Accedi",
+    "description": "signIn"
+  },
+  "signOut": {
+    "message": "Esci",
+    "description": "signOut"
+  },
+  "signInToUnlock": {
+    "message": "Accedi per sbloccare le funzionalità AI",
+    "description": "signInToUnlock"
+  },
+  "continueWithGoogle": {
+    "message": "Continua con Google",
+    "description": "continueWithGoogle"
+  },
+  "privacyNote": {
+    "message": "La tua privacy è importante - vediamo solo nome ed email",
+    "description": "privacyNote"
+  },
+  "manageSubscription": {
+    "message": "Gestisci abbonamento",
+    "description": "manageSubscription"
+  },
+  "fullPage": {
+    "message": "PAGINA INTERA",
+    "description": "fullPage"
+  },
+  "aiReady": {
+    "message": "IA pronta",
+    "description": "aiReady"
+  },
+  "manage": {
+    "message": "Gestisci",
+    "description": "manage"
+  },
+  "aiChat": {
+    "message": "Chat IA",
+    "description": "aiChat"
+  },
+  "aiPartnerGreeting": {
+    "message": "Sono il tuo assistente IA. Chiedimi qualsiasi cosa su questa immagine!",
+    "description": "aiPartnerGreeting"
+  },
+  "testApi": {
+    "message": "Testa API",
+    "description": "testApi"
+  },
+  "send": {
+    "message": "Invia",
+    "description": "send"
+  },
+  "clearChat": {
+    "message": "Cancella chat",
+    "description": "clearChat"
+  },
+  "copyChat": {
+    "message": "Copia chat",
+    "description": "copyChat"
+  },
+  "activateAiAnalysis": {
+    "message": "Attiva analisi IA",
+    "description": "activateAiAnalysis"
+  },
+  "connected": {
+    "message": "Connesso",
+    "description": "connected"
+  },
+  "goToAiStudio": {
+    "message": "Vai ad AI Studio",
+    "description": "goToAiStudio"
+  },
+  "createApiKeyCopy": {
+    "message": "Clicca \"Crea chiave API\" e copiala",
+    "description": "createApiKeyCopy"
+  },
+  "pasteItBelow": {
+    "message": "Incolla qui sotto",
+    "description": "pasteItBelow"
+  },
+  "show": {
+    "message": "Mostra",
+    "description": "show"
+  },
+  "ageTermsAgree": {
+    "message": "Ho 18+ anni e accetto",
+    "description": "ageTermsAgree"
+  },
+  "activate": {
+    "message": "Attiva",
+    "description": "activate"
+  },
+  "clear": {
+    "message": "Cancella",
+    "description": "clear"
+  },
+  "goProForAi": {
+    "message": "Diventa Pro per l'analisi IA",
+    "description": "goProForAi"
+  },
+  "trialEndedMessage": {
+    "message": "Il periodo di prova è terminato. Abbonati per continuare a usare l'analisi IA.",
+    "description": "trialEndedMessage"
+  },
+  "lessThanCoffee": {
+    "message": "Meno di un caffè al mese per strumenti IA professionali",
+    "description": "lessThanCoffee"
+  },
+  "monthly": {
+    "message": "Mensile",
+    "description": "monthly"
+  },
+  "yearly": {
+    "message": "Annuale",
+    "description": "yearly"
+  },
+  "subscriptionActivatesAuto": {
+    "message": "L'abbonamento si attiva automaticamente",
+    "description": "subscriptionActivatesAuto"
+  },
+  "checkSubscriptionStatus": {
+    "message": "Controlla stato abbonamento",
+    "description": "checkSubscriptionStatus"
+  },
+  "continueWithCaptureOnly": {
+    "message": "Continua solo con cattura",
+    "description": "continueWithCaptureOnly"
+  },
+  "leaveAReview": {
+    "message": "Lascia una recensione",
+    "description": "leaveAReview"
+  },
+  "maybeLater": {
+    "message": "Forse dopo",
+    "description": "maybeLater"
+  },
+  "processing": {
+    "message": "Elaborazione...",
+    "description": "processing"
+  },
+  "pleaseWait": {
+    "message": "Attendere prego",
+    "description": "pleaseWait"
+  },
+  "queueSpaceNeeded": {
+    "message": "Spazio in coda necessario",
+    "description": "queueSpaceNeeded"
+  },
+  "clearQueueCapture": {
+    "message": "Svuota coda e cattura",
+    "description": "clearQueueCapture"
+  },
+  "sendToAi": {
+    "message": "Invia all'IA",
+    "description": "sendToAi"
+  },
+  "copy": {
+    "message": "Copia",
+    "description": "copy"
+  },
+  "stop": {
+    "message": "FERMA",
+    "description": "stop"
+  },
+  "deleteSelected": {
+    "message": "Elimina selezionati",
+    "description": "deleteSelected"
+  },
+  "copied": {
+    "message": "Copiato!",
+    "description": "copied"
+  },
+  "openGoogleAiStudio": {
+    "message": "Apri Google AI Studio",
+    "description": "openGoogleAiStudio"
+  },
+  "fullPageNeedsSpace": {
+    "message": "L'acquisizione a pagina intera richiede più spazio.",
+    "description": "fullPageNeedsSpace"
+  },
+  "reviewHeader": {
+    "message": "Amiamo Snap To AI",
+    "description": "reviewHeader"
+  },
+  "reviewMessage": {
+    "message": "Abbiamo lavorato sodo per rendere gli screenshot AI semplici e potenti. Se SnapToAI ti ha fatto risparmiare tempo, lascia una recensione.",
+    "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "Chiedi all'IA",
+    "description": "askAi"
+  },
+  "downloadAsPNG": {
+    "message": "PNG",
+    "description": "downloadAsPNG"
+  },
+  "exportAsPDF": {
+    "message": "PDF",
+    "description": "exportAsPDF"
   }
 }

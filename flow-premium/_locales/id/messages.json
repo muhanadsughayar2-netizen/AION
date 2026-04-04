@@ -238,5 +238,205 @@
   "statusSnapCopied": {
     "message": "Tangkapan layar disalin",
     "description": "Status: single copy done"
+  },
+  "signIn": {
+    "message": "Masuk",
+    "description": "signIn"
+  },
+  "signOut": {
+    "message": "Keluar",
+    "description": "signOut"
+  },
+  "signInToUnlock": {
+    "message": "Masuk untuk membuka fitur AI",
+    "description": "signInToUnlock"
+  },
+  "continueWithGoogle": {
+    "message": "Lanjutkan dengan Google",
+    "description": "continueWithGoogle"
+  },
+  "privacyNote": {
+    "message": "Privasi Anda penting - kami hanya melihat nama & email Anda",
+    "description": "privacyNote"
+  },
+  "manageSubscription": {
+    "message": "Kelola langganan",
+    "description": "manageSubscription"
+  },
+  "fullPage": {
+    "message": "HALAMAN PENUH",
+    "description": "fullPage"
+  },
+  "aiReady": {
+    "message": "AI siap",
+    "description": "aiReady"
+  },
+  "manage": {
+    "message": "Kelola",
+    "description": "manage"
+  },
+  "aiChat": {
+    "message": "Obrolan AI",
+    "description": "aiChat"
+  },
+  "aiPartnerGreeting": {
+    "message": "Saya asisten AI Anda. Tanyakan apa saja tentang gambar ini!",
+    "description": "aiPartnerGreeting"
+  },
+  "testApi": {
+    "message": "Tes API",
+    "description": "testApi"
+  },
+  "send": {
+    "message": "Kirim",
+    "description": "send"
+  },
+  "clearChat": {
+    "message": "Hapus obrolan",
+    "description": "clearChat"
+  },
+  "copyChat": {
+    "message": "Salin obrolan",
+    "description": "copyChat"
+  },
+  "activateAiAnalysis": {
+    "message": "Aktifkan analisis AI",
+    "description": "activateAiAnalysis"
+  },
+  "connected": {
+    "message": "Terhubung",
+    "description": "connected"
+  },
+  "goToAiStudio": {
+    "message": "Buka AI Studio",
+    "description": "goToAiStudio"
+  },
+  "createApiKeyCopy": {
+    "message": "Klik \"Buat kunci API\" dan salin",
+    "description": "createApiKeyCopy"
+  },
+  "pasteItBelow": {
+    "message": "Tempel di bawah",
+    "description": "pasteItBelow"
+  },
+  "show": {
+    "message": "Tampilkan",
+    "description": "show"
+  },
+  "ageTermsAgree": {
+    "message": "Saya 18+ dan setuju dengan",
+    "description": "ageTermsAgree"
+  },
+  "activate": {
+    "message": "Aktifkan",
+    "description": "activate"
+  },
+  "clear": {
+    "message": "Hapus",
+    "description": "clear"
+  },
+  "goProForAi": {
+    "message": "Jadi Pro untuk analisis AI",
+    "description": "goProForAi"
+  },
+  "trialEndedMessage": {
+    "message": "Masa uji coba Anda telah berakhir. Berlangganan untuk terus menggunakan fitur AI.",
+    "description": "trialEndedMessage"
+  },
+  "lessThanCoffee": {
+    "message": "Kurang dari secangkir kopi per bulan untuk alat AI profesional",
+    "description": "lessThanCoffee"
+  },
+  "monthly": {
+    "message": "Bulanan",
+    "description": "monthly"
+  },
+  "yearly": {
+    "message": "Tahunan",
+    "description": "yearly"
+  },
+  "subscriptionActivatesAuto": {
+    "message": "Langganan aktif secara otomatis",
+    "description": "subscriptionActivatesAuto"
+  },
+  "checkSubscriptionStatus": {
+    "message": "Periksa status langganan",
+    "description": "checkSubscriptionStatus"
+  },
+  "continueWithCaptureOnly": {
+    "message": "Lanjutkan dengan tangkapan saja",
+    "description": "continueWithCaptureOnly"
+  },
+  "leaveAReview": {
+    "message": "Tinggalkan ulasan",
+    "description": "leaveAReview"
+  },
+  "maybeLater": {
+    "message": "Mungkin nanti",
+    "description": "maybeLater"
+  },
+  "processing": {
+    "message": "Memproses...",
+    "description": "processing"
+  },
+  "pleaseWait": {
+    "message": "Harap tunggu",
+    "description": "pleaseWait"
+  },
+  "queueSpaceNeeded": {
+    "message": "Ruang antrean diperlukan",
+    "description": "queueSpaceNeeded"
+  },
+  "clearQueueCapture": {
+    "message": "Hapus antrean & tangkap",
+    "description": "clearQueueCapture"
+  },
+  "sendToAi": {
+    "message": "Kirim ke AI",
+    "description": "sendToAi"
+  },
+  "copy": {
+    "message": "Salin",
+    "description": "copy"
+  },
+  "stop": {
+    "message": "BERHENTI",
+    "description": "stop"
+  },
+  "deleteSelected": {
+    "message": "Hapus yang dipilih",
+    "description": "deleteSelected"
+  },
+  "copied": {
+    "message": "Tersalin!",
+    "description": "copied"
+  },
+  "openGoogleAiStudio": {
+    "message": "Buka Google AI Studio",
+    "description": "openGoogleAiStudio"
+  },
+  "fullPageNeedsSpace": {
+    "message": "Tangkapan halaman penuh membutuhkan lebih banyak ruang.",
+    "description": "fullPageNeedsSpace"
+  },
+  "reviewHeader": {
+    "message": "Kami Cinta Snap To AI",
+    "description": "reviewHeader"
+  },
+  "reviewMessage": {
+    "message": "Kami bekerja keras membuat tangkapan layar AI sederhana dan kuat. Jika SnapToAI menghemat waktu Anda, silakan tinggalkan ulasan.",
+    "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "Tanya AI",
+    "description": "askAi"
+  },
+  "downloadAsPNG": {
+    "message": "PNG",
+    "description": "downloadAsPNG"
+  },
+  "exportAsPDF": {
+    "message": "PDF",
+    "description": "exportAsPDF"
   }
 }

@@ -104,7 +104,16 @@ def init_db():
                 updated_at TIMESTAMP DEFAULT NOW()
             )
         ''')
-        print('✅ users, user_activity, subscriptions tables ready')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS free_prompts (
+                id SERIAL PRIMARY KEY,
+                identifier TEXT UNIQUE NOT NULL,
+                usage_count INTEGER DEFAULT 0,
+                last_used TIMESTAMP DEFAULT NOW(),
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        ''')
+        print('✅ users, user_activity, subscriptions, free_prompts tables ready')
         # Add columns if missing (for existing tables)
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS browser_language VARCHAR(10)')
@@ -274,7 +283,8 @@ def health():
 
 @app.errorhandler(500)
 def handle_500(e):
-    return Response("OK", status=200, mimetype='text/plain')
+    print(f'❌ 500 error: {e}')
+    return Response("Internal Server Error", status=500, mimetype='text/plain')
 
 @app.route('/api/db-status')
 def db_status():
@@ -1747,6 +1757,154 @@ def privacy_policy_route():
         return response
     except FileNotFoundError:
         return serve_file(os.path.join(BASE_DIR, 'index.html'))
+
+import time as _time
+
+FREE_PROMPT_LIMIT = 3
+GEMINI_OWNER_KEY = os.environ.get('GEMINI_OWNER_KEY', '')
+_rate_limit_cache = {}
+
+@app.route('/api/ai/proxy', methods=['POST', 'OPTIONS'])
+def ai_proxy():
+    if request.method == 'OPTIONS':
+        response = Response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
+
+    if not GEMINI_OWNER_KEY:
+        r = jsonify({'error': 'AI proxy not configured', 'remaining': 0})
+        r.headers['Access-Control-Allow-Origin'] = '*'
+        return r, 503
+
+    data = request.get_json(silent=True)
+    if not data:
+        r = jsonify({'error': 'Invalid request'})
+        r.headers['Access-Control-Allow-Origin'] = '*'
+        return r, 400
+
+    identifier = str(data.get('email') or data.get('deviceId') or '')[:200].strip().lower()
+    if not identifier:
+        r = jsonify({'error': 'Email or device ID required'})
+        r.headers['Access-Control-Allow-Origin'] = '*'
+        return r, 400
+
+    now = _time.time()
+    cache_key = identifier
+    if cache_key in _rate_limit_cache:
+        timestamps = [t for t in _rate_limit_cache[cache_key] if now - t < 60]
+        if len(timestamps) >= 3:
+            r = jsonify({'error': 'Rate limit exceeded. Wait a moment.', 'remaining': -1})
+            r.headers['Access-Control-Allow-Origin'] = '*'
+            return r, 429
+        timestamps.append(now)
+        _rate_limit_cache[cache_key] = timestamps
+    else:
+        _rate_limit_cache[cache_key] = [now]
+
+    if not ensure_db():
+        r = jsonify({'error': 'Database unavailable'})
+        r.headers['Access-Control-Allow-Origin'] = '*'
+        return r, 503
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute('''
+            INSERT INTO free_prompts (identifier, usage_count, last_used)
+            VALUES (%s, 0, NOW())
+            ON CONFLICT (identifier) DO NOTHING
+        ''', (identifier,))
+        conn.commit()
+
+        cur.execute('SELECT usage_count FROM free_prompts WHERE identifier = %s', (identifier,))
+        row = cur.fetchone()
+        usage_count = row[0] if row else 0
+
+        if usage_count >= FREE_PROMPT_LIMIT:
+            r = jsonify({'error': 'limit_reached', 'remaining': 0, 'limit': FREE_PROMPT_LIMIT})
+            r.headers['Access-Control-Allow-Origin'] = '*'
+            return r, 403
+
+        prompt = str(data.get('prompt', ''))[:2000]
+        image_data = str(data.get('imageData', ''))
+        if len(image_data) > 5 * 1024 * 1024:
+            r = jsonify({'error': 'Image too large'})
+            r.headers['Access-Control-Allow-Origin'] = '*'
+            return r, 400
+
+        import requests as http_requests
+        parts = [{'text': prompt}] if prompt else [{'text': 'Describe this image'}]
+        if image_data:
+            img_mime = 'image/png'
+            if image_data.startswith('data:'):
+                header_end = image_data.find(',')
+                if header_end > 0:
+                    header = image_data[:header_end]
+                    if 'image/jpeg' in header:
+                        img_mime = 'image/jpeg'
+                    elif 'image/webp' in header:
+                        img_mime = 'image/webp'
+                    elif 'image/gif' in header:
+                        img_mime = 'image/gif'
+                    image_data = image_data[header_end + 1:]
+            parts.append({'inline_data': {'mime_type': img_mime, 'data': image_data}})
+
+        gemini_body = {
+            'contents': [{'role': 'user', 'parts': parts}],
+            'generationConfig': {'maxOutputTokens': 1024, 'temperature': 0.3}
+        }
+
+        gemini_resp = http_requests.post(
+            f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_OWNER_KEY}',
+            json=gemini_body,
+            timeout=30
+        )
+        gemini_data = gemini_resp.json()
+
+        if 'error' in gemini_data:
+            r = jsonify({'error': gemini_data['error'].get('message', 'AI error'), 'remaining': FREE_PROMPT_LIMIT - usage_count})
+            r.headers['Access-Control-Allow-Origin'] = '*'
+            return r, 502
+
+        cur.execute('''
+            UPDATE free_prompts SET usage_count = usage_count + 1, last_used = NOW()
+            WHERE identifier = %s
+        ''', (identifier,))
+        conn.commit()
+
+        new_count = usage_count + 1
+        remaining = FREE_PROMPT_LIMIT - new_count
+
+        ai_text = ''
+        if gemini_data.get('candidates') and gemini_data['candidates'][0].get('content', {}).get('parts'):
+            ai_text = gemini_data['candidates'][0]['content']['parts'][0].get('text', '')
+
+        r = jsonify({
+            'response': ai_text,
+            'remaining': remaining,
+            'used': new_count,
+            'limit': FREE_PROMPT_LIMIT
+        })
+        r.headers['Access-Control-Allow-Origin'] = '*'
+        return r
+
+    except Exception as e:
+        print(f'❌ ai/proxy error: {e}')
+        r = jsonify({'error': 'Proxy request failed'})
+        r.headers['Access-Control-Allow-Origin'] = '*'
+        return r, 500
+    finally:
+        if cur:
+            try: cur.close()
+            except: pass
+        if conn:
+            try: conn.close()
+            except: pass
+
 
 if __name__ == '__main__':
     print('✅ Landing page live at: 0.0.0.0:5000')

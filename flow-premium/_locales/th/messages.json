@@ -238,5 +238,205 @@
   "statusSnapCopied": {
     "message": "คัดลอกภาพหน้าจอแล้ว",
     "description": "Status: single copy done"
+  },
+  "signIn": {
+    "message": "เข้าสู่ระบบ",
+    "description": "signIn"
+  },
+  "signOut": {
+    "message": "ออกจากระบบ",
+    "description": "signOut"
+  },
+  "signInToUnlock": {
+    "message": "เข้าสู่ระบบเพื่อปลดล็อกฟีเจอร์ AI",
+    "description": "signInToUnlock"
+  },
+  "continueWithGoogle": {
+    "message": "ดำเนินการต่อด้วย Google",
+    "description": "continueWithGoogle"
+  },
+  "privacyNote": {
+    "message": "ความเป็นส่วนตัวของคุณสำคัญ - เราเห็นแค่ชื่อและอีเมล",
+    "description": "privacyNote"
+  },
+  "manageSubscription": {
+    "message": "จัดการการสมัครสมาชิก",
+    "description": "manageSubscription"
+  },
+  "fullPage": {
+    "message": "ทั้งหน้า",
+    "description": "fullPage"
+  },
+  "aiReady": {
+    "message": "AI พร้อม",
+    "description": "aiReady"
+  },
+  "manage": {
+    "message": "จัดการ",
+    "description": "manage"
+  },
+  "aiChat": {
+    "message": "แชท AI",
+    "description": "aiChat"
+  },
+  "aiPartnerGreeting": {
+    "message": "ฉันคือผู้ช่วย AI ของคุณ ถามฉันได้ทุกอย่างเกี่ยวกับภาพนี้!",
+    "description": "aiPartnerGreeting"
+  },
+  "testApi": {
+    "message": "ทดสอบ API",
+    "description": "testApi"
+  },
+  "send": {
+    "message": "ส่ง",
+    "description": "send"
+  },
+  "clearChat": {
+    "message": "ล้างแชท",
+    "description": "clearChat"
+  },
+  "copyChat": {
+    "message": "คัดลอกแชท",
+    "description": "copyChat"
+  },
+  "activateAiAnalysis": {
+    "message": "เปิดใช้การวิเคราะห์ AI",
+    "description": "activateAiAnalysis"
+  },
+  "connected": {
+    "message": "เชื่อมต่อแล้ว",
+    "description": "connected"
+  },
+  "goToAiStudio": {
+    "message": "ไปที่ AI Studio",
+    "description": "goToAiStudio"
+  },
+  "createApiKeyCopy": {
+    "message": "คลิก \"สร้างคีย์ API\" แล้วคัดลอก",
+    "description": "createApiKeyCopy"
+  },
+  "pasteItBelow": {
+    "message": "วางด้านล่าง",
+    "description": "pasteItBelow"
+  },
+  "show": {
+    "message": "แสดง",
+    "description": "show"
+  },
+  "ageTermsAgree": {
+    "message": "ฉันอายุ 18 ปีขึ้นไปและยอมรับ",
+    "description": "ageTermsAgree"
+  },
+  "activate": {
+    "message": "เปิดใช้งาน",
+    "description": "activate"
+  },
+  "clear": {
+    "message": "ล้าง",
+    "description": "clear"
+  },
+  "goProForAi": {
+    "message": "อัปเกรดเป็น Pro สำหรับการวิเคราะห์ AI",
+    "description": "goProForAi"
+  },
+  "trialEndedMessage": {
+    "message": "ช่วงทดลองใช้สิ้นสุดแล้ว สมัครสมาชิกเพื่อใช้ฟีเจอร์วิเคราะห์ AI ต่อ",
+    "description": "trialEndedMessage"
+  },
+  "lessThanCoffee": {
+    "message": "ถูกกว่ากาแฟหนึ่งแก้วต่อเดือนสำหรับเครื่องมือ AI ระดับมืออาชีพ",
+    "description": "lessThanCoffee"
+  },
+  "monthly": {
+    "message": "รายเดือน",
+    "description": "monthly"
+  },
+  "yearly": {
+    "message": "รายปี",
+    "description": "yearly"
+  },
+  "subscriptionActivatesAuto": {
+    "message": "การสมัครสมาชิกจะเปิดใช้งานอัตโนมัติ",
+    "description": "subscriptionActivatesAuto"
+  },
+  "checkSubscriptionStatus": {
+    "message": "ตรวจสอบสถานะการสมัครสมาชิก",
+    "description": "checkSubscriptionStatus"
+  },
+  "continueWithCaptureOnly": {
+    "message": "ใช้เฉพาะการจับภาพต่อไป",
+    "description": "continueWithCaptureOnly"
+  },
+  "leaveAReview": {
+    "message": "เขียนรีวิว",
+    "description": "leaveAReview"
+  },
+  "maybeLater": {
+    "message": "ไว้ทีหลัง",
+    "description": "maybeLater"
+  },
+  "processing": {
+    "message": "กำลังประมวลผล...",
+    "description": "processing"
+  },
+  "pleaseWait": {
+    "message": "กรุณารอสักครู่",
+    "description": "pleaseWait"
+  },
+  "queueSpaceNeeded": {
+    "message": "ต้องการพื้นที่ในคิว",
+    "description": "queueSpaceNeeded"
+  },
+  "clearQueueCapture": {
+    "message": "ล้างคิวและจับภาพ",
+    "description": "clearQueueCapture"
+  },
+  "sendToAi": {
+    "message": "ส่งไปยัง AI",
+    "description": "sendToAi"
+  },
+  "copy": {
+    "message": "คัดลอก",
+    "description": "copy"
+  },
+  "stop": {
+    "message": "หยุด",
+    "description": "stop"
+  },
+  "deleteSelected": {
+    "message": "ลบที่เลือก",
+    "description": "deleteSelected"
+  },
+  "copied": {
+    "message": "คัดลอกแล้ว!",
+    "description": "copied"
+  },
+  "openGoogleAiStudio": {
+    "message": "เปิด Google AI Studio",
+    "description": "openGoogleAiStudio"
+  },
+  "fullPageNeedsSpace": {
+    "message": "การจับภาพเต็มหน้าต้องการพื้นที่เพิ่มเติม",
+    "description": "fullPageNeedsSpace"
+  },
+  "reviewHeader": {
+    "message": "เรารัก Snap To AI",
+    "description": "reviewHeader"
+  },
+  "reviewMessage": {
+    "message": "เราทำงานหนักเพื่อทำให้ภาพหน้าจอ AI เรียบง่ายและทรงพลัง หาก SnapToAI ช่วยประหยัดเวลาของคุณ กรุณาเขียนรีวิว",
+    "description": "reviewMessage"
+  },
+  "askAi": {
+    "message": "ถาม AI",
+    "description": "askAi"
+  },
+  "downloadAsPNG": {
+    "message": "PNG",
+    "description": "downloadAsPNG"
+  },
+  "exportAsPDF": {
+    "message": "PDF",
+    "description": "exportAsPDF"
   }
 }
