@@ -3566,7 +3566,7 @@ function hideGeminiModal() {
 
 async function loadGeminiKey() {
   try {
-    const result = await chrome.storage.sync.get(['geminiApiKey']);
+    const result = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel']);
     console.log('[SnapToAI] Loaded Gemini key:', result.geminiApiKey ? 'exists' : 'none');
     if (result.geminiApiKey) {
       if (geminiKeyInput) geminiKeyInput.value = result.geminiApiKey;
@@ -3574,6 +3574,10 @@ async function loadGeminiKey() {
     } else {
       if (geminiKeyInput) geminiKeyInput.value = '';
       if (geminiStatus) geminiStatus.style.display = 'none';
+    }
+    const modelSelect = document.getElementById('geminiModelSelect');
+    if (modelSelect && result.geminiModel) {
+      modelSelect.value = result.geminiModel;
     }
     return !!result.geminiApiKey;
   } catch (e) {
@@ -3590,8 +3594,10 @@ async function saveGeminiKey() {
     return;
   }
   try {
-    await chrome.storage.sync.set({ geminiApiKey: key });
-    console.log('[SnapToAI] Gemini key saved');
+    const modelSelect = document.getElementById('geminiModelSelect');
+    const model = modelSelect ? modelSelect.value : 'gemini-2.0-flash';
+    await chrome.storage.sync.set({ geminiApiKey: key, geminiModel: model });
+    console.log('[SnapToAI] Gemini key and model saved:', model);
     if (geminiStatus) geminiStatus.style.display = 'flex';
     updateAiButtonState();
     hideGeminiModal();
