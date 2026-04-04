@@ -392,9 +392,17 @@ function getCurrentModeModel() {
   return AI_MODES[currentAiMode]?.model || AI_MODES['vision'].model;
 }
 
+const MODE_COLORS = {
+  'vision': 'rgba(0,217,255,0.06)',
+  'image': 'rgba(255,107,237,0.06)',
+  'music': 'rgba(0,255,136,0.06)',
+  'video': 'rgba(255,170,0,0.06)'
+};
+
 function initModeButtons() {
   const btns = document.querySelectorAll('.mode-btn');
   const inputEl = document.getElementById('chatInput');
+  const modeBar = document.getElementById('modeBar');
   
   btns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -407,18 +415,34 @@ function initModeButtons() {
       btns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       
+      btn.classList.add('switching');
+      setTimeout(() => btn.classList.remove('switching'), 500);
+      
+      if (modeBar) modeBar.style.background = MODE_COLORS[mode] || MODE_COLORS['vision'];
+      
       const cfg = AI_MODES[mode];
-      if (inputEl && cfg) inputEl.placeholder = cfg.placeholder;
+      if (inputEl && cfg) {
+        inputEl.style.transition = 'opacity 0.2s ease';
+        inputEl.style.opacity = '0';
+        setTimeout(() => {
+          inputEl.placeholder = cfg.placeholder;
+          inputEl.style.opacity = '1';
+        }, 200);
+      }
       
       const thread = document.getElementById('chatThread');
       if (thread) {
         const notice = document.createElement('div');
-        notice.className = 'chat-bubble ai';
-        notice.style.cssText = 'font-size: 12px; opacity: 0.8; padding: 8px 14px;';
+        notice.className = 'chat-bubble ai mode-switch-notice';
+        notice.style.cssText = 'font-size: 12px; padding: 10px 16px; border-left: 3px solid; margin: 4px 0;';
+        const borderColors = { 'vision': '#00d9ff', 'image': '#ff6bed', 'music': '#00ff88', 'video': '#ffaa00' };
+        notice.style.borderLeftColor = borderColors[mode] || '#00d9ff';
         notice.textContent = cfg.welcome;
         thread.appendChild(notice);
         thread.scrollTop = thread.scrollHeight;
       }
+      
+      if (inputEl) inputEl.focus();
     });
   });
   
@@ -430,6 +454,7 @@ function initModeButtons() {
         b.classList.toggle('active', b.dataset.mode === mode);
       });
       if (inputEl) inputEl.placeholder = AI_MODES[mode].placeholder;
+      if (modeBar) modeBar.style.background = MODE_COLORS[mode] || MODE_COLORS['vision'];
     }
   }).catch(() => {});
 }

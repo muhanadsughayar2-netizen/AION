@@ -444,30 +444,91 @@
     }
     
     .mode-btn {
+      position: relative;
       display: flex;
       align-items: center;
-      gap: 4px;
-      padding: 5px 12px;
+      gap: 5px;
+      padding: 6px 14px;
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 20px;
-      color: #778899;
+      color: #667788;
       font-size: 12px;
+      font-weight: 500;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.2s ease;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
       flex-shrink: 0;
+      overflow: hidden;
+      transform: scale(1);
     }
+    .mode-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .mode-btn[data-mode="vision"]::before { background: radial-gradient(ellipse at center, rgba(0,217,255,0.15), transparent 70%); }
+    .mode-btn[data-mode="image"]::before { background: radial-gradient(ellipse at center, rgba(255,107,237,0.15), transparent 70%); }
+    .mode-btn[data-mode="music"]::before { background: radial-gradient(ellipse at center, rgba(0,255,136,0.15), transparent 70%); }
+    .mode-btn[data-mode="video"]::before { background: radial-gradient(ellipse at center, rgba(255,170,0,0.15), transparent 70%); }
     .mode-btn:hover {
-      background: rgba(0,217,255,0.1);
-      border-color: rgba(0,217,255,0.25);
+      transform: scale(1.04);
+      border-color: rgba(255,255,255,0.18);
       color: #aabbcc;
     }
+    .mode-btn:hover::before { opacity: 0.6; }
+    .mode-btn:active { transform: scale(0.96); }
     .mode-btn.active {
-      background: rgba(0,217,255,0.15);
-      border-color: rgba(0,217,255,0.4);
+      transform: scale(1.06);
+      font-weight: 600;
+    }
+    .mode-btn.active::before { opacity: 1; }
+    .mode-btn[data-mode="vision"].active {
+      border-color: rgba(0,217,255,0.5);
       color: #00d9ff;
-      box-shadow: 0 0 8px rgba(0,217,255,0.15);
+      box-shadow: 0 0 12px rgba(0,217,255,0.2), 0 0 4px rgba(0,217,255,0.1) inset;
+    }
+    .mode-btn[data-mode="image"].active {
+      border-color: rgba(255,107,237,0.5);
+      color: #ff6bed;
+      box-shadow: 0 0 12px rgba(255,107,237,0.2), 0 0 4px rgba(255,107,237,0.1) inset;
+    }
+    .mode-btn[data-mode="music"].active {
+      border-color: rgba(0,255,136,0.5);
+      color: #00ff88;
+      box-shadow: 0 0 12px rgba(0,255,136,0.2), 0 0 4px rgba(0,255,136,0.1) inset;
+    }
+    .mode-btn[data-mode="video"].active {
+      border-color: rgba(255,170,0,0.5);
+      color: #ffaa00;
+      box-shadow: 0 0 12px rgba(255,170,0,0.2), 0 0 4px rgba(255,170,0,0.1) inset;
+    }
+    .mode-btn .mode-emoji {
+      display: inline-block;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .mode-btn.active .mode-emoji { transform: scale(1.2); }
+    .mode-btn.switching .mode-emoji {
+      animation: modeEmojiBounce 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes modeEmojiBounce {
+      0% { transform: scale(1); }
+      30% { transform: scale(1.5) rotate(-8deg); }
+      60% { transform: scale(0.9) rotate(4deg); }
+      100% { transform: scale(1.2) rotate(0deg); }
+    }
+    .mode-switch-notice {
+      animation: noticeSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes noticeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #modeBar {
+      transition: background 0.3s ease;
     }
     #modeBar::-webkit-scrollbar { display: none; }
 
@@ -1026,11 +1087,11 @@
         <span>Want to analyze code? Go to your code, press <kbd>Ctrl+A</kbd> (<kbd>⌘+A</kbd> on Mac) to select all, <kbd>Ctrl+C</kbd> to copy, then paste it right here.</span>
         <button class="tip-dismiss" id="dismissTip" title="Dismiss">✕</button>
       </div>
-      <div id="modeBar" style="display: flex; gap: 6px; padding: 6px 10px; background: rgba(0,217,255,0.03); border-bottom: 1px solid rgba(0,217,255,0.08); overflow-x: auto; scrollbar-width: none;">
-        <button class="mode-btn active" data-mode="vision" title="Analyze screenshots & text">🔍 Vision</button>
-        <button class="mode-btn" data-mode="image" title="Generate images from text">🎨 Image</button>
-        <button class="mode-btn" data-mode="music" title="Create music clips">🎵 Music</button>
-        <button class="mode-btn" data-mode="video" title="Generate short videos">🎬 Video</button>
+      <div id="modeBar" style="display: flex; gap: 6px; padding: 7px 10px; background: rgba(0,217,255,0.03); border-bottom: 1px solid rgba(0,217,255,0.08); overflow-x: auto; scrollbar-width: none;">
+        <button class="mode-btn active" data-mode="vision" title="Analyze screenshots & text"><span class="mode-emoji">🔍</span> Vision</button>
+        <button class="mode-btn" data-mode="image" title="Generate images from text"><span class="mode-emoji">🎨</span> Image</button>
+        <button class="mode-btn" data-mode="music" title="Create music clips"><span class="mode-emoji">🎵</span> Music</button>
+        <button class="mode-btn" data-mode="video" title="Generate short videos"><span class="mode-emoji">🎬</span> Video</button>
       </div>
       <div class="input-area">
         <input type="file" id="fileInput" accept="image/*,.pdf,.txt,.md,.json,.csv" multiple hidden>
