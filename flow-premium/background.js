@@ -195,35 +195,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     case 'analyze-clipboard': {
       let clipText = '';
       try {
-        const [result] = await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: async () => {
-            const sel = window.getSelection();
-            if (sel && sel.toString().trim().length > 0) return sel.toString();
-            const active = document.activeElement;
-            if (active && active.value && typeof active.selectionStart === 'number' && active.selectionStart !== active.selectionEnd) {
-              return active.value.substring(active.selectionStart, active.selectionEnd);
-            }
-            try {
-              const clip = await navigator.clipboard.readText();
-              if (clip && clip.trim()) return clip;
-            } catch (e) {}
-            try {
-              const ta = document.createElement('textarea');
-              ta.style.cssText = 'position:fixed;opacity:0;';
-              document.body.appendChild(ta);
-              ta.focus();
-              document.execCommand('paste');
-              const pasted = ta.value;
-              ta.remove();
-              if (pasted && pasted.trim()) return pasted;
-            } catch (e) {}
-            return '';
-          }
-        });
-        clipText = result?.result || '';
+        const data = await chrome.storage.session.get('lastCopiedText');
+        clipText = data.lastCopiedText || '';
       } catch (e) {
-        console.log('[SnapToAI] Clipboard read failed:', e.message);
+        console.log('[SnapToAI] Stored clipboard read failed:', e.message);
       }
       if (clipText.trim()) {
         await handleAskSnapToAI({ selectionText: clipText, frameId: 0 }, tab);
@@ -497,6 +472,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           url: chrome.runtime.getURL('ai-chat.html?direct=true'),
           type: 'popup', width: 1000, height: 700, focused: true
         });
+        sendResponse({ success: false });
+      }
+    })();
+    return true;
+  } else if (request.action === 'analyzeClipboardText') {
+    (async () => {
+      try {
+        const data = await chrome.storage.session.get('lastCopiedText');
+        const copiedText = data.lastCopiedText || '';
+        let tab = sender.tab;
+        if (!tab) {
+          const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+          tab = activeTab;
+        }
+        if (tab && copiedText) {
+          await handleAskSnapToAI({ selectionText: copiedText, frameId: 0 }, tab);
+        } else if (copiedText) {
+          const payload = {
+            screenshot: null,
+            context: { url: '', title: '', selectedText: copiedText },
+            timestamp: Date.now()
+          };
+          await chrome.storage.session.set({ askAiPayload: payload });
+          chrome.windows.create({
+            url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&count=1'),
+            type: 'popup', width: 1000, height: 700, focused: true
+          });
+        }
+        sendResponse({ success: true });
+      } catch (e) {
+        console.error('[SnapToAI] analyzeClipboardText error:', e);
         sendResponse({ success: false });
       }
     })();
