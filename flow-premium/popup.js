@@ -4236,8 +4236,9 @@ async function sendToGemini(prompt, isRetry = false) {
         requestBody.thoughtSignature = aiThoughtSignature;
       }
 
+      const popupModel = await (async () => { try { const r = await chrome.storage.sync.get('geminiModel'); return r.geminiModel || 'gemini-2.0-flash'; } catch(e) { return 'gemini-2.0-flash'; } })();
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${popupModel}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -4378,8 +4379,9 @@ async function testGeminiAPI() {
   try {
     // Use queue to respect rate limits
     const data = await aiQueue.add(async () => {
+      const testModel = await (async () => { try { const r = await chrome.storage.sync.get('geminiModel'); return r.geminiModel || 'gemini-2.0-flash'; } catch(e) { return 'gemini-2.0-flash'; } })();
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${result.geminiApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${testModel}:generateContent?key=${result.geminiApiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

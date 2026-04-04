@@ -353,6 +353,17 @@ let filesQueue = []; // Multi-file upload queue (Gemini-style)
 // Get config from prompts.js (user-editable) or use defaults
 const getConfig = (key, defaultVal) => (window.SNAPTOAI_CONFIG && window.SNAPTOAI_CONFIG[key]) || defaultVal;
 
+const DEFAULT_MODEL = 'gemini-2.0-flash';
+
+async function getSelectedModel() {
+  try {
+    const { geminiModel } = await chrome.storage.sync.get('geminiModel');
+    return geminiModel || DEFAULT_MODEL;
+  } catch (e) {
+    return DEFAULT_MODEL;
+  }
+}
+
 const SYSTEM_PROMPT = getConfig('SYSTEM_PROMPT', "You are a professional assistant. Give COMPLETE, DIRECT answers. Never truncate or ask 'would you like more?' Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions.");
 
 const SMART_SYSTEM_PROMPT = getConfig('SMART_SYSTEM_PROMPT', "You are a professional assistant. I'm providing webpage text for accuracy and screenshots for visual context. Give COMPLETE, DIRECT answers. Never truncate. Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions.");
@@ -697,8 +708,9 @@ async function sendToGemini(prompt, imageDataUrls) {
   // Wait for rate limit before making request
   await waitForRateLimit();
   
+  const selectedModel = await getSelectedModel();
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -914,8 +926,9 @@ async function handleSend() {
             // Wait for rate limit before batch request
             await waitForRateLimit();
             
+            const batchModel = await getSelectedModel();
             const batchResponse = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+              `https://generativelanguage.googleapis.com/v1beta/models/${batchModel}:generateContent?key=${apiKey}`,
               {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1003,9 +1016,10 @@ async function handleSend() {
     // Wait for rate limit before streaming request
     await waitForRateLimit();
     
+    const streamModel = await getSelectedModel();
     // Stream request
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent?alt=sse&key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${streamModel}:streamGenerateContent?alt=sse&key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1295,8 +1309,9 @@ async function startEducationMode() {
     // Wait for rate limit before request
     await waitForRateLimit();
     
+    const verdictModel = await getSelectedModel();
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${verdictModel}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1747,8 +1762,9 @@ Output ONLY JSON:
     // Wait for rate limit before Verdict request
     await waitForRateLimit();
     
+    const vModel = await getSelectedModel();
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiResult.geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${vModel}:generateContent?key=${apiResult.geminiApiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
