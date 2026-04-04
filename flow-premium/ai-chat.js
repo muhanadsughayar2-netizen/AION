@@ -353,16 +353,74 @@ let filesQueue = []; // Multi-file upload queue (Gemini-style)
 // Get config from prompts.js (user-editable) or use defaults
 const getConfig = (key, defaultVal) => (window.SNAPTOAI_CONFIG && window.SNAPTOAI_CONFIG[key]) || defaultVal;
 
-const DEFAULT_MODEL = 'gemini-2.0-flash';
+const AI_MODES = {
+  'analyze': {
+    model: 'gemini-2.0-flash',
+    responseModalities: ['TEXT'],
+    systemPromptOverride: null
+  },
+  'create-images': {
+    model: 'gemini-2.0-flash-preview-image-generation',
+    responseModalities: ['TEXT', 'IMAGE'],
+    systemPromptOverride: 'You are a creative AI artist. When the user asks you to create, draw, design, or generate an image, produce the image directly. Also describe what you created briefly. If the user asks for modifications, generate a new version. Be creative and produce high-quality visuals.'
+  },
+  'write-code': {
+    model: 'gemini-2.5-flash-preview-05-20',
+    responseModalities: ['TEXT'],
+    systemPromptOverride: 'You are an expert software engineer. Write clean, production-ready code. Always include the full code — never truncate or use placeholders like "// rest of code here". Use proper formatting with language-tagged code blocks. Explain your approach briefly, then show the complete code. If analyzing a screenshot of code, identify bugs, suggest improvements, and provide the fixed version.'
+  },
+  'think-deep': {
+    model: 'gemini-2.5-pro-preview-05-06',
+    responseModalities: ['TEXT'],
+    systemPromptOverride: null
+  }
+};
 
-async function getSelectedModel() {
+let currentAiMode = 'analyze';
+
+async function getSelectedMode() {
   try {
     const { geminiModel } = await chrome.storage.sync.get('geminiModel');
-    return geminiModel || DEFAULT_MODEL;
+    currentAiMode = geminiModel || 'analyze';
+    return AI_MODES[currentAiMode] || AI_MODES['analyze'];
   } catch (e) {
-    return DEFAULT_MODEL;
+    return AI_MODES['analyze'];
   }
 }
+
+async function getSelectedModel() {
+  const mode = await getSelectedMode();
+  return mode.model;
+}
+
+const MODE_UI = {
+  'analyze': { icon: '🔍', label: 'Analyze Mode', placeholder: 'Ask about your screenshot...' },
+  'create-images': { icon: '🎨', label: 'Create Images Mode', placeholder: 'Describe the image you want...' },
+  'write-code': { icon: '💻', label: 'Code Mode', placeholder: 'Describe the code you need...' },
+  'think-deep': { icon: '🧠', label: 'Think Deep Mode', placeholder: 'Ask a complex question...' }
+};
+
+function updateModeIndicator(mode) {
+  const ui = MODE_UI[mode] || MODE_UI['analyze'];
+  const iconEl = document.getElementById('modeIcon');
+  const labelEl = document.getElementById('modeLabel');
+  const inputEl = document.getElementById('chatInput');
+  if (iconEl) iconEl.textContent = ui.icon;
+  if (labelEl) labelEl.textContent = ui.label;
+  if (inputEl) inputEl.placeholder = ui.placeholder;
+}
+
+(async () => {
+  await getSelectedMode();
+  updateModeIndicator(currentAiMode);
+})();
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'sync' && changes.geminiModel) {
+    currentAiMode = changes.geminiModel.newValue || 'analyze';
+    updateModeIndicator(currentAiMode);
+  }
+});
 
 const SYSTEM_PROMPT = getConfig('SYSTEM_PROMPT', "You are a professional assistant. Give COMPLETE, DIRECT answers. Never truncate or ask 'would you like more?' Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions.");
 
@@ -1005,33 +1063,47 @@ async function handleSend() {
     
     contents.push({ role: 'user', parts: userParts });
     
-    // Use appropriate prompt based on content
-    let systemPrompt = SYSTEM_PROMPT;
-    if (currentImages.length > 1) {
-      systemPrompt = MULTI_IMAGE_PROMPT;
-    } else if (currentPageText && currentPageText.length > 800) {
-      systemPrompt = SMART_SYSTEM_PROMPT;
+    // Get current AI mode
+    const aiMode = await getSelectedMode();
+    
+    // Use appropriate prompt based on content and mode
+    let systemPrompt = aiMode.systemPromptOverride || SYSTEM_PROMPT;
+    if (!aiMode.systemPromptOverride) {
+      if (currentImages.length > 1) {
+        systemPrompt = MULTI_IMAGE_PROMPT;
+      } else if (currentPageText && currentPageText.length > 800) {
+        systemPrompt = SMART_SYSTEM_PROMPT;
+      }
     }
     
-    // Wait for rate limit before streaming request
+    // Wait for rate limit before request
     await waitForRateLimit();
     
-    const streamModel = await getSelectedModel();
-    // Stream request
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${streamModel}:streamGenerateContent?alt=sse&key=${apiKey}`,
+    const genConfig = { 
+      maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
+      temperature: getConfig('TEMPERATURE', 0.7),
+      topP: 0.95,
+      topK: 40
+    };
+    
+    if (aiMode.responseModalities && aiMode.responseModalities.includes('IMAGE')) {
+      genConfig.responseModalities = aiMode.responseModalities;
+    }
+
+    // Image generation mode uses non-streaming (streaming doesn't support image output)
+    const useStreaming = !aiMode.responseModalities || !aiMode.responseModalities.includes('IMAGE');
+    const endpointUrl = useStreaming 
+      ? `https://generativelanguage.googleapis.com/v1beta/models/${aiMode.model}:streamGenerateContent?alt=sse&key=${apiKey}`
+      : `https://generativelanguage.googleapis.com/v1beta/models/${aiMode.model}:generateContent?key=${apiKey}`;
+    
+    const response = await fetch(endpointUrl,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: contents,
-          generationConfig: { 
-            maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
-            temperature: getConfig('TEMPERATURE', 0.7),
-            topP: 0.95,
-            topK: 40
-          }
+          generationConfig: genConfig
         })
       }
     );
@@ -1047,40 +1119,65 @@ async function handleSend() {
     responseBubble.className = 'chat-bubble ai';
     thread.appendChild(responseBubble);
     
-    // Stream the response
     let fullText = '';
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+
+    if (!useStreaming) {
+      // Non-streaming response (image generation mode)
+      const data = await response.json();
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      let htmlContent = '';
       
-      const chunk = decoder.decode(value);
-      const lines = chunk.split('\n');
+      for (const part of parts) {
+        if (part.text) {
+          fullText += part.text;
+          const parsedHtml = typeof marked !== 'undefined' ? marked.parse(part.text) : part.text;
+          htmlContent += typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
+        }
+        if (part.inlineData) {
+          const imgSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          htmlContent += `<div style="margin: 12px 0;"><img src="${imgSrc}" style="max-width: 100%; border-radius: 12px; cursor: pointer;" onclick="window.open(this.src, '_blank')" title="Click to open full size"><div style="margin-top: 6px; display: flex; gap: 8px;"><button onclick="(async()=>{try{const r=await fetch(this.closest('div').previousElementSibling.src);const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='snaptoai-image.png';a.click()}catch(e){}})()" style="background: rgba(0,217,255,0.15); border: 1px solid rgba(0,217,255,0.3); color: #00d9ff; padding: 4px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">Save Image</button></div></div>`;
+        }
+      }
       
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const data = JSON.parse(line.slice(6));
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text) {
-              fullText += text;
-              // Render markdown
-              if (typeof marked !== 'undefined') {
-                const parsedHtml = marked.parse(fullText);
-                responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
-                // Make all links open in new tabs
-                responseBubble.querySelectorAll('a').forEach(link => {
-                  link.setAttribute('target', '_blank');
-                  link.setAttribute('rel', 'noopener noreferrer');
-                });
-              } else {
-                responseBubble.textContent = fullText;
+      responseBubble.innerHTML = htmlContent || 'No response generated.';
+      responseBubble.querySelectorAll('a').forEach(link => {
+        link.setAttribute('target', '_blank');
+        link.setAttribute('rel', 'noopener noreferrer');
+      });
+      thread.scrollTop = thread.scrollHeight;
+    } else {
+      // Streaming response (text modes)
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (text) {
+                fullText += text;
+                if (typeof marked !== 'undefined') {
+                  const parsedHtml = marked.parse(fullText);
+                  responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
+                  responseBubble.querySelectorAll('a').forEach(link => {
+                    link.setAttribute('target', '_blank');
+                    link.setAttribute('rel', 'noopener noreferrer');
+                  });
+                } else {
+                  responseBubble.textContent = fullText;
+                }
+                thread.scrollTop = thread.scrollHeight;
               }
-              thread.scrollTop = thread.scrollHeight;
-            }
-          } catch (e) {}
+            } catch (e) {}
+          }
         }
       }
     }

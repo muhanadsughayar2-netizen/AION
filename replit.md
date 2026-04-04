@@ -33,7 +33,7 @@ The extension supports capturing, annotating, organizing (reordering, multi-sele
 - **Right-Click Hero Redesign:** The popup primarily shows a queue-only view, with capture actions moved to the right-click context menu.
 - **Monetization Funnel:** Offers 10 complimentary backend-proxied AI prompts, followed by a pitch for Google Cloud credits for users to obtain their own Gemini key, leading to the 30-day trial and subscription model.
 - **Review Prompting System:** Triggers review prompts at specific usage milestones, guiding users to the Chrome Web Store.
-- **Model Selector:** Allows users to choose their preferred Gemini model (Flash, Flash Lite, Pro) within the API key modal, which is saved and used for dynamic API calls.
+- **AI Mode Selector:** Users choose an AI mode (Analyze, Create Images, Write Code, Think Deep) in the API key modal. Each mode maps to the best Gemini model internally: Analyze→2.0 Flash, Create Images→2.0 Flash (image gen), Write Code→2.5 Flash, Think Deep→2.5 Pro. Image generation uses non-streaming with `responseModalities: ['TEXT','IMAGE']`. Mode indicator shows in AI chat with icon, label, and contextual placeholder. Stored as `geminiModel` in chrome.storage.sync.
 
 ### System Design Choices
 The extension is built as a Manifest V3 Chrome Extension, employing a Service Worker for background processes, a Content Script for in-page interactions, and a Popup Interface for user interaction. Data is stored client-side using Chrome's session and local storage APIs for screenshots (privacy-first). User identity is managed via Google Sign-In through the `chrome.identity` API, with user data stored server-side in PostgreSQL for monitoring purposes.

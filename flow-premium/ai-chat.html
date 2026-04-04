@@ -998,6 +998,10 @@
         <span>Want to analyze code? Go to your code, press <kbd>Ctrl+A</kbd> (<kbd>⌘+A</kbd> on Mac) to select all, <kbd>Ctrl+C</kbd> to copy, then paste it right here.</span>
         <button class="tip-dismiss" id="dismissTip" title="Dismiss">✕</button>
       </div>
+      <div id="modeIndicator" style="display: flex; align-items: center; gap: 6px; padding: 4px 12px; font-size: 11px; color: #778899; background: rgba(0,217,255,0.04); border-bottom: 1px solid rgba(0,217,255,0.08);">
+        <span id="modeIcon">🔍</span>
+        <span id="modeLabel">Analyze Mode</span>
+      </div>
       <div class="input-area">
         <input type="file" id="fileInput" accept="image/*,.pdf,.txt,.md,.json,.csv" multiple hidden>
         <label for="fileInput" class="upload-btn" title="Attach files">+</label>

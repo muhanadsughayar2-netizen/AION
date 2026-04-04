@@ -3634,6 +3634,21 @@ if (toggleKeyVisibility && geminiKeyInput) {
   });
 }
 
+// Mode description updater
+const modeSelect = document.getElementById('geminiModelSelect');
+const modeDesc = document.getElementById('modeDescription');
+if (modeSelect && modeDesc) {
+  const descriptions = {
+    'analyze': 'Fast analysis of screenshots, code, and text',
+    'create-images': 'Generate images from text descriptions',
+    'write-code': 'Write, debug, and explain code',
+    'think-deep': 'Complex reasoning for hard problems'
+  };
+  modeSelect.addEventListener('change', () => {
+    modeDesc.textContent = descriptions[modeSelect.value] || '';
+  });
+}
+
 // ===== SUBSCRIPTION MANAGEMENT =====
 const subscriptionModal = document.getElementById('subscriptionModal');
 const subMonthlyBtn = document.getElementById('subMonthlyBtn');
@@ -4236,7 +4251,7 @@ async function sendToGemini(prompt, isRetry = false) {
         requestBody.thoughtSignature = aiThoughtSignature;
       }
 
-      const popupModel = await (async () => { try { const r = await chrome.storage.sync.get('geminiModel'); return r.geminiModel || 'gemini-2.0-flash'; } catch(e) { return 'gemini-2.0-flash'; } })();
+      const popupModel = await (async () => { try { const r = await chrome.storage.sync.get('geminiModel'); const modeMap = {'analyze':'gemini-2.0-flash','create-images':'gemini-2.0-flash','write-code':'gemini-2.5-flash-preview-05-20','think-deep':'gemini-2.5-pro-preview-05-06'}; return modeMap[r.geminiModel] || 'gemini-2.0-flash'; } catch(e) { return 'gemini-2.0-flash'; } })();
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${popupModel}:generateContent?key=${apiKey}`,
         {
@@ -4379,7 +4394,7 @@ async function testGeminiAPI() {
   try {
     // Use queue to respect rate limits
     const data = await aiQueue.add(async () => {
-      const testModel = await (async () => { try { const r = await chrome.storage.sync.get('geminiModel'); return r.geminiModel || 'gemini-2.0-flash'; } catch(e) { return 'gemini-2.0-flash'; } })();
+      const testModel = await (async () => { try { const r = await chrome.storage.sync.get('geminiModel'); const modeMap = {'analyze':'gemini-2.0-flash','create-images':'gemini-2.0-flash','write-code':'gemini-2.5-flash-preview-05-20','think-deep':'gemini-2.5-pro-preview-05-06'}; return modeMap[r.geminiModel] || 'gemini-2.0-flash'; } catch(e) { return 'gemini-2.0-flash'; } })();
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${testModel}:generateContent?key=${result.geminiApiKey}`,
         {
