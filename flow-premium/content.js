@@ -4110,8 +4110,6 @@
   }
 
   if (!isAISite) {
-    let analyzeToastTimeout = null;
-
     document.addEventListener('copy', () => {
       setTimeout(() => {
         const sel = window.getSelection();
@@ -4128,60 +4126,10 @@
           chrome.storage.session.set({ lastCopiedText: copiedText });
         } catch (e) {}
 
-        const existing = document.getElementById('snaptoai-analyze-toast');
-        if (existing) existing.remove();
-        if (analyzeToastTimeout) clearTimeout(analyzeToastTimeout);
-
-        const toast = document.createElement('div');
-        toast.id = 'snaptoai-analyze-toast';
-        toast.innerHTML = '📋 <span style="margin-right:8px;">Copied!</span><span style="cursor:pointer;background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:6px;font-weight:700;">✨ Analyze with AI</span>';
-
-        Object.assign(toast.style, {
-          position: 'fixed',
-          left: '50%',
-          top: '20px',
-          transform: 'translateX(-50%)',
-          backgroundColor: 'rgba(30, 30, 50, 0.95)',
-          color: '#fff',
-          padding: '10px 18px',
-          borderRadius: '10px',
-          fontSize: '14px',
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          boxShadow: '0 4px 24px rgba(0, 217, 255, 0.3), 0 0 0 1px rgba(0, 217, 255, 0.2)',
-          zIndex: '2147483647',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px',
-          backdropFilter: 'blur(12px)',
-          opacity: '0',
-          transition: 'opacity 0.3s ease, transform 0.3s ease',
-          pointerEvents: 'auto'
-        });
-
-        document.body.appendChild(toast);
-        requestAnimationFrame(() => { toast.style.opacity = '1'; });
-
-        const analyzeBtn = toast.querySelector('span:last-child');
-        analyzeBtn.addEventListener('mouseenter', () => { analyzeBtn.style.background = 'rgba(0, 217, 255, 0.4)'; });
-        analyzeBtn.addEventListener('mouseleave', () => { analyzeBtn.style.background = 'rgba(255,255,255,0.2)'; });
-        analyzeBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
+        chrome.storage.local.get('snaptoaiCopyToAI', (data) => {
+          if (data.snaptoaiCopyToAI === false) return;
           chrome.runtime.sendMessage({ action: 'analyzeClipboardText' });
-          toast.style.opacity = '0';
-          setTimeout(() => toast.remove(), 300);
         });
-
-        toast.addEventListener('click', () => {
-          toast.style.opacity = '0';
-          setTimeout(() => toast.remove(), 300);
-        });
-
-        analyzeToastTimeout = setTimeout(() => {
-          if (toast.parentNode) {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-          }
-        }, 6000);
       }, 50);
     });
   }
