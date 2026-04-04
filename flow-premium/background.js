@@ -124,7 +124,6 @@ function registerSnapToAIMenu() {
 
     chrome.contextMenus.create({ id: 'ask-ai-this', title: '✨ Ask AI About This', parentId: 'snaptoai-parent', contexts: ['all'] });
     chrome.contextMenus.create({ id: 'explain-text', title: '📝 Explain Selected Text', parentId: 'snaptoai-parent', contexts: ['selection'] });
-    chrome.contextMenus.create({ id: 'analyze-clipboard', title: '📋 Analyze Copied Code', parentId: 'snaptoai-parent', contexts: ['all'] });
     chrome.contextMenus.create({ id: 'analyze-image', title: '🖼️ Analyze This Image', parentId: 'snaptoai-parent', contexts: ['image'] });
 
     chrome.contextMenus.create({ id: 'sep2', type: 'separator', parentId: 'snaptoai-parent' });
