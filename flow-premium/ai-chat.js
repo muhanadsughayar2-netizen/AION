@@ -1454,10 +1454,11 @@ async function startEducationMode() {
     
     // Add all images
     for (const img of currentImages) {
-      const base64Data = img.data.replace(/^data:image\/\w+;base64,/, '');
+      const base64Data = img.split(',')[1];
+      const mimeType = img.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
       userParts.push({
-        inline_data: {
-          mime_type: img.type || 'image/png',
+        inlineData: {
+          mimeType: mimeType,
           data: base64Data
         }
       });
