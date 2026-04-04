@@ -361,8 +361,8 @@ const AI_MODES = {
     welcome: "I'm your AI vision partner. Snap a screenshot and ask me anything!"
   },
   'image': {
-    model: 'imagen-3.0-generate-002',
-    type: 'imagen',
+    model: 'gemini-2.0-flash-preview-image-generation',
+    type: 'gemini-image',
     placeholder: 'Describe the image you want to create...',
     welcome: '🎨 Image mode — describe what you want and I\'ll create it!'
   },
@@ -1116,16 +1116,16 @@ async function handleSend() {
       return bubble;
     };
 
-    if (modeConfig.type === 'imagen') {
-      // === IMAGE GENERATION (Imagen) ===
+    if (modeConfig.type === 'gemini-image') {
+      // === IMAGE GENERATION (Gemini native image gen) ===
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:predict?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            instances: [{ prompt: prompt }],
-            parameters: { sampleCount: 1, aspectRatio: '1:1' }
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
           })
         }
       );
@@ -1137,25 +1137,41 @@ async function handleSend() {
       
       const responseBubble = createResponseBubble();
       const data = await response.json();
-      const predictions = data.predictions || [];
+      const parts = data.candidates?.[0]?.content?.parts || [];
       let htmlContent = '';
+      let hasImage = false;
       
-      if (predictions.length > 0) {
-        for (const pred of predictions) {
-          const b64 = pred.bytesBase64Encoded;
-          const mime = pred.mimeType || 'image/png';
-          if (b64) {
-            const imgSrc = `data:${mime};base64,${b64}`;
-            htmlContent += `<div style="margin:8px 0;"><img src="${imgSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;" onclick="window.open(this.src,'_blank')" title="Click to view full size"><div style="margin-top:6px;"><button onclick="(async()=>{try{const a=document.createElement('a');a.href='${imgSrc}';a.download='snaptoai-image.png';a.click()}catch(e){}})()" style="background:rgba(0,217,255,0.15);border:1px solid rgba(0,217,255,0.3);color:#00d9ff;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;">💾 Save</button></div></div>`;
-          }
+      for (const part of parts) {
+        if (part.text) {
+          fullText += part.text;
+          const parsedHtml = typeof marked !== 'undefined' ? marked.parse(part.text) : part.text;
+          htmlContent += typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
         }
-        fullText = `Generated image for: "${prompt}"`;
-        htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:8px;">${fullText}</div>` + htmlContent;
-      } else {
-        htmlContent = '<div style="color:#ff6b6b;">No image was generated. Try a different description.</div>';
+        if (part.inlineData) {
+          hasImage = true;
+          const imgSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          htmlContent += `<div style="margin:10px 0;"><img src="${imgSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);" onclick="window.open(this.src,'_blank')" title="Click to view full size"><div style="margin-top:8px; display:flex; gap:8px;"><button class="img-save-btn" style="background:rgba(255,107,237,0.15);border:1px solid rgba(255,107,237,0.3);color:#ff6bed;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Image</button></div></div>`;
+        }
+      }
+      
+      if (!hasImage && !fullText) {
+        htmlContent = '<div style="color:#ff6b6b;">No image was generated. Try a more descriptive prompt.</div>';
       }
       
       responseBubble.innerHTML = htmlContent;
+      
+      responseBubble.querySelectorAll('.img-save-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const img = btn.closest('div').parentElement.querySelector('img');
+          if (img) {
+            const a = document.createElement('a');
+            a.href = img.src;
+            a.download = 'snaptoai-image.png';
+            a.click();
+          }
+        });
+      });
+      
       thread.scrollTop = thread.scrollHeight;
       addBubbleActions(responseBubble, fullText);
       
@@ -1164,6 +1180,8 @@ async function handleSend() {
       const isMusic = modeConfig.mediaType === 'audio';
       const emoji = isMusic ? '🎵' : '🎬';
       const label = isMusic ? 'music' : 'video';
+      const modelName = isMusic ? 'Lyria' : 'Veo';
+      const accentColor = isMusic ? '#00ff88' : '#ffaa00';
 
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:predict?key=${apiKey}`,
@@ -1175,44 +1193,87 @@ async function handleSend() {
             parameters: isMusic ? { durationSeconds: 30 } : { durationSeconds: 5, aspectRatio: '16:9' }
           })
         }
-      );
+      ).catch(e => ({ ok: false, _fetchError: true, _msg: e.message }));
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errMsg = errorData.error?.message || `${label} generation failed: ${response.status}`;
-        if (response.status === 404 || errMsg.includes('not found')) {
-          throw new Error(`${isMusic ? 'Music' : 'Video'} generation is not yet available with your API key. This feature requires access to Google's ${isMusic ? 'Lyria' : 'Veo'} model. Check Google AI Studio for availability.`);
+        const responseBubble = createResponseBubble();
+        let errorDetail = '';
+        if (response._fetchError) {
+          errorDetail = response._msg;
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          errorDetail = errorData.error?.message || `Status ${response.status}`;
         }
-        throw new Error(errMsg);
-      }
-      
-      const responseBubble = createResponseBubble();
-      const data = await response.json();
-      const predictions = data.predictions || [];
-      let htmlContent = '';
-      
-      if (predictions.length > 0) {
-        for (const pred of predictions) {
-          const b64 = pred.bytesBase64Encoded;
-          const mime = pred.mimeType || (isMusic ? 'audio/mp3' : 'video/mp4');
-          if (b64) {
-            const mediaSrc = `data:${mime};base64,${b64}`;
-            if (isMusic) {
-              htmlContent += `<div style="margin:8px 0;"><audio controls style="width:100%;border-radius:8px;" src="${mediaSrc}"></audio><div style="margin-top:6px;"><button onclick="(async()=>{const a=document.createElement('a');a.href='${mediaSrc}';a.download='snaptoai-music.mp3';a.click()})()" style="background:rgba(0,217,255,0.15);border:1px solid rgba(0,217,255,0.3);color:#00d9ff;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;">💾 Save</button></div></div>`;
-            } else {
-              htmlContent += `<div style="margin:8px 0;"><video controls style="max-width:100%;border-radius:12px;" src="${mediaSrc}"></video><div style="margin-top:6px;"><button onclick="(async()=>{const a=document.createElement('a');a.href='${mediaSrc}';a.download='snaptoai-video.mp4';a.click()})()" style="background:rgba(0,217,255,0.15);border:1px solid rgba(0,217,255,0.3);color:#00d9ff;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;">💾 Save</button></div></div>`;
+        
+        const isNotFound = response.status === 404 || response.status === 400 || 
+                          errorDetail.includes('not found') || errorDetail.includes('not supported') ||
+                          errorDetail.includes('invalid') || response._fetchError;
+        
+        if (isNotFound || response.status === 403) {
+          responseBubble.innerHTML = `
+            <div style="padding:4px 0;">
+              <div style="font-size:14px; margin-bottom:10px;">${emoji} <strong>${modelName} ${label} generation</strong></div>
+              <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px; margin:8px 0;">
+                <div style="color:${accentColor}; font-size:13px; font-weight:600; margin-bottom:8px;">Coming Soon</div>
+                <div style="color:#aabbcc; font-size:12px; line-height:1.6;">
+                  Google's ${modelName} model for ${label} generation is currently in preview and may require special API access.<br><br>
+                  <strong>To check availability:</strong><br>
+                  1. Visit <a href="https://aistudio.google.com" target="_blank" style="color:${accentColor};">Google AI Studio</a><br>
+                  2. Check if ${modelName} appears in your available models<br>
+                  3. Enable billing if required for preview models
+                </div>
+              </div>
+              <div style="font-size:11px; color:#556677; margin-top:8px;">Your Vision and Image modes work with any standard API key.</div>
+            </div>`;
+        } else {
+          throw new Error(errorDetail);
+        }
+        
+        thread.scrollTop = thread.scrollHeight;
+        fullText = `${modelName} not available`;
+        addBubbleActions(responseBubble, fullText);
+      } else {
+        const responseBubble = createResponseBubble();
+        const data = await response.json();
+        const predictions = data.predictions || [];
+        let htmlContent = '';
+        
+        if (predictions.length > 0) {
+          for (const pred of predictions) {
+            const b64 = pred.bytesBase64Encoded;
+            const mime = pred.mimeType || (isMusic ? 'audio/mp3' : 'video/mp4');
+            if (b64) {
+              const mediaSrc = `data:${mime};base64,${b64}`;
+              if (isMusic) {
+                htmlContent += `<div style="margin:8px 0;"><audio controls style="width:100%;border-radius:8px;" src="${mediaSrc}"></audio><div style="margin-top:6px;"><button class="media-save-btn" style="background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.3);color:#00ff88;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;">💾 Save Music</button></div></div>`;
+              } else {
+                htmlContent += `<div style="margin:8px 0;"><video controls style="max-width:100%;border-radius:12px;" src="${mediaSrc}"></video><div style="margin-top:6px;"><button class="media-save-btn" style="background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;">💾 Save Video</button></div></div>`;
+              }
             }
           }
+          fullText = `Generated ${label} for: "${prompt}"`;
+          htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:8px;">${emoji} ${fullText}</div>` + htmlContent;
+        } else {
+          htmlContent = `<div style="color:#ff6b6b;">No ${label} was generated. Try a different description.</div>`;
         }
-        fullText = `Generated ${label} for: "${prompt}"`;
-        htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:8px;">${emoji} ${fullText}</div>` + htmlContent;
-      } else {
-        htmlContent = `<div style="color:#ff6b6b;">No ${label} was generated. Try a different description.</div>`;
+        
+        responseBubble.innerHTML = htmlContent;
+        
+        responseBubble.querySelectorAll('.media-save-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const mediaEl = btn.closest('div').parentElement.querySelector('audio, video');
+            if (mediaEl) {
+              const a = document.createElement('a');
+              a.href = mediaEl.src;
+              a.download = isMusic ? 'snaptoai-music.mp3' : 'snaptoai-video.mp4';
+              a.click();
+            }
+          });
+        });
+        
+        thread.scrollTop = thread.scrollHeight;
+        addBubbleActions(responseBubble, fullText);
       }
-      
-      responseBubble.innerHTML = htmlContent;
-      thread.scrollTop = thread.scrollHeight;
-      addBubbleActions(responseBubble, fullText);
       
     } else {
       // === VISION / GEMINI (streaming text) ===
