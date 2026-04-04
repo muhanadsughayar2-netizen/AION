@@ -385,6 +385,10 @@ const AI_MODES = {
 let currentAiMode = 'vision';
 
 function getSelectedModel() {
+  return AI_MODES['vision'].model;
+}
+
+function getCurrentModeModel() {
   return AI_MODES[currentAiMode]?.model || AI_MODES['vision'].model;
 }
 
@@ -418,7 +422,7 @@ function initModeButtons() {
     });
   });
   
-  const saved = chrome.storage.sync.get('geminiModel').then(r => {
+  chrome.storage.sync.get('geminiModel').then(r => {
     const mode = r.geminiModel || 'vision';
     if (AI_MODES[mode]) {
       currentAiMode = mode;
@@ -1077,18 +1081,18 @@ async function handleSend() {
     
     await waitForRateLimit();
     
-    removeLoading();
-    const responseBubble = document.createElement('div');
-    responseBubble.className = 'chat-bubble ai';
-    thread.appendChild(responseBubble);
-    
     let fullText = '';
+
+    const createResponseBubble = () => {
+      removeLoading();
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble ai';
+      thread.appendChild(bubble);
+      return bubble;
+    };
 
     if (modeConfig.type === 'imagen') {
       // === IMAGE GENERATION (Imagen) ===
-      responseBubble.innerHTML = '<div style="color:#778899;font-size:12px;">🎨 Creating your image...</div>';
-      thread.scrollTop = thread.scrollHeight;
-      
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:predict?key=${apiKey}`,
         {
@@ -1106,6 +1110,7 @@ async function handleSend() {
         throw new Error(errorData.error?.message || `Image generation failed: ${response.status}`);
       }
       
+      const responseBubble = createResponseBubble();
       const data = await response.json();
       const predictions = data.predictions || [];
       let htmlContent = '';
@@ -1127,18 +1132,16 @@ async function handleSend() {
       
       responseBubble.innerHTML = htmlContent;
       thread.scrollTop = thread.scrollHeight;
+      addBubbleActions(responseBubble, fullText);
       
     } else if (modeConfig.type === 'media-gen') {
       // === MUSIC / VIDEO GENERATION ===
       const isMusic = modeConfig.mediaType === 'audio';
       const emoji = isMusic ? '🎵' : '🎬';
       const label = isMusic ? 'music' : 'video';
-      responseBubble.innerHTML = `<div style="color:#778899;font-size:12px;">${emoji} Generating your ${label}... this may take a moment</div>`;
-      thread.scrollTop = thread.scrollHeight;
 
-      const endpoint = isMusic ? 'predict' : 'predict';
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:${endpoint}?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:predict?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1158,6 +1161,7 @@ async function handleSend() {
         throw new Error(errMsg);
       }
       
+      const responseBubble = createResponseBubble();
       const data = await response.json();
       const predictions = data.predictions || [];
       let htmlContent = '';
@@ -1183,6 +1187,7 @@ async function handleSend() {
       
       responseBubble.innerHTML = htmlContent;
       thread.scrollTop = thread.scrollHeight;
+      addBubbleActions(responseBubble, fullText);
       
     } else {
       // === VISION / GEMINI (streaming text) ===
@@ -1216,6 +1221,7 @@ async function handleSend() {
         throw new Error(errorData.error?.message || `API Error: ${response.status}`);
       }
       
+      const responseBubble = createResponseBubble();
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       
@@ -1249,10 +1255,8 @@ async function handleSend() {
           }
         }
       }
+      addBubbleActions(responseBubble, fullText);
     }
-    
-    // Add action buttons to this response
-    addBubbleActions(responseBubble, fullText);
     
     const userHistoryEntry = { role: 'user', text: prompt };
     if (isFirstMessage && currentImages.length > 0) {
