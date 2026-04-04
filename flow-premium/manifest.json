@@ -11,6 +11,7 @@
     "unlimitedStorage",
     "scripting",
     "clipboardWrite",
+    "clipboardRead",
     "downloads",
     "identity",
     "contextMenus"

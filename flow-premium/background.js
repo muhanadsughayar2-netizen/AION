@@ -198,11 +198,27 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         const [result] = await chrome.scripting.executeScript({
           target: { tabId: tab.id },
           func: async () => {
-            try {
-              return await navigator.clipboard.readText();
-            } catch (e) {
-              return '';
+            const sel = window.getSelection();
+            if (sel && sel.toString().trim().length > 0) return sel.toString();
+            const active = document.activeElement;
+            if (active && active.value && typeof active.selectionStart === 'number' && active.selectionStart !== active.selectionEnd) {
+              return active.value.substring(active.selectionStart, active.selectionEnd);
             }
+            try {
+              const clip = await navigator.clipboard.readText();
+              if (clip && clip.trim()) return clip;
+            } catch (e) {}
+            try {
+              const ta = document.createElement('textarea');
+              ta.style.cssText = 'position:fixed;opacity:0;';
+              document.body.appendChild(ta);
+              ta.focus();
+              document.execCommand('paste');
+              const pasted = ta.value;
+              ta.remove();
+              if (pasted && pasted.trim()) return pasted;
+            } catch (e) {}
+            return '';
           }
         });
         clipText = result?.result || '';
@@ -402,20 +418,10 @@ chrome.commands.onCommand.addListener(async (command) => {
           target: { tabId: tab.id },
           func: () => {
             const sel = window.getSelection();
-            if (sel && sel.toString().trim()) return sel.toString();
+            if (sel && sel.toString().trim().length > 0) return sel.toString();
             const active = document.activeElement;
-            if (active) {
-              if (active.value && active.selectionStart !== active.selectionEnd) {
-                return active.value.substring(active.selectionStart, active.selectionEnd);
-              }
-              if (active.shadowRoot) {
-                const innerSel = active.shadowRoot.getSelection?.();
-                if (innerSel && innerSel.toString().trim()) return innerSel.toString();
-              }
-              if (active.textContent && active.contentEditable === 'true') {
-                const innerSel = window.getSelection();
-                if (innerSel && innerSel.toString().trim()) return innerSel.toString();
-              }
+            if (active && active.value && typeof active.selectionStart === 'number' && active.selectionStart !== active.selectionEnd) {
+              return active.value.substring(active.selectionStart, active.selectionEnd);
             }
             return '';
           }
