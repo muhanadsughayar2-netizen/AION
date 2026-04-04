@@ -120,13 +120,10 @@ async function loadSubscriptionStatus() {
   try {
     const status = await window.SnapToAISubscription.check();
 
-    const subActions = document.getElementById('subscriptionActions');
-
     if (status.isEarlyAccess) {
       if (badge) { badge.textContent = 'Pro Early Access'; badge.className = 'status-badge pro'; }
       if (message) message.textContent = 'All features available during Early Access!';
       if (subscribeSection) subscribeSection.style.display = 'none';
-      if (subActions) subActions.style.display = 'none';
       return;
     }
 
@@ -139,25 +136,21 @@ async function loadSubscriptionStatus() {
         document.getElementById('proStatus').textContent = 'Active';
         document.getElementById('proPlan').textContent = (status.planType || 'pro').charAt(0).toUpperCase() + (status.planType || 'pro').slice(1);
       }
-      if (subActions) subActions.style.display = 'flex';
     } else if (status.status === 'trial') {
       if (badge) { badge.textContent = 'Trial'; badge.className = 'status-badge trial'; }
       if (message) message.textContent = 'You have ' + status.daysRemaining + ' days remaining in your trial.';
       if (subscribeSection) subscribeSection.style.display = 'none';
       if (proInfo) proInfo.style.display = 'none';
-      if (subActions) subActions.style.display = 'none';
     } else if (status.status === 'trial_expired' || status.status === 'subscription_expired') {
       if (badge) { badge.textContent = 'Expired'; badge.className = 'status-badge expired'; }
       if (message) message.textContent = 'Your trial has ended. Subscribe to continue using AI features.';
       if (subscribeSection) subscribeSection.style.display = 'block';
       if (proInfo) proInfo.style.display = 'none';
-      if (subActions) subActions.style.display = status.status === 'subscription_expired' ? 'flex' : 'none';
     } else {
       if (badge) { badge.textContent = 'Not signed in'; badge.className = 'status-badge'; }
       if (message) message.textContent = 'Sign in with Google to start your 30-day trial.';
       if (subscribeSection) subscribeSection.style.display = 'none';
       if (proInfo) proInfo.style.display = 'none';
-      if (subActions) subActions.style.display = 'none';
     }
   } catch (e) {
     console.error('Failed to load subscription status:', e);

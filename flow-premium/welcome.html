@@ -6,11 +6,25 @@
   <title>Welcome to Snap To AI</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --secondary: #1c2128;
+      --border: rgba(48, 54, 61, 0.8);
+      --primary: #22d3ee;
+      --magic: #a855f7;
+      --snip: #10b981;
+      --ai: #3b82f6;
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --foreground: #f0f6fc;
+    }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0a0e14;
-      color: #e6edf3;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -20,113 +34,209 @@
 
     .container {
       width: 100%;
-      max-width: 440px;
-      text-align: center;
+      max-width: 560px;
     }
 
-    .card {
-      background: rgba(22, 27, 34, 0.8);
-      border: 1px solid rgba(0, 217, 255, 0.12);
-      border-radius: 20px;
-      padding: 36px 28px;
-      backdrop-filter: blur(20px);
-    }
-
-    .camera-icon {
-      font-size: 48px;
-      margin-bottom: 12px;
-    }
-
-    h1 {
-      font-size: 30px;
-      font-weight: 800;
-      margin-bottom: 6px;
-      color: #fff;
-    }
-
-    h1 .cyan { color: #00d9ff; }
-
-    .tagline {
-      font-size: 16px;
-      color: #c0c8d2;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-
-    .sub {
-      font-size: 14px;
-      color: #8b949e;
-      margin-bottom: 28px;
-      line-height: 1.5;
-    }
-
-    .actions {
+    .tabs {
       display: flex;
       justify-content: center;
-      gap: 18px;
-      margin-bottom: 24px;
-    }
-
-    .action-col {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .action-label {
-      font-size: 9px;
-      font-weight: 700;
-      color: #00d9ff;
-      letter-spacing: 1px;
-    }
-
-    .action-circle {
-      width: 52px;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 217, 255, 0.06);
-      border: 1.5px solid rgba(0, 217, 255, 0.25);
-      border-radius: 50%;
-      color: #00d9ff;
-    }
-
-    .action-circle svg {
-      width: 22px;
-      height: 22px;
-    }
-
-    .pin-guide {
-      background: rgba(0, 217, 255, 0.04);
-      border: 1px solid rgba(0, 217, 255, 0.15);
-      border-radius: 14px;
-      padding: 20px;
-    }
-
-    .pin-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #e6edf3;
+      gap: 8px;
       margin-bottom: 16px;
     }
 
-    .pin-steps {
+    .tab {
       display: flex;
       align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .tab:hover {
+      color: var(--foreground);
+      background: var(--secondary);
+    }
+
+    .tab.active {
+      background: rgba(34, 211, 238, 0.15);
+      color: var(--primary);
+      border-color: rgba(34, 211, 238, 0.3);
+    }
+
+    .tab.api-tab.active {
+      background: rgba(168, 85, 247, 0.15);
+      color: var(--magic);
+      border-color: rgba(168, 85, 247, 0.3);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+    }
+
+    .free-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .free-badge span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(168, 85, 247, 0.15));
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--primary);
+      animation: pulse 2s infinite;
+    }
+
+    .free-badge .gemini-credit {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(16, 185, 129, 0.15));
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #10b981;
+      font-size: 12px;
+      padding: 6px 14px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .icon-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.25), rgba(168, 85, 247, 0.25));
+      border: 1px solid rgba(34, 211, 238, 0.4);
+      border-radius: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 30px rgba(34, 211, 238, 0.15);
+    }
+
+    .icon-box .stars {
+      position: relative;
+      width: 48px;
+      height: 48px;
+    }
+    .icon-box .star1 {
+      position: absolute;
+      top: 0;
+      left: 5px;
+      font-size: 16px;
+      color: #22d3ee;
+    }
+    .icon-box .star2 {
+      position: absolute;
+      top: 8px;
+      right: 0;
+      font-size: 26px;
+      color: #f59e0b;
+    }
+    .icon-box .star3 {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      font-size: 20px;
+      color: #ec4899;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--foreground);
+      margin-bottom: 10px;
+    }
+
+    h1 .gradient {
+      background: linear-gradient(135deg, var(--primary), var(--magic));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
       justify-content: center;
       gap: 10px;
     }
 
-    .pin-step {
+    .tag {
+      padding: 6px 14px;
+      border-radius: 24px;
+      font-size: 14px;
+      border: 1px solid;
+    }
+
+    .tag.snip { background: rgba(16, 185, 129, 0.1); color: var(--snip); border-color: rgba(16, 185, 129, 0.2); }
+    .tag.ai { background: rgba(59, 130, 246, 0.1); color: var(--ai); border-color: rgba(59, 130, 246, 0.2); }
+    .tag.magic { background: rgba(168, 85, 247, 0.1); color: var(--magic); border-color: rgba(168, 85, 247, 0.2); }
+    .tag.primary { background: rgba(34, 211, 238, 0.1); color: var(--primary); border-color: rgba(34, 211, 238, 0.2); }
+
+    .extension-box {
+      background: rgba(28, 33, 40, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .extension-title {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .capture-icons {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .capture-item {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 6px;
+      cursor: pointer;
     }
 
-    .pin-step-icon {
+    .capture-icon {
       width: 48px;
       height: 48px;
       display: flex;
@@ -134,244 +244,415 @@
       justify-content: center;
       border-radius: 12px;
       font-size: 20px;
-      position: relative;
+      transition: all 0.2s;
     }
 
-    .pin-step-icon.puzzle {
-      background: rgba(0, 217, 255, 0.12);
-      border: 1.5px solid rgba(0, 217, 255, 0.3);
-      animation: stepPulse1 5s ease-in-out infinite;
+    .capture-icon.snip { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .capture-icon.ai { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); }
+    .capture-icon.magic { background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); }
+
+    .capture-item:hover .capture-icon {
+      transform: scale(1.05);
     }
 
-    .pin-step-icon.ext {
-      background: rgba(0, 217, 255, 0.06);
-      border: 1.5px solid rgba(0, 217, 255, 0.2);
+    .capture-item:hover .capture-icon.snip { background: rgba(16, 185, 129, 0.2); }
+    .capture-item:hover .capture-icon.ai { background: rgba(59, 130, 246, 0.2); }
+    .capture-item:hover .capture-icon.magic { background: rgba(168, 85, 247, 0.2); }
+
+    .capture-label {
       font-size: 11px;
-      color: #00d9ff;
-      font-weight: 600;
-      padding: 0 6px;
-      animation: stepPulse2 5s ease-in-out infinite;
+      color: var(--muted);
     }
 
-    .pin-step-icon.check {
-      background: rgba(0, 255, 136, 0.12);
-      border: 1.5px solid rgba(0, 255, 136, 0.3);
-      color: #00ff88;
-      font-size: 22px;
+    .ai-logos {
+      text-align: center;
+    }
+
+    .ai-logos p {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .ai-logos p .accent {
+      color: var(--primary);
+      font-weight: 500;
+    }
+
+    .ai-names {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ai-name {
+      font-size: 16px;
       font-weight: 700;
-      animation: stepPulse3 5s ease-in-out infinite;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
-    .pin-cursor {
-      position: absolute;
-      bottom: -4px;
-      right: -2px;
-      opacity: 0;
-      animation: pinCursorMove 5s ease-in-out infinite;
-      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+    .ai-tags {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
-    .pin-click-ring {
-      position: absolute;
+    .ai-tag {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      border: 1px solid;
+    }
+
+    .ai-tag.chatgpt { background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: rgba(16, 185, 129, 0.2); }
+    .ai-tag.grok { background: rgba(249, 115, 22, 0.1); color: #f97316; border-color: rgba(249, 115, 22, 0.2); }
+    .ai-tag.gemini { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border-color: rgba(59, 130, 246, 0.2); }
+
+    .features-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid;
+    }
+
+    .feature-item.snip { background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2); }
+    .feature-item.ai { background: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.2); }
+    .feature-item.magic { background: rgba(168, 85, 247, 0.05); border-color: rgba(168, 85, 247, 0.2); }
+
+    .feature-check {
+      font-size: 14px;
+      margin-top: 2px;
+    }
+
+    .feature-check.snip { color: var(--snip); }
+    .feature-check.ai { color: var(--ai); }
+    .feature-check.magic { color: var(--magic); }
+
+    .feature-content .name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--foreground);
+      margin-bottom: 2px;
+    }
+
+    .feature-content .desc {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .use-cases {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .use-case {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(22, 27, 34, 0.5);
+      transition: all 0.2s;
+    }
+
+    .use-case:hover {
+      border-color: rgba(34, 211, 238, 0.3);
+    }
+
+    .use-case .icon {
+      font-size: 16px;
+    }
+
+    .use-case .icon.snip { color: var(--snip); }
+    .use-case .icon.ai { color: var(--ai); }
+    .use-case .icon.magic { color: var(--magic); }
+    .use-case .icon.primary { color: var(--primary); }
+
+    .use-case .title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--foreground);
+    }
+
+    .use-case .subtitle {
+      font-size: 10px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .use-case.special {
+      border: 2px solid rgba(34, 211, 238, 0.5);
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(168, 85, 247, 0.1));
+      box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1);
+    }
+
+    .use-case.special:hover {
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(168, 85, 247, 0.15));
+    }
+
+    .use-case.special .title {
+      color: var(--primary);
+    }
+
+    .demo-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      background: rgba(34, 211, 238, 0.05);
+      color: var(--primary);
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      margin-bottom: 16px;
+      transition: all 0.2s;
+    }
+
+    .demo-link:hover {
+      background: rgba(34, 211, 238, 0.1);
+    }
+
+    .demo-link .play {
       width: 20px;
       height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(34, 211, 238, 0.2);
       border-radius: 50%;
-      border: 2px solid #00d9ff;
-      bottom: 2px;
-      right: 4px;
-      opacity: 0;
-      animation: pinClickRing 5s ease-in-out infinite;
-    }
-
-    .pin-cursor-2 {
-      position: absolute;
-      bottom: -4px;
-      right: 8px;
-      opacity: 0;
-      animation: pinCursorMove2 5s ease-in-out infinite;
-      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
-    }
-
-    .pin-click-ring-2 {
-      position: absolute;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      border: 2px solid #00ff88;
-      bottom: 2px;
-      right: 14px;
-      opacity: 0;
-      animation: pinClickRing2 5s ease-in-out infinite;
-    }
-
-    .pin-arrow {
-      color: #8b949e;
-      font-size: 16px;
-      margin-top: -12px;
-      opacity: 0;
-    }
-
-    .pin-arrow.a1 { animation: arrowFade1 5s ease-in-out infinite; }
-    .pin-arrow.a2 { animation: arrowFade2 5s ease-in-out infinite; }
-
-    .pin-step-label {
       font-size: 10px;
-      color: #8b949e;
     }
 
-    .pin-step-label.ready {
-      color: #00ff88;
+    .founder-banner {
+      position: relative;
+      border: 2px solid var(--primary);
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(168, 85, 247, 0.15), rgba(34, 211, 238, 0.15));
+      padding: 16px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .founder-banner .badge {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: var(--primary);
+      color: #0d1117;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 0 0 0 8px;
+    }
+
+    .founder-banner .title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .founder-banner .title-row .icon {
+      font-size: 18px;
+    }
+
+    .founder-banner .title-row p {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--foreground);
+    }
+
+    .founder-banner .desc {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .founder-banner .desc .highlight {
+      color: var(--primary);
       font-weight: 600;
     }
 
-    @keyframes stepPulse1 {
-      0%, 5% { border-color: rgba(0,217,255,0.3); box-shadow: none; }
-      10% { border-color: #00d9ff; box-shadow: 0 0 14px rgba(0,217,255,0.4); }
-      25%, 100% { border-color: rgba(0,217,255,0.3); box-shadow: none; }
+    .pro-section {
+      text-align: center;
+      margin-bottom: 16px;
     }
 
-    @keyframes stepPulse2 {
-      0%, 35% { border-color: rgba(0,217,255,0.2); box-shadow: none; }
-      42% { border-color: #00d9ff; box-shadow: 0 0 14px rgba(0,217,255,0.4); }
-      55%, 100% { border-color: rgba(0,217,255,0.2); box-shadow: none; }
+    .pro-section .crown-text {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
     }
 
-    @keyframes stepPulse3 {
-      0%, 65% { border-color: rgba(0,255,136,0.3); box-shadow: none; transform: scale(1); }
-      72% { border-color: #00ff88; box-shadow: 0 0 16px rgba(0,255,136,0.4); transform: scale(1.08); }
-      80%, 100% { border-color: rgba(0,255,136,0.3); box-shadow: none; transform: scale(1); }
+    .pro-section .saves-text {
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 12px;
     }
 
-    @keyframes pinCursorMove {
-      0%, 4% { opacity: 0; transform: translate(12px, 12px); }
-      10% { opacity: 1; transform: translate(0, 0); }
-      18% { opacity: 1; transform: translate(0, 0); }
-      22% { opacity: 0; transform: translate(-8px, -4px); }
-      100% { opacity: 0; }
+    .pro-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--primary), #0891b2);
+      border: none;
+      border-radius: 10px;
+      color: #0d1117;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: all 0.2s;
     }
 
-    @keyframes pinClickRing {
-      0%, 13% { opacity: 0; transform: scale(0.4); }
-      15% { opacity: 0.8; transform: scale(1); }
-      20% { opacity: 0; transform: scale(1.6); }
-      100% { opacity: 0; }
+    .pro-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(34, 211, 238, 0.3);
     }
 
-    @keyframes pinCursorMove2 {
-      0%, 34% { opacity: 0; transform: translate(12px, 12px); }
-      40% { opacity: 1; transform: translate(0, 0); }
-      48% { opacity: 1; transform: translate(0, 0); }
-      52% { opacity: 0; transform: translate(-6px, -4px); }
-      100% { opacity: 0; }
+    .pro-section .yearly {
+      font-size: 11px;
+      color: var(--muted);
     }
 
-    @keyframes pinClickRing2 {
-      0%, 44% { opacity: 0; transform: scale(0.4); }
-      46% { opacity: 0.8; transform: scale(1); }
-      50% { opacity: 0; transform: scale(1.6); }
-      100% { opacity: 0; }
+    .launch-cta {
+      background: linear-gradient(135deg, rgba(28, 33, 40, 0.5), rgba(34, 211, 238, 0.05));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
     }
 
-    @keyframes arrowFade1 {
-      0%, 18% { opacity: 0.2; }
-      22% { opacity: 1; color: #00d9ff; }
-      30%, 100% { opacity: 0.2; color: #8b949e; }
+    .launch-cta .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--foreground);
+      margin-bottom: 10px;
     }
 
-    @keyframes arrowFade2 {
-      0%, 50% { opacity: 0.2; }
-      55% { opacity: 1; color: #00ff88; }
-      65%, 100% { opacity: 0.2; color: #8b949e; }
+    .launch-cta .steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 10px;
     }
 
-    .privacy {
-      font-size: 13px;
-      color: #8b949e;
-      margin-top: 18px;
+    .launch-cta .steps .snip { color: var(--snip); }
+    .launch-cta .steps .ai { color: var(--ai); }
+    .launch-cta .steps .magic { color: var(--magic); font-weight: 500; }
+
+    .launch-cta .ready {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
     }
 
-    @media (max-width: 400px) {
-      .card { padding: 28px 18px; }
+    @media (max-width: 560px) {
+      .card { padding: 24px; }
       h1 { font-size: 26px; }
-      .actions { gap: 12px; }
-      .action-circle { width: 46px; height: 46px; }
-      .pin-steps { gap: 6px; }
+      .subtitle { font-size: 15px; }
+      .tag { font-size: 12px; padding: 5px 12px; }
+      .free-badge span { font-size: 12px; }
+      .launch-cta .title-row { font-size: 16px; }
+      .launch-cta .steps { font-size: 12px; }
+      .launch-cta .ready { font-size: 12px; }
+      .footer { font-size: 12px; }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="card">
-      <div class="camera-icon">📸</div>
-      <h1>Snap <span class="cyan">To AI</span></h1>
-      <p class="tagline">Snap it. Snip it. Flip it to AI.</p>
-      <p class="sub">Right-click any page to capture, analyze, and send screenshots to AI instantly.</p>
 
-      <div class="actions">
-        <div class="action-col">
-          <span class="action-label">SNAP</span>
-          <div class="action-circle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    <div class="card">
+      <div class="free-badge">
+        <span>🎁 20 DAILY PROMPTS INCLUDED</span>
+        <span class="gemini-credit">🎁 Enable Google Cloud billing → Google provides $300 in credits</span>
+      </div>
+
+      <div class="header">
+        <div class="icon-box">
+          <div class="stars">
+            <span class="star1">✦</span>
+            <span class="star2">✦</span>
+            <span class="star3">✦</span>
           </div>
         </div>
-        <div class="action-col">
-          <span class="action-label">SNIP</span>
-          <div class="action-circle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
-          </div>
-        </div>
-        <div class="action-col">
-          <span class="action-label">FULL PAGE</span>
-          <div class="action-circle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/></svg>
-          </div>
-        </div>
-        <div class="action-col">
-          <span class="action-label">AI</span>
-          <div class="action-circle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          </div>
+        <h1>Stop Typing. <span class="gradient">Start Snapping.</span></h1>
+        <p class="subtitle">Turn any visual on your screen into instant, custom AI intelligence. One click to analyze, code, or summarize.</p>
+        <div class="tags">
+          <span class="tag snip">📈 Stocks</span>
+          <span class="tag ai">💰 Crypto</span>
+          <span class="tag magic">🛍️ Shopping</span>
+          <span class="tag primary">💪 Health</span>
+          <span class="tag snip">📚 Learning</span>
         </div>
       </div>
 
-      <div class="pin-guide">
-        <div class="pin-title">Pin it to get started</div>
-        <div class="pin-steps">
-          <div class="pin-step">
-            <div class="pin-step-icon puzzle">
-              🧩
-              <div class="pin-cursor">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M5 3l14 9-6 1.5L10 20z"/></svg>
-              </div>
-              <div class="pin-click-ring"></div>
-            </div>
-            <span class="pin-step-label">Click the puzzle icon</span>
-          </div>
-          <span class="pin-arrow a1">→</span>
-          <div class="pin-step">
-            <div class="pin-step-icon ext">
-              📸 SnapToAI 📌
-              <div class="pin-cursor-2">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M5 3l14 9-6 1.5L10 20z"/></svg>
-              </div>
-              <div class="pin-click-ring-2"></div>
-            </div>
-            <span class="pin-step-label">Click the pin</span>
-          </div>
-          <span class="pin-arrow a2">→</span>
-          <div class="pin-step">
-            <div class="pin-step-icon check">✓</div>
-            <span class="pin-step-label ready">Ready to snap!</span>
-          </div>
+      <div class="launch-cta">
+        <div class="title-row">
+          <span>🚀</span>
+          Launch Your Intelligence Layer
         </div>
+        <div class="steps">
+          <span>Click</span>
+          <span class="snip">⭐ Extensions</span>
+          <span>→ Pin</span>
+          <span class="ai">📌</span>
+          <span class="magic">Snap To AI</span>
+        </div>
+        <p class="ready">That's it! You're ready to snap.</p>
       </div>
     </div>
 
-    <p class="privacy">🔒 Your screenshots stay private — processed securely</p>
+    <p class="footer">
+      🔒 Your screenshots stay private — processed securely
+    </p>
   </div>
+
+  <script src="welcome.js"></script>
 </body>
 </html>

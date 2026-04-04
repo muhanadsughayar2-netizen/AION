@@ -30,171 +30,6 @@ function releaseRequestLock() {
 }
 // ============ END RATE LIMITER ============
 
-// ============ BACKEND PROXY (3 free prompts) ============
-const PROXY_BACKEND_URL = 'https://www.snaptoai.com';
-let freePromptsRemaining = null;
-
-async function getProxyIdentifier() {
-  try {
-    const result = await chrome.storage.local.get('snaptoai_user');
-    if (result.snaptoai_user?.email) return result.snaptoai_user.email;
-  } catch (e) {}
-  try {
-    let { snaptoai_device_id } = await chrome.storage.local.get('snaptoai_device_id');
-    if (!snaptoai_device_id) {
-      snaptoai_device_id = 'dev_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-      await chrome.storage.local.set({ snaptoai_device_id });
-    }
-    return snaptoai_device_id;
-  } catch (e) {}
-  return '';
-}
-
-async function sendViaProxy(prompt, imageBase64) {
-  const identifier = await getProxyIdentifier();
-  if (!identifier) throw new Error('Could not identify user for proxy');
-
-  const body = { prompt, email: identifier.includes('@') ? identifier : undefined, deviceId: identifier.includes('@') ? undefined : identifier };
-  if (imageBase64) body.imageData = imageBase64;
-
-  const resp = await fetch(PROXY_BACKEND_URL + '/api/ai/proxy', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-
-  const data = await resp.json();
-
-  if (data.error === 'limit_reached') {
-    freePromptsRemaining = 0;
-    throw new Error('FREE_PROMPTS_EXHAUSTED');
-  }
-
-  if (data.error) throw new Error(data.error);
-
-  freePromptsRemaining = data.remaining;
-  return { text: data.response, remaining: data.remaining, used: data.used, limit: data.limit };
-}
-// ============ TRIAL ENDED MODAL ============
-function showTrialEndedModal(reason) {
-  const modal = document.getElementById('trialEndedModal');
-  if (!modal) return;
-
-  const messages = {
-    expired: 'Your 30-day trial was amazing — you clearly love SnapToAI! Keep the momentum going with a Pro plan.',
-    subscription_expired: 'Your subscription has lapsed. Renew to keep all your AI superpowers active.'
-  };
-  const emojis = { expired: '🎯', subscription_expired: '⚡' };
-
-  const msgEl = document.getElementById('trialEndedMessage');
-  const emojiEl = document.getElementById('trialEndedEmoji');
-  if (msgEl) msgEl.textContent = messages[reason] || messages.expired;
-  if (emojiEl) {
-    emojiEl.textContent = emojis[reason] || '🎯';
-    // Re-trigger animation
-    emojiEl.style.animation = 'none';
-    emojiEl.offsetHeight;
-    emojiEl.style.animation = '';
-  }
-
-  modal.style.display = 'flex';
-
-  // Wire buttons
-  const monthlyBtn = document.getElementById('trialMonthlyBtn');
-  const yearlyBtn = document.getElementById('trialYearlyBtn');
-  const checkBtn = document.getElementById('trialCheckStatusBtn');
-  const continueBtn = document.getElementById('trialContinueCaptureBtn');
-  const statusMsg = document.getElementById('trialStatusMsg');
-
-  if (monthlyBtn) monthlyBtn.onclick = () => {
-    if (window.SnapToAISubscription) window.SnapToAISubscription.openCheckout('monthly');
-    if (checkBtn) checkBtn.textContent = '⏳ Waiting for payment...';
-  };
-  if (yearlyBtn) yearlyBtn.onclick = () => {
-    if (window.SnapToAISubscription) window.SnapToAISubscription.openCheckout('yearly');
-    if (checkBtn) checkBtn.textContent = '⏳ Waiting for payment...';
-  };
-  if (checkBtn) checkBtn.onclick = async () => {
-    checkBtn.textContent = '⏳ Checking...';
-    if (statusMsg) statusMsg.style.display = 'none';
-    try {
-      if (window.SnapToAISubscription) {
-        const sub = await window.SnapToAISubscription.refresh();
-        if (sub.success && sub.canUseAI) {
-          modal.style.display = 'none';
-          showPromptToast('🎉 Subscription active! AI is ready.', 3000);
-        } else {
-          if (statusMsg) { statusMsg.textContent = 'No active subscription found. Complete payment first.'; statusMsg.style.display = 'block'; }
-          checkBtn.textContent = '🔄 Check subscription status';
-        }
-      }
-    } catch (e) {
-      if (statusMsg) { statusMsg.textContent = 'Could not reach server. Try again.'; statusMsg.style.display = 'block'; }
-      checkBtn.textContent = '🔄 Check subscription status';
-    }
-  };
-  if (continueBtn) continueBtn.onclick = () => { modal.style.display = 'none'; };
-}
-
-window.onSubscriptionActivated = (result) => {
-  const modal = document.getElementById('trialEndedModal');
-  if (modal) modal.style.display = 'none';
-  showPromptToast('🎉 Subscription active! AI is ready.', 3000);
-};
-
-function showProxyKeyPrompt() {
-  const modal = document.getElementById('geminiKeyModal');
-  if (!modal) return;
-  modal.classList.add('open');
-  
-  const closeBtn = document.getElementById('closeGeminiKeyModal');
-  const cancelBtn = document.getElementById('geminiKeyModalCancel');
-  const saveBtn = document.getElementById('geminiKeyModalSave');
-  const input = document.getElementById('geminiKeyModalInput');
-  const checkbox = document.getElementById('geminiKeyModalCompliance');
-  
-  const closeModal = () => modal.classList.remove('open');
-  if (closeBtn) closeBtn.onclick = closeModal;
-  if (cancelBtn) cancelBtn.onclick = closeModal;
-  if (modal) modal.onclick = (e) => { if (e.target === modal) closeModal(); };
-  
-  if (checkbox && saveBtn) {
-    checkbox.checked = false;
-    saveBtn.disabled = true;
-    saveBtn.style.opacity = '0.5';
-    saveBtn.style.cursor = 'not-allowed';
-    checkbox.onchange = () => {
-      saveBtn.disabled = !checkbox.checked;
-      saveBtn.style.opacity = checkbox.checked ? '1' : '0.5';
-      saveBtn.style.cursor = checkbox.checked ? 'pointer' : 'not-allowed';
-    };
-  }
-  
-  if (saveBtn && input) {
-    saveBtn.onclick = async () => {
-      if (saveBtn.disabled) return;
-      const key = input.value.trim();
-      if (!key) return;
-      await chrome.storage.sync.set({ geminiApiKey: key });
-      freePromptsRemaining = null;
-      closeModal();
-      showPromptToast('Key saved! You now have unlimited AI access.', 3000);
-    };
-  }
-}
-
-let _toastTimeout = null;
-function showPromptToast(message, duration = 4000, urgent = false) {
-  const toast = document.getElementById('promptToast');
-  if (!toast) return;
-  toast.textContent = message;
-  toast.className = urgent ? 'prompt-toast-urgent' : '';
-  toast.style.display = 'block';
-  if (_toastTimeout) clearTimeout(_toastTimeout);
-  _toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, duration);
-}
-// ============ END BACKEND PROXY ============
-
 // ============ IndexedDB for unlimited image storage ============
 const SNAPTOAI_DB_NAME = 'SnapToAI_ImageDB';
 const SNAPTOAI_STORE_NAME = 'images';
@@ -365,37 +200,11 @@ async function initializeChat() {
   const count = urlParams.get('count');
   const isDirect = urlParams.get('direct') === 'true';
   const isContextMenu = urlParams.get('source') === 'contextmenu';
-  const isGrabCode = urlParams.get('source') === 'grabcode';
   
   // Get metadata from session storage
-  const result = await chrome.storage.session.get(['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap', 'askAiPayload', 'grabCodeText']);
+  const result = await chrome.storage.session.get(['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap', 'askAiPayload']);
   currentPageText = result.pageText || '';
   
-  if (isGrabCode) {
-    const codeText = result.grabCodeText || '';
-    try { await chrome.storage.session.remove('grabCodeText'); } catch (e) {}
-
-    currentImages = [];
-    const previewContainer = document.querySelector('.image-preview');
-    if (previewContainer) previewContainer.style.display = 'none';
-
-    setupMagicButtons();
-    if (typeof updateVerdictButtonVisibility === 'function') {
-      updateVerdictButtonVisibility();
-    }
-
-    setTimeout(() => {
-      const chatInput = document.getElementById('chatInput');
-      if (chatInput && codeText) {
-        chatInput.value = codeText;
-        chatInput.style.height = 'auto';
-        chatInput.style.height = Math.min(chatInput.scrollHeight, 300) + 'px';
-        chatInput.focus();
-      }
-    }, 300);
-    return;
-  }
-
   if (isContextMenu) {
     const storageError = urlParams.get('error');
     if (storageError === 'storage') {
@@ -455,16 +264,11 @@ async function initializeChat() {
       codeContext = '\n\n**Code visible on page:**\n```\n' + ctx.visibleCodeBlocks.join('\n---\n').substring(0, 4000) + '\n```';
     }
 
-    const fallback = DEFAULT_MAGIC_BUTTONS.find(b => b.isFallback) || DEFAULT_MAGIC_BUTTONS[0];
-    let autoPrompt = fallback.prompt;
-    if (ctx.selectedText) {
-      autoPrompt += `\n\nSelected text: ${ctx.selectedText.substring(0, 3000)}`;
-    }
-    if (contextInfo) {
-      autoPrompt += `\n\n${contextInfo}`;
-    }
-    if (codeContext) {
-      autoPrompt += codeContext;
+    let autoPrompt = '';
+    if (ctx.selectedText && ctx.selectedText.length > 100) {
+      autoPrompt = `Analyze the following content from ${ctx.url || 'this page'}.\n\n${contextInfo}${codeContext}\n\nProvide a clear, helpful analysis. If it's code, explain what it does and identify any issues. If it's text, summarize and explain the key points. If it's an error, explain the cause and how to fix it.`;
+    } else {
+      autoPrompt = `Analyze this screenshot from ${ctx.title || ctx.url || 'this page'}.\n\n${contextInfo}${codeContext}\n\nLook at the screenshot and provide a clear, helpful analysis. Identify what's shown and give useful insights. If you see code or errors, explain them. If you see a UI, give feedback. If you see a chart or data, interpret it. Be direct and practical.`;
     }
 
     setupMagicButtons();
@@ -472,7 +276,7 @@ async function initializeChat() {
       updateVerdictButtonVisibility();
     }
 
-    try { await chrome.storage.session.remove('askAiPayload'); } catch (e) { console.log('[SnapToAI] Cleanup note:', e.message); }
+    await chrome.storage.session.remove('askAiPayload');
 
     setTimeout(() => {
       const chatInput = document.getElementById('chatInput');
@@ -583,17 +387,6 @@ async function initializeChat() {
   if (typeof updateVerdictButtonVisibility === 'function') {
     updateVerdictButtonVisibility();
   }
-
-  // Check trial status — show upgrade modal if expired (non-blocking)
-  setTimeout(async () => {
-    if (!window.SnapToAISubscription) return;
-    const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
-    if (snaptoai_dev_override) return;
-    const sub = await window.SnapToAISubscription.check();
-    if (sub.status === 'trial_expired' || sub.status === 'subscription_expired') {
-      showTrialEndedModal(sub.status);
-    }
-  }, 600);
 }
 
 // Template logic for Magic Buttons
@@ -677,9 +470,8 @@ async function sendToGemini(prompt, imageDataUrls) {
     const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
     if (!snaptoai_dev_override) {
       const sub = await window.SnapToAISubscription.check();
-      if (sub.status === 'trial_expired' || sub.status === 'subscription_expired') {
-        showTrialEndedModal(sub.status);
-        throw new Error('__trial_ended__');
+      if (!sub.canUseAI && sub.status !== 'no_api_key') {
+        throw new Error('Your trial has ended. Please upgrade to continue using AI analysis.');
       }
     }
   }
@@ -776,107 +568,38 @@ async function handleSend() {
   
   if (!prompt) return;
 
-  if (!acquireRequestLock()) {
-    addBubble('Please wait for the current request to complete...', 'ai');
-    return;
-  }
-
-  // Immediately clear input and show user message — no waiting
-  input.value = '';
-  resetInputSize(input);
-  sendBtn.disabled = true;
-  addBubble(prompt, 'user');
-
-  // Subscription check after visual feedback so UI feels instant
   if (window.SnapToAISubscription) {
     const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
     if (!snaptoai_dev_override) {
       const sub = await window.SnapToAISubscription.check();
-      if (sub.status === 'trial_expired' || sub.status === 'subscription_expired') {
-        releaseRequestLock();
-        sendBtn.disabled = false;
-        showTrialEndedModal(sub.status);
+      if (!sub.canUseAI && sub.status !== 'no_api_key') {
+        addBubble('Your trial has ended. Please upgrade to continue using AI analysis.', 'ai');
         return;
       }
     }
   }
 
+  if (!acquireRequestLock()) {
+    addBubble('Please wait for the current request to complete...', 'ai');
+    return;
+  }
+  
+  input.value = '';
+  resetInputSize(input);
+  sendBtn.disabled = true;
+  
+  // Add user message
+  addBubble(prompt, 'user');
   addThinkingBubble();
-
-  // Allow browser to paint before heavy processing
-  await new Promise(r => requestAnimationFrame(r));
+  
+  // CRITICAL: Allow browser to paint the thinking bubble before heavy processing
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   
   try {
+    // Get API key
     const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
     const apiKey = keyResult.geminiApiKey;
-    
-    if (!apiKey) {
-      try {
-        let imageBase64 = '';
-        if (currentImages.length > 0 && currentImages[0]) {
-          imageBase64 = currentImages[0].split(',')[1] || '';
-        }
-        const proxyResult = await sendViaProxy(prompt, imageBase64);
-        removeLoading();
-        const aiText = proxyResult.text || 'No response';
-        const proxyBubble = document.createElement('div');
-        proxyBubble.className = 'chat-bubble ai';
-        if (typeof marked !== 'undefined') {
-          const parsed = marked.parse(aiText);
-          proxyBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsed) : parsed;
-          proxyBubble.querySelectorAll('a').forEach(link => {
-            link.setAttribute('target', '_blank');
-            link.setAttribute('rel', 'noopener noreferrer');
-          });
-        } else {
-          proxyBubble.textContent = aiText;
-        }
-        thread.appendChild(proxyBubble);
-        addBubbleActions(proxyBubble, aiText);
-        thread.scrollTop = thread.scrollHeight;
-        conversationHistory.push({ role: 'user', text: prompt });
-        conversationHistory.push({ role: 'model', text: aiText });
-        
-        if (proxyResult.remaining !== undefined) {
-          const remaining = proxyResult.remaining;
-          const limit = proxyResult.limit || 10;
-          
-          if (remaining === 0) {
-            showPromptToast('Last prompt used! Add your Gemini key for unlimited access.', 5000, true);
-            setTimeout(() => showProxyKeyPrompt(), 1500);
-          } else if (remaining === 1) {
-            showPromptToast('⚠️ 1 prompt remaining — add your Gemini key soon', 5000, true);
-          } else if (remaining === 3) {
-            showPromptToast(`📊 3 of ${limit} prompts left. Get your own key for unlimited access + $300 Cloud credits!`, 5000);
-          } else if (remaining === 5) {
-            showPromptToast(`📊 ${remaining} of ${limit} prompts remaining. Tip: add your own Gemini key for unlimited prompts.`, 4000);
-          } else {
-            showPromptToast(`📊 ${remaining} of ${limit} prompts remaining`, 3000);
-          }
-        }
-        sendBtn.disabled = false;
-        releaseRequestLock();
-        return;
-      } catch (proxyErr) {
-        if (proxyErr.message === 'FREE_PROMPTS_EXHAUSTED') {
-          removeLoading();
-          sendBtn.disabled = false;
-          releaseRequestLock();
-          setTimeout(() => showProxyKeyPrompt(), 400);
-          return;
-        }
-        removeLoading();
-        const msg = proxyErr.message || '';
-        if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('wait')) {
-          addBubble('⏳ Too many requests — please wait a moment and try again.', 'ai');
-        } else {
-          addBubble('Something went wrong. Please try again in a moment.', 'error');
-        }
-        sendBtn.disabled = false;
-        releaseRequestLock();
-        return;
-      }
-    }
+    if (!apiKey) throw new Error('Please set your Gemini API key in Settings');
     
     const contents = [];
     for (const msg of conversationHistory) {
@@ -1109,13 +832,9 @@ async function handleSend() {
     
   } catch (error) {
     removeLoading();
-    if (error.message === '__trial_ended__') {
-      // Modal already shown — don't add an error bubble
-    } else {
-      const friendlyMsg = await getFriendlyErrorMessage(error.message);
-      const isQuotaError = error.message.toLowerCase().match(/quota|rate|limit|429|exceeded/);
-      addBubble(friendlyMsg, isQuotaError ? 'ai' : 'error');
-    }
+    const friendlyMsg = await getFriendlyErrorMessage(error.message);
+    const isQuotaError = error.message.toLowerCase().match(/quota|rate|limit|429|exceeded/);
+    addBubble(friendlyMsg, isQuotaError ? 'ai' : 'error');
   } finally {
     releaseRequestLock(); // Always release the lock
   }
@@ -1140,19 +859,18 @@ async function getFriendlyErrorMessage(errorMsg) {
              `This is a temporary limit from Google. Please wait a few seconds and try again.\n\n` +
              `If this persists, check your Google AI Studio dashboard for quota details.`;
     } else {
-      return `✨ To use AI analysis, connect your Gemini API key.\n\n` +
-             `It takes about 1 minute:\n` +
-             `1. Go to aistudio.google.com\n` +
-             `2. Click "Create API key"\n` +
-             `3. Copy the key and paste it in Settings\n\n` +
-             `That's it — you'll get unlimited AI prompts!`;
+      // User is on shared/free tier
+      return `🎯 You've used your 20 prompts for today!\n\n` +
+             `Come back tomorrow for 20 more prompts.\n\n` +
+             `💡 Want unlimited prompts? Google offers $300 in credits when you sign up!\n` +
+             `👉 Sign up at ai.google.dev and get your own API key in Settings.`;
     }
   }
   
   // API key errors
   if (lowerMsg.includes('api key') || lowerMsg.includes('invalid') || lowerMsg.includes('unauthorized') || lowerMsg.includes('401')) {
     return `API key issue detected.\n\n` +
-           `Please check your API key in Settings. You can get a new one at aistudio.google.com — it takes about a minute.`;
+           `Please check your API key in Settings, or get one from ai.google.dev with $300 in credits!`;
   }
   
   // Network errors
@@ -1864,41 +1582,7 @@ Output ONLY JSON:
 
 // ============ MAGIC BUTTONS SYSTEM ============
 let magicButtons = [];
-const DEFAULT_MAGIC_BUTTONS = [
-  {
-    name: 'Analyze',
-    emoji: '⚡',
-    prompt: 'What is this? Give me the key points.',
-    hint: 'Smart analysis — works on anything',
-    colorIndex: 0,
-    isDefault: true,
-    isFallback: true
-  },
-  {
-    name: 'Explain',
-    emoji: '💡',
-    prompt: 'Explain this simply like I\'m 15.',
-    hint: 'Simple explanation',
-    colorIndex: 1,
-    isDefault: true
-  },
-  {
-    name: 'Extract',
-    emoji: '🔍',
-    prompt: 'Extract all text and data from this image.',
-    hint: 'Pull out all data',
-    colorIndex: 2,
-    isDefault: true
-  },
-  {
-    name: 'Roast It',
-    emoji: '🔥',
-    prompt: 'Honest review. What\'s good, what\'s bad? Rate it /10.',
-    hint: 'Brutally honest feedback',
-    colorIndex: 3,
-    isDefault: true
-  }
-];
+const DEFAULT_MAGIC_BUTTONS = [];
 
 // Split images into batches of max size
 function chunkImages(images, maxSize = 30) {
@@ -2183,11 +1867,11 @@ function renderMagicButtons() {
     const safeName = escapeHtml(btn.name);
     // Also escape emoji in case of storage tampering
     const safeEmoji = escapeHtml(btn.emoji);
-    const controls = btn.isDefault ? '' : `<span class="edit-magic" data-edit="${i}">✎</span><span class="delete-magic" data-delete="${i}">✕</span>`;
     return `
     <button class="magic-btn" data-index="${i}" title="${safeTitle}" style="background: ${bgColor}; border: none;">
       ${safeEmoji} ${safeName}
-      ${controls}
+      <span class="edit-magic" data-edit="${i}">✎</span>
+      <span class="delete-magic" data-delete="${i}">✕</span>
     </button>
   `;}).join('');
   
@@ -2220,13 +1904,11 @@ function renderMagicButtons() {
 }
 
 async function saveMagicButtons() {
-  const userOnly = magicButtons.filter(b => !b.isDefault);
-  await chrome.storage.local.set({ magicButtons: userOnly });
+  await chrome.storage.local.set({ magicButtons });
   renderMagicButtons();
 }
 
 function deleteMagicButton(index) {
-  if (magicButtons[index]?.isDefault) return;
   if (confirm('Delete this magic button?')) {
     magicButtons.splice(index, 1);
     saveMagicButtons();
@@ -2237,7 +1919,7 @@ let editingMagicIndex = null;
 
 function editMagicButton(index) {
   const btn = magicButtons[index];
-  if (!btn || btn.isDefault) return;
+  if (!btn) return;
   
   editingMagicIndex = index;
   document.getElementById('magicName').value = btn.name;
@@ -2259,9 +1941,138 @@ async function executeMagicButton(index) {
   if (!btn) return;
   
   const input = document.getElementById('chatInput');
-  input.value = btn.prompt;
-  if (navigator.vibrate) navigator.vibrate(50);
-  handleSend();
+  if (btn.hint) {
+    input.placeholder = btn.hint;
+  }
+  
+  // Prevent duplicate/parallel requests that cause rate limits
+  if (!acquireRequestLock()) {
+    addBubble('Please wait for the current request to complete...', 'ai');
+    return;
+  }
+  
+  if (!currentImages.length) {
+    addBubble('Please capture a screenshot first!', 'ai');
+    releaseRequestLock();
+    return;
+  }
+  
+  const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!apiResult.geminiApiKey) {
+    addBubble('Please add your Gemini API key first.', 'ai');
+    releaseRequestLock();
+    return;
+  }
+  
+  // Split images into batches of 30 max
+  const MAX_BATCH_SIZE = 30;
+  const batches = chunkImages(currentImages, MAX_BATCH_SIZE);
+  const totalBatches = batches.length;
+  
+  // User-created buttons: prompt stays HIDDEN (like Education mode)
+  // Only show a subtle indicator that button was activated
+  conversationHistory.push({ role: 'user', text: `[${btn.emoji} ${btn.name} activated]` });
+  
+  if (navigator.vibrate) navigator.vibrate(100);
+  
+  // Process each batch
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+    const batch = batches[batchIndex];
+    const batchLabel = totalBatches > 1 ? ` (${batchIndex + 1}/${totalBatches})` : '';
+    
+    // Show animated thinking bubble instead of static text
+    addThinkingBubble();
+    
+    // Allow browser to paint the thinking animation before heavy processing
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    
+    try {
+      const chatContext = getChatContext();
+      
+      // USER-CREATED BUTTONS: Simple Education-style output (no cards, no dual output)
+      const magicPrompt = `ROLE: Expert analyst who gives DECISIVE, HELPFUL advice.
+
+CRITICAL RULES:
+- You have NO internet access. Base ALL insights purely on the image content
+- Be EXTREMELY SPECIFIC with numbers
+- Give ACTIONABLE advice. No hedging, no excuses, no disclaimers
+${totalBatches > 1 ? `\nNOTE: This is batch ${batchIndex + 1} of ${totalBatches}. Focus on THIS batch of images.` : ''}
+${chatContext ? `CONTEXT: ${chatContext.substring(0, 150)}\n` : ''}
+
+USER'S REQUEST: "${btn.prompt}"
+
+Respond naturally with clear, helpful analysis. Use markdown formatting (headers, bullets, bold) for readability.`;
+
+      // Build parts with THIS BATCH of images only
+      const parts = [{ text: magicPrompt }];
+      batch.forEach(img => {
+        const imageData = img.replace(/^data:image\/\w+;base64,/, '');
+        parts.push({ inlineData: { mimeType: 'image/png', data: imageData } });
+      });
+
+      // Wait for rate limit before Magic button request
+      await waitForRateLimit();
+      
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiResult.geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts }],
+            generationConfig: { maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS_MAGIC', 2048), temperature: getConfig('TEMPERATURE', 0.7) }
+          })
+        }
+      );
+      
+      const data = await response.json();
+      if (data.error) throw new Error(data.error.message);
+      
+      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      
+      // Remove the thinking bubble
+      removeLoading();
+      
+      const thread = document.getElementById('chatThread');
+      if (responseText && responseText.length > 10) {
+        const hasJsonBlock = responseText.match(/```(?:json)?\s*[\s\S]*?```/) || responseText.match(/\{[\s\S]*"title"[\s\S]*\}/);
+        if (hasJsonBlock) {
+          renderDualStockOutput(responseText, btn, batchLabel);
+        } else {
+          const responseBubble = document.createElement('div');
+          responseBubble.className = 'chat-bubble ai';
+          const parsedContent = marked.parse(responseText);
+          responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedContent) : parsedContent;
+          thread.appendChild(responseBubble);
+          addBubbleActions(responseBubble, responseText);
+        }
+      } else {
+        const errorBubble = document.createElement('div');
+        errorBubble.className = 'chat-bubble ai';
+        errorBubble.textContent = 'Analysis processing - please try again.';
+        thread.appendChild(errorBubble);
+      }
+      
+      thread.scrollTop = thread.scrollHeight;
+      conversationHistory.push({ role: 'model', text: responseText });
+      
+      // Delay between batches to respect rate limits (6s minimum)
+      if (batchIndex < batches.length - 1) {
+        await new Promise(r => setTimeout(r, 6000));
+      }
+      
+    } catch (error) {
+      removeLoading();
+      const errorMsg = await getFriendlyErrorMessage(error.message);
+      const errorBubble = document.createElement('div');
+      errorBubble.className = 'chat-bubble ai';
+      errorBubble.textContent = `${btn.emoji} ${btn.name}${batchLabel}: ` + errorMsg;
+      document.getElementById('chatThread').appendChild(errorBubble);
+    }
+  }
+  
+  releaseRequestLock(); // Always release the lock when done
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 }
 
 // Modal Controls

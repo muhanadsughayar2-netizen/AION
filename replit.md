@@ -52,15 +52,15 @@ Handles infinite-scroll sites with scroll settlement detection. Works on any web
 - **Known limitations:** Full page capture may timeout in agent mode - use popup FULL PAGE button for guaranteed results
 - Files: agent-chat.html, agent-chat.js, background.js (agentCaptureTab, agentAddSnaps, agentFullPageCapture), content.js
 
-**SnapToAI Mouse Wand Menu (March 2026):** Full right-click context menu with ALL core features:
-- Parent menu "SnapToAI" with submenu items for every core action
-- **Capture actions:** Snap Viewport (captureScreenshot with tab.id), Snip Region (captureVisibleTab → annotate.html?mode=snip), Full Page Capture (startFullPageCapture with tab.id)
-- **AI actions:** Ask AI About This (screenshot + context → auto-analysis), Explain Selected Text (selection context only), Analyze This Image (image context only)
-- **Queue/Chat actions:** Send Queue to AI (loads all snaps → ai-chat with count), Open AI Chat (direct mode), View Queue (opens popup.html in window with source tab tracking)
-- Keyboard shortcut: Ctrl+Shift+A (Cmd+Shift+A on Mac) for Ask AI
-- Restricted page guard (chrome://, about://, edge://, devtools:// pages blocked)
+**Ask SnapToAI Context Menu (March 2026):** Right-click any page to analyze with AI:
+- Right-click context menu "Ask SnapToAI" on any page
+- Keyboard shortcut: Ctrl+Shift+A (Cmd+Shift+A on Mac)
+- Captures screenshot + page context (selected text, code blocks, URLs)
+- Smart analysis: long selected text → text-focused analysis; otherwise → screenshot-focused analysis
+- Opens ai-chat.html with source=contextmenu, auto-sends analysis prompt
+- Restricted page guard (chrome://, about://, edge:// pages blocked)
 - Context extraction via chrome.scripting.executeScript: selected text, code blocks, clicked element
-- Files: manifest.json (contextMenus permission, ask-ai command), background.js (registerSnapToAIMenu, handleAskSnapToAI), ai-chat.js (isContextMenu branch in initializeChat)
+- Files: manifest.json (contextMenus permission, ask-ai command), background.js (registerAskAIContextMenu, handleAskSnapToAI), ai-chat.js (isContextMenu branch in initializeChat)
 
 **Video Tutorials Feature (January 2026):** In-app help system:
 - Small "?" help button in popup header (subtle glassmorphism design)
@@ -101,26 +101,6 @@ Handles infinite-scroll sites with scroll settlement detection. Works on any web
 - Admin dashboard includes "Registered Users" and "Recent Activity" sections
 - Placeholder OAuth client_id in manifest.json — replace with real one from Google Cloud Console
 - Files: popup.html, popup.js, popup.css (overlay + header), manifest.json (identity + oauth2), app.py (API + DB)
-
-**Right-Click Hero Redesign (March 2026):**
-- Popup stripped to queue-only view: hero panel shows right-click tip instead of capture buttons
-- All capture actions accessed via right-click context menu (SnapToAI Mouse Wand)
-- Hero panel has "Open AI Chat" and "Add Gemini Key" buttons
-- Counter chip shows current queue count (X/9)
-- Selection bar includes "Send to AI" button for quick multi-select AI analysis
-- Dynamic right-click menu: "Send X Snaps to AI" updates count automatically via storage listener
-- Files: popup.html, popup.css, popup.js, background.js
-
-**Monetization Funnel (March 2026):**
-- 10 complimentary backend-proxied AI prompts (no API key needed)
-- Backend `/api/ai/proxy` endpoint: tracks usage per email/deviceId, 3 req/min rate limit
-- DB table: `free_prompts` (identifier, usage_count, last_used, created_at)
-- After 10 prompts: shows $300 Google Cloud credit pitch to encourage own Gemini key
-- Gemini key modal enhanced with green $300 credit banner
-- Trial countdown toast: appears at 7 and 3 days remaining, dismissible
-- Flow: 10 free prompts → $300 pitch → own Gemini key → 30-day trial → Whop subscription
-- Environment secret needed: GEMINI_OWNER_KEY (for backend proxy)
-- Files: app.py, ai-chat.js, popup.html, popup.css, popup.js
 
 **Review Prompting System (March 2026):**
 - Triggers after 5, 15, and 30 successful captures
