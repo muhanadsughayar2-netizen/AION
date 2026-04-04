@@ -124,6 +124,7 @@ function registerSnapToAIMenu() {
 
     chrome.contextMenus.create({ id: 'ask-ai-this', title: '✨ Ask AI About This', parentId: 'snaptoai-parent', contexts: ['all'] });
     chrome.contextMenus.create({ id: 'explain-text', title: '📝 Explain Selected Text', parentId: 'snaptoai-parent', contexts: ['selection'] });
+    chrome.contextMenus.create({ id: 'analyze-clipboard', title: '📋 Analyze Copied Code', parentId: 'snaptoai-parent', contexts: ['all'] });
     chrome.contextMenus.create({ id: 'analyze-image', title: '🖼️ Analyze This Image', parentId: 'snaptoai-parent', contexts: ['image'] });
 
     chrome.contextMenus.create({ id: 'sep2', type: 'separator', parentId: 'snaptoai-parent' });
@@ -190,6 +191,31 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     case 'analyze-image':
       await handleAskSnapToAI(info, tab);
       break;
+
+    case 'analyze-clipboard': {
+      let clipText = '';
+      try {
+        const [result] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: async () => {
+            try {
+              return await navigator.clipboard.readText();
+            } catch (e) {
+              return '';
+            }
+          }
+        });
+        clipText = result?.result || '';
+      } catch (e) {
+        console.log('[SnapToAI] Clipboard read failed:', e.message);
+      }
+      if (clipText.trim()) {
+        await handleAskSnapToAI({ selectionText: clipText, frameId: 0 }, tab);
+      } else {
+        await handleAskSnapToAI(info, tab);
+      }
+      break;
+    }
 
     case 'send-queue-ai': {
       try {
@@ -370,7 +396,35 @@ chrome.commands.onCommand.addListener(async (command) => {
   } else if (command === 'ask-ai') {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab) {
-      await handleAskSnapToAI({ selectionText: '', frameId: 0 }, tab);
+      let selectedText = '';
+      try {
+        const [result] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            const sel = window.getSelection();
+            if (sel && sel.toString().trim()) return sel.toString();
+            const active = document.activeElement;
+            if (active) {
+              if (active.value && active.selectionStart !== active.selectionEnd) {
+                return active.value.substring(active.selectionStart, active.selectionEnd);
+              }
+              if (active.shadowRoot) {
+                const innerSel = active.shadowRoot.getSelection?.();
+                if (innerSel && innerSel.toString().trim()) return innerSel.toString();
+              }
+              if (active.textContent && active.contentEditable === 'true') {
+                const innerSel = window.getSelection();
+                if (innerSel && innerSel.toString().trim()) return innerSel.toString();
+              }
+            }
+            return '';
+          }
+        });
+        selectedText = result?.result || '';
+      } catch (e) {
+        console.log('[SnapToAI] Selection read failed:', e.message);
+      }
+      await handleAskSnapToAI({ selectionText: selectedText, frameId: 0 }, tab);
     }
   }
 });
