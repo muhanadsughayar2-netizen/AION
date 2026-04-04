@@ -124,7 +124,6 @@ function registerSnapToAIMenu() {
 
     chrome.contextMenus.create({ id: 'ask-ai-this', title: '✨ Ask AI About This', parentId: 'snaptoai-parent', contexts: ['all'] });
     chrome.contextMenus.create({ id: 'explain-text', title: '📝 Explain Selected Text', parentId: 'snaptoai-parent', contexts: ['selection'] });
-    chrome.contextMenus.create({ id: 'grab-all-code', title: '📋 Grab All Code → AI', parentId: 'snaptoai-parent', contexts: ['all'] });
     chrome.contextMenus.create({ id: 'analyze-image', title: '🖼️ Analyze This Image', parentId: 'snaptoai-parent', contexts: ['image'] });
 
     chrome.contextMenus.create({ id: 'sep2', type: 'separator', parentId: 'snaptoai-parent' });
@@ -191,44 +190,6 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     case 'analyze-image':
       await handleAskSnapToAI(info, tab);
       break;
-
-    case 'analyze-clipboard':
-    case 'grab-all-code': {
-      let allText = '';
-      try {
-        const [result] = await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: () => {
-            const active = document.activeElement;
-            if (active && active.value) {
-              return active.value;
-            }
-            if (active && active.textContent && active.contentEditable === 'true') {
-              return active.textContent;
-            }
-            const editorEl = document.querySelector('.view-lines, .CodeMirror-code, .ace_text-layer, .monaco-editor .lines-content');
-            if (editorEl) return editorEl.textContent;
-            const preBlocks = document.querySelectorAll('pre, code');
-            if (preBlocks.length > 0) {
-              return Array.from(preBlocks).map(el => el.textContent).join('\n\n');
-            }
-            return document.body.innerText;
-          }
-        });
-        allText = (result?.result || '').trim();
-      } catch (e) {
-        console.log('[SnapToAI] Grab all code failed:', e.message);
-      }
-      if (allText.length > 50000) allText = allText.substring(0, 50000);
-      if (allText) {
-        await chrome.storage.session.set({ grabCodeText: allText });
-        chrome.windows.create({
-          url: chrome.runtime.getURL('ai-chat.html?source=grabcode'),
-          type: 'popup', width: 1000, height: 700, focused: true
-        });
-      }
-      break;
-    }
 
     case 'send-queue-ai': {
       try {
@@ -494,25 +455,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           url: chrome.runtime.getURL('ai-chat.html?direct=true'),
           type: 'popup', width: 1000, height: 700, focused: true
         });
-        sendResponse({ success: false });
-      }
-    })();
-    return true;
-  } else if (request.action === 'analyzeClipboardText') {
-    (async () => {
-      try {
-        const data = await chrome.storage.session.get('lastCopiedText');
-        const copiedText = data.lastCopiedText || '';
-        if (copiedText) {
-          await chrome.storage.session.set({ grabCodeText: copiedText });
-          chrome.windows.create({
-            url: chrome.runtime.getURL('ai-chat.html?source=grabcode'),
-            type: 'popup', width: 1000, height: 700, focused: true
-          });
-        }
-        sendResponse({ success: true });
-      } catch (e) {
-        console.error('[SnapToAI] analyzeClipboardText error:', e);
         sendResponse({ success: false });
       }
     })();

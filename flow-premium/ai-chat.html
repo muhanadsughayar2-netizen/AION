@@ -443,6 +443,45 @@
       padding: 16px;
     }
     
+    .code-tip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 24px;
+      background: rgba(0, 217, 255, 0.04);
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+      font-size: 11px;
+      color: #556677;
+      line-height: 1.4;
+    }
+    .code-tip kbd {
+      display: inline-block;
+      padding: 1px 5px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 10px;
+      color: #778899;
+    }
+    .code-tip .tip-icon {
+      font-size: 13px;
+      opacity: 0.6;
+    }
+    .code-tip .tip-dismiss {
+      margin-left: auto;
+      cursor: pointer;
+      opacity: 0.4;
+      font-size: 12px;
+      padding: 2px 6px;
+      border: none;
+      background: none;
+      color: #556677;
+    }
+    .code-tip .tip-dismiss:hover {
+      opacity: 0.8;
+    }
+
     .input-area {
       display: flex;
       gap: 12px;
@@ -954,6 +993,11 @@
       </div>
       
       <div class="file-preview-zone" id="filePreviewZone"></div>
+      <div class="code-tip" id="codeTip">
+        <span class="tip-icon">💡</span>
+        <span>Want to analyze code? Go to your code, press <kbd>Ctrl+A</kbd> (<kbd>⌘+A</kbd> on Mac) to select all, <kbd>Ctrl+C</kbd> to copy, then paste it right here.</span>
+        <button class="tip-dismiss" id="dismissTip" title="Dismiss">✕</button>
+      </div>
       <div class="input-area">
         <input type="file" id="fileInput" accept="image/*,.pdf,.txt,.md,.json,.csv" multiple hidden>
         <label for="fileInput" class="upload-btn" title="Attach files">+</label>

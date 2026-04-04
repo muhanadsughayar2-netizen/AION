@@ -365,36 +365,10 @@ async function initializeChat() {
   const count = urlParams.get('count');
   const isDirect = urlParams.get('direct') === 'true';
   const isContextMenu = urlParams.get('source') === 'contextmenu';
-  const isGrabCode = urlParams.get('source') === 'grabcode';
   
   // Get metadata from session storage
-  const result = await chrome.storage.session.get(['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap', 'askAiPayload', 'grabCodeText']);
+  const result = await chrome.storage.session.get(['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap', 'askAiPayload']);
   currentPageText = result.pageText || '';
-  
-  if (isGrabCode) {
-    const codeText = result.grabCodeText || '';
-    try { await chrome.storage.session.remove('grabCodeText'); } catch (e) {}
-
-    currentImages = [];
-    const previewContainer = document.querySelector('.image-preview');
-    if (previewContainer) previewContainer.style.display = 'none';
-
-    setupMagicButtons();
-    if (typeof updateVerdictButtonVisibility === 'function') {
-      updateVerdictButtonVisibility();
-    }
-
-    setTimeout(() => {
-      const chatInput = document.getElementById('chatInput');
-      if (chatInput && codeText) {
-        chatInput.value = codeText;
-        chatInput.style.height = 'auto';
-        chatInput.style.height = Math.min(chatInput.scrollHeight, 300) + 'px';
-        chatInput.focus();
-      }
-    }, 300);
-    return;
-  }
 
   if (isContextMenu) {
     const storageError = urlParams.get('error');
@@ -1647,6 +1621,22 @@ function clearFilesQueue() {
   filesQueue = [];
   document.getElementById('filePreviewZone').innerHTML = '';
 }
+
+// Code tip dismiss logic
+(async () => {
+  const tipEl = document.getElementById('codeTip');
+  const dismissBtn = document.getElementById('dismissTip');
+  if (tipEl && dismissBtn) {
+    const { codeTipDismissed } = await chrome.storage.local.get('codeTipDismissed');
+    if (codeTipDismissed) {
+      tipEl.style.display = 'none';
+    }
+    dismissBtn.addEventListener('click', () => {
+      tipEl.style.display = 'none';
+      chrome.storage.local.set({ codeTipDismissed: true });
+    });
+  }
+})();
 
 // Initialize
 initializeChat();
