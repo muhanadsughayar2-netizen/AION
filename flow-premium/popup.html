@@ -303,14 +303,14 @@
         <button type="button" id="toggleKeyVisibility" aria-label="Show API key" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #00d9ff; font-size: 12px; cursor: pointer; padding: 4px 8px; font-weight: 500;">Show</button>
       </div>
       <div class="model-select-wrapper" style="margin-top: 10px;">
-        <label for="geminiModelSelect" style="display: block; font-size: 11px; color: #778899; margin-bottom: 5px;">AI Mode</label>
+        <label for="geminiModelSelect" style="display: block; font-size: 11px; color: #778899; margin-bottom: 5px;">AI Mode (also switchable in chat)</label>
         <select id="geminiModelSelect" style="width: 100%; padding: 10px 14px; background: #1a1a2e; border: 1px solid rgba(0,217,255,0.2); border-radius: 8px; color: #fff; font-size: 13px; outline: none; cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url('data:image/svg+xml;utf8,<svg fill=\"%2300d9ff\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>'); background-repeat: no-repeat; background-position: right 10px center; background-size: 18px;">
-          <option value="analyze">Analyze Screenshots + Text</option>
-          <option value="create-images">Create Images</option>
-          <option value="write-code">Write Code</option>
-          <option value="think-deep">Think Deep (Complex Tasks)</option>
+          <option value="vision">🔍 Vision — Analyze screenshots & text</option>
+          <option value="image">🎨 Image — Generate images</option>
+          <option value="music">🎵 Music — Create music clips</option>
+          <option value="video">🎬 Video — Generate short videos</option>
         </select>
-        <div style="font-size: 10px; color: #556677; margin-top: 4px; line-height: 1.4;" id="modeDescription">Fast analysis of screenshots, code, and text</div>
+        <div style="font-size: 10px; color: #556677; margin-top: 4px; line-height: 1.4;" id="modeDescription">Powered by Gemini 2.0 Flash</div>
       </div>
       <div class="gemini-compliance">
         <label class="compliance-label">

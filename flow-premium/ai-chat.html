@@ -443,6 +443,34 @@
       padding: 16px;
     }
     
+    .mode-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      color: #778899;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    .mode-btn:hover {
+      background: rgba(0,217,255,0.1);
+      border-color: rgba(0,217,255,0.25);
+      color: #aabbcc;
+    }
+    .mode-btn.active {
+      background: rgba(0,217,255,0.15);
+      border-color: rgba(0,217,255,0.4);
+      color: #00d9ff;
+      box-shadow: 0 0 8px rgba(0,217,255,0.15);
+    }
+    #modeBar::-webkit-scrollbar { display: none; }
+
     .code-tip {
       display: flex;
       align-items: center;
@@ -998,9 +1026,11 @@
         <span>Want to analyze code? Go to your code, press <kbd>Ctrl+A</kbd> (<kbd>⌘+A</kbd> on Mac) to select all, <kbd>Ctrl+C</kbd> to copy, then paste it right here.</span>
         <button class="tip-dismiss" id="dismissTip" title="Dismiss">✕</button>
       </div>
-      <div id="modeIndicator" style="display: flex; align-items: center; gap: 6px; padding: 4px 12px; font-size: 11px; color: #778899; background: rgba(0,217,255,0.04); border-bottom: 1px solid rgba(0,217,255,0.08);">
-        <span id="modeIcon">🔍</span>
-        <span id="modeLabel">Analyze Mode</span>
+      <div id="modeBar" style="display: flex; gap: 6px; padding: 6px 10px; background: rgba(0,217,255,0.03); border-bottom: 1px solid rgba(0,217,255,0.08); overflow-x: auto; scrollbar-width: none;">
+        <button class="mode-btn active" data-mode="vision" title="Analyze screenshots & text">🔍 Vision</button>
+        <button class="mode-btn" data-mode="image" title="Generate images from text">🎨 Image</button>
+        <button class="mode-btn" data-mode="music" title="Create music clips">🎵 Music</button>
+        <button class="mode-btn" data-mode="video" title="Generate short videos">🎬 Video</button>
       </div>
       <div class="input-area">
         <input type="file" id="fileInput" accept="image/*,.pdf,.txt,.md,.json,.csv" multiple hidden>

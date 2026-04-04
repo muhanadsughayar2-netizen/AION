@@ -354,73 +354,83 @@ let filesQueue = []; // Multi-file upload queue (Gemini-style)
 const getConfig = (key, defaultVal) => (window.SNAPTOAI_CONFIG && window.SNAPTOAI_CONFIG[key]) || defaultVal;
 
 const AI_MODES = {
-  'analyze': {
+  'vision': {
     model: 'gemini-2.0-flash',
-    responseModalities: ['TEXT'],
-    systemPromptOverride: null
+    type: 'gemini',
+    placeholder: 'Ask about your screenshot...',
+    welcome: "I'm your AI vision partner. Snap a screenshot and ask me anything!"
   },
-  'create-images': {
-    model: 'gemini-2.0-flash-preview-image-generation',
-    responseModalities: ['TEXT', 'IMAGE'],
-    systemPromptOverride: 'You are a creative AI artist. When the user asks you to create, draw, design, or generate an image, produce the image directly. Also describe what you created briefly. If the user asks for modifications, generate a new version. Be creative and produce high-quality visuals.'
+  'image': {
+    model: 'imagen-3.0-generate-002',
+    type: 'imagen',
+    placeholder: 'Describe the image you want to create...',
+    welcome: '🎨 Image mode — describe what you want and I\'ll create it!'
   },
-  'write-code': {
-    model: 'gemini-2.5-flash-preview-05-20',
-    responseModalities: ['TEXT'],
-    systemPromptOverride: 'You are an expert software engineer. Write clean, production-ready code. Always include the full code — never truncate or use placeholders like "// rest of code here". Use proper formatting with language-tagged code blocks. Explain your approach briefly, then show the complete code. If analyzing a screenshot of code, identify bugs, suggest improvements, and provide the fixed version.'
+  'music': {
+    model: 'lyria-2.0-flash',
+    type: 'media-gen',
+    mediaType: 'audio',
+    placeholder: 'Describe the music you want (mood, genre, tempo)...',
+    welcome: '🎵 Music mode — describe the vibe and I\'ll compose it!'
   },
-  'think-deep': {
-    model: 'gemini-2.5-pro-preview-05-06',
-    responseModalities: ['TEXT'],
-    systemPromptOverride: null
+  'video': {
+    model: 'veo-2.0-generate-001',
+    type: 'media-gen',
+    mediaType: 'video',
+    placeholder: 'Describe the video scene you want...',
+    welcome: '🎬 Video mode — describe a scene and I\'ll generate it!'
   }
 };
 
-let currentAiMode = 'analyze';
+let currentAiMode = 'vision';
 
-async function getSelectedMode() {
-  try {
-    const { geminiModel } = await chrome.storage.sync.get('geminiModel');
-    currentAiMode = geminiModel || 'analyze';
-    return AI_MODES[currentAiMode] || AI_MODES['analyze'];
-  } catch (e) {
-    return AI_MODES['analyze'];
-  }
+function getSelectedModel() {
+  return AI_MODES[currentAiMode]?.model || AI_MODES['vision'].model;
 }
 
-async function getSelectedModel() {
-  const mode = await getSelectedMode();
-  return mode.model;
-}
-
-const MODE_UI = {
-  'analyze': { icon: '🔍', label: 'Analyze Mode', placeholder: 'Ask about your screenshot...' },
-  'create-images': { icon: '🎨', label: 'Create Images Mode', placeholder: 'Describe the image you want...' },
-  'write-code': { icon: '💻', label: 'Code Mode', placeholder: 'Describe the code you need...' },
-  'think-deep': { icon: '🧠', label: 'Think Deep Mode', placeholder: 'Ask a complex question...' }
-};
-
-function updateModeIndicator(mode) {
-  const ui = MODE_UI[mode] || MODE_UI['analyze'];
-  const iconEl = document.getElementById('modeIcon');
-  const labelEl = document.getElementById('modeLabel');
+function initModeButtons() {
+  const btns = document.querySelectorAll('.mode-btn');
   const inputEl = document.getElementById('chatInput');
-  if (iconEl) iconEl.textContent = ui.icon;
-  if (labelEl) labelEl.textContent = ui.label;
-  if (inputEl) inputEl.placeholder = ui.placeholder;
+  
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.mode;
+      if (mode === currentAiMode) return;
+      
+      currentAiMode = mode;
+      chrome.storage.sync.set({ geminiModel: mode });
+      
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      const cfg = AI_MODES[mode];
+      if (inputEl && cfg) inputEl.placeholder = cfg.placeholder;
+      
+      const thread = document.getElementById('chatThread');
+      if (thread) {
+        const notice = document.createElement('div');
+        notice.className = 'chat-bubble ai';
+        notice.style.cssText = 'font-size: 12px; opacity: 0.8; padding: 8px 14px;';
+        notice.textContent = cfg.welcome;
+        thread.appendChild(notice);
+        thread.scrollTop = thread.scrollHeight;
+      }
+    });
+  });
+  
+  const saved = chrome.storage.sync.get('geminiModel').then(r => {
+    const mode = r.geminiModel || 'vision';
+    if (AI_MODES[mode]) {
+      currentAiMode = mode;
+      btns.forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === mode);
+      });
+      if (inputEl) inputEl.placeholder = AI_MODES[mode].placeholder;
+    }
+  }).catch(() => {});
 }
 
-(async () => {
-  await getSelectedMode();
-  updateModeIndicator(currentAiMode);
-})();
-
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'sync' && changes.geminiModel) {
-    currentAiMode = changes.geminiModel.newValue || 'analyze';
-    updateModeIndicator(currentAiMode);
-  }
-});
+initModeButtons();
 
 const SYSTEM_PROMPT = getConfig('SYSTEM_PROMPT', "You are a professional assistant. Give COMPLETE, DIRECT answers. Never truncate or ask 'would you like more?' Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions.");
 
@@ -1063,57 +1073,10 @@ async function handleSend() {
     
     contents.push({ role: 'user', parts: userParts });
     
-    // Get current AI mode
-    const aiMode = await getSelectedMode();
+    const modeConfig = AI_MODES[currentAiMode] || AI_MODES['vision'];
     
-    // Use appropriate prompt based on content and mode
-    let systemPrompt = aiMode.systemPromptOverride || SYSTEM_PROMPT;
-    if (!aiMode.systemPromptOverride) {
-      if (currentImages.length > 1) {
-        systemPrompt = MULTI_IMAGE_PROMPT;
-      } else if (currentPageText && currentPageText.length > 800) {
-        systemPrompt = SMART_SYSTEM_PROMPT;
-      }
-    }
-    
-    // Wait for rate limit before request
     await waitForRateLimit();
     
-    const genConfig = { 
-      maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
-      temperature: getConfig('TEMPERATURE', 0.7),
-      topP: 0.95,
-      topK: 40
-    };
-    
-    if (aiMode.responseModalities && aiMode.responseModalities.includes('IMAGE')) {
-      genConfig.responseModalities = aiMode.responseModalities;
-    }
-
-    // Image generation mode uses non-streaming (streaming doesn't support image output)
-    const useStreaming = !aiMode.responseModalities || !aiMode.responseModalities.includes('IMAGE');
-    const endpointUrl = useStreaming 
-      ? `https://generativelanguage.googleapis.com/v1beta/models/${aiMode.model}:streamGenerateContent?alt=sse&key=${apiKey}`
-      : `https://generativelanguage.googleapis.com/v1beta/models/${aiMode.model}:generateContent?key=${apiKey}`;
-    
-    const response = await fetch(endpointUrl,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: contents,
-          generationConfig: genConfig
-        })
-      }
-    );
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error?.message || `API Error: ${response.status}`);
-    }
-    
-    // Remove thinking bubble and create response bubble
     removeLoading();
     const responseBubble = document.createElement('div');
     responseBubble.className = 'chat-bubble ai';
@@ -1121,32 +1084,138 @@ async function handleSend() {
     
     let fullText = '';
 
-    if (!useStreaming) {
-      // Non-streaming response (image generation mode)
-      const data = await response.json();
-      const parts = data.candidates?.[0]?.content?.parts || [];
-      let htmlContent = '';
+    if (modeConfig.type === 'imagen') {
+      // === IMAGE GENERATION (Imagen) ===
+      responseBubble.innerHTML = '<div style="color:#778899;font-size:12px;">🎨 Creating your image...</div>';
+      thread.scrollTop = thread.scrollHeight;
       
-      for (const part of parts) {
-        if (part.text) {
-          fullText += part.text;
-          const parsedHtml = typeof marked !== 'undefined' ? marked.parse(part.text) : part.text;
-          htmlContent += typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:predict?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            instances: [{ prompt: prompt }],
+            parameters: { sampleCount: 1, aspectRatio: '1:1' }
+          })
         }
-        if (part.inlineData) {
-          const imgSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-          htmlContent += `<div style="margin: 12px 0;"><img src="${imgSrc}" style="max-width: 100%; border-radius: 12px; cursor: pointer;" onclick="window.open(this.src, '_blank')" title="Click to open full size"><div style="margin-top: 6px; display: flex; gap: 8px;"><button onclick="(async()=>{try{const r=await fetch(this.closest('div').previousElementSibling.src);const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='snaptoai-image.png';a.click()}catch(e){}})()" style="background: rgba(0,217,255,0.15); border: 1px solid rgba(0,217,255,0.3); color: #00d9ff; padding: 4px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">Save Image</button></div></div>`;
-        }
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `Image generation failed: ${response.status}`);
       }
       
-      responseBubble.innerHTML = htmlContent || 'No response generated.';
-      responseBubble.querySelectorAll('a').forEach(link => {
-        link.setAttribute('target', '_blank');
-        link.setAttribute('rel', 'noopener noreferrer');
-      });
+      const data = await response.json();
+      const predictions = data.predictions || [];
+      let htmlContent = '';
+      
+      if (predictions.length > 0) {
+        for (const pred of predictions) {
+          const b64 = pred.bytesBase64Encoded;
+          const mime = pred.mimeType || 'image/png';
+          if (b64) {
+            const imgSrc = `data:${mime};base64,${b64}`;
+            htmlContent += `<div style="margin:8px 0;"><img src="${imgSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;" onclick="window.open(this.src,'_blank')" title="Click to view full size"><div style="margin-top:6px;"><button onclick="(async()=>{try{const a=document.createElement('a');a.href='${imgSrc}';a.download='snaptoai-image.png';a.click()}catch(e){}})()" style="background:rgba(0,217,255,0.15);border:1px solid rgba(0,217,255,0.3);color:#00d9ff;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;">💾 Save</button></div></div>`;
+          }
+        }
+        fullText = `Generated image for: "${prompt}"`;
+        htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:8px;">${fullText}</div>` + htmlContent;
+      } else {
+        htmlContent = '<div style="color:#ff6b6b;">No image was generated. Try a different description.</div>';
+      }
+      
+      responseBubble.innerHTML = htmlContent;
       thread.scrollTop = thread.scrollHeight;
+      
+    } else if (modeConfig.type === 'media-gen') {
+      // === MUSIC / VIDEO GENERATION ===
+      const isMusic = modeConfig.mediaType === 'audio';
+      const emoji = isMusic ? '🎵' : '🎬';
+      const label = isMusic ? 'music' : 'video';
+      responseBubble.innerHTML = `<div style="color:#778899;font-size:12px;">${emoji} Generating your ${label}... this may take a moment</div>`;
+      thread.scrollTop = thread.scrollHeight;
+
+      const endpoint = isMusic ? 'predict' : 'predict';
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:${endpoint}?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            instances: [{ prompt: prompt }],
+            parameters: isMusic ? { durationSeconds: 30 } : { durationSeconds: 5, aspectRatio: '16:9' }
+          })
+        }
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errMsg = errorData.error?.message || `${label} generation failed: ${response.status}`;
+        if (response.status === 404 || errMsg.includes('not found')) {
+          throw new Error(`${isMusic ? 'Music' : 'Video'} generation is not yet available with your API key. This feature requires access to Google's ${isMusic ? 'Lyria' : 'Veo'} model. Check Google AI Studio for availability.`);
+        }
+        throw new Error(errMsg);
+      }
+      
+      const data = await response.json();
+      const predictions = data.predictions || [];
+      let htmlContent = '';
+      
+      if (predictions.length > 0) {
+        for (const pred of predictions) {
+          const b64 = pred.bytesBase64Encoded;
+          const mime = pred.mimeType || (isMusic ? 'audio/mp3' : 'video/mp4');
+          if (b64) {
+            const mediaSrc = `data:${mime};base64,${b64}`;
+            if (isMusic) {
+              htmlContent += `<div style="margin:8px 0;"><audio controls style="width:100%;border-radius:8px;" src="${mediaSrc}"></audio><div style="margin-top:6px;"><button onclick="(async()=>{const a=document.createElement('a');a.href='${mediaSrc}';a.download='snaptoai-music.mp3';a.click()})()" style="background:rgba(0,217,255,0.15);border:1px solid rgba(0,217,255,0.3);color:#00d9ff;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;">💾 Save</button></div></div>`;
+            } else {
+              htmlContent += `<div style="margin:8px 0;"><video controls style="max-width:100%;border-radius:12px;" src="${mediaSrc}"></video><div style="margin-top:6px;"><button onclick="(async()=>{const a=document.createElement('a');a.href='${mediaSrc}';a.download='snaptoai-video.mp4';a.click()})()" style="background:rgba(0,217,255,0.15);border:1px solid rgba(0,217,255,0.3);color:#00d9ff;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;">💾 Save</button></div></div>`;
+            }
+          }
+        }
+        fullText = `Generated ${label} for: "${prompt}"`;
+        htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:8px;">${emoji} ${fullText}</div>` + htmlContent;
+      } else {
+        htmlContent = `<div style="color:#ff6b6b;">No ${label} was generated. Try a different description.</div>`;
+      }
+      
+      responseBubble.innerHTML = htmlContent;
+      thread.scrollTop = thread.scrollHeight;
+      
     } else {
-      // Streaming response (text modes)
+      // === VISION / GEMINI (streaming text) ===
+      let systemPrompt = SYSTEM_PROMPT;
+      if (currentImages.length > 1) {
+        systemPrompt = MULTI_IMAGE_PROMPT;
+      } else if (currentPageText && currentPageText.length > 800) {
+        systemPrompt = SMART_SYSTEM_PROMPT;
+      }
+      
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:streamGenerateContent?alt=sse&key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: contents,
+            generationConfig: { 
+              maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
+              temperature: getConfig('TEMPERATURE', 0.7),
+              topP: 0.95,
+              topK: 40
+            }
+          })
+        }
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+      }
+      
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       
