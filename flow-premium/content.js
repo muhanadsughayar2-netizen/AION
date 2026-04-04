@@ -4110,27 +4110,28 @@
   }
 
   if (!isAISite) {
-    document.addEventListener('copy', () => {
-      setTimeout(() => {
-        const sel = window.getSelection();
-        let copiedText = sel ? sel.toString().trim() : '';
-        if (!copiedText) {
-          const active = document.activeElement;
-          if (active && active.value && typeof active.selectionStart === 'number' && active.selectionStart !== active.selectionEnd) {
-            copiedText = active.value.substring(active.selectionStart, active.selectionEnd).trim();
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        setTimeout(() => {
+          let selectedText = '';
+          const sel = window.getSelection();
+          if (sel && sel.toString().trim().length > 0) {
+            selectedText = sel.toString().trim();
           }
-        }
-        if (!copiedText || copiedText.length < 5) return;
+          if (!selectedText) {
+            const active = document.activeElement;
+            if (active && active.value) {
+              selectedText = active.value.trim();
+            }
+          }
+          if (!selectedText || selectedText.length < 5) return;
 
-        try {
-          chrome.storage.session.set({ lastCopiedText: copiedText });
-        } catch (e) {}
-
-        chrome.storage.local.get('snaptoaiCopyToAI', (data) => {
-          if (data.snaptoaiCopyToAI === false) return;
+          try {
+            chrome.storage.session.set({ lastCopiedText: selectedText });
+          } catch (e) {}
           chrome.runtime.sendMessage({ action: 'analyzeClipboardText' });
-        });
-      }, 50);
+        }, 150);
+      }
     });
   }
 
