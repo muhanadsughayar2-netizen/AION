@@ -4114,25 +4114,43 @@
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
         setTimeout(() => {
           let selectedText = '';
+
           const sel = window.getSelection();
           if (sel && sel.toString().trim().length > 0) {
             selectedText = sel.toString().trim();
           }
+
           if (!selectedText) {
             const active = document.activeElement;
             if (active && active.value) {
               selectedText = active.value.trim();
             }
           }
+
+          if (!selectedText) {
+            const editorEl = document.querySelector('.view-lines, .CodeMirror-code, .ace_text-layer, .monaco-editor .lines-content');
+            if (editorEl) {
+              selectedText = editorEl.textContent.trim();
+            }
+          }
+
+          if (!selectedText) {
+            const codeBlocks = document.querySelectorAll('pre, code');
+            if (codeBlocks.length > 0) {
+              selectedText = Array.from(codeBlocks).map(el => el.textContent.trim()).filter(t => t.length > 5).join('\n\n');
+            }
+          }
+
           if (!selectedText || selectedText.length < 5) return;
+          if (selectedText.length > 50000) selectedText = selectedText.substring(0, 50000);
 
           try {
             chrome.storage.session.set({ lastCopiedText: selectedText });
           } catch (e) {}
           chrome.runtime.sendMessage({ action: 'analyzeClipboardText' });
-        }, 150);
+        }, 200);
       }
-    });
+    }, true);
   }
 
 })();
