@@ -1117,13 +1117,11 @@ async function handleSend() {
     };
 
     if (modeConfig.type === 'gemini-image') {
-      // === IMAGE GENERATION (tries multiple models via predict endpoint) ===
+      // === IMAGE GENERATION (via generateContent with responseModalities) ===
       const imageModels = [
-        'imagen-3.0-generate-001',
-        'imagen-3.0-fast-generate-001',
-        'imagen-3.0-generate-002',
-        'nano-banana-2',
-        'nano-banana-pro'
+        'gemini-2.0-flash-exp',
+        'gemini-2.0-flash',
+        'gemini-2.5-flash-preview-04-17'
       ];
       
       let lastResponseData = null;
@@ -1135,9 +1133,9 @@ async function handleSend() {
         
         for (let attempt = 0; attempt < 3; attempt++) {
           const loadingEl = document.querySelector('.loading-dots');
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predict?key=${apiKey}`;
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
           
-          console.log(`[SnapToAI Image] Attempt ${attempt+1}/3 using ${modelName}`);
+          console.log(`[SnapToAI Image] Attempt ${attempt+1}/3 using ${modelName} via generateContent`);
           
           let response;
           try {
@@ -1145,8 +1143,8 @@ async function handleSend() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                instances: [{ prompt: prompt }],
-                parameters: { sampleCount: 1, aspectRatio: '1:1' }
+                contents: [{ role: 'user', parts: [{ text: `Generate an image: ${prompt}` }] }],
+                generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
               })
             });
           } catch(fetchErr) {
@@ -1158,7 +1156,7 @@ async function handleSend() {
           const responseBody = await response.json().catch(() => ({}));
           console.log(`[SnapToAI Image] Status: ${response.status}`, JSON.stringify(responseBody).substring(0, 500));
           
-          if (response.ok) {
+          if (response.ok && responseBody.candidates?.[0]?.content?.parts) {
             lastResponseData = responseBody;
             succeeded = true;
             break;
@@ -1191,23 +1189,23 @@ async function handleSend() {
       }
       
       const responseBubble = createResponseBubble();
-      const data = lastResponseData;
-      const predictions = data.predictions || [];
+      const parts = lastResponseData.candidates[0].content.parts;
       let htmlContent = '';
       let hasImage = false;
       
-      for (const pred of predictions) {
-        const b64 = pred.bytesBase64Encoded;
-        if (b64) {
+      for (const part of parts) {
+        if (part.text) {
+          fullText += part.text;
+        }
+        if (part.inlineData) {
           hasImage = true;
-          const mime = pred.mimeType || 'image/png';
-          const imgSrc = `data:${mime};base64,${b64}`;
+          const imgSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
           htmlContent += `<div style="margin:10px 0;"><img src="${imgSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);" onclick="window.open(this.src,'_blank')" title="Click to view full size"><div style="margin-top:8px; display:flex; gap:8px;"><button class="img-save-btn" style="background:rgba(255,107,237,0.15);border:1px solid rgba(255,107,237,0.3);color:#ff6bed;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Image</button></div></div>`;
         }
       }
       
       if (hasImage) {
-        fullText = `Generated image: "${prompt}"`;
+        fullText = fullText || `Generated image: "${prompt}"`;
         htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:8px;">🎨 ${fullText}</div>` + htmlContent;
       } else {
         htmlContent = '<div style="color:#ff6b6b;">No image was generated. Try a more descriptive prompt.</div>';
