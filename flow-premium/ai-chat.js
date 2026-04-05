@@ -361,7 +361,7 @@ const AI_MODES = {
     welcome: "I'm your AI vision partner. Snap a screenshot and ask me anything!"
   },
   'image': {
-    model: 'gemini-2.0-flash-preview-image-generation',
+    model: 'imagen-3.0-generate-001',
     type: 'gemini-image',
     placeholder: 'Describe the image you want to create...',
     welcome: '🎨 Image mode — describe what you want and I\'ll create it!'
@@ -1116,46 +1116,35 @@ async function handleSend() {
     };
 
     if (modeConfig.type === 'gemini-image') {
-      // === IMAGE GENERATION (tries Gemini native, then Imagen 3 fallback) ===
+      // === IMAGE GENERATION (Imagen 3 via predict endpoint) ===
       const imageModels = [
-        { model: modeConfig.model, endpoint: 'generateContent', label: 'Gemini Image' },
-        { model: 'imagen-3.0-generate-001', endpoint: 'predict', label: 'Imagen 3' }
+        'imagen-3.0-generate-001',
+        'imagen-3.0-fast-generate-001',
+        'imagen-3.0-generate-002'
       ];
       
       let lastResponseData = null;
-      let usedEndpoint = 'generateContent';
       let lastError = '';
       let succeeded = false;
       
-      for (const modelOpt of imageModels) {
-        const retryDelays = [10, 20, 30];
+      for (const modelName of imageModels) {
+        const retryDelays = [8, 15, 25];
         
         for (let attempt = 0; attempt < 3; attempt++) {
           const loadingEl = document.querySelector('.loading-dots');
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predict?key=${apiKey}`;
           
-          let url, body;
-          if (modelOpt.endpoint === 'generateContent') {
-            url = `https://generativelanguage.googleapis.com/v1beta/models/${modelOpt.model}:generateContent?key=${apiKey}`;
-            body = JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text: prompt }] }],
-              generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
-            });
-          } else {
-            url = `https://generativelanguage.googleapis.com/v1beta/models/${modelOpt.model}:predict?key=${apiKey}`;
-            body = JSON.stringify({
-              instances: [{ prompt: prompt }],
-              parameters: { sampleCount: 1 }
-            });
-          }
-          
-          console.log(`[SnapToAI Image] Attempt ${attempt+1}/3 using ${modelOpt.label} (${modelOpt.model})`);
+          console.log(`[SnapToAI Image] Attempt ${attempt+1}/3 using ${modelName}`);
           
           let response;
           try {
             response = await fetch(url, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: body
+              body: JSON.stringify({
+                instances: [{ prompt: prompt }],
+                parameters: { sampleCount: 1, aspectRatio: '1:1' }
+              })
             });
           } catch(fetchErr) {
             console.error(`[SnapToAI Image] Fetch error:`, fetchErr.message);
@@ -1168,7 +1157,6 @@ async function handleSend() {
           
           if (response.ok) {
             lastResponseData = responseBody;
-            usedEndpoint = modelOpt.endpoint;
             succeeded = true;
             break;
           }
@@ -1186,16 +1174,13 @@ async function handleSend() {
           
           if (attempt < 2) {
             const waitSec = retryDelays[attempt];
-            if (loadingEl) loadingEl.innerHTML = `<span style="color:#ff6bed;">⏳ Rate limited — retrying in ${waitSec}s (${modelOpt.label})...</span>`;
+            if (loadingEl) loadingEl.innerHTML = `<span style="color:#ff6bed;">⏳ Rate limited — retrying in ${waitSec}s...</span>`;
             await new Promise(r => setTimeout(r, waitSec * 1000));
           }
         }
         
         if (succeeded) break;
-        console.log(`[SnapToAI Image] ${modelOpt.label} failed, trying next model...`);
-        const loadingEl = document.querySelector('.loading-dots');
-        if (loadingEl) loadingEl.innerHTML = `<span style="color:#ff6bed;">⏳ Trying ${modelOpt.label === 'Gemini Image' ? 'Imagen 3' : 'fallback'}...</span>`;
-        await new Promise(r => setTimeout(r, 2000));
+        console.log(`[SnapToAI Image] ${modelName} failed, trying next model...`);
       }
       
       if (!succeeded) {
@@ -1204,38 +1189,24 @@ async function handleSend() {
       
       const responseBubble = createResponseBubble();
       const data = lastResponseData;
+      const predictions = data.predictions || [];
       let htmlContent = '';
       let hasImage = false;
       
-      if (usedEndpoint === 'predict') {
-        const predictions = data.predictions || [];
-        for (const pred of predictions) {
-          const b64 = pred.bytesBase64Encoded;
-          if (b64) {
-            hasImage = true;
-            const mime = pred.mimeType || 'image/png';
-            const imgSrc = `data:${mime};base64,${b64}`;
-            htmlContent += `<div style="margin:10px 0;"><img src="${imgSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);" onclick="window.open(this.src,'_blank')" title="Click to view full size"><div style="margin-top:8px; display:flex; gap:8px;"><button class="img-save-btn" style="background:rgba(255,107,237,0.15);border:1px solid rgba(255,107,237,0.3);color:#ff6bed;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Image</button></div></div>`;
-          }
-        }
-        fullText = `Generated image: "${prompt}"`;
-      } else {
-        const parts = data.candidates?.[0]?.content?.parts || [];
-        for (const part of parts) {
-          if (part.text) {
-            fullText += part.text;
-            const parsedHtml = typeof marked !== 'undefined' ? marked.parse(part.text) : part.text;
-            htmlContent += typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
-          }
-          if (part.inlineData) {
-            hasImage = true;
-            const imgSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-            htmlContent += `<div style="margin:10px 0;"><img src="${imgSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);" onclick="window.open(this.src,'_blank')" title="Click to view full size"><div style="margin-top:8px; display:flex; gap:8px;"><button class="img-save-btn" style="background:rgba(255,107,237,0.15);border:1px solid rgba(255,107,237,0.3);color:#ff6bed;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Image</button></div></div>`;
-          }
+      for (const pred of predictions) {
+        const b64 = pred.bytesBase64Encoded;
+        if (b64) {
+          hasImage = true;
+          const mime = pred.mimeType || 'image/png';
+          const imgSrc = `data:${mime};base64,${b64}`;
+          htmlContent += `<div style="margin:10px 0;"><img src="${imgSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);" onclick="window.open(this.src,'_blank')" title="Click to view full size"><div style="margin-top:8px; display:flex; gap:8px;"><button class="img-save-btn" style="background:rgba(255,107,237,0.15);border:1px solid rgba(255,107,237,0.3);color:#ff6bed;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Image</button></div></div>`;
         }
       }
       
-      if (!hasImage && !fullText) {
+      if (hasImage) {
+        fullText = `Generated image: "${prompt}"`;
+        htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:8px;">🎨 ${fullText}</div>` + htmlContent;
+      } else {
         htmlContent = '<div style="color:#ff6b6b;">No image was generated. Try a more descriptive prompt.</div>';
       }
       
@@ -1258,13 +1229,16 @@ async function handleSend() {
       
     } else if (modeConfig.type === 'gemini-audio') {
       // === AUDIO / TTS GENERATION (Gemini TTS) ===
+      const ttsPrompt = `Say the following: ${prompt}`;
+      console.log(`[SnapToAI Audio] Using model: ${modeConfig.model}, prompt: "${ttsPrompt}"`);
+      
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            contents: [{ role: 'user', parts: [{ text: ttsPrompt }] }],
             generationConfig: {
               responseModalities: ['AUDIO'],
               speechConfig: {
@@ -1277,14 +1251,17 @@ async function handleSend() {
         }
       );
       
+      const responseBody = await response.json().catch(() => ({}));
+      console.log(`[SnapToAI Audio] Status: ${response.status}`, JSON.stringify(responseBody).substring(0, 500));
+      
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || `Audio generation failed: ${response.status}`);
+        throw new Error(responseBody.error?.message || `Audio generation failed: ${response.status}`);
       }
       
       const responseBubble = createResponseBubble();
-      const data = await response.json();
+      const data = responseBody;
       const parts = data.candidates?.[0]?.content?.parts || [];
+      console.log(`[SnapToAI Audio] Got ${parts.length} parts`);
       let htmlContent = '';
       let hasAudio = false;
       
