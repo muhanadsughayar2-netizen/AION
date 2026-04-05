@@ -441,6 +441,9 @@ function initModeButtons() {
         if (mode === 'music') {
           showSongStudio(thread);
         }
+        if (mode === 'image') {
+          showImageStudio(thread);
+        }
         
         thread.scrollTop = thread.scrollHeight;
       }
@@ -463,6 +466,514 @@ function initModeButtons() {
 }
 
 initModeButtons();
+
+function applyTextOverlays(imgEl, overlays, responseBubble) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = imgEl.naturalWidth;
+  canvas.height = imgEl.naturalHeight;
+  ctx.drawImage(imgEl, 0, 0);
+  
+  for (const overlay of overlays) {
+    if (!overlay.text.trim()) continue;
+    const fontSize = parseInt(overlay.size) * (canvas.width / 400);
+    ctx.font = `bold ${fontSize}px 'Segoe UI', 'Noto Sans Arabic', 'Noto Sans Hebrew', 'Arial', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    let y;
+    if (overlay.position === 'top') y = canvas.height * 0.12;
+    else if (overlay.position === 'bottom') y = canvas.height * 0.88;
+    else y = canvas.height * 0.5;
+    
+    const x = canvas.width / 2;
+    
+    ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+    ctx.lineWidth = fontSize * 0.12;
+    ctx.lineJoin = 'round';
+    ctx.strokeText(overlay.text, x, y);
+    
+    ctx.fillStyle = overlay.color || '#ffffff';
+    ctx.fillText(overlay.text, x, y);
+  }
+  
+  const container = imgEl.closest('.generated-image-container');
+  const dataUrl = canvas.toDataURL('image/png');
+  
+  imgEl.src = dataUrl;
+  imgEl.onclick = () => window.open(dataUrl, '_blank');
+  
+  const saveBtn = container?.querySelector('.img-save-btn');
+  if (saveBtn) {
+    saveBtn.onclick = () => {
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = 'snaptoai-image.png';
+      a.click();
+    };
+  }
+}
+
+function showInlineTextEditor(container, thread) {
+  const existing = container.querySelector('.inline-text-editor');
+  if (existing) { existing.remove(); return; }
+  
+  const editor = document.createElement('div');
+  editor.className = 'inline-text-editor';
+  editor.style.cssText = 'margin-top:10px;padding:12px;background:rgba(255,170,0,0.05);border:1px solid rgba(255,170,0,0.15);border-radius:12px;';
+  
+  editor.innerHTML = `
+    <div style="font-size:12px;font-weight:600;color:#ffaa00;margin-bottom:8px;">✍️ Add Text Overlay</div>
+    <div style="font-size:10px;color:#667788;margin-bottom:8px;">Perfect for Arabic, Hebrew, or any text that AI can't render properly</div>
+    <div class="text-editor-items"></div>
+    <button class="editor-add-layer" style="display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:8px;border:1px dashed rgba(255,170,0,0.3);background:rgba(255,170,0,0.05);color:#ffaa00;font-size:11px;cursor:pointer;margin:4px 0;">+ Add Text Layer</button>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="editor-apply" style="flex:1;padding:8px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffaa00,#ff8800);color:#000;font-size:12px;font-weight:700;cursor:pointer;">Apply Text</button>
+      <button class="editor-cancel" style="padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#667788;font-size:11px;cursor:pointer;">Cancel</button>
+    </div>
+  `;
+  
+  container.appendChild(editor);
+  
+  let layers = [];
+  let layerIdCount = 0;
+  
+  function addEditorLayer() {
+    layerIdCount++;
+    const id = layerIdCount;
+    const itemsContainer = editor.querySelector('.text-editor-items');
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;gap:6px;align-items:center;margin:4px 0;flex-wrap:wrap;';
+    item.innerHTML = `
+      <input type="text" class="el-text" placeholder="Your text (any language)..." style="flex:1;min-width:120px;padding:7px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#e8eef4;font-size:12px;outline:none;">
+      <select class="el-size" style="padding:7px 4px;background:#1a1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#e8eef4;font-size:11px;outline:none;">
+        <option value="24">Small</option>
+        <option value="36" selected>Medium</option>
+        <option value="52">Large</option>
+        <option value="72">X-Large</option>
+      </select>
+      <select class="el-pos" style="padding:7px 4px;background:#1a1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#e8eef4;font-size:11px;outline:none;">
+        <option value="top">Top</option>
+        <option value="center" selected>Center</option>
+        <option value="bottom">Bottom</option>
+      </select>
+      <input type="color" class="el-color" value="#ffffff" style="width:30px;height:30px;border:none;border-radius:6px;cursor:pointer;">
+      <button class="el-remove" style="padding:3px 7px;background:rgba(255,60,60,0.1);border:1px solid rgba(255,60,60,0.2);border-radius:6px;color:#ff4444;cursor:pointer;font-size:13px;">✕</button>
+    `;
+    itemsContainer.appendChild(item);
+    
+    layers.push({ id, el: item });
+    item.querySelector('.el-remove').addEventListener('click', () => {
+      item.remove();
+      layers = layers.filter(l => l.id !== id);
+    });
+  }
+  
+  addEditorLayer();
+  
+  editor.querySelector('.editor-add-layer').addEventListener('click', addEditorLayer);
+  editor.querySelector('.editor-cancel').addEventListener('click', () => editor.remove());
+  
+  editor.querySelector('.editor-apply').addEventListener('click', () => {
+    const overlays = layers.map(l => ({
+      text: l.el.querySelector('.el-text').value,
+      size: l.el.querySelector('.el-size').value,
+      position: l.el.querySelector('.el-pos').value,
+      color: l.el.querySelector('.el-color').value
+    })).filter(o => o.text.trim());
+    
+    if (overlays.length === 0) return;
+    
+    const imgEl = container.querySelector('img');
+    if (!imgEl) return;
+    
+    const tempImg = new Image();
+    tempImg.crossOrigin = 'anonymous';
+    tempImg.onload = () => {
+      applyTextOverlays(tempImg, overlays, null);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = tempImg.naturalWidth;
+      canvas.height = tempImg.naturalHeight;
+      ctx.drawImage(tempImg, 0, 0);
+      
+      for (const overlay of overlays) {
+        if (!overlay.text.trim()) continue;
+        const fontSize = parseInt(overlay.size) * (canvas.width / 400);
+        ctx.font = `bold ${fontSize}px 'Segoe UI', 'Noto Sans Arabic', 'Noto Sans Hebrew', 'Arial', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        let y;
+        if (overlay.position === 'top') y = canvas.height * 0.12;
+        else if (overlay.position === 'bottom') y = canvas.height * 0.88;
+        else y = canvas.height * 0.5;
+        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+        ctx.lineWidth = fontSize * 0.12;
+        ctx.lineJoin = 'round';
+        ctx.strokeText(overlay.text, canvas.width / 2, y);
+        ctx.fillStyle = overlay.color || '#ffffff';
+        ctx.fillText(overlay.text, canvas.width / 2, y);
+      }
+      
+      const dataUrl = canvas.toDataURL('image/png');
+      imgEl.src = dataUrl;
+      imgEl.onclick = () => window.open(dataUrl, '_blank');
+      
+      const saveBtn = container.querySelector('.img-save-btn');
+      if (saveBtn) {
+        saveBtn.onclick = () => {
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = 'snaptoai-image.png';
+          a.click();
+        };
+      }
+      
+      editor.remove();
+    };
+    tempImg.src = imgEl.src;
+  });
+  
+  thread.scrollTop = thread.scrollHeight;
+}
+
+function showImageStudio(thread) {
+  const existing = thread.querySelector('.image-studio');
+  if (existing) existing.remove();
+  
+  const studio = document.createElement('div');
+  studio.className = 'chat-bubble ai image-studio';
+  studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none;';
+  
+  const styles = [
+    { emoji: '📸', name: 'Photo Realistic' },
+    { emoji: '🎨', name: 'Digital Art' },
+    { emoji: '✏️', name: 'Illustration' },
+    { emoji: '🖼️', name: 'Oil Painting' },
+    { emoji: '🌈', name: 'Watercolor' },
+    { emoji: '📐', name: 'Flat Design' },
+    { emoji: '🔮', name: '3D Render' },
+    { emoji: '✨', name: 'Anime' },
+    { emoji: '🖍️', name: 'Cartoon' },
+    { emoji: '📰', name: 'Vintage Poster' },
+    { emoji: '🌌', name: 'Sci-Fi' },
+    { emoji: '🏛️', name: 'Renaissance' },
+    { emoji: '🎭', name: 'Pop Art' },
+    { emoji: '⬛', name: 'Minimalist' },
+    { emoji: '🌿', name: 'Nature' },
+    { emoji: '🏙️', name: 'Cyberpunk' }
+  ];
+  
+  const categories = [
+    { emoji: '📋', name: 'Brochure' },
+    { emoji: '🪧', name: 'Poster' },
+    { emoji: '📱', name: 'Social Media Post' },
+    { emoji: '🏷️', name: 'Logo' },
+    { emoji: '🖼️', name: 'Background' },
+    { emoji: '🎴', name: 'Card' },
+    { emoji: '📢', name: 'Ad Banner' },
+    { emoji: '👤', name: 'Portrait' },
+    { emoji: '🏞️', name: 'Landscape' },
+    { emoji: '🍔', name: 'Product Shot' },
+    { emoji: '📊', name: 'Infographic' },
+    { emoji: '🎁', name: 'Invitation' }
+  ];
+  
+  const colors = [
+    { hex: '#ff4444', name: 'Red' },
+    { hex: '#ff8800', name: 'Orange' },
+    { hex: '#ffcc00', name: 'Yellow' },
+    { hex: '#00cc44', name: 'Green' },
+    { hex: '#0088ff', name: 'Blue' },
+    { hex: '#8844ff', name: 'Purple' },
+    { hex: '#ff44aa', name: 'Pink' },
+    { hex: '#ffffff', name: 'White' },
+    { hex: '#111111', name: 'Black' },
+    { hex: '#c0a060', name: 'Gold' }
+  ];
+  
+  const chipStyle = `display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer;transition:all 0.2s;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#ccd6e0;margin:3px;user-select:none;`;
+  const sectionTitleStyle = `font-size:13px;font-weight:600;color:#ff6bed;margin:12px 0 8px 0;`;
+  const sectionSubStyle = `font-size:11px;color:#667788;margin:-4px 0 6px 0;`;
+  
+  studio.innerHTML = `
+    <div style="background:linear-gradient(135deg, rgba(255,107,237,0.06), rgba(200,80,200,0.03));border:1px solid rgba(255,107,237,0.12);border-radius:16px;padding:20px;backdrop-filter:blur(10px);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+        <span style="font-size:24px;">🎨</span>
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#e8eef4;">Image Studio</div>
+          <div style="font-size:11px;color:#667788;">Create the perfect image step by step</div>
+        </div>
+      </div>
+      
+      <div style="${sectionTitleStyle}">What Are You Creating?</div>
+      <div style="${sectionSubStyle}">Pick a format</div>
+      <div class="studio-categories" style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${categories.map(c => `<div class="studio-chip cat-chip" data-value="${c.name}" style="${chipStyle}"><span>${c.emoji}</span><span>${c.name}</span></div>`).join('')}
+      </div>
+      
+      <div style="${sectionTitleStyle}">Art Style</div>
+      <div style="${sectionSubStyle}">How should it look?</div>
+      <div class="studio-styles" style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${styles.map(s => `<div class="studio-chip style-chip" data-value="${s.name}" style="${chipStyle}"><span>${s.emoji}</span><span>${s.name}</span></div>`).join('')}
+      </div>
+      
+      <div style="${sectionTitleStyle}">Color Scheme</div>
+      <div style="${sectionSubStyle}">Dominant colors (pick up to 2)</div>
+      <div class="studio-colors" style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${colors.map(c => `<div class="studio-chip color-chip" data-value="${c.name}" data-hex="${c.hex}" style="${chipStyle}"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c.hex};border:1px solid rgba(255,255,255,0.2);"></span><span>${c.name}</span></div>`).join('')}
+      </div>
+      
+      <div style="${sectionTitleStyle}">Describe Your Image</div>
+      <div style="${sectionSubStyle}">What should be in the image?</div>
+      <textarea class="studio-desc" placeholder="e.g. A professional business meeting in a modern office, a sunset over mountains, a sleek product on a marble table..." style="width:100%;box-sizing:border-box;min-height:60px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;"></textarea>
+      
+      <div style="${sectionTitleStyle}">✍️ Text to Place on Image</div>
+      <div style="${sectionSubStyle}">Add text AFTER generation — perfect for Arabic, Hebrew, or any language (AI can't render text well, so we overlay it for you!)</div>
+      <div class="text-overlay-section">
+        <div class="overlay-items"></div>
+        <button class="add-text-btn" style="display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border-radius:10px;border:1px dashed rgba(255,107,237,0.3);background:rgba(255,107,237,0.05);color:#ff6bed;font-size:12px;cursor:pointer;margin-top:4px;">+ Add Text Layer</button>
+      </div>
+      
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button class="studio-create-btn" style="flex:1;padding:12px 20px;border-radius:12px;border:none;background:linear-gradient(135deg,#ff6bed,#cc44bb);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;opacity:0.4;pointer-events:none;">🎨 Create Image</button>
+        <button class="studio-surprise-btn" style="padding:12px 16px;border-radius:12px;border:1px solid rgba(255,107,237,0.3);background:rgba(255,107,237,0.08);color:#ff6bed;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;">🎲 Surprise Me</button>
+      </div>
+      
+      <div class="studio-preview" style="margin-top:10px;padding:8px 12px;background:rgba(0,0,0,0.2);border-radius:8px;font-size:11px;color:#556677;display:none;">
+        <span style="color:#ff6bed;">Preview:</span> <span class="preview-text"></span>
+      </div>
+    </div>
+  `;
+  
+  thread.appendChild(studio);
+  
+  let selectedCategory = null;
+  let selectedStyle = null;
+  let selectedColors = [];
+  let overlayTexts = [];
+  let overlayIdCounter = 0;
+  
+  function updatePreview() {
+    const preview = studio.querySelector('.studio-preview');
+    const previewText = studio.querySelector('.preview-text');
+    const createBtn = studio.querySelector('.studio-create-btn');
+    const desc = studio.querySelector('.studio-desc').value.trim();
+    
+    if (selectedCategory || selectedStyle || desc) {
+      const parts = [];
+      if (selectedCategory) parts.push(`${selectedCategory}`);
+      if (selectedStyle) parts.push(`in ${selectedStyle.toLowerCase()} style`);
+      if (selectedColors.length > 0) parts.push(`with ${selectedColors.join(' and ').toLowerCase()} colors`);
+      if (desc) parts.push(`— ${desc}`);
+      if (overlayTexts.length > 0) parts.push(`(${overlayTexts.length} text overlay${overlayTexts.length > 1 ? 's' : ''} will be added after)`);
+      
+      previewText.textContent = parts.join(' ');
+      preview.style.display = 'block';
+      createBtn.style.opacity = '1';
+      createBtn.style.pointerEvents = 'auto';
+    } else {
+      preview.style.display = 'none';
+      createBtn.style.opacity = '0.4';
+      createBtn.style.pointerEvents = 'none';
+    }
+  }
+  
+  function handleSingleChipClick(chipClass, callback) {
+    studio.querySelectorAll(`.${chipClass}`).forEach(chip => {
+      chip.addEventListener('click', () => {
+        const wasActive = chip.style.background.includes('rgba(255, 107, 237');
+        studio.querySelectorAll(`.${chipClass}`).forEach(c => {
+          c.style.background = 'rgba(255,255,255,0.04)';
+          c.style.borderColor = 'rgba(255,255,255,0.1)';
+          c.style.color = '#ccd6e0';
+          c.style.transform = '';
+        });
+        if (!wasActive) {
+          chip.style.background = 'rgba(255,107,237,0.15)';
+          chip.style.borderColor = 'rgba(255,107,237,0.4)';
+          chip.style.color = '#ff6bed';
+          chip.style.transform = 'scale(1.05)';
+          callback(chip.dataset.value);
+        } else {
+          callback(null);
+        }
+        updatePreview();
+      });
+      chip.addEventListener('mouseenter', () => {
+        if (!chip.style.background.includes('rgba(255, 107, 237')) chip.style.background = 'rgba(255,255,255,0.08)';
+      });
+      chip.addEventListener('mouseleave', () => {
+        if (!chip.style.background.includes('rgba(255, 107, 237')) chip.style.background = 'rgba(255,255,255,0.04)';
+      });
+    });
+  }
+  
+  handleSingleChipClick('cat-chip', v => { selectedCategory = v; });
+  handleSingleChipClick('style-chip', v => { selectedStyle = v; });
+  
+  studio.querySelectorAll('.color-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const val = chip.dataset.value;
+      const isActive = chip.style.background.includes('rgba(255, 107, 237');
+      if (isActive) {
+        selectedColors = selectedColors.filter(c => c !== val);
+        chip.style.background = 'rgba(255,255,255,0.04)';
+        chip.style.borderColor = 'rgba(255,255,255,0.1)';
+        chip.style.color = '#ccd6e0';
+        chip.style.transform = '';
+      } else if (selectedColors.length < 2) {
+        selectedColors.push(val);
+        chip.style.background = 'rgba(255,107,237,0.15)';
+        chip.style.borderColor = 'rgba(255,107,237,0.4)';
+        chip.style.color = '#ff6bed';
+        chip.style.transform = 'scale(1.05)';
+      }
+      updatePreview();
+    });
+  });
+  
+  studio.querySelector('.studio-desc').addEventListener('input', updatePreview);
+  
+  function addTextOverlayItem() {
+    overlayIdCounter++;
+    const id = overlayIdCounter;
+    const container = studio.querySelector('.overlay-items');
+    const item = document.createElement('div');
+    item.className = 'overlay-item';
+    item.dataset.id = id;
+    item.style.cssText = 'display:flex;gap:6px;align-items:flex-start;margin:6px 0;flex-wrap:wrap;';
+    item.innerHTML = `
+      <input type="text" class="overlay-text" placeholder="Your exact text (any language)..." style="flex:1;min-width:140px;padding:8px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#e8eef4;font-size:12px;outline:none;">
+      <select class="overlay-size" style="padding:8px 6px;background:#1a1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#e8eef4;font-size:11px;outline:none;">
+        <option value="24">Small</option>
+        <option value="36" selected>Medium</option>
+        <option value="52">Large</option>
+        <option value="72">X-Large</option>
+      </select>
+      <select class="overlay-pos" style="padding:8px 6px;background:#1a1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#e8eef4;font-size:11px;outline:none;">
+        <option value="top">Top</option>
+        <option value="center" selected>Center</option>
+        <option value="bottom">Bottom</option>
+      </select>
+      <input type="color" class="overlay-color" value="#ffffff" style="width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;background:transparent;">
+      <button class="overlay-remove" style="padding:4px 8px;background:rgba(255,60,60,0.1);border:1px solid rgba(255,60,60,0.2);border-radius:6px;color:#ff4444;cursor:pointer;font-size:14px;">✕</button>
+    `;
+    container.appendChild(item);
+    
+    item.querySelector('.overlay-remove').addEventListener('click', () => {
+      item.remove();
+      overlayTexts = overlayTexts.filter(t => t.id !== id);
+      updatePreview();
+    });
+    
+    const updateOverlay = () => {
+      const text = item.querySelector('.overlay-text').value;
+      const existing = overlayTexts.find(t => t.id === id);
+      const data = {
+        id,
+        text,
+        size: item.querySelector('.overlay-size').value,
+        position: item.querySelector('.overlay-pos').value,
+        color: item.querySelector('.overlay-color').value
+      };
+      if (existing) Object.assign(existing, data);
+      else overlayTexts.push(data);
+      updatePreview();
+    };
+    
+    item.querySelector('.overlay-text').addEventListener('input', updateOverlay);
+    item.querySelector('.overlay-size').addEventListener('change', updateOverlay);
+    item.querySelector('.overlay-pos').addEventListener('change', updateOverlay);
+    item.querySelector('.overlay-color').addEventListener('input', updateOverlay);
+  }
+  
+  studio.querySelector('.add-text-btn').addEventListener('click', addTextOverlayItem);
+  
+  studio.querySelector('.studio-create-btn').addEventListener('click', () => {
+    if (!selectedCategory && !selectedStyle && !studio.querySelector('.studio-desc').value.trim()) return;
+    
+    const desc = studio.querySelector('.studio-desc').value.trim();
+    let prompt = 'Generate an image:';
+    if (selectedCategory) prompt += ` ${selectedCategory}`;
+    if (selectedStyle) prompt += ` in ${selectedStyle.toLowerCase()} art style`;
+    if (selectedColors.length > 0) prompt += ` with a ${selectedColors.join(' and ').toLowerCase()} color scheme`;
+    if (desc) prompt += `. ${desc}`;
+    
+    const validOverlays = overlayTexts.filter(t => t.text.trim());
+    if (validOverlays.length > 0) {
+      prompt += '. IMPORTANT: Do NOT include any text or words in the image. Leave clean space for text overlay.';
+    }
+    prompt += '. Make it high quality and professional.';
+    
+    if (validOverlays.length > 0) {
+      window._pendingTextOverlays = validOverlays;
+    }
+    
+    const inputEl = document.getElementById('chatInput');
+    if (inputEl) {
+      inputEl.value = prompt;
+      const sendBtn = document.getElementById('sendBtn');
+      if (sendBtn) sendBtn.click();
+    }
+    
+    studio.style.opacity = '0.5';
+    studio.style.pointerEvents = 'none';
+  });
+  
+  studio.querySelector('.studio-surprise-btn').addEventListener('click', () => {
+    const rCat = categories[Math.floor(Math.random() * categories.length)];
+    const rStyle = styles[Math.floor(Math.random() * styles.length)];
+    const rColor1 = colors[Math.floor(Math.random() * colors.length)];
+    let rColor2 = colors[Math.floor(Math.random() * colors.length)];
+    while (rColor2.name === rColor1.name) rColor2 = colors[Math.floor(Math.random() * colors.length)];
+    
+    const surpriseDescs = [
+      'A stunning mountain landscape at golden hour',
+      'Modern luxury apartment interior with city views',
+      'Elegant perfume bottle with flower petals',
+      'Futuristic city skyline at night with neon lights',
+      'Delicious food spread on a rustic wooden table',
+      'Professional headshot with bokeh background',
+      'Tropical beach with crystal clear water',
+      'Abstract geometric shapes floating in space',
+      'Cozy coffee shop with warm lighting',
+      'Fashion model in a flowing dress on a rooftop'
+    ];
+    const rDesc = surpriseDescs[Math.floor(Math.random() * surpriseDescs.length)];
+    
+    selectedCategory = rCat.name;
+    selectedStyle = rStyle.name;
+    selectedColors = [rColor1.name, rColor2.name];
+    
+    studio.querySelectorAll('.cat-chip').forEach(c => {
+      const m = c.dataset.value === rCat.name;
+      c.style.background = m ? 'rgba(255,107,237,0.15)' : 'rgba(255,255,255,0.04)';
+      c.style.borderColor = m ? 'rgba(255,107,237,0.4)' : 'rgba(255,255,255,0.1)';
+      c.style.color = m ? '#ff6bed' : '#ccd6e0';
+      c.style.transform = m ? 'scale(1.05)' : '';
+    });
+    studio.querySelectorAll('.style-chip').forEach(c => {
+      const m = c.dataset.value === rStyle.name;
+      c.style.background = m ? 'rgba(255,107,237,0.15)' : 'rgba(255,255,255,0.04)';
+      c.style.borderColor = m ? 'rgba(255,107,237,0.4)' : 'rgba(255,255,255,0.1)';
+      c.style.color = m ? '#ff6bed' : '#ccd6e0';
+      c.style.transform = m ? 'scale(1.05)' : '';
+    });
+    studio.querySelectorAll('.color-chip').forEach(c => {
+      const m = c.dataset.value === rColor1.name || c.dataset.value === rColor2.name;
+      c.style.background = m ? 'rgba(255,107,237,0.15)' : 'rgba(255,255,255,0.04)';
+      c.style.borderColor = m ? 'rgba(255,107,237,0.4)' : 'rgba(255,255,255,0.1)';
+      c.style.color = m ? '#ff6bed' : '#ccd6e0';
+      c.style.transform = m ? 'scale(1.05)' : '';
+    });
+    
+    studio.querySelector('.studio-desc').value = rDesc;
+    updatePreview();
+    
+    studio.querySelector('.studio-surprise-btn').textContent = '🎲 Again!';
+  });
+}
 
 function showSongStudio(thread) {
   const existing = thread.querySelector('.song-studio');
@@ -1439,6 +1950,7 @@ async function handleSend() {
       const parts = lastResponseData.candidates[0].content.parts;
       let htmlContent = '';
       let hasImage = false;
+      let rawImageSrc = null;
       
       for (const part of parts) {
         if (part.text) {
@@ -1446,8 +1958,8 @@ async function handleSend() {
         }
         if (part.inlineData) {
           hasImage = true;
-          const imgSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-          htmlContent += `<div style="margin:10px 0;"><img src="${imgSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);" onclick="window.open(this.src,'_blank')" title="Click to view full size"><div style="margin-top:8px; display:flex; gap:8px;"><button class="img-save-btn" style="background:rgba(255,107,237,0.15);border:1px solid rgba(255,107,237,0.3);color:#ff6bed;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Image</button></div></div>`;
+          rawImageSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          htmlContent += `<div style="margin:10px 0;" class="generated-image-container"><img class="generated-img" src="${rawImageSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);" onclick="window.open(this.src,'_blank')" title="Click to view full size"><div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"><button class="img-save-btn" style="background:rgba(255,107,237,0.15);border:1px solid rgba(255,107,237,0.3);color:#ff6bed;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Image</button><button class="img-add-text-btn" style="background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">✍️ Add Text</button></div></div>`;
         }
       }
       
@@ -1460,15 +1972,35 @@ async function handleSend() {
       
       responseBubble.innerHTML = htmlContent;
       
+      const pendingOverlays = window._pendingTextOverlays || [];
+      window._pendingTextOverlays = null;
+      
+      if (pendingOverlays.length > 0 && rawImageSrc) {
+        const imgEl = responseBubble.querySelector('.generated-img');
+        if (imgEl) {
+          imgEl.onload = () => {
+            applyTextOverlays(imgEl, pendingOverlays, responseBubble);
+          };
+        }
+      }
+      
       responseBubble.querySelectorAll('.img-save-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          const img = btn.closest('div').parentElement.querySelector('img');
+          const img = btn.closest('.generated-image-container')?.querySelector('img, canvas') || btn.closest('div').parentElement.querySelector('img');
           if (img) {
             const a = document.createElement('a');
-            a.href = img.src;
+            a.href = img.tagName === 'CANVAS' ? img.toDataURL('image/png') : img.src;
             a.download = 'snaptoai-image.png';
             a.click();
           }
+        });
+      });
+      
+      responseBubble.querySelectorAll('.img-add-text-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const container = btn.closest('.generated-image-container');
+          if (!container) return;
+          showInlineTextEditor(container, thread);
         });
       });
       
