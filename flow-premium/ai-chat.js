@@ -1119,6 +1119,8 @@ async function handleSend() {
     if (modeConfig.type === 'gemini-image') {
       // === IMAGE GENERATION (via generateContent with responseModalities) ===
       const imageModels = [
+        'nano-banana-2',
+        'nano-banana-pro',
         'gemini-2.0-flash-exp',
         'gemini-2.0-flash',
         'gemini-2.5-flash-preview-04-17'
