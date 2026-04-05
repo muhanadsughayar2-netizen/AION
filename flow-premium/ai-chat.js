@@ -1117,17 +1117,28 @@ async function handleSend() {
 
     if (modeConfig.type === 'gemini-image') {
       // === IMAGE GENERATION (Gemini native image gen) ===
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
-          })
+      let response;
+      const maxRetries = 3;
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+              generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+            })
+          }
+        );
+        if (response.ok || (response.status !== 429 && response.status !== 503)) break;
+        if (attempt < maxRetries - 1) {
+          const waitSec = (attempt + 1) * 5;
+          const loadingEl = document.querySelector('.loading-dots');
+          if (loadingEl) loadingEl.innerHTML = `<span style="color:#ff6bed;">⏳ Rate limited — retrying in ${waitSec}s...</span>`;
+          await new Promise(r => setTimeout(r, waitSec * 1000));
         }
-      );
+      }
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
