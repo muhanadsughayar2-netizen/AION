@@ -1,0 +1,149 @@
+
+Projects
+Security and quality
+Insights
+google-gemini/cookbook
+Go to file
+Name		
+amiragamalyassin
+amiragamalyassin
+Update Prompting.ipynb (#1187)
+f39e898
+ · 
+3 days ago
+.devcontainer
+I0 2025 new models and capabilities (#769)
+11 months ago
+.gemini
+Add audio chord extraction example (#1173)
+last week
+.github
+I0 2025 new models and capabilities (#769)
+11 months ago
+examples
+Improved + Fix code logic and reorder notebook cells (#1146)
+3 days ago
+quickstarts-js
+update cookbooks (#1147)
+last month
+quickstarts
+Update Prompting.ipynb (#1187)
+3 days ago
+.gitignore
+Reorganize and update .gitignore entriesOnly ignoring python files at…
+2 months ago
+CONTRIBUTING.md
+Add audio chord extraction example (#1173)
+last week
+LICENSE
+I0 2025 new models and capabilities (#769)
+11 months ago
+README.md
+Add service tiers (#1184)
+4 days ago
+Repository files navigation
+README
+Contributing
+Apache-2.0 license
+Security
+Welcome to the Gemini API Cookbook
+This cookbook provides a structured learning path for using the Gemini API, focusing on hands-on tutorials and practical examples.
+
+For comprehensive API documentation, visit ai.google.dev.
+
+
+Gemini 3: For the most recent updates on our latest generation, please check the Get Started Colab and the thinking Colab guides who include migration guides.
+
+🍌 Nano-Banana 2: Go bananas with our latest image generation model: Nano-Banana 2. Get started here Colab with 512px, thinking, search and image grounding, and a ton of examples!
+
+🎶 Lyria 3: Channel your inner composer with Lyria 3. Get started here Colab with 30s clips and full song generation, image-to-music, and a ton of examples!
+
+Navigating the Cookbook
+This cookbook is organized into two main categories:
+
+Quick Starts: Step-by-step guides covering both introductory topics ("Get Started Colab") and specific API features.
+Examples: Practical use cases demonstrating how to combine multiple features.
+We also showcase Demos in separate repositories, illustrating end-to-end applications of the Gemini API.
+
+
+What's New?
+Here are the recent additions and updates to the Gemini API and the Cookbook:
+
+Inference tiers: Learn how to use the Priority and Flex tiers in the Inference tiers guide to help you balance speed, cost, and reliability.
+🎶 Lyria 3: Convert your ideas into songs Colab with full control over the music structure and more!
+🍌 Nano-Banana 2 & Pro: Use Gemini's native image generation Colab capabilities to edit images with high consistency or generate visual stories. Experience Nano-Banana 2 for high speed or Nano-Banana Pro for 4K quality—both now with thinking and search grounding!
+File Search: Discover how to ground generations in your own data in a hosted RAG system with the File Search quickstart Colab.
+Grounding with Google Maps: Get started using factual geographical data from 📍 Google Maps in your apps! See the Google Maps section of the Grounding Guide Colab.
+Veo 3.1: Get started with our video generation model with this Veo guide, including image-to-videos and video extension! Colab
+Gemini Robotics-ER 1.5: Learn about this new Gemini model specifically for spatial understanding and reasoning for robotics applications. Colab
+Lyria and TTS: Get started with podcast and music generation with the TTS Colab and Lyria RealTime Colab models.
+LiveAPI: Get started with the multimodal Live API Colab and unlock new interactivity with Gemini.
+Recently Added Guides:
+Grounding Colab: Discover different ways to ground Gemini's answer using different tools, from Google Search to Youtube and URLs and the new Maps grounding tool.
+Batch API Colab: Use Batch API to send large volume of non-time-sensitive requests to the model and get up to 90% discount.
+Logs and datasets Colab: Process and evaluate your collected logs using the Batch API.
+
+
+
+1. Quick Starts
+The quickstarts section contains step-by-step tutorials to get you started with Gemini and learn about its specific features.
+
+To begin, you'll need:
+
+A Google account.
+An API key (create one in Google AI Studio).
+
+We recommend starting with the following:
+
+Authentication Colab: Set up your API key for access.
+Get started Colab: Get started with Gemini models and the Gemini API, covering basic prompting and multimodal input.
+
+Then, explore the other quickstarts tutorials to learn about individual features:
+
+Get started with Live API Colab: Get started with the live API with this comprehensive overview of its capabilities
+Get started with Veo Colab: Get started with our video generation capabilities
+Get started with Imagen Colab and Native image generation Colab: Get started with our image generation capabilities
+Grounding Colab: use Google Search for grounded responses
+Code execution Colab: Generate and run Python code to solve complex tasks and even output graphs
+And many more
+
+2. Examples (Practical Use Cases)
+These examples demonstrate how to combine multiple Gemini API features or 3rd-party tools to build more complex applications.
+
+Browser as a tool Colab: Use a web browser for live and internal (intranet) web interactions
+Illustrate a book Colab: Use Gemini to create illustration for an open-source book
+Animated Story Generation Colab: Create animated videos by combining Gemini's story generation, Imagen, and audio synthesis
+Plotting and mapping Live Colab: Mix Live API and Code execution to solve complex tasks live
+3D Spatial understanding Colab: Use Gemini 3D spatial abilities to understand 3D scenes
+Gradio and live API: Use gradio to deploy your own instance of the Live API
+And many many more
+
+3. Demos (End-to-End Applications)
+These fully functional, end-to-end applications showcase the power of Gemini in real-world scenarios.
+
+Gemini CLI: Open-source AI agent that brings the power of Gemini directly into your terminal
+Gemini API quickstart: Python Flask App running with the Google AI Gemini API, designed to get you started building with Gemini's multi-modal capabilities
+Multimodal Live API Web Console: React-based starter app for using the Multimodal Live API over a websocket
+Fullstack Langgraph Quickstart: A fullstack application using a React frontend and a LangGraph-powered backend agent
+Google AI Studio Starter Applets: A collection of small apps that demonstrate how Gemini can be used to create interactive experiences
+
+Official SDKs
+The Gemini API is a REST API. You can call it directly using tools like curl (see REST examples or the great Postman workspace), or use one of our official SDKs:
+
+Python
+Go
+Node.js
+Dart (Flutter)
+Android
+Swift
+
+Get Help
+Ask a question on the Google AI Developer Forum.
+
+The Gemini API on Google Cloud Vertex AI
+For enterprise developers, the Gemini API is also available on Google Cloud Vertex AI. See this repo for examples.
+
+Contributing
+Contributions are welcome! See CONTRIBUTING.md for details.
+
+Thank you for developing with the Gemini API! We're excited to see what you create.
