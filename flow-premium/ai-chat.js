@@ -873,6 +873,26 @@ function showSongStudio(thread) {
         </div>
       </div>
       
+      ${currentImages.length > 0 ? `
+      <div style="background:linear-gradient(135deg, rgba(255,170,0,0.08), rgba(255,100,0,0.04));border:1px solid rgba(255,170,0,0.2);border-radius:12px;padding:14px;margin:10px 0;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="font-size:18px;">📸→🎵</span>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#ffaa00;">Image to Music</div>
+            <div style="font-size:10px;color:#889900;">You have ${currentImages.length} screenshot${currentImages.length > 1 ? 's' : ''} loaded — turn ${currentImages.length > 1 ? 'them' : 'it'} into music!</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#aabbcc;margin-bottom:10px;">AI will analyze your image and create music that matches its mood, colors, and atmosphere</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="img2music-auto" style="padding:8px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffaa00,#ff8800);color:#000;font-size:12px;font-weight:700;cursor:pointer;">🎵 Auto — Let AI Decide</button>
+          <button class="img2music-happy" style="padding:8px 14px;border-radius:10px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.08);color:#00ff88;font-size:11px;cursor:pointer;">😊 Happy</button>
+          <button class="img2music-chill" style="padding:8px 14px;border-radius:10px;border:1px solid rgba(0,217,255,0.3);background:rgba(0,217,255,0.08);color:#00d9ff;font-size:11px;cursor:pointer;">😌 Chill</button>
+          <button class="img2music-epic" style="padding:8px 14px;border-radius:10px;border:1px solid rgba(255,107,237,0.3);background:rgba(255,107,237,0.08);color:#ff6bed;font-size:11px;cursor:pointer;">🏔️ Epic</button>
+          <button class="img2music-dark" style="padding:8px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#aabbcc;font-size:11px;cursor:pointer;">🌑 Dark</button>
+        </div>
+      </div>
+      ` : ''}
+      
       <div style="${sectionTitleStyle}">Step 1: Pick a Genre</div>
       <div style="${sectionSubStyle}">Choose your style</div>
       <div class="studio-genres" style="display:flex;flex-wrap:wrap;gap:2px;">
@@ -906,6 +926,30 @@ function showSongStudio(thread) {
   `;
   
   thread.appendChild(studio);
+  
+  const img2musicMoods = {
+    'auto': 'Create music that perfectly captures the mood, atmosphere, emotion, and colors of this image. Choose the best genre, tempo, and instruments automatically.',
+    'happy': 'Create happy, upbeat, joyful music inspired by this image. Use bright, energetic melodies.',
+    'chill': 'Create calm, relaxing, chill music inspired by this image. Use smooth, ambient sounds.',
+    'epic': 'Create epic, powerful, cinematic music inspired by this image. Use dramatic orchestral sounds.',
+    'dark': 'Create dark, mysterious, moody music inspired by this image. Use deep, atmospheric tones.'
+  };
+  
+  Object.keys(img2musicMoods).forEach(mood => {
+    const btn = studio.querySelector(`.img2music-${mood}`);
+    if (btn) {
+      btn.addEventListener('click', () => {
+        const inputEl = document.getElementById('chatInput');
+        if (inputEl) {
+          inputEl.value = img2musicMoods[mood];
+          const sendBtn = document.getElementById('sendBtn');
+          if (sendBtn) sendBtn.click();
+        }
+        studio.style.opacity = '0.5';
+        studio.style.pointerEvents = 'none';
+      });
+    }
+  });
   
   let selectedGenre = null;
   let selectedMood = null;
@@ -1252,6 +1296,19 @@ async function initializeChat() {
   // Update verdict button visibility
   if (typeof updateVerdictButtonVisibility === 'function') {
     updateVerdictButtonVisibility();
+  }
+
+  const isImg2Music = urlParams.get('img2music') === 'true';
+  if (isImg2Music && currentImages.length > 0) {
+    console.log('[SnapToAI] Image-to-Music mode - auto-sending');
+    setTimeout(() => {
+      const chatInput = document.getElementById('chatInput');
+      if (chatInput) {
+        chatInput.value = 'Create music that perfectly captures the mood, atmosphere, emotion, and colors of this image. Choose the best genre, tempo, and instruments automatically. Make it a complete, polished musical piece.';
+        handleSend();
+      }
+    }, 600);
+    return;
   }
 
   // Check trial status — show upgrade modal if expired (non-blocking)
@@ -1832,8 +1889,19 @@ async function handleSend() {
         const isTTS = audioModel.includes('tts');
         
         if (isLyria) {
+          const contentParts = [];
+          if (currentImages.length > 0) {
+            for (const img of currentImages) {
+              const [meta, b64] = img.split(',');
+              const mime = meta.match(/:(.*?);/)?.[1] || 'image/png';
+              contentParts.push({ inlineData: { mimeType: mime, data: b64 } });
+            }
+            contentParts.push({ text: prompt || 'Create music that captures the mood, atmosphere, and emotion of this image. Make it a complete, polished musical piece.' });
+          } else {
+            contentParts.push({ text: prompt });
+          }
           bodyPayload = {
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            contents: [{ role: 'user', parts: contentParts }],
             generationConfig: { responseModalities: ['AUDIO'] }
           };
         } else {

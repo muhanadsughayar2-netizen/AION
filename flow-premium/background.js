@@ -125,6 +125,7 @@ function registerSnapToAIMenu() {
     chrome.contextMenus.create({ id: 'ask-ai-this', title: '✨ Ask AI About This', parentId: 'snaptoai-parent', contexts: ['all'] });
     chrome.contextMenus.create({ id: 'explain-text', title: '📝 Explain Selected Text', parentId: 'snaptoai-parent', contexts: ['selection'] });
     chrome.contextMenus.create({ id: 'analyze-image', title: '🖼️ Analyze This Image', parentId: 'snaptoai-parent', contexts: ['image'] });
+    chrome.contextMenus.create({ id: 'image-to-music', title: '🎵 Make Music From This Image', parentId: 'snaptoai-parent', contexts: ['image'] });
 
     chrome.contextMenus.create({ id: 'sep2', type: 'separator', parentId: 'snaptoai-parent' });
 
@@ -191,6 +192,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       await handleAskSnapToAI(info, tab);
       break;
 
+    case 'image-to-music':
+      await handleImageToMusic(info, tab);
+      break;
+
     case 'send-queue-ai': {
       try {
         const snaps = await getSnaps();
@@ -232,6 +237,72 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       break;
   }
 });
+
+async function handleImageToMusic(info, tab) {
+  try {
+    if (!info.srcUrl) {
+      console.log('[SnapToAI] No image URL for image-to-music');
+      return;
+    }
+    
+    let imageData = info.srcUrl;
+    
+    if (!imageData.startsWith('data:')) {
+      try {
+        const [result] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: (url) => {
+            return new Promise((resolve) => {
+              const img = new Image();
+              img.crossOrigin = 'anonymous';
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/jpeg', 0.85));
+              };
+              img.onerror = () => resolve(null);
+              img.src = url;
+            });
+          },
+          args: [info.srcUrl]
+        });
+        if (result?.result) {
+          imageData = result.result;
+        }
+      } catch(e) {
+        console.log('[SnapToAI] Could not convert image, trying screenshot fallback');
+        try {
+          imageData = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 85 });
+        } catch(e2) {
+          console.error('[SnapToAI] Screenshot fallback failed:', e2.message);
+          return;
+        }
+      }
+    }
+    
+    await chrome.storage.session.set({
+      selectedSnaps: [imageData],
+      useIndexedDB: false,
+      geminiModel: 'music'
+    });
+    
+    chrome.storage.sync.set({ geminiModel: 'music' });
+    
+    chrome.windows.create({
+      url: chrome.runtime.getURL('ai-chat.html?count=1&source=contextmenu&mode=music&img2music=true'),
+      type: 'popup',
+      width: 1000,
+      height: 700,
+      focused: true
+    });
+    
+  } catch(e) {
+    console.error('[SnapToAI] Image-to-music failed:', e.message);
+  }
+}
 
 async function handleAskSnapToAI(info, tab) {
   try {
