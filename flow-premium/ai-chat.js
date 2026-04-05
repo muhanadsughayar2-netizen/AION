@@ -367,11 +367,10 @@ const AI_MODES = {
     welcome: '🎨 Image mode — describe what you want and I\'ll create it!'
   },
   'music': {
-    model: 'lyria-2.0-flash',
-    type: 'media-gen',
-    mediaType: 'audio',
-    placeholder: 'Describe the music you want (mood, genre, tempo)...',
-    welcome: '🎵 Music mode — describe the vibe and I\'ll compose it!'
+    model: 'gemini-2.5-flash-preview-tts',
+    type: 'gemini-audio',
+    placeholder: 'Type what you want spoken or sung...',
+    welcome: '🎵 Audio mode — type text and I\'ll speak it for you!'
   },
   'video': {
     model: 'veo-2.0-generate-001',
@@ -1175,13 +1174,88 @@ async function handleSend() {
       thread.scrollTop = thread.scrollHeight;
       addBubbleActions(responseBubble, fullText);
       
+    } else if (modeConfig.type === 'gemini-audio') {
+      // === AUDIO / TTS GENERATION (Gemini TTS) ===
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseModalities: ['AUDIO'],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: 'Kore' }
+                }
+              }
+            }
+          })
+        }
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `Audio generation failed: ${response.status}`);
+      }
+      
+      const responseBubble = createResponseBubble();
+      const data = await response.json();
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      let htmlContent = '';
+      let hasAudio = false;
+      
+      for (const part of parts) {
+        if (part.text) {
+          fullText += part.text;
+          const parsedHtml = typeof marked !== 'undefined' ? marked.parse(part.text) : part.text;
+          htmlContent += typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
+        }
+        if (part.inlineData && part.inlineData.mimeType?.startsWith('audio')) {
+          hasAudio = true;
+          const audioSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          htmlContent += `<div style="margin:10px 0;">
+            <audio controls style="width:100%; border-radius:8px; outline:none;" src="${audioSrc}"></audio>
+            <div style="margin-top:8px; display:flex; gap:8px;">
+              <button class="audio-save-btn" style="background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.3);color:#00ff88;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Audio</button>
+            </div>
+          </div>`;
+        }
+      }
+      
+      if (!hasAudio && !fullText) {
+        htmlContent = '<div style="color:#ff6b6b;">No audio was generated. Try typing a sentence to speak.</div>';
+      } else if (!hasAudio) {
+        htmlContent = `<div style="font-size:13px;color:#aabbcc;">${fullText}</div>`;
+      } else {
+        fullText = fullText || `Audio for: "${prompt}"`;
+        htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:6px;">🎵 ${fullText}</div>` + htmlContent;
+      }
+      
+      responseBubble.innerHTML = htmlContent;
+      
+      responseBubble.querySelectorAll('.audio-save-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const audioEl = btn.closest('div').parentElement.querySelector('audio');
+          if (audioEl) {
+            const a = document.createElement('a');
+            a.href = audioEl.src;
+            a.download = 'snaptoai-audio.wav';
+            a.click();
+          }
+        });
+      });
+      
+      thread.scrollTop = thread.scrollHeight;
+      addBubbleActions(responseBubble, fullText);
+      
     } else if (modeConfig.type === 'media-gen') {
-      // === MUSIC / VIDEO GENERATION ===
-      const isMusic = modeConfig.mediaType === 'audio';
-      const emoji = isMusic ? '🎵' : '🎬';
-      const label = isMusic ? 'music' : 'video';
-      const modelName = isMusic ? 'Lyria' : 'Veo';
-      const accentColor = isMusic ? '#00ff88' : '#ffaa00';
+      // === VIDEO GENERATION ===
+      const emoji = '🎬';
+      const label = 'video';
+      const modelName = 'Veo';
+      const accentColor = '#ffaa00';
 
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:predict?key=${apiKey}`,
@@ -1190,7 +1264,7 @@ async function handleSend() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             instances: [{ prompt: prompt }],
-            parameters: isMusic ? { durationSeconds: 30 } : { durationSeconds: 5, aspectRatio: '16:9' }
+            parameters: { durationSeconds: 5, aspectRatio: '16:9' }
           })
         }
       ).catch(e => ({ ok: false, _fetchError: true, _msg: e.message }));
@@ -1241,14 +1315,10 @@ async function handleSend() {
         if (predictions.length > 0) {
           for (const pred of predictions) {
             const b64 = pred.bytesBase64Encoded;
-            const mime = pred.mimeType || (isMusic ? 'audio/mp3' : 'video/mp4');
+            const mime = pred.mimeType || 'video/mp4';
             if (b64) {
               const mediaSrc = `data:${mime};base64,${b64}`;
-              if (isMusic) {
-                htmlContent += `<div style="margin:8px 0;"><audio controls style="width:100%;border-radius:8px;" src="${mediaSrc}"></audio><div style="margin-top:6px;"><button class="media-save-btn" style="background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.3);color:#00ff88;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;">💾 Save Music</button></div></div>`;
-              } else {
-                htmlContent += `<div style="margin:8px 0;"><video controls style="max-width:100%;border-radius:12px;" src="${mediaSrc}"></video><div style="margin-top:6px;"><button class="media-save-btn" style="background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;">💾 Save Video</button></div></div>`;
-              }
+              htmlContent += `<div style="margin:8px 0;"><video controls style="max-width:100%;border-radius:12px;" src="${mediaSrc}"></video><div style="margin-top:6px;"><button class="media-save-btn" style="background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;">💾 Save Video</button></div></div>`;
             }
           }
           fullText = `Generated ${label} for: "${prompt}"`;
@@ -1265,7 +1335,7 @@ async function handleSend() {
             if (mediaEl) {
               const a = document.createElement('a');
               a.href = mediaEl.src;
-              a.download = isMusic ? 'snaptoai-music.mp3' : 'snaptoai-video.mp4';
+              a.download = 'snaptoai-video.mp4';
               a.click();
             }
           });
