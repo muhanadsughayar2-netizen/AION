@@ -475,23 +475,74 @@ function showImageStudio(thread) {
   studio.className = 'chat-bubble ai image-studio';
   studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none;';
   
-  const styles = [
+  const modernStyles = [
     { emoji: '📸', name: 'Photo Realistic' },
     { emoji: '🎨', name: 'Digital Art' },
     { emoji: '✏️', name: 'Illustration' },
+    { emoji: '🔮', name: '3D Render' },
+    { emoji: '✨', name: 'Anime / Manga' },
+    { emoji: '🖍️', name: 'Cartoon' },
+    { emoji: '📐', name: 'Flat Design' },
+    { emoji: '🏙️', name: 'Cyberpunk' },
+    { emoji: '🌌', name: 'Sci-Fi Concept' },
+    { emoji: '⬛', name: 'Minimalist' },
+    { emoji: '🎮', name: 'Pixel Art' },
+    { emoji: '🌀', name: 'Psychedelic' }
+  ];
+  
+  const artPeriods = [
+    { emoji: '🏛️', name: 'Renaissance' },
+    { emoji: '🌅', name: 'Impressionism' },
+    { emoji: '🎭', name: 'Pop Art' },
+    { emoji: '🔷', name: 'Cubism' },
+    { emoji: '💫', name: 'Surrealism' },
+    { emoji: '🎨', name: 'Baroque' },
+    { emoji: '🌊', name: 'Ukiyo-e (Japanese)' },
+    { emoji: '⬜', name: 'Art Deco' },
+    { emoji: '🖤', name: 'Gothic' },
+    { emoji: '🌸', name: 'Art Nouveau' },
+    { emoji: '🟥', name: 'Abstract Expressionism' },
+    { emoji: '🔲', name: 'Bauhaus' },
+    { emoji: '🌿', name: 'Romanticism' },
+    { emoji: '⚫', name: 'Film Noir' },
+    { emoji: '✨', name: 'Rococo' },
+    { emoji: '🏺', name: 'Ancient Egyptian' },
+    { emoji: '🕌', name: 'Islamic Geometric' },
+    { emoji: '🎎', name: 'Chinese Ink Wash' }
+  ];
+  
+  const masterStyles = [
+    { emoji: '🌟', name: 'Style of Van Gogh' },
+    { emoji: '💎', name: 'Style of Picasso' },
+    { emoji: '🕐', name: 'Style of Dalí' },
+    { emoji: '🌺', name: 'Style of Monet' },
+    { emoji: '💀', name: 'Style of Frida Kahlo' },
+    { emoji: '🖼️', name: 'Style of Rembrandt' },
+    { emoji: '🎨', name: 'Style of Kandinsky' },
+    { emoji: '🔴', name: 'Style of Mondrian' },
+    { emoji: '🏔️', name: 'Style of Hokusai' },
+    { emoji: '👁️', name: 'Style of M.C. Escher' },
+    { emoji: '🌻', name: 'Style of Gustav Klimt' },
+    { emoji: '🎭', name: 'Style of Warhol' },
+    { emoji: '🌙', name: 'Style of Vermeer' },
+    { emoji: '⚡', name: 'Style of Banksy' },
+    { emoji: '🎪', name: 'Style of Basquiat' },
+    { emoji: '🖌️', name: 'Style of Caravaggio' }
+  ];
+  
+  const techniques = [
     { emoji: '🖼️', name: 'Oil Painting' },
     { emoji: '🌈', name: 'Watercolor' },
-    { emoji: '📐', name: 'Flat Design' },
-    { emoji: '🔮', name: '3D Render' },
-    { emoji: '✨', name: 'Anime' },
-    { emoji: '🖍️', name: 'Cartoon' },
-    { emoji: '📰', name: 'Vintage Poster' },
-    { emoji: '🌌', name: 'Sci-Fi' },
-    { emoji: '🏛️', name: 'Renaissance' },
-    { emoji: '🎭', name: 'Pop Art' },
-    { emoji: '⬛', name: 'Minimalist' },
-    { emoji: '🌿', name: 'Nature' },
-    { emoji: '🏙️', name: 'Cyberpunk' }
+    { emoji: '✏️', name: 'Pencil Sketch' },
+    { emoji: '🖊️', name: 'Ink Drawing' },
+    { emoji: '🪵', name: 'Woodcut Print' },
+    { emoji: '🧱', name: 'Mosaic' },
+    { emoji: '🪡', name: 'Embroidery' },
+    { emoji: '🏺', name: 'Fresco' },
+    { emoji: '✂️', name: 'Paper Collage' },
+    { emoji: '🖍️', name: 'Charcoal' },
+    { emoji: '🧊', name: 'Glass Stained' },
+    { emoji: '🪨', name: 'Stone Carving' }
   ];
   
   const categories = [
@@ -546,10 +597,27 @@ function showImageStudio(thread) {
         ${categories.map(c => `<div class="studio-chip cat-chip" data-value="${c.name}" style="${chipStyle}"><span>${c.emoji}</span><span>${c.name}</span></div>`).join('')}
       </div>
       
-      <div style="${sectionTitleStyle}">Art Style</div>
-      <div style="${sectionSubStyle}">How should it look?</div>
+      <div style="${sectionTitleStyle}">🎨 Modern Styles</div>
       <div class="studio-styles" style="display:flex;flex-wrap:wrap;gap:2px;">
-        ${styles.map(s => `<div class="studio-chip style-chip" data-value="${s.name}" style="${chipStyle}"><span>${s.emoji}</span><span>${s.name}</span></div>`).join('')}
+        ${modernStyles.map(s => `<div class="studio-chip style-chip" data-value="${s.name}" style="${chipStyle}"><span>${s.emoji}</span><span>${s.name}</span></div>`).join('')}
+      </div>
+      
+      <div style="${sectionTitleStyle}">🏛️ Art Periods & Movements</div>
+      <div style="${sectionSubStyle}">From ancient civilizations to modern art</div>
+      <div class="studio-styles" style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${artPeriods.map(s => `<div class="studio-chip style-chip" data-value="${s.name}" style="${chipStyle}"><span>${s.emoji}</span><span>${s.name}</span></div>`).join('')}
+      </div>
+      
+      <div style="${sectionTitleStyle}">🖌️ In the Style of Masters</div>
+      <div style="${sectionSubStyle}">Create like the legends</div>
+      <div class="studio-styles" style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${masterStyles.map(s => `<div class="studio-chip style-chip" data-value="${s.name}" style="${chipStyle}"><span>${s.emoji}</span><span>${s.name}</span></div>`).join('')}
+      </div>
+      
+      <div style="${sectionTitleStyle}">🎭 Techniques & Mediums</div>
+      <div style="${sectionSubStyle}">Traditional art methods</div>
+      <div class="studio-styles" style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${techniques.map(s => `<div class="studio-chip style-chip" data-value="${s.name}" style="${chipStyle}"><span>${s.emoji}</span><span>${s.name}</span></div>`).join('')}
       </div>
       
       <div style="${sectionTitleStyle}">Color Scheme</div>
@@ -684,7 +752,8 @@ function showImageStudio(thread) {
   
   studio.querySelector('.studio-surprise-btn').addEventListener('click', () => {
     const rCat = categories[Math.floor(Math.random() * categories.length)];
-    const rStyle = styles[Math.floor(Math.random() * styles.length)];
+    const allStyles = [...modernStyles, ...artPeriods, ...masterStyles, ...techniques];
+    const rStyle = allStyles[Math.floor(Math.random() * allStyles.length)];
     const rColor1 = colors[Math.floor(Math.random() * colors.length)];
     let rColor2 = colors[Math.floor(Math.random() * colors.length)];
     while (rColor2.name === rColor1.name) rColor2 = colors[Math.floor(Math.random() * colors.length)];
