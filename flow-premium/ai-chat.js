@@ -355,7 +355,7 @@ const getConfig = (key, defaultVal) => (window.SNAPTOAI_CONFIG && window.SNAPTOA
 
 const AI_MODES = {
   'vision': {
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3-flash-preview',
     type: 'gemini',
     placeholder: 'Ask about your screenshot...',
     welcome: "I'm your AI vision partner. Snap a screenshot and ask me anything!"
