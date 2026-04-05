@@ -377,7 +377,8 @@ const AI_MODES = {
     type: 'media-gen',
     mediaType: 'video',
     placeholder: 'Describe the video scene you want...',
-    welcome: '🎬 Video mode — describe a scene and I\'ll generate it!'
+    welcome: '🎬 Video mode — describe a scene and I\'ll generate it!',
+    fallbackModels: ['veo-3.1-generate', 'veo-3.1-lite-generate']
   }
 };
 
@@ -1116,11 +1117,13 @@ async function handleSend() {
     };
 
     if (modeConfig.type === 'gemini-image') {
-      // === IMAGE GENERATION (Imagen 3 via predict endpoint) ===
+      // === IMAGE GENERATION (tries multiple models via predict endpoint) ===
       const imageModels = [
         'imagen-3.0-generate-001',
         'imagen-3.0-fast-generate-001',
-        'imagen-3.0-generate-002'
+        'imagen-3.0-generate-002',
+        'nano-banana-2',
+        'nano-banana-pro'
       ];
       
       let lastResponseData = null;
@@ -1310,65 +1313,68 @@ async function handleSend() {
       addBubbleActions(responseBubble, fullText);
       
     } else if (modeConfig.type === 'media-gen') {
-      // === VIDEO GENERATION ===
-      const emoji = '🎬';
-      const label = 'video';
-      const modelName = 'Veo';
+      // === VIDEO GENERATION (tries multiple Veo models) ===
+      const videoModels = [modeConfig.model, ...(modeConfig.fallbackModels || [])];
       const accentColor = '#ffaa00';
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:predict?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            instances: [{ prompt: prompt }],
-            parameters: { durationSeconds: 5, aspectRatio: '16:9' }
-          })
-        }
-      ).catch(e => ({ ok: false, _fetchError: true, _msg: e.message }));
       
-      if (!response.ok) {
-        const responseBubble = createResponseBubble();
-        let errorDetail = '';
-        if (response._fetchError) {
-          errorDetail = response._msg;
-        } else {
-          const errorData = await response.json().catch(() => ({}));
-          errorDetail = errorData.error?.message || `Status ${response.status}`;
+      let videoResponse = null;
+      let videoData = null;
+      let videoSucceeded = false;
+      let videoError = '';
+      
+      for (const vModel of videoModels) {
+        console.log(`[SnapToAI Video] Trying model: ${vModel}`);
+        try {
+          const resp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${vModel}:predict?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                instances: [{ prompt: prompt }],
+                parameters: { durationSeconds: 5, aspectRatio: '16:9' }
+              })
+            }
+          );
+          const body = await resp.json().catch(() => ({}));
+          console.log(`[SnapToAI Video] ${vModel} status: ${resp.status}`, JSON.stringify(body).substring(0, 300));
+          
+          if (resp.ok) {
+            videoData = body;
+            videoSucceeded = true;
+            break;
+          }
+          videoError = body.error?.message || `Status ${resp.status}`;
+        } catch(e) {
+          console.error(`[SnapToAI Video] ${vModel} fetch error:`, e.message);
+          videoError = e.message;
         }
-        
-        const isNotFound = response.status === 404 || response.status === 400 || 
-                          errorDetail.includes('not found') || errorDetail.includes('not supported') ||
-                          errorDetail.includes('invalid') || response._fetchError;
-        
-        if (isNotFound || response.status === 403) {
-          responseBubble.innerHTML = `
+      }
+      
+      if (!videoSucceeded) {
+        const responseBubble = createResponseBubble();
+        responseBubble.innerHTML = `
             <div style="padding:4px 0;">
-              <div style="font-size:14px; margin-bottom:10px;">${emoji} <strong>${modelName} ${label} generation</strong></div>
+              <div style="font-size:14px; margin-bottom:10px;">🎬 <strong>Video generation</strong></div>
               <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px; margin:8px 0;">
                 <div style="color:${accentColor}; font-size:13px; font-weight:600; margin-bottom:8px;">Coming Soon</div>
                 <div style="color:#aabbcc; font-size:12px; line-height:1.6;">
-                  Google's ${modelName} model for ${label} generation is currently in preview and may require special API access.<br><br>
+                  Video generation models (Veo) are currently in preview and may require special API access.<br><br>
                   <strong>To check availability:</strong><br>
                   1. Visit <a href="https://aistudio.google.com" target="_blank" style="color:${accentColor};">Google AI Studio</a><br>
-                  2. Check if ${modelName} appears in your available models<br>
+                  2. Check if Veo appears in your available models<br>
                   3. Enable billing if required for preview models
                 </div>
+                <div style="color:#556677; font-size:11px; margin-top:8px;">Tried: ${videoModels.join(', ')}<br>Error: ${videoError}</div>
               </div>
-              <div style="font-size:11px; color:#556677; margin-top:8px;">Your Vision and Image modes work with any standard API key.</div>
             </div>`;
-        } else {
-          throw new Error(errorDetail);
-        }
         
         thread.scrollTop = thread.scrollHeight;
-        fullText = `${modelName} not available`;
+        fullText = 'Video not available';
         addBubbleActions(responseBubble, fullText);
       } else {
         const responseBubble = createResponseBubble();
-        const data = await response.json();
-        const predictions = data.predictions || [];
+        const predictions = videoData.predictions || [];
         let htmlContent = '';
         
         if (predictions.length > 0) {
@@ -1380,10 +1386,10 @@ async function handleSend() {
               htmlContent += `<div style="margin:8px 0;"><video controls style="max-width:100%;border-radius:12px;" src="${mediaSrc}"></video><div style="margin-top:6px;"><button class="media-save-btn" style="background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;">💾 Save Video</button></div></div>`;
             }
           }
-          fullText = `Generated ${label} for: "${prompt}"`;
-          htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:8px;">${emoji} ${fullText}</div>` + htmlContent;
+          fullText = `Generated video for: "${prompt}"`;
+          htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:8px;">🎬 ${fullText}</div>` + htmlContent;
         } else {
-          htmlContent = `<div style="color:#ff6b6b;">No ${label} was generated. Try a different description.</div>`;
+          htmlContent = `<div style="color:#ff6b6b;">No video was generated. Try a different description.</div>`;
         }
         
         responseBubble.innerHTML = htmlContent;
