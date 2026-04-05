@@ -361,24 +361,22 @@ const AI_MODES = {
     welcome: "I'm your AI vision partner. Snap a screenshot and ask me anything!"
   },
   'image': {
-    model: 'gemini-2.0-flash-exp',
+    model: 'gemini-2.5-flash-image',
     type: 'gemini-image',
     placeholder: 'Describe the image you want to create...',
     welcome: '🎨 Image mode — describe what you want and I\'ll create it!'
   },
   'music': {
-    model: 'gemini-2.5-flash-preview-tts',
+    model: 'lyria-3-clip-preview',
     type: 'gemini-audio',
-    placeholder: 'Type what you want spoken or sung...',
-    welcome: '🎵 Audio mode — type text and I\'ll speak it for you!'
+    placeholder: 'Describe the music you want (mood, genre, tempo)...',
+    welcome: '🎵 Music mode — describe the vibe and I\'ll compose it!'
   },
   'video': {
-    model: 'veo-2.0-generate-001',
-    type: 'media-gen',
-    mediaType: 'video',
+    model: 'veo-3.0-generate-001',
+    type: 'media-video',
     placeholder: 'Describe the video scene you want...',
-    welcome: '🎬 Video mode — describe a scene and I\'ll generate it!',
-    fallbackModels: ['veo-3.1-generate', 'veo-3.1-lite-generate']
+    welcome: '🎬 Video mode — describe a scene and I\'ll generate it!'
   }
 };
 
@@ -1119,11 +1117,9 @@ async function handleSend() {
     if (modeConfig.type === 'gemini-image') {
       // === IMAGE GENERATION (via generateContent with responseModalities) ===
       const imageModels = [
-        'nano-banana-2',
-        'nano-banana-pro',
-        'gemini-2.0-flash-exp',
-        'gemini-2.0-flash',
-        'gemini-2.5-flash-preview-04-17'
+        'gemini-2.5-flash-image',
+        'gemini-3.1-flash-image-preview',
+        'gemini-3-pro-image-preview'
       ];
       
       let lastResponseData = null;
@@ -1231,39 +1227,72 @@ async function handleSend() {
       addBubbleActions(responseBubble, fullText);
       
     } else if (modeConfig.type === 'gemini-audio') {
-      // === AUDIO / TTS GENERATION (Gemini TTS) ===
-      const ttsPrompt = `Say the following: ${prompt}`;
-      console.log(`[SnapToAI Audio] Using model: ${modeConfig.model}, prompt: "${ttsPrompt}"`);
+      // === MUSIC / AUDIO GENERATION (Lyria or TTS) ===
+      const musicModels = [modeConfig.model, 'lyria-3-pro-preview', 'gemini-2.5-flash-preview-tts'];
+      let audioData = null;
+      let audioError = '';
+      let audioSucceeded = false;
       
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: ttsPrompt }] }],
+      for (const audioModel of musicModels) {
+        console.log(`[SnapToAI Audio] Trying model: ${audioModel}`);
+        
+        let bodyPayload;
+        const isLyria = audioModel.includes('lyria');
+        const isTTS = audioModel.includes('tts');
+        
+        if (isLyria) {
+          bodyPayload = {
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { responseModalities: ['AUDIO'] }
+          };
+        } else {
+          bodyPayload = {
+            contents: [{ role: 'user', parts: [{ text: `Say the following: ${prompt}` }] }],
             generationConfig: {
               responseModalities: ['AUDIO'],
-              speechConfig: {
-                voiceConfig: {
-                  prebuiltVoiceConfig: { voiceName: 'Kore' }
-                }
-              }
+              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } }
             }
-          })
+          };
         }
-      );
+        
+        try {
+          const resp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${audioModel}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(bodyPayload)
+            }
+          );
+          
+          const body = await resp.json().catch(() => ({}));
+          console.log(`[SnapToAI Audio] ${audioModel} status: ${resp.status}`, JSON.stringify(body).substring(0, 500));
+          
+          if (resp.ok && body.candidates?.[0]?.content?.parts) {
+            audioData = body;
+            audioSucceeded = true;
+            console.log(`[SnapToAI Audio] Success with ${audioModel}!`);
+            break;
+          }
+          
+          audioError = body.error?.message || `Status ${resp.status}`;
+          const isRateLimit = resp.status === 429 || audioError.toLowerCase().includes('rate') || audioError.toLowerCase().includes('quota');
+          if (isRateLimit) {
+            console.log(`[SnapToAI Audio] Rate limited on ${audioModel}, trying next...`);
+          }
+        } catch(e) {
+          audioError = e.message;
+          console.error(`[SnapToAI Audio] ${audioModel} error:`, e.message);
+        }
+      }
       
-      const responseBody = await response.json().catch(() => ({}));
-      console.log(`[SnapToAI Audio] Status: ${response.status}`, JSON.stringify(responseBody).substring(0, 500));
-      
-      if (!response.ok) {
-        throw new Error(responseBody.error?.message || `Audio generation failed: ${response.status}`);
+      if (!audioSucceeded) {
+        throw new Error(audioError || 'Audio generation failed');
       }
       
       const responseBubble = createResponseBubble();
-      const data = responseBody;
-      const parts = data.candidates?.[0]?.content?.parts || [];
+      const data = audioData;
+      const parts = data.candidates[0].content.parts;
       console.log(`[SnapToAI Audio] Got ${parts.length} parts`);
       let htmlContent = '';
       let hasAudio = false;
@@ -1312,21 +1341,25 @@ async function handleSend() {
       thread.scrollTop = thread.scrollHeight;
       addBubbleActions(responseBubble, fullText);
       
-    } else if (modeConfig.type === 'media-gen') {
-      // === VIDEO GENERATION (tries multiple Veo models) ===
-      const videoModels = [modeConfig.model, ...(modeConfig.fallbackModels || [])];
+    } else if (modeConfig.type === 'media-video') {
+      // === VIDEO GENERATION (Veo via predictLongRunning) ===
+      const videoModels = [
+        'veo-3.0-generate-001',
+        'veo-3.0-fast-generate-001',
+        'veo-3.1-generate-preview',
+        'veo-3.1-fast-generate-preview'
+      ];
       const accentColor = '#ffaa00';
       
-      let videoResponse = null;
       let videoData = null;
       let videoSucceeded = false;
       let videoError = '';
       
       for (const vModel of videoModels) {
-        console.log(`[SnapToAI Video] Trying model: ${vModel}`);
+        console.log(`[SnapToAI Video] Trying model: ${vModel} via predictLongRunning`);
         try {
           const resp = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${vModel}:predict?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/${vModel}:predictLongRunning?key=${apiKey}`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -1374,38 +1407,81 @@ async function handleSend() {
         addBubbleActions(responseBubble, fullText);
       } else {
         const responseBubble = createResponseBubble();
-        const predictions = videoData.predictions || [];
         let htmlContent = '';
         
-        if (predictions.length > 0) {
-          for (const pred of predictions) {
-            const b64 = pred.bytesBase64Encoded;
-            const mime = pred.mimeType || 'video/mp4';
-            if (b64) {
-              const mediaSrc = `data:${mime};base64,${b64}`;
-              htmlContent += `<div style="margin:8px 0;"><video controls style="max-width:100%;border-radius:12px;" src="${mediaSrc}"></video><div style="margin-top:6px;"><button class="media-save-btn" style="background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;">💾 Save Video</button></div></div>`;
+        const operationName = videoData.name;
+        if (operationName) {
+          responseBubble.innerHTML = `<div style="font-size:13px;color:#aabbcc;">🎬 Video generation started! Checking progress...</div>`;
+          thread.scrollTop = thread.scrollHeight;
+          
+          let videoDone = false;
+          let pollCount = 0;
+          const maxPolls = 60;
+          
+          while (!videoDone && pollCount < maxPolls) {
+            await new Promise(r => setTimeout(r, 5000));
+            pollCount++;
+            
+            try {
+              const pollResp = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/${operationName}?key=${apiKey}`
+              );
+              const pollData = await pollResp.json();
+              console.log(`[SnapToAI Video] Poll ${pollCount}:`, JSON.stringify(pollData).substring(0, 300));
+              
+              responseBubble.innerHTML = `<div style="font-size:13px;color:#aabbcc;">🎬 Generating video... (${pollCount * 5}s elapsed)</div>`;
+              
+              if (pollData.done) {
+                videoDone = true;
+                const videoResult = pollData.response;
+                const videos = videoResult?.generateVideoResponse?.generatedSamples || videoResult?.predictions || [];
+                
+                if (videos.length > 0) {
+                  htmlContent = '';
+                  for (const v of videos) {
+                    const videoUri = v.video?.uri || v.uri;
+                    const b64 = v.video?.bytesBase64Encoded || v.bytesBase64Encoded;
+                    if (videoUri) {
+                      htmlContent += `<div style="margin:8px 0;"><video controls style="max-width:100%;border-radius:12px;" src="${videoUri}"></video><div style="margin-top:6px;"><a href="${videoUri}" download="snaptoai-video.mp4" style="background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;padding:5px 14px;border-radius:8px;font-size:11px;text-decoration:none;cursor:pointer;">💾 Save Video</a></div></div>`;
+                    } else if (b64) {
+                      const mediaSrc = `data:video/mp4;base64,${b64}`;
+                      htmlContent += `<div style="margin:8px 0;"><video controls style="max-width:100%;border-radius:12px;" src="${mediaSrc}"></video><div style="margin-top:6px;"><button class="media-save-btn" style="background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;">💾 Save Video</button></div></div>`;
+                    }
+                  }
+                  fullText = `Generated video for: "${prompt}"`;
+                  htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:8px;">🎬 ${fullText}</div>` + htmlContent;
+                } else {
+                  htmlContent = `<div style="color:#ff6b6b;">Video generation completed but no video was returned. Try a different description.</div>`;
+                }
+                responseBubble.innerHTML = htmlContent;
+                
+                responseBubble.querySelectorAll('.media-save-btn').forEach(btn => {
+                  btn.addEventListener('click', () => {
+                    const mediaEl = btn.closest('div').parentElement.querySelector('video');
+                    if (mediaEl) {
+                      const a = document.createElement('a');
+                      a.href = mediaEl.src;
+                      a.download = 'snaptoai-video.mp4';
+                      a.click();
+                    }
+                  });
+                });
+              }
+            } catch(pollErr) {
+              console.error(`[SnapToAI Video] Poll error:`, pollErr.message);
             }
           }
-          fullText = `Generated video for: "${prompt}"`;
-          htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:8px;">🎬 ${fullText}</div>` + htmlContent;
+          
+          if (!videoDone) {
+            htmlContent = `<div style="color:#ffaa00;">🎬 Video is still generating. This can take a few minutes. Check back shortly.</div>`;
+            responseBubble.innerHTML = htmlContent;
+          }
         } else {
-          htmlContent = `<div style="color:#ff6b6b;">No video was generated. Try a different description.</div>`;
+          htmlContent = `<div style="color:#ff6b6b;">Unexpected response format from video generation.</div>`;
+          responseBubble.innerHTML = htmlContent;
         }
         
-        responseBubble.innerHTML = htmlContent;
-        
-        responseBubble.querySelectorAll('.media-save-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const mediaEl = btn.closest('div').parentElement.querySelector('audio, video');
-            if (mediaEl) {
-              const a = document.createElement('a');
-              a.href = mediaEl.src;
-              a.download = 'snaptoai-video.mp4';
-              a.click();
-            }
-          });
-        });
-        
+        fullText = fullText || `Video for: "${prompt}"`;
         thread.scrollTop = thread.scrollHeight;
         addBubbleActions(responseBubble, fullText);
       }
