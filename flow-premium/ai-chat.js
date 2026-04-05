@@ -1122,77 +1122,88 @@ async function handleSend() {
         { model: 'imagen-3.0-generate-001', endpoint: 'predict', label: 'Imagen 3' }
       ];
       
-      let response;
+      let lastResponseData = null;
       let usedEndpoint = 'generateContent';
       let lastError = '';
+      let succeeded = false;
       
       for (const modelOpt of imageModels) {
-        const maxRetries = 3;
         const retryDelays = [10, 20, 30];
         
-        for (let attempt = 0; attempt < maxRetries; attempt++) {
+        for (let attempt = 0; attempt < 3; attempt++) {
           const loadingEl = document.querySelector('.loading-dots');
           
+          let url, body;
           if (modelOpt.endpoint === 'generateContent') {
-            response = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/${modelOpt.model}:generateContent?key=${apiKey}`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                  generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
-                })
-              }
-            );
+            url = `https://generativelanguage.googleapis.com/v1beta/models/${modelOpt.model}:generateContent?key=${apiKey}`;
+            body = JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+              generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+            });
           } else {
-            response = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/${modelOpt.model}:predict?key=${apiKey}`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  instances: [{ prompt: prompt }],
-                  parameters: { sampleCount: 1 }
-                })
-              }
-            );
+            url = `https://generativelanguage.googleapis.com/v1beta/models/${modelOpt.model}:predict?key=${apiKey}`;
+            body = JSON.stringify({
+              instances: [{ prompt: prompt }],
+              parameters: { sampleCount: 1 }
+            });
           }
           
-          usedEndpoint = modelOpt.endpoint;
+          console.log(`[SnapToAI Image] Attempt ${attempt+1}/3 using ${modelOpt.label} (${modelOpt.model})`);
           
-          if (response.ok) break;
-          
-          const isRateLimit = response.status === 429 || response.status === 503;
-          if (!isRateLimit) {
-            const errBody = await response.json().catch(() => ({}));
-            lastError = errBody.error?.message || `Status ${response.status}`;
-            const isResourceExhausted = lastError.toLowerCase().includes('resource') || 
-                                         lastError.toLowerCase().includes('quota') || 
-                                         lastError.toLowerCase().includes('rate');
-            if (!isResourceExhausted) break;
+          let response;
+          try {
+            response = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: body
+            });
+          } catch(fetchErr) {
+            console.error(`[SnapToAI Image] Fetch error:`, fetchErr.message);
+            lastError = fetchErr.message;
+            continue;
           }
           
-          if (attempt < maxRetries - 1) {
+          const responseBody = await response.json().catch(() => ({}));
+          console.log(`[SnapToAI Image] Status: ${response.status}`, JSON.stringify(responseBody).substring(0, 500));
+          
+          if (response.ok) {
+            lastResponseData = responseBody;
+            usedEndpoint = modelOpt.endpoint;
+            succeeded = true;
+            break;
+          }
+          
+          lastError = responseBody.error?.message || `Status ${response.status}`;
+          console.warn(`[SnapToAI Image] Error: ${lastError}`);
+          
+          const isRetryable = response.status === 429 || response.status === 503 ||
+            lastError.toLowerCase().includes('resource') || 
+            lastError.toLowerCase().includes('quota') || 
+            lastError.toLowerCase().includes('rate') ||
+            lastError.toLowerCase().includes('exhausted');
+          
+          if (!isRetryable) break;
+          
+          if (attempt < 2) {
             const waitSec = retryDelays[attempt];
             if (loadingEl) loadingEl.innerHTML = `<span style="color:#ff6bed;">⏳ Rate limited — retrying in ${waitSec}s (${modelOpt.label})...</span>`;
             await new Promise(r => setTimeout(r, waitSec * 1000));
           }
         }
         
-        if (response.ok) break;
+        if (succeeded) break;
+        console.log(`[SnapToAI Image] ${modelOpt.label} failed, trying next model...`);
         const loadingEl = document.querySelector('.loading-dots');
-        if (loadingEl) loadingEl.innerHTML = `<span style="color:#ff6bed;">⏳ Trying ${imageModels[1]?.label || 'fallback'}...</span>`;
+        if (loadingEl) loadingEl.innerHTML = `<span style="color:#ff6bed;">⏳ Trying ${modelOpt.label === 'Gemini Image' ? 'Imagen 3' : 'fallback'}...</span>`;
         await new Promise(r => setTimeout(r, 2000));
       }
       
-      if (!response.ok) {
-        const errorData = lastError || 'Image generation failed';
-        throw new Error(typeof errorData === 'string' ? errorData : `Image generation failed: ${response.status}`);
+      if (!succeeded) {
+        throw new Error(lastError || 'Image generation failed');
       }
       
       const responseBubble = createResponseBubble();
-      const data = await response.json();
+      const data = lastResponseData;
       let htmlContent = '';
       let hasImage = false;
       
