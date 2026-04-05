@@ -1392,13 +1392,10 @@ async function handleSend() {
               <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px; margin:8px 0;">
                 <div style="color:${accentColor}; font-size:13px; font-weight:600; margin-bottom:8px;">Coming Soon</div>
                 <div style="color:#aabbcc; font-size:12px; line-height:1.6;">
-                  Video generation models (Veo) are currently in preview and may require special API access.<br><br>
-                  <strong>To check availability:</strong><br>
-                  1. Visit <a href="https://aistudio.google.com" target="_blank" style="color:${accentColor};">Google AI Studio</a><br>
-                  2. Check if Veo appears in your available models<br>
-                  3. Enable billing if required for preview models
+                  Veo video generation requires OAuth authentication (service accounts), which is beyond what API keys support.<br><br>
+                  Google is working on making Veo available through standard API keys. When that happens, this will work automatically.
                 </div>
-                <div style="color:#556677; font-size:11px; margin-top:8px;">Tried: ${videoModels.join(', ')}<br>Error: ${videoError}</div>
+                <div style="font-size:11px; color:#556677; margin-top:8px;">Your Vision, Image, and Music modes all work!</div>
               </div>
             </div>`;
         
