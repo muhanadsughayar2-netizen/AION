@@ -372,11 +372,11 @@ const AI_MODES = {
     placeholder: 'Describe the music you want (mood, genre, tempo)...',
     welcome: '🎵 Music mode — describe the vibe and I\'ll compose it!'
   },
-  'video': {
-    model: 'veo-3.0-generate-001',
-    type: 'media-video',
-    placeholder: 'Describe the video scene you want...',
-    welcome: '🎬 Video mode — describe a scene and I\'ll generate it!'
+  'research': {
+    model: 'gemini-2.5-flash',
+    type: 'gemini-research',
+    placeholder: 'Ask anything — I\'ll search the web for the best answer...',
+    welcome: '🔬 Research mode — I\'ll search the web and compile a thorough, sourced answer!'
   }
 };
 
@@ -394,7 +394,7 @@ const MODE_COLORS = {
   'vision': 'rgba(0,217,255,0.06)',
   'image': 'rgba(255,107,237,0.06)',
   'music': 'rgba(0,255,136,0.06)',
-  'video': 'rgba(255,170,0,0.06)'
+  'research': 'rgba(255,170,0,0.06)'
 };
 
 function initModeButtons() {
@@ -433,7 +433,7 @@ function initModeButtons() {
         const notice = document.createElement('div');
         notice.className = 'chat-bubble ai mode-switch-notice';
         notice.style.cssText = 'font-size: 12px; padding: 10px 16px; border-left: 3px solid; margin: 4px 0;';
-        const borderColors = { 'vision': '#00d9ff', 'image': '#ff6bed', 'music': '#00ff88', 'video': '#ffaa00' };
+        const borderColors = { 'vision': '#00d9ff', 'image': '#ff6bed', 'music': '#00ff88', 'research': '#ffaa00' };
         notice.style.borderLeftColor = borderColors[mode] || '#00d9ff';
         notice.textContent = cfg.welcome;
         thread.appendChild(notice);
@@ -1590,145 +1590,115 @@ async function handleSend() {
       thread.scrollTop = thread.scrollHeight;
       addBubbleActions(responseBubble, fullText);
       
-    } else if (modeConfig.type === 'media-video') {
-      // === VIDEO GENERATION (Veo via predictLongRunning) ===
-      const videoModels = [
-        'veo-3.0-generate-001',
-        'veo-3.0-fast-generate-001',
-        'veo-3.1-generate-preview',
-        'veo-3.1-fast-generate-preview'
-      ];
+    } else if (modeConfig.type === 'gemini-research') {
+      // === RESEARCH MODE (Gemini with Google Search Grounding) ===
       const accentColor = '#ffaa00';
+      const responseBubble = createResponseBubble();
+      responseBubble.innerHTML = `<div style="font-size:13px;color:#aabbcc;"><span style="display:inline-block;animation:spin 1s linear infinite;">🔬</span> Searching the web and researching your question...</div>`;
+      thread.scrollTop = thread.scrollHeight;
       
-      let videoData = null;
-      let videoSucceeded = false;
-      let videoError = '';
+      const researchModels = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'];
+      let researchDone = false;
       
-      for (const vModel of videoModels) {
-        console.log(`[SnapToAI Video] Trying model: ${vModel} via predictLongRunning`);
+      for (const rModel of researchModels) {
+        if (researchDone) break;
+        console.log(`[SnapToAI Research] Trying model: ${rModel} with google_search grounding`);
+        
         try {
+          const requestBody = {
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            systemInstruction: {
+              parts: [{ text: 'You are an expert researcher. Search the web thoroughly to answer the user\'s question. Provide a comprehensive, well-organized answer with key facts bolded. Include sources and links where relevant. Structure your response with clear sections and bullet points. Always cite your sources at the end.' }]
+            },
+            tools: [{ google_search: {} }],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 8192
+            }
+          };
+          
+          if (currentImages.length > 0) {
+            const imgParts = currentImages.map(img => {
+              const [meta, b64] = img.split(',');
+              const mime = meta.match(/:(.*?);/)?.[1] || 'image/png';
+              return { inlineData: { mimeType: mime, data: b64 } };
+            });
+            requestBody.contents[0].parts = [...imgParts, { text: prompt || 'Research this image — search the web for related information, context, and details.' }];
+          }
+          
           const resp = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${vModel}:predictLongRunning?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/${rModel}:generateContent?key=${apiKey}`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                instances: [{ prompt: prompt }],
-                parameters: { durationSeconds: 5, aspectRatio: '16:9' }
-              })
+              body: JSON.stringify(requestBody)
             }
           );
-          const body = await resp.json().catch(() => ({}));
-          console.log(`[SnapToAI Video] ${vModel} status: ${resp.status}`, JSON.stringify(body).substring(0, 300));
           
-          if (resp.ok) {
-            videoData = body;
-            videoSucceeded = true;
-            break;
+          const data = await resp.json();
+          console.log(`[SnapToAI Research] ${rModel} status: ${resp.status}`);
+          
+          if (resp.ok && data.candidates?.[0]?.content?.parts) {
+            researchDone = true;
+            const parts = data.candidates[0].content.parts;
+            let textContent = parts.map(p => p.text || '').join('');
+            
+            const groundingMeta = data.candidates[0].groundingMetadata;
+            let sourcesHtml = '';
+            
+            if (groundingMeta?.groundingChunks?.length > 0) {
+              sourcesHtml = `<div style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);">
+                <div style="font-size:11px;font-weight:600;color:${accentColor};margin-bottom:6px;">📚 Sources</div>`;
+              const seen = new Set();
+              for (const chunk of groundingMeta.groundingChunks) {
+                const web = chunk.web;
+                if (web?.uri && !seen.has(web.uri)) {
+                  seen.add(web.uri);
+                  const title = web.title || new URL(web.uri).hostname;
+                  sourcesHtml += `<div style="margin:3px 0;"><a href="${web.uri}" target="_blank" style="color:#aabbcc;font-size:11px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">🔗 ${title}</a></div>`;
+                }
+              }
+              sourcesHtml += `</div>`;
+            }
+            
+            if (groundingMeta?.searchEntryPoint?.renderedContent) {
+              sourcesHtml += `<div style="margin-top:8px;">${groundingMeta.searchEntryPoint.renderedContent}</div>`;
+            }
+            
+            fullText = textContent;
+            
+            textContent = textContent
+              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+              .replace(/\*(.*?)\*/g, '<em>$1</em>')
+              .replace(/^### (.*$)/gm, '<h4 style="color:#e8eef4;margin:10px 0 4px;">$1</h4>')
+              .replace(/^## (.*$)/gm, '<h3 style="color:#e8eef4;margin:12px 0 6px;">$1</h3>')
+              .replace(/^# (.*$)/gm, '<h2 style="color:#e8eef4;margin:14px 0 8px;">$1</h2>')
+              .replace(/\n/g, '<br>');
+            
+            responseBubble.innerHTML = `
+              <div style="padding:4px 0;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+                  <span style="font-size:16px;">🔬</span>
+                  <span style="font-size:13px;font-weight:600;color:${accentColor};">Research Results</span>
+                </div>
+                <div style="font-size:13px;color:#ccd6e0;line-height:1.7;">${textContent}</div>
+                ${sourcesHtml}
+              </div>`;
+            
+            thread.scrollTop = thread.scrollHeight;
+            addBubbleActions(responseBubble, fullText);
+          } else {
+            const errMsg = data.error?.message || 'Unknown error';
+            console.error(`[SnapToAI Research] ${rModel} failed:`, errMsg);
           }
-          videoError = body.error?.message || `Status ${resp.status}`;
         } catch(e) {
-          console.error(`[SnapToAI Video] ${vModel} fetch error:`, e.message);
-          videoError = e.message;
+          console.error(`[SnapToAI Research] ${rModel} error:`, e.message);
         }
       }
       
-      if (!videoSucceeded) {
-        const responseBubble = createResponseBubble();
-        responseBubble.innerHTML = `
-            <div style="padding:4px 0;">
-              <div style="font-size:14px; margin-bottom:10px;">🎬 <strong>Video generation</strong></div>
-              <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px; margin:8px 0;">
-                <div style="color:${accentColor}; font-size:13px; font-weight:600; margin-bottom:8px;">Coming Soon</div>
-                <div style="color:#aabbcc; font-size:12px; line-height:1.6;">
-                  Veo video generation requires OAuth authentication (service accounts), which is beyond what API keys support.<br><br>
-                  Google is working on making Veo available through standard API keys. When that happens, this will work automatically.
-                </div>
-                <div style="font-size:11px; color:#556677; margin-top:8px;">Your Vision, Image, and Music modes all work!</div>
-              </div>
-            </div>`;
-        
-        thread.scrollTop = thread.scrollHeight;
-        fullText = 'Video not available';
-        addBubbleActions(responseBubble, fullText);
-      } else {
-        const responseBubble = createResponseBubble();
-        let htmlContent = '';
-        
-        const operationName = videoData.name;
-        if (operationName) {
-          responseBubble.innerHTML = `<div style="font-size:13px;color:#aabbcc;">🎬 Video generation started! Checking progress...</div>`;
-          thread.scrollTop = thread.scrollHeight;
-          
-          let videoDone = false;
-          let pollCount = 0;
-          const maxPolls = 60;
-          
-          while (!videoDone && pollCount < maxPolls) {
-            await new Promise(r => setTimeout(r, 5000));
-            pollCount++;
-            
-            try {
-              const pollResp = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/${operationName}?key=${apiKey}`
-              );
-              const pollData = await pollResp.json();
-              console.log(`[SnapToAI Video] Poll ${pollCount}:`, JSON.stringify(pollData).substring(0, 300));
-              
-              responseBubble.innerHTML = `<div style="font-size:13px;color:#aabbcc;">🎬 Generating video... (${pollCount * 5}s elapsed)</div>`;
-              
-              if (pollData.done) {
-                videoDone = true;
-                const videoResult = pollData.response;
-                const videos = videoResult?.generateVideoResponse?.generatedSamples || videoResult?.predictions || [];
-                
-                if (videos.length > 0) {
-                  htmlContent = '';
-                  for (const v of videos) {
-                    const videoUri = v.video?.uri || v.uri;
-                    const b64 = v.video?.bytesBase64Encoded || v.bytesBase64Encoded;
-                    if (videoUri) {
-                      htmlContent += `<div style="margin:8px 0;"><video controls style="max-width:100%;border-radius:12px;" src="${videoUri}"></video><div style="margin-top:6px;"><a href="${videoUri}" download="snaptoai-video.mp4" style="background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;padding:5px 14px;border-radius:8px;font-size:11px;text-decoration:none;cursor:pointer;">💾 Save Video</a></div></div>`;
-                    } else if (b64) {
-                      const mediaSrc = `data:video/mp4;base64,${b64}`;
-                      htmlContent += `<div style="margin:8px 0;"><video controls style="max-width:100%;border-radius:12px;" src="${mediaSrc}"></video><div style="margin-top:6px;"><button class="media-save-btn" style="background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;">💾 Save Video</button></div></div>`;
-                    }
-                  }
-                  fullText = `Generated video for: "${prompt}"`;
-                  htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:8px;">🎬 ${fullText}</div>` + htmlContent;
-                } else {
-                  htmlContent = `<div style="color:#ff6b6b;">Video generation completed but no video was returned. Try a different description.</div>`;
-                }
-                responseBubble.innerHTML = htmlContent;
-                
-                responseBubble.querySelectorAll('.media-save-btn').forEach(btn => {
-                  btn.addEventListener('click', () => {
-                    const mediaEl = btn.closest('div').parentElement.querySelector('video');
-                    if (mediaEl) {
-                      const a = document.createElement('a');
-                      a.href = mediaEl.src;
-                      a.download = 'snaptoai-video.mp4';
-                      a.click();
-                    }
-                  });
-                });
-              }
-            } catch(pollErr) {
-              console.error(`[SnapToAI Video] Poll error:`, pollErr.message);
-            }
-          }
-          
-          if (!videoDone) {
-            htmlContent = `<div style="color:#ffaa00;">🎬 Video is still generating. This can take a few minutes. Check back shortly.</div>`;
-            responseBubble.innerHTML = htmlContent;
-          }
-        } else {
-          htmlContent = `<div style="color:#ff6b6b;">Unexpected response format from video generation.</div>`;
-          responseBubble.innerHTML = htmlContent;
-        }
-        
-        fullText = fullText || `Video for: "${prompt}"`;
-        thread.scrollTop = thread.scrollHeight;
+      if (!researchDone) {
+        responseBubble.innerHTML = `<div style="color:#ff6b6b;">Research failed. Please check your API key or try again.</div>`;
+        fullText = 'Research failed';
         addBubbleActions(responseBubble, fullText);
       }
       
