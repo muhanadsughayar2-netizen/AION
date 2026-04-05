@@ -437,6 +437,11 @@ function initModeButtons() {
         notice.style.borderLeftColor = borderColors[mode] || '#00d9ff';
         notice.textContent = cfg.welcome;
         thread.appendChild(notice);
+        
+        if (mode === 'music') {
+          showSongStudio(thread);
+        }
+        
         thread.scrollTop = thread.scrollHeight;
       }
       
@@ -458,6 +463,250 @@ function initModeButtons() {
 }
 
 initModeButtons();
+
+function showSongStudio(thread) {
+  const existing = thread.querySelector('.song-studio');
+  if (existing) existing.remove();
+  
+  const studio = document.createElement('div');
+  studio.className = 'chat-bubble ai song-studio';
+  studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none;';
+  
+  const genres = [
+    { emoji: '🎸', name: 'Rock' },
+    { emoji: '🎷', name: 'Jazz' },
+    { emoji: '🌴', name: 'Reggae' },
+    { emoji: '🎹', name: 'Classical' },
+    { emoji: '🎤', name: 'Pop' },
+    { emoji: '🎵', name: 'R&B' },
+    { emoji: '🔥', name: 'Hip Hop' },
+    { emoji: '💃', name: 'Latin' },
+    { emoji: '🤠', name: 'Country' },
+    { emoji: '⚡', name: 'EDM' },
+    { emoji: '🎶', name: 'Lo-Fi' },
+    { emoji: '🌙', name: 'Blues' },
+    { emoji: '🎻', name: 'Folk' },
+    { emoji: '💀', name: 'Metal' },
+    { emoji: '🌸', name: 'K-Pop' },
+    { emoji: '🕌', name: 'Afrobeat' },
+    { emoji: '🎺', name: 'Funk' },
+    { emoji: '✨', name: 'Indie' },
+    { emoji: '🌊', name: 'Ambient' },
+    { emoji: '🎧', name: 'Trap' }
+  ];
+  
+  const moods = [
+    { emoji: '😊', name: 'Happy' },
+    { emoji: '😢', name: 'Sad' },
+    { emoji: '⚡', name: 'Energetic' },
+    { emoji: '😌', name: 'Chill' },
+    { emoji: '❤️', name: 'Romantic' },
+    { emoji: '🏔️', name: 'Epic' },
+    { emoji: '🌑', name: 'Dark' },
+    { emoji: '🕺', name: 'Funky' },
+    { emoji: '🌅', name: 'Nostalgic' },
+    { emoji: '💪', name: 'Powerful' },
+    { emoji: '🌿', name: 'Peaceful' },
+    { emoji: '🎉', name: 'Party' }
+  ];
+  
+  const tempos = [
+    { emoji: '🐢', name: 'Slow' },
+    { emoji: '🚶', name: 'Medium' },
+    { emoji: '🏃', name: 'Fast' },
+    { emoji: '🚀', name: 'Very Fast' }
+  ];
+  
+  const chipStyle = `display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer;transition:all 0.2s;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#ccd6e0;margin:3px;user-select:none;`;
+  const chipActiveStyle = `background:rgba(0,255,136,0.15);border-color:rgba(0,255,136,0.4);color:#00ff88;`;
+  const sectionTitleStyle = `font-size:13px;font-weight:600;color:#00ff88;margin:12px 0 8px 0;`;
+  const sectionSubStyle = `font-size:11px;color:#667788;margin:-4px 0 6px 0;`;
+  
+  studio.innerHTML = `
+    <div style="background:linear-gradient(135deg, rgba(0,255,136,0.06), rgba(0,200,100,0.03));border:1px solid rgba(0,255,136,0.12);border-radius:16px;padding:20px;backdrop-filter:blur(10px);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+        <span style="font-size:24px;">🎵</span>
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#e8eef4;">Song Studio</div>
+          <div style="font-size:11px;color:#667788;">Create your perfect song in 3 steps</div>
+        </div>
+      </div>
+      
+      <div style="${sectionTitleStyle}">Step 1: Pick a Genre</div>
+      <div style="${sectionSubStyle}">Choose your style</div>
+      <div class="studio-genres" style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${genres.map(g => `<div class="studio-chip genre-chip" data-value="${g.name}" style="${chipStyle}"><span>${g.emoji}</span><span>${g.name}</span></div>`).join('')}
+      </div>
+      
+      <div style="${sectionTitleStyle}">Step 2: Set the Mood</div>
+      <div style="${sectionSubStyle}">How should it feel?</div>
+      <div class="studio-moods" style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${moods.map(m => `<div class="studio-chip mood-chip" data-value="${m.name}" style="${chipStyle}"><span>${m.emoji}</span><span>${m.name}</span></div>`).join('')}
+      </div>
+      
+      <div style="${sectionTitleStyle}">Step 3: Choose Tempo</div>
+      <div class="studio-tempos" style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${tempos.map(t => `<div class="studio-chip tempo-chip" data-value="${t.name}" style="${chipStyle}"><span>${t.emoji}</span><span>${t.name}</span></div>`).join('')}
+      </div>
+      
+      <div style="${sectionTitleStyle}">What's the Song About?</div>
+      <div style="${sectionSubStyle}">Describe your song idea (optional)</div>
+      <textarea class="studio-topic" placeholder="e.g. A summer road trip with friends, falling in love on a rainy day, celebrating a victory..." style="width:100%;box-sizing:border-box;min-height:60px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;"></textarea>
+      
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button class="studio-create-btn" style="flex:1;padding:12px 20px;border-radius:12px;border:none;background:linear-gradient(135deg,#00ff88,#00cc6a);color:#000;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;opacity:0.4;pointer-events:none;">🎵 Create Song</button>
+        <button class="studio-surprise-btn" style="padding:12px 16px;border-radius:12px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.08);color:#00ff88;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;">🎲 Surprise Me</button>
+      </div>
+      
+      <div class="studio-preview" style="margin-top:10px;padding:8px 12px;background:rgba(0,0,0,0.2);border-radius:8px;font-size:11px;color:#556677;display:none;">
+        <span style="color:#00ff88;">Preview:</span> <span class="preview-text"></span>
+      </div>
+    </div>
+  `;
+  
+  thread.appendChild(studio);
+  
+  let selectedGenre = null;
+  let selectedMood = null;
+  let selectedTempo = null;
+  
+  function updatePreview() {
+    const preview = studio.querySelector('.studio-preview');
+    const previewText = studio.querySelector('.preview-text');
+    const createBtn = studio.querySelector('.studio-create-btn');
+    const topic = studio.querySelector('.studio-topic').value.trim();
+    
+    if (selectedGenre) {
+      const parts = [];
+      if (selectedMood) parts.push(`${selectedMood.toLowerCase()}`);
+      parts.push(`${selectedGenre.toLowerCase()} song`);
+      if (selectedTempo) parts.push(`at a ${selectedTempo.toLowerCase()} tempo`);
+      if (topic) parts.push(`about ${topic}`);
+      
+      previewText.textContent = parts.join(' ');
+      preview.style.display = 'block';
+      createBtn.style.opacity = '1';
+      createBtn.style.pointerEvents = 'auto';
+    } else {
+      preview.style.display = 'none';
+      createBtn.style.opacity = '0.4';
+      createBtn.style.pointerEvents = 'none';
+    }
+  }
+  
+  function handleChipClick(container, chipClass, callback) {
+    studio.querySelectorAll(`.${chipClass}`).forEach(chip => {
+      chip.addEventListener('click', () => {
+        const wasActive = chip.style.background.includes('rgba(0, 255, 136');
+        studio.querySelectorAll(`.${chipClass}`).forEach(c => {
+          c.style.background = 'rgba(255,255,255,0.04)';
+          c.style.borderColor = 'rgba(255,255,255,0.1)';
+          c.style.color = '#ccd6e0';
+          c.style.transform = '';
+        });
+        if (!wasActive) {
+          chip.style.background = 'rgba(0,255,136,0.15)';
+          chip.style.borderColor = 'rgba(0,255,136,0.4)';
+          chip.style.color = '#00ff88';
+          chip.style.transform = 'scale(1.05)';
+          callback(chip.dataset.value);
+        } else {
+          callback(null);
+        }
+        updatePreview();
+      });
+      
+      chip.addEventListener('mouseenter', () => {
+        if (!chip.style.background.includes('rgba(0, 255, 136')) {
+          chip.style.background = 'rgba(255,255,255,0.08)';
+        }
+      });
+      chip.addEventListener('mouseleave', () => {
+        if (!chip.style.background.includes('rgba(0, 255, 136')) {
+          chip.style.background = 'rgba(255,255,255,0.04)';
+        }
+      });
+    });
+  }
+  
+  handleChipClick(studio, 'genre-chip', v => { selectedGenre = v; });
+  handleChipClick(studio, 'mood-chip', v => { selectedMood = v; });
+  handleChipClick(studio, 'tempo-chip', v => { selectedTempo = v; });
+  
+  studio.querySelector('.studio-topic').addEventListener('input', updatePreview);
+  
+  studio.querySelector('.studio-create-btn').addEventListener('click', () => {
+    if (!selectedGenre) return;
+    
+    const topic = studio.querySelector('.studio-topic').value.trim();
+    let prompt = `Create a ${selectedGenre.toLowerCase()} song`;
+    if (selectedMood) prompt += ` with a ${selectedMood.toLowerCase()} mood`;
+    if (selectedTempo) prompt += ` at a ${selectedTempo.toLowerCase()} tempo`;
+    if (topic) prompt += `. The song is about: ${topic}`;
+    prompt += `. Make it sound professional and polished with clear structure (intro, verse, chorus, verse, chorus, outro).`;
+    
+    const inputEl = document.getElementById('chatInput');
+    if (inputEl) {
+      inputEl.value = prompt;
+      const sendBtn = document.getElementById('sendBtn');
+      if (sendBtn) sendBtn.click();
+    }
+    
+    studio.style.opacity = '0.5';
+    studio.style.pointerEvents = 'none';
+  });
+  
+  studio.querySelector('.studio-surprise-btn').addEventListener('click', () => {
+    const rGenre = genres[Math.floor(Math.random() * genres.length)];
+    const rMood = moods[Math.floor(Math.random() * moods.length)];
+    const rTempo = tempos[Math.floor(Math.random() * tempos.length)];
+    
+    const surpriseTopics = [
+      'dancing under the stars on a warm summer night',
+      'a journey through a neon-lit city at midnight',
+      'finding courage to chase your dreams',
+      'memories of childhood and growing up',
+      'the feeling of freedom on an open road',
+      'falling in love unexpectedly',
+      'overcoming challenges and rising stronger',
+      'a party that never ends',
+      'nature and the beauty of the ocean',
+      'missing someone far away'
+    ];
+    const rTopic = surpriseTopics[Math.floor(Math.random() * surpriseTopics.length)];
+    
+    selectedGenre = rGenre.name;
+    selectedMood = rMood.name;
+    selectedTempo = rTempo.name;
+    
+    studio.querySelectorAll('.genre-chip').forEach(c => {
+      const match = c.dataset.value === rGenre.name;
+      c.style.background = match ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.04)';
+      c.style.borderColor = match ? 'rgba(0,255,136,0.4)' : 'rgba(255,255,255,0.1)';
+      c.style.color = match ? '#00ff88' : '#ccd6e0';
+      c.style.transform = match ? 'scale(1.05)' : '';
+    });
+    studio.querySelectorAll('.mood-chip').forEach(c => {
+      const match = c.dataset.value === rMood.name;
+      c.style.background = match ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.04)';
+      c.style.borderColor = match ? 'rgba(0,255,136,0.4)' : 'rgba(255,255,255,0.1)';
+      c.style.color = match ? '#00ff88' : '#ccd6e0';
+      c.style.transform = match ? 'scale(1.05)' : '';
+    });
+    studio.querySelectorAll('.tempo-chip').forEach(c => {
+      const match = c.dataset.value === rTempo.name;
+      c.style.background = match ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.04)';
+      c.style.borderColor = match ? 'rgba(0,255,136,0.4)' : 'rgba(255,255,255,0.1)';
+      c.style.color = match ? '#00ff88' : '#ccd6e0';
+      c.style.transform = match ? 'scale(1.05)' : '';
+    });
+    
+    studio.querySelector('.studio-topic').value = rTopic;
+    updatePreview();
+    
+    studio.querySelector('.studio-surprise-btn').textContent = '🎲 Again!';
+  });
+}
 
 const SYSTEM_PROMPT = getConfig('SYSTEM_PROMPT', "You are a professional assistant. Give COMPLETE, DIRECT answers. Never truncate or ask 'would you like more?' Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions.");
 
