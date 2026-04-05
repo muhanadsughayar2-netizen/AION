@@ -1116,51 +1116,111 @@ async function handleSend() {
     };
 
     if (modeConfig.type === 'gemini-image') {
-      // === IMAGE GENERATION (Gemini native image gen) ===
+      // === IMAGE GENERATION (tries Gemini native, then Imagen 3 fallback) ===
+      const imageModels = [
+        { model: modeConfig.model, endpoint: 'generateContent', label: 'Gemini Image' },
+        { model: 'imagen-3.0-generate-001', endpoint: 'predict', label: 'Imagen 3' }
+      ];
+      
       let response;
-      const maxRetries = 3;
-      for (let attempt = 0; attempt < maxRetries; attempt++) {
-        response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text: prompt }] }],
-              generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
-            })
-          }
-        );
-        if (response.ok || (response.status !== 429 && response.status !== 503)) break;
-        if (attempt < maxRetries - 1) {
-          const waitSec = (attempt + 1) * 5;
+      let usedEndpoint = 'generateContent';
+      let lastError = '';
+      
+      for (const modelOpt of imageModels) {
+        const maxRetries = 3;
+        const retryDelays = [10, 20, 30];
+        
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
           const loadingEl = document.querySelector('.loading-dots');
-          if (loadingEl) loadingEl.innerHTML = `<span style="color:#ff6bed;">⏳ Rate limited — retrying in ${waitSec}s...</span>`;
-          await new Promise(r => setTimeout(r, waitSec * 1000));
+          
+          if (modelOpt.endpoint === 'generateContent') {
+            response = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${modelOpt.model}:generateContent?key=${apiKey}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                  generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+                })
+              }
+            );
+          } else {
+            response = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${modelOpt.model}:predict?key=${apiKey}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  instances: [{ prompt: prompt }],
+                  parameters: { sampleCount: 1 }
+                })
+              }
+            );
+          }
+          
+          usedEndpoint = modelOpt.endpoint;
+          
+          if (response.ok) break;
+          
+          const isRateLimit = response.status === 429 || response.status === 503;
+          if (!isRateLimit) {
+            const errBody = await response.json().catch(() => ({}));
+            lastError = errBody.error?.message || `Status ${response.status}`;
+            const isResourceExhausted = lastError.toLowerCase().includes('resource') || 
+                                         lastError.toLowerCase().includes('quota') || 
+                                         lastError.toLowerCase().includes('rate');
+            if (!isResourceExhausted) break;
+          }
+          
+          if (attempt < maxRetries - 1) {
+            const waitSec = retryDelays[attempt];
+            if (loadingEl) loadingEl.innerHTML = `<span style="color:#ff6bed;">⏳ Rate limited — retrying in ${waitSec}s (${modelOpt.label})...</span>`;
+            await new Promise(r => setTimeout(r, waitSec * 1000));
+          }
         }
+        
+        if (response.ok) break;
+        const loadingEl = document.querySelector('.loading-dots');
+        if (loadingEl) loadingEl.innerHTML = `<span style="color:#ff6bed;">⏳ Trying ${imageModels[1]?.label || 'fallback'}...</span>`;
+        await new Promise(r => setTimeout(r, 2000));
       }
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || `Image generation failed: ${response.status}`);
+        const errorData = lastError || 'Image generation failed';
+        throw new Error(typeof errorData === 'string' ? errorData : `Image generation failed: ${response.status}`);
       }
       
       const responseBubble = createResponseBubble();
       const data = await response.json();
-      const parts = data.candidates?.[0]?.content?.parts || [];
       let htmlContent = '';
       let hasImage = false;
       
-      for (const part of parts) {
-        if (part.text) {
-          fullText += part.text;
-          const parsedHtml = typeof marked !== 'undefined' ? marked.parse(part.text) : part.text;
-          htmlContent += typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
+      if (usedEndpoint === 'predict') {
+        const predictions = data.predictions || [];
+        for (const pred of predictions) {
+          const b64 = pred.bytesBase64Encoded;
+          if (b64) {
+            hasImage = true;
+            const mime = pred.mimeType || 'image/png';
+            const imgSrc = `data:${mime};base64,${b64}`;
+            htmlContent += `<div style="margin:10px 0;"><img src="${imgSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);" onclick="window.open(this.src,'_blank')" title="Click to view full size"><div style="margin-top:8px; display:flex; gap:8px;"><button class="img-save-btn" style="background:rgba(255,107,237,0.15);border:1px solid rgba(255,107,237,0.3);color:#ff6bed;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Image</button></div></div>`;
+          }
         }
-        if (part.inlineData) {
-          hasImage = true;
-          const imgSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-          htmlContent += `<div style="margin:10px 0;"><img src="${imgSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);" onclick="window.open(this.src,'_blank')" title="Click to view full size"><div style="margin-top:8px; display:flex; gap:8px;"><button class="img-save-btn" style="background:rgba(255,107,237,0.15);border:1px solid rgba(255,107,237,0.3);color:#ff6bed;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Image</button></div></div>`;
+        fullText = `Generated image: "${prompt}"`;
+      } else {
+        const parts = data.candidates?.[0]?.content?.parts || [];
+        for (const part of parts) {
+          if (part.text) {
+            fullText += part.text;
+            const parsedHtml = typeof marked !== 'undefined' ? marked.parse(part.text) : part.text;
+            htmlContent += typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
+          }
+          if (part.inlineData) {
+            hasImage = true;
+            const imgSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+            htmlContent += `<div style="margin:10px 0;"><img src="${imgSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);" onclick="window.open(this.src,'_blank')" title="Click to view full size"><div style="margin-top:8px; display:flex; gap:8px;"><button class="img-save-btn" style="background:rgba(255,107,237,0.15);border:1px solid rgba(255,107,237,0.3);color:#ff6bed;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Image</button></div></div>`;
+          }
         }
       }
       
