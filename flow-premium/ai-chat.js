@@ -361,7 +361,7 @@ const AI_MODES = {
     welcome: "I'm your AI vision partner. Snap a screenshot and ask me anything!"
   },
   'image': {
-    model: 'imagen-3.0-generate-001',
+    model: 'gemini-2.0-flash-exp',
     type: 'gemini-image',
     placeholder: 'Describe the image you want to create...',
     welcome: '🎨 Image mode — describe what you want and I\'ll create it!'
