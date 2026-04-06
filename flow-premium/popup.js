@@ -1959,21 +1959,21 @@ function updateThumbnails() {
     emptyWow.className = 'empty-wow';
     emptyWow.innerHTML = `
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 16px 18px;width:100%;box-sizing:border-box;">
-        <div class="float-mouse" style="margin-bottom:16px;">
-          <svg width="36" height="54" viewBox="0 0 36 54" fill="none">
-            <rect x="2" y="2" width="32" height="50" rx="16" stroke="#00d9ff" stroke-width="1.5" fill="rgba(0,217,255,0.04)"/>
-            <line x1="18" y1="2" x2="18" y2="22" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
-            <rect x="15" y="9" width="6" height="11" rx="3" stroke="#00d9ff" stroke-width="1" fill="none" opacity="0.5"/>
+        <div class="float-mouse" style="margin-bottom:18px;">
+          <svg width="42" height="60" viewBox="0 0 42 60" fill="none">
+            <rect x="3" y="3" width="36" height="54" rx="18" stroke="#5abfcf" stroke-width="2.5" fill="rgba(0,180,200,0.06)"/>
+            <line x1="21" y1="3" x2="21" y2="25" stroke="rgba(255,255,255,0.06)" stroke-width="0.7"/>
+            <rect x="17" y="11" width="8" height="13" rx="4" stroke="#5abfcf" stroke-width="1.8" fill="rgba(0,180,200,0.1)"/>
           </svg>
         </div>
         <div style="font-size:14px;white-space:nowrap;text-align:center;">
-          <strong style="color:#00d9ff;">Right-click</strong><span style="color:rgba(255,255,255,0.75);"> anywhere to get started</span>
+          <strong style="color:#00d9ff;">Right-click</strong><span style="color:rgba(255,255,255,0.7);"> anywhere to get started</span>
         </div>
-        <div style="display:flex;gap:16px;margin-top:14px;font-size:11px;color:rgba(255,255,255,0.55);white-space:nowrap;">
-          <span>📸 Snap</span>
-          <span>✂️ Snip</span>
-          <span>📄 Full</span>
-          <span>⭐ AI</span>
+        <div style="display:flex;gap:20px;margin-top:14px;font-size:11px;white-space:nowrap;">
+          <span style="color:rgba(255,255,255,0.45);">📸 Snap</span>
+          <span style="color:rgba(255,255,255,0.45);">✂️ Snip</span>
+          <span style="color:rgba(255,255,255,0.45);">📄 Full</span>
+          <span style="color:#e8c840;">⭐ AI</span>
         </div>
       </div>
     `;
