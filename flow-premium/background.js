@@ -98,7 +98,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     } else {
       // No trial data found anywhere - this is an error state
       // DO NOT create new trial - checkSubscription will handle this
-      console.error('[SnapToAI] Extension updated but NO trial data found! User needs to reinstall.');
+      console.log('[SnapToAI] Extension updated but NO trial data found! User needs to reinstall.');
     }
   }
 });
@@ -177,7 +177,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
           });
         }
       } catch (e) {
-        console.error('[SnapToAI] Snip from menu failed:', e.message);
+        console.log('[SnapToAI] Snip from menu failed:', e.message);
       }
       break;
     }
@@ -216,7 +216,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
           });
         }
       } catch (e) {
-        console.error('[SnapToAI] Send queue to AI failed:', e.message);
+        console.log('[SnapToAI] Send queue to AI failed:', e.message);
       }
       break;
     }
@@ -277,7 +277,7 @@ async function handleImageToMusic(info, tab) {
         try {
           imageData = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 85 });
         } catch(e2) {
-          console.error('[SnapToAI] Screenshot fallback failed:', e2.message);
+          console.log('[SnapToAI] Screenshot fallback failed:', e2.message);
           return;
         }
       }
@@ -300,7 +300,7 @@ async function handleImageToMusic(info, tab) {
     });
     
   } catch(e) {
-    console.error('[SnapToAI] Image-to-music failed:', e.message);
+    console.log('[SnapToAI] Image-to-music failed:', e.message);
   }
 }
 
@@ -323,7 +323,7 @@ async function handleAskSnapToAI(info, tab) {
     try {
       screenshot = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 85 });
     } catch (e) {
-      console.error('[SnapToAI] Screenshot capture failed:', e);
+      console.log('[SnapToAI] Screenshot capture failed:', e);
     }
 
     let pageContext = {
@@ -390,10 +390,10 @@ async function handleAskSnapToAI(info, tab) {
     try {
       await chrome.storage.session.set({ askAiPayload: payload });
     } catch (storageErr) {
-      console.warn('[SnapToAI] Storage failed, retrying without screenshot:', storageErr.message);
+      console.log('[SnapToAI] Storage failed, retrying without screenshot:', storageErr.message);
       payload.screenshot = null;
       try { await chrome.storage.session.set({ askAiPayload: payload }); } catch (e2) {
-        console.error('[SnapToAI] Storage retry also failed:', e2.message);
+        console.log('[SnapToAI] Storage retry also failed:', e2.message);
       }
     }
 
@@ -406,7 +406,7 @@ async function handleAskSnapToAI(info, tab) {
     });
 
   } catch (err) {
-    console.error('[SnapToAI] Ask AI error:', err);
+    console.log('[SnapToAI] Ask AI error:', err);
     chrome.windows.create({
       url: chrome.runtime.getURL('ai-chat.html?source=contextmenu&error=storage'),
       type: 'popup',
@@ -521,7 +521,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
         sendResponse({ success: true });
       } catch (e) {
-        console.error('[SnapToAI] askAiDirect error:', e);
+        console.log('[SnapToAI] askAiDirect error:', e);
         chrome.windows.create({
           url: chrome.runtime.getURL('ai-chat.html?direct=true'),
           type: 'popup', width: 1000, height: 700, focused: true

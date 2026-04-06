@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       cardContent.innerHTML = '<p>No content available. Please try again from the AI chat.</p>';
     }
   } catch (err) {
-    console.error('Failed to load magic card content:', err);
+    console.log('Failed to load magic card content:', err);
     cardContent.innerHTML = '<p>Failed to load content. Please try again.</p>';
   }
   
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         copyBtn.style.background = '';
       }, 2000);
     } catch (err) {
-      console.error('Copy failed:', err);
+      console.log('Copy failed:', err);
       // Fallback to plain text
       try {
         await navigator.clipboard.writeText(cardContent.innerText);

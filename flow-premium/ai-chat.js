@@ -226,7 +226,7 @@ async function loadImagesFromIndexedDB() {
     db.close();
     return result;
   } catch (e) {
-    console.error('[SnapToAI] IndexedDB load failed:', e);
+    console.log('[SnapToAI] IndexedDB load failed:', e);
     return [];
   }
 }
@@ -2506,7 +2506,7 @@ if (chatThreadElement) {
     e.clipboardData.setData('text/plain', plainText);
     console.log('[SnapToAI] Rich text copied with formatting (sync)');
   } catch (err) {
-    console.error('[SnapToAI] Clipboard setData failed:', err);
+    console.log('[SnapToAI] Clipboard setData failed:', err);
   }
   });
 }

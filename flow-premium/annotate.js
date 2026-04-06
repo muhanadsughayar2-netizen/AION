@@ -1100,7 +1100,7 @@ async function loadFullPageImages() {
     }
     
   } catch (error) {
-    console.error('Failed to load full page images:', error);
+    console.log('Failed to load full page images:', error);
     updateStatus('Failed to load pages. Please try again.');
     if (window.isAutoSaveMode) window.close();
   }
@@ -1749,7 +1749,7 @@ async function saveSnipToQueue() {
     console.log('[SnapToAI] Snip saved to queue, original preserved for more snips');
     
   } catch (error) {
-    console.error('[SnapToAI] Snip save error:', error);
+    console.log('[SnapToAI] Snip save error:', error);
     updateStatus('Failed to save snip. Try again.');
   }
 }
@@ -2597,7 +2597,7 @@ async function loadCustomStickers() {
     
     setupStickerListeners();
   } catch (error) {
-    console.error('Failed to load custom stickers:', error);
+    console.log('Failed to load custom stickers:', error);
   }
 }
 
@@ -2624,7 +2624,7 @@ async function createCustomSticker() {
       loadCustomStickers();
     }
   } catch (error) {
-    console.error('Failed to create custom sticker:', error);
+    console.log('Failed to create custom sticker:', error);
   }
 }
 
@@ -2636,7 +2636,7 @@ async function deleteCustomSticker(text) {
     await chrome.storage.local.set({ customStickers: filtered });
     loadCustomStickers();
   } catch (error) {
-    console.error('Failed to delete custom sticker:', error);
+    console.log('Failed to delete custom sticker:', error);
   }
 }
 
@@ -2802,7 +2802,7 @@ async function save() {
     
     window.close();
   } catch (error) {
-    console.error('Save error:', error);
+    console.log('Save error:', error);
     updateStatus('Save failed. Try again.');
   }
 }
@@ -3125,7 +3125,7 @@ async function saveFullPageWithAnnotations() {
     setTimeout(() => window.close(), 2000);
     
   } catch (error) {
-    console.error('Save full page error:', error);
+    console.log('Save full page error:', error);
     updateStatus('Failed to save. Please try again.');
   }
 }

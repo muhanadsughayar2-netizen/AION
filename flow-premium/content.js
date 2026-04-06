@@ -69,7 +69,7 @@
       console.log(`[SnapToAI] Saved ${screenshots.length} screenshots to IndexedDB`);
       return true;
     } catch (e) {
-      console.warn('[SnapToAI] IndexedDB save failed:', e.message);
+      console.log('[SnapToAI] IndexedDB save failed:', e.message);
       return false;
     }
   }
@@ -170,7 +170,7 @@
         uploadToAI(request.platform, request.useSelectedOnly)
           .then(sendResponse)
           .catch(err => {
-            console.warn('[SnapToAI] Upload error:', err.message);
+            console.log('[SnapToAI] Upload error:', err.message);
             sendResponse({ success: false, error: 'Upload not available on this page' });
           });
         return true;
@@ -207,7 +207,7 @@
         safeFullPageCapture(request.tabId)
           .then(sendResponse)
           .catch(err => {
-            console.warn('[SnapToAI] Full page capture failed safely:', err.message);
+            console.log('[SnapToAI] Full page capture failed safely:', err.message);
             showToast('This page cannot be captured. Try SNAP instead.', 'error');
             sendResponse({ success: false, error: 'Page not capturable' });
           });
@@ -277,7 +277,7 @@
       }
     } catch (err) {
       // NEVER let errors bubble up to Chrome
-      console.warn('[SnapToAI] Message handler error:', err.message);
+      console.log('[SnapToAI] Message handler error:', err.message);
       sendResponse({ success: false, error: 'Internal error' });
     }
   });
@@ -419,7 +419,7 @@
       return result;
     } catch (error) {
       // Log to console but NEVER throw - this prevents Chrome extension errors
-      console.warn('[SnapToAI] Capture error (handled):', error.message || error);
+      console.log('[SnapToAI] Capture error (handled):', error.message || error);
       
       // Cleanup styles on error too
       cleanupSpecialSiteStyles();
@@ -515,7 +515,7 @@
       
       return { success: true };
     } catch (error) {
-      console.error('Clipboard write failed:', error);
+      console.log('Clipboard write failed:', error);
       return { success: false, error: error.message };
     }
   }
@@ -574,7 +574,7 @@
       const fileInput = await findFileInput(platform);
       
       if (!fileInput) {
-        console.error('[SnapToAI] Could not find file input on this page');
+        console.log('[SnapToAI] Could not find file input on this page');
         showToast('Upload button not found. Try clicking the paperclip/attach icon first.', 'error');
         return { success: false, error: 'File input not found. Make sure the chat input area is visible.' };
       }
@@ -601,7 +601,7 @@
             await new Promise(resolve => setTimeout(resolve, 1400));
           }
         } catch (snapError) {
-          console.error(`[SnapToAI] Failed to upload snap ${i + 1}:`, snapError);
+          console.log(`[SnapToAI] Failed to upload snap ${i + 1}:`, snapError);
         }
       }
       
@@ -619,7 +619,7 @@
       
       return { success: true, count: uploadedCount };
     } catch (error) {
-      console.error('[SnapToAI] Upload failed:', error);
+      console.log('[SnapToAI] Upload failed:', error);
       showToast('Upload failed: ' + (error.message || 'Unknown error'), 'error');
       return { success: false, error: error.message };
     }
@@ -769,7 +769,7 @@
       }
     }
     
-    console.error('[SnapToAI] No file input found after all retries');
+    console.log('[SnapToAI] No file input found after all retries');
     return null;
   }
 
@@ -781,7 +781,7 @@
         // Try to convert to optimized JPEG for faster AI platform uploads
         return await convertToOptimizedJpeg(dataUrl, filename.replace('.png', '.jpg'));
       } catch (e) {
-        console.warn('[SnapToAI] JPEG conversion failed, using original PNG:', e.message);
+        console.log('[SnapToAI] JPEG conversion failed, using original PNG:', e.message);
         // Fall through to PNG
       }
     }
@@ -1130,7 +1130,7 @@
             }
           } catch (e) {
             // Canvas may be tainted by CORS
-            console.warn(`[SnapToAI] Canvas ${index} is tainted, cannot capture`);
+            console.log(`[SnapToAI] Canvas ${index} is tainted, cannot capture`);
             return;
           }
           
@@ -1159,7 +1159,7 @@
           canvas.parentNode.insertBefore(img, canvas);
           
         } catch (e) {
-          console.warn(`[SnapToAI] Failed to capture canvas ${index}:`, e.message);
+          console.log(`[SnapToAI] Failed to capture canvas ${index}:`, e.message);
         }
       });
       
@@ -1225,7 +1225,7 @@
       console.log('[SnapToAI] 🎬 Canvas/WebGL/video capture complete');
       
     } catch (error) {
-      console.warn('[SnapToAI] Media capture error (non-fatal):', error.message);
+      console.log('[SnapToAI] Media capture error (non-fatal):', error.message);
     }
   }
   
@@ -1279,7 +1279,7 @@
       console.log('[SnapToAI] 🔄 Canvas/WebGL/video restore complete');
       
     } catch (error) {
-      console.warn('[SnapToAI] Media restore error (non-fatal):', error.message);
+      console.log('[SnapToAI] Media restore error (non-fatal):', error.message);
       // Force reset state even on error
       mediaState.canvasElements = [];
       mediaState.videoElements = [];
@@ -1459,7 +1459,7 @@
         window.MutationObserver.prototype = originalMutationObserver.prototype;
         freezeState.originalMutationObserver = originalMutationObserver;
       } catch (e) {
-        console.warn('[SnapToAI] Could not override MutationObserver:', e.message);
+        console.log('[SnapToAI] Could not override MutationObserver:', e.message);
       }
       
       // 4. DISCONNECT ALL IntersectionObservers
@@ -1481,7 +1481,7 @@
           freezeState.originalIntersectionObserver = originalIntersectionObserver;
         }
       } catch (e) {
-        console.warn('[SnapToAI] Could not override IntersectionObserver:', e.message);
+        console.log('[SnapToAI] Could not override IntersectionObserver:', e.message);
       }
       
       // 5. PAUSE ALL VIDEOS
@@ -1591,7 +1591,7 @@
       console.log('[SnapToAI] 🧊 DOM frozen successfully');
       
     } catch (error) {
-      console.warn('[SnapToAI] Freeze error (non-fatal):', error.message);
+      console.log('[SnapToAI] Freeze error (non-fatal):', error.message);
     }
   }
   
@@ -1717,7 +1717,7 @@
       console.log('[SnapToAI] 🔥 DOM unfrozen successfully');
       
     } catch (error) {
-      console.warn('[SnapToAI] Unfreeze error (non-fatal):', error.message);
+      console.log('[SnapToAI] Unfreeze error (non-fatal):', error.message);
       // Force reset state even on error
       freezeState.isFrozen = false;
     }
@@ -2484,7 +2484,7 @@
         return { success: false, error: 'Capture failed' };
       }
     } catch (error) {
-      console.warn('[SnapToAI] Simple capture issue:', error?.message || error);
+      console.log('[SnapToAI] Simple capture issue:', error?.message || error);
       showToast('Capture failed: ' + error.message, 'error');
       return { success: false, error: error.message };
     }
@@ -3272,7 +3272,7 @@
         
         // Guard against invalid scroll positions
         if (isNaN(currentScrollTop) || currentScrollTop < 0) {
-          console.warn('[SnapToAI] Invalid scroll position, aborting capture');
+          console.log('[SnapToAI] Invalid scroll position, aborting capture');
           break;
         }
         
@@ -3532,7 +3532,7 @@
                   pageTitle: document.title || 'Untitled Page'
                 }, (response) => {
                   if (chrome.runtime.lastError) {
-                    console.warn('[SnapToAI] Batch send error:', chrome.runtime.lastError.message);
+                    console.log('[SnapToAI] Batch send error:', chrome.runtime.lastError.message);
                   }
                   resolve(response);
                 });
@@ -3540,7 +3540,7 @@
               new Promise(resolve => setTimeout(resolve, 3000)) // 3s timeout
             ]);
           } catch (e) {
-            console.warn('[SnapToAI] Batch', i + 1, 'error:', e.message);
+            console.log('[SnapToAI] Batch', i + 1, 'error:', e.message);
           }
           
           // Small delay between batches to let background process

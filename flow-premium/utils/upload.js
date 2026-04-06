@@ -80,7 +80,7 @@ async function uploadFile(fileInput, file) {
     
     return true;
   } catch (error) {
-    console.error('Upload file error:', error);
+    console.log('Upload file error:', error);
     return false;
   }
 }
@@ -132,7 +132,7 @@ async function uploadSnapsToAI(snaps, platform) {
       count: files.length
     };
   } catch (error) {
-    console.error('Upload snaps error:', error);
+    console.log('Upload snaps error:', error);
     return {
       success: false,
       error: error.message

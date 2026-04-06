@@ -46,7 +46,7 @@ async function getSnapCount() {
     const snaps = result.snaps || [];
     return snaps.length;
   } catch (error) {
-    console.error('Error getting snap count:', error);
+    console.log('Error getting snap count:', error);
     return 0;
   }
 }
@@ -57,7 +57,7 @@ async function saveSnaps(snaps) {
     await chrome.storage.session.set({ snaps });
     return true;
   } catch (error) {
-    console.error('Error saving snaps:', error);
+    console.log('Error saving snaps:', error);
     return false;
   }
 }
@@ -68,7 +68,7 @@ async function loadSnaps() {
     const result = await chrome.storage.session.get('snaps');
     return result.snaps || [];
   } catch (error) {
-    console.error('Error loading snaps:', error);
+    console.log('Error loading snaps:', error);
     return [];
   }
 }
@@ -79,7 +79,7 @@ async function clearAllSnaps() {
     await chrome.storage.session.remove('snaps');
     return true;
   } catch (error) {
-    console.error('Error clearing snaps:', error);
+    console.log('Error clearing snaps:', error);
     return false;
   }
 }

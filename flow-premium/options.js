@@ -43,7 +43,7 @@ async function loadSettings() {
     toggleJpegQuality(settings.imageFormat === 'jpeg');
     
   } catch (error) {
-    console.error('Failed to load settings:', error);
+    console.log('Failed to load settings:', error);
   }
 }
 
@@ -71,7 +71,7 @@ async function saveSettings() {
     showStatus('Settings saved successfully!', 'success');
     
   } catch (error) {
-    console.error('Failed to save settings:', error);
+    console.log('Failed to save settings:', error);
     showStatus('Failed to save settings.', 'error');
   }
 }
@@ -160,7 +160,7 @@ async function loadSubscriptionStatus() {
       if (subActions) subActions.style.display = 'none';
     }
   } catch (e) {
-    console.error('Failed to load subscription status:', e);
+    console.log('Failed to load subscription status:', e);
     if (badge) { badge.textContent = 'Unknown'; badge.className = 'status-badge'; }
   }
 }

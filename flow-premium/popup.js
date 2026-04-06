@@ -55,7 +55,7 @@ async function handleGoogleSignIn() {
     const responseUrl = await new Promise((resolve, reject) => {
       chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, (responseUrl) => {
         if (chrome.runtime.lastError) {
-          console.error('[SnapToAI] launchWebAuthFlow error:', chrome.runtime.lastError.message);
+          console.log('[SnapToAI] launchWebAuthFlow error:', chrome.runtime.lastError.message);
           reject(new Error(chrome.runtime.lastError.message));
         } else if (!responseUrl) {
           reject(new Error('No response from Google sign-in'));
@@ -129,7 +129,7 @@ async function handleGoogleSignIn() {
     }
   } catch (error) {
     pendingAfterSignIn = null;
-    console.error('[SnapToAI] Google Sign-In failed:', error);
+    console.log('[SnapToAI] Google Sign-In failed:', error);
     if (authError) {
       const msg = error.message || String(error);
       if (msg === 'The user did not approve access.' || msg.includes('canceled') || msg.includes('cancelled')) {
@@ -161,7 +161,7 @@ async function handleSignOut() {
     await refreshSubscriptionUI();
     updateAiButtonState();
   } catch (error) {
-    console.error('[SnapToAI] Sign-out error:', error);
+    console.log('[SnapToAI] Sign-out error:', error);
   }
 }
 
@@ -264,7 +264,7 @@ async function saveImagesToIndexedDB(images) {
     db.close();
     return true;
   } catch (e) {
-    console.error('[SnapToAI] IndexedDB save failed:', e);
+    console.log('[SnapToAI] IndexedDB save failed:', e);
     return false;
   }
 }
@@ -282,7 +282,7 @@ async function loadImagesFromIndexedDB() {
     db.close();
     return result;
   } catch (e) {
-    console.error('[SnapToAI] IndexedDB load failed:', e);
+    console.log('[SnapToAI] IndexedDB load failed:', e);
     return [];
   }
 }
@@ -910,7 +910,7 @@ function findBestOverlapMatch(img1Data, img2, expectedOverlap, searchRange = 50)
       return expectedOverlap;
     }
   } catch (e) {
-    console.warn('[SnapToAI] Duplicate detection failed, using default overlap:', e.message);
+    console.log('[SnapToAI] Duplicate detection failed, using default overlap:', e.message);
     return expectedOverlap;
   }
 }
@@ -1675,7 +1675,7 @@ async function handleSnapClick() {
       }
     });
   } catch (err) {
-    console.error('[SnapToAI] Snap error:', err);
+    console.log('[SnapToAI] Snap error:', err);
     setStatus('Capture failed', 'error');
     if (snapButton) snapButton.disabled = false;
   }
@@ -2317,7 +2317,7 @@ async function handleCopySelected() {
       ]);
     } catch (clipErr) {
       // Fallback: try with explicit image/png (some browsers prefer this)
-      console.warn('[SnapToAI] Clipboard failed with', mimeType, '- trying image/png:', clipErr.message);
+      console.log('[SnapToAI] Clipboard failed with', mimeType, '- trying image/png:', clipErr.message);
       const pngBlob = await new Promise((resolve, reject) => {
         compositeCanvas.toBlob((b) => {
           if (b) resolve(b);
@@ -2332,7 +2332,7 @@ async function handleCopySelected() {
     // Show the prominent "Paste in AI now" message with count!
     statusPasteReady(selectedSnaps.length);
   } catch (error) {
-    console.error('Copy selected error:', error);
+    console.log('Copy selected error:', error);
     // Provide more helpful error message
     if (error.name === 'NotAllowedError') {
       statusError('Clipboard access denied - click window first');
@@ -2595,7 +2595,7 @@ async function handleDownloadSelected() {
     
     statusDownloaded();
   } catch (error) {
-    console.error('Download selected error:', error);
+    console.log('Download selected error:', error);
     hideProcessingOverlay();
     statusError('Download failed');
   }
@@ -2985,7 +2985,7 @@ async function handleExportPDFDirect() {
     setStatus('Selected combined & exported as clean PDF! 🔥', 'success', 4000);
     
   } catch (error) {
-    console.error('PDF export error:', error);
+    console.log('PDF export error:', error);
     hideProcessingOverlay();
     statusError('PDF export failed');
   }
@@ -3158,7 +3158,7 @@ async function exportPDFCombined(snaps, mode) {
             setTimeout(() => resolve(), 200);
           };
           script.onerror = (err) => {
-            console.error('jsPDF load error:', err);
+            console.log('jsPDF load error:', err);
             reject(new Error('Failed to load jsPDF library'));
           };
           document.head.appendChild(script);
@@ -3217,7 +3217,7 @@ async function exportPDFCombined(snaps, mode) {
     
     statusExported();
   } catch (error) {
-    console.error('PDF export error:', error);
+    console.log('PDF export error:', error);
     hideProcessingOverlay();
     statusError('PDF export failed');
   }
@@ -3256,7 +3256,7 @@ async function exportPDFSeparate(snaps, mode) {
             setTimeout(() => resolve(), 200);
           };
           script.onerror = (err) => {
-            console.error('jsPDF load error:', err);
+            console.log('jsPDF load error:', err);
             reject(new Error('Failed to load jsPDF library'));
           };
           document.head.appendChild(script);
@@ -3327,7 +3327,7 @@ async function exportPDFSeparate(snaps, mode) {
       status.className = 'status';
     }, 2000);
   } catch (error) {
-    console.error('PDF export error:', error);
+    console.log('PDF export error:', error);
     hideProcessingOverlay();
     status.textContent = chrome.i18n.getMessage('statusCaptureFailed') || 'PDF export failed';
     status.className = 'status error';
@@ -3397,7 +3397,7 @@ async function handleDrop(e, dropIndex) {
       updateUI();
     }
   } catch (error) {
-    console.error('Drag drop error:', error);
+    console.log('Drag drop error:', error);
   }
 }
 
@@ -3461,7 +3461,7 @@ async function handleDeleteSnap(index) {
     
     updateUI();
   } catch (error) {
-    console.error('Delete snap error:', error);
+    console.log('Delete snap error:', error);
     statusError('Delete failed');
   }
 }
@@ -3563,7 +3563,7 @@ if (geminiComplianceCheckbox && geminiSaveBtn) {
 function showGeminiModal() {
   console.log('[SnapToAI] Opening Gemini modal');
   if (!geminiModal) {
-    console.error('[SnapToAI] geminiModal not found');
+    console.log('[SnapToAI] geminiModal not found');
     return;
   }
   geminiModal.style.display = 'flex';
@@ -3594,7 +3594,7 @@ async function loadGeminiKey() {
     }
     return !!result.geminiApiKey;
   } catch (e) {
-    console.error('[SnapToAI] Error loading Gemini key:', e);
+    console.log('[SnapToAI] Error loading Gemini key:', e);
     return false;
   }
 }
@@ -3615,7 +3615,7 @@ async function saveGeminiKey() {
     updateAiButtonState();
     hideGeminiModal();
   } catch (e) {
-    console.error('[SnapToAI] Error saving Gemini key:', e);
+    console.log('[SnapToAI] Error saving Gemini key:', e);
   }
 }
 
@@ -3627,7 +3627,7 @@ async function clearGeminiKey() {
     updateAiButtonState();
     if (geminiStatus) geminiStatus.style.display = 'none';
   } catch (e) {
-    console.error('[SnapToAI] Error clearing Gemini key:', e);
+    console.log('[SnapToAI] Error clearing Gemini key:', e);
   }
 }
 
@@ -3878,7 +3878,7 @@ async function refreshSubscriptionUI() {
 
     applySubscriptionBadge(upgradeBtn, status, snaptoai_dev_override);
   } catch (e) {
-    console.error('[SnapToAI] Subscription UI refresh error:', e);
+    console.log('[SnapToAI] Subscription UI refresh error:', e);
     if (upgradeBtn) upgradeBtn.style.visibility = 'hidden';
   }
 }
@@ -4079,7 +4079,7 @@ async function openAiChat(imageDataUrls) {
   }
   
   if (!saved && !sessionFallbackOk) {
-    console.error('[SnapToAI] Failed to save images anywhere');
+    console.log('[SnapToAI] Failed to save images anywhere');
     if (directAiBtn) {
       directAiBtn.style.opacity = '1';
       directAiBtn.style.pointerEvents = 'auto';
@@ -4297,7 +4297,7 @@ async function sendToGemini(prompt, isRetry = false) {
 
     if (data.error) {
       addChatBubble('Error: ' + (data.error.message || 'API error. Check your key.'), 'ai');
-      console.error('[SnapToAI] Gemini error:', data.error);
+      console.log('[SnapToAI] Gemini error:', data.error);
     } else if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
       const aiResponse = data.candidates[0].content.parts[0].text;
       addChatBubble(aiResponse, 'ai');
@@ -4315,7 +4315,7 @@ async function sendToGemini(prompt, isRetry = false) {
   } catch (error) {
     loadingBubble.remove();
     addChatBubble('Connection error. Check your internet and try again.', 'ai');
-    console.error('[SnapToAI] Fetch error:', error);
+    console.log('[SnapToAI] Fetch error:', error);
   }
 
   aiSendBtn.disabled = false;
