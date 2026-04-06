@@ -466,7 +466,7 @@ function showImageStudio(thread) {
   
   const studio = document.createElement('div');
   studio.className = 'chat-bubble ai image-studio';
-  studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none; max-width: 420px;';
+  studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none; max-width: 100%; width: 100%;';
   
   studio.innerHTML = `
     <div style="background:linear-gradient(135deg, rgba(255,107,237,0.05), rgba(200,80,200,0.02));border:1px solid rgba(255,107,237,0.15);border-radius:14px;padding:16px;">
@@ -542,7 +542,7 @@ function showSongStudio(thread) {
   
   const studio = document.createElement('div');
   studio.className = 'chat-bubble ai song-studio';
-  studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none; max-width: 420px;';
+  studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none; max-width: 100%; width: 100%;';
   
   const genres = [
     { emoji: '🎸', name: 'Rock' },
