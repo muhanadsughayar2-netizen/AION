@@ -1724,10 +1724,18 @@ async function handleSend() {
           console.log(`[SnapToAI Audio] ${audioModel} status: ${resp.status}`, JSON.stringify(body).substring(0, 500));
           
           if (resp.ok && body.candidates?.[0]?.content?.parts) {
-            audioData = body;
-            audioSucceeded = true;
-            console.log(`[SnapToAI Audio] Success with ${audioModel}!`);
-            break;
+            const audioParts = body.candidates[0].content.parts;
+            const hasRealAudio = audioParts.some(p => p.inlineData?.data && p.inlineData.data.length > 100);
+            if (hasRealAudio) {
+              audioData = body;
+              audioSucceeded = true;
+              console.log(`[SnapToAI Audio] Success with ${audioModel}!`);
+              break;
+            } else {
+              audioError = 'Model returned empty audio. Your API key may not have access to music generation — try adding Google Cloud billing for full Lyria access.';
+              console.log(`[SnapToAI Audio] ${audioModel} returned parts but no real audio data`);
+              continue;
+            }
           }
           
           audioError = body.error?.message || `Status ${resp.status}`;
