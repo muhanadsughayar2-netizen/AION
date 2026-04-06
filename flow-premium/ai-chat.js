@@ -1588,8 +1588,20 @@ async function handleSend() {
             break;
           }
           
+          if (response.ok && !responseBody.candidates?.[0]?.content?.parts) {
+            const blockReason = responseBody.candidates?.[0]?.finishReason || 
+                               responseBody.promptFeedback?.blockReason || '';
+            if (blockReason === 'SAFETY' || blockReason === 'BLOCKED') {
+              lastError = 'Your prompt was blocked by safety filters. Try rephrasing it.';
+            } else {
+              lastError = 'The AI couldn\'t generate an image for that prompt. Try a different description.';
+            }
+            console.log(`[SnapToAI Image] 200 but no image data. Reason: ${blockReason || 'unknown'}`);
+            continue;
+          }
+          
           lastError = responseBody.error?.message || `Status ${response.status}`;
-          console.warn(`[SnapToAI Image] Error: ${lastError}`);
+          console.log(`[SnapToAI Image] Error: ${lastError}`);
           
           const isRetryable = response.status === 429 || response.status === 503 ||
             lastError.toLowerCase().includes('resource') || 
