@@ -1969,11 +1969,11 @@ function updateThumbnails() {
         <div style="font-size:14px;white-space:nowrap;text-align:center;">
           <strong style="color:#00d9ff;">Right-click</strong><span style="color:rgba(255,255,255,0.7);"> anywhere to get started</span>
         </div>
-        <div style="display:flex;gap:20px;margin-top:14px;font-size:11px;white-space:nowrap;">
-          <span style="color:rgba(255,255,255,0.45);">📸 Snap</span>
-          <span style="color:rgba(255,255,255,0.45);">✂️ Snip</span>
-          <span style="color:rgba(255,255,255,0.45);">📄 Full</span>
-          <span style="color:#e8c840;">⭐ AI</span>
+        <div style="display:flex;gap:22px;margin-top:14px;font-size:11px;white-space:nowrap;">
+          <span style="color:rgba(255,255,255,0.7);">📷 Snap</span>
+          <span style="color:rgba(255,255,255,0.7);">✂ Snip</span>
+          <span style="color:rgba(255,255,255,0.7);">📄 Full</span>
+          <span style="color:#dbb630;">⭐ AI</span>
         </div>
       </div>
     `;
@@ -2219,6 +2219,7 @@ function toggleSelection(index) {
     selectedSnapIds.add(index);
   }
   updateThumbnails();
+  updateClearButton();
   
   // UPDATE STATUS IMMEDIATELY with selection count
   const count = selectedSnapIds.size;
@@ -2245,6 +2246,7 @@ function handleSelectAll() {
   }
   
   updateThumbnails();
+  updateClearButton();
   
   // UPDATE STATUS IMMEDIATELY with selection count
   const count = selectedSnapIds.size;
