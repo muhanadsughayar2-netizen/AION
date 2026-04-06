@@ -1525,8 +1525,13 @@ async function handleSend() {
               })
             });
           } catch(fetchErr) {
-            console.error(`[SnapToAI Image] Fetch error:`, fetchErr.message);
+            console.log(`[SnapToAI Image] Fetch error on ${modelName}:`, fetchErr.message);
             lastError = fetchErr.message;
+            if (attempt < 2) {
+              const waitSec = retryDelays[attempt];
+              if (loadingEl) loadingEl.innerHTML = `<span style="color:#ff6bed;">⏳ Connection issue — retrying in ${waitSec}s...</span>`;
+              await new Promise(r => setTimeout(r, waitSec * 1000));
+            }
             continue;
           }
           
@@ -1562,7 +1567,10 @@ async function handleSend() {
       }
       
       if (!succeeded) {
-        throw new Error(lastError || 'Image generation failed');
+        const friendlyError = lastError?.toLowerCase().includes('failed to fetch') 
+          ? 'Connection failed — please check your internet and try again.'
+          : (lastError || 'Image generation failed. Please try again.');
+        throw new Error(friendlyError);
       }
       
       const responseBubble = createResponseBubble();
@@ -1673,12 +1681,15 @@ async function handleSend() {
           }
         } catch(e) {
           audioError = e.message;
-          console.error(`[SnapToAI Audio] ${audioModel} error:`, e.message);
+          console.log(`[SnapToAI Audio] ${audioModel} error:`, e.message);
         }
       }
       
       if (!audioSucceeded) {
-        throw new Error(audioError || 'Audio generation failed');
+        const friendlyAudioError = audioError?.toLowerCase().includes('failed to fetch')
+          ? 'Connection failed — please check your internet and try again.'
+          : (audioError || 'Music generation failed. Please try again.');
+        throw new Error(friendlyAudioError);
       }
       
       const responseBubble = createResponseBubble();
