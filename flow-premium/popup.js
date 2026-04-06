@@ -3642,7 +3642,6 @@ if (modeSelect && modeDesc) {
     'vision': 'Powered by Gemini 2.0 Flash',
     'image': 'Powered by Imagen 3',
     'music': 'Powered by Lyria — 30-sec clips',
-    'research': 'Powered by Gemini + Google Search — deep research with sources'
   };
   modeSelect.addEventListener('change', () => {
     modeDesc.textContent = descriptions[modeSelect.value] || '';

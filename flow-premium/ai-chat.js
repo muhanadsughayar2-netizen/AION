@@ -371,12 +371,6 @@ const AI_MODES = {
     type: 'gemini-audio',
     placeholder: 'Describe the music you want (mood, genre, tempo)...',
     welcome: '🎵 Music mode — describe the vibe and I\'ll compose it!'
-  },
-  'research': {
-    model: 'gemini-2.5-flash',
-    type: 'gemini-research',
-    placeholder: 'Ask anything — I\'ll search the web for the best answer...',
-    welcome: '🔬 Research mode — I\'ll search the web and compile a thorough, sourced answer!'
   }
 };
 
@@ -393,8 +387,7 @@ function getCurrentModeModel() {
 const MODE_COLORS = {
   'vision': 'rgba(0,217,255,0.06)',
   'image': 'rgba(255,107,237,0.06)',
-  'music': 'rgba(0,255,136,0.06)',
-  'research': 'rgba(255,170,0,0.06)'
+  'music': 'rgba(0,255,136,0.06)'
 };
 
 function initModeButtons() {
@@ -433,7 +426,7 @@ function initModeButtons() {
         const notice = document.createElement('div');
         notice.className = 'chat-bubble ai mode-switch-notice';
         notice.style.cssText = 'font-size: 12px; padding: 10px 16px; border-left: 3px solid; margin: 4px 0;';
-        const borderColors = { 'vision': '#00d9ff', 'image': '#ff6bed', 'music': '#00ff88', 'research': '#ffaa00' };
+        const borderColors = { 'vision': '#00d9ff', 'image': '#ff6bed', 'music': '#00ff88' };
         notice.style.borderLeftColor = borderColors[mode] || '#00d9ff';
         notice.textContent = cfg.welcome;
         thread.appendChild(notice);
@@ -475,269 +468,41 @@ function showImageStudio(thread) {
   studio.className = 'chat-bubble ai image-studio';
   studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none;';
   
-  const modernStyles = [
-    { emoji: '📸', name: 'Photo Realistic' },
-    { emoji: '🎨', name: 'Digital Art' },
-    { emoji: '✏️', name: 'Illustration' },
-    { emoji: '🔮', name: '3D Render' },
-    { emoji: '✨', name: 'Anime / Manga' },
-    { emoji: '🖍️', name: 'Cartoon' },
-    { emoji: '📐', name: 'Flat Design' },
-    { emoji: '🏙️', name: 'Cyberpunk' },
-    { emoji: '🌌', name: 'Sci-Fi Concept' },
-    { emoji: '⬛', name: 'Minimalist' },
-    { emoji: '🎮', name: 'Pixel Art' },
-    { emoji: '🌀', name: 'Psychedelic' }
-  ];
-  
-  const artPeriods = [
-    { emoji: '🏛️', name: 'Renaissance' },
-    { emoji: '🌅', name: 'Impressionism' },
-    { emoji: '🎭', name: 'Pop Art' },
-    { emoji: '🔷', name: 'Cubism' },
-    { emoji: '💫', name: 'Surrealism' },
-    { emoji: '🎨', name: 'Baroque' },
-    { emoji: '🌊', name: 'Ukiyo-e (Japanese)' },
-    { emoji: '⬜', name: 'Art Deco' },
-    { emoji: '🖤', name: 'Gothic' },
-    { emoji: '🌸', name: 'Art Nouveau' },
-    { emoji: '🟥', name: 'Abstract Expressionism' },
-    { emoji: '🔲', name: 'Bauhaus' },
-    { emoji: '🌿', name: 'Romanticism' },
-    { emoji: '⚫', name: 'Film Noir' },
-    { emoji: '✨', name: 'Rococo' },
-    { emoji: '🏺', name: 'Ancient Egyptian' },
-    { emoji: '🕌', name: 'Islamic Geometric' },
-    { emoji: '🎎', name: 'Chinese Ink Wash' }
-  ];
-  
-  const masterStyles = [
-    { emoji: '🌟', name: 'Style of Van Gogh' },
-    { emoji: '💎', name: 'Style of Picasso' },
-    { emoji: '🕐', name: 'Style of Dalí' },
-    { emoji: '🌺', name: 'Style of Monet' },
-    { emoji: '💀', name: 'Style of Frida Kahlo' },
-    { emoji: '🖼️', name: 'Style of Rembrandt' },
-    { emoji: '🎨', name: 'Style of Kandinsky' },
-    { emoji: '🔴', name: 'Style of Mondrian' },
-    { emoji: '🏔️', name: 'Style of Hokusai' },
-    { emoji: '👁️', name: 'Style of M.C. Escher' },
-    { emoji: '🌻', name: 'Style of Gustav Klimt' },
-    { emoji: '🎭', name: 'Style of Warhol' },
-    { emoji: '🌙', name: 'Style of Vermeer' },
-    { emoji: '⚡', name: 'Style of Banksy' },
-    { emoji: '🎪', name: 'Style of Basquiat' },
-    { emoji: '🖌️', name: 'Style of Caravaggio' }
-  ];
-  
-  const techniques = [
-    { emoji: '🖼️', name: 'Oil Painting' },
-    { emoji: '🌈', name: 'Watercolor' },
-    { emoji: '✏️', name: 'Pencil Sketch' },
-    { emoji: '🖊️', name: 'Ink Drawing' },
-    { emoji: '🪵', name: 'Woodcut Print' },
-    { emoji: '🧱', name: 'Mosaic' },
-    { emoji: '🪡', name: 'Embroidery' },
-    { emoji: '🏺', name: 'Fresco' },
-    { emoji: '✂️', name: 'Paper Collage' },
-    { emoji: '🖍️', name: 'Charcoal' },
-    { emoji: '🧊', name: 'Glass Stained' },
-    { emoji: '🪨', name: 'Stone Carving' }
-  ];
-  
-  const categories = [
-    { emoji: '🖼️', name: 'Wallpaper' },
-    { emoji: '📱', name: 'Social Media Image' },
-    { emoji: '🏷️', name: 'Logo / Icon' },
-    { emoji: '👤', name: 'Portrait' },
-    { emoji: '🏞️', name: 'Landscape' },
-    { emoji: '🍔', name: 'Product Shot' },
-    { emoji: '🎴', name: 'Album Cover' },
-    { emoji: '🎮', name: 'Game Art' },
-    { emoji: '🏠', name: 'Interior Design' },
-    { emoji: '👗', name: 'Fashion' },
-    { emoji: '🍽️', name: 'Food Photography' },
-    { emoji: '🐾', name: 'Animal / Pet' },
-    { emoji: '🚗', name: 'Vehicle' },
-    { emoji: '💎', name: 'Jewelry / Luxury' },
-    { emoji: '🌌', name: 'Space / Cosmic' },
-    { emoji: '🎭', name: 'Character Design' }
-  ];
-  
-  const colors = [
-    { hex: '#ff4444', name: 'Red' },
-    { hex: '#ff8800', name: 'Orange' },
-    { hex: '#ffcc00', name: 'Yellow' },
-    { hex: '#00cc44', name: 'Green' },
-    { hex: '#0088ff', name: 'Blue' },
-    { hex: '#8844ff', name: 'Purple' },
-    { hex: '#ff44aa', name: 'Pink' },
-    { hex: '#ffffff', name: 'White' },
-    { hex: '#111111', name: 'Black' },
-    { hex: '#c0a060', name: 'Gold' }
-  ];
-  
-  const chipStyle = `display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer;transition:all 0.2s;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#ccd6e0;margin:3px;user-select:none;`;
-  const sectionTitleStyle = `font-size:13px;font-weight:600;color:#ff6bed;margin:12px 0 8px 0;`;
-  const sectionSubStyle = `font-size:11px;color:#667788;margin:-4px 0 6px 0;`;
-  
   studio.innerHTML = `
     <div style="background:linear-gradient(135deg, rgba(255,107,237,0.06), rgba(200,80,200,0.03));border:1px solid rgba(255,107,237,0.12);border-radius:16px;padding:20px;backdrop-filter:blur(10px);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
         <span style="font-size:24px;">🎨</span>
         <div>
           <div style="font-size:16px;font-weight:700;color:#e8eef4;">Image Studio</div>
-          <div style="font-size:11px;color:#667788;">Create the perfect image step by step</div>
+          <div style="font-size:11px;color:#667788;">Describe what you want — AI will create it</div>
         </div>
       </div>
       
-      <div style="${sectionTitleStyle}">What Are You Creating?</div>
-      <div style="${sectionSubStyle}">Pick a format</div>
-      <div class="studio-categories" style="display:flex;flex-wrap:wrap;gap:2px;">
-        ${categories.map(c => `<div class="studio-chip cat-chip" data-value="${c.name}" style="${chipStyle}"><span>${c.emoji}</span><span>${c.name}</span></div>`).join('')}
-      </div>
+      <textarea class="studio-desc" placeholder="Describe the image you want...&#10;&#10;e.g. A sunset over mountains with purple sky&#10;e.g. A cute cat wearing a tiny hat&#10;e.g. Logo for a coffee shop, minimalist style&#10;e.g. Oil painting of a futuristic city" style="width:100%;box-sizing:border-box;min-height:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;line-height:1.5;"></textarea>
       
-      <div style="${sectionTitleStyle}">🎨 Modern Styles</div>
-      <div class="studio-styles" style="display:flex;flex-wrap:wrap;gap:2px;">
-        ${modernStyles.map(s => `<div class="studio-chip style-chip" data-value="${s.name}" style="${chipStyle}"><span>${s.emoji}</span><span>${s.name}</span></div>`).join('')}
-      </div>
-      
-      <div style="${sectionTitleStyle}">🏛️ Art Periods & Movements</div>
-      <div style="${sectionSubStyle}">From ancient civilizations to modern art</div>
-      <div class="studio-styles" style="display:flex;flex-wrap:wrap;gap:2px;">
-        ${artPeriods.map(s => `<div class="studio-chip style-chip" data-value="${s.name}" style="${chipStyle}"><span>${s.emoji}</span><span>${s.name}</span></div>`).join('')}
-      </div>
-      
-      <div style="${sectionTitleStyle}">🖌️ In the Style of Masters</div>
-      <div style="${sectionSubStyle}">Create like the legends</div>
-      <div class="studio-styles" style="display:flex;flex-wrap:wrap;gap:2px;">
-        ${masterStyles.map(s => `<div class="studio-chip style-chip" data-value="${s.name}" style="${chipStyle}"><span>${s.emoji}</span><span>${s.name}</span></div>`).join('')}
-      </div>
-      
-      <div style="${sectionTitleStyle}">🎭 Techniques & Mediums</div>
-      <div style="${sectionSubStyle}">Traditional art methods</div>
-      <div class="studio-styles" style="display:flex;flex-wrap:wrap;gap:2px;">
-        ${techniques.map(s => `<div class="studio-chip style-chip" data-value="${s.name}" style="${chipStyle}"><span>${s.emoji}</span><span>${s.name}</span></div>`).join('')}
-      </div>
-      
-      <div style="${sectionTitleStyle}">Color Scheme</div>
-      <div style="${sectionSubStyle}">Dominant colors (pick up to 2)</div>
-      <div class="studio-colors" style="display:flex;flex-wrap:wrap;gap:2px;">
-        ${colors.map(c => `<div class="studio-chip color-chip" data-value="${c.name}" data-hex="${c.hex}" style="${chipStyle}"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c.hex};border:1px solid rgba(255,255,255,0.2);"></span><span>${c.name}</span></div>`).join('')}
-      </div>
-      
-      <div style="${sectionTitleStyle}">Describe Your Image</div>
-      <div style="${sectionSubStyle}">What should be in the image?</div>
-      <textarea class="studio-desc" placeholder="e.g. A professional business meeting in a modern office, a sunset over mountains, a sleek product on a marble table..." style="width:100%;box-sizing:border-box;min-height:60px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;"></textarea>
-      
-      <div style="display:flex;gap:10px;margin-top:14px;">
+      <div style="display:flex;gap:10px;margin-top:12px;">
         <button class="studio-create-btn" style="flex:1;padding:12px 20px;border-radius:12px;border:none;background:linear-gradient(135deg,#ff6bed,#cc44bb);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;opacity:0.4;pointer-events:none;">🎨 Create Image</button>
         <button class="studio-surprise-btn" style="padding:12px 16px;border-radius:12px;border:1px solid rgba(255,107,237,0.3);background:rgba(255,107,237,0.08);color:#ff6bed;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;">🎲 Surprise Me</button>
-      </div>
-      
-      <div class="studio-preview" style="margin-top:10px;padding:8px 12px;background:rgba(0,0,0,0.2);border-radius:8px;font-size:11px;color:#556677;display:none;">
-        <span style="color:#ff6bed;">Preview:</span> <span class="preview-text"></span>
       </div>
     </div>
   `;
   
   thread.appendChild(studio);
   
-  let selectedCategory = null;
-  let selectedStyle = null;
-  let selectedColors = [];
+  const descInput = studio.querySelector('.studio-desc');
+  const createBtn = studio.querySelector('.studio-create-btn');
   
-  function updatePreview() {
-    const preview = studio.querySelector('.studio-preview');
-    const previewText = studio.querySelector('.preview-text');
-    const createBtn = studio.querySelector('.studio-create-btn');
-    const desc = studio.querySelector('.studio-desc').value.trim();
-    
-    if (selectedCategory || selectedStyle || desc) {
-      const parts = [];
-      if (selectedCategory) parts.push(`${selectedCategory}`);
-      if (selectedStyle) parts.push(`in ${selectedStyle.toLowerCase()} style`);
-      if (selectedColors.length > 0) parts.push(`with ${selectedColors.join(' and ').toLowerCase()} colors`);
-      if (desc) parts.push(`— ${desc}`);
-      
-      previewText.textContent = parts.join(' ');
-      preview.style.display = 'block';
-      createBtn.style.opacity = '1';
-      createBtn.style.pointerEvents = 'auto';
-    } else {
-      preview.style.display = 'none';
-      createBtn.style.opacity = '0.4';
-      createBtn.style.pointerEvents = 'none';
-    }
-  }
-  
-  function handleSingleChipClick(chipClass, callback) {
-    studio.querySelectorAll(`.${chipClass}`).forEach(chip => {
-      chip.addEventListener('click', () => {
-        const wasActive = chip.style.background.includes('rgba(255, 107, 237');
-        studio.querySelectorAll(`.${chipClass}`).forEach(c => {
-          c.style.background = 'rgba(255,255,255,0.04)';
-          c.style.borderColor = 'rgba(255,255,255,0.1)';
-          c.style.color = '#ccd6e0';
-          c.style.transform = '';
-        });
-        if (!wasActive) {
-          chip.style.background = 'rgba(255,107,237,0.15)';
-          chip.style.borderColor = 'rgba(255,107,237,0.4)';
-          chip.style.color = '#ff6bed';
-          chip.style.transform = 'scale(1.05)';
-          callback(chip.dataset.value);
-        } else {
-          callback(null);
-        }
-        updatePreview();
-      });
-      chip.addEventListener('mouseenter', () => {
-        if (!chip.style.background.includes('rgba(255, 107, 237')) chip.style.background = 'rgba(255,255,255,0.08)';
-      });
-      chip.addEventListener('mouseleave', () => {
-        if (!chip.style.background.includes('rgba(255, 107, 237')) chip.style.background = 'rgba(255,255,255,0.04)';
-      });
-    });
-  }
-  
-  handleSingleChipClick('cat-chip', v => { selectedCategory = v; });
-  handleSingleChipClick('style-chip', v => { selectedStyle = v; });
-  
-  studio.querySelectorAll('.color-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const val = chip.dataset.value;
-      const isActive = chip.style.background.includes('rgba(255, 107, 237');
-      if (isActive) {
-        selectedColors = selectedColors.filter(c => c !== val);
-        chip.style.background = 'rgba(255,255,255,0.04)';
-        chip.style.borderColor = 'rgba(255,255,255,0.1)';
-        chip.style.color = '#ccd6e0';
-        chip.style.transform = '';
-      } else if (selectedColors.length < 2) {
-        selectedColors.push(val);
-        chip.style.background = 'rgba(255,107,237,0.15)';
-        chip.style.borderColor = 'rgba(255,107,237,0.4)';
-        chip.style.color = '#ff6bed';
-        chip.style.transform = 'scale(1.05)';
-      }
-      updatePreview();
-    });
+  descInput.addEventListener('input', () => {
+    const hasText = descInput.value.trim().length > 0;
+    createBtn.style.opacity = hasText ? '1' : '0.4';
+    createBtn.style.pointerEvents = hasText ? 'auto' : 'none';
   });
   
-  studio.querySelector('.studio-desc').addEventListener('input', updatePreview);
-  
-  studio.querySelector('.studio-create-btn').addEventListener('click', () => {
-    if (!selectedCategory && !selectedStyle && !studio.querySelector('.studio-desc').value.trim()) return;
+  createBtn.addEventListener('click', () => {
+    const desc = descInput.value.trim();
+    if (!desc) return;
     
-    const desc = studio.querySelector('.studio-desc').value.trim();
-    let prompt = 'Generate an image:';
-    if (selectedCategory) prompt += ` ${selectedCategory}`;
-    if (selectedStyle) prompt += ` in ${selectedStyle.toLowerCase()} art style`;
-    if (selectedColors.length > 0) prompt += ` with a ${selectedColors.join(' and ').toLowerCase()} color scheme`;
-    if (desc) prompt += `. ${desc}`;
-    
-    prompt += '. Make it high quality and professional. Do NOT include any text, words, or letters in the image.';
+    const prompt = `Generate an image: ${desc}. Make it high quality and professional. Do NOT include any text, words, or letters in the image.`;
     
     const inputEl = document.getElementById('chatInput');
     if (inputEl) {
@@ -750,58 +515,25 @@ function showImageStudio(thread) {
     studio.style.pointerEvents = 'none';
   });
   
+  const surpriseIdeas = [
+    'A stunning mountain landscape at golden hour with purple and orange sky',
+    'A cute golden retriever puppy wearing a tiny top hat',
+    'Futuristic city skyline at night with neon lights, cyberpunk style',
+    'A cozy coffee shop interior with warm lighting and rain outside',
+    'An astronaut floating in space with Earth in the background',
+    'A Japanese garden with cherry blossoms and a koi pond',
+    'A majestic lion portrait in oil painting style',
+    'A luxury sports car on a winding mountain road at sunset',
+    'An underwater coral reef with colorful tropical fish',
+    'A fantasy castle floating in the clouds with waterfalls'
+  ];
+  
   studio.querySelector('.studio-surprise-btn').addEventListener('click', () => {
-    const rCat = categories[Math.floor(Math.random() * categories.length)];
-    const allStyles = [...modernStyles, ...artPeriods, ...masterStyles, ...techniques];
-    const rStyle = allStyles[Math.floor(Math.random() * allStyles.length)];
-    const rColor1 = colors[Math.floor(Math.random() * colors.length)];
-    let rColor2 = colors[Math.floor(Math.random() * colors.length)];
-    while (rColor2.name === rColor1.name) rColor2 = colors[Math.floor(Math.random() * colors.length)];
-    
-    const surpriseDescs = [
-      'A stunning mountain landscape at golden hour',
-      'Modern luxury apartment interior with city views',
-      'Elegant perfume bottle with flower petals',
-      'Futuristic city skyline at night with neon lights',
-      'Delicious food spread on a rustic wooden table',
-      'Professional headshot with bokeh background',
-      'Tropical beach with crystal clear water',
-      'Abstract geometric shapes floating in space',
-      'Cozy coffee shop with warm lighting',
-      'Fashion model in a flowing dress on a rooftop'
-    ];
-    const rDesc = surpriseDescs[Math.floor(Math.random() * surpriseDescs.length)];
-    
-    selectedCategory = rCat.name;
-    selectedStyle = rStyle.name;
-    selectedColors = [rColor1.name, rColor2.name];
-    
-    studio.querySelectorAll('.cat-chip').forEach(c => {
-      const m = c.dataset.value === rCat.name;
-      c.style.background = m ? 'rgba(255,107,237,0.15)' : 'rgba(255,255,255,0.04)';
-      c.style.borderColor = m ? 'rgba(255,107,237,0.4)' : 'rgba(255,255,255,0.1)';
-      c.style.color = m ? '#ff6bed' : '#ccd6e0';
-      c.style.transform = m ? 'scale(1.05)' : '';
-    });
-    studio.querySelectorAll('.style-chip').forEach(c => {
-      const m = c.dataset.value === rStyle.name;
-      c.style.background = m ? 'rgba(255,107,237,0.15)' : 'rgba(255,255,255,0.04)';
-      c.style.borderColor = m ? 'rgba(255,107,237,0.4)' : 'rgba(255,255,255,0.1)';
-      c.style.color = m ? '#ff6bed' : '#ccd6e0';
-      c.style.transform = m ? 'scale(1.05)' : '';
-    });
-    studio.querySelectorAll('.color-chip').forEach(c => {
-      const m = c.dataset.value === rColor1.name || c.dataset.value === rColor2.name;
-      c.style.background = m ? 'rgba(255,107,237,0.15)' : 'rgba(255,255,255,0.04)';
-      c.style.borderColor = m ? 'rgba(255,107,237,0.4)' : 'rgba(255,255,255,0.1)';
-      c.style.color = m ? '#ff6bed' : '#ccd6e0';
-      c.style.transform = m ? 'scale(1.05)' : '';
-    });
-    
-    studio.querySelector('.studio-desc').value = rDesc;
-    updatePreview();
-    
-    studio.querySelector('.studio-surprise-btn').textContent = '🎲 Again!';
+    const idea = surpriseIdeas[Math.floor(Math.random() * surpriseIdeas.length)];
+    descInput.value = idea;
+    createBtn.style.opacity = '1';
+    createBtn.style.pointerEvents = 'auto';
+    studio.querySelector('.studio-surprise-btn').textContent = '🎲 Another!';
   });
 }
 
@@ -1999,118 +1731,6 @@ async function handleSend() {
       
       thread.scrollTop = thread.scrollHeight;
       addBubbleActions(responseBubble, fullText);
-      
-    } else if (modeConfig.type === 'gemini-research') {
-      // === RESEARCH MODE (Gemini with Google Search Grounding) ===
-      const accentColor = '#ffaa00';
-      const responseBubble = createResponseBubble();
-      responseBubble.innerHTML = `<div style="font-size:13px;color:#aabbcc;"><span style="display:inline-block;animation:spin 1s linear infinite;">🔬</span> Searching the web and researching your question...</div>`;
-      thread.scrollTop = thread.scrollHeight;
-      
-      const researchModels = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'];
-      let researchDone = false;
-      
-      for (const rModel of researchModels) {
-        if (researchDone) break;
-        console.log(`[SnapToAI Research] Trying model: ${rModel} with google_search grounding`);
-        
-        try {
-          const requestBody = {
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            systemInstruction: {
-              parts: [{ text: 'You are an expert researcher. Search the web thoroughly to answer the user\'s question. Provide a comprehensive, well-organized answer with key facts bolded. Include sources and links where relevant. Structure your response with clear sections and bullet points. Always cite your sources at the end.' }]
-            },
-            tools: [{ google_search: {} }],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 8192
-            }
-          };
-          
-          if (currentImages.length > 0) {
-            const imgParts = currentImages.map(img => {
-              const [meta, b64] = img.split(',');
-              const mime = meta.match(/:(.*?);/)?.[1] || 'image/png';
-              return { inlineData: { mimeType: mime, data: b64 } };
-            });
-            requestBody.contents[0].parts = [...imgParts, { text: prompt || 'Research this image — search the web for related information, context, and details.' }];
-          }
-          
-          const resp = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${rModel}:generateContent?key=${apiKey}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(requestBody)
-            }
-          );
-          
-          const data = await resp.json();
-          console.log(`[SnapToAI Research] ${rModel} status: ${resp.status}`);
-          
-          if (resp.ok && data.candidates?.[0]?.content?.parts) {
-            researchDone = true;
-            const parts = data.candidates[0].content.parts;
-            let textContent = parts.map(p => p.text || '').join('');
-            
-            const groundingMeta = data.candidates[0].groundingMetadata;
-            let sourcesHtml = '';
-            
-            if (groundingMeta?.groundingChunks?.length > 0) {
-              sourcesHtml = `<div style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);">
-                <div style="font-size:11px;font-weight:600;color:${accentColor};margin-bottom:6px;">📚 Sources</div>`;
-              const seen = new Set();
-              for (const chunk of groundingMeta.groundingChunks) {
-                const web = chunk.web;
-                if (web?.uri && !seen.has(web.uri)) {
-                  seen.add(web.uri);
-                  const title = web.title || new URL(web.uri).hostname;
-                  sourcesHtml += `<div style="margin:3px 0;"><a href="${web.uri}" target="_blank" style="color:#aabbcc;font-size:11px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">🔗 ${title}</a></div>`;
-                }
-              }
-              sourcesHtml += `</div>`;
-            }
-            
-            if (groundingMeta?.searchEntryPoint?.renderedContent) {
-              sourcesHtml += `<div style="margin-top:8px;">${groundingMeta.searchEntryPoint.renderedContent}</div>`;
-            }
-            
-            fullText = textContent;
-            
-            textContent = textContent
-              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-              .replace(/\*(.*?)\*/g, '<em>$1</em>')
-              .replace(/^### (.*$)/gm, '<h4 style="color:#e8eef4;margin:10px 0 4px;">$1</h4>')
-              .replace(/^## (.*$)/gm, '<h3 style="color:#e8eef4;margin:12px 0 6px;">$1</h3>')
-              .replace(/^# (.*$)/gm, '<h2 style="color:#e8eef4;margin:14px 0 8px;">$1</h2>')
-              .replace(/\n/g, '<br>');
-            
-            responseBubble.innerHTML = `
-              <div style="padding:4px 0;">
-                <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
-                  <span style="font-size:16px;">🔬</span>
-                  <span style="font-size:13px;font-weight:600;color:${accentColor};">Research Results</span>
-                </div>
-                <div style="font-size:13px;color:#ccd6e0;line-height:1.7;">${textContent}</div>
-                ${sourcesHtml}
-              </div>`;
-            
-            thread.scrollTop = thread.scrollHeight;
-            addBubbleActions(responseBubble, fullText);
-          } else {
-            const errMsg = data.error?.message || 'Unknown error';
-            console.error(`[SnapToAI Research] ${rModel} failed:`, errMsg);
-          }
-        } catch(e) {
-          console.error(`[SnapToAI Research] ${rModel} error:`, e.message);
-        }
-      }
-      
-      if (!researchDone) {
-        responseBubble.innerHTML = `<div style="color:#ff6b6b;">Research failed. Please check your API key or try again.</div>`;
-        fullText = 'Research failed';
-        addBubbleActions(responseBubble, fullText);
-      }
       
     } else {
       // === VISION / GEMINI (streaming text) ===
