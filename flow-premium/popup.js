@@ -2602,7 +2602,10 @@ async function handleDownloadSelected() {
 // Update clear button state
 function updateClearButton() {
   const clearButton = document.getElementById('clearButton');
-  clearButton.disabled = currentSnaps.length === 0;
+  if (!clearButton) return;
+  clearButton.disabled = selectedSnapIds.size === 0;
+  clearButton.style.opacity = selectedSnapIds.size === 0 ? '0.4' : '1';
+  clearButton.style.pointerEvents = selectedSnapIds.size === 0 ? 'none' : 'auto';
 }
 
 // Handle annotation
