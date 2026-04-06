@@ -390,6 +390,22 @@ const MODE_COLORS = {
   'music': 'rgba(0,255,136,0.06)'
 };
 
+const MODEL_NAMES = {
+  'vision': { name: 'Gemini 3', sub: 'Flash (Preview)', color: '#00d9ff' },
+  'image': { name: 'Nano', sub: 'Banana', color: '#ff6bed' },
+  'music': { name: 'Lyria', sub: '', color: '#00ff88' }
+};
+
+function updateModelHeader(mode) {
+  const logo = document.getElementById('modelLogo');
+  if (!logo) return;
+  const m = MODEL_NAMES[mode] || MODEL_NAMES['vision'];
+  logo.innerHTML = `${m.name} ${m.sub ? `<span>${m.sub}</span>` : ''}`;
+  logo.style.transition = 'opacity 0.2s';
+  logo.style.opacity = '0';
+  setTimeout(() => { logo.style.opacity = '1'; }, 50);
+}
+
 function initModeButtons() {
   const btns = document.querySelectorAll('.mode-btn');
   const inputEl = document.getElementById('chatInput');
@@ -410,6 +426,8 @@ function initModeButtons() {
       setTimeout(() => btn.classList.remove('switching'), 500);
       
       if (modeBar) modeBar.style.background = MODE_COLORS[mode] || MODE_COLORS['vision'];
+      
+      updateModelHeader(mode);
       
       const cfg = AI_MODES[mode];
       if (inputEl && cfg) {
@@ -454,6 +472,7 @@ function initModeButtons() {
       });
       if (inputEl) inputEl.placeholder = AI_MODES[mode].placeholder;
       if (modeBar) modeBar.style.background = MODE_COLORS[mode] || MODE_COLORS['vision'];
+      updateModelHeader(mode);
     }
   }).catch(() => {});
 }
