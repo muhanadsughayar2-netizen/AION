@@ -466,24 +466,19 @@ function showImageStudio(thread) {
   
   const studio = document.createElement('div');
   studio.className = 'chat-bubble ai image-studio';
-  studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none;';
+  studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none; max-width: 420px;';
   
   studio.innerHTML = `
-    <div style="background:linear-gradient(135deg, rgba(255,107,237,0.06), rgba(200,80,200,0.03));border:1px solid rgba(255,107,237,0.12);border-radius:16px;padding:20px;backdrop-filter:blur(10px);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <span style="font-size:24px;">🎨</span>
-        <div>
-          <div style="font-size:16px;font-weight:700;color:#e8eef4;">Image Studio</div>
-          <div style="font-size:11px;color:#667788;">Describe what you want — AI will create it</div>
+    <div style="background:linear-gradient(135deg, rgba(255,107,237,0.05), rgba(200,80,200,0.02));border:1px solid rgba(255,107,237,0.15);border-radius:14px;padding:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:20px;">🎨</span>
+          <span style="font-size:14px;font-weight:700;color:#e8eef4;">Image Studio</span>
         </div>
+        <button class="studio-surprise-btn" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(255,107,237,0.25);background:rgba(255,107,237,0.06);color:#ff6bed;font-size:11px;font-weight:600;cursor:pointer;">🎲 Surprise Me</button>
       </div>
-      
-      <textarea class="studio-desc" placeholder="Describe the image you want...&#10;&#10;e.g. A sunset over mountains with purple sky&#10;e.g. A cute cat wearing a tiny hat&#10;e.g. Logo for a coffee shop, minimalist style&#10;e.g. Oil painting of a futuristic city" style="width:100%;box-sizing:border-box;min-height:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;line-height:1.5;"></textarea>
-      
-      <div style="display:flex;gap:10px;margin-top:12px;">
-        <button class="studio-create-btn" style="flex:1;padding:12px 20px;border-radius:12px;border:none;background:linear-gradient(135deg,#ff6bed,#cc44bb);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;opacity:0.4;pointer-events:none;">🎨 Create Image</button>
-        <button class="studio-surprise-btn" style="padding:12px 16px;border-radius:12px;border:1px solid rgba(255,107,237,0.3);background:rgba(255,107,237,0.08);color:#ff6bed;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;">🎲 Surprise Me</button>
-      </div>
+      <textarea class="studio-desc" placeholder="What do you want to create? Describe it here..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,107,237,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;"></textarea>
+      <button class="studio-create-btn" style="width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#ff6bed,#cc44bb);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;opacity:0.4;pointer-events:none;">🎨 Create Image</button>
     </div>
   `;
   
@@ -496,7 +491,11 @@ function showImageStudio(thread) {
     const hasText = descInput.value.trim().length > 0;
     createBtn.style.opacity = hasText ? '1' : '0.4';
     createBtn.style.pointerEvents = hasText ? 'auto' : 'none';
+    descInput.style.height = '48px';
+    descInput.style.height = Math.max(48, descInput.scrollHeight) + 'px';
   });
+  descInput.addEventListener('focus', () => { descInput.style.borderColor = 'rgba(255,107,237,0.4)'; });
+  descInput.addEventListener('blur', () => { descInput.style.borderColor = 'rgba(255,107,237,0.15)'; });
   
   createBtn.addEventListener('click', () => {
     const desc = descInput.value.trim();
@@ -543,7 +542,7 @@ function showSongStudio(thread) {
   
   const studio = document.createElement('div');
   studio.className = 'chat-bubble ai song-studio';
-  studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none;';
+  studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none; max-width: 420px;';
   
   const genres = [
     { emoji: '🎸', name: 'Rock' },
