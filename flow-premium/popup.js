@@ -1963,9 +1963,9 @@ function updateThumbnails() {
           </svg>
         </div>
         <div style="font-size:14px;white-space:nowrap;text-align:center;">
-          <strong style="color:#00d9ff;">Right-click</strong><span style="color:rgba(255,255,255,0.5);"> anywhere to get started</span>
+          <strong style="color:#00d9ff;">Right-click</strong><span style="color:rgba(255,255,255,0.75);"> anywhere to get started</span>
         </div>
-        <div style="display:flex;gap:16px;margin-top:14px;font-size:11px;color:rgba(255,255,255,0.35);white-space:nowrap;">
+        <div style="display:flex;gap:16px;margin-top:14px;font-size:11px;color:rgba(255,255,255,0.55);white-space:nowrap;">
           <span>📸 Snap</span>
           <span>✂️ Snip</span>
           <span>📄 Full</span>
