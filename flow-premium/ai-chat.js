@@ -614,14 +614,16 @@ function showSongStudio(thread) {
             <div style="font-size:10px;color:#889900;">You have ${currentImages.length} screenshot${currentImages.length > 1 ? 's' : ''} loaded — turn ${currentImages.length > 1 ? 'them' : 'it'} into music!</div>
           </div>
         </div>
-        <div style="font-size:11px;color:#aabbcc;margin-bottom:10px;">AI will analyze your image and create music that matches its mood, colors, and atmosphere</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="img2music-auto" style="padding:8px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffaa00,#ff8800);color:#000;font-size:12px;font-weight:700;cursor:pointer;">🎵 Auto — Let AI Decide</button>
-          <button class="img2music-happy" style="padding:8px 14px;border-radius:10px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.08);color:#00ff88;font-size:11px;cursor:pointer;">😊 Happy</button>
-          <button class="img2music-chill" style="padding:8px 14px;border-radius:10px;border:1px solid rgba(0,217,255,0.3);background:rgba(0,217,255,0.08);color:#00d9ff;font-size:11px;cursor:pointer;">😌 Chill</button>
-          <button class="img2music-epic" style="padding:8px 14px;border-radius:10px;border:1px solid rgba(255,107,237,0.3);background:rgba(255,107,237,0.08);color:#ff6bed;font-size:11px;cursor:pointer;">🏔️ Epic</button>
-          <button class="img2music-dark" style="padding:8px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#aabbcc;font-size:11px;cursor:pointer;">🌑 Dark</button>
+        <textarea class="img2music-desc" placeholder="Describe the music you want...&#10;&#10;e.g. Acoustic guitar, soft and peaceful&#10;e.g. Epic orchestral with drums&#10;e.g. Lo-fi hip hop, rainy day vibes" style="width:100%;box-sizing:border-box;min-height:70px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,170,0,0.2);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;margin-bottom:10px;line-height:1.4;"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <button class="img2music-happy" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.08);color:#00ff88;font-size:11px;cursor:pointer;">😊 Happy</button>
+          <button class="img2music-chill" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(0,217,255,0.3);background:rgba(0,217,255,0.08);color:#00d9ff;font-size:11px;cursor:pointer;">😌 Chill</button>
+          <button class="img2music-epic" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,107,237,0.3);background:rgba(255,107,237,0.08);color:#ff6bed;font-size:11px;cursor:pointer;">🏔️ Epic</button>
+          <button class="img2music-dark" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#aabbcc;font-size:11px;cursor:pointer;">🌑 Dark</button>
+          <button class="img2music-romantic" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,100,100,0.3);background:rgba(255,100,100,0.08);color:#ff6464;font-size:11px;cursor:pointer;">💕 Romantic</button>
+          <button class="img2music-mysterious" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(138,100,255,0.3);background:rgba(138,100,255,0.08);color:#8a64ff;font-size:11px;cursor:pointer;">🔮 Mysterious</button>
         </div>
+        <button class="img2music-go" style="width:100%;padding:10px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffaa00,#ff8800);color:#000;font-size:13px;font-weight:700;cursor:pointer;">🎵 Create Music From Image</button>
       </div>
       ` : ''}
       
@@ -659,29 +661,53 @@ function showSongStudio(thread) {
   
   thread.appendChild(studio);
   
-  const img2musicMoods = {
-    'auto': 'Create music that perfectly captures the mood, atmosphere, emotion, and colors of this image. Choose the best genre, tempo, and instruments automatically.',
-    'happy': 'Create happy, upbeat, joyful music inspired by this image. Use bright, energetic melodies.',
-    'chill': 'Create calm, relaxing, chill music inspired by this image. Use smooth, ambient sounds.',
-    'epic': 'Create epic, powerful, cinematic music inspired by this image. Use dramatic orchestral sounds.',
-    'dark': 'Create dark, mysterious, moody music inspired by this image. Use deep, atmospheric tones.'
+  const img2musicChips = {
+    'happy': 'Happy, upbeat, bright and energetic',
+    'chill': 'Calm, relaxing, smooth and ambient',
+    'epic': 'Epic, powerful, cinematic and orchestral',
+    'dark': 'Dark, mysterious, deep and atmospheric',
+    'romantic': 'Romantic, warm, gentle and emotional',
+    'mysterious': 'Mysterious, ethereal, haunting and enchanting'
   };
   
-  Object.keys(img2musicMoods).forEach(mood => {
+  const img2musicDesc = studio.querySelector('.img2music-desc');
+  
+  Object.keys(img2musicChips).forEach(mood => {
     const btn = studio.querySelector(`.img2music-${mood}`);
-    if (btn) {
+    if (btn && img2musicDesc) {
       btn.addEventListener('click', () => {
-        const inputEl = document.getElementById('chatInput');
-        if (inputEl) {
-          inputEl.value = img2musicMoods[mood];
-          const sendBtn = document.getElementById('sendBtn');
-          if (sendBtn) sendBtn.click();
+        const current = img2musicDesc.value.trim();
+        if (current) {
+          img2musicDesc.value = current + ', ' + img2musicChips[mood].toLowerCase();
+        } else {
+          img2musicDesc.value = img2musicChips[mood];
         }
-        studio.style.opacity = '0.5';
-        studio.style.pointerEvents = 'none';
+        btn.style.background = btn.style.background.includes('0.08') ? btn.style.borderColor.replace('0.3', '0.15') : btn.style.background;
+        btn.style.opacity = '0.5';
       });
     }
   });
+  
+  const img2musicGoBtn = studio.querySelector('.img2music-go');
+  if (img2musicGoBtn) {
+    img2musicGoBtn.addEventListener('click', () => {
+      const userNotes = img2musicDesc ? img2musicDesc.value.trim() : '';
+      let prompt = 'Create music inspired by this image.';
+      if (userNotes) {
+        prompt = `Create music inspired by this image. Style notes: ${userNotes}. Make it a complete, polished musical piece.`;
+      } else {
+        prompt = 'Create music that perfectly captures the mood, atmosphere, emotion, and colors of this image. Choose the best genre, tempo, and instruments automatically. Make it a complete, polished musical piece.';
+      }
+      const inputEl = document.getElementById('chatInput');
+      if (inputEl) {
+        inputEl.value = prompt;
+        const sendBtn = document.getElementById('sendBtn');
+        if (sendBtn) sendBtn.click();
+      }
+      studio.style.opacity = '0.5';
+      studio.style.pointerEvents = 'none';
+    });
+  }
   
   let selectedGenre = null;
   let selectedMood = null;
