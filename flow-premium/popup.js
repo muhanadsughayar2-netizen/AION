@@ -1856,17 +1856,21 @@ async function handleClear() {
   }
   
   try {
-    // Delete selected snaps in reverse order (to preserve indices)
     const indicesToDelete = Array.from(selectedSnapIds).sort((a, b) => b - a);
+    const deleteCount = indicesToDelete.length;
     
-    for (const index of indicesToDelete) {
-      await chrome.runtime.sendMessage({ action: 'deleteSnap', index });
-    }
+    const newSnaps = currentSnaps.filter((_, i) => !selectedSnapIds.has(i));
+    const newMeta = currentSnapMetadata.filter((_, i) => !selectedSnapIds.has(i));
     
-    // Clear selection after deleting
+    await chrome.runtime.sendMessage({ 
+      action: 'setSnaps', 
+      snaps: newSnaps, 
+      metadata: newMeta 
+    });
+    
     selectedSnapIds.clear();
     
-    setStatus(`Cleared ${indicesToDelete.length} snap${indicesToDelete.length > 1 ? 's' : ''}`, 'success', 1500);
+    setStatus(`Cleared ${deleteCount} snap${deleteCount > 1 ? 's' : ''}`, 'success', 1500);
     
     await loadSnaps();
     updateUI();
