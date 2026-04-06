@@ -2099,6 +2099,10 @@ function exportToPDF() {
   }
   
   // Create PDF using jsPDF
+  if (!window.jspdf) {
+    addBubble('PDF export is not available. Please try again.', 'error');
+    return;
+  }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -2148,7 +2152,7 @@ function exportToPDF() {
     
     // Role label
     doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
+    try { doc.setFont(undefined, 'bold'); } catch(e) { /* font fallback */ }
     if (isUser) {
       doc.setTextColor(25, 118, 210);
     } else {
@@ -2159,7 +2163,7 @@ function exportToPDF() {
     
     // Message text - wrap long lines
     doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
+    try { doc.setFont(undefined, 'normal'); } catch(e) { /* font fallback */ }
     doc.setTextColor(51, 51, 51);
     
     const lines = doc.splitTextToSize(text, maxWidth);
@@ -2254,15 +2258,17 @@ function resetInputSize(textarea) {
 // Sidebar toggle
 const sidebarToggle = document.getElementById('sidebarToggle');
 const imagePanel = document.getElementById('imagePanel');
-sidebarToggle.addEventListener('click', () => {
-  const collapsed = imagePanel.classList.toggle('collapsed');
-  sidebarToggle.textContent = collapsed ? '▶' : '◀';
-  sidebarToggle.title = collapsed ? 'Show sidebar' : 'Hide sidebar';
-});
+if (sidebarToggle && imagePanel) {
+  sidebarToggle.addEventListener('click', () => {
+    const collapsed = imagePanel.classList.toggle('collapsed');
+    sidebarToggle.textContent = collapsed ? '▶' : '◀';
+    sidebarToggle.title = collapsed ? 'Show sidebar' : 'Hide sidebar';
+  });
+}
 
 // Event listeners
-document.getElementById('closeBtn').addEventListener('click', () => window.close());
-document.getElementById('sendBtn').addEventListener('click', handleSend);
+document.getElementById('closeBtn')?.addEventListener('click', () => window.close());
+document.getElementById('sendBtn')?.addEventListener('click', handleSend);
 
 const chatInput = document.getElementById('chatInput');
 chatInput.addEventListener('keydown', (e) => {
@@ -2322,10 +2328,10 @@ chatInput.addEventListener('paste', (e) => {
   setTimeout(() => autoResize(chatInput), 0);
 });
 
-document.getElementById('continueBtn').addEventListener('click', continueResponse);
-document.getElementById('summarizeBtn').addEventListener('click', summarizeChat);
-document.getElementById('clearBtn').addEventListener('click', clearChat);
-document.getElementById('exportBtn').addEventListener('click', exportToPDF);
+document.getElementById('continueBtn')?.addEventListener('click', continueResponse);
+document.getElementById('summarizeBtn')?.addEventListener('click', summarizeChat);
+document.getElementById('clearBtn')?.addEventListener('click', clearChat);
+document.getElementById('exportBtn')?.addEventListener('click', exportToPDF);
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILES = 20;
