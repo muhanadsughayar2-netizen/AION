@@ -3938,7 +3938,7 @@ function updateAiButtonState() {
     const aiStatusDot = document.querySelector('.ai-status-dot');
     if (aiButton) {
       if (result.geminiApiKey) {
-        aiButton.innerHTML = '<span class="hero-key-main">● AI Ready</span><span class="hero-key-sub">⚙ API Key</span>';
+        aiButton.innerHTML = '<span class="hero-key-main">● AI Ready</span><span class="hero-key-sub">⚙ Settings</span>';
         aiButton.className = 'hero-key-btn connected';
       } else {
         aiButton.innerHTML = '<span class="hero-key-main">✨ Activate AI Analysis</span><span class="hero-key-sub">20 prompts/day included</span>';
