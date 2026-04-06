@@ -276,7 +276,7 @@
     "description": "aiReady"
   },
   "manage": {
-    "message": "Manage",
+    "message": "⚙ Settings",
     "description": "manage"
   },
   "aiChat": {

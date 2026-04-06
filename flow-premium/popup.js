@@ -1954,19 +1954,18 @@ function updateThumbnails() {
     const emptyWow = document.createElement('div');
     emptyWow.className = 'empty-wow';
     emptyWow.innerHTML = `
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px 20px;">
-        <div class="float-mouse" style="margin-bottom:14px;">
-          <svg width="32" height="48" viewBox="0 0 32 48" fill="none">
-            <rect x="2" y="2" width="28" height="44" rx="14" stroke="#00d9ff" stroke-width="1.5" fill="rgba(0,217,255,0.05)"/>
-            <line x1="16" y1="2" x2="16" y2="20" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
-            <rect x="13" y="8" width="6" height="10" rx="3" stroke="#00d9ff" stroke-width="1" fill="none" opacity="0.6"/>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 16px 18px;width:100%;box-sizing:border-box;">
+        <div class="float-mouse" style="margin-bottom:16px;">
+          <svg width="36" height="54" viewBox="0 0 36 54" fill="none">
+            <rect x="2" y="2" width="32" height="50" rx="16" stroke="#00d9ff" stroke-width="1.5" fill="rgba(0,217,255,0.04)"/>
+            <line x1="18" y1="2" x2="18" y2="22" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+            <rect x="15" y="9" width="6" height="11" rx="3" stroke="#00d9ff" stroke-width="1" fill="none" opacity="0.5"/>
           </svg>
         </div>
-        <div style="font-size:13px;text-align:center;">
-          <strong style="color:#00d9ff;">Right-click</strong>
-          <span style="color:rgba(255,255,255,0.55);"> anywhere to get started</span>
+        <div style="font-size:14px;white-space:nowrap;text-align:center;">
+          <strong style="color:#00d9ff;">Right-click</strong><span style="color:rgba(255,255,255,0.5);"> anywhere to get started</span>
         </div>
-        <div style="display:flex;gap:14px;margin-top:12px;font-size:10px;color:rgba(255,255,255,0.4);">
+        <div style="display:flex;gap:16px;margin-top:14px;font-size:11px;color:rgba(255,255,255,0.35);white-space:nowrap;">
           <span>📸 Snap</span>
           <span>✂️ Snip</span>
           <span>📄 Full</span>
