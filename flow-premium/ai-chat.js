@@ -1765,39 +1765,59 @@ async function handleSend() {
       }
       
       const responseBubble = createResponseBubble();
+      
+      if (!response.body) {
+        throw new Error('No response stream available');
+      }
+      
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let sseBuffer = '';
       
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
+        sseBuffer += decoder.decode(value, { stream: true });
+        const lines = sseBuffer.split('\n');
+        sseBuffer = lines.pop() || '';
         
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             try {
-              const data = JSON.parse(line.slice(6));
+              const jsonStr = line.slice(6).trim();
+              if (!jsonStr || jsonStr === '[DONE]') continue;
+              const data = JSON.parse(jsonStr);
               const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
               if (text) {
                 fullText += text;
-                if (typeof marked !== 'undefined') {
-                  const parsedHtml = marked.parse(fullText);
-                  responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
-                  responseBubble.querySelectorAll('a').forEach(link => {
-                    link.setAttribute('target', '_blank');
-                    link.setAttribute('rel', 'noopener noreferrer');
-                  });
-                } else {
+                try {
+                  if (typeof marked !== 'undefined') {
+                    const parsedHtml = marked.parse(fullText);
+                    responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
+                    responseBubble.querySelectorAll('a').forEach(link => {
+                      link.setAttribute('target', '_blank');
+                      link.setAttribute('rel', 'noopener noreferrer');
+                    });
+                  } else {
+                    responseBubble.textContent = fullText;
+                  }
+                } catch (renderErr) {
                   responseBubble.textContent = fullText;
                 }
                 thread.scrollTop = thread.scrollHeight;
               }
-            } catch (e) {}
+            } catch (parseErr) {
+              // Skip malformed SSE chunks
+            }
           }
         }
       }
+      
+      if (!fullText) {
+        responseBubble.innerHTML = '<div style="color:#ff6b6b;">No response received. Please try again.</div>';
+      }
+      
       addBubbleActions(responseBubble, fullText);
     }
     
