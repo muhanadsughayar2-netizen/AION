@@ -1967,7 +1967,10 @@ function updateThumbnails() {
         <div class="wow-glow"></div>
       </div>
       <div class="wow-text">Right-click to begin</div>
-      <div class="wow-hint">or use the buttons above ☝️</div>
+      <div class="wow-hint" style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.65);line-height:1.5;text-align:center;">
+        📸 <strong>Snap</strong> = full tab &nbsp;·&nbsp; ✂️ <strong>Snip</strong> = select area &nbsp;·&nbsp; 📄 <strong>Full Page</strong> = scrolling capture<br>
+        ⭐ <strong>Ask AI</strong> = chat with your screenshots
+      </div>
     `;
     container.appendChild(emptyWow);
     return;
