@@ -1967,9 +1967,11 @@ function updateThumbnails() {
         <div class="wow-glow"></div>
       </div>
       <div class="wow-text">Right-click to begin</div>
-      <div class="wow-hint" style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.65);line-height:1.6;text-align:center;">
-        📸 <strong>Snap</strong> = full tab &nbsp;·&nbsp; ✂️ <strong>Snip</strong> = select area &nbsp;·&nbsp; 📄 <strong>Full Page</strong> = scroll capture<br>
-        ⭐ <strong>Ask AI</strong> → Vision · Image Gen · Music Gen
+      <div class="wow-hint" style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:10px;color:rgba(255,255,255,0.5);max-width:240px;margin-left:auto;margin-right:auto;">
+        <span>📸 <strong style="color:rgba(255,255,255,0.7);">Snap</strong> — full tab</span>
+        <span>✂️ <strong style="color:rgba(255,255,255,0.7);">Snip</strong> — select area</span>
+        <span>📄 <strong style="color:rgba(255,255,255,0.7);">Full Page</strong> — scroll</span>
+        <span>⭐ <strong style="color:rgba(255,255,255,0.7);">Ask AI</strong> — create</span>
       </div>
     `;
     container.appendChild(emptyWow);
