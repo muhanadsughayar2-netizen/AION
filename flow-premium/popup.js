@@ -1954,24 +1954,24 @@ function updateThumbnails() {
     const emptyWow = document.createElement('div');
     emptyWow.className = 'empty-wow';
     emptyWow.innerHTML = `
-      <div class="wow-mouse">
-        <div class="wow-mouse-body">
-          <div class="wow-mouse-left"></div>
-          <div class="wow-mouse-right">
-            <div class="wow-click-ring"></div>
-            <div class="wow-click-ring ring2"></div>
-          </div>
-          <div class="wow-mouse-divider"></div>
-          <div class="wow-mouse-scroll"></div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px 20px;">
+        <div class="float-mouse" style="margin-bottom:14px;">
+          <svg width="32" height="48" viewBox="0 0 32 48" fill="none">
+            <rect x="2" y="2" width="28" height="44" rx="14" stroke="#00d9ff" stroke-width="1.5" fill="rgba(0,217,255,0.05)"/>
+            <line x1="16" y1="2" x2="16" y2="20" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+            <rect x="13" y="8" width="6" height="10" rx="3" stroke="#00d9ff" stroke-width="1" fill="none" opacity="0.6"/>
+          </svg>
         </div>
-        <div class="wow-glow"></div>
-      </div>
-      <div class="wow-text">Right-click to begin</div>
-      <div class="wow-hint" style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:10px;color:rgba(255,255,255,0.5);max-width:240px;margin-left:auto;margin-right:auto;">
-        <span>📸 <strong style="color:rgba(255,255,255,0.7);">Snap</strong> — full tab</span>
-        <span>✂️ <strong style="color:rgba(255,255,255,0.7);">Snip</strong> — select area</span>
-        <span>📄 <strong style="color:rgba(255,255,255,0.7);">Full Page</strong> — scroll</span>
-        <span>⭐ <strong style="color:rgba(255,255,255,0.7);">Ask AI</strong> — create</span>
+        <div style="font-size:13px;text-align:center;">
+          <strong style="color:#00d9ff;">Right-click</strong>
+          <span style="color:rgba(255,255,255,0.55);"> anywhere to get started</span>
+        </div>
+        <div style="display:flex;gap:14px;margin-top:12px;font-size:10px;color:rgba(255,255,255,0.4);">
+          <span>📸 Snap</span>
+          <span>✂️ Snip</span>
+          <span>📄 Full</span>
+          <span>⭐ AI</span>
+        </div>
       </div>
     `;
     container.appendChild(emptyWow);
