@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   if (_crown && _devbox && _xi) {
-    _crown.addEventListener('click', () => {
+    _crown.parentElement.addEventListener('click', () => {
       const now = Date.now();
       if (now - _tt > 2000) _tc = 0;
       _tt = now;
