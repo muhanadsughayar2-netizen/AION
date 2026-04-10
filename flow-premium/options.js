@@ -202,4 +202,40 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const refreshSubBtn = document.getElementById('refreshSubBtn');
   if (refreshSubBtn) refreshSubBtn.addEventListener('click', refreshSubscription);
+
+  const devPassBtn = document.getElementById('devPassBtn');
+  const devPassInput = document.getElementById('devPassInput');
+  const devPassMsg = document.getElementById('devPassMsg');
+  if (devPassBtn && devPassInput) {
+    chrome.storage.local.get(['snaptoai_dev_override'], (r) => {
+      if (r.snaptoai_dev_override) {
+        devPassMsg.textContent = '✅ Developer access active';
+        devPassMsg.style.color = '#00ff88';
+        devPassBtn.textContent = 'Revoke';
+        devPassBtn.style.background = 'rgba(255,100,100,0.15)';
+        devPassBtn.style.color = '#ff6b6b';
+        devPassBtn.onclick = async () => {
+          await window.SnapToAI_DEV.lock();
+          devPassMsg.textContent = 'Access revoked. Reload extension.';
+          devPassMsg.style.color = '#888';
+          devPassBtn.textContent = 'Unlock';
+          devPassBtn.style.background = 'rgba(0,255,136,0.15)';
+          devPassBtn.style.color = '#00ff88';
+          devPassBtn.onclick = null;
+          location.reload();
+        };
+      }
+    });
+    devPassBtn.addEventListener('click', async () => {
+      const pass = devPassInput.value.trim();
+      if (!pass) return;
+      const result = await window.SnapToAI_DEV.unlock(pass);
+      devPassMsg.textContent = result.message;
+      devPassMsg.style.color = result.success ? '#00ff88' : '#ff6b6b';
+      if (result.success) {
+        devPassInput.value = '';
+        setTimeout(() => location.reload(), 1000);
+      }
+    });
+  }
 });

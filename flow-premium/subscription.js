@@ -117,6 +117,18 @@ async function checkSubscriptionWithServer(email) {
 }
 
 async function checkSubscription() {
+  const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
+  if (snaptoai_dev_override) {
+    return {
+      status: 'subscribed',
+      planType: 'developer',
+      canUseAI: true,
+      isEarlyAccess: false,
+      daysRemaining: 999,
+      needsApiKey: false
+    };
+  }
+
   if (EARLY_ACCESS_MODE) {
     return {
       status: 'subscribed',
@@ -274,7 +286,7 @@ function getCheckoutUrls() {
   };
 }
 
-const DEV_PASSWORD_HASH = '85bfe6364f8612f84c121ef2075abcbc';
+const DEV_PASSWORD_HASH = '58624a8dc37fb843b67f758e9f7a20d3';
 
 async function devOverride(password) {
   try {
