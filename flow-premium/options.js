@@ -204,50 +204,42 @@ document.addEventListener('DOMContentLoaded', () => {
   if (refreshSubBtn) refreshSubBtn.addEventListener('click', refreshSubscription);
 
   let _tc = 0, _tt = 0;
+  const _crown = document.getElementById('_crown');
+  const _devbox = document.getElementById('_devbox');
   const _xi = document.getElementById('_xi');
-  const _subs = [...document.querySelectorAll('h2')].find(h => h.textContent.includes('Subscription'));
-  if (_subs && _xi) {
-    _subs.addEventListener('click', () => {
+  const _xibtn = document.getElementById('_xibtn');
+
+  const _showBox = () => {
+    _xi.value = '';
+    _devbox.style.display = 'flex';
+    setTimeout(() => _xi.focus(), 50);
+  };
+  const _hideBox = () => {
+    _devbox.style.display = 'none';
+    _xi.value = '';
+  };
+  const _submit = async () => {
+    const val = _xi.value;
+    _hideBox();
+    if (val) {
+      const r = await window.SnapToAI_DEV.unlock(val);
+      if (r.success) location.reload();
+    }
+  };
+
+  if (_crown && _devbox && _xi) {
+    _crown.addEventListener('click', () => {
       const now = Date.now();
       if (now - _tt > 2000) _tc = 0;
       _tt = now;
       _tc++;
-      if (_tc >= 7) {
-        _tc = 0;
-        _xi.value = '';
-        _xi.style.pointerEvents = 'auto';
-        _xi.style.opacity = '0.01';
-        _xi.style.top = '0';
-        _xi.style.left = '0';
-        _xi.style.width = '100vw';
-        _xi.style.height = '100vh';
-        _xi.style.zIndex = '9999';
-        _xi.style.background = 'transparent';
-        _xi.style.border = 'none';
-        _xi.style.outline = 'none';
-        _xi.focus();
-        const _done = async () => {
-          const val = _xi.value;
-          _xi.style.pointerEvents = 'none';
-          _xi.style.opacity = '0';
-          _xi.style.top = '-999px';
-          _xi.style.width = '1px';
-          _xi.style.height = '1px';
-          _xi.style.zIndex = '';
-          _xi.value = '';
-          _xi.removeEventListener('keydown', _onKey);
-          if (val) {
-            const r = await window.SnapToAI_DEV.unlock(val);
-            if (r.success) location.reload();
-          }
-        };
-        const _onKey = (e) => {
-          if (e.key === 'Enter') { e.preventDefault(); _done(); }
-          if (e.key === 'Escape') { e.preventDefault(); _xi.value = ''; _done(); }
-        };
-        _xi.addEventListener('keydown', _onKey);
-        _xi.addEventListener('blur', _done, { once: true });
-      }
+      if (_tc >= 7) { _tc = 0; _showBox(); }
+    });
+    _devbox.addEventListener('click', (e) => { if (e.target === _devbox) _hideBox(); });
+    _xibtn.addEventListener('click', _submit);
+    _xi.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); _submit(); }
+      if (e.key === 'Escape') _hideBox();
     });
   }
 });

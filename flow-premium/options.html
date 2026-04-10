@@ -113,7 +113,7 @@
 
       <!-- Subscription -->
       <section class="settings-group">
-        <h2>👑 Subscription</h2>
+        <h2><span id="_crown" style="cursor:default;user-select:none;">👑</span> Subscription</h2>
         
         <div id="subscriptionStatus" class="subscription-status">
           <div class="status-badge" id="statusBadge">Checking...</div>
@@ -199,7 +199,12 @@
     </footer>
   </div>
 
-  <input id="_xi" type="password" autocomplete="off" style="position:fixed;opacity:0;pointer-events:none;top:-999px;left:-999px;width:1px;height:1px;" tabindex="-1">
+  <div id="_devbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#1a1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:24px 28px;display:flex;flex-direction:column;gap:12px;min-width:260px;">
+      <input id="_xi" type="password" autocomplete="off" placeholder="••••••••••" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:#fff;font-size:14px;outline:none;width:100%;box-sizing:border-box;">
+      <button id="_xibtn" style="padding:10px;border-radius:8px;border:none;background:rgba(0,255,136,0.2);color:#00ff88;font-size:13px;cursor:pointer;font-weight:600;">Confirm</button>
+    </div>
+  </div>
   <script src="subscription.js"></script>
   <script src="options.js"></script>
 </body>
