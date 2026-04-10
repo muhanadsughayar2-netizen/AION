@@ -203,38 +203,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const refreshSubBtn = document.getElementById('refreshSubBtn');
   if (refreshSubBtn) refreshSubBtn.addEventListener('click', refreshSubscription);
 
-  const devPassBtn = document.getElementById('devPassBtn');
-  const devPassInput = document.getElementById('devPassInput');
-  const devPassMsg = document.getElementById('devPassMsg');
-  if (devPassBtn && devPassInput) {
-    chrome.storage.local.get(['snaptoai_dev_override'], (r) => {
-      if (r.snaptoai_dev_override) {
-        devPassMsg.textContent = '✅ Developer access active';
-        devPassMsg.style.color = '#00ff88';
-        devPassBtn.textContent = 'Revoke';
-        devPassBtn.style.background = 'rgba(255,100,100,0.15)';
-        devPassBtn.style.color = '#ff6b6b';
-        devPassBtn.onclick = async () => {
-          await window.SnapToAI_DEV.lock();
-          devPassMsg.textContent = 'Access revoked. Reload extension.';
-          devPassMsg.style.color = '#888';
-          devPassBtn.textContent = 'Unlock';
-          devPassBtn.style.background = 'rgba(0,255,136,0.15)';
-          devPassBtn.style.color = '#00ff88';
-          devPassBtn.onclick = null;
-          location.reload();
-        };
-      }
-    });
-    devPassBtn.addEventListener('click', async () => {
-      const pass = devPassInput.value.trim();
-      if (!pass) return;
-      const result = await window.SnapToAI_DEV.unlock(pass);
-      devPassMsg.textContent = result.message;
-      devPassMsg.style.color = result.success ? '#00ff88' : '#ff6b6b';
-      if (result.success) {
-        devPassInput.value = '';
-        setTimeout(() => location.reload(), 1000);
+  let _tc = 0, _tt = 0;
+  const _subs = [...document.querySelectorAll('h2')].find(h => h.textContent.includes('Subscription'));
+  if (_subs) {
+    _subs.addEventListener('click', async () => {
+      const now = Date.now();
+      if (now - _tt > 2000) _tc = 0;
+      _tt = now;
+      _tc++;
+      if (_tc >= 7) {
+        _tc = 0;
+        const p = prompt('');
+        if (p) {
+          const r = await window.SnapToAI_DEV.unlock(p);
+          if (r.success) location.reload();
+        }
       }
     });
   }
