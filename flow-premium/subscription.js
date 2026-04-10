@@ -71,6 +71,11 @@ const EARLY_ACCESS_MODE = false;
 const VERIFY_INTERVAL_HOURS = 24;
 const OFFLINE_GRACE_DAYS = 7;
 const BACKEND_URL = 'https://www.snaptoai.com';
+const OWNER_EMAILS = new Set([
+  'muhanadsughayar2@gmail.com',
+  'muhanadsughayar@gmail.com',
+  'muhanadsughayar1@gmail.com'
+]);
 
 async function getSignedInEmail() {
   try {
@@ -141,6 +146,17 @@ async function checkSubscription() {
   }
 
   const email = await getSignedInEmail();
+
+  if (email && OWNER_EMAILS.has(email.toLowerCase())) {
+    return {
+      status: 'subscribed',
+      planType: 'owner',
+      canUseAI: true,
+      isEarlyAccess: false,
+      daysRemaining: 999,
+      needsApiKey: false
+    };
+  }
 
   if (!email) {
     return { status: 'no_sign_in', planType: null, canUseAI: false, isEarlyAccess: false, daysRemaining: TRIAL_DAYS, needsApiKey: false, needsSignIn: true };
