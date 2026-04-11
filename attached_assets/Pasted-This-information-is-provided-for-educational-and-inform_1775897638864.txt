@@ -1,0 +1,79 @@
+This information is provided for educational and informational context only regarding the technical integration and financial management of Google Gemini Video (Veo) APIs.
+
+The SnapToAI Video Blueprint: From Screenshot to Cinema
+Since your backend is built on Flask (app.py) and you are already using the Gemini API, adding video is a direct technical extension. However, because video generation is asynchronous (taking 1–3 minutes), you cannot use a simple request-response loop. You must implement a "Job" system.
+
+Section 1: Verification Route (Confirming API Support)
+Before writing the generator, you need to know if your $300 credit line/API key has "Veo" enabled. Add this route to your app.py.
+
+@app.route('/api/check-video-support', methods=['GET'])
+def check_video_support():
+    try:
+        # List all models available to your API Key
+        models = genai.list_models()
+        video_models = [m.name for m in models if 'veo' in m.name]
+        
+        return jsonify({
+            "supported": len(video_models) > 0,
+            "models": video_models,
+            "message": "Video models found" if video_models else "No video models found for this key"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+Section 2: The Core Generation Logic (The Async Pattern)
+Video generation returns an Operation ID, not a file. You need two endpoints: one to start the job and one to check if it's finished.
+
+Endpoint 1: Start the Video Job
+
+@app.route('/api/generate-video', methods=['POST'])
+def start_video():
+    data = request.json
+    prompt = data.get('prompt')
+    image_data = data.get('image') # Base64 from SnapToAI snip
+
+    # Use Veo 3.1 for high quality or Veo 2 for cost-saving
+    model = genai.GenerativeModel("veo-3.1-generate-preview")
+    
+    # Start the asynchronous operation
+    operation = model.generate_video(
+        prompt=prompt,
+        image=image_data # Optional: This turns the screenshot into video
+    )
+    
+    # Return the operation ID to the Chrome Extension
+    return jsonify({"operation_id": operation.name})
+Endpoint 2: Poll for Results
+
+@app.route('/api/video-status/<path:op_id>', methods=['GET'])
+def check_video_status(op_id):
+    operation = genai.get_operation(op_id)
+    
+    if operation.done:
+        # If finished, return the video URI
+        video_uri = operation.result.video.uri
+        return jsonify({"status": "completed", "video_url": video_uri})
+    
+    return jsonify({"status": "processing"})
+Section 3: The "Image-to-Video" Killer Feature
+In your Chrome Extension, when a user captures a "Snip," you should offer an "Animate" button.
+
+Technical Edge: By sending the screenshot as the image parameter in the generate_video call, the AI uses the screenshot as the starting frame.
+Use Case: A developer snaps a UI bug $\rightarrow$ hits "Animate" $\rightarrow$ the AI generates a video showing how the UI should move.
+Section 4: Frontend Extension Integration
+Your Chrome Extension needs a new UI state to handle the waiting period:
+
+The Trigger: User clicks "Generate Video."
+The Polling UI: Show a progress bar or a spinner.
+The Loop: Use setInterval in your extension's Javascript to call your /api/video-status endpoint every 15 seconds.
+The Reveal: Once the status is "completed," replace the spinner with a <video> tag playing the result.
+Section 5: Credit Safeguards (The $300 Limit)
+As the owner, you must prevent "Credit Drain." Video is 10x more expensive than images.
+
+Daily Caps: In your backend, track the user's email. If they have requested 3 videos in 24 hours, return a 429 Too Many Requests error unless they are a Whop Subscriber.
+Model Selection: Default to Veo 2 for free users ($0.05/video) and Veo 3.1 ($0.40/video) for paid users. This stretches your $300 credit from 750 videos to potentially 6,000 videos.
+Section 6: Implementation Checklist
+Update SDK: Ensure your requirements.txt in Replit has the latest google-generativeai version.
+Run Discovery: Hit the /api/check-video-support route once to confirm your key is ready.
+Update DB: Ensure your production database can store operation_ids linked to user sessions so users can refresh the page without losing their video progress.
+Whop Logic: Update your subscription check to unlock the "Video" tab only for verified accounts if you want to be conservative with credits.
+Would you like me to generate the specific JavaScript code for the Chrome Extension to handle the 15-second polling loop and progress bar?
