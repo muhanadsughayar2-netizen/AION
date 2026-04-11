@@ -1,0 +1,93 @@
+This information is provided for educational and informational context only regarding the technical integration and UI/UX design of Google Gemini Video (Veo) APIs.
+
+1. Frontend Integration: The "Capability Handshake"
+Now that your Flask backend is ready to report video support, your Chrome Extension needs to "listen" for this capability before showing the Video tab. This prevents a poor user experience where a user clicks "Video" only to find it doesn't work for their specific API key or region.
+
+Logic for popup.js (or your UI Controller): Add this function to run when the extension popup opens:
+
+async function checkCapabilities() {
+  try {
+    const response = await fetch('https://SnapToAI.replit.app/api/check-video-support');
+    const data = await response.json();
+
+    if (data.videoSupported) {
+      // Show the Video Tab/Icon
+      document.getElementById('video-tab').style.display = 'flex';
+      console.log("Video mode enabled: ", data.availableModels);
+    } else {
+      // Hide or show "Coming Soon"
+      document.getElementById('video-tab').style.display = 'none';
+      console.warn("Video mode disabled: API key/region not supported.");
+    }
+  } catch (error) {
+    console.error("Failed to fetch capabilities:", error);
+  }
+}
+
+// Run on initialization
+checkCapabilities();
+2. UI/UX: Designing the "Video" Tab
+Since video generation takes significantly longer than text or images, the UI needs a "Job Status" design rather than a simple "Chat" design.
+
+The Input: A text area for the prompt + a toggle for "Use current Snip as starting frame."
+The Waiting State: Instead of a simple spinner, use a Progress Bar. Since you know video takes roughly 2–3 minutes, a "fake" progress bar that moves slowly to 90% and then waits for the real API "Done" signal creates a better psychological experience for the user.
+The Result: Use a standard HTML5 <video> tag with controls, loop, and a Download button.
+3. The "Image-to-Video" Technical Flow
+Your killer feature is taking a screenshot and animating it. When the user clicks "Generate Video" with a snip active, your extension must send the image to your backend.
+
+Extension Request Logic:
+
+async function startVideoGeneration(prompt, base64Image) {
+  const response = await fetch('https://SnapToAI.replit.app/api/generate-video', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt: prompt,
+      image: base64Image, // The screenshot data
+      model: "veo-3.1-generate-preview" // Or your preferred model
+    })
+  });
+  
+  const { operation_id } = await response.json();
+  
+  // Start the polling loop
+  pollVideoStatus(operation_id);
+}
+4. Technical Mechanics: The Polling Loop (Essential)
+Because Flask will timeout if it waits 3 minutes for Google, your extension must handle the "Are we there yet?" logic.
+
+Polling Logic:
+
+function pollVideoStatus(opId) {
+  const interval = setInterval(async () => {
+    const response = await fetch(`https://SnapToAI.replit.app/api/video-status/${opId}`);
+    const data = await response.json();
+
+    if (data.status === "completed") {
+      clearInterval(interval);
+      displayVideo(data.video_url); // Show the final video to the user
+    } else if (data.status === "error") {
+      clearInterval(interval);
+      showError("Video generation failed.");
+    }
+  }, 15000); // Check every 15 seconds
+}
+5. Credit Management: Protecting Your $300 Credit
+As the owner, you are paying $0.40 per video for Veo 3.1. To prevent your $300 credit from vanishing:
+
+Backend Rate Limiting: In your app.py, use a simple dictionary to track requests by user email.
+Example: If user_requests[email] > 3 in 24 hours, return a "Daily Limit Reached" message.
+Model Tiering:
+Free Users: Use Veo 2 ($0.05/video). It's 8x cheaper.
+Whop Subscribers: Unlock Veo 3.1 ($0.40/video).
+UI Warning: Add a small text note under the "Generate" button: "Uses 1 Video Credit. 1080p generation takes ~2 minutes." This prevents users from clicking the button multiple times in frustration.
+6. First Principles: Why Video is a "Killer Feature" for SnapToAI
+By adding video, you move SnapToAI from a Utility Tool (taking screenshots) to a Creative Suite.
+
+Visual Storytelling: Users can snap a static UI design and immediately generate a "Hero Video" for their landing page or a demo for a client.
+Contextual AI: Because you already have the "Vision" mode, you can use Gemini to describe the screenshot first, and then use that description to generate a more accurate video prompt automatically.
+Next Action Steps
+Install the SDK: Run pip install google-generativeai>=0.8.3 in your Replit shell.
+Restart & Verify: Visit your /api/check-video-support route. If it says videoSupported: true, you are clear for takeoff.
+UI Update: Add the "Video" icon to your extension's sidebar or mode selector.
+Would you like me to write the actual Python code for the /api/generate-video (Start Job) and /api/video-status (Check Job) routes for your app.py?
