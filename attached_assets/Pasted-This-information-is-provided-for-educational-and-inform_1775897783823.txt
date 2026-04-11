@@ -1,0 +1,75 @@
+This information is provided for educational and informational context only regarding the technical integration and financial management of Google Gemini Video (Veo) APIs.
+
+1. Backend Implementation: The "Veo Discovery" Route
+To integrate video into your Flask backend (app.py), you first need to initialize the Gemini SDK and create an endpoint that "sniffs" out if your current API key has access to the video models.
+
+Step A: Update requirements.txt Add this line to your requirements.txt file in Replit to ensure you have the latest SDK: google-generativeai>=0.8.3
+
+Step B: Add this code to app.py Place this block where your other API routes are defined:
+
+import google.generativeai as genai
+import os
+from flask import jsonify
+
+# Initialize the Gemini client using your existing environment variable
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+
+@app.route('/api/check-video-support', methods=['GET'])
+def check_video_support():
+    """
+    Checks if the current API key/project supports Veo video generation.
+    """
+    try:
+        # Fetch all models available to this key
+        available_models = genai.list_models()
+        
+        # Filter for models containing 'veo' (Google's Video Generation Engine)
+        video_models = [
+            {
+                "name": m.name,
+                "displayName": m.display_name,
+                "description": m.description
+            } 
+            for m in available_models if 'veo' in m.name.lower()
+        ]
+
+        return jsonify({
+            "status": "success",
+            "videoSupported": len(video_models) > 0,
+            "availableModels": video_models,
+            "message": f"Found {len(video_models)} video-capable models." if video_models else "No video models found. Check project region or permissions."
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "videoSupported": False,
+            "error": str(e)
+        }), 500
+2. Technical Mechanics: Why Discovery is the First Step
+Video generation is currently a "Preview" feature. Unlike standard Gemini 1.5 Flash, which is available globally, Veo (Video Generation) is often restricted by:
+
+Region: Your Google Cloud project must typically be in us-central1.
+Whitelist: Some "Preview" models require manual enabling in the Google Cloud Console.
+API Version: You must use the v1beta or the latest production endpoint.
+By running this /api/check-video-support route, your Chrome Extension can dynamically decide whether to show the "Video" tab or keep it hidden, preventing "Model Not Found" errors for your users.
+
+3. Financial Context: The $300 Credit Guardrail
+As analyzed from your documentation screenshots, video is the most expensive operation.
+
+Cost Management: If the check returns models/veo-3.1-generate-preview, each generation will cost $0.40.
+Strategy: If the check returns models/veo-2-generate-001, you can offer video more cheaply ($0.05).
+Action: You should use this discovery route to "flag" which model your backend will use, allowing you to adjust your Whop subscription tiers accordingly.
+4. Deep-Dive: The "Asynchronous" Challenge
+Once you confirm support, the actual generation logic is significantly different from Vision or Image generation.
+
+The Problem: A Flask route usually times out after 30–60 seconds. A video takes 120–300 seconds to generate.
+The Solution: When you call model.generate_video(), Google returns an Operation Name.
+Workflow: Your backend must return this name to the extension immediately. The extension then "polls" (asks) your backend every 15 seconds: "Is video [Name] ready?"
+5. Actionable Next Steps
+Deploy the Route: Add the code above to your Replit and click "Run."
+Test the Route: Visit https://SnapToAI.replit.app/api/check-video-support in your browser.
+Analyze Results:
+If videoSupported: true, we can move to building the Image-to-Video logic.
+If videoSupported: false, you need to go to your Google Cloud Console and ensure the "Generative AI Video" API is enabled for your project.
+Would you like me to prepare the JavaScript code for the Chrome Extension so it can call this new route and show/hide the Video tab automatically?

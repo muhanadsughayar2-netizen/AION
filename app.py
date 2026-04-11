@@ -5,6 +5,10 @@ import mimetypes
 import psycopg2
 from datetime import datetime
 import requests
+try:
+    import google.generativeai as genai
+except Exception:
+    genai = None
 
 # Disable automatic static folder - we'll handle all routing manually
 app = Flask(__name__, static_folder=None)
@@ -202,6 +206,50 @@ def lazy_init_db():
         print(f'❌ lazy_init_db error: {e}')
 
 app.url_map.strict_slashes = False
+
+if genai and os.environ.get('GEMINI_API_KEY'):
+    try:
+        genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
+    except Exception as e:
+        print(f'⚠️ Gemini SDK init failed: {e}')
+
+@app.route('/api/check-video-support', methods=['GET'])
+def check_video_support():
+    if not genai:
+        return jsonify({
+            "status": "error",
+            "videoSupported": False,
+            "error": "google-generativeai is not installed"
+        }), 500
+    if not os.environ.get('GEMINI_API_KEY'):
+        return jsonify({
+            "status": "error",
+            "videoSupported": False,
+            "error": "GEMINI_API_KEY is not set"
+        }), 500
+    try:
+        models = list(genai.list_models())
+        video_models = [
+            {
+                "name": m.name,
+                "displayName": getattr(m, 'display_name', ''),
+                "description": getattr(m, 'description', '')
+            }
+            for m in models
+            if 'veo' in m.name.lower()
+        ]
+        return jsonify({
+            "status": "success",
+            "videoSupported": len(video_models) > 0,
+            "availableModels": video_models,
+            "message": "Video models found" if video_models else "No video models found for this key"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "videoSupported": False,
+            "error": str(e)
+        }), 500
 
 
 # Supported languages
