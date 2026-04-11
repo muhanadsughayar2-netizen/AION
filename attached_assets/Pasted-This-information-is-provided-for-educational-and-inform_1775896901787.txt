@@ -1,0 +1,53 @@
+This information is provided for educational and informational context only regarding the integration of Google Gemini Video Generation (Veo) APIs.
+
+Executive Summary: The "Snap-to-Cinema" Evolution
+Integrating video generation into SnapToAI is not only possible but highly synergistic with your existing "screenshot-first" architecture. Since you are already leveraging the Gemini API ecosystem and the $300 Google Cloud credit, you have the foundation. However, video generation (Veo) differs technically and financially from Vision or Image generation. It requires an asynchronous workflow and a more careful approach to unit cost management.
+
+1. The Veo Model Hierarchy: Choosing Your Engine
+Based on the documentation provided in the screenshots, you have three primary options for video generation. Each has a different impact on your $300 credit line:
+
+Veo 3.1 Preview (veo-3.1-generate-preview): The flagship. High quality, supports 1080p (Lite) and 720p. Cost: $0.40 per 720p video.
+Veo 3 (veo-3-generate-001): The balanced version. Cost: $0.15 per 720p video.
+Veo 2 (veo-2-generate-001): The "value" model. Cost: $0.05 per video.
+Recommendation: For a premium extension experience, use Veo 3.1 for paid subscribers and Veo 2 for a limited "Free Tier" to preserve your credits.
+
+2. Technical Mechanics: The Async Polling Pattern
+Unlike Gemini Vision (which is a near-instant request/response), Video generation is asynchronous. You cannot hold an HTTP connection open for the 2–5 minutes it takes to render a video.
+
+The Request: You send the prompt/image to the generateVideo endpoint.
+The Operation: The API returns an operation_id.
+The Polling: Your extension (or your backend) must "poll" the API every 10–20 seconds to check if operation.done === true.
+The Result: Once done, the API provides a URI to download the generated MP4.
+3. Strategic Integration: "Image-to-Video" is Your Killer Feature
+Since SnapToAI is a screenshot tool, the most powerful use case is Image-to-Video.
+
+The Flow: User captures a "Snip" of a website or a UI design $\rightarrow$ Clicks "Animate" $\rightarrow$ SnapToAI sends that screenshot as a reference_image to Veo.
+The Prompting: You can automatically prepend a prompt like "A cinematic slow pan across this website interface" to make the output look professional without the user needing to be a prompt engineer.
+4. Financial Analysis & Credit Burn Rate
+Your $300 credit is a significant runway, but video is the most expensive "fuel" in the Gemini fleet:
+
+At $0.40/video (Veo 3.1): $300 = 750 videos.
+At $0.05/video (Veo 2): $300 = 6,000 videos.
+Actionable Step: You must implement a Server-Side Rate Limiter. If you allow users to call the API directly from the extension using your key, one malicious user could drain your $300 credit in an hour. Route video requests through a proxy that checks their "Whop" subscription status or "Free Prompt" count.
+
+5. Implementation Edge Cases & Safety
+SynthID Watermarking: Google automatically embeds digital watermarks into Veo videos. You should inform users of this to maintain the "Privacy-First" transparency of your brand.
+Aspect Ratios: Ensure your UI allows users to choose between 16:9 (Cinematic), 9:16 (TikTok/Reels), and 1:1 (Square). The API supports these via the aspect_ratio parameter.
+Safety Filters: Video generation has stricter safety filters than text. If a screenshot contains sensitive data, the API might return an "Internal Error" or "Blocked" status. You need a graceful UI state to handle these rejections.
+6. Steps to "Ease" the Integration
+To add this without rewriting your entire extension:
+
+Update your API Client: Ensure your backend or extension library supports the google-generativeai SDK version that includes generative_models.VeoModel.
+UI Addition: Add a "Video" tab next to your Vision/Image/Music modes.
+The "Reference Image" Toggle: Add a checkbox that says "Use latest screenshot as reference" to simplify the Image-to-Video workflow.
+Progress Tracking: Add a "Rendering..." progress bar in your extension popup so users don't think the app has frozen during the polling phase.
+7. Deep-Dive Comparison of Model Capabilities
+Feature	Veo 3.1	Veo 3	Veo 2
+Max Resolution	1080p (Lite)	720p	720p
+Max Duration	10 Seconds	8 Seconds	6 Seconds
+Reference Images	Up to 3	Up to 3	No
+Extend Video	Yes	Yes	No
+Cost (approx)	$0.40	$0.15	$0.05
+Conclusion: Adding video is highly feasible and fits your "SnapToAI" brand perfectly. By utilizing the Image-to-Video capability, you turn static screenshots into dynamic content, which is a massive value-add for social media managers and UI/UX designers.
+
+Would you like a code snippet for the asynchronous polling logic in JavaScript to handle the video generation lifecycle?
