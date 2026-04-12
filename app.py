@@ -259,24 +259,29 @@ def check_video_support():
             "error": "No API key available"
         }), 500
     try:
-        import google.generativeai as genai_check
-        genai_check.configure(api_key=check_key)
-        models = list(genai_check.list_models())
+        list_url = f'https://generativelanguage.googleapis.com/v1beta/models?key={check_key}'
+        resp = requests.get(list_url, timeout=10)
+        if not resp.ok:
+            return jsonify({
+                "status": "error",
+                "videoSupported": False,
+                "error": f"Failed to list models: {resp.status_code}"
+            }), resp.status_code
+        models_data = resp.json().get('models', [])
         video_models = [
             {
-                "name": m.name,
-                "displayName": getattr(m, 'display_name', ''),
-                "description": getattr(m, 'description', '')
+                "name": m.get('name', ''),
+                "displayName": m.get('displayName', ''),
+                "description": m.get('description', '')
             }
-            for m in models
-            if 'veo' in m.name.lower()
+            for m in models_data
+            if 'veo' in m.get('name', '').lower()
         ]
-        if server_key and check_key != server_key:
-            genai.configure(api_key=server_key)
         return jsonify({
             "status": "success",
             "videoSupported": len(video_models) > 0,
             "availableModels": video_models,
+            "usingServerKey": not user_key,
             "message": "Video models found" if video_models else "No video models found for this key"
         })
     except Exception as e:
