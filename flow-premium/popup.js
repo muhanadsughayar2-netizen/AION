@@ -4300,19 +4300,9 @@ async function sendToGemini(prompt, isRetry = false) {
 
     // Handle rate limit errors
     if (data.error && data.error.message && data.error.message.includes('quota')) {
-      const retryMatch = data.error?.message?.match(/retry in ([\d.]+)s/i);
-      const retrySeconds = retryMatch ? Math.ceil(parseFloat(retryMatch[1])) : 60;
-      
-      if (aiRetryCount < 2) {
-        aiRetryCount++;
-        addChatBubble(`⏳ Rate limit hit. Retrying in ${retrySeconds} seconds... (Attempt ${aiRetryCount}/2)`, 'ai');
-        startCooldown(retrySeconds);
-        setTimeout(() => sendToGemini(prompt, true), retrySeconds * 1000);
-      } else {
-        addChatBubble('🚫 Limit reached for now. Try again in a minute, or copy your image to use with another AI!', 'ai');
-        aiSendBtn.disabled = false;
-      }
-      console.log('[SnapToAI] Rate limit hit, retry:', aiRetryCount);
+      addChatBubble('🚫 Billing or quota limit reached. No automatic retry for this request.', 'ai');
+      aiSendBtn.disabled = false;
+      console.log('[SnapToAI] Quota hit, stopping without retry');
       return;
     }
 

@@ -2530,8 +2530,6 @@ async function handleSend() {
       let succeeded = false;
       
       for (const modelName of imageModels) {
-        const retryDelays = [8, 15, 25];
-        
         for (let attempt = 0; attempt < 3; attempt++) {
           const loadingEl = document.querySelector('.loading-dots');
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
@@ -2551,11 +2549,6 @@ async function handleSend() {
           } catch(fetchErr) {
             console.log(`[SnapToAI Image] Fetch error on ${modelName}:`, fetchErr.message);
             lastError = fetchErr.message;
-            if (attempt < 2) {
-              const waitSec = retryDelays[attempt];
-              if (loadingEl) loadingEl.innerHTML = `<span style="color:#ff6bed;">⏳ Connection issue — retrying in ${waitSec}s...</span>`;
-              await new Promise(r => setTimeout(r, waitSec * 1000));
-            }
             continue;
           }
           
@@ -2583,19 +2576,7 @@ async function handleSend() {
           lastError = responseBody.error?.message || `Status ${response.status}`;
           console.log(`[SnapToAI Image] Error: ${lastError}`);
           
-          const isRetryable = response.status === 429 || response.status === 503 ||
-            lastError.toLowerCase().includes('resource') || 
-            lastError.toLowerCase().includes('quota') || 
-            lastError.toLowerCase().includes('rate') ||
-            lastError.toLowerCase().includes('exhausted');
-          
-          if (!isRetryable) break;
-          
-          if (attempt < 2) {
-            const waitSec = retryDelays[attempt];
-            if (loadingEl) loadingEl.innerHTML = `<span style="color:#ff6bed;">⏳ Rate limited — retrying in ${waitSec}s...</span>`;
-            await new Promise(r => setTimeout(r, waitSec * 1000));
-          }
+          break;
         }
         
         if (succeeded) break;
