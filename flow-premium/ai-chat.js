@@ -683,22 +683,54 @@ function showVideoStudio(thread) {
 
 async function getGoogleAuthToken() {
   try {
-    return await new Promise((resolve, reject) => {
-      chrome.identity.getAuthToken({ interactive: false }, (token) => {
-        if (chrome.runtime.lastError || !token) {
-          chrome.identity.getAuthToken({ interactive: true }, (token2) => {
-            if (chrome.runtime.lastError || !token2) {
-              reject(new Error(chrome.runtime.lastError?.message || 'No auth token'));
+    const result = await chrome.storage.local.get('snaptoai_user');
+    const user = result.snaptoai_user;
+    if (user && user.accessToken) {
+      const tokenAge = Date.now() - (user.tokenObtainedAt || 0);
+      if (tokenAge < 45 * 60 * 1000) {
+        const checkResp = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${user.accessToken}`);
+        if (checkResp.ok) {
+          return user.accessToken;
+        }
+      }
+    }
+    const clientId = chrome.runtime.getManifest().oauth2?.client_id;
+    if (!clientId) return null;
+    const redirectUrl = chrome.identity.getRedirectURL();
+    const scopes = 'openid email profile';
+    const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
+      '?client_id=' + encodeURIComponent(clientId) +
+      '&response_type=token' +
+      '&redirect_uri=' + encodeURIComponent(redirectUrl) +
+      '&scope=' + encodeURIComponent(scopes) +
+      '&prompt=none';
+    const responseUrl = await new Promise((resolve, reject) => {
+      chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: false }, (url) => {
+        if (chrome.runtime.lastError || !url) {
+          const interactiveUrl = authUrl.replace('&prompt=none', '');
+          chrome.identity.launchWebAuthFlow({ url: interactiveUrl, interactive: true }, (url2) => {
+            if (chrome.runtime.lastError || !url2) {
+              reject(new Error(chrome.runtime.lastError?.message || 'Auth failed'));
             } else {
-              resolve(token2);
+              resolve(url2);
             }
           });
         } else {
-          resolve(token);
+          resolve(url);
         }
       });
     });
+    const tokenMatch = responseUrl.match(/access_token=([^&]+)/);
+    if (!tokenMatch) return null;
+    const newToken = tokenMatch[1];
+    if (user) {
+      user.accessToken = newToken;
+      user.tokenObtainedAt = Date.now();
+      await chrome.storage.local.set({ snaptoai_user: user });
+    }
+    return newToken;
   } catch (e) {
+    console.log('[SnapToAI Video] Auth token error:', e.message);
     return null;
   }
 }

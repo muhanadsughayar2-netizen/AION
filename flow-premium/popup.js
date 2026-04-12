@@ -92,7 +92,9 @@ async function handleGoogleSignIn() {
       name: userInfo.name || '',
       email: userInfo.email,
       picture: userInfo.picture || '',
-      signedInAt: Date.now()
+      signedInAt: Date.now(),
+      accessToken: token,
+      tokenObtainedAt: Date.now()
     };
 
     await chrome.storage.local.set({ snaptoai_user: userData });
