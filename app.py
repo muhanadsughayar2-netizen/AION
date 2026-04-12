@@ -231,8 +231,15 @@ if genai and os.environ.get('GEMINI_API_KEY'):
     except Exception as e:
         print(f'⚠️ Gemini SDK init failed: {e}')
 
-@app.route('/api/check-video-support', methods=['GET'])
+@app.route('/api/check-video-support', methods=['POST', 'OPTIONS'])
 def check_video_support():
+    if request.method == 'OPTIONS':
+        response = Response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        return response
+
     if not genai:
         return jsonify({
             "status": "error",
@@ -240,7 +247,8 @@ def check_video_support():
             "error": "google-generativeai is not installed"
         }), 500
 
-    user_key = request.args.get('apiKey', '')
+    data = request.get_json(silent=True) or {}
+    user_key = data.get('apiKey', '')
     server_key = os.environ.get('GEMINI_API_KEY', '')
     check_key = user_key or server_key
 
@@ -355,8 +363,14 @@ def check_user_subscription(email):
     except Exception:
         return False, None
 
-@app.route('/api/generate-video', methods=['POST'])
+@app.route('/api/generate-video', methods=['POST', 'OPTIONS'])
 def generate_video():
+    if request.method == 'OPTIONS':
+        response = Response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        return response
     if not genai or not os.environ.get('GEMINI_API_KEY'):
         return jsonify({"error": "Video generation not configured"}), 500
 
@@ -458,8 +472,14 @@ def generate_video():
         print(f'[Video] Generation error: {e}')
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/video-status/<path:operation_id>', methods=['GET'])
+@app.route('/api/video-status/<path:operation_id>', methods=['GET', 'OPTIONS'])
 def video_status(operation_id):
+    if request.method == 'OPTIONS':
+        response = Response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        return response
     if not os.environ.get('GEMINI_API_KEY'):
         return jsonify({"error": "Not configured"}), 500
 
@@ -667,7 +687,7 @@ def add_headers(response):
     if origin.startswith('chrome-extension://'):
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     return response
 
 @app.route('/health')

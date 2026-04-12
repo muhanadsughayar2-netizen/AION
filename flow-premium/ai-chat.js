@@ -493,12 +493,15 @@ initModeButtons();
 (async function checkVideoSupport() {
   try {
     const backendUrl = 'https://www.snaptoai.com';
-    let checkUrl = `${backendUrl}/api/check-video-support`;
     const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
-    if (keyResult.geminiApiKey) {
-      checkUrl += `?apiKey=${encodeURIComponent(keyResult.geminiApiKey)}`;
-    }
-    const resp = await fetch(checkUrl, { signal: AbortSignal.timeout(8000) });
+    const body = {};
+    if (keyResult.geminiApiKey) body.apiKey = keyResult.geminiApiKey;
+    const resp = await fetch(`${backendUrl}/api/check-video-support`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(8000)
+    });
     const data = await resp.json();
     if (data.videoSupported) {
       const videoBtn = document.getElementById('videoModeBtn');
@@ -1594,6 +1597,19 @@ async function handleSend() {
   await new Promise(r => requestAnimationFrame(r));
   
   try {
+    const modeConfig = AI_MODES[currentAiMode] || AI_MODES['vision'];
+
+    if (modeConfig.type === 'gemini-video') {
+      removeLoading();
+      await startVideoGeneration(prompt, thread);
+      conversationHistory.push({ role: 'user', text: prompt });
+      conversationHistory.push({ role: 'model', text: '[Video generation started]' });
+      sendBtn.disabled = false;
+      input.focus();
+      releaseRequestLock();
+      return;
+    }
+
     const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
     const apiKey = keyResult.geminiApiKey;
     
@@ -1806,8 +1822,6 @@ async function handleSend() {
     
     contents.push({ role: 'user', parts: userParts });
     
-    const modeConfig = AI_MODES[currentAiMode] || AI_MODES['vision'];
-    
     await waitForRateLimit();
     
     let fullText = '';
@@ -1820,17 +1834,7 @@ async function handleSend() {
       return bubble;
     };
 
-    if (modeConfig.type === 'gemini-video') {
-      removeLoading();
-      await startVideoGeneration(prompt, thread);
-      conversationHistory.push({ role: 'user', text: prompt });
-      conversationHistory.push({ role: 'model', text: '[Video generation started]' });
-      sendBtn.disabled = false;
-      input.focus();
-      releaseRequestLock();
-      return;
-
-    } else if (modeConfig.type === 'gemini-image') {
+    if (modeConfig.type === 'gemini-image') {
       // === IMAGE GENERATION (via generateContent with responseModalities) ===
       const imageModels = [
         'gemini-2.5-flash-image',
