@@ -81,8 +81,8 @@ async function confirmPaidGeneration(mode, details) {
       ? `Expected spend: ${details.cost}${details?.label ? ` for ${details.label}` : ''}.`
       : 'Expected spend: shown as estimate.';
     const savingsLine = mode === 'video'
-      ? 'Default settings are set to the lowest-cost option to help keep API spend down.'
-      : 'This is set to the lowest-cost option to help keep API spend down.';
+      ? 'Default settings are set to the lowest-cost option so you avoid paying extra vendor markups or upsells from third-party competitors.'
+      : 'This is set to the lowest-cost option so you avoid paying extra vendor markups or upsells from third-party competitors.';
 
     titleEl.textContent = preset.title;
     estimateEl.textContent = `Estimated cost: ${details?.cost || 'unknown'}`;
