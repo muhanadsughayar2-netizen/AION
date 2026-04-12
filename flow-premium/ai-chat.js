@@ -42,7 +42,7 @@ function getPaidModeEstimate(mode, clipCount = 1, durationSeconds = 8) {
   if (mode === 'music') {
     return {
       label: '1 music generation',
-      cost: '$1-$3',
+      cost: '$1-$2',
       note: 'audio generation'
     };
   }
@@ -680,10 +680,11 @@ const VEO_MODELS = [
   { id: 'veo-2.0-generate-001', label: '2.0', desc: 'Basic (needs billing)', tier: 'basic' }
 ];
 
-let selectedVeoModel = 'veo-3.1-fast-generate-preview';
-let selectedVideoDuration = 8;
+let selectedVeoModel = 'veo-3.1-lite-generate-preview';
+let selectedVideoDuration = 4;
 let selectedClipCount = 1;
 let userAvailableVeoModels = [];
+let selectedMusicModel = 'lyria-3-clip-preview';
 
 function showVideoStudio(thread) {
   const existing = thread.querySelector('.video-studio');
@@ -710,10 +711,10 @@ function showVideoStudio(thread) {
       </div>
       <div class="veo-duration-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
         <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Length:</span>
-        <button class="veo-dur-btn" data-dur="4" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">4s</button>
+        <button class="veo-dur-btn selected" data-dur="4" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">4s</button>
         <button class="veo-dur-btn" data-dur="5" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">5s</button>
         <button class="veo-dur-btn" data-dur="6" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">6s</button>
-        <button class="veo-dur-btn selected" data-dur="8" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">8s</button>
+        <button class="veo-dur-btn" data-dur="8" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">8s</button>
       </div>
       <div class="veo-clips-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
         <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Clips (auto-stitched):</span>
