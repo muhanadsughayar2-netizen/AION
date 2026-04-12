@@ -704,20 +704,20 @@ function showVideoStudio(thread) {
         <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Quality:</span>
         <span class="veo-models-loading" style="font-size:11px;color:#8899aa;">Checking available models...</span>
       </div>
-      <div class="veo-duration-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
-        <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Duration:</span>
+      <div class="veo-duration-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+        <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Length:</span>
         <button class="veo-dur-btn" data-dur="4" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">4s</button>
         <button class="veo-dur-btn" data-dur="5" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">5s</button>
         <button class="veo-dur-btn" data-dur="6" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">6s</button>
         <button class="veo-dur-btn selected" data-dur="8" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">8s</button>
       </div>
-      <div class="veo-clips-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+      <div class="veo-clips-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
         <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Clips (auto-stitched):</span>
         <button class="veo-clip-btn selected" data-clips="1" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">1x</button>
         <button class="veo-clip-btn" data-clips="2" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">2x</button>
         <button class="veo-clip-btn" data-clips="3" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">3x</button>
       </div>
-      <textarea class="studio-desc" placeholder="Describe the video scene you want to create..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;"></textarea>
+      <textarea class="studio-desc" placeholder="Describe the video scene you want to create..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;margin-bottom:8px;"></textarea>
       ${hasScreenshots ? `
       <div style="margin-top:10px;">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#aabbcc;">
@@ -738,12 +738,12 @@ function showVideoStudio(thread) {
           </div>
         </div>
       </div>` : ''}
-      <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
         <span style="font-size:10px;color:#667788;">⏱ ~1-2 min per clip</span>
         <span style="font-size:10px;color:#667788;">•</span>
         <span class="studio-dur-label" style="font-size:10px;color:#667788;">8s total</span>
       </div>
-      <button class="studio-create-btn" style="width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffa500,#cc8400);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;opacity:0.4;pointer-events:none;">🎬 Generate Video</button>
+      <button class="studio-create-btn" style="width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffa500,#cc8400);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;opacity:0.4;pointer-events:none;">🎬 Generate Video</button>
     </div>
   `;
 
