@@ -30,6 +30,37 @@ function releaseRequestLock() {
 }
 // ============ END RATE LIMITER ============
 
+function getPaidModeEstimate(mode, clipCount = 1, durationSeconds = 8) {
+  if (mode === 'video') {
+    const totalSeconds = clipCount * durationSeconds;
+    return {
+      label: `${clipCount} clip${clipCount > 1 ? 's' : ''} × ${durationSeconds}s`,
+      cost: clipCount === 1 ? '$2-$4' : `$${clipCount * 2}-$${clipCount * 4}`,
+      note: totalSeconds <= 8 ? 'short clip' : `longer ${totalSeconds}s video`
+    };
+  }
+  if (mode === 'music') {
+    return {
+      label: '1 music generation',
+      cost: '$1-$3',
+      note: 'audio generation'
+    };
+  }
+  return {
+    label: '1 paid generation',
+    cost: '$1-$4',
+    note: 'estimate'
+  };
+}
+
+async function confirmPaidGeneration(mode, details) {
+  const label = details?.label || 'this generation';
+  const cost = details?.cost || 'unknown';
+  const note = details?.note || '';
+  const message = `This ${label} may cost about ${cost}. ${note ? `(${note}) ` : ''}Do you want to continue?`;
+  return window.confirm(message);
+}
+
 // ============ BACKEND PROXY (3 free prompts) ============
 const PROXY_BACKEND_URL = 'https://www.snaptoai.com';
 let freePromptsRemaining = null;
@@ -2286,6 +2317,15 @@ async function handleSend() {
     const apiKey = keyResult.geminiApiKey;
 
     if (modeConfig.type === 'gemini-video') {
+      const clipCount = selectedClipCount || 1;
+      const costInfo = getPaidModeEstimate('video', clipCount, selectedVideoDuration || 8);
+      const ok = await confirmPaidGeneration('video', costInfo);
+      if (!ok) {
+        removeLoading();
+        sendBtn.disabled = false;
+        releaseRequestLock();
+        return;
+      }
       removeLoading();
       await startVideoGeneration(prompt, thread);
       conversationHistory.push({ role: 'user', text: prompt });
@@ -2640,6 +2680,14 @@ async function handleSend() {
       addBubbleActions(responseBubble, fullText);
       
     } else if (modeConfig.type === 'gemini-audio') {
+      const costInfo = getPaidModeEstimate('music');
+      const ok = await confirmPaidGeneration('music', costInfo);
+      if (!ok) {
+        removeLoading();
+        sendBtn.disabled = false;
+        releaseRequestLock();
+        return;
+      }
       // === MUSIC / AUDIO GENERATION (Lyria or TTS) ===
       const musicModels = [modeConfig.model, 'lyria-3-pro-preview', 'gemini-2.5-flash-preview-tts'];
       let audioData = null;
