@@ -633,9 +633,10 @@ function showVideoStudio(thread) {
       </div>
       <div class="veo-duration-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
         <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Duration:</span>
+        <button class="veo-dur-btn" data-dur="4" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">4s</button>
         <button class="veo-dur-btn" data-dur="5" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">5s</button>
+        <button class="veo-dur-btn" data-dur="6" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">6s</button>
         <button class="veo-dur-btn selected" data-dur="8" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">8s</button>
-        <button class="veo-dur-btn" data-dur="10" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">10s</button>
       </div>
       <textarea class="studio-desc" placeholder="Describe the video scene you want to create..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;"></textarea>
       ${hasScreenshots ? `
