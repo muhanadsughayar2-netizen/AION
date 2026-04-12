@@ -723,11 +723,10 @@ async function getGoogleAuthToken() {
     const tokenMatch = responseUrl.match(/access_token=([^&]+)/);
     if (!tokenMatch) return null;
     const newToken = tokenMatch[1];
-    if (user) {
-      user.accessToken = newToken;
-      user.tokenObtainedAt = Date.now();
-      await chrome.storage.local.set({ snaptoai_user: user });
-    }
+    const updatedUser = user || {};
+    updatedUser.accessToken = newToken;
+    updatedUser.tokenObtainedAt = Date.now();
+    await chrome.storage.local.set({ snaptoai_user: updatedUser });
     return newToken;
   } catch (e) {
     console.log('[SnapToAI Video] Auth token error:', e.message);
@@ -808,7 +807,7 @@ async function pollVideoStatus(operationId, progressBubble, thread, backendUrl) 
   let pollCount = 0;
   const maxPolls = 40;
 
-  const authToken = await getGoogleAuthToken();
+  let authToken = await getGoogleAuthToken();
 
   activeVideoPollTimer = setInterval(async () => {
     pollCount++;
@@ -820,10 +819,22 @@ async function pollVideoStatus(operationId, progressBubble, thread, backendUrl) 
       return;
     }
 
+    if (pollCount % 10 === 0) {
+      const refreshed = await getGoogleAuthToken();
+      if (refreshed) authToken = refreshed;
+    }
+
     try {
       const headers = {};
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
       const resp = await fetch(`${backendUrl}/api/video-status/${encodeURIComponent(operationId)}`, { headers });
+
+      if (resp.status === 401) {
+        const refreshed = await getGoogleAuthToken();
+        if (refreshed) authToken = refreshed;
+        return;
+      }
+
       const data = await resp.json();
 
       if (data.status === 'processing') {
