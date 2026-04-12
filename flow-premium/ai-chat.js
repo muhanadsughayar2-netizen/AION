@@ -80,10 +80,13 @@ async function confirmPaidGeneration(mode, details) {
     const spendLine = details?.cost
       ? `Expected spend: ${details.cost}${details?.label ? ` for ${details.label}` : ''}.`
       : 'Expected spend: shown as estimate.';
+    const savingsLine = mode === 'video'
+      ? 'Default settings are set to the lowest-cost option to help keep API spend down.'
+      : 'This is set to the lowest-cost option to help keep API spend down.';
 
     titleEl.textContent = preset.title;
     estimateEl.textContent = `Estimated cost: ${details?.cost || 'unknown'}`;
-    messageEl.textContent = `${preset.message} ${spendLine}`;
+    messageEl.textContent = `${preset.message} ${spendLine} ${savingsLine}`;
     modal.style.display = 'block';
 
     const cleanup = (result) => {
