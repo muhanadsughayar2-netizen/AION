@@ -1212,6 +1212,62 @@
     </div>
   </div>
 
+  <div id="premiumCostModal" class="magic-modal" style="display:none;">
+    <div class="magic-modal-content" style="max-width: 380px; max-height: none;">
+      <div class="magic-modal-header">
+        <span style="-webkit-text-fill-color: #fff;">💎 Confirm Premium Usage</span>
+        <button class="magic-close" id="closePremiumCostModal" aria-label="Close">&#x2715;</button>
+      </div>
+      <div class="magic-modal-body" style="max-height: none; overflow: visible;">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:12px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,105,180,0.08));border:1px solid rgba(255,215,0,0.2);">
+          <div style="font-size:24px;">✨</div>
+          <div>
+            <div id="premiumCostTitle" style="font-size:14px;font-weight:700;color:#fff;">Premium Generation Request</div>
+            <div id="premiumCostEstimate" style="font-size:12px;color:#ffd36a;margin-top:2px;">Estimated cost: ~$2.00</div>
+          </div>
+        </div>
+        <div id="premiumCostMessage" style="font-size:13px;line-height:1.5;color:rgba(255,255,255,0.82);margin-bottom:10px;">
+          This feature uses high-compute AI and is billed per request. Automatic retries are disabled so you are only charged once per click.
+        </div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.62);margin-bottom:14px;">
+          Confirm only if you want to generate this paid result now.
+        </div>
+      </div>
+      <div class="magic-modal-footer" style="display:flex;gap:10px;">
+        <button id="premiumCostCancel" class="magic-save-btn" style="flex:1;background:transparent;border:1px solid #555;color:#ccc;">Go Back</button>
+        <button id="premiumCostConfirm" class="magic-save-btn" style="flex:1;background:linear-gradient(135deg,#ffd36a,#ff9f43);color:#111;">Confirm & Generate</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="premiumCostModal" class="magic-modal" style="display:none;">
+    <div class="magic-modal-content" style="max-width: 380px; max-height: none;">
+      <div class="magic-modal-header">
+        <span style="-webkit-text-fill-color: #fff;">💎 Confirm Premium Usage</span>
+        <button class="magic-close" id="closePremiumCostModal" aria-label="Close">&#x2715;</button>
+      </div>
+      <div class="magic-modal-body" style="max-height: none; overflow: visible;">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:12px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,105,180,0.08));border:1px solid rgba(255,215,0,0.2);">
+          <div style="font-size:24px;">✨</div>
+          <div>
+            <div id="premiumCostTitle" style="font-size:14px;font-weight:700;color:#fff;">Premium Generation Request</div>
+            <div id="premiumCostEstimate" style="font-size:12px;color:#ffd36a;margin-top:2px;">Estimated cost: ~$2.00</div>
+          </div>
+        </div>
+        <div id="premiumCostMessage" style="font-size:13px;line-height:1.5;color:rgba(255,255,255,0.82);margin-bottom:10px;">
+          This feature uses high-compute AI and is billed per request. Automatic retries are disabled so you are only charged once per click.
+        </div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.62);margin-bottom:14px;">
+          Confirm only if you want to generate this paid result now.
+        </div>
+      </div>
+      <div class="magic-modal-footer" style="display:flex;gap:10px;">
+        <button id="premiumCostCancel" class="magic-save-btn" style="flex:1;background:transparent;border:1px solid #555;color:#ccc;">Go Back</button>
+        <button id="premiumCostConfirm" class="magic-save-btn" style="flex:1;background:linear-gradient(135deg,#ffd36a,#ff9f43);color:#111;">Confirm & Generate</button>
+      </div>
+    </div>
+  </div>
+
   <div id="promptToast" style="display: none; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 1px solid rgba(0,217,255,0.3); border-radius: 8px; padding: 10px 16px; color: rgba(255,255,255,0.85); font-size: 13px; z-index: 10001; backdrop-filter: blur(8px); animation: toastFadeIn 0.3s ease; max-width: 90%; text-align: center;"></div>
   <style>
     @keyframes toastFadeIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }

@@ -54,11 +54,52 @@ function getPaidModeEstimate(mode, clipCount = 1, durationSeconds = 8) {
 }
 
 async function confirmPaidGeneration(mode, details) {
-  const label = details?.label || 'this generation';
-  const cost = details?.cost || 'unknown';
-  const note = details?.note || '';
-  const message = `This ${label} may cost about ${cost}. ${note ? `(${note}) ` : ''}Do you want to continue?`;
-  return window.confirm(message);
+  return new Promise(resolve => {
+    const modal = document.getElementById('premiumCostModal');
+    const titleEl = document.getElementById('premiumCostTitle');
+    const estimateEl = document.getElementById('premiumCostEstimate');
+    const messageEl = document.getElementById('premiumCostMessage');
+    const confirmBtn = document.getElementById('premiumCostConfirm');
+    const cancelBtn = document.getElementById('premiumCostCancel');
+    const closeBtn = document.getElementById('closePremiumCostModal');
+    if (!modal || !titleEl || !estimateEl || !messageEl || !confirmBtn || !cancelBtn || !closeBtn) {
+      resolve(window.confirm(`This ${details?.label || 'generation'} may cost about ${details?.cost || 'unknown'}. Continue?`));
+      return;
+    }
+
+    const preset = mode === 'video'
+      ? {
+          title: 'Authorize Video Generation',
+          message: 'This premium video request uses high-compute AI and is billed per request. Automatic retries are disabled so you are only charged once per click.'
+        }
+      : {
+          title: 'Authorize Music Generation',
+          message: 'This premium music request uses high-compute AI and is billed per request. Automatic retries are disabled so you are only charged once per click.'
+        };
+
+    titleEl.textContent = preset.title;
+    estimateEl.textContent = `Estimated cost: ${details?.cost || 'unknown'}`;
+    messageEl.textContent = preset.message;
+    modal.style.display = 'block';
+
+    const cleanup = (result) => {
+      modal.style.display = 'none';
+      confirmBtn.onclick = null;
+      cancelBtn.onclick = null;
+      closeBtn.onclick = null;
+      window.removeEventListener('keydown', onKeyDown);
+      resolve(result);
+    };
+
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') cleanup(false);
+    };
+
+    confirmBtn.onclick = () => cleanup(true);
+    cancelBtn.onclick = () => cleanup(false);
+    closeBtn.onclick = () => cleanup(false);
+    window.addEventListener('keydown', onKeyDown);
+  });
 }
 
 // ============ BACKEND PROXY (3 free prompts) ============
