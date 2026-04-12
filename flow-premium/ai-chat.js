@@ -605,6 +605,7 @@ const VEO_MODELS = [
 ];
 
 let selectedVeoModel = 'veo-3.1-fast-generate-preview';
+let selectedVideoDuration = 8;
 let userAvailableVeoModels = [];
 
 function showVideoStudio(thread) {
@@ -630,6 +631,12 @@ function showVideoStudio(thread) {
         <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Quality:</span>
         <span class="veo-models-loading" style="font-size:11px;color:#8899aa;">Checking available models...</span>
       </div>
+      <div class="veo-duration-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+        <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Duration:</span>
+        <button class="veo-dur-btn" data-dur="5" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">5s</button>
+        <button class="veo-dur-btn selected" data-dur="8" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">8s</button>
+        <button class="veo-dur-btn" data-dur="10" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">10s</button>
+      </div>
       <textarea class="studio-desc" placeholder="Describe the video scene you want to create..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;"></textarea>
       ${hasScreenshots ? `
       <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;font-size:12px;color:#aabbcc;">
@@ -639,7 +646,7 @@ function showVideoStudio(thread) {
       <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
         <span style="font-size:10px;color:#667788;">⏱ ~1-2 min render time</span>
         <span style="font-size:10px;color:#667788;">•</span>
-        <span style="font-size:10px;color:#667788;">8s clip</span>
+        <span class="studio-dur-label" style="font-size:10px;color:#667788;">8s clip</span>
       </div>
       <button class="studio-create-btn" style="width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffa500,#cc8400);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;opacity:0.4;pointer-events:none;">🎬 Generate Video</button>
     </div>
@@ -659,6 +666,24 @@ function showVideoStudio(thread) {
   });
   descInput.addEventListener('focus', () => { descInput.style.borderColor = 'rgba(255,165,0,0.4)'; });
   descInput.addEventListener('blur', () => { descInput.style.borderColor = 'rgba(255,165,0,0.15)'; });
+
+  studio.querySelectorAll('.veo-dur-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      studio.querySelectorAll('.veo-dur-btn').forEach(b => {
+        b.style.border = '1px solid rgba(255,165,0,0.2)';
+        b.style.background = 'rgba(255,165,0,0.04)';
+        b.style.color = '#aabbcc';
+        b.classList.remove('selected');
+      });
+      btn.style.border = '1px solid rgba(255,165,0,0.5)';
+      btn.style.background = 'rgba(255,165,0,0.15)';
+      btn.style.color = '#ffa500';
+      btn.classList.add('selected');
+      selectedVideoDuration = parseInt(btn.dataset.dur);
+      const durLabel = studio.querySelector('.studio-dur-label');
+      if (durLabel) durLabel.textContent = `${selectedVideoDuration}s clip`;
+    });
+  });
 
   createBtn.addEventListener('click', async () => {
     const desc = descInput.value.trim();
@@ -777,7 +802,7 @@ async function startVideoGeneration(prompt, thread) {
       <span style="font-size:13px;font-weight:600;color:#ffa500;">Rendering your video...</span>
     </div>
     <div style="font-size:12px;color:#8899aa;margin-bottom:6px;">Using ${modelName.replace(/-generate.*/, '')}</div>
-    <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">This usually takes 1-2 minutes. You can keep chatting!</div>
+    <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">Generating ${selectedVideoDuration}s clip — usually takes 1-2 minutes. You can keep chatting!</div>
     <div class="video-progress-bar" style="width:100%;height:4px;background:rgba(255,165,0,0.1);border-radius:2px;overflow:hidden;">
       <div class="video-progress-fill" style="width:5%;height:100%;background:linear-gradient(90deg,#ffa500,#ffcc00);border-radius:2px;transition:width 0.5s ease;"></div>
     </div>
@@ -794,7 +819,7 @@ async function startVideoGeneration(prompt, thread) {
       parameters: {
         aspectRatio: '16:9',
         sampleCount: 1,
-        durationSeconds: 8,
+        durationSeconds: selectedVideoDuration,
         personGeneration: 'allow_all'
       }
     };
