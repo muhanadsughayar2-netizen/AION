@@ -647,10 +647,25 @@ function showVideoStudio(thread) {
       </div>
       <textarea class="studio-desc" placeholder="Describe the video scene you want to create..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;"></textarea>
       ${hasScreenshots ? `
-      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;font-size:12px;color:#aabbcc;">
-        <input type="checkbox" class="studio-use-screenshot" style="accent-color:#ffa500;" checked>
-        <span>📸 Use loaded screenshot as starting frame</span>
-      </label>` : ''}
+      <div style="margin-top:10px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#aabbcc;">
+          <input type="checkbox" class="studio-use-screenshot" style="accent-color:#ffa500;" checked>
+          <span>📸 Use loaded screenshot as starting frame</span>
+        </label>
+        <div class="studio-stylize-wrap" style="margin-top:6px;margin-left:24px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#aabbcc;">
+            <input type="checkbox" class="studio-stylize-photo" style="accent-color:#ff69b4;" checked>
+            <span>🎨 Stylize photo first (bypasses safety filters for people)</span>
+          </label>
+          <div class="stylize-style-selector" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+            <button class="stylize-btn selected" data-style="pixar" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(255,105,180,0.5);background:rgba(255,105,180,0.15);color:#ff69b4;font-size:10px;font-weight:600;cursor:pointer;">Pixar 3D</button>
+            <button class="stylize-btn" data-style="anime" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(255,105,180,0.2);background:rgba(255,105,180,0.04);color:#aabbcc;font-size:10px;font-weight:600;cursor:pointer;">Anime</button>
+            <button class="stylize-btn" data-style="cartoon" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(255,105,180,0.2);background:rgba(255,105,180,0.04);color:#aabbcc;font-size:10px;font-weight:600;cursor:pointer;">Cartoon</button>
+            <button class="stylize-btn" data-style="watercolor" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(255,105,180,0.2);background:rgba(255,105,180,0.04);color:#aabbcc;font-size:10px;font-weight:600;cursor:pointer;">Watercolor</button>
+            <button class="stylize-btn" data-style="oil" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(255,105,180,0.2);background:rgba(255,105,180,0.04);color:#aabbcc;font-size:10px;font-weight:600;cursor:pointer;">Oil Paint</button>
+          </div>
+        </div>
+      </div>` : ''}
       <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
         <span style="font-size:10px;color:#667788;">⏱ ~1-2 min per clip</span>
         <span style="font-size:10px;color:#667788;">•</span>
@@ -715,12 +730,46 @@ function showVideoStudio(thread) {
     });
   });
 
+  let selectedStylizeStyle = 'pixar';
+
+  const useScreenshotCb = studio.querySelector('.studio-use-screenshot');
+  const stylizeWrap = studio.querySelector('.studio-stylize-wrap');
+  if (useScreenshotCb && stylizeWrap) {
+    useScreenshotCb.addEventListener('change', () => {
+      stylizeWrap.style.display = useScreenshotCb.checked ? 'block' : 'none';
+    });
+  }
+
+  studio.querySelectorAll('.stylize-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      studio.querySelectorAll('.stylize-btn').forEach(b => {
+        b.style.border = '1px solid rgba(255,105,180,0.2)';
+        b.style.background = 'rgba(255,105,180,0.04)';
+        b.style.color = '#aabbcc';
+        b.classList.remove('selected');
+      });
+      btn.style.border = '1px solid rgba(255,105,180,0.5)';
+      btn.style.background = 'rgba(255,105,180,0.15)';
+      btn.style.color = '#ff69b4';
+      btn.classList.add('selected');
+      selectedStylizeStyle = btn.dataset.style;
+    });
+  });
+
   createBtn.addEventListener('click', async () => {
     const desc = descInput.value.trim();
     if (!desc) return;
 
     studio.style.opacity = '0.5';
     studio.style.pointerEvents = 'none';
+
+    const stylizeCb = studio.querySelector('.studio-stylize-photo');
+    const shouldStylize = useScreenshotCb?.checked && stylizeCb?.checked;
+    if (shouldStylize) {
+      chrome.storage.local.set({ _videoStylizeStyle: selectedStylizeStyle });
+    } else {
+      chrome.storage.local.remove('_videoStylizeStyle');
+    }
 
     const inputEl = document.getElementById('chatInput');
     if (inputEl) {
@@ -811,6 +860,67 @@ async function loadAvailableVeoModels(studio) {
   }
 }
 
+async function stylizeImageForVideo(apiKey, imageData, style) {
+  const stylePrompts = {
+    pixar: 'Transform this photo into a Pixar/Disney 3D animated style. Keep the exact same people, poses, expressions, clothing, and background but render everything as high-quality 3D Pixar animation. Do not add any text or words.',
+    anime: 'Transform this photo into beautiful Japanese anime style. Keep the exact same people, poses, expressions, clothing, and background but render everything as detailed anime art. Do not add any text or words.',
+    cartoon: 'Transform this photo into a fun colorful cartoon style like a modern animated movie. Keep the exact same people, poses, expressions, clothing, and background. Do not add any text or words.',
+    watercolor: 'Transform this photo into a beautiful watercolor painting. Keep the exact same people, poses, expressions, clothing, and background but render as soft watercolor art. Do not add any text or words.',
+    oil: 'Transform this photo into a classic oil painting style. Keep the exact same people, poses, expressions, clothing, and background but render as rich oil painting art. Do not add any text or words.'
+  };
+
+  const cleanB64 = imageData.includes(',') ? imageData.split(',')[1] : imageData;
+  let mimeType = 'image/png';
+  if (imageData.startsWith('data:')) {
+    const match = imageData.match(/^data:(image\/[a-zA-Z+]+);/);
+    if (match) mimeType = match[1];
+  }
+
+  const models = ['gemini-2.0-flash-exp', 'gemini-2.0-flash'];
+  let lastError = '';
+
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: stylePrompts[style] || stylePrompts.pixar },
+              { inlineData: { mimeType: mimeType, data: cleanB64 } }
+            ]
+          }],
+          generationConfig: {
+            responseModalities: ['TEXT', 'IMAGE']
+          }
+        })
+      });
+
+      if (!resp.ok) {
+        lastError = `${model}: ${resp.status}`;
+        continue;
+      }
+
+      const data = await resp.json();
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      for (const part of parts) {
+        if (part.inlineData?.data) {
+          const styledMime = part.inlineData.mimeType || 'image/png';
+          return { base64: part.inlineData.data, mimeType: styledMime };
+        }
+      }
+      lastError = `${model}: no image in response`;
+    } catch (e) {
+      lastError = `${model}: ${e.message}`;
+    }
+  }
+
+  console.log(`[SnapToAI Video] Stylize failed: ${lastError}`);
+  return null;
+}
+
 async function startVideoGeneration(prompt, thread) {
   const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
   const apiKey = keyResult.geminiApiKey;
@@ -869,14 +979,36 @@ async function startVideoGeneration(prompt, thread) {
   thread.appendChild(progressBubble);
   thread.scrollTop = thread.scrollHeight;
 
+  let stylizedImage = null;
+  if (includeImage) {
+    const styleData = await chrome.storage.local.get('_videoStylizeStyle');
+    const stylizeStyle = styleData._videoStylizeStyle;
+    chrome.storage.local.remove('_videoStylizeStyle');
+
+    if (stylizeStyle && currentImages[0]) {
+      const text = progressBubble.querySelector('.video-progress-text');
+      if (text) text.textContent = '🎨 Stylizing your photo first...';
+      console.log(`[SnapToAI Video] Stylizing image with style: ${stylizeStyle}`);
+
+      stylizedImage = await stylizeImageForVideo(apiKey, currentImages[0], stylizeStyle);
+      if (stylizedImage) {
+        console.log('[SnapToAI Video] Photo stylized successfully');
+        if (text) text.textContent = 'Photo stylized! Starting video...';
+      } else {
+        console.log('[SnapToAI Video] Stylize failed, using original image');
+        if (text) text.textContent = 'Stylize failed, using original photo...';
+      }
+    }
+  }
+
   if (clipCount === 1) {
-    await generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread);
+    await generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage);
   } else {
-    await generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread);
+    await generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage);
   }
 }
 
-async function generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread) {
+async function generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage) {
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`;
 
@@ -889,15 +1021,19 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
       }
     };
 
-    if (includeImage && currentImages[0]) {
-      const imgData = currentImages[0];
-      const cleanB64 = imgData.includes(',') ? imgData.split(',')[1] : imgData;
-      let mimeType = 'image/png';
-      if (imgData.startsWith('data:')) {
-        const match = imgData.match(/^data:(image\/[a-zA-Z+]+);/);
-        if (match) mimeType = match[1];
+    if (includeImage && (stylizedImage || currentImages[0])) {
+      if (stylizedImage) {
+        requestBody.instances[0].image = { bytesBase64Encoded: stylizedImage.base64, mimeType: stylizedImage.mimeType };
+      } else {
+        const imgData = currentImages[0];
+        const cleanB64 = imgData.includes(',') ? imgData.split(',')[1] : imgData;
+        let mimeType = 'image/png';
+        if (imgData.startsWith('data:')) {
+          const match = imgData.match(/^data:(image\/[a-zA-Z+]+);/);
+          if (match) mimeType = match[1];
+        }
+        requestBody.instances[0].image = { bytesBase64Encoded: cleanB64, mimeType: mimeType };
       }
-      requestBody.instances[0].image = { bytesBase64Encoded: cleanB64, mimeType: mimeType };
     }
 
     console.log(`[SnapToAI Video] Starting generation with ${modelName}`);
@@ -937,7 +1073,7 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
   }
 }
 
-async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread) {
+async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage) {
   const clipUrls = [];
   const clipScenes = [];
 
@@ -975,15 +1111,19 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
         }
       };
 
-      if (i === 0 && includeImage && currentImages[0]) {
-        const imgData = currentImages[0];
-        const cleanB64 = imgData.includes(',') ? imgData.split(',')[1] : imgData;
-        let mimeType = 'image/png';
-        if (imgData.startsWith('data:')) {
-          const match = imgData.match(/^data:(image\/[a-zA-Z+]+);/);
-          if (match) mimeType = match[1];
+      if (i === 0 && includeImage && (stylizedImage || currentImages[0])) {
+        if (stylizedImage) {
+          requestBody.instances[0].image = { bytesBase64Encoded: stylizedImage.base64, mimeType: stylizedImage.mimeType };
+        } else {
+          const imgData = currentImages[0];
+          const cleanB64 = imgData.includes(',') ? imgData.split(',')[1] : imgData;
+          let mimeType = 'image/png';
+          if (imgData.startsWith('data:')) {
+            const match = imgData.match(/^data:(image\/[a-zA-Z+]+);/);
+            if (match) mimeType = match[1];
+          }
+          requestBody.instances[0].image = { bytesBase64Encoded: cleanB64, mimeType: mimeType };
         }
-        requestBody.instances[0].image = { bytesBase64Encoded: cleanB64, mimeType: mimeType };
       }
 
       const resp = await fetch(url, {
