@@ -249,7 +249,7 @@ def check_video_support():
 
     data = request.get_json(silent=True) or {}
     user_key = data.get('apiKey', '')
-    server_key = os.environ.get('GEMINI_API_KEY', '')
+    server_key = os.environ.get('GOOGLE_API_KEY', '') or os.environ.get('GEMINI_API_KEY', '')
     check_key = user_key or server_key
 
     if not check_key:
@@ -376,7 +376,8 @@ def generate_video():
         response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         return response
-    if not genai or not os.environ.get('GEMINI_API_KEY'):
+    video_api_key = os.environ.get('GOOGLE_API_KEY') or os.environ.get('GEMINI_API_KEY')
+    if not video_api_key:
         return jsonify({"error": "Video generation not configured"}), 500
 
     data = request.get_json()
@@ -418,8 +419,7 @@ def generate_video():
     model_name = 'veo-3.1-generate-preview' if is_subscribed else 'veo-2.0-generate-001'
 
     try:
-        api_key = os.environ.get('GEMINI_API_KEY')
-        url = f'https://generativelanguage.googleapis.com/v1beta/models/{model_name}:predictLongRunning?key={api_key}'
+        url = f'https://generativelanguage.googleapis.com/v1beta/models/{model_name}:predictLongRunning?key={video_api_key}'
 
         request_body = {
             "instances": [{
@@ -485,7 +485,8 @@ def video_status(operation_id):
         response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         return response
-    if not os.environ.get('GEMINI_API_KEY'):
+    video_api_key = os.environ.get('GOOGLE_API_KEY') or os.environ.get('GEMINI_API_KEY')
+    if not video_api_key:
         return jsonify({"error": "Not configured"}), 500
 
     email = get_verified_email(request)
@@ -505,8 +506,7 @@ def video_status(operation_id):
         pass
 
     try:
-        api_key = os.environ.get('GEMINI_API_KEY')
-        url = f'https://generativelanguage.googleapis.com/v1beta/{operation_id}?key={api_key}'
+        url = f'https://generativelanguage.googleapis.com/v1beta/{operation_id}?key={video_api_key}'
 
         resp = requests.get(url, timeout=15)
         resp_data = resp.json()
@@ -597,7 +597,7 @@ def video_download(safe_op_id):
             return jsonify({"error": "Access denied"}), 403
 
         video_uri = row[0]
-        api_key = os.environ.get('GEMINI_API_KEY')
+        api_key = os.environ.get('GOOGLE_API_KEY') or os.environ.get('GEMINI_API_KEY')
         if api_key:
             separator = '&' if '?' in video_uri else '?'
             authenticated_url = f'{video_uri}{separator}key={api_key}'
