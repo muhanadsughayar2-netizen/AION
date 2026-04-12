@@ -493,7 +493,12 @@ initModeButtons();
 (async function checkVideoSupport() {
   try {
     const backendUrl = 'https://www.snaptoai.com';
-    const resp = await fetch(`${backendUrl}/api/check-video-support`, { signal: AbortSignal.timeout(8000) });
+    let checkUrl = `${backendUrl}/api/check-video-support`;
+    const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+    if (keyResult.geminiApiKey) {
+      checkUrl += `?apiKey=${encodeURIComponent(keyResult.geminiApiKey)}`;
+    }
+    const resp = await fetch(checkUrl, { signal: AbortSignal.timeout(8000) });
     const data = await resp.json();
     if (data.videoSupported) {
       const videoBtn = document.getElementById('videoModeBtn');
@@ -756,11 +761,13 @@ async function startVideoGeneration(prompt, thread) {
   }
 }
 
-function pollVideoStatus(operationId, progressBubble, thread, backendUrl) {
+async function pollVideoStatus(operationId, progressBubble, thread, backendUrl) {
   if (activeVideoPollTimer) clearInterval(activeVideoPollTimer);
 
   let pollCount = 0;
   const maxPolls = 40;
+
+  const authToken = await getGoogleAuthToken();
 
   activeVideoPollTimer = setInterval(async () => {
     pollCount++;
@@ -773,7 +780,9 @@ function pollVideoStatus(operationId, progressBubble, thread, backendUrl) {
     }
 
     try {
-      const resp = await fetch(`${backendUrl}/api/video-status/${encodeURIComponent(operationId)}`);
+      const headers = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const resp = await fetch(`${backendUrl}/api/video-status/${encodeURIComponent(operationId)}`, { headers });
       const data = await resp.json();
 
       if (data.status === 'processing') {
@@ -785,7 +794,7 @@ function pollVideoStatus(operationId, progressBubble, thread, backendUrl) {
       } else if (data.status === 'completed') {
         clearInterval(activeVideoPollTimer);
         activeVideoPollTimer = null;
-        showVideoResult(progressBubble, data.videoUrl, thread);
+        await showVideoResult(progressBubble, data.videoUrl, thread);
       } else if (data.status === 'error') {
         clearInterval(activeVideoPollTimer);
         activeVideoPollTimer = null;
@@ -797,14 +806,21 @@ function pollVideoStatus(operationId, progressBubble, thread, backendUrl) {
   }, 15000);
 }
 
-function showVideoResult(bubble, videoUrl, thread) {
+async function showVideoResult(bubble, videoUrl, thread) {
+  const backendUrl = 'https://www.snaptoai.com';
+  const fullVideoUrl = videoUrl.startsWith('http') ? videoUrl : `${backendUrl}${videoUrl}`;
+
+  const authToken = await getGoogleAuthToken();
+  const authParam = authToken ? `${fullVideoUrl.includes('?') ? '&' : '?'}token=${authToken}` : '';
+  const authenticatedUrl = `${fullVideoUrl}${authParam}`;
+
   bubble.innerHTML = `
     <div style="margin:8px 0;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
         <span style="font-size:18px;">🎬</span>
         <span style="font-size:13px;font-weight:600;color:#ffa500;">Video ready!</span>
       </div>
-      <video controls autoplay muted playsinline style="width:100%;max-width:480px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);" src="${videoUrl}"></video>
+      <video controls autoplay muted playsinline style="width:100%;max-width:480px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);" src="${authenticatedUrl}"></video>
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="video-save-btn" style="background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.3);color:#ffa500;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">💾 Save Video</button>
       </div>
@@ -813,7 +829,7 @@ function showVideoResult(bubble, videoUrl, thread) {
 
   bubble.querySelector('.video-save-btn')?.addEventListener('click', () => {
     const a = document.createElement('a');
-    a.href = videoUrl;
+    a.href = authenticatedUrl;
     a.download = 'snaptoai-video.mp4';
     a.click();
   });

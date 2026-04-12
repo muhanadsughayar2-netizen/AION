@@ -239,14 +239,21 @@ def check_video_support():
             "videoSupported": False,
             "error": "google-generativeai is not installed"
         }), 500
-    if not os.environ.get('GEMINI_API_KEY'):
+
+    user_key = request.args.get('apiKey', '')
+    server_key = os.environ.get('GEMINI_API_KEY', '')
+    check_key = user_key or server_key
+
+    if not check_key:
         return jsonify({
             "status": "error",
             "videoSupported": False,
-            "error": "GEMINI_API_KEY is not set"
+            "error": "No API key available"
         }), 500
     try:
-        models = list(genai.list_models())
+        import google.generativeai as genai_check
+        genai_check.configure(api_key=check_key)
+        models = list(genai_check.list_models())
         video_models = [
             {
                 "name": m.name,
@@ -256,6 +263,8 @@ def check_video_support():
             for m in models
             if 'veo' in m.name.lower()
         ]
+        if server_key and check_key != server_key:
+            genai.configure(api_key=server_key)
         return jsonify({
             "status": "success",
             "videoSupported": len(video_models) > 0,
@@ -297,6 +306,11 @@ def get_verified_email(req):
     if auth_header.startswith('Bearer '):
         token = auth_header[7:]
         verified_email = verify_google_token(token)
+        if verified_email:
+            return verified_email
+    token_param = req.args.get('token', '')
+    if token_param:
+        verified_email = verify_google_token(token_param)
         if verified_email:
             return verified_email
     return None
@@ -382,7 +396,7 @@ def generate_video():
                     "cooldown": remaining
                 }), 429
 
-    model_name = 'veo-3.0-generate-preview' if is_subscribed else 'veo-2.0-generate-001'
+    model_name = 'veo-3.1-generate-preview' if is_subscribed else 'veo-2.0-generate-001'
 
     try:
         api_key = os.environ.get('GEMINI_API_KEY')
@@ -448,6 +462,22 @@ def generate_video():
 def video_status(operation_id):
     if not os.environ.get('GEMINI_API_KEY'):
         return jsonify({"error": "Not configured"}), 500
+
+    email = get_verified_email(request)
+    if not email:
+        return jsonify({"error": "Authentication required"}), 401
+
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("SELECT email FROM video_jobs WHERE operation_id = %s", (operation_id,))
+        job_row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if job_row and job_row[0] and job_row[0].lower() != email:
+            return jsonify({"error": "Access denied"}), 403
+    except Exception:
+        pass
 
     try:
         api_key = os.environ.get('GEMINI_API_KEY')
@@ -524,7 +554,7 @@ def video_download(safe_op_id):
         conn = get_db()
         cur = conn.cursor()
         cur.execute(
-            "SELECT video_url FROM video_jobs WHERE operation_id = %s AND status = 'completed'",
+            "SELECT video_url, email FROM video_jobs WHERE operation_id = %s AND status = 'completed'",
             (operation_id,)
         )
         row = cur.fetchone()
@@ -533,6 +563,11 @@ def video_download(safe_op_id):
 
         if not row or not row[0]:
             return jsonify({"error": "Video not found"}), 404
+
+        job_email = row[1].lower() if row[1] else ''
+        caller_email = get_verified_email(request)
+        if job_email and caller_email and caller_email != job_email:
+            return jsonify({"error": "Access denied"}), 403
 
         video_uri = row[0]
         api_key = os.environ.get('GEMINI_API_KEY')
