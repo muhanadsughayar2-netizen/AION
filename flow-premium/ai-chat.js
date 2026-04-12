@@ -885,8 +885,7 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
       parameters: {
         aspectRatio: '16:9',
         sampleCount: 1,
-        durationSeconds: selectedVideoDuration,
-        personGeneration: 'allow_adult'
+        durationSeconds: selectedVideoDuration
       }
     };
 
@@ -972,8 +971,7 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
         parameters: {
           aspectRatio: '16:9',
           sampleCount: 1,
-          durationSeconds: selectedVideoDuration,
-          personGeneration: 'allow_adult'
+          durationSeconds: selectedVideoDuration
         }
       };
 
