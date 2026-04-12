@@ -492,23 +492,25 @@ initModeButtons();
 
 (async function checkVideoSupport() {
   try {
-    const backendUrl = 'https://www.snaptoai.com';
     const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
-    const body = {};
-    if (keyResult.geminiApiKey) body.apiKey = keyResult.geminiApiKey;
-    const resp = await fetch(`${backendUrl}/api/check-video-support`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(8000)
-    });
+    const apiKey = keyResult.geminiApiKey;
+    if (!apiKey) {
+      console.log('[SnapToAI] Video mode hidden — no API key set');
+      return;
+    }
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { signal: AbortSignal.timeout(10000) });
+    if (!resp.ok) {
+      console.log('[SnapToAI] Video mode hidden — model list failed');
+      return;
+    }
     const data = await resp.json();
-    if (data.videoSupported) {
+    const hasVeo = (data.models || []).some(m => m.name && m.name.toLowerCase().includes('veo'));
+    if (hasVeo) {
       const videoBtn = document.getElementById('videoModeBtn');
       if (videoBtn) videoBtn.style.display = '';
       console.log('[SnapToAI] Video mode enabled — Veo models available');
     } else {
-      console.log('[SnapToAI] Video mode hidden — no Veo models found');
+      console.log('[SnapToAI] Video mode hidden — no Veo models on this key');
     }
   } catch (e) {
     console.log('[SnapToAI] Video support check skipped:', e.message);
@@ -593,6 +595,18 @@ function showImageStudio(thread) {
 
 let activeVideoPollTimer = null;
 
+const VEO_MODELS = [
+  { id: 'veo-3.1-generate-preview', label: '3.1', desc: 'Best quality', tier: 'top' },
+  { id: 'veo-3.1-fast-generate-preview', label: '3.1 Fast', desc: 'Fast + great quality', tier: 'mid' },
+  { id: 'veo-3.1-lite-generate-preview', label: '3.1 Lite', desc: 'Quick drafts', tier: 'lite' },
+  { id: 'veo-3.0-generate-001', label: '3.0', desc: 'High quality', tier: 'mid' },
+  { id: 'veo-3.0-fast-generate-001', label: '3.0 Fast', desc: 'Fast + good', tier: 'lite' },
+  { id: 'veo-2.0-generate-001', label: '2.0', desc: 'Basic (needs billing)', tier: 'basic' }
+];
+
+let selectedVeoModel = 'veo-3.1-fast-generate-preview';
+let userAvailableVeoModels = [];
+
 function showVideoStudio(thread) {
   const existing = thread.querySelector('.video-studio');
   if (existing) existing.remove();
@@ -611,6 +625,10 @@ function showVideoStudio(thread) {
           <span style="font-size:14px;font-weight:700;color:#e8eef4;">Video Studio</span>
         </div>
         <button class="studio-surprise-btn" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(255,165,0,0.25);background:rgba(255,165,0,0.06);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">🎲 Surprise Me</button>
+      </div>
+      <div class="veo-model-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+        <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Quality:</span>
+        <span class="veo-models-loading" style="font-size:11px;color:#8899aa;">Checking available models...</span>
       </div>
       <textarea class="studio-desc" placeholder="Describe the video scene you want to create..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;"></textarea>
       ${hasScreenshots ? `
@@ -649,15 +667,14 @@ function showVideoStudio(thread) {
     studio.style.opacity = '0.5';
     studio.style.pointerEvents = 'none';
 
-    const useScreenshot = studio.querySelector('.studio-use-screenshot');
-    const includeImage = useScreenshot && useScreenshot.checked && currentImages.length > 0;
-
     const inputEl = document.getElementById('chatInput');
     if (inputEl) {
       inputEl.value = desc;
       document.getElementById('sendBtn')?.click();
     }
   });
+
+  loadAvailableVeoModels(studio);
 
   const surpriseIdeas = [
     'A drone shot sweeping over a misty mountain range at sunrise with golden light',
@@ -681,74 +698,76 @@ function showVideoStudio(thread) {
   });
 }
 
-async function getGoogleAuthToken() {
+async function loadAvailableVeoModels(studio) {
+  const selector = studio.querySelector('.veo-model-selector');
+  const loadingEl = studio.querySelector('.veo-models-loading');
   try {
-    const result = await chrome.storage.local.get('snaptoai_user');
-    const user = result.snaptoai_user;
-    if (user && user.accessToken) {
-      const tokenAge = Date.now() - (user.tokenObtainedAt || 0);
-      if (tokenAge < 45 * 60 * 1000) {
-        const checkResp = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${user.accessToken}`);
-        if (checkResp.ok) {
-          return user.accessToken;
-        }
-      }
+    const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+    const apiKey = keyResult.geminiApiKey;
+    if (!apiKey) {
+      if (loadingEl) loadingEl.innerHTML = '<span style="color:#ff6b6b;font-size:11px;">Set your Gemini API key in settings to use Video mode</span>';
+      return;
     }
-    const clientId = chrome.runtime.getManifest().oauth2?.client_id;
-    if (!clientId) return null;
-    const redirectUrl = chrome.identity.getRedirectURL();
-    const scopes = 'openid email profile';
-    const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
-      '?client_id=' + encodeURIComponent(clientId) +
-      '&response_type=token' +
-      '&redirect_uri=' + encodeURIComponent(redirectUrl) +
-      '&scope=' + encodeURIComponent(scopes) +
-      '&prompt=none';
-    const responseUrl = await new Promise((resolve, reject) => {
-      chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: false }, (url) => {
-        if (chrome.runtime.lastError || !url) {
-          const interactiveUrl = authUrl.replace('&prompt=none', '');
-          chrome.identity.launchWebAuthFlow({ url: interactiveUrl, interactive: true }, (url2) => {
-            if (chrome.runtime.lastError || !url2) {
-              reject(new Error(chrome.runtime.lastError?.message || 'Auth failed'));
-            } else {
-              resolve(url2);
-            }
-          });
-        } else {
-          resolve(url);
-        }
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { signal: AbortSignal.timeout(10000) });
+    if (!resp.ok) {
+      if (loadingEl) loadingEl.innerHTML = '<span style="color:#ff6b6b;font-size:11px;">Could not check models — verify your API key</span>';
+      return;
+    }
+    const data = await resp.json();
+    const allModels = data.models || [];
+    const veoNames = allModels.filter(m => m.name && m.name.toLowerCase().includes('veo')).map(m => m.name.replace('models/', ''));
+
+    userAvailableVeoModels = VEO_MODELS.filter(vm => veoNames.includes(vm.id));
+
+    if (userAvailableVeoModels.length === 0) {
+      if (loadingEl) loadingEl.innerHTML = '<span style="color:#ff9900;font-size:11px;">No Veo models found on your key. Enable Google Cloud billing or get the $300 free credit to unlock video generation.</span>';
+      return;
+    }
+
+    if (!userAvailableVeoModels.find(m => m.id === selectedVeoModel)) {
+      selectedVeoModel = userAvailableVeoModels[0].id;
+    }
+
+    if (loadingEl) loadingEl.remove();
+    const buttonsHtml = userAvailableVeoModels.map(m => {
+      const isSelected = m.id === selectedVeoModel;
+      return `<button class="veo-model-chip" data-model="${m.id}" title="${m.desc}" style="padding:5px 12px;border-radius:20px;border:1px solid ${isSelected ? 'rgba(255,165,0,0.6)' : 'rgba(255,165,0,0.2)'};background:${isSelected ? 'rgba(255,165,0,0.15)' : 'rgba(255,165,0,0.03)'};color:${isSelected ? '#ffa500' : '#8899aa'};font-size:11px;font-weight:${isSelected ? '700' : '500'};cursor:pointer;transition:all 0.2s;">${m.label}</button>`;
+    }).join('');
+    selector.insertAdjacentHTML('beforeend', buttonsHtml);
+
+    selector.querySelectorAll('.veo-model-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        selectedVeoModel = chip.dataset.model;
+        selector.querySelectorAll('.veo-model-chip').forEach(c => {
+          const sel = c.dataset.model === selectedVeoModel;
+          c.style.borderColor = sel ? 'rgba(255,165,0,0.6)' : 'rgba(255,165,0,0.2)';
+          c.style.background = sel ? 'rgba(255,165,0,0.15)' : 'rgba(255,165,0,0.03)';
+          c.style.color = sel ? '#ffa500' : '#8899aa';
+          c.style.fontWeight = sel ? '700' : '500';
+        });
+        console.log(`[SnapToAI Video] Selected model: ${selectedVeoModel}`);
       });
     });
-    const tokenMatch = responseUrl.match(/access_token=([^&]+)/);
-    if (!tokenMatch) return null;
-    const newToken = tokenMatch[1];
-    const updatedUser = user || {};
-    updatedUser.accessToken = newToken;
-    updatedUser.tokenObtainedAt = Date.now();
-    await chrome.storage.local.set({ snaptoai_user: updatedUser });
-    return newToken;
+
+    console.log(`[SnapToAI Video] ${userAvailableVeoModels.length} Veo models available for user`);
   } catch (e) {
-    console.log('[SnapToAI Video] Auth token error:', e.message);
-    return null;
+    if (loadingEl) loadingEl.innerHTML = '<span style="color:#ff6b6b;font-size:11px;">Could not load models</span>';
+    console.log('[SnapToAI Video] Model check error:', e.message);
   }
 }
 
 async function startVideoGeneration(prompt, thread) {
-  let authToken = await getGoogleAuthToken();
-  if (!authToken) {
-    addBubble('Please sign in with Google to use video generation.', 'error');
+  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+  const apiKey = keyResult.geminiApiKey;
+  if (!apiKey) {
+    addBubble('Please set your Gemini API key in settings to use video generation.', 'error');
     return;
   }
 
   const useScreenshot = document.querySelector('.studio-use-screenshot');
   const includeImage = useScreenshot && useScreenshot.checked && typeof currentImages !== 'undefined' && currentImages.length > 0;
-  let imageData = '';
-  if (includeImage) {
-    imageData = currentImages[0];
-  }
 
-  const backendUrl = 'https://www.snaptoai.com';
+  const modelName = selectedVeoModel || 'veo-3.1-fast-generate-preview';
 
   const progressBubble = document.createElement('div');
   progressBubble.className = 'chat-bubble ai video-progress';
@@ -757,6 +776,7 @@ async function startVideoGeneration(prompt, thread) {
       <span style="font-size:18px;">🎬</span>
       <span style="font-size:13px;font-weight:600;color:#ffa500;">Rendering your video...</span>
     </div>
+    <div style="font-size:12px;color:#8899aa;margin-bottom:6px;">Using ${modelName.replace(/-generate.*/, '')}</div>
     <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">This usually takes 1-2 minutes. You can keep chatting!</div>
     <div class="video-progress-bar" style="width:100%;height:4px;background:rgba(255,165,0,0.1);border-radius:2px;overflow:hidden;">
       <div class="video-progress-fill" style="width:5%;height:100%;background:linear-gradient(90deg,#ffa500,#ffcc00);border-radius:2px;transition:width 0.5s ease;"></div>
@@ -767,33 +787,54 @@ async function startVideoGeneration(prompt, thread) {
   thread.scrollTop = thread.scrollHeight;
 
   try {
-    const resp = await fetch(`${backendUrl}/api/generate-video`, {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`;
+
+    const requestBody = {
+      instances: [{ prompt: prompt }],
+      parameters: {
+        aspectRatio: '16:9',
+        sampleCount: 1,
+        durationSeconds: 8,
+        personGeneration: 'allow_all'
+      }
+    };
+
+    if (includeImage && currentImages[0]) {
+      const imgData = currentImages[0];
+      const cleanB64 = imgData.includes(',') ? imgData.split(',')[1] : imgData;
+      requestBody.instances[0].image = { bytesBase64Encoded: cleanB64 };
+    }
+
+    console.log(`[SnapToAI Video] Starting generation with ${modelName}`);
+    const resp = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
-      },
-      body: JSON.stringify({
-        prompt: prompt,
-        image: imageData
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
     });
 
     const data = await resp.json();
 
     if (!resp.ok) {
-      progressBubble.innerHTML = `
-        <div style="color:#ff6b6b;font-size:13px;">
-          <span style="font-size:16px;">❌</span> ${data.error || 'Video generation failed.'}
-          ${data.cooldown ? `<div style="margin-top:6px;font-size:11px;color:#8899aa;">Cooldown: ${Math.ceil(data.cooldown / 60)} min remaining</div>` : ''}
-        </div>
-      `;
+      const errorMsg = data.error?.message || `API error ${resp.status}`;
+      console.log(`[SnapToAI Video] API error: ${errorMsg}`);
+      let friendlyMsg = errorMsg;
+      if (resp.status === 400 && errorMsg.toLowerCase().includes('billing')) {
+        friendlyMsg = 'This model requires Google Cloud billing. Enable billing or get the $300 free credit at console.cloud.google.com/billing';
+      } else if (resp.status === 429) {
+        friendlyMsg = 'Rate limit reached. Please wait a few minutes and try again.';
+      }
+      progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${friendlyMsg}</div>`;
       return;
     }
 
-    const operationId = data.operationId;
-    console.log(`[SnapToAI Video] Job started: ${operationId}`);
-    pollVideoStatus(operationId, progressBubble, thread, backendUrl);
+    const operationName = data.name;
+    if (!operationName) {
+      progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> No operation ID returned. Try again.</div>`;
+      return;
+    }
+
+    console.log(`[SnapToAI Video] Job started: ${operationName}`);
+    pollVideoStatus(operationName, apiKey, progressBubble, thread);
 
   } catch (err) {
     console.log(`[SnapToAI Video] Error:`, err.message);
@@ -801,13 +842,11 @@ async function startVideoGeneration(prompt, thread) {
   }
 }
 
-async function pollVideoStatus(operationId, progressBubble, thread, backendUrl) {
+async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
   if (activeVideoPollTimer) clearInterval(activeVideoPollTimer);
 
   let pollCount = 0;
   const maxPolls = 40;
-
-  let authToken = await getGoogleAuthToken();
 
   activeVideoPollTimer = setInterval(async () => {
     pollCount++;
@@ -819,38 +858,47 @@ async function pollVideoStatus(operationId, progressBubble, thread, backendUrl) 
       return;
     }
 
-    if (pollCount % 10 === 0) {
-      const refreshed = await getGoogleAuthToken();
-      if (refreshed) authToken = refreshed;
-    }
-
     try {
-      const headers = {};
-      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-      const resp = await fetch(`${backendUrl}/api/video-status/${encodeURIComponent(operationId)}`, { headers });
+      const url = `https://generativelanguage.googleapis.com/v1beta/${operationId}?key=${apiKey}`;
+      const resp = await fetch(url);
+      const data = await resp.json();
 
-      if (resp.status === 401) {
-        const refreshed = await getGoogleAuthToken();
-        if (refreshed) authToken = refreshed;
+      if (!resp.ok) {
+        const errMsg = data.error?.message || `Status check failed (${resp.status})`;
+        if (resp.status === 429) {
+          return;
+        }
+        clearInterval(activeVideoPollTimer);
+        activeVideoPollTimer = null;
+        progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${errMsg}</div>`;
         return;
       }
 
-      const data = await resp.json();
-
-      if (data.status === 'processing') {
-        const progress = data.progress || Math.min(pollCount * 5, 90);
+      if (!data.done) {
+        const pct = data.metadata?.percentComplete || Math.min(pollCount * 5, 90);
         const fill = progressBubble.querySelector('.video-progress-fill');
         const text = progressBubble.querySelector('.video-progress-text');
-        if (fill) fill.style.width = `${progress}%`;
-        if (text) text.textContent = `Rendering... ${progress}%`;
-      } else if (data.status === 'completed') {
+        if (fill) fill.style.width = `${pct}%`;
+        if (text) text.textContent = `Rendering... ${pct}%`;
+      } else {
         clearInterval(activeVideoPollTimer);
         activeVideoPollTimer = null;
-        await showVideoResult(progressBubble, data.videoUrl, thread);
-      } else if (data.status === 'error') {
-        clearInterval(activeVideoPollTimer);
-        activeVideoPollTimer = null;
-        progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${data.error || 'Video generation failed.'}</div>`;
+
+        const videos = data.response?.generateVideoResponse?.generatedSamples || [];
+        if (!videos.length) {
+          const errMsg = data.error?.message || 'Video generation failed — no output returned.';
+          progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${errMsg}</div>`;
+          return;
+        }
+
+        const videoUri = videos[0].video?.uri || '';
+        if (!videoUri) {
+          progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> No video URL returned.</div>`;
+          return;
+        }
+
+        const authedUrl = `${videoUri}${videoUri.includes('?') ? '&' : '?'}key=${apiKey}`;
+        showVideoResult(progressBubble, authedUrl, thread);
       }
     } catch (err) {
       console.log(`[SnapToAI Video] Poll error:`, err.message);
@@ -858,21 +906,14 @@ async function pollVideoStatus(operationId, progressBubble, thread, backendUrl) 
   }, 15000);
 }
 
-async function showVideoResult(bubble, videoUrl, thread) {
-  const backendUrl = 'https://www.snaptoai.com';
-  const fullVideoUrl = videoUrl.startsWith('http') ? videoUrl : `${backendUrl}${videoUrl}`;
-
-  const authToken = await getGoogleAuthToken();
-  const authParam = authToken ? `${fullVideoUrl.includes('?') ? '&' : '?'}token=${authToken}` : '';
-  const authenticatedUrl = `${fullVideoUrl}${authParam}`;
-
+function showVideoResult(bubble, videoUrl, thread) {
   bubble.innerHTML = `
     <div style="margin:8px 0;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
         <span style="font-size:18px;">🎬</span>
         <span style="font-size:13px;font-weight:600;color:#ffa500;">Video ready!</span>
       </div>
-      <video controls autoplay muted playsinline style="width:100%;max-width:480px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);" src="${authenticatedUrl}"></video>
+      <video controls autoplay muted playsinline style="width:100%;max-width:480px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);" src="${videoUrl}"></video>
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="video-save-btn" style="background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.3);color:#ffa500;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">💾 Save Video</button>
       </div>
@@ -881,7 +922,7 @@ async function showVideoResult(bubble, videoUrl, thread) {
 
   bubble.querySelector('.video-save-btn')?.addEventListener('click', () => {
     const a = document.createElement('a');
-    a.href = authenticatedUrl;
+    a.href = videoUrl;
     a.download = 'snaptoai-video.mp4';
     a.click();
   });
@@ -1648,6 +1689,9 @@ async function handleSend() {
   try {
     const modeConfig = AI_MODES[currentAiMode] || AI_MODES['vision'];
 
+    const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+    const apiKey = keyResult.geminiApiKey;
+
     if (modeConfig.type === 'gemini-video') {
       removeLoading();
       await startVideoGeneration(prompt, thread);
@@ -1658,9 +1702,6 @@ async function handleSend() {
       releaseRequestLock();
       return;
     }
-
-    const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
-    const apiKey = keyResult.geminiApiKey;
     
     if (!apiKey) {
       try {

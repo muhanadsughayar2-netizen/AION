@@ -3666,18 +3666,14 @@ if (modeSelect && modeDesc) {
 
 (async function checkVideoSupportPopup() {
   try {
-    const backendUrl = 'https://www.snaptoai.com';
     const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
-    const body = {};
-    if (keyResult.geminiApiKey) body.apiKey = keyResult.geminiApiKey;
-    const resp = await fetch(`${backendUrl}/api/check-video-support`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(8000)
-    });
+    const apiKey = keyResult.geminiApiKey;
+    if (!apiKey) return;
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { signal: AbortSignal.timeout(10000) });
+    if (!resp.ok) return;
     const data = await resp.json();
-    if (data.videoSupported) {
+    const hasVeo = (data.models || []).some(m => m.name && m.name.toLowerCase().includes('veo'));
+    if (hasVeo) {
       const videoOpt = document.getElementById('videoModeOption');
       if (videoOpt) videoOpt.style.display = '';
     }
