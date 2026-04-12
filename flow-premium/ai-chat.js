@@ -77,9 +77,13 @@ async function confirmPaidGeneration(mode, details) {
           message: 'This premium music request uses high-compute AI and is billed per request. Automatic retries are disabled so you are only charged once per click.'
         };
 
+    const spendLine = details?.cost
+      ? `Expected spend: ${details.cost}${details?.label ? ` for ${details.label}` : ''}.`
+      : 'Expected spend: shown as estimate.';
+
     titleEl.textContent = preset.title;
-    estimateEl.textContent = `Estimated cost: ${details?.cost || 'unknown'}`;
-    messageEl.textContent = preset.message;
+    estimateEl.textContent = `Estimated cost: ${details?.cost || 'unknown'} • ${spendLine}`;
+    messageEl.textContent = `${preset.message} ${spendLine}`;
     modal.style.display = 'block';
 
     const cleanup = (result) => {
