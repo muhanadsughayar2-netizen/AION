@@ -3,8 +3,12 @@ import html as html_escape_module
 import os
 import mimetypes
 import psycopg2
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
+import json
+import time
+import base64
+import uuid
 try:
     import google.generativeai as genai
 except Exception:
@@ -117,7 +121,21 @@ def init_db():
                 created_at TIMESTAMP DEFAULT NOW()
             )
         ''')
-        print('✅ users, user_activity, subscriptions, free_prompts tables ready')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS video_jobs (
+                id SERIAL PRIMARY KEY,
+                operation_id TEXT UNIQUE NOT NULL,
+                email TEXT,
+                prompt TEXT,
+                model_used VARCHAR(50),
+                status VARCHAR(20) DEFAULT 'processing',
+                video_url TEXT,
+                error_message TEXT,
+                created_at TIMESTAMP DEFAULT NOW(),
+                completed_at TIMESTAMP
+            )
+        ''')
+        print('✅ users, user_activity, subscriptions, free_prompts, video_jobs tables ready')
         # Add columns if missing (for existing tables)
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS browser_language VARCHAR(10)')
@@ -250,6 +268,231 @@ def check_video_support():
             "videoSupported": False,
             "error": str(e)
         }), 500
+
+OWNER_EMAILS_SET = {
+    'muhanadsughayar2@gmail.com',
+    'muhanadsughayar@gmail.com',
+    'muhanadsughayar1@gmail.com'
+}
+
+VIDEO_DAILY_LIMIT_FREE = 2
+VIDEO_DAILY_LIMIT_PAID = 10
+VIDEO_COOLDOWN_SECONDS = 300
+
+def get_user_video_stats(email):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        cur.execute(
+            "SELECT COUNT(*) FROM video_jobs WHERE email = %s AND created_at >= %s",
+            (email, today_start)
+        )
+        daily_count = cur.fetchone()[0]
+        cur.execute(
+            "SELECT MAX(created_at) FROM video_jobs WHERE email = %s",
+            (email,)
+        )
+        last_job_row = cur.fetchone()
+        last_job_time = last_job_row[0] if last_job_row and last_job_row[0] else None
+        cur.close()
+        conn.close()
+        return daily_count, last_job_time
+    except Exception as e:
+        print(f'[Video] Stats error: {e}')
+        return 0, None
+
+def check_user_subscription(email):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT status, plan_type FROM subscriptions WHERE email = %s",
+            (email,)
+        )
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row and row[0] in ('active', 'subscribed'):
+            return True, row[1]
+        return False, None
+    except Exception:
+        return False, None
+
+@app.route('/api/generate-video', methods=['POST'])
+def generate_video():
+    if not genai or not os.environ.get('GEMINI_API_KEY'):
+        return jsonify({"error": "Video generation not configured"}), 500
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Missing request body"}), 400
+
+    prompt = data.get('prompt', '').strip()
+    email = data.get('email', '').strip().lower()
+    image_base64 = data.get('image', '')
+
+    if not prompt:
+        return jsonify({"error": "Prompt is required"}), 400
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+
+    is_owner = email in OWNER_EMAILS_SET
+    is_subscribed, plan_type = check_user_subscription(email) if not is_owner else (True, 'owner')
+
+    if not is_owner:
+        daily_count, last_job_time = get_user_video_stats(email)
+        daily_limit = VIDEO_DAILY_LIMIT_PAID if is_subscribed else VIDEO_DAILY_LIMIT_FREE
+
+        if daily_count >= daily_limit:
+            return jsonify({
+                "error": f"Daily limit reached ({daily_limit} videos/day). {'Upgrade for more!' if not is_subscribed else 'Try again tomorrow.'}",
+                "limitReached": True
+            }), 429
+
+        if last_job_time:
+            elapsed = (datetime.utcnow() - last_job_time).total_seconds()
+            if elapsed < VIDEO_COOLDOWN_SECONDS:
+                remaining = int(VIDEO_COOLDOWN_SECONDS - elapsed)
+                return jsonify({
+                    "error": f"Please wait {remaining} seconds before generating another video.",
+                    "cooldown": remaining
+                }), 429
+
+    model_name = 'veo-3.0-generate-preview' if is_subscribed else 'veo-2.0-generate-001'
+
+    try:
+        api_key = os.environ.get('GEMINI_API_KEY')
+        url = f'https://generativelanguage.googleapis.com/v1beta/models/{model_name}:predictLongRunning?key={api_key}'
+
+        request_body = {
+            "instances": [{
+                "prompt": prompt
+            }],
+            "parameters": {
+                "aspectRatio": "16:9",
+                "sampleCount": 1,
+                "durationSeconds": 8,
+                "personGeneration": "allow_all"
+            }
+        }
+
+        if image_base64:
+            clean_b64 = image_base64.split(',')[1] if ',' in image_base64 else image_base64
+            request_body["instances"][0]["image"] = {
+                "bytesBase64Encoded": clean_b64
+            }
+
+        resp = requests.post(url, json=request_body, timeout=30)
+        resp_data = resp.json()
+
+        if not resp.ok:
+            error_msg = resp_data.get('error', {}).get('message', f'API error {resp.status_code}')
+            print(f'[Video] API error: {error_msg}')
+            return jsonify({"error": error_msg}), resp.status_code
+
+        operation_name = resp_data.get('name', '')
+        if not operation_name:
+            return jsonify({"error": "No operation ID returned from API"}), 500
+
+        try:
+            conn = get_db()
+            cur = conn.cursor()
+            cur.execute(
+                """INSERT INTO video_jobs (operation_id, email, prompt, model_used, status)
+                   VALUES (%s, %s, %s, %s, 'processing')""",
+                (operation_name, email, prompt[:500], model_name)
+            )
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception as db_err:
+            print(f'[Video] DB insert error: {db_err}')
+
+        return jsonify({
+            "operationId": operation_name,
+            "model": model_name,
+            "status": "processing"
+        })
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Request timed out. Please try again."}), 504
+    except Exception as e:
+        print(f'[Video] Generation error: {e}')
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/video-status/<path:operation_id>', methods=['GET'])
+def video_status(operation_id):
+    if not os.environ.get('GEMINI_API_KEY'):
+        return jsonify({"error": "Not configured"}), 500
+
+    try:
+        api_key = os.environ.get('GEMINI_API_KEY')
+        url = f'https://generativelanguage.googleapis.com/v1beta/{operation_id}?key={api_key}'
+
+        resp = requests.get(url, timeout=15)
+        resp_data = resp.json()
+
+        if not resp.ok:
+            error_msg = resp_data.get('error', {}).get('message', f'Status check failed ({resp.status_code})')
+            return jsonify({"status": "error", "error": error_msg}), resp.status_code
+
+        done = resp_data.get('done', False)
+
+        if not done:
+            metadata = resp_data.get('metadata', {})
+            return jsonify({
+                "status": "processing",
+                "progress": metadata.get('percentComplete', 0)
+            })
+
+        response = resp_data.get('response', {})
+        videos = response.get('generateVideoResponse', {}).get('generatedSamples', [])
+
+        if not videos:
+            error_info = resp_data.get('error', {})
+            error_msg = error_info.get('message', 'Video generation failed — no output returned.')
+            try:
+                conn = get_db()
+                cur = conn.cursor()
+                cur.execute(
+                    "UPDATE video_jobs SET status='failed', error_message=%s, completed_at=NOW() WHERE operation_id=%s",
+                    (error_msg, operation_id)
+                )
+                conn.commit()
+                cur.close()
+                conn.close()
+            except Exception:
+                pass
+            return jsonify({"status": "error", "error": error_msg})
+
+        video_uri = videos[0].get('video', {}).get('uri', '')
+
+        if video_uri and api_key:
+            separator = '&' if '?' in video_uri else '?'
+            video_uri = f'{video_uri}{separator}key={api_key}'
+
+        try:
+            conn = get_db()
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE video_jobs SET status='completed', video_url=%s, completed_at=NOW() WHERE operation_id=%s",
+                (video_uri, operation_id)
+            )
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception:
+            pass
+
+        return jsonify({
+            "status": "completed",
+            "videoUrl": video_uri
+        })
+
+    except Exception as e:
+        print(f'[Video] Status check error: {e}')
+        return jsonify({"status": "error", "error": str(e)}), 500
 
 
 # Supported languages

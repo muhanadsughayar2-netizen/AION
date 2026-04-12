@@ -500,6 +500,12 @@
       color: #00ff88;
       box-shadow: 0 0 12px rgba(0,255,136,0.2), 0 0 4px rgba(0,255,136,0.1) inset;
     }
+    .mode-btn[data-mode="video"]::before { background: radial-gradient(ellipse at center, rgba(255,165,0,0.15), transparent 70%); }
+    .mode-btn[data-mode="video"].active {
+      border-color: rgba(255,165,0,0.5);
+      color: #ffa500;
+      box-shadow: 0 0 12px rgba(255,165,0,0.2), 0 0 4px rgba(255,165,0,0.1) inset;
+    }
     .mode-btn .mode-emoji {
       display: inline-block;
       transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);

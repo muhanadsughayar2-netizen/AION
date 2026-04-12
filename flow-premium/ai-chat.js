@@ -371,6 +371,12 @@ const AI_MODES = {
     type: 'gemini-audio',
     placeholder: 'Describe the music you want (mood, genre, tempo)...',
     welcome: '🎵 Music mode — describe the vibe and I\'ll compose it!'
+  },
+  'video': {
+    model: 'veo-2.0-generate-001',
+    type: 'gemini-video',
+    placeholder: 'Describe the video you want to create...',
+    welcome: '🎬 Video mode — describe a scene and I\'ll bring it to life!'
   }
 };
 
@@ -387,13 +393,15 @@ function getCurrentModeModel() {
 const MODE_COLORS = {
   'vision': 'rgba(0,217,255,0.06)',
   'image': 'rgba(255,107,237,0.06)',
-  'music': 'rgba(0,255,136,0.06)'
+  'music': 'rgba(0,255,136,0.06)',
+  'video': 'rgba(255,165,0,0.06)'
 };
 
 const MODEL_NAMES = {
   'vision': { name: 'Gemini 3', sub: 'Flash (Preview)', color: '#00d9ff' },
   'image': { name: 'Nano', sub: 'Banana', color: '#ff6bed' },
-  'music': { name: 'Lyria', sub: '', color: '#00ff88' }
+  'music': { name: 'Lyria', sub: '', color: '#00ff88' },
+  'video': { name: 'Veo', sub: '', color: '#ffa500' }
 };
 
 function updateModelHeader(mode) {
@@ -444,7 +452,7 @@ function initModeButtons() {
         const notice = document.createElement('div');
         notice.className = 'chat-bubble ai mode-switch-notice';
         notice.style.cssText = 'font-size: 12px; padding: 10px 16px; border-left: 3px solid; margin: 4px 0;';
-        const borderColors = { 'vision': '#00d9ff', 'image': '#ff6bed', 'music': '#00ff88' };
+        const borderColors = { 'vision': '#00d9ff', 'image': '#ff6bed', 'music': '#00ff88', 'video': '#ffa500' };
         notice.style.borderLeftColor = borderColors[mode] || '#00d9ff';
         notice.textContent = cfg.welcome;
         thread.appendChild(notice);
@@ -454,6 +462,9 @@ function initModeButtons() {
         }
         if (mode === 'image') {
           showImageStudio(thread);
+        }
+        if (mode === 'video') {
+          showVideoStudio(thread);
         }
         
         thread.scrollTop = thread.scrollHeight;
@@ -478,6 +489,23 @@ function initModeButtons() {
 }
 
 initModeButtons();
+
+(async function checkVideoSupport() {
+  try {
+    const backendUrl = 'https://www.snaptoai.com';
+    const resp = await fetch(`${backendUrl}/api/check-video-support`, { signal: AbortSignal.timeout(8000) });
+    const data = await resp.json();
+    if (data.videoSupported) {
+      const videoBtn = document.getElementById('videoModeBtn');
+      if (videoBtn) videoBtn.style.display = '';
+      console.log('[SnapToAI] Video mode enabled — Veo models available');
+    } else {
+      console.log('[SnapToAI] Video mode hidden — no Veo models found');
+    }
+  } catch (e) {
+    console.log('[SnapToAI] Video support check skipped:', e.message);
+  }
+})();
 
 function showImageStudio(thread) {
   const existing = thread.querySelector('.image-studio');
@@ -553,6 +581,236 @@ function showImageStudio(thread) {
     createBtn.style.pointerEvents = 'auto';
     studio.querySelector('.studio-surprise-btn').textContent = '🎲 Another!';
   });
+}
+
+let activeVideoPollTimer = null;
+
+function showVideoStudio(thread) {
+  const existing = thread.querySelector('.video-studio');
+  if (existing) existing.remove();
+
+  const studio = document.createElement('div');
+  studio.className = 'chat-bubble ai video-studio';
+  studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none; max-width: 100%; width: 100%;';
+
+  const hasScreenshots = typeof currentImages !== 'undefined' && currentImages.length > 0;
+
+  studio.innerHTML = `
+    <div style="background:linear-gradient(135deg, rgba(255,165,0,0.05), rgba(200,120,0,0.02));border:1px solid rgba(255,165,0,0.15);border-radius:14px;padding:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:20px;">🎬</span>
+          <span style="font-size:14px;font-weight:700;color:#e8eef4;">Video Studio</span>
+        </div>
+        <button class="studio-surprise-btn" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(255,165,0,0.25);background:rgba(255,165,0,0.06);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">🎲 Surprise Me</button>
+      </div>
+      <textarea class="studio-desc" placeholder="Describe the video scene you want to create..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;"></textarea>
+      ${hasScreenshots ? `
+      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;font-size:12px;color:#aabbcc;">
+        <input type="checkbox" class="studio-use-screenshot" style="accent-color:#ffa500;" checked>
+        <span>📸 Use loaded screenshot as starting frame</span>
+      </label>` : ''}
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+        <span style="font-size:10px;color:#667788;">⏱ ~1-2 min render time</span>
+        <span style="font-size:10px;color:#667788;">•</span>
+        <span style="font-size:10px;color:#667788;">8s clip</span>
+      </div>
+      <button class="studio-create-btn" style="width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffa500,#cc8400);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;opacity:0.4;pointer-events:none;">🎬 Generate Video</button>
+    </div>
+  `;
+
+  thread.appendChild(studio);
+
+  const descInput = studio.querySelector('.studio-desc');
+  const createBtn = studio.querySelector('.studio-create-btn');
+
+  descInput.addEventListener('input', () => {
+    const hasText = descInput.value.trim().length > 0;
+    createBtn.style.opacity = hasText ? '1' : '0.4';
+    createBtn.style.pointerEvents = hasText ? 'auto' : 'none';
+    descInput.style.height = '48px';
+    descInput.style.height = Math.max(48, descInput.scrollHeight) + 'px';
+  });
+  descInput.addEventListener('focus', () => { descInput.style.borderColor = 'rgba(255,165,0,0.4)'; });
+  descInput.addEventListener('blur', () => { descInput.style.borderColor = 'rgba(255,165,0,0.15)'; });
+
+  createBtn.addEventListener('click', async () => {
+    const desc = descInput.value.trim();
+    if (!desc) return;
+
+    studio.style.opacity = '0.5';
+    studio.style.pointerEvents = 'none';
+
+    const useScreenshot = studio.querySelector('.studio-use-screenshot');
+    const includeImage = useScreenshot && useScreenshot.checked && currentImages.length > 0;
+
+    const inputEl = document.getElementById('chatInput');
+    if (inputEl) {
+      inputEl.value = desc;
+      document.getElementById('sendBtn')?.click();
+    }
+  });
+
+  const surpriseIdeas = [
+    'A drone shot sweeping over a misty mountain range at sunrise with golden light',
+    'A timelapse of a flower blooming in a sun-drenched garden',
+    'A slow-motion shot of ocean waves crashing on rocky cliffs at sunset',
+    'A cinematic walk through a neon-lit cyberpunk city at night in the rain',
+    'A cozy cabin in a snowy forest with smoke rising from the chimney',
+    'A majestic eagle soaring over a vast canyon with dramatic clouds',
+    'Northern lights dancing over a frozen lake with reflections',
+    'A bustling Tokyo street crossing with lights and people in fast motion',
+    'A submarine journey through a colorful coral reef with tropical fish',
+    'A spaceship launching into a star-filled sky with engine trails'
+  ];
+
+  studio.querySelector('.studio-surprise-btn').addEventListener('click', () => {
+    const idea = surpriseIdeas[Math.floor(Math.random() * surpriseIdeas.length)];
+    descInput.value = idea;
+    createBtn.style.opacity = '1';
+    createBtn.style.pointerEvents = 'auto';
+    studio.querySelector('.studio-surprise-btn').textContent = '🎲 Another!';
+  });
+}
+
+async function getSignedInEmailForVideo() {
+  try {
+    const result = await chrome.storage.local.get(['userEmail']);
+    return result.userEmail || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+async function startVideoGeneration(prompt, thread) {
+  const email = await getSignedInEmailForVideo();
+  if (!email) {
+    addBubble('Please sign in with Google to use video generation.', 'error');
+    return;
+  }
+
+  const useScreenshot = document.querySelector('.studio-use-screenshot');
+  const includeImage = useScreenshot && useScreenshot.checked && typeof currentImages !== 'undefined' && currentImages.length > 0;
+  let imageData = '';
+  if (includeImage) {
+    imageData = currentImages[0];
+  }
+
+  const backendUrl = 'https://www.snaptoai.com';
+
+  const progressBubble = document.createElement('div');
+  progressBubble.className = 'chat-bubble ai video-progress';
+  progressBubble.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <span style="font-size:18px;">🎬</span>
+      <span style="font-size:13px;font-weight:600;color:#ffa500;">Rendering your video...</span>
+    </div>
+    <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">This usually takes 1-2 minutes. You can keep chatting!</div>
+    <div class="video-progress-bar" style="width:100%;height:4px;background:rgba(255,165,0,0.1);border-radius:2px;overflow:hidden;">
+      <div class="video-progress-fill" style="width:5%;height:100%;background:linear-gradient(90deg,#ffa500,#ffcc00);border-radius:2px;transition:width 0.5s ease;"></div>
+    </div>
+    <div class="video-progress-text" style="font-size:10px;color:#667788;margin-top:6px;">Starting...</div>
+  `;
+  thread.appendChild(progressBubble);
+  thread.scrollTop = thread.scrollHeight;
+
+  try {
+    const resp = await fetch(`${backendUrl}/api/generate-video`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: prompt,
+        email: email,
+        image: imageData
+      })
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      progressBubble.innerHTML = `
+        <div style="color:#ff6b6b;font-size:13px;">
+          <span style="font-size:16px;">❌</span> ${data.error || 'Video generation failed.'}
+          ${data.cooldown ? `<div style="margin-top:6px;font-size:11px;color:#8899aa;">Cooldown: ${Math.ceil(data.cooldown / 60)} min remaining</div>` : ''}
+        </div>
+      `;
+      return;
+    }
+
+    const operationId = data.operationId;
+    console.log(`[SnapToAI Video] Job started: ${operationId}`);
+    pollVideoStatus(operationId, progressBubble, thread, backendUrl);
+
+  } catch (err) {
+    console.log(`[SnapToAI Video] Error:`, err.message);
+    progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> Connection failed — please check your internet and try again.</div>`;
+  }
+}
+
+function pollVideoStatus(operationId, progressBubble, thread, backendUrl) {
+  if (activeVideoPollTimer) clearInterval(activeVideoPollTimer);
+
+  let pollCount = 0;
+  const maxPolls = 40;
+
+  activeVideoPollTimer = setInterval(async () => {
+    pollCount++;
+
+    if (pollCount > maxPolls) {
+      clearInterval(activeVideoPollTimer);
+      activeVideoPollTimer = null;
+      progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">⏰</span> Video generation timed out. Please try again.</div>`;
+      return;
+    }
+
+    try {
+      const resp = await fetch(`${backendUrl}/api/video-status/${encodeURIComponent(operationId)}`);
+      const data = await resp.json();
+
+      if (data.status === 'processing') {
+        const progress = data.progress || Math.min(pollCount * 5, 90);
+        const fill = progressBubble.querySelector('.video-progress-fill');
+        const text = progressBubble.querySelector('.video-progress-text');
+        if (fill) fill.style.width = `${progress}%`;
+        if (text) text.textContent = `Rendering... ${progress}%`;
+      } else if (data.status === 'completed') {
+        clearInterval(activeVideoPollTimer);
+        activeVideoPollTimer = null;
+        showVideoResult(progressBubble, data.videoUrl, thread);
+      } else if (data.status === 'error') {
+        clearInterval(activeVideoPollTimer);
+        activeVideoPollTimer = null;
+        progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${data.error || 'Video generation failed.'}</div>`;
+      }
+    } catch (err) {
+      console.log(`[SnapToAI Video] Poll error:`, err.message);
+    }
+  }, 15000);
+}
+
+function showVideoResult(bubble, videoUrl, thread) {
+  bubble.innerHTML = `
+    <div style="margin:8px 0;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:18px;">🎬</span>
+        <span style="font-size:13px;font-weight:600;color:#ffa500;">Video ready!</span>
+      </div>
+      <video controls autoplay muted playsinline style="width:100%;max-width:480px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);" src="${videoUrl}"></video>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="video-save-btn" style="background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.3);color:#ffa500;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">💾 Save Video</button>
+      </div>
+    </div>
+  `;
+
+  bubble.querySelector('.video-save-btn')?.addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.href = videoUrl;
+    a.download = 'snaptoai-video.mp4';
+    a.click();
+  });
+
+  thread.scrollTop = thread.scrollHeight;
+  addBubbleActions(bubble, 'Generated video');
 }
 
 function showSongStudio(thread) {
@@ -1537,7 +1795,17 @@ async function handleSend() {
       return bubble;
     };
 
-    if (modeConfig.type === 'gemini-image') {
+    if (modeConfig.type === 'gemini-video') {
+      removeLoading();
+      await startVideoGeneration(prompt, thread);
+      conversationHistory.push({ role: 'user', text: prompt });
+      conversationHistory.push({ role: 'model', text: '[Video generation started]' });
+      sendBtn.disabled = false;
+      input.focus();
+      releaseRequestLock();
+      return;
+
+    } else if (modeConfig.type === 'gemini-image') {
       // === IMAGE GENERATION (via generateContent with responseModalities) ===
       const imageModels = [
         'gemini-2.5-flash-image',

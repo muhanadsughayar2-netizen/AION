@@ -3655,11 +3655,26 @@ if (modeSelect && modeDesc) {
     'vision': 'Powered by Gemini 2.0 Flash',
     'image': 'Powered by Imagen 3',
     'music': 'Powered by Lyria — 30-sec clips',
+    'video': 'Powered by Veo — 8-sec clips',
   };
   modeSelect.addEventListener('change', () => {
     modeDesc.textContent = descriptions[modeSelect.value] || '';
   });
 }
+
+(async function checkVideoSupportPopup() {
+  try {
+    const backendUrl = 'https://www.snaptoai.com';
+    const resp = await fetch(`${backendUrl}/api/check-video-support`, { signal: AbortSignal.timeout(8000) });
+    const data = await resp.json();
+    if (data.videoSupported) {
+      const videoOpt = document.getElementById('videoModeOption');
+      if (videoOpt) videoOpt.style.display = '';
+    }
+  } catch (e) {
+    console.log('[SnapToAI] Video support check skipped');
+  }
+})();
 
 // ===== SUBSCRIPTION MANAGEMENT =====
 const subscriptionModal = document.getElementById('subscriptionModal');
