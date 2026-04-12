@@ -686,7 +686,13 @@ async function getGoogleAuthToken() {
     return await new Promise((resolve, reject) => {
       chrome.identity.getAuthToken({ interactive: false }, (token) => {
         if (chrome.runtime.lastError || !token) {
-          reject(new Error(chrome.runtime.lastError?.message || 'No auth token'));
+          chrome.identity.getAuthToken({ interactive: true }, (token2) => {
+            if (chrome.runtime.lastError || !token2) {
+              reject(new Error(chrome.runtime.lastError?.message || 'No auth token'));
+            } else {
+              resolve(token2);
+            }
+          });
         } else {
           resolve(token);
         }
