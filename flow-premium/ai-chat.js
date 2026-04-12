@@ -1939,7 +1939,7 @@ async function handleSend() {
         if (part.inlineData) {
           hasImage = true;
           rawImageSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-          htmlContent += `<div style="margin:10px 0;" class="generated-image-container"><img class="generated-img" src="${rawImageSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);" onclick="const a=document.createElement('a');a.href=this.src;a.download='snaptoai-image.png';a.click();" title="Click to save full size"><div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"><button class="img-save-btn" style="background:rgba(255,107,237,0.15);border:1px solid rgba(255,107,237,0.3);color:#ff6bed;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Image</button></div></div>`;
+          htmlContent += `<div style="margin:10px 0;" class="generated-image-container"><img class="generated-img" src="${rawImageSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);" title="Click to save full size"><div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"><button class="img-save-btn" style="background:rgba(255,107,237,0.15);border:1px solid rgba(255,107,237,0.3);color:#ff6bed;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Image</button></div></div>`;
         }
       }
       
@@ -1952,6 +1952,14 @@ async function handleSend() {
       
       responseBubble.innerHTML = htmlContent;
       
+      responseBubble.querySelectorAll('.generated-img').forEach(img => {
+        img.addEventListener('click', () => {
+          const a = document.createElement('a');
+          a.href = img.src;
+          a.download = 'snaptoai-image.png';
+          a.click();
+        });
+      });
       responseBubble.querySelectorAll('.img-save-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const img = btn.closest('.generated-image-container')?.querySelector('img') || btn.closest('div').parentElement.querySelector('img');
