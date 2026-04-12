@@ -802,7 +802,12 @@ async function startVideoGeneration(prompt, thread) {
     if (includeImage && currentImages[0]) {
       const imgData = currentImages[0];
       const cleanB64 = imgData.includes(',') ? imgData.split(',')[1] : imgData;
-      requestBody.instances[0].image = { bytesBase64Encoded: cleanB64 };
+      let mimeType = 'image/png';
+      if (imgData.startsWith('data:')) {
+        const match = imgData.match(/^data:(image\/[a-zA-Z+]+);/);
+        if (match) mimeType = match[1];
+      }
+      requestBody.instances[0].image = { bytesBase64Encoded: cleanB64, mimeType: mimeType };
     }
 
     console.log(`[SnapToAI Video] Starting generation with ${modelName}`);
