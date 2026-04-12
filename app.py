@@ -566,7 +566,9 @@ def video_download(safe_op_id):
 
         job_email = row[1].lower() if row[1] else ''
         caller_email = get_verified_email(request)
-        if job_email and caller_email and caller_email != job_email:
+        if not caller_email:
+            return jsonify({"error": "Authentication required"}), 401
+        if job_email and caller_email != job_email:
             return jsonify({"error": "Access denied"}), 403
 
         video_uri = row[0]

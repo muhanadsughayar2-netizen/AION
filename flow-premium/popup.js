@@ -3665,7 +3665,12 @@ if (modeSelect && modeDesc) {
 (async function checkVideoSupportPopup() {
   try {
     const backendUrl = 'https://www.snaptoai.com';
-    const resp = await fetch(`${backendUrl}/api/check-video-support`, { signal: AbortSignal.timeout(8000) });
+    let checkUrl = `${backendUrl}/api/check-video-support`;
+    const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+    if (keyResult.geminiApiKey) {
+      checkUrl += `?apiKey=${encodeURIComponent(keyResult.geminiApiKey)}`;
+    }
+    const resp = await fetch(checkUrl, { signal: AbortSignal.timeout(8000) });
     const data = await resp.json();
     if (data.videoSupported) {
       const videoOpt = document.getElementById('videoModeOption');
