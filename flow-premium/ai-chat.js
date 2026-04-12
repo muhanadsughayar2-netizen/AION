@@ -914,16 +914,36 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         clearInterval(activeVideoPollTimer);
         activeVideoPollTimer = null;
 
-        const videos = data.response?.generateVideoResponse?.generatedSamples || [];
-        if (!videos.length) {
-          const errMsg = data.error?.message || 'Video generation failed — no output returned.';
+        console.log('[SnapToAI Video] Done response:', JSON.stringify(data).substring(0, 1000));
+
+        if (data.error) {
+          const errMsg = data.error.message || 'Video generation failed.';
           progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${errMsg}</div>`;
           return;
         }
 
-        const videoUri = videos[0].video?.uri || '';
+        let videoUri = '';
+        const gvr = data.response?.generateVideoResponse;
+        if (gvr?.generatedSamples?.[0]?.video?.uri) {
+          videoUri = gvr.generatedSamples[0].video.uri;
+        } else if (gvr?.generatedSamples?.[0]?.uri) {
+          videoUri = gvr.generatedSamples[0].uri;
+        }
+        if (!videoUri && data.response?.videos?.[0]?.uri) {
+          videoUri = data.response.videos[0].uri;
+        }
+        if (!videoUri && data.response?.generatedSamples?.[0]?.video?.uri) {
+          videoUri = data.response.generatedSamples[0].video.uri;
+        }
         if (!videoUri) {
-          progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> No video URL returned.</div>`;
+          const respStr = JSON.stringify(data.response || data).substring(0, 300);
+          console.log('[SnapToAI Video] Could not find video URI in:', respStr);
+          const filtered = data.response?.generateVideoResponse?.raiMediaFilteredReasons;
+          if (filtered && filtered.length > 0) {
+            progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">🛡️</span> Video was blocked by safety filters. Try a different prompt.</div>`;
+          } else {
+            progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> Video generation completed but no video was returned. This can happen when the prompt triggers content filters. Try rephrasing your description.</div>`;
+          }
           return;
         }
 
