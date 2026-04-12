@@ -82,7 +82,7 @@ async function confirmPaidGeneration(mode, details) {
       : 'Expected spend: shown as estimate.';
 
     titleEl.textContent = preset.title;
-    estimateEl.textContent = `Estimated cost: ${details?.cost || 'unknown'} • ${spendLine}`;
+    estimateEl.textContent = `Estimated cost: ${details?.cost || 'unknown'}`;
     messageEl.textContent = `${preset.message} ${spendLine}`;
     modal.style.display = 'block';
 
