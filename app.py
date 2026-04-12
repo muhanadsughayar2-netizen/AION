@@ -279,6 +279,28 @@ VIDEO_DAILY_LIMIT_FREE = 2
 VIDEO_DAILY_LIMIT_PAID = 10
 VIDEO_COOLDOWN_SECONDS = 300
 
+def verify_google_token(token):
+    try:
+        resp = requests.get(
+            f'https://oauth2.googleapis.com/tokeninfo?access_token={token}',
+            timeout=5
+        )
+        if resp.ok:
+            data = resp.json()
+            return data.get('email', '').lower()
+        return None
+    except Exception:
+        return None
+
+def get_verified_email(req):
+    auth_header = req.headers.get('Authorization', '')
+    if auth_header.startswith('Bearer '):
+        token = auth_header[7:]
+        verified_email = verify_google_token(token)
+        if verified_email:
+            return verified_email
+    return None
+
 def get_user_video_stats(email):
     try:
         conn = get_db()
@@ -329,13 +351,14 @@ def generate_video():
         return jsonify({"error": "Missing request body"}), 400
 
     prompt = data.get('prompt', '').strip()
-    email = data.get('email', '').strip().lower()
     image_base64 = data.get('image', '')
 
     if not prompt:
         return jsonify({"error": "Prompt is required"}), 400
+
+    email = get_verified_email(request)
     if not email:
-        return jsonify({"error": "Email is required"}), 400
+        return jsonify({"error": "Authentication required. Please sign in with Google."}), 401
 
     is_owner = email in OWNER_EMAILS_SET
     is_subscribed, plan_type = check_user_subscription(email) if not is_owner else (True, 'owner')
@@ -468,10 +491,6 @@ def video_status(operation_id):
 
         video_uri = videos[0].get('video', {}).get('uri', '')
 
-        if video_uri and api_key:
-            separator = '&' if '?' in video_uri else '?'
-            video_uri = f'{video_uri}{separator}key={api_key}'
-
         try:
             conn = get_db()
             cur = conn.cursor()
@@ -485,14 +504,61 @@ def video_status(operation_id):
         except Exception:
             pass
 
+        safe_op_id = operation_id.replace('/', '__')
+        proxy_url = f'/api/video-download/{safe_op_id}'
+
         return jsonify({
             "status": "completed",
-            "videoUrl": video_uri
+            "videoUrl": proxy_url
         })
 
     except Exception as e:
         print(f'[Video] Status check error: {e}')
         return jsonify({"status": "error", "error": str(e)}), 500
+
+@app.route('/api/video-download/<path:safe_op_id>', methods=['GET'])
+def video_download(safe_op_id):
+    operation_id = safe_op_id.replace('__', '/')
+
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT video_url FROM video_jobs WHERE operation_id = %s AND status = 'completed'",
+            (operation_id,)
+        )
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if not row or not row[0]:
+            return jsonify({"error": "Video not found"}), 404
+
+        video_uri = row[0]
+        api_key = os.environ.get('GEMINI_API_KEY')
+        if api_key:
+            separator = '&' if '?' in video_uri else '?'
+            authenticated_url = f'{video_uri}{separator}key={api_key}'
+        else:
+            authenticated_url = video_uri
+
+        video_resp = requests.get(authenticated_url, timeout=30, stream=True)
+        if not video_resp.ok:
+            return jsonify({"error": "Failed to fetch video"}), 502
+
+        content_type = video_resp.headers.get('Content-Type', 'video/mp4')
+
+        return Response(
+            video_resp.iter_content(chunk_size=8192),
+            content_type=content_type,
+            headers={
+                'Access-Control-Allow-Origin': '*',
+                'Cache-Control': 'public, max-age=3600'
+            }
+        )
+    except Exception as e:
+        print(f'[Video] Download proxy error: {e}')
+        return jsonify({"error": "Failed to download video"}), 500
 
 
 # Supported languages

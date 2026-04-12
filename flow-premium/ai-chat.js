@@ -673,18 +673,25 @@ function showVideoStudio(thread) {
   });
 }
 
-async function getSignedInEmailForVideo() {
+async function getGoogleAuthToken() {
   try {
-    const result = await chrome.storage.local.get(['userEmail']);
-    return result.userEmail || '';
+    return await new Promise((resolve, reject) => {
+      chrome.identity.getAuthToken({ interactive: false }, (token) => {
+        if (chrome.runtime.lastError || !token) {
+          reject(new Error(chrome.runtime.lastError?.message || 'No auth token'));
+        } else {
+          resolve(token);
+        }
+      });
+    });
   } catch (e) {
-    return '';
+    return null;
   }
 }
 
 async function startVideoGeneration(prompt, thread) {
-  const email = await getSignedInEmailForVideo();
-  if (!email) {
+  let authToken = await getGoogleAuthToken();
+  if (!authToken) {
     addBubble('Please sign in with Google to use video generation.', 'error');
     return;
   }
@@ -717,10 +724,12 @@ async function startVideoGeneration(prompt, thread) {
   try {
     const resp = await fetch(`${backendUrl}/api/generate-video`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
       body: JSON.stringify({
         prompt: prompt,
-        email: email,
         image: imageData
       })
     });
