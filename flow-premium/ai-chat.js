@@ -820,7 +820,7 @@ async function startVideoGeneration(prompt, thread) {
         aspectRatio: '16:9',
         sampleCount: 1,
         durationSeconds: selectedVideoDuration,
-        personGeneration: 'allow_all'
+        personGeneration: 'allow_adult'
       }
     };
 
