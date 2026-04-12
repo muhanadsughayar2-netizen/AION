@@ -606,6 +606,7 @@ const VEO_MODELS = [
 
 let selectedVeoModel = 'veo-3.1-fast-generate-preview';
 let selectedVideoDuration = 8;
+let selectedClipCount = 1;
 let userAvailableVeoModels = [];
 
 function showVideoStudio(thread) {
@@ -638,6 +639,12 @@ function showVideoStudio(thread) {
         <button class="veo-dur-btn" data-dur="6" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">6s</button>
         <button class="veo-dur-btn selected" data-dur="8" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">8s</button>
       </div>
+      <div class="veo-clips-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+        <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Clips (auto-stitched):</span>
+        <button class="veo-clip-btn selected" data-clips="1" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">1x</button>
+        <button class="veo-clip-btn" data-clips="2" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">2x</button>
+        <button class="veo-clip-btn" data-clips="3" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">3x</button>
+      </div>
       <textarea class="studio-desc" placeholder="Describe the video scene you want to create..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;"></textarea>
       ${hasScreenshots ? `
       <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;font-size:12px;color:#aabbcc;">
@@ -645,9 +652,9 @@ function showVideoStudio(thread) {
         <span>📸 Use loaded screenshot as starting frame</span>
       </label>` : ''}
       <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
-        <span style="font-size:10px;color:#667788;">⏱ ~1-2 min render time</span>
+        <span style="font-size:10px;color:#667788;">⏱ ~1-2 min per clip</span>
         <span style="font-size:10px;color:#667788;">•</span>
-        <span class="studio-dur-label" style="font-size:10px;color:#667788;">8s clip</span>
+        <span class="studio-dur-label" style="font-size:10px;color:#667788;">8s total</span>
       </div>
       <button class="studio-create-btn" style="width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffa500,#cc8400);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;opacity:0.4;pointer-events:none;">🎬 Generate Video</button>
     </div>
@@ -668,6 +675,12 @@ function showVideoStudio(thread) {
   descInput.addEventListener('focus', () => { descInput.style.borderColor = 'rgba(255,165,0,0.4)'; });
   descInput.addEventListener('blur', () => { descInput.style.borderColor = 'rgba(255,165,0,0.15)'; });
 
+  function updateDurLabel() {
+    const durLabel = studio.querySelector('.studio-dur-label');
+    const total = selectedVideoDuration * selectedClipCount;
+    if (durLabel) durLabel.textContent = selectedClipCount > 1 ? `${total}s total (${selectedClipCount} x ${selectedVideoDuration}s)` : `${total}s total`;
+  }
+
   studio.querySelectorAll('.veo-dur-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       studio.querySelectorAll('.veo-dur-btn').forEach(b => {
@@ -681,8 +694,24 @@ function showVideoStudio(thread) {
       btn.style.color = '#ffa500';
       btn.classList.add('selected');
       selectedVideoDuration = parseInt(btn.dataset.dur);
-      const durLabel = studio.querySelector('.studio-dur-label');
-      if (durLabel) durLabel.textContent = `${selectedVideoDuration}s clip`;
+      updateDurLabel();
+    });
+  });
+
+  studio.querySelectorAll('.veo-clip-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      studio.querySelectorAll('.veo-clip-btn').forEach(b => {
+        b.style.border = '1px solid rgba(255,165,0,0.2)';
+        b.style.background = 'rgba(255,165,0,0.04)';
+        b.style.color = '#aabbcc';
+        b.classList.remove('selected');
+      });
+      btn.style.border = '1px solid rgba(255,165,0,0.5)';
+      btn.style.background = 'rgba(255,165,0,0.15)';
+      btn.style.color = '#ffa500';
+      btn.classList.add('selected');
+      selectedClipCount = parseInt(btn.dataset.clips);
+      updateDurLabel();
     });
   });
 
@@ -794,24 +823,60 @@ async function startVideoGeneration(prompt, thread) {
   const includeImage = useScreenshot && useScreenshot.checked && typeof currentImages !== 'undefined' && currentImages.length > 0;
 
   const modelName = selectedVeoModel || 'veo-3.1-fast-generate-preview';
+  const clipCount = selectedClipCount || 1;
+  const totalDur = selectedVideoDuration * clipCount;
 
   const progressBubble = document.createElement('div');
   progressBubble.className = 'chat-bubble ai video-progress';
-  progressBubble.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-      <span style="font-size:18px;">🎬</span>
-      <span style="font-size:13px;font-weight:600;color:#ffa500;">Rendering your video...</span>
-    </div>
-    <div style="font-size:12px;color:#8899aa;margin-bottom:6px;">Using ${modelName.replace(/-generate.*/, '')}</div>
-    <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">Generating ${selectedVideoDuration}s clip — usually takes 1-2 minutes. You can keep chatting!</div>
-    <div class="video-progress-bar" style="width:100%;height:4px;background:rgba(255,165,0,0.1);border-radius:2px;overflow:hidden;">
-      <div class="video-progress-fill" style="width:5%;height:100%;background:linear-gradient(90deg,#ffa500,#ffcc00);border-radius:2px;transition:width 0.5s ease;"></div>
-    </div>
-    <div class="video-progress-text" style="font-size:10px;color:#667788;margin-top:6px;">Starting...</div>
-  `;
+
+  if (clipCount === 1) {
+    progressBubble.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:18px;">🎬</span>
+        <span style="font-size:13px;font-weight:600;color:#ffa500;">Rendering your video...</span>
+      </div>
+      <div style="font-size:12px;color:#8899aa;margin-bottom:6px;">Using ${modelName.replace(/-generate.*/, '')}</div>
+      <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">Generating ${selectedVideoDuration}s clip — usually takes 1-2 minutes. You can keep chatting!</div>
+      <div class="video-progress-bar" style="width:100%;height:4px;background:rgba(255,165,0,0.1);border-radius:2px;overflow:hidden;">
+        <div class="video-progress-fill" style="width:5%;height:100%;background:linear-gradient(90deg,#ffa500,#ffcc00);border-radius:2px;transition:width 0.5s ease;"></div>
+      </div>
+      <div class="video-progress-text" style="font-size:10px;color:#667788;margin-top:6px;">Starting...</div>
+    `;
+  } else {
+    let clipsHtml = '';
+    for (let i = 1; i <= clipCount; i++) {
+      clipsHtml += `<div class="multi-clip-status" data-clip="${i}" style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <span style="font-size:12px;">🎞️</span>
+        <span style="font-size:11px;color:#667788;">Clip ${i}/${clipCount}</span>
+        <span class="clip-state" style="font-size:11px;color:#667788;">${i === 1 ? '⏳ Generating...' : '⏸️ Waiting...'}</span>
+      </div>`;
+    }
+    progressBubble.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:18px;">🎬</span>
+        <span style="font-size:13px;font-weight:600;color:#ffa500;">Rendering ${clipCount} clips → ${totalDur}s video</span>
+      </div>
+      <div style="font-size:12px;color:#8899aa;margin-bottom:6px;">Using ${modelName.replace(/-generate.*/, '')}</div>
+      <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">Generating ${clipCount} x ${selectedVideoDuration}s clips, then auto-stitching. This may take a few minutes.</div>
+      ${clipsHtml}
+      <div class="video-progress-bar" style="width:100%;height:4px;background:rgba(255,165,0,0.1);border-radius:2px;overflow:hidden;margin-top:8px;">
+        <div class="video-progress-fill" style="width:2%;height:100%;background:linear-gradient(90deg,#ffa500,#ffcc00);border-radius:2px;transition:width 0.5s ease;"></div>
+      </div>
+      <div class="video-progress-text" style="font-size:10px;color:#667788;margin-top:6px;">Starting clip 1...</div>
+    `;
+  }
+
   thread.appendChild(progressBubble);
   thread.scrollTop = thread.scrollHeight;
 
+  if (clipCount === 1) {
+    await generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread);
+  } else {
+    await generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread);
+  }
+}
+
+async function generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread) {
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`;
 
@@ -871,6 +936,345 @@ async function startVideoGeneration(prompt, thread) {
     console.log(`[SnapToAI Video] Error:`, err.message);
     progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> Connection failed — please check your internet and try again.</div>`;
   }
+}
+
+async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread) {
+  const clipUrls = [];
+  const clipScenes = [];
+
+  if (clipCount === 2) {
+    clipScenes.push(
+      `Scene 1 of 2 — opening: ${prompt}`,
+      `Scene 2 of 2 — continuation and finale: ${prompt}`
+    );
+  } else if (clipCount === 3) {
+    clipScenes.push(
+      `Scene 1 of 3 — opening establishing shot: ${prompt}`,
+      `Scene 2 of 3 — middle action: ${prompt}`,
+      `Scene 3 of 3 — dramatic finale: ${prompt}`
+    );
+  }
+
+  for (let i = 0; i < clipCount; i++) {
+    const clipNum = i + 1;
+    const statusEl = progressBubble.querySelector(`.multi-clip-status[data-clip="${clipNum}"] .clip-state`);
+    if (statusEl) statusEl.textContent = '⏳ Generating...';
+    if (statusEl) statusEl.style.color = '#ffa500';
+
+    const fill = progressBubble.querySelector('.video-progress-fill');
+    const text = progressBubble.querySelector('.video-progress-text');
+    if (text) text.textContent = `Generating clip ${clipNum} of ${clipCount}...`;
+
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`;
+      const requestBody = {
+        instances: [{ prompt: clipScenes[i] || prompt }],
+        parameters: {
+          aspectRatio: '16:9',
+          sampleCount: 1,
+          durationSeconds: selectedVideoDuration,
+          personGeneration: 'allow_adult'
+        }
+      };
+
+      if (i === 0 && includeImage && currentImages[0]) {
+        const imgData = currentImages[0];
+        const cleanB64 = imgData.includes(',') ? imgData.split(',')[1] : imgData;
+        let mimeType = 'image/png';
+        if (imgData.startsWith('data:')) {
+          const match = imgData.match(/^data:(image\/[a-zA-Z+]+);/);
+          if (match) mimeType = match[1];
+        }
+        requestBody.instances[0].image = { bytesBase64Encoded: cleanB64, mimeType: mimeType };
+      }
+
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        const errorMsg = data.error?.message || `API error ${resp.status}`;
+        let friendlyMsg = errorMsg;
+        if (resp.status === 429) friendlyMsg = 'Rate limit reached. Please wait a few minutes and try again.';
+        if (statusEl) { statusEl.textContent = '❌ Failed'; statusEl.style.color = '#ff6b6b'; }
+        if (clipUrls.length > 0) {
+          if (text) text.textContent = `Clip ${clipNum} failed, stitching ${clipUrls.length} successful clip(s)...`;
+          break;
+        }
+        progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${friendlyMsg}</div>`;
+        return;
+      }
+
+      const operationName = data.name;
+      if (!operationName) {
+        if (statusEl) { statusEl.textContent = '❌ No operation ID'; statusEl.style.color = '#ff6b6b'; }
+        if (clipUrls.length > 0) break;
+        progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> No operation ID returned for clip ${clipNum}.</div>`;
+        return;
+      }
+
+      console.log(`[SnapToAI Video] Clip ${clipNum} job started: ${operationName}`);
+      const clipUrl = await pollVideoStatusAsync(operationName, apiKey, progressBubble, clipNum, clipCount);
+
+      if (clipUrl) {
+        clipUrls.push(clipUrl);
+        if (statusEl) { statusEl.textContent = '✅ Done'; statusEl.style.color = '#00cc88'; }
+        const pct = Math.round((clipNum / clipCount) * 80);
+        if (fill) fill.style.width = `${pct}%`;
+      } else {
+        if (statusEl) { statusEl.textContent = '❌ Failed'; statusEl.style.color = '#ff6b6b'; }
+        if (clipUrls.length > 0) break;
+        return;
+      }
+
+    } catch (err) {
+      console.log(`[SnapToAI Video] Clip ${clipNum} error:`, err.message);
+      if (statusEl) { statusEl.textContent = '❌ Error'; statusEl.style.color = '#ff6b6b'; }
+      if (clipUrls.length > 0) break;
+      progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> Connection failed on clip ${clipNum}.</div>`;
+      return;
+    }
+  }
+
+  if (clipUrls.length === 0) return;
+
+  if (clipUrls.length === 1) {
+    showVideoResult(progressBubble, clipUrls[0], thread);
+    return;
+  }
+
+  const fill = progressBubble.querySelector('.video-progress-fill');
+  const text = progressBubble.querySelector('.video-progress-text');
+  if (fill) fill.style.width = '85%';
+  if (text) text.textContent = 'Stitching clips together...';
+
+  try {
+    const stitchedUrl = await stitchVideos(clipUrls);
+    if (fill) fill.style.width = '100%';
+    showStitchedVideoResult(progressBubble, stitchedUrl, clipUrls, thread);
+  } catch (err) {
+    console.log('[SnapToAI Video] Stitch error:', err.message);
+    showMultiClipFallback(progressBubble, clipUrls, thread);
+  }
+}
+
+function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, totalClips) {
+  return new Promise((resolve) => {
+    let pollCount = 0;
+    const maxPolls = 40;
+
+    const timer = setInterval(async () => {
+      pollCount++;
+
+      if (pollCount > maxPolls) {
+        clearInterval(timer);
+        const text = progressBubble.querySelector('.video-progress-text');
+        if (text) text.textContent = `Clip ${clipNum} timed out.`;
+        resolve(null);
+        return;
+      }
+
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/${operationId}?key=${apiKey}`;
+        const resp = await fetch(url);
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          if (resp.status === 429) return;
+          clearInterval(timer);
+          resolve(null);
+          return;
+        }
+
+        if (!data.done) {
+          const pct = data.metadata?.percentComplete || Math.min(pollCount * 5, 90);
+          const text = progressBubble.querySelector('.video-progress-text');
+          if (text) text.textContent = `Clip ${clipNum}/${totalClips}: Rendering... ${pct}%`;
+        } else {
+          clearInterval(timer);
+
+          console.log('[SnapToAI Video] Clip done:', JSON.stringify(data).substring(0, 500));
+
+          if (data.error) {
+            resolve(null);
+            return;
+          }
+
+          let videoUri = '';
+          const gvr = data.response?.generateVideoResponse;
+          if (gvr?.generatedSamples?.[0]?.video?.uri) {
+            videoUri = gvr.generatedSamples[0].video.uri;
+          } else if (gvr?.generatedSamples?.[0]?.uri) {
+            videoUri = gvr.generatedSamples[0].uri;
+          }
+          if (!videoUri && data.response?.videos?.[0]?.uri) {
+            videoUri = data.response.videos[0].uri;
+          }
+          if (!videoUri && data.response?.generatedSamples?.[0]?.video?.uri) {
+            videoUri = data.response.generatedSamples[0].video.uri;
+          }
+
+          if (videoUri) {
+            const authedUrl = `${videoUri}${videoUri.includes('?') ? '&' : '?'}key=${apiKey}`;
+            resolve(authedUrl);
+          } else {
+            resolve(null);
+          }
+        }
+      } catch (err) {
+        console.log(`[SnapToAI Video] Poll error clip ${clipNum}:`, err.message);
+      }
+    }, 15000);
+  });
+}
+
+async function stitchVideos(videoUrls) {
+  console.log(`[SnapToAI Video] Stitching ${videoUrls.length} clips...`);
+
+  const blobs = [];
+  for (const url of videoUrls) {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`Failed to fetch clip: ${resp.status}`);
+    blobs.push(await resp.blob());
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 1280;
+  canvas.height = 720;
+  const ctx = canvas.getContext('2d');
+
+  const stream = canvas.captureStream(30);
+  const audioCtx = new AudioContext();
+  const dest = audioCtx.createMediaStreamDestination();
+
+  const audioTracks = dest.stream.getAudioTracks();
+  if (audioTracks.length > 0) {
+    stream.addTrack(audioTracks[0]);
+  }
+
+  const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9,opus' });
+  const chunks = [];
+  recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+  const recordingDone = new Promise(resolve => { recorder.onstop = resolve; });
+
+  recorder.start();
+
+  for (let i = 0; i < blobs.length; i++) {
+    const blobUrl = URL.createObjectURL(blobs[i]);
+    const video = document.createElement('video');
+    video.src = blobUrl;
+    video.muted = false;
+    video.crossOrigin = 'anonymous';
+
+    await new Promise((resolve, reject) => {
+      video.onloadedmetadata = resolve;
+      video.onerror = reject;
+    });
+
+    try {
+      const source = audioCtx.createMediaElementSource(video);
+      source.connect(dest);
+    } catch (e) {
+      console.log('[SnapToAI Video] Audio connect skipped:', e.message);
+    }
+
+    video.play();
+
+    await new Promise((resolve) => {
+      const drawFrame = () => {
+        if (video.ended || video.paused) { resolve(); return; }
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        requestAnimationFrame(drawFrame);
+      };
+      video.onended = resolve;
+      drawFrame();
+    });
+
+    URL.revokeObjectURL(blobUrl);
+  }
+
+  recorder.stop();
+  await audioCtx.close();
+  await recordingDone;
+
+  const stitchedBlob = new Blob(chunks, { type: 'video/webm' });
+  return URL.createObjectURL(stitchedBlob);
+}
+
+function showStitchedVideoResult(bubble, stitchedUrl, clipUrls, thread) {
+  const totalDur = selectedVideoDuration * clipUrls.length;
+  bubble.innerHTML = `
+    <div style="margin:8px 0;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:18px;">🎬</span>
+        <span style="font-size:13px;font-weight:600;color:#ffa500;">Video ready! (${totalDur}s — ${clipUrls.length} clips stitched)</span>
+      </div>
+      <video controls autoplay muted playsinline style="width:100%;max-width:480px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);" src="${stitchedUrl}"></video>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="video-save-btn" style="background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.3);color:#ffa500;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;">💾 Save Combined</button>
+        <button class="video-save-clips-btn" style="background:rgba(0,200,136,0.1);border:1px solid rgba(0,200,136,0.3);color:#00cc88;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;">📥 Save Individual Clips</button>
+      </div>
+    </div>
+  `;
+
+  bubble.querySelector('.video-save-btn')?.addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.href = stitchedUrl;
+    a.download = 'snaptoai-video-combined.webm';
+    a.click();
+  });
+
+  bubble.querySelector('.video-save-clips-btn')?.addEventListener('click', () => {
+    clipUrls.forEach((url, i) => {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `snaptoai-clip-${i + 1}.mp4`;
+      a.click();
+    });
+  });
+
+  thread.scrollTop = thread.scrollHeight;
+  addBubbleActions(bubble, 'Generated stitched video');
+}
+
+function showMultiClipFallback(bubble, clipUrls, thread) {
+  let clipsHtml = clipUrls.map((url, i) => `
+    <div style="margin-bottom:10px;">
+      <div style="font-size:11px;color:#8899aa;margin-bottom:4px;">Clip ${i + 1}</div>
+      <video controls muted playsinline style="width:100%;max-width:480px;border-radius:10px;" src="${url}"></video>
+    </div>
+  `).join('');
+
+  bubble.innerHTML = `
+    <div style="margin:8px 0;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:18px;">🎬</span>
+        <span style="font-size:13px;font-weight:600;color:#ffa500;">${clipUrls.length} clips ready!</span>
+      </div>
+      <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">Auto-stitch wasn't possible. Here are your individual clips:</div>
+      ${clipsHtml}
+      <div style="margin-top:10px;">
+        <button class="video-save-clips-btn" style="background:rgba(0,200,136,0.1);border:1px solid rgba(0,200,136,0.3);color:#00cc88;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;">📥 Save All Clips</button>
+      </div>
+    </div>
+  `;
+
+  bubble.querySelector('.video-save-clips-btn')?.addEventListener('click', () => {
+    clipUrls.forEach((url, i) => {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `snaptoai-clip-${i + 1}.mp4`;
+      a.click();
+    });
+  });
+
+  thread.scrollTop = thread.scrollHeight;
+  addBubbleActions(bubble, 'Generated video clips');
 }
 
 async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
