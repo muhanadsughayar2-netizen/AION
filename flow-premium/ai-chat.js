@@ -104,16 +104,26 @@ function buildDailyLimitCard() {
         <span style="font-size:15px;font-weight:800;color:#fff;">You've Used Today's Free Prompts!</span>
       </div>
       <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
-        Great work today! Your 20 daily free prompts will reset tomorrow. Or unlock <span style="color:#ffd700;font-weight:700;">unlimited access</span> right now with your own API key.
+        Great work today! Your 20 daily free prompts will reset tomorrow. Or upgrade to <span style="color:#ffd700;font-weight:700;">unlimited access</span> with Google Cloud — you'll get <span style="color:#00ff88;font-weight:700;">$300 in free credits</span>!
       </div>
-      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.12), rgba(138,43,226,0.08));border:1px solid rgba(255,215,0,0.2);margin-bottom:10px;">
-        <span style="font-size:18px;">🔑</span>
-        <div>
-          <div style="font-size:13px;font-weight:700;color:#ffd700;">Get Unlimited AI — Free</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.7);">Create a free Gemini API key in ~1 minute at AI Studio</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.08));border:1px solid rgba(255,215,0,0.25);">
+          <span style="font-size:18px;">🎁</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#ffd700;">$300 Free Credit from Google</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.7);">New accounts get $300 to use on all AI features</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
+          <span style="font-size:14px;">💳</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Google verifies with a ~$1 hold (refunded instantly) — then you get $300 free</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
+          <span style="font-size:14px;">🔓</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Unlocks <strong>unlimited</strong> Vision, Image, Music & Video</span>
         </div>
       </div>
-      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="unlock-billing-btn" style="display:block;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg, #8a2be2, #ff69b4);color:#fff;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;">Get Free API Key →</a>
+      <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener" class="unlock-billing-btn" style="display:block;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg, #8a2be2, #ff69b4);color:#fff;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;">Enable Billing & Get $300 Free →</a>
       <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.5);">Or come back tomorrow for 20 more free prompts</div>
     </div>`;
 }
