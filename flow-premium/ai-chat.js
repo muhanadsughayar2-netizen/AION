@@ -147,29 +147,29 @@ function buildRateLimitCard() {
 
 function buildMusicRetryCard() {
   return `
-    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(138,43,226,0.12), rgba(255,105,180,0.06));border:1px solid rgba(138,43,226,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(0,255,136,0.12), rgba(0,200,100,0.06));border:1px solid rgba(0,255,136,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <span style="font-size:24px;">🎵</span>
-        <span style="font-size:15px;font-weight:800;color:#fff;">Song Didn't Quite Land</span>
+        <span style="font-size:15px;font-weight:800;color:#fff;">Unlock Music Studio</span>
       </div>
       <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
-        The AI generated audio but it came out empty — this sometimes happens with complex prompts. No worries, here's what to try:
+        Music generation requires Google Cloud billing to be enabled. Google gives you <span style="color:#ffd700;font-weight:700;">$300 in free credits</span> — more than enough to create hundreds of songs.
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
-          <span style="font-size:14px;">🎯</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Try a <strong>simpler prompt</strong> — e.g. "upbeat pop song about summer"</span>
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.08));border:1px solid rgba(255,215,0,0.25);">
+          <span style="font-size:18px;">🎁</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#ffd700;">$300 Free Credit from Google</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.7);">New accounts get $300 to use on any Google Cloud AI service</div>
+          </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
-          <span style="font-size:14px;">🎲</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Hit <strong>"Surprise Me"</strong> in Song Studio for a quick win</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
-          <span style="font-size:14px;">🔄</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Just <strong>try again</strong> — sometimes it works on the second try!</span>
+          <span style="font-size:14px;">💳</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Google verifies with a ~$1 hold (refunded instantly) — then you get $300 free</span>
         </div>
       </div>
-      <div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.45);">This uses the same prompt credit — no extra cost</div>
+      <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener" class="unlock-billing-btn" style="display:block;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg, #00ff88, #ffd700);color:#111;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;">Enable Billing & Claim $300 Free →</a>
+      <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.5);">Takes less than 2 minutes — no charges until you exceed the free credit</div>
     </div>`;
 }
 
