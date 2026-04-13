@@ -73,21 +73,28 @@ function buildNoKeyCard() {
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
           <span style="font-size:14px;">1️⃣</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Click the button below to visit Google AI Studio</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Visit <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:#00d9ff;text-decoration:none;font-weight:600;">Google AI Studio</a> and click "Create API key"</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
           <span style="font-size:14px;">2️⃣</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Click <strong>"Create API key"</strong> and copy it</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Copy your new key</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
           <span style="font-size:14px;">3️⃣</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Paste it in SnapToAI <strong>Settings</strong> → done!</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Click the button below to paste it — done!</span>
         </div>
       </div>
-      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="unlock-billing-btn" style="display:block;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg, #00d9ff, #8a2be2);color:#fff;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;">Get Free API Key →</a>
+      <button class="unlock-billing-btn snaptoai-set-key-btn" style="display:block;width:100%;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg, #00d9ff, #8a2be2);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;">Enter My API Key →</button>
       <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.5);">Free forever — unlimited Vision & Image prompts</div>
     </div>`;
 }
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.snaptoai-set-key-btn')) {
+    e.preventDefault();
+    showProxyKeyPrompt();
+  }
+});
 
 function buildDailyLimitCard() {
   return `
