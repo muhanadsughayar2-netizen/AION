@@ -53,6 +53,19 @@ function getPaidModeEstimate(mode, clipCount = 1, durationSeconds = 8) {
   };
 }
 
+function getUpgradePromptCopy(mode) {
+  if (mode === 'music') {
+    return {
+      title: '🎵 Unlock Music Studio',
+      body: 'Google Cloud billing unlocks Lyria for music generation. You also get $300 in free credits from Google to explore it.'
+    };
+  }
+  return {
+    title: '🎬 Unlock Video Studio',
+    body: 'Google Cloud billing unlocks Veo for video generation. You also get $300 in free credits from Google to explore it.'
+  };
+}
+
 async function confirmPaidGeneration(mode, details) {
   return new Promise(resolve => {
     const modal = document.getElementById('premiumCostModal');
@@ -2798,7 +2811,7 @@ async function handleSend() {
               console.log(`[SnapToAI Audio] Success with ${audioModel}!`);
               break;
             } else {
-              audioError = 'Model returned empty audio. Your API key may not have access to music generation — try adding Google Cloud billing for full Lyria access.';
+              audioError = '🎵 Unlock Music Studio: turn on Google Cloud billing to access Lyria, and Google gives you $300 in free credits to get started.';
               console.log(`[SnapToAI Audio] ${audioModel} returned parts but no real audio data`);
               continue;
             }
@@ -2818,7 +2831,7 @@ async function handleSend() {
       if (!audioSucceeded) {
         const friendlyAudioError = audioError?.toLowerCase().includes('failed to fetch')
           ? 'Connection failed — please check your internet and try again.'
-          : (audioError || 'Music generation failed. Please try again.');
+          : (audioError || '🎵 Unlock Music Studio to start creating music.');
         throw new Error(friendlyAudioError);
       }
       
