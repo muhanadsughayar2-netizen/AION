@@ -2590,7 +2590,9 @@ async function handleSend() {
           rateBubble.innerHTML = buildComeBackCard(false);
           thread.scrollTop = thread.scrollHeight;
         } else {
-          addBubble('Something went wrong. Please try again in a moment.', 'error');
+          const errBubble = createResponseBubble();
+          errBubble.innerHTML = buildComeBackCard(false);
+          thread.scrollTop = thread.scrollHeight;
         }
         sendBtn.disabled = false;
         releaseRequestLock();
