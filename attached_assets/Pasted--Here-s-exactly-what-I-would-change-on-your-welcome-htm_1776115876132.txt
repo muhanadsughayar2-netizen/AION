@@ -1,0 +1,72 @@
+✅ Here's exactly what I would change on your welcome.html page
+Your current welcome screen is clean and simple, but it’s too basic. It makes the extension look like “just another screenshot tool.”
+New users see this first — this is your make-or-break moment. Right now it doesn’t show the exciting AI part (chat + image/music/video generation), so people pin it, try one snap, get confused by the AI chat / trial / key setup, and uninstall.
+My Recommended Changes (copy-paste ready)
+1. New Headline + Tagline (biggest improvement)
+Replace current:
+
+“Snap To AI”
+“Snap it. Snip it. Flip it to AI.”
+
+With this (much stronger):
+HTML<h1>Snap <span style="color:#00d4ff">To AI</span></h1>
+<p class="tagline" style="font-size:22px; margin-top:8px;">
+  Capture any screen → instantly chat with AI,<br>
+  generate images, music & videos
+</p>
+2. New Subtitle (replace the current long sentence)
+HTML<p style="font-size:15px; opacity:0.85; margin:20px 0 30px;">
+  Right-click → Snap → Ask AI anything. Turn screenshots into images, songs, or videos in seconds.
+</p>
+3. Update the 4 big buttons (keep the icons, change labels slightly)
+Keep the layout, just change the text under the icons:
+
+SNAP → stays SNAP
+SNIP → stays SNIP
+FULL PAGE → stays FULL PAGE
+AI → change to AI CHAT (or add a small “★”)
+
+4. Replace the entire “Pin it to get started” box with something more exciting
+New version (much better):
+HTML<div class="pin-box" style="background:#1a1a1a; border-radius:16px; padding:24px; text-align:center;">
+  <h3 style="margin-bottom:16px;">Ready to create with AI?</h3>
+  
+  <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin:20px 0;">
+    <div>📸 Capture</div>
+    <div style="color:#00d4ff">→</div>
+    <div>💬 Ask AI</div>
+    <div style="color:#00d4ff">→</div>
+    <div>✨ Generate</div>
+  </div>
+  
+  <p style="font-size:15px; margin-bottom:20px;">
+    First time? Just <strong>pin the extension</strong> so you can snap from any page.
+  </p>
+  
+  <button onclick="chrome.action.openPopup()" style="background:#00d4ff; color:#000; font-weight:bold; padding:12px 32px; border-radius:9999px; border:none; cursor:pointer;">
+    Pin SnapToAI & Start Snapping
+  </button>
+</div>
+5. Add one small “Wow” preview right above the pin box (highly recommended)
+Add this section:
+HTML<div style="text-align:center; margin:30px 0;">
+  <p style="font-size:13px; opacity:0.7; margin-bottom:8px;">What you can create in seconds</p>
+  <div style="display:flex; gap:12px; justify-content:center;">
+    <div style="background:#222; padding:8px; border-radius:12px; font-size:13px;">📸 Screenshot → AI Chat</div>
+    <div style="background:#222; padding:8px; border-radius:12px; font-size:13px;">🖼️ Image Generation</div>
+    <div style="background:#222; padding:8px; border-radius:12px; font-size:13px;">🎵 Music</div>
+    <div style="background:#222; padding:8px; border-radius:12px; font-size:13px;">🎬 Video</div>
+  </div>
+</div>
+6. Small polish changes
+
+Change footer privacy text to:
+🔒 Your screenshots stay 100% private — processed securely with Google Gemini
+Make the whole page a tiny bit brighter (the current pure black feels a bit cold)
+
+Would you like me to:
+
+Give you the full updated welcome.html code (ready to replace the entire file), or
+Give you just the CSS + HTML snippets for the changes above?
+
+Just say “full code” or “snippets” and I’ll send it immediately. This one change usually cuts uninstalls a lot because users immediately understand the magic.1.9s
