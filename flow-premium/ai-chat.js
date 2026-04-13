@@ -1283,7 +1283,7 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
         progressBubble.innerHTML = buildUnlockCard('video');
         return;
       } else if (resp.status === 429 || errorMsg.toLowerCase().includes('rate') || errorMsg.toLowerCase().includes('quota') || errorMsg.toLowerCase().includes('exceeded')) {
-        progressBubble.innerHTML = buildRateLimitCard();
+        progressBubble.innerHTML = buildUnlockCard('video');
         return;
       }
       progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${friendlyMsg}</div>`;
@@ -1378,7 +1378,7 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
             if (text) text.textContent = `Clip ${clipNum} rate limited, stitching ${clipUrls.length} successful clip(s)...`;
             break;
           }
-          progressBubble.innerHTML = buildRateLimitCard();
+          progressBubble.innerHTML = buildUnlockCard('video');
           return;
         }
         let friendlyMsg = errorMsg;
@@ -1691,7 +1691,7 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         activeVideoPollTimer = null;
         const errLower = errMsg.toLowerCase();
         if (errLower.includes('quota') || errLower.includes('rate') || errLower.includes('exceeded') || errLower.includes('resource')) {
-          progressBubble.innerHTML = buildRateLimitCard();
+          progressBubble.innerHTML = buildUnlockCard('video');
         } else if (isBillingError(resp.status, errMsg)) {
           progressBubble.innerHTML = buildUnlockCard('video');
         } else {
@@ -1716,7 +1716,7 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
           const errMsg = data.error.message || 'Video generation failed.';
           const errLower2 = errMsg.toLowerCase();
           if (errLower2.includes('quota') || errLower2.includes('rate') || errLower2.includes('exceeded') || errLower2.includes('resource') || data.error.code === 429) {
-            progressBubble.innerHTML = buildRateLimitCard();
+            progressBubble.innerHTML = buildUnlockCard('video');
           } else if (isBillingError(data.error.code || 0, errMsg)) {
             progressBubble.innerHTML = buildUnlockCard('video');
           } else {
