@@ -60,9 +60,59 @@ function isBillingError(status, message) {
     (lower.includes('billing') || lower.includes('paid tier') || lower.includes('permission') || lower.includes('precondition') || lower.includes('not enabled') || lower.includes('not activated'));
 }
 
-function buildComeBackCard(hasOwnKey) {
-  if (hasOwnKey) {
-    return `
+function buildNoKeyCard() {
+  return `
+    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(0,217,255,0.12), rgba(138,43,226,0.06));border:1px solid rgba(0,217,255,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:24px;">🔑</span>
+        <span style="font-size:15px;font-weight:800;color:#fff;">Set Up Your Free AI Key</span>
+      </div>
+      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
+        To use AI features, you need a Gemini API key. It's <span style="color:#00ff88;font-weight:700;">completely free</span> and takes about 1 minute to set up.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
+          <span style="font-size:14px;">1️⃣</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Click the button below to visit Google AI Studio</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
+          <span style="font-size:14px;">2️⃣</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Click <strong>"Create API key"</strong> and copy it</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
+          <span style="font-size:14px;">3️⃣</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Paste it in SnapToAI <strong>Settings</strong> → done!</span>
+        </div>
+      </div>
+      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="unlock-billing-btn" style="display:block;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg, #00d9ff, #8a2be2);color:#fff;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;">Get Free API Key →</a>
+      <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.5);">Free forever — unlimited Vision & Image prompts</div>
+    </div>`;
+}
+
+function buildDailyLimitCard() {
+  return `
+    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(138,43,226,0.12), rgba(255,105,180,0.06));border:1px solid rgba(138,43,226,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:24px;">🌟</span>
+        <span style="font-size:15px;font-weight:800;color:#fff;">You've Used Today's Free Prompts!</span>
+      </div>
+      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
+        Great work today! Your 20 daily free prompts will reset tomorrow. Or unlock <span style="color:#ffd700;font-weight:700;">unlimited access</span> right now with your own API key.
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.12), rgba(138,43,226,0.08));border:1px solid rgba(255,215,0,0.2);margin-bottom:10px;">
+        <span style="font-size:18px;">🔑</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#ffd700;">Get Unlimited AI — Free</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.7);">Create a free Gemini API key in ~1 minute at AI Studio</div>
+        </div>
+      </div>
+      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="unlock-billing-btn" style="display:block;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg, #8a2be2, #ff69b4);color:#fff;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;">Get Free API Key →</a>
+      <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.5);">Or come back tomorrow for 20 more free prompts</div>
+    </div>`;
+}
+
+function buildRateLimitCard() {
+  return `
     <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(0,217,255,0.10), rgba(138,43,226,0.06));border:1px solid rgba(0,217,255,0.22);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <span style="font-size:24px;">⏳</span>
@@ -75,26 +125,6 @@ function buildComeBackCard(hasOwnKey) {
         <span style="font-size:16px;">💡</span>
         <div style="font-size:12px;color:rgba(255,255,255,0.8);">Check your <a href="https://aistudio.google.com" target="_blank" rel="noopener" style="color:#00d9ff;text-decoration:none;font-weight:600;">AI Studio dashboard</a> for quota details</div>
       </div>
-    </div>`;
-  }
-  return `
-    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(138,43,226,0.12), rgba(255,105,180,0.06));border:1px solid rgba(138,43,226,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:24px;">🌟</span>
-        <span style="font-size:15px;font-weight:800;color:#fff;">You've Used Your Free Prompts!</span>
-      </div>
-      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
-        Great work today! You've explored what SnapToAI can do. Come back tomorrow for more free prompts, or unlock <span style="color:#ffd700;font-weight:700;">unlimited access</span> right now with your own API key.
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.12), rgba(138,43,226,0.08));border:1px solid rgba(255,215,0,0.2);margin-bottom:10px;">
-        <span style="font-size:18px;">🔑</span>
-        <div>
-          <div style="font-size:13px;font-weight:700;color:#ffd700;">Get Unlimited AI — Free</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.7);">Create a free Gemini API key in ~1 minute at AI Studio</div>
-        </div>
-      </div>
-      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="unlock-billing-btn" style="display:block;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg, #8a2be2, #ff69b4);color:#fff;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;">Get Free API Key →</a>
-      <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.5);">Or come back tomorrow for more free prompts</div>
     </div>`;
 }
 
@@ -1236,7 +1266,7 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
         progressBubble.innerHTML = buildUnlockCard('video');
         return;
       } else if (resp.status === 429 || errorMsg.toLowerCase().includes('rate') || errorMsg.toLowerCase().includes('quota') || errorMsg.toLowerCase().includes('exceeded')) {
-        progressBubble.innerHTML = buildComeBackCard(true);
+        progressBubble.innerHTML = buildRateLimitCard();
         return;
       }
       progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${friendlyMsg}</div>`;
@@ -1331,7 +1361,7 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
             if (text) text.textContent = `Clip ${clipNum} rate limited, stitching ${clipUrls.length} successful clip(s)...`;
             break;
           }
-          progressBubble.innerHTML = buildComeBackCard(true);
+          progressBubble.innerHTML = buildRateLimitCard();
           return;
         }
         let friendlyMsg = errorMsg;
@@ -1644,7 +1674,7 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         activeVideoPollTimer = null;
         const errLower = errMsg.toLowerCase();
         if (errLower.includes('quota') || errLower.includes('rate') || errLower.includes('exceeded') || errLower.includes('resource')) {
-          progressBubble.innerHTML = buildComeBackCard(true);
+          progressBubble.innerHTML = buildRateLimitCard();
         } else if (isBillingError(resp.status, errMsg)) {
           progressBubble.innerHTML = buildUnlockCard('video');
         } else {
@@ -1669,7 +1699,7 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
           const errMsg = data.error.message || 'Video generation failed.';
           const errLower2 = errMsg.toLowerCase();
           if (errLower2.includes('quota') || errLower2.includes('rate') || errLower2.includes('exceeded') || errLower2.includes('resource') || data.error.code === 429) {
-            progressBubble.innerHTML = buildComeBackCard(true);
+            progressBubble.innerHTML = buildRateLimitCard();
           } else if (isBillingError(data.error.code || 0, errMsg)) {
             progressBubble.innerHTML = buildUnlockCard('video');
           } else {
@@ -2577,7 +2607,7 @@ async function handleSend() {
         if (proxyErr.message === 'FREE_PROMPTS_EXHAUSTED') {
           removeLoading();
           const exhaustedBubble = createResponseBubble();
-          exhaustedBubble.innerHTML = buildComeBackCard(false);
+          exhaustedBubble.innerHTML = buildDailyLimitCard();
           thread.scrollTop = thread.scrollHeight;
           sendBtn.disabled = false;
           releaseRequestLock();
@@ -2585,15 +2615,13 @@ async function handleSend() {
         }
         removeLoading();
         const msg = proxyErr.message || '';
+        const errBubble = createResponseBubble();
         if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('wait')) {
-          const rateBubble = createResponseBubble();
-          rateBubble.innerHTML = buildComeBackCard(false);
-          thread.scrollTop = thread.scrollHeight;
+          errBubble.innerHTML = buildDailyLimitCard();
         } else {
-          const errBubble = createResponseBubble();
-          errBubble.innerHTML = buildComeBackCard(false);
-          thread.scrollTop = thread.scrollHeight;
+          errBubble.innerHTML = buildNoKeyCard();
         }
+        thread.scrollTop = thread.scrollHeight;
         sendBtn.disabled = false;
         releaseRequestLock();
         return;
@@ -2687,9 +2715,7 @@ async function handleSend() {
               if (batchResponse.status === 429 || batchErrLower.includes('quota') || batchErrLower.includes('rate') || batchErrLower.includes('exceeded') || batchErrLower.includes('resource')) {
                 batchInfo.remove();
                 const quotaBatchBubble = createResponseBubble();
-                const apiR = await chrome.storage.sync.get(['geminiApiKey']);
-                const hasKey = apiR.geminiApiKey && apiR.geminiApiKey.length > 20;
-                quotaBatchBubble.innerHTML = buildComeBackCard(hasKey);
+                quotaBatchBubble.innerHTML = buildRateLimitCard();
                 thread.scrollTop = thread.scrollHeight;
                 sendBtn.disabled = false;
                 releaseRequestLock();
@@ -2702,9 +2728,7 @@ async function handleSend() {
             if (batchCatchLower.includes('quota') || batchCatchLower.includes('rate') || batchCatchLower.includes('exceeded')) {
               batchInfo.remove();
               const quotaBatchBubble2 = createResponseBubble();
-              const apiR2 = await chrome.storage.sync.get(['geminiApiKey']);
-              const hasKey2 = apiR2.geminiApiKey && apiR2.geminiApiKey.length > 20;
-              quotaBatchBubble2.innerHTML = buildComeBackCard(hasKey2);
+              quotaBatchBubble2.innerHTML = buildRateLimitCard();
               thread.scrollTop = thread.scrollHeight;
               sendBtn.disabled = false;
               releaseRequestLock();
@@ -3171,10 +3195,8 @@ async function handleSend() {
       const isQuotaError = lowerErr.match(/quota|rate|limit|429|exceeded|resource.exhausted/);
       const isBilling = lowerErr.includes('billing') || lowerErr.includes('permission') || lowerErr.includes('not enabled') || lowerErr.includes('paid tier') || lowerErr.includes('precondition');
       if (isQuotaError) {
-        const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
-        const hasOwnKey = apiResult.geminiApiKey && apiResult.geminiApiKey.length > 20;
         const quotaBubble = createResponseBubble();
-        quotaBubble.innerHTML = buildComeBackCard(hasOwnKey);
+        quotaBubble.innerHTML = buildRateLimitCard();
         thread.scrollTop = thread.scrollHeight;
       } else if (isBilling) {
         const unlockBubble = createResponseBubble();
