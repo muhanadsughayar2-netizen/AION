@@ -98,6 +98,34 @@ function buildComeBackCard(hasOwnKey) {
     </div>`;
 }
 
+function buildMusicRetryCard() {
+  return `
+    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(138,43,226,0.12), rgba(255,105,180,0.06));border:1px solid rgba(138,43,226,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:24px;">🎵</span>
+        <span style="font-size:15px;font-weight:800;color:#fff;">Song Didn't Quite Land</span>
+      </div>
+      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
+        The AI generated audio but it came out empty — this sometimes happens with complex prompts. No worries, here's what to try:
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
+          <span style="font-size:14px;">🎯</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Try a <strong>simpler prompt</strong> — e.g. "upbeat pop song about summer"</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
+          <span style="font-size:14px;">🎲</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Hit <strong>"Surprise Me"</strong> in Song Studio for a quick win</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
+          <span style="font-size:14px;">🔄</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Just <strong>try again</strong> — sometimes it works on the second try!</span>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.45);">This uses the same prompt credit — no extra cost</div>
+    </div>`;
+}
+
 function buildUnlockCard(mode) {
   const isMusic = mode === 'music';
   const icon = isMusic ? '🎵' : '🎬';
@@ -2875,7 +2903,7 @@ async function handleSend() {
           
           if (resp.ok && body.candidates?.[0]?.content?.parts) {
             const audioParts = body.candidates[0].content.parts;
-            const hasRealAudio = audioParts.some(p => p.inlineData?.data && p.inlineData.data.length > 100);
+            const hasRealAudio = audioParts.some(p => p.inlineData?.data && p.inlineData.data.length > 5000);
             if (hasRealAudio) {
               audioData = body;
               audioSucceeded = true;
@@ -2928,20 +2956,38 @@ async function handleSend() {
           const parsedHtml = typeof marked !== 'undefined' ? marked.parse(part.text) : part.text;
           htmlContent += typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
         }
-        if (part.inlineData && part.inlineData.mimeType?.startsWith('audio')) {
+        if (part.inlineData && part.inlineData.mimeType?.startsWith('audio') && part.inlineData.data?.length > 5000) {
           hasAudio = true;
           const audioSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-          htmlContent += `<div style="margin:10px 0;">
-            <audio controls style="width:100%; border-radius:8px; outline:none;" src="${audioSrc}"></audio>
+          const audioId = 'audio-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+          htmlContent += `<div id="wrap-${audioId}" style="margin:10px 0;">
+            <audio id="${audioId}" controls style="width:100%; border-radius:8px; outline:none;" src="${audioSrc}"></audio>
             <div style="margin-top:8px; display:flex; gap:8px;">
               <button class="audio-save-btn" style="background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.3);color:#00ff88;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Audio</button>
             </div>
           </div>`;
+          setTimeout(() => {
+            const audioEl = document.getElementById(audioId);
+            if (!audioEl) return;
+            const checkDuration = () => {
+              if (audioEl.duration === 0 || isNaN(audioEl.duration)) {
+                const wrap = document.getElementById('wrap-' + audioId);
+                if (wrap) {
+                  wrap.closest('.chat-bubble')?.remove();
+                  const retryBubble = createResponseBubble();
+                  retryBubble.innerHTML = buildMusicRetryCard();
+                  thread.scrollTop = thread.scrollHeight;
+                }
+              }
+            };
+            audioEl.addEventListener('loadedmetadata', checkDuration);
+            setTimeout(checkDuration, 3000);
+          }, 100);
         }
       }
       
       if (!hasAudio && !fullText) {
-        htmlContent = buildUnlockCard('music');
+        htmlContent = buildMusicRetryCard();
       } else if (!hasAudio) {
         htmlContent = `<div style="font-size:13px;color:#aabbcc;">${fullText}</div>`;
       } else {
