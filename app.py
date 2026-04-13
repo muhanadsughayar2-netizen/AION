@@ -294,7 +294,8 @@ def check_video_support():
 OWNER_EMAILS_SET = {
     'muhanadsughayar2@gmail.com',
     'muhanadsughayar@gmail.com',
-    'muhanadsughayar1@gmail.com'
+    'muhanadsughayar1@gmail.com',
+    'jospeh@smartconnects.com'
 }
 
 VIDEO_DAILY_LIMIT_FREE = 2
