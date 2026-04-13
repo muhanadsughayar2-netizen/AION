@@ -1235,8 +1235,9 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
       if (isBillingError(resp.status, errorMsg)) {
         progressBubble.innerHTML = buildUnlockCard('video');
         return;
-      } else if (resp.status === 429) {
-        friendlyMsg = 'Rate limit reached. Please wait a few minutes and try again.';
+      } else if (resp.status === 429 || errorMsg.toLowerCase().includes('rate') || errorMsg.toLowerCase().includes('quota') || errorMsg.toLowerCase().includes('exceeded')) {
+        progressBubble.innerHTML = buildComeBackCard(true);
+        return;
       }
       progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${friendlyMsg}</div>`;
       return;
@@ -1324,8 +1325,16 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
           progressBubble.innerHTML = buildUnlockCard('video');
           return;
         }
+        if (resp.status === 429 || errorMsg.toLowerCase().includes('rate') || errorMsg.toLowerCase().includes('quota') || errorMsg.toLowerCase().includes('exceeded')) {
+          if (clipUrls.length > 0) {
+            if (statusEl) { statusEl.textContent = '⏳ Rate limited'; statusEl.style.color = '#ffd700'; }
+            if (text) text.textContent = `Clip ${clipNum} rate limited, stitching ${clipUrls.length} successful clip(s)...`;
+            break;
+          }
+          progressBubble.innerHTML = buildComeBackCard(true);
+          return;
+        }
         let friendlyMsg = errorMsg;
-        if (resp.status === 429) friendlyMsg = 'Rate limit reached. Please wait a few minutes and try again.';
         if (statusEl) { statusEl.textContent = '❌ Failed'; statusEl.style.color = '#ff6b6b'; }
         if (clipUrls.length > 0) {
           if (text) text.textContent = `Clip ${clipNum} failed, stitching ${clipUrls.length} successful clip(s)...`;
@@ -1627,6 +1636,8 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
       if (!resp.ok) {
         const errMsg = data.error?.message || `Status check failed (${resp.status})`;
         if (resp.status === 429) {
+          const text = progressBubble.querySelector('.video-progress-text');
+          if (text) text.textContent = 'Rate limit — retrying shortly...';
           return;
         }
         clearInterval(activeVideoPollTimer);
