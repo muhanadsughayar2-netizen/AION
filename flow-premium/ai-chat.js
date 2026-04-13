@@ -60,6 +60,44 @@ function isBillingError(status, message) {
     (lower.includes('billing') || lower.includes('paid tier') || lower.includes('permission') || lower.includes('precondition') || lower.includes('not enabled') || lower.includes('not activated'));
 }
 
+function buildComeBackCard(hasOwnKey) {
+  if (hasOwnKey) {
+    return `
+    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(0,217,255,0.10), rgba(138,43,226,0.06));border:1px solid rgba(0,217,255,0.22);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:24px;">⏳</span>
+        <span style="font-size:15px;font-weight:800;color:#fff;">Taking a Quick Breather</span>
+      </div>
+      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
+        Google's API has a temporary rate limit. This resets automatically — just wait a moment and try again.
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:rgba(0,217,255,0.08);border:1px solid rgba(0,217,255,0.15);">
+        <span style="font-size:16px;">💡</span>
+        <div style="font-size:12px;color:rgba(255,255,255,0.8);">Check your <a href="https://aistudio.google.com" target="_blank" rel="noopener" style="color:#00d9ff;text-decoration:none;font-weight:600;">AI Studio dashboard</a> for quota details</div>
+      </div>
+    </div>`;
+  }
+  return `
+    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(138,43,226,0.12), rgba(255,105,180,0.06));border:1px solid rgba(138,43,226,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:24px;">🌟</span>
+        <span style="font-size:15px;font-weight:800;color:#fff;">You've Used Your Free Prompts!</span>
+      </div>
+      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
+        Great work today! You've explored what SnapToAI can do. Come back tomorrow for more free prompts, or unlock <span style="color:#ffd700;font-weight:700;">unlimited access</span> right now with your own API key.
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.12), rgba(138,43,226,0.08));border:1px solid rgba(255,215,0,0.2);margin-bottom:10px;">
+        <span style="font-size:18px;">🔑</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#ffd700;">Get Unlimited AI — Free</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.7);">Create a free Gemini API key in ~1 minute at AI Studio</div>
+        </div>
+      </div>
+      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="unlock-billing-btn" style="display:block;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg, #8a2be2, #ff69b4);color:#fff;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;">Get Free API Key →</a>
+      <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.5);">Or come back tomorrow for more free prompts</div>
+    </div>`;
+}
+
 function buildUnlockCard(mode) {
   const isMusic = mode === 'music';
   const icon = isMusic ? '🎵' : '🎬';
@@ -2477,15 +2515,19 @@ async function handleSend() {
       } catch (proxyErr) {
         if (proxyErr.message === 'FREE_PROMPTS_EXHAUSTED') {
           removeLoading();
+          const exhaustedBubble = createResponseBubble();
+          exhaustedBubble.innerHTML = buildComeBackCard(false);
+          thread.scrollTop = thread.scrollHeight;
           sendBtn.disabled = false;
           releaseRequestLock();
-          setTimeout(() => showProxyKeyPrompt(), 400);
           return;
         }
         removeLoading();
         const msg = proxyErr.message || '';
         if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('wait')) {
-          addBubble('⏳ Too many requests — please wait a moment and try again.', 'ai');
+          const rateBubble = createResponseBubble();
+          rateBubble.innerHTML = buildComeBackCard(false);
+          thread.scrollTop = thread.scrollHeight;
         } else {
           addBubble('Something went wrong. Please try again in a moment.', 'error');
         }
@@ -3025,9 +3067,18 @@ async function handleSend() {
     if (error.message === '__trial_ended__') {
       // Modal already shown — don't add an error bubble
     } else {
-      const friendlyMsg = await getFriendlyErrorMessage(error.message);
-      const isQuotaError = error.message.toLowerCase().match(/quota|rate|limit|429|exceeded/);
-      addBubble(friendlyMsg, isQuotaError ? 'ai' : 'error');
+      const lowerErr = error.message.toLowerCase();
+      const isQuotaError = lowerErr.match(/quota|rate|limit|429|exceeded/);
+      if (isQuotaError) {
+        const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
+        const hasOwnKey = apiResult.geminiApiKey && apiResult.geminiApiKey.length > 20;
+        const quotaBubble = createResponseBubble();
+        quotaBubble.innerHTML = buildComeBackCard(hasOwnKey);
+        thread.scrollTop = thread.scrollHeight;
+      } else {
+        const friendlyMsg = await getFriendlyErrorMessage(error.message);
+        addBubble(friendlyMsg, 'error');
+      }
     }
   } finally {
     releaseRequestLock(); // Always release the lock
