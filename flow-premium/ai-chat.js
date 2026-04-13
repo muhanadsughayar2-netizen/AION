@@ -53,17 +53,40 @@ function getPaidModeEstimate(mode, clipCount = 1, durationSeconds = 8) {
   };
 }
 
-function getUpgradePromptCopy(mode) {
-  if (mode === 'music') {
-    return {
-      title: '🎵 Unlock Music Studio',
-      body: 'Google Cloud billing unlocks Lyria for music generation. You also get $300 in free credits from Google to explore it.'
-    };
-  }
-  return {
-    title: '🎬 Unlock Video Studio',
-    body: 'Google Cloud billing unlocks Veo for video generation. You also get $300 in free credits from Google to explore it.'
-  };
+function isBillingError(status, message) {
+  if (!message) return false;
+  const lower = message.toLowerCase();
+  return (status === 400 || status === 403 || status === 404) &&
+    (lower.includes('billing') || lower.includes('paid tier') || lower.includes('permission') || lower.includes('precondition') || lower.includes('not enabled') || lower.includes('not activated'));
+}
+
+function buildUnlockCard(mode) {
+  const isMusic = mode === 'music';
+  const icon = isMusic ? '🎵' : '🎬';
+  const title = isMusic ? 'Unlock Music Studio' : 'Unlock Video Studio';
+  const feature = isMusic ? 'Lyria music generation' : 'Veo video generation';
+  const gradient = isMusic ? 'rgba(0,255,136,0.12), rgba(0,200,100,0.06)' : 'rgba(255,165,0,0.12), rgba(200,120,0,0.06)';
+  const borderColor = isMusic ? 'rgba(0,255,136,0.25)' : 'rgba(255,165,0,0.25)';
+  const accentColor = isMusic ? '#00ff88' : '#ffa500';
+  return `
+    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, ${gradient});border:1px solid ${borderColor};box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:24px;">${icon}</span>
+        <span style="font-size:15px;font-weight:800;color:#fff;">${title}</span>
+      </div>
+      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
+        Enable Google Cloud billing to unlock ${feature}. Google gives you <span style="color:#ffd700;font-weight:700;">$300 in free credits</span> — more than enough to explore and create.
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.08));border:1px solid rgba(255,215,0,0.25);margin-bottom:10px;">
+        <span style="font-size:18px;">🎁</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#ffd700;">$300 Free Credit from Google</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.7);">New accounts get $300 to use on any Google Cloud AI service</div>
+        </div>
+      </div>
+      <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener" class="unlock-billing-btn" style="display:block;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg, ${accentColor}, #ffd700);color:#111;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;">Enable Billing & Claim $300 Free →</a>
+      <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.5);">Takes less than 2 minutes — no charges until you exceed the free credit</div>
+    </div>`;
 }
 
 async function confirmPaidGeneration(mode, details) {
@@ -917,7 +940,8 @@ async function loadAvailableVeoModels(studio) {
     userAvailableVeoModels = VEO_MODELS.filter(vm => veoNames.includes(vm.id));
 
     if (userAvailableVeoModels.length === 0) {
-      if (loadingEl) loadingEl.innerHTML = '<span style="color:#ff9900;font-size:11px;">No Veo models found on your key. Enable Google Cloud billing or get the $300 free credit to unlock video generation.</span>';
+      if (loadingEl) loadingEl.remove();
+      selector.insertAdjacentHTML('beforeend', buildUnlockCard('video'));
       return;
     }
 
@@ -1142,8 +1166,9 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
       const errorMsg = data.error?.message || `API error ${resp.status}`;
       console.log(`[SnapToAI Video] API error: ${errorMsg}`);
       let friendlyMsg = errorMsg;
-      if (resp.status === 400 && errorMsg.toLowerCase().includes('billing')) {
-        friendlyMsg = 'This model requires Google Cloud billing. Enable billing or get the $300 free credit at console.cloud.google.com/billing';
+      if (isBillingError(resp.status, errorMsg)) {
+        progressBubble.innerHTML = buildUnlockCard('video');
+        return;
       } else if (resp.status === 429) {
         friendlyMsg = 'Rate limit reached. Please wait a few minutes and try again.';
       }
@@ -1229,6 +1254,10 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
 
       if (!resp.ok) {
         const errorMsg = data.error?.message || `API error ${resp.status}`;
+        if (isBillingError(resp.status, errorMsg)) {
+          progressBubble.innerHTML = buildUnlockCard('video');
+          return;
+        }
         let friendlyMsg = errorMsg;
         if (resp.status === 429) friendlyMsg = 'Rate limit reached. Please wait a few minutes and try again.';
         if (statusEl) { statusEl.textContent = '❌ Failed'; statusEl.style.color = '#ff6b6b'; }
@@ -2811,7 +2840,7 @@ async function handleSend() {
               console.log(`[SnapToAI Audio] Success with ${audioModel}!`);
               break;
             } else {
-              audioError = '🎵 Unlock Music Studio: turn on Google Cloud billing to access Lyria, and Google gives you $300 in free credits to get started.';
+              audioError = '__billing_unlock__';
               console.log(`[SnapToAI Audio] ${audioModel} returned parts but no real audio data`);
               continue;
             }
@@ -2829,9 +2858,18 @@ async function handleSend() {
       }
       
       if (!audioSucceeded) {
+        if (audioError === '__billing_unlock__' || audioError?.toLowerCase().includes('billing') || audioError?.toLowerCase().includes('permission') || audioError?.toLowerCase().includes('not enabled') || audioError?.toLowerCase().includes('paid tier')) {
+          removeLoading();
+          const unlockBubble = createResponseBubble();
+          unlockBubble.innerHTML = buildUnlockCard('music');
+          thread.scrollTop = thread.scrollHeight;
+          sendBtn.disabled = false;
+          releaseRequestLock();
+          return;
+        }
         const friendlyAudioError = audioError?.toLowerCase().includes('failed to fetch')
           ? 'Connection failed — please check your internet and try again.'
-          : (audioError || '🎵 Unlock Music Studio to start creating music.');
+          : (audioError || 'Music generation failed. Please try again.');
         throw new Error(friendlyAudioError);
       }
       
@@ -2861,7 +2899,7 @@ async function handleSend() {
       }
       
       if (!hasAudio && !fullText) {
-        htmlContent = '<div style="color:#ff6b6b;">No audio was generated. Try typing a sentence to speak.</div>';
+        htmlContent = buildUnlockCard('music');
       } else if (!hasAudio) {
         htmlContent = `<div style="font-size:13px;color:#aabbcc;">${fullText}</div>`;
       } else {
