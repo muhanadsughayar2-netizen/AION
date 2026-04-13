@@ -131,10 +131,36 @@
 
     .wow-chip {
       background: rgba(255, 255, 255, 0.06);
-      padding: 8px 12px;
-      border-radius: 12px;
+      padding: 8px 16px;
+      border-radius: 9999px;
       font-size: 13px;
+      white-space: nowrap;
       border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .trial-line {
+      text-align: center;
+      font-size: 14px;
+      opacity: 0.75;
+      margin-top: 12px;
+    }
+
+    .cta-btn {
+      background: #00d4ff;
+      color: #000;
+      font-weight: bold;
+      padding: 14px 36px;
+      border-radius: 9999px;
+      border: none;
+      cursor: pointer;
+      margin-top: 16px;
+      width: 100%;
+      font-size: 15px;
+      transition: background 0.2s;
+    }
+
+    .cta-btn:hover {
+      background: #33e0ff;
     }
 
     .pin-guide {
@@ -429,6 +455,8 @@
 
         <p class="pin-hint">First time? Just <strong>pin the extension</strong> so you can snap from any page.</p>
 
+        <p class="trial-line">🎁 30-day trial — all features unlocked</p>
+
         <div class="pin-steps">
           <div class="pin-step">
             <div class="pin-step-icon puzzle">
@@ -457,10 +485,21 @@
             <span class="pin-step-label ready">Ready to snap!</span>
           </div>
         </div>
+
+        <button class="cta-btn" id="openPopupBtn">Open AI Chat Now →</button>
       </div>
     </div>
 
     <p class="privacy">🔒 Your screenshots stay 100% private — processed securely with Google Gemini</p>
   </div>
+  <script>
+    document.getElementById('openPopupBtn').addEventListener('click', function() {
+      try {
+        chrome.action.openPopup();
+      } catch (e) {
+        window.close();
+      }
+    });
+  </script>
 </body>
 </html>
