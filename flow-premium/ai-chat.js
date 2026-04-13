@@ -1642,7 +1642,14 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         }
         clearInterval(activeVideoPollTimer);
         activeVideoPollTimer = null;
-        progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${errMsg}</div>`;
+        const errLower = errMsg.toLowerCase();
+        if (errLower.includes('quota') || errLower.includes('rate') || errLower.includes('exceeded') || errLower.includes('resource')) {
+          progressBubble.innerHTML = buildComeBackCard(true);
+        } else if (isBillingError(resp.status, errMsg)) {
+          progressBubble.innerHTML = buildUnlockCard('video');
+        } else {
+          progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${errMsg}</div>`;
+        }
         return;
       }
 
@@ -1660,7 +1667,14 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
 
         if (data.error) {
           const errMsg = data.error.message || 'Video generation failed.';
-          progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${errMsg}</div>`;
+          const errLower2 = errMsg.toLowerCase();
+          if (errLower2.includes('quota') || errLower2.includes('rate') || errLower2.includes('exceeded') || errLower2.includes('resource') || data.error.code === 429) {
+            progressBubble.innerHTML = buildComeBackCard(true);
+          } else if (isBillingError(data.error.code || 0, errMsg)) {
+            progressBubble.innerHTML = buildUnlockCard('video');
+          } else {
+            progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${errMsg}</div>`;
+          }
           return;
         }
 
@@ -2657,10 +2671,36 @@ async function handleSend() {
               const batchText = batchData.candidates?.[0]?.content?.parts?.[0]?.text || '';
               allBatchResults.push(`## Batch ${batchNum + 1} (Images ${start + 1}-${end})\n${batchText}`);
             } else {
-              allBatchResults.push(`## Batch ${batchNum + 1}\n⚠️ Failed to process this batch.`);
+              const batchErrBody = await batchResponse.json().catch(() => ({}));
+              const batchErrMsg = batchErrBody.error?.message || '';
+              const batchErrLower = batchErrMsg.toLowerCase();
+              if (batchResponse.status === 429 || batchErrLower.includes('quota') || batchErrLower.includes('rate') || batchErrLower.includes('exceeded') || batchErrLower.includes('resource')) {
+                batchInfo.remove();
+                const quotaBatchBubble = createResponseBubble();
+                const apiR = await chrome.storage.sync.get(['geminiApiKey']);
+                const hasKey = apiR.geminiApiKey && apiR.geminiApiKey.length > 20;
+                quotaBatchBubble.innerHTML = buildComeBackCard(hasKey);
+                thread.scrollTop = thread.scrollHeight;
+                sendBtn.disabled = false;
+                releaseRequestLock();
+                return;
+              }
+              allBatchResults.push(`## Batch ${batchNum + 1}\nFailed to process this batch.`);
             }
           } catch (batchError) {
-            allBatchResults.push(`## Batch ${batchNum + 1}\n⚠️ Error: ${batchError.message}`);
+            const batchCatchLower = batchError.message?.toLowerCase() || '';
+            if (batchCatchLower.includes('quota') || batchCatchLower.includes('rate') || batchCatchLower.includes('exceeded')) {
+              batchInfo.remove();
+              const quotaBatchBubble2 = createResponseBubble();
+              const apiR2 = await chrome.storage.sync.get(['geminiApiKey']);
+              const hasKey2 = apiR2.geminiApiKey && apiR2.geminiApiKey.length > 20;
+              quotaBatchBubble2.innerHTML = buildComeBackCard(hasKey2);
+              thread.scrollTop = thread.scrollHeight;
+              sendBtn.disabled = false;
+              releaseRequestLock();
+              return;
+            }
+            allBatchResults.push(`## Batch ${batchNum + 1}\nError processing this batch.`);
           }
           
           // Rate limit delay between batches (except last) - 6s to respect API limits
@@ -3125,16 +3165,21 @@ async function handleSend() {
       // Modal already shown — don't add an error bubble
     } else {
       const lowerErr = error.message.toLowerCase();
-      const isQuotaError = lowerErr.match(/quota|rate|limit|429|exceeded/);
+      const isQuotaError = lowerErr.match(/quota|rate|limit|429|exceeded|resource.exhausted/);
+      const isBilling = lowerErr.includes('billing') || lowerErr.includes('permission') || lowerErr.includes('not enabled') || lowerErr.includes('paid tier') || lowerErr.includes('precondition');
       if (isQuotaError) {
         const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
         const hasOwnKey = apiResult.geminiApiKey && apiResult.geminiApiKey.length > 20;
         const quotaBubble = createResponseBubble();
         quotaBubble.innerHTML = buildComeBackCard(hasOwnKey);
         thread.scrollTop = thread.scrollHeight;
+      } else if (isBilling) {
+        const unlockBubble = createResponseBubble();
+        unlockBubble.innerHTML = buildUnlockCard('video');
+        thread.scrollTop = thread.scrollHeight;
       } else {
         const friendlyMsg = await getFriendlyErrorMessage(error.message);
-        addBubble(friendlyMsg, 'error');
+        addBubble(friendlyMsg, 'ai');
       }
     }
   } finally {
@@ -3153,20 +3198,12 @@ async function getFriendlyErrorMessage(errorMsg) {
   const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
   const hasOwnApiKey = apiResult.geminiApiKey && apiResult.geminiApiKey.length > 20;
   
-  // Quota/Rate limit errors
-  if (lowerMsg.includes('quota') || lowerMsg.includes('rate') || lowerMsg.includes('limit') || lowerMsg.includes('429') || lowerMsg.includes('exceeded')) {
+  // Quota/Rate limit errors — friendly non-scary messages
+  if (lowerMsg.includes('quota') || lowerMsg.includes('rate') || lowerMsg.includes('limit') || lowerMsg.includes('429') || lowerMsg.includes('exceeded') || lowerMsg.includes('resource')) {
     if (hasOwnApiKey) {
-      // User has their own API key - show technical error
-      return `⚠️ API rate limit reached.\n\n` +
-             `This is a temporary limit from Google. Please wait a few seconds and try again.\n\n` +
-             `If this persists, check your Google AI Studio dashboard for quota details.`;
+      return `⏳ Taking a quick breather! Google's API has a temporary limit. Just wait a moment and try again.`;
     } else {
-      return `✨ To use AI analysis, connect your Gemini API key.\n\n` +
-             `It takes about 1 minute:\n` +
-             `1. Go to aistudio.google.com\n` +
-             `2. Click "Create API key"\n` +
-             `3. Copy the key and paste it in Settings\n\n` +
-             `That's it — you'll get unlimited AI prompts!`;
+      return `🌟 You've had a great session! Come back tomorrow for more free prompts, or get unlimited access with a free Gemini API key at aistudio.google.com`;
     }
   }
   
