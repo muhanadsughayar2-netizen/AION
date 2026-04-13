@@ -1,10 +1,10 @@
 {
   "extensionName": {
-    "message": "SnapToAI - Screenshot to AI",
+    "message": "SnapToAI: Screenshot to AI Chat + Image, Music & Video Generator",
     "description": "extensionName"
   },
   "extensionDescription": {
-    "message": "Capture screenshots and batch upload to AI platforms",
+    "message": "Capture any screen → chat with AI, generate images, music & videos instantly. Vision AI + full generative power in one click.",
     "description": "extensionDescription"
   },
   "flowReady": {
