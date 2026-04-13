@@ -1,0 +1,1507 @@
+Uncaught (in promise) ReferenceError: createResponseBubble is not defined
+Context
+ai-chat.html?count=1
+Stack Trace
+ai-chat.js:3173 (anonymous function)
+...
+2674
+2675
+2676
+2677
+2678
+2679
+2680
+2681
+2682
+2683
+2684
+2685
+2686
+2687
+2688
+2689
+2690
+2691
+2692
+2693
+2694
+2695
+2696
+2697
+2698
+2699
+2700
+2701
+2702
+2703
+2704
+2705
+2706
+2707
+2708
+2709
+2710
+2711
+2712
+2713
+2714
+2715
+2716
+2717
+2718
+2719
+2720
+2721
+2722
+2723
+2724
+2725
+2726
+2727
+2728
+2729
+2730
+2731
+2732
+2733
+2734
+2735
+2736
+2737
+2738
+2739
+2740
+2741
+2742
+2743
+2744
+2745
+2746
+2747
+2748
+2749
+2750
+2751
+2752
+2753
+2754
+2755
+2756
+2757
+2758
+2759
+2760
+2761
+2762
+2763
+2764
+2765
+2766
+2767
+2768
+2769
+2770
+2771
+2772
+2773
+2774
+2775
+2776
+2777
+2778
+2779
+2780
+2781
+2782
+2783
+2784
+2785
+2786
+2787
+2788
+2789
+2790
+2791
+2792
+2793
+2794
+2795
+2796
+2797
+2798
+2799
+2800
+2801
+2802
+2803
+2804
+2805
+2806
+2807
+2808
+2809
+2810
+2811
+2812
+2813
+2814
+2815
+2816
+2817
+2818
+2819
+2820
+2821
+2822
+2823
+2824
+2825
+2826
+2827
+2828
+2829
+2830
+2831
+2832
+2833
+2834
+2835
+2836
+2837
+2838
+2839
+2840
+2841
+2842
+2843
+2844
+2845
+2846
+2847
+2848
+2849
+2850
+2851
+2852
+2853
+2854
+2855
+2856
+2857
+2858
+2859
+2860
+2861
+2862
+2863
+2864
+2865
+2866
+2867
+2868
+2869
+2870
+2871
+2872
+2873
+2874
+2875
+2876
+2877
+2878
+2879
+2880
+2881
+2882
+2883
+2884
+2885
+2886
+2887
+2888
+2889
+2890
+2891
+2892
+2893
+2894
+2895
+2896
+2897
+2898
+2899
+2900
+2901
+2902
+2903
+2904
+2905
+2906
+2907
+2908
+2909
+2910
+2911
+2912
+2913
+2914
+2915
+2916
+2917
+2918
+2919
+2920
+2921
+2922
+2923
+2924
+2925
+2926
+2927
+2928
+2929
+2930
+2931
+2932
+2933
+2934
+2935
+2936
+2937
+2938
+2939
+2940
+2941
+2942
+2943
+2944
+2945
+2946
+2947
+2948
+2949
+2950
+2951
+2952
+2953
+2954
+2955
+2956
+2957
+2958
+2959
+2960
+2961
+2962
+2963
+2964
+2965
+2966
+2967
+2968
+2969
+2970
+2971
+2972
+2973
+2974
+2975
+2976
+2977
+2978
+2979
+2980
+2981
+2982
+2983
+2984
+2985
+2986
+2987
+2988
+2989
+2990
+2991
+2992
+2993
+2994
+2995
+2996
+2997
+2998
+2999
+3000
+3001
+3002
+3003
+3004
+3005
+3006
+3007
+3008
+3009
+3010
+3011
+3012
+3013
+3014
+3015
+3016
+3017
+3018
+3019
+3020
+3021
+3022
+3023
+3024
+3025
+3026
+3027
+3028
+3029
+3030
+3031
+3032
+3033
+3034
+3035
+3036
+3037
+3038
+3039
+3040
+3041
+3042
+3043
+3044
+3045
+3046
+3047
+3048
+3049
+3050
+3051
+3052
+3053
+3054
+3055
+3056
+3057
+3058
+3059
+3060
+3061
+3062
+3063
+3064
+3065
+3066
+3067
+3068
+3069
+3070
+3071
+3072
+3073
+3074
+3075
+3076
+3077
+3078
+3079
+3080
+3081
+3082
+3083
+3084
+3085
+3086
+3087
+3088
+3089
+3090
+3091
+3092
+3093
+3094
+3095
+3096
+3097
+3098
+3099
+3100
+3101
+3102
+3103
+3104
+3105
+3106
+3107
+3108
+3109
+3110
+3111
+3112
+3113
+3114
+3115
+3116
+3117
+3118
+3119
+3120
+3121
+3122
+3123
+3124
+3125
+3126
+3127
+3128
+3129
+3130
+3131
+3132
+3133
+3134
+3135
+3136
+3137
+3138
+3139
+3140
+3141
+3142
+3143
+3144
+3145
+3146
+3147
+3148
+3149
+3150
+3151
+3152
+3153
+3154
+3155
+3156
+3157
+3158
+3159
+3160
+3161
+3162
+3163
+3164
+3165
+3166
+3167
+3168
+3169
+3170
+3171
+3172
+3173
+3174
+3175
+3176
+3177
+3178
+3179
+3180
+3181
+3182
+3183
+3184
+3185
+3186
+3187
+3188
+3189
+3190
+3191
+3192
+3193
+3194
+3195
+3196
+3197
+3198
+3199
+3200
+3201
+3202
+3203
+3204
+3205
+3206
+3207
+3208
+3209
+3210
+3211
+3212
+3213
+3214
+3215
+3216
+3217
+3218
+3219
+3220
+3221
+3222
+3223
+3224
+3225
+3226
+3227
+3228
+3229
+3230
+3231
+3232
+3233
+3234
+3235
+3236
+3237
+3238
+3239
+3240
+3241
+3242
+3243
+3244
+3245
+3246
+3247
+3248
+3249
+3250
+3251
+3252
+3253
+3254
+3255
+3256
+3257
+3258
+3259
+3260
+3261
+3262
+3263
+3264
+3265
+3266
+3267
+3268
+3269
+3270
+3271
+3272
+3273
+3274
+3275
+3276
+3277
+3278
+3279
+3280
+3281
+3282
+3283
+3284
+3285
+3286
+3287
+3288
+3289
+3290
+3291
+3292
+3293
+3294
+3295
+3296
+3297
+3298
+3299
+3300
+3301
+3302
+3303
+3304
+3305
+3306
+3307
+3308
+3309
+3310
+3311
+3312
+3313
+3314
+3315
+3316
+3317
+3318
+3319
+3320
+3321
+3322
+3323
+3324
+3325
+3326
+3327
+3328
+3329
+3330
+3331
+3332
+3333
+3334
+3335
+3336
+3337
+3338
+3339
+3340
+3341
+3342
+3343
+3344
+3345
+3346
+3347
+3348
+3349
+3350
+3351
+3352
+3353
+3354
+3355
+3356
+3357
+3358
+3359
+3360
+3361
+3362
+3363
+3364
+3365
+3366
+3367
+3368
+3369
+3370
+3371
+3372
+3373
+3374
+3375
+3376
+3377
+3378
+3379
+3380
+3381
+3382
+3383
+3384
+3385
+3386
+3387
+3388
+3389
+3390
+3391
+3392
+3393
+3394
+3395
+3396
+3397
+3398
+3399
+3400
+3401
+3402
+3403
+3404
+3405
+3406
+3407
+3408
+3409
+3410
+3411
+3412
+3413
+3414
+3415
+3416
+3417
+3418
+3419
+3420
+3421
+3422
+3423
+3424
+3425
+3426
+3427
+3428
+3429
+3430
+3431
+3432
+3433
+3434
+3435
+3436
+3437
+3438
+3439
+3440
+3441
+3442
+3443
+3444
+3445
+3446
+3447
+3448
+3449
+3450
+3451
+3452
+3453
+3454
+3455
+3456
+3457
+3458
+3459
+3460
+3461
+3462
+3463
+3464
+3465
+3466
+3467
+3468
+3469
+3470
+3471
+3472
+3473
+3474
+3475
+3476
+3477
+3478
+3479
+3480
+3481
+3482
+3483
+3484
+3485
+3486
+3487
+3488
+3489
+3490
+3491
+3492
+3493
+3494
+3495
+3496
+3497
+3498
+3499
+3500
+3501
+3502
+3503
+3504
+3505
+3506
+3507
+3508
+3509
+3510
+3511
+3512
+3513
+3514
+3515
+3516
+3517
+3518
+3519
+3520
+3521
+3522
+3523
+3524
+3525
+3526
+3527
+3528
+3529
+3530
+3531
+3532
+3533
+3534
+3535
+3536
+3537
+3538
+3539
+3540
+3541
+3542
+3543
+3544
+3545
+3546
+3547
+3548
+3549
+3550
+3551
+3552
+3553
+3554
+3555
+3556
+3557
+3558
+3559
+3560
+3561
+3562
+3563
+3564
+3565
+3566
+3567
+3568
+3569
+3570
+3571
+3572
+3573
+3574
+3575
+3576
+3577
+3578
+3579
+3580
+3581
+3582
+3583
+3584
+3585
+3586
+3587
+3588
+3589
+3590
+3591
+3592
+3593
+3594
+3595
+3596
+3597
+3598
+3599
+3600
+3601
+3602
+3603
+3604
+3605
+3606
+3607
+3608
+3609
+3610
+3611
+3612
+3613
+3614
+3615
+3616
+3617
+3618
+3619
+3620
+3621
+3622
+3623
+3624
+3625
+3626
+3627
+3628
+3629
+3630
+3631
+3632
+3633
+3634
+3635
+3636
+3637
+3638
+3639
+3640
+3641
+3642
+3643
+3644
+3645
+3646
+3647
+3648
+3649
+3650
+3651
+3652
+3653
+3654
+3655
+3656
+3657
+3658
+3659
+3660
+3661
+3662
+3663
+3664
+3665
+3666
+3667
+3668
+3669
+3670
+3671
+3672
+...
+<2673 lines not shown>
+              const batchErrBody = await batchResponse.json().catch(() => ({}));
+              const batchErrMsg = batchErrBody.error?.message || '';
+              const batchErrLower = batchErrMsg.toLowerCase();
+              if (batchResponse.status === 429 || batchErrLower.includes('quota') || batchErrLower.includes('rate') || batchErrLower.includes('exceeded') || batchErrLower.includes('resource')) {
+                batchInfo.remove();
+                const quotaBatchBubble = createResponseBubble();
+                const apiR = await chrome.storage.sync.get(['geminiApiKey']);
+                const hasKey = apiR.geminiApiKey && apiR.geminiApiKey.length > 20;
+                quotaBatchBubble.innerHTML = buildComeBackCard(hasKey);
+                thread.scrollTop = thread.scrollHeight;
+                sendBtn.disabled = false;
+                releaseRequestLock();
+                return;
+              }
+              allBatchResults.push(`## Batch ${batchNum + 1}\nFailed to process this batch.`);
+            }
+          } catch (batchError) {
+            const batchCatchLower = batchError.message?.toLowerCase() || '';
+            if (batchCatchLower.includes('quota') || batchCatchLower.includes('rate') || batchCatchLower.includes('exceeded')) {
+              batchInfo.remove();
+              const quotaBatchBubble2 = createResponseBubble();
+              const apiR2 = await chrome.storage.sync.get(['geminiApiKey']);
+              const hasKey2 = apiR2.geminiApiKey && apiR2.geminiApiKey.length > 20;
+              quotaBatchBubble2.innerHTML = buildComeBackCard(hasKey2);
+              thread.scrollTop = thread.scrollHeight;
+              sendBtn.disabled = false;
+              releaseRequestLock();
+              return;
+            }
+            allBatchResults.push(`## Batch ${batchNum + 1}\nError processing this batch.`);
+          }
+          
+          // Rate limit delay between batches (except last) - 6s to respect API limits
+          if (batchNum < numBatches - 1) {
+            batchInfo.innerHTML = `📊 <strong>Batch ${batchNum + 1}/${numBatches} complete!</strong><br>Waiting for rate limit...`;
+            await new Promise(r => setTimeout(r, 6000));
+          }
+        }
+        
+        // Remove batch progress and show combined results
+        batchInfo.remove();
+        
+        const responseBubble = document.createElement('div');
+        responseBubble.className = 'chat-bubble ai';
+        const combinedResult = `# Full Page Analysis (${totalImages} screenshots)\n\n${allBatchResults.join('\n\n---\n\n')}`;
+        responseBubble.innerHTML = typeof marked !== 'undefined' ? (typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(marked.parse(combinedResult)) : marked.parse(combinedResult)) : combinedResult;
+        thread.appendChild(responseBubble);
+        addBubbleActions(responseBubble, combinedResult);
+        thread.scrollTop = thread.scrollHeight;
+        
+        const batchHistoryEntry = { role: 'user', text: prompt };
+        if (currentImages.length > 0) batchHistoryEntry.images = currentImages;
+        conversationHistory.push(batchHistoryEntry);
+        conversationHistory.push({ role: 'model', text: combinedResult });
+        
+        sendBtn.disabled = false;
+        input.focus();
+        return;
+      }
+      
+      // Normal case: 20 or fewer images - send all at once
+      for (const imgUrl of currentImages) {
+        const base64Data = imgUrl.split(',')[1];
+        const mimeType = imgUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+        userParts.push({ inlineData: { mimeType: mimeType, data: base64Data } });
+      }
+      // If we have page text, include it for smarter analysis
+      if (currentPageText && currentPageText.length > 800) {
+        userParts.push({ text: `[PAGE TEXT FOR CONTEXT]:\n${currentPageText}\n\n[USER QUESTION]: ${prompt}` });
+      } else {
+        userParts.push({ text: prompt });
+      }
+    } else {
+      userParts.push({ text: prompt });
+    }
+    
+    // Attach all queued files (multi-file Gemini-style)
+    if (filesQueue && filesQueue.length > 0) {
+      filesQueue.forEach(f => {
+        userParts.push({ inlineData: { mimeType: f.mimeType, data: f.data } });
+      });
+      clearFilesQueue();
+    }
+    
+    contents.push({ role: 'user', parts: userParts });
+    
+    await waitForRateLimit();
+    
+    let fullText = '';
+
+    const createResponseBubble = () => {
+      removeLoading();
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble ai';
+      thread.appendChild(bubble);
+      return bubble;
+    };
+
+    if (modeConfig.type === 'gemini-image') {
+      // === IMAGE GENERATION (via generateContent with responseModalities) ===
+      const imageModels = [
+        'gemini-2.5-flash-image',
+        'gemini-3.1-flash-image-preview',
+        'gemini-3-pro-image-preview'
+      ];
+      
+      let lastResponseData = null;
+      let lastError = '';
+      let succeeded = false;
+      
+      for (const modelName of imageModels) {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const loadingEl = document.querySelector('.loading-dots');
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+          
+          console.log(`[SnapToAI Image] Attempt ${attempt+1}/3 using ${modelName} via generateContent`);
+          
+          let response;
+          try {
+            response = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ role: 'user', parts: [{ text: `Generate an image: ${prompt}` }] }],
+                generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+              })
+            });
+          } catch(fetchErr) {
+            console.log(`[SnapToAI Image] Fetch error on ${modelName}:`, fetchErr.message);
+            lastError = fetchErr.message;
+            continue;
+          }
+          
+          const responseBody = await response.json().catch(() => ({}));
+          console.log(`[SnapToAI Image] Status: ${response.status}`, JSON.stringify(responseBody).substring(0, 500));
+          
+          if (response.ok && responseBody.candidates?.[0]?.content?.parts) {
+            lastResponseData = responseBody;
+            succeeded = true;
+            break;
+          }
+          
+          if (response.ok && !responseBody.candidates?.[0]?.content?.parts) {
+            const blockReason = responseBody.candidates?.[0]?.finishReason || 
+                               responseBody.promptFeedback?.blockReason || '';
+            if (blockReason === 'SAFETY' || blockReason === 'BLOCKED') {
+              lastError = 'Your prompt was blocked by safety filters. Try rephrasing it.';
+            } else {
+              lastError = 'The AI couldn\'t generate an image for that prompt. Try a different description.';
+            }
+            console.log(`[SnapToAI Image] 200 but no image data. Reason: ${blockReason || 'unknown'}`);
+            continue;
+          }
+          
+          lastError = responseBody.error?.message || `Status ${response.status}`;
+          console.log(`[SnapToAI Image] Error: ${lastError}`);
+          
+          break;
+        }
+        
+        if (succeeded) break;
+        console.log(`[SnapToAI Image] ${modelName} failed, trying next model...`);
+      }
+      
+      if (!succeeded) {
+        const friendlyError = lastError?.toLowerCase().includes('failed to fetch') 
+          ? 'Connection failed — please check your internet and try again.'
+          : (lastError || 'Image generation failed. Please try again.');
+        throw new Error(friendlyError);
+      }
+      
+      const responseBubble = createResponseBubble();
+      const parts = lastResponseData.candidates[0].content.parts;
+      let htmlContent = '';
+      let hasImage = false;
+      let rawImageSrc = null;
+      
+      for (const part of parts) {
+        if (part.text) {
+          fullText += part.text;
+        }
+        if (part.inlineData) {
+          hasImage = true;
+          rawImageSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          htmlContent += `<div style="margin:10px 0;" class="generated-image-container"><img class="generated-img" src="${rawImageSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);" title="Click to save full size"><div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"><button class="img-save-btn" style="background:rgba(255,107,237,0.15);border:1px solid rgba(255,107,237,0.3);color:#ff6bed;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Image</button></div></div>`;
+        }
+      }
+      
+      if (hasImage) {
+        fullText = fullText || `Generated image: "${prompt}"`;
+        htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:8px;">🎨 ${fullText}</div>` + htmlContent;
+      } else {
+        htmlContent = '<div style="color:#ff6b6b;">No image was generated. Try a more descriptive prompt.</div>';
+      }
+      
+      responseBubble.innerHTML = htmlContent;
+      
+      responseBubble.querySelectorAll('.generated-img').forEach(img => {
+        img.addEventListener('click', () => {
+          const a = document.createElement('a');
+          a.href = img.src;
+          a.download = 'snaptoai-image.png';
+          a.click();
+        });
+      });
+      responseBubble.querySelectorAll('.img-save-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const img = btn.closest('.generated-image-container')?.querySelector('img') || btn.closest('div').parentElement.querySelector('img');
+          if (img) {
+            const a = document.createElement('a');
+            a.href = img.src;
+            a.download = 'snaptoai-image.png';
+            a.click();
+          }
+        });
+      });
+      
+      thread.scrollTop = thread.scrollHeight;
+      addBubbleActions(responseBubble, fullText);
+      
+    } else if (modeConfig.type === 'gemini-audio') {
+      const costInfo = getPaidModeEstimate('music');
+      const ok = await confirmPaidGeneration('music', costInfo);
+      if (!ok) {
+        removeLoading();
+        sendBtn.disabled = false;
+        releaseRequestLock();
+        return;
+      }
+      // === MUSIC / AUDIO GENERATION (Lyria or TTS) ===
+      const musicModels = [modeConfig.model, 'lyria-3-pro-preview', 'gemini-2.5-flash-preview-tts'];
+      let audioData = null;
+      let audioError = '';
+      let audioSucceeded = false;
+      
+      for (const audioModel of musicModels) {
+        console.log(`[SnapToAI Audio] Trying model: ${audioModel}`);
+        
+        let bodyPayload;
+        const isLyria = audioModel.includes('lyria');
+        const isTTS = audioModel.includes('tts');
+        
+        if (isLyria) {
+          const contentParts = [];
+          if (currentImages.length > 0) {
+            for (const img of currentImages) {
+              const [meta, b64] = img.split(',');
+              const mime = meta.match(/:(.*?);/)?.[1] || 'image/png';
+              contentParts.push({ inlineData: { mimeType: mime, data: b64 } });
+            }
+            contentParts.push({ text: prompt || 'Create music that captures the mood, atmosphere, and emotion of this image. Make it a complete, polished musical piece.' });
+          } else {
+            contentParts.push({ text: prompt });
+          }
+          bodyPayload = {
+            contents: [{ role: 'user', parts: contentParts }],
+            generationConfig: { responseModalities: ['AUDIO'] }
+          };
+        } else {
+          bodyPayload = {
+            contents: [{ role: 'user', parts: [{ text: `Say the following: ${prompt}` }] }],
+            generationConfig: {
+              responseModalities: ['AUDIO'],
+              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } }
+            }
+          };
+        }
+        
+        try {
+          const resp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${audioModel}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(bodyPayload)
+            }
+          );
+          
+          const body = await resp.json().catch(() => ({}));
+          console.log(`[SnapToAI Audio] ${audioModel} status: ${resp.status}`, JSON.stringify(body).substring(0, 500));
+          
+          if (resp.ok && body.candidates?.[0]?.content?.parts) {
+            const audioParts = body.candidates[0].content.parts;
+            const hasRealAudio = audioParts.some(p => p.inlineData?.data && p.inlineData.data.length > 5000);
+            if (hasRealAudio) {
+              audioData = body;
+              audioSucceeded = true;
+              console.log(`[SnapToAI Audio] Success with ${audioModel}!`);
+              break;
+            } else {
+              audioError = '__billing_unlock__';
+              console.log(`[SnapToAI Audio] ${audioModel} returned parts but no real audio data`);
+              continue;
+            }
+          }
+          
+          audioError = body.error?.message || `Status ${resp.status}`;
+          const isRateLimit = resp.status === 429 || audioError.toLowerCase().includes('rate') || audioError.toLowerCase().includes('quota');
+          if (isRateLimit) {
+            console.log(`[SnapToAI Audio] Rate limited on ${audioModel}, trying next...`);
+          }
+        } catch(e) {
+          audioError = e.message;
+          console.log(`[SnapToAI Audio] ${audioModel} error:`, e.message);
+        }
+      }
+      
+      if (!audioSucceeded) {
+        if (audioError === '__billing_unlock__' || audioError?.toLowerCase().includes('billing') || audioError?.toLowerCase().includes('permission') || audioError?.toLowerCase().includes('not enabled') || audioError?.toLowerCase().includes('paid tier')) {
+          removeLoading();
+          const unlockBubble = createResponseBubble();
+          unlockBubble.innerHTML = buildUnlockCard('music');
+          thread.scrollTop = thread.scrollHeight;
+          sendBtn.disabled = false;
+          releaseRequestLock();
+          return;
+        }
+        const friendlyAudioError = audioError?.toLowerCase().includes('failed to fetch')
+          ? 'Connection failed — please check your internet and try again.'
+          : (audioError || 'Music generation failed. Please try again.');
+        throw new Error(friendlyAudioError);
+      }
+      
+      const responseBubble = createResponseBubble();
+      const data = audioData;
+      const parts = data.candidates[0].content.parts;
+      console.log(`[SnapToAI Audio] Got ${parts.length} parts`);
+      let htmlContent = '';
+      let hasAudio = false;
+      
+      for (const part of parts) {
+        if (part.text) {
+          fullText += part.text;
+          const parsedHtml = typeof marked !== 'undefined' ? marked.parse(part.text) : part.text;
+          htmlContent += typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
+        }
+        if (part.inlineData && part.inlineData.mimeType?.startsWith('audio') && part.inlineData.data?.length > 5000) {
+          hasAudio = true;
+          const audioSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          const audioId = 'audio-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+          htmlContent += `<div id="wrap-${audioId}" style="margin:10px 0;">
+            <audio id="${audioId}" controls style="width:100%; border-radius:8px; outline:none;" src="${audioSrc}"></audio>
+            <div style="margin-top:8px; display:flex; gap:8px;">
+              <button class="audio-save-btn" style="background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.3);color:#00ff88;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Audio</button>
+            </div>
+          </div>`;
+          setTimeout(() => {
+            const audioEl = document.getElementById(audioId);
+            if (!audioEl) return;
+            const checkDuration = () => {
+              if (audioEl.duration === 0 || isNaN(audioEl.duration)) {
+                const wrap = document.getElementById('wrap-' + audioId);
+                if (wrap) {
+                  wrap.closest('.chat-bubble')?.remove();
+                  const retryBubble = createResponseBubble();
+                  retryBubble.innerHTML = buildMusicRetryCard();
+                  thread.scrollTop = thread.scrollHeight;
+                }
+              }
+            };
+            audioEl.addEventListener('loadedmetadata', checkDuration);
+            setTimeout(checkDuration, 3000);
+          }, 100);
+        }
+      }
+      
+      if (!hasAudio && !fullText) {
+        htmlContent = buildMusicRetryCard();
+      } else if (!hasAudio) {
+        htmlContent = `<div style="font-size:13px;color:#aabbcc;">${fullText}</div>`;
+      } else {
+        fullText = fullText || `Audio for: "${prompt}"`;
+        htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:6px;">🎵 ${fullText}</div>` + htmlContent;
+      }
+      
+      responseBubble.innerHTML = htmlContent;
+      
+      responseBubble.querySelectorAll('.audio-save-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const audioEl = btn.closest('div').parentElement.querySelector('audio');
+          if (audioEl) {
+            const a = document.createElement('a');
+            a.href = audioEl.src;
+            a.download = 'snaptoai-audio.wav';
+            a.click();
+          }
+        });
+      });
+      
+      thread.scrollTop = thread.scrollHeight;
+      addBubbleActions(responseBubble, fullText);
+      
+    } else {
+      // === VISION / GEMINI (streaming text) ===
+      let systemPrompt = SYSTEM_PROMPT;
+      if (currentImages.length > 1) {
+        systemPrompt = MULTI_IMAGE_PROMPT;
+      } else if (currentPageText && currentPageText.length > 800) {
+        systemPrompt = SMART_SYSTEM_PROMPT;
+      }
+      
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:streamGenerateContent?alt=sse&key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: contents,
+            generationConfig: { 
+              maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
+              temperature: getConfig('TEMPERATURE', 0.7),
+              topP: 0.95,
+              topK: 40
+            }
+          })
+        }
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+      }
+      
+      const responseBubble = createResponseBubble();
+      
+      if (!response.body) {
+        throw new Error('No response stream available');
+      }
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let sseBuffer = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        sseBuffer += decoder.decode(value, { stream: true });
+        const lines = sseBuffer.split('\n');
+        sseBuffer = lines.pop() || '';
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const jsonStr = line.slice(6).trim();
+              if (!jsonStr || jsonStr === '[DONE]') continue;
+              const data = JSON.parse(jsonStr);
+              const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (text) {
+                fullText += text;
+                try {
+                  if (typeof marked !== 'undefined') {
+                    const parsedHtml = marked.parse(fullText);
+                    responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
+                    responseBubble.querySelectorAll('a').forEach(link => {
+                      link.setAttribute('target', '_blank');
+                      link.setAttribute('rel', 'noopener noreferrer');
+                    });
+                  } else {
+                    responseBubble.textContent = fullText;
+                  }
+                } catch (renderErr) {
+                  responseBubble.textContent = fullText;
+                }
+                thread.scrollTop = thread.scrollHeight;
+              }
+            } catch (parseErr) {
+              // Skip malformed SSE chunks
+            }
+          }
+        }
+      }
+      
+      if (!fullText) {
+        responseBubble.innerHTML = '<div style="color:#ff6b6b;">No response received. Please try again.</div>';
+      }
+      
+      addBubbleActions(responseBubble, fullText);
+    }
+    
+    const userHistoryEntry = { role: 'user', text: prompt };
+    if (isFirstMessage && currentImages.length > 0) {
+      userHistoryEntry.images = currentImages;
+    }
+    conversationHistory.push(userHistoryEntry);
+    conversationHistory.push({ role: 'model', text: fullText });
+    
+  } catch (error) {
+    removeLoading();
+    if (error.message === '__trial_ended__') {
+      // Modal already shown — don't add an error bubble
+    } else {
+      const lowerErr = error.message.toLowerCase();
+      const isQuotaError = lowerErr.match(/quota|rate|limit|429|exceeded|resource.exhausted/);
+      const isBilling = lowerErr.includes('billing') || lowerErr.includes('permission') || lowerErr.includes('not enabled') || lowerErr.includes('paid tier') || lowerErr.includes('precondition');
+      if (isQuotaError) {
+        const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
+        const hasOwnKey = apiResult.geminiApiKey && apiResult.geminiApiKey.length > 20;
+        const quotaBubble = createRespon

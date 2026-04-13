@@ -2489,6 +2489,14 @@ async function handleSend() {
 
   addThinkingBubble();
 
+  const createResponseBubble = () => {
+    removeLoading();
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble ai';
+    thread.appendChild(bubble);
+    return bubble;
+  };
+
   // Allow browser to paint before heavy processing
   await new Promise(r => requestAnimationFrame(r));
   
@@ -2761,13 +2769,6 @@ async function handleSend() {
     
     let fullText = '';
 
-    const createResponseBubble = () => {
-      removeLoading();
-      const bubble = document.createElement('div');
-      bubble.className = 'chat-bubble ai';
-      thread.appendChild(bubble);
-      return bubble;
-    };
 
     if (modeConfig.type === 'gemini-image') {
       // === IMAGE GENERATION (via generateContent with responseModalities) ===
