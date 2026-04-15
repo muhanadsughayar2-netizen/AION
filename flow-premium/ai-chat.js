@@ -62,30 +62,35 @@ function isBillingError(status, message) {
 
 function buildNoKeyCard() {
   return `
-    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(0,217,255,0.12), rgba(138,43,226,0.06));border:1px solid rgba(0,217,255,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:24px;">🔑</span>
-        <span style="font-size:15px;font-weight:800;color:#fff;">Set Up Your Free AI Key</span>
+    <div style="padding:18px;border-radius:14px;background:linear-gradient(135deg, rgba(0,217,255,0.10), rgba(138,43,226,0.05));border:1px solid rgba(0,217,255,0.22);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+      <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:6px;">Hey! Want this app to see pictures and understand them like magic? ✨</div>
+      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.85);margin-bottom:14px;">
+        Just connect your Gemini key. It takes 1 minute.<br>
+        With a key you get about <span style="color:#00ff88;font-weight:700;">20 tries every day</span> — perfect to play and test.
       </div>
-      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
-        To use AI features, you need a Gemini API key. It's <span style="color:#00ff88;font-weight:700;">completely free</span> and takes about 1 minute to set up.
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+      <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;">
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
           <span style="font-size:14px;">1️⃣</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Visit <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:#00d9ff;text-decoration:none;font-weight:600;">Google AI Studio</a> and click "Create API key"</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Go to <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:#00d9ff;text-decoration:none;font-weight:600;">Google AI Studio</a></span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
           <span style="font-size:14px;">2️⃣</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Copy your new key</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Click "Create API key"</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
           <span style="font-size:14px;">3️⃣</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Click the button below to paste it — done!</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Copy the key</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
+          <span style="font-size:14px;">4️⃣</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Paste it here — done!</span>
         </div>
       </div>
-      <button class="unlock-billing-btn snaptoai-set-key-btn" style="display:block;width:100%;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg, #00d9ff, #8a2be2);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;">Enter My API Key →</button>
-      <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.5);">Free forever — unlimited Vision & Image prompts</div>
+      <button class="unlock-billing-btn snaptoai-set-key-btn" style="display:block;width:100%;text-align:center;padding:11px;border-radius:10px;background:linear-gradient(135deg, #00d9ff, #8a2be2);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;">Enter My Key →</button>
+      <div style="margin-top:14px;padding:12px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.10), rgba(255,165,0,0.05));border:1px solid rgba(255,215,0,0.20);">
+        <div style="font-size:13px;font-weight:700;color:#ffd700;margin-bottom:4px;">Want way more power? 🚀</div>
+        <div style="font-size:12px;line-height:1.5;color:rgba(255,255,255,0.8);">Upgrade to prepaid and Google gives you <span style="color:#00ff88;font-weight:700;">$300 free credits</span>. Then you get tons of tries + <span style="color:#ffd700;font-weight:600;">Video & Music</span> unlock too!</div>
+      </div>
     </div>`;
 }
 
