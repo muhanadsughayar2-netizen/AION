@@ -20,358 +20,328 @@
 
     .container {
       width: 100%;
-      max-width: 440px;
-      text-align: center;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
     }
 
     .card {
-      background: rgba(22, 27, 34, 0.8);
-      border: 1px solid rgba(0, 217, 255, 0.12);
-      border-radius: 20px;
-      padding: 36px 28px;
-      backdrop-filter: blur(20px);
+      background: #13171e;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 28px 24px;
     }
 
-    .camera-icon {
-      font-size: 48px;
-      margin-bottom: 12px;
-    }
-
-    h1 {
-      font-size: 30px;
-      font-weight: 800;
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
       margin-bottom: 6px;
+    }
+
+    .card-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .card h2 {
+      font-size: 18px;
+      font-weight: 700;
       color: #fff;
     }
 
-    h1 .cyan { color: #00d9ff; }
+    .card h2 .accent { color: #00d9ff; }
 
-    .tagline {
-      font-size: 16px;
-      color: #c0c8d2;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-
-    .sub {
-      font-size: 14px;
+    .card-sub {
+      font-size: 13px;
       color: #8b949e;
-      margin-bottom: 28px;
       line-height: 1.5;
+      margin-bottom: 22px;
     }
 
-    .actions {
-      display: flex;
-      justify-content: center;
-      gap: 18px;
-      margin-bottom: 24px;
-    }
-
-    .action-col {
+    .steps {
       display: flex;
       flex-direction: column;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .step {
+      display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 14px;
     }
 
-    .action-label {
-      font-size: 9px;
-      font-weight: 700;
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(0, 217, 255, 0.08);
+      border: 1px solid rgba(0, 217, 255, 0.2);
       color: #00d9ff;
-      letter-spacing: 1px;
-    }
-
-    .action-circle {
-      width: 52px;
-      height: 52px;
+      font-size: 13px;
+      font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 217, 255, 0.06);
-      border: 1.5px solid rgba(0, 217, 255, 0.25);
-      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .step-text {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.82);
+      line-height: 1.4;
+    }
+
+    .step-text a {
       color: #00d9ff;
-    }
-
-    .action-circle svg {
-      width: 22px;
-      height: 22px;
-    }
-
-    .pin-guide {
-      background: rgba(0, 217, 255, 0.04);
-      border: 1px solid rgba(0, 217, 255, 0.15);
-      border-radius: 14px;
-      padding: 20px;
-    }
-
-    .pin-title {
-      font-size: 14px;
+      text-decoration: none;
       font-weight: 600;
-      color: #e6edf3;
+    }
+
+    .key-input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .key-input {
+      flex: 1;
+      padding: 10px 12px;
+      background: #0d1117;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .key-input:focus {
+      border-color: rgba(0, 217, 255, 0.4);
+    }
+
+    .key-input::placeholder {
+      color: #484f58;
+    }
+
+    .cta-btn {
+      width: 100%;
+      padding: 12px 20px;
+      background: #00d9ff;
+      border: none;
+      border-radius: 10px;
+      color: #000;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.2px;
+    }
+
+    .cta-btn:hover {
+      background: #00c4e6;
+    }
+
+    .compliance-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
       margin-bottom: 16px;
     }
 
-    .pin-steps {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
+    .compliance-row input[type="checkbox"] {
+      margin-top: 2px;
+      flex-shrink: 0;
+      accent-color: #00d9ff;
     }
 
-    .pin-step {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .pin-step-icon {
-      width: 48px;
-      height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 12px;
-      font-size: 20px;
-      position: relative;
-    }
-
-    .pin-step-icon.puzzle {
-      background: rgba(0, 217, 255, 0.12);
-      border: 1.5px solid rgba(0, 217, 255, 0.3);
-      animation: stepPulse1 5s ease-in-out infinite;
-    }
-
-    .pin-step-icon.ext {
-      background: rgba(0, 217, 255, 0.06);
-      border: 1.5px solid rgba(0, 217, 255, 0.2);
+    .compliance-row label {
       font-size: 11px;
+      color: #6e7681;
+      line-height: 1.4;
+      cursor: pointer;
+    }
+
+    .compliance-row label a {
       color: #00d9ff;
-      font-weight: 600;
-      padding: 0 6px;
-      animation: stepPulse2 5s ease-in-out infinite;
+      text-decoration: none;
     }
 
-    .pin-step-icon.check {
-      background: rgba(0, 255, 136, 0.12);
-      border: 1.5px solid rgba(0, 255, 136, 0.3);
-      color: #00ff88;
-      font-size: 22px;
+    .upgrade-features {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .feature-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      background: rgba(0, 217, 255, 0.06);
+      border: 1px solid rgba(0, 217, 255, 0.15);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .feature-pill .pill-icon {
+      font-size: 13px;
+    }
+
+    .credits-line {
+      font-size: 13px;
+      color: #8b949e;
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+
+    .credits-line strong {
+      color: #00d9ff;
       font-weight: 700;
-      animation: stepPulse3 5s ease-in-out infinite;
     }
 
-    .pin-cursor {
-      position: absolute;
-      bottom: -4px;
-      right: -2px;
-      opacity: 0;
-      animation: pinCursorMove 5s ease-in-out infinite;
-      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
-    }
-
-    .pin-click-ring {
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 2px solid #00d9ff;
-      bottom: 2px;
-      right: 4px;
-      opacity: 0;
-      animation: pinClickRing 5s ease-in-out infinite;
-    }
-
-    .pin-cursor-2 {
-      position: absolute;
-      bottom: -4px;
-      right: 8px;
-      opacity: 0;
-      animation: pinCursorMove2 5s ease-in-out infinite;
-      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
-    }
-
-    .pin-click-ring-2 {
-      position: absolute;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      border: 2px solid #00ff88;
-      bottom: 2px;
-      right: 14px;
-      opacity: 0;
-      animation: pinClickRing2 5s ease-in-out infinite;
-    }
-
-    .pin-arrow {
-      color: #8b949e;
-      font-size: 16px;
-      margin-top: -12px;
-      opacity: 0;
-    }
-
-    .pin-arrow.a1 { animation: arrowFade1 5s ease-in-out infinite; }
-    .pin-arrow.a2 { animation: arrowFade2 5s ease-in-out infinite; }
-
-    .pin-step-label {
-      font-size: 10px;
-      color: #8b949e;
-    }
-
-    .pin-step-label.ready {
-      color: #00ff88;
+    .upgrade-btn {
+      width: 100%;
+      padding: 12px 20px;
+      background: transparent;
+      border: 1px solid rgba(0, 217, 255, 0.3);
+      border-radius: 10px;
+      color: #00d9ff;
+      font-size: 14px;
       font-weight: 600;
+      cursor: pointer;
     }
 
-    @keyframes stepPulse1 {
-      0%, 5% { border-color: rgba(0,217,255,0.3); box-shadow: none; }
-      10% { border-color: #00d9ff; box-shadow: 0 0 14px rgba(0,217,255,0.4); }
-      25%, 100% { border-color: rgba(0,217,255,0.3); box-shadow: none; }
-    }
-
-    @keyframes stepPulse2 {
-      0%, 35% { border-color: rgba(0,217,255,0.2); box-shadow: none; }
-      42% { border-color: #00d9ff; box-shadow: 0 0 14px rgba(0,217,255,0.4); }
-      55%, 100% { border-color: rgba(0,217,255,0.2); box-shadow: none; }
-    }
-
-    @keyframes stepPulse3 {
-      0%, 65% { border-color: rgba(0,255,136,0.3); box-shadow: none; transform: scale(1); }
-      72% { border-color: #00ff88; box-shadow: 0 0 16px rgba(0,255,136,0.4); transform: scale(1.08); }
-      80%, 100% { border-color: rgba(0,255,136,0.3); box-shadow: none; transform: scale(1); }
-    }
-
-    @keyframes pinCursorMove {
-      0%, 4% { opacity: 0; transform: translate(12px, 12px); }
-      10% { opacity: 1; transform: translate(0, 0); }
-      18% { opacity: 1; transform: translate(0, 0); }
-      22% { opacity: 0; transform: translate(-8px, -4px); }
-      100% { opacity: 0; }
-    }
-
-    @keyframes pinClickRing {
-      0%, 13% { opacity: 0; transform: scale(0.4); }
-      15% { opacity: 0.8; transform: scale(1); }
-      20% { opacity: 0; transform: scale(1.6); }
-      100% { opacity: 0; }
-    }
-
-    @keyframes pinCursorMove2 {
-      0%, 34% { opacity: 0; transform: translate(12px, 12px); }
-      40% { opacity: 1; transform: translate(0, 0); }
-      48% { opacity: 1; transform: translate(0, 0); }
-      52% { opacity: 0; transform: translate(-6px, -4px); }
-      100% { opacity: 0; }
-    }
-
-    @keyframes pinClickRing2 {
-      0%, 44% { opacity: 0; transform: scale(0.4); }
-      46% { opacity: 0.8; transform: scale(1); }
-      50% { opacity: 0; transform: scale(1.6); }
-      100% { opacity: 0; }
-    }
-
-    @keyframes arrowFade1 {
-      0%, 18% { opacity: 0.2; }
-      22% { opacity: 1; color: #00d9ff; }
-      30%, 100% { opacity: 0.2; color: #8b949e; }
-    }
-
-    @keyframes arrowFade2 {
-      0%, 50% { opacity: 0.2; }
-      55% { opacity: 1; color: #00ff88; }
-      65%, 100% { opacity: 0.2; color: #8b949e; }
+    .upgrade-btn:hover {
+      background: rgba(0, 217, 255, 0.06);
+      border-color: rgba(0, 217, 255, 0.5);
     }
 
     .privacy {
-      font-size: 13px;
-      color: #8b949e;
-      margin-top: 18px;
+      font-size: 12px;
+      color: #484f58;
+      text-align: center;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 5px;
+    }
+
+    .toast {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a7f37;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 100;
     }
 
     @media (max-width: 400px) {
-      .card { padding: 28px 18px; }
-      h1 { font-size: 26px; }
-      .actions { gap: 12px; }
-      .action-circle { width: 46px; height: 46px; }
-      .pin-steps { gap: 6px; }
+      .card { padding: 22px 18px; }
+      .card h2 { font-size: 16px; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="card">
-      <div class="camera-icon">📸</div>
-      <h1>Snap <span class="cyan">To AI</span></h1>
-      <p class="tagline">Capture any screen → instantly chat with AI, generate images, music & videos</p>
-      <p class="sub">Right-click → Snap → Ask AI anything. Turn screenshots into images, songs, or videos in seconds.</p>
+      <div class="card-header">
+        <span class="card-icon">📸</span>
+        <h2>Set Up <span class="accent">Snap To AI</span></h2>
+      </div>
+      <p class="card-sub">Get your API key and start chatting with AI in seconds.</p>
 
-      <div class="actions">
-        <div class="action-col">
-          <span class="action-label">VISION</span>
-          <div class="action-circle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-          </div>
+      <div class="steps">
+        <div class="step">
+          <span class="step-num">1</span>
+          <span class="step-text">Open <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a> and create a key</span>
         </div>
-        <div class="action-col">
-          <span class="action-label">IMAGE</span>
-          <div class="action-circle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-          </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <span class="step-text">Copy the key and paste it below</span>
         </div>
-        <div class="action-col">
-          <span class="action-label">MUSIC</span>
-          <div class="action-circle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          </div>
-        </div>
-        <div class="action-col">
-          <span class="action-label">VIDEO</span>
-          <div class="action-circle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <span class="step-text">Right-click any page → <strong>Snap To AI</strong> → go</span>
         </div>
       </div>
 
-      <div class="pin-guide">
-        <div class="pin-title">Pin it to get started</div>
-        <div class="pin-steps">
-          <div class="pin-step">
-            <div class="pin-step-icon puzzle">
-              🧩
-              <div class="pin-cursor">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M5 3l14 9-6 1.5L10 20z"/></svg>
-              </div>
-              <div class="pin-click-ring"></div>
-            </div>
-            <span class="pin-step-label">Click the puzzle icon</span>
-          </div>
-          <span class="pin-arrow a1">→</span>
-          <div class="pin-step">
-            <div class="pin-step-icon ext">
-              📸 SnapToAI 📌
-              <div class="pin-cursor-2">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M5 3l14 9-6 1.5L10 20z"/></svg>
-              </div>
-              <div class="pin-click-ring-2"></div>
-            </div>
-            <span class="pin-step-label">Click the pin</span>
-          </div>
-          <span class="pin-arrow a2">→</span>
-          <div class="pin-step">
-            <div class="pin-step-icon check">✓</div>
-            <span class="pin-step-label ready">Ready to snap!</span>
-          </div>
-        </div>
+      <div class="key-input-row">
+        <input type="password" class="key-input" id="welcomeKeyInput" placeholder="Paste your API key here...">
       </div>
+
+      <div class="compliance-row">
+        <input type="checkbox" id="welcomeCompliance">
+        <label for="welcomeCompliance">I'm 18+ and agree to <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener">Gemini API Terms</a>.</label>
+      </div>
+
+      <button class="cta-btn" id="welcomeSaveBtn" disabled style="opacity: 0.5; cursor: not-allowed;">Activate My Key</button>
     </div>
 
-    <p class="privacy">🔒 Your screenshots stay private — processed securely</p>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-icon">⚡</span>
+        <h2>Need more <span class="accent">power</span>?</h2>
+      </div>
+      <p class="card-sub">Unlock Image, Music, and Video generation with a billing-enabled key.</p>
+
+      <div class="upgrade-features">
+        <span class="feature-pill"><span class="pill-icon">🖼️</span> Images</span>
+        <span class="feature-pill"><span class="pill-icon">🎵</span> Music</span>
+        <span class="feature-pill"><span class="pill-icon">🎬</span> Videos</span>
+      </div>
+
+      <p class="credits-line">Google offers <strong>$300 in cloud credits</strong> for new accounts — more than enough to explore every mode.</p>
+
+      <a href="https://aistudio.google.com/apikey" target="_blank" style="text-decoration: none;">
+        <button class="upgrade-btn" type="button">Get a Billing-Enabled Key</button>
+      </a>
+    </div>
+
+    <p class="privacy">🔒 Your screenshots stay private — never sent to our servers</p>
   </div>
+
+  <div class="toast" id="welcomeToast">Key saved — you're all set!</div>
+
+  <script>
+    const input = document.getElementById('welcomeKeyInput');
+    const checkbox = document.getElementById('welcomeCompliance');
+    const saveBtn = document.getElementById('welcomeSaveBtn');
+    const toast = document.getElementById('welcomeToast');
+
+    function updateBtn() {
+      const ready = checkbox.checked && input.value.trim().length > 0;
+      saveBtn.disabled = !ready;
+      saveBtn.style.opacity = ready ? '1' : '0.5';
+      saveBtn.style.cursor = ready ? 'pointer' : 'not-allowed';
+    }
+
+    checkbox.addEventListener('change', updateBtn);
+    input.addEventListener('input', updateBtn);
+
+    saveBtn.addEventListener('click', async () => {
+      if (saveBtn.disabled) return;
+      const key = input.value.trim();
+      if (!key) return;
+      try {
+        await chrome.storage.sync.set({ geminiApiKey: key });
+        await chrome.storage.local.remove(['snaptoai_key_tier', 'snaptoai_key_tier_key', 'snaptoai_key_tier_ts']);
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
+      } catch (e) {
+        console.log('[SnapToAI] Error saving key:', e);
+      }
+    });
+  </script>
 </body>
 </html>
