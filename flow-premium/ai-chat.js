@@ -409,9 +409,11 @@ function showProxyKeyPrompt() {
       const key = input.value.trim();
       if (!key) return;
       await chrome.storage.sync.set({ geminiApiKey: key });
+      await chrome.storage.local.remove(['snaptoai_key_tier', 'snaptoai_key_tier_key', 'snaptoai_key_tier_ts']);
       freePromptsRemaining = null;
       closeModal();
       showPromptToast('Key saved! You now have unlimited AI access.', 3000);
+      checkKeyTier();
     };
   }
 }
@@ -723,32 +725,89 @@ function initModeButtons() {
 
 initModeButtons();
 
-(async function checkVideoSupport() {
+let isPrepaidKey = false;
+
+function showPaidModes() {
+  isPrepaidKey = true;
+  const imageBtn = document.getElementById('imageModeBtn');
+  const musicBtn = document.getElementById('musicModeBtn');
+  const videoBtn = document.getElementById('videoModeBtn');
+  if (imageBtn) imageBtn.style.display = '';
+  if (musicBtn) musicBtn.style.display = '';
+  if (videoBtn) videoBtn.style.display = '';
+}
+
+function hidePaidModes() {
+  isPrepaidKey = false;
+  const imageBtn = document.getElementById('imageModeBtn');
+  const musicBtn = document.getElementById('musicModeBtn');
+  const videoBtn = document.getElementById('videoModeBtn');
+  if (imageBtn) imageBtn.style.display = 'none';
+  if (musicBtn) musicBtn.style.display = 'none';
+  if (videoBtn) videoBtn.style.display = 'none';
+
+  if (currentAiMode !== 'vision') {
+    currentAiMode = 'vision';
+    chrome.storage.sync.set({ geminiModel: 'vision' });
+    const btns = document.querySelectorAll('.mode-btn');
+    btns.forEach(b => b.classList.toggle('active', b.dataset.mode === 'vision'));
+    const inputEl = document.getElementById('chatInput');
+    if (inputEl && AI_MODES['vision']) inputEl.placeholder = AI_MODES['vision'].placeholder;
+    const modeBar = document.getElementById('modeBar');
+    if (modeBar) modeBar.style.background = MODE_COLORS['vision'];
+    updateModelHeader('vision');
+  }
+}
+
+async function checkKeyTier() {
   try {
     const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
     const apiKey = keyResult.geminiApiKey;
     if (!apiKey) {
-      console.log('[SnapToAI] Video mode hidden — no API key set');
+      hidePaidModes();
+      console.log('[SnapToAI] Free key — Vision only');
       return;
     }
+
+    const cached = await chrome.storage.local.get(['snaptoai_key_tier', 'snaptoai_key_tier_key', 'snaptoai_key_tier_ts']);
+    if (cached.snaptoai_key_tier_key === apiKey && cached.snaptoai_key_tier_ts && (Date.now() - cached.snaptoai_key_tier_ts < 3600000)) {
+      if (cached.snaptoai_key_tier === 'prepaid') {
+        showPaidModes();
+        console.log('[SnapToAI] Prepaid key (cached) — all modes enabled');
+      } else {
+        hidePaidModes();
+        console.log('[SnapToAI] Free key (cached) — Vision only');
+      }
+      return;
+    }
+
     const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { signal: AbortSignal.timeout(10000) });
     if (!resp.ok) {
-      console.log('[SnapToAI] Video mode hidden — model list failed');
+      hidePaidModes();
+      console.log('[SnapToAI] Model list failed — Vision only');
       return;
     }
     const data = await resp.json();
-    const hasVeo = (data.models || []).some(m => m.name && m.name.toLowerCase().includes('veo'));
-    if (hasVeo) {
-      const videoBtn = document.getElementById('videoModeBtn');
-      if (videoBtn) videoBtn.style.display = '';
-      console.log('[SnapToAI] Video mode enabled — Veo models available');
+    const models = data.models || [];
+    const hasVeo = models.some(m => m.name && m.name.toLowerCase().includes('veo'));
+    const hasLyria = models.some(m => m.name && m.name.toLowerCase().includes('lyria'));
+    const hasPaidModels = hasVeo || hasLyria;
+
+    if (hasPaidModels) {
+      showPaidModes();
+      await chrome.storage.local.set({ snaptoai_key_tier: 'prepaid', snaptoai_key_tier_key: apiKey, snaptoai_key_tier_ts: Date.now() });
+      console.log('[SnapToAI] Prepaid key detected — all modes enabled');
     } else {
-      console.log('[SnapToAI] Video mode hidden — no Veo models on this key');
+      hidePaidModes();
+      await chrome.storage.local.set({ snaptoai_key_tier: 'free', snaptoai_key_tier_key: apiKey, snaptoai_key_tier_ts: Date.now() });
+      console.log('[SnapToAI] Free key detected — Vision only');
     }
   } catch (e) {
-    console.log('[SnapToAI] Video support check skipped:', e.message);
+    console.log('[SnapToAI] Key tier check skipped:', e.message);
   }
-})();
+}
+
+checkKeyTier();
 
 function showImageStudio(thread) {
   const existing = thread.querySelector('.image-studio');

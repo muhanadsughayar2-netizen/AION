@@ -3612,6 +3612,7 @@ async function saveGeminiKey() {
     const modelSelect = document.getElementById('geminiModelSelect');
     const model = modelSelect ? modelSelect.value : 'gemini-2.0-flash';
     await chrome.storage.sync.set({ geminiApiKey: key, geminiModel: model });
+    await chrome.storage.local.remove(['snaptoai_key_tier', 'snaptoai_key_tier_key', 'snaptoai_key_tier_ts']);
     console.log('[SnapToAI] Gemini key and model saved:', model);
     if (geminiStatus) geminiStatus.style.display = 'flex';
     updateAiButtonState();
@@ -3624,6 +3625,7 @@ async function saveGeminiKey() {
 async function clearGeminiKey() {
   try {
     await chrome.storage.sync.remove('geminiApiKey');
+    await chrome.storage.local.remove(['snaptoai_key_tier', 'snaptoai_key_tier_key', 'snaptoai_key_tier_ts']);
     console.log('[SnapToAI] Gemini key cleared');
     geminiKeyInput.value = '';
     updateAiButtonState();
