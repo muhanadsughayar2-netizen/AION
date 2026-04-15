@@ -781,26 +781,43 @@ async function checkKeyTier() {
       return;
     }
 
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { signal: AbortSignal.timeout(10000) });
-    if (!resp.ok) {
-      hidePaidModes();
-      console.log('[SnapToAI] Model list failed — Vision only');
-      return;
-    }
-    const data = await resp.json();
-    const models = data.models || [];
-    const hasVeo = models.some(m => m.name && m.name.toLowerCase().includes('veo'));
-    const hasLyria = models.some(m => m.name && m.name.toLowerCase().includes('lyria'));
-    const hasPaidModels = hasVeo || hasLyria;
+    const testResp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: 'Say OK' }] }],
+          generationConfig: { responseModalities: ['TEXT', 'IMAGE'], maxOutputTokens: 1 }
+        }),
+        signal: AbortSignal.timeout(15000)
+      }
+    );
 
-    if (hasPaidModels) {
+    const billingEnabled = testResp.ok;
+    let isBillingError = false;
+
+    if (!testResp.ok) {
+      try {
+        const errData = await testResp.json();
+        const errMsg = JSON.stringify(errData).toLowerCase();
+        isBillingError = errMsg.includes('billing') || errMsg.includes('paid api') ||
+          errMsg.includes('enable billing') || errMsg.includes('payment') ||
+          errMsg.includes('pay-as-you-go') || errMsg.includes('failed_precondition') ||
+          errMsg.includes('image_generation') || errMsg.includes('not available');
+      } catch (_) {
+        isBillingError = true;
+      }
+    }
+
+    if (billingEnabled) {
       showPaidModes();
       await chrome.storage.local.set({ snaptoai_key_tier: 'prepaid', snaptoai_key_tier_key: apiKey, snaptoai_key_tier_ts: Date.now() });
-      console.log('[SnapToAI] Prepaid key detected — all modes enabled');
+      console.log('[SnapToAI] Billing enabled — all modes unlocked');
     } else {
       hidePaidModes();
       await chrome.storage.local.set({ snaptoai_key_tier: 'free', snaptoai_key_tier_key: apiKey, snaptoai_key_tier_ts: Date.now() });
-      console.log('[SnapToAI] Free key detected — Vision only');
+      console.log('[SnapToAI] No billing — Vision only', isBillingError ? '(billing error)' : '(other error)');
     }
   } catch (e) {
     console.log('[SnapToAI] Key tier check skipped:', e.message);
