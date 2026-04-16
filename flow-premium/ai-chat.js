@@ -482,18 +482,35 @@ function showProxyKeyPrompt() {
 }
 
 async function detectKeyTier(apiKey) {
+  // Probe: send EMPTY body to Veo 2.0 predictLongRunning.
+  // - Prepaid key  -> billing check PASSES, then validation fails with INVALID_ARGUMENT
+  //                   ("No instances in the request"). NO job starts, NO charge.
+  // - Free tier    -> billing check FAILS with FAILED_PRECONDITION
+  //                   ("exclusively available to users with Google Cloud Platform billing enabled").
+  // models.list cannot be used as a probe because it returns Veo entries for ALL keys
+  // regardless of billing status.
   try {
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}&pageSize=1000`, {
-      method: 'GET'
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/veo-2.0-generate-001:predictLongRunning?key=${encodeURIComponent(apiKey)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}'
     });
-    if (!resp.ok) return 'free';
-    const data = await resp.json();
-    const models = Array.isArray(data?.models) ? data.models : [];
-    const hasVeo = models.some(m => {
-      const name = (m?.name || '').toLowerCase();
-      return name.includes('veo');
-    });
-    return hasVeo ? 'prepaid' : 'free';
+    const data = await resp.json().catch(() => ({}));
+    const status = (data?.error?.status || '').toUpperCase();
+    const msg = (data?.error?.message || '').toLowerCase();
+    if (status === 'FAILED_PRECONDITION' || msg.includes('billing')) {
+      return 'free';
+    }
+    if (status === 'INVALID_ARGUMENT' || msg.includes('no instances')) {
+      return 'prepaid';
+    }
+    // Unexpected response (auth error, network, etc.) — fail closed to free.
+    if (data?.error) {
+      console.log('[SnapToAI] Probe unexpected error, defaulting to free:', data.error);
+      return 'free';
+    }
+    // No error at all is unexpected for empty body, but treat as prepaid signal.
+    return 'prepaid';
   } catch (e) {
     console.log('[SnapToAI] Key tier detection failed:', e?.message || e);
     return 'free';
