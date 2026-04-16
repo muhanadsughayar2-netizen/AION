@@ -429,27 +429,6 @@ function showProxyKeyPrompt() {
       statusEl.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border:2px solid #00d9ff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;"></span>Checking your account for video model access…';
 
       const probe = await detectKeyTierVerbose(key);
-
-      if (probe.error) {
-        statusEl.style.background = 'rgba(255,80,80,0.10)';
-        statusEl.style.border = '1px solid rgba(255,80,80,0.35)';
-        statusEl.style.color = '#ffb3b3';
-        statusEl.innerHTML = `
-          <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#ff8080;margin-bottom:6px;">
-            <span style="width:8px;height:8px;border-radius:50%;background:#ff5050;"></span>Could not verify your key
-          </div>
-          <div style="color:rgba(255,255,255,0.85);margin-bottom:8px;">${probe.error}</div>
-          <div style="color:rgba(255,255,255,0.55);font-size:11px;">Check your internet connection or verify the key is correct, then try again.</div>
-        `;
-        saveBtn.textContent = 'Try Again';
-        saveBtn.style.opacity = '1';
-        saveBtn.style.cursor = 'pointer';
-        saveBtn.disabled = false;
-        _verdictLocked = false;
-        setTimeout(() => { saveBtn.onclick = runSave; }, 0);
-        return;
-      }
-
       const tier = probe.tier;
 
       if (tier === 'prepaid') {
@@ -541,24 +520,13 @@ async function isOwnerKey(apiKey) {
   }
 }
 
-// Verbose version: returns { tier, error } so the UI can distinguish a real
-// verdict from a probe failure (CORS, network, invalid key auth, etc).
-async function detectKeyTierVerbose(apiKey) {
-  // SAFEGUARD: owner-key fingerprint match -> forced free.
-  try {
-    if (await isOwnerKey(apiKey)) {
-      console.log('[SnapToAI] Owner-key fingerprint match — forcing free tier');
-      return { tier: 'free', error: null };
-    }
-  } catch (_) {}
-
-  // Probe: send EMPTY body to Veo 2.0 predictLongRunning.
-  // - Prepaid -> billing check PASSES, validation fails INVALID_ARGUMENT (no charge).
-  // - Free    -> billing check FAILS with FAILED_PRECONDITION.
+// Single-shot probe against one Veo model. Returns:
+// 'prepaid' | 'free' | 'invalid' (bad key) | 'retry' (transient/unknown — caller should try another model)
+async function _probeOneVeoModel(apiKey, modelId, timeoutMs) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 12000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/veo-2.0-generate-001:predictLongRunning?key=${encodeURIComponent(apiKey)}`, {
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:predictLongRunning?key=${encodeURIComponent(apiKey)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
@@ -566,48 +534,69 @@ async function detectKeyTierVerbose(apiKey) {
     });
     clearTimeout(timer);
     const data = await resp.json().catch(() => ({}));
-    console.log('[SnapToAI] Tier probe response:', resp.status, data);
+    console.log(`[SnapToAI] Probe ${modelId} -> HTTP ${resp.status}`, data);
 
     const status = (data?.error?.status || '').toUpperCase();
     const msg = (data?.error?.message || '').toLowerCase();
     const code = data?.error?.code;
 
-    // Free signal: explicit billing precondition.
-    if (status === 'FAILED_PRECONDITION' || msg.includes('billing')) {
-      return { tier: 'free', error: null };
-    }
-    // Invalid key.
+    if (status === 'FAILED_PRECONDITION' || msg.includes('billing')) return 'free';
     if (code === 401 || code === 403 || status === 'PERMISSION_DENIED' || status === 'UNAUTHENTICATED' ||
-        msg.includes('api key not valid') || msg.includes('api_key_invalid')) {
-      return { tier: null, error: 'Invalid API key. Double-check the key and try again.' };
+        msg.includes('api key not valid') || msg.includes('api_key_invalid') || msg.includes('api key expired')) {
+      return 'invalid';
     }
-    // Prepaid signal: validation passed billing and complained about empty payload.
-    if (status === 'INVALID_ARGUMENT' || msg.includes('no instances')) {
-      return { tier: 'prepaid', error: null };
-    }
-    // 200 OK with operation name = also prepaid (rare with empty body but possible).
-    if (resp.ok && (data?.name || data?.metadata)) {
-      return { tier: 'prepaid', error: null };
-    }
-    // Anything else: surface it instead of silently returning 'free'.
-    const detail = msg || (`HTTP ${resp.status}`) || 'Unknown response';
-    return { tier: null, error: `Unexpected response from Google: ${detail}` };
+    if (status === 'INVALID_ARGUMENT' || msg.includes('no instances') || msg.includes('instances')) return 'prepaid';
+    if (resp.ok && (data?.name || data?.metadata)) return 'prepaid';
+    return 'retry';
   } catch (e) {
     clearTimeout(timer);
-    const m = e?.message || String(e);
-    console.log('[SnapToAI] Key tier probe error:', m);
-    if (e?.name === 'AbortError') return { tier: null, error: 'Verification timed out. Please try again.' };
-    return { tier: null, error: `Network error: ${m}` };
+    console.log(`[SnapToAI] Probe ${modelId} threw:`, e?.message || e);
+    return 'retry';
   }
+}
+
+// Always commits to a verdict. Tries multiple Veo models with retries until one
+// gives a definitive answer. Returns { tier: 'prepaid'|'free', invalid: bool }.
+async function detectKeyTierVerbose(apiKey) {
+  // SAFEGUARD: owner-key fingerprint -> forced free.
+  try {
+    if (await isOwnerKey(apiKey)) {
+      console.log('[SnapToAI] Owner-key fingerprint match — forcing free tier');
+      return { tier: 'free', invalid: false };
+    }
+  } catch (_) {}
+
+  const probeModels = [
+    'veo-2.0-generate-001',
+    'veo-3.0-generate-001',
+    'veo-3.0-fast-generate-001',
+    'veo-3.1-fast-generate-preview'
+  ];
+
+  let sawInvalid = false;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    for (const m of probeModels) {
+      const r = await _probeOneVeoModel(apiKey, m, 10000);
+      if (r === 'prepaid') return { tier: 'prepaid', invalid: false };
+      if (r === 'free') return { tier: 'free', invalid: false };
+      if (r === 'invalid') sawInvalid = true;
+      // 'retry' -> try next model / next attempt
+    }
+    // Brief backoff before second pass
+    await new Promise(res => setTimeout(res, 500));
+  }
+
+  // Couldn't get a definitive billing/validation signal from any Veo model.
+  // Safest verdict for business: treat as free (locks paid modes). If the key
+  // appears invalid, mark it so UI can warn — but still default to free.
+  console.log('[SnapToAI] All probes inconclusive; defaulting to free.');
+  return { tier: 'free', invalid: sawInvalid };
 }
 
 // Backwards-compatible wrapper used by checkKeyTier().
 async function detectKeyTier(apiKey) {
   const r = await detectKeyTierVerbose(apiKey);
-  if (r.tier) return r.tier;
-  // For the silent background path, default to 'free' on any error so paid
-  // modes stay locked until the user re-runs activation.
-  return 'free';
+  return r.tier;
 }
 
 let _toastTimeout = null;
