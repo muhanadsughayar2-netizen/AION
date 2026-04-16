@@ -3678,8 +3678,9 @@ async function _popupDetectTier(apiKey) {
 (function wireApiKeyTutorialVideo() {
   const card = document.getElementById('apiKeyVideoCard');
   const poster = document.getElementById('apiKeyVideoPoster');
-  const videoEl = document.getElementById('apiKeyVideoEl');
-  if (!card || !poster || !videoEl) return;
+  const frameWrap = document.getElementById('apiKeyVideoFrameWrap');
+  const frame = document.getElementById('apiKeyVideoFrame');
+  if (!card || !poster || !frameWrap || !frame) return;
 
   // Inject pulse keyframes once
   if (!document.getElementById('apiKeyVideoStyles')) {
@@ -3698,10 +3699,9 @@ async function _popupDetectTier(apiKey) {
 
   poster.addEventListener('click', () => {
     poster.style.display = 'none';
-    videoEl.style.display = 'block';
-    videoEl.play().catch(err => {
-      console.log('[SnapToAI] Tutorial video play blocked:', err);
-    });
+    frameWrap.style.display = 'block';
+    // Load on click (saves bandwidth until user opts in)
+    frame.src = 'https://www.youtube-nocookie.com/embed/vyrH5i4H3mA?autoplay=1&rel=0&modestbranding=1&playsinline=1';
   });
 })();
 
