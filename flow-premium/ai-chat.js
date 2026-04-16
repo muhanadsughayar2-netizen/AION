@@ -32,23 +32,31 @@ function releaseRequestLock() {
 
 function getPaidModeEstimate(mode, clipCount = 1, durationSeconds = 8) {
   if (mode === 'video') {
+    // Real Veo pricing (Google AI Studio, per second of generated video):
+    //   Veo 3.1 Lite preview ........ ~$0.10/s
+    //   Veo 3.1 Fast / Veo 3 Fast ... ~$0.40/s
+    //   Veo 3 / Veo 3.1 (full) ...... ~$0.75/s
+    // We show a $0.10–$0.40/s range (covers Lite + Fast, the default models).
     const totalSeconds = clipCount * durationSeconds;
+    const low  = (totalSeconds * 0.10).toFixed(2);
+    const high = (totalSeconds * 0.40).toFixed(2);
     return {
-      label: `${clipCount} clip${clipCount > 1 ? 's' : ''} × ${durationSeconds}s`,
-      cost: clipCount === 1 ? '$2-$4' : `$${clipCount * 2}-$${clipCount * 4}`,
-      note: totalSeconds <= 8 ? 'short clip' : `longer ${totalSeconds}s video`
+      label: `${clipCount} clip${clipCount > 1 ? 's' : ''} × ${durationSeconds}s = ${totalSeconds}s`,
+      cost: `~$${low}–$${high}`,
+      note: 'Veo Lite/Fast — ~$0.10–$0.40 per second'
     };
   }
   if (mode === 'music') {
+    // Lyria: ~$0.06 per second of audio. Default ~30s clip = ~$1.80.
     return {
-      label: '1 music generation',
-      cost: '$1-$2',
-      note: 'audio generation'
+      label: '1 music clip (~30s)',
+      cost: '~$0.10–$0.30',
+      note: 'Lyria audio generation'
     };
   }
   return {
     label: '1 paid generation',
-    cost: '$1-$4',
+    cost: '~$0.10–$0.50',
     note: 'estimate'
   };
 }
@@ -1162,9 +1170,14 @@ function showVideoStudio(thread) {
       </div>
       <div class="veo-clips-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
         <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Clips (auto-stitched):</span>
-        <button class="veo-clip-btn selected" data-clips="1" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">1x</button>
-        <button class="veo-clip-btn" data-clips="2" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">2x</button>
-        <button class="veo-clip-btn" data-clips="3" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">3x</button>
+        <button class="veo-clip-btn selected" data-clips="1" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">1x</button>
+        <button class="veo-clip-btn" data-clips="2" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">2x</button>
+        <button class="veo-clip-btn" data-clips="3" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">3x</button>
+        <button class="veo-clip-btn" data-clips="4" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">4x</button>
+        <button class="veo-clip-btn" data-clips="5" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">5x</button>
+        <button class="veo-clip-btn" data-clips="6" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">6x</button>
+        <button class="veo-clip-btn" data-clips="7" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">7x</button>
+        <button class="veo-clip-btn" data-clips="8" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">8x</button>
       </div>
       <textarea class="studio-desc" placeholder="Describe the video scene you want to create..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;margin-bottom:8px;"></textarea>
       ${hasScreenshots ? `
@@ -1612,6 +1625,22 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
       `Scene 2 of 3 — middle action: ${prompt}`,
       `Scene 3 of 3 — dramatic finale: ${prompt}`
     );
+  } else if (clipCount >= 4 && clipCount <= 8) {
+    // Generic narrative arc for longer videos (4–8 clips)
+    const beats = [
+      'opening establishing shot, set the scene',
+      'introduce the main subject, slow build',
+      'first action / development',
+      'rising tension or change of perspective',
+      'mid-point twist or shift in mood',
+      'building toward the climax',
+      'dramatic climax or peak action',
+      'closing finale and resolution'
+    ];
+    for (let i = 0; i < clipCount; i++) {
+      const beat = beats[Math.min(i, beats.length - 1)];
+      clipScenes.push(`Scene ${i + 1} of ${clipCount} — ${beat}: ${prompt}`);
+    }
   }
 
   for (let i = 0; i < clipCount; i++) {
