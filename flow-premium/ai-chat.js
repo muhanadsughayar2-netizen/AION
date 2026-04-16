@@ -1132,6 +1132,29 @@ const VEO_MODELS = [
   { id: 'veo-2.0-generate-001', label: '2.0', desc: 'Basic (needs billing)', tier: 'basic' }
 ];
 
+// Real Google Veo pricing (Gemini API / Vertex AI public rates, USD per second of video).
+// Source: https://ai.google.dev/gemini-api/docs/pricing  &  https://cloud.google.com/vertex-ai/generative-ai/pricing
+const VEO_PRICING = {
+  'veo-3.1-generate-preview':      0.40,  // Veo 3.1 (with audio)
+  'veo-3.1-fast-generate-preview': 0.15,  // Veo 3.1 Fast
+  'veo-3.1-lite-generate-preview': 0.10,  // Veo 3.1 Lite
+  'veo-3.0-generate-001':          0.75,  // Veo 3 (with audio)
+  'veo-3.0-fast-generate-001':     0.40,  // Veo 3 Fast (with audio)
+  'veo-2.0-generate-001':          0.50   // Veo 2 (no audio)
+};
+
+// Lyria music pricing (Vertex AI, USD per second of audio).
+const LYRIA_PRICING = {
+  'lyria-3-clip-preview': 0.06,  // Lyria 3 (preview)
+  'lyria-3-pro-preview':  0.10,  // Lyria 3 Pro (preview, higher fidelity)
+  'gemini-2.5-flash-preview-tts': 0.015 // TTS fallback (not real music)
+};
+const LYRIA_MODELS_DISPLAY = [
+  { id: 'lyria-3-clip-preview', label: 'Lyria 3', desc: 'Default music model' },
+  { id: 'lyria-3-pro-preview',  label: 'Lyria 3 Pro', desc: 'Higher-fidelity (fallback)' },
+  { id: 'gemini-2.5-flash-preview-tts', label: 'Gemini TTS', desc: 'Voice fallback (not music)' }
+];
+
 let selectedVeoModel = 'veo-3.1-lite-generate-preview';
 let selectedVideoDuration = 4;
 let selectedClipCount = 1;
@@ -1205,6 +1228,12 @@ function showVideoStudio(thread) {
         <span style="font-size:10px;color:#667788;">•</span>
         <span class="studio-dur-label" style="font-size:10px;color:#667788;">8s total</span>
       </div>
+      <div class="veo-price-card" style="margin-top:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,165,0,0.12);border-radius:10px;padding:10px 12px;">
+        <div style="font-size:10px;color:#667788;margin-bottom:6px;">💰 Pay-per-use (billed by Google to your own API key) — current cost per model:</div>
+        <div class="veo-price-rows" style="display:flex;flex-direction:column;gap:3px;font-size:11px;">
+          <span style="color:#667788;">Loading model prices…</span>
+        </div>
+      </div>
       <button class="studio-create-btn" style="width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffa500,#cc8400);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;opacity:0.4;pointer-events:none;">🎬 Generate Video</button>
     </div>
   `;
@@ -1228,6 +1257,7 @@ function showVideoStudio(thread) {
     const durLabel = studio.querySelector('.studio-dur-label');
     const total = selectedVideoDuration * selectedClipCount;
     if (durLabel) durLabel.textContent = selectedClipCount > 1 ? `${total}s total (${selectedClipCount} x ${selectedVideoDuration}s)` : `${total}s total`;
+    renderVeoPriceTable(studio);
   }
 
   studio.querySelectorAll('.veo-dur-btn').forEach(btn => {
@@ -1263,6 +1293,8 @@ function showVideoStudio(thread) {
       updateDurLabel();
     });
   });
+
+  renderVeoPriceTable(studio);
 
   let selectedStylizeStyle = 'pixar';
 
@@ -1385,14 +1417,41 @@ async function loadAvailableVeoModels(studio) {
           c.style.fontWeight = sel ? '700' : '500';
         });
         console.log(`[SnapToAI Video] Selected model: ${selectedVeoModel}`);
+        renderVeoPriceTable(studio);
       });
     });
 
+    renderVeoPriceTable(studio);
     console.log(`[SnapToAI Video] ${userAvailableVeoModels.length} Veo models available for user`);
   } catch (e) {
     if (loadingEl) loadingEl.innerHTML = '<span style="color:#ff6b6b;font-size:11px;">Could not load models</span>';
     console.log('[SnapToAI Video] Model check error:', e.message);
   }
+}
+
+function renderVeoPriceTable(studio) {
+  if (!studio) return;
+  const rowsEl = studio.querySelector('.veo-price-rows');
+  if (!rowsEl) return;
+  const list = (userAvailableVeoModels && userAvailableVeoModels.length > 0)
+    ? userAvailableVeoModels
+    : VEO_MODELS;
+  const totalSec = (selectedVideoDuration || 8) * (selectedClipCount || 1);
+  const html = list.map(m => {
+    const rate = VEO_PRICING[m.id];
+    if (rate == null) return '';
+    const total = (rate * totalSec).toFixed(2);
+    const isSelected = m.id === selectedVeoModel;
+    const color = isSelected ? '#ffa500' : '#aabbcc';
+    const weight = isSelected ? '700' : '500';
+    const bg = isSelected ? 'rgba(255,165,0,0.08)' : 'transparent';
+    const marker = isSelected ? '▸ ' : '  ';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 6px;border-radius:6px;background:${bg};color:${color};font-weight:${weight};">
+      <span>${marker}Veo ${m.label}</span>
+      <span style="font-variant-numeric:tabular-nums;">$${rate.toFixed(2)}/s · <strong>$${total}</strong></span>
+    </div>`;
+  }).filter(Boolean).join('');
+  rowsEl.innerHTML = html + `<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,165,0,0.15);font-size:10px;color:#667788;">Total = price/sec × ${totalSec}s (${selectedClipCount}×${selectedVideoDuration}s). Charged by Google to your own API key.</div>`;
 }
 
 async function stylizeImageForVideo(apiKey, imageData, style) {
@@ -2172,7 +2231,28 @@ function showSongStudio(thread) {
           <div style="font-size:11px;color:#667788;">Create your perfect song in 3 steps</div>
         </div>
       </div>
-      
+
+      <div style="margin:10px 0;background:rgba(255,255,255,0.02);border:1px solid rgba(0,255,136,0.12);border-radius:10px;padding:10px 12px;">
+        <div style="font-size:10px;color:#667788;margin-bottom:6px;">💰 Pay-per-use (billed by Google to your own API key) — cost per ~30s clip:</div>
+        <div style="display:flex;flex-direction:column;gap:3px;font-size:11px;">
+          ${LYRIA_MODELS_DISPLAY.map(m => {
+            const rate = LYRIA_PRICING[m.id];
+            if (rate == null) return '';
+            const total30 = (rate * 30).toFixed(2);
+            const isDefault = m.id === 'lyria-3-clip-preview';
+            const color = isDefault ? '#00ff88' : '#aabbcc';
+            const weight = isDefault ? '700' : '500';
+            const bg = isDefault ? 'rgba(0,255,136,0.06)' : 'transparent';
+            const marker = isDefault ? '▸ ' : '  ';
+            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 6px;border-radius:6px;background:${bg};color:${color};font-weight:${weight};">
+              <span>${marker}${m.label}</span>
+              <span style="font-variant-numeric:tabular-nums;">$${rate.toFixed(3)}/s · <strong>~$${total30}</strong></span>
+            </div>`;
+          }).join('')}
+          <div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(0,255,136,0.15);font-size:10px;color:#667788;">SnapToAI uses <strong style="color:#00ff88;">Lyria 3</strong> by default and falls back automatically if a model is unavailable on your key.</div>
+        </div>
+      </div>
+
       ${currentImages.length > 0 ? `
       <div style="background:linear-gradient(135deg, rgba(255,170,0,0.08), rgba(255,100,0,0.04));border:1px solid rgba(255,170,0,0.2);border-radius:12px;padding:14px;margin:10px 0;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
