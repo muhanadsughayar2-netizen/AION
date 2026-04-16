@@ -3695,15 +3695,19 @@ async function _popupDetectTier(apiKey) {
     document.head.appendChild(st);
   }
 
+  const frameWrap = document.getElementById('apiKeyVideoFrameWrap');
+  const frame = document.getElementById('apiKeyVideoFrame');
+
   poster.addEventListener('click', () => {
-    // Open on YouTube in a new tab — guaranteed to play full-size, no CSP/iframe issues.
-    const url = 'https://www.youtube.com/watch?v=vyrH5i4H3mA';
-    try {
-      if (chrome?.tabs?.create) chrome.tabs.create({ url });
-      else window.open(url, '_blank', 'noopener');
-    } catch (_) {
-      window.open(url, '_blank', 'noopener');
+    if (!frameWrap || !frame) {
+      // Defensive fallback only — primary path is in-modal playback.
+      window.open('https://www.youtube.com/watch?v=vyrH5i4H3mA', '_blank', 'noopener');
+      return;
     }
+    poster.style.display = 'none';
+    frameWrap.style.display = 'block';
+    frame.src = 'https://www.youtube.com/embed/vyrH5i4H3mA?autoplay=1&rel=0&modestbranding=1&playsinline=1';
+    console.log('[SnapToAI] Tutorial iframe src set:', frame.src);
   });
 })();
 
