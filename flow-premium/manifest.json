@@ -36,7 +36,9 @@
     "https://www.perplexity.ai/*",
     "https://x.com/*",
     "https://generativelanguage.googleapis.com/*",
-    "https://www.googleapis.com/*"
+    "https://www.googleapis.com/*",
+    "https://snaptoai.com/*",
+    "https://www.snaptoai.com/*"
   ],
   "web_accessible_resources": [
     {

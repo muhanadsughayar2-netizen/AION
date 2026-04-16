@@ -383,10 +383,13 @@ function showProxyKeyPrompt() {
   const input = document.getElementById('geminiKeyModalInput');
   const checkbox = document.getElementById('geminiKeyModalCompliance');
   
+  let _verdictLocked = false;
   const closeModal = () => modal.classList.remove('open');
   if (closeBtn) closeBtn.onclick = closeModal;
   if (cancelBtn) cancelBtn.onclick = closeModal;
-  if (modal) modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+  if (modal) modal.onclick = (e) => { if (e.target === modal && !_verdictLocked) closeModal(); };
+  const modalContent = modal.querySelector('.magic-modal-content');
+  if (modalContent) modalContent.onclick = (e) => e.stopPropagation();
   
   if (checkbox && saveBtn) {
     checkbox.checked = false;
@@ -401,12 +404,12 @@ function showProxyKeyPrompt() {
   }
   
   if (saveBtn && input) {
-    saveBtn.onclick = async () => {
+    const runSave = async () => {
       if (saveBtn.disabled) return;
       const key = input.value.trim();
       if (!key) return;
 
-      const originalLabel = saveBtn.textContent;
+      _verdictLocked = true;
       saveBtn.disabled = true;
       saveBtn.style.opacity = '0.6';
       saveBtn.style.cursor = 'wait';
@@ -425,15 +428,29 @@ function showProxyKeyPrompt() {
       statusEl.style.color = '#9be7ff';
       statusEl.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border:2px solid #00d9ff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;"></span>Checking your account for video model access…';
 
-      const tier = await detectKeyTier(key);
+      const probe = await detectKeyTierVerbose(key);
 
-      await chrome.storage.sync.set({ geminiApiKey: key });
-      await chrome.storage.local.set({
-        snaptoai_key_tier: tier,
-        snaptoai_key_tier_key: key,
-        snaptoai_key_tier_ts: Date.now()
-      });
-      freePromptsRemaining = null;
+      if (probe.error) {
+        statusEl.style.background = 'rgba(255,80,80,0.10)';
+        statusEl.style.border = '1px solid rgba(255,80,80,0.35)';
+        statusEl.style.color = '#ffb3b3';
+        statusEl.innerHTML = `
+          <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#ff8080;margin-bottom:6px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#ff5050;"></span>Could not verify your key
+          </div>
+          <div style="color:rgba(255,255,255,0.85);margin-bottom:8px;">${probe.error}</div>
+          <div style="color:rgba(255,255,255,0.55);font-size:11px;">Check your internet connection or verify the key is correct, then try again.</div>
+        `;
+        saveBtn.textContent = 'Try Again';
+        saveBtn.style.opacity = '1';
+        saveBtn.style.cursor = 'pointer';
+        saveBtn.disabled = false;
+        _verdictLocked = false;
+        setTimeout(() => { saveBtn.onclick = runSave; }, 0);
+        return;
+      }
+
+      const tier = probe.tier;
 
       if (tier === 'prepaid') {
         statusEl.style.background = 'linear-gradient(135deg, rgba(0,255,136,0.12), rgba(0,200,100,0.06))';
@@ -446,11 +463,6 @@ function showProxyKeyPrompt() {
         saveBtn.style.opacity = '1';
         saveBtn.style.cursor = 'pointer';
         saveBtn.disabled = false;
-        saveBtn.onclick = () => {
-          closeModal();
-          showPromptToast('🎉 Prepaid plan active — all AI features unlocked!', 3500);
-          checkKeyTier();
-        };
       } else {
         statusEl.style.background = 'linear-gradient(135deg, rgba(255,165,0,0.12), rgba(255,107,237,0.06))';
         statusEl.style.border = '1px solid rgba(255,165,0,0.35)';
@@ -471,13 +483,31 @@ function showProxyKeyPrompt() {
         saveBtn.style.opacity = '1';
         saveBtn.style.cursor = 'pointer';
         saveBtn.disabled = false;
-        saveBtn.onclick = () => {
+      }
+
+      // Defer onclick replacement so the click that triggered runSave can't re-fire it.
+      setTimeout(() => {
+        saveBtn.onclick = async () => {
+          // Persist key + tier ONLY now, when user explicitly confirms.
+          await chrome.storage.sync.set({ geminiApiKey: key });
+          await chrome.storage.local.set({
+            snaptoai_key_tier: tier,
+            snaptoai_key_tier_key: key,
+            snaptoai_key_tier_ts: Date.now()
+          });
+          freePromptsRemaining = null;
+          _verdictLocked = false;
           closeModal();
-          showPromptToast('Key saved — Vision unlocked. Upgrade to Prepaid for Image/Music/Video.', 4500);
+          if (tier === 'prepaid') {
+            showPromptToast('🎉 Prepaid plan active — all AI features unlocked!', 3500);
+          } else {
+            showPromptToast('Key saved — Vision unlocked. Upgrade to Prepaid for Image/Music/Video.', 4500);
+          }
           checkKeyTier();
         };
-      }
+      }, 0);
     };
+    saveBtn.onclick = runSave;
   }
 }
 
@@ -511,49 +541,73 @@ async function isOwnerKey(apiKey) {
   }
 }
 
-async function detectKeyTier(apiKey) {
-  // SAFEGUARD: If the user pastes the owner's shared proxy key (or any
-  // protected key), force-treat as 'free' so it can never be used to
-  // generate Image/Music/Video and run up the owner's bill.
-  // Server publishes only the SHA-256 fingerprint, never the raw key.
-  if (await isOwnerKey(apiKey)) {
-    console.log('[SnapToAI] Owner-key fingerprint match — forcing free tier');
-    return 'free';
-  }
+// Verbose version: returns { tier, error } so the UI can distinguish a real
+// verdict from a probe failure (CORS, network, invalid key auth, etc).
+async function detectKeyTierVerbose(apiKey) {
+  // SAFEGUARD: owner-key fingerprint match -> forced free.
+  try {
+    if (await isOwnerKey(apiKey)) {
+      console.log('[SnapToAI] Owner-key fingerprint match — forcing free tier');
+      return { tier: 'free', error: null };
+    }
+  } catch (_) {}
 
   // Probe: send EMPTY body to Veo 2.0 predictLongRunning.
-  // - Prepaid key  -> billing check PASSES, then validation fails with INVALID_ARGUMENT
-  //                   ("No instances in the request"). NO job starts, NO charge.
-  // - Free tier    -> billing check FAILS with FAILED_PRECONDITION
-  //                   ("exclusively available to users with Google Cloud Platform billing enabled").
-  // models.list cannot be used as a probe because it returns Veo entries for ALL keys
-  // regardless of billing status.
+  // - Prepaid -> billing check PASSES, validation fails INVALID_ARGUMENT (no charge).
+  // - Free    -> billing check FAILS with FAILED_PRECONDITION.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
   try {
     const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/veo-2.0-generate-001:predictLongRunning?key=${encodeURIComponent(apiKey)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: '{}'
+      body: '{}',
+      signal: controller.signal
     });
+    clearTimeout(timer);
     const data = await resp.json().catch(() => ({}));
+    console.log('[SnapToAI] Tier probe response:', resp.status, data);
+
     const status = (data?.error?.status || '').toUpperCase();
     const msg = (data?.error?.message || '').toLowerCase();
+    const code = data?.error?.code;
+
+    // Free signal: explicit billing precondition.
     if (status === 'FAILED_PRECONDITION' || msg.includes('billing')) {
-      return 'free';
+      return { tier: 'free', error: null };
     }
+    // Invalid key.
+    if (code === 401 || code === 403 || status === 'PERMISSION_DENIED' || status === 'UNAUTHENTICATED' ||
+        msg.includes('api key not valid') || msg.includes('api_key_invalid')) {
+      return { tier: null, error: 'Invalid API key. Double-check the key and try again.' };
+    }
+    // Prepaid signal: validation passed billing and complained about empty payload.
     if (status === 'INVALID_ARGUMENT' || msg.includes('no instances')) {
-      return 'prepaid';
+      return { tier: 'prepaid', error: null };
     }
-    // Unexpected response (auth error, network, etc.) — fail closed to free.
-    if (data?.error) {
-      console.log('[SnapToAI] Probe unexpected error, defaulting to free:', data.error);
-      return 'free';
+    // 200 OK with operation name = also prepaid (rare with empty body but possible).
+    if (resp.ok && (data?.name || data?.metadata)) {
+      return { tier: 'prepaid', error: null };
     }
-    // No error at all is unexpected for empty body, but treat as prepaid signal.
-    return 'prepaid';
+    // Anything else: surface it instead of silently returning 'free'.
+    const detail = msg || (`HTTP ${resp.status}`) || 'Unknown response';
+    return { tier: null, error: `Unexpected response from Google: ${detail}` };
   } catch (e) {
-    console.log('[SnapToAI] Key tier detection failed:', e?.message || e);
-    return 'free';
+    clearTimeout(timer);
+    const m = e?.message || String(e);
+    console.log('[SnapToAI] Key tier probe error:', m);
+    if (e?.name === 'AbortError') return { tier: null, error: 'Verification timed out. Please try again.' };
+    return { tier: null, error: `Network error: ${m}` };
   }
+}
+
+// Backwards-compatible wrapper used by checkKeyTier().
+async function detectKeyTier(apiKey) {
+  const r = await detectKeyTierVerbose(apiKey);
+  if (r.tier) return r.tier;
+  // For the silent background path, default to 'free' on any error so paid
+  // modes stay locked until the user re-runs activation.
+  return 'free';
 }
 
 let _toastTimeout = null;
