@@ -520,13 +520,15 @@ async function isOwnerKey(apiKey) {
   }
 }
 
-// Single-shot probe against one Veo model. Returns:
+// Single-shot probe against one paid model. Returns:
 // 'prepaid' | 'free' | 'invalid' (bad key) | 'retry' (transient/unknown — caller should try another model)
-async function _probeOneVeoModel(apiKey, modelId, timeoutMs) {
+// `endpoint` is the action verb on the model (predictLongRunning for Veo, predict for Imagen).
+async function _probeOneVeoModel(apiKey, modelId, timeoutMs, endpoint) {
+  endpoint = endpoint || 'predictLongRunning';
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:predictLongRunning?key=${encodeURIComponent(apiKey)}`, {
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:${endpoint}?key=${encodeURIComponent(apiKey)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
@@ -566,19 +568,33 @@ async function detectKeyTierVerbose(apiKey) {
     }
   } catch (_) {}
 
-  const probeModels = [
-    'veo-2.0-generate-001',
-    'veo-3.0-generate-001',
-    'veo-3.0-fast-generate-001',
-    'veo-3.1-fast-generate-preview'
+  // Imagen first — it requires only Tier 1 billing, so it's the canonical "has billing" probe.
+  // Veo second — many keys with billing are still on Tier 1 and Veo requires Tier 2+, so a
+  // Veo FAILED_PRECONDITION is NOT a reliable "no billing" signal. We only trust Veo as a
+  // backup positive signal (prepaid), not as a free verdict on its own.
+  const probeChain = [
+    { model: 'imagen-3.0-generate-001',     endpoint: 'predict',             trustFreeVerdict: true  },
+    { model: 'imagen-4.0-generate-001',     endpoint: 'predict',             trustFreeVerdict: true  },
+    { model: 'veo-2.0-generate-001',        endpoint: 'predictLongRunning',  trustFreeVerdict: false },
+    { model: 'veo-3.0-generate-001',        endpoint: 'predictLongRunning',  trustFreeVerdict: false },
+    { model: 'veo-3.0-fast-generate-001',   endpoint: 'predictLongRunning',  trustFreeVerdict: false },
+    { model: 'veo-3.1-fast-generate-preview', endpoint: 'predictLongRunning', trustFreeVerdict: false }
   ];
 
   let sawInvalid = false;
+  let sawFreeFromImagen = false;
   for (let attempt = 0; attempt < 2; attempt++) {
-    for (const m of probeModels) {
-      const r = await _probeOneVeoModel(apiKey, m, 10000);
+    for (const p of probeChain) {
+      const r = await _probeOneVeoModel(apiKey, p.model, 10000, p.endpoint);
       if (r === 'prepaid') return { tier: 'prepaid', invalid: false };
-      if (r === 'free') return { tier: 'free', invalid: false };
+      if (r === 'free') {
+        // Only Imagen's "billing required" is a definitive free-tier signal.
+        // Veo's billing precondition can fire on Tier 1 paid keys (Veo needs Tier 2+),
+        // so we don't trust it as a free verdict by itself.
+        if (p.trustFreeVerdict) return { tier: 'free', invalid: false };
+        sawFreeFromImagen = false; // explicit no-op; Veo free-signal is ignored
+        continue;
+      }
       if (r === 'invalid') sawInvalid = true;
       // 'retry' -> try next model / next attempt
     }

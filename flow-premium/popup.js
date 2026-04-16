@@ -3602,11 +3602,12 @@ async function loadGeminiKey() {
 }
 
 // ---- Tier probe (popup-local, mirrors ai-chat.js logic) ----
-async function _popupProbeOneVeo(apiKey, modelId, timeoutMs) {
+async function _popupProbeOneVeo(apiKey, modelId, timeoutMs, endpoint) {
+  endpoint = endpoint || 'predictLongRunning';
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:predictLongRunning?key=${encodeURIComponent(apiKey)}`, {
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:${endpoint}?key=${encodeURIComponent(apiKey)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
@@ -3646,13 +3647,26 @@ async function _popupIsOwnerKey(apiKey) {
 
 async function _popupDetectTier(apiKey) {
   if (await _popupIsOwnerKey(apiKey)) return { tier: 'free', invalid: false };
-  const models = ['veo-2.0-generate-001', 'veo-3.0-generate-001', 'veo-3.0-fast-generate-001', 'veo-3.1-fast-generate-preview'];
+  // Imagen first — only Tier 1 billing required, canonical "has billing" check.
+  // Veo second — requires Tier 2+ on many accounts, so its FAILED_PRECONDITION
+  // is NOT a reliable free-tier signal. We trust Veo only as a positive (prepaid).
+  const chain = [
+    { model: 'imagen-3.0-generate-001',     endpoint: 'predict',             trustFree: true },
+    { model: 'imagen-4.0-generate-001',     endpoint: 'predict',             trustFree: true },
+    { model: 'veo-2.0-generate-001',        endpoint: 'predictLongRunning',  trustFree: false },
+    { model: 'veo-3.0-generate-001',        endpoint: 'predictLongRunning',  trustFree: false },
+    { model: 'veo-3.0-fast-generate-001',   endpoint: 'predictLongRunning',  trustFree: false },
+    { model: 'veo-3.1-fast-generate-preview', endpoint: 'predictLongRunning', trustFree: false }
+  ];
   let invalid = false;
   for (let pass = 0; pass < 2; pass++) {
-    for (const m of models) {
-      const r = await _popupProbeOneVeo(apiKey, m, 10000);
+    for (const p of chain) {
+      const r = await _popupProbeOneVeo(apiKey, p.model, 10000, p.endpoint);
       if (r === 'prepaid') return { tier: 'prepaid', invalid: false };
-      if (r === 'free')    return { tier: 'free', invalid: false };
+      if (r === 'free') {
+        if (p.trustFree) return { tier: 'free', invalid: false };
+        continue; // Veo billing-required is not a reliable free verdict (Tier 1 still hits it)
+      }
       if (r === 'invalid') invalid = true;
     }
     await new Promise(res => setTimeout(res, 500));
