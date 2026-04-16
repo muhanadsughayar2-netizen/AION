@@ -3674,6 +3674,37 @@ async function _popupDetectTier(apiKey) {
   return { tier: 'free', invalid };
 }
 
+// ---- API-key tutorial video: click poster to replace with playing video ----
+(function wireApiKeyTutorialVideo() {
+  const card = document.getElementById('apiKeyVideoCard');
+  const poster = document.getElementById('apiKeyVideoPoster');
+  const videoEl = document.getElementById('apiKeyVideoEl');
+  if (!card || !poster || !videoEl) return;
+
+  // Inject pulse keyframes once
+  if (!document.getElementById('apiKeyVideoStyles')) {
+    const st = document.createElement('style');
+    st.id = 'apiKeyVideoStyles';
+    st.textContent = `
+      @keyframes apiKeyPulse {
+        0%   { transform: scale(1);   opacity: 0.9; }
+        70%  { transform: scale(1.35); opacity: 0; }
+        100% { transform: scale(1.35); opacity: 0; }
+      }
+      #apiKeyVideoCard:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(0,217,255,0.22); transition: all 0.2s ease; }
+    `;
+    document.head.appendChild(st);
+  }
+
+  poster.addEventListener('click', () => {
+    poster.style.display = 'none';
+    videoEl.style.display = 'block';
+    videoEl.play().catch(err => {
+      console.log('[SnapToAI] Tutorial video play blocked:', err);
+    });
+  });
+})();
+
 // ---- Inject verdict UI into the existing modal ----
 function _ensureVerdictArea() {
   let area = document.getElementById('geminiVerdictArea');
