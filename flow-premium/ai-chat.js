@@ -56,8 +56,12 @@ function getPaidModeEstimate(mode, clipCount = 1, durationSeconds = 8) {
 function isBillingError(status, message) {
   if (!message) return false;
   const lower = message.toLowerCase();
-  return (status === 400 || status === 403 || status === 404) &&
-    (lower.includes('billing') || lower.includes('paid tier') || lower.includes('permission') || lower.includes('precondition') || lower.includes('not enabled') || lower.includes('not activated'));
+  const hasBillingKeyword = lower.includes('billing') || lower.includes('paid tier') ||
+    lower.includes('permission') || lower.includes('precondition') ||
+    lower.includes('not enabled') || lower.includes('not activated') ||
+    lower.includes('paid api') || lower.includes('pay-as-you-go') ||
+    lower.includes('gcp billing') || lower.includes('exclusively available');
+  return (status === 400 || status === 403 || status === 404 || status === 429) && hasBillingKeyword;
 }
 
 function buildNoKeyCard() {
@@ -580,7 +584,7 @@ const AI_MODES = {
     welcome: "I'm your AI vision partner. Snap a screenshot and ask me anything!"
   },
   'image': {
-    model: 'gemini-2.5-flash-image',
+    model: 'gemini-3-flash-preview',
     type: 'gemini-image',
     placeholder: 'Describe the image you want to create...',
     welcome: '🎨 Image mode — describe what you want and I\'ll create it!'
@@ -592,7 +596,7 @@ const AI_MODES = {
     welcome: '🎵 Music mode — describe the vibe and I\'ll compose it!'
   },
   'video': {
-    model: 'veo-2.0-generate-001',
+    model: 'veo-3.0-generate-001',
     type: 'gemini-video',
     placeholder: 'Describe the video you want to create...',
     welcome: '🎬 Video mode — describe a scene and I\'ll bring it to life!'
@@ -743,133 +747,20 @@ function hidePaidModes() {
   }
 }
 
-const BILLING_DENIED_PHRASES = [
-  'billing account', 'enable billing', 'billing is not enabled',
-  'billing not enabled', 'paid api plan', 'pay-as-you-go',
-  'billing account is required', 'billing is required'
-];
-const BILLING_DENIED_CODES = ['FAILED_PRECONDITION', 'PERMISSION_DENIED'];
-const TRANSIENT_CODES = [
-  'UNAVAILABLE', 'DEADLINE_EXCEEDED', 'INTERNAL', 'RESOURCE_EXHAUSTED',
-  'CANCELLED', 'DATA_LOSS', 'ABORTED'
-];
-const PROBE_MODELS = [
-  'gemini-2.0-flash',
-  'gemini-2.5-flash-preview-04-17',
-  'gemini-2.5-flash'
-];
-
-function classifyProbeError(errData, httpStatus) {
-  try {
-    const errStr = JSON.stringify(errData).toLowerCase();
-    const errCode = errData?.error?.status || errData?.error?.code || '';
-    const errCodeUpper = String(errCode).toUpperCase();
-
-    for (const phrase of BILLING_DENIED_PHRASES) {
-      if (errStr.includes(phrase)) return 'free';
-    }
-    for (const code of BILLING_DENIED_CODES) {
-      if (errCodeUpper === code && !errStr.includes('quota') && !errStr.includes('rate')) return 'free';
-    }
-
-    if (httpStatus === 429) return 'unknown';
-    if (httpStatus >= 500) return 'unknown';
-    for (const code of TRANSIENT_CODES) {
-      if (errCodeUpper === code) return 'unknown';
-    }
-
-    if (errStr.includes('not found') || errStr.includes('model') || errStr.includes('deprecated')) return 'unknown';
-
-    if (httpStatus === 400) return 'unknown';
-
-    return 'unknown';
-  } catch (_) {
-    return 'unknown';
-  }
-}
-
-async function probeWithFallbacks(apiKey) {
-  for (const model of PROBE_MODELS) {
-    try {
-      const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: 'Reply with the single word OK' }] }],
-            generationConfig: { maxOutputTokens: 1 }
-          }),
-          signal: AbortSignal.timeout(12000)
-        }
-      );
-
-      if (resp.ok) {
-        console.log(`[SnapToAI] Probe ${model} succeeded → paid`);
-        return 'paid';
-      }
-
-      let errData = {};
-      try { errData = await resp.json(); } catch (_) {}
-      const verdict = classifyProbeError(errData, resp.status);
-      console.log(`[SnapToAI] Probe ${model} status=${resp.status} verdict=${verdict}`, errData?.error?.status || '');
-
-      if (verdict === 'free') return 'free';
-    } catch (e) {
-      console.log(`[SnapToAI] Probe ${model} network error: ${e.message}`);
-    }
-  }
-  return 'unknown';
-}
-
 async function checkKeyTier() {
   try {
     const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
     const apiKey = keyResult.geminiApiKey;
     if (!apiKey) {
       hidePaidModes();
-      console.log('[SnapToAI] No key — Vision only');
+      console.log('[SnapToAI] No API key — Vision only (free proxy)');
       return;
     }
-
-    const cached = await chrome.storage.local.get(['snaptoai_key_tier', 'snaptoai_key_tier_key', 'snaptoai_key_tier_ts']);
-    if (cached.snaptoai_key_tier_key === apiKey && cached.snaptoai_key_tier_ts) {
-      const age = Date.now() - cached.snaptoai_key_tier_ts;
-      const maxAge = cached.snaptoai_key_tier === 'prepaid' ? 86400000 : 300000;
-      if (age < maxAge) {
-        if (cached.snaptoai_key_tier === 'prepaid') {
-          showPaidModes();
-          console.log('[SnapToAI] Prepaid key (cached) — all modes enabled');
-        } else {
-          hidePaidModes();
-          console.log('[SnapToAI] Free key (cached) — Vision only');
-        }
-        return;
-      }
-    }
-
-    const verdict = await probeWithFallbacks(apiKey);
-
-    if (verdict === 'paid') {
-      showPaidModes();
-      await chrome.storage.local.set({ snaptoai_key_tier: 'prepaid', snaptoai_key_tier_key: apiKey, snaptoai_key_tier_ts: Date.now() });
-      console.log('[SnapToAI] Billing confirmed — all modes unlocked');
-    } else if (verdict === 'free') {
-      hidePaidModes();
-      await chrome.storage.local.set({ snaptoai_key_tier: 'free', snaptoai_key_tier_key: apiKey, snaptoai_key_tier_ts: Date.now() });
-      console.log('[SnapToAI] Billing not enabled — Vision only');
-    } else {
-      if (cached.snaptoai_key_tier === 'prepaid') {
-        showPaidModes();
-        console.log('[SnapToAI] Probe inconclusive — keeping last-known PAID state');
-      } else {
-        showPaidModes();
-        console.log('[SnapToAI] Probe inconclusive, no prior state — showing all modes (errors handled per-request)');
-      }
-    }
+    showPaidModes();
+    console.log('[SnapToAI] API key present — all modes enabled (billing errors handled per-request)');
   } catch (e) {
     showPaidModes();
-    console.log('[SnapToAI] Key tier check failed, showing all modes (errors handled per-request):', e.message);
+    console.log('[SnapToAI] Key check error, showing all modes:', e.message);
   }
 }
 
@@ -2944,8 +2835,8 @@ async function handleSend() {
     if (modeConfig.type === 'gemini-image') {
       // === IMAGE GENERATION (via generateContent with responseModalities) ===
       const imageModels = [
+        'gemini-3-flash-preview',
         'gemini-2.5-flash-image',
-        'gemini-3.1-flash-image-preview',
         'gemini-3-pro-image-preview'
       ];
       
