@@ -3678,9 +3678,7 @@ async function _popupDetectTier(apiKey) {
 (function wireApiKeyTutorialVideo() {
   const card = document.getElementById('apiKeyVideoCard');
   const poster = document.getElementById('apiKeyVideoPoster');
-  const frameWrap = document.getElementById('apiKeyVideoFrameWrap');
-  const frame = document.getElementById('apiKeyVideoFrame');
-  if (!card || !poster || !frameWrap || !frame) return;
+  if (!card || !poster) return;
 
   // Inject pulse keyframes once
   if (!document.getElementById('apiKeyVideoStyles')) {
@@ -3698,10 +3696,14 @@ async function _popupDetectTier(apiKey) {
   }
 
   poster.addEventListener('click', () => {
-    poster.style.display = 'none';
-    frameWrap.style.display = 'block';
-    // Load on click (saves bandwidth until user opts in)
-    frame.src = 'https://www.youtube-nocookie.com/embed/vyrH5i4H3mA?autoplay=1&rel=0&modestbranding=1&playsinline=1';
+    // Open on YouTube in a new tab — guaranteed to play full-size, no CSP/iframe issues.
+    const url = 'https://www.youtube.com/watch?v=vyrH5i4H3mA';
+    try {
+      if (chrome?.tabs?.create) chrome.tabs.create({ url });
+      else window.open(url, '_blank', 'noopener');
+    } catch (_) {
+      window.open(url, '_blank', 'noopener');
+    }
   });
 })();
 
