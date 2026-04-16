@@ -3619,14 +3619,15 @@ async function _popupProbeOneVeo(apiKey, modelId, timeoutMs, endpoint) {
     const status = (data?.error?.status || '').toUpperCase();
     const msg = (data?.error?.message || '').toLowerCase();
     const code = data?.error?.code;
-    if (status === 'FAILED_PRECONDITION' || msg.includes('billing') ||
-        msg.includes('paid plan') || msg.includes('paid plans') ||
-        msg.includes('upgrade your account') || msg.includes('only available on paid') ||
-        msg.includes('quota') && msg.includes('free')) return 'free';
+    // PREPAID positive signal first — Google only returns "no instances" when billing is enabled
+    if (status === 'INVALID_ARGUMENT' && (msg.includes('no instances') || msg.includes('instances'))) return 'prepaid';
+    if (resp.ok && (data?.name || data?.metadata)) return 'prepaid';
+    // Invalid key signals
     if (code === 401 || code === 403 || status === 'PERMISSION_DENIED' || status === 'UNAUTHENTICATED' ||
         msg.includes('api key not valid') || msg.includes('api_key_invalid') || msg.includes('api key expired')) return 'invalid';
-    if (status === 'INVALID_ARGUMENT' && (msg.includes('no instances') || msg.includes('instances') || msg.includes('prompt'))) return 'prepaid';
-    if (resp.ok && (data?.name || data?.metadata)) return 'prepaid';
+    // FREE / billing-required signal — only trust this from billing-language responses
+    if (status === 'FAILED_PRECONDITION' || msg.includes('billing enabled') || msg.includes('gcp billing') ||
+        msg.includes('billing is required') || msg.includes('enable billing')) return 'free';
     return 'retry';
   } catch (e) {
     clearTimeout(timer);
@@ -3650,16 +3651,16 @@ async function _popupIsOwnerKey(apiKey) {
 
 async function _popupDetectTier(apiKey) {
   if (await _popupIsOwnerKey(apiKey)) return { tier: 'free', invalid: false };
-  // Imagen first — only Tier 1 billing required, canonical "has billing" check.
-  // Veo second — requires Tier 2+ on many accounts, so its FAILED_PRECONDITION
-  // is NOT a reliable free-tier signal. We trust Veo only as a positive (prepaid).
+  // Veo first — "no instances" response is the canonical PREPAID positive signal.
+  // Imagen last — its "only available on paid plans" message is a model-availability
+  // message, NOT a billing-status message, and falsely flags prepaid keys as free.
   const chain = [
-    { model: 'imagen-3.0-generate-001',     endpoint: 'predict',             trustFree: true },
-    { model: 'imagen-4.0-generate-001',     endpoint: 'predict',             trustFree: true },
-    { model: 'veo-2.0-generate-001',        endpoint: 'predictLongRunning',  trustFree: false },
-    { model: 'veo-3.0-generate-001',        endpoint: 'predictLongRunning',  trustFree: false },
-    { model: 'veo-3.0-fast-generate-001',   endpoint: 'predictLongRunning',  trustFree: false },
-    { model: 'veo-3.1-fast-generate-preview', endpoint: 'predictLongRunning', trustFree: false }
+    { model: 'veo-3.0-fast-generate-001',     endpoint: 'predictLongRunning',  trustFree: false },
+    { model: 'veo-3.1-fast-generate-preview', endpoint: 'predictLongRunning',  trustFree: false },
+    { model: 'veo-3.0-generate-001',          endpoint: 'predictLongRunning',  trustFree: false },
+    { model: 'veo-2.0-generate-001',          endpoint: 'predictLongRunning',  trustFree: true  },
+    { model: 'imagen-4.0-generate-001',       endpoint: 'predict',             trustFree: false },
+    { model: 'imagen-3.0-generate-001',       endpoint: 'predict',             trustFree: false }
   ];
   let invalid = false;
   for (let pass = 0; pass < 2; pass++) {
