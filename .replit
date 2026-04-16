@@ -79,3 +79,4 @@ build = ["pip", "install", "-r", "requirements.txt"]
 
 [userenv.shared]
 SUPABASE_DATABASE_URL = "postgresql://postgres.drzstffdumyqfbqyjlua:Xnu124yuXnu124yu%25%25@aws-0-us-west-2.pooler.supabase.com:5432/postgres"
+GEMINI_FREE_KEYS = "AIzaSyAgCoj-jLBBy2xzGhed_NWPuIloi26Broo,AIzaSyAQhtFAP2ywJ-QSQ-gOsf5ehTJ0qCOdMF8,AIzaSyCtVNsJKHKvK0EdDwDTqCaLdFWLz6yj41Q"

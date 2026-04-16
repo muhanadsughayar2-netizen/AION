@@ -2181,13 +2181,12 @@ def privacy_policy_route():
 import time as _time
 
 FREE_PROMPT_LIMIT = 5
-GEMINI_FREE_KEYS = [
-    'AIzaSyAgCoj-jLBBy2xzGhed_NWPuIloi26Broo',
-    'AIzaSyAQhtFAP2ywJ-QSQ-gOsf5ehTJ0qCOdMF8',
-    'AIzaSyCtVNsJKHKvK0EdDwDTqCaLdFWLz6yj41Q',
-]
+_free_keys_raw = os.environ.get('GEMINI_FREE_KEYS', '')
+GEMINI_FREE_KEYS = [k.strip() for k in _free_keys_raw.split(',') if k.strip()] if _free_keys_raw else []
 _free_key_index = 0
 _rate_limit_cache = {}
+import threading
+_key_lock = threading.Lock()
 
 @app.route('/api/ai/proxy', methods=['POST', 'OPTIONS'])
 def ai_proxy():
@@ -2238,29 +2237,21 @@ def ai_proxy():
     try:
         conn = get_db()
         cur = conn.cursor()
+        from datetime import datetime, timezone
+        now_utc = datetime.now(timezone.utc)
+        today_str = now_utc.strftime('%Y-%m-%d')
+
         cur.execute('''
             INSERT INTO free_prompts (identifier, usage_count, last_used)
             VALUES (%s, 0, NOW())
-            ON CONFLICT (identifier) DO NOTHING
-        ''', (identifier,))
-        conn.commit()
-
-        cur.execute('SELECT usage_count, last_used FROM free_prompts WHERE identifier = %s', (identifier,))
+            ON CONFLICT (identifier) DO UPDATE SET
+                usage_count = CASE WHEN free_prompts.last_used::date < %s::date THEN 0 ELSE free_prompts.usage_count END,
+                last_used = CASE WHEN free_prompts.last_used::date < %s::date THEN NOW() ELSE free_prompts.last_used END
+            RETURNING usage_count
+        ''', (identifier, today_str, today_str))
         row = cur.fetchone()
+        conn.commit()
         usage_count = row[0] if row else 0
-        last_used = row[1] if row else None
-
-        from datetime import datetime, timezone
-        now_utc = datetime.now(timezone.utc)
-        if last_used:
-            if hasattr(last_used, 'date'):
-                last_date = last_used.date()
-            else:
-                last_date = None
-            if last_date and last_date < now_utc.date():
-                cur.execute('UPDATE free_prompts SET usage_count = 0, last_used = NOW() WHERE identifier = %s', (identifier,))
-                conn.commit()
-                usage_count = 0
 
         if usage_count >= FREE_PROMPT_LIMIT:
             r = jsonify({'error': 'limit_reached', 'remaining': 0, 'limit': FREE_PROMPT_LIMIT})
@@ -2299,8 +2290,10 @@ def ai_proxy():
         global _free_key_index
         gemini_data = None
         last_error = 'All keys exhausted'
+        with _key_lock:
+            start_idx = _free_key_index
         for attempt in range(len(GEMINI_FREE_KEYS)):
-            key_idx = (_free_key_index + attempt) % len(GEMINI_FREE_KEYS)
+            key_idx = (start_idx + attempt) % len(GEMINI_FREE_KEYS)
             try_key = GEMINI_FREE_KEYS[key_idx]
             try:
                 gemini_resp = http_requests.post(
@@ -2318,7 +2311,8 @@ def ai_proxy():
                     gemini_data = resp_data
                     break
                 gemini_data = resp_data
-                _free_key_index = (key_idx + 1) % len(GEMINI_FREE_KEYS)
+                with _key_lock:
+                    _free_key_index = (key_idx + 1) % len(GEMINI_FREE_KEYS)
                 break
             except Exception as ke:
                 last_error = str(ke)

@@ -797,10 +797,13 @@ async function checkKeyTier() {
       showPaidModes();
       await chrome.storage.local.set({ snaptoai_key_tier: 'prepaid', snaptoai_key_tier_key: apiKey, snaptoai_key_tier_ts: Date.now() });
       console.log('[SnapToAI] Billing enabled — all modes unlocked');
-    } else {
+    } else if (isBillingError) {
       hidePaidModes();
       await chrome.storage.local.set({ snaptoai_key_tier: 'free', snaptoai_key_tier_key: apiKey, snaptoai_key_tier_ts: Date.now() });
-      console.log('[SnapToAI] No billing — Vision only', isBillingError ? '(billing error)' : '(other error)');
+      console.log('[SnapToAI] No billing — Vision only');
+    } else {
+      hidePaidModes();
+      console.log('[SnapToAI] Tier check inconclusive (network/transient error) — defaulting to Vision, not caching');
     }
   } catch (e) {
     console.log('[SnapToAI] Key tier check skipped:', e.message);
@@ -2696,7 +2699,7 @@ async function handleSend() {
         const msg = proxyErr.message || '';
         const errBubble = createResponseBubble();
         if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('wait')) {
-          errBubble.innerHTML = buildDailyLimitCard();
+          errBubble.innerHTML = buildRateLimitCard();
         } else {
           errBubble.innerHTML = buildNoKeyCard();
         }
@@ -3372,8 +3375,11 @@ function addBubbleActions(bubble, text) {
   // Read aloud using FREE browser TTS with auto language detection
   const readBtn = actions.querySelector('.read-aloud-btn');
   
+  let speakSessionId = 0;
+
   readBtn.onclick = () => {
     if (synth.speaking) {
+      speakSessionId++;
       synth.cancel();
       readBtn.textContent = '🔊 Read';
       return;
@@ -3382,8 +3388,12 @@ function addBubbleActions(bubble, text) {
     const cleanText = text.replace(/```[\s\S]*?```/g, ' code block ').replace(/[#*_~`>|]/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\s+/g, ' ').trim();
     if (!cleanText) return;
 
+    speakSessionId++;
+    const thisSession = speakSessionId;
     synth.cancel();
+
     setTimeout(() => {
+      if (thisSession !== speakSessionId) return;
       voices = synth.getVoices();
       const detectedLang = detectLanguage(cleanText);
       const MAX_CHUNK = 200;
@@ -3411,6 +3421,7 @@ function addBubbleActions(bubble, text) {
       let chunkIndex = 0;
 
       function speakNext() {
+        if (thisSession !== speakSessionId) return;
         if (chunkIndex >= chunks.length) {
           readBtn.textContent = '🔊 Read';
           return;
@@ -3424,7 +3435,11 @@ function addBubbleActions(bubble, text) {
         }
         u.rate = 1.0;
         u.pitch = 1.0;
-        u.onend = () => { chunkIndex++; speakNext(); };
+        u.onend = () => {
+          chunkIndex++;
+          if (thisSession !== speakSessionId) return;
+          setTimeout(() => speakNext(), 150);
+        };
         u.onerror = () => { readBtn.textContent = '🔊 Read'; };
         synth.speak(u);
       }
