@@ -3601,6 +3601,78 @@ async function loadGeminiKey() {
   }
 }
 
+// ---- Tier probe (popup-local, mirrors ai-chat.js logic) ----
+async function _popupProbeOneVeo(apiKey, modelId, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:predictLongRunning?key=${encodeURIComponent(apiKey)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    const data = await resp.json().catch(() => ({}));
+    console.log(`[SnapToAI popup] Probe ${modelId} -> HTTP ${resp.status}`, data);
+    const status = (data?.error?.status || '').toUpperCase();
+    const msg = (data?.error?.message || '').toLowerCase();
+    const code = data?.error?.code;
+    if (status === 'FAILED_PRECONDITION' || msg.includes('billing')) return 'free';
+    if (code === 401 || code === 403 || status === 'PERMISSION_DENIED' || status === 'UNAUTHENTICATED' ||
+        msg.includes('api key not valid') || msg.includes('api_key_invalid') || msg.includes('api key expired')) return 'invalid';
+    if (status === 'INVALID_ARGUMENT' || msg.includes('no instances') || msg.includes('instances')) return 'prepaid';
+    if (resp.ok && (data?.name || data?.metadata)) return 'prepaid';
+    return 'retry';
+  } catch (e) {
+    clearTimeout(timer);
+    console.log(`[SnapToAI popup] Probe ${modelId} threw:`, e?.message || e);
+    return 'retry';
+  }
+}
+
+async function _popupIsOwnerKey(apiKey) {
+  try {
+    const resp = await fetch('https://www.snaptoai.com/api/owner-key-fingerprint', { signal: AbortSignal.timeout(5000) });
+    if (!resp.ok) return false;
+    const { fingerprints } = await resp.json();
+    if (!Array.isArray(fingerprints) || fingerprints.length === 0) return false;
+    const enc = new TextEncoder().encode(apiKey);
+    const buf = await crypto.subtle.digest('SHA-256', enc);
+    const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    return fingerprints.includes(hex);
+  } catch (_) { return false; }
+}
+
+async function _popupDetectTier(apiKey) {
+  if (await _popupIsOwnerKey(apiKey)) return { tier: 'free', invalid: false };
+  const models = ['veo-2.0-generate-001', 'veo-3.0-generate-001', 'veo-3.0-fast-generate-001', 'veo-3.1-fast-generate-preview'];
+  let invalid = false;
+  for (let pass = 0; pass < 2; pass++) {
+    for (const m of models) {
+      const r = await _popupProbeOneVeo(apiKey, m, 10000);
+      if (r === 'prepaid') return { tier: 'prepaid', invalid: false };
+      if (r === 'free')    return { tier: 'free', invalid: false };
+      if (r === 'invalid') invalid = true;
+    }
+    await new Promise(res => setTimeout(res, 500));
+  }
+  return { tier: 'free', invalid };
+}
+
+// ---- Inject verdict UI into the existing modal ----
+function _ensureVerdictArea() {
+  let area = document.getElementById('geminiVerdictArea');
+  if (area) return area;
+  const actions = document.querySelector('#geminiModal .gemini-actions');
+  if (!actions) return null;
+  area = document.createElement('div');
+  area.id = 'geminiVerdictArea';
+  area.style.cssText = 'margin:12px 0;padding:12px;border-radius:10px;font-size:13px;line-height:1.45;display:none;';
+  actions.parentNode.insertBefore(area, actions);
+  return area;
+}
+
 async function saveGeminiKey() {
   if (!geminiKeyInput) return;
   const key = geminiKeyInput.value.trim();
@@ -3608,18 +3680,76 @@ async function saveGeminiKey() {
     console.log('[SnapToAI] No key to save');
     return;
   }
+
+  const modelSelect = document.getElementById('geminiModelSelect');
+  const model = modelSelect ? modelSelect.value : 'vision';
+
+  const verdict = _ensureVerdictArea();
+  if (verdict) {
+    verdict.style.display = 'block';
+    verdict.style.background = 'rgba(0,217,255,0.08)';
+    verdict.style.border = '1px solid rgba(0,217,255,0.25)';
+    verdict.style.color = '#9be7ff';
+    verdict.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border:2px solid #00d9ff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;"></span>Checking your account for video & image model access…';
+  }
+  if (geminiSaveBtn) {
+    geminiSaveBtn.disabled = true;
+    geminiSaveBtn.textContent = 'Verifying…';
+  }
+
+  let result;
   try {
-    const modelSelect = document.getElementById('geminiModelSelect');
-    const model = modelSelect ? modelSelect.value : 'gemini-2.0-flash';
+    result = await _popupDetectTier(key);
+  } catch (e) {
+    console.log('[SnapToAI] Tier probe crashed, defaulting to free:', e);
+    result = { tier: 'free', invalid: false };
+  }
+  const tier = result.tier;
+
+  try {
     await chrome.storage.sync.set({ geminiApiKey: key, geminiModel: model });
-    await chrome.storage.local.remove(['snaptoai_key_tier', 'snaptoai_key_tier_key', 'snaptoai_key_tier_ts']);
-    console.log('[SnapToAI] Gemini key and model saved:', model);
+    await chrome.storage.local.set({
+      snaptoai_key_tier: tier,
+      snaptoai_key_tier_key: key,
+      snaptoai_key_tier_ts: Date.now()
+    });
+    console.log('[SnapToAI] Gemini key saved. Tier =', tier);
     if (geminiStatus) geminiStatus.style.display = 'flex';
     updateAiButtonState();
-    hideGeminiModal();
   } catch (e) {
     console.log('[SnapToAI] Error saving Gemini key:', e);
   }
+
+  if (verdict) {
+    if (tier === 'prepaid') {
+      verdict.style.background = 'linear-gradient(135deg, rgba(0,255,136,0.12), rgba(0,200,100,0.06))';
+      verdict.style.border = '1px solid rgba(0,255,136,0.35)';
+      verdict.style.color = '#9bffcb';
+      verdict.innerHTML = `
+        <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#00ff88;margin-bottom:6px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#00ff88;"></span>Prepaid plan detected — all modes unlocked
+        </div>
+        <div style="color:rgba(255,255,255,0.85);">Vision, Image, Music and Video are all available.</div>
+      `;
+    } else {
+      verdict.style.background = 'linear-gradient(135deg, rgba(255,170,0,0.12), rgba(255,100,0,0.06))';
+      verdict.style.border = '1px solid rgba(255,170,0,0.35)';
+      verdict.style.color = '#ffd28a';
+      const extra = result.invalid ? ' Your key may also be invalid — double-check it.' : '';
+      verdict.innerHTML = `
+        <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#ffaa00;margin-bottom:6px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#ffaa00;"></span>Free tier detected — Vision only
+        </div>
+        <div style="color:rgba(255,255,255,0.85);">Image, Music and Video need a prepaid Google Cloud billing account.${extra}</div>
+        <div style="margin-top:6px;"><a href="https://console.cloud.google.com/billing" target="_blank" style="color:#00d9ff;">Add billing →</a></div>
+      `;
+    }
+  }
+  if (geminiSaveBtn) {
+    geminiSaveBtn.disabled = false;
+    geminiSaveBtn.textContent = 'Done';
+  }
+  setTimeout(hideGeminiModal, 1800);
 }
 
 async function clearGeminiKey() {
