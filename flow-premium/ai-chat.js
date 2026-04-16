@@ -405,13 +405,98 @@ function showProxyKeyPrompt() {
       if (saveBtn.disabled) return;
       const key = input.value.trim();
       if (!key) return;
+
+      const originalLabel = saveBtn.textContent;
+      saveBtn.disabled = true;
+      saveBtn.style.opacity = '0.6';
+      saveBtn.style.cursor = 'wait';
+      saveBtn.textContent = 'Testing key for prepaid access…';
+
+      let statusEl = document.getElementById('geminiKeyTestStatus');
+      if (!statusEl) {
+        statusEl = document.createElement('div');
+        statusEl.id = 'geminiKeyTestStatus';
+        statusEl.style.cssText = 'margin-top:10px;padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.5;';
+        const body = saveBtn.closest('.magic-modal-content')?.querySelector('.magic-modal-body');
+        if (body) body.appendChild(statusEl);
+      }
+      statusEl.style.background = 'rgba(0,217,255,0.08)';
+      statusEl.style.border = '1px solid rgba(0,217,255,0.25)';
+      statusEl.style.color = '#9be7ff';
+      statusEl.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border:2px solid #00d9ff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;"></span>Checking your account for video model access…';
+
+      const tier = await detectKeyTier(key);
+
       await chrome.storage.sync.set({ geminiApiKey: key });
-      await chrome.storage.local.remove(['snaptoai_key_tier', 'snaptoai_key_tier_key', 'snaptoai_key_tier_ts']);
+      await chrome.storage.local.set({
+        snaptoai_key_tier: tier,
+        snaptoai_key_tier_key: key,
+        snaptoai_key_tier_ts: Date.now()
+      });
       freePromptsRemaining = null;
-      closeModal();
-      showPromptToast('Key saved! You now have unlimited AI access.', 3000);
-      checkKeyTier();
+
+      if (tier === 'prepaid') {
+        statusEl.style.background = 'linear-gradient(135deg, rgba(0,255,136,0.12), rgba(0,200,100,0.06))';
+        statusEl.style.border = '1px solid rgba(0,255,136,0.35)';
+        statusEl.style.color = '#5dffa3';
+        statusEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;font-weight:700;color:#00ff88;"><span style="width:8px;height:8px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88;"></span>Prepaid plan detected</span><div style="margin-top:4px;color:rgba(255,255,255,0.85);">All features unlocked: Vision, Image, Music & Video.</div>';
+        saveBtn.style.background = 'linear-gradient(135deg,#00ff88,#00c46f)';
+        saveBtn.style.color = '#111';
+        saveBtn.textContent = '✓ Activate Prepaid Plan';
+        saveBtn.style.opacity = '1';
+        saveBtn.style.cursor = 'pointer';
+        saveBtn.disabled = false;
+        saveBtn.onclick = () => {
+          closeModal();
+          showPromptToast('🎉 Prepaid plan active — all AI features unlocked!', 3500);
+          checkKeyTier();
+        };
+      } else {
+        statusEl.style.background = 'linear-gradient(135deg, rgba(255,165,0,0.12), rgba(255,107,237,0.06))';
+        statusEl.style.border = '1px solid rgba(255,165,0,0.35)';
+        statusEl.style.color = '#ffd36a';
+        statusEl.innerHTML = `
+          <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#ffa500;margin-bottom:6px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#ffa500;box-shadow:0 0 8px #ffa500;"></span>Free tier detected
+          </div>
+          <div style="color:rgba(255,255,255,0.85);margin-bottom:10px;">
+            Your key works for Vision chat, but Image, Music and Video need a <b>prepaid (pay-as-you-go)</b> plan. Google gifts you <span style="color:#ffd700;font-weight:700;">$300 in free credits</span>.
+          </div>
+          <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener" style="display:block;text-align:center;padding:9px;border-radius:8px;background:linear-gradient(135deg,#ffa500,#ffd700);color:#111;font-size:12px;font-weight:700;text-decoration:none;">Upgrade to Prepaid & Claim $300 →</a>
+        `;
+        saveBtn.style.background = 'rgba(255,255,255,0.06)';
+        saveBtn.style.border = '1px solid rgba(255,255,255,0.15)';
+        saveBtn.style.color = '#fff';
+        saveBtn.textContent = 'Continue with Vision only';
+        saveBtn.style.opacity = '1';
+        saveBtn.style.cursor = 'pointer';
+        saveBtn.disabled = false;
+        saveBtn.onclick = () => {
+          closeModal();
+          showPromptToast('Key saved — Vision unlocked. Upgrade to Prepaid for Image/Music/Video.', 4500);
+          checkKeyTier();
+        };
+      }
     };
+  }
+}
+
+async function detectKeyTier(apiKey) {
+  try {
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}&pageSize=1000`, {
+      method: 'GET'
+    });
+    if (!resp.ok) return 'free';
+    const data = await resp.json();
+    const models = Array.isArray(data?.models) ? data.models : [];
+    const hasVeo = models.some(m => {
+      const name = (m?.name || '').toLowerCase();
+      return name.includes('veo');
+    });
+    return hasVeo ? 'prepaid' : 'free';
+  } catch (e) {
+    console.log('[SnapToAI] Key tier detection failed:', e?.message || e);
+    return 'free';
   }
 }
 
@@ -658,14 +743,18 @@ function initModeButtons() {
 
       if (mode !== 'vision') {
         try {
-          const r = await chrome.storage.sync.get(['geminiApiKey']);
-          if (!r.geminiApiKey) {
+          const synced = await chrome.storage.sync.get(['geminiApiKey']);
+          const local = await chrome.storage.local.get(['snaptoai_key_tier', 'snaptoai_key_tier_key']);
+          const apiKey = synced.geminiApiKey;
+          const tierMatchesKey = local.snaptoai_key_tier_key === apiKey;
+          const isPrepaid = apiKey && tierMatchesKey && local.snaptoai_key_tier === 'prepaid';
+          if (!apiKey || !isPrepaid) {
             const thread = document.getElementById('chatThread');
             if (thread) {
               const card = document.createElement('div');
               card.className = 'chat-bubble ai';
               card.style.cssText = 'background:transparent;padding:0;border:none;';
-              card.innerHTML = buildNeedKeyForPaidCard(mode);
+              card.innerHTML = apiKey ? buildUnlockCard(mode) : buildNeedKeyForPaidCard(mode);
               thread.appendChild(card);
               thread.scrollTop = thread.scrollHeight;
             }
@@ -783,11 +872,26 @@ async function checkKeyTier() {
       console.log('[SnapToAI] No API key — Vision only (free proxy)');
       return;
     }
-    showPaidModes();
-    console.log('[SnapToAI] API key present — all modes enabled (billing errors handled per-request)');
+    const local = await chrome.storage.local.get(['snaptoai_key_tier', 'snaptoai_key_tier_key']);
+    let tier = (local.snaptoai_key_tier_key === apiKey) ? local.snaptoai_key_tier : null;
+    if (!tier) {
+      tier = await detectKeyTier(apiKey);
+      await chrome.storage.local.set({
+        snaptoai_key_tier: tier,
+        snaptoai_key_tier_key: apiKey,
+        snaptoai_key_tier_ts: Date.now()
+      });
+    }
+    if (tier === 'prepaid') {
+      showPaidModes();
+      console.log('[SnapToAI] Prepaid key detected — all modes enabled');
+    } else {
+      hidePaidModes();
+      console.log('[SnapToAI] Free-tier key detected — Vision only');
+    }
   } catch (e) {
-    showPaidModes();
-    console.log('[SnapToAI] Key check error, showing all modes:', e.message);
+    hidePaidModes();
+    console.log('[SnapToAI] Key check error, defaulting to Vision only:', e.message);
   }
 }
 
