@@ -3514,23 +3514,33 @@ async function handleSend() {
     
   } catch (error) {
     removeLoading();
+    console.error('[SnapToAI Video] Generation failed. Raw error:', error?.message || error);
     if (error.message === '__trial_ended__') {
       // Modal already shown — don't add an error bubble
     } else {
-      const lowerErr = error.message.toLowerCase();
+      const lowerErr = (error.message || '').toLowerCase();
       const isQuotaError = lowerErr.match(/quota|rate|limit|429|exceeded|resource.exhausted/);
-      const isBilling = lowerErr.includes('billing') || lowerErr.includes('permission') || lowerErr.includes('not enabled') || lowerErr.includes('paid tier') || lowerErr.includes('precondition');
+      // Tightened: only count as billing if the message clearly says so.
+      // 'precondition' / 'permission' alone are too broad and triggered the
+      // upgrade card incorrectly for unrelated failures.
+      const isBilling = lowerErr.includes('billing') ||
+        lowerErr.includes('paid plan') || lowerErr.includes('paid plans') ||
+        lowerErr.includes('paid tier') || lowerErr.includes('pay-as-you-go') ||
+        lowerErr.includes('upgrade your account') ||
+        lowerErr.includes('only available on paid');
       if (isQuotaError) {
         const quotaBubble = createResponseBubble();
         quotaBubble.innerHTML = buildRateLimitCard();
         thread.scrollTop = thread.scrollHeight;
       } else if (isBilling) {
         const unlockBubble = createResponseBubble();
-        unlockBubble.innerHTML = buildUnlockCard('video');
+        unlockBubble.innerHTML = buildUnlockCard('video') +
+          `<div style="margin-top:10px;padding:10px;border-radius:8px;background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.2);font-size:11px;color:#ffa500;font-family:monospace;word-break:break-word;">Google said: ${(error.message || '').slice(0, 400)}</div>`;
         thread.scrollTop = thread.scrollHeight;
       } else {
+        // Show the real Google error so the user can see what actually went wrong
         const friendlyMsg = await getFriendlyErrorMessage(error.message);
-        addBubble(friendlyMsg, 'ai');
+        addBubble(`${friendlyMsg}\n\nDetails: ${(error.message || '').slice(0, 400)}`, 'ai');
       }
     }
   } finally {
