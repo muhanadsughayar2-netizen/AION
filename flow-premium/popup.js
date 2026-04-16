@@ -3702,7 +3702,7 @@ async function _popupDetectTier(apiKey) {
     if (!frameWrap || !frame) return;
     poster.style.display = 'none';
     frameWrap.style.display = 'block';
-    frame.src = 'https://www.youtube-nocookie.com/embed/JZ64eBFlL2g?rel=0&modestbranding=1&playsinline=1';
+    frame.src = 'https://www.youtube.com/embed/JZ64eBFlL2g?si=Xrxzaj4eK1UcTyBd&autoplay=1&rel=0&modestbranding=1&playsinline=1';
     console.log('[SnapToAI] Tutorial iframe src set:', frame.src);
   });
 })();
