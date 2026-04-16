@@ -2280,6 +2280,7 @@ def ai_proxy():
 
         gemini_body = {
             'contents': [{'role': 'user', 'parts': parts}],
+            'systemInstruction': {'parts': [{'text': 'You are a helpful assistant. Always respond in natural human language. NEVER output raw JSON, bounding boxes, coordinates, box_2d data, or machine-readable detection formats. Always respond in plain, readable text.'}]},
             'generationConfig': {'maxOutputTokens': 1024, 'temperature': 0.3}
         }
 

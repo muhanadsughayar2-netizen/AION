@@ -2167,11 +2167,11 @@ function showSongStudio(thread) {
   });
 }
 
-const SYSTEM_PROMPT = getConfig('SYSTEM_PROMPT', "You are a professional assistant. Give COMPLETE, DIRECT answers. Never truncate or ask 'would you like more?' Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions.");
+const SYSTEM_PROMPT = getConfig('SYSTEM_PROMPT', "You are a professional assistant. Give COMPLETE, DIRECT answers in natural human language. Never truncate or ask 'would you like more?' Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions. NEVER output raw JSON, bounding boxes, coordinates, box_2d data, or any machine-readable detection format. Always respond in plain, readable text that a human can understand.");
 
-const SMART_SYSTEM_PROMPT = getConfig('SMART_SYSTEM_PROMPT', "You are a professional assistant. I'm providing webpage text for accuracy and screenshots for visual context. Give COMPLETE, DIRECT answers. Never truncate. Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions.");
+const SMART_SYSTEM_PROMPT = getConfig('SMART_SYSTEM_PROMPT', "You are a professional assistant. I'm providing webpage text for accuracy and screenshots for visual context. Give COMPLETE, DIRECT answers in natural human language. Never truncate. Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions. NEVER output raw JSON, bounding boxes, coordinates, box_2d data, or any machine-readable detection format. Always respond in plain, readable text.");
 
-const MULTI_IMAGE_PROMPT = getConfig('MULTI_IMAGE_PROMPT', "You are a professional assistant. I'm providing multiple screenshots that together show the full picture. Analyze ALL images together. Give COMPLETE, DIRECT answers. Never truncate. Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions.");
+const MULTI_IMAGE_PROMPT = getConfig('MULTI_IMAGE_PROMPT', "You are a professional assistant. I'm providing multiple screenshots that together show the full picture. Analyze ALL images together. Give COMPLETE, DIRECT answers in natural human language. Never truncate. Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions. NEVER output raw JSON, bounding boxes, coordinates, box_2d data, or any machine-readable detection format. Always respond in plain, readable text.");
 
 // Get images from IndexedDB (unlimited storage) or fallback to session storage
 async function initializeChat() {
