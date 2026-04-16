@@ -2181,12 +2181,8 @@ def privacy_policy_route():
 import time as _time
 
 FREE_PROMPT_LIMIT = 5
-_free_keys_raw = os.environ.get('GEMINI_FREE_KEYS', '')
-GEMINI_FREE_KEYS = [k.strip() for k in _free_keys_raw.split(',') if k.strip()] if _free_keys_raw else []
-_free_key_index = 0
+GEMINI_OWNER_KEY = os.environ.get('GEMINI_OWNER_KEY', '')
 _rate_limit_cache = {}
-import threading
-_key_lock = threading.Lock()
 
 @app.route('/api/ai/proxy', methods=['POST', 'OPTIONS'])
 def ai_proxy():
@@ -2197,7 +2193,7 @@ def ai_proxy():
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
         return response
 
-    if not GEMINI_FREE_KEYS:
+    if not GEMINI_OWNER_KEY:
         r = jsonify({'error': 'AI proxy not configured', 'remaining': 0})
         r.headers['Access-Control-Allow-Origin'] = '*'
         return r, 503
@@ -2287,39 +2283,15 @@ def ai_proxy():
             'generationConfig': {'maxOutputTokens': 1024, 'temperature': 0.3}
         }
 
-        global _free_key_index
-        gemini_data = None
-        last_error = 'All keys exhausted'
-        with _key_lock:
-            start_idx = _free_key_index
-        for attempt in range(len(GEMINI_FREE_KEYS)):
-            key_idx = (start_idx + attempt) % len(GEMINI_FREE_KEYS)
-            try_key = GEMINI_FREE_KEYS[key_idx]
-            try:
-                gemini_resp = http_requests.post(
-                    f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={try_key}',
-                    json=gemini_body,
-                    timeout=30
-                )
-                resp_data = gemini_resp.json()
-                if 'error' in resp_data:
-                    err_msg = resp_data['error'].get('message', '').lower()
-                    if 'quota' in err_msg or 'rate' in err_msg or 'resource' in err_msg or 'exhausted' in err_msg:
-                        last_error = resp_data['error'].get('message', 'AI error')
-                        continue
-                    last_error = resp_data['error'].get('message', 'AI error')
-                    gemini_data = resp_data
-                    break
-                gemini_data = resp_data
-                with _key_lock:
-                    _free_key_index = (key_idx + 1) % len(GEMINI_FREE_KEYS)
-                break
-            except Exception as ke:
-                last_error = str(ke)
-                continue
+        gemini_resp = http_requests.post(
+            f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_OWNER_KEY}',
+            json=gemini_body,
+            timeout=30
+        )
+        gemini_data = gemini_resp.json()
 
-        if gemini_data is None or 'error' in gemini_data:
-            err = gemini_data['error'].get('message', last_error) if gemini_data and 'error' in gemini_data else last_error
+        if 'error' in gemini_data:
+            err = gemini_data['error'].get('message', 'AI error')
             err_lower = err.lower()
             if 'quota' in err_lower or 'exhausted' in err_lower or 'rate' in err_lower:
                 r = jsonify({'error': 'busy', 'message': 'Our free AI is busy right now. Please try again in a minute!', 'remaining': FREE_PROMPT_LIMIT - usage_count})
