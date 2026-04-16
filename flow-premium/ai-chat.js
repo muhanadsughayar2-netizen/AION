@@ -869,7 +869,25 @@ function initModeButtons() {
           const local = await chrome.storage.local.get(['snaptoai_key_tier', 'snaptoai_key_tier_key']);
           const apiKey = synced.geminiApiKey;
           const tierMatchesKey = local.snaptoai_key_tier_key === apiKey;
-          const isPrepaid = apiKey && tierMatchesKey && local.snaptoai_key_tier === 'prepaid';
+          let isPrepaid = apiKey && tierMatchesKey && local.snaptoai_key_tier === 'prepaid';
+
+          // Auto re-probe when cached verdict is missing/stale/free — the user may have
+          // activated under older (buggy) probe logic that misclassified them.
+          if (apiKey && !isPrepaid) {
+            try {
+              const fresh = await detectKeyTier(apiKey);
+              await chrome.storage.local.set({
+                snaptoai_key_tier: fresh,
+                snaptoai_key_tier_key: apiKey,
+                snaptoai_key_tier_ts: Date.now()
+              });
+              if (fresh === 'prepaid') {
+                isPrepaid = true;
+                showPromptToast('🎉 Prepaid plan re-verified — all AI features unlocked!', 3500);
+              }
+            } catch (_) {}
+          }
+
           if (!apiKey || !isPrepaid) {
             const thread = document.getElementById('chatThread');
             if (thread) {
