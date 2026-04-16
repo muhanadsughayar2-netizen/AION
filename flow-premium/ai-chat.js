@@ -121,15 +121,12 @@ function buildRateLimitCard() {
     <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(0,217,255,0.10), rgba(138,43,226,0.06));border:1px solid rgba(0,217,255,0.22);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <span style="font-size:24px;">⏳</span>
-        <span style="font-size:15px;font-weight:800;color:#fff;">Taking a Quick Breather</span>
+        <span style="font-size:15px;font-weight:800;color:#fff;">AI is Busy — Try Again Soon!</span>
       </div>
       <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
-        Google's API has a temporary rate limit. This resets automatically — just wait a moment and try again.
+        Our free AI is getting lots of love right now. Try again in a minute, or get your own Gemini key for <span style="color:#00ff88;font-weight:700;">instant, unlimited access</span>.
       </div>
-      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:rgba(0,217,255,0.08);border:1px solid rgba(0,217,255,0.15);">
-        <span style="font-size:16px;">💡</span>
-        <div style="font-size:12px;color:rgba(255,255,255,0.8);">Check your <a href="https://aistudio.google.com" target="_blank" rel="noopener" style="color:#00d9ff;text-decoration:none;font-weight:600;">AI Studio dashboard</a> for quota details</div>
-      </div>
+      ${buildNoKeyCard()}
     </div>`;
 }
 
@@ -284,6 +281,10 @@ async function sendViaProxy(prompt, imageBase64) {
   if (data.error === 'limit_reached') {
     freePromptsRemaining = 0;
     throw new Error('FREE_PROMPTS_EXHAUSTED');
+  }
+
+  if (data.error === 'busy') {
+    throw new Error('PROXY_BUSY');
   }
 
   if (data.error) throw new Error(data.error);
@@ -2698,7 +2699,7 @@ async function handleSend() {
         removeLoading();
         const msg = proxyErr.message || '';
         const errBubble = createResponseBubble();
-        if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('wait')) {
+        if (msg === 'PROXY_BUSY' || msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('wait') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('busy')) {
           errBubble.innerHTML = buildRateLimitCard();
         } else {
           errBubble.innerHTML = buildNoKeyCard();

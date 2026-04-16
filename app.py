@@ -2320,7 +2320,11 @@ def ai_proxy():
 
         if gemini_data is None or 'error' in gemini_data:
             err = gemini_data['error'].get('message', last_error) if gemini_data and 'error' in gemini_data else last_error
-            r = jsonify({'error': err, 'remaining': FREE_PROMPT_LIMIT - usage_count})
+            err_lower = err.lower()
+            if 'quota' in err_lower or 'exhausted' in err_lower or 'rate' in err_lower:
+                r = jsonify({'error': 'busy', 'message': 'Our free AI is busy right now. Please try again in a minute!', 'remaining': FREE_PROMPT_LIMIT - usage_count})
+            else:
+                r = jsonify({'error': err, 'remaining': FREE_PROMPT_LIMIT - usage_count})
             r.headers['Access-Control-Allow-Origin'] = '*'
             return r, 502
 
