@@ -1380,7 +1380,7 @@ async function stylizeImageForVideo(apiKey, imageData, style) {
     if (match) mimeType = match[1];
   }
 
-  const models = ['gemini-2.0-flash-exp', 'gemini-2.0-flash'];
+  const models = ['gemini-2.5-flash-image', 'gemini-3.1-flash-image-preview', 'gemini-3-pro-image-preview', 'gemini-2.0-flash-exp'];
   let lastError = '';
 
   for (const model of models) {
