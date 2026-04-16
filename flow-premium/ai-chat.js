@@ -134,19 +134,27 @@ function buildRateLimitCard() {
     </div>`;
 }
 
-function buildMusicRetryCard() {
+const MODE_META = {
+  'image': { icon: '🎨', name: 'Image Studio', feature: 'AI image generation', accent: '#ff6bed', glow: 'rgba(255,107,237,0.12), rgba(200,80,200,0.06)', border: 'rgba(255,107,237,0.25)' },
+  'music': { icon: '🎵', name: 'Music Studio', feature: 'AI music generation', accent: '#00ff88', glow: 'rgba(0,255,136,0.12), rgba(0,200,100,0.06)', border: 'rgba(0,255,136,0.25)' },
+  'video': { icon: '🎬', name: 'Video Studio', feature: 'AI video generation', accent: '#ffa500', glow: 'rgba(255,165,0,0.12), rgba(200,120,0,0.06)', border: 'rgba(255,165,0,0.25)' }
+};
+
+function buildUnlockCard(mode) {
+  const meta = MODE_META[mode] || MODE_META['image'];
   return `
-    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(0,255,136,0.12), rgba(0,200,100,0.06));border:1px solid rgba(0,255,136,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div style="padding:18px;border-radius:14px;background:linear-gradient(135deg, ${meta.glow});border:1px solid ${meta.border};box-shadow:0 8px 32px rgba(0,0,0,0.2);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:24px;">🎵</span>
-        <span style="font-size:15px;font-weight:800;color:#fff;">Unlock Music Studio</span>
+        <span style="font-size:26px;">${meta.icon}</span>
+        <span style="font-size:16px;font-weight:800;color:#fff;">Unlock ${meta.name}</span>
       </div>
-      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
-        Music generation requires Google Cloud billing to be enabled. Google gives you <span style="color:#ffd700;font-weight:700;">$300 in free credits</span> — more than enough to create hundreds of songs.
+      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.92);margin-bottom:14px;">
+        To use <b>${meta.feature}</b>, please upgrade your Google account to a <span style="color:${meta.accent};font-weight:700;">prepaid (pay-as-you-go) plan</span>.
+        Google gives you <span style="color:#ffd700;font-weight:700;">$300 in free credits</span> as a gift — more than enough to explore and create.
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
-        <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.08));border:1px solid rgba(255,215,0,0.25);">
-          <span style="font-size:18px;">🎁</span>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.08));border:1px solid rgba(255,215,0,0.25);">
+          <span style="font-size:20px;">🎁</span>
           <div>
             <div style="font-size:13px;font-weight:700;color:#ffd700;">$300 Free Credit from Google</div>
             <div style="font-size:11px;color:rgba(255,255,255,0.7);">New accounts get $300 to use on any Google Cloud AI service</div>
@@ -157,37 +165,38 @@ function buildMusicRetryCard() {
           <span style="font-size:12px;color:rgba(255,255,255,0.85);">Google verifies with a ~$1 hold (refunded instantly) — then you get $300 free</span>
         </div>
       </div>
-      <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener" class="unlock-billing-btn" style="display:block;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg, #00ff88, #ffd700);color:#111;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;">Enable Billing & Claim $300 Free →</a>
-      <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.5);">Takes less than 2 minutes — no charges until you exceed the free credit</div>
+      <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener" class="unlock-billing-btn" style="display:block;text-align:center;padding:11px;border-radius:10px;background:linear-gradient(135deg, ${meta.accent}, #ffd700);color:#111;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;">Upgrade to Prepaid & Claim $300 Free →</a>
+      <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.55);">Takes less than 2 minutes — no charges until you exceed the free credit</div>
     </div>`;
 }
 
-function buildUnlockCard(mode) {
-  const isMusic = mode === 'music';
-  const icon = isMusic ? '🎵' : '🎬';
-  const title = isMusic ? 'Unlock Music Studio' : 'Unlock Video Studio';
-  const feature = isMusic ? 'Lyria music generation' : 'Veo video generation';
-  const gradient = isMusic ? 'rgba(0,255,136,0.12), rgba(0,200,100,0.06)' : 'rgba(255,165,0,0.12), rgba(200,120,0,0.06)';
-  const borderColor = isMusic ? 'rgba(0,255,136,0.25)' : 'rgba(255,165,0,0.25)';
-  const accentColor = isMusic ? '#00ff88' : '#ffa500';
+function buildMusicRetryCard() {
+  return buildUnlockCard('music');
+}
+
+function buildNeedKeyForPaidCard(mode) {
+  const meta = MODE_META[mode] || MODE_META['image'];
   return `
-    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, ${gradient});border:1px solid ${borderColor};box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div style="padding:18px;border-radius:14px;background:linear-gradient(135deg, ${meta.glow});border:1px solid ${meta.border};box-shadow:0 8px 32px rgba(0,0,0,0.2);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:24px;">${icon}</span>
-        <span style="font-size:15px;font-weight:800;color:#fff;">${title}</span>
+        <span style="font-size:26px;">${meta.icon}</span>
+        <span style="font-size:16px;font-weight:800;color:#fff;">${meta.name} requires your own key</span>
       </div>
-      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
-        Enable Google Cloud billing to unlock ${feature}. Google gives you <span style="color:#ffd700;font-weight:700;">$300 in free credits</span> — more than enough to explore and create.
+      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.92);margin-bottom:14px;">
+        The free shared access is for <b>chat & vision only</b>. To use <b>${meta.feature}</b>, you need your own Gemini API key on a <span style="color:${meta.accent};font-weight:700;">prepaid (pay-as-you-go) plan</span>.
+        Google gives you <span style="color:#ffd700;font-weight:700;">$300 in free credits</span> as a gift to get started.
       </div>
-      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.08));border:1px solid rgba(255,215,0,0.25);margin-bottom:10px;">
-        <span style="font-size:18px;">🎁</span>
-        <div>
-          <div style="font-size:13px;font-weight:700;color:#ffd700;">$300 Free Credit from Google</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.7);">New accounts get $300 to use on any Google Cloud AI service</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.08));border:1px solid rgba(255,215,0,0.25);">
+          <span style="font-size:20px;">🎁</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#ffd700;">$300 Free Credit from Google</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.7);">More than enough to create hundreds of images, songs or videos</div>
+          </div>
         </div>
       </div>
-      <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener" class="unlock-billing-btn" style="display:block;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg, ${accentColor}, #ffd700);color:#111;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;">Enable Billing & Claim $300 Free →</a>
-      <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.5);">Takes less than 2 minutes — no charges until you exceed the free credit</div>
+      <button class="unlock-billing-btn snaptoai-set-key-btn" style="display:block;width:100%;text-align:center;padding:11px;border-radius:10px;background:linear-gradient(135deg, ${meta.accent}, #ffd700);color:#111;font-size:13px;font-weight:700;border:none;cursor:pointer;margin-bottom:8px;">Get My Free Key & Upgrade →</button>
+      <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener" style="display:block;text-align:center;padding:9px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:600;text-decoration:none;cursor:pointer;">I have a key — Enable Billing →</a>
     </div>`;
 }
 
@@ -643,10 +652,28 @@ function initModeButtons() {
   const modeBar = document.getElementById('modeBar');
   
   btns.forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const mode = btn.dataset.mode;
       if (mode === currentAiMode) return;
-      
+
+      if (mode !== 'vision') {
+        try {
+          const r = await chrome.storage.sync.get(['geminiApiKey']);
+          if (!r.geminiApiKey) {
+            const thread = document.getElementById('chatThread');
+            if (thread) {
+              const card = document.createElement('div');
+              card.className = 'chat-bubble ai';
+              card.style.cssText = 'background:transparent;padding:0;border:none;';
+              card.innerHTML = buildNeedKeyForPaidCard(mode);
+              thread.appendChild(card);
+              thread.scrollTop = thread.scrollHeight;
+            }
+            return;
+          }
+        } catch (_) {}
+      }
+
       currentAiMode = mode;
       chrome.storage.sync.set({ geminiModel: mode });
       
