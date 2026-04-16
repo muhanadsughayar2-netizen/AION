@@ -766,7 +766,7 @@ async function checkKeyTier() {
     }
 
     const testResp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -788,7 +788,8 @@ async function checkKeyTier() {
         isBillingError = errMsg.includes('billing') || errMsg.includes('paid api') ||
           errMsg.includes('enable billing') || errMsg.includes('payment') ||
           errMsg.includes('pay-as-you-go') || errMsg.includes('failed_precondition') ||
-          errMsg.includes('image_generation') || errMsg.includes('not available');
+          errMsg.includes('image_generation') || errMsg.includes('not available') ||
+          errMsg.includes('quota') || errMsg.includes('resource_exhausted');
       } catch (_) {
         isBillingError = true;
       }
