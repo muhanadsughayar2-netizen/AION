@@ -3373,23 +3373,63 @@ function addBubbleActions(bubble, text) {
   const readBtn = actions.querySelector('.read-aloud-btn');
   
   readBtn.onclick = () => {
-    // Toggle: if speaking, stop
     if (synth.speaking) {
       synth.cancel();
       readBtn.textContent = '🔊 Read';
       return;
     }
-    
-    const plainText = bubble.textContent.replace('📋 Copy🔊 Read', '').replace('✓ Copied!🔊 Read', '').replace('⏹ Stop', '');
-    
-    // Use premium multi-language TTS with auto language detection
-    const utterance = speakText(plainText);
-    
-    synth.speak(utterance);
-    readBtn.textContent = '⏹ Stop';
-    
-    utterance.onend = () => readBtn.textContent = '🔊 Read';
-    utterance.onerror = () => readBtn.textContent = '🔊 Read';
+
+    const cleanText = text.replace(/```[\s\S]*?```/g, ' code block ').replace(/[#*_~`>|]/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\s+/g, ' ').trim();
+    if (!cleanText) return;
+
+    synth.cancel();
+    setTimeout(() => {
+      voices = synth.getVoices();
+      const detectedLang = detectLanguage(cleanText);
+      const MAX_CHUNK = 200;
+      const sentences = cleanText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleanText];
+      const chunks = [];
+      let current = '';
+      for (const s of sentences) {
+        if ((current + s).length > MAX_CHUNK && current) {
+          chunks.push(current.trim());
+          current = s;
+        } else {
+          current += s;
+        }
+      }
+      if (current.trim()) chunks.push(current.trim());
+
+      let bestVoice = null;
+      const langPrefix = detectedLang;
+      bestVoice = voices.find(v => v.lang.startsWith(langPrefix) && v.name.includes('Google')) ||
+                  voices.find(v => v.lang.startsWith(langPrefix)) ||
+                  voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) ||
+                  voices.find(v => v.lang.startsWith('en'));
+
+      readBtn.textContent = '⏹ Stop';
+      let chunkIndex = 0;
+
+      function speakNext() {
+        if (chunkIndex >= chunks.length) {
+          readBtn.textContent = '🔊 Read';
+          return;
+        }
+        const u = new SpeechSynthesisUtterance(chunks[chunkIndex]);
+        if (bestVoice) {
+          u.voice = bestVoice;
+          u.lang = bestVoice.lang;
+        } else {
+          u.lang = detectedLang;
+        }
+        u.rate = 1.0;
+        u.pitch = 1.0;
+        u.onend = () => { chunkIndex++; speakNext(); };
+        u.onerror = () => { readBtn.textContent = '🔊 Read'; };
+        synth.speak(u);
+      }
+      speakNext();
+    }, 100);
   };
 }
 

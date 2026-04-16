@@ -3977,7 +3977,7 @@ function updateAiButtonState() {
       }
     }
     if (aiStatusText) {
-      aiStatusText.textContent = result.geminiApiKey ? 'AI Ready' : 'AI: 3 prompts included';
+      aiStatusText.textContent = result.geminiApiKey ? 'AI Ready' : 'AI: 5 free prompts';
     }
     if (aiStatusDot) {
       aiStatusDot.style.background = result.geminiApiKey ? '#00ff88' : '#ffaa00';
