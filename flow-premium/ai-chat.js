@@ -481,7 +481,46 @@ function showProxyKeyPrompt() {
   }
 }
 
+let _ownerKeyFingerprintsCache = null;
+async function getOwnerKeyFingerprints() {
+  if (_ownerKeyFingerprintsCache !== null) return _ownerKeyFingerprintsCache;
+  try {
+    const resp = await fetch(`${PROXY_BACKEND_URL}/api/owner-key-fingerprint`);
+    const data = await resp.json();
+    _ownerKeyFingerprintsCache = Array.isArray(data?.fingerprints) ? data.fingerprints : [];
+  } catch (e) {
+    _ownerKeyFingerprintsCache = [];
+  }
+  return _ownerKeyFingerprintsCache;
+}
+
+async function sha256Hex(str) {
+  const buf = new TextEncoder().encode(str);
+  const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function isOwnerKey(apiKey) {
+  try {
+    const fingerprints = await getOwnerKeyFingerprints();
+    if (!fingerprints.length) return false;
+    const hash = await sha256Hex(apiKey);
+    return fingerprints.includes(hash);
+  } catch (e) {
+    return false;
+  }
+}
+
 async function detectKeyTier(apiKey) {
+  // SAFEGUARD: If the user pastes the owner's shared proxy key (or any
+  // protected key), force-treat as 'free' so it can never be used to
+  // generate Image/Music/Video and run up the owner's bill.
+  // Server publishes only the SHA-256 fingerprint, never the raw key.
+  if (await isOwnerKey(apiKey)) {
+    console.log('[SnapToAI] Owner-key fingerprint match — forcing free tier');
+    return 'free';
+  }
+
   // Probe: send EMPTY body to Veo 2.0 predictLongRunning.
   // - Prepaid key  -> billing check PASSES, then validation fails with INVALID_ARGUMENT
   //                   ("No instances in the request"). NO job starts, NO charge.

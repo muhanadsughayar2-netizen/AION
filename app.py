@@ -2184,6 +2184,21 @@ FREE_PROMPT_LIMIT = 5
 GEMINI_OWNER_KEY = os.environ.get('GEMINI_OWNER_KEY', '')
 _rate_limit_cache = {}
 
+import hashlib as _hashlib
+_OWNER_KEY_FINGERPRINT = _hashlib.sha256(GEMINI_OWNER_KEY.encode('utf-8')).hexdigest() if GEMINI_OWNER_KEY else ''
+
+@app.route('/api/owner-key-fingerprint', methods=['GET', 'OPTIONS'])
+def owner_key_fingerprint():
+    if request.method == 'OPTIONS':
+        r = Response()
+        r.headers['Access-Control-Allow-Origin'] = '*'
+        r.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        return r
+    r = jsonify({'fingerprints': [_OWNER_KEY_FINGERPRINT] if _OWNER_KEY_FINGERPRINT else []})
+    r.headers['Access-Control-Allow-Origin'] = '*'
+    r.headers['Cache-Control'] = 'public, max-age=3600'
+    return r
+
 @app.route('/api/ai/proxy', methods=['POST', 'OPTIONS'])
 def ai_proxy():
     if request.method == 'OPTIONS':
