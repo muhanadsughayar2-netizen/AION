@@ -106,30 +106,13 @@ function buildDailyLimitCard() {
     <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(138,43,226,0.12), rgba(255,105,180,0.06));border:1px solid rgba(138,43,226,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <span style="font-size:24px;">🌟</span>
-        <span style="font-size:15px;font-weight:800;color:#fff;">You've Used Today's Free Prompts!</span>
+        <span style="font-size:15px;font-weight:800;color:#fff;">You've Used Today's 5 Free Prompts!</span>
       </div>
       <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
-        Great work today! Your 20 daily free prompts will reset tomorrow. Or upgrade to <span style="color:#ffd700;font-weight:700;">unlimited access</span> with Google Cloud — you'll get <span style="color:#00ff88;font-weight:700;">$300 in free credits</span>!
+        Great work! Want unlimited access? Just get your own free Gemini key — it takes 1 minute and gives you about <span style="color:#00ff88;font-weight:700;">20 tries every day</span>.
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
-        <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.08));border:1px solid rgba(255,215,0,0.25);">
-          <span style="font-size:18px;">🎁</span>
-          <div>
-            <div style="font-size:13px;font-weight:700;color:#ffd700;">$300 Free Credit from Google</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.7);">New accounts get $300 to use on all AI features</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
-          <span style="font-size:14px;">💳</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Google verifies with a ~$1 hold (refunded instantly) — then you get $300 free</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
-          <span style="font-size:14px;">🔓</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Unlocks <strong>unlimited</strong> Vision, Image, Music & Video</span>
-        </div>
-      </div>
-      <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener" class="unlock-billing-btn" style="display:block;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg, #8a2be2, #ff69b4);color:#fff;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;">Enable Billing & Get $300 Free →</a>
-      <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.5);">Or come back tomorrow for 20 more free prompts</div>
+      ${buildNoKeyCard()}
+      <div style="text-align:center;margin-top:10px;font-size:10px;color:rgba(255,255,255,0.5);">Or come back tomorrow for 5 more free prompts</div>
     </div>`;
 }
 
@@ -263,7 +246,7 @@ async function confirmPaidGeneration(mode, details) {
   });
 }
 
-// ============ BACKEND PROXY (3 free prompts) ============
+// ============ BACKEND PROXY (5 free prompts/day) ============
 const PROXY_BACKEND_URL = 'https://www.snaptoai.com';
 let freePromptsRemaining = null;
 
@@ -2683,19 +2666,17 @@ async function handleSend() {
         
         if (proxyResult.remaining !== undefined) {
           const remaining = proxyResult.remaining;
-          const limit = proxyResult.limit || 10;
+          const limit = proxyResult.limit || 5;
           
           if (remaining === 0) {
-            showPromptToast('Last prompt used! Add your Gemini key for unlimited access.', 5000, true);
+            showPromptToast('Last free prompt today! Get your own Gemini key for unlimited access.', 5000, true);
             setTimeout(() => showProxyKeyPrompt(), 1500);
           } else if (remaining === 1) {
-            showPromptToast('⚠️ 1 prompt remaining — add your Gemini key soon', 5000, true);
-          } else if (remaining === 3) {
-            showPromptToast(`📊 3 of ${limit} prompts left. Get your own key for unlimited access + $300 Cloud credits!`, 5000);
-          } else if (remaining === 5) {
-            showPromptToast(`📊 ${remaining} of ${limit} prompts remaining. Tip: add your own Gemini key for unlimited prompts.`, 4000);
+            showPromptToast('⚠️ 1 free prompt left today — get your own Gemini key for unlimited', 5000, true);
+          } else if (remaining === 2) {
+            showPromptToast(`📊 2 of ${limit} free prompts left today. Get your own key for unlimited!`, 4000);
           } else {
-            showPromptToast(`📊 ${remaining} of ${limit} prompts remaining`, 3000);
+            showPromptToast(`📊 ${remaining} of ${limit} free prompts today`, 3000);
           }
         }
         sendBtn.disabled = false;

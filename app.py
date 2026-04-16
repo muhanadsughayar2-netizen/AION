@@ -2180,8 +2180,13 @@ def privacy_policy_route():
 
 import time as _time
 
-FREE_PROMPT_LIMIT = 3
-GEMINI_OWNER_KEY = os.environ.get('GEMINI_OWNER_KEY', '')
+FREE_PROMPT_LIMIT = 5
+GEMINI_FREE_KEYS = [
+    'AIzaSyAgCoj-jLBBy2xzGhed_NWPuIloi26Broo',
+    'AIzaSyAQhtFAP2ywJ-QSQ-gOsf5ehTJ0qCOdMF8',
+    'AIzaSyCtVNsJKHKvK0EdDwDTqCaLdFWLz6yj41Q',
+]
+_free_key_index = 0
 _rate_limit_cache = {}
 
 @app.route('/api/ai/proxy', methods=['POST', 'OPTIONS'])
@@ -2193,7 +2198,7 @@ def ai_proxy():
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
         return response
 
-    if not GEMINI_OWNER_KEY:
+    if not GEMINI_FREE_KEYS:
         r = jsonify({'error': 'AI proxy not configured', 'remaining': 0})
         r.headers['Access-Control-Allow-Origin'] = '*'
         return r, 503
@@ -2240,9 +2245,22 @@ def ai_proxy():
         ''', (identifier,))
         conn.commit()
 
-        cur.execute('SELECT usage_count FROM free_prompts WHERE identifier = %s', (identifier,))
+        cur.execute('SELECT usage_count, last_used FROM free_prompts WHERE identifier = %s', (identifier,))
         row = cur.fetchone()
         usage_count = row[0] if row else 0
+        last_used = row[1] if row else None
+
+        from datetime import datetime, timezone
+        now_utc = datetime.now(timezone.utc)
+        if last_used:
+            if hasattr(last_used, 'date'):
+                last_date = last_used.date()
+            else:
+                last_date = None
+            if last_date and last_date < now_utc.date():
+                cur.execute('UPDATE free_prompts SET usage_count = 0, last_used = NOW() WHERE identifier = %s', (identifier,))
+                conn.commit()
+                usage_count = 0
 
         if usage_count >= FREE_PROMPT_LIMIT:
             r = jsonify({'error': 'limit_reached', 'remaining': 0, 'limit': FREE_PROMPT_LIMIT})
@@ -2278,15 +2296,37 @@ def ai_proxy():
             'generationConfig': {'maxOutputTokens': 1024, 'temperature': 0.3}
         }
 
-        gemini_resp = http_requests.post(
-            f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_OWNER_KEY}',
-            json=gemini_body,
-            timeout=30
-        )
-        gemini_data = gemini_resp.json()
+        global _free_key_index
+        gemini_data = None
+        last_error = 'All keys exhausted'
+        for attempt in range(len(GEMINI_FREE_KEYS)):
+            key_idx = (_free_key_index + attempt) % len(GEMINI_FREE_KEYS)
+            try_key = GEMINI_FREE_KEYS[key_idx]
+            try:
+                gemini_resp = http_requests.post(
+                    f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={try_key}',
+                    json=gemini_body,
+                    timeout=30
+                )
+                resp_data = gemini_resp.json()
+                if 'error' in resp_data:
+                    err_msg = resp_data['error'].get('message', '').lower()
+                    if 'quota' in err_msg or 'rate' in err_msg or 'resource' in err_msg or 'exhausted' in err_msg:
+                        last_error = resp_data['error'].get('message', 'AI error')
+                        continue
+                    last_error = resp_data['error'].get('message', 'AI error')
+                    gemini_data = resp_data
+                    break
+                gemini_data = resp_data
+                _free_key_index = (key_idx + 1) % len(GEMINI_FREE_KEYS)
+                break
+            except Exception as ke:
+                last_error = str(ke)
+                continue
 
-        if 'error' in gemini_data:
-            r = jsonify({'error': gemini_data['error'].get('message', 'AI error'), 'remaining': FREE_PROMPT_LIMIT - usage_count})
+        if gemini_data is None or 'error' in gemini_data:
+            err = gemini_data['error'].get('message', last_error) if gemini_data and 'error' in gemini_data else last_error
+            r = jsonify({'error': err, 'remaining': FREE_PROMPT_LIMIT - usage_count})
             r.headers['Access-Control-Allow-Origin'] = '*'
             return r, 502
 
