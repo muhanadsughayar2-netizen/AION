@@ -3125,8 +3125,8 @@ async function handleSend() {
     if (modeConfig.type === 'gemini-image') {
       // === IMAGE GENERATION (via generateContent with responseModalities) ===
       const imageModels = [
-        'gemini-3-flash-preview',
         'gemini-2.5-flash-image',
+        'gemini-3.1-flash-image-preview',
         'gemini-3-pro-image-preview'
       ];
       
@@ -3314,7 +3314,7 @@ async function handleSend() {
               console.log(`[SnapToAI Audio] Success with ${audioModel}!`);
               break;
             } else {
-              audioError = '__billing_unlock__';
+              audioError = `${audioModel} returned no audio payload (model may not support AUDIO modality on your tier)`;
               console.log(`[SnapToAI Audio] ${audioModel} returned parts but no real audio data`);
               continue;
             }
@@ -3425,27 +3425,36 @@ async function handleSend() {
         systemPrompt = SMART_SYSTEM_PROMPT;
       }
       
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:streamGenerateContent?alt=sse&key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents: contents,
-            generationConfig: { 
-              maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
-              temperature: getConfig('TEMPERATURE', 0.7),
-              topP: 0.95,
-              topK: 40
-            }
-          })
-        }
-      );
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+      const visionModels = [modeConfig.model, 'gemini-2.5-flash', 'gemini-2.0-flash'];
+      let response = null;
+      let lastVisionErr = '';
+      for (const visionModel of visionModels) {
+        const r = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${visionModel}:streamGenerateContent?alt=sse&key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: systemPrompt }] },
+              contents: contents,
+              generationConfig: {
+                maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
+                temperature: getConfig('TEMPERATURE', 0.7),
+                topP: 0.95,
+                topK: 40
+              }
+            })
+          }
+        );
+        if (r.ok) { response = r; console.log(`[SnapToAI Vision] Using ${visionModel}`); break; }
+        const errorData = await r.json().catch(() => ({}));
+        lastVisionErr = errorData.error?.message || `API Error: ${r.status}`;
+        console.log(`[SnapToAI Vision] ${visionModel} failed: ${lastVisionErr}`);
+        // 429/quota → don't burn through fallbacks, surface immediately
+        if (r.status === 429) break;
+      }
+      if (!response) {
+        throw new Error(lastVisionErr || 'All Vision models unavailable');
       }
       
       const responseBubble = createResponseBubble();
