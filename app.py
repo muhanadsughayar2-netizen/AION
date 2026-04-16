@@ -2107,6 +2107,18 @@ def index():
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     return response
 
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    """Serve files from the static/ directory (videos, images, etc.)."""
+    static_dir = os.path.join(BASE_DIR, 'static')
+    file_path = os.path.join(static_dir, filename)
+    if not os.path.exists(file_path) or not os.path.isfile(file_path):
+        return Response("Not found", status=404)
+    resp = send_from_directory(static_dir, filename, conditional=True)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Cache-Control'] = 'public, max-age=86400'
+    return resp
+
 @app.route('/<lang_code>')
 def language_page(lang_code):
     """Serve language-specific page"""
