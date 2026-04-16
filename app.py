@@ -2110,7 +2110,7 @@ def index():
 @app.route('/static/<path:filename>')
 def static_files(filename):
     """Serve files from the static/ directory (videos, images, etc.)."""
-    static_dir = os.path.join(BASE_DIR, 'static')
+    static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
     file_path = os.path.join(static_dir, filename)
     if not os.path.exists(file_path) or not os.path.isfile(file_path):
         return Response("Not found", status=404)

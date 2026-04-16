@@ -3695,15 +3695,14 @@ async function _popupDetectTier(apiKey) {
     document.head.appendChild(st);
   }
 
-  const frameWrap = document.getElementById('apiKeyVideoFrameWrap');
-  const frame = document.getElementById('apiKeyVideoFrame');
+  const videoEl = document.getElementById('apiKeyVideoEl');
 
   poster.addEventListener('click', () => {
-    if (!frameWrap || !frame) return;
+    if (!videoEl) return;
     poster.style.display = 'none';
-    frameWrap.style.display = 'block';
-    frame.src = 'https://www.youtube.com/embed/JZ64eBFlL2g?si=Xrxzaj4eK1UcTyBd&autoplay=1&rel=0&modestbranding=1&playsinline=1';
-    console.log('[SnapToAI] Tutorial iframe src set:', frame.src);
+    videoEl.style.display = 'block';
+    if (!videoEl.src) videoEl.src = 'https://www.snaptoai.com/static/snaptoai-rap-tutorial.webm';
+    videoEl.play().catch(err => console.log('[SnapToAI] Play blocked, user can click ▶:', err));
   });
 })();
 
