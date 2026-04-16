@@ -30,30 +30,13 @@ function releaseRequestLock() {
 }
 // ============ END RATE LIMITER ============
 
-// Veo per-second pricing (Gemini API public rates, USD)
-const VEO_PRICING = {
-  'veo-3.1-generate-preview':       0.40,
-  'veo-3.1-fast-generate-preview':  0.15,
-  'veo-3.1-lite-generate-preview':  0.10,
-  'veo-3.0-generate-001':           0.40,
-  'veo-3.0-generate-preview':       0.40,
-  'veo-3.0-fast-generate-001':      0.15,
-  'veo-3.0-fast-generate-preview':  0.15,
-  'veo-2.0-generate-001':           0.35
-};
-
-function getPaidModeEstimate(mode, clipCount = 1, durationSeconds = 8, modelId = null) {
+function getPaidModeEstimate(mode, clipCount = 1, durationSeconds = 8) {
   if (mode === 'video') {
     const totalSeconds = clipCount * durationSeconds;
-    const rate = (modelId && VEO_PRICING[modelId] != null) ? VEO_PRICING[modelId] : 0.20;
-    const exact = rate * totalSeconds;
-    const cost = exact < 1
-      ? `~$${exact.toFixed(2)}`
-      : `~$${exact.toFixed(2)}`;
     return {
-      label: `${clipCount} clip${clipCount > 1 ? 's' : ''} × ${durationSeconds}s = ${totalSeconds}s`,
-      cost,
-      note: `at $${rate.toFixed(2)}/sec`
+      label: `${clipCount} clip${clipCount > 1 ? 's' : ''} × ${durationSeconds}s`,
+      cost: clipCount === 1 ? '$2-$4' : `$${clipCount * 2}-$${clipCount * 4}`,
+      note: totalSeconds <= 8 ? 'short clip' : `longer ${totalSeconds}s video`
     };
   }
   if (mode === 'music') {
@@ -1160,11 +1143,6 @@ function showVideoStudio(thread) {
         <button class="veo-clip-btn selected" data-clips="1" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">1x</button>
         <button class="veo-clip-btn" data-clips="2" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">2x</button>
         <button class="veo-clip-btn" data-clips="3" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">3x</button>
-        <button class="veo-clip-btn" data-clips="4" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">4x</button>
-        <button class="veo-clip-btn" data-clips="5" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">5x</button>
-        <button class="veo-clip-btn" data-clips="6" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">6x</button>
-        <button class="veo-clip-btn" data-clips="7" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">7x</button>
-        <button class="veo-clip-btn" data-clips="8" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">8x</button>
       </div>
       <textarea class="studio-desc" placeholder="Describe the video scene you want to create..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;margin-bottom:8px;"></textarea>
       ${hasScreenshots ? `
@@ -1398,7 +1376,7 @@ async function stylizeImageForVideo(apiKey, imageData, style) {
     if (match) mimeType = match[1];
   }
 
-  const models = ['gemini-2.5-flash-image', 'gemini-3.1-flash-image-preview', 'gemini-3-pro-image-preview'];
+  const models = ['gemini-2.0-flash-exp', 'gemini-2.0-flash'];
   let lastError = '';
 
   for (const model of models) {
@@ -1575,7 +1553,7 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
         progressBubble.innerHTML = buildUnlockCard('video');
         return;
       } else if (resp.status === 429 || errorMsg.toLowerCase().includes('rate') || errorMsg.toLowerCase().includes('quota') || errorMsg.toLowerCase().includes('exceeded')) {
-        progressBubble.innerHTML = buildRateLimitCard();
+        progressBubble.innerHTML = buildUnlockCard('video');
         return;
       }
       progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${friendlyMsg}</div>`;
@@ -1612,25 +1590,6 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
       `Scene 2 of 3 — middle action: ${prompt}`,
       `Scene 3 of 3 — dramatic finale: ${prompt}`
     );
-  } else if (clipCount >= 4) {
-    const beats = [
-      'opening establishing shot, wide angle, setting the scene',
-      'introducing the main subject, medium shot, building anticipation',
-      'rising action, closer framing, increased motion and energy',
-      'peak moment, dynamic camera movement, high intensity',
-      'reaction shot, emotional close-up, moment of realization',
-      'turning point, new angle, shift in tone',
-      'climactic action, wide dramatic shot, maximum impact',
-      'final resolution, closing frame, memorable ending'
-    ];
-    for (let i = 0; i < clipCount; i++) {
-      const beatIdx = Math.min(i, beats.length - 1);
-      // Spread beats across requested count when fewer than 8
-      const scaled = clipCount < beats.length
-        ? beats[Math.floor((i * beats.length) / clipCount)]
-        : beats[beatIdx];
-      clipScenes.push(`Scene ${i + 1} of ${clipCount} — ${scaled}: ${prompt}`);
-    }
   }
 
   for (let i = 0; i < clipCount; i++) {
@@ -1689,7 +1648,7 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
             if (text) text.textContent = `Clip ${clipNum} rate limited, stitching ${clipUrls.length} successful clip(s)...`;
             break;
           }
-          progressBubble.innerHTML = buildRateLimitCard();
+          progressBubble.innerHTML = buildUnlockCard('video');
           return;
         }
         let friendlyMsg = errorMsg;
@@ -2002,7 +1961,7 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         activeVideoPollTimer = null;
         const errLower = errMsg.toLowerCase();
         if (errLower.includes('quota') || errLower.includes('rate') || errLower.includes('exceeded') || errLower.includes('resource')) {
-          progressBubble.innerHTML = buildRateLimitCard();
+          progressBubble.innerHTML = buildUnlockCard('video');
         } else if (isBillingError(resp.status, errMsg)) {
           progressBubble.innerHTML = buildUnlockCard('video');
         } else {
@@ -2027,7 +1986,7 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
           const errMsg = data.error.message || 'Video generation failed.';
           const errLower2 = errMsg.toLowerCase();
           if (errLower2.includes('quota') || errLower2.includes('rate') || errLower2.includes('exceeded') || errLower2.includes('resource') || data.error.code === 429) {
-            progressBubble.innerHTML = buildRateLimitCard();
+            progressBubble.innerHTML = buildUnlockCard('video');
           } else if (isBillingError(data.error.code || 0, errMsg)) {
             progressBubble.innerHTML = buildUnlockCard('video');
           } else {
@@ -2866,7 +2825,7 @@ async function handleSend() {
 
     if (modeConfig.type === 'gemini-video') {
       const clipCount = selectedClipCount || 1;
-      const costInfo = getPaidModeEstimate('video', clipCount, selectedVideoDuration || 8, selectedVeoModel);
+      const costInfo = getPaidModeEstimate('video', clipCount, selectedVideoDuration || 8);
       const ok = await confirmPaidGeneration('video', costInfo);
       if (!ok) {
         removeLoading();
@@ -3125,8 +3084,8 @@ async function handleSend() {
     if (modeConfig.type === 'gemini-image') {
       // === IMAGE GENERATION (via generateContent with responseModalities) ===
       const imageModels = [
+        'gemini-3-flash-preview',
         'gemini-2.5-flash-image',
-        'gemini-3.1-flash-image-preview',
         'gemini-3-pro-image-preview'
       ];
       
@@ -3314,7 +3273,7 @@ async function handleSend() {
               console.log(`[SnapToAI Audio] Success with ${audioModel}!`);
               break;
             } else {
-              audioError = `${audioModel} returned no audio payload (model may not support AUDIO modality on your tier)`;
+              audioError = '__billing_unlock__';
               console.log(`[SnapToAI Audio] ${audioModel} returned parts but no real audio data`);
               continue;
             }
@@ -3425,36 +3384,27 @@ async function handleSend() {
         systemPrompt = SMART_SYSTEM_PROMPT;
       }
       
-      const visionModels = [modeConfig.model, 'gemini-2.5-flash', 'gemini-2.0-flash'];
-      let response = null;
-      let lastVisionErr = '';
-      for (const visionModel of visionModels) {
-        const r = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${visionModel}:streamGenerateContent?alt=sse&key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: systemPrompt }] },
-              contents: contents,
-              generationConfig: {
-                maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
-                temperature: getConfig('TEMPERATURE', 0.7),
-                topP: 0.95,
-                topK: 40
-              }
-            })
-          }
-        );
-        if (r.ok) { response = r; console.log(`[SnapToAI Vision] Using ${visionModel}`); break; }
-        const errorData = await r.json().catch(() => ({}));
-        lastVisionErr = errorData.error?.message || `API Error: ${r.status}`;
-        console.log(`[SnapToAI Vision] ${visionModel} failed: ${lastVisionErr}`);
-        // 429/quota → don't burn through fallbacks, surface immediately
-        if (r.status === 429) break;
-      }
-      if (!response) {
-        throw new Error(lastVisionErr || 'All Vision models unavailable');
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:streamGenerateContent?alt=sse&key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: contents,
+            generationConfig: { 
+              maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
+              temperature: getConfig('TEMPERATURE', 0.7),
+              topP: 0.95,
+              topK: 40
+            }
+          })
+        }
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `API Error: ${response.status}`);
       }
       
       const responseBubble = createResponseBubble();
@@ -3523,33 +3473,23 @@ async function handleSend() {
     
   } catch (error) {
     removeLoading();
-    console.error('[SnapToAI Video] Generation failed. Raw error:', error?.message || error);
     if (error.message === '__trial_ended__') {
       // Modal already shown — don't add an error bubble
     } else {
-      const lowerErr = (error.message || '').toLowerCase();
+      const lowerErr = error.message.toLowerCase();
       const isQuotaError = lowerErr.match(/quota|rate|limit|429|exceeded|resource.exhausted/);
-      // Tightened: only count as billing if the message clearly says so.
-      // 'precondition' / 'permission' alone are too broad and triggered the
-      // upgrade card incorrectly for unrelated failures.
-      const isBilling = lowerErr.includes('billing') ||
-        lowerErr.includes('paid plan') || lowerErr.includes('paid plans') ||
-        lowerErr.includes('paid tier') || lowerErr.includes('pay-as-you-go') ||
-        lowerErr.includes('upgrade your account') ||
-        lowerErr.includes('only available on paid');
+      const isBilling = lowerErr.includes('billing') || lowerErr.includes('permission') || lowerErr.includes('not enabled') || lowerErr.includes('paid tier') || lowerErr.includes('precondition');
       if (isQuotaError) {
         const quotaBubble = createResponseBubble();
         quotaBubble.innerHTML = buildRateLimitCard();
         thread.scrollTop = thread.scrollHeight;
       } else if (isBilling) {
         const unlockBubble = createResponseBubble();
-        unlockBubble.innerHTML = buildUnlockCard('video') +
-          `<div style="margin-top:10px;padding:10px;border-radius:8px;background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.2);font-size:11px;color:#ffa500;font-family:monospace;word-break:break-word;">Google said: ${(error.message || '').slice(0, 400)}</div>`;
+        unlockBubble.innerHTML = buildUnlockCard('video');
         thread.scrollTop = thread.scrollHeight;
       } else {
-        // Show the real Google error so the user can see what actually went wrong
         const friendlyMsg = await getFriendlyErrorMessage(error.message);
-        addBubble(`${friendlyMsg}\n\nDetails: ${(error.message || '').slice(0, 400)}`, 'ai');
+        addBubble(friendlyMsg, 'ai');
       }
     }
   } finally {
