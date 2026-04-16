@@ -542,12 +542,15 @@ async function _probeOneVeoModel(apiKey, modelId, timeoutMs, endpoint) {
     const msg = (data?.error?.message || '').toLowerCase();
     const code = data?.error?.code;
 
-    if (status === 'FAILED_PRECONDITION' || msg.includes('billing')) return 'free';
+    if (status === 'FAILED_PRECONDITION' || msg.includes('billing') ||
+        msg.includes('paid plan') || msg.includes('paid plans') ||
+        msg.includes('upgrade your account') || msg.includes('only available on paid') ||
+        (msg.includes('quota') && msg.includes('free'))) return 'free';
     if (code === 401 || code === 403 || status === 'PERMISSION_DENIED' || status === 'UNAUTHENTICATED' ||
         msg.includes('api key not valid') || msg.includes('api_key_invalid') || msg.includes('api key expired')) {
       return 'invalid';
     }
-    if (status === 'INVALID_ARGUMENT' || msg.includes('no instances') || msg.includes('instances')) return 'prepaid';
+    if (status === 'INVALID_ARGUMENT' && (msg.includes('no instances') || msg.includes('instances') || msg.includes('prompt'))) return 'prepaid';
     if (resp.ok && (data?.name || data?.metadata)) return 'prepaid';
     return 'retry';
   } catch (e) {
