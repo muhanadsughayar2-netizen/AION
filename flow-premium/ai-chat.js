@@ -30,13 +30,30 @@ function releaseRequestLock() {
 }
 // ============ END RATE LIMITER ============
 
-function getPaidModeEstimate(mode, clipCount = 1, durationSeconds = 8) {
+// Veo per-second pricing (Gemini API public rates, USD)
+const VEO_PRICING = {
+  'veo-3.1-generate-preview':       0.40,
+  'veo-3.1-fast-generate-preview':  0.15,
+  'veo-3.1-lite-generate-preview':  0.10,
+  'veo-3.0-generate-001':           0.40,
+  'veo-3.0-generate-preview':       0.40,
+  'veo-3.0-fast-generate-001':      0.15,
+  'veo-3.0-fast-generate-preview':  0.15,
+  'veo-2.0-generate-001':           0.35
+};
+
+function getPaidModeEstimate(mode, clipCount = 1, durationSeconds = 8, modelId = null) {
   if (mode === 'video') {
     const totalSeconds = clipCount * durationSeconds;
+    const rate = (modelId && VEO_PRICING[modelId] != null) ? VEO_PRICING[modelId] : 0.20;
+    const exact = rate * totalSeconds;
+    const cost = exact < 1
+      ? `~$${exact.toFixed(2)}`
+      : `~$${exact.toFixed(2)}`;
     return {
-      label: `${clipCount} clip${clipCount > 1 ? 's' : ''} × ${durationSeconds}s`,
-      cost: clipCount === 1 ? '$2-$4' : `$${clipCount * 2}-$${clipCount * 4}`,
-      note: totalSeconds <= 8 ? 'short clip' : `longer ${totalSeconds}s video`
+      label: `${clipCount} clip${clipCount > 1 ? 's' : ''} × ${durationSeconds}s = ${totalSeconds}s`,
+      cost,
+      note: `at $${rate.toFixed(2)}/sec`
     };
   }
   if (mode === 'music') {
@@ -2849,7 +2866,7 @@ async function handleSend() {
 
     if (modeConfig.type === 'gemini-video') {
       const clipCount = selectedClipCount || 1;
-      const costInfo = getPaidModeEstimate('video', clipCount, selectedVideoDuration || 8);
+      const costInfo = getPaidModeEstimate('video', clipCount, selectedVideoDuration || 8, selectedVeoModel);
       const ok = await confirmPaidGeneration('video', costInfo);
       if (!ok) {
         removeLoading();
