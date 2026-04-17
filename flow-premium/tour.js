@@ -11,43 +11,51 @@
     {
       target: null,
       title: 'Welcome to SnapToAI 📸',
-      body: 'Capture multiple screenshots and chat with AI about them. Quick 30-second tour — let\'s go.'
+      body: 'Quick tour: Capture → Select → Edit → Send. Takes about 30 seconds.',
+      welcome: true
     },
     {
       target: '#snapButton',
-      title: 'Snap the screen',
-      body: 'One click captures the visible area and adds it to your queue. You can stack up to 10 screenshots.'
+      title: 'Capture fast',
+      body: 'Tap SNAP to grab the visible part of the page. Your queue holds up to 9 screenshots.'
     },
     {
       target: '#snipButton',
-      title: 'Snip a region',
-      body: 'Drag a box around just the part of the screen you want. Only the cropped area is saved.'
+      title: 'Snip or full page',
+      body: 'Use SNIP to drag-select only what you need. FULL PAGE captures the whole scrolling page as one image.',
+      altTarget: '#fullPageButton'
     },
     {
-      target: '#fullPageButton',
-      title: 'Full-page capture',
-      body: 'Captures and stitches the whole page — even content below the fold — into one tall image.'
+      target: '#thumbnails',
+      title: 'Stack, select, stitch',
+      body: 'Screenshots stack in your queue. Select any set (say 3) and stitch them into ONE combined image.'
+    },
+    {
+      target: '#thumbnails',
+      title: 'Edit each screenshot',
+      body: 'Click any screenshot to open Snap Editor. Crop, annotate, add stickers — then save.'
     },
     {
       target: '#directAiButton',
-      title: 'Ask AI about it',
-      body: 'Send your screenshots straight to ChatGPT, Claude, Grok, or chat in-app with Gemini for vision, image, music & video.'
+      title: 'Send to AI your way',
+      body: 'Hit Ask AI to send selected shots to our built-in AI. Or copy them and paste into ChatGPT, Claude, or Grok.'
+    },
+    {
+      // Dynamic: spotlight the sign-in button if signed out, else the
+      // settings link. Picked at runtime in resolveTarget().
+      target: 'DYNAMIC_SIGNIN_OR_SETTINGS',
+      title: 'Sign in + Settings',
+      body: 'Sign in with Google, then open Settings. That activates Vision and gives you 20 prompts per day.'
     },
     {
       target: '#aiManageLink',
-      title: 'Modes & settings',
-      body: 'Switch between Vision, Image, Music, and Video modes here. Plug in your free Gemini key from Google AI Studio.'
-    },
-    {
-      target: '#signInHeaderBtn',
-      title: 'Sign in (optional)',
-      body: 'Sign in with Google to sync your account and unlock 10 free AI prompts to try things out — no card needed.',
-      altTarget: '#userAvatarContainer'  // shown instead if already signed in
+      title: 'Image, Music & Video',
+      body: 'These need your own Gemini API key on a paid Google tier. You pay Google directly — we never charge for usage.'
     },
     {
       target: null,
       title: "You're all set! 🎉",
-      body: 'Pro tip: right-click anywhere on a webpage to open the SnapToAI wand menu — capture, ask AI about an image, or explain selected text.'
+      body: 'Pro tip: right-click any page for the SnapToAI wand menu — capture, analyze, and send faster.'
     }
   ];
 
@@ -98,12 +106,30 @@
 
   function resolveTarget(step) {
     if (!step.target) return null;
+    // Dynamic: pick sign-in button when signed out, settings link when signed in
+    if (step.target === 'DYNAMIC_SIGNIN_OR_SETTINGS') {
+      const signIn = document.querySelector('#signInHeaderBtn');
+      const avatar = document.querySelector('#userAvatarContainer');
+      const signedIn = avatar && avatar.offsetParent !== null;
+      const signInVisible = signIn && signIn.offsetParent !== null;
+      if (!signedIn && signInVisible) return signIn;
+      const settings = document.querySelector('#aiManageLink');
+      if (settings && settings.offsetParent !== null) return settings;
+      return null;
+    }
     let el = document.querySelector(step.target);
     if ((!el || el.offsetParent === null) && step.altTarget) {
       el = document.querySelector(step.altTarget);
     }
     if (!el || el.offsetParent === null) return null;
     return el;
+  }
+
+  // Area of overlap between two rects (0 if none).
+  function overlapArea(a, b) {
+    const w = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+    const h = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+    return w * h;
   }
 
   function positionStep(step) {
@@ -134,19 +160,63 @@
       });
     });
 
+    // Welcome step: clear overlay (no blur over capture row), pin to top
+    overlay.classList.toggle('tour-overlay--clear', !!step.welcome);
+    tooltip.classList.toggle('tour-welcome', !!step.welcome);
+
+    if (step.welcome) {
+      // Top-anchored welcome so users can SEE the capture row beneath it.
+      // Adaptive: if the welcome card would overlap the capture row, scoot
+      // it up by reducing top to keep clearance above the row.
+      spotlight.style.display = 'none';
+      tooltip.classList.remove('tour-center');
+      tooltip.removeAttribute('data-pos');
+      tooltip.style.left = '50%';
+      tooltip.style.transform = 'translateX(-50%)';
+      const arrow = tooltip.querySelector('.tour-tooltip-arrow');
+      if (arrow) arrow.style.display = 'none';
+
+      // Measure tooltip height with current content
+      tooltip.style.top = '-9999px';
+      const measuredH = tooltip.getBoundingClientRect().height;
+
+      // Find the capture row (snap/snip/full/ai buttons share parent)
+      const captureBtn = document.querySelector('#snapButton');
+      let top = 12;
+      if (captureBtn && captureBtn.offsetParent !== null) {
+        const rowRect = captureBtn.getBoundingClientRect();
+        const minClearance = 8;
+        // If welcome at top:12 would overlap the capture row, push it up
+        // (negative top isn't allowed) — instead, shrink top to whatever
+        // keeps bottom above the row, but not below 6px.
+        const maxTopToAvoidRow = rowRect.top - measuredH - minClearance;
+        if (12 + measuredH > rowRect.top - minClearance) {
+          top = Math.max(6, maxTopToAvoidRow);
+        }
+      }
+      tooltip.style.top = `${top}px`;
+      return;
+    }
+
     if (!target) {
-      // Centered (welcome / final step)
+      // Centered (final step only — welcome is handled above)
       spotlight.style.display = 'none';
       tooltip.classList.add('tour-center');
       tooltip.removeAttribute('data-pos');
       tooltip.style.left = '';
       tooltip.style.top = '';
+      tooltip.style.transform = '';
       const arrow = tooltip.querySelector('.tour-tooltip-arrow');
       if (arrow) arrow.style.display = 'none';
       return;
     }
 
-    // Position spotlight over the target
+    // Targeted step: spotlight + arrow tooltip
+    tooltip.classList.remove('tour-center');
+    tooltip.style.transform = '';
+    const arrow = tooltip.querySelector('.tour-tooltip-arrow');
+    if (arrow) arrow.style.display = '';
+
     const rect = target.getBoundingClientRect();
     const pad = 6;
     spotlight.style.display = 'block';
@@ -155,35 +225,86 @@
     spotlight.style.width = `${rect.width + pad * 2}px`;
     spotlight.style.height = `${rect.height + pad * 2}px`;
 
-    // Position tooltip below if target is in upper half, above otherwise
-    tooltip.classList.remove('tour-center');
-    const arrow = tooltip.querySelector('.tour-tooltip-arrow');
-    if (arrow) arrow.style.display = '';
+    const spotRect = {
+      left: rect.left - pad,
+      top: rect.top - pad,
+      right: rect.right + pad,
+      bottom: rect.bottom + pad
+    };
+
+    // Measure tooltip with current content (responsive width)
+    // Briefly position offscreen to get true measurements
+    tooltip.style.left = '-9999px';
+    tooltip.style.top = '0px';
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const tooltipW = tooltipRect.width;
+    const tooltipH = tooltipRect.height;
 
     const viewportH = window.innerHeight;
     const viewportW = window.innerWidth;
-    const tooltipW = 270;
-    const tooltipH = tooltip.offsetHeight || 140;
-    const gap = 16;
+    const margin = 10;
+    const gap = 14;
 
-    let pos = 'bottom';
-    let top, left;
-    if (rect.bottom + tooltipH + gap < viewportH - 10) {
-      pos = 'bottom';
-      top = rect.bottom + gap;
-    } else if (rect.top - tooltipH - gap > 10) {
-      pos = 'top';
-      top = rect.top - tooltipH - gap;
-    } else {
-      pos = 'bottom';
-      top = Math.max(10, viewportH - tooltipH - 10);
+    // Try positions in order: bottom, top, right, left. Pick first that fits
+    // viewport AND does not overlap the spotlight rect.
+    const targetCenterX = rect.left + rect.width / 2;
+    const targetCenterY = rect.top + rect.height / 2;
+    const candidates = [
+      { pos: 'bottom', top: spotRect.bottom + gap, left: targetCenterX - tooltipW / 2 },
+      { pos: 'top',    top: spotRect.top - tooltipH - gap, left: targetCenterX - tooltipW / 2 },
+      { pos: 'right',  top: targetCenterY - tooltipH / 2, left: spotRect.right + gap },
+      { pos: 'left',   top: targetCenterY - tooltipH / 2, left: spotRect.left - tooltipW - gap }
+    ];
+
+    let chosen = null;
+    let bestFallback = null;
+    let bestFallbackOverlap = Infinity;
+    for (const c of candidates) {
+      const left = Math.max(margin, Math.min(c.left, viewportW - tooltipW - margin));
+      const top = Math.max(margin, Math.min(c.top, viewportH - tooltipH - margin));
+      const fits = top >= margin && left >= margin
+        && top + tooltipH <= viewportH - margin
+        && left + tooltipW <= viewportW - margin;
+      const ovl = overlapArea(
+        { left, top, right: left + tooltipW, bottom: top + tooltipH },
+        spotRect
+      );
+      if (fits && ovl === 0) { chosen = { ...c, left, top }; break; }
+      // Track candidate with smallest overlap as fallback
+      if (fits && ovl < bestFallbackOverlap) {
+        bestFallback = { ...c, left, top };
+        bestFallbackOverlap = ovl;
+      }
     }
-    left = rect.left + rect.width / 2 - tooltipW / 2;
-    left = Math.max(10, Math.min(left, viewportW - tooltipW - 10));
+    if (!chosen) {
+      // Use the lowest-overlap candidate that fits, if any
+      if (bestFallback) {
+        chosen = bestFallback;
+      } else {
+        // Last resort — clamped bottom (truly no room anywhere)
+        const left = Math.max(margin, Math.min(targetCenterX - tooltipW / 2, viewportW - tooltipW - margin));
+        const top = Math.min(spotRect.bottom + gap, viewportH - tooltipH - margin);
+        chosen = { pos: 'bottom', left, top };
+      }
+    }
 
-    tooltip.setAttribute('data-pos', pos);
-    tooltip.style.left = `${left}px`;
-    tooltip.style.top = `${top}px`;
+    tooltip.setAttribute('data-pos', chosen.pos);
+    tooltip.style.left = `${chosen.left}px`;
+    tooltip.style.top = `${chosen.top}px`;
+
+    // Arrow alignment — point at target center, clamped within tooltip bounds
+    const ARROW_INSET = 14;
+    if (chosen.pos === 'top' || chosen.pos === 'bottom') {
+      let ax = targetCenterX - chosen.left;
+      ax = Math.max(ARROW_INSET, Math.min(ax, tooltipW - ARROW_INSET));
+      tooltip.style.setProperty('--tour-arrow-x', `${ax}px`);
+      tooltip.style.removeProperty('--tour-arrow-y');
+    } else {
+      let ay = targetCenterY - chosen.top;
+      ay = Math.max(ARROW_INSET, Math.min(ay, tooltipH - ARROW_INSET));
+      tooltip.style.setProperty('--tour-arrow-y', `${ay}px`);
+      tooltip.style.removeProperty('--tour-arrow-x');
+    }
   }
 
   function goNext() {

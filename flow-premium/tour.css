@@ -10,6 +10,13 @@
   animation: tourFadeIn 0.25s ease;
 }
 
+/* Welcome step: keep the capture row visible underneath. No blur, lighter veil. */
+.tour-overlay.tour-overlay--clear {
+  background: rgba(0, 8, 20, 0.42);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 @keyframes tourFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .tour-spotlight {
@@ -31,7 +38,9 @@
 
 .tour-tooltip {
   position: absolute;
-  width: 270px;
+  width: min(260px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
   background: linear-gradient(135deg, rgba(20, 30, 50, 0.98), rgba(15, 22, 40, 0.98));
   border: 1px solid rgba(0, 217, 255, 0.4);
   border-radius: 14px;
@@ -41,6 +50,11 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 217, 255, 0.2);
   animation: tourSlideIn 0.3s cubic-bezier(.4,.2,.2,1);
   z-index: 10000;
+}
+
+/* Welcome variant: top-pinned, slimmer so capture row is visible below it. */
+.tour-tooltip.tour-welcome {
+  width: min(280px, calc(100vw - 24px));
 }
 
 @keyframes tourSlideIn {
@@ -141,10 +155,12 @@
   transform: rotate(45deg);
 }
 
-.tour-tooltip[data-pos="bottom"] .tour-tooltip-arrow { top: -8px; left: 50%; margin-left: -7px; border-right: none; border-bottom: none; }
-.tour-tooltip[data-pos="top"]    .tour-tooltip-arrow { bottom: -8px; left: 50%; margin-left: -7px; border-left: none; border-top: none; }
-.tour-tooltip[data-pos="right"]  .tour-tooltip-arrow { left: -8px; top: 50%; margin-top: -7px; border-right: none; border-top: none; }
-.tour-tooltip[data-pos="left"]   .tour-tooltip-arrow { right: -8px; top: 50%; margin-top: -7px; border-left: none; border-bottom: none; }
+/* Arrow positions use CSS vars set by JS so the arrow points at the target's
+   center even when the tooltip is shifted to fit the viewport. */
+.tour-tooltip[data-pos="bottom"] .tour-tooltip-arrow { top: -8px; left: var(--tour-arrow-x, 50%); margin-left: -7px; border-right: none; border-bottom: none; }
+.tour-tooltip[data-pos="top"]    .tour-tooltip-arrow { bottom: -8px; left: var(--tour-arrow-x, 50%); margin-left: -7px; border-left: none; border-top: none; }
+.tour-tooltip[data-pos="right"]  .tour-tooltip-arrow { left: -8px; top: var(--tour-arrow-y, 50%); margin-top: -7px; border-right: none; border-top: none; }
+.tour-tooltip[data-pos="left"]   .tour-tooltip-arrow { right: -8px; top: var(--tour-arrow-y, 50%); margin-top: -7px; border-left: none; border-bottom: none; }
 
 /* "Take the tour" link in the account popover */
 .account-popover-tour {
