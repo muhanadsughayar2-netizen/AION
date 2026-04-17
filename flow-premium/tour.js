@@ -28,17 +28,20 @@
     {
       target: '#thumbnails',
       title: 'Stack, select, stitch',
-      body: 'Screenshots stack in your queue. Select any set (say 3) and stitch them into ONE combined image.'
+      body: 'Screenshots stack in your queue (demo shown below). Select any set and stitch them into ONE combined image.',
+      demo: 'unselected'
     },
     {
       target: '#thumbnails',
       title: 'Edit each screenshot',
-      body: 'Click any screenshot to open Snap Editor. Crop, annotate, add stickers — then save.'
+      body: 'Click any thumbnail to open Snap Editor — crop, annotate, add stickers, then save.',
+      demo: 'unselected'
     },
     {
       target: '#directAiButton',
       title: 'Send to AI your way',
-      body: 'Hit Ask AI to send selected shots to our built-in AI. Or copy them and paste into ChatGPT, Claude, or Grok.'
+      body: 'Pick the shots you want (see the checkmarks below), then hit Ask AI for built-in chat — or copy and paste into ChatGPT, Claude, or Grok.',
+      demo: 'selected'
     },
     {
       // Dynamic: spotlight the sign-in button if signed out, else the
@@ -69,6 +72,8 @@
   let spotlight = null;
   let tooltip = null;
   let resizeHandler = null;
+  // Snapshot of #thumbnails innerHTML so we can restore real queue after demo
+  let thumbnailsBackup = null;
   // Lifecycle bookkeeping so manual + auto-start can never race or leak.
   let tourState = 'idle';        // 'idle' | 'pending' | 'running' | 'completed'
   let pendingStartTimer = null;
@@ -101,12 +106,44 @@
       window.removeEventListener('resize', resizeHandler);
       resizeHandler = null;
     }
+    restoreThumbnails();
     if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
     overlay = spotlight = tooltip = null;
     tourState = markCompleted ? 'completed' : 'idle';
     if (markCompleted) {
       try { chrome.storage.local.set({ [TOUR_FLAG]: true }); } catch (e) {}
     }
+  }
+
+  // Inject 3 fake thumbnails into #thumbnails so users SEE what stitching/
+  // editing/sending looks like even when their real queue is empty.
+  // Skipped (no-op) if the user already has real screenshots queued.
+  function injectDemoThumbnails(mode) {
+    const container = document.querySelector('#thumbnails');
+    if (!container) return;
+    // If real thumbnails are already present, leave them alone.
+    if (container.querySelector('.thumbnail')) return;
+    if (thumbnailsBackup === null) thumbnailsBackup = container.innerHTML;
+
+    const selected = mode === 'selected';
+    container.innerHTML = '';
+    for (let i = 1; i <= 3; i++) {
+      const t = document.createElement('div');
+      const isSel = selected && i <= 2;   // first 2 selected when mode='selected'
+      t.className = `tour-demo-thumb tour-demo-thumb--${i}${isSel ? ' tour-demo-selected' : ''}`;
+      t.innerHTML = `
+        ${isSel ? '<div class="tour-demo-check">✓</div>' : ''}
+        <div class="tour-demo-num">${i}</div>
+      `;
+      container.appendChild(t);
+    }
+  }
+
+  function restoreThumbnails() {
+    if (thumbnailsBackup === null) return;
+    const container = document.querySelector('#thumbnails');
+    if (container) container.innerHTML = thumbnailsBackup;
+    thumbnailsBackup = null;
   }
 
   function resolveTarget(step) {
@@ -168,6 +205,13 @@
     // Welcome step: clear overlay (no blur over capture row), pin to top
     overlay.classList.toggle('tour-overlay--clear', !!step.welcome);
     tooltip.classList.toggle('tour-welcome', !!step.welcome);
+
+    // Demo thumbnails: inject for steps that need them, restore otherwise
+    if (step.demo) {
+      injectDemoThumbnails(step.demo);
+    } else {
+      restoreThumbnails();
+    }
 
     if (step.welcome) {
       // Top-anchored welcome so users can SEE the capture row beneath it.

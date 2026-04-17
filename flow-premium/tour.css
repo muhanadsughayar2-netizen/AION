@@ -4,17 +4,16 @@
   inset: 0;
   z-index: 10010;
   pointer-events: auto;
-  background: rgba(0, 8, 20, 0.78);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  /* Much lighter than before so the popup stays readable underneath. */
+  background: rgba(0, 8, 20, 0.38);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   animation: tourFadeIn 0.25s ease;
 }
 
-/* Welcome step: keep the capture row visible underneath. No blur, lighter veil. */
+/* Welcome step: even lighter so the capture row is clearly visible. */
 .tour-overlay.tour-overlay--clear {
-  background: rgba(0, 8, 20, 0.42);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  background: rgba(0, 8, 20, 0.22);
 }
 
 @keyframes tourFadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -23,17 +22,60 @@
   position: absolute;
   border-radius: 14px;
   pointer-events: none;
+  /* Big-spread shadow used to be opaque (0.78) which blacked out the whole
+     popup. Lowered to 0.38 so users can SEE the rest of the UI while we
+     highlight one thing. Keep the cyan ring strong. */
   box-shadow:
-    0 0 0 4px rgba(0, 217, 255, 0.9),
-    0 0 0 9999px rgba(0, 8, 20, 0.78),
-    0 0 30px 6px rgba(0, 217, 255, 0.5);
+    0 0 0 4px rgba(0, 217, 255, 0.95),
+    0 0 0 9999px rgba(0, 8, 20, 0.38),
+    0 0 30px 6px rgba(0, 217, 255, 0.55);
   transition: all 0.35s cubic-bezier(.4,.2,.2,1);
   animation: tourPulse 2s ease-in-out infinite;
 }
 
 @keyframes tourPulse {
-  0%, 100% { box-shadow: 0 0 0 4px rgba(0, 217, 255, 0.9), 0 0 0 9999px rgba(0, 8, 20, 0.78), 0 0 30px 6px rgba(0, 217, 255, 0.5); }
-  50%      { box-shadow: 0 0 0 4px rgba(0, 217, 255, 1),    0 0 0 9999px rgba(0, 8, 20, 0.78), 0 0 45px 10px rgba(0, 217, 255, 0.75); }
+  0%, 100% { box-shadow: 0 0 0 4px rgba(0, 217, 255, 0.95), 0 0 0 9999px rgba(0, 8, 20, 0.38), 0 0 30px 6px rgba(0, 217, 255, 0.55); }
+  50%      { box-shadow: 0 0 0 4px rgba(0, 217, 255, 1),    0 0 0 9999px rgba(0, 8, 20, 0.38), 0 0 45px 10px rgba(0, 217, 255, 0.8); }
+}
+
+/* Demo thumbnails injected by the tour to demonstrate stitch / edit / send.
+   Removed automatically on next step + teardown. */
+.tour-demo-thumb {
+  aspect-ratio: 16 / 9;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 217, 255, 0.35);
+  position: relative;
+  overflow: hidden;
+  animation: tourSlideIn 0.3s ease;
+}
+.tour-demo-thumb.tour-demo-thumb--1 { background: linear-gradient(135deg, #0a4a6e, #1d7fa3 60%, #5cd0ff); }
+.tour-demo-thumb.tour-demo-thumb--2 { background: linear-gradient(135deg, #2a1a5c, #6a3fc8 60%, #c9a8ff); }
+.tour-demo-thumb.tour-demo-thumb--3 { background: linear-gradient(135deg, #1a4a2e, #2fa86b 60%, #8cf2c0); }
+.tour-demo-thumb.tour-demo-selected {
+  border-color: #00d9ff;
+  box-shadow: 0 0 12px rgba(0, 217, 255, 0.6);
+}
+.tour-demo-thumb .tour-demo-num {
+  position: absolute;
+  top: 2px; right: 2px;
+  background: rgba(0, 217, 255, 0.9);
+  color: #001220;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+.tour-demo-thumb .tour-demo-check {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  border-radius: 4px;
+  background: #00d9ff;
+  color: #001220;
+  font-size: 11px;
+  font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
 }
 
 .tour-tooltip {
