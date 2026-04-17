@@ -553,6 +553,14 @@ async function _probeOneVeoModel(apiKey, modelId, timeoutMs, endpoint) {
     // PREPAID positive signal first — Google only returns "no instances" when billing is enabled
     if (status === 'INVALID_ARGUMENT' && (msg.includes('no instances') || msg.includes('instances'))) return 'prepaid';
     if (resp.ok && (data?.name || data?.metadata)) return 'prepaid';
+    // 429 / RESOURCE_EXHAUSTED on Veo is ALSO a prepaid signal — free-tier keys can't even attempt
+    // Veo generation, so hitting a quota / rate limit means the key has paid Veo access.
+    if (resp.status === 429 || status === 'RESOURCE_EXHAUSTED' ||
+        msg.includes('exceeded your current quota') || msg.includes('rate limit') ||
+        msg.includes('quota exceeded') || msg.includes('per-minute') || msg.includes('rpm')) {
+      console.log(`[SnapToAI] Probe ${modelId}: 429/quota — treating as PREPAID signal`);
+      return 'prepaid';
+    }
     // Invalid key signals
     if (code === 401 || code === 403 || status === 'PERMISSION_DENIED' || status === 'UNAUTHENTICATED' ||
         msg.includes('api key not valid') || msg.includes('api_key_invalid') || msg.includes('api key expired')) {
