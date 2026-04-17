@@ -1713,24 +1713,164 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
   }
 }
 
-async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage) {
-  const clipUrls = [];
-  const clipResults = []; // local; tracks per-clip outcome for the final summary card
-  const clipScenes = [];
+// ============================================================================
+// PER-CLIP VEO GENERATION — extracted so the multi-clip batch loop AND the
+// per-clip "Retry just this one" buttons can both call it.
+//
+// Returns: { url, status, billingAbort }
+//   - url: video URL on success, null otherwise
+//   - status: phase-explicit final state (see status taxonomy below)
+//   - billingAbort: true → caller should stop the whole batch (billing problem)
+//
+// Status taxonomy:
+//   success
+//   rate_limit_prestart_skipped, transient_prestart_skipped  (FREE — no job started)
+//   no_op_id_ambiguous_skipped                               (UNKNOWN billing)
+//   timeout_skipped, job_error_skipped, no_uri_skipped, rate_limit_skipped,
+//   transient_skipped, safety_blocked_skipped                (job started, MAY be billed)
+// ============================================================================
+async function generateOneVeoClip(clipIdx, ctx) {
+  const { prompt, apiKey, modelName, includeImage, clipCount, clipScenes,
+          stylizedImage, progressBubble, durationSeconds, sourceImageForClip0 } = ctx;
+  const clipNum = clipIdx + 1;
+  const statusEl = progressBubble.querySelector(`.multi-clip-status[data-clip="${clipNum}"] .clip-state`);
+  const fill = progressBubble.querySelector('.video-progress-fill');
+  const text = progressBubble.querySelector('.video-progress-text');
 
-  if (clipCount === 2) {
-    clipScenes.push(
-      `Scene 1 of 2 — opening: ${prompt}`,
-      `Scene 2 of 2 — continuation and finale: ${prompt}`
-    );
-  } else if (clipCount === 3) {
-    clipScenes.push(
-      `Scene 1 of 3 — opening establishing shot: ${prompt}`,
-      `Scene 2 of 3 — middle action: ${prompt}`,
-      `Scene 3 of 3 — dramatic finale: ${prompt}`
-    );
-  } else if (clipCount >= 4 && clipCount <= 8) {
-    // Generic narrative arc for longer videos (4–8 clips)
+  if (statusEl) { statusEl.textContent = '⏳ Generating...'; statusEl.style.color = '#ffa500'; }
+  if (text) text.textContent = `Generating clip ${clipNum} of ${clipCount}...`;
+
+  const MAX_RATE_RETRIES_POST = 4;
+  const MAX_FULL_CYCLE_RETRIES = 2;
+  let cycleAttempt = 0;
+  let finalStatus = 'unknown';
+
+  while (cycleAttempt < MAX_FULL_CYCLE_RETRIES) {
+    cycleAttempt++;
+
+    // ---- PHASE 1: kick off the Veo job (with pre-job rate-limit retries) ----
+    let resp, data, errorMsg = '';
+    let postRateRetry = 0;
+
+    while (true) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`;
+        const requestBody = {
+          instances: [{ prompt: clipScenes[clipIdx] || prompt }],
+          parameters: { aspectRatio: '16:9', sampleCount: 1, durationSeconds: durationSeconds }
+        };
+
+        // Use the SNAPSHOTTED image from batch start — never re-read globals,
+        // so retrying clip 0 always uses the same input the original batch used.
+        if (clipIdx === 0 && includeImage && sourceImageForClip0) {
+          requestBody.instances[0].image = {
+            bytesBase64Encoded: sourceImageForClip0.base64,
+            mimeType: sourceImageForClip0.mimeType
+          };
+        }
+
+        resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+        data = await resp.json().catch(() => ({}));
+        errorMsg = (data?.error?.message) || '';
+
+        const isRate = !resp.ok && (
+          resp.status === 429 ||
+          /rate|quota|exceeded|resource/.test(errorMsg.toLowerCase())
+        );
+
+        if (isRate && !isBillingError(resp.status, errorMsg) && postRateRetry < MAX_RATE_RETRIES_POST) {
+          postRateRetry++;
+          const waitSec = 65;
+          if (statusEl) { statusEl.textContent = `⏳ Quota wait — ${waitSec}s (retry ${postRateRetry}/${MAX_RATE_RETRIES_POST})`; statusEl.style.color = '#ffd700'; }
+          for (let s = waitSec; s > 0; s--) {
+            await new Promise(r => setTimeout(r, 1000));
+            if (text) text.textContent = `Clip ${clipNum}/${clipCount} — Veo quota cooling down (${s}s) · retry ${postRateRetry}/${MAX_RATE_RETRIES_POST}`;
+          }
+          if (statusEl) { statusEl.textContent = '⏳ Retrying...'; statusEl.style.color = '#ffa500'; }
+          continue;
+        }
+        break;
+      } catch (innerErr) {
+        console.log('[SnapToAI Video] Clip POST threw:', innerErr.message);
+        break;
+      }
+    }
+
+    // ---- PHASE 2: classify POST outcome ----
+    if (!resp || !resp.ok) {
+      if (resp && isBillingError(resp.status, errorMsg)) {
+        return { url: null, status: 'billing_blocked', billingAbort: true };
+      }
+      const isRate = resp && (resp.status === 429 || /rate|quota|exceeded|resource/.test(errorMsg.toLowerCase()));
+      if (isRate) {
+        finalStatus = 'rate_limit_prestart_skipped';
+        if (cycleAttempt < MAX_FULL_CYCLE_RETRIES) continue;
+        break;
+      }
+      if (cycleAttempt < MAX_FULL_CYCLE_RETRIES) {
+        if (statusEl) { statusEl.textContent = `⚠ Network error — retrying (${cycleAttempt}/${MAX_FULL_CYCLE_RETRIES})`; statusEl.style.color = '#ffd700'; }
+        await new Promise(r => setTimeout(r, 15000));
+        continue;
+      }
+      finalStatus = 'transient_prestart_skipped';
+      break;
+    }
+
+    const operationName = data.name;
+    if (!operationName) {
+      if (cycleAttempt < MAX_FULL_CYCLE_RETRIES) { await new Promise(r => setTimeout(r, 5000)); continue; }
+      finalStatus = 'no_op_id_ambiguous_skipped';
+      break;
+    }
+
+    // ---- PHASE 3: poll for completion ----
+    const result = await pollVideoStatusAsync(operationName, apiKey, progressBubble, clipNum, clipCount);
+
+    if (result.status === 'success' && result.url) {
+      if (statusEl) { statusEl.textContent = '✅ Done'; statusEl.style.color = '#00cc88'; }
+      return { url: result.url, status: 'success', billingAbort: false };
+    }
+
+    if (result.status === 'safety_blocked') {
+      finalStatus = 'safety_blocked_skipped';
+      break;
+    }
+
+    if (cycleAttempt < MAX_FULL_CYCLE_RETRIES) {
+      const waitSec = result.status === 'rate_limit' ? 65 : 20;
+      if (statusEl) { statusEl.textContent = `⚠ ${result.status} — retrying (${cycleAttempt}/${MAX_FULL_CYCLE_RETRIES})`; statusEl.style.color = '#ffd700'; }
+      if (text) text.textContent = `Clip ${clipNum}/${clipCount} ${result.status} — retrying in ${waitSec}s...`;
+      await new Promise(r => setTimeout(r, waitSec * 1000));
+      continue;
+    }
+
+    finalStatus = `${result.status}_skipped`;
+    break;
+  }
+
+  if (statusEl) {
+    statusEl.textContent = `⚠ Skipped (${finalStatus.replace('_skipped','')})`;
+    statusEl.style.color = '#ffaa00';
+  }
+  return { url: null, status: finalStatus, billingAbort: false };
+}
+
+// Build the standard 8-beat narrative scene list
+function buildClipScenes(prompt, clipCount) {
+  if (clipCount === 2) return [
+    `Scene 1 of 2 — opening: ${prompt}`,
+    `Scene 2 of 2 — continuation and finale: ${prompt}`
+  ];
+  if (clipCount === 3) return [
+    `Scene 1 of 3 — opening establishing shot: ${prompt}`,
+    `Scene 2 of 3 — middle action: ${prompt}`,
+    `Scene 3 of 3 — dramatic finale: ${prompt}`
+  ];
+  if (clipCount >= 4 && clipCount <= 8) {
     const beats = [
       'opening establishing shot, set the scene',
       'introduce the main subject, slow build',
@@ -1741,276 +1881,235 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
       'dramatic climax or peak action',
       'closing finale and resolution'
     ];
-    for (let i = 0; i < clipCount; i++) {
-      const beat = beats[Math.min(i, beats.length - 1)];
-      clipScenes.push(`Scene ${i + 1} of ${clipCount} — ${beat}: ${prompt}`);
+    return Array.from({length: clipCount}, (_, i) =>
+      `Scene ${i + 1} of ${clipCount} — ${beats[Math.min(i, beats.length - 1)]}: ${prompt}`);
+  }
+  return [];
+}
+
+async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage) {
+  const clipScenes = buildClipScenes(prompt, clipCount);
+  // Index-based results so retry can replace any specific slot
+  const clipResults = Array.from({length: clipCount}, (_, i) => ({ n: i + 1, status: 'pending', url: null }));
+
+  // ---- SNAPSHOT immutable batch context so per-clip retries always use the
+  // same inputs the original batch used, even if the user changes the
+  // duration selector or the screenshot queue afterward. ----
+  const durationSeconds = selectedVideoDuration;
+  let sourceImageForClip0 = null;
+  if (includeImage) {
+    if (stylizedImage) {
+      sourceImageForClip0 = { base64: stylizedImage.base64, mimeType: stylizedImage.mimeType };
+    } else if (currentImages[0]) {
+      const imgData = currentImages[0];
+      const cleanB64 = imgData.includes(',') ? imgData.split(',')[1] : imgData;
+      let mimeType = 'image/png';
+      if (imgData.startsWith('data:')) {
+        const match = imgData.match(/^data:(image\/[a-zA-Z+]+);/);
+        if (match) mimeType = match[1];
+      }
+      sourceImageForClip0 = { base64: cleanB64, mimeType };
     }
   }
 
+  const ctx = { prompt, apiKey, modelName, includeImage, clipCount, clipScenes,
+                stylizedImage, progressBubble, thread, clipResults,
+                durationSeconds, sourceImageForClip0,
+                retryInFlight: false, billingAbortAt: -1 };
+
   for (let i = 0; i < clipCount; i++) {
-    const clipNum = i + 1;
-    const statusEl = progressBubble.querySelector(`.multi-clip-status[data-clip="${clipNum}"] .clip-state`);
-    if (statusEl) statusEl.textContent = '⏳ Generating...';
-    if (statusEl) statusEl.style.color = '#ffa500';
+    const result = await generateOneVeoClip(i, ctx);
+    clipResults[i].status = result.status;
+    clipResults[i].url = result.url;
 
-    const fill = progressBubble.querySelector('.video-progress-fill');
-    const text = progressBubble.querySelector('.video-progress-text');
-    if (text) text.textContent = `Generating clip ${clipNum} of ${clipCount}...`;
-
-    // ========================================================================
-    // PER-CLIP RESILIENCE LOOP
-    // Goal: every clip the user asked for either succeeds OR is gracefully
-    // skipped with a clear status. We NEVER abort the whole batch because of
-    // a single transient/permanent failure on one clip. Only billing errors
-    // (which apply to the whole account) abort the batch.
-    //
-    // Retry policy per clip:
-    //   - rate_limit / 429    → wait 65s, retry up to 4x (per-minute quota reset)
-    //   - transient / network → wait 15s, retry up to 2x
-    //   - timeout             → retry once with fresh job
-    //   - safety_blocked      → SKIP (re-running won't help, content was rejected)
-    //   - no_uri / job_error  → retry once, then SKIP if still fails
-    //   - billing             → ABORT batch (whole-account problem)
-    // ========================================================================
-    // Cost-conscious retry policy:
-    //   - POST rate-limit waits are CHEAP (no job started yet → no billing)
-    //   - Full cycles AFTER a job started are EXPENSIVE (each new POST may bill)
-    //   - So we allow many POST-rate retries, but very few full-cycle retries
-    const MAX_RATE_RETRIES_POST = 4;     // pre-job, no billing risk
-    const MAX_FULL_CYCLE_RETRIES = 2;    // capped to limit billable re-generations per clip
-    let cycleAttempt = 0;
-    let finalStatus = 'unknown';
-    let billingAbort = false;
-
-    while (cycleAttempt < MAX_FULL_CYCLE_RETRIES) {
-      cycleAttempt++;
-
-      // ---- PHASE 1: kick off the Veo job (with rate-limit retries) ----
-      let resp, data, errorMsg = '';
-      let postRateRetry = 0;
-
-      while (true) {
-        try {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`;
-          const requestBody = {
-            instances: [{ prompt: clipScenes[i] || prompt }],
-            parameters: {
-              aspectRatio: '16:9',
-              sampleCount: 1,
-              durationSeconds: selectedVideoDuration
-            }
-          };
-
-          if (i === 0 && includeImage && (stylizedImage || currentImages[0])) {
-            if (stylizedImage) {
-              requestBody.instances[0].image = { bytesBase64Encoded: stylizedImage.base64, mimeType: stylizedImage.mimeType };
-            } else {
-              const imgData = currentImages[0];
-              const cleanB64 = imgData.includes(',') ? imgData.split(',')[1] : imgData;
-              let mimeType = 'image/png';
-              if (imgData.startsWith('data:')) {
-                const match = imgData.match(/^data:(image\/[a-zA-Z+]+);/);
-                if (match) mimeType = match[1];
-              }
-              requestBody.instances[0].image = { bytesBase64Encoded: cleanB64, mimeType: mimeType };
-            }
-          }
-
-          resp = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-          });
-          data = await resp.json().catch(() => ({}));
-          errorMsg = (data?.error?.message) || '';
-
-          const isRate = !resp.ok && (
-            resp.status === 429 ||
-            errorMsg.toLowerCase().includes('rate') ||
-            errorMsg.toLowerCase().includes('quota') ||
-            errorMsg.toLowerCase().includes('exceeded') ||
-            errorMsg.toLowerCase().includes('resource')
-          );
-
-          if (isRate && !isBillingError(resp.status, errorMsg) && postRateRetry < MAX_RATE_RETRIES_POST) {
-            postRateRetry++;
-            const waitSec = 65;
-            if (statusEl) { statusEl.textContent = `⏳ Quota wait — ${waitSec}s (retry ${postRateRetry}/${MAX_RATE_RETRIES_POST})`; statusEl.style.color = '#ffd700'; }
-            console.log(`[SnapToAI Video] Clip ${clipNum} POST 429 — retry ${postRateRetry}/${MAX_RATE_RETRIES_POST} after ${waitSec}s`);
-            for (let s = waitSec; s > 0; s--) {
-              await new Promise(r => setTimeout(r, 1000));
-              if (text) text.textContent = `Clip ${clipNum}/${clipCount} — Veo quota cooling down (${s}s) · retry ${postRateRetry}/${MAX_RATE_RETRIES_POST}`;
-            }
-            if (statusEl) { statusEl.textContent = '⏳ Retrying...'; statusEl.style.color = '#ffa500'; }
-            continue;
-          }
-          break;
-        } catch (innerErr) {
-          console.log('[SnapToAI Video] Clip POST threw:', innerErr.message);
-          break;
-        }
-      }
-
-      // ---- PHASE 2: classify POST outcome ----
-      if (!resp || !resp.ok) {
-        if (resp && isBillingError(resp.status, errorMsg)) {
-          billingAbort = true;
-          break;
-        }
-        // Persistent rate limit after retries — SKIP this clip (don't abort batch).
-        // The final summary card handles the "0 succeeded" case.
-        const isRate = resp && (resp.status === 429 || /rate|quota|exceeded|resource/.test(errorMsg.toLowerCase()));
-        if (isRate) {
-          finalStatus = 'rate_limit_prestart_skipped';  // POST 429 → no Veo job created → free
-          if (cycleAttempt < MAX_FULL_CYCLE_RETRIES) continue;
-          break;
-        }
-        // Generic transient at POST → no job created → free
-        if (cycleAttempt < MAX_FULL_CYCLE_RETRIES) {
-          if (statusEl) { statusEl.textContent = `⚠ Network error — retrying (${cycleAttempt}/${MAX_FULL_CYCLE_RETRIES})`; statusEl.style.color = '#ffd700'; }
-          await new Promise(r => setTimeout(r, 15000));
-          continue;
-        }
-        finalStatus = 'transient_prestart_skipped';
-        break;
-      }
-
-      const operationName = data.name;
-      if (!operationName) {
-        if (cycleAttempt < MAX_FULL_CYCLE_RETRIES) { await new Promise(r => setTimeout(r, 5000)); continue; }
-        // HTTP 200 but no operation ID — ambiguous. Conservative: assume MAY be billed.
-        finalStatus = 'no_op_id_ambiguous_skipped';
-        break;
-      }
-
-      // ---- PHASE 3: poll for completion ----
-      console.log(`[SnapToAI Video] Clip ${clipNum} job started (cycle ${cycleAttempt}): ${operationName}`);
-      const result = await pollVideoStatusAsync(operationName, apiKey, progressBubble, clipNum, clipCount);
-
-      if (result.status === 'success' && result.url) {
-        clipUrls.push(result.url);
-        if (statusEl) { statusEl.textContent = '✅ Done'; statusEl.style.color = '#00cc88'; }
-        const pct = Math.round((clipNum / clipCount) * 80);
-        if (fill) fill.style.width = `${pct}%`;
-        finalStatus = 'success';
-        break;
-      }
-
-      // Permanent failures — SKIP this clip, do NOT retry
-      if (result.status === 'safety_blocked') {
-        finalStatus = 'safety_blocked_skipped';
-        break;
-      }
-
-      // Recoverable — retry whole cycle if we have attempts left
-      if (cycleAttempt < MAX_FULL_CYCLE_RETRIES) {
-        const waitSec = result.status === 'rate_limit' ? 65 : 20;
-        if (statusEl) { statusEl.textContent = `⚠ ${result.status} — retrying (${cycleAttempt}/${MAX_FULL_CYCLE_RETRIES})`; statusEl.style.color = '#ffd700'; }
-        if (text) text.textContent = `Clip ${clipNum}/${clipCount} ${result.status} — retrying in ${waitSec}s...`;
-        await new Promise(r => setTimeout(r, waitSec * 1000));
-        continue;
-      }
-
-      // Out of retries
-      finalStatus = `${result.status}_skipped`;
-      break;
+    if (result.url) {
+      const fill = progressBubble.querySelector('.video-progress-fill');
+      const pct = Math.round(((i + 1) / clipCount) * 80);
+      if (fill) fill.style.width = `${pct}%`;
     }
 
-    if (billingAbort) {
-      // Don't lose already-generated clips. If we have any, render them
-      // (single or stitched) AND surface a billing notice. Otherwise show
-      // the unlock card.
-      if (clipUrls.length === 0) {
-        progressBubble.innerHTML = buildUnlockCard('video');
+    if (result.billingAbort) {
+      ctx.billingAbortAt = i + 1;
+      break;
+    }
+  }
+
+  await renderVeoBatchOutcome(ctx);
+}
+
+// ============================================================================
+// Render the appropriate outcome card (zero-success / single / stitched /
+// fallback) AND wire up the per-clip "🔄 Retry" buttons next to each
+// failed/skipped clip.
+// ============================================================================
+async function renderVeoBatchOutcome(ctx) {
+  const { progressBubble, thread, clipResults, clipCount, billingAbortAt } = ctx;
+  const successUrls = clipResults.filter(r => r.url).map(r => r.url);
+
+  // --- Case A: 0 successful clips ---
+  if (successUrls.length === 0) {
+    progressBubble.innerHTML = buildVeoSummaryCard(ctx, billingAbortAt, /*hasSuccess*/ false, null);
+    wireVeoRetryButtons(ctx);
+    return;
+  }
+
+  // --- Case B: at least 1 successful clip → render video, append retry panel ---
+  try {
+    if (successUrls.length === 1) {
+      showVideoResult(progressBubble, successUrls[0], thread);
+    } else {
+      const fill = progressBubble.querySelector('.video-progress-fill');
+      const text = progressBubble.querySelector('.video-progress-text');
+      if (fill) fill.style.width = '85%';
+      if (text) text.textContent = 'Stitching clips together...';
+      const stitchedUrl = await stitchVideos(successUrls);
+      if (fill) fill.style.width = '100%';
+      showStitchedVideoResult(progressBubble, stitchedUrl, successUrls, thread);
+    }
+  } catch (err) {
+    console.log('[SnapToAI Video] Stitch error:', err.message);
+    showMultiClipFallback(progressBubble, successUrls, thread);
+  }
+
+  // Append retry panel below the video result (only if some clips actually failed)
+  const failedClips = clipResults.filter(r => !r.url);
+  if (failedClips.length > 0 || billingAbortAt > 0) {
+    const panel = document.createElement('div');
+    panel.innerHTML = buildVeoSummaryCard(ctx, billingAbortAt, /*hasSuccess*/ true, successUrls.length);
+    progressBubble.appendChild(panel.firstElementChild);
+    wireVeoRetryButtons(ctx);
+  }
+}
+
+function setAllRetryButtonsDisabled(progressBubble, disabled, label) {
+  progressBubble.querySelectorAll('.veo-retry-btn').forEach(b => {
+    b.disabled = disabled;
+    b.style.opacity = disabled ? '0.5' : '1';
+    b.style.cursor = disabled ? 'not-allowed' : 'pointer';
+    if (disabled && label) b.textContent = label;
+  });
+}
+
+function buildVeoSummaryCard(ctx, billingAbortAt, hasSuccess, successCount) {
+  const { clipResults, clipCount } = ctx;
+  const PRESTART_FREE = new Set(['rate_limit_prestart_skipped','transient_prestart_skipped']);
+  const RETRYABLE = new Set([  // safety_blocked is NOT retryable (content rejected)
+    'rate_limit_prestart_skipped','transient_prestart_skipped',
+    'rate_limit_skipped','transient_skipped','timeout_skipped',
+    'no_uri_skipped','job_error_skipped','no_op_id_ambiguous_skipped','pending'
+  ]);
+
+  const rows = clipResults.map((r, idx) => {
+    if (r.url) {
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);gap:10px;">
+        <span><b>Clip ${r.n}</b> <span style="color:rgba(255,255,255,0.5);font-size:11px;">success</span></span>
+        <span style="color:#00cc88;font-size:12px;">✓ done</span>
+      </div>`;
+    }
+    const isFree = PRESTART_FREE.has(r.status);
+    const tag = isFree
+      ? 'no job started · not billed'
+      : (r.status === 'no_op_id_ambiguous_skipped'
+          ? 'unclear · billing status unknown'
+          : 'job started · may be billed');
+    const cleanStatus = r.status.replace(/_skipped$/,'').replace(/_/g,' ');
+    const canRetry = RETRYABLE.has(r.status);
+    const retryBtn = canRetry
+      ? `<button class="veo-retry-btn" data-clip-idx="${idx}" style="background:rgba(0,217,255,0.15);border:1px solid rgba(0,217,255,0.4);color:#00d9ff;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">🔄 Retry</button>`
+      : `<span style="font-size:10px;color:rgba(255,255,255,0.35);">cannot retry</span>`;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);gap:10px;">
+      <span style="flex:1;min-width:0;"><b>Clip ${r.n}</b> <span style="color:rgba(255,255,255,0.5);font-size:11px;">${tag}</span><br><span style="color:#ffaa00;font-size:11px;">${cleanStatus}</span></span>
+      ${retryBtn}
+    </div>`;
+  }).join('');
+
+  const billingLine = (() => {
+    if (billingAbortAt > 0) {
+      return `⚠ Stopped at clip ${billingAbortAt} due to a billing/account issue. Check your Google Cloud billing console, then retry individual clips below.`;
+    }
+    const failedNotFree = clipResults.filter(r => !r.url && !PRESTART_FREE.has(r.status));
+    const failedFree = clipResults.filter(r => !r.url && PRESTART_FREE.has(r.status));
+    if (failedNotFree.length > 0) {
+      return `Note: ${failedNotFree.length} clip(s) reached Google's Veo servers and may be billed. ${failedFree.length} clip(s) never reached the API and are not billed. Check your Google Cloud billing for exact charges.`;
+    }
+    return failedFree.length > 0 ? `None of the failed clips reached Google's API, so you were not billed for them.` : '';
+  })();
+
+  if (hasSuccess) {
+    return `<div style="margin-top:14px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.2);border-radius:10px;padding:12px;color:#fff;font-size:12px;">
+      <div style="font-weight:600;margin-bottom:8px;color:#00d9ff;">${successCount} of ${clipCount} clips succeeded · retry the rest below</div>
+      <div style="margin:8px 0;">${rows}</div>
+      ${billingLine ? `<div style="margin-top:10px;color:rgba(255,255,255,0.7);font-size:11px;line-height:1.5;">${billingLine}</div>` : ''}
+    </div>`;
+  }
+  return `<div style="background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:10px;padding:14px;color:#fff;font-size:13px;">
+    <div style="font-weight:600;margin-bottom:8px;color:#ff6b6b;">⚠ 0 of ${clipCount} clips generated · retry below</div>
+    <div style="margin:8px 0;">${rows}</div>
+    <div style="margin-top:10px;color:rgba(255,255,255,0.7);font-size:12px;line-height:1.5;">
+      ${billingLine}<br>Or try a different Veo model / fewer clips / wait 60s.
+    </div>
+  </div>`;
+}
+
+function wireVeoRetryButtons(ctx) {
+  const { progressBubble } = ctx;
+  progressBubble.querySelectorAll('.veo-retry-btn').forEach(btn => {
+    if (btn.dataset.wired === '1') return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', async () => {
+      const idx = parseInt(btn.dataset.clipIdx, 10);
+      if (isNaN(idx)) return;
+      // Batch-level mutex: only one retry may run at a time so users cannot
+      // accidentally fire multiple paid generations in parallel.
+      if (ctx.retryInFlight) {
+        console.log('[SnapToAI Video] Retry already in flight — ignoring click.');
         return;
       }
+      ctx.retryInFlight = true;
+      setAllRetryButtonsDisabled(progressBubble, true, '⏳ Waiting...');
+      btn.textContent = '⏳ Retrying...';
       try {
-        if (clipUrls.length === 1) {
-          showVideoResult(progressBubble, clipUrls[0], thread);
-        } else {
-          const stitched = await stitchVideos(clipUrls);
-          showStitchedVideoResult(progressBubble, stitched, clipUrls, thread);
-        }
-      } catch (e) {
-        showMultiClipFallback(progressBubble, clipUrls, thread);
+        await retryVeoClip(idx, ctx);
+      } finally {
+        ctx.retryInFlight = false;
+        // Buttons are re-rendered by renderVeoBatchOutcome on success;
+        // on failure, re-enable surviving buttons here.
+        setAllRetryButtonsDisabled(progressBubble, false, null);
       }
-      // Append a small billing notice so the user knows why we stopped early
-      const notice = document.createElement('div');
-      notice.style.cssText = 'margin-top:10px;padding:10px;background:rgba(255,200,0,0.1);border:1px solid rgba(255,200,0,0.3);border-radius:8px;color:#ffd700;font-size:12px;';
-      notice.innerHTML = `⚠ Billing limit hit on clip ${clipNum} of ${clipCount}. Saved ${clipUrls.length} successful clip(s) above.`;
-      progressBubble.appendChild(notice);
+    });
+  });
+}
+
+async function retryVeoClip(clipIdx, ctx) {
+  const { progressBubble, clipResults, clipCount } = ctx;
+  console.log(`[SnapToAI Video] User-triggered retry for clip ${clipIdx + 1}`);
+
+  // Show a small inline progress strip at the top of the bubble during retry
+  let retryBar = progressBubble.querySelector('.veo-retry-progress');
+  if (!retryBar) {
+    retryBar = document.createElement('div');
+    retryBar.className = 'veo-retry-progress';
+    retryBar.style.cssText = 'margin:10px 0;padding:10px;background:rgba(255,165,0,0.1);border:1px solid rgba(255,165,0,0.3);border-radius:8px;color:#ffa500;font-size:12px;';
+    progressBubble.insertBefore(retryBar, progressBubble.firstChild);
+  }
+  retryBar.innerHTML = `<div class="video-progress-text">Retrying clip ${clipIdx + 1} of ${clipCount}...</div><div style="margin-top:6px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;"><div class="video-progress-fill" style="height:100%;width:0;background:linear-gradient(90deg,#ffa500,#ff6b6b);transition:width .3s;"></div></div>`;
+
+  try {
+    const result = await generateOneVeoClip(clipIdx, ctx);
+    clipResults[clipIdx].status = result.status;
+    clipResults[clipIdx].url = result.url;
+
+    if (result.billingAbort) {
+      retryBar.innerHTML = `<div style="color:#ff6b6b;">⚠ Retry blocked by billing — check your Google Cloud account.</div>`;
       return;
     }
 
-    // Track outcome for the final summary card (local, no global leak)
-    clipResults.push({ n: clipNum, status: finalStatus });
-
-    // Mark skipped clips clearly but KEEP GOING through the loop
-    if (finalStatus !== 'success') {
-      if (statusEl) {
-        statusEl.textContent = `⚠ Skipped (${finalStatus.replace('_skipped','')})`;
-        statusEl.style.color = '#ffaa00';
-      }
-      console.log(`[SnapToAI Video] Clip ${clipNum} skipped after ${cycleAttempt} cycle(s): ${finalStatus}`);
-    }
-  }
-
-  // Final summary: if NO clips succeeded, give a clear breakdown so the user
-  // knows exactly what happened (instead of the bubble silently disappearing).
-  if (clipUrls.length === 0) {
-    // Categorize statuses by phase for honest billing language.
-    // Only statuses that explicitly failed BEFORE the Veo job was created
-    // are guaranteed free. Everything post-start (or ambiguous) may be billed.
-    const PRESTART_FREE_STATUSES = new Set([
-      'rate_limit_prestart_skipped',  // POST returned 429 → no job created
-      'transient_prestart_skipped',   // POST itself failed → no job created
-    ]);
-    const freeCount = clipResults.filter(r => PRESTART_FREE_STATUSES.has(r.status)).length;
-    const maybeBilledCount = clipResults.length - freeCount;
-    const rows = clipResults.map(r => {
-      const isFree = PRESTART_FREE_STATUSES.has(r.status);
-      const tag = isFree
-        ? 'no job started · not billed'
-        : (r.status === 'no_op_id_ambiguous_skipped'
-            ? 'unclear · billing status unknown'
-            : 'job started · may be billed by Google');
-      const cleanStatus = r.status.replace(/_skipped$/,'').replace(/_/g,' ');
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);gap:10px;">
-        <span><b>Clip ${r.n}</b> <span style="color:rgba(255,255,255,0.5);font-size:11px;">${tag}</span></span>
-        <span style="color:#ffaa00;font-size:12px;">${cleanStatus}</span>
-      </div>`;
-    }).join('');
-    const billingLine = maybeBilledCount > 0
-      ? `Note: ${maybeBilledCount} clip(s) reached Google's Veo servers and may be billed even though they did not complete. ${freeCount} clip(s) never reached the API and are not billed. Check your Google Cloud billing console for exact charges.`
-      : `None of the clips reached Google's API, so you were not billed for this batch.`;
-    progressBubble.innerHTML = `
-      <div style="background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:10px;padding:14px;color:#fff;font-size:13px;">
-        <div style="font-weight:600;margin-bottom:8px;color:#ff6b6b;">⚠ 0 of ${clipCount} clips generated</div>
-        <div style="margin:8px 0;">${rows || 'All clips failed before completion.'}</div>
-        <div style="margin-top:10px;color:rgba(255,255,255,0.7);font-size:12px;line-height:1.5;">
-          ${billingLine}<br>Try a different Veo model, fewer clips, or wait 60s and retry.
-        </div>
-      </div>`;
-    return;
-  }
-
-  if (clipUrls.length === 1) {
-    showVideoResult(progressBubble, clipUrls[0], thread);
-    return;
-  }
-
-  const fill = progressBubble.querySelector('.video-progress-fill');
-  const text = progressBubble.querySelector('.video-progress-text');
-  if (fill) fill.style.width = '85%';
-  if (text) text.textContent = 'Stitching clips together...';
-
-  try {
-    const stitchedUrl = await stitchVideos(clipUrls);
-    if (fill) fill.style.width = '100%';
-    showStitchedVideoResult(progressBubble, stitchedUrl, clipUrls, thread);
+    // Re-render the whole outcome (this redraws the video result + summary card)
+    retryBar.remove();
+    await renderVeoBatchOutcome(ctx);
   } catch (err) {
-    console.log('[SnapToAI Video] Stitch error:', err.message);
-    showMultiClipFallback(progressBubble, clipUrls, thread);
+    console.log('[SnapToAI Video] Retry threw:', err.message);
+    retryBar.innerHTML = `<div style="color:#ff6b6b;">⚠ Retry failed: ${err.message}</div>`;
   }
 }
 
