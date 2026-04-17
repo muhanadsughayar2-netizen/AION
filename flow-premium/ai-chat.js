@@ -142,6 +142,30 @@ function buildRateLimitCard() {
     </div>`;
 }
 
+// Veo-specific rate-limit card — used when the user's OWN prepaid Gemini key hits
+// Google's per-minute quota for a Veo model. This is NOT a billing problem; we must
+// not show the "Upgrade to prepaid" upsell here.
+function buildVeoRateLimitCard(modelLabel) {
+  const labelText = modelLabel ? ` on <b>${modelLabel}</b>` : '';
+  return `
+    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(255,165,0,0.10), rgba(255,100,0,0.06));border:1px solid rgba(255,165,0,0.28);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:24px;">⏱️</span>
+        <span style="font-size:15px;font-weight:800;color:#fff;">Google Veo rate limit hit${labelText}</span>
+      </div>
+      <div style="font-size:13px;line-height:1.55;color:rgba(255,255,255,0.92);margin-bottom:12px;">
+        You used up your <b>per-minute Veo quota</b> on your own Google API key. This is <b>not</b> a billing issue — your prepaid plan is fine.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-size:12px;color:rgba(255,255,255,0.85);">
+        <div>✅ <b>Wait ~60 seconds</b> — Veo per-minute quotas reset every minute</div>
+        <div>🔀 <b>Switch to a different Veo model</b> (each has its own quota bucket — try 3.1 Fast or 3.1 Lite)</div>
+        <div>📉 <b>Reduce clip count</b> — fewer clips = fewer requests-per-minute</div>
+      </div>
+      <a href="https://ai.google.dev/gemini-api/docs/rate-limits" target="_blank" rel="noopener" style="display:block;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg,#ffa500,#ff8800);color:#111;font-size:12px;font-weight:700;text-decoration:none;">📊 Check your Veo rate limits →</a>
+      <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.55);">Quotas auto-increase as your account warms up over the first few days of paid usage.</div>
+    </div>`;
+}
+
 const MODE_META = {
   'image': { icon: '🎨', name: 'Image Studio', feature: 'AI image generation', accent: '#ff6bed', glow: 'rgba(255,107,237,0.12), rgba(200,80,200,0.06)', border: 'rgba(255,107,237,0.25)' },
   'music': { icon: '🎵', name: 'Music Studio', feature: 'AI music generation', accent: '#00ff88', glow: 'rgba(0,255,136,0.12), rgba(0,200,100,0.06)', border: 'rgba(0,255,136,0.25)' },
@@ -1655,7 +1679,8 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
         progressBubble.innerHTML = buildUnlockCard('video');
         return;
       } else if (resp.status === 429 || errorMsg.toLowerCase().includes('rate') || errorMsg.toLowerCase().includes('quota') || errorMsg.toLowerCase().includes('exceeded')) {
-        progressBubble.innerHTML = buildUnlockCard('video');
+        const modelLabelLookup = (VEO_MODELS.find(m => m.id === modelName) || {}).label;
+        progressBubble.innerHTML = buildVeoRateLimitCard(modelLabelLookup ? `Veo ${modelLabelLookup}` : '');
         return;
       }
       progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${friendlyMsg}</div>`;
@@ -1720,53 +1745,92 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
     const text = progressBubble.querySelector('.video-progress-text');
     if (text) text.textContent = `Generating clip ${clipNum} of ${clipCount}...`;
 
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`;
-      const requestBody = {
-        instances: [{ prompt: clipScenes[i] || prompt }],
-        parameters: {
-          aspectRatio: '16:9',
-          sampleCount: 1,
-          durationSeconds: selectedVideoDuration
-        }
-      };
+    // RETRY LOOP — on per-minute rate limit, wait 65s and retry the SAME clip
+    // up to MAX_RATE_RETRIES times before giving up. This ensures the user
+    // actually gets the N clips they requested instead of a truncated video.
+    const MAX_RATE_RETRIES = 4;  // up to ~4.3 min of waiting per clip
+    let rateRetry = 0;
+    let resp, data, errorMsg;
 
-      if (i === 0 && includeImage && (stylizedImage || currentImages[0])) {
-        if (stylizedImage) {
-          requestBody.instances[0].image = { bytesBase64Encoded: stylizedImage.base64, mimeType: stylizedImage.mimeType };
-        } else {
-          const imgData = currentImages[0];
-          const cleanB64 = imgData.includes(',') ? imgData.split(',')[1] : imgData;
-          let mimeType = 'image/png';
-          if (imgData.startsWith('data:')) {
-            const match = imgData.match(/^data:(image\/[a-zA-Z+]+);/);
-            if (match) mimeType = match[1];
+    while (true) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`;
+        const requestBody = {
+          instances: [{ prompt: clipScenes[i] || prompt }],
+          parameters: {
+            aspectRatio: '16:9',
+            sampleCount: 1,
+            durationSeconds: selectedVideoDuration
           }
-          requestBody.instances[0].image = { bytesBase64Encoded: cleanB64, mimeType: mimeType };
+        };
+
+        if (i === 0 && includeImage && (stylizedImage || currentImages[0])) {
+          if (stylizedImage) {
+            requestBody.instances[0].image = { bytesBase64Encoded: stylizedImage.base64, mimeType: stylizedImage.mimeType };
+          } else {
+            const imgData = currentImages[0];
+            const cleanB64 = imgData.includes(',') ? imgData.split(',')[1] : imgData;
+            let mimeType = 'image/png';
+            if (imgData.startsWith('data:')) {
+              const match = imgData.match(/^data:(image\/[a-zA-Z+]+);/);
+              if (match) mimeType = match[1];
+            }
+            requestBody.instances[0].image = { bytesBase64Encoded: cleanB64, mimeType: mimeType };
+          }
         }
+
+        resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+        data = await resp.json();
+        errorMsg = (data?.error?.message) || '';
+
+        const isRate = !resp.ok && (
+          resp.status === 429 ||
+          errorMsg.toLowerCase().includes('rate') ||
+          errorMsg.toLowerCase().includes('quota') ||
+          errorMsg.toLowerCase().includes('exceeded') ||
+          errorMsg.toLowerCase().includes('resource')
+        );
+
+        if (isRate && !isBillingError(resp.status, errorMsg) && rateRetry < MAX_RATE_RETRIES) {
+          rateRetry++;
+          const waitSec = 65; // Veo per-minute quota resets every 60s; +5s safety
+          if (statusEl) { statusEl.textContent = `⏳ Rate limit — waiting ${waitSec}s (retry ${rateRetry}/${MAX_RATE_RETRIES})`; statusEl.style.color = '#ffd700'; }
+          if (text) text.textContent = `Clip ${clipNum}/${clipCount} hit Veo per-minute quota — auto-retrying in ${waitSec}s...`;
+          console.log(`[SnapToAI Video] Clip ${clipNum} 429 — retry ${rateRetry}/${MAX_RATE_RETRIES} after ${waitSec}s`);
+          // Countdown
+          for (let s = waitSec; s > 0; s--) {
+            await new Promise(r => setTimeout(r, 1000));
+            if (text) text.textContent = `Clip ${clipNum}/${clipCount} — Veo quota cooling down (${s}s) · retry ${rateRetry}/${MAX_RATE_RETRIES}`;
+          }
+          if (statusEl) { statusEl.textContent = '⏳ Retrying...'; statusEl.style.color = '#ffa500'; }
+          continue; // retry same clip
+        }
+        break; // no retry needed (success, billing error, or out of retries)
+      } catch (innerErr) {
+        console.log('[SnapToAI Video] Clip request threw:', innerErr.message);
+        break;
       }
+    }
 
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
-
-      const data = await resp.json();
-
+    try {
       if (!resp.ok) {
-        const errorMsg = data.error?.message || `API error ${resp.status}`;
         if (isBillingError(resp.status, errorMsg)) {
           progressBubble.innerHTML = buildUnlockCard('video');
           return;
         }
         if (resp.status === 429 || errorMsg.toLowerCase().includes('rate') || errorMsg.toLowerCase().includes('quota') || errorMsg.toLowerCase().includes('exceeded')) {
+          // Exhausted retries — show clear rate-limit card (NOT the billing upsell)
+          const modelLabelLookup = (VEO_MODELS.find(m => m.id === modelName) || {}).label;
           if (clipUrls.length > 0) {
             if (statusEl) { statusEl.textContent = '⏳ Rate limited'; statusEl.style.color = '#ffd700'; }
-            if (text) text.textContent = `Clip ${clipNum} rate limited, stitching ${clipUrls.length} successful clip(s)...`;
+            if (text) text.textContent = `Clip ${clipNum} blocked by Veo rate limit after ${MAX_RATE_RETRIES} retries — stitching ${clipUrls.length} successful clip(s)...`;
             break;
           }
-          progressBubble.innerHTML = buildUnlockCard('video');
+          progressBubble.innerHTML = buildVeoRateLimitCard(modelLabelLookup ? `Veo ${modelLabelLookup}` : '');
           return;
         }
         let friendlyMsg = errorMsg;
@@ -2078,10 +2142,10 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         clearInterval(activeVideoPollTimer);
         activeVideoPollTimer = null;
         const errLower = errMsg.toLowerCase();
-        if (errLower.includes('quota') || errLower.includes('rate') || errLower.includes('exceeded') || errLower.includes('resource')) {
+        if (isBillingError(resp.status, errMsg)) {
           progressBubble.innerHTML = buildUnlockCard('video');
-        } else if (isBillingError(resp.status, errMsg)) {
-          progressBubble.innerHTML = buildUnlockCard('video');
+        } else if (errLower.includes('quota') || errLower.includes('rate') || errLower.includes('exceeded') || errLower.includes('resource')) {
+          progressBubble.innerHTML = buildVeoRateLimitCard('');
         } else {
           progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${errMsg}</div>`;
         }
@@ -2103,10 +2167,10 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         if (data.error) {
           const errMsg = data.error.message || 'Video generation failed.';
           const errLower2 = errMsg.toLowerCase();
-          if (errLower2.includes('quota') || errLower2.includes('rate') || errLower2.includes('exceeded') || errLower2.includes('resource') || data.error.code === 429) {
+          if (isBillingError(data.error.code || 0, errMsg)) {
             progressBubble.innerHTML = buildUnlockCard('video');
-          } else if (isBillingError(data.error.code || 0, errMsg)) {
-            progressBubble.innerHTML = buildUnlockCard('video');
+          } else if (errLower2.includes('quota') || errLower2.includes('rate') || errLower2.includes('exceeded') || errLower2.includes('resource') || data.error.code === 429) {
+            progressBubble.innerHTML = buildVeoRateLimitCard('');
           } else {
             progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${errMsg}</div>`;
           }
