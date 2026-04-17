@@ -76,6 +76,178 @@
   font-weight: 900;
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+  z-index: 2;
+}
+
+/* Inner mock-screenshot content: fake browser bar + content lines so the
+   demo looks like an actual screenshot, not a colored tile. */
+.tour-demo-thumb-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  gap: 3px;
+}
+.tour-demo-thumb-bar {
+  display: flex;
+  gap: 3px;
+  height: 5px;
+  align-items: center;
+}
+.tour-demo-thumb-bar span {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.65);
+  flex-shrink: 0;
+}
+.tour-demo-thumb-bar::after {
+  content: '';
+  flex: 1;
+  height: 4px;
+  margin-left: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.25);
+}
+.tour-demo-thumb-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  justify-content: center;
+}
+.tour-demo-thumb-lines div {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.55);
+}
+.tour-demo-thumb-lines div:nth-child(1) { width: 90%; }
+.tour-demo-thumb-lines div:nth-child(2) { width: 70%; }
+.tour-demo-thumb-lines div:nth-child(3) { width: 80%; }
+
+/* Settings preview card (shown inside the Settings tour step) */
+.tour-demo-settings {
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(0, 217, 255, 0.25);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: -4px 0 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tour-demo-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11.5px;
+}
+.tour-demo-settings-label {
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+}
+.tour-demo-settings-pill {
+  background: rgba(0, 217, 255, 0.12);
+  color: #9cebff;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 217, 255, 0.25);
+  white-space: nowrap;
+}
+.tour-demo-settings-pill--ok {
+  background: rgba(0, 255, 136, 0.14);
+  color: #8effc1;
+  border-color: rgba(0, 255, 136, 0.35);
+}
+.tour-demo-settings-toggle {
+  width: 28px;
+  height: 16px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #00d9ff, #0099cc);
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+}
+.tour-demo-settings-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px; right: 2px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+/* Mode preview cards (Image / Music / Video) */
+.tour-demo-modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: -4px 0 14px 0;
+}
+.tour-demo-mode-card {
+  border-radius: 10px;
+  padding: 10px 6px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+.tour-demo-mode-card--image {
+  background: linear-gradient(135deg, #5b1d8e 0%, #c4348a 50%, #ffb86c 100%);
+}
+.tour-demo-mode-card--music {
+  background: linear-gradient(135deg, #0d3d5c 0%, #2391c4 50%, #6df0ff 100%);
+}
+.tour-demo-mode-card--video {
+  background: linear-gradient(135deg, #1a0e3d 0%, #6e2bd6 50%, #ff5e9c 100%);
+}
+.tour-demo-mode-emoji {
+  font-size: 22px;
+  line-height: 1;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+}
+.tour-demo-mode-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+.tour-demo-mode-sub {
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 2px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Music card: faux waveform overlay */
+.tour-demo-mode-card--music::after {
+  content: '';
+  position: absolute;
+  bottom: 4px; left: 6px; right: 6px;
+  height: 8px;
+  background: repeating-linear-gradient(
+    to right,
+    rgba(255,255,255,0.7) 0 2px,
+    transparent 2px 4px
+  );
+  -webkit-mask: linear-gradient(to right, transparent, #000 20%, #000 80%, transparent);
+  mask: linear-gradient(to right, transparent, #000 20%, #000 80%, transparent);
+  opacity: 0.7;
+}
+
+/* Video card: faux play triangle overlay */
+.tour-demo-mode-card--video::after {
+  content: '▶';
+  position: absolute;
+  top: 6px; right: 6px;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
 }
 
 .tour-tooltip {

@@ -47,13 +47,20 @@
       // Dynamic: spotlight the sign-in button if signed out, else the
       // settings link. Picked at runtime in resolveTarget().
       target: 'DYNAMIC_SIGNIN_OR_SETTINGS',
-      title: 'Sign in + Settings',
-      body: 'Sign in with Google, then open Settings. That activates Vision and gives you 20 prompts per day.'
+      title: 'Sign in with Google',
+      body: 'Sign in to sync your account, save your API key, and unlock 20 AI prompts per day. No card needed.'
+    },
+    {
+      target: '#aiManageLink',
+      title: 'Settings — your control panel ⚙',
+      body: 'Settings is where you paste your free Gemini key, switch models, toggle Vision, and watch your daily quota. Here\'s what it looks like:',
+      extra: 'settings'
     },
     {
       target: '#aiManageLink',
       title: 'Generate, don\'t just analyze ✨',
-      body: 'Switch modes to make IMAGES (Nano Banana), MUSIC (Lyria — full Song Studio with genres & moods), or VIDEOS (Veo with multi-clip batches & per-clip retry).'
+      body: 'Switch modes to create — not just chat:',
+      extra: 'modes'
     },
     {
       target: '#aiManageLink',
@@ -131,12 +138,69 @@
       const t = document.createElement('div');
       const isSel = selected && i <= 2;   // first 2 selected when mode='selected'
       t.className = `tour-demo-thumb tour-demo-thumb--${i}${isSel ? ' tour-demo-selected' : ''}`;
+      // Mock-screenshot styling: fake browser bar + content lines so the
+      // demo reads as "this is a screenshot of a webpage" not just a tile.
       t.innerHTML = `
+        <div class="tour-demo-thumb-inner">
+          <div class="tour-demo-thumb-bar">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="tour-demo-thumb-lines">
+            <div></div><div></div><div></div>
+          </div>
+        </div>
         ${isSel ? '<div class="tour-demo-check">✓</div>' : ''}
         <div class="tour-demo-num">${i}</div>
       `;
       container.appendChild(t);
     }
+  }
+
+  // Inline visual demos rendered inside the tooltip body for steps that
+  // need to SHOW a feature (Settings panel, Image/Music/Video modes).
+  function renderExtra(kind) {
+    if (kind === 'settings') {
+      return `
+        <div class="tour-demo-settings">
+          <div class="tour-demo-settings-row">
+            <span class="tour-demo-settings-label">🔑 Gemini API Key</span>
+            <span class="tour-demo-settings-pill tour-demo-settings-pill--ok">●●● set</span>
+          </div>
+          <div class="tour-demo-settings-row">
+            <span class="tour-demo-settings-label">👁 Vision</span>
+            <span class="tour-demo-settings-toggle"></span>
+          </div>
+          <div class="tour-demo-settings-row">
+            <span class="tour-demo-settings-label">⚡ Daily prompts</span>
+            <span class="tour-demo-settings-pill">17 / 20 left</span>
+          </div>
+          <div class="tour-demo-settings-row">
+            <span class="tour-demo-settings-label">🧠 Model</span>
+            <span class="tour-demo-settings-pill">Gemini 2.5 Flash</span>
+          </div>
+        </div>`;
+    }
+    if (kind === 'modes') {
+      return `
+        <div class="tour-demo-modes">
+          <div class="tour-demo-mode-card tour-demo-mode-card--image">
+            <div class="tour-demo-mode-emoji">🎨</div>
+            <div class="tour-demo-mode-label">Image</div>
+            <div class="tour-demo-mode-sub">Nano Banana</div>
+          </div>
+          <div class="tour-demo-mode-card tour-demo-mode-card--music">
+            <div class="tour-demo-mode-emoji">🎵</div>
+            <div class="tour-demo-mode-label">Music</div>
+            <div class="tour-demo-mode-sub">Lyria · Song Studio</div>
+          </div>
+          <div class="tour-demo-mode-card tour-demo-mode-card--video">
+            <div class="tour-demo-mode-emoji">🎬</div>
+            <div class="tour-demo-mode-label">Video</div>
+            <div class="tour-demo-mode-sub">Veo 3.1 · multi-clip</div>
+          </div>
+        </div>`;
+    }
+    return '';
   }
 
   function restoreThumbnails() {
@@ -186,6 +250,7 @@
       <div class="tour-tooltip-arrow"></div>
       <div class="tour-tooltip-title">${step.title}</div>
       <div class="tour-tooltip-body">${step.body}</div>
+      ${step.extra ? renderExtra(step.extra) : ''}
       <div class="tour-tooltip-footer">
         <div class="tour-progress">${dots}</div>
         <div class="tour-tooltip-buttons">
