@@ -162,6 +162,38 @@
   color: #8effc1;
   border-color: rgba(0, 255, 136, 0.35);
 }
+.tour-demo-settings-pill--lock {
+  background: rgba(255, 200, 80, 0.12);
+  color: #ffd28a;
+  border-color: rgba(255, 200, 80, 0.32);
+}
+.tour-demo-settings-tier {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #8effc1;
+  background: rgba(0, 255, 136, 0.12);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.tour-demo-upgrade {
+  margin: 10px 0 14px 0;
+  padding: 9px 11px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(135deg, rgba(255, 184, 108, 0.14), rgba(255, 94, 156, 0.14));
+  border: 1px solid rgba(255, 184, 108, 0.32);
+  border-radius: 10px;
+}
+.tour-demo-upgrade b {
+  color: #ffd28a;
+}
 .tour-demo-settings-toggle {
   width: 28px;
   height: 16px;

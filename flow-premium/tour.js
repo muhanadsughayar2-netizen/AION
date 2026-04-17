@@ -53,7 +53,7 @@
     {
       target: '#aiManageLink',
       title: 'Settings — your control panel ⚙',
-      body: 'Settings is where you paste your free Gemini key, switch models, toggle Vision, and watch your daily quota. Here\'s what it looks like:',
+      body: 'Paste your free Gemini key here to unlock AI. We auto-detect what your key can do — no manual model switching.',
       extra: 'settings'
     },
     {
@@ -167,17 +167,16 @@
             <span class="tour-demo-settings-pill tour-demo-settings-pill--ok">●●● set</span>
           </div>
           <div class="tour-demo-settings-row">
-            <span class="tour-demo-settings-label">👁 Vision</span>
-            <span class="tour-demo-settings-toggle"></span>
+            <span class="tour-demo-settings-label">👁 Vision <span class="tour-demo-settings-tier">free tier</span></span>
+            <span class="tour-demo-settings-pill">17 / 20 left today</span>
           </div>
           <div class="tour-demo-settings-row">
-            <span class="tour-demo-settings-label">⚡ Daily prompts</span>
-            <span class="tour-demo-settings-pill">17 / 20 left</span>
+            <span class="tour-demo-settings-label">🎨🎵🎬 Image · Music · Video</span>
+            <span class="tour-demo-settings-pill tour-demo-settings-pill--lock">🔒 needs paid key</span>
           </div>
-          <div class="tour-demo-settings-row">
-            <span class="tour-demo-settings-label">🧠 Model</span>
-            <span class="tour-demo-settings-pill">Gemini 2.5 Flash</span>
-          </div>
+        </div>
+        <div class="tour-demo-upgrade">
+          💡 <b>Want Image, Music & Video?</b> Add a card to your Google Cloud account → get <b>$300 free credit</b> → the same key auto-activates all three modes.
         </div>`;
     }
     if (kind === 'modes') {
@@ -186,17 +185,17 @@
           <div class="tour-demo-mode-card tour-demo-mode-card--image">
             <div class="tour-demo-mode-emoji">🎨</div>
             <div class="tour-demo-mode-label">Image</div>
-            <div class="tour-demo-mode-sub">Nano Banana</div>
+            <div class="tour-demo-mode-sub">Edit &amp; remix</div>
           </div>
           <div class="tour-demo-mode-card tour-demo-mode-card--music">
             <div class="tour-demo-mode-emoji">🎵</div>
             <div class="tour-demo-mode-label">Music</div>
-            <div class="tour-demo-mode-sub">Lyria · Song Studio</div>
+            <div class="tour-demo-mode-sub">Score your clips</div>
           </div>
           <div class="tour-demo-mode-card tour-demo-mode-card--video">
             <div class="tour-demo-mode-emoji">🎬</div>
             <div class="tour-demo-mode-label">Video</div>
-            <div class="tour-demo-mode-sub">Veo 3.1 · multi-clip</div>
+            <div class="tour-demo-mode-sub">Bring it alive</div>
           </div>
         </div>`;
     }
