@@ -2233,7 +2233,7 @@ function showSongStudio(thread) {
       </div>
 
       <div style="margin:10px 0;background:rgba(255,255,255,0.02);border:1px solid rgba(0,255,136,0.12);border-radius:10px;padding:10px 12px;">
-        <div style="font-size:10px;color:#667788;margin-bottom:6px;">💰 Pay-per-use (billed by Google to your own API key) — cost per ~30s clip:</div>
+        <div style="font-size:10px;color:#667788;margin-bottom:6px;">💰 Pay-per-use (billed by Google to your own API key) — <em>estimated</em> cost per ~30s clip:</div>
         <div style="display:flex;flex-direction:column;gap:3px;font-size:11px;">
           ${LYRIA_MODELS_DISPLAY.map(m => {
             const rate = LYRIA_PRICING[m.id];
