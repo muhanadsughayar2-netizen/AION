@@ -27,15 +27,50 @@ async function checkAuthState() {
   }
 }
 
+// Cycles through messages on the sign-in status pill so the popup feels
+// alive while we wait for Google's OAuth window to come back.
+let signInStatusTimer = null;
+function startSignInStatusCycle() {
+  const statusEl = document.getElementById('signInStatus');
+  const textEl = statusEl && statusEl.querySelector('.sign-in-status-text');
+  if (!statusEl || !textEl) return;
+  const messages = [
+    'Opening Google sign-in window...',
+    'Waiting for you to choose your Google account...',
+    'Verifying your account with Google...',
+    'Almost there — finishing setup...',
+    'Just a moment, syncing your profile...'
+  ];
+  let i = 0;
+  textEl.textContent = messages[0];
+  statusEl.style.display = 'flex';
+  if (signInStatusTimer) clearInterval(signInStatusTimer);
+  signInStatusTimer = setInterval(() => {
+    i = (i + 1) % messages.length;
+    textEl.style.opacity = '0';
+    setTimeout(() => {
+      textEl.textContent = messages[i];
+      textEl.style.opacity = '1';
+    }, 220);
+  }, 2500);
+}
+function stopSignInStatusCycle() {
+  const statusEl = document.getElementById('signInStatus');
+  if (signInStatusTimer) { clearInterval(signInStatusTimer); signInStatusTimer = null; }
+  if (statusEl) statusEl.style.display = 'none';
+}
+
 async function handleGoogleSignIn() {
   const signInBtn = document.getElementById('googleSignInBtn');
   const authError = document.getElementById('authError');
   try {
     if (signInBtn) {
       signInBtn.disabled = true;
+      signInBtn.classList.add('is-loading');
       signInBtn.querySelector('.google-btn-text') && (signInBtn.querySelector('.google-btn-text').textContent = 'Signing in...');
     }
     if (authError) authError.style.display = 'none';
+    startSignInStatusCycle();
 
     console.log('[SnapToAI] Starting Google Sign-In via launchWebAuthFlow...');
     console.log('[SnapToAI] Extension ID:', chrome.runtime.id);
@@ -144,8 +179,10 @@ async function handleGoogleSignIn() {
       authError.style.display = 'block';
     }
   } finally {
+    stopSignInStatusCycle();
     if (signInBtn) {
       signInBtn.disabled = false;
+      signInBtn.classList.remove('is-loading');
       signInBtn.querySelector('.google-btn-text') && (signInBtn.querySelector('.google-btn-text').textContent = 'Continue with Google');
     }
   }

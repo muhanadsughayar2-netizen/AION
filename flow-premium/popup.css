@@ -3045,9 +3045,73 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .google-signin-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.85;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Spinner shown while sign-in is in progress (replaces the G icon) */
+.google-btn-spinner {
+  display: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(60, 64, 67, 0.2);
+  border-top-color: #4285F4;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: googleBtnSpin 0.7s linear infinite;
+}
+
+.google-signin-btn.is-loading .google-g-icon { display: none; }
+.google-signin-btn.is-loading .google-btn-spinner { display: inline-block; }
+
+@keyframes googleBtnSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Cycling status message under the sign-in button */
+.sign-in-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 14px;
+  background: rgba(0, 217, 255, 0.08);
+  border: 1px solid rgba(0, 217, 255, 0.25);
+  border-radius: 14px;
+  color: #00d9ff;
+  font-size: 12px;
+  font-weight: 500;
+  max-width: 280px;
+  animation: authFadeIn 0.3s ease;
+}
+
+.sign-in-status-text {
+  transition: opacity 0.25s ease;
+}
+
+.sign-in-dots {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.sign-in-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #00d9ff;
+  opacity: 0.4;
+  animation: signInDotPulse 1.2s infinite ease-in-out;
+}
+
+.sign-in-dots span:nth-child(2) { animation-delay: 0.2s; }
+.sign-in-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes signInDotPulse {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1.1); }
 }
 
 .auth-privacy-note {
