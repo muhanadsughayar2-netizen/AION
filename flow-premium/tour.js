@@ -49,8 +49,13 @@
     },
     {
       target: '#aiManageLink',
-      title: 'Image, Music & Video',
-      body: 'These need your own Gemini API key on a paid Google tier. You pay Google directly — we never charge for usage.'
+      title: 'Generate, don\'t just analyze ✨',
+      body: 'Switch modes to make IMAGES (Nano Banana), MUSIC (Lyria — full Song Studio with genres & moods), or VIDEOS (Veo with multi-clip batches & per-clip retry).'
+    },
+    {
+      target: '#aiManageLink',
+      title: 'About the cost 💳',
+      body: 'Image, Music & Video need your own Gemini key on a paid Google tier. You pay Google directly — we never charge for usage. Your $300 Google free credit covers a lot.'
     },
     {
       target: null,
