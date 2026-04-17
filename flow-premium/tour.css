@@ -1,0 +1,167 @@
+/* SnapToAI first-run guided tour */
+.tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10010;
+  pointer-events: auto;
+  background: rgba(0, 8, 20, 0.78);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: tourFadeIn 0.25s ease;
+}
+
+@keyframes tourFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.tour-spotlight {
+  position: absolute;
+  border-radius: 14px;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 4px rgba(0, 217, 255, 0.9),
+    0 0 0 9999px rgba(0, 8, 20, 0.78),
+    0 0 30px 6px rgba(0, 217, 255, 0.5);
+  transition: all 0.35s cubic-bezier(.4,.2,.2,1);
+  animation: tourPulse 2s ease-in-out infinite;
+}
+
+@keyframes tourPulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(0, 217, 255, 0.9), 0 0 0 9999px rgba(0, 8, 20, 0.78), 0 0 30px 6px rgba(0, 217, 255, 0.5); }
+  50%      { box-shadow: 0 0 0 4px rgba(0, 217, 255, 1),    0 0 0 9999px rgba(0, 8, 20, 0.78), 0 0 45px 10px rgba(0, 217, 255, 0.75); }
+}
+
+.tour-tooltip {
+  position: absolute;
+  width: 270px;
+  background: linear-gradient(135deg, rgba(20, 30, 50, 0.98), rgba(15, 22, 40, 0.98));
+  border: 1px solid rgba(0, 217, 255, 0.4);
+  border-radius: 14px;
+  padding: 16px 18px;
+  color: #fff;
+  font-family: inherit;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 217, 255, 0.2);
+  animation: tourSlideIn 0.3s cubic-bezier(.4,.2,.2,1);
+  z-index: 10000;
+}
+
+@keyframes tourSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.tour-tooltip.tour-center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.tour-tooltip-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #00d9ff;
+  margin-bottom: 8px;
+}
+
+.tour-tooltip-body {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 14px;
+}
+
+.tour-tooltip-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tour-progress {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.tour-progress span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.tour-progress span.active {
+  background: #00d9ff;
+  width: 18px;
+  border-radius: 4px;
+}
+
+.tour-tooltip-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.tour-btn {
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.tour-btn-skip {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.tour-btn-skip:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.tour-btn-next {
+  background: linear-gradient(135deg, #00d9ff, #0099cc);
+  color: #001220;
+  box-shadow: 0 2px 10px rgba(0, 217, 255, 0.4);
+}
+
+.tour-btn-next:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 217, 255, 0.6);
+}
+
+/* Tooltip arrow indicator pointing to spotlight */
+.tour-tooltip-arrow {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(135deg, rgba(20, 30, 50, 0.98), rgba(15, 22, 40, 0.98));
+  border: 1px solid rgba(0, 217, 255, 0.4);
+  transform: rotate(45deg);
+}
+
+.tour-tooltip[data-pos="bottom"] .tour-tooltip-arrow { top: -8px; left: 50%; margin-left: -7px; border-right: none; border-bottom: none; }
+.tour-tooltip[data-pos="top"]    .tour-tooltip-arrow { bottom: -8px; left: 50%; margin-left: -7px; border-left: none; border-top: none; }
+.tour-tooltip[data-pos="right"]  .tour-tooltip-arrow { left: -8px; top: 50%; margin-top: -7px; border-right: none; border-top: none; }
+.tour-tooltip[data-pos="left"]   .tour-tooltip-arrow { right: -8px; top: 50%; margin-top: -7px; border-left: none; border-bottom: none; }
+
+/* "Take the tour" link in the account popover */
+.account-popover-tour {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #00d9ff;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease;
+}
+
+.account-popover-tour:hover {
+  background: rgba(0, 217, 255, 0.08);
+}

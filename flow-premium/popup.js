@@ -211,6 +211,13 @@ function setupAuthListeners() {
   const signOutBtn = document.getElementById('signOutBtn');
   if (signOutBtn) signOutBtn.addEventListener('click', handleSignOut);
 
+  const takeTourBtn = document.getElementById('takeTourBtn');
+  if (takeTourBtn) takeTourBtn.addEventListener('click', () => {
+    const accountPopover = document.getElementById('accountPopover');
+    if (accountPopover) accountPopover.style.display = 'none';
+    if (typeof window.startSnapToAITour === 'function') window.startSnapToAITour();
+  });
+
   const signInHeaderBtn = document.getElementById('signInHeaderBtn');
   if (signInHeaderBtn) {
     signInHeaderBtn.addEventListener('click', () => {

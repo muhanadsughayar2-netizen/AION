@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SnapToAI</title>
   <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="tour.css">
   <style>
     /* RTL support for Arabic */
     html[dir="rtl"] .container {
@@ -62,6 +63,7 @@
         <div id="accountPopover" class="account-popover" style="display: none;">
           <div class="account-popover-email" id="accountEmail"></div>
           <a id="manageSubPopoverLink" href="https://whop.com/hub/" target="_blank" class="account-popover-manage" style="display: none;" data-i18n="manageSubscription">Manage Subscription</a>
+          <button class="account-popover-tour" id="takeTourBtn">🎯 Take the tour</button>
           <button class="account-popover-signout" id="signOutBtn" data-i18n="signOut">Sign Out</button>
         </div>
       </div>
@@ -394,5 +396,6 @@
 
   <script src="subscription.js"></script>
   <script src="popup.js"></script>
+  <script src="tour.js"></script>
 </body>
 </html>
