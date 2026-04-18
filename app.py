@@ -1011,8 +1011,9 @@ def admin_activity():
 
 @app.route('/admin-dashboard')
 def admin_panel():
-    """Enhanced admin panel - requires valid session cookie"""
-    if not verify_admin_session():
+    """Enhanced admin panel - requires valid session cookie or ?password= param"""
+    pw_param = request.args.get('password', '')
+    if pw_param != ADMIN_PASSWORD and not verify_admin_session():
         return Response("Access denied. Please login through the website.", status=403)
     
     password = ADMIN_PASSWORD  # For filter links
@@ -1117,8 +1118,12 @@ def admin_panel():
             screen = row[15] or '-'
             plat = row[16] or '-'
             
-            days_elapsed = (now_ms - trial_start) / (1000 * 60 * 60 * 24)
-            days_remaining = max(0, 30 - int(days_elapsed))
+            if trial_start is None:
+                days_elapsed = 999
+                days_remaining = 0
+            else:
+                days_elapsed = (now_ms - trial_start) / (1000 * 60 * 60 * 24)
+                days_remaining = max(0, 30 - int(days_elapsed))
             
             if is_paid:
                 status = 'paid'
@@ -1284,6 +1289,7 @@ def admin_panel():
     </div>
     
     <form class="filters" method="GET" action="/admin-dashboard">
+        <input type="hidden" name="password" value="{ADMIN_PASSWORD}">
         <div>
             <label>Status</label><br>
             <select name="status">
