@@ -1110,7 +1110,7 @@ function setupEventListeners() {
   const youtubeBtn = document.getElementById('youtubeBtn');
   if (youtubeBtn) {
     youtubeBtn.addEventListener('click', () => {
-      chrome.tabs.create({ url: 'https://youtube.com/@snaptoai-q9m' });
+      chrome.tabs.create({ url: 'https://youtube.com/@snaptoai-2026' });
     });
   }
   
