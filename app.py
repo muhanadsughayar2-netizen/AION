@@ -1620,6 +1620,13 @@ def subscription_status():
             response.headers['Access-Control-Allow-Origin'] = '*'
             return response, 400
 
+        # Owner override — these emails always get full pro access, no DB/Whop check needed
+        if email in OWNER_EMAILS_SET:
+            result = {'success': True, 'canUseAI': True, 'status': 'subscribed', 'planType': 'owner', 'daysRemaining': None}
+            response = jsonify(result)
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            return response
+
         conn = get_db()
         cur = conn.cursor()
         now_ms = int(datetime.utcnow().timestamp() * 1000)
