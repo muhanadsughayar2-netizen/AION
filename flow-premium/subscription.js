@@ -299,7 +299,7 @@ function stopCheckoutPolling() {
 function getCheckoutUrls() {
   return {
     monthly: 'https://whop.com/checkout/plan_hmWCOg7IaSal9/',
-    yearly: 'https://whop.com/checkout/plan_XSjtJu7RnYLW8/'
+    yearly: 'https://whop.com/checkout/1aDc9KSfVUI7ebt70t-b0CG-pC20-A6BO-J1wnDPrjfcVL/'
   };
 }
 
