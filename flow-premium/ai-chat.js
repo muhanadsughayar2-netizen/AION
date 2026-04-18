@@ -566,7 +566,7 @@ async function isOwnerKey(apiKey) {
 // Single-shot probe against one paid model. Returns:
 // 'prepaid' | 'free' | 'invalid' (bad key) | 'retry' (transient/unknown — caller should try another model)
 // `endpoint` is the action verb on the model (predictLongRunning for Veo, predict for Imagen).
-async function _probeOneVeoModel(apiKey, modelId, timeoutMs, endpoint) {
+async function _probeOneVeoModel(apiKey, modelId, timeoutMs, endpoint, treatInvalidAsPrepaid) {
   endpoint = endpoint || 'predictLongRunning';
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -587,6 +587,10 @@ async function _probeOneVeoModel(apiKey, modelId, timeoutMs, endpoint) {
 
     // PREPAID positive signal — HTTP 200 with an operation name means billing accepted the job
     if (resp.ok && (data?.name || data?.metadata)) return 'prepaid';
+    // For models where Google checks billing BEFORE format (e.g. veo-2.0):
+    // INVALID_ARGUMENT means billing passed and Google got to format validation → key is prepaid.
+    // Free keys never reach format validation on these models — they get FAILED_PRECONDITION first.
+    if (treatInvalidAsPrepaid && status === 'INVALID_ARGUMENT') return 'prepaid';
     // 429 / RESOURCE_EXHAUSTED on Veo is ALSO a prepaid signal — free-tier keys can't even attempt
     // Veo generation, so hitting a quota / rate limit means the key has paid Veo access.
     if (resp.status === 429 || status === 'RESOURCE_EXHAUSTED' ||
@@ -627,22 +631,23 @@ async function detectKeyTierVerbose(apiKey) {
   // Veo FAILED_PRECONDITION is NOT a reliable "no billing" signal. We only trust Veo as a
   // backup positive signal (prepaid), not as a free verdict on its own.
   const probeChain = [
-    // Veo first — "no instances" response is the canonical PREPAID positive signal.
-    // Imagen last — "only available on paid plans" is a model-availability message,
-    // NOT a billing-status message, so it falsely flags prepaid keys as free.
-    { model: 'veo-3.0-fast-generate-001',     endpoint: 'predictLongRunning',  trustFreeVerdict: false },
-    { model: 'veo-3.1-fast-generate-preview', endpoint: 'predictLongRunning',  trustFreeVerdict: false },
-    { model: 'veo-3.0-generate-001',          endpoint: 'predictLongRunning',  trustFreeVerdict: false },
-    { model: 'veo-2.0-generate-001',          endpoint: 'predictLongRunning',  trustFreeVerdict: true  },
-    { model: 'imagen-4.0-generate-001',       endpoint: 'predict',             trustFreeVerdict: false },
-    { model: 'imagen-3.0-generate-001',       endpoint: 'predict',             trustFreeVerdict: false }
+    // Veo first — Imagen last ("only available on paid plans" is a model-availability
+    // message, NOT a billing-status message, and falsely flags prepaid keys as free).
+    { model: 'veo-3.0-fast-generate-001',     endpoint: 'predictLongRunning',  trustFreeVerdict: false, treatInvalidAsPrepaid: false },
+    { model: 'veo-3.1-fast-generate-preview', endpoint: 'predictLongRunning',  trustFreeVerdict: false, treatInvalidAsPrepaid: false },
+    { model: 'veo-3.0-generate-001',          endpoint: 'predictLongRunning',  trustFreeVerdict: false, treatInvalidAsPrepaid: false },
+    // veo-2.0: Google checks billing BEFORE format here. INVALID_ARGUMENT = billing OK = prepaid.
+    // Free keys get FAILED_PRECONDITION from this model, never INVALID_ARGUMENT.
+    { model: 'veo-2.0-generate-001',          endpoint: 'predictLongRunning',  trustFreeVerdict: true,  treatInvalidAsPrepaid: true  },
+    { model: 'imagen-4.0-generate-001',       endpoint: 'predict',             trustFreeVerdict: false, treatInvalidAsPrepaid: false },
+    { model: 'imagen-3.0-generate-001',       endpoint: 'predict',             trustFreeVerdict: false, treatInvalidAsPrepaid: false }
   ];
 
   let sawInvalid = false;
   let sawFreeFromImagen = false;
   for (let attempt = 0; attempt < 2; attempt++) {
     for (const p of probeChain) {
-      const r = await _probeOneVeoModel(apiKey, p.model, 10000, p.endpoint);
+      const r = await _probeOneVeoModel(apiKey, p.model, 10000, p.endpoint, p.treatInvalidAsPrepaid);
       if (r === 'prepaid') return { tier: 'prepaid', invalid: false };
       if (r === 'free') {
         // Only Imagen's "billing required" is a definitive free-tier signal.

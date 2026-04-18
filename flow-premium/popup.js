@@ -3646,7 +3646,7 @@ async function loadGeminiKey() {
 }
 
 // ---- Tier probe (popup-local, mirrors ai-chat.js logic) ----
-async function _popupProbeOneVeo(apiKey, modelId, timeoutMs, endpoint) {
+async function _popupProbeOneVeo(apiKey, modelId, timeoutMs, endpoint, treatInvalidAsPrepaid) {
   endpoint = endpoint || 'predictLongRunning';
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -3665,6 +3665,10 @@ async function _popupProbeOneVeo(apiKey, modelId, timeoutMs, endpoint) {
     const code = data?.error?.code;
     // PREPAID positive signal — HTTP 200 with an operation name means billing accepted the job
     if (resp.ok && (data?.name || data?.metadata)) return 'prepaid';
+    // For models where Google checks billing BEFORE format (e.g. veo-2.0):
+    // INVALID_ARGUMENT means billing passed and Google got to format validation → key is prepaid.
+    // Free keys never reach format validation on these models — they get FAILED_PRECONDITION first.
+    if (treatInvalidAsPrepaid && status === 'INVALID_ARGUMENT') return 'prepaid';
     // Invalid key signals
     if (code === 401 || code === 403 || status === 'PERMISSION_DENIED' || status === 'UNAUTHENTICATED' ||
         msg.includes('api key not valid') || msg.includes('api_key_invalid') || msg.includes('api key expired')) return 'invalid';
@@ -3698,17 +3702,19 @@ async function _popupDetectTier(apiKey) {
   // Imagen last — its "only available on paid plans" message is a model-availability
   // message, NOT a billing-status message, and falsely flags prepaid keys as free.
   const chain = [
-    { model: 'veo-3.0-fast-generate-001',     endpoint: 'predictLongRunning',  trustFree: false },
-    { model: 'veo-3.1-fast-generate-preview', endpoint: 'predictLongRunning',  trustFree: false },
-    { model: 'veo-3.0-generate-001',          endpoint: 'predictLongRunning',  trustFree: false },
-    { model: 'veo-2.0-generate-001',          endpoint: 'predictLongRunning',  trustFree: true  },
-    { model: 'imagen-4.0-generate-001',       endpoint: 'predict',             trustFree: false },
-    { model: 'imagen-3.0-generate-001',       endpoint: 'predict',             trustFree: false }
+    { model: 'veo-3.0-fast-generate-001',     endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
+    { model: 'veo-3.1-fast-generate-preview', endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
+    { model: 'veo-3.0-generate-001',          endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
+    // veo-2.0: Google checks billing BEFORE format here. INVALID_ARGUMENT = billing OK = prepaid.
+    // Free keys get FAILED_PRECONDITION from this model, never INVALID_ARGUMENT.
+    { model: 'veo-2.0-generate-001',          endpoint: 'predictLongRunning',  trustFree: true,  treatInvalidAsPrepaid: true  },
+    { model: 'imagen-4.0-generate-001',       endpoint: 'predict',             trustFree: false, treatInvalidAsPrepaid: false },
+    { model: 'imagen-3.0-generate-001',       endpoint: 'predict',             trustFree: false, treatInvalidAsPrepaid: false }
   ];
   let invalid = false;
   for (let pass = 0; pass < 2; pass++) {
     for (const p of chain) {
-      const r = await _popupProbeOneVeo(apiKey, p.model, 10000, p.endpoint);
+      const r = await _popupProbeOneVeo(apiKey, p.model, 10000, p.endpoint, p.treatInvalidAsPrepaid);
       if (r === 'prepaid') return { tier: 'prepaid', invalid: false };
       if (r === 'free') {
         if (p.trustFree) return { tier: 'free', invalid: false };
