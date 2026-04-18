@@ -585,8 +585,7 @@ async function _probeOneVeoModel(apiKey, modelId, timeoutMs, endpoint) {
     const msg = (data?.error?.message || '').toLowerCase();
     const code = data?.error?.code;
 
-    // PREPAID positive signal first — Google only returns "no instances" when billing is enabled
-    if (status === 'INVALID_ARGUMENT' && (msg.includes('no instances') || msg.includes('instances'))) return 'prepaid';
+    // PREPAID positive signal — HTTP 200 with an operation name means billing accepted the job
     if (resp.ok && (data?.name || data?.metadata)) return 'prepaid';
     // 429 / RESOURCE_EXHAUSTED on Veo is ALSO a prepaid signal — free-tier keys can't even attempt
     // Veo generation, so hitting a quota / rate limit means the key has paid Veo access.
