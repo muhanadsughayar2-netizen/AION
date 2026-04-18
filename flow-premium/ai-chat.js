@@ -3539,6 +3539,27 @@ async function handleSend() {
       let lastError = '';
       let succeeded = false;
       
+      // Build image-mode parts: attach any queued screenshots so the model can
+      // see them (image-to-image editing). If no screenshots, text-to-image only.
+      const imgModeParts = [];
+      if (currentImages && currentImages.length > 0) {
+        // Send up to 4 images; for larger queues use just the first one to stay safe.
+        const imagesToSend = currentImages.slice(0, Math.min(currentImages.length, 4));
+        for (const imgUrl of imagesToSend) {
+          const base64Data = imgUrl.split(',')[1];
+          const mimeType = imgUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+          imgModeParts.push({ inlineData: { mimeType, data: base64Data } });
+        }
+        if (currentImages.length > 4) {
+          imgModeParts.push({ text: `[Using first 4 of ${currentImages.length} screenshots for reference]\n${prompt}` });
+        } else {
+          imgModeParts.push({ text: prompt });
+        }
+        console.log(`[SnapToAI Image] Attaching ${imagesToSend.length} screenshot(s) as image reference`);
+      } else {
+        imgModeParts.push({ text: `Generate an image: ${prompt}` });
+      }
+
       for (const modelName of imageModels) {
         for (let attempt = 0; attempt < 3; attempt++) {
           const loadingEl = document.querySelector('.loading-dots');
@@ -3552,7 +3573,7 @@ async function handleSend() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                contents: [{ role: 'user', parts: [{ text: `Generate an image: ${prompt}` }] }],
+                contents: [{ role: 'user', parts: imgModeParts }],
                 generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
               })
             });
