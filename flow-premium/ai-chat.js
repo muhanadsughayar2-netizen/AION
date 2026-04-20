@@ -1656,9 +1656,12 @@ async function startVideoGeneration(prompt, thread) {
       </div>`;
     }
     progressBubble.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        <span style="font-size:18px;">🎬</span>
-        <span style="font-size:13px;font-weight:600;color:#ffa500;">Rendering ${clipCount} clips → ${totalDur}s video</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:18px;">🎬</span>
+          <span style="font-size:13px;font-weight:600;color:#ffa500;">Rendering ${clipCount} clips → ${totalDur}s video</span>
+        </div>
+        <button class="veo-stop-btn" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(255,107,107,0.5);background:rgba(255,107,107,0.1);color:#ff6b6b;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">⏹ Stop &amp; keep what I have</button>
       </div>
       <div style="font-size:12px;color:#8899aa;margin-bottom:6px;">Using ${modelName.replace(/-generate.*/, '')}</div>
       <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">Generating ${clipCount} x ${selectedVideoDuration}s clips, then auto-stitching. This may take a few minutes.</div>
@@ -1805,6 +1808,10 @@ async function generateOneVeoClip(clipIdx, ctx) {
   while (cycleAttempt < MAX_FULL_CYCLE_RETRIES) {
     cycleAttempt++;
 
+    // Early guard: if user pressed Stop after the batch loop already
+    // committed to this clip, bail out before a billable POST is sent.
+    if (ctx.userStopped) { finalStatus = 'user_stopped_skipped'; break; }
+
     // ---- PHASE 1: kick off the Veo job (with pre-job rate-limit retries) ----
     let resp, data, errorMsg = '';
     let postRateRetry = 0;
@@ -1843,10 +1850,10 @@ async function generateOneVeoClip(clipIdx, ctx) {
           postRateRetry++;
           const waitSec = 65;
           if (statusEl) { statusEl.textContent = `⏳ Quota wait — ${waitSec}s (retry ${postRateRetry}/${MAX_RATE_RETRIES_POST})`; statusEl.style.color = '#ffd700'; }
-          for (let s = waitSec; s > 0; s--) {
-            await new Promise(r => setTimeout(r, 1000));
+          const completed = await cancellableWait(waitSec, ctx, (s) => {
             if (text) text.textContent = `Clip ${clipNum}/${clipCount} — Veo quota cooling down (${s}s) · retry ${postRateRetry}/${MAX_RATE_RETRIES_POST}`;
-          }
+          });
+          if (!completed) { finalStatus = 'user_stopped_skipped'; break; }
           if (statusEl) { statusEl.textContent = '⏳ Retrying...'; statusEl.style.color = '#ffa500'; }
           continue;
         }
@@ -1870,7 +1877,8 @@ async function generateOneVeoClip(clipIdx, ctx) {
       }
       if (cycleAttempt < MAX_FULL_CYCLE_RETRIES) {
         if (statusEl) { statusEl.textContent = `⚠ Network error — retrying (${cycleAttempt}/${MAX_FULL_CYCLE_RETRIES})`; statusEl.style.color = '#ffd700'; }
-        await new Promise(r => setTimeout(r, 15000));
+        const completed = await cancellableWait(15, ctx);
+        if (!completed) { finalStatus = 'user_stopped_skipped'; break; }
         continue;
       }
       finalStatus = 'transient_prestart_skipped';
@@ -1879,7 +1887,11 @@ async function generateOneVeoClip(clipIdx, ctx) {
 
     const operationName = data.name;
     if (!operationName) {
-      if (cycleAttempt < MAX_FULL_CYCLE_RETRIES) { await new Promise(r => setTimeout(r, 5000)); continue; }
+      if (cycleAttempt < MAX_FULL_CYCLE_RETRIES) {
+        const completed = await cancellableWait(5, ctx);
+        if (!completed) { finalStatus = 'user_stopped_skipped'; break; }
+        continue;
+      }
       finalStatus = 'no_op_id_ambiguous_skipped';
       break;
     }
@@ -1900,8 +1912,11 @@ async function generateOneVeoClip(clipIdx, ctx) {
     if (cycleAttempt < MAX_FULL_CYCLE_RETRIES) {
       const waitSec = result.status === 'rate_limit' ? 65 : 20;
       if (statusEl) { statusEl.textContent = `⚠ ${result.status} — retrying (${cycleAttempt}/${MAX_FULL_CYCLE_RETRIES})`; statusEl.style.color = '#ffd700'; }
-      if (text) text.textContent = `Clip ${clipNum}/${clipCount} ${result.status} — retrying in ${waitSec}s...`;
-      await new Promise(r => setTimeout(r, waitSec * 1000));
+      const completed = await cancellableWait(waitSec, ctx, (s) => {
+        if (text) text.textContent = `Clip ${clipNum}/${clipCount} ${result.status} — retrying in ${s}s...`;
+      });
+      // Stopped AFTER a Veo job already started → may be billed.
+      if (!completed) { finalStatus = 'user_stopped_poststart_skipped'; break; }
       continue;
     }
 
@@ -2399,9 +2414,33 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
                 stylizedImage, progressBubble, thread, clipResults,
                 durationSeconds, sourceImageForClip0,
                 aspectRatio: aspectRatio || '16:9',
-                retryInFlight: false, billingAbortAt: -1 };
+                retryInFlight: false, billingAbortAt: -1,
+                userStopped: false };
+
+  // Wire the Stop button. Sets a flag that all wait loops + the batch loop
+  // observe; the user keeps every clip already rendered, no further Veo
+  // requests are sent, and we render the partial outcome immediately.
+  const stopBtn = progressBubble.querySelector('.veo-stop-btn');
+  if (stopBtn) {
+    stopBtn.addEventListener('click', () => {
+      if (ctx.userStopped) return;
+      ctx.userStopped = true;
+      stopBtn.textContent = '⏹ Stopping...';
+      stopBtn.disabled = true;
+      stopBtn.style.opacity = '0.6';
+      const text = progressBubble.querySelector('.video-progress-text');
+      if (text) text.textContent = '⏹ Stopping after the current clip — your finished clips are safe.';
+    });
+  }
 
   for (let i = 0; i < clipCount; i++) {
+    if (ctx.userStopped) {
+      // Mark every remaining clip as stopped-by-user (retryable later).
+      for (let j = i; j < clipCount; j++) {
+        if (!clipResults[j].url) clipResults[j].status = 'user_stopped_skipped';
+      }
+      break;
+    }
     const result = await generateOneVeoClip(i, ctx);
     clipResults[i].status = result.status;
     clipResults[i].url = result.url;
@@ -2419,6 +2458,20 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
   }
 
   await renderVeoBatchOutcome(ctx);
+}
+
+// Cancellable sleep. Polls ctx.userStopped every second so the user can
+// abort during long quota-cooldown waits. Returns true if completed
+// normally, false if the user pressed Stop mid-wait.
+async function cancellableWait(seconds, ctx, onTick) {
+  for (let s = seconds; s > 0; s--) {
+    if (ctx && ctx.userStopped) return false;
+    if (typeof onTick === 'function') {
+      try { onTick(s); } catch (_) {}
+    }
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  return !(ctx && ctx.userStopped);
 }
 
 // ============================================================================
@@ -2605,11 +2658,12 @@ function setAllRetryButtonsDisabled(progressBubble, disabled, label) {
 
 function buildVeoSummaryCard(ctx, billingAbortAt, hasSuccess, successCount) {
   const { clipResults, clipCount } = ctx;
-  const PRESTART_FREE = new Set(['rate_limit_prestart_skipped','transient_prestart_skipped']);
+  const PRESTART_FREE = new Set(['rate_limit_prestart_skipped','transient_prestart_skipped','user_stopped_skipped']);
   const RETRYABLE = new Set([  // safety_blocked is NOT retryable (content rejected)
     'rate_limit_prestart_skipped','transient_prestart_skipped',
     'rate_limit_skipped','transient_skipped','timeout_skipped',
-    'no_uri_skipped','job_error_skipped','no_op_id_ambiguous_skipped','pending'
+    'no_uri_skipped','job_error_skipped','no_op_id_ambiguous_skipped','pending',
+    'user_stopped_skipped','user_stopped_poststart_skipped'
   ]);
 
   const rows = clipResults.map((r, idx) => {
@@ -2620,12 +2674,18 @@ function buildVeoSummaryCard(ctx, billingAbortAt, hasSuccess, successCount) {
       </div>`;
     }
     const isFree = PRESTART_FREE.has(r.status);
-    const tag = isFree
-      ? 'no job started · not billed'
-      : (r.status === 'no_op_id_ambiguous_skipped'
-          ? 'unclear · billing status unknown'
-          : 'job started · may be billed');
-    const cleanStatus = r.status.replace(/_skipped$/,'').replace(/_/g,' ');
+    const tag = r.status === 'user_stopped_skipped'
+      ? 'you stopped early · not billed'
+      : (r.status === 'user_stopped_poststart_skipped'
+          ? 'you stopped early · job had started · may be billed'
+          : (isFree
+              ? 'no job started · not billed'
+              : (r.status === 'no_op_id_ambiguous_skipped'
+                  ? 'unclear · billing status unknown'
+                  : 'job started · may be billed')));
+    const cleanStatus = (r.status === 'user_stopped_skipped' || r.status === 'user_stopped_poststart_skipped')
+      ? 'stopped — click Retry to resume just this clip'
+      : r.status.replace(/_skipped$/,'').replace(/_/g,' ');
     const canRetry = RETRYABLE.has(r.status);
     const retryBtn = canRetry
       ? `<button class="veo-retry-btn" data-clip-idx="${idx}" style="background:rgba(0,217,255,0.15);border:1px solid rgba(0,217,255,0.4);color:#00d9ff;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">🔄 Retry</button>`
@@ -2696,6 +2756,9 @@ function wireVeoRetryButtons(ctx) {
 async function retryVeoClip(clipIdx, ctx) {
   const { progressBubble, clipResults, clipCount } = ctx;
   console.log(`[SnapToAI Video] User-triggered retry for clip ${clipIdx + 1}`);
+  // Reset the stop flag so the user-initiated retry isn't immediately
+  // aborted by a sticky stop from the previous batch run.
+  ctx.userStopped = false;
 
   // Show a small inline progress strip at the top of the bubble during retry
   let retryBar = progressBubble.querySelector('.veo-retry-progress');
