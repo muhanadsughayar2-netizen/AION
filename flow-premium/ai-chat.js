@@ -1863,36 +1863,146 @@ async function generateOneVeoClip(clipIdx, ctx) {
   return { url: null, status: finalStatus, billingAbort: false };
 }
 
-// Build the standard 8-beat narrative scene list
-function buildClipScenes(prompt, clipCount) {
-  if (clipCount === 2) return [
-    `Scene 1 of 2 — opening: ${prompt}`,
-    `Scene 2 of 2 — continuation and finale: ${prompt}`
+// ─────────────────────────────────────────────────────────────────
+// VISUAL CONTINUITY ANCHORING
+// Veo generates 8-second clips. Without shared visual anchors and
+// explicit camera transitions, characters / lighting / setting drift
+// between clips and the stitched video looks broken. We fix this by:
+//   1) asking Gemini to expand the user prompt into a STYLE BIBLE
+//      (characters, location, lighting, palette, camera language)
+//      that is REPEATED at the top of every clip prompt, AND
+//   2) writing each per-clip scene as a continuation of the previous
+//      one ("camera glides from X, landing on Y") so Veo treats it as
+//      one continuous take rather than 8 separate generations.
+// Falls back to a heavily anchored template if Gemini is unreachable.
+// ─────────────────────────────────────────────────────────────────
+
+function buildAnchoredFallback(prompt, clipCount) {
+  const anchor =
+`[PRODUCTION RULES — APPLY TO EVERY SHOT]
+- VISUAL CONSISTENCY IS MANDATORY across all ${clipCount} segments.
+- Same characters, same wardrobe, same location, same lighting, same color palette in every shot.
+- Cinematic photoreal style. Natural lighting, shallow depth of field, smooth handheld or dolly motion.
+- STRICT: Zero on-screen text, no subtitles, no captions, no logos, no words anywhere in the frame.
+
+[USER BRIEF]
+${prompt}`;
+
+  const transitions = [
+    'opening establishing wide shot — set the scene and introduce the environment',
+    'camera glides forward, landing on the main subject — slow reveal',
+    'medium shot of the main action developing — natural motion continues',
+    'camera slowly orbits around the subject — new angle, same scene',
+    'cut to a complementary detail in the same location — close-up insert',
+    'pull back smoothly to re-establish the wider scene — match the lighting',
+    'climactic beat — the strongest emotional moment of the sequence',
+    'final wide shot — calm resolution, hold on the scene'
   ];
-  if (clipCount === 3) return [
-    `Scene 1 of 3 — opening establishing shot: ${prompt}`,
-    `Scene 2 of 3 — middle action: ${prompt}`,
-    `Scene 3 of 3 — dramatic finale: ${prompt}`
-  ];
-  if (clipCount >= 4 && clipCount <= 8) {
-    const beats = [
-      'opening establishing shot, set the scene',
-      'introduce the main subject, slow build',
-      'first action / development',
-      'rising tension or change of perspective',
-      'mid-point twist or shift in mood',
-      'building toward the climax',
-      'dramatic climax or peak action',
-      'closing finale and resolution'
-    ];
-    return Array.from({length: clipCount}, (_, i) =>
-      `Scene ${i + 1} of ${clipCount} — ${beats[Math.min(i, beats.length - 1)]}: ${prompt}`);
+
+  return Array.from({length: clipCount}, (_, i) => {
+    const t0 = i * 8, t1 = (i + 1) * 8;
+    const beat = transitions[Math.min(i, transitions.length - 1)];
+    const continuity = i === 0
+      ? `This is the OPENING segment — establish the baseline scene. Lock in the characters, location, lighting, and color palette exactly as described above; every following segment will inherit from this shot.`
+      : `This segment must visually continue from segment ${i} (same characters, same wardrobe, same location, same lighting, same color palette). No hard cuts, no scene changes, no new characters appearing.`;
+    return `${anchor}
+
+[SEGMENT ${i + 1} of ${clipCount}  (${t0}-${t1}s)]
+${beat}.
+${continuity}`;
+  });
+}
+
+// Ask Gemini to produce a continuity-anchored storyboard.
+// Returns array of clip prompts on success, null on failure.
+async function generateAnchoredStoryboard(prompt, clipCount, apiKey) {
+  if (!apiKey || clipCount < 2) return null;
+  try {
+    const directorBrief =
+`You are a film director planning a ${clipCount * 8}-second cinematic video that will be rendered by Google Veo as ${clipCount} sequential 8-second clips, then stitched together.
+
+The biggest failure mode is visual drift: characters change face, the location shifts, lighting jumps. Your job is to PREVENT that.
+
+USER'S BRIEF:
+"""
+${prompt}
+"""
+
+Return STRICT JSON ONLY (no markdown, no commentary) in this exact shape:
+{
+  "style_bible": "A 3-5 sentence locked description of: main character(s) (age, ethnicity, hair, exact wardrobe), exact location, lighting setup, color palette, lens / camera style, mood. This text will be repeated verbatim at the top of every clip — be specific and unambiguous.",
+  "clips": [
+    { "shot": "What happens in this 8s segment. Start the description with how the camera moves IN from the previous shot (e.g. 'camera glides right, landing on...'). For clip 1, open with an establishing shot. Each clip must continue the same scene — same characters, same lighting, same location." },
+    ... exactly ${clipCount} entries ...
+  ]
+}
+
+Rules:
+- The clips must read like one continuous take, not ${clipCount} separate videos.
+- NEVER introduce new characters mid-sequence unless the user brief explicitly asks for it.
+- NEVER cut to a different location.
+- NEVER include on-screen text, captions, subtitles, or logos.
+- Keep each "shot" description under 60 words.`;
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: directorBrief }] }],
+        generationConfig: { temperature: 0.7, responseMimeType: 'application/json' }
+      })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    let parsed;
+    try { parsed = JSON.parse(txt); }
+    catch {
+      const m = txt.match(/\{[\s\S]*\}/);
+      if (!m) return null;
+      parsed = JSON.parse(m[0]);
+    }
+    if (!parsed?.style_bible || !Array.isArray(parsed?.clips) || parsed.clips.length !== clipCount) return null;
+    // Strict per-clip validation: every clip must have a non-empty shot string
+    if (!parsed.clips.every(c => c && typeof c.shot === 'string' && c.shot.trim().length > 0)) return null;
+
+    const bible = String(parsed.style_bible).trim();
+    return parsed.clips.map((c, i) => {
+      const shot = String(c.shot).trim();
+      const t0 = i * 8, t1 = (i + 1) * 8;
+      const continuity = i === 0
+        ? `This is the OPENING segment — establish the baseline scene exactly as the style bible describes. Every following segment will inherit these characters, wardrobe, location, lighting, and palette.`
+        : `This segment must visually continue from segment ${i}: identical characters, wardrobe, location, lighting, and color palette. No hard cuts or new characters.`;
+      return `[PRODUCTION RULES — APPLY TO EVERY SHOT]
+${bible}
+STRICT DIRECTIVE: Zero on-screen text, no subtitles, no captions, no logos, no words anywhere in the frame.
+
+[SEGMENT ${i + 1} of ${clipCount}  (${t0}-${t1}s)]
+${shot}
+${continuity}`;
+    });
+  } catch (e) {
+    console.warn('[veo storyboard] director call failed, falling back to template:', e?.message || e);
+    return null;
   }
-  return [];
+}
+
+async function buildClipScenes(prompt, clipCount, apiKey) {
+  if (clipCount < 2) return [];
+  const fromAI = await generateAnchoredStoryboard(prompt, clipCount, apiKey);
+  if (fromAI && fromAI.length === clipCount) {
+    console.log(`[veo storyboard] using AI-generated style bible for ${clipCount} clips`);
+    return fromAI;
+  }
+  console.log(`[veo storyboard] using anchored fallback template for ${clipCount} clips`);
+  return buildAnchoredFallback(prompt, clipCount);
 }
 
 async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage) {
-  const clipScenes = buildClipScenes(prompt, clipCount);
+  const progressText = progressBubble.querySelector('.video-progress-text');
+  if (progressText) progressText.textContent = `Planning ${clipCount}-clip storyboard for visual continuity...`;
+  const clipScenes = await buildClipScenes(prompt, clipCount, apiKey);
   // Index-based results so retry can replace any specific slot
   const clipResults = Array.from({length: clipCount}, (_, i) => ({ n: i + 1, status: 'pending', url: null }));
 
