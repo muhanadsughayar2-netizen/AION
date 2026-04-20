@@ -1577,6 +1577,54 @@ async function startVideoGeneration(prompt, thread) {
   const clipCount = selectedClipCount || 1;
   const totalDur = selectedVideoDuration * clipCount;
 
+  // ── HeyGen-style plan approval for multi-clip videos ──────────────
+  // Build the storyboard FIRST and let the user approve it before any
+  // Veo credits are charged. Single clips skip this step (low risk, no
+  // continuity to coordinate). Cancelling here is free.
+  let prebuiltScenes = null;
+  if (clipCount > 1) {
+    const planLoader = document.createElement('div');
+    planLoader.className = 'chat-bubble ai';
+    planLoader.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:18px;">📋</span>
+        <span style="font-size:13px;color:#ffa500;">Drafting your ${clipCount}-clip storyboard so you can review it before we render...</span>
+      </div>`;
+    thread.appendChild(planLoader);
+    thread.scrollTop = thread.scrollHeight;
+
+    try {
+      prebuiltScenes = await buildClipScenes(prompt, clipCount, apiKey);
+    } catch (e) {
+      console.warn('[veo plan] storyboard build failed:', e?.message || e);
+    }
+    planLoader.remove();
+
+    if (!prebuiltScenes || prebuiltScenes.length !== clipCount) {
+      const errBubble = document.createElement('div');
+      errBubble.className = 'chat-bubble ai';
+      errBubble.innerHTML = `<span style="color:#ff7777;">⚠ Could not draft a storyboard. Please try a more descriptive prompt.</span>`;
+      thread.appendChild(errBubble);
+      return;
+    }
+
+    const perSecond = VEO_PRICING[modelName] || 0;
+    const estCostUsd = perSecond * totalDur;
+
+    const approved = await showPlanApprovalBubble({
+      thread, scenes: prebuiltScenes, prompt, clipCount, modelName, totalDur, estCostUsd,
+      clipDur: selectedVideoDuration
+    });
+    if (!approved) {
+      const cancelBubble = document.createElement('div');
+      cancelBubble.className = 'chat-bubble ai';
+      cancelBubble.innerHTML = `<span style="color:#8899aa;">✕ Cancelled — no Veo credits were used. Refine your prompt and try again.</span>`;
+      thread.appendChild(cancelBubble);
+      thread.scrollTop = thread.scrollHeight;
+      return;
+    }
+  }
+
   const progressBubble = document.createElement('div');
   progressBubble.className = 'chat-bubble ai video-progress';
 
@@ -1645,7 +1693,7 @@ async function startVideoGeneration(prompt, thread) {
   if (clipCount === 1) {
     await generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage);
   } else {
-    await generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage);
+    await generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes);
   }
 }
 
@@ -1988,6 +2036,88 @@ ${continuity}`;
   }
 }
 
+// Pretty-print one clip prompt as a digestible card body for the plan preview.
+// We strip our own meta-headers and show only the human-readable parts.
+function prettyPrintClipForPreview(clipPrompt) {
+  if (!clipPrompt) return '';
+  let bible = '';
+  let shot = '';
+  const segMatch = clipPrompt.match(/\[SEGMENT[^\]]+\]\s*([\s\S]*?)(?:\nThis (?:is the OPENING|segment must)[\s\S]*)?$/);
+  if (segMatch) shot = segMatch[1].trim();
+  const ruleMatch = clipPrompt.match(/\[PRODUCTION RULES[^\]]*\]\s*([\s\S]*?)\n\[/);
+  if (ruleMatch) bible = ruleMatch[1].replace(/^STRICT DIRECTIVE:.*$/gmi, '').replace(/\n{2,}/g, '\n').trim();
+  return { bible, shot };
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Show the storyboard plan + Approve / Cancel buttons in a chat bubble.
+// Resolves true (approved) / false (cancelled). Removes the bubble on resolve.
+function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, totalDur, estCostUsd, clipDur }) {
+  return new Promise((resolve) => {
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble ai video-plan-preview';
+    bubble.style.cssText = 'border:1px solid rgba(255,165,0,0.35);background:rgba(255,165,0,0.04);';
+    const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
+
+    // Style bible appears in clip 1; pull it once.
+    const first = prettyPrintClipForPreview(scenes[0]);
+    const sceneCards = scenes.map((s, i) => {
+      const parts = prettyPrintClipForPreview(s);
+      const t0 = i * segLen, t1 = (i + 1) * segLen;
+      return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:10px;margin-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:11px;color:#ffa500;font-weight:600;">SEGMENT ${i + 1} · ${t0}-${t1}s</span>
+        </div>
+        <div style="font-size:12px;color:#cdd6e0;line-height:1.5;">${escapeHtml(parts.shot)}</div>
+      </div>`;
+    }).join('');
+
+    const costLine = (estCostUsd != null && !isNaN(estCostUsd))
+      ? `<span style="color:#ff7777;font-weight:600;">≈ $${estCostUsd.toFixed(2)}</span> in Veo credits will be billed to your Gemini key.`
+      : `Veo credits will be billed to your Gemini key.`;
+
+    bubble.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:20px;">📋</span>
+        <span style="font-size:14px;font-weight:600;color:#ffa500;">Review the plan before we render</span>
+      </div>
+      <div style="font-size:12px;color:#8899aa;margin-bottom:10px;line-height:1.5;">
+        ${clipCount} clips × 8s = <b style="color:#cdd6e0;">${totalDur}s video</b> · ${escapeHtml(modelName.replace(/-generate.*/, ''))}<br>
+        ${costLine} <b>Approve only if the plan looks right</b> — once rendering starts, failed clips may still be billed.
+      </div>
+
+      ${first.bible ? `<div style="background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:10px;margin-bottom:10px;">
+        <div style="font-size:11px;color:#00d4ff;font-weight:600;margin-bottom:6px;">🎨 STYLE BIBLE (locked across every clip)</div>
+        <div style="font-size:12px;color:#cdd6e0;line-height:1.5;white-space:pre-wrap;">${escapeHtml(first.bible)}</div>
+      </div>` : ''}
+
+      <div style="font-size:11px;color:#667788;font-weight:600;margin-bottom:6px;">🎞️ SCENE-BY-SCENE</div>
+      ${sceneCards}
+
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="plan-cancel-btn" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#cdd6e0;cursor:pointer;font-size:13px;font-weight:600;">✕ Cancel</button>
+        <button class="plan-approve-btn" style="flex:2;padding:10px;border-radius:8px;border:1px solid rgba(0,200,120,0.5);background:linear-gradient(135deg,#00c878,#00a060);color:#fff;cursor:pointer;font-size:13px;font-weight:700;">✓ Approve & Render ${clipCount} clips</button>
+      </div>
+      <div style="font-size:10px;color:#667788;margin-top:8px;text-align:center;">Cancelling will not charge you. You can refine your prompt and try again.</div>
+    `;
+
+    thread.appendChild(bubble);
+    thread.scrollTop = thread.scrollHeight;
+
+    const cleanup = (decision) => {
+      bubble.remove();
+      resolve(decision);
+    };
+    bubble.querySelector('.plan-approve-btn').onclick = () => cleanup(true);
+    bubble.querySelector('.plan-cancel-btn').onclick = () => cleanup(false);
+  });
+}
+
 async function buildClipScenes(prompt, clipCount, apiKey) {
   if (clipCount < 2) return [];
   const fromAI = await generateAnchoredStoryboard(prompt, clipCount, apiKey);
@@ -1999,10 +2129,13 @@ async function buildClipScenes(prompt, clipCount, apiKey) {
   return buildAnchoredFallback(prompt, clipCount);
 }
 
-async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage) {
-  const progressText = progressBubble.querySelector('.video-progress-text');
-  if (progressText) progressText.textContent = `Planning ${clipCount}-clip storyboard for visual continuity...`;
-  const clipScenes = await buildClipScenes(prompt, clipCount, apiKey);
+async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes) {
+  let clipScenes = prebuiltScenes;
+  if (!clipScenes || clipScenes.length !== clipCount) {
+    const progressText = progressBubble.querySelector('.video-progress-text');
+    if (progressText) progressText.textContent = `Planning ${clipCount}-clip storyboard for visual continuity...`;
+    clipScenes = await buildClipScenes(prompt, clipCount, apiKey);
+  }
   // Index-based results so retry can replace any specific slot
   const clipResults = Array.from({length: clipCount}, (_, i) => ({ n: i + 1, status: 'pending', url: null }));
 
