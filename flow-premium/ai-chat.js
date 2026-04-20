@@ -1582,6 +1582,7 @@ async function startVideoGeneration(prompt, thread) {
   // Veo credits are charged. Single clips skip this step (low risk, no
   // continuity to coordinate). Cancelling here is free.
   let prebuiltScenes = null;
+  let selectedAspectRatio = '16:9';
   if (clipCount > 1) {
     const planLoader = document.createElement('div');
     planLoader.className = 'chat-bubble ai';
@@ -1612,11 +1613,11 @@ async function startVideoGeneration(prompt, thread) {
     const estCostUsd = perSecond * totalDur;
 
     const heroImage = (includeImage && currentImages && currentImages[0]) ? currentImages[0] : null;
-    const approved = await showPlanApprovalBubble({
+    const decision = await showPlanApprovalBubble({
       thread, scenes: prebuiltScenes, prompt, clipCount, modelName, totalDur, estCostUsd,
       clipDur: selectedVideoDuration, heroImage
     });
-    if (!approved) {
+    if (!decision || !decision.approved) {
       const cancelBubble = document.createElement('div');
       cancelBubble.className = 'chat-bubble ai';
       cancelBubble.innerHTML = `<span style="color:#8899aa;">✕ Cancelled — no Veo credits were used. Refine your prompt and try again.</span>`;
@@ -1624,6 +1625,9 @@ async function startVideoGeneration(prompt, thread) {
       thread.scrollTop = thread.scrollHeight;
       return;
     }
+    // Apply user edits if they used the Edit/Save flow.
+    if (decision.scenes && decision.scenes.length === clipCount) prebuiltScenes = decision.scenes;
+    if (decision.aspectRatio) selectedAspectRatio = decision.aspectRatio;
   }
 
   const progressBubble = document.createElement('div');
@@ -1692,20 +1696,20 @@ async function startVideoGeneration(prompt, thread) {
   }
 
   if (clipCount === 1) {
-    await generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage);
+    await generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage, selectedAspectRatio);
   } else {
-    await generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes);
+    await generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes, selectedAspectRatio);
   }
 }
 
-async function generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage) {
+async function generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage, aspectRatio) {
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`;
 
     const requestBody = {
       instances: [{ prompt: prompt }],
       parameters: {
-        aspectRatio: '16:9',
+        aspectRatio: aspectRatio || '16:9',
         sampleCount: 1,
         durationSeconds: selectedVideoDuration
       }
@@ -1810,7 +1814,7 @@ async function generateOneVeoClip(clipIdx, ctx) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`;
         const requestBody = {
           instances: [{ prompt: clipScenes[clipIdx] || prompt }],
-          parameters: { aspectRatio: '16:9', sampleCount: 1, durationSeconds: durationSeconds }
+          parameters: { aspectRatio: ctx.aspectRatio || '16:9', sampleCount: 1, durationSeconds: durationSeconds }
         };
 
         // Use the SNAPSHOTTED image from batch start — never re-read globals,
@@ -2073,17 +2077,26 @@ function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, 
     bubble.style.cssText = 'padding:0;background:transparent;border:none;max-width:100%;';
     const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
 
-    const meta = (scenes && scenes.meta) ? scenes.meta : {};
-    const title = meta.title || 'Your Video';
-    const scriptSummary = meta.script_summary || prompt;
-    const styleBible = meta.style_bible || '';
-    const shots = Array.isArray(meta.shots) && meta.shots.length === scenes.length
-      ? meta.shots
-      : scenes.map(() => '');
+    // Mutable draft. We mutate it in edit mode and recompile scenes on Save.
+    // Result resolved with { approved, scenes, aspectRatio } so the caller can
+    // pick up edits & aspect-ratio choice when starting Veo.
+    const meta = (scenes && scenes.meta) ? { ...scenes.meta } : {};
+    const draft = {
+      title: meta.title || 'Your Video',
+      script_summary: meta.script_summary || prompt,
+      style_bible: meta.style_bible || '',
+      shots: (Array.isArray(meta.shots) && meta.shots.length === scenes.length) ? [...meta.shots] : scenes.map(() => ''),
+      vibe: meta.vibe || '',
+      aspectRatio: '16:9'
+    };
+    let editing = false;
+    let liveScenes = scenes;  // recompiled on Save
+    let draftSnapshot = null; // snapshot of draft taken on Edit, restored on Discard
 
     const modelShort = String(modelName || '').replace(/-generate.*/, '').replace(/-preview/, '');
     const costStr = (estCostUsd != null && !isNaN(estCostUsd)) ? `≈ $${estCostUsd.toFixed(2)}` : '';
-    const aspect = '16:9';
+
+    const VIBES = ['', 'Cinematic', 'Handheld documentary', 'Anime', 'Pixar 3D', 'Film noir', 'Commercial / corporate', 'Music video', 'Vintage 8mm'];
 
     const hero = heroImage
       ? `<img src="${escapeHtml(heroImage)}" alt="" style="width:100%;height:160px;object-fit:cover;display:block;">`
@@ -2099,98 +2112,210 @@ function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, 
             </div>
           </div>`;
 
-    const timelineDots = scenes.map((_, i) =>
-      `<div style="flex:1;height:4px;background:linear-gradient(90deg,#ffa500,#ffcc00);border-radius:2px;${i < scenes.length - 1 ? 'margin-right:3px;' : ''}"></div>`
-    ).join('');
-
-    const sceneCards = scenes.map((_, i) => {
-      const t0 = i * segLen, t1 = (i + 1) * segLen;
-      const shot = shots[i] || '';
-      return `<div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:700;">${i + 1}</span>
-          <span style="font-size:10px;color:#667788;letter-spacing:1px;font-weight:600;">SEGMENT · ${t0}-${t1}s</span>
-        </div>
-        <div style="font-size:12px;color:#cdd6e0;line-height:1.5;">${escapeHtml(shot)}</div>
-      </div>`;
-    }).join('');
-
     const chip = (icon, label) =>
       `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);font-size:11px;color:#cdd6e0;">${icon} ${escapeHtml(label)}</span>`;
 
-    bubble.innerHTML = `
-      <div style="background:#11151c;border:1px solid rgba(255,255,255,0.08);border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.4);font-family:inherit;">
-        <!-- Toolbar -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);">
-          <button class="plan-expand-btn" style="background:none;border:none;color:#8899aa;font-size:12px;font-weight:600;cursor:pointer;padding:4px 0;">▾ Expand</button>
-          <div style="display:flex;gap:6px;">
-            <button class="plan-cancel-btn" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#cdd6e0;cursor:pointer;font-size:12px;font-weight:600;">Edit</button>
-            <button class="plan-approve-btn" style="padding:6px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#00c878,#00a060);color:#fff;cursor:pointer;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,200,120,0.3);">Generate</button>
+    let expanded = false;
+
+    function renderViewSceneCards() {
+      return draft.shots.map((shot, i) => {
+        const t0 = i * segLen, t1 = (i + 1) * segLen;
+        return `<div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:700;">${i + 1}</span>
+            <span style="font-size:10px;color:#667788;letter-spacing:1px;font-weight:600;">SEGMENT · ${t0}-${t1}s</span>
           </div>
-        </div>
+          <div style="font-size:12px;color:#cdd6e0;line-height:1.5;">${escapeHtml(shot)}</div>
+        </div>`;
+      }).join('');
+    }
 
-        <!-- Hero -->
-        ${hero}
+    function renderEditSceneCards() {
+      return draft.shots.map((shot, i) => {
+        const t0 = i * segLen, t1 = (i + 1) * segLen;
+        return `<div style="background:rgba(255,165,0,0.04);border:1px solid rgba(255,165,0,0.25);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:rgba(255,165,0,0.2);color:#ffa500;font-size:11px;font-weight:700;">${i + 1}</span>
+            <span style="font-size:10px;color:#667788;letter-spacing:1px;font-weight:600;">SEGMENT · ${t0}-${t1}s</span>
+          </div>
+          <textarea data-shot-idx="${i}" rows="3" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.3);color:#e6ecf3;font-size:12px;line-height:1.5;font-family:inherit;resize:vertical;">${escapeHtml(shot)}</textarea>
+        </div>`;
+      }).join('');
+    }
 
-        <!-- Body -->
-        <div style="padding:16px 18px 14px;">
-          <h2 style="margin:0 0 14px 0;font-size:20px;font-weight:700;color:#fff;line-height:1.25;">${escapeHtml(title)}</h2>
+    function render() {
+      const timelineDots = draft.shots.map((_, i) =>
+        `<div style="flex:1;height:4px;background:linear-gradient(90deg,#ffa500,#ffcc00);border-radius:2px;${i < draft.shots.length - 1 ? 'margin-right:3px;' : ''}"></div>`
+      ).join('');
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      const titleBlock = editing
+        ? `<input class="edit-title" type="text" value="${escapeHtml(draft.title)}" style="width:100%;box-sizing:border-box;font-size:18px;font-weight:700;color:#fff;background:rgba(0,0,0,0.3);border:1px solid rgba(255,165,0,0.3);border-radius:8px;padding:8px 10px;margin-bottom:14px;font-family:inherit;">`
+        : `<h2 style="margin:0 0 14px 0;font-size:20px;font-weight:700;color:#fff;line-height:1.25;">${escapeHtml(draft.title)}</h2>`;
+
+      const scriptStyleBlock = editing
+        ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div>
+              <div style="font-size:10px;color:#ffa500;letter-spacing:1.2px;font-weight:700;margin-bottom:4px;">SCRIPT (1-line pitch)</div>
+              <textarea class="edit-script" rows="4" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:6px;border:1px solid rgba(255,165,0,0.3);background:rgba(0,0,0,0.3);color:#e6ecf3;font-size:12px;line-height:1.5;font-family:inherit;resize:vertical;">${escapeHtml(draft.script_summary)}</textarea>
+            </div>
+            <div>
+              <div style="font-size:10px;color:#ffa500;letter-spacing:1.2px;font-weight:700;margin-bottom:4px;">STYLE BIBLE (locked across every clip)</div>
+              <textarea class="edit-style" rows="4" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:6px;border:1px solid rgba(255,165,0,0.3);background:rgba(0,0,0,0.3);color:#e6ecf3;font-size:12px;line-height:1.5;font-family:inherit;resize:vertical;">${escapeHtml(draft.style_bible)}</textarea>
+            </div>
+          </div>`
+        : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
             <div>
               <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin-bottom:4px;">SCRIPT</div>
-              <div style="font-size:12px;color:#cdd6e0;line-height:1.5;">${escapeHtml(scriptSummary)}</div>
+              <div style="font-size:12px;color:#cdd6e0;line-height:1.5;">${escapeHtml(draft.script_summary)}</div>
             </div>
             <div>
               <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin-bottom:4px;">STYLE</div>
-              <div style="font-size:12px;color:#cdd6e0;line-height:1.5;">${escapeHtml(styleBible)}</div>
+              <div style="font-size:12px;color:#cdd6e0;line-height:1.5;">${escapeHtml(draft.style_bible)}</div>
+            </div>
+          </div>`;
+
+      const editControls = editing
+        ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;">VIBE</span>
+              <select class="edit-vibe" style="padding:5px 8px;border-radius:6px;background:rgba(0,0,0,0.3);color:#e6ecf3;border:1px solid rgba(255,255,255,0.1);font-size:12px;">
+                ${VIBES.map(v => `<option value="${escapeHtml(v)}" ${v === draft.vibe ? 'selected' : ''}>${v ? escapeHtml(v) : '— none —'}</option>`).join('')}
+              </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;">ASPECT</span>
+              <button class="edit-aspect" data-val="16:9" style="padding:5px 10px;border-radius:6px;border:1px solid ${draft.aspectRatio === '16:9' ? 'rgba(255,165,0,0.6)' : 'rgba(255,255,255,0.1)'};background:${draft.aspectRatio === '16:9' ? 'rgba(255,165,0,0.15)' : 'rgba(0,0,0,0.3)'};color:#e6ecf3;font-size:11px;font-weight:600;cursor:pointer;">16:9</button>
+              <button class="edit-aspect" data-val="9:16" style="padding:5px 10px;border-radius:6px;border:1px solid ${draft.aspectRatio === '9:16' ? 'rgba(255,165,0,0.6)' : 'rgba(255,255,255,0.1)'};background:${draft.aspectRatio === '9:16' ? 'rgba(255,165,0,0.15)' : 'rgba(0,0,0,0.3)'};color:#e6ecf3;font-size:11px;font-weight:600;cursor:pointer;">9:16</button>
+            </div>
+          </div>`
+        : '';
+
+      const sceneSection = editing
+        ? `<div style="padding:0 18px 14px;">
+            <div style="font-size:10px;color:#ffa500;letter-spacing:1.2px;font-weight:700;margin:6px 0 8px;">🎞️ EDIT EACH SCENE (this is the real Veo prompt for that 8s clip)</div>
+            ${renderEditSceneCards()}
+          </div>`
+        : `<div class="plan-expand-body" style="display:${expanded ? 'block' : 'none'};padding:0 18px 14px;">
+            <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin:6px 0 8px;">🎞️ SCENE-BY-SCENE BREAKDOWN</div>
+            ${renderViewSceneCards()}
+          </div>`;
+
+      const toolbar = editing
+        ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,165,0,0.25);background:rgba(255,165,0,0.06);">
+            <span style="font-size:12px;color:#ffa500;font-weight:700;">✎ Editing plan</span>
+            <div style="display:flex;gap:6px;">
+              <button class="plan-discard-btn" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#cdd6e0;cursor:pointer;font-size:12px;font-weight:600;">Discard</button>
+              <button class="plan-save-btn" style="padding:6px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#ffa500,#ff7700);color:#fff;cursor:pointer;font-size:12px;font-weight:700;">✓ Save</button>
+            </div>
+          </div>`
+        : `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);">
+            <button class="plan-expand-btn" style="background:none;border:none;color:#8899aa;font-size:12px;font-weight:600;cursor:pointer;padding:4px 0;">${expanded ? '▴ Collapse' : '▾ Expand'}</button>
+            <div style="display:flex;gap:6px;">
+              <button class="plan-cancel-btn" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#cdd6e0;cursor:pointer;font-size:12px;font-weight:600;">Cancel</button>
+              <button class="plan-edit-btn" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.4);background:rgba(255,165,0,0.1);color:#ffa500;cursor:pointer;font-size:12px;font-weight:700;">✎ Edit</button>
+              <button class="plan-approve-btn" style="padding:6px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#00c878,#00a060);color:#fff;cursor:pointer;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,200,120,0.3);">Generate</button>
+            </div>
+          </div>`;
+
+      bubble.innerHTML = `
+        <div style="background:#11151c;border:1px solid rgba(255,255,255,0.08);border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.4);font-family:inherit;">
+          ${toolbar}
+          ${hero}
+          <div style="padding:16px 18px 14px;">
+            ${titleBlock}
+            ${scriptStyleBlock}
+            ${editControls}
+            <div style="display:flex;gap:4px;margin-bottom:12px;">${timelineDots}</div>
+            <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin-bottom:6px;">DETAILS</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px;">
+              ${chip('⏱', `${totalDur}s`)}
+              ${chip('🎞', `${clipCount} clips`)}
+              ${chip('📐', draft.aspectRatio)}
+              ${chip('🎥', modelShort)}
+              ${costStr ? chip('💳', `${costStr} on your key`) : ''}
             </div>
           </div>
-
-          <div style="display:flex;gap:4px;margin-bottom:12px;">${timelineDots}</div>
-
-          <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin-bottom:6px;">DETAILS</div>
-          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px;">
-            ${chip('⏱', `${totalDur}s`)}
-            ${chip('🎞', `${clipCount} clips`)}
-            ${chip('📐', aspect)}
-            ${chip('🎥', modelShort)}
-            ${costStr ? chip('💳', `${costStr} on your key`) : ''}
+          ${sceneSection}
+          <div style="padding:10px 18px;border-top:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);font-size:10px;color:#667788;text-align:center;line-height:1.5;">
+            ${editing
+              ? 'Save to apply your edits — they will be sent to Veo verbatim.'
+              : 'Cancel = no charge. Edit lets you tweak any field. Once you Generate, failed clips may still be billed by Google.'}
           </div>
         </div>
+      `;
 
-        <!-- Expandable scene-by-scene -->
-        <div class="plan-expand-body" style="display:none;padding:0 18px 14px;">
-          <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin:6px 0 8px;">🎞️ SCENE-BY-SCENE BREAKDOWN</div>
-          ${sceneCards}
-        </div>
+      wireEvents();
+    }
 
-        <!-- Footer note -->
-        <div style="padding:10px 18px;border-top:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);font-size:10px;color:#667788;text-align:center;line-height:1.5;">
-          Edit returns you to the prompt — <b style="color:#cdd6e0;">no Veo credits charged</b>. Once you Generate, failed clips may still be billed by Google.
-        </div>
-      </div>
-    `;
+    function wireEvents() {
+      const expandBtn = bubble.querySelector('.plan-expand-btn');
+      if (expandBtn) expandBtn.onclick = () => { expanded = !expanded; render(); thread.scrollTop = thread.scrollHeight; };
+
+      const editBtn = bubble.querySelector('.plan-edit-btn');
+      if (editBtn) editBtn.onclick = () => {
+        // Snapshot the current draft (incl. aspect ratio) so Discard truly reverts.
+        draftSnapshot = { ...draft, shots: [...draft.shots] };
+        editing = true;
+        render();
+      };
+
+      const discardBtn = bubble.querySelector('.plan-discard-btn');
+      if (discardBtn) discardBtn.onclick = () => {
+        if (draftSnapshot) {
+          draft.title = draftSnapshot.title;
+          draft.script_summary = draftSnapshot.script_summary;
+          draft.style_bible = draftSnapshot.style_bible;
+          draft.shots = [...draftSnapshot.shots];
+          draft.vibe = draftSnapshot.vibe;
+          draft.aspectRatio = draftSnapshot.aspectRatio;
+        }
+        draftSnapshot = null;
+        editing = false;
+        render();
+      };
+
+      const saveBtn = bubble.querySelector('.plan-save-btn');
+      if (saveBtn) saveBtn.onclick = () => {
+        const t = bubble.querySelector('.edit-title');
+        const sc = bubble.querySelector('.edit-script');
+        const st = bubble.querySelector('.edit-style');
+        const vb = bubble.querySelector('.edit-vibe');
+        if (t) draft.title = t.value.trim() || draft.title;
+        if (sc) draft.script_summary = sc.value.trim();
+        if (st) draft.style_bible = st.value.trim();
+        if (vb) draft.vibe = vb.value;
+        bubble.querySelectorAll('textarea[data-shot-idx]').forEach(ta => {
+          const idx = parseInt(ta.dataset.shotIdx, 10);
+          if (!isNaN(idx)) draft.shots[idx] = ta.value.trim();
+        });
+        // Recompile the actual prompts that go to Veo from the edited draft.
+        liveScenes = recompileScenesFromMeta({
+          title: draft.title,
+          script_summary: draft.script_summary,
+          style_bible: draft.style_bible,
+          shots: [...draft.shots]
+        }, clipCount, segLen, draft.vibe);
+        editing = false;
+        render();
+      };
+
+      bubble.querySelectorAll('.edit-aspect').forEach(b => {
+        b.onclick = () => { draft.aspectRatio = b.dataset.val; render(); };
+      });
+
+      const cleanup = (decision) => {
+        bubble.remove();
+        resolve(decision);
+      };
+      const apv = bubble.querySelector('.plan-approve-btn');
+      if (apv) apv.onclick = () => cleanup({ approved: true, scenes: liveScenes, aspectRatio: draft.aspectRatio });
+      const cnl = bubble.querySelector('.plan-cancel-btn');
+      if (cnl) cnl.onclick = () => cleanup({ approved: false });
+    }
 
     thread.appendChild(bubble);
+    render();
     thread.scrollTop = thread.scrollHeight;
-
-    const expandBtn = bubble.querySelector('.plan-expand-btn');
-    const expandBody = bubble.querySelector('.plan-expand-body');
-    let expanded = false;
-    expandBtn.onclick = () => {
-      expanded = !expanded;
-      expandBody.style.display = expanded ? 'block' : 'none';
-      expandBtn.textContent = expanded ? '▴ Collapse' : '▾ Expand';
-      thread.scrollTop = thread.scrollHeight;
-    };
-
-    const cleanup = (decision) => {
-      bubble.remove();
-      resolve(decision);
-    };
-    bubble.querySelector('.plan-approve-btn').onclick = () => cleanup(true);
-    bubble.querySelector('.plan-cancel-btn').onclick = () => cleanup(false);
   });
 }
 
@@ -2205,7 +2330,42 @@ async function buildClipScenes(prompt, clipCount, apiKey) {
   return buildAnchoredFallback(prompt, clipCount);
 }
 
-async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes) {
+// Compile one clip prompt from edited meta (used when user edits the plan card).
+// Always includes the production rules + style bible + this segment's shot text.
+function compileScenePrompt({ styleBible, vibe, shot, index, total, clipDur }) {
+  const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
+  const t0 = index * segLen, t1 = (index + 1) * segLen;
+  const vibeLine = vibe ? `Vibe: ${vibe}.` : '';
+  const continuity = index === 0
+    ? `This is the OPENING segment — establish the baseline scene exactly as the style bible describes. Every following segment will inherit these characters, wardrobe, location, lighting, and palette.`
+    : `This segment must visually continue from segment ${index}: identical characters, wardrobe, location, lighting, and color palette. No hard cuts or new characters.`;
+  return `[PRODUCTION RULES — APPLY TO EVERY SHOT]
+${styleBible}
+${vibeLine}
+STRICT DIRECTIVE: Zero on-screen text, no subtitles, no captions, no logos, no words anywhere in the frame.
+
+[SEGMENT ${index + 1} of ${total}  (${t0}-${t1}s)]
+${shot}
+${continuity}`;
+}
+
+// Recompile the full scenes array from current meta state.
+// Returns a new array with .meta attached, ready to feed generateMultiClip.
+function recompileScenesFromMeta(meta, clipCount, clipDur, vibe) {
+  const out = [];
+  for (let i = 0; i < clipCount; i++) {
+    out.push(compileScenePrompt({
+      styleBible: meta.style_bible || '',
+      vibe: vibe || meta.vibe || '',
+      shot: (meta.shots && meta.shots[i]) || '',
+      index: i, total: clipCount, clipDur
+    }));
+  }
+  out.meta = { ...meta, vibe: vibe || meta.vibe || '' };
+  return out;
+}
+
+async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes, aspectRatio) {
   let clipScenes = prebuiltScenes;
   if (!clipScenes || clipScenes.length !== clipCount) {
     const progressText = progressBubble.querySelector('.video-progress-text');
@@ -2238,6 +2398,7 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
   const ctx = { prompt, apiKey, modelName, includeImage, clipCount, clipScenes,
                 stylizedImage, progressBubble, thread, clipResults,
                 durationSeconds, sourceImageForClip0,
+                aspectRatio: aspectRatio || '16:9',
                 retryInFlight: false, billingAbortAt: -1 };
 
   for (let i = 0; i < clipCount; i++) {
@@ -2269,10 +2430,17 @@ async function renderVeoBatchOutcome(ctx) {
   const { progressBubble, thread, clipResults, clipCount, billingAbortAt } = ctx;
   const successUrls = clipResults.filter(r => r.url).map(r => r.url);
 
+  // Revoke prior stitched blob URL on re-render to avoid memory leaks.
+  if (ctx.lastStitchedUrl) {
+    try { URL.revokeObjectURL(ctx.lastStitchedUrl); } catch (_) {}
+    ctx.lastStitchedUrl = null;
+  }
+
   // --- Case A: 0 successful clips ---
   if (successUrls.length === 0) {
     progressBubble.innerHTML = buildVeoSummaryCard(ctx, billingAbortAt, /*hasSuccess*/ false, null);
     wireVeoRetryButtons(ctx);
+    wireVeoRerenderButtons(ctx);
     return;
   }
 
@@ -2286,6 +2454,7 @@ async function renderVeoBatchOutcome(ctx) {
       if (fill) fill.style.width = '85%';
       if (text) text.textContent = 'Stitching clips together...';
       const stitchedUrl = await stitchVideos(successUrls);
+      ctx.lastStitchedUrl = stitchedUrl;
       if (fill) fill.style.width = '100%';
       showStitchedVideoResult(progressBubble, stitchedUrl, successUrls, thread);
     }
@@ -2294,14 +2463,135 @@ async function renderVeoBatchOutcome(ctx) {
     showMultiClipFallback(progressBubble, successUrls, thread);
   }
 
-  // Append retry panel below the video result (only if some clips actually failed)
+  // Always append the retry/re-render panel so users can fix bad clips
+  // without paying to regenerate the entire video.
   const failedClips = clipResults.filter(r => !r.url);
-  if (failedClips.length > 0 || billingAbortAt > 0) {
-    const panel = document.createElement('div');
-    panel.innerHTML = buildVeoSummaryCard(ctx, billingAbortAt, /*hasSuccess*/ true, successUrls.length);
-    progressBubble.appendChild(panel.firstElementChild);
-    wireVeoRetryButtons(ctx);
+  const panel = document.createElement('div');
+  panel.innerHTML = buildVeoSummaryCard(ctx, billingAbortAt, /*hasSuccess*/ true, successUrls.length);
+  progressBubble.appendChild(panel.firstElementChild);
+  if (clipCount > 1) {
+    const rerenderPanel = document.createElement('div');
+    rerenderPanel.innerHTML = buildVeoRerenderPanel(ctx);
+    if (rerenderPanel.firstElementChild) progressBubble.appendChild(rerenderPanel.firstElementChild);
   }
+  wireVeoRetryButtons(ctx);
+  wireVeoRerenderButtons(ctx);
+}
+
+// Per-clip re-render panel. Lets the user replace a single successful clip
+// (e.g. one that's visually off) without paying to rerun the entire batch.
+// Each row shows the current prompt + an inline editor + cost.
+function buildVeoRerenderPanel(ctx) {
+  const { clipResults, clipScenes, modelName, durationSeconds } = ctx;
+  const successCount = clipResults.filter(r => r.url).length;
+  if (successCount === 0) return '';
+  const perSecond = (typeof VEO_PRICING !== 'undefined' && VEO_PRICING[modelName]) || 0;
+  const perClipCost = perSecond * (durationSeconds || 8);
+  const costStr = perClipCost > 0 ? `≈ $${perClipCost.toFixed(2)}/clip` : '';
+
+  const rows = clipResults.map((r, idx) => {
+    if (!r.url) return '';
+    const prompt = (clipScenes && clipScenes[idx]) || '';
+    return `<div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;">
+        <span style="font-size:12px;font-weight:600;color:#cdd6e0;">🎬 Clip ${r.n}</span>
+        <button class="veo-rerender-toggle" data-clip-idx="${idx}" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,165,0,0.4);background:rgba(255,165,0,0.1);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">✎ Re-render this clip</button>
+      </div>
+      <div class="veo-rerender-editor" data-clip-idx="${idx}" style="display:none;margin-top:6px;">
+        <div style="font-size:10px;color:#667788;letter-spacing:1px;font-weight:600;margin-bottom:4px;">PROMPT FOR THIS CLIP (edit then confirm)</div>
+        <textarea class="veo-rerender-prompt" data-clip-idx="${idx}" rows="6" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:6px;border:1px solid rgba(255,165,0,0.3);background:rgba(0,0,0,0.3);color:#e6ecf3;font-size:11px;line-height:1.5;font-family:ui-monospace,monospace;resize:vertical;">${escapeHtml(prompt)}</textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:8px;">
+          <span style="font-size:10px;color:#667788;">${costStr ? costStr + ' on your Google key' : ''}</span>
+          <div style="display:flex;gap:6px;">
+            <button class="veo-rerender-cancel" data-clip-idx="${idx}" style="padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#cdd6e0;font-size:11px;font-weight:600;cursor:pointer;">Cancel</button>
+            <button class="veo-rerender-confirm" data-clip-idx="${idx}" style="padding:5px 14px;border-radius:6px;border:none;background:linear-gradient(135deg,#ffa500,#ff7700);color:#fff;font-size:11px;font-weight:700;cursor:pointer;">✓ Confirm re-render</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div style="margin-top:12px;background:rgba(255,165,0,0.04);border:1px solid rgba(255,165,0,0.2);border-radius:10px;padding:12px;">
+    <div style="font-weight:600;color:#ffa500;font-size:12px;margin-bottom:8px;">✎ Don't like one of the clips? Re-render only that one — pay just for one clip.</div>
+    ${rows}
+  </div>`;
+}
+
+function wireVeoRerenderButtons(ctx) {
+  const { progressBubble, clipScenes, clipResults } = ctx;
+  progressBubble.querySelectorAll('.veo-rerender-toggle').forEach(btn => {
+    if (btn.dataset.wired === '1') return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.clipIdx, 10);
+      const editor = progressBubble.querySelector(`.veo-rerender-editor[data-clip-idx="${idx}"]`);
+      if (!editor) return;
+      const isOpen = editor.style.display === 'block';
+      editor.style.display = isOpen ? 'none' : 'block';
+      btn.textContent = isOpen ? '✎ Re-render this clip' : '▴ Close editor';
+    });
+  });
+  progressBubble.querySelectorAll('.veo-rerender-cancel').forEach(btn => {
+    if (btn.dataset.wired === '1') return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.clipIdx, 10);
+      const editor = progressBubble.querySelector(`.veo-rerender-editor[data-clip-idx="${idx}"]`);
+      const toggle = progressBubble.querySelector(`.veo-rerender-toggle[data-clip-idx="${idx}"]`);
+      if (editor) editor.style.display = 'none';
+      if (toggle) toggle.textContent = '✎ Re-render this clip';
+    });
+  });
+  progressBubble.querySelectorAll('.veo-rerender-confirm').forEach(btn => {
+    if (btn.dataset.wired === '1') return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', async () => {
+      const idx = parseInt(btn.dataset.clipIdx, 10);
+      if (isNaN(idx)) return;
+      if (ctx.retryInFlight) return;
+      const ta = progressBubble.querySelector(`.veo-rerender-prompt[data-clip-idx="${idx}"]`);
+      if (!ta) return;
+      const newPrompt = ta.value.trim();
+      if (!newPrompt) { alert('Prompt cannot be empty.'); return; }
+      if (!confirm(`Re-render clip ${idx + 1}? This will charge your Google key for one clip and replace the existing one.`)) return;
+
+      // TRANSACTIONAL replacement: snapshot the prior good clip so a failed
+      // re-render does NOT destroy the user's existing video. Only swap (and
+      // revoke the old URL) when the new clip succeeds.
+      const priorPrompt = ctx.clipScenes[idx];
+      const priorResult = { ...clipResults[idx] };
+      ctx.clipScenes[idx] = newPrompt;
+
+      ctx.retryInFlight = true;
+      setAllRetryButtonsDisabled(progressBubble, true, '⏳ Re-rendering...');
+      btn.textContent = '⏳ Re-rendering...';
+      try {
+        const result = await generateOneVeoClip(idx, ctx);
+        if (result.url) {
+          // Success → swap, then revoke the old blob URL.
+          clipResults[idx].status = result.status;
+          clipResults[idx].url = result.url;
+          if (priorResult.url) { try { URL.revokeObjectURL(priorResult.url); } catch (_) {} }
+          await renderVeoBatchOutcome(ctx);
+        } else {
+          // Failure → restore prior prompt + prior URL, then re-render the SAME video.
+          ctx.clipScenes[idx] = priorPrompt;
+          clipResults[idx] = priorResult;
+          alert(`Re-render failed (${result.status}). Your original clip ${idx + 1} is preserved — try a different prompt or accept the original.`);
+          await renderVeoBatchOutcome(ctx);
+        }
+      } catch (err) {
+        console.log('[SnapToAI Video] Re-render threw:', err.message);
+        ctx.clipScenes[idx] = priorPrompt;
+        clipResults[idx] = priorResult;
+        alert(`Re-render error: ${err.message}. Your original clip is preserved.`);
+        try { await renderVeoBatchOutcome(ctx); } catch (_) {}
+      } finally {
+        ctx.retryInFlight = false;
+        setAllRetryButtonsDisabled(progressBubble, false, null);
+      }
+    });
+  });
 }
 
 function setAllRetryButtonsDisabled(progressBubble, disabled, label) {
