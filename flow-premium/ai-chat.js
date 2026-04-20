@@ -1611,9 +1611,10 @@ async function startVideoGeneration(prompt, thread) {
     const perSecond = VEO_PRICING[modelName] || 0;
     const estCostUsd = perSecond * totalDur;
 
+    const heroImage = (includeImage && currentImages && currentImages[0]) ? currentImages[0] : null;
     const approved = await showPlanApprovalBubble({
       thread, scenes: prebuiltScenes, prompt, clipCount, modelName, totalDur, estCostUsd,
-      clipDur: selectedVideoDuration
+      clipDur: selectedVideoDuration, heroImage
     });
     if (!approved) {
       const cancelBubble = document.createElement('div');
@@ -1947,9 +1948,11 @@ ${prompt}`;
     'final wide shot — calm resolution, hold on the scene'
   ];
 
-  return Array.from({length: clipCount}, (_, i) => {
+  const shots = [];
+  const prompts = Array.from({length: clipCount}, (_, i) => {
     const t0 = i * 8, t1 = (i + 1) * 8;
     const beat = transitions[Math.min(i, transitions.length - 1)];
+    shots.push(beat);
     const continuity = i === 0
       ? `This is the OPENING segment — establish the baseline scene. Lock in the characters, location, lighting, and color palette exactly as described above; every following segment will inherit from this shot.`
       : `This segment must visually continue from segment ${i} (same characters, same wardrobe, same location, same lighting, same color palette). No hard cuts, no scene changes, no new characters appearing.`;
@@ -1959,6 +1962,13 @@ ${prompt}`;
 ${beat}.
 ${continuity}`;
   });
+  prompts.meta = {
+    title: (prompt || 'Your Video').split(/[.\n]/)[0].slice(0, 50).trim() || 'Your Video',
+    script_summary: prompt,
+    style_bible: 'Cinematic photoreal style. Same characters, location, lighting, and color palette across every clip. Natural lighting, shallow depth of field, smooth motion. No on-screen text.',
+    shots
+  };
+  return prompts;
 }
 
 // Ask Gemini to produce a continuity-anchored storyboard.
@@ -1978,6 +1988,8 @@ ${prompt}
 
 Return STRICT JSON ONLY (no markdown, no commentary) in this exact shape:
 {
+  "title": "A short punchy title for the video (max 6 words, title-case, no quotes).",
+  "script_summary": "A single 1-2 sentence pitch describing what the viewer will experience.",
   "style_bible": "A 3-5 sentence locked description of: main character(s) (age, ethnicity, hair, exact wardrobe), exact location, lighting setup, color palette, lens / camera style, mood. This text will be repeated verbatim at the top of every clip — be specific and unambiguous.",
   "clips": [
     { "shot": "What happens in this 8s segment. Start the description with how the camera moves IN from the previous shot (e.g. 'camera glides right, landing on...'). For clip 1, open with an establishing shot. Each clip must continue the same scene — same characters, same lighting, same location." },
@@ -2016,7 +2028,7 @@ Rules:
     if (!parsed.clips.every(c => c && typeof c.shot === 'string' && c.shot.trim().length > 0)) return null;
 
     const bible = String(parsed.style_bible).trim();
-    return parsed.clips.map((c, i) => {
+    const prompts = parsed.clips.map((c, i) => {
       const shot = String(c.shot).trim();
       const t0 = i * 8, t1 = (i + 1) * 8;
       const continuity = i === 0
@@ -2030,23 +2042,18 @@ STRICT DIRECTIVE: Zero on-screen text, no subtitles, no captions, no logos, no w
 ${shot}
 ${continuity}`;
     });
+    // Decorate the array with title / summary / bible for the preview card.
+    prompts.meta = {
+      title: typeof parsed.title === 'string' ? parsed.title.trim() : '',
+      script_summary: typeof parsed.script_summary === 'string' ? parsed.script_summary.trim() : '',
+      style_bible: bible,
+      shots: parsed.clips.map(c => String(c.shot).trim())
+    };
+    return prompts;
   } catch (e) {
     console.warn('[veo storyboard] director call failed, falling back to template:', e?.message || e);
     return null;
   }
-}
-
-// Pretty-print one clip prompt as a digestible card body for the plan preview.
-// We strip our own meta-headers and show only the human-readable parts.
-function prettyPrintClipForPreview(clipPrompt) {
-  if (!clipPrompt) return '';
-  let bible = '';
-  let shot = '';
-  const segMatch = clipPrompt.match(/\[SEGMENT[^\]]+\]\s*([\s\S]*?)(?:\nThis (?:is the OPENING|segment must)[\s\S]*)?$/);
-  if (segMatch) shot = segMatch[1].trim();
-  const ruleMatch = clipPrompt.match(/\[PRODUCTION RULES[^\]]*\]\s*([\s\S]*?)\n\[/);
-  if (ruleMatch) bible = ruleMatch[1].replace(/^STRICT DIRECTIVE:.*$/gmi, '').replace(/\n{2,}/g, '\n').trim();
-  return { bible, shot };
 }
 
 function escapeHtml(s) {
@@ -2055,59 +2062,128 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-// Show the storyboard plan + Approve / Cancel buttons in a chat bubble.
-// Resolves true (approved) / false (cancelled). Removes the bubble on resolve.
-function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, totalDur, estCostUsd, clipDur }) {
+// Show the storyboard plan + Edit / Generate buttons in a chat bubble.
+// HeyGen-inspired card: hero image, title, two-column Script + Style,
+// detail chips, scene timeline, expand for full breakdown.
+// Resolves true (approved) / false (cancelled). Removes bubble on resolve.
+function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, totalDur, estCostUsd, clipDur, heroImage }) {
   return new Promise((resolve) => {
     const bubble = document.createElement('div');
     bubble.className = 'chat-bubble ai video-plan-preview';
-    bubble.style.cssText = 'border:1px solid rgba(255,165,0,0.35);background:rgba(255,165,0,0.04);';
+    bubble.style.cssText = 'padding:0;background:transparent;border:none;max-width:100%;';
     const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
 
-    // Style bible appears in clip 1; pull it once.
-    const first = prettyPrintClipForPreview(scenes[0]);
-    const sceneCards = scenes.map((s, i) => {
-      const parts = prettyPrintClipForPreview(s);
+    const meta = (scenes && scenes.meta) ? scenes.meta : {};
+    const title = meta.title || 'Your Video';
+    const scriptSummary = meta.script_summary || prompt;
+    const styleBible = meta.style_bible || '';
+    const shots = Array.isArray(meta.shots) && meta.shots.length === scenes.length
+      ? meta.shots
+      : scenes.map(() => '');
+
+    const modelShort = String(modelName || '').replace(/-generate.*/, '').replace(/-preview/, '');
+    const costStr = (estCostUsd != null && !isNaN(estCostUsd)) ? `≈ $${estCostUsd.toFixed(2)}` : '';
+    const aspect = '16:9';
+
+    const hero = heroImage
+      ? `<img src="${escapeHtml(heroImage)}" alt="" style="width:100%;height:160px;object-fit:cover;display:block;">`
+      : `<div style="width:100%;height:160px;background:
+            radial-gradient(ellipse at 30% 20%, rgba(255,165,0,0.35), transparent 55%),
+            radial-gradient(ellipse at 75% 80%, rgba(0,212,255,0.35), transparent 55%),
+            linear-gradient(135deg,#1a1f2e,#0c1118);
+            display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+            <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(255,255,255,0.02) 0 2px,transparent 2px 12px);"></div>
+            <div style="position:relative;text-align:center;">
+              <div style="font-size:42px;line-height:1;margin-bottom:6px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.4));">🎬</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);letter-spacing:2px;font-weight:600;">VEO STORYBOARD</div>
+            </div>
+          </div>`;
+
+    const timelineDots = scenes.map((_, i) =>
+      `<div style="flex:1;height:4px;background:linear-gradient(90deg,#ffa500,#ffcc00);border-radius:2px;${i < scenes.length - 1 ? 'margin-right:3px;' : ''}"></div>`
+    ).join('');
+
+    const sceneCards = scenes.map((_, i) => {
       const t0 = i * segLen, t1 = (i + 1) * segLen;
-      return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:10px;margin-bottom:6px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <span style="font-size:11px;color:#ffa500;font-weight:600;">SEGMENT ${i + 1} · ${t0}-${t1}s</span>
+      const shot = shots[i] || '';
+      return `<div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:700;">${i + 1}</span>
+          <span style="font-size:10px;color:#667788;letter-spacing:1px;font-weight:600;">SEGMENT · ${t0}-${t1}s</span>
         </div>
-        <div style="font-size:12px;color:#cdd6e0;line-height:1.5;">${escapeHtml(parts.shot)}</div>
+        <div style="font-size:12px;color:#cdd6e0;line-height:1.5;">${escapeHtml(shot)}</div>
       </div>`;
     }).join('');
 
-    const costLine = (estCostUsd != null && !isNaN(estCostUsd))
-      ? `<span style="color:#ff7777;font-weight:600;">≈ $${estCostUsd.toFixed(2)}</span> in Veo credits will be billed to your Gemini key.`
-      : `Veo credits will be billed to your Gemini key.`;
+    const chip = (icon, label) =>
+      `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);font-size:11px;color:#cdd6e0;">${icon} ${escapeHtml(label)}</span>`;
 
     bubble.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:20px;">📋</span>
-        <span style="font-size:14px;font-weight:600;color:#ffa500;">Review the plan before we render</span>
-      </div>
-      <div style="font-size:12px;color:#8899aa;margin-bottom:10px;line-height:1.5;">
-        ${clipCount} clips × 8s = <b style="color:#cdd6e0;">${totalDur}s video</b> · ${escapeHtml(modelName.replace(/-generate.*/, ''))}<br>
-        ${costLine} <b>Approve only if the plan looks right</b> — once rendering starts, failed clips may still be billed.
-      </div>
+      <div style="background:#11151c;border:1px solid rgba(255,255,255,0.08);border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.4);font-family:inherit;">
+        <!-- Toolbar -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);">
+          <button class="plan-expand-btn" style="background:none;border:none;color:#8899aa;font-size:12px;font-weight:600;cursor:pointer;padding:4px 0;">▾ Expand</button>
+          <div style="display:flex;gap:6px;">
+            <button class="plan-cancel-btn" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#cdd6e0;cursor:pointer;font-size:12px;font-weight:600;">Edit</button>
+            <button class="plan-approve-btn" style="padding:6px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#00c878,#00a060);color:#fff;cursor:pointer;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,200,120,0.3);">Generate</button>
+          </div>
+        </div>
 
-      ${first.bible ? `<div style="background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:10px;margin-bottom:10px;">
-        <div style="font-size:11px;color:#00d4ff;font-weight:600;margin-bottom:6px;">🎨 STYLE BIBLE (locked across every clip)</div>
-        <div style="font-size:12px;color:#cdd6e0;line-height:1.5;white-space:pre-wrap;">${escapeHtml(first.bible)}</div>
-      </div>` : ''}
+        <!-- Hero -->
+        ${hero}
 
-      <div style="font-size:11px;color:#667788;font-weight:600;margin-bottom:6px;">🎞️ SCENE-BY-SCENE</div>
-      ${sceneCards}
+        <!-- Body -->
+        <div style="padding:16px 18px 14px;">
+          <h2 style="margin:0 0 14px 0;font-size:20px;font-weight:700;color:#fff;line-height:1.25;">${escapeHtml(title)}</h2>
 
-      <div style="display:flex;gap:8px;margin-top:14px;">
-        <button class="plan-cancel-btn" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#cdd6e0;cursor:pointer;font-size:13px;font-weight:600;">✕ Cancel</button>
-        <button class="plan-approve-btn" style="flex:2;padding:10px;border-radius:8px;border:1px solid rgba(0,200,120,0.5);background:linear-gradient(135deg,#00c878,#00a060);color:#fff;cursor:pointer;font-size:13px;font-weight:700;">✓ Approve & Render ${clipCount} clips</button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div>
+              <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin-bottom:4px;">SCRIPT</div>
+              <div style="font-size:12px;color:#cdd6e0;line-height:1.5;">${escapeHtml(scriptSummary)}</div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin-bottom:4px;">STYLE</div>
+              <div style="font-size:12px;color:#cdd6e0;line-height:1.5;">${escapeHtml(styleBible)}</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:4px;margin-bottom:12px;">${timelineDots}</div>
+
+          <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin-bottom:6px;">DETAILS</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px;">
+            ${chip('⏱', `${totalDur}s`)}
+            ${chip('🎞', `${clipCount} clips`)}
+            ${chip('📐', aspect)}
+            ${chip('🎥', modelShort)}
+            ${costStr ? chip('💳', `${costStr} on your key`) : ''}
+          </div>
+        </div>
+
+        <!-- Expandable scene-by-scene -->
+        <div class="plan-expand-body" style="display:none;padding:0 18px 14px;">
+          <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin:6px 0 8px;">🎞️ SCENE-BY-SCENE BREAKDOWN</div>
+          ${sceneCards}
+        </div>
+
+        <!-- Footer note -->
+        <div style="padding:10px 18px;border-top:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);font-size:10px;color:#667788;text-align:center;line-height:1.5;">
+          Edit returns you to the prompt — <b style="color:#cdd6e0;">no Veo credits charged</b>. Once you Generate, failed clips may still be billed by Google.
+        </div>
       </div>
-      <div style="font-size:10px;color:#667788;margin-top:8px;text-align:center;">Cancelling will not charge you. You can refine your prompt and try again.</div>
     `;
 
     thread.appendChild(bubble);
     thread.scrollTop = thread.scrollHeight;
+
+    const expandBtn = bubble.querySelector('.plan-expand-btn');
+    const expandBody = bubble.querySelector('.plan-expand-body');
+    let expanded = false;
+    expandBtn.onclick = () => {
+      expanded = !expanded;
+      expandBody.style.display = expanded ? 'block' : 'none';
+      expandBtn.textContent = expanded ? '▴ Collapse' : '▾ Expand';
+      thread.scrollTop = thread.scrollHeight;
+    };
 
     const cleanup = (decision) => {
       bubble.remove();
