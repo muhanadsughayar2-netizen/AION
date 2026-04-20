@@ -18,3 +18,9 @@ id = "yJZJOOYA9qZFO7uYKk_A_"
 uri = "file://snaptoai-extension-v2.4.1.zip"
 type = "unspecified"
 title = "SnapToAI Chrome Extension v2.4.1 (ready to upload)"
+
+[[outputs]]
+id = "mcqNym--WHAPTHGzpNtOb"
+uri = "file://snaptoai-extension-v2.4.2.zip"
+type = "unspecified"
+title = "SnapToAI Chrome Extension v2.4.2 (ready to upload)"
