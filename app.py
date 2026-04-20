@@ -95,6 +95,18 @@ def init_db():
                 created_at TIMESTAMP DEFAULT NOW()
             )
         ''')
+        cur.execute('ALTER TABLE user_activity ADD COLUMN IF NOT EXISTS device_id TEXT')
+        # Lightweight aggregate so we can show a single "total captures across
+        # ALL users (signed-in + anonymous)" headline number on the dashboard
+        # without scanning user_activity every time.
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS anon_capture_stats (
+                device_id TEXT PRIMARY KEY,
+                capture_count INTEGER DEFAULT 0,
+                first_seen TIMESTAMP DEFAULT NOW(),
+                last_seen TIMESTAMP DEFAULT NOW()
+            )
+        ''')
         cur.execute('''
             CREATE TABLE IF NOT EXISTS subscriptions (
                 id SERIAL PRIMARY KEY,
@@ -878,12 +890,19 @@ def auth_activity():
             return response, 400
 
         email = str(data.get('email', ''))[:200].strip().lower()
+        device_id = str(data.get('deviceId', ''))[:100].strip()
         action = str(data.get('action', ''))[:100]
         details = str(data.get('details', ''))[:500]
 
         valid_actions = ['capture_snap', 'capture_snip', 'capture_fullpage', 'ai_chat', 'review_prompt_shown', 'review_clicked']
-        if not email or '@' not in email or not action:
-            response = jsonify({'success': False, 'error': 'Valid email and action are required'})
+        if not action:
+            response = jsonify({'success': False, 'error': 'action is required'})
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            return response, 400
+        # Allow anonymous logging: must have either a valid email OR a device id.
+        has_valid_email = bool(email) and '@' in email
+        if not has_valid_email and not device_id:
+            response = jsonify({'success': False, 'error': 'Either email or deviceId is required'})
             response.headers['Access-Control-Allow-Origin'] = '*'
             return response, 400
 
@@ -894,16 +913,29 @@ def auth_activity():
 
         conn = get_db()
         cur = conn.cursor()
+        # Email column can legitimately be empty for anonymous events.
         cur.execute('''
-            INSERT INTO user_activity (email, action, details, created_at)
-            VALUES (%s, %s, %s, NOW())
-        ''', (email, action, details))
+            INSERT INTO user_activity (email, action, details, device_id, created_at)
+            VALUES (%s, %s, %s, %s, NOW())
+        ''', (email if has_valid_email else None, action, details, device_id or None))
 
         if action in ('capture_snap', 'capture_snip', 'capture_fullpage'):
-            cur.execute('''
-                UPDATE users SET capture_count = capture_count + 1, last_seen = NOW()
-                WHERE email = %s
-            ''', (email,))
+            if has_valid_email:
+                # Signed-in: count against the user record only — never the
+                # anonymous bucket — so the dashboard total isn't double-counted.
+                cur.execute('''
+                    UPDATE users SET capture_count = capture_count + 1, last_seen = NOW()
+                    WHERE email = %s
+                ''', (email,))
+            elif device_id:
+                # Truly anonymous: count against the device bucket.
+                cur.execute('''
+                    INSERT INTO anon_capture_stats (device_id, capture_count, first_seen, last_seen)
+                    VALUES (%s, 1, NOW(), NOW())
+                    ON CONFLICT (device_id) DO UPDATE
+                    SET capture_count = anon_capture_stats.capture_count + 1,
+                        last_seen = NOW()
+                ''', (device_id,))
 
         conn.commit()
         cur.close()
@@ -1084,6 +1116,25 @@ def admin_panel():
             FROM user_activity ORDER BY created_at DESC LIMIT 50
         ''')
         recent_activity_rows = cur.fetchall()
+
+        # Total captures across ALL users — signed-in (users.capture_count)
+        # plus anonymous (anon_capture_stats.capture_count). This is the
+        # headline metric that confirms the extension is reporting activity.
+        cur.execute('SELECT COALESCE(SUM(capture_count),0) FROM users')
+        total_signed_in_captures = cur.fetchone()[0] or 0
+        cur.execute('SELECT COALESCE(SUM(capture_count),0), COUNT(*) FROM anon_capture_stats')
+        anon_row = cur.fetchone()
+        total_anon_captures = anon_row[0] or 0
+        anon_devices = anon_row[1] or 0
+        total_captures_all = total_signed_in_captures + total_anon_captures
+        # Captures recorded in the last 24h (from the activity log) — useful
+        # to confirm tracking is alive RIGHT NOW.
+        cur.execute('''
+            SELECT COUNT(*) FROM user_activity
+            WHERE action IN ('capture_snap','capture_snip','capture_fullpage')
+              AND created_at > NOW() - INTERVAL '24 hours'
+        ''')
+        captures_last_24h = cur.fetchone()[0] or 0
         
         cur.close()
         conn.close()
@@ -1232,6 +1283,14 @@ def admin_panel():
         <div class="stat-box">
             <div class="stat-number" style="color: #a855f7;">{total_usage}</div>
             <div class="stat-label">Total AI Uses</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number" style="color: #ffa500;">{total_captures_all}</div>
+            <div class="stat-label">📸 Total Captures<br><span style="font-size:10px;color:#666;">{total_signed_in_captures} signed-in · {total_anon_captures} anonymous</span></div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number" style="color: #00ff88;">{captures_last_24h}</div>
+            <div class="stat-label">⚡ Captures (24h)<br><span style="font-size:10px;color:#666;">{anon_devices} anon devices total</span></div>
         </div>
         <div class="stat-box">
             <div class="stat-number" style="color: #f97316;">{len(languages)}</div>

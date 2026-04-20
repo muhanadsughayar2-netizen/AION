@@ -262,17 +262,39 @@ async function incrementCaptureCount(captureType) {
       }
     }
 
+    // Always log the capture to the backend, even when the user isn't
+    // signed in. This way the admin dashboard reflects ALL activity, not
+    // just signed-in users. Anonymous captures use a stable per-install
+    // device id so we can still see unique-user counts.
+    let deviceId;
+    try {
+      const idData = await chrome.storage.local.get('snaptoai_device_id');
+      deviceId = idData.snaptoai_device_id;
+      if (!deviceId) {
+        deviceId = 'dev_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+        await chrome.storage.local.set({ snaptoai_device_id: deviceId });
+      }
+    } catch (_) { deviceId = 'dev_unknown'; }
+
     const userData = await chrome.storage.local.get(['snaptoai_user']);
-    if (userData.snaptoai_user && userData.snaptoai_user.email) {
-      fetch(BACKEND_URL + '/api/auth/activity', {
+    const email = (userData.snaptoai_user && userData.snaptoai_user.email) || '';
+
+    try {
+      const resp = await fetch(BACKEND_URL + '/api/auth/activity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: userData.snaptoai_user.email,
+          email,
+          deviceId,
           action: captureType,
           details: JSON.stringify({ count: newCount })
         })
-      }).catch(() => {});
+      });
+      if (!resp.ok) {
+        console.log('[SnapToAI] Capture log non-OK:', resp.status, await resp.text().catch(() => ''));
+      }
+    } catch (netErr) {
+      console.log('[SnapToAI] Capture log network error:', netErr.message);
     }
   } catch (e) {
     console.log('[SnapToAI] Capture count error:', e);
