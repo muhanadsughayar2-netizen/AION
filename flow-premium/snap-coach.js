@@ -250,10 +250,25 @@ GUIDELINES:
     recognition.onerror = (e) => {
       isListening = false;
       setState('idle');
-      const msg = e.error === 'not-allowed'
-        ? 'I need microphone permission. Click the lock icon in your address bar to allow it.'
-        : (e.error === 'no-speech' ? 'I didn\'t hear anything — try again?' : 'Mic error: ' + e.error);
-      showBubble(msg, [{ label: 'OK', onClick: hideBubble }]);
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        showBubble(
+          'Chrome blocked the microphone for this extension. Tap "Fix it" — I\'ll open the right settings page so you can switch it to Allow in one click.',
+          [
+            { label: '🔧 Fix it for me', onClick: openMicSettings },
+            { label: 'Not now', onClick: hideBubble, danger: true }
+          ]
+        );
+      } else if (e.error === 'no-speech') {
+        showBubble('I didn\'t hear anything — try again?', [
+          { label: '🎤 Try again', onClick: () => { hideBubble(); startListening(); } },
+          { label: 'Close', onClick: hideBubble, danger: true }
+        ]);
+      } else {
+        showBubble('Mic hiccup: ' + e.error + '. Try again?', [
+          { label: '🎤 Retry', onClick: () => { hideBubble(); startListening(); } },
+          { label: 'Close', onClick: hideBubble, danger: true }
+        ]);
+      }
     };
     recognition.onend = () => {
       if (isListening) { isListening = false; setState('idle'); }
@@ -324,6 +339,26 @@ GUIDELINES:
     const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join(' ').trim();
     if (!text) throw new Error('Empty reply.');
     return text;
+  }
+
+  // Opens Chrome's microphone settings page in a new tab so the user can
+  // flip the toggle to "Allow" without hunting for a hidden lock icon.
+  function openMicSettings() {
+    hideBubble();
+    try {
+      const extId = chrome.runtime.id;
+      // This page lets the user grant mic access specifically to this extension.
+      const url = 'chrome://settings/content/siteDetails?site=chrome-extension%3A%2F%2F' + extId;
+      chrome.tabs.create({ url });
+    } catch (_) {
+      try { chrome.tabs.create({ url: 'chrome://settings/content/microphone' }); } catch (__) {}
+    }
+    // Show a friendly nudge once the page opens
+    setTimeout(() => {
+      showBubble('Find "Microphone" on that page and switch it to Allow. Then come back and tap me again!', [
+        { label: 'Got it', onClick: hideBubble }
+      ]);
+    }, 600);
   }
 
   function getGeminiKey() {
