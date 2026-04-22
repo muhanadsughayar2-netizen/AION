@@ -1704,6 +1704,7 @@ async function handleOrbClick() {
       setStatus(`Snap ${response.count} captured! ✓`, 'success', 2500);
       
       incrementCaptureCount('capture_snap');
+      try { window.SnapCoach && response.count === 1 && window.SnapCoach.celebrate('Nice — your first capture! Tap me if you\'d like a quick tour of what to do next.'); } catch (_) {}
       
       // Reload snaps
       await loadSnaps();

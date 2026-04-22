@@ -1,0 +1,131 @@
+/* ============================================================================
+   Snap — the in-popup voice co-pilot mascot.
+   Pure CSS, no extra deps. Lives in the bottom-right of the popup.
+   ============================================================================ */
+
+#snap-mascot {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ffd166 0%, #ff8c42 55%, #b94a00 100%);
+  box-shadow: 0 6px 18px rgba(255,140,66,0.45), 0 0 0 2px rgba(255,255,255,0.08) inset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  cursor: pointer;
+  z-index: 99998;
+  user-select: none;
+  transition: transform 0.18s ease, box-shadow 0.25s ease;
+  animation: snap-breathe 3.4s ease-in-out infinite;
+}
+#snap-mascot:hover { transform: scale(1.08); }
+#snap-mascot.snap-thinking {
+  animation: snap-thinking 1.1s ease-in-out infinite;
+  box-shadow: 0 6px 18px rgba(0,217,255,0.55), 0 0 22px rgba(0,217,255,0.55);
+}
+#snap-mascot.snap-talking {
+  animation: snap-talking 0.45s ease-in-out infinite;
+  box-shadow: 0 6px 18px rgba(0,255,136,0.55), 0 0 26px rgba(0,255,136,0.55);
+}
+#snap-mascot.snap-listening {
+  animation: snap-listening 0.7s ease-in-out infinite;
+  box-shadow: 0 6px 18px rgba(255,107,107,0.55), 0 0 26px rgba(255,107,107,0.55);
+  background: radial-gradient(circle at 30% 30%, #ff9a9a 0%, #ff4757 55%, #8b0000 100%);
+}
+
+@keyframes snap-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+@keyframes snap-thinking {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50%      { transform: scale(1.1) rotate(8deg); }
+}
+@keyframes snap-talking {
+  0%, 100% { transform: scale(1.04); }
+  50%      { transform: scale(1.18); }
+}
+@keyframes snap-listening {
+  0%, 100% { transform: scale(1.05); box-shadow: 0 6px 18px rgba(255,107,107,0.45), 0 0 18px rgba(255,107,107,0.45); }
+  50%      { transform: scale(1.18); box-shadow: 0 6px 22px rgba(255,107,107,0.7), 0 0 32px rgba(255,107,107,0.7); }
+}
+
+/* Tooltip / status bubble that floats above the mascot */
+#snap-bubble {
+  position: fixed;
+  right: 76px;
+  bottom: 22px;
+  max-width: 230px;
+  padding: 9px 12px;
+  border-radius: 14px 14px 4px 14px;
+  background: rgba(15, 22, 30, 0.96);
+  color: #e6ecf3;
+  font-size: 12px;
+  line-height: 1.45;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,165,0,0.35);
+  z-index: 99997;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  pointer-events: none;
+}
+#snap-bubble.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+#snap-bubble .snap-bubble-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+#snap-bubble .snap-bubble-btn {
+  padding: 4px 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,165,0,0.4);
+  background: rgba(255,165,0,0.12);
+  color: #ffa500;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#snap-bubble .snap-bubble-btn:hover { background: rgba(255,165,0,0.22); }
+#snap-bubble .snap-bubble-btn.snap-stop {
+  border-color: rgba(255,107,107,0.5);
+  background: rgba(255,107,107,0.12);
+  color: #ff6b6b;
+}
+
+/* "Click here" — temporary glow on any UI element Snap points at */
+.snap-glow-target {
+  position: relative;
+  animation: snap-target-pulse 1.1s ease-in-out infinite !important;
+  box-shadow: 0 0 0 3px rgba(255,165,0,0.6), 0 0 18px rgba(255,165,0,0.7) !important;
+  border-radius: 10px !important;
+  z-index: 99996;
+}
+@keyframes snap-target-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(255,165,0,0.55), 0 0 14px rgba(255,165,0,0.55); }
+  50%      { box-shadow: 0 0 0 5px rgba(255,165,0,0.85), 0 0 28px rgba(255,165,0,0.95); }
+}
+
+/* Tiny dismiss "x" on the bubble */
+#snap-bubble .snap-bubble-close {
+  position: absolute;
+  top: 4px;
+  right: 7px;
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.45);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+#snap-bubble .snap-bubble-close:hover { color: #fff; }
