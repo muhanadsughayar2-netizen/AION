@@ -1,97 +1,93 @@
 /* ============================================================================
-   Snap — mascot-first voice + chat co-pilot.
+   Snap — HUD shelf at the bottom of the popup, powered by the Gemini Live API
+   (Bidi WebSocket). One persistent mic button toggles a streaming session.
 
-   UI:
-   - Header trigger pill (no floating mess).
-   - Full-popup STAGE with a big animated mascot center-screen.
-   - Live SUBTITLES near the mascot (no chat history / WhatsApp look).
-   - Mic + text input + Stop at the bottom.
+   Why WebSocket / Live API:
+   - The REST flow fired a separate HTTPS request for each text + TTS call,
+     which is what was hitting Gemini's per-minute limits.
+   - The Live API runs a single bidi WS session: user audio streams up, model
+     audio + transcripts stream back. One connection per conversation, no
+     repeated REST calls, much higher per-minute throughput.
 
-   Logic (kept from v2.6.0 — these fixes prevent API spam):
-   - Per-turn turnId + AbortController. Stop bumps the ID and aborts in-flight
-     fetches; stale callbacks are silently dropped.
-   - Single-fire `processed` guard on SpeechRecognition.onresult.
-   - isBusy gate blocks new turns while one is running.
-   - AudioContext primed on every user click (Chrome autoplay policy).
+   Stop semantics:
+   - Tapping the mic while a session is active calls hardStop().
+   - hardStop() closes the WebSocket immediately and stops all audio playback,
+     so no more bytes leave the client.
    ============================================================================ */
 
 (function () {
   'use strict';
 
-  // ===== System prompt =====
-  const SNAP_SYSTEM_PROMPT = `You are "Snap" — a warm, upbeat, slightly playful creative co-pilot living inside the SnapToAI Chrome extension. Speak like a friendly studio buddy: short spoken-style sentences (1-3 max), natural contractions, encouraging, never robotic. You are this app's guide AND a creative partner who actively suggests cool things the user can do with their screenshots.
+  // ----- System prompt -----
+  const SNAP_SYSTEM_PROMPT = `You are "Snap" — a warm, upbeat, slightly playful creative co-pilot living inside the SnapToAI Chrome extension. Speak like a friendly studio buddy: short spoken-style sentences (1-3 max), natural contractions, never robotic. Pitch creative workflows the user hasn't thought of.
 
-PROACTIVE COACHING — your superpower:
-You are a creative ideas machine. The user often doesn't know the best way to use screenshots + AI. Spot the opportunity, pitch a smart workflow in one breath. Be specific.
-
-WORKFLOW IDEAS BY CONTEXT:
-📈 Stocks/trading: multi-timeframe stitches, indicator overlays, candlestick pattern questions.
-💻 Code/debugging: error + function context combos.
-🎨 Design/UI: competitor comparisons, breakpoint diffs.
-📚 Learning: full-page article summaries, PDF stitch-into-study-guide.
-🛒 Shopping: real-vs-counterfeit, multi-listing value comparisons.
-📊 Dashboards: anomaly investigation across timeframes.
-
-ABOUT THE APP:
-- Three capture modes: SNAP (viewport), SNIP (drag region), FULL PAGE (auto-scroll stitch).
+ABOUT SNAPTOAI:
+- Three capture modes: SNAP (viewport), SNIP (region), FULL PAGE (auto-scroll stitch).
 - Holds up to 10 screenshots in a queue.
-- ASK AI opens built-in chat using the user's own Gemini key.
+- ASK AI opens a built-in chat using the user's own Gemini key.
 - AI modes: Vision, Image (Nano Banana), Music (Lyria), Video (Veo).
 - Annotation: highlight, callouts, text, stickers.
 - Right-click anywhere for the wand menu.
-- 55 languages, 30-day free trial, paid plan via Whop.
 
-UI ELEMENTS YOU CAN POINT AT (end your reply with [glow:#id] — only when you actually told the user to click that button):
-- [glow:#snapButton] [glow:#snipButton] [glow:#fullPageButton] [glow:#directAiButton]
-- [glow:#signInHeaderBtn] [glow:#sendSelectedAiBtn] [glow:#copySelectedBtn]
-- [glow:#exportPdfBtn] [glow:#downloadSelectedBtn] [glow:#youtubeBtn]
-
-GUIDELINES:
-- Keep replies under 25 words when possible (live subtitles — short reads better).
-- After every capture, suggest the next step (don't just praise).
-- If queue has 2+ images, suggest stitching or sending in one go.
+PROACTIVE COACHING:
+- After a capture, suggest the next step (don't just praise).
+- Spot opportunities: stocks (multi-timeframe), code (error+function context), design (competitor compare), learning (PDF stitch), shopping (compare listings), dashboards (anomaly check).
 - If user is vague, ask ONE sharp clarifying question, then pitch a workflow.
-- Be bold with ideas the user hasn't thought of yet.`;
 
-  const GEMINI_MODEL = 'gemini-2.0-flash';
-  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+UI ELEMENTS YOU CAN POINT AT (end your reply with [glow:#id] only when you actually told the user to click that button):
+[glow:#snapButton] [glow:#snipButton] [glow:#fullPageButton] [glow:#directAiButton]
+[glow:#signInHeaderBtn] [glow:#sendSelectedAiBtn] [glow:#copySelectedBtn]
+[glow:#exportPdfBtn] [glow:#downloadSelectedBtn] [glow:#youtubeBtn]
 
-  const TTS_MODEL = 'gemini-2.5-flash-preview-tts';
-  const TTS_URL = `https://generativelanguage.googleapis.com/v1beta/models/${TTS_MODEL}:generateContent`;
-  const TTS_VOICE = 'Kore';
-  const TTS_SAMPLE_RATE = 24000;
+GUIDELINES: Keep replies under 25 words when possible — they appear as live subtitles, short reads better.`;
 
-  // ===== Per-turn state =====
-  let activeTurnId = 0;
-  let activeAbortController = null;
-  let isBusy = false;
-  let isListening = false;
-  let recognition = null;
+  // Live API model (bidi audio in / audio out + transcripts).
+  // Uses the user's existing Gemini API key (same as the rest of the extension).
+  const LIVE_MODEL = 'models/gemini-live-2.5-flash-preview';
+  const LIVE_VOICE = 'Kore';
+  const LIVE_WS_URL = (key) =>
+    `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${encodeURIComponent(key)}`;
 
-  // ===== DOM refs =====
-  let panelEl = null;
-  let stageEl = null;
-  let subtitleEl = null;
+  // ----- Per-session state -----
+  let ws = null;
+  let isSessionActive = false;     // WS open + mic streaming
+  let setupComplete = false;
+  let sessionId = 0;               // bumped on hardStop — invalidates stale callbacks
+
+  // ----- Audio capture (mic → WS) -----
+  let micStream = null;
+  let captureCtx = null;
+  let captureNode = null;
+  let captureSource = null;
+  let captureMute = null;
+
+  // ----- Audio playback (WS → speakers) -----
+  let playCtx = null;
+  let playQueueTime = 0;
+  let playingSources = [];
+
+  // ----- DOM refs -----
+  let shelfEl = null;
+  let mascotEl = null;
+  let bubbleEl = null;
   let micBtnEl = null;
-  let inputEl = null;
-  let sendBtnEl = null;
-  let stopBtnEl = null;
+  let labelDotEl = null;
+  let labelHintEl = null;
 
-  // ===== Audio =====
-  let audioCtx = null;
-  let currentAudioSource = null;
+  // ----- Subtitle text accumulators (Live API streams transcripts in chunks) -----
+  let inputTranscriptBuffer = '';
+  let outputTranscriptBuffer = '';
+  let bubbleHideTimer = null;
 
-  // ===== Conversation memory =====
-  let conversationHistory = [];
-
-  // ===== Public hook =====
+  // ===========================================================================
+  //  PUBLIC HOOK
+  // ===========================================================================
   window.SnapCoach = {
-    open: openPanel,
-    close: closePanel,
+    open() { /* shelf is always visible */ },
+    close() { hardStop(); },
     celebrate(message) {
-      if (!panelEl || panelEl.classList.contains('snap-open')) return;
-      openPanel();
-      showSubtitle(message || 'Nice capture! Want a tip on what to do next?', 'bot');
+      if (isSessionActive) return;
+      flashBubble(message || 'Nice capture! Tap the mic and ask me what to do next.', 'bot', 4500);
     }
   };
 
@@ -104,439 +100,426 @@ GUIDELINES:
   let booted = false;
   function boot() {
     if (booted) return; booted = true;
-    injectTrigger();
-    injectPanel();
-    try { window.speechSynthesis.getVoices(); } catch (_) {}
+    injectShelf();
+    // Remove the legacy header trigger if a previous version added it.
+    const legacy = document.getElementById('snap-trigger');
+    if (legacy) legacy.remove();
   }
 
-  function injectTrigger() {
-    if (document.getElementById('snap-trigger')) return;
-    const header = document.querySelector('.header .header-right') || document.querySelector('.header');
-    if (!header) return;
-    const btn = document.createElement('button');
-    btn.id = 'snap-trigger';
-    btn.type = 'button';
-    btn.title = 'Open Snap — your voice & chat co-pilot';
-    btn.innerHTML = '<span class="snap-trigger-dot"></span><span>Snap</span>';
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      primeAudio();
-      openPanel();
-    });
-    header.insertBefore(btn, header.firstChild);
-  }
-
-  function injectPanel() {
-    if (document.getElementById('snap-panel')) return;
-    panelEl = document.createElement('div');
-    panelEl.id = 'snap-panel';
-    panelEl.innerHTML = `
-      <div class="snap-stage-topbar">
-        <button class="snap-panel-close" type="button" aria-label="Close">×</button>
+  function injectShelf() {
+    if (document.getElementById('snap-shelf')) return;
+    shelfEl = document.createElement('div');
+    shelfEl.id = 'snap-shelf';
+    shelfEl.classList.add('snap-state-idle');
+    shelfEl.innerHTML = `
+      <div class="snap-shelf-bubble" aria-live="polite"></div>
+      <div class="snap-shelf-mascot-wrap">
+        <div class="snap-shelf-ring"></div>
+        <div class="snap-shelf-mascot">📸</div>
       </div>
-      <div class="snap-stage snap-state-idle">
-        <div class="snap-mascot-wrap">
-          <div class="snap-mascot-ring"></div>
-          <div class="snap-mascot-ring"></div>
-          <div class="snap-mascot-ring"></div>
-          <div class="snap-mascot">📸</div>
-        </div>
-        <div class="snap-mascot-name">
-          <strong>SNAP</strong>
-          <span>Your AI co-pilot</span>
-        </div>
-        <div class="snap-subtitle" aria-live="polite"></div>
+      <div class="snap-shelf-label">
+        <strong>SNAP</strong>
+        <span><span class="snap-shelf-status-dot"></span><span class="snap-shelf-hint">Tap the mic to talk</span></span>
       </div>
-      <div class="snap-input-bar">
-        <button class="snap-mic-btn" type="button" title="Talk to Snap" aria-label="Mic">🎤</button>
-        <input class="snap-text-input" type="text" placeholder="Or type a message…" maxlength="500" />
-        <button class="snap-send-btn" type="button" title="Send" aria-label="Send">➤</button>
-        <button class="snap-stop-btn" type="button" title="Stop">■ Stop</button>
-      </div>
+      <button class="snap-shelf-mic" type="button" title="Talk to Snap" aria-label="Talk to Snap">🎤</button>
     `;
-    document.body.appendChild(panelEl);
+    document.body.appendChild(shelfEl);
 
-    stageEl     = panelEl.querySelector('.snap-stage');
-    subtitleEl  = panelEl.querySelector('.snap-subtitle');
-    micBtnEl    = panelEl.querySelector('.snap-mic-btn');
-    inputEl     = panelEl.querySelector('.snap-text-input');
-    sendBtnEl   = panelEl.querySelector('.snap-send-btn');
-    stopBtnEl   = panelEl.querySelector('.snap-stop-btn');
+    mascotEl  = shelfEl.querySelector('.snap-shelf-mascot');
+    bubbleEl  = shelfEl.querySelector('.snap-shelf-bubble');
+    micBtnEl  = shelfEl.querySelector('.snap-shelf-mic');
+    labelDotEl  = shelfEl.querySelector('.snap-shelf-status-dot');
+    labelHintEl = shelfEl.querySelector('.snap-shelf-hint');
 
-    panelEl.querySelector('.snap-panel-close').addEventListener('click', () => {
-      hardStop();
-      closePanel();
-    });
-
-    micBtnEl.addEventListener('click', () => {
-      primeAudio();
-      if (isListening) { stopListening(); return; }
-      startListening();
-    });
-
-    sendBtnEl.addEventListener('click', () => {
-      primeAudio();
-      submitText();
-    });
-
-    stopBtnEl.addEventListener('click', () => {
-      hardStop();
-      showSubtitle('Stopped. Tap the mic or type when ready.', 'bot');
-    });
-
-    inputEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        primeAudio();
-        submitText();
-      }
-    });
+    micBtnEl.addEventListener('click', onMicClick);
   }
 
-  function openPanel() {
-    if (!panelEl) injectPanel();
-    panelEl.classList.add('snap-open');
-    setStage('idle');
-    showSubtitle("Hey, I'm Snap! Tap the mic or type — I'll guide you.", 'bot');
-    setTimeout(() => { try { inputEl.focus({ preventScroll: true }); } catch (_) {} }, 320);
+  function setStage(state, hint) {
+    if (!shelfEl) return;
+    shelfEl.classList.remove('snap-state-idle', 'snap-state-listening', 'snap-state-thinking', 'snap-state-talking');
+    shelfEl.classList.add('snap-state-' + state);
+    shelfEl.classList.toggle('snap-active', state !== 'idle');
+    if (hint && labelHintEl) labelHintEl.textContent = hint;
   }
-  function closePanel() {
-    if (!panelEl) return;
-    panelEl.classList.remove('snap-open');
+
+  function flashBubble(text, kind, autoHideMs) {
+    if (!bubbleEl) return;
+    clearTimeout(bubbleHideTimer);
+    bubbleEl.classList.remove('snap-user', 'snap-error');
+    if (kind === 'user')  bubbleEl.classList.add('snap-user');
+    if (kind === 'error') bubbleEl.classList.add('snap-error');
+    bubbleEl.textContent = text || '';
+    bubbleEl.classList.add('snap-show');
+    if (autoHideMs) bubbleHideTimer = setTimeout(hideBubble, autoHideMs);
+  }
+  function hideBubble() {
+    if (bubbleEl) bubbleEl.classList.remove('snap-show');
   }
 
   // ===========================================================================
-  //  STAGE STATE & SUBTITLES
+  //  MIC BUTTON — toggles the entire Live session
   // ===========================================================================
-  function setStage(state) {
-    if (!stageEl) return;
-    stageEl.classList.remove('snap-state-idle', 'snap-state-listening', 'snap-state-thinking', 'snap-state-talking');
-    stageEl.classList.add('snap-state-' + state);
-  }
-
-  let subtitleHideTimer = null;
-  function showSubtitle(text, kind, opts) {
-    if (!subtitleEl) return;
-    clearTimeout(subtitleHideTimer);
-    subtitleEl.classList.remove('snap-user', 'snap-error', 'snap-thinking');
-    if (kind === 'user')     subtitleEl.classList.add('snap-user');
-    if (kind === 'error')    subtitleEl.classList.add('snap-error');
-    if (kind === 'thinking') subtitleEl.classList.add('snap-thinking');
-    subtitleEl.textContent = text || '';
-    subtitleEl.classList.add('snap-show');
-    if (opts && opts.autoHideMs) {
-      subtitleHideTimer = setTimeout(hideSubtitle, opts.autoHideMs);
+  async function onMicClick() {
+    if (isSessionActive) {
+      hardStop();
+      flashBubble('Stopped.', 'bot', 1800);
+      return;
     }
-  }
-  function hideSubtitle() {
-    if (!subtitleEl) return;
-    subtitleEl.classList.remove('snap-show');
-  }
-
-  function setBusy(busy) {
-    isBusy = busy;
-    if (!sendBtnEl) return;
-    sendBtnEl.disabled = busy;
-    micBtnEl.disabled = busy && !isListening;
-    inputEl.disabled = busy;
-    stopBtnEl.classList.toggle('snap-show', busy);
-    sendBtnEl.style.display = busy ? 'none' : 'flex';
+    await startLiveSession();
   }
 
   // ===========================================================================
-  //  HARD STOP — abort fetches + audio + recognition for current turn
+  //  HARD STOP — kills the WebSocket + audio immediately
   // ===========================================================================
   function hardStop() {
-    activeTurnId++;
-    if (activeAbortController) {
-      try { activeAbortController.abort(); } catch (_) {}
-      activeAbortController = null;
+    sessionId++;                      // invalidates any stale ws callbacks
+    isSessionActive = false;
+    setupComplete = false;
+
+    // Stop mic capture first so we stop sending bytes upstream.
+    try {
+      if (captureNode)  { captureNode.disconnect(); }
+      if (captureSource){ captureSource.disconnect(); }
+      if (captureMute)  { captureMute.disconnect(); }
+    } catch (_) {}
+    captureNode = captureSource = captureMute = null;
+
+    if (micStream) {
+      try { micStream.getTracks().forEach(t => t.stop()); } catch (_) {}
+      micStream = null;
     }
-    stopListening();
-    stopGeminiAudio();
-    try { window.speechSynthesis.cancel(); } catch (_) {}
-    setBusy(false);
-    setStage('idle');
+    if (captureCtx) {
+      try { captureCtx.close(); } catch (_) {}
+      captureCtx = null;
+    }
+
+    // Close the WebSocket so no more data is sent or received.
+    if (ws) {
+      try {
+        ws.onopen = ws.onmessage = ws.onerror = ws.onclose = null;
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) ws.close(1000, 'user-stop');
+      } catch (_) {}
+      ws = null;
+    }
+
+    // Stop any audio playback already queued.
+    try { playingSources.forEach(s => { try { s.onended = null; s.stop(); } catch (_) {} }); } catch (_) {}
+    playingSources = [];
+    playQueueTime = 0;
+    inputTranscriptBuffer = '';
+    outputTranscriptBuffer = '';
+
+    setStage('idle', 'Tap the mic to talk');
   }
 
   // ===========================================================================
-  //  AUDIO
+  //  START LIVE SESSION
   // ===========================================================================
-  function getAudioCtx() {
-    if (!audioCtx) {
-      const Ctor = window.AudioContext || window.webkitAudioContext;
-      audioCtx = new Ctor();
+  async function startLiveSession() {
+    const key = await getGeminiKey();
+    if (!key) {
+      flashBubble("Add your Gemini API key in ⚙ Settings first — then tap the mic.", 'error', 6000);
+      glowTarget('#aiManageLink', 4500);
+      return;
     }
-    return audioCtx;
-  }
-  function primeAudio() {
+
+    // 1) Get mic access. Some Chrome builds need explicit permission for
+    //    the extension popup; we surface a clear message if it fails.
     try {
-      const ctx = getAudioCtx();
-      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-      const buf = ctx.createBuffer(1, 1, 22050);
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-      src.connect(ctx.destination);
-      src.start(0);
-    } catch (_) {}
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
+    } catch (err) {
+      flashBubble("Chrome blocked the mic. Open Site settings → Microphone → Allow for this extension, then tap me again.", 'error', 7000);
+      return;
+    }
+
+    const mySession = ++sessionId;
+    setStage('listening', 'Connecting…');
+    flashBubble("Connecting to Snap…", 'bot');
+
+    // 2) Open the WebSocket.
+    try {
+      ws = new WebSocket(LIVE_WS_URL(key));
+    } catch (err) {
+      cleanupMic();
+      flashBubble("Couldn't open Snap's voice channel: " + (err.message || err), 'error', 6000);
+      setStage('idle', 'Tap the mic to talk');
+      return;
+    }
+
+    ws.onopen = () => {
+      if (mySession !== sessionId) return;
+      // 3) Send setup. Live API expects setup as the very first message.
+      const setupMsg = {
+        setup: {
+          model: LIVE_MODEL,
+          generationConfig: {
+            responseModalities: ['AUDIO'],
+            speechConfig: {
+              voiceConfig: { prebuiltVoiceConfig: { voiceName: LIVE_VOICE } }
+            }
+          },
+          systemInstruction: { parts: [{ text: SNAP_SYSTEM_PROMPT }] },
+          // Server VAD: detects when the user stops talking and triggers AI reply.
+          realtimeInputConfig: {
+            automaticActivityDetection: {}
+          },
+          // Get text transcripts of both sides for the live subtitle.
+          inputAudioTranscription: {},
+          outputAudioTranscription: {}
+        }
+      };
+      try { ws.send(JSON.stringify(setupMsg)); } catch (_) {}
+    };
+
+    ws.onmessage = async (ev) => {
+      if (mySession !== sessionId) return;
+      let payload;
+      try {
+        const raw = (ev.data instanceof Blob) ? await ev.data.text() : ev.data;
+        payload = JSON.parse(raw);
+      } catch (_) { return; }
+      handleLiveMessage(payload, mySession);
+    };
+
+    ws.onerror = () => {
+      if (mySession !== sessionId) return;
+      flashBubble("Voice channel error. Tap mic to retry.", 'error', 5000);
+    };
+
+    ws.onclose = (ev) => {
+      if (mySession !== sessionId) return;
+      const wasActive = isSessionActive;
+      isSessionActive = false;
+      setupComplete = false;
+      cleanupMic();
+      setStage('idle', 'Tap the mic to talk');
+      if (wasActive && ev.code !== 1000) {
+        // Code 1011/1008/1007 etc. — surface a friendly message
+        const reason = (ev.reason || '').slice(0, 120);
+        let msg = "Voice channel closed.";
+        if (/quota|rate|exhaust/i.test(reason)) msg = "Google rate-limited the voice channel. Try again in a moment.";
+        else if (/auth|key|permission/i.test(reason)) msg = "Your API key was rejected by the Live API. Check Settings.";
+        else if (reason) msg = "Voice channel closed: " + reason;
+        flashBubble(msg, 'error', 6000);
+      }
+    };
   }
-  function stopGeminiAudio() {
-    if (currentAudioSource) {
-      try { currentAudioSource.onended = null; currentAudioSource.stop(); } catch (_) {}
-      currentAudioSource = null;
+
+  function cleanupMic() {
+    try {
+      if (captureNode)  captureNode.disconnect();
+      if (captureSource) captureSource.disconnect();
+      if (captureMute)   captureMute.disconnect();
+    } catch (_) {}
+    captureNode = captureSource = captureMute = null;
+    if (micStream) {
+      try { micStream.getTracks().forEach(t => t.stop()); } catch (_) {}
+      micStream = null;
+    }
+    if (captureCtx) {
+      try { captureCtx.close(); } catch (_) {}
+      captureCtx = null;
     }
   }
-  async function playPcm16(base64Pcm, sampleRate, turnIdAtStart) {
-    if (turnIdAtStart !== activeTurnId) return;
-    const bin = atob(base64Pcm);
+
+  // ===========================================================================
+  //  HANDLE INCOMING LIVE MESSAGES
+  // ===========================================================================
+  function handleLiveMessage(msg, mySession) {
+    // Setup confirmed → start streaming mic audio
+    if (msg.setupComplete) {
+      setupComplete = true;
+      isSessionActive = true;
+      startMicStreaming(mySession);
+      setStage('listening', 'Listening… speak now');
+      flashBubble("I'm listening — go ahead.", 'bot', 2200);
+      return;
+    }
+
+    if (!msg.serverContent) return;
+    const sc = msg.serverContent;
+
+    // User's own speech transcript (subtitle echo)
+    if (sc.inputTranscription && sc.inputTranscription.text) {
+      inputTranscriptBuffer += sc.inputTranscription.text;
+      flashBubble('“' + inputTranscriptBuffer.trim() + '”', 'user');
+    }
+
+    // AI speech transcript (live subtitle)
+    if (sc.outputTranscription && sc.outputTranscription.text) {
+      outputTranscriptBuffer += sc.outputTranscription.text;
+      // Strip glow tags from the visible subtitle as they stream in
+      const visible = outputTranscriptBuffer.replace(/\[glow:[^\]]+\]/gi, '').trim();
+      if (visible) flashBubble(visible, 'bot');
+    }
+
+    // AI audio chunks
+    if (sc.modelTurn && sc.modelTurn.parts) {
+      for (const part of sc.modelTurn.parts) {
+        if (part.inlineData && part.inlineData.data && /audio\/pcm/i.test(part.inlineData.mimeType || '')) {
+          const m = (part.inlineData.mimeType || '').match(/rate=(\d+)/);
+          const rate = m ? parseInt(m[1], 10) : 24000;
+          enqueuePcm(part.inlineData.data, rate, mySession);
+        }
+      }
+      // Mascot starts "talking" the moment the first chunk arrives
+      setStage('talking', 'Snap is speaking…');
+    }
+
+    // Server VAD detected user starting to speak — interrupt playback (barge-in)
+    if (sc.interrupted) {
+      stopAllPlayback();
+      setStage('listening', 'Listening… speak now');
+    }
+
+    // End of AI turn — process glow tag, reset transcripts, idle the mascot
+    if (sc.turnComplete) {
+      const glowMatch = outputTranscriptBuffer.match(/\[glow:([^\]]+)\]/i);
+      if (glowMatch) glowTarget(glowMatch[1].trim(), 5000);
+      inputTranscriptBuffer = '';
+      outputTranscriptBuffer = '';
+      // Subtitle stays visible briefly, then fades
+      bubbleHideTimer = setTimeout(hideBubble, 4500);
+      // Stay in talking state until audio queue drains; otherwise return to listening
+      if (playingSources.length === 0) setStage('listening', 'Listening… speak now');
+    }
+  }
+
+  // ===========================================================================
+  //  MIC STREAMING — PCM 16kHz mono → base64 → realtimeInput
+  // ===========================================================================
+  function startMicStreaming(mySession) {
+    if (!micStream) return;
+    try {
+      // Try to create an AudioContext at 16kHz directly so no resampling is needed.
+      // Some browsers ignore the option and pick the device sampleRate (typically 48000) —
+      // we handle that case below.
+      const Ctor = window.AudioContext || window.webkitAudioContext;
+      try { captureCtx = new Ctor({ sampleRate: 16000 }); }
+      catch (_) { captureCtx = new Ctor(); }
+
+      captureSource = captureCtx.createMediaStreamSource(micStream);
+
+      // ScriptProcessor is deprecated but still works everywhere and avoids
+      // shipping a separate AudioWorklet module file in the extension.
+      const bufSize = 4096;
+      captureNode = captureCtx.createScriptProcessor(bufSize, 1, 1);
+
+      // Mute the loopback so the user doesn't hear themselves.
+      captureMute = captureCtx.createGain();
+      captureMute.gain.value = 0;
+
+      const inRate = captureCtx.sampleRate;
+      const outRate = 16000;
+      const ratio = inRate / outRate;
+
+      captureNode.onaudioprocess = (e) => {
+        if (mySession !== sessionId) return;
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        const inBuf = e.inputBuffer.getChannelData(0);
+
+        // Downsample to 16kHz mono if needed (simple decimation works fine for speech).
+        let pcm;
+        if (Math.abs(inRate - outRate) < 1) {
+          pcm = floatTo16(inBuf);
+        } else {
+          const outLen = Math.floor(inBuf.length / ratio);
+          const out = new Float32Array(outLen);
+          for (let i = 0; i < outLen; i++) out[i] = inBuf[Math.floor(i * ratio)];
+          pcm = floatTo16(out);
+        }
+        const b64 = bytesToBase64(new Uint8Array(pcm.buffer));
+
+        try {
+          ws.send(JSON.stringify({
+            realtimeInput: {
+              mediaChunks: [{ mimeType: 'audio/pcm;rate=16000', data: b64 }]
+            }
+          }));
+        } catch (_) {}
+      };
+
+      captureSource.connect(captureNode);
+      captureNode.connect(captureMute);
+      captureMute.connect(captureCtx.destination);
+    } catch (err) {
+      flashBubble("Mic capture failed: " + (err.message || err), 'error', 6000);
+      hardStop();
+    }
+  }
+
+  function floatTo16(f32) {
+    const out = new Int16Array(f32.length);
+    for (let i = 0; i < f32.length; i++) {
+      let s = Math.max(-1, Math.min(1, f32[i]));
+      out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    }
+    return out;
+  }
+  function bytesToBase64(bytes) {
+    let bin = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(bin);
+  }
+
+  // ===========================================================================
+  //  PLAYBACK QUEUE — schedules incoming PCM chunks back-to-back
+  // ===========================================================================
+  function getPlayCtx() {
+    if (!playCtx) {
+      const Ctor = window.AudioContext || window.webkitAudioContext;
+      playCtx = new Ctor();
+    }
+    if (playCtx.state === 'suspended') {
+      try { playCtx.resume(); } catch (_) {}
+    }
+    return playCtx;
+  }
+
+  function enqueuePcm(b64, rate, mySession) {
+    if (mySession !== sessionId) return;
+    const bin = atob(b64);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     const view = new DataView(bytes.buffer);
-    const sampleCount = Math.floor(bytes.length / 2);
-    const f32 = new Float32Array(sampleCount);
-    for (let i = 0; i < sampleCount; i++) f32[i] = view.getInt16(i * 2, true) / 32768;
+    const samples = Math.floor(bytes.length / 2);
+    const f32 = new Float32Array(samples);
+    for (let i = 0; i < samples; i++) f32[i] = view.getInt16(i * 2, true) / 32768;
 
-    const ctx = getAudioCtx();
-    if (ctx.state === 'suspended') {
-      try { await ctx.resume(); } catch (_) {}
-      if (ctx.state === 'suspended') throw new Error('audio-suspended');
-    }
-    if (turnIdAtStart !== activeTurnId) return;
-
-    const buf = ctx.createBuffer(1, sampleCount, sampleRate);
+    const ctx = getPlayCtx();
+    const buf = ctx.createBuffer(1, samples, rate);
     buf.copyToChannel(f32, 0, 0);
     const src = ctx.createBufferSource();
     src.buffer = buf;
     src.connect(ctx.destination);
-    setStage('talking');
+
+    const startAt = Math.max(ctx.currentTime + 0.02, playQueueTime);
+    src.start(startAt);
+    playQueueTime = startAt + buf.duration;
+    playingSources.push(src);
     src.onended = () => {
-      if (currentAudioSource === src) currentAudioSource = null;
-      if (turnIdAtStart === activeTurnId) {
-        setBusy(false);
-        setStage('idle');
-        // Subtitle stays visible briefly after speech, then fades
-        subtitleHideTimer = setTimeout(hideSubtitle, 4500);
+      playingSources = playingSources.filter(s => s !== src);
+      if (mySession !== sessionId) return;
+      if (playingSources.length === 0 && isSessionActive) {
+        setStage('listening', 'Listening… speak now');
       }
     };
-    stopGeminiAudio();
-    currentAudioSource = src;
-    src.start(0);
+  }
+
+  function stopAllPlayback() {
+    try { playingSources.forEach(s => { try { s.onended = null; s.stop(); } catch (_) {} }); } catch (_) {}
+    playingSources = [];
+    playQueueTime = 0;
   }
 
   // ===========================================================================
-  //  SPEECH RECOGNITION — single-fire guard prevents the spam bug
+  //  HELPERS
   // ===========================================================================
-  function startListening() {
-    if (isBusy || isListening) return;
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      showSubtitle("Voice isn't supported here. Try Chrome or just type below.", 'error');
-      return;
-    }
-
-    let processed = false;       // <-- the single-fire guard
-    recognition = new SR();
-    recognition.lang = navigator.language || 'en-US';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onresult = (e) => {
-      if (processed) return;     // ignore duplicate result events
-      processed = true;
-      const transcript = (e.results[0] && e.results[0][0] && e.results[0][0].transcript) || '';
-      const cleaned = transcript.trim();
-      if (cleaned) submitTranscript(cleaned);
-      else showSubtitle("Didn't catch that — try again or type instead.", 'bot');
-    };
-    recognition.onerror = (e) => {
-      if (processed) return;
-      processed = true;
-      handleMicError(e.error);
-    };
-    recognition.onend = () => {
-      isListening = false;
-      micBtnEl.classList.remove('snap-mic-listening');
-      if (!isBusy) setStage('idle');
-    };
-
-    isListening = true;
-    micBtnEl.classList.add('snap-mic-listening');
-    setStage('listening');
-    showSubtitle('Listening… speak now.', 'bot');
-    try { recognition.start(); }
-    catch (err) {
-      isListening = false;
-      micBtnEl.classList.remove('snap-mic-listening');
-      setStage('idle');
-      showSubtitle("Couldn't start the mic: " + err.message, 'error');
-    }
-  }
-  function stopListening() {
-    if (recognition && isListening) {
-      try { recognition.stop(); } catch (_) {}
-    }
-    isListening = false;
-    if (micBtnEl) micBtnEl.classList.remove('snap-mic-listening');
-  }
-  function handleMicError(code) {
-    isListening = false;
-    micBtnEl.classList.remove('snap-mic-listening');
-    setStage('idle');
-    if (code === 'not-allowed' || code === 'service-not-allowed') {
-      showSubtitle('Mic blocked by Chrome. Just type below — or enable the mic in Site settings.', 'error');
-    } else if (code === 'no-speech') {
-      showSubtitle("Didn't hear anything — try again or type below.", 'bot');
-    } else {
-      showSubtitle('Mic error: ' + code, 'error');
-    }
-  }
-
-  // ===========================================================================
-  //  TURN SUBMISSION — voice OR text both end up here
-  // ===========================================================================
-  function submitText() {
-    if (isBusy) return;
-    const text = (inputEl.value || '').trim();
-    if (!text) return;
-    inputEl.value = '';
-    submitTranscript(text);
-  }
-  function submitTranscript(text) {
-    if (isBusy) return;
-    runTurn(text);
-  }
-
-  async function runTurn(userText) {
-    const turnId = ++activeTurnId;
-    activeAbortController = new AbortController();
-    const signal = activeAbortController.signal;
-    setBusy(true);
-
-    // Briefly echo what the user said
-    showSubtitle('“' + userText + '”', 'user');
-    setStage('thinking');
-    setTimeout(() => {
-      if (turnId === activeTurnId && isBusy) showSubtitle('Thinking', 'thinking');
-    }, 700);
-
-    conversationHistory.push({ role: 'user', parts: [{ text: userText }] });
-    if (conversationHistory.length > 12) conversationHistory = conversationHistory.slice(-12);
-
-    let replyText;
-    try {
-      replyText = await callGemini(conversationHistory, signal);
-    } catch (err) {
-      if (turnId !== activeTurnId) return;
-      if (err.name === 'AbortError') return;
-      setBusy(false);
-      setStage('idle');
-      showSubtitle(friendlyErr(err.message), 'error', { autoHideMs: 6000 });
-      return;
-    }
-
-    if (turnId !== activeTurnId) return;
-
-    const glowMatch = replyText.match(/\[glow:([^\]]+)\]/i);
-    const cleanReply = replyText.replace(/\[glow:[^\]]+\]/gi, '').trim();
-    conversationHistory.push({ role: 'model', parts: [{ text: cleanReply }] });
-
-    showSubtitle(cleanReply, 'bot');
-    if (glowMatch) glowTarget(glowMatch[1].trim(), 5000);
-
-    try {
-      await geminiTts(cleanReply, turnId, signal);
-    } catch (err) {
-      if (turnId !== activeTurnId || err.name === 'AbortError') return;
-      console.warn('[snap-coach] TTS failed, using browser voice:', err.message);
-      browserTtsFallback(cleanReply, turnId);
-    }
-  }
-
-  function friendlyErr(msg) {
-    if (!msg) return 'Something went wrong — try again?';
-    if (/quota|exhausted|429/i.test(msg)) return "Google says I'm rate-limited for a moment. Wait a few seconds and try again.";
-    if (/api key|key/i.test(msg)) return 'I need your Gemini API key in Settings first.';
-    return 'Network hiccup: ' + msg;
-  }
-
-  // ===========================================================================
-  //  GEMINI TEXT
-  // ===========================================================================
-  async function callGemini(history, signal) {
-    const key = await getGeminiKey();
-    if (!key) throw new Error('Add your Gemini API key in Settings first.');
-    const body = {
-      systemInstruction: { parts: [{ text: SNAP_SYSTEM_PROMPT }] },
-      contents: history,
-      generationConfig: { temperature: 0.8, maxOutputTokens: 200 }
-    };
-    const resp = await fetch(GEMINI_URL + '?key=' + encodeURIComponent(key), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal
-    });
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) throw new Error((data && data.error && data.error.message) || ('HTTP ' + resp.status));
-    const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join(' ').trim();
-    if (!text) throw new Error('Empty reply.');
-    return text;
-  }
-
-  // ===========================================================================
-  //  GEMINI TTS — exactly ONE call per turn
-  // ===========================================================================
-  async function geminiTts(text, turnId, signal) {
-    const key = await getGeminiKey();
-    if (!key) throw new Error('No API key.');
-    const body = {
-      systemInstruction: { parts: [{ text: 'Read the following text in a warm, conversational, friendly voice. Speak only the text itself — never read instructions, prefixes, or formatting tags.' }] },
-      contents: [{ parts: [{ text }] }],
-      generationConfig: {
-        responseModalities: ['AUDIO'],
-        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_VOICE } } }
-      }
-    };
-    const resp = await fetch(TTS_URL + '?key=' + encodeURIComponent(key), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal
-    });
-    if (turnId !== activeTurnId) return;
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) throw new Error((data && data.error && data.error.message) || ('TTS HTTP ' + resp.status));
-    const part = data?.candidates?.[0]?.content?.parts?.find(p => p.inlineData && p.inlineData.data);
-    if (!part) throw new Error('TTS empty.');
-    const mime = part.inlineData.mimeType || '';
-    const m = mime.match(/rate=(\d+)/);
-    const rate = m ? parseInt(m[1], 10) : TTS_SAMPLE_RATE;
-    await playPcm16(part.inlineData.data, rate, turnId);
-  }
-
-  function browserTtsFallback(text, turnId) {
-    if (!('speechSynthesis' in window)) { setBusy(false); setStage('idle'); return; }
-    try { window.speechSynthesis.cancel(); } catch (_) {}
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = 1.05; u.pitch = 1.05; u.volume = 1;
-    const voices = window.speechSynthesis.getVoices();
-    const pref = voices.find(v => /en-US/i.test(v.lang) && /female|samantha|google|jenny|aria/i.test(v.name))
-              || voices.find(v => /en-US/i.test(v.lang)) || voices[0];
-    if (pref) u.voice = pref;
-    setStage('talking');
-    u.onend = u.onerror = () => {
-      if (turnId === activeTurnId) {
-        setBusy(false);
-        setStage('idle');
-        subtitleHideTimer = setTimeout(hideSubtitle, 4500);
-      }
-    };
-    window.speechSynthesis.speak(u);
-  }
-
-  // ===== Helpers =====
   function getGeminiKey() {
     return new Promise((resolve) => {
       try { chrome.storage.sync.get(['geminiApiKey'], (r) => resolve(r && r.geminiApiKey)); }
