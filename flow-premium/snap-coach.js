@@ -157,6 +157,27 @@ GUIDELINES:
     await startListening();
   }
 
+  function openMicPermissionPage() {
+    try {
+      const url = chrome.runtime.getURL('mic-permission.html');
+      if (chrome.tabs && chrome.tabs.create) {
+        chrome.tabs.create({ url });
+      } else {
+        window.open(url, '_blank');
+      }
+    } catch (_) {
+      window.open('mic-permission.html', '_blank');
+    }
+  }
+
+  async function micPermissionState() {
+    try {
+      if (!navigator.permissions || !navigator.permissions.query) return 'unknown';
+      const r = await navigator.permissions.query({ name: 'microphone' });
+      return r.state; // 'granted' | 'prompt' | 'denied'
+    } catch (_) { return 'unknown'; }
+  }
+
   // --- Browser speech recognition (free, built-in) ---
   async function startListening() {
     // Hard reset any in-flight speech / recognition first so we don't
@@ -176,6 +197,16 @@ GUIDELINES:
     if (!SR) {
       showBubble('Voice isn\'t supported in this browser. Try Chrome or Edge.', [
         { label: 'OK', onClick: hideBubble }
+      ]);
+      return;
+    }
+    // Mic check — if Chrome already said no, jump straight to the
+    // dedicated permission page instead of failing inside the popup.
+    const permState = await micPermissionState();
+    if (permState === 'denied') {
+      showBubble('Chrome has my mic blocked. Open the permission page and click Allow?', [
+        { label: 'Open permission page', onClick: () => { hideBubble(); openMicPermissionPage(); } },
+        { label: 'Cancel', onClick: hideBubble, danger: true }
       ]);
       return;
     }
@@ -214,9 +245,18 @@ GUIDELINES:
     recognition.onerror = (e) => {
       isListening = false;
       setState('idle');
-      const msg = e.error === 'not-allowed'
-        ? 'I need microphone permission. Click the lock icon in your address bar to allow it.'
-        : (e.error === 'no-speech' ? 'I didn\'t hear anything — try again?' : 'Mic error: ' + e.error);
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        // Open our own permission page — Chrome treats it as a real
+        // origin so the grant sticks for every part of the extension.
+        showBubble('I need permission to use your mic — I\'ll open a quick page where you can grant it.', [
+          { label: 'Open permission page', onClick: () => { hideBubble(); openMicPermissionPage(); } },
+          { label: 'Cancel', onClick: hideBubble, danger: true }
+        ]);
+        return;
+      }
+      const msg = e.error === 'no-speech'
+        ? 'I didn\'t hear anything — try again?'
+        : 'Mic error: ' + e.error;
       showBubble(msg, [{ label: 'OK', onClick: hideBubble }]);
     };
     recognition.onend = () => {
