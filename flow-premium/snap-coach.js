@@ -54,6 +54,13 @@ GUIDELINES:
   const GEMINI_MODEL = 'gemini-2.0-flash';
   const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
+  // Premium voice via Gemini native TTS (sounds human, not robotic).
+  // 30 prebuilt voices available — Kore is warm + conversational.
+  const TTS_MODEL = 'gemini-2.5-flash-preview-tts';
+  const TTS_URL = `https://generativelanguage.googleapis.com/v1beta/models/${TTS_MODEL}:generateContent`;
+  const TTS_VOICE = 'Kore';
+  const TTS_SAMPLE_RATE = 24000;
+
   // --- DOM refs (populated in init) ---
   let mascotEl = null;
   let bubbleEl = null;
@@ -127,6 +134,7 @@ GUIDELINES:
       try { window.speechSynthesis.cancel(); } catch (_) {}
       currentUtterance = null;
     }
+    stopGeminiAudio();
     isListening = false;
     isThinking = false;
     isSpeaking = false;
@@ -285,35 +293,108 @@ GUIDELINES:
     });
   }
 
-  // --- Browser TTS (free) ---
-  function speak(text) {
+  // --- Premium voice via Gemini native TTS (sounds human, not robotic) ---
+  // Falls back to the browser's built-in voice only if Gemini TTS fails.
+  let audioCtx = null;
+  let currentAudioSource = null;
+
+  function getAudioCtx() {
+    if (!audioCtx) {
+      const Ctor = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new Ctor();
+    }
+    if (audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (_) {} }
+    return audioCtx;
+  }
+
+  function stopGeminiAudio() {
+    if (currentAudioSource) {
+      try { currentAudioSource.onended = null; currentAudioSource.stop(); } catch (_) {}
+      currentAudioSource = null;
+    }
+  }
+
+  // Decode base64 → Int16 PCM → Float32 → AudioBuffer → play
+  function playPcm16(base64Pcm, sampleRate) {
+    const bin = atob(base64Pcm);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const view = new DataView(bytes.buffer);
+    const sampleCount = Math.floor(bytes.length / 2);
+    const f32 = new Float32Array(sampleCount);
+    for (let i = 0; i < sampleCount; i++) {
+      f32[i] = view.getInt16(i * 2, true) / 32768;
+    }
+    const ctx = getAudioCtx();
+    const buf = ctx.createBuffer(1, sampleCount, sampleRate);
+    buf.copyToChannel(f32, 0, 0);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.onended = () => {
+      if (currentAudioSource === src) currentAudioSource = null;
+      isSpeaking = false;
+      setState('idle');
+    };
+    stopGeminiAudio();
+    currentAudioSource = src;
+    isSpeaking = true;
+    setState('talking');
+    src.start(0);
+  }
+
+  async function geminiTts(text) {
+    const key = await getGeminiKey();
+    if (!key) throw new Error('No API key.');
+    const body = {
+      contents: [{ parts: [{ text: 'Say warmly and conversationally, like a friend giving a quick tip: ' + text }] }],
+      generationConfig: {
+        responseModalities: ['AUDIO'],
+        speechConfig: {
+          voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_VOICE } }
+        }
+      }
+    };
+    const resp = await fetch(TTS_URL + '?key=' + encodeURIComponent(key), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      throw new Error((data && data.error && data.error.message) || ('TTS HTTP ' + resp.status));
+    }
+    const part = data?.candidates?.[0]?.content?.parts?.find(p => p.inlineData && p.inlineData.data);
+    if (!part) throw new Error('TTS empty.');
+    const mime = part.inlineData.mimeType || '';
+    const m = mime.match(/rate=(\d+)/);
+    const rate = m ? parseInt(m[1], 10) : TTS_SAMPLE_RATE;
+    playPcm16(part.inlineData.data, rate);
+  }
+
+  function browserTtsFallback(text) {
     if (!('speechSynthesis' in window)) return;
     try { window.speechSynthesis.cancel(); } catch (_) {}
     const u = new SpeechSynthesisUtterance(text);
-    u.rate = 1.05;
-    u.pitch = 1.05;
-    u.volume = 1;
-    // Prefer a friendly English voice if available
+    u.rate = 1.05; u.pitch = 1.05; u.volume = 1;
     const voices = window.speechSynthesis.getVoices();
     const pref = voices.find(v => /en-US/i.test(v.lang) && /female|samantha|google|jenny|aria/i.test(v.name))
-              || voices.find(v => /en-US/i.test(v.lang))
-              || voices[0];
+              || voices.find(v => /en-US/i.test(v.lang)) || voices[0];
     if (pref) u.voice = pref;
-
-    isSpeaking = true;
-    setState('talking');
-    u.onend = () => {
-      isSpeaking = false;
-      currentUtterance = null;
-      setState('idle');
-    };
-    u.onerror = () => {
-      isSpeaking = false;
-      currentUtterance = null;
-      setState('idle');
-    };
+    isSpeaking = true; setState('talking');
+    const done = () => { isSpeaking = false; currentUtterance = null; setState('idle'); };
+    u.onend = done; u.onerror = done;
     currentUtterance = u;
     window.speechSynthesis.speak(u);
+  }
+
+  function speak(text) {
+    // Try the premium voice first; only fall back to the robotic
+    // browser voice if the network call fails.
+    geminiTts(text).catch((err) => {
+      console.warn('[snap-coach] Gemini TTS failed, falling back to browser voice:', err && err.message);
+      browserTtsFallback(text);
+    });
   }
 
   // --- Glow a UI element so the user can find it ---
