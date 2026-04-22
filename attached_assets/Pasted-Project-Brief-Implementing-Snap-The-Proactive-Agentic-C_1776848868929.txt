@@ -1,0 +1,47 @@
+Project Brief: Implementing "Snap" – The Proactive Agentic Co-Pilot
+Goal: Transform the SnapToAI Chrome Extension from a tool into an Agentic Platform by embedding a real-time, voice-and-text "Proactive Coach" mascot named Snap.
+
+1. The Core Engine (The Brain)
+Model: Use the Gemini 3.1 Flash Live API (Multimodal Live).
+
+Protocol: Implement a WebSocket (WSS) connection to allow for real-time, low-latency audio-to-audio interaction.
+
+Billing Logic: Use the "Bring Your Own Key" (BYOK) model. Pull the user’s stored Gemini API key to power the agent, ensuring $0 server costs for the developer.
+
+2. The Personality & Knowledge (The System Instruction)
+Identity: "Snap," a high-energy, witty, and expert co-pilot.
+
+App Knowledge: The agent must be grounded in the SnapToAI Manual, specifically:
+
+Chunk & Stitch Engine: Aligning vocal mouth-shapes in 4-second blocks for character consistency.
+
+War Simulation: 15-indicator financial analysis for stock/crypto trading.
+
+Multi-Image Logic: Handling complex DOM structures and automated scrolling.
+
+Emotional Range: Use Audio Tags (e.g., [enthusiasm], [curiosity], [short pause]) to ensure the voice sounds human and expressive, not robotic.
+
+3. The UI/UX (The Face)
+Mascot: A small, floating circular mascot in the bottom-right of the popup.
+
+Visual Feedback: * "Breathing" Animation: Subtle CSS pulse when idle.
+
+"Thinking" Animation: A glow effect when the API is processing.
+
+"Talking" Sync: Animate the mascot's scale/glow based on the real-time audio frequency from the Gemini stream.
+
+Glow-Guided Onboarding: When Snap says "Click here," the corresponding UI element (e.g., the Scissors icon) must trigger a temporary CSS highlight/glow class.
+
+4. Technical Implementation (The Architecture)
+Manifest V3 Compliance: Since background scripts sleep, use an Offscreen Document to manage the continuous WebSocket connection and the microphone stream.
+
+Audio Handling: * Input: Capture PCM 16kHz audio from the user’s mic.
+
+Output: Play back the 24kHz audio stream returned by the Gemini Live API.
+
+Context Awareness: Pass the current_url and last_user_action to the agent so it can offer proactive advice (e.g., "I see you're on a trading chart, want me to run a War Simulation?").
+
+5. Proactive Triggers
+Inactivity: If a user stays on a page for >20 seconds without an action, Snap should suggest a relevant feature.
+
+Success Celebration: After a successful "Stitch," Snap should congratulate the user and suggest the next production step.
