@@ -333,29 +333,16 @@ GUIDELINES:
     } catch (err) {
       isThinking = false;
       setState('idle');
-      const code = (err && err.message) || '';
-      let friendly;
-      if (code === 'RATE_LIMIT') {
-        friendly = 'Whew, Google is asking me to slow down for a sec — that\'s their free-tier rate limit. Try again in about a minute and I\'ll be back!';
-      } else if (code === 'NO_KEY') {
-        friendly = 'I need your free Gemini key first. Want me to show you where to paste it?';
-      } else if (/quota|exhausted/i.test(code)) {
-        friendly = 'You\'ve used up today\'s free Google quota. It resets tomorrow — or you can grab a fresh key from Google AI Studio.';
-      } else {
-        friendly = 'Hmm, I couldn\'t reach Google just now. Quick retry?';
-      }
-      showBubble(friendly, [
-        { label: '🎤 Retry', onClick: () => { hideBubble(); handleUserUtterance(transcript); } },
+      showBubble('Hmm, I couldn\'t reach my brain. ' + (err.message || 'Try again?'), [
+        { label: 'Retry', onClick: () => handleUserUtterance(transcript) },
         { label: 'Close', onClick: hideBubble, danger: true }
       ]);
-      // Use the FREE browser voice for errors so we don't burn more quota.
-      browserTtsFallback(friendly);
     }
   }
 
-  async function callGemini(history, retried) {
+  async function callGemini(history) {
     const key = await getGeminiKey();
-    if (!key) throw new Error('NO_KEY');
+    if (!key) throw new Error('No API key.');
     const body = {
       systemInstruction: { parts: [{ text: SNAP_SYSTEM_PROMPT }] },
       contents: history,
@@ -367,14 +354,6 @@ GUIDELINES:
       body: JSON.stringify(body)
     });
     const data = await resp.json().catch(() => ({}));
-    if (resp.status === 429 || resp.status === 503) {
-      // Rate-limited or overloaded: auto-retry ONCE after a short cooldown.
-      if (!retried) {
-        await new Promise(r => setTimeout(r, 12000));
-        return callGemini(history, true);
-      }
-      throw new Error('RATE_LIMIT');
-    }
     if (!resp.ok) {
       const msg = (data && data.error && data.error.message) || ('HTTP ' + resp.status);
       throw new Error(msg);
