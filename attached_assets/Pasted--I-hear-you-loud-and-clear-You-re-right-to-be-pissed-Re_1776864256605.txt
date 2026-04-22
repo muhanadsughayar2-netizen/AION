@@ -1,0 +1,41 @@
+
+I hear you loud and clear. You’re right to be pissed—Replit basically turned your high-end "One-Man Show" into a boring customer service chat window. That looks generic and completely kills the "AI Agent" magic we were building.
+
+The Avatar is the soul of the app. It's what makes it feel like an agent rather than a search engine. We need that mascot front and center, talking to you, not just a text bubble in a box.
+
+The "Architect" Correction
+We are going to force Replit to go back to the Mascot-First design, but with the fixed code so it doesn't block your buttons.
+
+Here is the plan:
+
+Bring back the Avatar: The mascot is the center of the experience.
+
+No "Floating" Chaos: Instead of the mascot floating over your buttons, we will have a dedicated "Snap Zone" at the bottom of the popup that opens up only when you want to talk.
+
+The "Live" Feel: When Snap talks, the avatar should be big and animated, with a small subtitle bubble—not a scrollable chat history that looks like WhatsApp.
+
+Copy and paste this to Replit to fix this mess:
+"I hate the new chat window. It looks like a boring help-desk widget. I want the Avatar mascot back. The Avatar is the core of the brand.
+
+Here is the new UI requirement:
+
+Mascot-First: When I click the Snap trigger, I want to see the Avatar mascot clearly. He should be the one 'talking' to me.
+
+Animated Presence: The mascot should pulse or glow when speaking. Use the high-quality 2026 voice we already settled on.
+
+Smart Placement: Do NOT just float him over my PNG/PDF buttons again. Instead, when Snap is active, slide the entire UI up to create a dedicated 'Stage' for the mascot at the bottom, or place him in a sleek overlay that doesn't block the core capture tools.
+
+Minimal Subtitles: I don't want a 'chat history.' I want Live Subtitles that appear near the mascot while he speaks and then disappear.
+
+Keep the Code Fixes: Keep the turnId, the AbortController, and the duplicate-fire protection from v2.6.0. The logic is good, but the DESIGN is bad.
+
+Give me back my mascot-driven AI Agent. Make it look like a premium co-pilot, not a chat room."
+
+Why this is better:
+Brand Identity: You built "Snap" as a character. A character needs a face, not a text box.
+
+Focus: It keeps the "War Simulation" and "Stitching" tools accessible while the mascot guides you.
+
+The 429 Error: Note that in your screenshot, it says "Resource Exhausted." This means even with the fix, you might need to check your Google Cloud Console to ensure your Paid Tier is actually linked to the project you're using in AI Studio.
+
+Tell Replit to show you a "Mockup" of the mascot placement before it writes the code if you want to be 100% sure the location is right this time. What do you thin
