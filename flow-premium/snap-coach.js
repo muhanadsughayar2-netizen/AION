@@ -51,8 +51,13 @@ GUIDELINES:
 - If the user asks something unrelated to the app, gently steer back: "I'm best at helping you use SnapToAI — want a tip?"
 - End with a [glow:#id] tag ONLY when you actually told them to click that button.`;
 
-  const GEMINI_MODEL = 'gemini-2.0-flash';
-  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+  // Primary "brain" — fast, cheap, follows instructions well (April 2026).
+  // Falls back to 2.0-flash automatically if the preview isn't available
+  // on the user's key.
+  const GEMINI_MODEL = 'gemini-3.1-flash-lite-preview';
+  const GEMINI_FALLBACK_MODEL = 'gemini-2.0-flash';
+  const geminiUrl = (model) =>
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
   // Premium voice via Gemini native TTS (sounds human, not robotic).
   // 30 prebuilt voices available — Kore is warm + conversational.
@@ -262,15 +267,13 @@ GUIDELINES:
     }
   }
 
-  async function callGemini(history) {
-    const key = await getGeminiKey();
-    if (!key) throw new Error('No API key.');
+  async function callGeminiOnce(model, key, history) {
     const body = {
       systemInstruction: { parts: [{ text: SNAP_SYSTEM_PROMPT }] },
       contents: history,
-      generationConfig: { temperature: 0.8, maxOutputTokens: 200 }
+      generationConfig: { temperature: 0.7, topP: 0.8, topK: 40, maxOutputTokens: 250 }
     };
-    const resp = await fetch(GEMINI_URL + '?key=' + encodeURIComponent(key), {
+    const resp = await fetch(geminiUrl(model) + '?key=' + encodeURIComponent(key), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
@@ -278,11 +281,29 @@ GUIDELINES:
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) {
       const msg = (data && data.error && data.error.message) || ('HTTP ' + resp.status);
-      throw new Error(msg);
+      const err = new Error(msg);
+      err.status = resp.status;
+      throw err;
     }
     const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join(' ').trim();
     if (!text) throw new Error('Empty reply.');
     return text;
+  }
+
+  async function callGemini(history) {
+    const key = await getGeminiKey();
+    if (!key) throw new Error('No API key.');
+    try {
+      return await callGeminiOnce(GEMINI_MODEL, key, history);
+    } catch (err) {
+      // Auto-fallback to a stable model if the preview is unavailable
+      // (e.g. 404 model-not-found, or 403 not enabled on this key).
+      const transient = err.status === 404 || err.status === 403 ||
+        /not.*found|unsupported|not enabled|permission/i.test(err.message || '');
+      if (!transient) throw err;
+      console.warn('[snap-coach] Falling back from', GEMINI_MODEL, 'to', GEMINI_FALLBACK_MODEL, '-', err.message);
+      return await callGeminiOnce(GEMINI_FALLBACK_MODEL, key, history);
+    }
   }
 
   function getGeminiKey() {
