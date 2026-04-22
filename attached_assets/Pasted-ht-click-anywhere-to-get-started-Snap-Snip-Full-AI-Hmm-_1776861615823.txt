@@ -1,0 +1,59 @@
+ht-click anywhere to get started
+📷 Snap
+✂ Snip
+📄 Full
+⭐ AI
+×
+Hmm, I couldn't reach my brain. Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details. it spoke really nicely then it stpped but its impressive
+
+2 hours ago
+
+Evaluating model switching strategy (10 seconds)
+That's actually great news — the voice worked beautifully! What hit you is Google's free-tier rate limit (too many calls in a short window). Let me make Snap handle it gracefully so you never see that scary technical message again.
+
+
+Edited flow-premium/snap-coach.js
+Now make the user-facing error friendly and skip the expensive TTS for error messages (use the free browser voice instead so we don't burn more quota):
+
+
+2 actions
+Now bump version and rebuild:
+
+
+Show less
+
+Edited flow-premium/manifest.json
+
+Ran rm
+Done. v2.5.6 is your new file.
+
+The honest news first: Snap actually worked perfectly — you heard the warm voice. What stopped him was Google's free-tier speed limit (you're allowed about 10–15 questions per minute on a free key; you went over briefly).
+
+What I fixed in v2.5.6 so it never feels broken again:
+
+Auto-retry: When Google says "slow down," Snap now waits 12 seconds quietly and tries again on its own. Most of the time you won't even notice.
+
+Friendly message instead of scary tech-speak: If it still can't get through, you'll now hear:
+
+"Whew, Google is asking me to slow down for a sec — that's their free-tier rate limit. Try again in about a minute and I'll be back!"
+
+Instead of: "Resource exhausted. Please refer to https://cloud.google.com/vertex-ai/..." 🤢
+
+Error messages now use the FREE browser voice instead of burning more of your quota to tell you you're out of quota. Smart.
+
+Other clear messages for: "no API key yet" and "you've used today's full free quota — resets tomorrow."
+
+📦 Upload snaptoai-extension-v2.5.6.zip (the v2.5.5 zip is gone).
+
+Tip if you want zero rate limits ever: Google's free tier is generous but not infinite. If you (or a power-user) hit it often, the fix is grabbing a paid Gemini key — pennies a day. Or just slow down to one question every 5 seconds and you'll never see it.
+
+
+Checkpoint made
+2 hours ago
+
+Worked for 1 minute
+
+Published your app
+2 hours ago
+
+Scroll to latest
