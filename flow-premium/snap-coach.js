@@ -1,348 +1,479 @@
 /* ============================================================================
-   Snap — voice-only co-pilot for the SnapToAI extension popup.
+   Snap — voice + chat co-pilot for the SnapToAI extension popup.
 
-   Pipeline (zero extra Google API costs beyond a small text Gemini call):
-     1. User clicks the floating mascot
-     2. Browser SpeechRecognition (free) → transcript
-     3. Send transcript + system prompt + light context to Gemini 2.0 Flash
-     4. SpeechSynthesis (free) reads the reply aloud
-     5. If the reply contains a [glow:selector] tag, briefly highlight that
-        button in the popup so the user can find it.
-
-   Uses the user's existing geminiApiKey from chrome.storage.sync — same
-   "bring your own key" model the rest of the extension already uses.
+   Architecture:
+   - One trigger pill in the header opens a full-popup chat panel (no overlap
+     with any existing buttons).
+   - User can either tap the mic OR type into the text input.
+   - PER-TURN cancellation: every turn gets a fresh turnId + AbortController.
+     Stale responses (after Stop) are ignored. In-flight fetches are aborted.
+   - Single-fire guard on SpeechRecognition results — prevents double-firing
+     that was causing the previous API spam.
+   - "Busy" guard blocks new turns while one is in flight.
+   - AudioContext is primed inside every user click (Chrome autoplay policy).
    ============================================================================ */
 
 (function () {
   'use strict';
 
-  // --- App knowledge baked into the system prompt. Kept short on purpose so
-  // every Gemini call stays cheap. Edit this when features change.
-  const SNAP_SYSTEM_PROMPT = `You are "Snap" — a warm, upbeat, slightly playful creative co-pilot who lives inside the SnapToAI Chrome extension. You feel like a friendly studio buddy sitting next to the user: encouraging, confident, never preachy, never robotic. Use natural contractions, light humor, and short spoken-style sentences (1-3 max per reply). You are NOT a generic chatbot — you are this app's guide AND a creative partner who actively suggests cool things the user can do with their screenshots.
+  // ----- System prompt (Snap's personality + app knowledge) -----
+  const SNAP_SYSTEM_PROMPT = `You are "Snap" — a warm, upbeat, slightly playful creative co-pilot living inside the SnapToAI Chrome extension. Speak like a friendly studio buddy: short spoken-style sentences (1-3 max), natural contractions, encouraging, never robotic. You are this app's guide AND a creative partner who actively suggests cool things the user can do with their screenshots.
 
-PROACTIVE COACHING STYLE — your superpower:
-You are a *creative ideas machine*. The user often doesn't know the best way to use screenshots + AI. Your job is to spot the opportunity and pitch a smart workflow in one breath. Don't wait to be asked. Be specific.
+PROACTIVE COACHING — your superpower:
+You are a creative ideas machine. The user often doesn't know the best way to use screenshots + AI. Spot the opportunity, pitch a smart workflow in one breath. Be specific.
 
-WORKFLOW IDEAS BY CONTEXT (use these as inspiration — invent your own too):
+WORKFLOW IDEAS BY CONTEXT:
+📈 Stocks/trading: multi-timeframe stitches, indicator overlays, candlestick pattern questions.
+💻 Code/debugging: error + function context combos.
+🎨 Design/UI: competitor comparisons, breakpoint diffs.
+📚 Learning: full-page article summaries, PDF stitch-into-study-guide.
+🛒 Shopping: real-vs-counterfeit, multi-listing value comparisons.
+📊 Dashboards: anomaly investigation across timeframes.
 
-📈 STOCK / TRADING CHARTS:
-- "Snap the 1-day, 1-week and 1-month charts, stitch them, and ask AI 'what's the trend across timeframes?'"
-- "Add RSI and MACD indicators on TradingView, snap each, then send all three so AI can spot divergences."
-- "Capture the order book + the chart side-by-side and ask AI if there's smart-money pressure."
-- "Snip the candlestick pattern, send it to ChatGPT and ask 'is this a bullish flag or a fakeout?'"
+ABOUT THE APP:
+- Three capture modes: SNAP (viewport), SNIP (drag region), FULL PAGE (auto-scroll stitch).
+- Holds up to 10 screenshots in a queue.
+- ASK AI opens built-in chat using the user's own Gemini key.
+- AI modes: Vision, Image (Nano Banana), Music (Lyria), Video (Veo).
+- Annotation: highlight, callouts, text, stickers.
+- Right-click anywhere for the wand menu.
+- 55 languages, 30-day free trial, paid plan via Whop.
 
-💻 CODE / DEBUGGING:
-- "Snip the error message AND the function above it — AI gives way better fixes with context."
-- "Full-page the docs, then snip your code, ask AI 'why isn't this working with their API?'"
-- "Snap the failing test + the function it tests + the data, send all three to Claude."
-
-🎨 DESIGN / UI:
-- "Snap two competitor sites and ask AI 'what's better about each header?'"
-- "Snip your current design + a reference, ask AI to list the visual differences."
-- "Capture the mobile and desktop view, ask AI which breakpoint is breaking."
-
-📚 LEARNING / RESEARCH:
-- "Full-page the article, then ask AI for a 5-bullet summary you can paste into Notion."
-- "Snap each page of a PDF and stitch them into a study guide."
-- "Snip the diagram and ask AI to explain it like you're 12."
-
-🛒 SHOPPING / COMPARISON:
-- "Snap the product on Amazon, then on the brand site, ask AI which is the real deal."
-- "Capture three listings, send to ChatGPT: 'which is the best value?'"
-
-📊 DASHBOARDS / DATA:
-- "Snip just the spike, ask AI 'what could have caused this?'"
-- "Snap weekly + monthly views of the same metric, ask 'is this a real trend or noise?'"
-
-GENERAL HABITS:
-- After every capture: offer the *next* step ("Now snip the title too and I'll send both") — not just praise.
-- When the queue has 2+ images, suggest stitching or sending in one go.
-- Celebrate wins briefly ("Nice grab!"), then immediately propose what to do with it.
-- If the user sounds stuck or vague, ask ONE sharp clarifying question, then pitch a concrete workflow.
-- Be bold with ideas — it's fine to suggest something the user hasn't thought of yet.
-
-ABOUT THE APP (SnapToAI):
-- Captures screenshots and sends them to AI chat sites (ChatGPT, Claude, Grok).
-- Three capture modes: SNAP (visible area), SNIP (drag a region), FULL PAGE (auto-scrolls and stitches the whole page).
-- Holds up to 10 screenshots in a queue at once.
-- ASK AI button opens a built-in chat that uses the user's own Google Gemini key.
-- AI modes inside the chat: Vision (analyze images), Image (generate pictures), Music (generate songs), Video (Veo video generation).
-- Annotation tools: highlight brush, numbered callouts, text, stickers.
-- Right-click anywhere on a webpage for a wand menu with all features.
-- Works in 55 languages.
-- 30-day free trial, then a paid plan via Whop.
-
-UI ELEMENTS YOU CAN POINT AT (use the [glow:#id] tag at the END of your reply to make a button glow for the user):
-- [glow:#snapButton] — the SNAP capture button (captures the visible viewport)
-- [glow:#snipButton] — the SNIP region button (drag-select a region)
-- [glow:#fullPageButton] — the FULL PAGE capture button (auto-scrolls and stitches)
-- [glow:#directAiButton] — the ASK AI button (opens the built-in AI chat)
-- [glow:#signInHeaderBtn] — sign in with Google
-- [glow:#sendSelectedAiBtn] — send selected screenshots to a chat site like ChatGPT/Claude
-- [glow:#copySelectedBtn] — copy selected screenshots to clipboard
-- [glow:#exportPdfBtn] — export to PDF
-- [glow:#downloadSelectedBtn] — download as PNG
-- [glow:#youtubeBtn] — open the YouTube tutorials
+UI ELEMENTS YOU CAN POINT AT (end your reply with [glow:#id] — use sparingly, only when you actually told the user to click that button):
+- [glow:#snapButton] [glow:#snipButton] [glow:#fullPageButton] [glow:#directAiButton]
+- [glow:#signInHeaderBtn] [glow:#sendSelectedAiBtn] [glow:#copySelectedBtn]
+- [glow:#exportPdfBtn] [glow:#downloadSelectedBtn] [glow:#youtubeBtn]
 
 GUIDELINES:
 - Keep replies under 25 words when possible.
-- If the user asks "how do I X", give one clear step + glow the button.
-- If the user just chats, be a friend — encouraging, brief, light humor OK.
-- Never invent features that aren't in the list above.
-- If the user asks something unrelated to the app, gently steer back: "I'm best at helping you use SnapToAI — want a tip?"
-- End with a [glow:#id] tag ONLY when you actually told them to click that button.`;
+- After every capture, suggest the next step (don't just praise).
+- If queue has 2+ images, suggest stitching or sending in one go.
+- If user is vague, ask ONE sharp clarifying question, then pitch a workflow.
+- Be bold with ideas the user hasn't thought of yet.`;
 
   const GEMINI_MODEL = 'gemini-2.0-flash';
   const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-  // Premium voice via Gemini native TTS (sounds human, not robotic).
-  // 30 prebuilt voices available — Kore is warm + conversational.
   const TTS_MODEL = 'gemini-2.5-flash-preview-tts';
   const TTS_URL = `https://generativelanguage.googleapis.com/v1beta/models/${TTS_MODEL}:generateContent`;
   const TTS_VOICE = 'Kore';
   const TTS_SAMPLE_RATE = 24000;
 
-  // --- DOM refs (populated in init) ---
-  let mascotEl = null;
-  let bubbleEl = null;
-  let recognition = null;
+  // ===== Per-turn state =====
+  // turnId is bumped on Stop / new turn; any in-flight callback that doesn't
+  // match the current turnId is ignored (prevents stale responses & spam).
+  let activeTurnId = 0;
+  let activeAbortController = null;
+  let isBusy = false;       // text-fetch OR TTS-fetch OR audio playback in progress
   let isListening = false;
-  let isThinking = false;
-  let isSpeaking = false;
-  let currentUtterance = null;
+  let recognition = null;
+
+  // ===== DOM refs =====
+  let panelEl = null;
+  let chatLogEl = null;
+  let micBtnEl = null;
+  let inputEl = null;
+  let sendBtnEl = null;
+  let stopBtnEl = null;
+  let statusRowEl = null;
+  let statusTextEl = null;
+
+  // ===== Audio =====
+  let audioCtx = null;
+  let currentAudioSource = null;
+
+  // ===== Conversation history (capped) =====
   let conversationHistory = [];
-  let inactivityTimer = null;
-  const INACTIVITY_MS = 25000;
 
-  function injectMascot() {
-    if (document.getElementById('snap-mascot')) return;
-    mascotEl = document.createElement('div');
-    mascotEl.id = 'snap-mascot';
-    mascotEl.title = 'Hi! I\'m Snap. Click to talk to me.';
-    mascotEl.textContent = '📸';
-    mascotEl.setAttribute('role', 'button');
-    mascotEl.setAttribute('aria-label', 'Open Snap voice assistant');
-    document.body.appendChild(mascotEl);
+  // ----- Public hook -----
+  window.SnapCoach = {
+    open: openPanel,
+    close: closePanel,
+    celebrate(message) {
+      // Non-intrusive: only auto-open if the panel isn't already open.
+      if (!panelEl || panelEl.classList.contains('snap-open')) return;
+      openPanel();
+      addBotMessage(message || 'Nice capture! Want a tip on what to do next?');
+    }
+  };
 
-    bubbleEl = document.createElement('div');
-    bubbleEl.id = 'snap-bubble';
-    bubbleEl.innerHTML = `
-      <button class="snap-bubble-close" aria-label="Close">×</button>
-      <div class="snap-bubble-text"></div>
-      <div class="snap-bubble-actions"></div>
-    `;
-    document.body.appendChild(bubbleEl);
+  // ===========================================================================
+  //  BOOT
+  // ===========================================================================
+  document.addEventListener('DOMContentLoaded', boot);
+  if (document.readyState !== 'loading') boot();
 
-    bubbleEl.querySelector('.snap-bubble-close').addEventListener('click', (e) => {
+  let booted = false;
+  function boot() {
+    if (booted) return; booted = true;
+    injectTrigger();
+    injectPanel();
+    try { window.speechSynthesis.getVoices(); } catch (_) {}
+  }
+
+  // Header trigger pill — sits inline in the header layout, never overlaps.
+  function injectTrigger() {
+    if (document.getElementById('snap-trigger')) return;
+    const header = document.querySelector('.header .header-right') || document.querySelector('.header');
+    if (!header) return;
+    const btn = document.createElement('button');
+    btn.id = 'snap-trigger';
+    btn.type = 'button';
+    btn.title = 'Open Snap — your voice & chat co-pilot';
+    btn.innerHTML = '<span class="snap-trigger-dot"></span><span>Snap</span>';
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
       e.stopPropagation();
-      hideBubble();
-      stopAll();
+      primeAudio();           // user gesture → unlock audio for later TTS
+      openPanel();
+    });
+    header.insertBefore(btn, header.firstChild);
+  }
+
+  // Full-popup chat panel — replaces view, never overlaps interactive controls.
+  function injectPanel() {
+    if (document.getElementById('snap-panel')) return;
+    panelEl = document.createElement('div');
+    panelEl.id = 'snap-panel';
+    panelEl.innerHTML = `
+      <div class="snap-panel-header">
+        <div class="snap-panel-avatar">📸</div>
+        <div class="snap-panel-title">
+          <strong>Snap</strong>
+          <span>Your voice &amp; chat co-pilot</span>
+        </div>
+        <button class="snap-panel-close" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="snap-chat-log" role="log" aria-live="polite"></div>
+      <div class="snap-status-row">
+        <span class="snap-status-pulse"></span>
+        <span class="snap-status-text">Ready. Tap the mic or type a message.</span>
+      </div>
+      <div class="snap-input-bar">
+        <button class="snap-mic-btn" type="button" title="Talk to Snap" aria-label="Mic">🎤</button>
+        <input class="snap-text-input" type="text" placeholder="Type a message…" maxlength="500" />
+        <button class="snap-send-btn" type="button" title="Send" aria-label="Send">➤</button>
+        <button class="snap-stop-btn" type="button" title="Stop">■ Stop</button>
+      </div>
+    `;
+    document.body.appendChild(panelEl);
+
+    chatLogEl     = panelEl.querySelector('.snap-chat-log');
+    micBtnEl      = panelEl.querySelector('.snap-mic-btn');
+    inputEl       = panelEl.querySelector('.snap-text-input');
+    sendBtnEl     = panelEl.querySelector('.snap-send-btn');
+    stopBtnEl     = panelEl.querySelector('.snap-stop-btn');
+    statusRowEl   = panelEl.querySelector('.snap-status-row');
+    statusTextEl  = panelEl.querySelector('.snap-status-text');
+
+    panelEl.querySelector('.snap-panel-close').addEventListener('click', () => {
+      hardStop();
+      closePanel();
     });
 
-    mascotEl.addEventListener('click', onMascotClick);
-  }
-
-  function showBubble(text, actions) {
-    if (!bubbleEl) return;
-    const txt = bubbleEl.querySelector('.snap-bubble-text');
-    const act = bubbleEl.querySelector('.snap-bubble-actions');
-    txt.textContent = text;
-    act.innerHTML = '';
-    (actions || []).forEach((a) => {
-      const b = document.createElement('button');
-      b.className = 'snap-bubble-btn' + (a.danger ? ' snap-stop' : '');
-      b.textContent = a.label;
-      b.addEventListener('click', (e) => { e.stopPropagation(); a.onClick(); });
-      act.appendChild(b);
+    micBtnEl.addEventListener('click', () => {
+      primeAudio();
+      if (isListening) { stopListening(); return; }
+      startListening();
     });
-    bubbleEl.classList.add('show');
-  }
-  function hideBubble() { if (bubbleEl) bubbleEl.classList.remove('show'); }
 
-  function setState(state) {
-    if (!mascotEl) return;
-    mascotEl.classList.remove('snap-thinking', 'snap-talking', 'snap-listening');
-    if (state === 'thinking')   mascotEl.classList.add('snap-thinking');
-    else if (state === 'talking')   mascotEl.classList.add('snap-talking');
-    else if (state === 'listening') mascotEl.classList.add('snap-listening');
+    sendBtnEl.addEventListener('click', () => {
+      primeAudio();
+      submitText();
+    });
+
+    stopBtnEl.addEventListener('click', () => {
+      hardStop();
+      setStatus('Stopped. Ready when you are.', false);
+    });
+
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        primeAudio();
+        submitText();
+      }
+    });
   }
 
-  function stopAll() {
-    if (recognition && isListening) {
-      try { recognition.stop(); } catch (_) {}
+  function openPanel() {
+    if (!panelEl) injectPanel();
+    panelEl.classList.add('snap-open');
+    if (chatLogEl.children.length === 0) {
+      addBotMessage("Hey, I'm Snap! 📸 Tap the mic or type — I'll guide you and pitch creative ideas for your screenshots.");
     }
-    if (currentUtterance) {
-      try { window.speechSynthesis.cancel(); } catch (_) {}
-      currentUtterance = null;
+    setTimeout(() => { try { inputEl.focus(); } catch (_) {} }, 300);
+  }
+  function closePanel() {
+    if (!panelEl) return;
+    panelEl.classList.remove('snap-open');
+  }
+
+  // ===========================================================================
+  //  CHAT LOG HELPERS
+  // ===========================================================================
+  function addUserMessage(text) {
+    const el = document.createElement('div');
+    el.className = 'snap-msg snap-msg-user';
+    el.textContent = text;
+    chatLogEl.appendChild(el);
+    scrollLog();
+  }
+  function addBotMessage(text) {
+    const el = document.createElement('div');
+    el.className = 'snap-msg snap-msg-bot';
+    el.textContent = text;
+    chatLogEl.appendChild(el);
+    scrollLog();
+    return el;
+  }
+  function addSystemMessage(text) {
+    const el = document.createElement('div');
+    el.className = 'snap-msg snap-msg-system';
+    el.textContent = text;
+    chatLogEl.appendChild(el);
+    scrollLog();
+  }
+  function addErrorMessage(text) {
+    const el = document.createElement('div');
+    el.className = 'snap-msg snap-msg-error';
+    el.textContent = text;
+    chatLogEl.appendChild(el);
+    scrollLog();
+  }
+  function scrollLog() {
+    requestAnimationFrame(() => { chatLogEl.scrollTop = chatLogEl.scrollHeight; });
+  }
+
+  function setStatus(text, active) {
+    if (!statusRowEl) return;
+    statusTextEl.textContent = text;
+    statusRowEl.classList.toggle('snap-active', !!active);
+  }
+
+  function setBusy(busy) {
+    isBusy = busy;
+    if (!sendBtnEl) return;
+    sendBtnEl.disabled = busy;
+    micBtnEl.disabled = busy && !isListening;
+    inputEl.disabled = busy;
+    stopBtnEl.classList.toggle('snap-show', busy);
+    sendBtnEl.style.display = busy ? 'none' : 'flex';
+  }
+
+  // ===========================================================================
+  //  HARD STOP — abort everything for this turn
+  // ===========================================================================
+  function hardStop() {
+    activeTurnId++;                                  // invalidate stale callbacks
+    if (activeAbortController) {
+      try { activeAbortController.abort(); } catch (_) {}
+      activeAbortController = null;
     }
+    stopListening();
     stopGeminiAudio();
-    isListening = false;
-    isThinking = false;
-    isSpeaking = false;
-    setState('idle');
+    try { window.speechSynthesis.cancel(); } catch (_) {}
+    setBusy(false);
   }
 
-  // --- Click handler: cycles through STOP → LISTEN ---
-  async function onMascotClick() {
-    // CRITICAL: Chrome blocks audio playback unless an AudioContext was
-    // created/resumed *during* a user gesture. We prime it on every click
-    // so the later async TTS reply can actually play sound.
-    primeAudio();
-
-    // If currently speaking or thinking, a click means "stop"
-    if (isSpeaking || isThinking || isListening) {
-      stopAll();
-      hideBubble();
-      return;
+  // ===========================================================================
+  //  AUDIO — primed on every click for Chrome autoplay policy
+  // ===========================================================================
+  function getAudioCtx() {
+    if (!audioCtx) {
+      const Ctor = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new Ctor();
     }
-    await startListening();
+    return audioCtx;
   }
-
   function primeAudio() {
     try {
       const ctx = getAudioCtx();
-      if (ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
-      }
-      // Play one inaudible sample so Chrome marks the context as "user-activated"
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
       const buf = ctx.createBuffer(1, 1, 22050);
       const src = ctx.createBufferSource();
       src.buffer = buf;
       src.connect(ctx.destination);
       src.start(0);
-    } catch (e) {
-      console.warn('[snap-coach] primeAudio failed:', e && e.message);
+    } catch (_) {}
+  }
+  function stopGeminiAudio() {
+    if (currentAudioSource) {
+      try { currentAudioSource.onended = null; currentAudioSource.stop(); } catch (_) {}
+      currentAudioSource = null;
     }
   }
+  async function playPcm16(base64Pcm, sampleRate, turnIdAtStart) {
+    if (turnIdAtStart !== activeTurnId) return;       // stale guard
+    const bin = atob(base64Pcm);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const view = new DataView(bytes.buffer);
+    const sampleCount = Math.floor(bytes.length / 2);
+    const f32 = new Float32Array(sampleCount);
+    for (let i = 0; i < sampleCount; i++) f32[i] = view.getInt16(i * 2, true) / 32768;
 
-  // --- Browser speech recognition (free, built-in) ---
-  async function startListening() {
-    // Hard reset any in-flight speech / recognition first so we don't
-    // (a) self-capture the assistant's own voice or (b) race onend handlers.
-    if (isSpeaking || currentUtterance) {
-      try { window.speechSynthesis.cancel(); } catch (_) {}
-      currentUtterance = null;
-      isSpeaking = false;
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') {
+      try { await ctx.resume(); } catch (_) {}
+      if (ctx.state === 'suspended') throw new Error('audio-suspended');
     }
-    if (recognition && isListening) {
-      try { recognition.stop(); } catch (_) {}
-      isListening = false;
-    }
-    setState('idle');
+    if (turnIdAtStart !== activeTurnId) return;
 
+    const buf = ctx.createBuffer(1, sampleCount, sampleRate);
+    buf.copyToChannel(f32, 0, 0);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.onended = () => {
+      if (currentAudioSource === src) currentAudioSource = null;
+      if (turnIdAtStart === activeTurnId) setBusy(false);
+    };
+    stopGeminiAudio();
+    currentAudioSource = src;
+    src.start(0);
+  }
+
+  // ===========================================================================
+  //  SPEECH RECOGNITION — single-fire guard prevents the spam bug
+  // ===========================================================================
+  function startListening() {
+    if (isBusy || isListening) return;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
-      showBubble('Voice isn\'t supported in this browser. Try Chrome or Edge.', [
-        { label: 'OK', onClick: hideBubble }
-      ]);
-      return;
-    }
-    // Need an API key to actually answer. Walk the user to settings.
-    const key = await getGeminiKey();
-    if (!key) {
-      showBubble('I need your Gemini API key first — it\'s free from Google AI Studio. Want me to show you where to paste it?', [
-        { label: 'Show me', onClick: () => { hideBubble(); glowTarget('#aiManageLink', 4500); } },
-        { label: 'Not now',  onClick: hideBubble, danger: true }
-      ]);
+      addErrorMessage("Voice isn't supported in this browser. Try Chrome or Edge — or just type your message.");
       return;
     }
 
+    let processed = false;          // <-- THE single-fire guard
     recognition = new SR();
     recognition.lang = navigator.language || 'en-US';
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
-    isListening = true;
-    setState('listening');
-    showBubble('I\'m listening… ask me anything about the app.', [
-      { label: 'Stop', onClick: () => { stopAll(); hideBubble(); }, danger: true }
-    ]);
-
     recognition.onresult = (e) => {
+      if (processed) return;        // ignore duplicate result events
+      processed = true;
       const transcript = (e.results[0] && e.results[0][0] && e.results[0][0].transcript) || '';
-      isListening = false;
-      if (!transcript.trim()) {
-        showBubble('I didn\'t catch that — try again?', [{ label: 'OK', onClick: hideBubble }]);
-        setState('idle');
-        return;
-      }
-      handleUserUtterance(transcript.trim());
+      const cleaned = transcript.trim();
+      if (cleaned) submitTranscript(cleaned);
+      else addSystemMessage("Didn't catch that — try again or type instead.");
     };
     recognition.onerror = (e) => {
-      isListening = false;
-      setState('idle');
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-        showBubble(
-          'Chrome blocked the microphone for this extension. Tap "Fix it" — I\'ll open the right settings page so you can switch it to Allow in one click.',
-          [
-            { label: '🔧 Fix it for me', onClick: openMicSettings },
-            { label: 'Not now', onClick: hideBubble, danger: true }
-          ]
-        );
-      } else if (e.error === 'no-speech') {
-        showBubble('I didn\'t hear anything — try again?', [
-          { label: '🎤 Try again', onClick: () => { hideBubble(); startListening(); } },
-          { label: 'Close', onClick: hideBubble, danger: true }
-        ]);
-      } else {
-        showBubble('Mic hiccup: ' + e.error + '. Try again?', [
-          { label: '🎤 Retry', onClick: () => { hideBubble(); startListening(); } },
-          { label: 'Close', onClick: hideBubble, danger: true }
-        ]);
-      }
+      if (processed) return;
+      processed = true;
+      handleMicError(e.error);
     };
     recognition.onend = () => {
-      if (isListening) { isListening = false; setState('idle'); }
+      isListening = false;
+      micBtnEl.classList.remove('snap-mic-listening');
+      if (!isBusy) setStatus('Ready. Tap the mic or type a message.', false);
     };
 
-    try {
-      recognition.start();
-    } catch (err) {
+    isListening = true;
+    micBtnEl.classList.add('snap-mic-listening');
+    setStatus('Listening…', true);
+    try { recognition.start(); }
+    catch (err) {
       isListening = false;
-      setState('idle');
-      showBubble('Couldn\'t start the mic: ' + err.message, [{ label: 'OK', onClick: hideBubble }]);
+      micBtnEl.classList.remove('snap-mic-listening');
+      addErrorMessage("Couldn't start the mic: " + err.message);
+    }
+  }
+  function stopListening() {
+    if (recognition && isListening) {
+      try { recognition.stop(); } catch (_) {}
+    }
+    isListening = false;
+    if (micBtnEl) micBtnEl.classList.remove('snap-mic-listening');
+  }
+  function handleMicError(code) {
+    isListening = false;
+    micBtnEl.classList.remove('snap-mic-listening');
+    setStatus('Ready. Tap the mic or type a message.', false);
+    if (code === 'not-allowed' || code === 'service-not-allowed') {
+      addErrorMessage('Chrome blocked the mic for this extension. Use the type box, or open Chrome → Settings → Site settings → Microphone to allow it.');
+    } else if (code === 'no-speech') {
+      addSystemMessage("Didn't hear anything — try again or type your message.");
+    } else {
+      addErrorMessage('Mic error: ' + code);
     }
   }
 
-  // --- Send transcript through Gemini and speak the reply ---
-  async function handleUserUtterance(transcript) {
-    isThinking = true;
-    setState('thinking');
-    showBubble('You said: "' + transcript + '"\n\nThinking…');
+  // ===========================================================================
+  //  TURN SUBMISSION — voice OR text both end up here
+  // ===========================================================================
+  function submitText() {
+    if (isBusy) return;
+    const text = (inputEl.value || '').trim();
+    if (!text) return;
+    inputEl.value = '';
+    submitTranscript(text);
+  }
+  function submitTranscript(text) {
+    if (isBusy) return;
+    runTurn(text);
+  }
 
-    conversationHistory.push({ role: 'user', parts: [{ text: transcript }] });
-    // Cap history so prompts stay cheap
+  async function runTurn(userText) {
+    // Bump turn ID & set up a fresh AbortController. Any callback for an old
+    // turn (e.g. a stop happened mid-flight) is silently dropped.
+    const turnId = ++activeTurnId;
+    activeAbortController = new AbortController();
+    const signal = activeAbortController.signal;
+    setBusy(true);
+
+    addUserMessage(userText);
+    setStatus('Thinking…', true);
+
+    conversationHistory.push({ role: 'user', parts: [{ text: userText }] });
     if (conversationHistory.length > 12) conversationHistory = conversationHistory.slice(-12);
 
+    let replyText;
     try {
-      const reply = await callGemini(conversationHistory);
-      isThinking = false;
-      conversationHistory.push({ role: 'model', parts: [{ text: reply }] });
-
-      // Pull out optional [glow:#selector] tag and clean the spoken text
-      const glowMatch = reply.match(/\[glow:([^\]]+)\]/i);
-      const spoken = reply.replace(/\[glow:[^\]]+\]/gi, '').trim();
-
-      showBubble(spoken, [
-        { label: '🎤 Reply', onClick: () => { hideBubble(); startListening(); } },
-        { label: 'Done',    onClick: () => { hideBubble(); stopAll(); }, danger: true }
-      ]);
-      speak(spoken);
-      if (glowMatch) glowTarget(glowMatch[1].trim(), 5000);
+      replyText = await callGemini(conversationHistory, signal);
     } catch (err) {
-      isThinking = false;
-      setState('idle');
-      showBubble('Hmm, I couldn\'t reach my brain. ' + (err.message || 'Try again?'), [
-        { label: 'Retry', onClick: () => handleUserUtterance(transcript) },
-        { label: 'Close', onClick: hideBubble, danger: true }
-      ]);
+      if (turnId !== activeTurnId) return;            // stop happened — ignore
+      if (err.name === 'AbortError') return;
+      setBusy(false);
+      setStatus('Ready. Tap the mic or type a message.', false);
+      addErrorMessage(friendlyErr(err.message));
+      return;
+    }
+
+    if (turnId !== activeTurnId) return;              // stop happened mid-fetch
+
+    // Strip glow tag, save to history, render to chat
+    const glowMatch = replyText.match(/\[glow:([^\]]+)\]/i);
+    const cleanReply = replyText.replace(/\[glow:[^\]]+\]/gi, '').trim();
+    conversationHistory.push({ role: 'model', parts: [{ text: cleanReply }] });
+    addBotMessage(cleanReply);
+    if (glowMatch) glowTarget(glowMatch[1].trim(), 5000);
+
+    // Speak (premium voice). On failure, fall back to browser voice.
+    setStatus('Speaking…', true);
+    try {
+      await geminiTts(cleanReply, turnId, signal);
+      // setBusy(false) is handled in audio onended for accuracy
+    } catch (err) {
+      if (turnId !== activeTurnId || err.name === 'AbortError') return;
+      console.warn('[snap-coach] TTS failed, using browser voice:', err.message);
+      browserTtsFallback(cleanReply, turnId);
     }
   }
 
-  async function callGemini(history) {
+  function friendlyErr(msg) {
+    if (!msg) return 'Something went wrong — try again?';
+    return 'Network hiccup: ' + msg;
+  }
+
+  // ===========================================================================
+  //  GEMINI TEXT
+  // ===========================================================================
+  async function callGemini(history, signal) {
     const key = await getGeminiKey();
-    if (!key) throw new Error('No API key.');
+    if (!key) throw new Error('Add your Gemini API key in Settings first.');
     const body = {
       systemInstruction: { parts: [{ text: SNAP_SYSTEM_PROMPT }] },
       contents: history,
@@ -351,137 +482,50 @@ GUIDELINES:
     const resp = await fetch(GEMINI_URL + '?key=' + encodeURIComponent(key), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal
     });
     const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
-      const msg = (data && data.error && data.error.message) || ('HTTP ' + resp.status);
-      throw new Error(msg);
-    }
+    if (!resp.ok) throw new Error((data && data.error && data.error.message) || ('HTTP ' + resp.status));
     const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join(' ').trim();
     if (!text) throw new Error('Empty reply.');
     return text;
   }
 
-  // Opens Chrome's microphone settings page in a new tab so the user can
-  // flip the toggle to "Allow" without hunting for a hidden lock icon.
-  function openMicSettings() {
-    hideBubble();
-    try {
-      const extId = chrome.runtime.id;
-      // This page lets the user grant mic access specifically to this extension.
-      const url = 'chrome://settings/content/siteDetails?site=chrome-extension%3A%2F%2F' + extId;
-      chrome.tabs.create({ url });
-    } catch (_) {
-      try { chrome.tabs.create({ url: 'chrome://settings/content/microphone' }); } catch (__) {}
-    }
-    // Show a friendly nudge once the page opens
-    setTimeout(() => {
-      showBubble('Find "Microphone" on that page and switch it to Allow. Then come back and tap me again!', [
-        { label: 'Got it', onClick: hideBubble }
-      ]);
-    }, 600);
-  }
-
-  function getGeminiKey() {
-    return new Promise((resolve) => {
-      try {
-        chrome.storage.sync.get(['geminiApiKey'], (r) => resolve(r && r.geminiApiKey));
-      } catch (_) { resolve(null); }
-    });
-  }
-
-  // --- Premium voice via Gemini native TTS (sounds human, not robotic) ---
-  // Falls back to the browser's built-in voice only if Gemini TTS fails.
-  let audioCtx = null;
-  let currentAudioSource = null;
-
-  function getAudioCtx() {
-    if (!audioCtx) {
-      const Ctor = window.AudioContext || window.webkitAudioContext;
-      audioCtx = new Ctor();
-    }
-    if (audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (_) {} }
-    return audioCtx;
-  }
-
-  function stopGeminiAudio() {
-    if (currentAudioSource) {
-      try { currentAudioSource.onended = null; currentAudioSource.stop(); } catch (_) {}
-      currentAudioSource = null;
-    }
-  }
-
-  // Decode base64 → Int16 PCM → Float32 → AudioBuffer → play
-  async function playPcm16(base64Pcm, sampleRate) {
-    const bin = atob(base64Pcm);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    const view = new DataView(bytes.buffer);
-    const sampleCount = Math.floor(bytes.length / 2);
-    const f32 = new Float32Array(sampleCount);
-    for (let i = 0; i < sampleCount; i++) {
-      f32[i] = view.getInt16(i * 2, true) / 32768;
-    }
-    const ctx = getAudioCtx();
-    // Force-wake the context. If Chrome refuses (no user gesture in scope),
-    // fall back to the browser voice immediately instead of going silent.
-    if (ctx.state === 'suspended') {
-      try { await ctx.resume(); } catch (_) {}
-      if (ctx.state === 'suspended') {
-        console.warn('[snap-coach] AudioContext still suspended after resume — falling back.');
-        throw new Error('audio-suspended');
-      }
-    }
-    const buf = ctx.createBuffer(1, sampleCount, sampleRate);
-    buf.copyToChannel(f32, 0, 0);
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.connect(ctx.destination);
-    src.onended = () => {
-      if (currentAudioSource === src) currentAudioSource = null;
-      isSpeaking = false;
-      setState('idle');
-    };
-    stopGeminiAudio();
-    currentAudioSource = src;
-    isSpeaking = true;
-    setState('talking');
-    src.start(0);
-    console.log('[snap-coach] 🔊 Playing Gemini voice (' + sampleCount + ' samples @ ' + sampleRate + 'Hz)');
-  }
-
-  async function geminiTts(text) {
+  // ===========================================================================
+  //  GEMINI TTS — ONE clean call per turn (no spam, no retry)
+  // ===========================================================================
+  async function geminiTts(text, turnId, signal) {
     const key = await getGeminiKey();
     if (!key) throw new Error('No API key.');
     const body = {
-      contents: [{ parts: [{ text: 'Say warmly and conversationally, like a friend giving a quick tip: ' + text }] }],
+      // Style instructions live in systemInstruction so they're never spoken aloud.
+      systemInstruction: { parts: [{ text: 'Read the following text in a warm, conversational, friendly voice. Speak only the text itself — never read instructions, prefixes, or formatting tags.' }] },
+      contents: [{ parts: [{ text }] }],
       generationConfig: {
         responseModalities: ['AUDIO'],
-        speechConfig: {
-          voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_VOICE } }
-        }
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_VOICE } } }
       }
     };
     const resp = await fetch(TTS_URL + '?key=' + encodeURIComponent(key), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal
     });
+    if (turnId !== activeTurnId) return;
     const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
-      throw new Error((data && data.error && data.error.message) || ('TTS HTTP ' + resp.status));
-    }
+    if (!resp.ok) throw new Error((data && data.error && data.error.message) || ('TTS HTTP ' + resp.status));
     const part = data?.candidates?.[0]?.content?.parts?.find(p => p.inlineData && p.inlineData.data);
     if (!part) throw new Error('TTS empty.');
     const mime = part.inlineData.mimeType || '';
     const m = mime.match(/rate=(\d+)/);
     const rate = m ? parseInt(m[1], 10) : TTS_SAMPLE_RATE;
-    playPcm16(part.inlineData.data, rate);
+    await playPcm16(part.inlineData.data, rate, turnId);
   }
 
-  function browserTtsFallback(text) {
-    if (!('speechSynthesis' in window)) return;
+  function browserTtsFallback(text, turnId) {
+    if (!('speechSynthesis' in window)) { setBusy(false); return; }
     try { window.speechSynthesis.cancel(); } catch (_) {}
     const u = new SpeechSynthesisUtterance(text);
     u.rate = 1.05; u.pitch = 1.05; u.volume = 1;
@@ -489,81 +533,28 @@ GUIDELINES:
     const pref = voices.find(v => /en-US/i.test(v.lang) && /female|samantha|google|jenny|aria/i.test(v.name))
               || voices.find(v => /en-US/i.test(v.lang)) || voices[0];
     if (pref) u.voice = pref;
-    isSpeaking = true; setState('talking');
-    const done = () => { isSpeaking = false; currentUtterance = null; setState('idle'); };
-    u.onend = done; u.onerror = done;
-    currentUtterance = u;
+    u.onend = u.onerror = () => {
+      if (turnId === activeTurnId) setBusy(false);
+    };
     window.speechSynthesis.speak(u);
   }
 
-  function speak(text) {
-    // Try the premium voice first; only fall back to the robotic
-    // browser voice if the network call fails.
-    geminiTts(text).catch((err) => {
-      console.warn('[snap-coach] Gemini TTS failed, falling back to browser voice:', err && err.message);
-      browserTtsFallback(text);
+  // ===========================================================================
+  //  HELPERS
+  // ===========================================================================
+  function getGeminiKey() {
+    return new Promise((resolve) => {
+      try { chrome.storage.sync.get(['geminiApiKey'], (r) => resolve(r && r.geminiApiKey)); }
+      catch (_) { resolve(null); }
     });
   }
-
-  // --- Glow a UI element so the user can find it ---
   function glowTarget(selector, durationMs) {
     try {
       const el = document.querySelector(selector);
       if (!el) return;
       el.classList.add('snap-glow-target');
-      // Scroll into view in the (small) popup
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setTimeout(() => el.classList.remove('snap-glow-target'), durationMs || 4000);
     } catch (_) {}
   }
-
-  // --- Proactive trigger: gentle nudge if the user sits idle ---
-  function resetInactivityTimer() {
-    clearTimeout(inactivityTimer);
-    inactivityTimer = setTimeout(() => {
-      if (isListening || isThinking || isSpeaking) return;
-      // Don't nag repeatedly in a single session
-      if (sessionStorage.getItem('snap_nudged') === '1') return;
-      sessionStorage.setItem('snap_nudged', '1');
-      showBubble('Need a hand? Tap me and ask anything — like "how do I capture a whole page?"', [
-        { label: '🎤 Ask',   onClick: () => { hideBubble(); startListening(); } },
-        { label: 'Dismiss', onClick: hideBubble, danger: true }
-      ]);
-    }, INACTIVITY_MS);
-  }
-
-  // Public hook so popup.js (or anyone else) can fire celebratory nudges.
-  window.SnapCoach = {
-    celebrate(message) {
-      if (isListening || isThinking || isSpeaking) return;
-      const m = message || 'Nice capture! Tap me if you want to know what to do next.';
-      showBubble(m, [
-        { label: '🎤 Tip',   onClick: () => { hideBubble(); startListening(); } },
-        { label: 'Thanks',  onClick: hideBubble, danger: true }
-      ]);
-      setTimeout(() => hideBubble(), 6000);
-    },
-    open() { startListening(); }
-  };
-
-  // --- Boot ---
-  document.addEventListener('DOMContentLoaded', () => {
-    injectMascot();
-    // Warm up TTS voice list (Chrome lazy-loads them)
-    try { window.speechSynthesis.getVoices(); } catch (_) {}
-    resetInactivityTimer();
-    ['mousemove', 'keydown', 'click', 'scroll'].forEach(evt =>
-      document.addEventListener(evt, resetInactivityTimer, { passive: true })
-    );
-    // First-time greeting
-    setTimeout(() => {
-      if (sessionStorage.getItem('snap_greeted') === '1') return;
-      sessionStorage.setItem('snap_greeted', '1');
-      showBubble('Hey, I\'m Snap! Tap me anytime and I\'ll guide you through the app by voice.', [
-        { label: '🎤 Try it', onClick: () => { hideBubble(); startListening(); } },
-        { label: 'Cool',     onClick: hideBubble, danger: true }
-      ]);
-      setTimeout(() => hideBubble(), 7000);
-    }, 800);
-  });
 })();
