@@ -184,6 +184,11 @@ GUIDELINES:
 
   // --- Click handler: cycles through STOP → LISTEN ---
   async function onMascotClick() {
+    // CRITICAL: Chrome blocks audio playback unless an AudioContext was
+    // created/resumed *during* a user gesture. We prime it on every click
+    // so the later async TTS reply can actually play sound.
+    primeAudio();
+
     // If currently speaking or thinking, a click means "stop"
     if (isSpeaking || isThinking || isListening) {
       stopAll();
@@ -191,6 +196,23 @@ GUIDELINES:
       return;
     }
     await startListening();
+  }
+
+  function primeAudio() {
+    try {
+      const ctx = getAudioCtx();
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+      // Play one inaudible sample so Chrome marks the context as "user-activated"
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch (e) {
+      console.warn('[snap-coach] primeAudio failed:', e && e.message);
+    }
   }
 
   // --- Browser speech recognition (free, built-in) ---
@@ -391,7 +413,7 @@ GUIDELINES:
   }
 
   // Decode base64 → Int16 PCM → Float32 → AudioBuffer → play
-  function playPcm16(base64Pcm, sampleRate) {
+  async function playPcm16(base64Pcm, sampleRate) {
     const bin = atob(base64Pcm);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -402,6 +424,15 @@ GUIDELINES:
       f32[i] = view.getInt16(i * 2, true) / 32768;
     }
     const ctx = getAudioCtx();
+    // Force-wake the context. If Chrome refuses (no user gesture in scope),
+    // fall back to the browser voice immediately instead of going silent.
+    if (ctx.state === 'suspended') {
+      try { await ctx.resume(); } catch (_) {}
+      if (ctx.state === 'suspended') {
+        console.warn('[snap-coach] AudioContext still suspended after resume — falling back.');
+        throw new Error('audio-suspended');
+      }
+    }
     const buf = ctx.createBuffer(1, sampleCount, sampleRate);
     buf.copyToChannel(f32, 0, 0);
     const src = ctx.createBufferSource();
@@ -417,6 +448,7 @@ GUIDELINES:
     isSpeaking = true;
     setState('talking');
     src.start(0);
+    console.log('[snap-coach] 🔊 Playing Gemini voice (' + sampleCount + ' samples @ ' + sampleRate + 'Hz)');
   }
 
   async function geminiTts(text) {
