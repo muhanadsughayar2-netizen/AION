@@ -43,7 +43,10 @@ GUIDELINES: Keep replies under 25 words when possible — they appear as live su
 
   // Live API model (bidi audio in / audio out + transcripts).
   // Uses the user's existing Gemini API key (same as the rest of the extension).
-  const LIVE_MODEL = 'models/gemini-live-2.5-flash-preview';
+  // gemini-2.0-flash-exp is the most stable Live API model in the wild and is
+  // available on the standard paid tier without the preview-model rate limits
+  // that were tripping the old TTS REST flow.
+  const LIVE_MODEL = 'models/gemini-2.0-flash-exp';
   const LIVE_VOICE = 'Kore';
   const LIVE_WS_URL = (key) =>
     `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${encodeURIComponent(key)}`;
