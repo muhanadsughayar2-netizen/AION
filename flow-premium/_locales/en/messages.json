@@ -1,10 +1,10 @@
 {
   "extensionName": {
-    "message": "Snap To AI PRO: 9-Source Vision, 64s Video & AI Media Studio",
+    "message": "Snap To AI: Google Gemini AI Video, Music & Image Generator",
     "description": "extensionName"
   },
   "extensionDescription": {
-    "message": "Stop chatting with the web. Snap up to 9 sources, analyze complex data, generate 64s cinematic videos & score pro audio.",
+    "message": "Turn any screen capture into 4K videos, studio music & photoreal art. The full Google AI Studio—powered by Gemini 3—in your browser.",
     "description": "extensionDescription"
   },
   "flowReady": {

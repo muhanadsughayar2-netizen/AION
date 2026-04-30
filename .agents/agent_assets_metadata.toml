@@ -42,3 +42,9 @@ id = "UQOlIF-cwk9eN091khQ1f"
 uri = "file://snaptoai-extension-v2.4.7.zip"
 type = "unspecified"
 title = "SnapToAI v2.4.7 — stitcher fix + new camera icon"
+
+[[outputs]]
+id = "fW1Fqkauo6P0upH4GSJCb"
+uri = "file://snaptoai-extension-v2.4.8.zip"
+type = "unspecified"
+title = "SnapToAI v2.4.8 — New name & description"
