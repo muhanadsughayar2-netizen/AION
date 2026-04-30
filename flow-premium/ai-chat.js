@@ -2881,78 +2881,132 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
   });
 }
 
-async function stitchVideos(videoUrls) {
+// v2.4.7: Hardened stitcher with timeout, Stop-button support, play() race
+// fix, and a setTimeout fallback so background tabs still make progress.
+//
+// `stitchCtx` is optional. If provided we honour stitchCtx.userStopped so the
+// generation Stop button also aborts during stitching.
+async function stitchVideos(videoUrls, stitchCtx) {
   console.log(`[SnapToAI Video] Stitching ${videoUrls.length} clips...`);
 
-  const blobs = [];
-  for (const url of videoUrls) {
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error(`Failed to fetch clip: ${resp.status}`);
-    blobs.push(await resp.blob());
-  }
+  // ---- Hard timeout: if anything hangs, give up cleanly so the caller can
+  // fall back to showing individual clip download links instead of a frozen
+  // "Stitching..." progress bar forever.
+  const STITCH_TIMEOUT_MS = 90000;
+  let timeoutHandle = null;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutHandle = setTimeout(
+      () => reject(new Error('Stitch timeout (90s) — falling back to clips')),
+      STITCH_TIMEOUT_MS
+    );
+  });
 
-  const canvas = document.createElement('canvas');
-  canvas.width = 1280;
-  canvas.height = 720;
-  const ctx = canvas.getContext('2d');
-
-  const stream = canvas.captureStream(30);
-  const audioCtx = new AudioContext();
-  const dest = audioCtx.createMediaStreamDestination();
-
-  const audioTracks = dest.stream.getAudioTracks();
-  if (audioTracks.length > 0) {
-    stream.addTrack(audioTracks[0]);
-  }
-
-  const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9,opus' });
-  const chunks = [];
-  recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-
-  const recordingDone = new Promise(resolve => { recorder.onstop = resolve; });
-
-  recorder.start();
-
-  for (let i = 0; i < blobs.length; i++) {
-    const blobUrl = URL.createObjectURL(blobs[i]);
-    const video = document.createElement('video');
-    video.src = blobUrl;
-    video.muted = false;
-    video.crossOrigin = 'anonymous';
-
-    await new Promise((resolve, reject) => {
-      video.onloadedmetadata = resolve;
-      video.onerror = reject;
-    });
-
-    try {
-      const source = audioCtx.createMediaElementSource(video);
-      source.connect(dest);
-    } catch (e) {
-      console.log('[SnapToAI Video] Audio connect skipped:', e.message);
+  const stitchPromise = (async () => {
+    const blobs = [];
+    for (const url of videoUrls) {
+      if (stitchCtx && stitchCtx.userStopped) throw new Error('User stopped');
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`Failed to fetch clip: ${resp.status}`);
+      blobs.push(await resp.blob());
     }
 
-    video.play();
+    const canvas = document.createElement('canvas');
+    canvas.width = 1280;
+    canvas.height = 720;
+    const ctx2d = canvas.getContext('2d');
 
-    await new Promise((resolve) => {
-      const drawFrame = () => {
-        if (video.ended || video.paused) { resolve(); return; }
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        requestAnimationFrame(drawFrame);
-      };
-      video.onended = resolve;
-      drawFrame();
-    });
+    const stream = canvas.captureStream(30);
+    const audioCtx = new AudioContext();
+    // Resume in case the browser created it in a suspended state — common
+    // with autoplay policies. await is safe even if already running.
+    try { await audioCtx.resume(); } catch (_) {}
+    const dest = audioCtx.createMediaStreamDestination();
 
-    URL.revokeObjectURL(blobUrl);
+    const audioTracks = dest.stream.getAudioTracks();
+    if (audioTracks.length > 0) {
+      stream.addTrack(audioTracks[0]);
+    }
+
+    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9,opus' });
+    const chunks = [];
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+    const recordingDone = new Promise(resolve => { recorder.onstop = resolve; });
+    recorder.start();
+
+    try {
+      for (let i = 0; i < blobs.length; i++) {
+        if (stitchCtx && stitchCtx.userStopped) throw new Error('User stopped');
+
+        const blobUrl = URL.createObjectURL(blobs[i]);
+        const video = document.createElement('video');
+        video.src = blobUrl;
+        video.muted = false;
+        video.crossOrigin = 'anonymous';
+        video.playsInline = true;
+
+        await new Promise((resolve, reject) => {
+          video.onloadedmetadata = () => resolve();
+          video.onerror = () => reject(new Error('Video load error'));
+        });
+
+        try {
+          const source = audioCtx.createMediaElementSource(video);
+          source.connect(dest);
+        } catch (e) {
+          console.log('[SnapToAI Video] Audio connect skipped:', e.message);
+        }
+
+        // FIX: actually wait for play() to start before entering the draw
+        // loop, otherwise the first iteration sees `video.paused === true`
+        // and resolves immediately, drawing zero frames for that clip.
+        try { await video.play(); } catch (e) {
+          console.log('[SnapToAI Video] play() rejected:', e.message);
+        }
+
+        await new Promise((resolve) => {
+          let resolved = false;
+          const finish = () => { if (!resolved) { resolved = true; resolve(); } };
+          const drawFrame = () => {
+            if (resolved) return;
+            if (stitchCtx && stitchCtx.userStopped) { finish(); return; }
+            if (video.ended) { finish(); return; }
+            try { ctx2d.drawImage(video, 0, 0, canvas.width, canvas.height); } catch (_) {}
+            // FIX: requestAnimationFrame pauses in background tabs, which is
+            // the #1 cause of hangs. Pair it with a setTimeout so we keep
+            // making progress even when the user clicks away.
+            if (typeof requestAnimationFrame === 'function') {
+              requestAnimationFrame(drawFrame);
+            } else {
+              setTimeout(drawFrame, 33);
+            }
+          };
+          // Belt-and-suspenders fallback that fires regardless of rAF state.
+          const tickInterval = setInterval(() => {
+            if (resolved) { clearInterval(tickInterval); return; }
+            if (stitchCtx && stitchCtx.userStopped) { clearInterval(tickInterval); finish(); return; }
+            if (video.ended) { clearInterval(tickInterval); finish(); return; }
+          }, 250);
+          video.onended = () => { clearInterval(tickInterval); finish(); };
+          drawFrame();
+        });
+
+        URL.revokeObjectURL(blobUrl);
+      }
+    } finally {
+      try { recorder.stop(); } catch (_) {}
+      try { await audioCtx.close(); } catch (_) {}
+      await recordingDone;
+    }
+
+    const stitchedBlob = new Blob(chunks, { type: 'video/webm' });
+    return URL.createObjectURL(stitchedBlob);
+  })();
+
+  try {
+    return await Promise.race([stitchPromise, timeoutPromise]);
+  } finally {
+    if (timeoutHandle) clearTimeout(timeoutHandle);
   }
-
-  recorder.stop();
-  await audioCtx.close();
-  await recordingDone;
-
-  const stitchedBlob = new Blob(chunks, { type: 'video/webm' });
-  return URL.createObjectURL(stitchedBlob);
 }
 
 function showStitchedVideoResult(bubble, stitchedUrl, clipUrls, thread) {
