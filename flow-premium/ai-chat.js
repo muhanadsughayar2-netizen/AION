@@ -2506,7 +2506,7 @@ async function renderVeoBatchOutcome(ctx) {
       const text = progressBubble.querySelector('.video-progress-text');
       if (fill) fill.style.width = '85%';
       if (text) text.textContent = 'Stitching clips together...';
-      const stitchedUrl = await stitchVideos(successUrls);
+      const stitchedUrl = await stitchVideos(successUrls, ctx);
       ctx.lastStitchedUrl = stitchedUrl;
       if (fill) fill.style.width = '100%';
       showStitchedVideoResult(progressBubble, stitchedUrl, successUrls, thread);
@@ -2981,11 +2981,17 @@ async function stitchVideos(videoUrls, stitchCtx) {
             }
           };
           // Belt-and-suspenders fallback that fires regardless of rAF state.
+          // Crucially, this also DRAWS frames — when the tab is backgrounded
+          // requestAnimationFrame is throttled/paused, so without this the
+          // canvas would never update and the stitched output would be a
+          // single static frame per clip. Drawing on a 100ms interval gives
+          // ~10fps stitched output in background tabs (acceptable fallback).
           const tickInterval = setInterval(() => {
             if (resolved) { clearInterval(tickInterval); return; }
             if (stitchCtx && stitchCtx.userStopped) { clearInterval(tickInterval); finish(); return; }
             if (video.ended) { clearInterval(tickInterval); finish(); return; }
-          }, 250);
+            try { ctx2d.drawImage(video, 0, 0, canvas.width, canvas.height); } catch (_) {}
+          }, 100);
           video.onended = () => { clearInterval(tickInterval); finish(); };
           drawFrame();
         });
