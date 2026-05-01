@@ -1595,7 +1595,7 @@ async function startVideoGeneration(prompt, thread) {
     thread.scrollTop = thread.scrollHeight;
 
     try {
-      prebuiltScenes = await buildClipScenes(prompt, clipCount, apiKey);
+      prebuiltScenes = await buildClipScenes(prompt, clipCount, apiKey, selectedVideoDuration);
     } catch (e) {
       console.warn('[veo plan] storyboard build failed:', e?.message || e);
     }
@@ -1833,6 +1833,29 @@ async function generateOneVeoClip(clipIdx, ctx) {
           };
         }
 
+        // v2.4.9 VISUAL CHAINING: for clip N>0, use the LAST FRAME of clip N-1
+        // as the starting image (Veo image-to-video mode). This is what
+        // actually enforces character/lighting/lens consistency across the
+        // stitched video — text-only continuity could not. Falls back to
+        // text-only if the previous frame is unavailable (extraction failed
+        // or no previous successful clip exists yet).
+        //
+        // JIT refresh: pull the CURRENT last frame of clip N-1 right before
+        // sending. This ensures retries / re-renders / fix-stitch always use
+        // the freshest version of clip N-1, not a stale cache from the
+        // initial batch.
+        if (clipIdx > 0) {
+          await refreshTransitionFrame(ctx, clipIdx - 1);
+          const prevFrame = Array.isArray(ctx.transitionFrames) && ctx.transitionFrames[clipIdx - 1];
+          if (prevFrame) {
+            requestBody.instances[0].image = {
+              bytesBase64Encoded: prevFrame.base64,
+              mimeType: prevFrame.mimeType
+            };
+            console.log(`[SnapToAI Video] Clip ${clipNum} chained to last frame of clip ${clipIdx}`);
+          }
+        }
+
         resp = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1840,6 +1863,33 @@ async function generateOneVeoClip(clipIdx, ctx) {
         });
         data = await resp.json().catch(() => ({}));
         errorMsg = (data?.error?.message) || '';
+
+        // v2.4.9: image-to-video unsupported by some Veo variants. If we
+        // attached a transition frame and the model rejected it, fall back
+        // ONCE to text-only continuity for this attempt instead of failing
+        // the whole clip. We only do this when an image was actually attached.
+        if (!resp.ok && requestBody.instances[0].image) {
+          const lower = errorMsg.toLowerCase();
+          const looksLikeImageReject =
+            resp.status === 400 &&
+            (lower.includes('image') || lower.includes('invalid_argument') ||
+             lower.includes('unsupported') || lower.includes('not supported'));
+          if (looksLikeImageReject) {
+            console.log(`[SnapToAI Video] Model ${modelName} rejected image input — retrying clip ${clipNum} text-only.`);
+            delete requestBody.instances[0].image;
+            try {
+              resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+              });
+              data = await resp.json().catch(() => ({}));
+              errorMsg = (data?.error?.message) || '';
+            } catch (textOnlyErr) {
+              console.log('[SnapToAI Video] Text-only fallback POST threw:', textOnlyErr.message);
+            }
+          }
+        }
 
         const isRate = !resp.ok && (
           resp.status === 429 ||
@@ -1945,7 +1995,8 @@ async function generateOneVeoClip(clipIdx, ctx) {
 // Falls back to a heavily anchored template if Gemini is unreachable.
 // ─────────────────────────────────────────────────────────────────
 
-function buildAnchoredFallback(prompt, clipCount) {
+function buildAnchoredFallback(prompt, clipCount, clipDur) {
+  const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
   const anchor =
 `[PRODUCTION RULES — APPLY TO EVERY SHOT]
 - VISUAL CONSISTENCY IS MANDATORY across all ${clipCount} segments.
@@ -1969,7 +2020,7 @@ ${prompt}`;
 
   const shots = [];
   const prompts = Array.from({length: clipCount}, (_, i) => {
-    const t0 = i * 8, t1 = (i + 1) * 8;
+    const t0 = i * segLen, t1 = (i + 1) * segLen;
     const beat = transitions[Math.min(i, transitions.length - 1)];
     shots.push(beat);
     const continuity = i === 0
@@ -1992,11 +2043,12 @@ ${continuity}`;
 
 // Ask Gemini to produce a continuity-anchored storyboard.
 // Returns array of clip prompts on success, null on failure.
-async function generateAnchoredStoryboard(prompt, clipCount, apiKey) {
+async function generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur) {
   if (!apiKey || clipCount < 2) return null;
+  const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
   try {
     const directorBrief =
-`You are a film director planning a ${clipCount * 8}-second cinematic video that will be rendered by Google Veo as ${clipCount} sequential 8-second clips, then stitched together.
+`You are a film director planning a ${clipCount * segLen}-second cinematic video that will be rendered by Google Veo as ${clipCount} sequential ${segLen}-second clips, then stitched together.
 
 The biggest failure mode is visual drift: characters change face, the location shifts, lighting jumps. Your job is to PREVENT that.
 
@@ -2011,7 +2063,7 @@ Return STRICT JSON ONLY (no markdown, no commentary) in this exact shape:
   "script_summary": "A single 1-2 sentence pitch describing what the viewer will experience.",
   "style_bible": "A 3-5 sentence locked description of: main character(s) (age, ethnicity, hair, exact wardrobe), exact location, lighting setup, color palette, lens / camera style, mood. This text will be repeated verbatim at the top of every clip — be specific and unambiguous.",
   "clips": [
-    { "shot": "What happens in this 8s segment. Start the description with how the camera moves IN from the previous shot (e.g. 'camera glides right, landing on...'). For clip 1, open with an establishing shot. Each clip must continue the same scene — same characters, same lighting, same location." },
+    { "shot": "What happens in this ${segLen}s segment. Start the description with how the camera moves IN from the previous shot (e.g. 'camera glides right, landing on...'). For clip 1, open with an establishing shot. Each clip must continue the same scene — same characters, same lighting, same location." },
     ... exactly ${clipCount} entries ...
   ]
 }
@@ -2049,7 +2101,7 @@ Rules:
     const bible = String(parsed.style_bible).trim();
     const prompts = parsed.clips.map((c, i) => {
       const shot = String(c.shot).trim();
-      const t0 = i * 8, t1 = (i + 1) * 8;
+      const t0 = i * segLen, t1 = (i + 1) * segLen;
       const continuity = i === 0
         ? `This is the OPENING segment — establish the baseline scene exactly as the style bible describes. Every following segment will inherit these characters, wardrobe, location, lighting, and palette.`
         : `This segment must visually continue from segment ${i}: identical characters, wardrobe, location, lighting, and color palette. No hard cuts or new characters.`;
@@ -2334,15 +2386,15 @@ function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, 
   });
 }
 
-async function buildClipScenes(prompt, clipCount, apiKey) {
+async function buildClipScenes(prompt, clipCount, apiKey, clipDur) {
   if (clipCount < 2) return [];
-  const fromAI = await generateAnchoredStoryboard(prompt, clipCount, apiKey);
+  const fromAI = await generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur);
   if (fromAI && fromAI.length === clipCount) {
-    console.log(`[veo storyboard] using AI-generated style bible for ${clipCount} clips`);
+    console.log(`[veo storyboard] using AI-generated style bible for ${clipCount} clips × ${clipDur || 8}s`);
     return fromAI;
   }
-  console.log(`[veo storyboard] using anchored fallback template for ${clipCount} clips`);
-  return buildAnchoredFallback(prompt, clipCount);
+  console.log(`[veo storyboard] using anchored fallback template for ${clipCount} clips × ${clipDur || 8}s`);
+  return buildAnchoredFallback(prompt, clipCount, clipDur);
 }
 
 // Compile one clip prompt from edited meta (used when user edits the plan card).
@@ -2385,7 +2437,7 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
   if (!clipScenes || clipScenes.length !== clipCount) {
     const progressText = progressBubble.querySelector('.video-progress-text');
     if (progressText) progressText.textContent = `Planning ${clipCount}-clip storyboard for visual continuity...`;
-    clipScenes = await buildClipScenes(prompt, clipCount, apiKey);
+    clipScenes = await buildClipScenes(prompt, clipCount, apiKey, selectedVideoDuration);
   }
   // Index-based results so retry can replace any specific slot
   const clipResults = Array.from({length: clipCount}, (_, i) => ({ n: i + 1, status: 'pending', url: null }));
@@ -2415,7 +2467,11 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
                 durationSeconds, sourceImageForClip0,
                 aspectRatio: aspectRatio || '16:9',
                 retryInFlight: false, billingAbortAt: -1,
-                userStopped: false };
+                userStopped: false,
+                // v2.4.9: cache of last-frame images, indexed by clip idx.
+                // transitionFrames[i] = last frame of clip i, used as the
+                // starting image for clip i+1 to enforce visual continuity.
+                transitionFrames: [] };
 
   // Wire the Stop button. Sets a flag that all wait loops + the batch loop
   // observe; the user keeps every clip already rendered, no further Veo
@@ -2449,6 +2505,20 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
       const fill = progressBubble.querySelector('.video-progress-fill');
       const pct = Math.round(((i + 1) / clipCount) * 80);
       if (fill) fill.style.width = `${pct}%`;
+
+      // v2.4.9 VISUAL CHAINING: pre-warm the last frame of this clip so the
+      // NEXT clip starts exactly where this one ended. The actual JIT refresh
+      // happens inside generateOneVeoClip too (covers retries / re-renders),
+      // but doing it here gives the user a visible "Capturing transition
+      // frame..." progress message during the long generation.
+      if (i + 1 < clipCount && !ctx.userStopped) {
+        const text = progressBubble.querySelector('.video-progress-text');
+        if (text) text.textContent = `Capturing transition frame from clip ${i + 1} for seamless handoff...`;
+        await refreshTransitionFrame(ctx, i);
+        if (!ctx.transitionFrames[i]) {
+          console.log(`[SnapToAI Video] Clip ${i + 1} last-frame extraction failed — clip ${i + 2} will use text-only continuity.`);
+        }
+      }
     }
 
     if (result.billingAbort) {
@@ -2458,6 +2528,90 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
   }
 
   await renderVeoBatchOutcome(ctx);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// VISUAL CHAINING (v2.4.9)
+// Veo treats every clip as an independent generation. Telling it
+// "be consistent" in text doesn't work — characters morph, lighting
+// jumps, lens swaps. The fix: extract the LAST FRAME of clip N and
+// feed it as the starting `image` for clip N+1 (Veo's image-to-video
+// mode). Clip N+1 then literally begins where clip N ended.
+//
+// Returns { base64, mimeType } ready to drop into requestBody.instances[0].image
+// — or null on any failure (caller falls back to text-only continuity).
+// ─────────────────────────────────────────────────────────────────
+
+// Just-in-time refresh of ctx.transitionFrames[idx] from clipResults[idx].url.
+// Call BEFORE reading transitionFrames[idx-1] (so the next clip uses the
+// CURRENT frame of the previous clip, not a stale cached one from the
+// original batch run), and AFTER replacing clipResults[idx].url (so the
+// next chain uses the freshly rendered clip).
+//
+// Cheap if already cached for the same URL (early return).
+async function refreshTransitionFrame(ctx, idx) {
+  if (!ctx || idx < 0 || !Array.isArray(ctx.clipResults)) return;
+  const r = ctx.clipResults[idx];
+  if (!r || !r.url) return;
+  const cached = ctx.transitionFrames[idx];
+  if (cached && cached._sourceUrl === r.url) return;
+  const frame = await extractLastFrame(r.url);
+  if (frame) {
+    frame._sourceUrl = r.url;
+    ctx.transitionFrames[idx] = frame;
+  } else if (cached) {
+    // Best-effort: keep stale cache rather than wipe it.
+    console.log(`[SnapToAI Video] Could not refresh transition frame for clip ${idx + 1}; keeping cached frame.`);
+  }
+}
+
+async function extractLastFrame(videoUrl) {
+  let blobUrl = null;
+  try {
+    const resp = await fetch(videoUrl);
+    if (!resp.ok) throw new Error(`fetch ${resp.status}`);
+    const blob = await resp.blob();
+    blobUrl = URL.createObjectURL(blob);
+
+    const video = document.createElement('video');
+    video.src = blobUrl;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    video.crossOrigin = 'anonymous';
+
+    await new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error('metadata timeout')), 15000);
+      video.onloadedmetadata = () => { clearTimeout(t); resolve(); };
+      video.onerror = () => { clearTimeout(t); reject(new Error('video load error')); };
+    });
+
+    // Seek to just before the very end. Some encoders won't paint the final
+    // frame at exactly duration, so back off 50ms.
+    const target = Math.max(0, (video.duration || 8) - 0.05);
+    await new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error('seek timeout')), 15000);
+      video.onseeked = () => { clearTimeout(t); resolve(); };
+      try { video.currentTime = target; }
+      catch (e) { clearTimeout(t); reject(e); }
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const c = canvas.getContext('2d');
+    c.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const dataUrl = canvas.toDataURL('image/png');
+    const base64 = dataUrl.split(',')[1] || '';
+    if (!base64) throw new Error('empty canvas');
+    return { base64, mimeType: 'image/png' };
+  } catch (e) {
+    console.log('[SnapToAI Video] extractLastFrame failed:', e.message);
+    return null;
+  } finally {
+    if (blobUrl) { try { URL.revokeObjectURL(blobUrl); } catch (_) {} }
+  }
 }
 
 // Cancellable sleep. Polls ctx.userStopped every second so the user can
@@ -2545,10 +2699,19 @@ function buildVeoRerenderPanel(ctx) {
   const rows = clipResults.map((r, idx) => {
     if (!r.url) return '';
     const prompt = (clipScenes && clipScenes[idx]) || '';
+    // v2.4.9: "Fix Stitch" only makes sense when there's a previous successful
+    // clip whose final frame we can borrow. Show it on clips 2..N.
+    const prevHasUrl = idx > 0 && clipResults[idx - 1] && clipResults[idx - 1].url;
+    const fixStitchBtn = prevHasUrl
+      ? `<button class="veo-fix-stitch-btn" data-clip-idx="${idx}" title="Re-render this clip starting from the LAST FRAME of clip ${idx} so the join looks seamless." style="padding:4px 10px;border-radius:6px;border:1px solid rgba(0,217,255,0.4);background:rgba(0,217,255,0.1);color:#00d9ff;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">✂ Fix stitch (${idx}→${idx + 1})</button>`
+      : '';
     return `<div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;margin-bottom:8px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
         <span style="font-size:12px;font-weight:600;color:#cdd6e0;">🎬 Clip ${r.n}</span>
-        <button class="veo-rerender-toggle" data-clip-idx="${idx}" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,165,0,0.4);background:rgba(255,165,0,0.1);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">✎ Re-render this clip</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${fixStitchBtn}
+          <button class="veo-rerender-toggle" data-clip-idx="${idx}" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,165,0,0.4);background:rgba(255,165,0,0.1);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">✎ Re-render this clip</button>
+        </div>
       </div>
       <div class="veo-rerender-editor" data-clip-idx="${idx}" style="display:none;margin-top:6px;">
         <div style="font-size:10px;color:#667788;letter-spacing:1px;font-weight:600;margin-bottom:4px;">PROMPT FOR THIS CLIP (edit then confirm)</div>
@@ -2565,13 +2728,77 @@ function buildVeoRerenderPanel(ctx) {
   }).join('');
 
   return `<div style="margin-top:12px;background:rgba(255,165,0,0.04);border:1px solid rgba(255,165,0,0.2);border-radius:10px;padding:12px;">
-    <div style="font-weight:600;color:#ffa500;font-size:12px;margin-bottom:8px;">✎ Don't like one of the clips? Re-render only that one — pay just for one clip.</div>
+    <div style="font-weight:600;color:#ffa500;font-size:12px;margin-bottom:6px;">✎ Don't like one of the clips? Re-render only that one — pay just for one clip.</div>
+    <div style="font-size:11px;color:#8899aa;margin-bottom:10px;line-height:1.5;">
+      <span style="color:#00d9ff;font-weight:600;">✂ Fix stitch</span> = same prompt, but the clip starts from the previous clip's last frame so the cut is invisible. Use this when the join looks jarring.
+    </div>
     ${rows}
   </div>`;
 }
 
 function wireVeoRerenderButtons(ctx) {
   const { progressBubble, clipScenes, clipResults } = ctx;
+
+  // v2.4.9: Fix Stitch — re-render clip `idx` using clip `idx-1`'s last frame
+  // as the starting image. Same prompt, just visually chained. This is the
+  // explicit "the join looks bad" repair button.
+  progressBubble.querySelectorAll('.veo-fix-stitch-btn').forEach(btn => {
+    if (btn.dataset.wired === '1') return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', async () => {
+      const idx = parseInt(btn.dataset.clipIdx, 10);
+      if (isNaN(idx) || idx <= 0) return;
+      if (ctx.retryInFlight) return;
+      const prevResult = clipResults[idx - 1];
+      if (!prevResult || !prevResult.url) {
+        alert(`Cannot fix stitch — clip ${idx} is not available as a reference.`);
+        return;
+      }
+      if (!confirm(`Re-render clip ${idx + 1} starting from clip ${idx}'s final frame? This will charge your Google key for one clip and replace the existing one.`)) return;
+
+      ctx.retryInFlight = true;
+      setAllRetryButtonsDisabled(progressBubble, true, '⏳ Fixing stitch...');
+      btn.textContent = '⏳ Re-rendering chained clip...';
+
+      const priorResult = { ...clipResults[idx] };
+      const priorTransitionFramePrev = ctx.transitionFrames[idx - 1];
+      const priorTransitionFrameSelf = ctx.transitionFrames[idx];
+
+      try {
+        // generateOneVeoClip will JIT-refresh transitionFrames[idx-1] from
+        // the CURRENT clipResults[idx-1].url (handles the case where clip
+        // idx-1 was itself re-rendered after the original batch).
+        const result = await generateOneVeoClip(idx, ctx);
+        if (result.url) {
+          clipResults[idx].status = result.status;
+          clipResults[idx].url = result.url;
+          if (priorResult.url) { try { URL.revokeObjectURL(priorResult.url); } catch (_) {} }
+          // Invalidate this clip's cached frame so clip idx+1's next regen
+          // picks up the freshly rendered version.
+          ctx.transitionFrames[idx] = null;
+          await refreshTransitionFrame(ctx, idx);
+          await renderVeoBatchOutcome(ctx);
+        } else {
+          clipResults[idx] = priorResult;
+          ctx.transitionFrames[idx - 1] = priorTransitionFramePrev;
+          ctx.transitionFrames[idx] = priorTransitionFrameSelf;
+          alert(`Fix stitch failed (${result.status}). Your original clip ${idx + 1} is preserved.`);
+          await renderVeoBatchOutcome(ctx);
+        }
+      } catch (err) {
+        console.log('[SnapToAI Video] Fix-stitch threw:', err.message);
+        clipResults[idx] = priorResult;
+        ctx.transitionFrames[idx - 1] = priorTransitionFramePrev;
+        ctx.transitionFrames[idx] = priorTransitionFrameSelf;
+        alert(`Fix stitch error: ${err.message}. Your original clip is preserved.`);
+        try { await renderVeoBatchOutcome(ctx); } catch (_) {}
+      } finally {
+        ctx.retryInFlight = false;
+        setAllRetryButtonsDisabled(progressBubble, false, null);
+      }
+    });
+  });
+
   progressBubble.querySelectorAll('.veo-rerender-toggle').forEach(btn => {
     if (btn.dataset.wired === '1') return;
     btn.dataset.wired = '1';
@@ -2613,23 +2840,31 @@ function wireVeoRerenderButtons(ctx) {
       // revoke the old URL) when the new clip succeeds.
       const priorPrompt = ctx.clipScenes[idx];
       const priorResult = { ...clipResults[idx] };
+      const priorTransitionFrameSelf = ctx.transitionFrames[idx];
       ctx.clipScenes[idx] = newPrompt;
 
       ctx.retryInFlight = true;
       setAllRetryButtonsDisabled(progressBubble, true, '⏳ Re-rendering...');
       btn.textContent = '⏳ Re-rendering...';
       try {
+        // generateOneVeoClip JIT-refreshes transitionFrames[idx-1] from
+        // current clipResults[idx-1].url so the new clip is always chained
+        // to the freshest version of its predecessor.
         const result = await generateOneVeoClip(idx, ctx);
         if (result.url) {
           // Success → swap, then revoke the old blob URL.
           clipResults[idx].status = result.status;
           clipResults[idx].url = result.url;
           if (priorResult.url) { try { URL.revokeObjectURL(priorResult.url); } catch (_) {} }
+          // Invalidate this clip's cached frame so clip idx+1's next regen
+          // chains to the freshly rendered version, not the old one.
+          ctx.transitionFrames[idx] = null;
+          await refreshTransitionFrame(ctx, idx);
           await renderVeoBatchOutcome(ctx);
         } else {
-          // Failure → restore prior prompt + prior URL, then re-render the SAME video.
           ctx.clipScenes[idx] = priorPrompt;
           clipResults[idx] = priorResult;
+          ctx.transitionFrames[idx] = priorTransitionFrameSelf;
           alert(`Re-render failed (${result.status}). Your original clip ${idx + 1} is preserved — try a different prompt or accept the original.`);
           await renderVeoBatchOutcome(ctx);
         }
@@ -2637,6 +2872,7 @@ function wireVeoRerenderButtons(ctx) {
         console.log('[SnapToAI Video] Re-render threw:', err.message);
         ctx.clipScenes[idx] = priorPrompt;
         clipResults[idx] = priorResult;
+        ctx.transitionFrames[idx] = priorTransitionFrameSelf;
         alert(`Re-render error: ${err.message}. Your original clip is preserved.`);
         try { await renderVeoBatchOutcome(ctx); } catch (_) {}
       } finally {
@@ -2770,7 +3006,13 @@ async function retryVeoClip(clipIdx, ctx) {
   }
   retryBar.innerHTML = `<div class="video-progress-text">Retrying clip ${clipIdx + 1} of ${clipCount}...</div><div style="margin-top:6px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;"><div class="video-progress-fill" style="height:100%;width:0;background:linear-gradient(90deg,#ffa500,#ff6b6b);transition:width .3s;"></div></div>`;
 
+  // Snapshot prior frame so we can restore on transient failure.
+  const priorTransitionFrameSelf = ctx.transitionFrames[clipIdx];
+
   try {
+    // generateOneVeoClip JIT-refreshes transitionFrames[clipIdx-1] from the
+    // current clipResults[clipIdx-1].url so the retry chains to the freshest
+    // version of its predecessor (handles any earlier re-renders).
     const result = await generateOneVeoClip(clipIdx, ctx);
     clipResults[clipIdx].status = result.status;
     clipResults[clipIdx].url = result.url;
@@ -2780,11 +3022,21 @@ async function retryVeoClip(clipIdx, ctx) {
       return;
     }
 
+    if (result.url) {
+      // Invalidate this clip's cached frame so clip clipIdx+1's next regen
+      // chains to the freshly retried version, not the old one.
+      ctx.transitionFrames[clipIdx] = null;
+      await refreshTransitionFrame(ctx, clipIdx);
+    } else {
+      ctx.transitionFrames[clipIdx] = priorTransitionFrameSelf;
+    }
+
     // Re-render the whole outcome (this redraws the video result + summary card)
     retryBar.remove();
     await renderVeoBatchOutcome(ctx);
   } catch (err) {
     console.log('[SnapToAI Video] Retry threw:', err.message);
+    ctx.transitionFrames[clipIdx] = priorTransitionFrameSelf;
     retryBar.innerHTML = `<div style="color:#ff6b6b;">⚠ Retry failed: ${err.message}</div>`;
   }
 }
