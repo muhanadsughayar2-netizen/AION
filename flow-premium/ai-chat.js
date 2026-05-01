@@ -1819,8 +1819,28 @@ async function generateOneVeoClip(clipIdx, ctx) {
     while (true) {
       try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`;
+
+        // v2.4.9 VISUAL CHAINING: for clip N>0, JIT-refresh the previous
+        // clip's last frame, then attach it as instances[0].image so Veo
+        // generates the next clip starting from that exact frame.
+        // This ALSO injects a continuity prefix into the text prompt so the
+        // storyboard can't override the image (e.g. "cut to wide aerial").
+        let attachedChainImage = null;
+        if (clipIdx > 0) {
+          await refreshTransitionFrame(ctx, clipIdx - 1);
+          const prevFrame = Array.isArray(ctx.transitionFrames) && ctx.transitionFrames[clipIdx - 1];
+          if (prevFrame && prevFrame.base64) {
+            attachedChainImage = prevFrame;
+          }
+        }
+
+        let scenePrompt = clipScenes[clipIdx] || prompt;
+        if (attachedChainImage) {
+          scenePrompt = `Continue seamlessly from the provided starting frame. Keep the same character, clothing, lighting, color palette, lens, and camera framing. Do not cut to a new scene. The motion should pick up exactly where the starting frame leaves off. ${scenePrompt}`;
+        }
+
         const requestBody = {
-          instances: [{ prompt: clipScenes[clipIdx] || prompt }],
+          instances: [{ prompt: scenePrompt }],
           parameters: { aspectRatio: ctx.aspectRatio || '16:9', sampleCount: 1, durationSeconds: durationSeconds }
         };
 
@@ -1833,27 +1853,19 @@ async function generateOneVeoClip(clipIdx, ctx) {
           };
         }
 
-        // v2.4.9 VISUAL CHAINING: for clip N>0, use the LAST FRAME of clip N-1
-        // as the starting image (Veo image-to-video mode). This is what
-        // actually enforces character/lighting/lens consistency across the
-        // stitched video — text-only continuity could not. Falls back to
-        // text-only if the previous frame is unavailable (extraction failed
-        // or no previous successful clip exists yet).
-        //
-        // JIT refresh: pull the CURRENT last frame of clip N-1 right before
-        // sending. This ensures retries / re-renders / fix-stitch always use
-        // the freshest version of clip N-1, not a stale cache from the
-        // initial batch.
-        if (clipIdx > 0) {
-          await refreshTransitionFrame(ctx, clipIdx - 1);
-          const prevFrame = Array.isArray(ctx.transitionFrames) && ctx.transitionFrames[clipIdx - 1];
-          if (prevFrame) {
-            requestBody.instances[0].image = {
-              bytesBase64Encoded: prevFrame.base64,
-              mimeType: prevFrame.mimeType
-            };
-            console.log(`[SnapToAI Video] Clip ${clipNum} chained to last frame of clip ${clipIdx}`);
-          }
+        if (attachedChainImage) {
+          requestBody.instances[0].image = {
+            bytesBase64Encoded: attachedChainImage.base64,
+            mimeType: attachedChainImage.mimeType
+          };
+          const kb = Math.round(attachedChainImage.base64.length * 0.75 / 1024);
+          console.log(`[SnapToAI Video] ✓ Clip ${clipNum} CHAINED to last frame of clip ${clipIdx} (model=${modelName}, image=${attachedChainImage.mimeType} ~${kb}KB) + continuity prefix`);
+        } else if (clipIdx > 0) {
+          console.log(`[SnapToAI Video] ✗ Clip ${clipNum} NOT chained — no previous frame available (text-only continuity, expect visual jump)`);
+        } else if (requestBody.instances[0].image) {
+          console.log(`[SnapToAI Video] ✓ Clip ${clipNum} starting from user-supplied screenshot (model=${modelName})`);
+        } else {
+          console.log(`[SnapToAI Video] Clip ${clipNum} text-only generation (model=${modelName})`);
         }
 
         resp = await fetch(url, {
@@ -2567,49 +2579,86 @@ async function refreshTransitionFrame(ctx, idx) {
 
 async function extractLastFrame(videoUrl) {
   let blobUrl = null;
+  let video = null;
   try {
     const resp = await fetch(videoUrl);
     if (!resp.ok) throw new Error(`fetch ${resp.status}`);
     const blob = await resp.blob();
     blobUrl = URL.createObjectURL(blob);
 
-    const video = document.createElement('video');
-    video.src = blobUrl;
+    // Park the <video> off-screen but IN THE DOM. Chrome will skip frame
+    // decoding for detached elements, which silently produces a black canvas.
+    video = document.createElement('video');
     video.muted = true;
     video.playsInline = true;
     video.preload = 'auto';
-    video.crossOrigin = 'anonymous';
+    video.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:64px;height:64px;opacity:0;pointer-events:none;z-index:-1;';
+    document.body.appendChild(video);
+    video.src = blobUrl;
 
     await new Promise((resolve, reject) => {
-      const t = setTimeout(() => reject(new Error('metadata timeout')), 15000);
+      const t = setTimeout(() => reject(new Error('metadata timeout')), 20000);
       video.onloadedmetadata = () => { clearTimeout(t); resolve(); };
-      video.onerror = () => { clearTimeout(t); reject(new Error('video load error')); };
+      video.onerror = () => { clearTimeout(t); reject(new Error(`video load error code=${(video.error && video.error.code) || '?'}`)); };
     });
 
+    // Wait for actual frame data, not just metadata.
+    if (video.readyState < 2 /* HAVE_CURRENT_DATA */) {
+      await new Promise((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error('loadeddata timeout')), 20000);
+        video.onloadeddata = () => { clearTimeout(t); resolve(); };
+      });
+    }
+
     // Seek to just before the very end. Some encoders won't paint the final
-    // frame at exactly duration, so back off 50ms.
-    const target = Math.max(0, (video.duration || 8) - 0.05);
+    // frame at exactly duration, so back off 100ms.
+    const target = Math.max(0, (video.duration || 8) - 0.1);
     await new Promise((resolve, reject) => {
-      const t = setTimeout(() => reject(new Error('seek timeout')), 15000);
+      const t = setTimeout(() => reject(new Error('seek timeout')), 20000);
       video.onseeked = () => { clearTimeout(t); resolve(); };
       try { video.currentTime = target; }
       catch (e) { clearTimeout(t); reject(e); }
     });
 
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
-    const c = canvas.getContext('2d');
-    c.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // CRITICAL: `seeked` fires before the new frame is actually painted to
+    // the video's GPU texture. Drawing immediately produces a black or stale
+    // frame. Wait for requestVideoFrameCallback (Chrome 83+) or fall back to
+    // two rAFs which gives the compositor a chance to paint.
+    if (typeof video.requestVideoFrameCallback === 'function') {
+      await new Promise(resolve => {
+        const t = setTimeout(resolve, 1500);
+        video.requestVideoFrameCallback(() => { clearTimeout(t); resolve(); });
+      });
+    } else {
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
 
-    const dataUrl = canvas.toDataURL('image/png');
+    const w = video.videoWidth || 0;
+    const h = video.videoHeight || 0;
+    if (!w || !h) throw new Error(`zero video dimensions ${w}x${h}`);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const c = canvas.getContext('2d');
+    c.drawImage(video, 0, 0, w, h);
+
+    // JPEG @ 0.92 keeps the request body sane: a 1280x720 PNG is ~2-4 MB
+    // base64 (which Veo may silently reject), JPEG is ~150-300 KB and
+    // visually indistinguishable. Veo accepts both image/jpeg and image/png.
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
     const base64 = dataUrl.split(',')[1] || '';
-    if (!base64) throw new Error('empty canvas');
-    return { base64, mimeType: 'image/png' };
+    if (!base64 || base64.length < 1000) {
+      throw new Error(`canvas produced empty/tiny image (${base64.length} b64 chars)`);
+    }
+    const kb = Math.round(base64.length * 0.75 / 1024);
+    console.log(`[SnapToAI Video] extractLastFrame OK ${w}x${h} ~${kb}KB jpeg from t=${target.toFixed(2)}s/${(video.duration||0).toFixed(2)}s`);
+    return { base64, mimeType: 'image/jpeg' };
   } catch (e) {
     console.log('[SnapToAI Video] extractLastFrame failed:', e.message);
     return null;
   } finally {
+    if (video && video.parentNode) { try { video.parentNode.removeChild(video); } catch (_) {} }
     if (blobUrl) { try { URL.revokeObjectURL(blobUrl); } catch (_) {} }
   }
 }

@@ -54,3 +54,9 @@ id = "NkIfN9X9-XUeYLwVajc8O"
 uri = "file://snaptoai-extension-v2.4.9.zip"
 type = "unspecified"
 title = "SnapToAI v2.4.9 — Multi-clip Veo consistency fix"
+
+[[outputs]]
+id = "IFkrGHqV7HlHQzIUDRqz7"
+uri = "file://snaptoai-extension-v2.4.10.zip"
+type = "unspecified"
+title = "SnapToAI v2.4.10 — real frame capture + continuity prompt"
