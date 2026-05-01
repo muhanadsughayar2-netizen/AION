@@ -60,3 +60,9 @@ id = "IFkrGHqV7HlHQzIUDRqz7"
 uri = "file://snaptoai-extension-v2.4.10.zip"
 type = "unspecified"
 title = "SnapToAI v2.4.10 — real frame capture + continuity prompt"
+
+[[outputs]]
+id = "RoHQ9NPFiSKUrnf3W9dZq"
+uri = "file://snaptoai-extension-v2.4.11.zip"
+type = "unspecified"
+title = "SnapToAI v2.4.11 — 8s × max 4 clips + architect fixes"

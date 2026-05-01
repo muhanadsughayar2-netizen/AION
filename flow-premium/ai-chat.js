@@ -1203,7 +1203,7 @@ const LYRIA_MODELS_DISPLAY = [
 ];
 
 let selectedVeoModel = 'veo-3.1-lite-generate-preview';
-let selectedVideoDuration = 4;
+let selectedVideoDuration = 8;
 let selectedClipCount = 1;
 let userAvailableVeoModels = [];
 let selectedMusicModel = 'lyria-3-clip-preview';
@@ -1231,23 +1231,18 @@ function showVideoStudio(thread) {
         <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Quality:</span>
         <span class="veo-models-loading" style="font-size:11px;color:#8899aa;">Checking available models...</span>
       </div>
-      <div class="veo-duration-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+      <div class="veo-duration-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center;">
         <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Length:</span>
-        <button class="veo-dur-btn selected" data-dur="4" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">4s</button>
-        <button class="veo-dur-btn" data-dur="5" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">5s</button>
-        <button class="veo-dur-btn" data-dur="6" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">6s</button>
-        <button class="veo-dur-btn" data-dur="8" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">8s</button>
+        <button class="veo-dur-btn selected" data-dur="8" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:default;">8s per clip</button>
+        <span style="font-size:10px;color:#667788;font-style:italic;">Veo's native length — best quality &amp; fewest visual cuts.</span>
       </div>
       <div class="veo-clips-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
         <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Clips (auto-stitched):</span>
-        <button class="veo-clip-btn selected" data-clips="1" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">1x</button>
-        <button class="veo-clip-btn" data-clips="2" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">2x</button>
-        <button class="veo-clip-btn" data-clips="3" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">3x</button>
-        <button class="veo-clip-btn" data-clips="4" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">4x</button>
-        <button class="veo-clip-btn" data-clips="5" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">5x</button>
-        <button class="veo-clip-btn" data-clips="6" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">6x</button>
-        <button class="veo-clip-btn" data-clips="7" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">7x</button>
-        <button class="veo-clip-btn" data-clips="8" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">8x</button>
+        <button class="veo-clip-btn selected" data-clips="1" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">1x · 8s</button>
+        <button class="veo-clip-btn" data-clips="2" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">2x · 16s</button>
+        <button class="veo-clip-btn" data-clips="3" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">3x · 24s</button>
+        <button class="veo-clip-btn" data-clips="4" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;" title="4×8s = 32s, perfect for Reels &amp; TikTok">4x · 32s 🎬</button>
+        <span style="font-size:10px;color:#667788;width:100%;margin-top:2px;font-style:italic;">Capped at 4 — 32s lands in the engagement sweet spot for Reels, TikTok &amp; Shorts.</span>
       </div>
       <textarea class="studio-desc" placeholder="Describe the video scene you want to create..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;margin-bottom:8px;"></textarea>
       ${hasScreenshots ? `
@@ -1889,6 +1884,11 @@ async function generateOneVeoClip(clipIdx, ctx) {
           if (looksLikeImageReject) {
             console.log(`[SnapToAI Video] Model ${modelName} rejected image input — retrying clip ${clipNum} text-only.`);
             delete requestBody.instances[0].image;
+            // CRITICAL: also strip the continuity prefix that referenced the
+            // (now removed) starting frame — otherwise Veo will hallucinate
+            // a "provided starting frame" that doesn't exist and produce
+            // worse transitions than no chaining at all.
+            requestBody.instances[0].prompt = clipScenes[clipIdx] || prompt;
             try {
               resp = await fetch(url, {
                 method: 'POST',
@@ -2622,16 +2622,16 @@ async function extractLastFrame(videoUrl) {
 
     // CRITICAL: `seeked` fires before the new frame is actually painted to
     // the video's GPU texture. Drawing immediately produces a black or stale
-    // frame. Wait for requestVideoFrameCallback (Chrome 83+) or fall back to
-    // two rAFs which gives the compositor a chance to paint.
+    // frame. Wait for requestVideoFrameCallback (Chrome 83+) when available,
+    // and ALSO do a two-rAF compositor wait afterwards — belt-and-suspenders
+    // guard for the case where rVFC fires early or times out.
     if (typeof video.requestVideoFrameCallback === 'function') {
       await new Promise(resolve => {
         const t = setTimeout(resolve, 1500);
         video.requestVideoFrameCallback(() => { clearTimeout(t); resolve(); });
       });
-    } else {
-      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     }
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     const w = video.videoWidth || 0;
     const h = video.videoHeight || 0;
