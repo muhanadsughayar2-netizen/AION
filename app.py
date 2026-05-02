@@ -430,13 +430,16 @@ def _domain_of(email):
     return e.split('@', 1)[1]
 
 def _resolve_institution_for_email(cur, email):
-    """Return (institution_id, branding_dict) if this email is/should-be an institution member.
-    Order: explicit member row -> domain match -> None.
-    Inserts a member row on first domain match. NEVER consumes a public-email domain.
+    """Resolve institution membership for an email. Returns a tuple
+    (institution_id, branding_dict, outcome) where outcome is one of:
+      'matched_active'   — bound, branding included
+      'member_inactive'  — explicit member row exists but is suspended
+      'seat_limit'       — domain match found but the institution is full
+      'none'             — no match
     """
     email = _norm_email(email)
     if not email or '@' not in email:
-        return None, None
+        return None, None, 'none'
     cur.execute("""
         SELECT m.institution_id, m.status, i.status, i.expires_at, i.slug, i.name, i.logo_url, i.brand_color, m.role
         FROM institution_members m JOIN institutions i ON i.id = m.institution_id
@@ -446,44 +449,41 @@ def _resolve_institution_for_email(cur, email):
     if row:
         if row[1] == 'active' and _institution_active((row[2], row[3])):
             return row[0], {
-                'institutionId': row[0],
-                'slug': row[4],
-                'name': row[5],
-                'logoUrl': row[6],
-                'brandColor': row[7] or '#00d9ff',
+                'institutionId': row[0], 'slug': row[4], 'name': row[5],
+                'logoUrl': row[6], 'brandColor': row[7] or '#00d9ff',
                 'role': row[8] or 'member'
-            }
-        return None, None
+            }, 'matched_active'
+        return None, None, 'member_inactive'
 
     domain = _domain_of(email)
     if not domain or domain in PUBLIC_DOMAINS:
-        return None, None
+        return None, None, 'none'
     cur.execute("""
         SELECT id, slug, name, logo_url, brand_color, allowed_domains, status, expires_at, seat_limit
         FROM institutions WHERE allowed_domains IS NOT NULL AND allowed_domains <> ''
     """)
+    seat_full_match = False
     for r in cur.fetchall():
         inst_id, slug, name, logo_url, brand_color, allowed, status, expires_at, seat_limit = r
         if not _institution_active((status, expires_at)):
             continue
         domains = [d.strip().lower() for d in (allowed or '').split(',') if d.strip()]
-        if domain in domains:
-            if seat_limit and _seats_used(cur, inst_id) >= seat_limit:
-                continue
-            cur.execute("""
-                INSERT INTO institution_members (institution_id, email, role, status, invited_by, joined_at)
-                VALUES (%s, %s, 'member', 'active', 'domain-auto', NOW())
-                ON CONFLICT (institution_id, email) DO UPDATE SET status='active'
-            """, (inst_id, email))
-            return inst_id, {
-                'institutionId': inst_id,
-                'slug': slug,
-                'name': name,
-                'logoUrl': logo_url,
-                'brandColor': brand_color or '#00d9ff',
-                'role': 'member'
-            }
-    return None, None
+        if domain not in domains:
+            continue
+        if seat_limit and _seats_used(cur, inst_id) >= seat_limit:
+            seat_full_match = True
+            continue
+        cur.execute("""
+            INSERT INTO institution_members (institution_id, email, role, status, invited_by, joined_at)
+            VALUES (%s, %s, 'member', 'active', 'domain-auto', NOW())
+            ON CONFLICT (institution_id, email) DO UPDATE SET status='active'
+        """, (inst_id, email))
+        return inst_id, {
+            'institutionId': inst_id, 'slug': slug, 'name': name,
+            'logoUrl': logo_url, 'brandColor': brand_color or '#00d9ff',
+            'role': 'member'
+        }, 'matched_active'
+    return (None, None, 'seat_limit') if seat_full_match else (None, None, 'none')
 
 def _apply_institution_membership(cur, email, institution_id):
     """Mark this user as an institution subscriber. Idempotent."""
@@ -536,8 +536,7 @@ def _institution_by_slug(cur, slug):
     return cur.fetchone()
 
 def _is_branding_locked(cur, slug):
-    """True iff super-admin has locked this institution's branding (so the
-    institution-admin cannot self-edit color/logo)."""
+    """True iff super-admin has set branding_locked=TRUE for this institution."""
     cur.execute("SELECT COALESCE(branding_locked, FALSE) FROM institutions WHERE slug=%s", (slug,))
     r = cur.fetchone()
     return bool(r and r[0])
@@ -1186,13 +1185,24 @@ def auth_register():
             response.headers['Access-Control-Allow-Origin'] = '*'
             return response, 403
 
-        # Institutions: bind to inst on first sign-in if pre-invited or domain match
+        # Institutions: bind to inst on first sign-in if pre-invited or domain match.
+        # If a domain auto-join match was found but seats are full, surface a
+        # deterministic 403 to the extension instead of silently onboarding.
         branding = None
         try:
-            inst_id, branding_resolved = _resolve_institution_for_email(cur, email)
+            inst_id, branding_resolved, outcome = _resolve_institution_for_email(cur, email)
             if inst_id:
                 _apply_institution_membership(cur, email, inst_id)
                 branding = branding_resolved
+            elif outcome == 'seat_limit':
+                conn.commit(); cur.close(); conn.close()
+                response = jsonify({
+                    'success': False, 'userId': user_id,
+                    'inviteResult': 'seat_limit', 'error': 'seat_limit',
+                    'message': 'Your organization\'s seat license is full. Please ask your admin to free up a seat or expand the plan.',
+                })
+                response.headers['Access-Control-Allow-Origin'] = '*'
+                return response, 403
         except Exception as inst_err:
             print(f'⚠️ institution resolve error: {inst_err}')
 
@@ -1883,7 +1893,8 @@ def admin_panel():
                 <input id="inst-name" placeholder="Display name (e.g. Acme Corp)" style="background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px;">
                 <input id="inst-slug" placeholder="Slug (e.g. acme)" style="background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px;">
                 <input id="inst-admin" placeholder="Primary admin email" style="background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px;">
-                <input id="inst-seats" type="number" value="50" placeholder="Seat limit" style="background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px;">
+                <input id="inst-seats" type="number" min="0" value="50" placeholder="Seat limit (0 = unlimited)" title="Set to 0 (or check Unlimited) for an unlimited seat license" style="background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px;">
+                <label style="color:#888; font-size: 12px; margin-left: 4px;"><input id="inst-seats-unlimited" type="checkbox" onchange="document.getElementById('inst-seats').disabled=this.checked; if(this.checked) document.getElementById('inst-seats').value='';"> Unlimited</label>
                 <input id="inst-color" type="color" value="#00d9ff" style="background: #0f0f1a; border: 1px solid #333; padding: 4px; border-radius: 6px; height: 36px;">
                 <input id="inst-expires" type="date" style="background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px;">
                 <input id="inst-domains" placeholder="Allowed domains (comma-sep, e.g. acme.com)" style="background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px; grid-column: span 2;">
@@ -1917,7 +1928,7 @@ def admin_panel():
             '<td style="padding: 8px;">' + logoHtml + '</td>' +
             '<td style="padding: 8px;"><strong style="color:' + (inst.brandColor || '#a855f7') + ';">' + inst.name + '</strong><br><span style="color:#888; font-size: 11px;">' + inst.slug + '</span></td>' +
             '<td style="padding: 8px; color:#ccc; font-size: 12px;">' + (inst.primaryAdminEmail || '<span style="color:#666;">—</span>') + '</td>' +
-            '<td style="padding: 8px;">' + inst.seatsUsed + ' / ' + inst.seatLimit + '</td>' +
+            '<td style="padding: 8px;">' + inst.seatsUsed + ' / ' + (inst.seatLimit == null ? '∞' : inst.seatLimit) + '</td>' +
             '<td style="padding: 8px;"><span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; background: ' + (inst.status === 'active' ? '#00ff8820' : '#ff475720') + '; color: ' + (inst.status === 'active' ? '#00ff88' : '#ff4757') + ';">' + inst.status + '</span></td>' +
             '<td style="padding: 8px; color:#ccc; font-size: 12px;">' + (inst.expiresAt ? new Date(inst.expiresAt).toLocaleDateString() : 'never') + '</td>' +
             '<td style="padding: 8px;">' +
@@ -1935,11 +1946,20 @@ def admin_panel():
       }
     }
     async function createInstitution() {
+      const unlimited = document.getElementById('inst-seats-unlimited').checked;
+      const rawSeats = document.getElementById('inst-seats').value;
+      let seatLimit;
+      if (unlimited || rawSeats === '' || rawSeats === '0') {
+        seatLimit = 0;
+      } else {
+        const parsed = parseInt(rawSeats, 10);
+        seatLimit = Number.isFinite(parsed) && parsed > 0 ? parsed : 50;
+      }
       const body = {
         name: document.getElementById('inst-name').value,
         slug: document.getElementById('inst-slug').value,
         primaryAdminEmail: document.getElementById('inst-admin').value,
-        seatLimit: parseInt(document.getElementById('inst-seats').value, 10) || 50,
+        seatLimit: seatLimit,
         brandColor: document.getElementById('inst-color').value,
         expiresAt: document.getElementById('inst-expires').value || null,
         allowedDomains: document.getElementById('inst-domains').value
@@ -2207,7 +2227,7 @@ def subscription_status():
             inst_branding = _get_institution_branding_for_email(cur, email)
             if not inst_branding:
                 # 2. Fresh visitor: maybe their domain matches an active institution
-                inst_id_new, branding_new = _resolve_institution_for_email(cur, email)
+                inst_id_new, branding_new, _outcome_new = _resolve_institution_for_email(cur, email)
                 if inst_id_new:
                     _apply_institution_membership(cur, email, inst_id_new)
                     conn.commit()
@@ -2279,58 +2299,36 @@ def subscription_status():
             former_branding = None
 
         if former_branding:
-            # Before declaring institution_expired, check for an active PERSONAL
-            # paid subscription (Whop monthly/yearly). If they have one, the
-            # personal sub takes precedence and we should NOT mask it with the
-            # institution_expired state.
-            has_personal_active = False
-            try:
-                cur.execute("""
-                    SELECT plan_type, status, subscription_end
-                    FROM subscriptions WHERE email=%s
-                """, (email,))
-                _sr = cur.fetchone()
-                if _sr:
-                    _pt, _st, _sub_end = _sr
-                    if _pt in ('monthly', 'yearly') and _st == 'active':
-                        has_personal_active = True
-                    elif _pt in ('monthly', 'yearly') and _st == 'canceled' and _sub_end and _sub_end > datetime.utcnow():
-                        has_personal_active = True
-            except Exception:
-                pass
-            # Also defer to a live Whop check (catches users whose local row was
-            # stomped to plan_type='institution' but who still have an active
-            # personal Whop subscription).
-            if not has_personal_active:
-                try:
-                    if _check_whop_api_for_email(email):
-                        has_personal_active = True
-                except Exception:
-                    pass
+            # If the user also has an active personal paid sub, that takes
+            # precedence — fall through to the normal subscription path below.
+            cur.execute("SELECT plan_type, status, subscription_end FROM subscriptions WHERE email=%s", (email,))
+            _sr = cur.fetchone()
+            has_personal_active = bool(
+                _sr and _sr[0] in ('monthly', 'yearly') and (
+                    _sr[1] == 'active' or
+                    (_sr[1] == 'canceled' and _sr[2] and _sr[2] > datetime.utcnow())
+                )
+            )
+            if not has_personal_active and _check_whop_api_for_email(email):
+                has_personal_active = True
 
             if not has_personal_active:
-                try:
-                    cur.execute("""
-                        UPDATE subscriptions
-                        SET status='expired', plan_type='institution_expired', updated_at=NOW()
-                        WHERE email=%s AND plan_type IN ('institution','institution_expired')
-                    """, (email,))
-                    cur.execute("UPDATE users SET institution_id=NULL WHERE LOWER(email)=%s", (email,))
-                    conn.commit()
-                except Exception as cleanup_err:
-                    print(f'⚠️ institution cleanup error: {cleanup_err}')
+                cur.execute("""
+                    UPDATE subscriptions
+                    SET status='expired', plan_type='institution_expired', updated_at=NOW()
+                    WHERE email=%s AND plan_type IN ('institution','institution_expired')
+                """, (email,))
+                cur.execute("UPDATE users SET institution_id=NULL WHERE LOWER(email)=%s", (email,))
+                conn.commit()
                 cur.close(); conn.close()
-                result = {
+                response = jsonify({
                     'success': True, 'canUseAI': False, 'status': 'institution_expired',
                     'planType': None, 'daysRemaining': 0,
                     'institutionName': former_branding.get('name'),
                     'branding': former_branding,
-                }
-                response = jsonify(result)
+                })
                 response.headers['Access-Control-Allow-Origin'] = '*'
                 return response
-            # Personal sub is active — fall through to the normal subscription
-            # path below, which will return 'subscribed' for monthly/yearly.
 
         cur.execute('SELECT plan_type, status, trial_start, trial_end, subscription_end FROM subscriptions WHERE email = %s', (email,))
         sub_row = cur.fetchone()
@@ -3120,8 +3118,7 @@ def api_admin_inst_create():
         return _cors(jsonify({'success': False, 'error': 'Name is required'})), 400
     slug = _slugify(data.get('slug') or name)
     primary_admin_email = _norm_email(data.get('primaryAdminEmail', ''))
-    # seatLimit: None (NULL) or 0 means UNLIMITED — enforcement sites use
-    # `if seat_limit and ...` which already treats both as unlimited.
+    # seatLimit: None / "" / 0 / "unlimited" → NULL (unlimited).
     raw_seats = data.get('seatLimit', 50)
     if raw_seats in (None, '', 0, '0', 'unlimited'):
         seat_limit = None
@@ -3299,10 +3296,7 @@ def api_admin_inst_delete(inst_id):
 
 @app.route('/api/admin/institutions', methods=['GET', 'POST', 'OPTIONS'])
 def api_admin_institutions_root():
-    """Canonical super-admin endpoint:
-       GET   → list institutions   (alias of /list)
-       POST  → create institution  (alias of /create)
-    """
+    """GET → list, POST → create."""
     if request.method == 'OPTIONS':
         return _options('GET, POST, OPTIONS')
     if request.method == 'GET':
@@ -3311,15 +3305,14 @@ def api_admin_institutions_root():
 
 @app.route('/api/admin/institutions/<int:inst_id>', methods=['PATCH', 'OPTIONS'])
 def api_admin_inst_patch(inst_id):
-    """Canonical super-admin update endpoint (alias of POST /<id>/update)."""
+    """PATCH alias of POST /<id>/update."""
     if request.method == 'OPTIONS':
         return _options('PATCH, DELETE, OPTIONS')
     return api_admin_inst_update(inst_id)
 
 @app.route('/api/admin/institutions/<int:inst_id>/suspend', methods=['POST', 'OPTIONS'])
 def api_admin_inst_suspend(inst_id):
-    """Canonical super-admin suspend endpoint — flips status='suspended' and
-    revokes all member institution-plan subscriptions in one call."""
+    """Suspend an institution and deactivate member institution-plan subs."""
     if request.method == 'OPTIONS':
         return _options('POST, OPTIONS')
     if not _require_super_admin():
@@ -3344,7 +3337,7 @@ def api_admin_inst_suspend(inst_id):
 
 @app.route('/api/admin/institutions/<int:inst_id>/members', methods=['GET', 'OPTIONS'])
 def api_admin_inst_members(inst_id):
-    """Super-admin visibility into a specific institution's member roster."""
+    """List members of one institution (super-admin)."""
     if request.method == 'OPTIONS':
         return _options('GET, OPTIONS')
     if not _require_super_admin():
@@ -4097,9 +4090,7 @@ def api_inst_set_branding(slug):
 
 @app.route('/api/institution/<slug>/branding/logo', methods=['POST', 'OPTIONS'])
 def api_inst_upload_logo(slug):
-    """Institution-admin endpoint to upload a logo (delegates to the same
-    validation used by the super-admin logo endpoint). Blocked when the
-    super-admin has set branding_locked=TRUE for this institution."""
+    """Institution-admin logo upload. Blocked when branding_locked=TRUE."""
     if request.method == 'OPTIONS':
         return _options('POST, OPTIONS')
     ok, _ = _verify_inst_admin(slug)
@@ -4107,14 +4098,11 @@ def api_inst_upload_logo(slug):
         return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
     if not ensure_db():
         return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
-    try:
-        _conn_lock = get_db(); _cur_lock = _conn_lock.cursor()
-        locked = _is_branding_locked(_cur_lock, slug)
-        _cur_lock.close(); _conn_lock.close()
-        if locked:
-            return _cors(jsonify({'success': False, 'error': 'Branding is locked by your account manager. Contact SnapToAI support.'})), 403
-    except Exception:
-        pass
+    _lc = get_db(); _lcur = _lc.cursor()
+    locked = _is_branding_locked(_lcur, slug)
+    _lcur.close(); _lc.close()
+    if locked:
+        return _cors(jsonify({'success': False, 'error': 'Branding is locked by your account manager. Contact SnapToAI support.'})), 403
     f = request.files.get('logo')
     if not f or not f.filename:
         return _cors(jsonify({'success': False, 'error': 'No file uploaded (field name: logo)'})), 400
@@ -4416,9 +4404,8 @@ window.addEventListener('load', () => {{
 
 @app.route('/api/institution/join', methods=['POST', 'OPTIONS'])
 def api_institution_join():
-    """Public invite-link redemption. REQUIRES a verified Google idToken so an
-    attacker cannot burn seats for arbitrary emails (the email is taken from
-    the token, never from the request body)."""
+    """Public invite-link redemption. Requires a verified Google idToken;
+    email is taken from the token, never from the request body."""
     if request.method == 'OPTIONS':
         return _options('POST, OPTIONS')
     if not ensure_db():
