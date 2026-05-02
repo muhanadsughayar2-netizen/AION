@@ -61,18 +61,33 @@
       chrome.storage.local.get([STORAGE_KEY], function (res) {
         var settings = res && res[STORAGE_KEY];
         var stored;
+        var needsPersist = false;
         if (settings && settings.theme && VALID[settings.theme]) {
           stored = settings.theme;
         } else if (!settings) {
           // Fresh install — no settings at all → default to auto.
           stored = 'auto';
         } else {
-          // Existing user without theme key → keep dark (no regression).
+          // Existing user without theme key (legacy upgrade fallback if
+          // the SW migration hasn't run yet) → keep dark (no regression)
+          // AND persist so subsequent first-paints have no flash.
           stored = 'dark';
+          needsPersist = true;
         }
         if (stored !== current) {
           current = stored;
           applyTheme(current);
+        } else {
+          // Even when no visual change, ensure cache is seeded so the
+          // next surface load has the right value at first paint.
+          try { localStorage.setItem(CACHE_KEY, stored); } catch (e) {}
+        }
+        if (needsPersist) {
+          try {
+            chrome.storage.local.set({
+              snaptoaiSettings: Object.assign({}, settings, { theme: 'dark' })
+            });
+          } catch (e) {}
         }
       });
     } catch (e) {}

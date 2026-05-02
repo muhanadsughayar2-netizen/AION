@@ -119,6 +119,21 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   // Apply persisted UI mode preference on install/update so the icon
   // click behaves consistently across browser restarts.
   await loadAndApplyUiMode();
+
+  // v2.6.0 theme migration: existing v2.5.0 users were always dark.
+  // On the first upgrade, persist that preference explicitly so the
+  // theme controller reconciles to dark immediately and any future
+  // first-paint resolves correctly with no light flash on light-OS.
+  if (details.reason === 'update') {
+    try {
+      const r = await chrome.storage.local.get(['snaptoaiSettings']);
+      const s = r && r.snaptoaiSettings;
+      if (s && !s.theme) {
+        await chrome.storage.local.set({ snaptoaiSettings: Object.assign({}, s, { theme: 'dark' }) });
+      }
+    } catch (e) { /* non-fatal */ }
+  }
+
   if (details.reason === 'install') {
     chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') });
     
