@@ -1154,6 +1154,28 @@ def auth_register():
                 print(f'⚠️ invite-code redeem error: {inv_err}')
                 invite_result = 'error'
 
+        # If the supplied invite code was REJECTED (seat full, exhausted, invalid),
+        # commit the user upsert (so the trial path still works) but return a hard
+        # failure so the extension surfaces a clear, actionable message instead of
+        # silently onboarding the user as if everything succeeded.
+        if invite_result in ('seat_limit', 'invite_exhausted', 'invalid_code'):
+            conn.commit()
+            cur.close(); conn.close()
+            messages = {
+                'seat_limit': 'This institution has reached its seat limit. Please ask your admin to free up a seat or expand the plan.',
+                'invite_exhausted': 'This invite link has been fully used. Please request a new one from your admin.',
+                'invalid_code': 'That invite code is not valid.',
+            }
+            response = jsonify({
+                'success': False,
+                'userId': user_id,
+                'inviteResult': invite_result,
+                'error': invite_result,
+                'message': messages[invite_result],
+            })
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            return response, 403
+
         # Institutions: bind to inst on first sign-in if pre-invited or domain match
         branding = None
         try:
@@ -2095,23 +2117,26 @@ def _check_whop_api_for_email(email):
 
 @app.route('/api/branding', methods=['POST', 'GET', 'OPTIONS'])
 def api_branding():
-    """Dedicated branding fetch — returns the institution branding dict for an email,
-    or {branding: null} if none. Lightweight; safe to poll from the extension UI."""
+    """Authenticated branding fetch — returns the caller's institution branding only.
+    Requires a Bearer Google token; the email being looked up MUST match the verified
+    identity. This prevents arbitrary email enumeration of institution membership."""
     if request.method == 'OPTIONS':
         return _options('GET, POST, OPTIONS')
     if not ensure_db():
         return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
-    email = ''
+    verified_email = get_verified_email(request)
+    if not verified_email:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
     if request.method == 'POST':
         data = request.get_json(silent=True) or {}
-        email = _norm_email(data.get('email', ''))
+        requested = _norm_email(data.get('email', '')) or verified_email
     else:
-        email = _norm_email(request.args.get('email', ''))
-    if not email or '@' not in email:
-        return _cors(jsonify({'success': False, 'error': 'Valid email required'})), 400
+        requested = _norm_email(request.args.get('email', '')) or verified_email
+    if requested != verified_email:
+        return _cors(jsonify({'success': False, 'error': 'Forbidden'})), 403
     try:
         conn = get_db(); cur = conn.cursor()
-        b = _get_institution_branding_for_email(cur, email)
+        b = _get_institution_branding_for_email(cur, verified_email)
         cur.close(); conn.close()
         return _cors(jsonify({'success': True, 'branding': b}))
     except Exception as e:
@@ -2157,12 +2182,21 @@ def subscription_status():
         cur = conn.cursor()
         now_ms = int(datetime.utcnow().timestamp() * 1000)
 
-        # Institutions: full pro access for active members of an active institution
+        # ---------------------------------------------------------------
+        # Institution entitlement (centralized).
+        # Order:
+        #   1. Active member of active institution  → subscribed (with branding)
+        #   2. Domain auto-bind matches a fresh new institution → subscribed
+        #   3. Has ANY institution membership/FK but check (1) failed
+        #      (institution suspended/expired, or member suspended/removed)
+        #      → institution_expired (with the former branding so the extension
+        #        can show "{Institution} license ended"). Cleans up FK + sub row.
+        # ---------------------------------------------------------------
         inst_branding = None
         try:
             inst_branding = _get_institution_branding_for_email(cur, email)
             if not inst_branding:
-                # First-time visitor: maybe their domain matches an institution
+                # 2. Fresh visitor: maybe their domain matches an active institution
                 inst_id_new, branding_new = _resolve_institution_for_email(cur, email)
                 if inst_id_new:
                     _apply_institution_membership(cur, email, inst_id_new)
@@ -2187,44 +2221,69 @@ def subscription_status():
         except Exception as inst_err:
             print(f'⚠️ institution status check error: {inst_err}')
 
-        # Defensive demotion: if a stale row says plan_type='institution', status='active'
-        # but the institution check above did NOT yield a branding (institution is now
-        # suspended, expired, or member was removed), we MUST NOT report subscribed.
-        # Clear the stale row so Whop / trial / paywall can take over correctly.
-        cur.execute('SELECT plan_type, status FROM subscriptions WHERE email = %s', (email,))
-        pre = cur.fetchone()
-        if pre and pre[0] == 'institution' and pre[1] == 'active' and not inst_branding:
-            # Capture the (now-stale) institution branding BEFORE we null the FK,
-            # so the extension can show "{InstitutionName} license ended".
-            former_branding = None
-            try:
+        # 3. No active branding. Detect ANY former institution affiliation
+        #    (member row in any state, OR users.institution_id still set, OR
+        #    a stale subscriptions row pointing at an institution plan). This
+        #    catches every suspension path:
+        #      - super-admin suspends institution (i.status='suspended')
+        #      - super-admin sets expires_at in past
+        #      - inst-admin suspends/removes member (m.status='suspended'/'removed')
+        #      - admin update flips subscriptions.status='inactive'
+        former_branding = None
+        try:
+            # Prefer member row (works even after FK was nulled).
+            cur.execute("""
+                SELECT i.name, i.brand_color, i.logo_url, i.slug
+                FROM institution_members m JOIN institutions i ON i.id = m.institution_id
+                WHERE LOWER(m.email) = %s
+                ORDER BY m.joined_at DESC NULLS LAST
+                LIMIT 1
+            """, (email,))
+            fb = cur.fetchone()
+            if not fb:
+                # Maybe member row was hard-deleted; fall back to users FK.
                 cur.execute("""
                     SELECT i.name, i.brand_color, i.logo_url, i.slug
                     FROM users u JOIN institutions i ON i.id = u.institution_id
                     WHERE LOWER(u.email)=%s
                 """, (email,))
                 fb = cur.fetchone()
-                if fb:
-                    former_branding = {
-                        'name': fb[0],
-                        'brandColor': fb[1] or '#00d9ff',
-                        'logoUrl': fb[2],
-                        'slug': fb[3],
-                    }
-            except Exception:
-                former_branding = None
-            cur.execute("""
-                UPDATE subscriptions
-                SET status='expired', plan_type='institution_expired', updated_at=NOW()
-                WHERE email=%s AND plan_type='institution' AND status='active'
-            """, (email,))
-            cur.execute("UPDATE users SET institution_id=NULL WHERE LOWER(email)=%s", (email,))
-            conn.commit()
+            if not fb:
+                # Maybe even the FK is gone but the subscriptions row still
+                # marks them as a former institution user.
+                cur.execute("""
+                    SELECT plan_type FROM subscriptions
+                    WHERE email=%s AND plan_type IN ('institution','institution_expired')
+                """, (email,))
+                if cur.fetchone():
+                    fb = ('Your institution', '#00d9ff', None, None)
+            if fb:
+                former_branding = {
+                    'name': fb[0],
+                    'brandColor': fb[1] or '#00d9ff',
+                    'logoUrl': fb[2],
+                    'slug': fb[3],
+                }
+        except Exception as fb_err:
+            print(f'⚠️ former-branding lookup error: {fb_err}')
+            former_branding = None
+
+        if former_branding:
+            try:
+                cur.execute("""
+                    UPDATE subscriptions
+                    SET status='expired', plan_type='institution_expired', updated_at=NOW()
+                    WHERE email=%s AND plan_type IN ('institution','institution_expired')
+                """, (email,))
+                cur.execute("UPDATE users SET institution_id=NULL WHERE LOWER(email)=%s", (email,))
+                conn.commit()
+            except Exception as cleanup_err:
+                print(f'⚠️ institution cleanup error: {cleanup_err}')
             cur.close(); conn.close()
             result = {
                 'success': True, 'canUseAI': False, 'status': 'institution_expired',
                 'planType': None, 'daysRemaining': 0,
-                'institutionName': (former_branding or {}).get('name'),
+                'institutionName': former_branding.get('name'),
                 'branding': former_branding,
             }
             response = jsonify(result)

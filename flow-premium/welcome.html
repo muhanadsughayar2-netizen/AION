@@ -404,6 +404,16 @@
     </div>
 
     <p class="privacy">🔒 Your screenshots stay private — processed securely</p>
+
+    <div id="inviteCodeWrap" style="margin-top:18px; text-align:center; font-size:12px; color:#8b949e;">
+      <a href="#" id="inviteCodeToggle" style="color:#00d9ff; text-decoration:none; cursor:pointer;">Have an institution invite code?</a>
+      <div id="inviteCodeForm" style="display:none; margin-top:10px;">
+        <input id="inviteCodeInput" type="text" maxlength="64" placeholder="Enter invite code"
+               style="padding:8px 12px; border-radius:8px; border:1px solid rgba(0,217,255,0.2); background:rgba(22,27,34,0.6); color:#e6edf3; font-size:13px; width:200px; margin-right:6px;">
+        <button id="inviteCodeSave" style="padding:8px 14px; border-radius:8px; border:none; background:#00d9ff; color:#0a0e14; font-weight:600; font-size:13px; cursor:pointer;">Save</button>
+        <div id="inviteCodeMsg" style="margin-top:8px; font-size:12px; color:#8b949e;"></div>
+      </div>
+    </div>
   </div>
   <script>
     // Apply institution branding (logo + name + brand color) when present.
@@ -433,6 +443,47 @@
           const nameEl = document.getElementById('welcomeInstName');
           if (nameEl) { nameEl.textContent = 'Welcome to ' + b.name; nameEl.style.display = 'block'; }
         }
+      } catch (e) { /* ignore */ }
+    })();
+
+    // Invite-code entry: persists the code so the next sign-in attaches it to
+    // /api/auth/register. Cleared automatically by popup.js once consumed.
+    (function() {
+      try {
+        if (!chrome || !chrome.storage || !chrome.storage.local) return;
+        const toggle = document.getElementById('inviteCodeToggle');
+        const form = document.getElementById('inviteCodeForm');
+        const input = document.getElementById('inviteCodeInput');
+        const save = document.getElementById('inviteCodeSave');
+        const msg = document.getElementById('inviteCodeMsg');
+        if (!toggle || !form || !input || !save) return;
+
+        chrome.storage.local.get(['snaptoai_pending_invite'], (r) => {
+          if (r && r.snaptoai_pending_invite) {
+            input.value = String(r.snaptoai_pending_invite).slice(0, 64);
+            form.style.display = 'block';
+            if (msg) msg.textContent = 'Saved. It will be applied at sign-in.';
+          }
+        });
+
+        toggle.addEventListener('click', function(e) {
+          e.preventDefault();
+          form.style.display = form.style.display === 'none' ? 'block' : 'none';
+          if (form.style.display === 'block') input.focus();
+        });
+
+        save.addEventListener('click', function() {
+          const code = (input.value || '').trim().slice(0, 64);
+          if (!code) {
+            chrome.storage.local.remove('snaptoai_pending_invite', () => {
+              if (msg) msg.textContent = 'Cleared.';
+            });
+            return;
+          }
+          chrome.storage.local.set({ snaptoai_pending_invite: code }, () => {
+            if (msg) msg.textContent = 'Saved. Sign in with Google to join.';
+          });
+        });
       } catch (e) { /* ignore */ }
     })();
   </script>
