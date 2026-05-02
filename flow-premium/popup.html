@@ -412,25 +412,6 @@
   <script src="subscription.js"></script>
   <script src="popup.js"></script>
   <script src="tour.js"></script>
-  <script>
-    // Theme cycle button (popup header)
-    (function () {
-      var btn = document.getElementById('themeCycleBtn');
-      if (!btn || !window.SnapToAITheme) return;
-      var labels = { light: 'Light', dark: 'Dark', auto: 'Auto (matches system)' };
-      var nextOf = { light: 'dark', dark: 'auto', auto: 'light' };
-      function refresh() {
-        var pref = window.SnapToAITheme.get();
-        btn.title = 'Theme: ' + labels[pref] + ' — click for ' + labels[nextOf[pref]];
-        btn.setAttribute('aria-label', 'Theme: ' + labels[pref] + '. Click to switch to ' + labels[nextOf[pref]] + '.');
-      }
-      btn.addEventListener('click', function () {
-        window.SnapToAITheme.cycle();
-        refresh();
-      });
-      window.SnapToAITheme.onChange(refresh);
-      refresh();
-    })();
-  </script>
+  <script src="theme-cycle-btn.js"></script>
 </body>
 </html>

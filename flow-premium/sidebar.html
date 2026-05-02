@@ -1804,31 +1804,6 @@
   <script src="prompts.js"></script>
   <script src="ai-chat.js"></script>
   <script src="sidebar.js"></script>
-  <script>
-    // Theme cycle button (sidebar header) — wired after sidebar.js initializes
-    (function () {
-      function wire() {
-        var btn = document.getElementById('themeCycleBtn');
-        if (!btn || !window.SnapToAITheme) return false;
-        var labels = { light: 'Light', dark: 'Dark', auto: 'Auto (matches system)' };
-        var nextOf = { light: 'dark', dark: 'auto', auto: 'light' };
-        function refresh() {
-          var pref = window.SnapToAITheme.get();
-          btn.title = 'Theme: ' + labels[pref] + ' — click for ' + labels[nextOf[pref]];
-          btn.setAttribute('aria-label', 'Theme: ' + labels[pref] + '. Click to switch to ' + labels[nextOf[pref]] + '.');
-        }
-        btn.addEventListener('click', function () {
-          window.SnapToAITheme.cycle();
-          refresh();
-        });
-        window.SnapToAITheme.onChange(refresh);
-        refresh();
-        return true;
-      }
-      if (!wire()) {
-        document.addEventListener('DOMContentLoaded', wire);
-      }
-    })();
-  </script>
+  <script src="theme-cycle-btn.js"></script>
 </body>
 </html>
