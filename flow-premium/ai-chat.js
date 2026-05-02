@@ -1190,6 +1190,14 @@ const VEO_PRICING = {
   'veo-2.0-generate-001':          0.50   // Veo 2 (no audio)
 };
 
+// Veo negative prompt — sent via parameters.negativePrompt INSTEAD of being
+// pasted into the prompt body. Inline negation ("no text, no captions...")
+// is a documented Veo anti-pattern: it primes the text-rendering head on the
+// very tokens we want to suppress, increasing the chance of garbled writing
+// in the frame. The dedicated parameter routes through a separate
+// suppression head and works far better in practice.
+const VEO_NEGATIVE_PROMPT = 'on-screen text, subtitles, captions, watermarks, logos, lower thirds, gibberish writing, distorted faces, extra limbs, blurry';
+
 // Lyria music pricing (Vertex AI, USD per second of audio).
 const LYRIA_PRICING = {
   'lyria-3-clip-preview': 0.06,  // Lyria 3 (preview)
@@ -1709,7 +1717,8 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
       parameters: {
         aspectRatio: aspectRatio || '16:9',
         sampleCount: 1,
-        durationSeconds: selectedVideoDuration
+        durationSeconds: selectedVideoDuration,
+        negativePrompt: VEO_NEGATIVE_PROMPT
       }
     };
 
@@ -1729,13 +1738,34 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
     }
 
     console.log(`[SnapToAI Video] Starting generation with ${modelName}`);
-    const resp = await fetch(url, {
+    let resp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
-    const data = await resp.json();
+    let data = await resp.json();
+
+    // Defensive retry: some Veo variants don't accept the negativePrompt
+    // parameter and reject with 400 INVALID_ARGUMENT. Strip it and retry
+    // transparently so single-clip generation doesn't fail outright.
+    if (!resp.ok && requestBody.parameters && requestBody.parameters.negativePrompt) {
+      const lower = (data?.error?.message || '').toLowerCase();
+      if (resp.status === 400 && lower.includes('negativeprompt')) {
+        console.log(`[SnapToAI Video] Model ${modelName} rejected negativePrompt — retrying single-clip without it.`);
+        delete requestBody.parameters.negativePrompt;
+        try {
+          resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+          });
+          data = await resp.json();
+        } catch (npErr) {
+          console.log('[SnapToAI Video] negativePrompt-stripped retry threw:', npErr.message);
+        }
+      }
+    }
 
     if (!resp.ok) {
       const errorMsg = data.error?.message || `API error ${resp.status}`;
@@ -1830,13 +1860,24 @@ async function generateOneVeoClip(clipIdx, ctx) {
         }
 
         let scenePrompt = clipScenes[clipIdx] || prompt;
+        // When an image is attached, Veo already conditions on that exact
+        // frame. Restating "keep the same character / lighting / lens" in
+        // 50+ words of English (a) wastes ~50 tokens of attention budget,
+        // (b) pushes the user's actual scene description ~9 lines down, and
+        // (c) contradicts the per-segment shot text. A single short tag
+        // preserves intent without dominating the prompt.
         if (attachedChainImage) {
-          scenePrompt = `Continue seamlessly from the provided starting frame. Keep the same character, clothing, lighting, color palette, lens, and camera framing. Do not cut to a new scene. The motion should pick up exactly where the starting frame leaves off. ${scenePrompt}`;
+          scenePrompt = `This shot continues directly from the attached starting frame. ${scenePrompt}`;
         }
 
         const requestBody = {
           instances: [{ prompt: scenePrompt }],
-          parameters: { aspectRatio: ctx.aspectRatio || '16:9', sampleCount: 1, durationSeconds: durationSeconds }
+          parameters: {
+            aspectRatio: ctx.aspectRatio || '16:9',
+            sampleCount: 1,
+            durationSeconds: durationSeconds,
+            negativePrompt: VEO_NEGATIVE_PROMPT
+          }
         };
 
         // Use the SNAPSHOTTED image from batch start — never re-read globals,
@@ -1870,6 +1911,30 @@ async function generateOneVeoClip(clipIdx, ctx) {
         });
         data = await resp.json().catch(() => ({}));
         errorMsg = (data?.error?.message) || '';
+
+        // Defensive retry #1: some Veo model variants don't accept the
+        // `negativePrompt` parameter and reject the entire request with
+        // 400 INVALID_ARGUMENT. Strip it and retry transparently rather
+        // than fail the clip. Cheap, idempotent, and isolated from the
+        // image-reject path below.
+        if (!resp.ok && requestBody.parameters && requestBody.parameters.negativePrompt) {
+          const lower = errorMsg.toLowerCase();
+          if (resp.status === 400 && lower.includes('negativeprompt')) {
+            console.log(`[SnapToAI Video] Model ${modelName} rejected negativePrompt — retrying clip ${clipNum} without it.`);
+            delete requestBody.parameters.negativePrompt;
+            try {
+              resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+              });
+              data = await resp.json().catch(() => ({}));
+              errorMsg = (data?.error?.message) || '';
+            } catch (npErr) {
+              console.log('[SnapToAI Video] negativePrompt-stripped retry threw:', npErr.message);
+            }
+          }
+        }
 
         // v2.4.9: image-to-video unsupported by some Veo variants. If we
         // attached a transition frame and the model rejected it, fall back
@@ -2009,45 +2074,51 @@ async function generateOneVeoClip(clipIdx, ctx) {
 
 function buildAnchoredFallback(prompt, clipCount, clipDur) {
   const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
+  // The fallback used to (a) hard-code "Cinematic photoreal" — overriding
+  // anime/8mm/claymation users; (b) burn an inline negative-prompt line that
+  // primes Veo on the very tokens we want to suppress (now in the
+  // negativePrompt parameter); (c) override every per-segment beat with a
+  // generic phrase from a static 8-string array ("calm resolution, hold on
+  // the scene") that often contradicted the user's request. The rewrite
+  // keeps continuity rules (the actual point of the fallback) but lets the
+  // user's literal brief drive every segment instead of canned beats.
   const anchor =
 `[PRODUCTION RULES — APPLY TO EVERY SHOT]
 - VISUAL CONSISTENCY IS MANDATORY across all ${clipCount} segments.
 - Same characters, same wardrobe, same location, same lighting, same color palette in every shot.
-- Cinematic photoreal style. Natural lighting, shallow depth of field, smooth handheld or dolly motion.
-- STRICT: Zero on-screen text, no subtitles, no captions, no logos, no words anywhere in the frame.
+- Smooth, intentional camera motion. No abrupt cuts.
 
 [USER BRIEF]
 ${prompt}`;
 
-  const transitions = [
-    'opening establishing wide shot — set the scene and introduce the environment',
-    'camera glides forward, landing on the main subject — slow reveal',
-    'medium shot of the main action developing — natural motion continues',
-    'camera slowly orbits around the subject — new angle, same scene',
-    'cut to a complementary detail in the same location — close-up insert',
-    'pull back smoothly to re-establish the wider scene — match the lighting',
-    'climactic beat — the strongest emotional moment of the sequence',
-    'final wide shot — calm resolution, hold on the scene'
-  ];
-
   const shots = [];
   const prompts = Array.from({length: clipCount}, (_, i) => {
     const t0 = i * segLen, t1 = (i + 1) * segLen;
-    const beat = transitions[Math.min(i, transitions.length - 1)];
+    // Per-segment beat keyed off the user's brief, not a canned array. Each
+    // beat is phrased as "this segment of the user's request" so Veo sees
+    // the user's actual subject in every clip prompt, not just clip 1.
+    let beat;
+    if (i === 0) {
+      beat = `Opening shot — establish the scene from the user brief above.`;
+    } else if (i === clipCount - 1) {
+      beat = `Final shot — bring the scene from the user brief to a natural close.`;
+    } else {
+      beat = `Continuation of the user brief above — develop the action naturally without changing scene or characters.`;
+    }
     shots.push(beat);
     const continuity = i === 0
-      ? `This is the OPENING segment — establish the baseline scene. Lock in the characters, location, lighting, and color palette exactly as described above; every following segment will inherit from this shot.`
-      : `This segment must visually continue from segment ${i} (same characters, same wardrobe, same location, same lighting, same color palette). No hard cuts, no scene changes, no new characters appearing.`;
+      ? `This is the OPENING segment — establish the baseline scene. Lock in the characters, location, lighting, and color palette; every following segment will inherit from this shot.`
+      : `This segment must visually continue from segment ${i}: identical characters, wardrobe, location, lighting, and color palette. No hard cuts, no scene changes, no new characters.`;
     return `${anchor}
 
 [SEGMENT ${i + 1} of ${clipCount}  (${t0}-${t1}s)]
-${beat}.
+${beat}
 ${continuity}`;
   });
   prompts.meta = {
     title: (prompt || 'Your Video').split(/[.\n]/)[0].slice(0, 50).trim() || 'Your Video',
     script_summary: prompt,
-    style_bible: 'Cinematic photoreal style. Same characters, location, lighting, and color palette across every clip. Natural lighting, shallow depth of field, smooth motion. No on-screen text.',
+    style_bible: `User brief (locked across every clip): ${prompt}. Same characters, location, lighting, and color palette in every shot.`,
     shots
   };
   return prompts;
@@ -2058,13 +2129,13 @@ ${continuity}`;
 async function generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur) {
   if (!apiKey || clipCount < 2) return null;
   const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
-  try {
-    const directorBrief =
+
+  const directorBrief =
 `You are a film director planning a ${clipCount * segLen}-second cinematic video that will be rendered by Google Veo as ${clipCount} sequential ${segLen}-second clips, then stitched together.
 
 The biggest failure mode is visual drift: characters change face, the location shifts, lighting jumps. Your job is to PREVENT that.
 
-USER'S BRIEF:
+USER'S BRIEF (this is what they actually asked for — preserve every concrete subject and verb):
 """
 ${prompt}
 """
@@ -2072,43 +2143,63 @@ ${prompt}
 Return STRICT JSON ONLY (no markdown, no commentary) in this exact shape:
 {
   "title": "A short punchy title for the video (max 6 words, title-case, no quotes).",
-  "script_summary": "A single 1-2 sentence pitch describing what the viewer will experience.",
-  "style_bible": "A 3-5 sentence locked description of: main character(s) (age, ethnicity, hair, exact wardrobe), exact location, lighting setup, color palette, lens / camera style, mood. This text will be repeated verbatim at the top of every clip — be specific and unambiguous.",
+  "script_summary": "A single 1-2 sentence pitch describing what the viewer will experience. Stay faithful to the user brief — do not invent a different premise.",
+  "style_bible": "A 3-5 sentence locked description of: main character(s) (only invent specifics like age/wardrobe if the user brief did NOT specify them — otherwise quote the brief verbatim), exact location, lighting setup, color palette, lens / camera style, mood. This text will be repeated verbatim at the top of every clip — be specific and unambiguous.",
   "clips": [
-    { "shot": "What happens in this ${segLen}s segment. Start the description with how the camera moves IN from the previous shot (e.g. 'camera glides right, landing on...'). For clip 1, open with an establishing shot. Each clip must continue the same scene — same characters, same lighting, same location." },
+    { "shot": "What concretely happens in this ${segLen}s segment. Lead with the SUBJECT and ACTION from the user brief, then describe the camera. Keep the same characters, location, and lighting as every other clip." },
     ... exactly ${clipCount} entries ...
   ]
 }
 
 Rules:
 - The clips must read like one continuous take, not ${clipCount} separate videos.
+- The user's literal subject and action MUST appear in every clip's shot description — do not paraphrase them away.
 - NEVER introduce new characters mid-sequence unless the user brief explicitly asks for it.
 - NEVER cut to a different location.
-- NEVER include on-screen text, captions, subtitles, or logos.
 - Keep each "shot" description under 60 words.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+  // One attempt + one retry on parse failure. The retry uses a stricter
+  // brief that explicitly demands valid JSON. A single failed parse used to
+  // silently degrade to the (worse) anchored fallback template.
+  async function callGemini(briefText, temperature) {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: directorBrief }] }],
-        generationConfig: { temperature: 0.7, responseMimeType: 'application/json' }
+        contents: [{ parts: [{ text: briefText }] }],
+        // Lowered from 0.7 to 0.4 — at 0.7 Gemini invented details (character
+        // ethnicity, location specifics) that drifted from the user's literal
+        // brief. 0.4 keeps it close to the brief without going fully
+        // deterministic.
+        generationConfig: { temperature, responseMimeType: 'application/json' }
       })
     });
     if (!res.ok) return null;
     const data = await res.json();
     const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    let parsed;
-    try { parsed = JSON.parse(txt); }
+    try { return JSON.parse(txt); }
     catch {
       const m = txt.match(/\{[\s\S]*\}/);
       if (!m) return null;
-      parsed = JSON.parse(m[0]);
+      try { return JSON.parse(m[0]); } catch { return null; }
     }
-    if (!parsed?.style_bible || !Array.isArray(parsed?.clips) || parsed.clips.length !== clipCount) return null;
-    // Strict per-clip validation: every clip must have a non-empty shot string
-    if (!parsed.clips.every(c => c && typeof c.shot === 'string' && c.shot.trim().length > 0)) return null;
+  }
+
+  function isValidParse(parsed) {
+    if (!parsed?.style_bible || !Array.isArray(parsed?.clips) || parsed.clips.length !== clipCount) return false;
+    return parsed.clips.every(c => c && typeof c.shot === 'string' && c.shot.trim().length > 0);
+  }
+
+  try {
+    let parsed = await callGemini(directorBrief, 0.4);
+    if (!isValidParse(parsed)) {
+      console.warn('[veo storyboard] first parse invalid, retrying with stricter brief');
+      const stricter = directorBrief + `\n\nIMPORTANT: Your previous response was invalid. Return ONLY a single JSON object matching the schema above — no markdown fences, no preamble, no trailing text. The clips array MUST have exactly ${clipCount} entries.`;
+      parsed = await callGemini(stricter, 0.3);
+      if (!isValidParse(parsed)) return null;
+    }
 
     const bible = String(parsed.style_bible).trim();
     const prompts = parsed.clips.map((c, i) => {
@@ -2117,9 +2208,16 @@ Rules:
       const continuity = i === 0
         ? `This is the OPENING segment — establish the baseline scene exactly as the style bible describes. Every following segment will inherit these characters, wardrobe, location, lighting, and palette.`
         : `This segment must visually continue from segment ${i}: identical characters, wardrobe, location, lighting, and color palette. No hard cuts or new characters.`;
-      return `[PRODUCTION RULES — APPLY TO EVERY SHOT]
+      // Echo the user's literal request at the top of every clip prompt so
+      // Gemini's paraphrase can never fully orphan the user's actual
+      // subject/verbs. The "STRICT DIRECTIVE" inline negation that used to
+      // live below the style bible is now sent via the negativePrompt
+      // parameter on the Veo call — see VEO_NEGATIVE_PROMPT.
+      return `[USER ORIGINAL REQUEST]
+${prompt}
+
+[PRODUCTION RULES — APPLY TO EVERY SHOT]
 ${bible}
-STRICT DIRECTIVE: Zero on-screen text, no subtitles, no captions, no logos, no words anywhere in the frame.
 
 [SEGMENT ${i + 1} of ${clipCount}  (${t0}-${t1}s)]
 ${shot}
@@ -2418,10 +2516,13 @@ function compileScenePrompt({ styleBible, vibe, shot, index, total, clipDur }) {
   const continuity = index === 0
     ? `This is the OPENING segment — establish the baseline scene exactly as the style bible describes. Every following segment will inherit these characters, wardrobe, location, lighting, and palette.`
     : `This segment must visually continue from segment ${index}: identical characters, wardrobe, location, lighting, and color palette. No hard cuts or new characters.`;
+  // Inline "STRICT DIRECTIVE: zero on-screen text..." was removed — it's
+  // now sent via parameters.negativePrompt on the Veo call (see
+  // VEO_NEGATIVE_PROMPT). Inline negation primes the model on the very
+  // tokens we want to suppress.
   return `[PRODUCTION RULES — APPLY TO EVERY SHOT]
 ${styleBible}
 ${vibeLine}
-STRICT DIRECTIVE: Zero on-screen text, no subtitles, no captions, no logos, no words anywhere in the frame.
 
 [SEGMENT ${index + 1} of ${total}  (${t0}-${t1}s)]
 ${shot}
@@ -2610,50 +2711,119 @@ async function extractLastFrame(videoUrl) {
       });
     }
 
-    // Seek to just before the very end. Some encoders won't paint the final
-    // frame at exactly duration, so back off 100ms.
-    const target = Math.max(0, (video.duration || 8) - 0.1);
-    await new Promise((resolve, reject) => {
-      const t = setTimeout(() => reject(new Error('seek timeout')), 20000);
-      video.onseeked = () => { clearTimeout(t); resolve(); };
-      try { video.currentTime = target; }
-      catch (e) { clearTimeout(t); reject(e); }
-    });
-
-    // CRITICAL: `seeked` fires before the new frame is actually painted to
-    // the video's GPU texture. Drawing immediately produces a black or stale
-    // frame. Wait for requestVideoFrameCallback (Chrome 83+) when available,
-    // and ALSO do a two-rAF compositor wait afterwards — belt-and-suspenders
-    // guard for the case where rVFC fires early or times out.
-    if (typeof video.requestVideoFrameCallback === 'function') {
-      await new Promise(resolve => {
-        const t = setTimeout(resolve, 1500);
-        video.requestVideoFrameCallback(() => { clearTimeout(t); resolve(); });
-      });
-    }
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
     const w = video.videoWidth || 0;
     const h = video.videoHeight || 0;
     if (!w || !h) throw new Error(`zero video dimensions ${w}x${h}`);
 
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const c = canvas.getContext('2d');
-    c.drawImage(video, 0, 0, w, h);
+    // Sample 3 candidate frames near EOF and pick the SHARPEST. The old
+    // single-seek to (duration - 0.1s) frequently landed on a motion-blurred
+    // frame at the apex of a camera move — that motion blur was then sent to
+    // Veo as the "starting frame" of the next clip, telling it "the world
+    // looks soft" → focus pop / character morph at the join. Sampling 3
+    // candidates and picking the one with highest Laplacian variance gives
+    // us a crisp identity reference for downstream chaining.
+    const duration = video.duration || 8;
+    const candidateOffsets = [0.4, 0.2, 0.05]
+      .map(off => Math.max(0, duration - off))
+      .filter((t, i, arr) => arr.indexOf(t) === i); // de-dupe for very short clips
 
-    // JPEG @ 0.92 keeps the request body sane: a 1280x720 PNG is ~2-4 MB
-    // base64 (which Veo may silently reject), JPEG is ~150-300 KB and
-    // visually indistinguishable. Veo accepts both image/jpeg and image/png.
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-    const base64 = dataUrl.split(',')[1] || '';
+    async function captureAt(targetT) {
+      await new Promise((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error('seek timeout')), 20000);
+        video.onseeked = () => { clearTimeout(t); resolve(); };
+        try { video.currentTime = targetT; }
+        catch (e) { clearTimeout(t); reject(e); }
+      });
+      // CRITICAL: `seeked` fires before the new frame is actually painted to
+      // the video's GPU texture. Drawing immediately produces a black or
+      // stale frame. Wait for requestVideoFrameCallback (Chrome 83+) when
+      // available, and ALSO do a two-rAF compositor wait afterwards.
+      if (typeof video.requestVideoFrameCallback === 'function') {
+        await new Promise(resolve => {
+          const t = setTimeout(resolve, 1500);
+          video.requestVideoFrameCallback(() => { clearTimeout(t); resolve(); });
+        });
+      }
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+      const c2 = document.createElement('canvas');
+      c2.width = w;
+      c2.height = h;
+      const ctx2 = c2.getContext('2d');
+      ctx2.drawImage(video, 0, 0, w, h);
+      return { canvas: c2, ctx: ctx2, t: targetT };
+    }
+
+    // Sharpness = variance of the Sobel-like gradient on a downsampled
+    // luminance buffer. Downsampling to ≤256 px wide keeps the pass cheap
+    // (~0.5 ms) while preserving the sharp/blur signal we care about.
+    function sharpnessScore(canvasEl, ctxEl) {
+      const targetW = Math.min(256, canvasEl.width);
+      const scale = targetW / canvasEl.width;
+      const targetH = Math.max(1, Math.round(canvasEl.height * scale));
+      const tmp = document.createElement('canvas');
+      tmp.width = targetW;
+      tmp.height = targetH;
+      tmp.getContext('2d').drawImage(canvasEl, 0, 0, targetW, targetH);
+      const img = tmp.getContext('2d').getImageData(0, 0, targetW, targetH);
+      const data = img.data;
+      // Compute luminance + horizontal/vertical gradient magnitude variance.
+      const lumW = targetW, lumH = targetH;
+      const lum = new Float32Array(lumW * lumH);
+      for (let i = 0, p = 0; p < data.length; p += 4, i++) {
+        lum[i] = 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
+      }
+      let sum = 0, sumSq = 0, n = 0;
+      for (let y = 1; y < lumH - 1; y++) {
+        for (let x = 1; x < lumW - 1; x++) {
+          const i = y * lumW + x;
+          const gx = lum[i + 1] - lum[i - 1];
+          const gy = lum[i + lumW] - lum[i - lumW];
+          const mag = Math.abs(gx) + Math.abs(gy);
+          sum += mag;
+          sumSq += mag * mag;
+          n++;
+        }
+      }
+      if (n === 0) return 0;
+      const mean = sum / n;
+      return (sumSq / n) - (mean * mean); // variance — higher = sharper
+    }
+
+    let best = null;
+    let bestScore = -1;
+    for (const off of candidateOffsets) {
+      try {
+        const cand = await captureAt(off);
+        const score = sharpnessScore(cand.canvas, cand.ctx);
+        if (score > bestScore) { bestScore = score; best = cand; }
+      } catch (e) {
+        console.log(`[SnapToAI Video] extractLastFrame seek ${off.toFixed(2)}s skipped: ${e.message}`);
+      }
+    }
+    if (!best) throw new Error('no candidate frames captured');
+
+    // PNG preserves identity tokens (no chroma subsampling, no DCT
+    // quantization) that Veo's image-to-video conditioner uses to lock
+    // character identity. JPEG @ 0.92 strips them, which is the primary
+    // cause of character morphing across chained clips. PNG can be ~3 MB on
+    // a 1280x720 frame though — if it exceeds 3 MB base64, fall back to
+    // JPEG @ 0.95 (Veo's documented payload ceiling is ~7 MB / image).
+    let dataUrl = best.canvas.toDataURL('image/png');
+    let base64 = dataUrl.split(',')[1] || '';
+    let mimeType = 'image/png';
+    const sizeKb = Math.round(base64.length * 0.75 / 1024);
+    if (sizeKb > 3072) {
+      dataUrl = best.canvas.toDataURL('image/jpeg', 0.95);
+      base64 = dataUrl.split(',')[1] || '';
+      mimeType = 'image/jpeg';
+    }
     if (!base64 || base64.length < 1000) {
       throw new Error(`canvas produced empty/tiny image (${base64.length} b64 chars)`);
     }
-    const kb = Math.round(base64.length * 0.75 / 1024);
-    console.log(`[SnapToAI Video] extractLastFrame OK ${w}x${h} ~${kb}KB jpeg from t=${target.toFixed(2)}s/${(video.duration||0).toFixed(2)}s`);
-    return { base64, mimeType: 'image/jpeg' };
+    const finalKb = Math.round(base64.length * 0.75 / 1024);
+    console.log(`[SnapToAI Video] extractLastFrame OK ${w}x${h} ~${finalKb}KB ${mimeType.split('/')[1]} from t=${best.t.toFixed(2)}s/${duration.toFixed(2)}s (sharpest of ${candidateOffsets.length}, var=${bestScore.toFixed(0)})`);
+    return { base64, mimeType };
   } catch (e) {
     console.log('[SnapToAI Video] extractLastFrame failed:', e.message);
     return null;
@@ -3211,9 +3381,45 @@ async function stitchVideos(videoUrls, stitchCtx) {
       blobs.push(await resp.blob());
     }
 
+    // Probe the FIRST clip to learn its native dimensions, so the canvas
+    // matches the real aspect ratio. Hard-coding 1280x720 used to squash
+    // 9:16 portrait Veo outputs into a landscape frame — the single most
+    // viscerally bad failure mode for any user who picked vertical.
+    const firstBlobUrl = URL.createObjectURL(blobs[0]);
+    let canvasW = 1280, canvasH = 720;
+    try {
+      const probe = document.createElement('video');
+      probe.src = firstBlobUrl;
+      probe.muted = true;
+      probe.preload = 'metadata';
+      await new Promise((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error('probe timeout')), 10000);
+        probe.onloadedmetadata = () => { clearTimeout(t); resolve(); };
+        probe.onerror = () => { clearTimeout(t); reject(new Error('probe error')); };
+      });
+      if (probe.videoWidth > 0 && probe.videoHeight > 0) {
+        canvasW = probe.videoWidth;
+        canvasH = probe.videoHeight;
+      } else if (stitchCtx && stitchCtx.aspectRatio === '9:16') {
+        canvasW = 720; canvasH = 1280;
+      } else if (stitchCtx && stitchCtx.aspectRatio === '1:1') {
+        canvasW = 1024; canvasH = 1024;
+      }
+    } catch (e) {
+      console.log('[SnapToAI Video] aspect-ratio probe failed, defaulting to 1280x720:', e.message);
+      if (stitchCtx && stitchCtx.aspectRatio === '9:16') {
+        canvasW = 720; canvasH = 1280;
+      } else if (stitchCtx && stitchCtx.aspectRatio === '1:1') {
+        canvasW = 1024; canvasH = 1024;
+      }
+    } finally {
+      URL.revokeObjectURL(firstBlobUrl);
+    }
+    console.log(`[SnapToAI Video] stitch canvas ${canvasW}x${canvasH} (aspect: ${stitchCtx && stitchCtx.aspectRatio || 'auto'})`);
+
     const canvas = document.createElement('canvas');
-    canvas.width = 1280;
-    canvas.height = 720;
+    canvas.width = canvasW;
+    canvas.height = canvasH;
     const ctx2d = canvas.getContext('2d');
 
     const stream = canvas.captureStream(30);
@@ -3228,11 +3434,38 @@ async function stitchVideos(videoUrls, stitchCtx) {
       stream.addTrack(audioTracks[0]);
     }
 
-    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9,opus' });
+    // MediaRecorder.isTypeSupported guard — vp9+opus is preferred for
+    // quality, but some hardened browser builds (corporate Chrome MSI,
+    // some Linux distros, older Edge) don't support it and constructing
+    // throws NotSupportedError. Walk a fallback chain so stitching keeps
+    // working everywhere.
+    const codecCandidates = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm'
+    ];
+    let chosenMime = '';
+    for (const m of codecCandidates) {
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) {
+        chosenMime = m;
+        break;
+      }
+    }
+    const recorder = chosenMime
+      ? new MediaRecorder(stream, { mimeType: chosenMime })
+      : new MediaRecorder(stream);
+    console.log(`[SnapToAI Video] MediaRecorder mime=${chosenMime || '(default)'}`);
     const chunks = [];
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
     const recordingDone = new Promise(resolve => { recorder.onstop = resolve; });
     recorder.start();
+
+    // Audio crossfade duration (seconds). 50ms is the sweet spot — long
+    // enough to mask the click/pop at clip boundaries, short enough that
+    // the user doesn't perceive an audible "duck."
+    const FADE_S = 0.05;
 
     try {
       for (let i = 0; i < blobs.length; i++) {
@@ -3250,9 +3483,17 @@ async function stitchVideos(videoUrls, stitchCtx) {
           video.onerror = () => reject(new Error('Video load error'));
         });
 
+        // Per-clip GainNode so we can ramp audio in (start of clip) and out
+        // (just before clip ends). Without these ramps, MediaRecorder
+        // captures the abrupt waveform discontinuity at every clip boundary
+        // as an audible click/pop. The ramps make the joins inaudible.
+        let gainNode = null;
         try {
           const source = audioCtx.createMediaElementSource(video);
-          source.connect(dest);
+          gainNode = audioCtx.createGain();
+          gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+          source.connect(gainNode);
+          gainNode.connect(dest);
         } catch (e) {
           console.log('[SnapToAI Video] Audio connect skipped:', e.message);
         }
@@ -3262,6 +3503,21 @@ async function stitchVideos(videoUrls, stitchCtx) {
         // and resolves immediately, drawing zero frames for that clip.
         try { await video.play(); } catch (e) {
           console.log('[SnapToAI Video] play() rejected:', e.message);
+        }
+
+        // Schedule the fade-in (now) and fade-out (just before clip ends).
+        if (gainNode) {
+          const t0 = audioCtx.currentTime;
+          gainNode.gain.cancelScheduledValues(t0);
+          gainNode.gain.setValueAtTime(0, t0);
+          gainNode.gain.linearRampToValueAtTime(1, t0 + FADE_S);
+          // Schedule the fade-out relative to playback duration. If
+          // duration isn't known yet, default to clip 8s — the fade is
+          // additionally clamped by video.onended below.
+          const dur = (video.duration && isFinite(video.duration) && video.duration > 0) ? video.duration : 8;
+          const fadeOutStart = t0 + Math.max(FADE_S, dur - FADE_S);
+          gainNode.gain.setValueAtTime(1, fadeOutStart);
+          gainNode.gain.linearRampToValueAtTime(0, fadeOutStart + FADE_S);
         }
 
         await new Promise((resolve) => {
