@@ -2,6 +2,7 @@
 
 // Default settings
 const DEFAULT_SETTINGS = {
+  theme: 'auto',
   imageFormat: 'png',
   jpegQuality: 90,
   pdfPaperSize: 'letter-portrait',
@@ -17,13 +18,31 @@ const DEFAULT_SETTINGS = {
   defaultFrameStyle: 'none'
 };
 
+// Apply current theme selection to the Appearance radio cards
+function applyThemeSelection(theme) {
+  const valid = { light: 1, dark: 1, auto: 1 };
+  const t = valid[theme] ? theme : 'auto';
+  document.querySelectorAll('.appearance-card').forEach(card => {
+    const isMatch = card.dataset.theme === t;
+    card.classList.toggle('selected', isMatch);
+    const radio = card.querySelector('input[type="radio"]');
+    if (radio) radio.checked = isMatch;
+  });
+}
+
 // Load settings from storage
 async function loadSettings() {
   try {
     const result = await chrome.storage.local.get('snaptoaiSettings');
-    const settings = { ...DEFAULT_SETTINGS, ...result.snaptoaiSettings };
+    // For existing users without a saved theme, default to 'dark' to avoid
+    // a visual regression. Truly fresh installs (no settings at all) get 'auto'.
+    const stored = result.snaptoaiSettings;
+    const baseDefaults = { ...DEFAULT_SETTINGS };
+    if (stored && !stored.theme) baseDefaults.theme = 'dark';
+    const settings = { ...baseDefaults, ...stored };
     
     // Apply to UI
+    applyThemeSelection(settings.theme);
     document.getElementById('imageFormat').value = settings.imageFormat;
     document.getElementById('jpegQuality').value = settings.jpegQuality;
     document.getElementById('jpegQualityValue').textContent = settings.jpegQuality + '%';
@@ -50,7 +69,10 @@ async function loadSettings() {
 // Save settings to storage
 async function saveSettings() {
   try {
+    const themeRadio = document.querySelector('.appearance-card input[type="radio"]:checked');
+    const theme = themeRadio ? themeRadio.value : 'auto';
     const settings = {
+      theme,
       imageFormat: document.getElementById('imageFormat').value,
       jpegQuality: parseInt(document.getElementById('jpegQuality').value),
       pdfPaperSize: document.getElementById('pdfPaperSize').value,
@@ -198,6 +220,22 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   
   document.getElementById('saveBtn').addEventListener('click', saveSettings);
+
+  // Wire Appearance cards — live update so all surfaces switch instantly.
+  document.querySelectorAll('.appearance-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const t = card.dataset.theme;
+      if (!t) return;
+      applyThemeSelection(t);
+      if (window.SnapToAITheme && typeof window.SnapToAITheme.set === 'function') {
+        window.SnapToAITheme.set(t);
+      }
+    });
+  });
+  // Keep the Appearance UI in sync with cross-surface changes (popup/sidebar buttons)
+  if (window.SnapToAITheme && typeof window.SnapToAITheme.onChange === 'function') {
+    window.SnapToAITheme.onChange((pref) => applyThemeSelection(pref));
+  }
   document.getElementById('resetBtn').addEventListener('click', resetSettings);
   
   const refreshSubBtn = document.getElementById('refreshSubBtn');

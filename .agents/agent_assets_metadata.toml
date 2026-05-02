@@ -72,3 +72,9 @@ id = "UvkNrQ8Vy9vU0BReZ8jny"
 uri = "file://snaptoai-extension-v2.5.0.zip"
 type = "unspecified"
 title = "SnapToAI v2.5.0 — Sidebar Mode (Chrome Extension)"
+
+[[outputs]]
+id = "XNLnHJAUX88ef4pusVH5C"
+uri = "file://snaptoai-extension-v2.6.0.zip"
+type = "unspecified"
+title = "SnapToAI v2.6.0 — Light & Dark Theme"

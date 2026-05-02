@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SnapToAI Sidebar</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="theme.css">
   <script src="marked.min.js"></script>
   <script src="jspdf.min.js"></script>
   <style>
@@ -1412,6 +1414,11 @@
         <span>Snap <span class="sb-logo-accent">To AI</span></span>
       </div>
       <div class="sb-account">
+        <button id="themeCycleBtn" class="theme-cycle-btn" title="Theme">
+          <svg class="theme-icon theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="theme-icon theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="theme-icon theme-icon-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v18a9 9 0 0 0 0-18z" fill="currentColor"/></svg>
+        </button>
         <button class="sb-icon-btn" id="sbOpenWindowBtn" title="Open in standalone window">⛶</button>
         <button class="sb-signin-btn" id="sbSignInBtn" style="display:none;">Sign in</button>
         <img class="sb-avatar" id="sbAvatar" alt="Account" style="display:none;" />
@@ -1797,5 +1804,31 @@
   <script src="prompts.js"></script>
   <script src="ai-chat.js"></script>
   <script src="sidebar.js"></script>
+  <script>
+    // Theme cycle button (sidebar header) — wired after sidebar.js initializes
+    (function () {
+      function wire() {
+        var btn = document.getElementById('themeCycleBtn');
+        if (!btn || !window.SnapToAITheme) return false;
+        var labels = { light: 'Light', dark: 'Dark', auto: 'Auto (matches system)' };
+        var nextOf = { light: 'dark', dark: 'auto', auto: 'light' };
+        function refresh() {
+          var pref = window.SnapToAITheme.get();
+          btn.title = 'Theme: ' + labels[pref] + ' — click for ' + labels[nextOf[pref]];
+          btn.setAttribute('aria-label', 'Theme: ' + labels[pref] + '. Click to switch to ' + labels[nextOf[pref]] + '.');
+        }
+        btn.addEventListener('click', function () {
+          window.SnapToAITheme.cycle();
+          refresh();
+        });
+        window.SnapToAITheme.onChange(refresh);
+        refresh();
+        return true;
+      }
+      if (!wire()) {
+        document.addEventListener('DOMContentLoaded', wire);
+      }
+    })();
+  </script>
 </body>
 </html>
