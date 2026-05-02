@@ -80,3 +80,7 @@ build = ["pip", "install", "-r", "requirements.txt"]
 [userenv.shared]
 SUPABASE_DATABASE_URL = "postgresql://postgres.drzstffdumyqfbqyjlua:Xnu124yuXnu124yu%25%25@aws-0-us-west-2.pooler.supabase.com:5432/postgres"
 GEMINI_FREE_KEYS = "AIzaSyBlmPH-wuK4R_8zY_Z55Td5toR3h1ajMR4"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000
