@@ -4154,6 +4154,13 @@ function applySubscriptionBadge(upgradeBtn, status, snaptoai_dev_override) {
       upgradeBtn.className = 'upgrade-btn upgrade-btn-trial';
     }
     if (manageLink) manageLink.style.display = 'none';
+  } else if (status.status === 'institution_expired') {
+    upgradeBtn.style.visibility = 'visible';
+    const instName = status.institutionName ? status.institutionName : 'Institution';
+    upgradeBtn.textContent = `${instName} license ended`;
+    upgradeBtn.className = 'upgrade-btn upgrade-btn-expired';
+    upgradeBtn.title = 'Your institution license has ended. Contact your admin to restore access, or upgrade to a personal plan.';
+    if (manageLink) manageLink.style.display = 'none';
   } else if (status.status === 'trial_expired' || status.status === 'subscription_expired' || status.status === 'expired' || (status.status === 'trial' && status.daysRemaining <= 0)) {
     upgradeBtn.style.visibility = 'visible';
     upgradeBtn.textContent = 'Trial ended · Upgrade for AI';

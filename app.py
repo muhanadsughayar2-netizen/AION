@@ -559,17 +559,42 @@ def _options(methods='GET, POST, OPTIONS'):
     return _cors(Response(), methods)
 
 def verify_google_token(token):
+    """Verify a Google OAuth token. Tries the id_token endpoint first (because
+    Google Identity Services / gsi/client returns JWT id tokens), then falls
+    back to access_token (used by chrome.identity.getAuthToken). When verifying
+    an id_token, also enforce that the audience matches our GOOGLE_CLIENT_ID
+    so that tokens minted for another app cannot be replayed against us."""
+    if not token:
+        return None
+    # 1) Try id_token verification (gsi/client / web sign-in)
     try:
         resp = requests.get(
-            f'https://oauth2.googleapis.com/tokeninfo?access_token={token}',
+            'https://oauth2.googleapis.com/tokeninfo',
+            params={'id_token': token},
             timeout=5
         )
         if resp.ok:
             data = resp.json()
-            return data.get('email', '').lower()
-        return None
+            email = (data.get('email') or '').lower()
+            if email and data.get('email_verified') in (True, 'true', '1', 1):
+                aud = data.get('aud') or ''
+                if not GOOGLE_CLIENT_ID or aud == GOOGLE_CLIENT_ID:
+                    return email
     except Exception:
-        return None
+        pass
+    # 2) Fall back to access_token verification (chrome.identity)
+    try:
+        resp = requests.get(
+            'https://oauth2.googleapis.com/tokeninfo',
+            params={'access_token': token},
+            timeout=5
+        )
+        if resp.ok:
+            data = resp.json()
+            return (data.get('email') or '').lower() or None
+    except Exception:
+        pass
+    return None
 
 def get_verified_email(req):
     auth_header = req.headers.get('Authorization', '')
@@ -1000,6 +1025,7 @@ import hashlib
 import secrets
 
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'snaptoai2024')
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 ADMIN_SESSION_SECRET = os.environ.get('ADMIN_SESSION_SECRET', 'sn4pt0a1_s3cr3t_k3y_2024_pr0d')
 
 def generate_admin_token(password):
@@ -2168,6 +2194,25 @@ def subscription_status():
         cur.execute('SELECT plan_type, status FROM subscriptions WHERE email = %s', (email,))
         pre = cur.fetchone()
         if pre and pre[0] == 'institution' and pre[1] == 'active' and not inst_branding:
+            # Capture the (now-stale) institution branding BEFORE we null the FK,
+            # so the extension can show "{InstitutionName} license ended".
+            former_branding = None
+            try:
+                cur.execute("""
+                    SELECT i.name, i.brand_color, i.logo_url, i.slug
+                    FROM users u JOIN institutions i ON i.id = u.institution_id
+                    WHERE LOWER(u.email)=%s
+                """, (email,))
+                fb = cur.fetchone()
+                if fb:
+                    former_branding = {
+                        'name': fb[0],
+                        'brandColor': fb[1] or '#00d9ff',
+                        'logoUrl': fb[2],
+                        'slug': fb[3],
+                    }
+            except Exception:
+                former_branding = None
             cur.execute("""
                 UPDATE subscriptions
                 SET status='expired', plan_type='institution_expired', updated_at=NOW()
@@ -2176,7 +2221,12 @@ def subscription_status():
             cur.execute("UPDATE users SET institution_id=NULL WHERE LOWER(email)=%s", (email,))
             conn.commit()
             cur.close(); conn.close()
-            result = {'success': True, 'canUseAI': False, 'status': 'institution_expired', 'planType': None, 'daysRemaining': 0}
+            result = {
+                'success': True, 'canUseAI': False, 'status': 'institution_expired',
+                'planType': None, 'daysRemaining': 0,
+                'institutionName': (former_branding or {}).get('name'),
+                'branding': former_branding,
+            }
             response = jsonify(result)
             response.headers['Access-Control-Allow-Origin'] = '*'
             return response
@@ -2969,6 +3019,8 @@ def api_admin_inst_create():
     primary_admin_email = _norm_email(data.get('primaryAdminEmail', ''))
     seat_limit = int(data.get('seatLimit') or 50)
     brand_color = str(data.get('brandColor') or '#00d9ff')[:20]
+    if not re.match(r'^#[0-9a-fA-F]{3,8}$', brand_color):
+        return _cors(jsonify({'success': False, 'error': 'brandColor must be a hex color like #00d9ff'})), 400
     allowed_domains = str(data.get('allowedDomains') or '')[:500]
     notes = str(data.get('notes') or '')[:1000]
     expires_at = None
@@ -3045,7 +3097,10 @@ def api_admin_inst_update(inst_id):
     if 'name' in data:
         fields.append('name=%s'); values.append(str(data['name']).strip()[:200])
     if 'brandColor' in data:
-        fields.append('brand_color=%s'); values.append(str(data['brandColor'])[:20])
+        bc = str(data['brandColor'])[:20]
+        if not re.match(r'^#[0-9a-fA-F]{3,8}$', bc):
+            return _cors(jsonify({'success': False, 'error': 'brandColor must be a hex color like #00d9ff'})), 400
+        fields.append('brand_color=%s'); values.append(bc)
     if 'primaryAdminEmail' in data:
         fields.append('primary_admin_email=%s'); values.append(_norm_email(data['primaryAdminEmail']) or None)
     if 'seatLimit' in data:
@@ -3192,7 +3247,12 @@ def api_admin_inst_logo(inst_id):
 INST_ADMIN_COOKIE_PREFIX = 'inst_admin_session_'
 
 def _verify_inst_admin(slug):
-    """True iff caller is super-admin OR has a valid inst-admin cookie/token for this slug."""
+    """True iff caller is super-admin OR holds a valid inst-admin SESSION COOKIE
+    for this slug. The cookie is only ever issued by the Google sign-in flow
+    (POST /api/institution/<slug>/admin-login), so URL tokens / bare emails
+    can no longer authorize the dashboard. This guarantees that the inst-admin
+    has proven possession of the Google account (including any 2FA) before they
+    can manage members, branding, or invites."""
     if _require_super_admin():
         return True, None
     cookie = request.cookies.get(INST_ADMIN_COOKIE_PREFIX + slug, '')
@@ -3207,30 +3267,38 @@ def _verify_inst_admin(slug):
                     return True, _norm_email(e)
             except Exception:
                 pass
-    # Or a fresh token in the URL — STILL must verify caller is currently an admin
-    token = request.args.get('token', '')
-    email = _norm_email(request.args.get('email', ''))
-    if token and not email:
-        try:
-            conn = get_db(); cur = conn.cursor()
-            cur.execute("SELECT primary_admin_email FROM institutions WHERE slug=%s", (slug,))
-            r = cur.fetchone()
-            cur.close(); conn.close()
-            if r and r[0]:
-                email = _norm_email(r[0])
-        except Exception:
-            pass
-    if token and email and _verify_admin_token(slug, email, token):
-        # Re-check that this email is still an active admin (revocation-safe)
-        try:
-            conn = get_db(); cur = conn.cursor()
-            is_admin = _is_inst_admin(cur, slug, email)
-            cur.close(); conn.close()
-            if is_admin:
-                return True, email
-        except Exception:
-            pass
     return False, None
+
+@app.route('/api/institution/<slug>/admin-login', methods=['POST', 'OPTIONS'])
+def api_inst_admin_google_login(slug):
+    """Verify a Google ID token and, if the email is an admin of this institution,
+    set the inst-admin session cookie. This is the PRIMARY auth path for the
+    institution-admin dashboard — the URL token remains as a one-time bootstrap."""
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    data = request.get_json(silent=True) or {}
+    id_token = (data.get('idToken') or data.get('credential') or '').strip()
+    if not id_token:
+        return _cors(jsonify({'success': False, 'error': 'idToken required'})), 400
+    email = verify_google_token(id_token)
+    if not email:
+        return _cors(jsonify({'success': False, 'error': 'Invalid Google token'})), 401
+    email = _norm_email(email)
+    try:
+        conn = get_db(); cur = conn.cursor()
+        is_admin = _is_inst_admin(cur, slug, email)
+        cur.close(); conn.close()
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+    if not is_admin:
+        return _cors(jsonify({'success': False, 'error': 'You are not an admin of this institution'})), 403
+    resp = _cors(jsonify({'success': True, 'email': email}))
+    cookie_value = f"{email}|{_gen_admin_token(slug, email)}"
+    resp.set_cookie(INST_ADMIN_COOKIE_PREFIX + slug, cookie_value, httponly=True, samesite='Lax', max_age=86400 * 30)
+    return resp
+
 
 @app.route('/institution/<slug>/admin', methods=['GET'])
 def institution_admin_page(slug):
@@ -3238,7 +3306,62 @@ def institution_admin_page(slug):
         return Response("Database not available", status=503)
     ok, admin_email = _verify_inst_admin(slug)
     if not ok:
-        return Response("Access denied. Ask the SnapToAI team for your admin link.", status=403)
+        # Render a Google Sign-In gate so the admin can authenticate with their Google identity
+        try:
+            conn = get_db(); cur = conn.cursor()
+            row = _institution_by_slug(cur, slug)
+            cur.close(); conn.close()
+        except Exception:
+            row = None
+        if not row:
+            return Response("Institution not found", status=404)
+        inst_name = html_escape_module.escape(row[2])
+        # CSS-context: only allow validated hex colors. html-escape is NOT enough.
+        _raw = row[4] or '#00d9ff'
+        inst_color = _raw if re.match(r'^#[0-9a-fA-F]{3,8}$', str(_raw)) else '#00d9ff'
+        client_id = html_escape_module.escape(GOOGLE_CLIENT_ID or '')
+        slug_safe = html_escape_module.escape(slug)
+        gate = f'''<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>{inst_name} — Admin Sign-In</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f1a; color: #fff; min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center; padding: 24px; }}
+  .card {{ max-width: 440px; background: rgba(255,255,255,0.04); border: 1px solid {inst_color}55; border-radius: 18px; padding: 36px; text-align: center; }}
+  h1 {{ color: {inst_color}; margin: 0 0 8px 0; font-size: 22px; }}
+  p {{ color: #ccc; line-height: 1.5; font-size: 14px; }}
+  #g-btn {{ display: flex; justify-content: center; margin: 24px 0 8px; }}
+  .err {{ color: #ff4757; font-size: 13px; margin-top: 12px; min-height: 18px; }}
+</style></head>
+<body><div class="card">
+  <h1>{inst_name}</h1>
+  <p>Sign in with your <strong>institution admin email</strong> to manage members, invites and branding.</p>
+  <div id="g-btn"></div>
+  <div class="err" id="err"></div>
+</div>
+<script>
+const SLUG = {json.dumps(slug)};
+function onGoogle(resp) {{
+  fetch('/api/institution/' + SLUG + '/admin-login', {{
+    method: 'POST', headers: {{'Content-Type':'application/json'}},
+    body: JSON.stringify({{idToken: resp.credential}})
+  }}).then(r => r.json()).then(d => {{
+    if (d.success) location.reload();
+    else document.getElementById('err').textContent = d.error || 'Sign-in failed';
+  }}).catch(e => document.getElementById('err').textContent = String(e));
+}}
+window.addEventListener('load', () => {{
+  if (!window.google || !{json.dumps(bool(client_id))}) {{
+    document.getElementById('err').textContent = 'Google Sign-In is not configured. Contact SnapToAI support.';
+    return;
+  }}
+  google.accounts.id.initialize({{ client_id: {json.dumps(client_id)}, callback: onGoogle }});
+  google.accounts.id.renderButton(document.getElementById('g-btn'), {{ theme: 'filled_black', size: 'large', width: 320 }});
+}});
+</script></body></html>'''
+        resp = Response(gate, mimetype='text/html', status=401)
+        resp.headers['Cache-Control'] = 'no-store'
+        return resp
     try:
         conn = get_db(); cur = conn.cursor()
         row = _institution_by_slug(cur, slug)
@@ -3251,6 +3374,13 @@ def institution_admin_page(slug):
         return Response(f"Error: {e}", status=500)
 
     name = html_escape_module.escape(info['name'])
+    # Defense-in-depth: even though all write paths now validate brandColor
+    # against ^#[0-9a-fA-F]{3,8}$, sanitize at render time so any legacy/bad
+    # row in the DB cannot break out of CSS context.
+    _bc_raw = info['brandColor'] or '#00d9ff'
+    if not re.match(r'^#[0-9a-fA-F]{3,8}$', str(_bc_raw)):
+        _bc_raw = '#00d9ff'
+    info['brandColor'] = _bc_raw
     logo_url = info['logoUrl'] or ''
     brand_color = info['brandColor'] or '#00d9ff'
     seat_limit = info['seatLimit']
@@ -3321,9 +3451,10 @@ def institution_admin_page(slug):
       <button onclick="inviteOne()">Invite by Email</button>
     </div>
     <div style="margin-top: 14px;">
-      <label style="font-size: 12px; color: #888;">Or paste a CSV list (one email per line, or comma-separated):</label>
+      <label style="font-size: 12px; color: #888;">Bulk invite — upload a CSV file <em>or</em> paste emails below:</label>
+      <input id="invite-csv-file" type="file" accept=".csv,text/csv,text/plain" style="margin: 6px 0; font-size: 12px;">
       <textarea id="invite-csv" placeholder="alice@example.com&#10;bob@example.com,carol@example.com"></textarea>
-      <button onclick="inviteBulk()" style="margin-top: 8px;">Bulk Invite from CSV</button>
+      <button onclick="inviteBulk()" style="margin-top: 8px;">Bulk Invite</button>
       <span id="bulk-msg" style="margin-left: 10px; color: #00ff88; font-size: 12px;"></span>
     </div>
     <div style="margin-top: 14px;">
@@ -3331,6 +3462,35 @@ def institution_admin_page(slug):
       <span id="link-msg" style="margin-left: 10px; color: #00ff88; font-size: 12px;"></span>
     </div>
     <div id="links-list" style="margin-top: 12px;"></div>
+  </div>
+
+  <div class="section">
+    <h2>🌐 Auto-join domains</h2>
+    <p style="font-size: 12px; color: #888; margin: 0 0 10px 0;">Anyone signing in with an email at one of these domains is automatically added as a member (public domains like gmail.com are blocked).</p>
+    <div class="row">
+      <input id="domains-input" class="grow" placeholder="acme.com, eng.acme.com" value="{domains if domains != '(none)' else ''}">
+      <button onclick="saveDomains()">Save Domains</button>
+      <span id="domains-msg" style="color: #00ff88; font-size: 12px;"></span>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>🎨 Branding</h2>
+    <div class="row" style="align-items: flex-start;">
+      <div class="grow">
+        <label style="font-size: 12px; color: #888; display: block; margin-bottom: 4px;">Brand color (hex):</label>
+        <input id="brand-color-input" type="text" value="{html_escape_module.escape(brand_color)}" style="width: 140px;">
+        <span style="display: inline-block; width: 24px; height: 24px; border-radius: 4px; vertical-align: middle; margin-left: 8px; background: {brand_color}; border: 1px solid #333;"></span>
+        <button onclick="saveColor()" style="margin-left: 12px;">Save Color</button>
+        <span id="color-msg" style="color: #00ff88; font-size: 12px; margin-left: 8px;"></span>
+      </div>
+      <div style="min-width: 240px;">
+        <label style="font-size: 12px; color: #888; display: block; margin-bottom: 4px;">Logo (PNG/JPG/SVG/WebP, max 2MB):</label>
+        <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" style="font-size: 12px;">
+        <button onclick="uploadLogo()" style="margin-top: 6px;">Upload Logo</button>
+        <span id="logo-msg" style="color: #00ff88; font-size: 12px; margin-left: 8px;"></span>
+      </div>
+    </div>
   </div>
 
   <div class="section">
@@ -3409,11 +3569,52 @@ async function inviteOne() {{
 }}
 async function inviteBulk() {{
   const text = document.getElementById('invite-csv').value;
-  if (!text.trim()) return;
-  const r = await fetch(API_BASE + '/invite-bulk', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{csv: text}})}});
-  const d = await r.json();
+  const file = document.getElementById('invite-csv-file') ? document.getElementById('invite-csv-file').files[0] : null;
   const msg = document.getElementById('bulk-msg');
-  if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Added ' + d.added + ' (' + d.skipped + ' skipped)'; document.getElementById('invite-csv').value=''; load(); }}
+  let resp;
+  if (file) {{
+    const fd = new FormData(); fd.append('file', file);
+    resp = await fetch(API_BASE + '/invite-bulk', {{method:'POST', body: fd}});
+  }} else {{
+    if (!text.trim()) return;
+    resp = await fetch(API_BASE + '/invite-bulk', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{csv: text}})}});
+  }}
+  const d = await resp.json();
+  if (d.success) {{
+    msg.style.color='#00ff88';
+    msg.textContent = '✓ Added ' + d.added + ' · already: ' + (d.alreadyMember||0) + ' · invalid: ' + (d.invalidEmail||0) + ' · no seats: ' + (d.noSeats||0);
+    document.getElementById('invite-csv').value='';
+    if (document.getElementById('invite-csv-file')) document.getElementById('invite-csv-file').value='';
+    load();
+  }} else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
+}}
+async function saveDomains() {{
+  const v = document.getElementById('domains-input').value;
+  const msg = document.getElementById('domains-msg');
+  msg.textContent = 'Saving...';
+  const r = await fetch(API_BASE + '/domains', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{allowedDomains: v}})}});
+  const d = await r.json();
+  if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Saved'; document.getElementById('stat-domains').textContent = d.allowedDomains || '(none)'; }}
+  else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
+}}
+async function saveColor() {{
+  const v = document.getElementById('brand-color-input').value.trim();
+  const msg = document.getElementById('color-msg');
+  msg.textContent = 'Saving...';
+  const r = await fetch(API_BASE + '/branding', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{brandColor: v}})}});
+  const d = await r.json();
+  if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Saved (members refresh to see it)'; }}
+  else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
+}}
+async function uploadLogo() {{
+  const f = document.getElementById('logo-file').files[0];
+  const msg = document.getElementById('logo-msg');
+  if (!f) {{ msg.style.color='#ff4757'; msg.textContent='Pick a file first'; return; }}
+  msg.style.color='#888'; msg.textContent='Uploading...';
+  const fd = new FormData(); fd.append('logo', f);
+  const r = await fetch(API_BASE + '/branding/logo', {{method:'POST', body: fd}});
+  const d = await r.json();
+  if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Uploaded'; setTimeout(()=>location.reload(), 800); }}
   else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
 }}
 async function createLink() {{
@@ -3555,8 +3756,16 @@ def api_inst_invite_bulk(slug):
         return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
     if not ensure_db():
         return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
-    data = request.get_json(silent=True) or {}
-    raw = str(data.get('csv', ''))[:50000]
+    raw = ''
+    upload = request.files.get('file') or request.files.get('csv')
+    if upload and upload.filename:
+        try:
+            raw = upload.read(200 * 1024).decode('utf-8', errors='ignore')
+        except Exception as e:
+            return _cors(jsonify({'success': False, 'error': f'Could not read CSV file: {e}'})), 400
+    else:
+        data = request.get_json(silent=True) or {}
+        raw = str(data.get('csv', ''))[:50000]
     if not raw.strip():
         return _cors(jsonify({'success': False, 'error': 'csv empty'})), 400
     parts = []
@@ -3614,6 +3823,123 @@ def api_inst_invite_bulk(slug):
         }))
     except Exception as e:
         return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+@app.route('/api/institution/<slug>/domains', methods=['POST', 'OPTIONS'])
+def api_inst_set_domains(slug):
+    """Institution-admin endpoint to set the auto-join allowed_domains list.
+    Public-email domains (gmail/outlook/etc.) are stripped server-side."""
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    data = request.get_json(silent=True) or {}
+    raw = str(data.get('allowedDomains') or '')[:500]
+    cleaned = []
+    for d in raw.replace(';', ',').replace(' ', ',').split(','):
+        d = d.strip().lower().lstrip('@')
+        if not d or d in PUBLIC_DOMAINS:
+            continue
+        if '.' not in d or len(d) > 100:
+            continue
+        if d not in cleaned:
+            cleaned.append(d)
+    final = ','.join(cleaned)
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("UPDATE institutions SET allowed_domains=%s, updated_at=NOW() WHERE slug=%s", (final or None, slug))
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True, 'allowedDomains': final}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+
+@app.route('/api/institution/<slug>/branding', methods=['POST', 'OPTIONS'])
+def api_inst_set_branding(slug):
+    """Institution-admin endpoint to update brand color (and other text fields).
+    Logo upload uses the dedicated /branding/logo endpoint below."""
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    data = request.get_json(silent=True) or {}
+    color = str(data.get('brandColor') or '').strip()[:20]
+    if color and not re.match(r'^#[0-9a-fA-F]{3,8}$', color):
+        return _cors(jsonify({'success': False, 'error': 'brandColor must be a hex color like #00d9ff'})), 400
+    try:
+        conn = get_db(); cur = conn.cursor()
+        if color:
+            cur.execute("UPDATE institutions SET brand_color=%s, updated_at=NOW() WHERE slug=%s", (color, slug))
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True, 'brandColor': color}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+
+@app.route('/api/institution/<slug>/branding/logo', methods=['POST', 'OPTIONS'])
+def api_inst_upload_logo(slug):
+    """Institution-admin endpoint to upload a logo (delegates to the same
+    validation used by the super-admin logo endpoint)."""
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    f = request.files.get('logo')
+    if not f or not f.filename:
+        return _cors(jsonify({'success': False, 'error': 'No file uploaded (field name: logo)'})), 400
+    ext = ''
+    if '.' in f.filename:
+        ext = '.' + f.filename.rsplit('.', 1)[1].lower()
+    if ext not in ALLOWED_LOGO_EXTS:
+        return _cors(jsonify({'success': False, 'error': f'Unsupported extension {ext}. Allowed: {sorted(ALLOWED_LOGO_EXTS)}'})), 400
+    blob = f.read(2 * 1024 * 1024 + 1)
+    if not blob:
+        return _cors(jsonify({'success': False, 'error': 'Empty file'})), 400
+    if len(blob) > 2 * 1024 * 1024:
+        return _cors(jsonify({'success': False, 'error': 'Logo too large (max 2 MB)'})), 400
+    head = blob[:12]
+    is_png = head.startswith(b'\x89PNG\r\n\x1a\n')
+    is_jpg = head.startswith(b'\xff\xd8\xff')
+    is_gif = head.startswith(b'GIF87a') or head.startswith(b'GIF89a')
+    is_webp = head[:4] == b'RIFF' and head[8:12] == b'WEBP'
+    is_svg = b'<svg' in blob[:512].lower() or blob.lstrip()[:5].lower().startswith(b'<?xml')
+    valid_for_ext = (
+        (ext == '.png' and is_png) or
+        (ext in ('.jpg', '.jpeg') and is_jpg) or
+        (ext == '.gif' and is_gif) or
+        (ext == '.webp' and is_webp) or
+        (ext == '.svg' and is_svg)
+    )
+    if not valid_for_ext:
+        return _cors(jsonify({'success': False, 'error': f'File contents do not match extension {ext}'})), 400
+    try:
+        os.makedirs(INSTITUTION_LOGO_DIR, exist_ok=True)
+        for old in os.listdir(INSTITUTION_LOGO_DIR):
+            if old.startswith(slug + '.'):
+                try: os.remove(os.path.join(INSTITUTION_LOGO_DIR, old))
+                except Exception: pass
+        target = os.path.join(INSTITUTION_LOGO_DIR, slug + ext)
+        with open(target, 'wb') as out:
+            out.write(blob)
+        logo_url = f'/static/institution-logos/{slug}{ext}?v={int(time.time())}'
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("UPDATE institutions SET logo_url=%s, updated_at=NOW() WHERE slug=%s", (logo_url, slug))
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True, 'logoUrl': logo_url}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
 
 @app.route('/api/institution/<slug>/invite-link', methods=['POST', 'OPTIONS'])
 def api_inst_invite_link(slug):
@@ -3798,7 +4124,9 @@ def institution_join_page(code):
     if max_uses and uses >= max_uses:
         return Response("This invite link has reached its usage limit.", status=410)
     safe_name = html_escape_module.escape(name)
-    safe_color = html_escape_module.escape(brand_color or '#00d9ff')
+    # CSS-context: enforce strict hex regex; fall back to default if anything else.
+    _raw_color = brand_color or '#00d9ff'
+    safe_color = _raw_color if re.match(r'^#[0-9a-fA-F]{3,8}$', str(_raw_color)) else '#00d9ff'
     logo_html = f'<img src="{html_escape_module.escape(logo_url)}" alt="logo" style="height:80px; max-width:240px; object-fit:contain; background:#fff; border-radius:12px; padding:8px; margin-bottom:24px;">' if logo_url else ''
     page = f'''<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Join {safe_name} on SnapToAI</title>
@@ -3814,53 +4142,76 @@ def institution_join_page(code):
   .step strong {{ color: {safe_color}; }}
   a {{ color: {safe_color}; }}
   #msg {{ margin-top: 12px; font-size: 13px; min-height: 18px; }}
-</style></head>
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
 <body>
 <div class="card">
   {logo_html}
   <h1>You're invited to {safe_name}</h1>
-  <p>Claim your free SnapToAI Pro seat — included with your {safe_name} membership.</p>
-  <form id="join-form" onsubmit="return joinNow(event)">
-    <input type="email" id="email" placeholder="your.work@email.com" required>
-    <button type="submit">Claim my seat</button>
-  </form>
+  <p>Sign in with Google to claim your free SnapToAI Pro seat — included with your {safe_name} membership.</p>
+  <div id="g-btn" style="display:flex; justify-content:center; margin: 24px 0 8px;"></div>
   <div id="msg"></div>
   <div class="step">
-    <strong>Next step:</strong> Install the SnapToAI Chrome extension and sign in with the same email — your branded version unlocks automatically.
+    <strong>Next step:</strong> After signing in, install the SnapToAI Chrome extension and sign in with the same Google account — your branded Pro license unlocks automatically.
     <br><br>
-    <a href="https://chromewebstore.google.com/detail/snaptoai" target="_blank">→ Install SnapToAI from Chrome Web Store</a>
+    <a id="install-link" href="https://chromewebstore.google.com/detail/snaptoai" target="_blank">→ Install SnapToAI from Chrome Web Store</a>
   </div>
 </div>
 <script>
-async function joinNow(e) {{
-  e.preventDefault();
-  const email = document.getElementById('email').value.trim();
+const INVITE_CODE = {json.dumps(code)};
+const GOOGLE_CLIENT = {json.dumps(GOOGLE_CLIENT_ID or '')};
+function onGoogle(resp) {{
   const msg = document.getElementById('msg');
   msg.style.color = '#888'; msg.textContent = 'Reserving your seat...';
-  const r = await fetch('/api/institution/join', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{code: {json.dumps(code)}, email}})}});
-  const d = await r.json();
-  if (d.success) {{
-    msg.style.color = '#00ff88';
-    msg.textContent = '✓ Your seat is reserved! Install the extension and sign in with ' + email + '.';
-  }} else {{
-    msg.style.color = '#ff4757';
-    msg.textContent = '✗ ' + (d.error || 'Could not reserve seat');
-  }}
-  return false;
+  fetch('/api/institution/join', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{code: INVITE_CODE, idToken: resp.credential}})}})
+    .then(r => r.json()).then(d => {{
+      if (d.success) {{
+        msg.style.color = '#00ff88';
+        msg.textContent = '✓ Seat reserved for ' + (d.email || 'your Google account') + '. Install the extension and sign in with the same Google account.';
+      }} else if (d.error === 'seat_limit') {{
+        msg.style.color = '#ff4757';
+        msg.textContent = '✗ This institution has hit its seat limit. Please contact your admin.';
+      }} else {{
+        msg.style.color = '#ff4757';
+        msg.textContent = '✗ ' + (d.error || 'Could not reserve seat');
+      }}
+    }}).catch(e => {{ msg.style.color = '#ff4757'; msg.textContent = '✗ ' + e; }});
 }}
+window.addEventListener('load', () => {{
+  if (!window.google || !GOOGLE_CLIENT) {{
+    document.getElementById('msg').style.color = '#ff4757';
+    document.getElementById('msg').textContent = 'Google Sign-In is not configured. Contact your institution admin.';
+    return;
+  }}
+  google.accounts.id.initialize({{ client_id: GOOGLE_CLIENT, callback: onGoogle }});
+  google.accounts.id.renderButton(document.getElementById('g-btn'), {{ theme: 'filled_black', size: 'large', width: 320 }});
+}});
 </script>
 </body></html>'''
-    return Response(page, mimetype='text/html')
+    resp = Response(page, mimetype='text/html')
+    resp.headers['Cache-Control'] = 'no-store'
+    return resp
 
 @app.route('/api/institution/join', methods=['POST', 'OPTIONS'])
 def api_institution_join():
+    """Public invite-link redemption. Accepts EITHER a Google idToken (preferred,
+    real-identity flow) OR a plain email (legacy fallback for tests)."""
     if request.method == 'OPTIONS':
         return _options('POST, OPTIONS')
     if not ensure_db():
         return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
     data = request.get_json(silent=True) or {}
     code = str(data.get('code', '')).strip()[:64]
-    email = _norm_email(data.get('email', ''))
+    id_token = (data.get('idToken') or data.get('credential') or '').strip()
+    email = ''
+    if id_token:
+        verified = verify_google_token(id_token)
+        if not verified:
+            return _cors(jsonify({'success': False, 'error': 'Invalid Google token'})), 401
+        email = _norm_email(verified)
+    else:
+        email = _norm_email(data.get('email', ''))
     if not code or not email or '@' not in email:
         return _cors(jsonify({'success': False, 'error': 'code and valid email required'})), 400
     try:
@@ -3881,10 +4232,10 @@ def api_institution_join():
             return _cors(jsonify({'success': False, 'error': 'Invite no longer active'})), 410
         if max_uses and uses >= max_uses:
             cur.close(); conn.close()
-            return _cors(jsonify({'success': False, 'error': 'Invite usage limit reached'})), 410
+            return _cors(jsonify({'success': False, 'error': 'invite_exhausted'})), 410
         if seat_limit and _seats_used(cur, inst_id) >= seat_limit:
             cur.close(); conn.close()
-            return _cors(jsonify({'success': False, 'error': 'Seat limit reached'})), 400
+            return _cors(jsonify({'success': False, 'error': 'seat_limit'})), 400
         result = _add_member(cur, inst_id, email, f'invite-link:{code[:8]}')
         if result == 'invalid':
             cur.close(); conn.close()

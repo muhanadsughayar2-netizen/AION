@@ -205,9 +205,13 @@ async function checkSubscription() {
       };
     }
 
+    let mappedStatus = 'trial_expired';
+    if (serverResult.status === 'subscription_expired') mappedStatus = 'subscription_expired';
+    else if (serverResult.status === 'institution_expired') mappedStatus = 'institution_expired';
     return {
-      status: serverResult.status === 'subscription_expired' ? 'subscription_expired' : 'trial_expired',
-      planType: null,
+      status: mappedStatus,
+      planType: serverResult.planType || null,
+      institutionName: (serverResult.branding && serverResult.branding.name) || null,
       canUseAI: false,
       isEarlyAccess: false,
       daysRemaining: 0,

@@ -329,8 +329,10 @@
 <body>
   <div class="container">
     <div class="card">
-      <div class="camera-icon">📸</div>
-      <h1>Snap <span class="cyan">To AI</span></h1>
+      <img id="welcomeBrandLogo" alt="" style="display:none; max-height:64px; max-width:240px; margin: 0 auto 14px; object-fit:contain;">
+      <div id="welcomeDefaultMark"><div class="camera-icon">📸</div>
+      <h1>Snap <span class="cyan">To AI</span></h1></div>
+      <div id="welcomeInstName" style="display:none; font-size:22px; font-weight:800; margin-bottom:8px; color:#fff;"></div>
       <p class="tagline">Capture any screen → instantly chat with AI, generate images, music & videos</p>
       <p class="sub">Right-click → Snap → Ask AI anything. Turn screenshots into images, songs, or videos in seconds.</p>
 
@@ -403,5 +405,36 @@
 
     <p class="privacy">🔒 Your screenshots stay private — processed securely</p>
   </div>
+  <script>
+    // Apply institution branding (logo + name + brand color) when present.
+    // The branding is cached by subscription.js into chrome.storage.local.snaptoai_branding.
+    (async function() {
+      try {
+        if (!chrome || !chrome.storage || !chrome.storage.local) return;
+        const { snaptoai_branding } = await chrome.storage.local.get(['snaptoai_branding']);
+        const b = snaptoai_branding;
+        if (!b) return;
+        if (b.brandColor) {
+          document.documentElement.style.setProperty('--accent', b.brandColor);
+          const cyans = document.querySelectorAll('h1 .cyan');
+          cyans.forEach(c => c.style.color = b.brandColor);
+        }
+        if (b.logoUrl) {
+          const img = document.getElementById('welcomeBrandLogo');
+          const url = b.logoUrl.startsWith('http') ? b.logoUrl : 'https://www.snaptoai.com' + b.logoUrl;
+          if (img) { img.src = url; img.alt = b.name || ''; img.style.display = 'inline-block'; }
+          const mark = document.getElementById('welcomeDefaultMark');
+          if (mark) mark.style.display = 'none';
+          const nameEl = document.getElementById('welcomeInstName');
+          if (nameEl && b.name) { nameEl.textContent = 'Welcome to ' + b.name; nameEl.style.display = 'block'; }
+        } else if (b.name) {
+          const mark = document.getElementById('welcomeDefaultMark');
+          if (mark) mark.style.display = 'none';
+          const nameEl = document.getElementById('welcomeInstName');
+          if (nameEl) { nameEl.textContent = 'Welcome to ' + b.name; nameEl.style.display = 'block'; }
+        }
+      } catch (e) { /* ignore */ }
+    })();
+  </script>
 </body>
 </html>
