@@ -242,6 +242,11 @@ function setupAuthListeners() {
         // been issued (these can be async without affecting the gesture).
         Promise.resolve(promise).then(() => {
           chrome.storage.local.set({ uiMode: 'sidebar' });
+          // Ask background to rebind the action icon click -> side panel
+          // so the preference survives browser restarts.
+          try {
+            chrome.runtime.sendMessage({ action: 'setUiModePreference', mode: 'sidebar' });
+          } catch (e) { /* ok */ }
           setTimeout(() => window.close(), 80);
         }).catch((e) => {
           console.log('[SnapToAI] Open sidebar failed:', e && e.message);

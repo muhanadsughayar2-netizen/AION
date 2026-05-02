@@ -112,56 +112,61 @@
     }
   }
 
+  // Preview capture is delegated to the background service worker so
+  // snap captures and live-preview captures share one global cooldown
+  // (avoids MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND races). We still
+  // keep a local mutex + minimum gap so we don't spam the message
+  // channel uselessly.
+  function bgRequest(action, payload) {
+    return new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage(Object.assign({ action }, payload || {}), (resp) => {
+          if (chrome.runtime.lastError) {
+            resolve({ success: false, error: chrome.runtime.lastError.message });
+          } else {
+            resolve(resp || { success: false, error: 'No response' });
+          }
+        });
+      } catch (e) {
+        resolve({ success: false, error: (e && e.message) || String(e) });
+      }
+    });
+  }
+
   async function captureOnce() {
     if (previewPaused) return;
     if (document.visibilityState === 'hidden') return;
-    if (previewInFlight) return;                 // mutex: skip if another capture is already running
+    if (previewInFlight) return;                 // local mutex
     const sinceLast = Date.now() - lastPreviewCaptureAt;
-    if (sinceLast < PREVIEW_MIN_GAP_MS) return;  // hard rate-limit floor
+    if (sinceLast < PREVIEW_MIN_GAP_MS) return;  // local rate-limit floor
     previewInFlight = true;
-    let tab;
     try {
-      tab = await getActiveBrowserTab();
-    } catch (e) {
-      previewInFlight = false;
-      setPreviewBadge('paused');
-      setPreviewEmpty('Preview unavailable');
-      return;
-    }
-    if (!tab) {
-      previewInFlight = false;
-      setPreviewBadge('paused');
-      setPreviewEmpty('No active tab');
-      return;
-    }
-    lastPreviewTabId = tab.id;
-    if (isRestricted(tab.url)) {
-      previewInFlight = false;
-      setPreviewBadge('paused', 'OFF');
-      setPreviewEmpty("Preview unavailable on this page");
-      return;
-    }
-    try {
-      // JPEG @ low quality keeps payload tiny (~30-80 KB) so 0.5 fps
-      // is well under Chrome's MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND.
-      const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 45 });
-      if (dataUrl) {
-        showPreviewImage(dataUrl, tab);
+      const resp = await bgRequest('sidebarPreviewCapture');
+      if (resp.success && resp.dataUrl) {
+        showPreviewImage(resp.dataUrl, { title: resp.tabTitle, url: resp.tabUrl });
         setPreviewBadge('live', 'LIVE');
         lastPreviewError = null;
-      }
-    } catch (e) {
-      const msg = (e && e.message) || String(e);
-      lastPreviewError = msg;
-      // Common: "Cannot access contents of url" or rate limiting.
-      if (/MAX_CAPTURE/i.test(msg)) {
-        setPreviewBadge('paused', 'BUSY');
-      } else if (/Cannot access|chrome:\/\/|extension/i.test(msg)) {
+        if (resp.tabId) lastPreviewTabId = resp.tabId;
+      } else if (resp.skip) {
+        // Cooldown / in-flight from background — quietly try again next tick
+      } else if (resp.error === 'restricted') {
         setPreviewBadge('paused', 'OFF');
         setPreviewEmpty("Preview unavailable on this page");
-      } else {
+      } else if (resp.error === 'no_tab') {
         setPreviewBadge('paused');
-        setPreviewEmpty('Preview paused — switch tabs to retry');
+        setPreviewEmpty('No active tab');
+      } else {
+        const msg = String(resp.error || '');
+        lastPreviewError = msg;
+        if (/MAX_CAPTURE/i.test(msg)) {
+          setPreviewBadge('paused', 'BUSY');
+        } else if (/Cannot access|chrome:\/\/|extension/i.test(msg)) {
+          setPreviewBadge('paused', 'OFF');
+          setPreviewEmpty("Preview unavailable on this page");
+        } else {
+          setPreviewBadge('paused');
+          setPreviewEmpty('Preview paused — switch tabs to retry');
+        }
       }
     } finally {
       lastPreviewCaptureAt = Date.now();
@@ -415,28 +420,55 @@
     }
   }
   if (els.signIn) {
-    els.signIn.addEventListener('click', () => {
-      // Open the popup so the user can sign in there (Google OAuth lives in popup)
+    els.signIn.addEventListener('click', async () => {
+      els.signIn.disabled = true;
+      const original = els.signIn.textContent;
+      els.signIn.textContent = 'Signing in…';
       try {
-        chrome.runtime.sendMessage({ action: 'openPopupForSignIn' });
-      } catch (e) {}
-      toast('Click the SnapToAI extension icon to sign in', '', 4000);
+        const resp = await bgRequest('signInWithGoogle');
+        if (resp.success) {
+          toast('Signed in as ' + (resp.user && resp.user.email || 'your Google account'), 'success');
+          refreshAccount();
+        } else {
+          const err = resp.error || 'Sign-in failed';
+          if (/cancel/i.test(err)) {
+            toast('Sign-in cancelled', '', 2200);
+          } else {
+            toast('Sign-in failed: ' + err, 'error', 4000);
+          }
+        }
+      } finally {
+        els.signIn.disabled = false;
+        els.signIn.textContent = original;
+      }
     });
   }
   if (els.avatar) {
-    els.avatar.addEventListener('click', () => {
-      toast('Account: signed in', '', 1800);
+    els.avatar.addEventListener('click', async () => {
+      // Click avatar -> simple sign-out confirm
+      if (confirm('Sign out of SnapToAI?')) {
+        const resp = await bgRequest('signOutGoogle');
+        if (resp.success) {
+          toast('Signed out', 'success');
+          refreshAccount();
+        } else {
+          toast('Sign-out failed: ' + (resp.error || 'unknown'), 'error');
+        }
+      }
     });
   }
   if (els.openWindow) {
+    // Repurposed as "Switch to popup mode" — long-press / click toggles
+    // the persisted UI preference so the icon click goes back to the
+    // popup on next use (and across browser restarts).
+    els.openWindow.title = 'Switch back to popup mode';
+    els.openWindow.textContent = '↺';
     els.openWindow.addEventListener('click', async () => {
-      try {
-        await chrome.windows.create({
-          url: chrome.runtime.getURL('ai-chat.html?direct=true'),
-          type: 'popup', width: 1000, height: 700, focused: true
-        });
-      } catch (e) {
-        toast('Could not open window', 'error');
+      const resp = await bgRequest('setUiModePreference', { mode: 'popup' });
+      if (resp.success) {
+        toast('Switched back to popup mode — click the extension icon next time', 'success', 4200);
+      } else {
+        toast('Could not switch: ' + (resp.error || 'unknown'), 'error');
       }
     });
   }
@@ -447,8 +479,11 @@
     refreshAccount();
     startPreviewLoop();
 
-    // Mark uiMode so future popup opens know to suggest sidebar
-    try { chrome.storage.local.set({ uiMode: 'sidebar', sidebarLastOpened: Date.now() }); } catch (e) {}
+    // Persist that the user is now using sidebar mode AND ask the
+    // background to wire up the action click so future icon clicks
+    // open the side panel directly (across browser restarts).
+    bgRequest('setUiModePreference', { mode: 'sidebar' });
+    try { chrome.storage.local.set({ sidebarLastOpened: Date.now() }); } catch (e) {}
   }
 
   if (document.readyState === 'loading') {

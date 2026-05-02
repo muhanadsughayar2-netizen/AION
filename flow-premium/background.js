@@ -22,11 +22,103 @@ const DEFAULT_SETTINGS = {
   defaultFrameStyle: 'none'
 };
 
-// Track last capture time to prevent rate limiting
+// Track last capture time to prevent rate limiting (shared between
+// snap captures AND sidebar live-preview captures — see
+// `sidebarPreviewCapture` handler below)
 let lastCaptureTime = 0;
+const SIDEBAR_PREVIEW_MIN_GAP_MS = 700;
+let lastSidebarPreviewAt = 0;
+let sidebarPreviewInFlight = false;
+
+// ============================================
+// UI MODE PREFERENCE (popup vs sidebar)
+// ============================================
+// applyUiMode: switch the action click between opening the popup
+// (default) and opening the side panel. This is what makes the
+// user's choice persist across browser restarts.
+// Serialization guard: ensure only ONE applyUiMode is in flight at a
+// time. Concurrent callers (popup click + onStartup + sidebar init +
+// fullpage abort) all chain off the same promise, which prevents them
+// from racing and toggling popup/sidebar state inconsistently.
+let _applyUiModeChain = Promise.resolve();
+function applyUiMode(mode) {
+  const next = _applyUiModeChain.catch(() => {}).then(async () => {
+    try {
+      if (mode === 'sidebar' && chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+        await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+        // Disabling the popup makes the icon click trigger sidePanel.open
+        await chrome.action.setPopup({ popup: '' });
+        console.log('[SnapToAI] UI mode: sidebar (icon click -> side panel)');
+      } else {
+        if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+          await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
+        }
+        await chrome.action.setPopup({ popup: 'popup.html' });
+        console.log('[SnapToAI] UI mode: popup (icon click -> popup)');
+      }
+    } catch (e) {
+      console.log('[SnapToAI] applyUiMode failed:', e && e.message);
+    }
+  });
+  _applyUiModeChain = next;
+  return next;
+}
+function loadAndApplyUiMode() {
+  return chrome.storage.local.get(['uiMode'])
+    .then((res) => applyUiMode((res && res.uiMode) || 'popup'))
+    .catch(() => applyUiMode('popup'));
+}
 
 // Open welcome page on first install and initialize subscription
+// ============================================
+// GOOGLE SIGN-IN (callable from popup OR sidebar)
+// ============================================
+async function backgroundGoogleSignIn() {
+  const manifest = chrome.runtime.getManifest();
+  const clientId = manifest && manifest.oauth2 && manifest.oauth2.client_id;
+  if (!clientId) throw new Error('OAuth client_id missing in manifest');
+  const redirectUrl = chrome.identity.getRedirectURL();
+  const scopes = 'openid email profile';
+  const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
+    '?client_id=' + encodeURIComponent(clientId) +
+    '&response_type=token' +
+    '&redirect_uri=' + encodeURIComponent(redirectUrl) +
+    '&scope=' + encodeURIComponent(scopes);
+
+  const responseUrl = await new Promise((resolve, reject) => {
+    chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, (url) => {
+      if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message));
+      if (!url) return reject(new Error('No response from Google sign-in'));
+      resolve(url);
+    });
+  });
+  const tokenMatch = responseUrl.match(/access_token=([^&]+)/);
+  if (!tokenMatch) throw new Error('No access token in response');
+  const token = tokenMatch[1];
+
+  const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!resp.ok) throw new Error('Failed to get user info from Google');
+  const userInfo = await resp.json();
+  if (!userInfo.email) throw new Error('No email returned from Google account');
+
+  const userData = {
+    name: userInfo.name || '',
+    email: userInfo.email,
+    picture: userInfo.picture || '',
+    signedInAt: Date.now(),
+    accessToken: token,
+    tokenObtainedAt: Date.now()
+  };
+  await chrome.storage.local.set({ snaptoai_user: userData });
+  return userData;
+}
+
 chrome.runtime.onInstalled.addListener(async (details) => {
+  // Apply persisted UI mode preference on install/update so the icon
+  // click behaves consistently across browser restarts.
+  await loadAndApplyUiMode();
   if (details.reason === 'install') {
     chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') });
     
@@ -486,10 +578,11 @@ chrome.action.onClicked.addListener(async (tab) => {
   batchBuffer = [];
   batchMetadata = null;
   
-  // Re-enable popup
-  await chrome.action.setPopup({ popup: 'popup.html' });
+  // Re-apply the user's UI mode preference (popup OR sidebar) instead
+  // of hard-resetting to popup — preserves sidebar-mode users' choice.
+  await loadAndApplyUiMode();
   
-  console.log('[SnapToAI] Abort complete, popup re-enabled');
+  console.log('[SnapToAI] Abort complete, UI mode restored');
 });
 
 // Listen for messages from popup and content scripts
@@ -565,6 +658,79 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === 'startFullPageCapture') {
     // Start full page capture process
     startFullPageCapture().then(sendResponse);
+    return true;
+  } else if (request.action === 'sidebarPreviewCapture') {
+    // Throttled, mutex-guarded preview capture for the sidebar live preview.
+    // Centralizing here means snap captures and preview captures share one
+    // global cooldown so we never trip MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND.
+    (async () => {
+      try {
+        if (sidebarPreviewInFlight) {
+          sendResponse({ success: false, skip: true, reason: 'in_flight' });
+          return;
+        }
+        const now = Date.now();
+        const sinceLastPreview = now - lastSidebarPreviewAt;
+        const sinceLastSnap = now - lastCaptureTime;
+        if (sinceLastPreview < SIDEBAR_PREVIEW_MIN_GAP_MS || sinceLastSnap < CAPTURE_COOLDOWN) {
+          sendResponse({ success: false, skip: true, reason: 'cooldown' });
+          return;
+        }
+        sidebarPreviewInFlight = true;
+        const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+        if (!tab) { sidebarPreviewInFlight = false; sendResponse({ success: false, error: 'no_tab' }); return; }
+        if (!isCapturableUrl(tab.url)) {
+          sidebarPreviewInFlight = false;
+          sendResponse({ success: false, error: 'restricted', tabUrl: tab.url, tabTitle: tab.title });
+          return;
+        }
+        try {
+          const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 45 });
+          // Update BOTH timers so snap captures see the preview as recent
+          // activity too (bidirectional shared cooldown).
+          const t = Date.now();
+          lastSidebarPreviewAt = t;
+          lastCaptureTime = t;
+          sendResponse({ success: true, dataUrl, tabUrl: tab.url, tabTitle: tab.title, tabId: tab.id });
+        } catch (e) {
+          sendResponse({ success: false, error: (e && e.message) || String(e) });
+        } finally {
+          sidebarPreviewInFlight = false;
+        }
+      } catch (e) {
+        sidebarPreviewInFlight = false;
+        sendResponse({ success: false, error: (e && e.message) || String(e) });
+      }
+    })();
+    return true;
+  } else if (request.action === 'setUiModePreference') {
+    (async () => {
+      const mode = request.mode === 'sidebar' ? 'sidebar' : 'popup';
+      await chrome.storage.local.set({ uiMode: mode });
+      await applyUiMode(mode);
+      sendResponse({ success: true, mode });
+    })();
+    return true;
+  } else if (request.action === 'signInWithGoogle') {
+    (async () => {
+      try {
+        const result = await backgroundGoogleSignIn();
+        sendResponse({ success: true, user: result });
+      } catch (e) {
+        sendResponse({ success: false, error: (e && e.message) || String(e) });
+      }
+    })();
+    return true;
+  } else if (request.action === 'signOutGoogle') {
+    (async () => {
+      try {
+        await chrome.storage.local.remove('snaptoai_user');
+        try { await chrome.identity.clearAllCachedAuthTokens(); } catch (_) {}
+        sendResponse({ success: true });
+      } catch (e) {
+        sendResponse({ success: false, error: (e && e.message) || String(e) });
+      }
+    })();
     return true;
   } else if (request.action === 'agentExecute') {
     // Relay agent automation command to the target tab
@@ -751,19 +917,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     finalizeFullPageCapture(request.screenshots, request.viewportWidth, request.viewportHeight, request.isAIPlatform, request.pageUrl, request.pageTitle).then(sendResponse);
     return true;
   } else if (request.action === 'fullPageStitchComplete' || request.action === 'fullPageStitchFailed') {
-    // Full page capture cycle complete (success or failure) - reset the flag
+    // Full page capture cycle complete (success or failure) - reset the flag.
+    // We MUST await loadAndApplyUiMode before sendResponse so the MV3 service
+    // worker stays alive long enough for the popup/sidebar toggle to apply.
     isFullPageCaptureInProgress = false;
     fullPageCapturePort = null;
-    chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
-    console.log('[SnapToAI] Full page capture completed, flag reset');
-    sendResponse({ success: true });
+    loadAndApplyUiMode().finally(() => {
+      console.log('[SnapToAI] Full page capture completed, flag reset, UI mode restored');
+      sendResponse({ success: true });
+    });
     return true;
   } else if (request.action === 'fullPageCaptureAborted') {
     // Timeout/abort from popup - reset capture state and notify content script
     isFullPageCaptureInProgress = false;
     fullPageCapturePort = null;
-    chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
-    console.log('[SnapToAI] Full page capture aborted (timeout or user cancel)');
     
     // SET ABORT FLAG IN STORAGE (reliable even if message fails)
     chrome.storage.session.set({ abortFullPageCapture: Date.now() }).catch(() => {});
@@ -777,7 +944,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     }).catch(() => {});
     
-    sendResponse({ success: true });
+    // Awaited so the worker doesn't go idle before mode is restored
+    loadAndApplyUiMode().finally(() => {
+      console.log('[SnapToAI] Full page capture aborted, UI mode restored');
+      sendResponse({ success: true });
+    });
     return true;
   } else if (request.action === 'getSettings') {
     // Get current settings
@@ -809,7 +980,10 @@ chrome.runtime.onConnect.addListener((port) => {
         console.log('[SnapToAI] Popup disconnected during full page capture - resetting flag');
         isFullPageCaptureInProgress = false;
         fullPageCapturePort = null;
-        chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
+        // Returning the promise into the chain keeps the serialization
+        // guard happy; we can't await here (event listener is sync) but
+        // the chain in applyUiMode will still serialize subsequent calls.
+        loadAndApplyUiMode().catch(() => {});
       }
     });
   }
@@ -819,13 +993,19 @@ chrome.runtime.onConnect.addListener((port) => {
 // Optional targetTabId parameter for agent automation
 async function captureScreenshot(targetTabId = null) {
   try {
-    // Check cooldown to prevent Chrome rate limit
+    // BIDIRECTIONAL COOLDOWN: snap captures and sidebar live-preview
+    // captures share Chrome's underlying captureVisibleTab rate limit,
+    // so we gate snap on BOTH lastCaptureTime (snap-to-snap) AND
+    // lastSidebarPreviewAt (preview-to-snap). Timers update only AFTER
+    // a successful captureVisibleTab so failed snaps don't impose a
+    // false cooldown on the next attempt.
     const now = Date.now();
     const timeSinceLastCapture = now - lastCaptureTime;
-    
-    if (timeSinceLastCapture < CAPTURE_COOLDOWN) {
-      const remainingTime = Math.ceil((CAPTURE_COOLDOWN - timeSinceLastCapture) / 1000);
-      console.log(`Capture on cooldown. Wait ${remainingTime}s`);
+    const timeSinceLastPreview = now - lastSidebarPreviewAt;
+    const gap = Math.min(timeSinceLastCapture, timeSinceLastPreview);
+    if (gap < CAPTURE_COOLDOWN) {
+      const remainingTime = Math.max(1, Math.ceil((CAPTURE_COOLDOWN - gap) / 1000));
+      console.log(`Capture on cooldown (gap=${gap}ms). Wait ${remainingTime}s`);
       return { 
         success: false, 
         error: `Please wait ${remainingTime} second${remainingTime > 1 ? 's' : ''} before capturing again` 
@@ -840,9 +1020,6 @@ async function captureScreenshot(targetTabId = null) {
       const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
       tab = activeTab;
     }
-    
-    // Update last capture time
-    lastCaptureTime = now;
     
     // Re-inject content script to handle iframe-heavy sites like Grok
     // This ensures the content script is fresh and ready for toast display
@@ -861,6 +1038,12 @@ async function captureScreenshot(targetTabId = null) {
     
     // Capture visible tab as PNG
     const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    
+    // Update BOTH cooldown timers AFTER successful capture so the
+    // sidebar live-preview won't race with this snap on the next tick.
+    const captureCompletedAt = Date.now();
+    lastCaptureTime = captureCompletedAt;
+    lastSidebarPreviewAt = captureCompletedAt;
     
     // Get current snaps
     const snaps = await getSnaps();
@@ -1149,6 +1332,7 @@ async function updateBadge(count) {
 chrome.runtime.onStartup.addListener(async () => {
   const count = await getSnapCount();
   await updateBadge(count);
+  await loadAndApplyUiMode();
 });
 
 // Update badge when extension icon is clicked
@@ -1275,7 +1459,7 @@ async function startFullPageCapture(targetTabId = null) {
     } catch (msgError) {
       console.log('[SnapToAI] Cannot access this page');
       isFullPageCaptureInProgress = false;
-      chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
+      await loadAndApplyUiMode(); // Awaited: ensure UI mode restored before returning
       return { 
         success: false, 
         error: 'Cannot capture this page. Works on regular websites only.',
@@ -1287,7 +1471,7 @@ async function startFullPageCapture(targetTabId = null) {
   } catch (error) {
     console.log('[SnapToAI] Capture not available:', error.message);
     isFullPageCaptureInProgress = false; // Reset on error
-    chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
+    await loadAndApplyUiMode(); // Awaited: ensure UI mode restored before returning
     return { 
       success: false, 
       error: 'Cannot capture this page. Works on regular websites only.',
@@ -1328,7 +1512,7 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
   try {
     if (!screenshots || screenshots.length === 0) {
       isFullPageCaptureInProgress = false;
-      chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
+      await loadAndApplyUiMode();
       return { success: false, error: 'No screenshots to stitch' };
     }
     
@@ -1338,7 +1522,7 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
     // Block if queue is full
     if (snaps.length >= MAX_SNAPS) {
       isFullPageCaptureInProgress = false;
-      chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
+      await loadAndApplyUiMode();
       return { 
         success: false, 
         error: `Queue full (${MAX_SNAPS}/${MAX_SNAPS}). Delete some images first.` 
@@ -1410,14 +1594,14 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
       } catch (autoSaveError) {
         console.log('[SnapToAI] AutoSave error:', autoSaveError.message);
         isFullPageCaptureInProgress = false;
-        chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
+        await loadAndApplyUiMode();
         return { success: false, error: autoSaveError.message };
       }
     }
   } catch (error) {
     console.log('[SnapToAI] Finalize:', error.message || error);
     isFullPageCaptureInProgress = false;
-    chrome.action.setPopup({ popup: 'popup.html' }); // Re-enable popup
+    await loadAndApplyUiMode();
     return { success: false, error: error.message };
   }
 }
@@ -1425,8 +1609,8 @@ async function finalizeFullPageCapture(screenshots, viewportWidth, viewportHeigh
 // Reset full page capture state (called when stitch completes or fails)
 async function resetFullPageCaptureState() {
   isFullPageCaptureInProgress = false;
-  // Re-enable popup so normal clicks work again
-  await chrome.action.setPopup({ popup: 'popup.html' });
+  // Re-apply user UI mode preference instead of hard-resetting to popup
+  await loadAndApplyUiMode();
 }
 
 // ============================================
