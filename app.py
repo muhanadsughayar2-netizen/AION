@@ -3076,7 +3076,17 @@ def api_admin_inst_create():
         return _cors(jsonify({'success': False, 'error': 'Name is required'})), 400
     slug = _slugify(data.get('slug') or name)
     primary_admin_email = _norm_email(data.get('primaryAdminEmail', ''))
-    seat_limit = int(data.get('seatLimit') or 50)
+    # seatLimit: None (NULL) or 0 means UNLIMITED — enforcement sites use
+    # `if seat_limit and ...` which already treats both as unlimited.
+    raw_seats = data.get('seatLimit', 50)
+    if raw_seats in (None, '', 0, '0', 'unlimited'):
+        seat_limit = None
+    else:
+        try:
+            sl = int(raw_seats)
+            seat_limit = None if sl <= 0 else sl
+        except (TypeError, ValueError):
+            seat_limit = 50
     brand_color = str(data.get('brandColor') or '#00d9ff')[:20]
     if not re.match(r'^#[0-9a-fA-F]{3,8}$', brand_color):
         return _cors(jsonify({'success': False, 'error': 'brandColor must be a hex color like #00d9ff'})), 400
@@ -3163,7 +3173,15 @@ def api_admin_inst_update(inst_id):
     if 'primaryAdminEmail' in data:
         fields.append('primary_admin_email=%s'); values.append(_norm_email(data['primaryAdminEmail']) or None)
     if 'seatLimit' in data:
-        fields.append('seat_limit=%s'); values.append(int(data['seatLimit'] or 50))
+        raw_seats = data['seatLimit']
+        if raw_seats in (None, '', 0, '0', 'unlimited'):
+            fields.append('seat_limit=%s'); values.append(None)
+        else:
+            try:
+                sl = int(raw_seats)
+                fields.append('seat_limit=%s'); values.append(None if sl <= 0 else sl)
+            except (TypeError, ValueError):
+                fields.append('seat_limit=%s'); values.append(50)
     if 'allowedDomains' in data:
         fields.append('allowed_domains=%s'); values.append(str(data['allowedDomains'] or '')[:500] or None)
     if 'notes' in data:
@@ -3231,6 +3249,92 @@ def api_admin_inst_delete(inst_id):
         return _cors(jsonify({'success': True}))
     except Exception as e:
         print(f'❌ inst delete: {e}')
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+@app.route('/api/admin/institutions', methods=['GET', 'POST', 'OPTIONS'])
+def api_admin_institutions_root():
+    """Canonical super-admin endpoint:
+       GET   → list institutions   (alias of /list)
+       POST  → create institution  (alias of /create)
+    """
+    if request.method == 'OPTIONS':
+        return _options('GET, POST, OPTIONS')
+    if request.method == 'GET':
+        return api_admin_inst_list()
+    return api_admin_inst_create()
+
+@app.route('/api/admin/institutions/<int:inst_id>', methods=['PATCH', 'OPTIONS'])
+def api_admin_inst_patch(inst_id):
+    """Canonical super-admin update endpoint (alias of POST /<id>/update)."""
+    if request.method == 'OPTIONS':
+        return _options('PATCH, DELETE, OPTIONS')
+    return api_admin_inst_update(inst_id)
+
+@app.route('/api/admin/institutions/<int:inst_id>/suspend', methods=['POST', 'OPTIONS'])
+def api_admin_inst_suspend(inst_id):
+    """Canonical super-admin suspend endpoint — flips status='suspended' and
+    revokes all member institution-plan subscriptions in one call."""
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    if not _require_super_admin():
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("UPDATE institutions SET status='suspended', updated_at=NOW() WHERE id=%s", (inst_id,))
+        cur.execute("""
+            UPDATE subscriptions SET status='inactive', updated_at=NOW()
+            WHERE plan_type='institution' AND LOWER(email) IN (
+                SELECT LOWER(email) FROM institution_members WHERE institution_id=%s
+            )
+        """, (inst_id,))
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True}))
+    except Exception as e:
+        print(f'❌ inst suspend: {e}')
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+@app.route('/api/admin/institutions/<int:inst_id>/members', methods=['GET', 'OPTIONS'])
+def api_admin_inst_members(inst_id):
+    """Super-admin visibility into a specific institution's member roster."""
+    if request.method == 'OPTIONS':
+        return _options('GET, OPTIONS')
+    if not _require_super_admin():
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("SELECT slug, name FROM institutions WHERE id=%s", (inst_id,))
+        ir = cur.fetchone()
+        if not ir:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Institution not found'})), 404
+        cur.execute("""
+            SELECT email, role, status, invited_by, joined_at, last_seen
+            FROM institution_members
+            WHERE institution_id=%s
+            ORDER BY joined_at DESC
+        """, (inst_id,))
+        members = [{
+            'email': r[0],
+            'role': r[1],
+            'status': r[2],
+            'invitedBy': r[3],
+            'joinedAt': r[4].isoformat() if r[4] else None,
+            'lastSeen': r[5].isoformat() if r[5] else None,
+        } for r in cur.fetchall()]
+        cur.close(); conn.close()
+        return _cors(jsonify({
+            'success': True,
+            'institution': {'id': inst_id, 'slug': ir[0], 'name': ir[1]},
+            'members': members,
+            'total': len(members),
+        }))
+    except Exception as e:
+        print(f'❌ inst members (super-admin): {e}')
         return _cors(jsonify({'success': False, 'error': str(e)})), 500
 
 @app.route('/api/admin/institutions/<int:inst_id>/logo', methods=['POST', 'OPTIONS'])
@@ -4254,8 +4358,9 @@ window.addEventListener('load', () => {{
 
 @app.route('/api/institution/join', methods=['POST', 'OPTIONS'])
 def api_institution_join():
-    """Public invite-link redemption. Accepts EITHER a Google idToken (preferred,
-    real-identity flow) OR a plain email (legacy fallback for tests)."""
+    """Public invite-link redemption. REQUIRES a verified Google idToken so an
+    attacker cannot burn seats for arbitrary emails (the email is taken from
+    the token, never from the request body)."""
     if request.method == 'OPTIONS':
         return _options('POST, OPTIONS')
     if not ensure_db():
@@ -4263,16 +4368,14 @@ def api_institution_join():
     data = request.get_json(silent=True) or {}
     code = str(data.get('code', '')).strip()[:64]
     id_token = (data.get('idToken') or data.get('credential') or '').strip()
-    email = ''
-    if id_token:
-        verified = verify_google_token(id_token)
-        if not verified:
-            return _cors(jsonify({'success': False, 'error': 'Invalid Google token'})), 401
-        email = _norm_email(verified)
-    else:
-        email = _norm_email(data.get('email', ''))
+    if not id_token:
+        return _cors(jsonify({'success': False, 'error': 'Google sign-in required'})), 401
+    verified = verify_google_token(id_token)
+    if not verified:
+        return _cors(jsonify({'success': False, 'error': 'Invalid Google token'})), 401
+    email = _norm_email(verified)
     if not code or not email or '@' not in email:
-        return _cors(jsonify({'success': False, 'error': 'code and valid email required'})), 400
+        return _cors(jsonify({'success': False, 'error': 'code and valid identity required'})), 400
     try:
         conn = get_db(); cur = conn.cursor()
         cur.execute("""
