@@ -15,9 +15,10 @@
       var v = localStorage.getItem(CACHE_KEY);
       if (v && VALID[v]) return v;
     } catch (e) {}
-    // Default for first paint: 'dark' so existing users see no flash.
-    // The async reconcile below promotes to 'auto' for true fresh installs.
-    return 'dark';
+    // No cache yet (fresh install or first time on this surface).
+    // Treat as 'auto' so the FIRST paint already honors the user's OS
+    // preference instead of always flashing dark on light systems.
+    return 'auto';
   }
 
   function resolveTheme(theme) {

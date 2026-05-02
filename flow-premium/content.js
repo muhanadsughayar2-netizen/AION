@@ -13,6 +13,113 @@
   window.__snaptoai_loaded = true;
   window.__snaptoai_healthy = true; // Will be set to false on critical errors
 
+  // === THEME (v2.6.0) ===
+  // Mirrors the extension's Light/Dark/Auto preference for any UI we
+  // inject onto the host page (toasts, full-page capture overlay, etc.).
+  // Cached locally; updated live via chrome.storage.onChanged so already-
+  // injected UI re-skins instantly when the user flips themes elsewhere.
+  let __snapThemePref = 'dark';
+  function __snapResolveTheme(pref) {
+    if (pref === 'auto') {
+      try { return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; }
+      catch (e) { return 'dark'; }
+    }
+    return pref === 'light' ? 'light' : 'dark';
+  }
+  function __snapPalette() {
+    const resolved = __snapResolveTheme(__snapThemePref);
+    if (resolved === 'light') {
+      return {
+        toastSuccessBg: 'rgba(8, 145, 178, 0.96)',  // accent
+        toastErrorBg:   'rgba(220, 38, 38, 0.96)',
+        toastText:      '#ffffff',
+        toastShadow:    '0 4px 20px rgba(8, 145, 178, 0.35)',
+        overlayBg:      'rgba(255, 255, 255, 0.96)',
+        overlayBorder:  'rgba(8, 145, 178, 0.45)',
+        overlayShadow:  '0 4px 20px rgba(15, 23, 42, 0.18)',
+        overlayText:    '#0f172a',
+        overlayAccent:  '#0891b2',
+        spinnerTrack:   'rgba(8, 145, 178, 0.25)',
+        spinnerHead:    'rgba(8, 145, 178, 0.95)',
+        successCheck:   '#16a34a'
+      };
+    }
+    // Dark (byte-equivalent to v2.5.0 toast/overlay colors)
+    return {
+      toastSuccessBg: 'rgba(0, 217, 255, 0.95)',
+      toastErrorBg:   'rgba(255, 59, 48, 0.95)',
+      toastText:      '#000',
+      toastShadow:    '0 4px 20px rgba(0, 217, 255, 0.4)',
+      overlayBg:      'rgba(0, 0, 0, 0.85)',
+      overlayBorder:  'rgba(0, 217, 255, 0.5)',
+      overlayShadow:  '0 4px 20px rgba(0, 0, 0, 0.5)',
+      overlayText:    '#ffffff',
+      overlayAccent:  '#00d9ff',
+      spinnerTrack:   'rgba(0, 217, 255, 0.3)',
+      spinnerHead:    'rgba(0, 217, 255, 0.9)',
+      successCheck:   '#4ade80'
+    };
+  }
+  function __snapApplyThemeToLiveUi() {
+    const p = __snapPalette();
+    // Re-skin any active toast
+    const t = document.getElementById('flow-toast');
+    if (t) {
+      const isError = t.dataset.flowToastType === 'error';
+      t.style.backgroundColor = isError ? p.toastErrorBg : p.toastSuccessBg;
+      t.style.color = p.toastText;
+      t.style.boxShadow = p.toastShadow;
+    }
+    // Re-skin active full-page overlay
+    const ov = document.getElementById('snaptoai-fullpage-overlay');
+    if (ov) {
+      const card = ov.firstElementChild;
+      if (card && card.style) {
+        card.style.background = p.overlayBg;
+        card.style.borderColor = p.overlayBorder;
+        card.style.boxShadow = p.overlayShadow;
+        card.style.color = p.overlayText;
+      }
+      const spinner = ov.querySelector('.snaptoai-overlay-spinner');
+      if (spinner && spinner.style) {
+        spinner.style.borderColor = p.spinnerTrack;
+        spinner.style.borderTopColor = p.spinnerHead;
+      }
+      const txt = document.getElementById('snaptoai-progress-text');
+      if (txt) txt.style.color = p.overlayAccent;
+    }
+  }
+  // Initial read + live updates
+  try {
+    if (chrome && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get(['snaptoaiSettings'], (res) => {
+        const s = res && res.snaptoaiSettings;
+        if (s && (s.theme === 'light' || s.theme === 'dark' || s.theme === 'auto')) {
+          __snapThemePref = s.theme;
+        } else if (!s) {
+          __snapThemePref = 'auto';
+        }
+        __snapApplyThemeToLiveUi();
+      });
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area !== 'local' || !changes.snaptoaiSettings) return;
+        const nv = changes.snaptoaiSettings.newValue;
+        const t = nv && nv.theme;
+        if (t === 'light' || t === 'dark' || t === 'auto') {
+          __snapThemePref = t;
+          __snapApplyThemeToLiveUi();
+        }
+      });
+    }
+  } catch (e) {}
+  // OS pref change (auto mode)
+  try {
+    const __snapMql = window.matchMedia('(prefers-color-scheme: light)');
+    const __snapOnPref = () => { if (__snapThemePref === 'auto') __snapApplyThemeToLiveUi(); };
+    if (__snapMql.addEventListener) __snapMql.addEventListener('change', __snapOnPref);
+    else if (__snapMql.addListener) __snapMql.addListener(__snapOnPref);
+  } catch (e) {}
+
   // Track last mouse position for toast placement
   let lastMouseX = window.innerWidth - 20;
   let lastMouseY = 20;
@@ -454,20 +561,22 @@
     const toast = document.createElement('div');
     toast.id = 'flow-toast';
     toast.textContent = message;
-    
+    toast.dataset.flowToastType = type === 'success' ? 'success' : 'error';
+    const __pal = __snapPalette();
+
     Object.assign(toast.style, {
       position: 'fixed',
       left: '50%',
       top: '20px',
       transform: 'translateX(-50%)',
-      backgroundColor: type === 'success' ? 'rgba(0, 217, 255, 0.95)' : 'rgba(255, 59, 48, 0.95)',
-      color: '#000',
+      backgroundColor: type === 'success' ? __pal.toastSuccessBg : __pal.toastErrorBg,
+      color: __pal.toastText,
       padding: '12px 24px',
       borderRadius: '8px',
       fontSize: '14px',
       fontWeight: '600',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      boxShadow: '0 4px 20px rgba(0, 217, 255, 0.4)',
+      boxShadow: __pal.toastShadow,
       zIndex: '2147483647',
       animation: 'flow-toast-fade-in 0.3s ease-out',
       backdropFilter: 'blur(10px)',
@@ -840,34 +949,35 @@
     
     const overlay = document.createElement('div');
     overlay.id = 'snaptoai-fullpage-overlay';
+    const __op = __snapPalette();
     overlay.innerHTML = `
       <div style="
         position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: rgba(0, 0, 0, 0.85);
-        border: 1px solid rgba(0, 217, 255, 0.5);
+        background: ${__op.overlayBg};
+        border: 1px solid ${__op.overlayBorder};
         border-radius: 12px;
         padding: 20px 30px;
         z-index: 2147483647;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        color: white;
+        color: ${__op.overlayText};
         backdrop-filter: blur(10px);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        box-shadow: ${__op.overlayShadow};
         text-align: center;
       ">
         <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-          <div style="
+          <div class="snaptoai-overlay-spinner" style="
             width: 22px;
             height: 22px;
-            border: 2px solid rgba(0, 217, 255, 0.3);
-            border-top-color: rgba(0, 217, 255, 0.9);
+            border: 2px solid ${__op.spinnerTrack};
+            border-top-color: ${__op.spinnerHead};
             border-radius: 50%;
             animation: snaptoai-spin 0.8s linear infinite;
           "></div>
           <div>
-            <div id="snaptoai-progress-text" style="font-size: 13px; color: #00d9ff;">Scrolling page... 0%</div>
+            <div id="snaptoai-progress-text" style="font-size: 13px; color: ${__op.overlayAccent};">Scrolling page... 0%</div>
           </div>
         </div>
       </div>
@@ -896,7 +1006,7 @@
     if (progressText) {
       // === TOUCH #7: PREMIUM PROGRESS TEXT ===
       if (percent >= 100) {
-        progressText.innerHTML = `<span style="color: #4ade80;">✓</span> Capture complete!`;
+        progressText.innerHTML = `<span style="color: ${__snapPalette().successCheck};">✓</span> Capture complete!`;
       } else if (current !== null && total !== null) {
         progressText.textContent = `Capturing magic… ${current} of ${total}`;
       } else {
