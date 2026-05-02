@@ -183,10 +183,13 @@ def init_db():
                 status VARCHAR(20) DEFAULT 'active',
                 allowed_domains TEXT,
                 notes TEXT,
+                branding_locked BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
             )
         ''')
+        # Backfill for installs predating branding_locked.
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS branding_locked BOOLEAN DEFAULT FALSE")
         cur.execute('''
             CREATE TABLE IF NOT EXISTS institution_members (
                 id SERIAL PRIMARY KEY,
@@ -527,10 +530,17 @@ def _get_institution_branding_for_email(cur, email):
 def _institution_by_slug(cur, slug):
     cur.execute("""
         SELECT id, slug, name, logo_url, brand_color, primary_admin_email, seat_limit,
-               expires_at, status, allowed_domains, notes, created_at
+               expires_at, status, allowed_domains, notes, created_at, branding_locked
         FROM institutions WHERE slug=%s
     """, (slug,))
     return cur.fetchone()
+
+def _is_branding_locked(cur, slug):
+    """True iff super-admin has locked this institution's branding (so the
+    institution-admin cannot self-edit color/logo)."""
+    cur.execute("SELECT COALESCE(branding_locked, FALSE) FROM institutions WHERE slug=%s", (slug,))
+    r = cur.fetchone()
+    return bool(r and r[0])
 
 def _is_inst_admin(cur, slug, email):
     """True iff email is the primary admin OR a member with role='admin' for this slug."""
@@ -2269,26 +2279,58 @@ def subscription_status():
             former_branding = None
 
         if former_branding:
+            # Before declaring institution_expired, check for an active PERSONAL
+            # paid subscription (Whop monthly/yearly). If they have one, the
+            # personal sub takes precedence and we should NOT mask it with the
+            # institution_expired state.
+            has_personal_active = False
             try:
                 cur.execute("""
-                    UPDATE subscriptions
-                    SET status='expired', plan_type='institution_expired', updated_at=NOW()
-                    WHERE email=%s AND plan_type IN ('institution','institution_expired')
+                    SELECT plan_type, status, subscription_end
+                    FROM subscriptions WHERE email=%s
                 """, (email,))
-                cur.execute("UPDATE users SET institution_id=NULL WHERE LOWER(email)=%s", (email,))
-                conn.commit()
-            except Exception as cleanup_err:
-                print(f'⚠️ institution cleanup error: {cleanup_err}')
-            cur.close(); conn.close()
-            result = {
-                'success': True, 'canUseAI': False, 'status': 'institution_expired',
-                'planType': None, 'daysRemaining': 0,
-                'institutionName': former_branding.get('name'),
-                'branding': former_branding,
-            }
-            response = jsonify(result)
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            return response
+                _sr = cur.fetchone()
+                if _sr:
+                    _pt, _st, _sub_end = _sr
+                    if _pt in ('monthly', 'yearly') and _st == 'active':
+                        has_personal_active = True
+                    elif _pt in ('monthly', 'yearly') and _st == 'canceled' and _sub_end and _sub_end > datetime.utcnow():
+                        has_personal_active = True
+            except Exception:
+                pass
+            # Also defer to a live Whop check (catches users whose local row was
+            # stomped to plan_type='institution' but who still have an active
+            # personal Whop subscription).
+            if not has_personal_active:
+                try:
+                    if _check_whop_api_for_email(email):
+                        has_personal_active = True
+                except Exception:
+                    pass
+
+            if not has_personal_active:
+                try:
+                    cur.execute("""
+                        UPDATE subscriptions
+                        SET status='expired', plan_type='institution_expired', updated_at=NOW()
+                        WHERE email=%s AND plan_type IN ('institution','institution_expired')
+                    """, (email,))
+                    cur.execute("UPDATE users SET institution_id=NULL WHERE LOWER(email)=%s", (email,))
+                    conn.commit()
+                except Exception as cleanup_err:
+                    print(f'⚠️ institution cleanup error: {cleanup_err}')
+                cur.close(); conn.close()
+                result = {
+                    'success': True, 'canUseAI': False, 'status': 'institution_expired',
+                    'planType': None, 'daysRemaining': 0,
+                    'institutionName': former_branding.get('name'),
+                    'branding': former_branding,
+                }
+                response = jsonify(result)
+                response.headers['Access-Control-Allow-Origin'] = '*'
+                return response
+            # Personal sub is active — fall through to the normal subscription
+            # path below, which will return 'subscribed' for monthly/yearly.
 
         cur.execute('SELECT plan_type, status, trial_start, trial_end, subscription_end FROM subscriptions WHERE email = %s', (email,))
         sub_row = cur.fetchone()
@@ -3036,7 +3078,8 @@ def ai_proxy():
 
 def _institution_to_dict(cur, row):
     """row from _institution_by_slug or list query (id, slug, name, logo_url, brand_color,
-       primary_admin_email, seat_limit, expires_at, status, allowed_domains, notes, created_at)."""
+       primary_admin_email, seat_limit, expires_at, status, allowed_domains, notes,
+       created_at, branding_locked)."""
     inst_id = row[0]
     slug = row[1]
     seats_used = _seats_used(cur, inst_id)
@@ -3055,6 +3098,7 @@ def _institution_to_dict(cur, row):
         'allowedDomains': row[9],
         'notes': row[10],
         'createdAt': row[11].isoformat() if row[11] else None,
+        'brandingLocked': bool(row[12]) if len(row) > 12 else False,
         'adminToken': admin_token
     }
 
@@ -3141,7 +3185,7 @@ def api_admin_inst_list():
         conn = get_db(); cur = conn.cursor()
         cur.execute("""
             SELECT id, slug, name, logo_url, brand_color, primary_admin_email, seat_limit,
-                   expires_at, status, allowed_domains, notes, created_at
+                   expires_at, status, allowed_domains, notes, created_at, branding_locked
             FROM institutions ORDER BY created_at DESC
         """)
         rows = cur.fetchall()
@@ -3188,6 +3232,8 @@ def api_admin_inst_update(inst_id):
         fields.append('notes=%s'); values.append(str(data['notes'] or '')[:1000] or None)
     if 'status' in data and data['status'] in ('active', 'suspended', 'expired'):
         fields.append('status=%s'); values.append(data['status'])
+    if 'brandingLocked' in data:
+        fields.append('branding_locked=%s'); values.append(bool(data['brandingLocked']))
     if 'expiresAt' in data:
         v = (data.get('expiresAt') or '').strip()
         try:
@@ -3638,19 +3684,19 @@ window.addEventListener('load', () => {{
   </div>
 
   <div class="section">
-    <h2>🎨 Branding</h2>
+    <h2>🎨 Branding{(' <span style="font-size: 11px; color: #ffa500; margin-left: 8px;">🔒 Locked by SnapToAI — contact support to change</span>') if info.get('brandingLocked') else ''}</h2>
     <div class="row" style="align-items: flex-start;">
       <div class="grow">
         <label style="font-size: 12px; color: #888; display: block; margin-bottom: 4px;">Brand color (hex):</label>
-        <input id="brand-color-input" type="text" value="{html_escape_module.escape(brand_color)}" style="width: 140px;">
+        <input id="brand-color-input" type="text" value="{html_escape_module.escape(brand_color)}" style="width: 140px;" {'disabled' if info.get('brandingLocked') else ''}>
         <span style="display: inline-block; width: 24px; height: 24px; border-radius: 4px; vertical-align: middle; margin-left: 8px; background: {brand_color}; border: 1px solid #333;"></span>
-        <button onclick="saveColor()" style="margin-left: 12px;">Save Color</button>
+        <button onclick="saveColor()" style="margin-left: 12px;" {'disabled' if info.get('brandingLocked') else ''}>Save Color</button>
         <span id="color-msg" style="color: #00ff88; font-size: 12px; margin-left: 8px;"></span>
       </div>
       <div style="min-width: 240px;">
         <label style="font-size: 12px; color: #888; display: block; margin-bottom: 4px;">Logo (PNG/JPG/SVG/WebP, max 2MB):</label>
-        <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" style="font-size: 12px;">
-        <button onclick="uploadLogo()" style="margin-top: 6px;">Upload Logo</button>
+        <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" style="font-size: 12px;" {'disabled' if info.get('brandingLocked') else ''}>
+        <button onclick="uploadLogo()" style="margin-top: 6px;" {'disabled' if info.get('brandingLocked') else ''}>Upload Logo</button>
         <span id="logo-msg" style="color: #00ff88; font-size: 12px; margin-left: 8px;"></span>
       </div>
     </div>
@@ -4037,6 +4083,9 @@ def api_inst_set_branding(slug):
         return _cors(jsonify({'success': False, 'error': 'brandColor must be a hex color like #00d9ff'})), 400
     try:
         conn = get_db(); cur = conn.cursor()
+        if _is_branding_locked(cur, slug):
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Branding is locked by your account manager. Contact SnapToAI support.'})), 403
         if color:
             cur.execute("UPDATE institutions SET brand_color=%s, updated_at=NOW() WHERE slug=%s", (color, slug))
         conn.commit()
@@ -4049,7 +4098,8 @@ def api_inst_set_branding(slug):
 @app.route('/api/institution/<slug>/branding/logo', methods=['POST', 'OPTIONS'])
 def api_inst_upload_logo(slug):
     """Institution-admin endpoint to upload a logo (delegates to the same
-    validation used by the super-admin logo endpoint)."""
+    validation used by the super-admin logo endpoint). Blocked when the
+    super-admin has set branding_locked=TRUE for this institution."""
     if request.method == 'OPTIONS':
         return _options('POST, OPTIONS')
     ok, _ = _verify_inst_admin(slug)
@@ -4057,6 +4107,14 @@ def api_inst_upload_logo(slug):
         return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
     if not ensure_db():
         return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    try:
+        _conn_lock = get_db(); _cur_lock = _conn_lock.cursor()
+        locked = _is_branding_locked(_cur_lock, slug)
+        _cur_lock.close(); _conn_lock.close()
+        if locked:
+            return _cors(jsonify({'success': False, 'error': 'Branding is locked by your account manager. Contact SnapToAI support.'})), 403
+    except Exception:
+        pass
     f = request.files.get('logo')
     if not f or not f.filename:
         return _cors(jsonify({'success': False, 'error': 'No file uploaded (field name: logo)'})), 400
