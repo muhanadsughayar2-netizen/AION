@@ -226,6 +226,34 @@ function setupAuthListeners() {
     });
   }
 
+  const openSidebarBtn = document.getElementById('openSidebarBtn');
+  if (openSidebarBtn) {
+    openSidebarBtn.addEventListener('click', () => {
+      // CRITICAL: chrome.sidePanel.open() requires a live user activation,
+      // so we must call it synchronously inside the click handler with NO
+      // awaited APIs in front of it (otherwise the user gesture is lost).
+      if (!chrome.sidePanel || !chrome.sidePanel.open) {
+        setStatus && setStatus('Side panel needs Chrome 114+ — try updating your browser', 'error');
+        return;
+      }
+      try {
+        const promise = chrome.sidePanel.open({ windowId: chrome.windows.WINDOW_ID_CURRENT });
+        // Persist the choice and close the popup AFTER the open call has
+        // been issued (these can be async without affecting the gesture).
+        Promise.resolve(promise).then(() => {
+          chrome.storage.local.set({ uiMode: 'sidebar' });
+          setTimeout(() => window.close(), 80);
+        }).catch((e) => {
+          console.log('[SnapToAI] Open sidebar failed:', e && e.message);
+          setStatus && setStatus('Could not open sidebar — try clicking the extension icon again', 'error');
+        });
+      } catch (e) {
+        console.log('[SnapToAI] Open sidebar threw:', e && e.message);
+        setStatus && setStatus('Could not open sidebar — try again', 'error');
+      }
+    });
+  }
+
   const authCloseBtn = document.getElementById('authCloseBtn');
   if (authCloseBtn) {
     authCloseBtn.addEventListener('click', () => {
