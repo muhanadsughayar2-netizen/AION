@@ -107,12 +107,20 @@ async function checkSubscriptionWithServer(email) {
     if (!response.ok) return null;
     const data = await response.json();
     if (data.success) {
-      await chrome.storage.local.set({
+      const updates = {
         subscriptionActive: data.canUseAI && data.status === 'subscribed',
         subscriptionPlan: data.planType || null,
         lastVerified: Date.now(),
         cachedSubStatus: data
-      });
+      };
+      // Cache white-label institution branding so the UI can swap logo/color instantly
+      if (data.branding && typeof data.branding === 'object') {
+        updates.snaptoai_branding = data.branding;
+      } else if (data.planType !== 'institution') {
+        // No longer an institution member — clear stale branding
+        try { await chrome.storage.local.remove('snaptoai_branding'); } catch (e) {}
+      }
+      await chrome.storage.local.set(updates);
       return data;
     }
     return null;

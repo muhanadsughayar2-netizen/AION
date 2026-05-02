@@ -4181,14 +4181,73 @@ async function refreshSubscriptionUI() {
     const status = await window.SnapToAISubscription.check();
     console.log('[SnapToAI] Subscription status:', status.status, status.canUseAI ? '(active)' : '(blocked)', 'override:', !!snaptoai_dev_override);
 
-    await chrome.storage.local.set({ cachedSubStatus: { status: status.status, daysRemaining: status.daysRemaining, canUseAI: status.canUseAI } });
+    await chrome.storage.local.set({ cachedSubStatus: { status: status.status, daysRemaining: status.daysRemaining, canUseAI: status.canUseAI, planType: status.planType || null } });
 
     applySubscriptionBadge(upgradeBtn, status, snaptoai_dev_override);
+    applyInstitutionBranding();
   } catch (e) {
     console.log('[SnapToAI] Subscription UI refresh error:', e);
     if (upgradeBtn) upgradeBtn.style.visibility = 'hidden';
   }
 }
+
+// ============== INSTITUTION WHITE-LABEL BRANDING (v2.7.0) ==============
+async function applyInstitutionBranding() {
+  try {
+    const { snaptoai_branding, cachedSubStatus } = await chrome.storage.local.get(['snaptoai_branding', 'cachedSubStatus']);
+    const isInst = cachedSubStatus && cachedSubStatus.planType === 'institution';
+    const b = (isInst && snaptoai_branding) ? snaptoai_branding : null;
+    const authImg = document.getElementById('authBrandLogo');
+    const authText = document.querySelector('#authLogo .auth-logo-text');
+    const headerImg = document.getElementById('headerBrandLogo');
+    const headerText = document.querySelector('#headerLogo .header-logo-text');
+    const upgradeBtn = document.getElementById('upgradeBtn');
+
+    if (b && b.logoUrl) {
+      const url = b.logoUrl.startsWith('http') ? b.logoUrl : 'https://www.snaptoai.com' + b.logoUrl;
+      if (authImg) { authImg.src = url; authImg.alt = b.name || ''; authImg.style.display = 'inline-block'; }
+      if (authText) authText.style.display = 'none';
+      if (headerImg) { headerImg.src = url; headerImg.alt = b.name || ''; headerImg.style.display = 'inline-block'; }
+      if (headerText) headerText.style.display = 'none';
+    } else if (b && b.name) {
+      // No logo but we have a name — render the inst name as text
+      if (authText) authText.innerHTML = '<span class="logo-snap">' + escapeHtml(b.name) + '</span>';
+      if (headerText) headerText.innerHTML = '<span class="logo-snap">' + escapeHtml(b.name) + '</span>';
+    } else {
+      // No branding — restore default look
+      if (authImg) authImg.style.display = 'none';
+      if (authText) { authText.style.display = ''; authText.innerHTML = '<span class="logo-snap">SNAP</span> <span class="logo-highlight">TO AI</span>'; }
+      if (headerImg) headerImg.style.display = 'none';
+      if (headerText) { headerText.style.display = ''; headerText.innerHTML = '<span class="logo-snap">SNAP</span> <span class="logo-highlight">TO AI</span>'; }
+    }
+    if (b && b.brandColor) {
+      document.documentElement.style.setProperty('--st-accent', b.brandColor);
+      document.documentElement.style.setProperty('--accent', b.brandColor);
+    }
+    // Institution members never need to see "Pro / Trial" upgrade nudges
+    if (isInst && upgradeBtn) {
+      upgradeBtn.textContent = b ? ('✓ ' + (b.name || 'Institution')) : '✓ Pro';
+      upgradeBtn.className = 'upgrade-btn upgrade-btn-pro';
+      upgradeBtn.style.visibility = 'visible';
+      if (b && b.brandColor) upgradeBtn.style.background = b.brandColor;
+    }
+  } catch (e) {
+    console.log('[SnapToAI] applyInstitutionBranding error:', e);
+  }
+}
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+// React to branding changes pushed from any surface
+try {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && (changes.snaptoai_branding || changes.cachedSubStatus)) {
+      applyInstitutionBranding();
+    }
+  });
+} catch (e) {}
+// Apply on first paint with whatever's cached locally
+try { applyInstitutionBranding(); } catch (e) {}
 
 // Load key on popup open and check subscription
 document.addEventListener('DOMContentLoaded', async () => {

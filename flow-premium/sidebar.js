@@ -473,11 +473,47 @@
     });
   }
 
+  // ---------- v2.7.0: institution white-label branding ----------
+  async function applyInstitutionBranding() {
+    try {
+      const { snaptoai_branding, cachedSubStatus } = await chrome.storage.local.get(['snaptoai_branding', 'cachedSubStatus']);
+      const isInst = cachedSubStatus && cachedSubStatus.planType === 'institution';
+      const b = (isInst && snaptoai_branding) ? snaptoai_branding : null;
+      const img = document.getElementById('sbBrandLogo');
+      const text = document.querySelector('#sbLogo .sb-logo-text');
+      if (b && b.logoUrl) {
+        const url = b.logoUrl.startsWith('http') ? b.logoUrl : 'https://www.snaptoai.com' + b.logoUrl;
+        if (img) { img.src = url; img.alt = b.name || ''; img.style.display = 'inline-block'; }
+        if (text) text.style.display = 'none';
+      } else if (b && b.name) {
+        if (text) { text.innerHTML = '<span class="sb-logo-emoji">📸</span> <span>' + (b.name.replace(/[<>&]/g,'')) + '</span>'; text.style.display = ''; }
+        if (img) img.style.display = 'none';
+      } else {
+        if (img) img.style.display = 'none';
+        if (text) { text.style.display = ''; text.innerHTML = '<span class="sb-logo-emoji">📸</span> <span>Snap <span class="sb-logo-accent">To AI</span></span>'; }
+      }
+      if (b && b.brandColor) {
+        document.documentElement.style.setProperty('--st-accent', b.brandColor);
+        document.documentElement.style.setProperty('--accent', b.brandColor);
+      }
+    } catch (e) {
+      console.log('[SnapToAI] sidebar branding error:', e);
+    }
+  }
+  try {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && (changes.snaptoai_branding || changes.cachedSubStatus)) {
+        applyInstitutionBranding();
+      }
+    });
+  } catch (e) {}
+
   // ---------- Init ----------
   function init() {
     refreshKeyPill();
     refreshAccount();
     startPreviewLoop();
+    applyInstitutionBranding();
 
     // Persist that the user is now using sidebar mode AND ask the
     // background to wire up the action click so future icon clicks

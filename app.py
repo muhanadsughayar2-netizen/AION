@@ -1,6 +1,7 @@
 from flask import Flask, send_from_directory, request, redirect, Response, jsonify
 import html as html_escape_module
 import os
+import re
 import mimetypes
 import psycopg2
 from datetime import datetime, timedelta
@@ -167,6 +168,55 @@ def init_db():
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS platform VARCHAR(30)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS device_type VARCHAR(20)')
         cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS device_id VARCHAR(60)')
+
+        # === INSTITUTIONS (white-label multi-tenant) ===
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS institutions (
+                id SERIAL PRIMARY KEY,
+                slug VARCHAR(60) UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                logo_url TEXT,
+                brand_color VARCHAR(20) DEFAULT '#00d9ff',
+                primary_admin_email TEXT,
+                seat_limit INTEGER DEFAULT 50,
+                expires_at TIMESTAMP,
+                status VARCHAR(20) DEFAULT 'active',
+                allowed_domains TEXT,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        ''')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS institution_members (
+                id SERIAL PRIMARY KEY,
+                institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
+                email TEXT NOT NULL,
+                role VARCHAR(20) DEFAULT 'member',
+                status VARCHAR(20) DEFAULT 'active',
+                invited_by TEXT,
+                joined_at TIMESTAMP DEFAULT NOW(),
+                last_seen TIMESTAMP,
+                UNIQUE (institution_id, email)
+            )
+        ''')
+        cur.execute('CREATE INDEX IF NOT EXISTS idx_inst_members_email ON institution_members(LOWER(email))')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS institution_invites (
+                id SERIAL PRIMARY KEY,
+                institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
+                code VARCHAR(64) UNIQUE NOT NULL,
+                email TEXT,
+                max_uses INTEGER DEFAULT 0,
+                uses INTEGER DEFAULT 0,
+                expires_at TIMESTAMP,
+                created_by TEXT,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        ''')
+        cur.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS institution_id INTEGER')
+        print('✅ institutions, institution_members, institution_invites tables ready')
+
         conn.commit()
         
         # === MIGRATION: Seed ip_trials from existing user_trials ===
@@ -313,6 +363,200 @@ OWNER_EMAILS_SET = {
 VIDEO_DAILY_LIMIT_FREE = 2
 VIDEO_DAILY_LIMIT_PAID = 10
 VIDEO_COOLDOWN_SECONDS = 300
+
+# ============================================
+# INSTITUTIONS (white-label multi-tenant) helpers
+# ============================================
+
+INSTITUTION_LOGO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'institution-logos')
+ALLOWED_LOGO_EXTS = {'.png', '.jpg', '.jpeg', '.webp', '.svg'}
+PUBLIC_DOMAINS = {'gmail.com', 'googlemail.com', 'yahoo.com', 'outlook.com', 'hotmail.com',
+                  'live.com', 'icloud.com', 'me.com', 'aol.com', 'proton.me', 'protonmail.com',
+                  'mail.com', 'gmx.com', 'yandex.com', 'msn.com', 'qq.com', '163.com'}
+
+def _slugify(s):
+    s = (s or '').strip().lower()
+    out = []
+    for ch in s:
+        if ch.isalnum():
+            out.append(ch)
+        elif ch in ' -_':
+            out.append('-')
+    slug = ''.join(out).strip('-')
+    while '--' in slug:
+        slug = slug.replace('--', '-')
+    return slug[:60] or ('inst-' + uuid.uuid4().hex[:8])
+
+def _norm_email(s):
+    return (s or '').strip().lower()[:200]
+
+def _gen_invite_code():
+    return uuid.uuid4().hex[:24]
+
+def _gen_admin_token(slug, email):
+    """Token an institution admin can use to access /institution/<slug>/admin."""
+    payload = f"{slug}|{_norm_email(email)}|{ADMIN_SESSION_SECRET}"
+    return hashlib.sha256(payload.encode('utf-8')).hexdigest()
+
+def _verify_admin_token(slug, email, token):
+    if not (slug and email and token):
+        return False
+    return token == _gen_admin_token(slug, email)
+
+def _institution_active(row):
+    """row = (status, expires_at) — true iff active and not expired."""
+    if not row:
+        return False
+    status = row[0]
+    expires_at = row[1] if len(row) > 1 else None
+    if status != 'active':
+        return False
+    if expires_at and expires_at < datetime.utcnow():
+        return False
+    return True
+
+def _seats_used(cur, institution_id):
+    cur.execute("SELECT COUNT(*) FROM institution_members WHERE institution_id=%s AND status='active'", (institution_id,))
+    r = cur.fetchone()
+    return int(r[0]) if r else 0
+
+def _domain_of(email):
+    e = _norm_email(email)
+    if '@' not in e:
+        return ''
+    return e.split('@', 1)[1]
+
+def _resolve_institution_for_email(cur, email):
+    """Return (institution_id, branding_dict) if this email is/should-be an institution member.
+    Order: explicit member row -> domain match -> None.
+    Inserts a member row on first domain match. NEVER consumes a public-email domain.
+    """
+    email = _norm_email(email)
+    if not email or '@' not in email:
+        return None, None
+    cur.execute("""
+        SELECT m.institution_id, m.status, i.status, i.expires_at, i.slug, i.name, i.logo_url, i.brand_color, m.role
+        FROM institution_members m JOIN institutions i ON i.id = m.institution_id
+        WHERE LOWER(m.email) = %s LIMIT 1
+    """, (email,))
+    row = cur.fetchone()
+    if row:
+        if row[1] == 'active' and _institution_active((row[2], row[3])):
+            return row[0], {
+                'institutionId': row[0],
+                'slug': row[4],
+                'name': row[5],
+                'logoUrl': row[6],
+                'brandColor': row[7] or '#00d9ff',
+                'role': row[8] or 'member'
+            }
+        return None, None
+
+    domain = _domain_of(email)
+    if not domain or domain in PUBLIC_DOMAINS:
+        return None, None
+    cur.execute("""
+        SELECT id, slug, name, logo_url, brand_color, allowed_domains, status, expires_at, seat_limit
+        FROM institutions WHERE allowed_domains IS NOT NULL AND allowed_domains <> ''
+    """)
+    for r in cur.fetchall():
+        inst_id, slug, name, logo_url, brand_color, allowed, status, expires_at, seat_limit = r
+        if not _institution_active((status, expires_at)):
+            continue
+        domains = [d.strip().lower() for d in (allowed or '').split(',') if d.strip()]
+        if domain in domains:
+            if seat_limit and _seats_used(cur, inst_id) >= seat_limit:
+                continue
+            cur.execute("""
+                INSERT INTO institution_members (institution_id, email, role, status, invited_by, joined_at)
+                VALUES (%s, %s, 'member', 'active', 'domain-auto', NOW())
+                ON CONFLICT (institution_id, email) DO UPDATE SET status='active'
+            """, (inst_id, email))
+            return inst_id, {
+                'institutionId': inst_id,
+                'slug': slug,
+                'name': name,
+                'logoUrl': logo_url,
+                'brandColor': brand_color or '#00d9ff',
+                'role': 'member'
+            }
+    return None, None
+
+def _apply_institution_membership(cur, email, institution_id):
+    """Mark this user as an institution subscriber. Idempotent."""
+    email = _norm_email(email)
+    cur.execute("UPDATE users SET institution_id=%s WHERE LOWER(email)=%s", (institution_id, email))
+    cur.execute("""
+        INSERT INTO subscriptions (email, plan_type, status, subscription_start, last_verified, created_at, updated_at)
+        VALUES (%s, 'institution', 'active', NOW(), NOW(), NOW(), NOW())
+        ON CONFLICT (email) DO UPDATE SET
+            plan_type = CASE WHEN subscriptions.plan_type IN ('monthly','yearly') AND subscriptions.status='active'
+                              THEN subscriptions.plan_type ELSE 'institution' END,
+            status = 'active',
+            subscription_end = NULL,
+            last_verified = NOW(),
+            updated_at = NOW()
+    """, (email,))
+
+def _get_institution_branding_for_email(cur, email):
+    """Return branding dict if this email is an active member of an active institution, else None."""
+    email = _norm_email(email)
+    if not email:
+        return None
+    cur.execute("""
+        SELECT i.id, i.slug, i.name, i.logo_url, i.brand_color, i.status, i.expires_at, m.status, m.role
+        FROM institution_members m JOIN institutions i ON i.id = m.institution_id
+        WHERE LOWER(m.email) = %s LIMIT 1
+    """, (email,))
+    r = cur.fetchone()
+    if not r:
+        return None
+    if r[7] != 'active':
+        return None
+    if not _institution_active((r[5], r[6])):
+        return None
+    return {
+        'institutionId': r[0],
+        'slug': r[1],
+        'name': r[2],
+        'logoUrl': r[3],
+        'brandColor': r[4] or '#00d9ff',
+        'role': r[8] or 'member'
+    }
+
+def _institution_by_slug(cur, slug):
+    cur.execute("""
+        SELECT id, slug, name, logo_url, brand_color, primary_admin_email, seat_limit,
+               expires_at, status, allowed_domains, notes, created_at
+        FROM institutions WHERE slug=%s
+    """, (slug,))
+    return cur.fetchone()
+
+def _is_inst_admin(cur, slug, email):
+    """True iff email is the primary admin OR a member with role='admin' for this slug."""
+    email = _norm_email(email)
+    if not email:
+        return False
+    cur.execute("SELECT id, primary_admin_email FROM institutions WHERE slug=%s", (slug,))
+    r = cur.fetchone()
+    if not r:
+        return False
+    if _norm_email(r[1]) == email:
+        return True
+    cur.execute("""
+        SELECT 1 FROM institution_members
+        WHERE institution_id=%s AND LOWER(email)=%s AND role='admin' AND status='active' LIMIT 1
+    """, (r[0], email))
+    return cur.fetchone() is not None
+
+def _cors(resp, methods='GET, POST, OPTIONS'):
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Access-Control-Allow-Methods'] = methods
+    resp.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    return resp
+
+def _options(methods='GET, POST, OPTIONS'):
+    return _cors(Response(), methods)
 
 def verify_google_token(token):
     try:
@@ -854,11 +1098,25 @@ def auth_register():
             RETURNING id
         ''', (email, name, picture, device_id))
         user_id = cur.fetchone()[0]
+
+        # Institutions: bind to inst on first sign-in if pre-invited or domain match
+        branding = None
+        try:
+            inst_id, branding_resolved = _resolve_institution_for_email(cur, email)
+            if inst_id:
+                _apply_institution_membership(cur, email, inst_id)
+                branding = branding_resolved
+        except Exception as inst_err:
+            print(f'⚠️ institution resolve error: {inst_err}')
+
         conn.commit()
         cur.close()
         conn.close()
 
-        response = jsonify({'success': True, 'userId': user_id})
+        payload = {'success': True, 'userId': user_id}
+        if branding:
+            payload['branding'] = branding
+        response = jsonify(payload)
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response
     except Exception as e:
@@ -1525,6 +1783,128 @@ def admin_panel():
         html += '''
         </table>
     </div>
+
+    <div id="institutions-section" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(124, 58, 237, 0.08)); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 20px; margin: 30px 0;">
+        <h2 style="color: #a855f7; margin: 0 0 5px 0;">🏛️ Institutions (White-Label Licenses)</h2>
+        <p style="color: #888; font-size: 12px; margin: 0 0 15px 0;">Sell branded multi-seat licenses to companies & schools. Members get full pro access automatically.</p>
+
+        <div style="background: rgba(0,0,0,0.25); border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+            <h3 style="color: #c084fc; margin: 0 0 10px 0; font-size: 14px;">+ Create new institution</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <input id="inst-name" placeholder="Display name (e.g. Acme Corp)" style="background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px;">
+                <input id="inst-slug" placeholder="Slug (e.g. acme)" style="background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px;">
+                <input id="inst-admin" placeholder="Primary admin email" style="background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px;">
+                <input id="inst-seats" type="number" value="50" placeholder="Seat limit" style="background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px;">
+                <input id="inst-color" type="color" value="#00d9ff" style="background: #0f0f1a; border: 1px solid #333; padding: 4px; border-radius: 6px; height: 36px;">
+                <input id="inst-expires" type="date" style="background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px;">
+                <input id="inst-domains" placeholder="Allowed domains (comma-sep, e.g. acme.com)" style="background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px; grid-column: span 2;">
+                <button onclick="createInstitution()" style="background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">Create Institution</button>
+            </div>
+            <div id="inst-create-msg" style="color: #00ff88; font-size: 12px; margin-top: 8px;"></div>
+        </div>
+
+        <div id="inst-list">Loading institutions...</div>
+    </div>
+
+    <script>
+    const ADMIN_PW = ''' + json.dumps(password) + ''';
+    async function loadInstitutions() {
+      try {
+        const r = await fetch('/api/admin/institutions/list?password=' + encodeURIComponent(ADMIN_PW));
+        const d = await r.json();
+        if (!d.success) { document.getElementById('inst-list').innerHTML = '<div style="color:#ff4757;">Error: ' + (d.error || 'unknown') + '</div>'; return; }
+        if (d.institutions.length === 0) { document.getElementById('inst-list').innerHTML = '<div style="color:#888; padding: 20px; text-align: center;">No institutions yet. Create your first one above ↑</div>'; return; }
+        let html = '<table style="width: 100%; border-collapse: collapse; font-size: 13px;"><tr>' +
+          '<th style="background: #16213e; color: #c084fc; padding: 10px 8px; text-align: left;">Logo</th>' +
+          '<th style="background: #16213e; color: #c084fc; padding: 10px 8px; text-align: left;">Name / Slug</th>' +
+          '<th style="background: #16213e; color: #c084fc; padding: 10px 8px; text-align: left;">Primary Admin</th>' +
+          '<th style="background: #16213e; color: #c084fc; padding: 10px 8px; text-align: left;">Seats</th>' +
+          '<th style="background: #16213e; color: #c084fc; padding: 10px 8px; text-align: left;">Status</th>' +
+          '<th style="background: #16213e; color: #c084fc; padding: 10px 8px; text-align: left;">Expires</th>' +
+          '<th style="background: #16213e; color: #c084fc; padding: 10px 8px; text-align: left;">Actions</th></tr>';
+        for (const inst of d.institutions) {
+          const logoHtml = inst.logoUrl ? '<img src="' + inst.logoUrl + '" style="height: 32px; max-width: 80px; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px;">' : '<span style="color:#666;">(none)</span>';
+          html += '<tr style="border-bottom: 1px solid #222;">' +
+            '<td style="padding: 8px;">' + logoHtml + '</td>' +
+            '<td style="padding: 8px;"><strong style="color:' + (inst.brandColor || '#a855f7') + ';">' + inst.name + '</strong><br><span style="color:#888; font-size: 11px;">' + inst.slug + '</span></td>' +
+            '<td style="padding: 8px; color:#ccc; font-size: 12px;">' + (inst.primaryAdminEmail || '<span style="color:#666;">—</span>') + '</td>' +
+            '<td style="padding: 8px;">' + inst.seatsUsed + ' / ' + inst.seatLimit + '</td>' +
+            '<td style="padding: 8px;"><span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; background: ' + (inst.status === 'active' ? '#00ff8820' : '#ff475720') + '; color: ' + (inst.status === 'active' ? '#00ff88' : '#ff4757') + ';">' + inst.status + '</span></td>' +
+            '<td style="padding: 8px; color:#ccc; font-size: 12px;">' + (inst.expiresAt ? new Date(inst.expiresAt).toLocaleDateString() : 'never') + '</td>' +
+            '<td style="padding: 8px;">' +
+              '<button onclick="copyAdminLink(\\'' + inst.slug + '\\')" style="background: #06b6d4; color: #000; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 4px;" title="Copy admin URL with token">📋 Admin URL</button>' +
+              '<a href="/institution/' + inst.slug + '/admin?token=' + (inst.adminToken || '') + '" target="_blank" style="background: #a855f7; color: #fff; padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 11px; margin-right: 4px;">Open</a>' +
+              '<label style="background: #333; color: #fff; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 4px;">📤 Logo<input type="file" accept="image/*" style="display:none;" onchange="uploadLogo(' + inst.id + ', this)"></label>' +
+              '<button onclick="toggleStatus(' + inst.id + ', \\'' + (inst.status === 'active' ? 'suspended' : 'active') + '\\')" style="background: #f97316; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 4px;">' + (inst.status === 'active' ? '⏸ Suspend' : '▶ Activate') + '</button>' +
+              '<button onclick="deleteInstitution(' + inst.id + ', \\'' + inst.name.replace(/\\'/g, "\\\\'") + '\\')" style="background: #ff4757; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">🗑</button>' +
+            '</td></tr>';
+        }
+        html += '</table>';
+        document.getElementById('inst-list').innerHTML = html;
+      } catch (e) {
+        document.getElementById('inst-list').innerHTML = '<div style="color:#ff4757;">Failed to load: ' + e.message + '</div>';
+      }
+    }
+    async function createInstitution() {
+      const body = {
+        name: document.getElementById('inst-name').value,
+        slug: document.getElementById('inst-slug').value,
+        primaryAdminEmail: document.getElementById('inst-admin').value,
+        seatLimit: parseInt(document.getElementById('inst-seats').value, 10) || 50,
+        brandColor: document.getElementById('inst-color').value,
+        expiresAt: document.getElementById('inst-expires').value || null,
+        allowedDomains: document.getElementById('inst-domains').value
+      };
+      if (!body.name) { alert('Name is required'); return; }
+      const r = await fetch('/api/admin/institutions/create?password=' + encodeURIComponent(ADMIN_PW), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      });
+      const d = await r.json();
+      const msg = document.getElementById('inst-create-msg');
+      if (d.success) {
+        msg.style.color = '#00ff88';
+        msg.textContent = '✓ Created "' + d.institution.name + '" (slug: ' + d.institution.slug + '). Loading...';
+        document.getElementById('inst-name').value = '';
+        document.getElementById('inst-slug').value = '';
+        document.getElementById('inst-admin').value = '';
+        document.getElementById('inst-domains').value = '';
+        loadInstitutions();
+      } else {
+        msg.style.color = '#ff4757';
+        msg.textContent = '✗ ' + (d.error || 'Failed');
+      }
+    }
+    async function uploadLogo(instId, fileInput) {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const fd = new FormData();
+      fd.append('logo', file);
+      const r = await fetch('/api/admin/institutions/' + instId + '/logo?password=' + encodeURIComponent(ADMIN_PW), { method: 'POST', body: fd });
+      const d = await r.json();
+      if (d.success) { alert('Logo uploaded'); loadInstitutions(); } else { alert('Upload failed: ' + (d.error || 'unknown')); }
+    }
+    async function toggleStatus(instId, newStatus) {
+      const r = await fetch('/api/admin/institutions/' + instId + '/update?password=' + encodeURIComponent(ADMIN_PW), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus })
+      });
+      const d = await r.json();
+      if (d.success) loadInstitutions(); else alert('Failed: ' + (d.error || 'unknown'));
+    }
+    async function deleteInstitution(instId, name) {
+      if (!confirm('Delete institution "' + name + '"? This will revoke access for all members and CANNOT be undone.')) return;
+      const r = await fetch('/api/admin/institutions/' + instId + '?password=' + encodeURIComponent(ADMIN_PW), { method: 'DELETE' });
+      const d = await r.json();
+      if (d.success) loadInstitutions(); else alert('Failed: ' + (d.error || 'unknown'));
+    }
+    function copyAdminLink(slug) {
+      // Find the institution row to grab its token from the Open button href
+      const link = document.querySelector('a[href*="/institution/' + slug + '/admin"]');
+      if (!link) { alert('Token not found'); return; }
+      const url = window.location.origin + link.getAttribute('href');
+      navigator.clipboard.writeText(url).then(() => alert('Admin URL copied to clipboard:\\n\\n' + url + '\\n\\nGive this to the institution admin.'));
+    }
+    loadInstitutions();
+    </script>
 </body>
 </html>
 '''
@@ -1695,6 +2075,35 @@ def subscription_status():
         conn = get_db()
         cur = conn.cursor()
         now_ms = int(datetime.utcnow().timestamp() * 1000)
+
+        # Institutions: full pro access for active members of an active institution
+        try:
+            inst_branding = _get_institution_branding_for_email(cur, email)
+            if not inst_branding:
+                # First-time visitor: maybe their domain matches an institution
+                inst_id_new, branding_new = _resolve_institution_for_email(cur, email)
+                if inst_id_new:
+                    _apply_institution_membership(cur, email, inst_id_new)
+                    conn.commit()
+                    inst_branding = branding_new
+            if inst_branding:
+                cur.execute("UPDATE institution_members SET last_seen=NOW() WHERE LOWER(email)=%s", (email,))
+                conn.commit()
+                cur.close()
+                conn.close()
+                result = {
+                    'success': True,
+                    'canUseAI': True,
+                    'status': 'subscribed',
+                    'planType': 'institution',
+                    'daysRemaining': None,
+                    'branding': inst_branding
+                }
+                response = jsonify(result)
+                response.headers['Access-Control-Allow-Origin'] = '*'
+                return response
+        except Exception as inst_err:
+            print(f'⚠️ institution status check error: {inst_err}')
 
         cur.execute('SELECT plan_type, status, trial_start, trial_end, subscription_end FROM subscriptions WHERE email = %s', (email,))
         sub_row = cur.fetchone()
@@ -2434,6 +2843,940 @@ def ai_proxy():
         if conn:
             try: conn.close()
             except: pass
+
+
+# ============================================
+# INSTITUTIONS — super-admin CRUD endpoints
+# ============================================
+
+def _institution_to_dict(cur, row):
+    """row from _institution_by_slug or list query (id, slug, name, logo_url, brand_color,
+       primary_admin_email, seat_limit, expires_at, status, allowed_domains, notes, created_at)."""
+    inst_id = row[0]
+    slug = row[1]
+    seats_used = _seats_used(cur, inst_id)
+    admin_token = _gen_admin_token(slug, row[5] or '') if row[5] else ''
+    return {
+        'id': inst_id,
+        'slug': slug,
+        'name': row[2],
+        'logoUrl': row[3],
+        'brandColor': row[4],
+        'primaryAdminEmail': row[5],
+        'seatLimit': row[6],
+        'seatsUsed': seats_used,
+        'expiresAt': row[7].isoformat() if row[7] else None,
+        'status': row[8],
+        'allowedDomains': row[9],
+        'notes': row[10],
+        'createdAt': row[11].isoformat() if row[11] else None,
+        'adminToken': admin_token
+    }
+
+def _require_super_admin():
+    pw = request.args.get('password', '')
+    return pw == ADMIN_PASSWORD or verify_admin_session()
+
+@app.route('/api/admin/institutions/create', methods=['POST', 'OPTIONS'])
+def api_admin_inst_create():
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    if not _require_super_admin():
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    data = request.get_json(silent=True) or {}
+    name = str(data.get('name', '')).strip()[:200]
+    if not name:
+        return _cors(jsonify({'success': False, 'error': 'Name is required'})), 400
+    slug = _slugify(data.get('slug') or name)
+    primary_admin_email = _norm_email(data.get('primaryAdminEmail', ''))
+    seat_limit = int(data.get('seatLimit') or 50)
+    brand_color = str(data.get('brandColor') or '#00d9ff')[:20]
+    allowed_domains = str(data.get('allowedDomains') or '')[:500]
+    notes = str(data.get('notes') or '')[:1000]
+    expires_at = None
+    raw_exp = (data.get('expiresAt') or '').strip()
+    if raw_exp:
+        try:
+            expires_at = datetime.strptime(raw_exp[:10], '%Y-%m-%d')
+        except Exception:
+            expires_at = None
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("SELECT 1 FROM institutions WHERE slug=%s", (slug,))
+        if cur.fetchone():
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': f'Slug "{slug}" already exists'})), 400
+        cur.execute("""
+            INSERT INTO institutions (slug, name, brand_color, primary_admin_email, seat_limit,
+                                      expires_at, status, allowed_domains, notes, created_at, updated_at)
+            VALUES (%s,%s,%s,%s,%s,%s,'active',%s,%s,NOW(),NOW())
+            RETURNING id
+        """, (slug, name, brand_color, primary_admin_email or None, seat_limit,
+              expires_at, allowed_domains or None, notes or None))
+        inst_id = cur.fetchone()[0]
+        # Pre-add the primary admin as a member with role='admin' so paywall bypass works
+        if primary_admin_email:
+            cur.execute("""
+                INSERT INTO institution_members (institution_id, email, role, status, invited_by, joined_at)
+                VALUES (%s,%s,'admin','active','super-admin',NOW())
+                ON CONFLICT (institution_id, email) DO UPDATE SET role='admin', status='active'
+            """, (inst_id, primary_admin_email))
+        conn.commit()
+        row = _institution_by_slug(cur, slug)
+        result = _institution_to_dict(cur, row)
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True, 'institution': result}))
+    except Exception as e:
+        print(f'❌ inst create: {e}')
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+@app.route('/api/admin/institutions/list', methods=['GET', 'OPTIONS'])
+def api_admin_inst_list():
+    if request.method == 'OPTIONS':
+        return _options('GET, OPTIONS')
+    if not _require_super_admin():
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("""
+            SELECT id, slug, name, logo_url, brand_color, primary_admin_email, seat_limit,
+                   expires_at, status, allowed_domains, notes, created_at
+            FROM institutions ORDER BY created_at DESC
+        """)
+        rows = cur.fetchall()
+        institutions = [_institution_to_dict(cur, r) for r in rows]
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True, 'institutions': institutions, 'total': len(institutions)}))
+    except Exception as e:
+        print(f'❌ inst list: {e}')
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+@app.route('/api/admin/institutions/<int:inst_id>/update', methods=['POST', 'OPTIONS'])
+def api_admin_inst_update(inst_id):
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    if not _require_super_admin():
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    data = request.get_json(silent=True) or {}
+    fields = []
+    values = []
+    if 'name' in data:
+        fields.append('name=%s'); values.append(str(data['name']).strip()[:200])
+    if 'brandColor' in data:
+        fields.append('brand_color=%s'); values.append(str(data['brandColor'])[:20])
+    if 'primaryAdminEmail' in data:
+        fields.append('primary_admin_email=%s'); values.append(_norm_email(data['primaryAdminEmail']) or None)
+    if 'seatLimit' in data:
+        fields.append('seat_limit=%s'); values.append(int(data['seatLimit'] or 50))
+    if 'allowedDomains' in data:
+        fields.append('allowed_domains=%s'); values.append(str(data['allowedDomains'] or '')[:500] or None)
+    if 'notes' in data:
+        fields.append('notes=%s'); values.append(str(data['notes'] or '')[:1000] or None)
+    if 'status' in data and data['status'] in ('active', 'suspended', 'expired'):
+        fields.append('status=%s'); values.append(data['status'])
+    if 'expiresAt' in data:
+        v = (data.get('expiresAt') or '').strip()
+        try:
+            fields.append('expires_at=%s'); values.append(datetime.strptime(v[:10], '%Y-%m-%d') if v else None)
+        except Exception:
+            fields.append('expires_at=%s'); values.append(None)
+    if not fields:
+        return _cors(jsonify({'success': False, 'error': 'Nothing to update'})), 400
+    fields.append('updated_at=NOW()')
+    try:
+        conn = get_db(); cur = conn.cursor()
+        values.append(inst_id)
+        cur.execute(f"UPDATE institutions SET {', '.join(fields)} WHERE id=%s", values)
+        # If we just changed primary admin, ensure they're an admin member
+        if 'primaryAdminEmail' in data:
+            new_email = _norm_email(data['primaryAdminEmail'])
+            if new_email:
+                cur.execute("""
+                    INSERT INTO institution_members (institution_id, email, role, status, invited_by, joined_at)
+                    VALUES (%s,%s,'admin','active','super-admin',NOW())
+                    ON CONFLICT (institution_id, email) DO UPDATE SET role='admin', status='active'
+                """, (inst_id, new_email))
+        # If suspended, also revoke all member subscriptions
+        if data.get('status') == 'suspended':
+            cur.execute("""
+                UPDATE subscriptions SET status='inactive', updated_at=NOW()
+                WHERE plan_type='institution' AND LOWER(email) IN (
+                    SELECT LOWER(email) FROM institution_members WHERE institution_id=%s
+                )
+            """, (inst_id,))
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True}))
+    except Exception as e:
+        print(f'❌ inst update: {e}')
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+@app.route('/api/admin/institutions/<int:inst_id>', methods=['DELETE', 'OPTIONS'])
+def api_admin_inst_delete(inst_id):
+    if request.method == 'OPTIONS':
+        return _options('DELETE, OPTIONS')
+    if not _require_super_admin():
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    try:
+        conn = get_db(); cur = conn.cursor()
+        # Revoke any institution-plan subs for members
+        cur.execute("""
+            UPDATE subscriptions SET status='inactive', plan_type='unknown', updated_at=NOW()
+            WHERE plan_type='institution' AND LOWER(email) IN (
+                SELECT LOWER(email) FROM institution_members WHERE institution_id=%s
+            )
+        """, (inst_id,))
+        cur.execute("UPDATE users SET institution_id=NULL WHERE institution_id=%s", (inst_id,))
+        cur.execute("DELETE FROM institutions WHERE id=%s", (inst_id,))  # CASCADE drops members + invites
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True}))
+    except Exception as e:
+        print(f'❌ inst delete: {e}')
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+@app.route('/api/admin/institutions/<int:inst_id>/logo', methods=['POST', 'OPTIONS'])
+def api_admin_inst_logo(inst_id):
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    if not _require_super_admin():
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    f = request.files.get('logo')
+    if not f or not f.filename:
+        return _cors(jsonify({'success': False, 'error': 'No file uploaded (field name: logo)'})), 400
+    ext = ''
+    if '.' in f.filename:
+        ext = '.' + f.filename.rsplit('.', 1)[1].lower()
+    if ext not in ALLOWED_LOGO_EXTS:
+        return _cors(jsonify({'success': False, 'error': f'Unsupported extension {ext}. Allowed: {sorted(ALLOWED_LOGO_EXTS)}'})), 400
+    try:
+        os.makedirs(INSTITUTION_LOGO_DIR, exist_ok=True)
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("SELECT slug FROM institutions WHERE id=%s", (inst_id,))
+        r = cur.fetchone()
+        if not r:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Institution not found'})), 404
+        slug = r[0]
+        # Remove old logos for this slug
+        for old in os.listdir(INSTITUTION_LOGO_DIR):
+            if old.startswith(slug + '.'):
+                try: os.remove(os.path.join(INSTITUTION_LOGO_DIR, old))
+                except Exception: pass
+        target = os.path.join(INSTITUTION_LOGO_DIR, slug + ext)
+        f.save(target)
+        # cache-bust the URL so updates propagate immediately to extensions
+        logo_url = f'/static/institution-logos/{slug}{ext}?v={int(time.time())}'
+        cur.execute("UPDATE institutions SET logo_url=%s, updated_at=NOW() WHERE id=%s", (logo_url, inst_id))
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True, 'logoUrl': logo_url}))
+    except Exception as e:
+        print(f'❌ inst logo: {e}')
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+
+# ============================================
+# INSTITUTIONS — institution-admin dashboard + APIs
+# ============================================
+
+INST_ADMIN_COOKIE_PREFIX = 'inst_admin_session_'
+
+def _verify_inst_admin(slug):
+    """True iff caller is super-admin OR has a valid inst-admin cookie/token for this slug."""
+    if _require_super_admin():
+        return True, None
+    cookie = request.cookies.get(INST_ADMIN_COOKIE_PREFIX + slug, '')
+    if cookie and '|' in cookie:
+        e, t = cookie.split('|', 1)
+        if _verify_admin_token(slug, e, t):
+            try:
+                conn = get_db(); cur = conn.cursor()
+                is_admin = _is_inst_admin(cur, slug, e)
+                cur.close(); conn.close()
+                if is_admin:
+                    return True, _norm_email(e)
+            except Exception:
+                pass
+    # Or a fresh token in the URL — STILL must verify caller is currently an admin
+    token = request.args.get('token', '')
+    email = _norm_email(request.args.get('email', ''))
+    if token and not email:
+        try:
+            conn = get_db(); cur = conn.cursor()
+            cur.execute("SELECT primary_admin_email FROM institutions WHERE slug=%s", (slug,))
+            r = cur.fetchone()
+            cur.close(); conn.close()
+            if r and r[0]:
+                email = _norm_email(r[0])
+        except Exception:
+            pass
+    if token and email and _verify_admin_token(slug, email, token):
+        # Re-check that this email is still an active admin (revocation-safe)
+        try:
+            conn = get_db(); cur = conn.cursor()
+            is_admin = _is_inst_admin(cur, slug, email)
+            cur.close(); conn.close()
+            if is_admin:
+                return True, email
+        except Exception:
+            pass
+    return False, None
+
+@app.route('/institution/<slug>/admin', methods=['GET'])
+def institution_admin_page(slug):
+    if not ensure_db():
+        return Response("Database not available", status=503)
+    ok, admin_email = _verify_inst_admin(slug)
+    if not ok:
+        return Response("Access denied. Ask the SnapToAI team for your admin link.", status=403)
+    try:
+        conn = get_db(); cur = conn.cursor()
+        row = _institution_by_slug(cur, slug)
+        if not row:
+            cur.close(); conn.close()
+            return Response("Institution not found", status=404)
+        info = _institution_to_dict(cur, row)
+        cur.close(); conn.close()
+    except Exception as e:
+        return Response(f"Error: {e}", status=500)
+
+    name = html_escape_module.escape(info['name'])
+    logo_url = info['logoUrl'] or ''
+    brand_color = info['brandColor'] or '#00d9ff'
+    seat_limit = info['seatLimit']
+    seats_used = info['seatsUsed']
+    expires = info['expiresAt'] or 'never'
+    domains = html_escape_module.escape(info['allowedDomains'] or '(none)')
+    status = info['status']
+
+    cookie_value = ''
+    set_cookie = False
+    if admin_email:
+        cookie_value = f"{admin_email}|{_gen_admin_token(slug, admin_email)}"
+        set_cookie = True
+
+    page = f'''<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>{name} — SnapToAI Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * {{ box-sizing: border-box; }}
+  body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f1a; color: #e0e0e0; padding: 24px; margin: 0; }}
+  .header {{ display: flex; align-items: center; gap: 16px; padding: 20px; background: linear-gradient(135deg, {brand_color}22, transparent); border: 1px solid {brand_color}55; border-radius: 14px; margin-bottom: 24px; }}
+  .header img {{ height: 56px; max-width: 200px; object-fit: contain; background: #fff; border-radius: 8px; padding: 6px; }}
+  h1 {{ color: {brand_color}; margin: 0; font-size: 24px; }}
+  .subtitle {{ color: #888; margin: 4px 0 0 0; font-size: 13px; }}
+  .stats {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }}
+  .card {{ background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 18px; }}
+  .card-num {{ font-size: 28px; font-weight: bold; color: {brand_color}; }}
+  .card-label {{ font-size: 11px; color: #888; text-transform: uppercase; margin-top: 4px; }}
+  .section {{ background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 20px; margin-bottom: 20px; }}
+  .section h2 {{ color: {brand_color}; margin: 0 0 12px 0; font-size: 16px; }}
+  input, select, textarea {{ background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px; font-family: inherit; font-size: 13px; }}
+  textarea {{ width: 100%; min-height: 100px; resize: vertical; }}
+  button {{ background: {brand_color}; color: #000; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }}
+  button.secondary {{ background: #333; color: #fff; }}
+  button.danger {{ background: #ff4757; color: #fff; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }}
+  th {{ background: #16213e; color: {brand_color}; padding: 10px 8px; text-align: left; }}
+  td {{ padding: 8px; border-bottom: 1px solid #222; }}
+  .badge {{ padding: 3px 8px; border-radius: 4px; font-size: 11px; }}
+  .badge-active {{ background: #00ff8820; color: #00ff88; }}
+  .badge-suspended {{ background: #ff475720; color: #ff4757; }}
+  .badge-pending {{ background: #ffa50020; color: #ffa500; }}
+  .row {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
+  .grow {{ flex: 1; min-width: 180px; }}
+  .invite-link {{ font-family: monospace; font-size: 11px; background: #0f0f1a; padding: 6px 8px; border-radius: 4px; color: #ccc; word-break: break-all; }}
+</style></head>
+<body>
+  <div class="header">
+    {('<img src="' + html_escape_module.escape(logo_url) + '" alt="logo">') if logo_url else ''}
+    <div>
+      <h1>{name}</h1>
+      <p class="subtitle">SnapToAI Institution Admin · slug: <code>{html_escape_module.escape(slug)}</code> · status: <strong>{status}</strong> · expires: {expires}</p>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="card"><div class="card-num" id="stat-seats">{seats_used} / {seat_limit}</div><div class="card-label">Seats Used</div></div>
+    <div class="card"><div class="card-num" id="stat-active">—</div><div class="card-label">Active Members</div></div>
+    <div class="card"><div class="card-num" id="stat-suspended">—</div><div class="card-label">Suspended</div></div>
+    <div class="card"><div class="card-num" id="stat-pending">—</div><div class="card-label">Pre-Invited</div></div>
+    <div class="card"><div class="card-num" id="stat-domains" style="font-size:14px;">{domains}</div><div class="card-label">Auto-Join Domains</div></div>
+  </div>
+
+  <div class="section">
+    <h2>✉️ Invite users</h2>
+    <div class="row">
+      <input id="invite-email" class="grow" placeholder="user@example.com" type="email">
+      <button onclick="inviteOne()">Invite by Email</button>
+    </div>
+    <div style="margin-top: 14px;">
+      <label style="font-size: 12px; color: #888;">Or paste a CSV list (one email per line, or comma-separated):</label>
+      <textarea id="invite-csv" placeholder="alice@example.com&#10;bob@example.com,carol@example.com"></textarea>
+      <button onclick="inviteBulk()" style="margin-top: 8px;">Bulk Invite from CSV</button>
+      <span id="bulk-msg" style="margin-left: 10px; color: #00ff88; font-size: 12px;"></span>
+    </div>
+    <div style="margin-top: 14px;">
+      <button class="secondary" onclick="createLink()">+ Generate Invite Link</button>
+      <span id="link-msg" style="margin-left: 10px; color: #00ff88; font-size: 12px;"></span>
+    </div>
+    <div id="links-list" style="margin-top: 12px;"></div>
+  </div>
+
+  <div class="section">
+    <h2>👥 Members</h2>
+    <div id="members-list">Loading...</div>
+  </div>
+
+<script>
+const SLUG = {json.dumps(slug)};
+const API_BASE = '/api/institution/' + SLUG;
+
+async function load() {{
+  const r = await fetch(API_BASE + '/members');
+  const d = await r.json();
+  if (!d.success) {{ document.getElementById('members-list').innerHTML = 'Error: ' + (d.error||''); return; }}
+  let active=0, suspended=0, pending=0;
+  for (const m of d.members) {{
+    if (m.status === 'active') active++;
+    else if (m.status === 'suspended') suspended++;
+    else pending++;
+  }}
+  document.getElementById('stat-active').textContent = active;
+  document.getElementById('stat-suspended').textContent = suspended;
+  document.getElementById('stat-pending').textContent = pending;
+
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}})[c]);
+  let html = '<table><tr><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Last Seen</th><th>Actions</th></tr>';
+  for (const m of d.members) {{
+    const badgeClass = m.status === 'active' ? 'badge-active' : (m.status === 'suspended' ? 'badge-suspended' : 'badge-pending');
+    const mid = parseInt(m.id, 10) || 0;
+    html += '<tr>' +
+      '<td>' + esc(m.email) + '</td>' +
+      '<td>' + esc(m.role) + '</td>' +
+      '<td><span class="badge ' + badgeClass + '">' + esc(m.status) + '</span></td>' +
+      '<td>' + (m.joinedAt ? new Date(m.joinedAt).toLocaleDateString() : '—') + '</td>' +
+      '<td>' + (m.lastSeen ? new Date(m.lastSeen).toLocaleDateString() : '—') + '</td>' +
+      '<td>' +
+        (m.status === 'active'
+          ? '<button class="danger" onclick="suspend(' + mid + ')">Suspend</button> '
+          : '<button onclick="reactivate(' + mid + ')">Reactivate</button> ') +
+        '<button class="secondary" onclick="removeMember(' + mid + ', ' + JSON.stringify(String(m.email||'')) + ')">Remove</button>' +
+      '</td></tr>';
+  }}
+  html += '</table>';
+  document.getElementById('members-list').innerHTML = html;
+
+  // Load invite links
+  const lr = await fetch(API_BASE + '/invite-links');
+  const ld = await lr.json();
+  let lhtml = '';
+  if (ld.success && ld.links.length) {{
+    lhtml = '<div style="margin-top: 8px; font-size: 12px; color: #888;">Active invite links (anyone with the URL can join):</div>';
+    for (const lk of ld.links) {{
+      const code = String(lk.code||'').replace(/[^a-zA-Z0-9_-]/g, '');
+      const url = window.location.origin + '/join/' + code;
+      const lid = parseInt(lk.id, 10) || 0;
+      const uses = parseInt(lk.uses, 10) || 0;
+      const maxUses = lk.maxUses ? (parseInt(lk.maxUses, 10) || 0) : 0;
+      lhtml += '<div style="margin-top: 6px; display: flex; gap: 8px; align-items: center;">' +
+        '<span class="invite-link grow">' + esc(url) + '</span>' +
+        '<span style="color: #888; font-size: 11px;">uses: ' + uses + (maxUses ? '/' + maxUses : '') + '</span>' +
+        '<button class="secondary" onclick="copyLink(' + JSON.stringify(url) + ')">Copy</button>' +
+        '<button class="danger" onclick="deleteLink(' + lid + ')">Revoke</button>' +
+      '</div>';
+    }}
+  }}
+  document.getElementById('links-list').innerHTML = lhtml;
+}}
+
+async function inviteOne() {{
+  const email = document.getElementById('invite-email').value.trim();
+  if (!email) return;
+  const r = await fetch(API_BASE + '/invite', {{method: 'POST', headers: {{'Content-Type':'application/json'}}, body: JSON.stringify({{email}})}});
+  const d = await r.json();
+  if (d.success) {{ document.getElementById('invite-email').value=''; load(); }} else alert('Failed: ' + (d.error||''));
+}}
+async function inviteBulk() {{
+  const text = document.getElementById('invite-csv').value;
+  if (!text.trim()) return;
+  const r = await fetch(API_BASE + '/invite-bulk', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{csv: text}})}});
+  const d = await r.json();
+  const msg = document.getElementById('bulk-msg');
+  if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Added ' + d.added + ' (' + d.skipped + ' skipped)'; document.getElementById('invite-csv').value=''; load(); }}
+  else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
+}}
+async function createLink() {{
+  const r = await fetch(API_BASE + '/invite-link', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{}})}});
+  const d = await r.json();
+  const msg = document.getElementById('link-msg');
+  if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Created'; load(); }}
+  else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
+}}
+async function deleteLink(id) {{ if (!confirm('Revoke this invite link?')) return;
+  const r = await fetch(API_BASE + '/invite-link/' + id, {{method:'DELETE'}}); const d = await r.json();
+  if (d.success) load(); else alert('Failed');
+}}
+async function suspend(id) {{
+  const r = await fetch(API_BASE + '/members/' + id + '/suspend', {{method:'POST'}});
+  const d = await r.json(); if (d.success) load(); else alert(d.error||'Failed');
+}}
+async function reactivate(id) {{
+  const r = await fetch(API_BASE + '/members/' + id + '/reactivate', {{method:'POST'}});
+  const d = await r.json(); if (d.success) load(); else alert(d.error||'Failed');
+}}
+async function removeMember(id, email) {{
+  if (!confirm('Remove ' + email + ' from the institution? They lose pro access immediately.')) return;
+  const r = await fetch(API_BASE + '/members/' + id, {{method:'DELETE'}});
+  const d = await r.json(); if (d.success) load(); else alert(d.error||'Failed');
+}}
+function copyLink(url) {{ navigator.clipboard.writeText(url).then(()=>alert('Copied: '+url)); }}
+
+load();
+</script>
+</body></html>'''
+    resp = Response(page, mimetype='text/html')
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    if set_cookie:
+        resp.set_cookie(INST_ADMIN_COOKIE_PREFIX + slug, cookie_value, httponly=True, samesite='Lax', max_age=86400 * 30)
+    return resp
+
+
+@app.route('/api/institution/<slug>/members', methods=['GET', 'OPTIONS'])
+def api_inst_members(slug):
+    if request.method == 'OPTIONS':
+        return _options('GET, OPTIONS')
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("SELECT id FROM institutions WHERE slug=%s", (slug,))
+        r = cur.fetchone()
+        if not r:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Not found'})), 404
+        inst_id = r[0]
+        cur.execute("""
+            SELECT id, email, role, status, invited_by, joined_at, last_seen
+            FROM institution_members WHERE institution_id=%s ORDER BY joined_at DESC
+        """, (inst_id,))
+        members = [{
+            'id': row[0], 'email': row[1], 'role': row[2], 'status': row[3],
+            'invitedBy': row[4],
+            'joinedAt': row[5].isoformat() if row[5] else None,
+            'lastSeen': row[6].isoformat() if row[6] else None
+        } for row in cur.fetchall()]
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True, 'members': members, 'total': len(members)}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+_EMAIL_RE = re.compile(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$')
+
+def _add_member(cur, inst_id, email, invited_by, role='member'):
+    """Returns 'added', 'already', or 'invalid'."""
+    email = _norm_email(email)
+    if not email or not _EMAIL_RE.match(email):
+        return 'invalid'
+    cur.execute("""
+        INSERT INTO institution_members (institution_id, email, role, status, invited_by, joined_at)
+        VALUES (%s,%s,%s,'active',%s,NOW())
+        ON CONFLICT (institution_id, email) DO UPDATE SET status='active'
+        RETURNING (xmax = 0) AS inserted
+    """, (inst_id, email, role, invited_by or 'inst-admin'))
+    row = cur.fetchone()
+    is_new = bool(row and row[0])
+    # Activate paywall bypass for already-registered users
+    cur.execute("""
+        UPDATE subscriptions SET plan_type=CASE WHEN plan_type IN ('monthly','yearly') AND status='active' THEN plan_type ELSE 'institution' END,
+                                  status='active', subscription_end=NULL, last_verified=NOW(), updated_at=NOW()
+        WHERE LOWER(email)=%s
+    """, (email,))
+    cur.execute("""
+        INSERT INTO subscriptions (email, plan_type, status, subscription_start, last_verified, created_at, updated_at)
+        VALUES (%s,'institution','active',NOW(),NOW(),NOW(),NOW())
+        ON CONFLICT (email) DO NOTHING
+    """, (email,))
+    cur.execute("UPDATE users SET institution_id=%s WHERE LOWER(email)=%s", (inst_id, email))
+    return 'added' if is_new else 'already'
+
+@app.route('/api/institution/<slug>/invite', methods=['POST', 'OPTIONS'])
+def api_inst_invite(slug):
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    ok, admin_email = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    data = request.get_json(silent=True) or {}
+    email = _norm_email(data.get('email', ''))
+    if not email or '@' not in email:
+        return _cors(jsonify({'success': False, 'error': 'Valid email required'})), 400
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("SELECT id, seat_limit FROM institutions WHERE slug=%s", (slug,))
+        r = cur.fetchone()
+        if not r:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Not found'})), 404
+        inst_id, seat_limit = r[0], r[1]
+        if seat_limit and _seats_used(cur, inst_id) >= seat_limit:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Seat limit reached. Increase the limit or remove inactive members.'})), 400
+        result = _add_member(cur, inst_id, email, admin_email or 'inst-admin')
+        conn.commit()
+        cur.close(); conn.close()
+        if result == 'invalid':
+            return _cors(jsonify({'success': False, 'error': 'Invalid email format'})), 400
+        return _cors(jsonify({'success': True, 'result': result}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+@app.route('/api/institution/<slug>/invite-bulk', methods=['POST', 'OPTIONS'])
+def api_inst_invite_bulk(slug):
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    ok, admin_email = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    data = request.get_json(silent=True) or {}
+    raw = str(data.get('csv', ''))[:50000]
+    if not raw.strip():
+        return _cors(jsonify({'success': False, 'error': 'csv empty'})), 400
+    parts = []
+    for line in raw.replace('\r', '\n').split('\n'):
+        for tok in line.split(','):
+            t = tok.strip().strip('"').strip("'")
+            if t:
+                parts.append(t)
+    seen = set()
+    candidates = []
+    for p in parts:
+        e = _norm_email(p)
+        if e and '@' in e and e not in seen:
+            seen.add(e)
+            candidates.append(e)
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("SELECT id, seat_limit FROM institutions WHERE slug=%s", (slug,))
+        r = cur.fetchone()
+        if not r:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Not found'})), 404
+        inst_id, seat_limit = r[0], r[1]
+        added = 0; skipped = 0
+        for e in candidates:
+            if seat_limit and _seats_used(cur, inst_id) >= seat_limit:
+                skipped += 1; continue
+            res = _add_member(cur, inst_id, e, admin_email or 'csv-bulk')
+            if res == 'added': added += 1
+            else: skipped += 1
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True, 'added': added, 'skipped': skipped, 'total': len(candidates)}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+@app.route('/api/institution/<slug>/invite-link', methods=['POST', 'OPTIONS'])
+def api_inst_invite_link(slug):
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    ok, admin_email = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    data = request.get_json(silent=True) or {}
+    max_uses = int(data.get('maxUses') or 0)
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("SELECT id FROM institutions WHERE slug=%s", (slug,))
+        r = cur.fetchone()
+        if not r:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Not found'})), 404
+        code = _gen_invite_code()
+        cur.execute("""
+            INSERT INTO institution_invites (institution_id, code, max_uses, uses, created_by, created_at)
+            VALUES (%s, %s, %s, 0, %s, NOW())
+        """, (r[0], code, max_uses, admin_email or 'inst-admin'))
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True, 'code': code, 'url': f'/join/{code}'}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+@app.route('/api/institution/<slug>/invite-links', methods=['GET', 'OPTIONS'])
+def api_inst_invite_links_list(slug):
+    if request.method == 'OPTIONS':
+        return _options('GET, OPTIONS')
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("SELECT id FROM institutions WHERE slug=%s", (slug,))
+        r = cur.fetchone()
+        if not r:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Not found'})), 404
+        cur.execute("""
+            SELECT id, code, max_uses, uses, created_at, created_by
+            FROM institution_invites WHERE institution_id=%s ORDER BY created_at DESC
+        """, (r[0],))
+        links = [{'id': row[0], 'code': row[1], 'maxUses': row[2], 'uses': row[3],
+                  'createdAt': row[4].isoformat() if row[4] else None, 'createdBy': row[5]}
+                 for row in cur.fetchall()]
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True, 'links': links}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+@app.route('/api/institution/<slug>/invite-link/<int:link_id>', methods=['DELETE', 'OPTIONS'])
+def api_inst_invite_link_delete(slug, link_id):
+    if request.method == 'OPTIONS':
+        return _options('DELETE, OPTIONS')
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("""
+            DELETE FROM institution_invites WHERE id=%s
+              AND institution_id=(SELECT id FROM institutions WHERE slug=%s)
+        """, (link_id, slug))
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+@app.route('/api/institution/<slug>/members/<int:member_id>/suspend', methods=['POST', 'OPTIONS'])
+def api_inst_member_suspend(slug, member_id):
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("""
+            UPDATE institution_members SET status='suspended'
+            WHERE id=%s AND institution_id=(SELECT id FROM institutions WHERE slug=%s)
+            RETURNING email
+        """, (member_id, slug))
+        r = cur.fetchone()
+        if r:
+            cur.execute("UPDATE subscriptions SET status='inactive', updated_at=NOW() WHERE LOWER(email)=%s AND plan_type='institution'", (_norm_email(r[0]),))
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+@app.route('/api/institution/<slug>/members/<int:member_id>/reactivate', methods=['POST', 'OPTIONS'])
+def api_inst_member_reactivate(slug, member_id):
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("""
+            UPDATE institution_members SET status='active'
+            WHERE id=%s AND institution_id=(SELECT id FROM institutions WHERE slug=%s)
+            RETURNING email
+        """, (member_id, slug))
+        r = cur.fetchone()
+        if r:
+            cur.execute("UPDATE subscriptions SET status='active', updated_at=NOW() WHERE LOWER(email)=%s AND plan_type='institution'", (_norm_email(r[0]),))
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+@app.route('/api/institution/<slug>/members/<int:member_id>', methods=['DELETE', 'OPTIONS'])
+def api_inst_member_delete(slug, member_id):
+    if request.method == 'OPTIONS':
+        return _options('DELETE, OPTIONS')
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("""
+            DELETE FROM institution_members
+            WHERE id=%s AND institution_id=(SELECT id FROM institutions WHERE slug=%s)
+            RETURNING email, institution_id
+        """, (member_id, slug))
+        r = cur.fetchone()
+        if r:
+            cur.execute("UPDATE subscriptions SET status='inactive', plan_type='unknown', updated_at=NOW() WHERE LOWER(email)=%s AND plan_type='institution'", (_norm_email(r[0]),))
+            cur.execute("UPDATE users SET institution_id=NULL WHERE LOWER(email)=%s AND institution_id=%s", (_norm_email(r[0]), r[1]))
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+
+# ============================================
+# INSTITUTIONS — public invite landing
+# ============================================
+
+@app.route('/join/<code>', methods=['GET'])
+def institution_join_page(code):
+    if not ensure_db():
+        return Response("Database not available", status=503)
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("""
+            SELECT i.id, i.slug, i.name, i.logo_url, i.brand_color, i.status, i.expires_at, i.seat_limit,
+                   inv.uses, inv.max_uses
+            FROM institution_invites inv JOIN institutions i ON i.id = inv.institution_id
+            WHERE inv.code=%s
+        """, (code,))
+        r = cur.fetchone()
+        cur.close(); conn.close()
+    except Exception as e:
+        return Response(f"Error: {e}", status=500)
+    if not r:
+        return Response("Invite link not found or expired.", status=404)
+    inst_id, slug, name, logo_url, brand_color, status, expires_at, seat_limit, uses, max_uses = r
+    if not _institution_active((status, expires_at)):
+        return Response(f"This invite is no longer active. Contact {html_escape_module.escape(name)}.", status=410)
+    if max_uses and uses >= max_uses:
+        return Response("This invite link has reached its usage limit.", status=410)
+    safe_name = html_escape_module.escape(name)
+    safe_color = html_escape_module.escape(brand_color or '#00d9ff')
+    logo_html = f'<img src="{html_escape_module.escape(logo_url)}" alt="logo" style="height:80px; max-width:240px; object-fit:contain; background:#fff; border-radius:12px; padding:8px; margin-bottom:24px;">' if logo_url else ''
+    page = f'''<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Join {safe_name} on SnapToAI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0f0f1a 0%, #1a0f2e 100%); color: #fff; min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center; padding: 24px; }}
+  .card {{ max-width: 520px; background: rgba(255,255,255,0.04); border: 1px solid {safe_color}55; border-radius: 20px; padding: 40px; text-align: center; backdrop-filter: blur(20px); }}
+  h1 {{ color: {safe_color}; margin: 0 0 8px 0; font-size: 28px; }}
+  p {{ color: #ccc; line-height: 1.6; }}
+  input {{ width: 100%; background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 12px 16px; border-radius: 10px; font-size: 15px; margin: 16px 0; box-sizing: border-box; }}
+  button {{ background: {safe_color}; color: #000; border: none; padding: 14px 28px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 15px; width: 100%; }}
+  .step {{ background: rgba(0,0,0,0.3); border-radius: 10px; padding: 16px; margin: 16px 0; text-align: left; font-size: 14px; color: #ccc; }}
+  .step strong {{ color: {safe_color}; }}
+  a {{ color: {safe_color}; }}
+  #msg {{ margin-top: 12px; font-size: 13px; min-height: 18px; }}
+</style></head>
+<body>
+<div class="card">
+  {logo_html}
+  <h1>You're invited to {safe_name}</h1>
+  <p>Claim your free SnapToAI Pro seat — included with your {safe_name} membership.</p>
+  <form id="join-form" onsubmit="return joinNow(event)">
+    <input type="email" id="email" placeholder="your.work@email.com" required>
+    <button type="submit">Claim my seat</button>
+  </form>
+  <div id="msg"></div>
+  <div class="step">
+    <strong>Next step:</strong> Install the SnapToAI Chrome extension and sign in with the same email — your branded version unlocks automatically.
+    <br><br>
+    <a href="https://chromewebstore.google.com/detail/snaptoai" target="_blank">→ Install SnapToAI from Chrome Web Store</a>
+  </div>
+</div>
+<script>
+async function joinNow(e) {{
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim();
+  const msg = document.getElementById('msg');
+  msg.style.color = '#888'; msg.textContent = 'Reserving your seat...';
+  const r = await fetch('/api/institution/join', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{code: {json.dumps(code)}, email}})}});
+  const d = await r.json();
+  if (d.success) {{
+    msg.style.color = '#00ff88';
+    msg.textContent = '✓ Your seat is reserved! Install the extension and sign in with ' + email + '.';
+  }} else {{
+    msg.style.color = '#ff4757';
+    msg.textContent = '✗ ' + (d.error || 'Could not reserve seat');
+  }}
+  return false;
+}}
+</script>
+</body></html>'''
+    return Response(page, mimetype='text/html')
+
+@app.route('/api/institution/join', methods=['POST', 'OPTIONS'])
+def api_institution_join():
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    data = request.get_json(silent=True) or {}
+    code = str(data.get('code', '')).strip()[:64]
+    email = _norm_email(data.get('email', ''))
+    if not code or not email or '@' not in email:
+        return _cors(jsonify({'success': False, 'error': 'code and valid email required'})), 400
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("""
+            SELECT inv.id, inv.institution_id, inv.uses, inv.max_uses,
+                   i.status, i.expires_at, i.seat_limit
+            FROM institution_invites inv JOIN institutions i ON i.id = inv.institution_id
+            WHERE inv.code=%s
+        """, (code,))
+        r = cur.fetchone()
+        if not r:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Invalid invite link'})), 404
+        inv_id, inst_id, uses, max_uses, status, expires_at, seat_limit = r
+        if not _institution_active((status, expires_at)):
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Invite no longer active'})), 410
+        if max_uses and uses >= max_uses:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Invite usage limit reached'})), 410
+        if seat_limit and _seats_used(cur, inst_id) >= seat_limit:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Seat limit reached'})), 400
+        result = _add_member(cur, inst_id, email, f'invite-link:{code[:8]}')
+        if result == 'invalid':
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Invalid email format'})), 400
+        # Only burn an invite-link use when we actually added a NEW seat
+        if result == 'added':
+            cur.execute("UPDATE institution_invites SET uses=uses+1 WHERE id=%s", (inv_id,))
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True, 'result': result}))
+    except Exception as e:
+        print(f'❌ inst join: {e}')
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
 
 
 if __name__ == '__main__':

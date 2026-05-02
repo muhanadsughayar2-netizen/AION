@@ -22,8 +22,9 @@
   <div id="authOverlay" class="auth-overlay" style="display: none;">
     <div class="auth-overlay-content">
       <button id="authCloseBtn" class="auth-close-btn" title="Skip for now">&times;</button>
-      <div class="auth-logo">
-        <span class="logo-snap">SNAP</span> <span class="logo-highlight">TO AI</span>
+      <div class="auth-logo" id="authLogo">
+        <img id="authBrandLogo" alt="" style="display:none; max-height:56px; max-width:220px; object-fit:contain;">
+        <span class="auth-logo-text"><span class="logo-snap">SNAP</span> <span class="logo-highlight">TO AI</span></span>
       </div>
       <div class="auth-tagline" data-i18n="signInToUnlock">Sign in to unlock AI features</div>
       <button id="googleSignInBtn" class="google-signin-btn">
@@ -48,8 +49,9 @@
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <div class="logo">
-        <span class="logo-snap">SNAP</span> <span class="logo-highlight">TO AI</span>
+      <div class="logo" id="headerLogo">
+        <img id="headerBrandLogo" alt="" style="display:none; max-height:28px; max-width:140px; object-fit:contain; vertical-align:middle;">
+        <span class="header-logo-text"><span class="logo-snap">SNAP</span> <span class="logo-highlight">TO AI</span></span>
         <button id="youtubeBtn" class="youtube-btn" title="Watch SnapToAI tutorials on YouTube">
           <svg viewBox="0 0 24 17" fill="#FF0000"><path d="M23.5 2.7a3 3 0 0 0-2.1-2.1C19.5 0 12 0 12 0S4.5 0 2.6.6A3 3 0 0 0 .5 2.7C0 4.6 0 8.5 0 8.5s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1c.5-1.9.5-5.8.5-5.8s0-3.9-.5-5.8zM9.5 12.1V4.9l6.3 3.6-6.3 3.6z"/></svg>
           <span class="youtube-btn-label">Tutorials</span>
