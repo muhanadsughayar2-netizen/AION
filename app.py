@@ -1932,8 +1932,8 @@ def admin_panel():
             '<td style="padding: 8px;"><span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; background: ' + (inst.status === 'active' ? '#00ff8820' : '#ff475720') + '; color: ' + (inst.status === 'active' ? '#00ff88' : '#ff4757') + ';">' + inst.status + '</span></td>' +
             '<td style="padding: 8px; color:#ccc; font-size: 12px;">' + (inst.expiresAt ? new Date(inst.expiresAt).toLocaleDateString() : 'never') + '</td>' +
             '<td style="padding: 8px;">' +
-              '<button onclick="copyAdminLink(\\'' + inst.slug + '\\')" style="background: #06b6d4; color: #000; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 4px;" title="Copy admin URL with token">📋 Admin URL</button>' +
-              '<a href="/institution/' + inst.slug + '/admin?token=' + (inst.adminToken || '') + '" target="_blank" style="background: #a855f7; color: #fff; padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 11px; margin-right: 4px;">Open</a>' +
+              '<button onclick="copyAdminLink(\\'' + inst.slug + '\\')" style="background: #06b6d4; color: #000; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 4px;" title="Copy admin URL (admin signs in with Google)">📋 Admin URL</button>' +
+              '<a href="/institution/' + inst.slug + '/admin" target="_blank" style="background: #a855f7; color: #fff; padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 11px; margin-right: 4px;">Open</a>' +
               '<label style="background: #333; color: #fff; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 4px;">📤 Logo<input type="file" accept="image/*" style="display:none;" onchange="uploadLogo(' + inst.id + ', this)"></label>' +
               '<button onclick="toggleStatus(' + inst.id + ', \\'' + (inst.status === 'active' ? 'suspended' : 'active') + '\\')" style="background: #f97316; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 4px;">' + (inst.status === 'active' ? '⏸ Suspend' : '▶ Activate') + '</button>' +
               '<button onclick="deleteInstitution(' + inst.id + ', \\'' + inst.name.replace(/\\'/g, "\\\\'") + '\\')" style="background: #ff4757; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">🗑</button>' +
@@ -2006,11 +2006,8 @@ def admin_panel():
       if (d.success) loadInstitutions(); else alert('Failed: ' + (d.error || 'unknown'));
     }
     function copyAdminLink(slug) {
-      // Find the institution row to grab its token from the Open button href
-      const link = document.querySelector('a[href*="/institution/' + slug + '/admin"]');
-      if (!link) { alert('Token not found'); return; }
-      const url = window.location.origin + link.getAttribute('href');
-      navigator.clipboard.writeText(url).then(() => alert('Admin URL copied to clipboard:\\n\\n' + url + '\\n\\nGive this to the institution admin.'));
+      const url = window.location.origin + '/institution/' + slug + '/admin';
+      navigator.clipboard.writeText(url).then(() => alert('Admin URL copied to clipboard:\\n\\n' + url + '\\n\\nThe primary-admin email signs in with Google to access the dashboard.'));
     }
     loadInstitutions();
     </script>
@@ -3402,13 +3399,11 @@ def api_admin_inst_logo(inst_id):
     head = blob[:12]
     is_png = head.startswith(b'\x89PNG\r\n\x1a\n')
     is_jpg = head.startswith(b'\xff\xd8\xff')
-    is_gif = head.startswith(b'GIF87a') or head.startswith(b'GIF89a')
     is_webp = head[:4] == b'RIFF' and head[8:12] == b'WEBP'
     is_svg = b'<svg' in blob[:512].lower() or blob.lstrip()[:5].lower().startswith(b'<?xml')
     valid_for_ext = (
         (ext == '.png' and is_png) or
         (ext in ('.jpg', '.jpeg') and is_jpg) or
-        (ext == '.gif' and is_gif) or
         (ext == '.webp' and is_webp) or
         (ext == '.svg' and is_svg)
     )
@@ -3586,6 +3581,7 @@ window.addEventListener('load', () => {{
     logo_url = info['logoUrl'] or ''
     brand_color = info['brandColor'] or '#00d9ff'
     seat_limit = info['seatLimit']
+    seat_limit_display = '∞' if seat_limit in (None, 0) else seat_limit
     seats_used = info['seatsUsed']
     expires = info['expiresAt'] or 'never'
     domains = html_escape_module.escape(info['allowedDomains'] or '(none)')
@@ -3639,7 +3635,7 @@ window.addEventListener('load', () => {{
   </div>
 
   <div class="stats">
-    <div class="card"><div class="card-num" id="stat-seats">{seats_used} / {seat_limit}</div><div class="card-label">Seats Used</div></div>
+    <div class="card"><div class="card-num" id="stat-seats">{seats_used} / {seat_limit_display}</div><div class="card-label">Seats Used</div></div>
     <div class="card"><div class="card-num" id="stat-active">—</div><div class="card-label">Active Members</div></div>
     <div class="card"><div class="card-num" id="stat-suspended">—</div><div class="card-label">Suspended</div></div>
     <div class="card"><div class="card-num" id="stat-pending">—</div><div class="card-label">Pre-Invited</div></div>
