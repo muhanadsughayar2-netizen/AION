@@ -1079,6 +1079,7 @@ def auth_register():
         email = str(data.get('email', ''))[:200].strip().lower()
         picture = str(data.get('picture', ''))[:500]
         device_id = str(data.get('deviceId', ''))[:100]
+        invite_code = str(data.get('inviteCode', '') or '')[:64].strip()
 
         if not email or '@' not in email:
             response = jsonify({'success': False, 'error': 'Valid email is required'})
@@ -1099,6 +1100,34 @@ def auth_register():
         ''', (email, name, picture, device_id))
         user_id = cur.fetchone()[0]
 
+        # Institutions: if an invite code was supplied, redeem it FIRST so the
+        # subsequent resolve picks up the new member row.
+        invite_result = None
+        if invite_code:
+            try:
+                cur.execute("""
+                    SELECT inv.id, inv.institution_id, inv.max_uses, inv.uses, i.status, i.expires_at, i.seat_limit
+                    FROM institution_invites inv JOIN institutions i ON i.id = inv.institution_id
+                    WHERE inv.code=%s
+                """, (invite_code,))
+                ir = cur.fetchone()
+                if ir and _institution_active((ir[4], ir[5])):
+                    inv_id, inst_id_inv, max_uses, uses, _s, _e, seat_limit = ir
+                    if max_uses and uses >= max_uses:
+                        invite_result = 'invite_exhausted'
+                    elif seat_limit and _seats_used(cur, inst_id_inv) >= seat_limit:
+                        invite_result = 'seat_limit'
+                    else:
+                        res = _add_member(cur, inst_id_inv, email, f'invite-code:{invite_code[:8]}')
+                        if res == 'added':
+                            cur.execute("UPDATE institution_invites SET uses=uses+1 WHERE id=%s", (inv_id,))
+                        invite_result = res
+                else:
+                    invite_result = 'invalid_code'
+            except Exception as inv_err:
+                print(f'⚠️ invite-code redeem error: {inv_err}')
+                invite_result = 'error'
+
         # Institutions: bind to inst on first sign-in if pre-invited or domain match
         branding = None
         try:
@@ -1116,6 +1145,8 @@ def auth_register():
         payload = {'success': True, 'userId': user_id}
         if branding:
             payload['branding'] = branding
+        if invite_result is not None:
+            payload['inviteResult'] = invite_result
         response = jsonify(payload)
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response
@@ -2036,6 +2067,30 @@ def _check_whop_api_for_email(email):
         return None
 
 
+@app.route('/api/branding', methods=['POST', 'GET', 'OPTIONS'])
+def api_branding():
+    """Dedicated branding fetch — returns the institution branding dict for an email,
+    or {branding: null} if none. Lightweight; safe to poll from the extension UI."""
+    if request.method == 'OPTIONS':
+        return _options('GET, POST, OPTIONS')
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    email = ''
+    if request.method == 'POST':
+        data = request.get_json(silent=True) or {}
+        email = _norm_email(data.get('email', ''))
+    else:
+        email = _norm_email(request.args.get('email', ''))
+    if not email or '@' not in email:
+        return _cors(jsonify({'success': False, 'error': 'Valid email required'})), 400
+    try:
+        conn = get_db(); cur = conn.cursor()
+        b = _get_institution_branding_for_email(cur, email)
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True, 'branding': b}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
 @app.route('/api/subscription/status', methods=['POST', 'OPTIONS'])
 def subscription_status():
     if request.method == 'OPTIONS':
@@ -2077,6 +2132,7 @@ def subscription_status():
         now_ms = int(datetime.utcnow().timestamp() * 1000)
 
         # Institutions: full pro access for active members of an active institution
+        inst_branding = None
         try:
             inst_branding = _get_institution_branding_for_email(cur, email)
             if not inst_branding:
@@ -2104,6 +2160,26 @@ def subscription_status():
                 return response
         except Exception as inst_err:
             print(f'⚠️ institution status check error: {inst_err}')
+
+        # Defensive demotion: if a stale row says plan_type='institution', status='active'
+        # but the institution check above did NOT yield a branding (institution is now
+        # suspended, expired, or member was removed), we MUST NOT report subscribed.
+        # Clear the stale row so Whop / trial / paywall can take over correctly.
+        cur.execute('SELECT plan_type, status FROM subscriptions WHERE email = %s', (email,))
+        pre = cur.fetchone()
+        if pre and pre[0] == 'institution' and pre[1] == 'active' and not inst_branding:
+            cur.execute("""
+                UPDATE subscriptions
+                SET status='expired', plan_type='institution_expired', updated_at=NOW()
+                WHERE email=%s AND plan_type='institution' AND status='active'
+            """, (email,))
+            cur.execute("UPDATE users SET institution_id=NULL WHERE LOWER(email)=%s", (email,))
+            conn.commit()
+            cur.close(); conn.close()
+            result = {'success': True, 'canUseAI': False, 'status': 'institution_expired', 'planType': None, 'daysRemaining': 0}
+            response = jsonify(result)
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            return response
 
         cur.execute('SELECT plan_type, status, trial_start, trial_end, subscription_end FROM subscriptions WHERE email = %s', (email,))
         sub_row = cur.fetchone()
@@ -3059,6 +3135,28 @@ def api_admin_inst_logo(inst_id):
         ext = '.' + f.filename.rsplit('.', 1)[1].lower()
     if ext not in ALLOWED_LOGO_EXTS:
         return _cors(jsonify({'success': False, 'error': f'Unsupported extension {ext}. Allowed: {sorted(ALLOWED_LOGO_EXTS)}'})), 400
+    # Server-side size cap (2 MB) — read into memory once, validate, then write
+    blob = f.read(2 * 1024 * 1024 + 1)
+    if not blob:
+        return _cors(jsonify({'success': False, 'error': 'Empty file'})), 400
+    if len(blob) > 2 * 1024 * 1024:
+        return _cors(jsonify({'success': False, 'error': 'Logo too large (max 2 MB)'})), 400
+    # Magic-byte sniff: must match the claimed extension family
+    head = blob[:12]
+    is_png = head.startswith(b'\x89PNG\r\n\x1a\n')
+    is_jpg = head.startswith(b'\xff\xd8\xff')
+    is_gif = head.startswith(b'GIF87a') or head.startswith(b'GIF89a')
+    is_webp = head[:4] == b'RIFF' and head[8:12] == b'WEBP'
+    is_svg = b'<svg' in blob[:512].lower() or blob.lstrip()[:5].lower().startswith(b'<?xml')
+    valid_for_ext = (
+        (ext == '.png' and is_png) or
+        (ext in ('.jpg', '.jpeg') and is_jpg) or
+        (ext == '.gif' and is_gif) or
+        (ext == '.webp' and is_webp) or
+        (ext == '.svg' and is_svg)
+    )
+    if not valid_for_ext:
+        return _cors(jsonify({'success': False, 'error': f'File contents do not match extension {ext}'})), 400
     try:
         os.makedirs(INSTITUTION_LOGO_DIR, exist_ok=True)
         conn = get_db(); cur = conn.cursor()
@@ -3074,7 +3172,8 @@ def api_admin_inst_logo(inst_id):
                 try: os.remove(os.path.join(INSTITUTION_LOGO_DIR, old))
                 except Exception: pass
         target = os.path.join(INSTITUTION_LOGO_DIR, slug + ext)
-        f.save(target)
+        with open(target, 'wb') as out:
+            out.write(blob)
         # cache-bust the URL so updates propagate immediately to extensions
         logo_url = f'/static/institution-logos/{slug}{ext}?v={int(time.time())}'
         cur.execute("UPDATE institutions SET logo_url=%s, updated_at=NOW() WHERE id=%s", (logo_url, inst_id))
@@ -3468,9 +3567,13 @@ def api_inst_invite_bulk(slug):
                 parts.append(t)
     seen = set()
     candidates = []
+    invalid_format = []
     for p in parts:
         e = _norm_email(p)
-        if e and '@' in e and e not in seen:
+        if not e or not _EMAIL_RE.match(e):
+            invalid_format.append(p[:120])
+            continue
+        if e not in seen:
             seen.add(e)
             candidates.append(e)
     try:
@@ -3481,16 +3584,34 @@ def api_inst_invite_bulk(slug):
             cur.close(); conn.close()
             return _cors(jsonify({'success': False, 'error': 'Not found'})), 404
         inst_id, seat_limit = r[0], r[1]
-        added = 0; skipped = 0
+        added = 0
+        already_member = 0
+        invalid_email = len(invalid_format)
+        no_seats = 0
         for e in candidates:
             if seat_limit and _seats_used(cur, inst_id) >= seat_limit:
-                skipped += 1; continue
+                no_seats += 1
+                continue
             res = _add_member(cur, inst_id, e, admin_email or 'csv-bulk')
-            if res == 'added': added += 1
-            else: skipped += 1
+            if res == 'added':
+                added += 1
+            elif res == 'already':
+                already_member += 1
+            else:
+                invalid_email += 1
         conn.commit()
         cur.close(); conn.close()
-        return _cors(jsonify({'success': True, 'added': added, 'skipped': skipped, 'total': len(candidates)}))
+        skipped = already_member + invalid_email + no_seats
+        return _cors(jsonify({
+            'success': True,
+            'added': added,
+            'alreadyMember': already_member,
+            'invalidEmail': invalid_email,
+            'noSeats': no_seats,
+            'skipped': skipped,
+            'total': len(candidates) + len(invalid_format),
+            'invalidSamples': invalid_format[:5]
+        }))
     except Exception as e:
         return _cors(jsonify({'success': False, 'error': str(e)})), 500
 
