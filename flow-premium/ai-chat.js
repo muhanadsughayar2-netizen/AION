@@ -5018,17 +5018,38 @@ async function handleSend() {
     const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
     let apiKey = keyResult.geminiApiKey;
 
-    // Task #27 — When the institution policy is `institution-only`, ignore any
-    // member-side BYOK key and force the request through the proxy so the
-    // server-side institution key is the one that's actually used.
+    // Task #27 — Honor the institution key policy. `institution-only` forbids
+    // BYOK entirely; `prefer-institution-key` routes through the proxy when an
+    // institution key is configured (so the institution key is used in
+    // preference to the member's own key). Both cases blank the local apiKey
+    // so sendChat falls into the proxy branch below.
+    let _instKeyInfo = { isInstitution: false };
     try {
-      const _instKeyInfo = await getInstitutionKeyInfo();
-      if (_instKeyInfo.isInstitution && _instKeyInfo.keyPolicy === 'institution-only') {
+      _instKeyInfo = await getInstitutionKeyInfo();
+      if (_instKeyInfo.isInstitution &&
+          (_instKeyInfo.keyPolicy === 'institution-only' ||
+           (_instKeyInfo.keyPolicy === 'prefer-institution-key' && _instKeyInfo.hasInstitutionKey))) {
         apiKey = '';
       }
     } catch (e) {}
 
     if (modeConfig.type === 'gemini-video') {
+      // Task #27 — Video generation calls Google directly (Veo predictLongRunning),
+      // not the proxy, so it cannot use the institution-side key. In
+      // institution-only mode there's no fallback path, so fail clearly with
+      // the same actionable error pattern instead of silently failing later.
+      if (_instKeyInfo.isInstitution && _instKeyInfo.keyPolicy === 'institution-only') {
+        removeLoading();
+        const errBubble = createResponseBubble();
+        errBubble.innerHTML = buildInstitutionKeyInvalidCard(
+          _instKeyInfo.institutionName,
+          'Video generation isn\'t available under institution-only key policy yet. Contact your admin if you need video access.'
+        );
+        thread.scrollTop = thread.scrollHeight;
+        sendBtn.disabled = false;
+        releaseRequestLock();
+        return;
+      }
       const clipCount = selectedClipCount || 1;
       const costInfo = getPaidModeEstimate('video', clipCount, selectedVideoDuration || 8);
       const ok = await confirmPaidGeneration('video', costInfo);
