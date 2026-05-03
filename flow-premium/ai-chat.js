@@ -3380,10 +3380,25 @@ async function renderVeoBatchOutcome(ctx) {
   }
 
   // --- Case B: at least 1 successful clip → render video, append retry panel ---
+  // Task #36 (UX): Browser-side stitching via canvas.captureStream + MediaRecorder
+  // is REAL-TIME (a 24s output takes 24s+ to capture) and CPU-bound, which made
+  // the combined output look slow / juddery / "broken" even when individual Veo
+  // clips were perfect. Per direct user feedback ("when it was seprate it was
+  // amazin... stiching not make the vdeo slow and brokedn") we now always
+  // present the clean per-clip view for multi-clip outputs and skip the
+  // captureStream pipeline entirely.
+  //
+  // Hide-don't-delete: stitchVideos / showStitchedVideoResult and the dynamic
+  // STITCH_TIMEOUT_MS work are kept intact. To re-enable browser stitching,
+  // flip ENABLE_BROWSER_STITCHING back to true. The proper long-term fix is a
+  // WebCodecs / mp4-muxer / ffmpeg.wasm faster-than-realtime path, NOT this
+  // canvas-record approach which can never produce a smooth result on average
+  // hardware.
+  const ENABLE_BROWSER_STITCHING = false;
   try {
     if (successUrls.length === 1) {
       showVideoResult(progressBubble, successUrls[0], thread);
-    } else {
+    } else if (ENABLE_BROWSER_STITCHING) {
       const fill = progressBubble.querySelector('.video-progress-fill');
       const text = progressBubble.querySelector('.video-progress-text');
       if (fill) fill.style.width = '85%';
@@ -3392,6 +3407,12 @@ async function renderVeoBatchOutcome(ctx) {
       ctx.lastStitchedUrl = stitchedUrl;
       if (fill) fill.style.width = '100%';
       showStitchedVideoResult(progressBubble, stitchedUrl, successUrls, thread);
+    } else {
+      // Multi-clip path: skip stitching, go straight to the friendly
+      // per-clip view (the same banner the timeout-fallback uses).
+      const fill = progressBubble.querySelector('.video-progress-fill');
+      if (fill) fill.style.width = '100%';
+      showMultiClipFallback(progressBubble, successUrls, thread);
     }
   } catch (err) {
     console.log('[SnapToAI Video] Stitch error:', err.message);
@@ -4389,10 +4410,10 @@ function showMultiClipFallback(bubble, clipUrls, thread) {
       <div style="background:linear-gradient(135deg,rgba(0,200,136,0.15),rgba(0,200,136,0.05));border:1px solid rgba(0,200,136,0.4);border-radius:12px;padding:14px 16px;margin-bottom:14px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
           <span style="font-size:22px;">✅</span>
-          <span style="font-size:15px;font-weight:700;color:#00cc88;">Your ${clipUrls.length} clips are ready and saved below</span>
+          <span style="font-size:15px;font-weight:700;color:#00cc88;">Your ${clipUrls.length} clips are ready — play or download below</span>
         </div>
         <div style="font-size:13px;color:#cdd6e0;line-height:1.55;">
-          The clips themselves came out fine — the only thing that didn't finish was the auto-join into a single file. You can play each one below, download them all with one click, or join them in any video editor (iMovie, CapCut, Premiere, etc.).
+          Each clip is a separate file at full quality. You can play them right here, download them all with one click, or join them in any video editor (iMovie, CapCut, Premiere, etc.) to make one combined movie.
         </div>
         <div style="margin-top:12px;">
           <button class="video-save-clips-btn" style="background:#00cc88;border:none;color:#0b1118;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📥 Download all clips</button>
