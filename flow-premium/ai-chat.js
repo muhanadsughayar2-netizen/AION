@@ -3874,10 +3874,18 @@ async function retryVeoClip(clipIdx, ctx) {
 function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, totalClips) {
   return new Promise((resolve) => {
     let pollCount = 0;
-    const maxPolls = 60;  // bumped 40 → 60 (= 15 min max per clip; high-quality clips can take 10+)
+    // Adaptive interval: poll fast at first (5s) so users see early progress
+    // updates, then back off to 15s once Veo is actually rendering. Without
+    // this, the first 15s after submit show NO update and feel like a hang.
+    // maxPolls accounts for the mixed cadence: 6× fast (30s) + 54× slow
+    // (810s) = ~14 min ceiling (was 15 min) — close enough.
+    const maxPolls = 60;
     let consecutiveErrors = 0;
     let stopped = false;
-    const POLL_INTERVAL_MS = 15000;
+    const FAST_POLL_MS = 5000;
+    const SLOW_POLL_MS = 15000;
+    const FAST_POLL_COUNT = 6;
+    const nextDelay = () => (pollCount < FAST_POLL_COUNT ? FAST_POLL_MS : SLOW_POLL_MS);
 
     // Recursive setTimeout (NOT setInterval) so a slow poll request can never
     // overlap with the next tick. Under a slow CDN setInterval would queue
@@ -3901,10 +3909,10 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
         const data = await resp.json().catch(() => ({}));
 
         if (!resp.ok) {
-          if (resp.status === 429) { consecutiveErrors = 0; setTimeout(tick, POLL_INTERVAL_MS); return; } // keep polling — quota will reset
+          if (resp.status === 429) { consecutiveErrors = 0; setTimeout(tick, nextDelay()); return; } // keep polling — quota will reset
           consecutiveErrors++;
           // Tolerate up to 3 transient HTTP errors before giving up on polling
-          if (consecutiveErrors < 3) { setTimeout(tick, POLL_INTERVAL_MS); return; }
+          if (consecutiveErrors < 3) { setTimeout(tick, nextDelay()); return; }
           stopped = true;
           resolve({ url: null, status: 'transient' });
           return;
@@ -3915,7 +3923,7 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
           const pct = data.metadata?.percentComplete || Math.min(pollCount * 5, 90);
           const text = progressBubble.querySelector('.video-progress-text');
           if (text) text.textContent = `Clip ${clipNum}/${totalClips}: Rendering... ${pct}%`;
-          setTimeout(tick, POLL_INTERVAL_MS);
+          setTimeout(tick, nextDelay());
           return;
         }
 
@@ -3959,10 +3967,12 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
           resolve({ url: null, status: 'transient' });
           return;
         }
-        setTimeout(tick, POLL_INTERVAL_MS);
+        setTimeout(tick, nextDelay());
       }
     };
-    setTimeout(tick, POLL_INTERVAL_MS);
+    // First poll fires after FAST_POLL_MS (5s) instead of 15s so users get
+    // a status update quickly after submitting.
+    setTimeout(tick, FAST_POLL_MS);
   });
 }
 
@@ -4355,7 +4365,20 @@ async function stitchVideos(videoUrls, stitchCtx) {
     console.log(`[SnapToAI Video] MediaRecorder mime=${chosenMime || '(default)'} @ 8Mbps`);
     const chunks = [];
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-    const recordingDone = new Promise(resolve => { recorder.onstop = resolve; });
+    // Hard 5s deadline on onstop firing. Chrome's MediaRecorder occasionally
+    // never emits 'stop' under load (GPU pressure, tab backgrounded mid-stop,
+    // codec edge cases) — without this fallback the whole stitch would hang
+    // until the outer 30-120s STITCH_TIMEOUT_MS, which feels like a freeze
+    // to the user. With the fallback we just use whatever chunks we have.
+    const recordingDone = new Promise(resolve => {
+      let settled = false;
+      const settle = () => { if (!settled) { settled = true; resolve(); } };
+      recorder.onstop = settle;
+      setTimeout(() => {
+        if (!settled) console.log('[SnapToAI Video] recorder.onstop timeout — force-finalizing with current chunks');
+        settle();
+      }, 5000);
+    });
 
     // Paint clip 0's first frame BEFORE the recorder starts, so the output
     // doesn't begin with a black gap.
@@ -4396,7 +4419,17 @@ async function stitchVideos(videoUrls, stitchCtx) {
           }
         }
 
-        try { await v.play(); } catch (e) {
+        // Hard 3s deadline on v.play() — normally resolves in <50ms, but
+        // some Chrome builds leave the promise pending forever after a tab
+        // throttle / GPU hiccup. The watchdog inside the draw loop will
+        // still bail the clip if it can't actually play, so all we lose by
+        // continuing here is a few ms.
+        try {
+          await Promise.race([
+            v.play(),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('play() timeout 3s')), 3000))
+          ]);
+        } catch (e) {
           console.log(`[SnapToAI Video] play() rejected on clip ${i+1}:`, e.message);
         }
 
@@ -4493,7 +4526,13 @@ async function stitchVideos(videoUrls, stitchCtx) {
       }
       try { recorder.stop(); } catch (_) {}
       await recordingDone;
-      try { await audioCtx.close(); } catch (_) {}
+      // Don't let audioCtx.close() hang the user (rare Chrome bug under load).
+      try {
+        await Promise.race([
+          audioCtx.close(),
+          new Promise(r => setTimeout(r, 2000))
+        ]);
+      } catch (_) {}
       // Drop references to the raw clip blobs so GC can reclaim them —
       // architect flagged this as a memory leak across retry sessions.
       blobs.length = 0;
@@ -4608,7 +4647,13 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
 
   let pollCount = 0;
   const maxPolls = 40;
-  const POLL_INTERVAL_MS = 15000;
+  // Adaptive cadence — fast at first so users see status updates quickly
+  // after submit, then back off so we don't burn API quota on long renders.
+  const FAST_POLL_MS = 5000;
+  const SLOW_POLL_MS = 15000;
+  const FAST_POLL_COUNT = 6;
+  const POLL_INTERVAL_MS = SLOW_POLL_MS; // legacy alias retained
+  const nextDelay = () => (pollCount < FAST_POLL_COUNT ? FAST_POLL_MS : SLOW_POLL_MS);
 
   // Recursive setTimeout (NOT setInterval) — a slow poll under bad network
   // would otherwise overlap multiple in-flight pollers, racing on the same
@@ -4634,7 +4679,7 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         if (resp.status === 429) {
           const text = progressBubble.querySelector('.video-progress-text');
           if (text) text.textContent = 'Rate limit — retrying shortly...';
-          activeVideoPollTimer = setTimeout(tick, POLL_INTERVAL_MS);
+          activeVideoPollTimer = setTimeout(tick, nextDelay());
           return;
         }
         stopped = true;
@@ -4656,7 +4701,7 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         const text = progressBubble.querySelector('.video-progress-text');
         if (fill) fill.style.width = `${pct}%`;
         if (text) text.textContent = `Rendering... ${pct}%`;
-        activeVideoPollTimer = setTimeout(tick, POLL_INTERVAL_MS);
+        activeVideoPollTimer = setTimeout(tick, nextDelay());
       } else {
         stopped = true;
         activeVideoPollTimer = null;
@@ -4706,10 +4751,10 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
       }
     } catch (err) {
       console.log(`[SnapToAI Video] Poll error:`, err.message);
-      activeVideoPollTimer = setTimeout(tick, POLL_INTERVAL_MS);
+      activeVideoPollTimer = setTimeout(tick, nextDelay());
     }
   };
-  activeVideoPollTimer = setTimeout(tick, POLL_INTERVAL_MS);
+  activeVideoPollTimer = setTimeout(tick, FAST_POLL_MS);
 }
 
 function showVideoResult(bubble, videoUrl, thread) {
