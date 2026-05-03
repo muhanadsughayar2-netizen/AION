@@ -1818,12 +1818,14 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
     }
 
     console.log(`[SnapToAI Video] Starting generation with ${modelName}`);
-    // Task #28: dev-only log of the final prompt sent to Veo (single-clip path).
-    try {
-      const _p = requestBody.instances[0].prompt || '';
-      const _t = _p.length > 700 ? _p.slice(0, 700) + `… [+${_p.length - 700} chars]` : _p;
-      console.log(`[veo prompt] single clip (${modelName}):\n${_t}`);
-    } catch {}
+    // Task #28: dev-only log gated behind the snaptoai_debug_veo flag.
+    if (_veoDebugLogEnabled()) {
+      try {
+        const _p = requestBody.instances[0].prompt || '';
+        const _t = _p.length > 700 ? _p.slice(0, 700) + `… [+${_p.length - 700} chars]` : _p;
+        console.log(`[veo prompt] single clip (${modelName}):\n${_t}`);
+      } catch {}
+    }
     let resp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1964,29 +1966,30 @@ async function generateOneVeoClip(clipIdx, ctx) {
 
         let scenePrompt = clipScenes[clipIdx] || prompt;
         // Task #28: When a chain image is attached, Veo already conditions on
-        // that exact frame so the long style bible is redundant — and worse,
-        // it crowds out the user's brief in Veo's attention budget. Build a
-        // short prompt: continuation tag → user brief verbatim → this shot's
-        // beat. The image carries the look; words carry the action.
+        // that exact frame so the long SUPPORTING STYLE block is redundant —
+        // and worse, it crowds out the user's brief in Veo's attention
+        // budget. Slim the existing scene prompt by keeping the
+        // [USER REQUEST...] and [THIS SEGMENT...] blocks (which carry any
+        // per-clip edits and Fix Stitch overrides) and dropping the
+        // SUPPORTING STYLE block. We deliberately read from clipScenes —
+        // not meta.shots — so user edits in the storyboard editor and
+        // per-clip re-renders are preserved.
         if (attachedChainImage) {
-          const meta = (clipScenes && clipScenes.meta) || {};
-          const shotBeat = (Array.isArray(meta.shots) && meta.shots[clipIdx])
-            ? String(meta.shots[clipIdx]).trim()
-            : '';
-          const briefLine = (prompt || '').trim();
-          const beatBlock = shotBeat ? `\n\n[THIS SEGMENT]\n${shotBeat}` : '';
-          scenePrompt = `[CONTINUES FROM ATTACHED FRAME — same look, same characters, no cut]\n\n[USER REQUEST — RENDER THIS EXACTLY]\n${briefLine}${beatBlock}`;
+          scenePrompt = slimSceneForChainImage(scenePrompt, prompt);
         }
 
-        // Task #28: dev-only log of the final prompt sent to Veo for each
-        // clip. Truncated so the console stays readable; full prompt is
-        // visible in network devtools if needed.
-        try {
-          const _truncated = scenePrompt.length > 700
-            ? scenePrompt.slice(0, 700) + `… [+${scenePrompt.length - 700} chars]`
-            : scenePrompt;
-          console.log(`[veo prompt] clip ${clipNum}/${clipCount} (${modelName}, chain=${attachedChainImage ? 'yes' : 'no'}):\n${_truncated}`);
-        } catch {}
+        // Task #28: dev-only log of the final prompt sent to Veo. Gated so
+        // it doesn't fire in normal production sessions; flip it on with
+        // either `localStorage.snaptoai_debug_veo = '1'` or
+        // `window.SNAPTOAI_DEBUG_VEO = true` from devtools.
+        if (_veoDebugLogEnabled()) {
+          try {
+            const _truncated = scenePrompt.length > 700
+              ? scenePrompt.slice(0, 700) + `… [+${scenePrompt.length - 700} chars]`
+              : scenePrompt;
+            console.log(`[veo prompt] clip ${clipNum}/${clipCount} (${modelName}, chain=${attachedChainImage ? 'yes' : 'no'}):\n${_truncated}`);
+          } catch {}
+        }
 
         const requestBody = {
           instances: [{ prompt: scenePrompt }],
@@ -2072,11 +2075,13 @@ async function generateOneVeoClip(clipIdx, ctx) {
             // a "provided starting frame" that doesn't exist and produce
             // worse transitions than no chaining at all.
             requestBody.instances[0].prompt = clipScenes[clipIdx] || prompt;
-            try {
-              const _p2 = requestBody.instances[0].prompt || '';
-              const _t2 = _p2.length > 700 ? _p2.slice(0, 700) + `… [+${_p2.length - 700} chars]` : _p2;
-              console.log(`[veo prompt] clip ${clipNum}/${clipCount} text-only fallback:\n${_t2}`);
-            } catch {}
+            if (_veoDebugLogEnabled()) {
+              try {
+                const _p2 = requestBody.instances[0].prompt || '';
+                const _t2 = _p2.length > 700 ? _p2.slice(0, 700) + `… [+${_p2.length - 700} chars]` : _p2;
+                console.log(`[veo prompt] clip ${clipNum}/${clipCount} text-only fallback:\n${_t2}`);
+              } catch {}
+            }
             try {
               resp = await fetch(url, {
                 method: 'POST',
@@ -2252,6 +2257,45 @@ function _briefTokens(text) {
       .filter(w => w.length >= 4 && !_BRIEF_STOPWORDS.has(w))
   ));
 }
+// Task #28: dev-only log gate. Off by default in production. Flip on with
+// `localStorage.setItem('snaptoai_debug_veo','1')` or
+// `window.SNAPTOAI_DEBUG_VEO = true` in devtools.
+function _veoDebugLogEnabled() {
+  try {
+    if (typeof window !== 'undefined' && window.SNAPTOAI_DEBUG_VEO === true) return true;
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('snaptoai_debug_veo') === '1') return true;
+  } catch {}
+  return false;
+}
+
+// Task #28: Build the slim chained-clip prompt by trimming the SUPPORTING
+// STYLE block out of the live scene prompt. Reads from the current scene
+// prompt (NOT meta.shots) so user edits in the storyboard editor and per-
+// clip overrides from Fix Stitch / "Retry just this one" are preserved.
+// Falls back to a brief-only prompt if the scene prompt isn't recognizable
+// (e.g. legacy or hand-edited shape).
+function slimSceneForChainImage(scenePrompt, fallbackBrief) {
+  const header = '[CONTINUES FROM ATTACHED FRAME — same look, same characters, no cut]';
+  const text = String(scenePrompt || '');
+  // Strip the [SUPPORTING STYLE...] block (everything from that label up
+  // to but not including [CONTINUITY] or end of string) and the
+  // [CONTINUITY] line itself, since the image already encodes the look
+  // and continuity.
+  const trimmed = text
+    .replace(/\n*\[SUPPORTING STYLE[^\]]*\][\s\S]*?(?=\n\[CONTINUITY\]|$)/i, '')
+    .replace(/\n*\[CONTINUITY\][^\n]*\n?/i, '')
+    .trim();
+  if (trimmed && /\[USER REQUEST/i.test(trimmed)) {
+    return `${header}\n\n${trimmed}`;
+  }
+  // Legacy / unrecognized shape — fall back to brief + raw scene prompt
+  // so we still preserve any per-clip text the caller passed in.
+  const brief = String(fallbackBrief || '').trim();
+  const tail = trimmed || text.trim();
+  const briefBlock = brief ? `[USER REQUEST — RENDER THIS EXACTLY]\n${brief}\n\n` : '';
+  return `${header}\n\n${briefBlock}${tail}`.trim();
+}
+
 function briefAdheres(userPrompt, parsed) {
   const tokens = _briefTokens(userPrompt);
   if (tokens.length === 0) return true; // brief too short to check meaningfully
