@@ -4055,7 +4055,11 @@ async function stitchVideos(videoUrls, stitchCtx) {
       videos.push(v);
       await new Promise((resolve, reject) => {
         const t = setTimeout(() => reject(new Error(`Clip ${i+1} load timeout`)), 15000);
-        v.onloadedmetadata = () => { clearTimeout(t); resolve(); };
+        // loadeddata (readyState >= HAVE_CURRENT_DATA = 2) instead of
+        // loadedmetadata (readyState 1) so drawImage() can actually paint the
+        // first decoded frame — otherwise the pre-recorder draw at line ~4135
+        // would write a black/transparent frame and FIX 3 wouldn't work.
+        v.onloadeddata = () => { clearTimeout(t); resolve(); };
         v.onerror = () => { clearTimeout(t); reject(new Error(`Clip ${i+1} load error`)); };
       });
     }
