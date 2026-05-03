@@ -73,7 +73,6 @@ const OFFLINE_GRACE_DAYS = 7;
 const BACKEND_URL = 'https://www.snaptoai.com';
 const OWNER_EMAILS = new Set([
   'muhanadsughayar2@gmail.com',
-  'muhanadsughayar@gmail.com',
   'muhanadsughayar1@gmail.com',
   'jospeh@smartconnects.com'
 ]);

@@ -398,7 +398,6 @@ def check_video_support():
 
 OWNER_EMAILS_SET = {
     'muhanadsughayar2@gmail.com',
-    'muhanadsughayar@gmail.com',
     'muhanadsughayar1@gmail.com',
     'joseph@smartconnects.com'
 }
