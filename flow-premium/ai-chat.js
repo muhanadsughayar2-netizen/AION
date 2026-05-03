@@ -3968,6 +3968,193 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
 // start to finish. Realtime playback is still required (canvas.captureStream
 // is wall-clock based) but with no crossfade contention the recorded frames
 // are smooth and the audio doesn't glitch at clip boundaries.
+// ---------------------------------------------------------------------------
+// fixWebmDuration — repair the missing Duration in a MediaRecorder-produced
+// WebM. Chrome's MediaRecorder writes EBML clusters but never back-fills the
+// Segment Info Duration field, which is why downloaded files report
+// `duration=N/A` to ffprobe and HANG on seek in browsers/players. We walk the
+// EBML structure, locate the SegmentInfo > Duration element (id 0x4489), and
+// rewrite it to the wall-clock duration in milliseconds. Pure JS, no deps,
+// safe under MV3 CSP. Adapted from the canonical EBML duration-fix recipe.
+// ---------------------------------------------------------------------------
+async function fixWebmDuration(blob, durationMs) {
+  try {
+    const buf = await blob.arrayBuffer();
+    const view = new DataView(buf);
+    const u8 = new Uint8Array(buf);
+
+    // Read a variable-length EBML integer (VINT). Returns {value, size}.
+    function readVint(offset) {
+      const first = view.getUint8(offset);
+      if (first === 0) return null;
+      let size = 1;
+      let mask = 0x80;
+      while (size <= 8 && !(first & mask)) { size++; mask >>= 1; }
+      if (size > 8) return null;
+      let value = first & (mask - 1);
+      for (let i = 1; i < size; i++) value = value * 256 + view.getUint8(offset + i);
+      return { value, size };
+    }
+    // Read element ID (VINT, but the leading bits are kept).
+    function readId(offset) {
+      const first = view.getUint8(offset);
+      if (first === 0) return null;
+      let size = 1, mask = 0x80;
+      while (size <= 4 && !(first & mask)) { size++; mask >>= 1; }
+      if (size > 4) return null;
+      let id = 0;
+      for (let i = 0; i < size; i++) id = id * 256 + view.getUint8(offset + i);
+      return { id, size };
+    }
+
+    // Walk top-level EBML to find the Segment (id 0x18538067).
+    let offset = 0;
+    let segmentDataStart = -1;
+    let segmentDataEnd = -1;
+    while (offset < u8.length) {
+      const idInfo = readId(offset);
+      if (!idInfo) break;
+      const sizeInfo = readVint(offset + idInfo.size);
+      if (!sizeInfo) break;
+      const dataStart = offset + idInfo.size + sizeInfo.size;
+      // 0x01FFFFFFFFFFFFFF (8-byte all-1s VINT) means "unknown size" — common
+      // for MediaRecorder's Segment. Treat as "rest of file".
+      const isUnknown = sizeInfo.size === 8 && sizeInfo.value === 0x00FFFFFFFFFFFFFF;
+      const dataEnd = isUnknown ? u8.length : Math.min(u8.length, dataStart + sizeInfo.value);
+      if (idInfo.id === 0x18538067) {
+        segmentDataStart = dataStart;
+        segmentDataEnd = dataEnd;
+        break;
+      }
+      offset = dataEnd;
+    }
+    if (segmentDataStart < 0) return blob;
+
+    // Inside the Segment, find the SegmentInfo (id 0x1549A966). Capture the
+    // size-VINT location/byte-count too so we can grow it when we inject a
+    // Duration element (otherwise the parent's declared size stays stale and
+    // strict players reject the file as malformed).
+    let infoDataStart = -1, infoDataEnd = -1, infoSizeOffset = -1, infoSizeBytes = 0, infoIsUnknown = false;
+    let cursor = segmentDataStart;
+    while (cursor < segmentDataEnd) {
+      const idInfo = readId(cursor);
+      if (!idInfo) break;
+      const sizeOffset = cursor + idInfo.size;
+      const sizeInfo = readVint(sizeOffset);
+      if (!sizeInfo) break;
+      const dataStart = sizeOffset + sizeInfo.size;
+      const isUnknown = sizeInfo.size === 8 && sizeInfo.value === 0x00FFFFFFFFFFFFFF;
+      const dataEnd = isUnknown ? segmentDataEnd : Math.min(segmentDataEnd, dataStart + sizeInfo.value);
+      if (idInfo.id === 0x1549A966) {
+        infoDataStart = dataStart;
+        infoDataEnd = dataEnd;
+        infoSizeOffset = sizeOffset;
+        infoSizeBytes = sizeInfo.size;
+        infoIsUnknown = isUnknown;
+        break;
+      }
+      cursor = dataEnd;
+    }
+    if (infoDataStart < 0) return blob;
+
+    // Inside SegmentInfo, find Duration (id 0x4489) — a Float (4 or 8 bytes).
+    let durIdOffset = -1, durSizeBytes = 0, durDataOffset = -1, durValueBytes = 0;
+    cursor = infoDataStart;
+    while (cursor < infoDataEnd) {
+      const idInfo = readId(cursor);
+      if (!idInfo) break;
+      const sizeInfo = readVint(cursor + idInfo.size);
+      if (!sizeInfo) break;
+      const dataStart = cursor + idInfo.size + sizeInfo.size;
+      const dataEnd = Math.min(infoDataEnd, dataStart + sizeInfo.value);
+      if (idInfo.id === 0x4489) {
+        durIdOffset = cursor;
+        durSizeBytes = sizeInfo.size;
+        durDataOffset = dataStart;
+        durValueBytes = sizeInfo.value;
+        break;
+      }
+      cursor = dataEnd;
+    }
+
+    // TimecodeScale defaults to 1,000,000 (1ms units). MediaRecorder always
+    // uses the default and the Duration field is in TimecodeScale units, so
+    // value = durationMs is correct.
+    const newDuration = Math.max(1, Math.round(durationMs));
+    if (durDataOffset >= 0 && durValueBytes >= 4) {
+      // Overwrite existing Duration float in place — preserves all offsets.
+      const out = new Uint8Array(buf.slice(0));
+      const dv = new DataView(out.buffer);
+      if (durValueBytes === 8) {
+        dv.setFloat64(durDataOffset, newDuration, false);
+      } else {
+        dv.setFloat32(durDataOffset, newDuration, false);
+      }
+      return new Blob([out], { type: blob.type || 'video/webm' });
+    }
+
+    // No Duration element exists — inject one at the start of SegmentInfo.
+    // Element layout: [0x44 0x89][size VINT (0x88 = 8-byte payload)][float64]
+    // = 11 bytes total. We must ALSO grow the parent SegmentInfo's size VINT
+    // by +11, otherwise strict parsers reject the file ("element exceeds
+    // containing master element"). When the existing payload is small enough
+    // the new size still fits in the same VINT byte count → rewrite in place.
+    // If it doesn't fit, expand the size VINT (shifts everything after by 1).
+    const insertion = new Uint8Array(2 + 1 + 8);
+    insertion[0] = 0x44; insertion[1] = 0x89; insertion[2] = 0x88;
+    new DataView(insertion.buffer).setFloat64(3, newDuration, false);
+
+    // Re-encode SegmentInfo's size VINT to (oldPayloadSize + 11).
+    function encodeVint(value, minBytes) {
+      let bytes = Math.max(minBytes || 1, 1);
+      while (bytes <= 8 && value >= (1 << (7 * bytes)) - 1) bytes++;
+      if (bytes > 8) return null;
+      const out = new Uint8Array(bytes);
+      out[0] = (1 << (8 - bytes));
+      let v = value;
+      for (let i = bytes - 1; i >= 0; i--) {
+        out[i] |= v & 0xFF;
+        v = Math.floor(v / 256);
+      }
+      return out;
+    }
+
+    if (infoIsUnknown || infoSizeOffset < 0) {
+      // Unknown-size SegmentInfo (rare) — inject without resizing the parent.
+      const before = u8.subarray(0, infoDataStart);
+      const after = u8.subarray(infoDataStart);
+      return new Blob([before, insertion, after], { type: blob.type || 'video/webm' });
+    }
+
+    const oldPayload = infoDataEnd - infoDataStart;
+    const newSizeVint = encodeVint(oldPayload + insertion.length, infoSizeBytes);
+    if (!newSizeVint) {
+      // Couldn't re-encode — fall back to in-place float overwrite path is
+      // gone (no Duration existed). Best effort: return original.
+      return blob;
+    }
+
+    if (newSizeVint.length === infoSizeBytes) {
+      // Same byte-count — patch in place, then splice in the Duration.
+      const head = new Uint8Array(u8.subarray(0, infoSizeOffset));
+      const tail = u8.subarray(infoDataStart);
+      const sizeAfterPatch = new Uint8Array(infoDataStart - infoSizeOffset);
+      // Re-write VINT bytes in the head copy.
+      head.set(newSizeVint, infoSizeOffset);
+      const before = head; // already patched
+      return new Blob([before, insertion, tail], { type: blob.type || 'video/webm' });
+    }
+    // Size VINT grew — splice in the new VINT (shift everything after).
+    const beforeSize = u8.subarray(0, infoSizeOffset);
+    const afterSize = u8.subarray(infoSizeOffset + infoSizeBytes, infoDataStart);
+    const tail = u8.subarray(infoDataStart);
+    return new Blob([beforeSize, newSizeVint, afterSize, insertion, tail], { type: blob.type || 'video/webm' });
+  } catch (e) {
+    console.log('[SnapToAI Video] fixWebmDuration failed (returning original):', e.message);
+    return blob;
+  }
+}
+
 async function stitchVideos(videoUrls, stitchCtx) {
   console.log(`[SnapToAI Video] Stitching ${videoUrls.length} clips (hard-cut mode)...`);
 
@@ -4147,6 +4334,10 @@ async function stitchVideos(videoUrls, stitchCtx) {
     // Audio is connected just-in-time per clip and disconnected before the
     // next clip's source attaches, so audioDest only ever has ONE active
     // source feeding it — no glitching, no ducking, no overlap.
+    // Track wall-clock recording duration so we can repair the WebM EBML
+    // Duration field after recorder.stop() — Chrome's MediaRecorder never
+    // writes it, which is what makes the downloaded file hang on playback.
+    const recordStartMs = performance.now();
     try {
       for (let i = 0; i < videos.length; i++) {
         if (stitchCtx && stitchCtx.userStopped) throw new Error('User stopped');
@@ -4177,9 +4368,15 @@ async function stitchVideos(videoUrls, stitchCtx) {
 
         // Draw loop: rAF foreground + 100ms setInterval backstop for
         // backgrounded tabs (rAF throttles to 1Hz when hidden).
+        // Per-clip hard ceiling at dur*1.5+3s in case `ended` never fires
+        // (some short Veo clips don't emit the event reliably) — without
+        // this the whole stitch would hang until the global 120s timeout.
         await new Promise((resolveClip) => {
           let stopped = false;
           let interval = null;
+          let lastProgressTs = performance.now();
+          let lastTime = -1;
+          const clipDeadline = performance.now() + (dur * 1500) + 3000;
           const done = () => {
             if (stopped) return;
             stopped = true;
@@ -4191,7 +4388,15 @@ async function stitchVideos(videoUrls, stitchCtx) {
             if (stopped) return;
             if (stitchCtx && stitchCtx.userStopped) { done(); return; }
             try { ctx2d.drawImage(v, 0, 0, canvasW, canvasH); } catch (_) {}
-            if (v.ended || (v.currentTime >= dur - 0.02)) { done(); return; }
+            const now = performance.now();
+            if (v.currentTime !== lastTime) { lastTime = v.currentTime; lastProgressTs = now; }
+            // currentTime hasn't advanced for 2.5s AND we've been playing for
+            // over 1s → element is stuck. Bail out of this clip.
+            const stalled = (now - lastProgressTs > 2500) && (now - recordStartMs > 1000);
+            if (v.ended || (v.currentTime >= dur - 0.02) || stalled || now > clipDeadline) {
+              if (stalled) console.log(`[SnapToAI Video] Clip ${i+1} stalled at ${v.currentTime.toFixed(2)}s — advancing`);
+              done(); return;
+            }
             if (typeof requestAnimationFrame === 'function') requestAnimationFrame(tick);
             else setTimeout(tick, 33);
           };
@@ -4223,10 +4428,19 @@ async function stitchVideos(videoUrls, stitchCtx) {
       try { recorder.stop(); } catch (_) {}
       await recordingDone;
       try { await audioCtx.close(); } catch (_) {}
+      // Drop references to the raw clip blobs so GC can reclaim them —
+      // architect flagged this as a memory leak across retry sessions.
+      blobs.length = 0;
     }
 
-    const stitchedBlob = new Blob(chunks, { type: 'video/webm' });
-    return URL.createObjectURL(stitchedBlob);
+    // Wall-clock duration of the recorded segment — used to back-fill the
+    // missing Duration in the WebM EBML header so the downloaded file is
+    // seekable (without this, players hang on playback / show duration N/A).
+    const recordedMs = Math.max(1, performance.now() - recordStartMs);
+    const rawBlob = new Blob(chunks, { type: chosenMime || 'video/webm' });
+    const fixedBlob = await fixWebmDuration(rawBlob, recordedMs);
+    console.log(`[SnapToAI Video] WebM duration repair: ${recordedMs.toFixed(0)}ms · raw=${rawBlob.size}B · fixed=${fixedBlob.size}B`);
+    return URL.createObjectURL(fixedBlob);
   })();
 
   try {
