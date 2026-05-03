@@ -653,6 +653,17 @@
         + (selectedKeys.has(key) ? ' sb-selected' : '');
       tile.title = tileTitle(idx);
       tile.dataset.key = key;
+      // Make every tile reachable via the keyboard so grid mode is
+      // usable without a pointer. Strip mode = "attach", grid mode =
+      // "toggle selection" — both fire on Enter / Space.
+      tile.tabIndex = 0;
+      tile.setAttribute('role', 'button');
+      tile.addEventListener('keydown', (ev) => {
+        if (ev.key !== 'Enter' && ev.key !== ' ') return;
+        ev.preventDefault();
+        if (gridMode) toggleSelectKey(tile.dataset.key);
+        else attachSnapByKey(tile.dataset.key);
+      });
       tile.innerHTML =
         '<span class="sb-queue-num">' + (idx + 1) + '</span>' +
         '<button class="sb-queue-x" aria-label="Remove snap" title="Remove">×</button>' +
@@ -838,10 +849,14 @@
   const SPLIT_KEY = 'sidebar_split_v1';
   const HERO_MIN = 220;
   const CHAT_MIN = 280;
+  // Fixed pixels eaten by the resizer + a small safety buffer for the
+  // chat region's own internal padding/footer rows. Without this the
+  // chat could dip below CHAT_MIN of *content* on short windows.
+  const CHAT_OVERHEAD = 8 /* resizer */ + 12 /* breathing room */;
 
   function clampHero(h) {
     const total = window.innerHeight || 800;
-    const max = Math.max(HERO_MIN, total - CHAT_MIN);
+    const max = Math.max(HERO_MIN, total - CHAT_MIN - CHAT_OVERHEAD);
     return Math.max(HERO_MIN, Math.min(h, max));
   }
   function setHeroHeight(h) {
