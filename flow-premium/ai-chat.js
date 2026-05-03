@@ -2692,15 +2692,41 @@ function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, 
   });
 }
 
+// TEMPORARILY DISABLED: the AI-director / "style bible" expansion was
+// rewriting the user's prompt into cinematic boilerplate (lighting,
+// anamorphic lenses, color palettes, multi-scene scripts) that didn't
+// reflect what they actually asked for. Until we redesign that flow,
+// multi-clip videos send the user's LITERAL prompt to every clip with a
+// short continuity line so the stitched video stays coherent. The
+// `generateAnchoredStoryboard` and `buildAnchoredFallback` functions
+// above are kept intact so we can re-enable the director path by
+// reverting this function to its previous body.
+// To re-enable later, restore the original two-line body that calls
+// generateAnchoredStoryboard() then falls back to buildAnchoredFallback().
 async function buildClipScenes(prompt, clipCount, apiKey, clipDur) {
   if (clipCount < 2) return [];
-  const fromAI = await generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur);
-  if (fromAI && fromAI.length === clipCount) {
-    console.log(`[veo storyboard] using AI-generated style bible for ${clipCount} clips × ${clipDur || 8}s`);
-    return fromAI;
-  }
-  console.log(`[veo storyboard] using anchored fallback template for ${clipCount} clips × ${clipDur || 8}s`);
-  return buildAnchoredFallback(prompt, clipCount, clipDur);
+  const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
+  const userPrompt = String(prompt || '').trim();
+  const shots = Array.from({ length: clipCount }, (_, i) => {
+    if (i === 0) return 'Open the scene exactly as described above.';
+    if (i === clipCount - 1) return 'Continue the same scene to a natural close — same characters, same setting, no cut.';
+    return 'Continue the same scene from the previous segment — same characters, same setting, no cut.';
+  });
+  const prompts = shots.map((shot, i) => {
+    const t0 = i * segLen, t1 = (i + 1) * segLen;
+    const continuity = i === 0
+      ? '[CONTINUITY] Establish the look that every later segment will inherit.'
+      : `[CONTINUITY] Same characters, wardrobe, location, lighting, and palette as segment ${i}. No hard cuts.`;
+    return `${userPrompt}\n\n[THIS SEGMENT — ${i + 1} of ${clipCount} (${t0}-${t1}s)]\n${shot}\n\n${continuity}`;
+  });
+  prompts.meta = {
+    title: (userPrompt.split(/[.\n]/)[0] || 'Your Video').slice(0, 60).trim() || 'Your Video',
+    script_summary: userPrompt,
+    style_bible: '',
+    shots
+  };
+  console.log(`[veo storyboard] literal-prompt mode — ${clipCount} clips × ${segLen}s, no AI director, user prompt verbatim`);
+  return prompts;
 }
 
 // Compile one clip prompt from edited meta (used when user edits the plan card).
