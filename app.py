@@ -193,6 +193,24 @@ def init_db():
         # Optional light-mode logo variant (Task #20). Falls back to logo_url
         # when NULL so existing single-logo institutions keep working untouched.
         cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_url_light TEXT")
+        # Task #27 — institution-shared Gemini/Vertex key.
+        # gemini_key_encrypted holds a Fernet ciphertext (never plaintext); gemini_key_hint
+        # stores the last 4 visible chars for the masked admin preview. key_policy controls
+        # who wins when both an institution key and a member BYOK key exist:
+        #   'institution-only'        — members can't override; BYOK input is hidden
+        #   'prefer-institution-key'  — institution key wins, BYOK is a fallback
+        #   'prefer-user-key'         — member BYOK wins, institution key is the fallback
+        # billing_behavior controls the SnapToAI free-prompt meter when the institution
+        # key is the one actually used:
+        #   'count-against-snaptoai-quota' — default; still decrements free_prompts
+        #   'bypass-snaptoai-quota'        — institution pays Google directly, no metering
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS gemini_key_encrypted TEXT")
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS gemini_key_hint VARCHAR(20)")
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_policy VARCHAR(30) DEFAULT 'prefer-user-key'")
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS billing_behavior VARCHAR(30) DEFAULT 'count-against-snaptoai-quota'")
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_set_at TIMESTAMP")
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_last_rotated_at TIMESTAMP")
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_last_used_at TIMESTAMP")
         cur.execute('''
             CREATE TABLE IF NOT EXISTS institution_members (
                 id SERIAL PRIMARY KEY,
@@ -507,12 +525,18 @@ def _apply_institution_membership(cur, email, institution_id):
     """, (email,))
 
 def _get_institution_branding_for_email(cur, email):
-    """Return branding dict if this email is an active member of an active institution, else None."""
+    """Return branding dict if this email is an active member of an active institution, else None.
+
+    Task #27: includes key-policy metadata (`hasInstitutionKey`, `keyPolicy`,
+    `billingBehavior`, `keyHint`) so the extension UI can hide/disable the BYOK
+    field when the institution mandates its own key. Plaintext key is NEVER returned."""
     email = _norm_email(email)
     if not email:
         return None
     cur.execute("""
-        SELECT i.id, i.slug, i.name, i.logo_url, i.brand_color, i.status, i.expires_at, m.status, m.role, i.logo_url_light
+        SELECT i.id, i.slug, i.name, i.logo_url, i.brand_color, i.status, i.expires_at,
+               m.status, m.role, i.logo_url_light,
+               i.gemini_key_encrypted, i.gemini_key_hint, i.key_policy, i.billing_behavior
         FROM institution_members m JOIN institutions i ON i.id = m.institution_id
         WHERE LOWER(m.email) = %s LIMIT 1
     """, (email,))
@@ -530,13 +554,121 @@ def _get_institution_branding_for_email(cur, email):
         'logoUrl': r[3],
         'logoUrlLight': r[9],
         'brandColor': r[4] or '#00d9ff',
-        'role': r[8] or 'member'
+        'role': r[8] or 'member',
+        'hasInstitutionKey': bool(r[10]),
+        'keyHint': r[11] or '',
+        'keyPolicy': r[12] or 'prefer-user-key',
+        'billingBehavior': r[13] or 'count-against-snaptoai-quota'
     }
+
+
+# ============================================
+# Task #27 — Institution Gemini key encryption + resolution
+# ============================================
+# We use Fernet (AES-128-CBC + HMAC-SHA256) with a key derived via PBKDF2 from
+# INSTITUTION_KEY_ENCRYPTION_SECRET (preferred) or GEMINI_OWNER_KEY (fallback).
+# Plaintext keys are NEVER stored, NEVER logged, NEVER returned via any API.
+# Rotating the encryption secret invalidates existing institution keys; admins
+# would need to re-paste them. Document this in deploy notes.
+
+_FERNET_INSTANCE = None
+
+def _get_fernet():
+    global _FERNET_INSTANCE
+    if _FERNET_INSTANCE is not None:
+        return _FERNET_INSTANCE
+    secret = os.environ.get('INSTITUTION_KEY_ENCRYPTION_SECRET') or os.environ.get('GEMINI_OWNER_KEY') or ''
+    if not secret:
+        return None
+    try:
+        from cryptography.fernet import Fernet
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+        salt = b'snaptoai-institution-key-v1'
+        kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=200_000)
+        key_bytes = base64.urlsafe_b64encode(kdf.derive(secret.encode('utf-8')))
+        _FERNET_INSTANCE = Fernet(key_bytes)
+        return _FERNET_INSTANCE
+    except Exception as e:
+        print(f'⚠️ Fernet init failed: {e}')
+        return None
+
+def _encrypt_inst_key(plaintext):
+    f = _get_fernet()
+    if not f:
+        raise RuntimeError('Encryption not configured: set INSTITUTION_KEY_ENCRYPTION_SECRET')
+    return f.encrypt(plaintext.encode('utf-8')).decode('utf-8')
+
+def _decrypt_inst_key(ciphertext):
+    if not ciphertext:
+        return None
+    f = _get_fernet()
+    if not f:
+        return None
+    try:
+        from cryptography.fernet import InvalidToken
+        return f.decrypt(ciphertext.encode('utf-8')).decode('utf-8')
+    except Exception:
+        return None
+
+def _resolve_institution_key_for_email(cur, email):
+    """Return (plaintext_key, policy, billing, inst_id, inst_name) for a member's
+    institution, or None if no active institution / no key configured. Plaintext
+    is materialized only inside this server process and only at call time."""
+    email = _norm_email(email)
+    if not email:
+        return None
+    cur.execute("""
+        SELECT i.id, i.name, i.gemini_key_encrypted, i.key_policy, i.billing_behavior,
+               i.status, i.expires_at, m.status
+        FROM institution_members m JOIN institutions i ON i.id = m.institution_id
+        WHERE LOWER(m.email) = %s LIMIT 1
+    """, (email,))
+    r = cur.fetchone()
+    if not r:
+        return None
+    if r[7] != 'active' or not _institution_active((r[5], r[6])):
+        return None
+    if not r[2]:
+        # Institution exists but no key set — return tuple with None key so the
+        # caller can still honor 'institution-only' policy by failing closed.
+        return (None, r[3] or 'prefer-user-key', r[4] or 'count-against-snaptoai-quota', r[0], r[1])
+    plaintext = _decrypt_inst_key(r[2])
+    return (plaintext, r[3] or 'prefer-user-key', r[4] or 'count-against-snaptoai-quota', r[0], r[1])
+
+def _test_gemini_key(api_key):
+    """Lightweight connectivity check: list models. Returns (ok, message)."""
+    if not api_key or len(api_key) < 10:
+        return False, 'Key too short'
+    try:
+        resp = requests.get(
+            f'https://generativelanguage.googleapis.com/v1beta/models?key={api_key}',
+            timeout=10
+        )
+        if resp.status_code == 200:
+            return True, 'Key is valid'
+        try:
+            err = resp.json().get('error', {}).get('message', '')
+        except Exception:
+            err = resp.text[:200]
+        return False, err or f'HTTP {resp.status_code}'
+    except Exception as e:
+        return False, str(e)
+
+def _is_invalid_key_error(err_text):
+    """Detect Google API responses that indicate a bad/revoked key."""
+    if not err_text:
+        return False
+    s = str(err_text).lower()
+    return ('api key not valid' in s or 'api_key_invalid' in s or
+            'invalid api key' in s or 'permission denied' in s and 'key' in s)
 
 def _institution_by_slug(cur, slug):
     cur.execute("""
         SELECT id, slug, name, logo_url, brand_color, primary_admin_email, seat_limit,
-               expires_at, status, allowed_domains, notes, created_at, branding_locked, logo_url_light
+               expires_at, status, allowed_domains, notes, created_at, branding_locked, logo_url_light,
+               gemini_key_encrypted, gemini_key_hint, key_policy, billing_behavior,
+               key_set_at, key_last_rotated_at, key_last_used_at
         FROM institutions WHERE slug=%s
     """, (slug,))
     return cur.fetchone()
@@ -2930,11 +3062,6 @@ def ai_proxy():
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
         return response
 
-    if not GEMINI_OWNER_KEY:
-        r = jsonify({'error': 'AI proxy not configured', 'remaining': 0})
-        r.headers['Access-Control-Allow-Origin'] = '*'
-        return r, 503
-
     data = request.get_json(silent=True)
     if not data:
         r = jsonify({'error': 'Invalid request'})
@@ -2946,6 +3073,12 @@ def ai_proxy():
         r = jsonify({'error': 'Email or device ID required'})
         r.headers['Access-Control-Allow-Origin'] = '*'
         return r, 400
+
+    if not GEMINI_OWNER_KEY:
+        # Owner key missing is OK *only* if this caller's institution provides
+        # one — checked further down. We can't know yet, so defer the 503 until
+        # after institution lookup.
+        pass
 
     now = _time.time()
     cache_key = identifier
@@ -2974,22 +3107,87 @@ def ai_proxy():
         now_utc = datetime.now(timezone.utc)
         today_str = now_utc.strftime('%Y-%m-%d')
 
-        cur.execute('''
-            INSERT INTO free_prompts (identifier, usage_count, last_used)
-            VALUES (%s, 0, NOW())
-            ON CONFLICT (identifier) DO UPDATE SET
-                usage_count = CASE WHEN free_prompts.last_used::date < %s::date THEN 0 ELSE free_prompts.usage_count END,
-                last_used = CASE WHEN free_prompts.last_used::date < %s::date THEN NOW() ELSE free_prompts.last_used END
-            RETURNING usage_count
-        ''', (identifier, today_str, today_str))
-        row = cur.fetchone()
-        conn.commit()
-        usage_count = row[0] if row else 0
+        # ---------- Task #27: institution-key resolution ----------
+        # Decide which Gemini key the proxy will use, and whether this call
+        # should count against the SnapToAI free-prompt meter.
+        # SECURITY: when an institution would be involved, the caller must
+        # prove ownership of the email via a Google OAuth token — otherwise
+        # any client could spoof an institution member's email to consume the
+        # institution's key/quota.
+        inst_resolution = None
+        if '@' in identifier:
+            try:
+                inst_resolution = _resolve_institution_key_for_email(cur, identifier)
+            except Exception as ire:
+                print(f'⚠️ inst key resolve error: {ire}')
+                inst_resolution = None
 
-        if usage_count >= FREE_PROMPT_LIMIT:
-            r = jsonify({'error': 'limit_reached', 'remaining': 0, 'limit': FREE_PROMPT_LIMIT})
+        if inst_resolution:
+            supplied_token = (str(data.get('accessToken') or data.get('idToken') or '')).strip()
+            verified_email = verify_google_token(supplied_token) if supplied_token else None
+            if not verified_email or verified_email.lower() != identifier.lower():
+                r = jsonify({
+                    'error': 'institution_key_invalid',
+                    'message': 'Sign-in required to use your institution\'s AI key. Please re-authenticate in the extension.',
+                    'remaining': 0
+                })
+                r.headers['Access-Control-Allow-Origin'] = '*'
+                return r, 401
+
+        inst_key_plain = None
+        inst_policy = 'prefer-user-key'
+        inst_billing = 'count-against-snaptoai-quota'
+        inst_id_for_audit = None
+        inst_name_for_err = None
+        if inst_resolution:
+            inst_key_plain, inst_policy, inst_billing, inst_id_for_audit, inst_name_for_err = inst_resolution
+
+        # institution-only policy with no usable key → fail closed (no fallback).
+        if inst_resolution and inst_policy == 'institution-only' and not inst_key_plain:
+            r = jsonify({
+                'error': 'institution_key_invalid',
+                'message': f'Your organization ({inst_name_for_err}) requires its own AI key, but it is not configured. Contact your institution admin.',
+                'remaining': 0
+            })
             r.headers['Access-Control-Allow-Origin'] = '*'
-            return r, 403
+            return r, 502
+
+        # Pick the active key. Per task scope, BYOK is client-side only — the
+        # proxy never receives a user's personal key — so when policy permits
+        # either, we use the institution key if present; otherwise fall back to
+        # the SnapToAI owner key. (prefer-user-key just means the *client*
+        # routes BYOK calls direct; if the client falls through to the proxy,
+        # use whatever the institution provides, else owner key.)
+        active_key = inst_key_plain or GEMINI_OWNER_KEY
+        used_institution_key = bool(inst_key_plain)
+
+        if not active_key:
+            r = jsonify({'error': 'AI proxy not configured', 'remaining': 0})
+            r.headers['Access-Control-Allow-Origin'] = '*'
+            return r, 503
+
+        # Skip SnapToAI metering when the institution explicitly bypasses it.
+        skip_meter = used_institution_key and inst_billing == 'bypass-snaptoai-quota'
+
+        if skip_meter:
+            usage_count = 0  # for response-shape compatibility
+        else:
+            cur.execute('''
+                INSERT INTO free_prompts (identifier, usage_count, last_used)
+                VALUES (%s, 0, NOW())
+                ON CONFLICT (identifier) DO UPDATE SET
+                    usage_count = CASE WHEN free_prompts.last_used::date < %s::date THEN 0 ELSE free_prompts.usage_count END,
+                    last_used = CASE WHEN free_prompts.last_used::date < %s::date THEN NOW() ELSE free_prompts.last_used END
+                RETURNING usage_count
+            ''', (identifier, today_str, today_str))
+            row = cur.fetchone()
+            conn.commit()
+            usage_count = row[0] if row else 0
+
+            if usage_count >= FREE_PROMPT_LIMIT:
+                r = jsonify({'error': 'limit_reached', 'remaining': 0, 'limit': FREE_PROMPT_LIMIT})
+                r.headers['Access-Control-Allow-Origin'] = '*'
+                return r, 403
 
         prompt = str(data.get('prompt', ''))[:2000]
         image_data = str(data.get('imageData', ''))
@@ -3022,7 +3220,7 @@ def ai_proxy():
         }
 
         gemini_resp = http_requests.post(
-            f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_OWNER_KEY}',
+            f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={active_key}',
             json=gemini_body,
             timeout=30
         )
@@ -3031,21 +3229,43 @@ def ai_proxy():
         if 'error' in gemini_data:
             err = gemini_data['error'].get('message', 'AI error')
             err_lower = err.lower()
+            # When the *institution* key is the one that failed authentication,
+            # surface a distinct error code so the extension can point the
+            # member at their admin instead of suggesting BYOK or retry.
+            if used_institution_key and _is_invalid_key_error(err):
+                r = jsonify({
+                    'error': 'institution_key_invalid',
+                    'message': f'Your organization ({inst_name_for_err})\'s AI key was rejected by Google. Contact your institution admin.',
+                    'remaining': 0
+                })
+                r.headers['Access-Control-Allow-Origin'] = '*'
+                return r, 502
             if 'quota' in err_lower or 'exhausted' in err_lower or 'rate' in err_lower:
-                r = jsonify({'error': 'busy', 'message': 'Our free AI is busy right now. Please try again in a minute!', 'remaining': FREE_PROMPT_LIMIT - usage_count})
+                r = jsonify({'error': 'busy', 'message': 'Our free AI is busy right now. Please try again in a minute!', 'remaining': max(0, FREE_PROMPT_LIMIT - usage_count)})
             else:
-                r = jsonify({'error': err, 'remaining': FREE_PROMPT_LIMIT - usage_count})
+                r = jsonify({'error': err, 'remaining': max(0, FREE_PROMPT_LIMIT - usage_count)})
             r.headers['Access-Control-Allow-Origin'] = '*'
             return r, 502
 
-        cur.execute('''
-            UPDATE free_prompts SET usage_count = usage_count + 1, last_used = NOW()
-            WHERE identifier = %s
-        ''', (identifier,))
-        conn.commit()
+        if not skip_meter:
+            cur.execute('''
+                UPDATE free_prompts SET usage_count = usage_count + 1, last_used = NOW()
+                WHERE identifier = %s
+            ''', (identifier,))
+            conn.commit()
+            new_count = usage_count + 1
+            remaining = FREE_PROMPT_LIMIT - new_count
+        else:
+            new_count = 0
+            remaining = FREE_PROMPT_LIMIT  # bypass — no metering applied
 
-        new_count = usage_count + 1
-        remaining = FREE_PROMPT_LIMIT - new_count
+        # Audit: record successful institution-key use.
+        if used_institution_key and inst_id_for_audit:
+            try:
+                cur.execute("UPDATE institutions SET key_last_used_at=NOW() WHERE id=%s", (inst_id_for_audit,))
+                conn.commit()
+            except Exception:
+                pass
 
         ai_text = ''
         if gemini_data.get('candidates') and gemini_data['candidates'][0].get('content', {}).get('parts'):
@@ -3055,7 +3275,9 @@ def ai_proxy():
             'response': ai_text,
             'remaining': remaining,
             'used': new_count,
-            'limit': FREE_PROMPT_LIMIT
+            'limit': FREE_PROMPT_LIMIT,
+            'usedInstitutionKey': used_institution_key,
+            'metered': not skip_meter
         })
         r.headers['Access-Control-Allow-Origin'] = '*'
         return r
@@ -3102,7 +3324,16 @@ def _institution_to_dict(cur, row):
         'createdAt': row[11].isoformat() if row[11] else None,
         'brandingLocked': bool(row[12]) if len(row) > 12 else False,
         'logoUrlLight': row[13] if len(row) > 13 else None,
-        'adminToken': admin_token
+        'adminToken': admin_token,
+        # Task #27 — institution-shared Gemini key admin metadata.
+        # NEVER expose plaintext / ciphertext. Only hint + flags + audit timestamps.
+        'hasGeminiKey': bool(row[14]) if len(row) > 14 else False,
+        'geminiKeyHint': (row[15] if len(row) > 15 else None) or '',
+        'keyPolicy': (row[16] if len(row) > 16 else None) or 'prefer-user-key',
+        'billingBehavior': (row[17] if len(row) > 17 else None) or 'count-against-snaptoai-quota',
+        'keySetAt': row[18].isoformat() if (len(row) > 18 and row[18]) else None,
+        'keyLastRotatedAt': row[19].isoformat() if (len(row) > 19 and row[19]) else None,
+        'keyLastUsedAt': row[20].isoformat() if (len(row) > 20 and row[20]) else None,
     }
 
 def _require_super_admin():
@@ -3799,6 +4030,50 @@ window.addEventListener('load', () => {{
     <div id="brand-warning" style="display: none; margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 12px; background: rgba(255,165,0,0.10); border: 1px solid rgba(255,165,0,0.40); color: #ffb454; max-width: 760px;"></div>
   </div>
 
+  <div class="section" id="gemini-key-section">
+    <h2>🔑 Agentic AI / API key</h2>
+    <p style="color: var(--st-text-secondary); font-size: 12px; margin: 0 0 14px 0; max-width: 720px;">
+      Provide a Google Gemini / Vertex API key for your members. The key is encrypted at rest, never sent to the extension, and used transparently by every active member of this institution. Plaintext is shown only at the moment you paste it.
+    </p>
+    <div id="gk-status" style="margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; background: #16213e; font-size: 13px;">Loading…</div>
+    <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; max-width: 720px; align-items: center;">
+      <input id="gk-input" type="password" placeholder="Paste Gemini/Vertex API key (e.g. AIza…)" autocomplete="off" spellcheck="false" style="font-family: ui-monospace, monospace;">
+      <button id="gk-save" type="button">Save key</button>
+      <button id="gk-test-input" type="button" style="background: transparent; color: var(--st-accent); border: 1px solid var(--st-accent);">Test</button>
+    </div>
+    <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+      <button id="gk-test-stored" type="button" style="background: transparent; color: var(--st-accent); border: 1px solid var(--st-accent);">Test stored key</button>
+      <button id="gk-remove" type="button" style="background: transparent; color: #ff6b6b; border: 1px solid #ff6b6b;">Remove key</button>
+    </div>
+    <div id="gk-msg" style="margin-top: 10px; font-size: 12px; min-height: 16px;"></div>
+
+    <h3 style="color: var(--st-accent); font-size: 13px; margin: 22px 0 8px 0;">Key policy</h3>
+    <p style="color: var(--st-text-secondary); font-size: 11px; margin: 0 0 8px 0; max-width: 720px;">
+      Controls what happens when a member also has their own personal Gemini key in the extension.
+    </p>
+    <select id="gk-policy" style="background: #0f0f1a; color: #fff; border: 1px solid #333; border-radius: 6px; padding: 8px 10px; min-width: 320px;">
+      <option value="prefer-user-key">Prefer member's personal key (institution key as fallback)</option>
+      <option value="prefer-institution-key">Prefer institution key (member's key as fallback)</option>
+      <option value="institution-only">Institution key only (hide member BYOK input)</option>
+    </select>
+
+    <h3 style="color: var(--st-accent); font-size: 13px; margin: 18px 0 8px 0;">Billing behavior</h3>
+    <p style="color: var(--st-text-secondary); font-size: 11px; margin: 0 0 8px 0; max-width: 720px;">
+      Controls whether AI calls made with the institution key still count against members' SnapToAI free-prompt quota.
+    </p>
+    <select id="gk-billing" style="background: #0f0f1a; color: #fff; border: 1px solid #333; border-radius: 6px; padding: 8px 10px; min-width: 320px;">
+      <option value="count-against-snaptoai-quota">Count against SnapToAI free-prompt quota</option>
+      <option value="bypass-snaptoai-quota">Bypass — institution pays Google directly, no metering</option>
+    </select>
+
+    <div style="margin-top: 14px;">
+      <button id="gk-save-policy" type="button">Save policy &amp; billing</button>
+      <span id="gk-policy-msg" style="margin-left: 12px; font-size: 12px;"></span>
+    </div>
+
+    <div id="gk-audit" style="margin-top: 18px; padding: 10px 12px; border-radius: 8px; background: #0f0f1a; border: 1px solid #2a2a4a; font-size: 11px; color: #aaa; line-height: 1.7;"></div>
+  </div>
+
   <div class="section">
     <h2>👥 Members</h2>
     <div id="members-list">Loading...</div>
@@ -4109,6 +4384,85 @@ async function removeMember(id, email) {{
 }}
 function copyLink(url) {{ navigator.clipboard.writeText(url).then(()=>alert('Copied: '+url)); }}
 
+// ---------- Task #27: institution Gemini key admin ----------
+function fmtTs(s) {{
+  if (!s) return 'never';
+  try {{ return new Date(s).toLocaleString(); }} catch(e) {{ return s; }}
+}}
+async function loadGeminiKey() {{
+  const r = await fetch(API_BASE + '/gemini-key');
+  const d = await r.json();
+  const status = document.getElementById('gk-status');
+  const audit = document.getElementById('gk-audit');
+  if (!d.success) {{ status.textContent = 'Error: ' + (d.error||''); return; }}
+  if (d.hasKey) {{
+    status.style.background = '#0d3b1f';
+    status.innerHTML = '✓ Institution key is configured · masked: <code style="font-family: ui-monospace, monospace;">••••••••' + (d.keyHint||'').replace(/[<>&]/g,'') + '</code>';
+  }} else {{
+    status.style.background = '#3b1f1f';
+    status.innerHTML = '⚠ No institution key set. Members fall back to their personal key or the SnapToAI shared key.';
+  }}
+  document.getElementById('gk-policy').value = d.keyPolicy || 'prefer-user-key';
+  document.getElementById('gk-billing').value = d.billingBehavior || 'count-against-snaptoai-quota';
+  audit.innerHTML =
+    '<div>🔧 Key first set: <strong>' + fmtTs(d.keySetAt) + '</strong></div>' +
+    '<div>♻️ Last rotated: <strong>' + fmtTs(d.keyLastRotatedAt) + '</strong></div>' +
+    '<div>✨ Last successfully used: <strong>' + fmtTs(d.keyLastUsedAt) + '</strong></div>';
+}}
+function gkMsg(text, ok) {{
+  const el = document.getElementById('gk-msg');
+  el.style.color = ok ? '#00ff88' : '#ff4757';
+  el.textContent = text;
+}}
+async function gkSave() {{
+  const key = document.getElementById('gk-input').value.trim();
+  if (!key) {{ gkMsg('Paste a key first', false); return; }}
+  gkMsg('Saving…', true);
+  const r = await fetch(API_BASE + '/gemini-key', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{key}})}});
+  const d = await r.json();
+  if (d.success) {{
+    gkMsg('✓ Saved (encrypted at rest, never returned in plaintext)', true);
+    document.getElementById('gk-input').value = '';
+    loadGeminiKey();
+  }} else {{ gkMsg('✗ ' + (d.error||'Save failed'), false); }}
+}}
+async function gkTestInput() {{
+  const key = document.getElementById('gk-input').value.trim();
+  if (!key) {{ gkMsg('Paste a key in the input first', false); return; }}
+  gkMsg('Testing…', true);
+  const r = await fetch(API_BASE + '/gemini-key/test', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{key}})}});
+  const d = await r.json();
+  gkMsg((d.ok ? '✓ ' : '✗ ') + (d.message||''), !!d.ok);
+}}
+async function gkTestStored() {{
+  gkMsg('Testing stored key…', true);
+  const r = await fetch(API_BASE + '/gemini-key/test', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{stored: true}})}});
+  const d = await r.json();
+  gkMsg((d.ok ? '✓ ' : '✗ ') + (d.message||''), !!d.ok);
+}}
+async function gkRemove() {{
+  if (!confirm('Remove the institution Gemini key? Members will fall back to their personal key or the SnapToAI shared key (depending on policy).')) return;
+  const r = await fetch(API_BASE + '/gemini-key', {{method:'DELETE'}});
+  const d = await r.json();
+  if (d.success) {{ gkMsg('✓ Removed', true); loadGeminiKey(); }} else {{ gkMsg('✗ ' + (d.error||''), false); }}
+}}
+async function gkSavePolicy() {{
+  const policy = document.getElementById('gk-policy').value;
+  const billing = document.getElementById('gk-billing').value;
+  const msg = document.getElementById('gk-policy-msg');
+  msg.textContent = 'Saving…';
+  const r = await fetch(API_BASE + '/gemini-key/policy', {{method:'PUT', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{keyPolicy: policy, billingBehavior: billing}})}});
+  const d = await r.json();
+  if (d.success) {{ msg.style.color = '#00ff88'; msg.textContent = '✓ Saved'; loadGeminiKey(); }}
+  else {{ msg.style.color = '#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
+}}
+document.getElementById('gk-save').addEventListener('click', gkSave);
+document.getElementById('gk-test-input').addEventListener('click', gkTestInput);
+document.getElementById('gk-test-stored').addEventListener('click', gkTestStored);
+document.getElementById('gk-remove').addEventListener('click', gkRemove);
+document.getElementById('gk-save-policy').addEventListener('click', gkSavePolicy);
+loadGeminiKey();
+
 load();
 </script>
 </body></html>'''
@@ -4348,6 +4702,169 @@ def api_inst_set_branding(slug):
         conn.commit()
         cur.close(); conn.close()
         return _cors(jsonify({'success': True, 'brandColor': color}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+
+# ============================================
+# Task #27 — Institution Gemini key admin endpoints.
+# All four require an authenticated institution admin (cookie session) or
+# super-admin. The plaintext key is accepted ONLY on POST and never returned.
+# ============================================
+
+@app.route('/api/institution/<slug>/gemini-key', methods=['GET', 'POST', 'DELETE', 'OPTIONS'])
+def api_inst_gemini_key(slug):
+    if request.method == 'OPTIONS':
+        return _options('GET, POST, DELETE, OPTIONS')
+    ok, admin_email = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("""
+            SELECT id, gemini_key_encrypted, gemini_key_hint, key_policy, billing_behavior,
+                   key_set_at, key_last_rotated_at, key_last_used_at
+            FROM institutions WHERE slug=%s
+        """, (slug,))
+        row = cur.fetchone()
+        if not row:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Not found'})), 404
+        inst_id = row[0]
+
+        if request.method == 'GET':
+            cur.close(); conn.close()
+            return _cors(jsonify({
+                'success': True,
+                'hasKey': bool(row[1]),
+                'keyHint': row[2] or '',
+                'keyPolicy': row[3] or 'prefer-user-key',
+                'billingBehavior': row[4] or 'count-against-snaptoai-quota',
+                'keySetAt': row[5].isoformat() if row[5] else None,
+                'keyLastRotatedAt': row[6].isoformat() if row[6] else None,
+                'keyLastUsedAt': row[7].isoformat() if row[7] else None,
+            }))
+
+        if request.method == 'DELETE':
+            cur.execute("""
+                UPDATE institutions
+                SET gemini_key_encrypted=NULL, gemini_key_hint=NULL,
+                    key_last_rotated_at=NOW(), updated_at=NOW()
+                WHERE id=%s
+            """, (inst_id,))
+            conn.commit()
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': True}))
+
+        # POST — set or rotate the key.
+        data = request.get_json(silent=True) or {}
+        key = str(data.get('key') or '').strip()
+        skip_test = bool(data.get('skipTest'))
+        if len(key) < 10 or len(key) > 200:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Key looks invalid (must be 10–200 chars)'})), 400
+        # Task #27 — verify the key works against Google BEFORE persisting, so a
+        # bad key can't silently break every member in `institution-only` mode.
+        # Admin can pass {skipTest: true} to override (e.g., temporary outage).
+        if not skip_test:
+            ok_test, test_msg = _test_gemini_key(key)
+            if not ok_test:
+                cur.close(); conn.close()
+                return _cors(jsonify({
+                    'success': False,
+                    'error': f'Google rejected this key: {test_msg}. Pass skipTest=true to save anyway.'
+                })), 400
+        try:
+            encrypted = _encrypt_inst_key(key)
+        except RuntimeError as enc_err:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': str(enc_err)})), 500
+        hint = key[-4:] if len(key) >= 4 else ''
+        was_already_set = bool(row[1])
+        if was_already_set:
+            cur.execute("""
+                UPDATE institutions
+                SET gemini_key_encrypted=%s, gemini_key_hint=%s,
+                    key_last_rotated_at=NOW(), updated_at=NOW()
+                WHERE id=%s
+            """, (encrypted, hint, inst_id))
+        else:
+            cur.execute("""
+                UPDATE institutions
+                SET gemini_key_encrypted=%s, gemini_key_hint=%s,
+                    key_set_at=NOW(), key_last_rotated_at=NOW(), updated_at=NOW()
+                WHERE id=%s
+            """, (encrypted, hint, inst_id))
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True, 'rotated': was_already_set, 'keyHint': hint}))
+    except Exception as e:
+        print(f'❌ inst gemini-key: {e}')
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+
+@app.route('/api/institution/<slug>/gemini-key/test', methods=['POST', 'OPTIONS'])
+def api_inst_gemini_key_test(slug):
+    """Test connectivity. Body: {key: '...'} to test a pasted key BEFORE saving,
+    or {stored: true} to test the currently saved (encrypted) key."""
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    data = request.get_json(silent=True) or {}
+    key = ''
+    if data.get('stored'):
+        try:
+            conn = get_db(); cur = conn.cursor()
+            cur.execute("SELECT gemini_key_encrypted FROM institutions WHERE slug=%s", (slug,))
+            r = cur.fetchone()
+            cur.close(); conn.close()
+            if not r or not r[0]:
+                return _cors(jsonify({'success': True, 'ok': False, 'message': 'No stored key'}))
+            key = _decrypt_inst_key(r[0]) or ''
+            if not key:
+                return _cors(jsonify({'success': True, 'ok': False, 'message': 'Stored key could not be decrypted (encryption secret may have changed). Re-paste the key.'}))
+        except Exception as e:
+            return _cors(jsonify({'success': False, 'error': str(e)})), 500
+    else:
+        key = str(data.get('key') or '').strip()
+        if not key:
+            return _cors(jsonify({'success': False, 'error': 'key or stored=true required'})), 400
+    ok_test, msg = _test_gemini_key(key)
+    return _cors(jsonify({'success': True, 'ok': ok_test, 'message': msg}))
+
+
+@app.route('/api/institution/<slug>/gemini-key/policy', methods=['PUT', 'OPTIONS'])
+def api_inst_gemini_key_policy(slug):
+    """Update key_policy + billing_behavior."""
+    if request.method == 'OPTIONS':
+        return _options('PUT, OPTIONS')
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    data = request.get_json(silent=True) or {}
+    policy = str(data.get('keyPolicy') or '').strip()
+    billing = str(data.get('billingBehavior') or '').strip()
+    if policy not in ('institution-only', 'prefer-institution-key', 'prefer-user-key'):
+        return _cors(jsonify({'success': False, 'error': 'Invalid keyPolicy'})), 400
+    if billing not in ('bypass-snaptoai-quota', 'count-against-snaptoai-quota'):
+        return _cors(jsonify({'success': False, 'error': 'Invalid billingBehavior'})), 400
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("""
+            UPDATE institutions SET key_policy=%s, billing_behavior=%s, updated_at=NOW()
+            WHERE slug=%s
+        """, (policy, billing, slug))
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True, 'keyPolicy': policy, 'billingBehavior': billing}))
     except Exception as e:
         return _cors(jsonify({'success': False, 'error': str(e)})), 500
 

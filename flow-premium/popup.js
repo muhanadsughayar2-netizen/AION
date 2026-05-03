@@ -4021,6 +4021,20 @@ function hideSubscriptionModal() {
 let pendingAfterSignIn = null;
 
 async function handleAIButtonClick() {
+  // Task #27 — institution-only members cannot supply their own key, so the
+  // BYOK modal must NEVER open here. Surface a friendly explainer instead.
+  try {
+    const { snaptoai_branding, cachedSubStatus } = await chrome.storage.local.get(['snaptoai_branding', 'cachedSubStatus']);
+    const isInst = cachedSubStatus && cachedSubStatus.planType === 'institution';
+    if (isInst && snaptoai_branding && snaptoai_branding.keyPolicy === 'institution-only') {
+      const orgName = snaptoai_branding.name || 'your organization';
+      const msg = snaptoai_branding.hasInstitutionKey
+        ? `🔑 ${orgName} provides your AI key — no personal key needed.`
+        : `⚠ ${orgName} hasn't set their AI key yet. Please contact your admin.`;
+      try { if (typeof showToast === 'function') showToast(msg); else alert(msg); } catch (e) { alert(msg); }
+      return;
+    }
+  } catch (e) {}
   if (window.SnapToAISubscription) {
     const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
     const status = await window.SnapToAISubscription.check();
@@ -4311,6 +4325,9 @@ try {
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && (changes.snaptoai_branding || changes.cachedSubStatus)) {
       applyInstitutionBranding();
+      // Task #27 — also re-render the AI button so policy changes (org sets a
+      // key, switches to institution-only, etc.) take effect without reload.
+      try { updateAiButtonState(); } catch (e) {}
     }
   });
 } catch (e) {}
@@ -4381,25 +4398,55 @@ async function showTrialCountdownToast() {
   }
 }
 
-function updateAiButtonState() {
+async function updateAiButtonState() {
+  // Task #27 — institution-only members can never set their own key, so the
+  // BYOK call-to-action is replaced with an "AI provided by {org}" indicator
+  // and the button becomes a no-op informational pill.
+  let instInfo = null;
+  try {
+    const { snaptoai_branding, cachedSubStatus } = await chrome.storage.local.get(['snaptoai_branding', 'cachedSubStatus']);
+    const isInst = cachedSubStatus && cachedSubStatus.planType === 'institution';
+    if (isInst && snaptoai_branding) instInfo = snaptoai_branding;
+  } catch (e) {}
   chrome.storage.sync.get(['geminiApiKey'], (result) => {
     const aiButton = document.getElementById('aiButton');
     const aiStatusText = document.getElementById('aiStatusText');
     const aiStatusDot = document.querySelector('.ai-status-dot');
+    const policy = instInfo ? (instInfo.keyPolicy || 'prefer-user-key') : null;
+    const orgName = instInfo ? (instInfo.name || 'your organization') : '';
+    const orgProvidesKey = !!(instInfo && instInfo.hasInstitutionKey);
+
     if (aiButton) {
-      if (result.geminiApiKey) {
+      if (policy === 'institution-only') {
+        aiButton.innerHTML = orgProvidesKey
+          ? `<span class="hero-key-main">● AI Ready</span><span class="hero-key-sub">🔑 Provided by ${escapeHtml(orgName)}</span>`
+          : `<span class="hero-key-main">⚠ AI Unavailable</span><span class="hero-key-sub">${escapeHtml(orgName)} hasn't set their key</span>`;
+        aiButton.className = orgProvidesKey ? 'hero-key-btn connected' : 'hero-key-btn';
+        aiButton.dataset.instOnly = '1';
+      } else if (result.geminiApiKey) {
         aiButton.innerHTML = '<span class="hero-key-main">● AI Ready</span><span class="hero-key-sub">⚙ Settings</span>';
         aiButton.className = 'hero-key-btn connected';
+        delete aiButton.dataset.instOnly;
+      } else if (orgProvidesKey) {
+        aiButton.innerHTML = `<span class="hero-key-main">● AI Ready</span><span class="hero-key-sub">🔑 Provided by ${escapeHtml(orgName)}</span>`;
+        aiButton.className = 'hero-key-btn connected';
+        delete aiButton.dataset.instOnly;
       } else {
         aiButton.innerHTML = '<span class="hero-key-main">✨ Activate AI Analysis</span><span class="hero-key-sub">20 prompts/day included</span>';
         aiButton.className = 'hero-key-btn';
+        delete aiButton.dataset.instOnly;
       }
     }
     if (aiStatusText) {
-      aiStatusText.textContent = result.geminiApiKey ? 'AI Ready' : 'AI: 5 free prompts';
+      if (policy === 'institution-only') {
+        aiStatusText.textContent = orgProvidesKey ? 'AI Ready (org)' : 'AI Unavailable';
+      } else {
+        aiStatusText.textContent = (result.geminiApiKey || orgProvidesKey) ? 'AI Ready' : 'AI: 5 free prompts';
+      }
     }
     if (aiStatusDot) {
-      aiStatusDot.style.background = result.geminiApiKey ? '#00ff88' : '#ffaa00';
+      const ready = (policy === 'institution-only') ? orgProvidesKey : !!(result.geminiApiKey || orgProvidesKey);
+      aiStatusDot.style.background = ready ? '#00ff88' : '#ffaa00';
     }
   });
 }

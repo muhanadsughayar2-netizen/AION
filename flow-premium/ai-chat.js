@@ -124,6 +124,28 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// Task #27 — Surfaced when the institution policy is `institution-only` and
+// the institution's key is missing or rejected by Google. We must NEVER
+// silently fall back to the SnapToAI shared key or to BYOK in this mode.
+function buildInstitutionKeyInvalidCard(institutionName, message) {
+  const safeName = String(institutionName || 'your organization').replace(/[<>&]/g, '');
+  const safeMsg = String(message || 'AI is temporarily unavailable.').replace(/[<>&]/g, '');
+  return `
+    <div style="padding:18px;border-radius:14px;background:linear-gradient(135deg, rgba(255,71,87,0.12), rgba(255,165,0,0.05));border:1px solid rgba(255,71,87,0.30);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:24px;">🔑</span>
+        <span style="font-size:15px;font-weight:800;color:#fff;">${safeName}'s AI key needs attention</span>
+      </div>
+      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:10px;">
+        ${safeMsg}
+      </div>
+      <div style="font-size:12px;line-height:1.55;color:rgba(255,255,255,0.7);padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
+        Your organization manages the AI key for everyone here, so a personal key won't help.
+        <strong style="color:#fff;">Please contact your ${safeName} admin</strong> to check the key in the institution dashboard.
+      </div>
+    </div>`;
+}
+
 function buildDailyLimitCard() {
   return `
     <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(138,43,226,0.12), rgba(255,105,180,0.06));border:1px solid rgba(138,43,226,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
@@ -324,6 +346,17 @@ async function sendViaProxy(prompt, imageBase64) {
   if (!identifier) throw new Error('Could not identify user for proxy');
 
   const body = { prompt, email: identifier.includes('@') ? identifier : undefined, deviceId: identifier.includes('@') ? undefined : identifier };
+  // Task #27 — pass the OAuth access token so the server can verify the
+  // claimed email when an institution key would be used (prevents spoofing
+  // another member's email to consume institution quota / bypass billing).
+  try {
+    if (identifier.includes('@')) {
+      const { snaptoai_user } = await chrome.storage.local.get('snaptoai_user');
+      if (snaptoai_user && snaptoai_user.accessToken) {
+        body.accessToken = snaptoai_user.accessToken;
+      }
+    }
+  } catch (e) {}
   if (imageBase64) body.imageData = imageBase64;
 
   const resp = await fetch(PROXY_BACKEND_URL + '/api/ai/proxy', {
@@ -343,10 +376,46 @@ async function sendViaProxy(prompt, imageBase64) {
     throw new Error('PROXY_BUSY');
   }
 
+  // Task #27 — surface institution-key failures with a distinct, actionable
+  // error so the chat UI can tell the member to contact their admin instead
+  // of suggesting BYOK. The server already refuses to silently fall back.
+  if (data.error === 'institution_key_invalid') {
+    const err = new Error(data.message || 'Your organization\'s AI key is invalid. Contact your institution admin.');
+    err.code = 'INSTITUTION_KEY_INVALID';
+    throw err;
+  }
+
   if (data.error) throw new Error(data.error);
 
   freePromptsRemaining = data.remaining;
-  return { text: data.response, remaining: data.remaining, used: data.used, limit: data.limit };
+  return {
+    text: data.response,
+    remaining: data.remaining,
+    used: data.used,
+    limit: data.limit,
+    usedInstitutionKey: !!data.usedInstitutionKey,
+    metered: data.metered !== false
+  };
+}
+
+// Task #27 — Read cached institution branding (set by subscription.js) and
+// return key-policy info so other UI can hide/disable BYOK and route through
+// the proxy when the institution mandates its own key.
+async function getInstitutionKeyInfo() {
+  try {
+    const { snaptoai_branding, cachedSubStatus } = await chrome.storage.local.get(['snaptoai_branding', 'cachedSubStatus']);
+    const isInst = cachedSubStatus && cachedSubStatus.planType === 'institution';
+    if (!isInst || !snaptoai_branding) return { isInstitution: false };
+    return {
+      isInstitution: true,
+      institutionName: snaptoai_branding.name || 'your organization',
+      hasInstitutionKey: !!snaptoai_branding.hasInstitutionKey,
+      keyPolicy: snaptoai_branding.keyPolicy || 'prefer-user-key',
+      billingBehavior: snaptoai_branding.billingBehavior || 'count-against-snaptoai-quota'
+    };
+  } catch (e) {
+    return { isInstitution: false };
+  }
 }
 // ============ TRIAL ENDED MODAL ============
 function showTrialEndedModal(reason) {
@@ -415,7 +484,18 @@ window.onSubscriptionActivated = (result) => {
   showPromptToast('🎉 Subscription active! AI is ready.', 3000);
 };
 
-function showProxyKeyPrompt() {
+async function showProxyKeyPrompt() {
+  // Task #27 — When the institution mandates its own key, BYOK is forbidden.
+  // Don't open the key modal at all; show a brief, friendly explainer toast.
+  try {
+    const info = await getInstitutionKeyInfo();
+    if (info.isInstitution && info.keyPolicy === 'institution-only') {
+      if (typeof showPromptToast === 'function') {
+        showPromptToast(`🔑 ${info.institutionName} provides your AI key — no personal key needed.`, 4500);
+      }
+      return;
+    }
+  } catch (e) {}
   const modal = document.getElementById('geminiKeyModal');
   if (!modal) return;
   modal.classList.add('open');
@@ -4936,7 +5016,17 @@ async function handleSend() {
     const modeConfig = AI_MODES[currentAiMode] || AI_MODES['vision'];
 
     const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
-    const apiKey = keyResult.geminiApiKey;
+    let apiKey = keyResult.geminiApiKey;
+
+    // Task #27 — When the institution policy is `institution-only`, ignore any
+    // member-side BYOK key and force the request through the proxy so the
+    // server-side institution key is the one that's actually used.
+    try {
+      const _instKeyInfo = await getInstitutionKeyInfo();
+      if (_instKeyInfo.isInstitution && _instKeyInfo.keyPolicy === 'institution-only') {
+        apiKey = '';
+      }
+    } catch (e) {}
 
     if (modeConfig.type === 'gemini-video') {
       const clipCount = selectedClipCount || 1;
@@ -5016,7 +5106,16 @@ async function handleSend() {
         removeLoading();
         const msg = proxyErr.message || '';
         const errBubble = createResponseBubble();
-        if (msg === 'PROXY_BUSY' || msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('wait') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('busy')) {
+        // Task #27 — institution-only policy with bad/missing key. Never
+        // suggest BYOK: the member is forbidden from overriding the org key.
+        if (proxyErr.code === 'INSTITUTION_KEY_INVALID') {
+          let instName = 'your organization';
+          try {
+            const _info = await getInstitutionKeyInfo();
+            if (_info.isInstitution) instName = _info.institutionName;
+          } catch (e) {}
+          errBubble.innerHTML = buildInstitutionKeyInvalidCard(instName, msg);
+        } else if (msg === 'PROXY_BUSY' || msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('wait') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('busy')) {
           errBubble.innerHTML = buildRateLimitCard();
         } else {
           errBubble.innerHTML = buildNoKeyCard();

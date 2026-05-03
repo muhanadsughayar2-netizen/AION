@@ -363,10 +363,31 @@
 
   async function refreshKeyPill() {
     try {
+      // Task #27 — When the institution provides the key (and especially when
+      // policy=institution-only), the pill must reflect that BYOK is moot.
+      let instInfo = null;
+      try {
+        const { snaptoai_branding, cachedSubStatus } = await chrome.storage.local.get(['snaptoai_branding', 'cachedSubStatus']);
+        const isInst = cachedSubStatus && cachedSubStatus.planType === 'institution';
+        if (isInst && snaptoai_branding) instInfo = snaptoai_branding;
+      } catch (e) {}
+      if (instInfo && instInfo.keyPolicy === 'institution-only') {
+        const name = instInfo.name || 'your organization';
+        if (instInfo.hasInstitutionKey) {
+          setKeyPillState('ready', `AI key provided by ${name}`, 'Managed');
+        } else {
+          setKeyPillState('missing', `${name} hasn't set their AI key yet — contact your admin`, 'Contact admin');
+        }
+        return;
+      }
       const res = await chrome.storage.sync.get(['geminiApiKey', 'geminiKey']);
       const key = res.geminiApiKey || res.geminiKey || '';
-      if (key && key.length > 10) {
+      if (instInfo && instInfo.hasInstitutionKey && instInfo.keyPolicy === 'prefer-institution-key') {
+        setKeyPillState('ready', `AI key provided by ${instInfo.name || 'your organization'}`, 'Manage');
+      } else if (key && key.length > 10) {
         setKeyPillState('ready', 'AI ready — your Gemini key is active', 'Manage');
+      } else if (instInfo && instInfo.hasInstitutionKey) {
+        setKeyPillState('ready', `AI ready — ${instInfo.name || 'your organization'} provides a fallback key`, 'Add personal');
       } else {
         setKeyPillState('missing', 'No Gemini key — tap to add (free)', 'Add key');
       }
@@ -374,7 +395,19 @@
       setKeyPillState('', 'Key status unknown', 'Manage');
     }
   }
-  function openKeyManager() {
+  async function openKeyManager() {
+    // Task #27 — institution-only members can't add a personal key; surface a
+    // toast instead of opening the BYOK modal they would never be able to use.
+    try {
+      const { snaptoai_branding, cachedSubStatus } = await chrome.storage.local.get(['snaptoai_branding', 'cachedSubStatus']);
+      const isInst = cachedSubStatus && cachedSubStatus.planType === 'institution';
+      if (isInst && snaptoai_branding && snaptoai_branding.keyPolicy === 'institution-only') {
+        if (typeof toast === 'function') {
+          toast(`${snaptoai_branding.name || 'Your organization'} provides the AI key — no personal key needed.`, 'info');
+        }
+        return;
+      }
+    } catch (e) {}
     // Reuse the in-chat key modal that ai-chat.js already wires up.
     const modal = document.getElementById('geminiKeyModal');
     if (modal) {
@@ -395,6 +428,11 @@
       }
       if (area === 'local' && changes.snaptoai_user) {
         refreshAccount();
+      }
+      // Task #27 — re-render the key pill when institution branding/policy
+      // changes (server pushed a new policy or rotated the institution key).
+      if (area === 'local' && (changes.snaptoai_branding || changes.cachedSubStatus)) {
+        refreshKeyPill();
       }
     });
   }
