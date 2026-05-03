@@ -3861,7 +3861,6 @@ function bpRelLum(c) {{
 function bpMix(a, b, t) {{ return {{ r:a.r+(b.r-a.r)*t, g:a.g+(b.g-a.g)*t, b:a.b+(b.b-a.b)*t }}; }}
 function bpLighten(c, t) {{ return bpMix(c, {{r:255,g:255,b:255}}, t); }}
 function bpDarken(c, t)  {{ return bpMix(c, {{r:0,g:0,b:0}}, t); }}
-function bpRgba(c, a) {{ return 'rgba('+bpClamp(c.r)+','+bpClamp(c.g)+','+bpClamp(c.b)+','+a+')'; }}
 function bpContrast(L1, L2) {{ const hi=Math.max(L1,L2), lo=Math.min(L1,L2); return (hi+0.05)/(lo+0.05); }}
 function bpAdapt(rgb, theme) {{
   let out = {{ r:rgb.r, g:rgb.g, b:rgb.b }}, iter = 0;
@@ -3892,7 +3891,24 @@ function updateBrandPreview() {{
   const raw = rawInput.value.trim();
   const rgb = bpHexToRgb(raw);
   if (!rgb) {{
-    // Invalid hex — gentle warning, leave previews neutral
+    // Invalid hex — reset previews to a neutral state so the admin
+    // doesn't see a stale swatch from the last valid input.
+    ['light','dark'].forEach((mode) => {{
+      const btn = wrap.querySelector('.bp-btn[data-mode="'+mode+'"]');
+      const link = wrap.querySelector('.bp-link[data-mode="'+mode+'"]');
+      const chip = wrap.querySelector('.bp-chip[data-mode="'+mode+'"]');
+      const badge = wrap.querySelector('.bp-badge[data-mode="'+mode+'"]');
+      const rawCode = wrap.querySelector('.bp-raw[data-mode="'+mode+'"]');
+      const renderedCode = wrap.querySelector('.bp-rendered[data-mode="'+mode+'"]');
+      const neutral = mode === 'light' ? '#cccccc' : '#444444';
+      const neutralFg = mode === 'light' ? '#666' : '#aaa';
+      if (btn) {{ btn.style.background = neutral; btn.style.color = neutralFg; }}
+      if (link) {{ link.style.color = neutralFg; }}
+      if (chip) {{ chip.style.background = neutral; }}
+      if (badge) {{ badge.textContent = '—'; badge.style.background = '#555'; badge.style.color = '#fff'; }}
+      if (rawCode) {{ rawCode.textContent = '—'; rawCode.style.color = neutralFg; }}
+      if (renderedCode) {{ renderedCode.textContent = '—'; renderedCode.style.color = neutralFg; }}
+    }});
     if (warnEl) {{
       warnEl.style.display = 'block';
       warnEl.textContent = 'Enter a valid hex color (e.g. #00d9ff or #0c9) to see the preview.';
