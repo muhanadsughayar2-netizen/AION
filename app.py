@@ -500,8 +500,9 @@ def _send_inst_admin_email(to_email, subject, body_text):
             s.send_message(msg)
         return True, None
     except Exception as e:
-        print(f'❌ admin magic-link email send: {e}')
-        return False, f'Email delivery failed: {e}'
+        print(f'❌ admin magic-link email send to {to_email}: {type(e).__name__}: {e}')
+        return False, ("We couldn't send the email right now — "
+                       "please try again in a moment, or ask the super-admin for help.")
 
 def _institution_active(row):
     """row = (status, expires_at) — true iff active and not expired."""
