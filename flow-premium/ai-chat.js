@@ -5524,9 +5524,11 @@ async function handleSend() {
   const input = document.getElementById('chatInput');
   const sendBtn = document.getElementById('sendBtn');
   const thread = document.getElementById('chatThread');
-  const prompt = input.value.trim();
+  let prompt = input.value.trim();
   
-  if (!prompt) return;
+  // Allow send if files are attached even with no text typed
+  if (!prompt && filesQueue.length === 0) return;
+  if (!prompt) prompt = 'Analyze this image.';
 
   if (!acquireRequestLock()) {
     addBubble('Please wait for the current request to complete...', 'ai');
