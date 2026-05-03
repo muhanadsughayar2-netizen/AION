@@ -4135,14 +4135,16 @@ async function fixWebmDuration(blob, durationMs) {
     }
 
     if (newSizeVint.length === infoSizeBytes) {
-      // Same byte-count — patch in place, then splice in the Duration.
-      const head = new Uint8Array(u8.subarray(0, infoSizeOffset));
-      const tail = u8.subarray(infoDataStart);
-      const sizeAfterPatch = new Uint8Array(infoDataStart - infoSizeOffset);
-      // Re-write VINT bytes in the head copy.
+      // Same byte-count — patch the parent's size VINT in place, then splice
+      // the new Duration element in at the start of SegmentInfo's payload.
+      // `head` MUST extend through `infoDataStart` so that `infoSizeOffset`
+      // is a valid write index (head.length === infoDataStart, valid indices
+      // 0..infoDataStart-1, and infoSizeOffset + infoSizeBytes <= infoDataStart
+      // by construction).
+      const head = new Uint8Array(u8.subarray(0, infoDataStart));
       head.set(newSizeVint, infoSizeOffset);
-      const before = head; // already patched
-      return new Blob([before, insertion, tail], { type: blob.type || 'video/webm' });
+      const tail = u8.subarray(infoDataStart);
+      return new Blob([head, insertion, tail], { type: blob.type || 'video/webm' });
     }
     // Size VINT grew — splice in the new VINT (shift everything after).
     const beforeSize = u8.subarray(0, infoSizeOffset);
