@@ -1329,7 +1329,9 @@ def auth_register():
         email = str(data.get('email', ''))[:200].strip().lower()
         picture = str(data.get('picture', ''))[:500]
         device_id = str(data.get('deviceId', ''))[:100]
-        invite_code = str(data.get('inviteCode', '') or '')[:64].strip()
+        # NOTE: `inviteCode` is intentionally ignored — invite links were retired
+        # in favor of email-only institution onboarding. Members are bound to
+        # their institution via the email allowlist (see `_resolve_institution_for_email`).
 
         if not email or '@' not in email:
             response = jsonify({'success': False, 'error': 'Valid email is required'})
@@ -1350,56 +1352,6 @@ def auth_register():
         ''', (email, name, picture, device_id))
         user_id = cur.fetchone()[0]
 
-        # Institutions: if an invite code was supplied, redeem it FIRST so the
-        # subsequent resolve picks up the new member row.
-        invite_result = None
-        if invite_code:
-            try:
-                cur.execute("""
-                    SELECT inv.id, inv.institution_id, inv.max_uses, inv.uses, i.status, i.expires_at, i.seat_limit
-                    FROM institution_invites inv JOIN institutions i ON i.id = inv.institution_id
-                    WHERE inv.code=%s
-                """, (invite_code,))
-                ir = cur.fetchone()
-                if ir and _institution_active((ir[4], ir[5])):
-                    inv_id, inst_id_inv, max_uses, uses, _s, _e, seat_limit = ir
-                    if max_uses and uses >= max_uses:
-                        invite_result = 'invite_exhausted'
-                    elif seat_limit and _seats_used(cur, inst_id_inv) >= seat_limit:
-                        invite_result = 'seat_limit'
-                    else:
-                        res = _add_member(cur, inst_id_inv, email, f'invite-code:{invite_code[:8]}')
-                        if res == 'added':
-                            cur.execute("UPDATE institution_invites SET uses=uses+1 WHERE id=%s", (inv_id,))
-                        invite_result = res
-                else:
-                    invite_result = 'invalid_code'
-            except Exception as inv_err:
-                print(f'⚠️ invite-code redeem error: {inv_err}')
-                invite_result = 'error'
-
-        # If the supplied invite code was REJECTED (seat full, exhausted, invalid),
-        # commit the user upsert (so the trial path still works) but return a hard
-        # failure so the extension surfaces a clear, actionable message instead of
-        # silently onboarding the user as if everything succeeded.
-        if invite_result in ('seat_limit', 'invite_exhausted', 'invalid_code'):
-            conn.commit()
-            cur.close(); conn.close()
-            messages = {
-                'seat_limit': 'This institution has reached its seat limit. Please ask your admin to free up a seat or expand the plan.',
-                'invite_exhausted': 'This invite link has been fully used. Please request a new one from your admin.',
-                'invalid_code': 'That invite code is not valid.',
-            }
-            response = jsonify({
-                'success': False,
-                'userId': user_id,
-                'inviteResult': invite_result,
-                'error': invite_result,
-                'message': messages[invite_result],
-            })
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            return response, 403
-
         # Institutions: bind to inst on first sign-in if pre-invited or domain match.
         # If a domain auto-join match was found but seats are full, surface a
         # deterministic 403 to the extension instead of silently onboarding.
@@ -1413,7 +1365,7 @@ def auth_register():
                 conn.commit(); cur.close(); conn.close()
                 response = jsonify({
                     'success': False, 'userId': user_id,
-                    'inviteResult': 'seat_limit', 'error': 'seat_limit',
+                    'error': 'seat_limit',
                     'message': 'Your organization\'s seat license is full. Please ask your admin to free up a seat or expand the plan.',
                 })
                 response.headers['Access-Control-Allow-Origin'] = '*'
@@ -1428,8 +1380,6 @@ def auth_register():
         payload = {'success': True, 'userId': user_id}
         if branding:
             payload['branding'] = branding
-        if invite_result is not None:
-            payload['inviteResult'] = invite_result
         response = jsonify(payload)
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response
@@ -4168,37 +4118,36 @@ window.addEventListener('load', () => {{
     {('<img src="' + html_escape_module.escape(logo_url) + '" alt="logo">') if logo_url else ''}
     <div style="flex: 1;">
       <h1>{name}</h1>
-      <p class="subtitle">SnapToAI Institution Admin · slug: <code>{html_escape_module.escape(slug)}</code> · status: <strong>{status}</strong> · expires: {expires}{(' · signed in as <strong>' + html_escape_module.escape(admin_email) + '</strong>') if admin_email else ''}</p>
+      <p class="subtitle">SnapToAI Institution Admin · slug: <code>{html_escape_module.escape(slug)}</code> · status: <strong style="color: {'#00ff88' if status == 'active' else '#ff4757'};">{status}</strong> · expires: {expires}{(' · signed in as <strong>' + html_escape_module.escape(admin_email) + '</strong>') if admin_email else ''}</p>
     </div>
     <button class="secondary" id="signout-btn" onclick="signOut()" title="Clear this device's admin session">Sign out</button>
   </div>
+  {('<div style="background: #ff475715; border: 1px solid #ff4757; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; color: #ffb3bb;"><strong style="color:#ff4757;">⚠ This institution is currently ' + html_escape_module.escape(status) + '.</strong><br><span style="font-size:13px;">Members cannot sign in to the extension and existing members lose institution access until SnapToAI re-activates this institution. Please contact <a href="mailto:support@snaptoai.com" style="color:#ff8a95;">support@snaptoai.com</a>.</span></div>') if status != 'active' else ''}
 
   <div class="stats">
     <div class="card"><div class="card-num" id="stat-seats">{seats_used} / {seat_limit_display}</div><div class="card-label">Seats Used</div></div>
     <div class="card"><div class="card-num" id="stat-active">—</div><div class="card-label">Active Members</div></div>
     <div class="card"><div class="card-num" id="stat-suspended">—</div><div class="card-label">Suspended</div></div>
-    <div class="card"><div class="card-num" id="stat-pending">—</div><div class="card-label">Pre-Invited</div></div>
+    <div class="card"><div class="card-num" id="stat-pending">—</div><div class="card-label">Awaiting first sign-in</div></div>
     <div class="card"><div class="card-num" id="stat-domains" style="font-size:14px;">{domains}</div><div class="card-label">Auto-Join Domains</div></div>
   </div>
 
   <div class="section">
-    <h2>✉️ Invite users</h2>
+    <h2>✉️ Add members by email</h2>
+    <p style="font-size: 12px; color: #aaa; margin: 0 0 12px 0; line-height: 1.5;">
+      Members are auto-enrolled the moment they sign in to the SnapToAI extension with this email address — they don't need a link or code. Just add their email here and tell them to install the extension and sign in with Google.
+    </p>
     <div class="row">
       <input id="invite-email" class="grow" placeholder="user@example.com" type="email">
-      <button onclick="inviteOne()">Invite by Email</button>
+      <button onclick="inviteOne()">Add Member</button>
     </div>
     <div style="margin-top: 14px;">
-      <label style="font-size: 12px; color: #888;">Bulk invite — upload a CSV file <em>or</em> paste emails below:</label>
+      <label style="font-size: 12px; color: #888;">Bulk add — upload a CSV file <em>or</em> paste emails below:</label>
       <input id="invite-csv-file" type="file" accept=".csv,text/csv,text/plain" style="margin: 6px 0; font-size: 12px;">
       <textarea id="invite-csv" placeholder="alice@example.com&#10;bob@example.com,carol@example.com"></textarea>
-      <button onclick="inviteBulk()" style="margin-top: 8px;">Bulk Invite</button>
+      <button onclick="inviteBulk()" style="margin-top: 8px;">Bulk Add</button>
       <span id="bulk-msg" style="margin-left: 10px; color: #00ff88; font-size: 12px;"></span>
     </div>
-    <div style="margin-top: 14px;">
-      <button class="secondary" onclick="createLink()">+ Generate Invite Link</button>
-      <span id="link-msg" style="margin-left: 10px; color: #00ff88; font-size: 12px;"></span>
-    </div>
-    <div id="links-list" style="margin-top: 12px;"></div>
   </div>
 
   <div class="section">
@@ -4361,28 +4310,6 @@ async function load() {{
   }}
   html += '</table>';
   document.getElementById('members-list').innerHTML = html;
-
-  // Load invite links
-  const lr = await fetch(API_BASE + '/invite-links');
-  const ld = await lr.json();
-  let lhtml = '';
-  if (ld.success && ld.links.length) {{
-    lhtml = '<div style="margin-top: 8px; font-size: 12px; color: #888;">Active invite links (anyone with the URL can join):</div>';
-    for (const lk of ld.links) {{
-      const code = String(lk.code||'').replace(/[^a-zA-Z0-9_-]/g, '');
-      const url = window.location.origin + '/join/' + code;
-      const lid = parseInt(lk.id, 10) || 0;
-      const uses = parseInt(lk.uses, 10) || 0;
-      const maxUses = lk.maxUses ? (parseInt(lk.maxUses, 10) || 0) : 0;
-      lhtml += '<div style="margin-top: 6px; display: flex; gap: 8px; align-items: center;">' +
-        '<span class="invite-link grow">' + esc(url) + '</span>' +
-        '<span style="color: #888; font-size: 11px;">uses: ' + uses + (maxUses ? '/' + maxUses : '') + '</span>' +
-        '<button class="secondary" onclick="copyLink(' + JSON.stringify(url) + ')">Copy</button>' +
-        '<button class="danger" onclick="deleteLink(' + lid + ')">Revoke</button>' +
-      '</div>';
-    }}
-  }}
-  document.getElementById('links-list').innerHTML = lhtml;
 }}
 
 async function signOut() {{
@@ -4674,17 +4601,6 @@ async function clearLogo(which) {{
     msg.style.color='#00ff88'; msg.textContent='✓ Cleared';
   }}
   else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
-}}
-async function createLink() {{
-  const r = await fetch(API_BASE + '/invite-link', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{}})}});
-  const d = await r.json();
-  const msg = document.getElementById('link-msg');
-  if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Created'; load(); }}
-  else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
-}}
-async function deleteLink(id) {{ if (!confirm('Revoke this invite link?')) return;
-  const r = await fetch(API_BASE + '/invite-link/' + id, {{method:'DELETE'}}); const d = await r.json();
-  if (d.success) load(); else alert('Failed');
 }}
 async function suspend(id) {{
   const r = await fetch(API_BASE + '/members/' + id + '/suspend', {{method:'POST'}});
@@ -5276,83 +5192,28 @@ def api_inst_upload_logo(slug):
         return _cors(jsonify({'success': False, 'error': str(e)})), 500
 
 
+# Invite links were retired in favor of email-only institution onboarding.
+# These endpoints return a friendly 410 so any cached admin UI from older
+# extension/dashboard versions surfaces a clear message instead of crashing.
+_INVITE_RETIRED_MSG = 'Invite links have been retired — add members by email instead. They are auto-enrolled when they sign in to the extension.'
+
 @app.route('/api/institution/<slug>/invite-link', methods=['POST', 'OPTIONS'])
 def api_inst_invite_link(slug):
     if request.method == 'OPTIONS':
         return _options('POST, OPTIONS')
-    ok, admin_email = _verify_inst_admin(slug)
-    if not ok:
-        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
-    if not ensure_db():
-        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
-    data = request.get_json(silent=True) or {}
-    max_uses = int(data.get('maxUses') or 0)
-    try:
-        conn = get_db(); cur = conn.cursor()
-        cur.execute("SELECT id FROM institutions WHERE slug=%s", (slug,))
-        r = cur.fetchone()
-        if not r:
-            cur.close(); conn.close()
-            return _cors(jsonify({'success': False, 'error': 'Not found'})), 404
-        code = _gen_invite_code()
-        cur.execute("""
-            INSERT INTO institution_invites (institution_id, code, max_uses, uses, created_by, created_at)
-            VALUES (%s, %s, %s, 0, %s, NOW())
-        """, (r[0], code, max_uses, admin_email or 'inst-admin'))
-        conn.commit()
-        cur.close(); conn.close()
-        return _cors(jsonify({'success': True, 'code': code, 'url': f'/join/{code}'}))
-    except Exception as e:
-        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+    return _cors(jsonify({'success': False, 'error': 'invite_links_retired', 'message': _INVITE_RETIRED_MSG})), 410
 
 @app.route('/api/institution/<slug>/invite-links', methods=['GET', 'OPTIONS'])
 def api_inst_invite_links_list(slug):
     if request.method == 'OPTIONS':
         return _options('GET, OPTIONS')
-    ok, _ = _verify_inst_admin(slug)
-    if not ok:
-        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
-    if not ensure_db():
-        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
-    try:
-        conn = get_db(); cur = conn.cursor()
-        cur.execute("SELECT id FROM institutions WHERE slug=%s", (slug,))
-        r = cur.fetchone()
-        if not r:
-            cur.close(); conn.close()
-            return _cors(jsonify({'success': False, 'error': 'Not found'})), 404
-        cur.execute("""
-            SELECT id, code, max_uses, uses, created_at, created_by
-            FROM institution_invites WHERE institution_id=%s ORDER BY created_at DESC
-        """, (r[0],))
-        links = [{'id': row[0], 'code': row[1], 'maxUses': row[2], 'uses': row[3],
-                  'createdAt': row[4].isoformat() if row[4] else None, 'createdBy': row[5]}
-                 for row in cur.fetchall()]
-        cur.close(); conn.close()
-        return _cors(jsonify({'success': True, 'links': links}))
-    except Exception as e:
-        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+    return _cors(jsonify({'success': False, 'error': 'invite_links_retired', 'links': [], 'message': _INVITE_RETIRED_MSG})), 410
 
 @app.route('/api/institution/<slug>/invite-link/<int:link_id>', methods=['DELETE', 'OPTIONS'])
 def api_inst_invite_link_delete(slug, link_id):
     if request.method == 'OPTIONS':
         return _options('DELETE, OPTIONS')
-    ok, _ = _verify_inst_admin(slug)
-    if not ok:
-        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
-    if not ensure_db():
-        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
-    try:
-        conn = get_db(); cur = conn.cursor()
-        cur.execute("""
-            DELETE FROM institution_invites WHERE id=%s
-              AND institution_id=(SELECT id FROM institutions WHERE slug=%s)
-        """, (link_id, slug))
-        conn.commit()
-        cur.close(); conn.close()
-        return _cors(jsonify({'success': True}))
-    except Exception as e:
-        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+    return _cors(jsonify({'success': False, 'error': 'invite_links_retired', 'message': _INVITE_RETIRED_MSG})), 410
 
 @app.route('/api/institution/<slug>/members/<int:member_id>/suspend', methods=['POST', 'OPTIONS'])
 def api_inst_member_suspend(slug, member_id):
@@ -5437,151 +5298,55 @@ def api_inst_member_delete(slug, member_id):
 
 @app.route('/join/<code>', methods=['GET'])
 def institution_join_page(code):
-    if not ensure_db():
-        return Response("Database not available", status=503)
-    try:
-        conn = get_db(); cur = conn.cursor()
-        cur.execute("""
-            SELECT i.id, i.slug, i.name, i.logo_url, i.brand_color, i.status, i.expires_at, i.seat_limit,
-                   inv.uses, inv.max_uses
-            FROM institution_invites inv JOIN institutions i ON i.id = inv.institution_id
-            WHERE inv.code=%s
-        """, (code,))
-        r = cur.fetchone()
-        cur.close(); conn.close()
-    except Exception as e:
-        return Response(f"Error: {e}", status=500)
-    if not r:
-        return Response("Invite link not found or expired.", status=404)
-    inst_id, slug, name, logo_url, brand_color, status, expires_at, seat_limit, uses, max_uses = r
-    if not _institution_active((status, expires_at)):
-        return Response(f"This invite is no longer active. Contact {html_escape_module.escape(name)}.", status=410)
-    if max_uses and uses >= max_uses:
-        return Response("This invite link has reached its usage limit.", status=410)
-    safe_name = html_escape_module.escape(name)
-    # CSS-context: enforce strict hex regex; fall back to default if anything else.
-    _raw_color = brand_color or '#00d9ff'
-    safe_color = _raw_color if re.match(r'^#[0-9a-fA-F]{3,8}$', str(_raw_color)) else '#00d9ff'
-    logo_html = f'<img src="{html_escape_module.escape(logo_url)}" alt="logo" style="height:80px; max-width:240px; object-fit:contain; background:#fff; border-radius:12px; padding:8px; margin-bottom:24px;">' if logo_url else ''
+    """Invite links were retired in favor of email-only institution onboarding.
+    Any old shared `/join/<code>` URL now lands on a friendly branded page
+    explaining the new flow — no scary 404, no 'no longer active' wall."""
+    # We deliberately ignore the code value: regardless of whether it is
+    # historically valid, expired, or unknown, the user-facing answer is the
+    # same — invites are now email-based, ask your admin to add your email.
+    safe_color = '#00d9ff'
     page = f'''<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Join {safe_name} on SnapToAI</title>
+<html><head><meta charset="UTF-8"><title>Join your institution on SnapToAI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0f0f1a 0%, #1a0f2e 100%); color: #fff; min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center; padding: 24px; }}
-  .card {{ max-width: 520px; background: rgba(255,255,255,0.04); border: 1px solid {safe_color}55; border-radius: 20px; padding: 40px; text-align: center; backdrop-filter: blur(20px); }}
-  h1 {{ color: {safe_color}; margin: 0 0 8px 0; font-size: 28px; }}
+  .card {{ max-width: 540px; background: rgba(255,255,255,0.04); border: 1px solid {safe_color}55; border-radius: 20px; padding: 40px; text-align: center; backdrop-filter: blur(20px); }}
+  h1 {{ color: {safe_color}; margin: 0 0 12px 0; font-size: 26px; }}
   p {{ color: #ccc; line-height: 1.6; }}
-  input {{ width: 100%; background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 12px 16px; border-radius: 10px; font-size: 15px; margin: 16px 0; box-sizing: border-box; }}
-  button {{ background: {safe_color}; color: #000; border: none; padding: 14px 28px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 15px; width: 100%; }}
-  .step {{ background: rgba(0,0,0,0.3); border-radius: 10px; padding: 16px; margin: 16px 0; text-align: left; font-size: 14px; color: #ccc; }}
+  .step {{ background: rgba(0,0,0,0.3); border-radius: 10px; padding: 16px; margin: 18px 0 8px; text-align: left; font-size: 14px; color: #ccc; }}
   .step strong {{ color: {safe_color}; }}
+  a.cta {{ display: inline-block; margin-top: 14px; background: {safe_color}; color: #000; padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: bold; }}
   a {{ color: {safe_color}; }}
-  #msg {{ margin-top: 12px; font-size: 13px; min-height: 18px; }}
-</style>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-</head>
+</style></head>
 <body>
 <div class="card">
-  {logo_html}
-  <h1>You're invited to {safe_name}</h1>
-  <p>Sign in with Google to claim your free SnapToAI Pro seat — included with your {safe_name} membership.</p>
-  <div id="g-btn" style="display:flex; justify-content:center; margin: 24px 0 8px;"></div>
-  <div id="msg"></div>
+  <div style="font-size: 44px; margin-bottom: 8px;">📸</div>
+  <h1>Invite links have been retired</h1>
+  <p>SnapToAI institutions now use email-only onboarding — no codes, no extra hops.</p>
   <div class="step">
-    <strong>Next step:</strong> After signing in, install the SnapToAI Chrome extension and sign in with the same Google account — your branded Pro license unlocks automatically.
-    <br><br>
-    <a id="install-link" href="https://chromewebstore.google.com/detail/snaptoai" target="_blank">→ Install SnapToAI from Chrome Web Store</a>
+    <strong>How to join:</strong>
+    <ol style="margin: 10px 0 0 0; padding-left: 22px; line-height: 1.7;">
+      <li>Ask your admin to add your email to the institution.</li>
+      <li>Install the SnapToAI Chrome extension.</li>
+      <li>Sign in with Google using that same email — your branded license unlocks automatically.</li>
+    </ol>
   </div>
+  <a class="cta" href="https://chromewebstore.google.com/detail/snaptoai" target="_blank" rel="noopener">→ Install SnapToAI</a>
+  <p style="margin-top: 18px; font-size: 12px; color: #888;">Need help? Contact your institution admin or <a href="mailto:support@snaptoai.com">support@snaptoai.com</a>.</p>
 </div>
-<script>
-const INVITE_CODE = {json.dumps(code)};
-const GOOGLE_CLIENT = {json.dumps(GOOGLE_CLIENT_ID or '')};
-function onGoogle(resp) {{
-  const msg = document.getElementById('msg');
-  msg.style.color = '#888'; msg.textContent = 'Reserving your seat...';
-  fetch('/api/institution/join', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{code: INVITE_CODE, idToken: resp.credential}})}})
-    .then(r => r.json()).then(d => {{
-      if (d.success) {{
-        msg.style.color = '#00ff88';
-        msg.textContent = '✓ Seat reserved for ' + (d.email || 'your Google account') + '. Install the extension and sign in with the same Google account.';
-      }} else if (d.error === 'seat_limit') {{
-        msg.style.color = '#ff4757';
-        msg.textContent = '✗ This institution has hit its seat limit. Please contact your admin.';
-      }} else {{
-        msg.style.color = '#ff4757';
-        msg.textContent = '✗ ' + (d.error || 'Could not reserve seat');
-      }}
-    }}).catch(e => {{ msg.style.color = '#ff4757'; msg.textContent = '✗ ' + e; }});
-}}
-window.addEventListener('load', () => {{
-  if (!window.google || !GOOGLE_CLIENT) {{
-    document.getElementById('msg').style.color = '#ff4757';
-    document.getElementById('msg').textContent = 'Google Sign-In is not configured. Contact your institution admin.';
-    return;
-  }}
-  google.accounts.id.initialize({{ client_id: GOOGLE_CLIENT, callback: onGoogle }});
-  google.accounts.id.renderButton(document.getElementById('g-btn'), {{ theme: 'filled_black', size: 'large', width: 320 }});
-}});
-</script>
 </body></html>'''
     resp = Response(page, mimetype='text/html')
     resp.headers['Cache-Control'] = 'no-store'
     return resp
 
+
 @app.route('/api/institution/join', methods=['POST', 'OPTIONS'])
 def api_institution_join():
-    """Public invite-link redemption. Requires a verified Google idToken;
-    email is taken from the token, never from the request body."""
+    """Retired. Invite links are no longer redeemable; institution membership
+    is granted via the admin email allowlist + Google sign-in on the extension."""
     if request.method == 'OPTIONS':
         return _options('POST, OPTIONS')
-    if not ensure_db():
-        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
-    data = request.get_json(silent=True) or {}
-    code = str(data.get('code', '')).strip()[:64]
-    id_token = (data.get('idToken') or data.get('credential') or '').strip()
-    if not id_token:
-        return _cors(jsonify({'success': False, 'error': 'Google sign-in required'})), 401
-    verified = verify_google_token(id_token)
-    if not verified:
-        return _cors(jsonify({'success': False, 'error': 'Invalid Google token'})), 401
-    email = _norm_email(verified)
-    if not code or not email or '@' not in email:
-        return _cors(jsonify({'success': False, 'error': 'code and valid identity required'})), 400
-    try:
-        conn = get_db(); cur = conn.cursor()
-        cur.execute("""
-            SELECT inv.id, inv.institution_id, inv.uses, inv.max_uses,
-                   i.status, i.expires_at, i.seat_limit
-            FROM institution_invites inv JOIN institutions i ON i.id = inv.institution_id
-            WHERE inv.code=%s
-        """, (code,))
-        r = cur.fetchone()
-        if not r:
-            cur.close(); conn.close()
-            return _cors(jsonify({'success': False, 'error': 'Invalid invite link'})), 404
-        inv_id, inst_id, uses, max_uses, status, expires_at, seat_limit = r
-        if not _institution_active((status, expires_at)):
-            cur.close(); conn.close()
-            return _cors(jsonify({'success': False, 'error': 'Invite no longer active'})), 410
-        if max_uses and uses >= max_uses:
-            cur.close(); conn.close()
-            return _cors(jsonify({'success': False, 'error': 'invite_exhausted'})), 410
-        if seat_limit and _seats_used(cur, inst_id) >= seat_limit:
-            cur.close(); conn.close()
-            return _cors(jsonify({'success': False, 'error': 'seat_limit'})), 400
-        result = _add_member(cur, inst_id, email, f'invite-link:{code[:8]}')
-        if result == 'invalid':
-            cur.close(); conn.close()
-            return _cors(jsonify({'success': False, 'error': 'Invalid email format'})), 400
-        # Only burn an invite-link use when we actually added a NEW seat
-        if result == 'added':
-            cur.execute("UPDATE institution_invites SET uses=uses+1 WHERE id=%s", (inv_id,))
-        conn.commit()
-        cur.close(); conn.close()
-        return _cors(jsonify({'success': True, 'result': result}))
-    except Exception as e:
-        print(f'❌ inst join: {e}')
-        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+    return _cors(jsonify({'success': False, 'error': 'invite_links_retired', 'message': _INVITE_RETIRED_MSG})), 410
 
 
 if __name__ == '__main__':

@@ -141,13 +141,11 @@ async function handleGoogleSignIn() {
       await chrome.storage.local.set({ snaptoai_device_id: deviceId });
     }
 
-    let pendingInvite = '';
-    try {
-      const pi = await chrome.storage.local.get(['snaptoai_pending_invite']);
-      pendingInvite = (pi && pi.snaptoai_pending_invite ? String(pi.snaptoai_pending_invite) : '').trim().slice(0, 64);
-    } catch (_) {}
+    // Invite codes were retired in favor of email-only institution onboarding.
+    // Purge any legacy pending-invite key from prior installs so it can never
+    // be sent again or surface stale UI.
+    try { await chrome.storage.local.remove('snaptoai_pending_invite'); } catch (_) {}
 
-    let inviteRejection = null;
     try {
       const regBody = {
         name: userData.name,
@@ -155,24 +153,11 @@ async function handleGoogleSignIn() {
         picture: userData.picture,
         deviceId: deviceId
       };
-      if (pendingInvite) regBody.inviteCode = pendingInvite;
-      const regResp = await fetch(BACKEND_URL + '/api/auth/register', {
+      await fetch(BACKEND_URL + '/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(regBody)
       });
-      let regData = null;
-      try { regData = await regResp.json(); } catch (_) {}
-      if (pendingInvite) {
-        if (regResp.ok && regData && regData.inviteResult === 'added') {
-          // Successful join - clear the pending code.
-          try { await chrome.storage.local.remove('snaptoai_pending_invite'); } catch (_) {}
-        } else if (!regResp.ok && regData && regData.error) {
-          // Hard rejection (seat_limit / invite_exhausted / invalid_code).
-          inviteRejection = { code: regData.error, message: regData.message || 'Invite code rejected.' };
-          try { await chrome.storage.local.remove('snaptoai_pending_invite'); } catch (_) {}
-        }
-      }
     } catch (e) {
       console.log('[SnapToAI] Backend registration failed (offline?):', e.message);
     }
@@ -180,11 +165,6 @@ async function handleGoogleSignIn() {
     await checkAuthState();
     await refreshSubscriptionUI();
     updateAiButtonState();
-
-    if (inviteRejection && authError) {
-      authError.textContent = inviteRejection.message;
-      authError.style.display = 'block';
-    }
 
     if (pendingAfterSignIn === 'geminiModal') {
       pendingAfterSignIn = null;
