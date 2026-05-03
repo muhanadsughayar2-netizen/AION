@@ -1302,6 +1302,30 @@ let selectedClipCount = 1;
 let userAvailableVeoModels = [];
 let selectedMusicModel = 'lyria-3-clip-preview';
 
+// Task #32: User-controllable director creativity. Persists across sessions
+// via chrome.storage.local under 'snaptoai_creativity'. Maps to the temperature
+// passed to generateAnchoredStoryboard() — Literal stays close to the user's
+// brief, Balanced is the default Task #31 setting, Cinematic gives Gemini
+// room for bolder lens / lighting / framing invention.
+let selectedCreativity = 'balanced';
+const CREATIVITY_LEVELS = {
+  literal:   { temp: 0.2,  label: 'Literal',   desc: 'Sticks tight to your brief.' },
+  balanced:  { temp: 0.35, label: 'Balanced',  desc: 'Default — cinematic but on-brief.' },
+  cinematic: { temp: 0.6,  label: 'Cinematic', desc: 'Bolder lens, lighting & framing.' }
+};
+function creativityTemp(level) {
+  return (CREATIVITY_LEVELS[level] || CREATIVITY_LEVELS.balanced).temp;
+}
+function creativityLabel(level) {
+  return (CREATIVITY_LEVELS[level] || CREATIVITY_LEVELS.balanced).label;
+}
+try {
+  chrome.storage.local.get('snaptoai_creativity', (res) => {
+    const v = res && res.snaptoai_creativity;
+    if (v && CREATIVITY_LEVELS[v]) selectedCreativity = v;
+  });
+} catch {}
+
 function showVideoStudio(thread) {
   const existing = thread.querySelector('.video-studio');
   if (existing) existing.remove();
@@ -1335,6 +1359,14 @@ function showVideoStudio(thread) {
         <button class="veo-clip-btn selected" data-clips="1" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">1x · 8s</button>
         <button class="veo-clip-btn" data-clips="2" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">2x · 16s</button>
         <button class="veo-clip-btn" data-clips="3" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">3x · 24s</button>
+      </div>
+      <div class="veo-creativity-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center;" title="Controls how much creative license the AI director takes when planning your storyboard.">
+        <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Creativity:</span>
+        ${Object.keys(CREATIVITY_LEVELS).map(k => {
+          const sel = k === selectedCreativity;
+          return `<button class="veo-creat-btn${sel ? ' selected' : ''}" data-creat="${k}" title="${CREATIVITY_LEVELS[k].desc}" style="padding:4px 10px;border-radius:8px;border:1px solid ${sel ? 'rgba(255,165,0,0.5)' : 'rgba(255,165,0,0.2)'};background:${sel ? 'rgba(255,165,0,0.15)' : 'rgba(255,165,0,0.04)'};color:${sel ? '#ffa500' : '#aabbcc'};font-size:11px;font-weight:600;cursor:pointer;">${CREATIVITY_LEVELS[k].label}</button>`;
+        }).join('')}
+        <span class="veo-creat-desc" style="font-size:10px;color:#667788;font-style:italic;">${CREATIVITY_LEVELS[selectedCreativity].desc}</span>
       </div>
       <textarea class="studio-desc" placeholder="Describe the video scene you want to create..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;margin-bottom:8px;"></textarea>
       ${hasScreenshots ? `
@@ -1425,6 +1457,30 @@ function showVideoStudio(thread) {
       btn.classList.add('selected');
       selectedClipCount = parseInt(btn.dataset.clips);
       updateDurLabel();
+    });
+  });
+
+  // Task #32: Creativity selector — persists to chrome.storage.local so the
+  // user's preferred director temperature carries across sessions.
+  const creatDescEl = studio.querySelector('.veo-creat-desc');
+  studio.querySelectorAll('.veo-creat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      studio.querySelectorAll('.veo-creat-btn').forEach(b => {
+        b.style.border = '1px solid rgba(255,165,0,0.2)';
+        b.style.background = 'rgba(255,165,0,0.04)';
+        b.style.color = '#aabbcc';
+        b.classList.remove('selected');
+      });
+      btn.style.border = '1px solid rgba(255,165,0,0.5)';
+      btn.style.background = 'rgba(255,165,0,0.15)';
+      btn.style.color = '#ffa500';
+      btn.classList.add('selected');
+      const level = btn.dataset.creat;
+      if (CREATIVITY_LEVELS[level]) {
+        selectedCreativity = level;
+        if (creatDescEl) creatDescEl.textContent = CREATIVITY_LEVELS[level].desc;
+        try { chrome.storage.local.set({ snaptoai_creativity: level }); } catch {}
+      }
     });
   });
 
@@ -1682,7 +1738,7 @@ async function startVideoGeneration(prompt, thread) {
     thread.scrollTop = thread.scrollHeight;
 
     try {
-      prebuiltScenes = await buildClipScenes(prompt, clipCount, apiKey, selectedVideoDuration);
+      prebuiltScenes = await buildClipScenes(prompt, clipCount, apiKey, selectedVideoDuration, creativityTemp(selectedCreativity), selectedCreativity);
     } catch (e) {
       console.warn('[veo plan] storyboard build failed:', e?.message || e);
     }
@@ -2411,9 +2467,16 @@ function briefAdheres(userPrompt, parsed) {
 
 // Ask Gemini to produce a continuity-anchored storyboard.
 // Returns array of clip prompts on success, null on failure.
-async function generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur) {
+async function generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur, temperature) {
   if (!apiKey || clipCount < 2) return null;
   const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
+  // Task #32: Temperature is now caller-controlled via the Video Studio
+  // Creativity selector. Falls back to the Task #31 default (0.35) when
+  // omitted so legacy callers / fallbacks still behave the same.
+  const baseTemp = (typeof temperature === 'number' && temperature > 0) ? temperature : 0.35;
+  // Retry uses a slightly tighter temperature than the primary attempt so
+  // a parse failure doesn't compound by also dialing creativity up.
+  const retryTemp = Math.max(0.2, baseTemp - 0.05);
 
   const directorBrief =
 `You are a film director planning a ${clipCount * segLen}-second cinematic video that will be rendered by Google Veo as ${clipCount} sequential ${segLen}-second clips, then stitched together.
@@ -2492,11 +2555,11 @@ Hard rules:
     // ran around 0.5-0.7. 0.35 gives the director enough room for real
     // cinematic instincts (lens choices, lighting moods, camera language)
     // without re-introducing the brief-drift we saw at 0.7.
-    let parsed = await callGemini(directorBrief, 0.35);
+    let parsed = await callGemini(directorBrief, baseTemp);
     if (!isValidParse(parsed)) {
       console.warn('[veo storyboard] first parse invalid, retrying with stricter brief');
       const stricter = directorBrief + `\n\nIMPORTANT: Your previous response was invalid. Return ONLY a single JSON object matching the schema above — no markdown fences, no preamble, no trailing text. The clips array MUST have exactly ${clipCount} entries.`;
-      parsed = await callGemini(stricter, 0.3);
+      parsed = await callGemini(stricter, retryTemp);
       if (!isValidParse(parsed)) return null;
     }
 
@@ -2532,7 +2595,10 @@ Hard rules:
       title: typeof parsed.title === 'string' ? parsed.title.trim() : '',
       script_summary: typeof parsed.script_summary === 'string' ? parsed.script_summary.trim() : '',
       style_bible: bible,
-      shots: parsed.clips.map(c => String(c.shot).trim())
+      shots: parsed.clips.map(c => String(c.shot).trim()),
+      // Task #32: stamp the temperature actually used so the plan approval
+      // card can show users which creativity mode produced this storyboard.
+      director_temp: baseTemp
     };
     return prompts;
   } catch (e) {
@@ -2568,7 +2634,10 @@ function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, 
       style_bible: meta.style_bible || '',
       shots: (Array.isArray(meta.shots) && meta.shots.length === scenes.length) ? [...meta.shots] : scenes.map(() => ''),
       vibe: meta.vibe || '',
-      aspectRatio: '16:9'
+      aspectRatio: '16:9',
+      // Task #32: surface which creativity mode produced this storyboard so
+      // users can see why two runs of the same prompt feel different.
+      creativity: meta.creativity || ''
     };
     let editing = false;
     let liveScenes = scenes;  // recompiled on Save
@@ -2713,6 +2782,7 @@ function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, 
               ${chip('🎞', `${clipCount} clips`)}
               ${chip('📐', draft.aspectRatio)}
               ${chip('🎥', modelShort)}
+              ${draft.creativity ? chip('🎨', `Creativity: ${creativityLabel(draft.creativity)}`) : ''}
               ${costStr ? chip('💳', `${costStr} on your key`) : ''}
             </div>
           </div>
@@ -2811,15 +2881,20 @@ function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, 
 // We now call generateAnchoredStoryboard() first (cinematic enrichment
 // with brief-anchoring guards), and only fall back to the literal
 // template if the director call fails.
-async function buildClipScenes(prompt, clipCount, apiKey, clipDur) {
+async function buildClipScenes(prompt, clipCount, apiKey, clipDur, temperature, creativityLevel) {
   if (clipCount < 2) return [];
-  const directed = await generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur);
+  const directed = await generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur, temperature);
   if (directed && directed.length === clipCount) {
-    console.log(`[veo storyboard] AI director succeeded — ${clipCount} cinematic clips`);
+    console.log(`[veo storyboard] AI director succeeded — ${clipCount} cinematic clips (creativity=${creativityLevel || 'default'}, temp=${temperature ?? 0.35})`);
+    // Task #32: stamp the human-readable creativity level on meta so the
+    // plan approval card can render a "Creativity: Cinematic" chip.
+    if (directed.meta && creativityLevel) directed.meta.creativity = creativityLevel;
     return directed;
   }
   console.log(`[veo storyboard] AI director unavailable, using brief-anchored fallback`);
-  return buildAnchoredFallback(prompt, clipCount, clipDur);
+  const fallback = buildAnchoredFallback(prompt, clipCount, clipDur);
+  if (fallback && fallback.meta && creativityLevel) fallback.meta.creativity = creativityLevel;
+  return fallback;
 }
 
 // Compile one clip prompt from edited meta (used when user edits the plan card).
@@ -2884,7 +2959,7 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
   if (!clipScenes || clipScenes.length !== clipCount) {
     const progressText = progressBubble.querySelector('.video-progress-text');
     if (progressText) progressText.textContent = `Planning ${clipCount}-clip storyboard for visual continuity...`;
-    clipScenes = await buildClipScenes(prompt, clipCount, apiKey, selectedVideoDuration);
+    clipScenes = await buildClipScenes(prompt, clipCount, apiKey, selectedVideoDuration, creativityTemp(selectedCreativity), selectedCreativity);
   }
   // Index-based results so retry can replace any specific slot
   const clipResults = Array.from({length: clipCount}, (_, i) => ({ n: i + 1, status: 'pending', url: null }));
