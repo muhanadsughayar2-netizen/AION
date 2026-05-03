@@ -18,10 +18,17 @@ async function applyBranding() {
       const tint = resolved ? resolved.accent : b.brandColor;
       cyans.forEach((c) => { c.style.color = tint; });
     }
-    if (b.logoUrl) {
+    if (b.logoUrl || b.logoUrlLight) {
+      const themeResolved = (window.SnapToAITheme && window.SnapToAITheme.getResolved)
+        ? window.SnapToAITheme.getResolved() : 'dark';
+      const pick = (themeResolved === 'light' && b.logoUrlLight) ? b.logoUrlLight : (b.logoUrl || b.logoUrlLight);
+      const hasBoth = !!(b.logoUrl && b.logoUrlLight);
       const img = document.getElementById('welcomeBrandLogo');
-      const url = b.logoUrl.startsWith('http') ? b.logoUrl : 'https://www.snaptoai.com' + b.logoUrl;
-      if (img) { img.src = url; img.alt = b.name || ''; img.style.display = 'inline-block'; }
+      const url = pick.startsWith('http') ? pick : 'https://www.snaptoai.com' + pick;
+      if (img) {
+        img.src = url; img.alt = b.name || ''; img.style.display = 'inline-block';
+        img.classList.toggle('themed-logo', hasBoth);
+      }
       const mark = document.getElementById('welcomeDefaultMark');
       if (mark) mark.style.display = 'none';
       const nameEl = document.getElementById('welcomeInstName');

@@ -4236,11 +4236,21 @@ async function applyInstitutionBranding() {
     const headerText = document.querySelector('#headerLogo .header-logo-text');
     const upgradeBtn = document.getElementById('upgradeBtn');
 
-    if (b && b.logoUrl) {
-      const url = b.logoUrl.startsWith('http') ? b.logoUrl : 'https://www.snaptoai.com' + b.logoUrl;
-      if (authImg) { authImg.src = url; authImg.alt = b.name || ''; authImg.style.display = 'inline-block'; }
+    if (b && (b.logoUrl || b.logoUrlLight)) {
+      const themeResolved = (window.SnapToAITheme && window.SnapToAITheme.getResolved)
+        ? window.SnapToAITheme.getResolved() : 'dark';
+      const pick = (themeResolved === 'light' && b.logoUrlLight) ? b.logoUrlLight : (b.logoUrl || b.logoUrlLight);
+      const hasBoth = !!(b.logoUrl && b.logoUrlLight);
+      const url = pick.startsWith('http') ? pick : 'https://www.snaptoai.com' + pick;
+      if (authImg) {
+        authImg.src = url; authImg.alt = b.name || ''; authImg.style.display = 'inline-block';
+        authImg.classList.toggle('themed-logo', hasBoth);
+      }
       if (authText) authText.style.display = 'none';
-      if (headerImg) { headerImg.src = url; headerImg.alt = b.name || ''; headerImg.style.display = 'inline-block'; }
+      if (headerImg) {
+        headerImg.src = url; headerImg.alt = b.name || ''; headerImg.style.display = 'inline-block';
+        headerImg.classList.toggle('themed-logo', hasBoth);
+      }
       if (headerText) headerText.style.display = 'none';
     } else if (b && b.name) {
       // No logo but we have a name — render the inst name as text

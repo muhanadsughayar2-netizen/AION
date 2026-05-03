@@ -190,6 +190,9 @@ def init_db():
         ''')
         # Backfill for installs predating branding_locked.
         cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS branding_locked BOOLEAN DEFAULT FALSE")
+        # Optional light-mode logo variant (Task #20). Falls back to logo_url
+        # when NULL so existing single-logo institutions keep working untouched.
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_url_light TEXT")
         cur.execute('''
             CREATE TABLE IF NOT EXISTS institution_members (
                 id SERIAL PRIMARY KEY,
@@ -441,7 +444,7 @@ def _resolve_institution_for_email(cur, email):
     if not email or '@' not in email:
         return None, None, 'none'
     cur.execute("""
-        SELECT m.institution_id, m.status, i.status, i.expires_at, i.slug, i.name, i.logo_url, i.brand_color, m.role
+        SELECT m.institution_id, m.status, i.status, i.expires_at, i.slug, i.name, i.logo_url, i.brand_color, m.role, i.logo_url_light
         FROM institution_members m JOIN institutions i ON i.id = m.institution_id
         WHERE LOWER(m.email) = %s LIMIT 1
     """, (email,))
@@ -450,7 +453,8 @@ def _resolve_institution_for_email(cur, email):
         if row[1] == 'active' and _institution_active((row[2], row[3])):
             return row[0], {
                 'institutionId': row[0], 'slug': row[4], 'name': row[5],
-                'logoUrl': row[6], 'brandColor': row[7] or '#00d9ff',
+                'logoUrl': row[6], 'logoUrlLight': row[9],
+                'brandColor': row[7] or '#00d9ff',
                 'role': row[8] or 'member'
             }, 'matched_active'
         return None, None, 'member_inactive'
@@ -459,12 +463,12 @@ def _resolve_institution_for_email(cur, email):
     if not domain or domain in PUBLIC_DOMAINS:
         return None, None, 'none'
     cur.execute("""
-        SELECT id, slug, name, logo_url, brand_color, allowed_domains, status, expires_at, seat_limit
+        SELECT id, slug, name, logo_url, brand_color, allowed_domains, status, expires_at, seat_limit, logo_url_light
         FROM institutions WHERE allowed_domains IS NOT NULL AND allowed_domains <> ''
     """)
     seat_full_match = False
     for r in cur.fetchall():
-        inst_id, slug, name, logo_url, brand_color, allowed, status, expires_at, seat_limit = r
+        inst_id, slug, name, logo_url, brand_color, allowed, status, expires_at, seat_limit, logo_url_light = r
         if not _institution_active((status, expires_at)):
             continue
         domains = [d.strip().lower() for d in (allowed or '').split(',') if d.strip()]
@@ -480,7 +484,8 @@ def _resolve_institution_for_email(cur, email):
         """, (inst_id, email))
         return inst_id, {
             'institutionId': inst_id, 'slug': slug, 'name': name,
-            'logoUrl': logo_url, 'brandColor': brand_color or '#00d9ff',
+            'logoUrl': logo_url, 'logoUrlLight': logo_url_light,
+            'brandColor': brand_color or '#00d9ff',
             'role': 'member'
         }, 'matched_active'
     return (None, None, 'seat_limit') if seat_full_match else (None, None, 'none')
@@ -507,7 +512,7 @@ def _get_institution_branding_for_email(cur, email):
     if not email:
         return None
     cur.execute("""
-        SELECT i.id, i.slug, i.name, i.logo_url, i.brand_color, i.status, i.expires_at, m.status, m.role
+        SELECT i.id, i.slug, i.name, i.logo_url, i.brand_color, i.status, i.expires_at, m.status, m.role, i.logo_url_light
         FROM institution_members m JOIN institutions i ON i.id = m.institution_id
         WHERE LOWER(m.email) = %s LIMIT 1
     """, (email,))
@@ -523,6 +528,7 @@ def _get_institution_branding_for_email(cur, email):
         'slug': r[1],
         'name': r[2],
         'logoUrl': r[3],
+        'logoUrlLight': r[9],
         'brandColor': r[4] or '#00d9ff',
         'role': r[8] or 'member'
     }
@@ -530,7 +536,7 @@ def _get_institution_branding_for_email(cur, email):
 def _institution_by_slug(cur, slug):
     cur.execute("""
         SELECT id, slug, name, logo_url, brand_color, primary_admin_email, seat_limit,
-               expires_at, status, allowed_domains, notes, created_at, branding_locked
+               expires_at, status, allowed_domains, notes, created_at, branding_locked, logo_url_light
         FROM institutions WHERE slug=%s
     """, (slug,))
     return cur.fetchone()
@@ -2260,7 +2266,7 @@ def subscription_status():
         try:
             # Prefer member row (works even after FK was nulled).
             cur.execute("""
-                SELECT i.name, i.brand_color, i.logo_url, i.slug
+                SELECT i.name, i.brand_color, i.logo_url, i.slug, i.logo_url_light
                 FROM institution_members m JOIN institutions i ON i.id = m.institution_id
                 WHERE LOWER(m.email) = %s
                 ORDER BY m.joined_at DESC NULLS LAST
@@ -2270,7 +2276,7 @@ def subscription_status():
             if not fb:
                 # Maybe member row was hard-deleted; fall back to users FK.
                 cur.execute("""
-                    SELECT i.name, i.brand_color, i.logo_url, i.slug
+                    SELECT i.name, i.brand_color, i.logo_url, i.slug, i.logo_url_light
                     FROM users u JOIN institutions i ON i.id = u.institution_id
                     WHERE LOWER(u.email)=%s
                 """, (email,))
@@ -2283,12 +2289,13 @@ def subscription_status():
                     WHERE email=%s AND plan_type IN ('institution','institution_expired')
                 """, (email,))
                 if cur.fetchone():
-                    fb = ('Your institution', '#00d9ff', None, None)
+                    fb = ('Your institution', '#00d9ff', None, None, None)
             if fb:
                 former_branding = {
                     'name': fb[0],
                     'brandColor': fb[1] or '#00d9ff',
                     'logoUrl': fb[2],
+                    'logoUrlLight': fb[4] if len(fb) > 4 else None,
                     'slug': fb[3],
                 }
         except Exception as fb_err:
@@ -3074,7 +3081,7 @@ def ai_proxy():
 def _institution_to_dict(cur, row):
     """row from _institution_by_slug or list query (id, slug, name, logo_url, brand_color,
        primary_admin_email, seat_limit, expires_at, status, allowed_domains, notes,
-       created_at, branding_locked)."""
+       created_at, branding_locked, logo_url_light)."""
     inst_id = row[0]
     slug = row[1]
     seats_used = _seats_used(cur, inst_id)
@@ -3094,6 +3101,7 @@ def _institution_to_dict(cur, row):
         'notes': row[10],
         'createdAt': row[11].isoformat() if row[11] else None,
         'brandingLocked': bool(row[12]) if len(row) > 12 else False,
+        'logoUrlLight': row[13] if len(row) > 13 else None,
         'adminToken': admin_token
     }
 
@@ -3179,7 +3187,7 @@ def api_admin_inst_list():
         conn = get_db(); cur = conn.cursor()
         cur.execute("""
             SELECT id, slug, name, logo_url, brand_color, primary_admin_email, seat_limit,
-                   expires_at, status, allowed_domains, notes, created_at, branding_locked
+                   expires_at, status, allowed_domains, notes, created_at, branding_locked, logo_url_light
             FROM institutions ORDER BY created_at DESC
         """)
         rows = cur.fetchall()
@@ -3373,42 +3381,23 @@ def api_admin_inst_members(inst_id):
         print(f'❌ inst members (super-admin): {e}')
         return _cors(jsonify({'success': False, 'error': str(e)})), 500
 
-@app.route('/api/admin/institutions/<int:inst_id>/logo', methods=['POST', 'OPTIONS'])
+def _logo_variant_meta(req):
+    """Resolve which logo column/file-suffix this request targets.
+    Returns (column_name, filename_suffix, response_key)."""
+    raw = (req.form.get('variant') if req.form else None) or req.args.get('variant') or ''
+    if str(raw).strip().lower() == 'light':
+        return 'logo_url_light', '-light', 'logoUrlLight'
+    return 'logo_url', '', 'logoUrl'
+
+@app.route('/api/admin/institutions/<int:inst_id>/logo', methods=['POST', 'DELETE', 'OPTIONS'])
 def api_admin_inst_logo(inst_id):
     if request.method == 'OPTIONS':
-        return _options('POST, OPTIONS')
+        return _options('POST, DELETE, OPTIONS')
     if not _require_super_admin():
         return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
     if not ensure_db():
         return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
-    f = request.files.get('logo')
-    if not f or not f.filename:
-        return _cors(jsonify({'success': False, 'error': 'No file uploaded (field name: logo)'})), 400
-    ext = ''
-    if '.' in f.filename:
-        ext = '.' + f.filename.rsplit('.', 1)[1].lower()
-    if ext not in ALLOWED_LOGO_EXTS:
-        return _cors(jsonify({'success': False, 'error': f'Unsupported extension {ext}. Allowed: {sorted(ALLOWED_LOGO_EXTS)}'})), 400
-    # Server-side size cap (2 MB) — read into memory once, validate, then write
-    blob = f.read(2 * 1024 * 1024 + 1)
-    if not blob:
-        return _cors(jsonify({'success': False, 'error': 'Empty file'})), 400
-    if len(blob) > 2 * 1024 * 1024:
-        return _cors(jsonify({'success': False, 'error': 'Logo too large (max 2 MB)'})), 400
-    # Magic-byte sniff: must match the claimed extension family
-    head = blob[:12]
-    is_png = head.startswith(b'\x89PNG\r\n\x1a\n')
-    is_jpg = head.startswith(b'\xff\xd8\xff')
-    is_webp = head[:4] == b'RIFF' and head[8:12] == b'WEBP'
-    is_svg = b'<svg' in blob[:512].lower() or blob.lstrip()[:5].lower().startswith(b'<?xml')
-    valid_for_ext = (
-        (ext == '.png' and is_png) or
-        (ext in ('.jpg', '.jpeg') and is_jpg) or
-        (ext == '.webp' and is_webp) or
-        (ext == '.svg' and is_svg)
-    )
-    if not valid_for_ext:
-        return _cors(jsonify({'success': False, 'error': f'File contents do not match extension {ext}'})), 400
+    column, suffix, resp_key = _logo_variant_meta(request)
     try:
         os.makedirs(INSTITUTION_LOGO_DIR, exist_ok=True)
         conn = get_db(); cur = conn.cursor()
@@ -3418,20 +3407,75 @@ def api_admin_inst_logo(inst_id):
             cur.close(); conn.close()
             return _cors(jsonify({'success': False, 'error': 'Institution not found'})), 404
         slug = r[0]
-        # Remove old logos for this slug
+        # DELETE clears just this variant.
+        if request.method == 'DELETE':
+            for old in os.listdir(INSTITUTION_LOGO_DIR):
+                base, _, _e = old.rpartition('.')
+                if suffix:
+                    if old.startswith(slug + suffix + '.'):
+                        try: os.remove(os.path.join(INSTITUTION_LOGO_DIR, old))
+                        except Exception: pass
+                else:
+                    if base == slug:
+                        try: os.remove(os.path.join(INSTITUTION_LOGO_DIR, old))
+                        except Exception: pass
+            cur.execute(f"UPDATE institutions SET {column}=NULL, updated_at=NOW() WHERE id=%s", (inst_id,))
+            conn.commit()
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': True, resp_key: None}))
+        f = request.files.get('logo')
+        if not f or not f.filename:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'No file uploaded (field name: logo)'})), 400
+        ext = ''
+        if '.' in f.filename:
+            ext = '.' + f.filename.rsplit('.', 1)[1].lower()
+        if ext not in ALLOWED_LOGO_EXTS:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': f'Unsupported extension {ext}. Allowed: {sorted(ALLOWED_LOGO_EXTS)}'})), 400
+        # Server-side size cap (2 MB) — read into memory once, validate, then write
+        blob = f.read(2 * 1024 * 1024 + 1)
+        if not blob:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Empty file'})), 400
+        if len(blob) > 2 * 1024 * 1024:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Logo too large (max 2 MB)'})), 400
+        # Magic-byte sniff: must match the claimed extension family
+        head = blob[:12]
+        is_png = head.startswith(b'\x89PNG\r\n\x1a\n')
+        is_jpg = head.startswith(b'\xff\xd8\xff')
+        is_webp = head[:4] == b'RIFF' and head[8:12] == b'WEBP'
+        is_svg = b'<svg' in blob[:512].lower() or blob.lstrip()[:5].lower().startswith(b'<?xml')
+        valid_for_ext = (
+            (ext == '.png' and is_png) or
+            (ext in ('.jpg', '.jpeg') and is_jpg) or
+            (ext == '.webp' and is_webp) or
+            (ext == '.svg' and is_svg)
+        )
+        if not valid_for_ext:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': f'File contents do not match extension {ext}'})), 400
+        # Remove old files of THIS variant only — don't clobber the other variant.
         for old in os.listdir(INSTITUTION_LOGO_DIR):
-            if old.startswith(slug + '.'):
-                try: os.remove(os.path.join(INSTITUTION_LOGO_DIR, old))
-                except Exception: pass
-        target = os.path.join(INSTITUTION_LOGO_DIR, slug + ext)
+            base, _, _e = old.rpartition('.')
+            if suffix:
+                if old.startswith(slug + suffix + '.'):
+                    try: os.remove(os.path.join(INSTITUTION_LOGO_DIR, old))
+                    except Exception: pass
+            else:
+                if base == slug:
+                    try: os.remove(os.path.join(INSTITUTION_LOGO_DIR, old))
+                    except Exception: pass
+        target = os.path.join(INSTITUTION_LOGO_DIR, slug + suffix + ext)
         with open(target, 'wb') as out:
             out.write(blob)
         # cache-bust the URL so updates propagate immediately to extensions
-        logo_url = f'/static/institution-logos/{slug}{ext}?v={int(time.time())}'
-        cur.execute("UPDATE institutions SET logo_url=%s, updated_at=NOW() WHERE id=%s", (logo_url, inst_id))
+        logo_url = f'/static/institution-logos/{slug}{suffix}{ext}?v={int(time.time())}'
+        cur.execute(f"UPDATE institutions SET {column}=%s, updated_at=NOW() WHERE id=%s", (logo_url, inst_id))
         conn.commit()
         cur.close(); conn.close()
-        return _cors(jsonify({'success': True, 'logoUrl': logo_url}))
+        return _cors(jsonify({'success': True, resp_key: logo_url}))
     except Exception as e:
         print(f'❌ inst logo: {e}')
         return _cors(jsonify({'success': False, 'error': str(e)})), 500
@@ -3685,9 +3729,19 @@ window.addEventListener('load', () => {{
       </div>
       <div style="min-width: 240px;">
         <label style="font-size: 12px; color: #888; display: block; margin-bottom: 4px;">Logo (PNG/JPG/SVG/WebP, max 2MB):</label>
+        {('<div style="margin-bottom:6px;"><img src="' + html_escape_module.escape(info.get('logoUrl') or '') + '" alt="" style="max-height:36px;max-width:160px;background:#fff;padding:4px;border-radius:4px;"></div>') if info.get('logoUrl') else ''}
         <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" style="font-size: 12px;" {'disabled' if info.get('brandingLocked') else ''}>
         <button onclick="uploadLogo()" style="margin-top: 6px;" {'disabled' if info.get('brandingLocked') else ''}>Upload Logo</button>
+        {('<button class="danger" onclick="clearLogo(' + "'default'" + ')" style="margin-top: 6px;" ' + ('disabled' if info.get('brandingLocked') else '') + '>Clear</button>') if info.get('logoUrl') else ''}
         <span id="logo-msg" style="color: #00ff88; font-size: 12px; margin-left: 8px;"></span>
+      </div>
+      <div style="min-width: 240px;">
+        <label style="font-size: 12px; color: #888; display: block; margin-bottom: 4px;">Light-mode logo <span style="color:#666;">(optional — used when viewers are in Light mode)</span>:</label>
+        {('<div style="margin-bottom:6px;"><img src="' + html_escape_module.escape(info.get('logoUrlLight') or '') + '" alt="" style="max-height:36px;max-width:160px;background:#1a1a2a;padding:4px;border-radius:4px;"></div>') if info.get('logoUrlLight') else ''}
+        <input id="logo-file-light" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" style="font-size: 12px;" {'disabled' if info.get('brandingLocked') else ''}>
+        <button onclick="uploadLogoLight()" style="margin-top: 6px;" {'disabled' if info.get('brandingLocked') else ''}>Upload Light Logo</button>
+        {('<button class="danger" onclick="clearLogo(' + "'light'" + ')" style="margin-top: 6px;" ' + ('disabled' if info.get('brandingLocked') else '') + '>Clear</button>') if info.get('logoUrlLight') else ''}
+        <span id="logo-light-msg" style="color: #00ff88; font-size: 12px; margin-left: 8px;"></span>
       </div>
     </div>
 
@@ -3987,6 +4041,28 @@ async function uploadLogo() {{
   if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Uploaded'; setTimeout(()=>location.reload(), 800); }}
   else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
 }}
+async function uploadLogoLight() {{
+  const f = document.getElementById('logo-file-light').files[0];
+  const msg = document.getElementById('logo-light-msg');
+  if (!f) {{ msg.style.color='#ff4757'; msg.textContent='Pick a file first'; return; }}
+  msg.style.color='#888'; msg.textContent='Uploading...';
+  const fd = new FormData(); fd.append('logo', f); fd.append('variant', 'light');
+  const r = await fetch(API_BASE + '/branding/logo', {{method:'POST', body: fd}});
+  const d = await r.json();
+  if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Uploaded'; setTimeout(()=>location.reload(), 800); }}
+  else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
+}}
+async function clearLogo(which) {{
+  const isLight = which === 'light';
+  const msg = document.getElementById(isLight ? 'logo-light-msg' : 'logo-msg');
+  if (!confirm('Remove the ' + (isLight ? 'Light-mode logo' : 'logo') + '?')) return;
+  msg.style.color='#888'; msg.textContent='Clearing...';
+  const url = API_BASE + '/branding/logo' + (isLight ? '?variant=light' : '');
+  const r = await fetch(url, {{method:'DELETE'}});
+  const d = await r.json();
+  if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Cleared'; setTimeout(()=>location.reload(), 600); }}
+  else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
+}}
 async function createLink() {{
   const r = await fetch(API_BASE + '/invite-link', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{}})}});
   const d = await r.json();
@@ -4256,11 +4332,14 @@ def api_inst_set_branding(slug):
         return _cors(jsonify({'success': False, 'error': str(e)})), 500
 
 
-@app.route('/api/institution/<slug>/branding/logo', methods=['POST', 'OPTIONS'])
+@app.route('/api/institution/<slug>/branding/logo', methods=['POST', 'DELETE', 'OPTIONS'])
 def api_inst_upload_logo(slug):
-    """Institution-admin logo upload. Blocked when branding_locked=TRUE."""
+    """Institution-admin logo upload. Blocked when branding_locked=TRUE.
+    Pass form/query field ``variant=light`` to target the optional Light-mode
+    logo variant instead of the default (dark-surface) logo. DELETE clears
+    just that variant."""
     if request.method == 'OPTIONS':
-        return _options('POST, OPTIONS')
+        return _options('POST, DELETE, OPTIONS')
     ok, _ = _verify_inst_admin(slug)
     if not ok:
         return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
@@ -4271,49 +4350,74 @@ def api_inst_upload_logo(slug):
     _lcur.close(); _lc.close()
     if locked:
         return _cors(jsonify({'success': False, 'error': 'Branding is locked by your account manager. Contact SnapToAI support.'})), 403
-    f = request.files.get('logo')
-    if not f or not f.filename:
-        return _cors(jsonify({'success': False, 'error': 'No file uploaded (field name: logo)'})), 400
-    ext = ''
-    if '.' in f.filename:
-        ext = '.' + f.filename.rsplit('.', 1)[1].lower()
-    if ext not in ALLOWED_LOGO_EXTS:
-        return _cors(jsonify({'success': False, 'error': f'Unsupported extension {ext}. Allowed: {sorted(ALLOWED_LOGO_EXTS)}'})), 400
-    blob = f.read(2 * 1024 * 1024 + 1)
-    if not blob:
-        return _cors(jsonify({'success': False, 'error': 'Empty file'})), 400
-    if len(blob) > 2 * 1024 * 1024:
-        return _cors(jsonify({'success': False, 'error': 'Logo too large (max 2 MB)'})), 400
-    head = blob[:12]
-    is_png = head.startswith(b'\x89PNG\r\n\x1a\n')
-    is_jpg = head.startswith(b'\xff\xd8\xff')
-    is_gif = head.startswith(b'GIF87a') or head.startswith(b'GIF89a')
-    is_webp = head[:4] == b'RIFF' and head[8:12] == b'WEBP'
-    is_svg = b'<svg' in blob[:512].lower() or blob.lstrip()[:5].lower().startswith(b'<?xml')
-    valid_for_ext = (
-        (ext == '.png' and is_png) or
-        (ext in ('.jpg', '.jpeg') and is_jpg) or
-        (ext == '.gif' and is_gif) or
-        (ext == '.webp' and is_webp) or
-        (ext == '.svg' and is_svg)
-    )
-    if not valid_for_ext:
-        return _cors(jsonify({'success': False, 'error': f'File contents do not match extension {ext}'})), 400
+    column, suffix, resp_key = _logo_variant_meta(request)
     try:
         os.makedirs(INSTITUTION_LOGO_DIR, exist_ok=True)
+        # DELETE clears just this variant.
+        if request.method == 'DELETE':
+            for old in os.listdir(INSTITUTION_LOGO_DIR):
+                base, _, _e = old.rpartition('.')
+                if suffix:
+                    if old.startswith(slug + suffix + '.'):
+                        try: os.remove(os.path.join(INSTITUTION_LOGO_DIR, old))
+                        except Exception: pass
+                else:
+                    if base == slug:
+                        try: os.remove(os.path.join(INSTITUTION_LOGO_DIR, old))
+                        except Exception: pass
+            conn = get_db(); cur = conn.cursor()
+            cur.execute(f"UPDATE institutions SET {column}=NULL, updated_at=NOW() WHERE slug=%s", (slug,))
+            conn.commit()
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': True, resp_key: None}))
+        f = request.files.get('logo')
+        if not f or not f.filename:
+            return _cors(jsonify({'success': False, 'error': 'No file uploaded (field name: logo)'})), 400
+        ext = ''
+        if '.' in f.filename:
+            ext = '.' + f.filename.rsplit('.', 1)[1].lower()
+        if ext not in ALLOWED_LOGO_EXTS:
+            return _cors(jsonify({'success': False, 'error': f'Unsupported extension {ext}. Allowed: {sorted(ALLOWED_LOGO_EXTS)}'})), 400
+        blob = f.read(2 * 1024 * 1024 + 1)
+        if not blob:
+            return _cors(jsonify({'success': False, 'error': 'Empty file'})), 400
+        if len(blob) > 2 * 1024 * 1024:
+            return _cors(jsonify({'success': False, 'error': 'Logo too large (max 2 MB)'})), 400
+        head = blob[:12]
+        is_png = head.startswith(b'\x89PNG\r\n\x1a\n')
+        is_jpg = head.startswith(b'\xff\xd8\xff')
+        is_gif = head.startswith(b'GIF87a') or head.startswith(b'GIF89a')
+        is_webp = head[:4] == b'RIFF' and head[8:12] == b'WEBP'
+        is_svg = b'<svg' in blob[:512].lower() or blob.lstrip()[:5].lower().startswith(b'<?xml')
+        valid_for_ext = (
+            (ext == '.png' and is_png) or
+            (ext in ('.jpg', '.jpeg') and is_jpg) or
+            (ext == '.gif' and is_gif) or
+            (ext == '.webp' and is_webp) or
+            (ext == '.svg' and is_svg)
+        )
+        if not valid_for_ext:
+            return _cors(jsonify({'success': False, 'error': f'File contents do not match extension {ext}'})), 400
+        # Remove old files of THIS variant only — don't clobber the other variant.
         for old in os.listdir(INSTITUTION_LOGO_DIR):
-            if old.startswith(slug + '.'):
-                try: os.remove(os.path.join(INSTITUTION_LOGO_DIR, old))
-                except Exception: pass
-        target = os.path.join(INSTITUTION_LOGO_DIR, slug + ext)
+            base, _, _e = old.rpartition('.')
+            if suffix:
+                if old.startswith(slug + suffix + '.'):
+                    try: os.remove(os.path.join(INSTITUTION_LOGO_DIR, old))
+                    except Exception: pass
+            else:
+                if base == slug:
+                    try: os.remove(os.path.join(INSTITUTION_LOGO_DIR, old))
+                    except Exception: pass
+        target = os.path.join(INSTITUTION_LOGO_DIR, slug + suffix + ext)
         with open(target, 'wb') as out:
             out.write(blob)
-        logo_url = f'/static/institution-logos/{slug}{ext}?v={int(time.time())}'
+        logo_url = f'/static/institution-logos/{slug}{suffix}{ext}?v={int(time.time())}'
         conn = get_db(); cur = conn.cursor()
-        cur.execute("UPDATE institutions SET logo_url=%s, updated_at=NOW() WHERE slug=%s", (logo_url, slug))
+        cur.execute(f"UPDATE institutions SET {column}=%s, updated_at=NOW() WHERE slug=%s", (logo_url, slug))
         conn.commit()
         cur.close(); conn.close()
-        return _cors(jsonify({'success': True, 'logoUrl': logo_url}))
+        return _cors(jsonify({'success': True, resp_key: logo_url}))
     except Exception as e:
         return _cors(jsonify({'success': False, 'error': str(e)})), 500
 

@@ -481,9 +481,16 @@
       const b = (isInst && snaptoai_branding) ? snaptoai_branding : null;
       const img = document.getElementById('sbBrandLogo');
       const text = document.querySelector('#sbLogo .sb-logo-text');
-      if (b && b.logoUrl) {
-        const url = b.logoUrl.startsWith('http') ? b.logoUrl : 'https://www.snaptoai.com' + b.logoUrl;
-        if (img) { img.src = url; img.alt = b.name || ''; img.style.display = 'inline-block'; }
+      if (b && (b.logoUrl || b.logoUrlLight)) {
+        const themeResolved = (window.SnapToAITheme && window.SnapToAITheme.getResolved)
+          ? window.SnapToAITheme.getResolved() : 'dark';
+        const pick = (themeResolved === 'light' && b.logoUrlLight) ? b.logoUrlLight : (b.logoUrl || b.logoUrlLight);
+        const hasBoth = !!(b.logoUrl && b.logoUrlLight);
+        const url = pick.startsWith('http') ? pick : 'https://www.snaptoai.com' + pick;
+        if (img) {
+          img.src = url; img.alt = b.name || ''; img.style.display = 'inline-block';
+          img.classList.toggle('themed-logo', hasBoth);
+        }
         if (text) text.style.display = 'none';
       } else if (b && b.name) {
         if (text) { text.innerHTML = '<span class="sb-logo-emoji">📸</span> <span>' + (b.name.replace(/[<>&]/g,'')) + '</span>'; text.style.display = ''; }

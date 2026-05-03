@@ -113,6 +113,22 @@
 :root[data-theme="light"] #welcomeBrandLogo {
   background: rgba(15, 23, 42, 0.06);
 }
+/* Institutions that ship BOTH a dark- and light-mode logo variant get a
+   transparent treatment — the logo art is already tuned for the surface,
+   so the adaptive chip would only add visual noise. The .themed-logo class
+   is added by popup.js / sidebar.js / welcome.js when both variants are
+   present in the branding payload. */
+#authBrandLogo.themed-logo,
+#headerBrandLogo.themed-logo,
+#sbBrandLogo.themed-logo,
+#welcomeBrandLogo.themed-logo,
+:root[data-theme="light"] #authBrandLogo.themed-logo,
+:root[data-theme="light"] #headerBrandLogo.themed-logo,
+:root[data-theme="light"] #sbBrandLogo.themed-logo,
+:root[data-theme="light"] #welcomeBrandLogo.themed-logo {
+  background: transparent;
+  padding: 0;
+}
 
 /* ============================================================
    Theme cycle button (shared between popup + sidebar headers)
