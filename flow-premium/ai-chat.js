@@ -1802,7 +1802,14 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
         aspectRatio: aspectRatio || '16:9',
         sampleCount: 1,
         durationSeconds: selectedVideoDuration,
-        negativePrompt: VEO_NEGATIVE_PROMPT
+        negativePrompt: VEO_NEGATIVE_PROMPT,
+        // Task #31: Disable Google's silent prompt-rewriter. enhancePrompt
+        // defaults to true on Veo, which means Google paraphrases our
+        // carefully-built director output (Style Bible + per-shot beats)
+        // before sending it to the model — we'd lose all the cinematic
+        // direction we just generated. Off = Veo sees exactly what we
+        // wrote.
+        enhancePrompt: false
       }
     };
 
@@ -1855,6 +1862,27 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
           data = await resp.json();
         } catch (npErr) {
           console.log('[SnapToAI Video] negativePrompt-stripped retry threw:', npErr.message);
+        }
+      }
+    }
+
+    // Task #31: Same defensive pattern for enhancePrompt. If a Veo variant
+    // doesn't recognize the flag, strip it and retry rather than failing
+    // the whole video. Google may add/remove this flag per model tier.
+    if (!resp.ok && requestBody.parameters && 'enhancePrompt' in requestBody.parameters) {
+      const lower = (data?.error?.message || '').toLowerCase();
+      if (resp.status === 400 && lower.includes('enhanceprompt')) {
+        console.log(`[SnapToAI Video] Model ${modelName} rejected enhancePrompt — retrying single-clip without it.`);
+        delete requestBody.parameters.enhancePrompt;
+        try {
+          resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+          });
+          data = await resp.json();
+        } catch (epErr) {
+          console.log('[SnapToAI Video] enhancePrompt-stripped retry threw:', epErr.message);
         }
       }
     }
@@ -2001,7 +2029,12 @@ async function generateOneVeoClip(clipIdx, ctx) {
             aspectRatio: ctx.aspectRatio || '16:9',
             sampleCount: 1,
             durationSeconds: durationSeconds,
-            negativePrompt: VEO_NEGATIVE_PROMPT
+            negativePrompt: VEO_NEGATIVE_PROMPT,
+            // Task #31: Disable Google's silent prompt-rewriter so Veo
+            // sees our director's exact Style Bible + per-shot beat
+            // instead of a paraphrased version. See generateSingleClip
+            // for the same flag and rationale.
+            enhancePrompt: false
           }
         };
 
@@ -2061,6 +2094,26 @@ async function generateOneVeoClip(clipIdx, ctx) {
           }
         }
 
+        // Task #31: Same defensive pattern for enhancePrompt on multi-clip.
+        if (!resp.ok && requestBody.parameters && 'enhancePrompt' in requestBody.parameters) {
+          const lower = errorMsg.toLowerCase();
+          if (resp.status === 400 && lower.includes('enhanceprompt')) {
+            console.log(`[SnapToAI Video] Model ${modelName} rejected enhancePrompt — retrying clip ${clipNum} without it.`);
+            delete requestBody.parameters.enhancePrompt;
+            try {
+              resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+              });
+              data = await resp.json().catch(() => ({}));
+              errorMsg = (data?.error?.message) || '';
+            } catch (epErr) {
+              console.log('[SnapToAI Video] enhancePrompt-stripped retry threw:', epErr.message);
+            }
+          }
+        }
+
         // v2.4.9: image-to-video unsupported by some Veo variants. If we
         // attached a transition frame and the model rejected it, fall back
         // ONCE to text-only continuity for this attempt instead of failing
@@ -2096,6 +2149,39 @@ async function generateOneVeoClip(clipIdx, ctx) {
               errorMsg = (data?.error?.message) || '';
             } catch (textOnlyErr) {
               console.log('[SnapToAI Video] Text-only fallback POST threw:', textOnlyErr.message);
+            }
+          }
+        }
+
+        // Task #31: Compounded-failure guard — if the FIRST failure was an
+        // image reject and the text-only fallback above then trips on
+        // negativePrompt or enhancePrompt, we'd otherwise give up. Re-run
+        // the param-strip checks one more time so a model that rejects
+        // both image input AND a parameter still gets a clean retry.
+        if (!resp.ok && resp.status === 400) {
+          const lower = (errorMsg || '').toLowerCase();
+          let stripped = false;
+          if (requestBody.parameters && requestBody.parameters.negativePrompt && lower.includes('negativeprompt')) {
+            console.log(`[SnapToAI Video] Post-fallback: stripping negativePrompt for clip ${clipNum}.`);
+            delete requestBody.parameters.negativePrompt;
+            stripped = true;
+          }
+          if (requestBody.parameters && 'enhancePrompt' in requestBody.parameters && lower.includes('enhanceprompt')) {
+            console.log(`[SnapToAI Video] Post-fallback: stripping enhancePrompt for clip ${clipNum}.`);
+            delete requestBody.parameters.enhancePrompt;
+            stripped = true;
+          }
+          if (stripped) {
+            try {
+              resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+              });
+              data = await resp.json().catch(() => ({}));
+              errorMsg = (data?.error?.message) || '';
+            } catch (postFallbackErr) {
+              console.log('[SnapToAI Video] Post-fallback param-strip retry threw:', postFallbackErr.message);
             }
           }
         }
