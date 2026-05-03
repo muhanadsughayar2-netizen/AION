@@ -2277,22 +2277,24 @@ function _veoDebugLogEnabled() {
 function slimSceneForChainImage(scenePrompt, fallbackBrief) {
   const header = '[CONTINUES FROM ATTACHED FRAME — same look, same characters, no cut]';
   const text = String(scenePrompt || '');
-  // Strip the [SUPPORTING STYLE...] block (everything from that label up
-  // to but not including [CONTINUITY] or end of string) and the
-  // [CONTINUITY] line itself, since the image already encodes the look
-  // and continuity.
+  // Task #31: labels were softened from "[SUPPORTING STYLE]" /
+  // "[USER REQUEST...]" to "Style direction:" / "User brief:". Updated
+  // the regexes to match the new shape, with the old labels kept as a
+  // fallback so any in-flight prompts compiled by an older copy of the
+  // page still get trimmed correctly.
   const trimmed = text
+    .replace(/\n*Style direction[^\n]*:[\s\S]*?(?=\n\[CONTINUITY\]|$)/i, '')
     .replace(/\n*\[SUPPORTING STYLE[^\]]*\][\s\S]*?(?=\n\[CONTINUITY\]|$)/i, '')
     .replace(/\n*\[CONTINUITY\][^\n]*\n?/i, '')
     .trim();
-  if (trimmed && /\[USER REQUEST/i.test(trimmed)) {
+  if (trimmed && /(User brief:|\[USER REQUEST)/i.test(trimmed)) {
     return `${header}\n\n${trimmed}`;
   }
   // Legacy / unrecognized shape — fall back to brief + raw scene prompt
   // so we still preserve any per-clip text the caller passed in.
   const brief = String(fallbackBrief || '').trim();
   const tail = trimmed || text.trim();
-  const briefBlock = brief ? `[USER REQUEST — RENDER THIS EXACTLY]\n${brief}\n\n` : '';
+  const briefBlock = brief ? `User brief:\n${brief}\n\n` : '';
   return `${header}\n\n${briefBlock}${tail}`.trim();
 }
 
@@ -2303,9 +2305,19 @@ function briefAdheres(userPrompt, parsed) {
     const lower = String(s || '').toLowerCase();
     return tokens.some(t => lower.includes(t));
   };
-  if (!inText(parsed?.style_bible)) return false;
-  if (!Array.isArray(parsed?.clips)) return false;
-  return parsed.clips.every(c => inText(c?.shot));
+  // Task #31: Loosened from "every clip must mention a brief token" to
+  // "the style bible OR a majority of clips mention one". The strict
+  // every-clip rule was throwing away perfectly good cinematic
+  // storyboards just because one beat shot used a synonym (e.g. "she"
+  // instead of repeating "the woman"), which collapsed us back to the
+  // bland literal-prompt fallback. The director's job is to ADD
+  // cinematic detail around the user's nouns — we still want the brief
+  // present in the overall plan, just not policed down to every line.
+  if (!Array.isArray(parsed?.clips) || parsed.clips.length === 0) return false;
+  const bibleHit = inText(parsed?.style_bible);
+  const clipHits = parsed.clips.filter(c => inText(c?.shot)).length;
+  const majority = clipHits >= Math.ceil(parsed.clips.length / 2);
+  return bibleHit || majority;
 }
 
 // Ask Gemini to produce a continuity-anchored storyboard.
@@ -2381,11 +2393,16 @@ Hard rules:
   }
 
   try {
-    let parsed = await callGemini(directorBrief, 0.25);
+    // Task #31: Bumped temperature 0.25 -> 0.35 (and retry 0.2 -> 0.3).
+    // 0.25 was producing flat, samey storyboards — the rapper-videos era
+    // ran around 0.5-0.7. 0.35 gives the director enough room for real
+    // cinematic instincts (lens choices, lighting moods, camera language)
+    // without re-introducing the brief-drift we saw at 0.7.
+    let parsed = await callGemini(directorBrief, 0.35);
     if (!isValidParse(parsed)) {
       console.warn('[veo storyboard] first parse invalid, retrying with stricter brief');
       const stricter = directorBrief + `\n\nIMPORTANT: Your previous response was invalid. Return ONLY a single JSON object matching the schema above — no markdown fences, no preamble, no trailing text. The clips array MUST have exactly ${clipCount} entries.`;
-      parsed = await callGemini(stricter, 0.2);
+      parsed = await callGemini(stricter, 0.3);
       if (!isValidParse(parsed)) return null;
     }
 
@@ -2535,12 +2552,12 @@ function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, 
           </div>`
         : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
             <div>
-              <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin-bottom:4px;">YOUR PROMPT</div>
+              <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin-bottom:4px;">SCRIPT</div>
               <div style="font-size:12px;color:#cdd6e0;line-height:1.5;white-space:pre-wrap;">${escapeHtml(draft.script_summary)}</div>
             </div>
             <div>
-              <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin-bottom:4px;">STYLE</div>
-              <div style="font-size:12px;color:${draft.style_bible ? '#cdd6e0' : '#667788'};line-height:1.5;font-style:${draft.style_bible ? 'normal' : 'italic'};">${draft.style_bible ? escapeHtml(draft.style_bible) : 'Literal mode — your prompt is sent verbatim with no extra style direction. Click ✎ Edit to add style notes.'}</div>
+              <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin-bottom:4px;">STYLE BIBLE</div>
+              <div style="font-size:12px;color:${draft.style_bible ? '#cdd6e0' : '#667788'};line-height:1.5;font-style:${draft.style_bible ? 'normal' : 'italic'};">${draft.style_bible ? escapeHtml(draft.style_bible) : 'No extra style direction yet — click ✎ Edit to lock in lighting, palette, and camera language across every clip.'}</div>
             </div>
           </div>`;
 
@@ -2692,46 +2709,23 @@ function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, 
   });
 }
 
-// TEMPORARILY DISABLED: the AI-director / "style bible" expansion was
-// rewriting the user's prompt into cinematic boilerplate (lighting,
-// anamorphic lenses, color palettes, multi-scene scripts) that didn't
-// reflect what they actually asked for. Until we redesign that flow,
-// multi-clip videos send the user's LITERAL prompt to every clip with a
-// short continuity line so the stitched video stays coherent. The
-// `generateAnchoredStoryboard` and `buildAnchoredFallback` functions
-// above are kept intact so we can re-enable the director path by
-// reverting this function to its previous body.
-// To re-enable later, restore the original two-line body that calls
-// generateAnchoredStoryboard() then falls back to buildAnchoredFallback().
+// Task #31: AI director restored. The April rapper-videos era ran the
+// user's prompt through Gemini to expand it into a Style Bible + per-shot
+// cinematic instructions BEFORE handing each clip to Veo. Task #28 +
+// commit 0484b47 disabled this and shipped the user's literal prompt to
+// every clip — which made every segment look like the same flat shot.
+// We now call generateAnchoredStoryboard() first (cinematic enrichment
+// with brief-anchoring guards), and only fall back to the literal
+// template if the director call fails.
 async function buildClipScenes(prompt, clipCount, apiKey, clipDur) {
   if (clipCount < 2) return [];
-  const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
-  const userPrompt = String(prompt || '').trim();
-  const shots = Array.from({ length: clipCount }, (_, i) => {
-    if (i === 0) return 'Open the scene exactly as described above.';
-    if (i === clipCount - 1) return 'Continue the same scene to a natural close — same characters, same setting, no cut.';
-    return 'Continue the same scene from the previous segment — same characters, same setting, no cut.';
-  });
-  // Route through compileScenePrompt with empty style/vibe so the prompt
-  // shape matches what the Edit→Save flow emits via recompileScenesFromMeta.
-  // That avoids a subtle format drift between edited and non-edited clips.
-  const prompts = shots.map((shot, i) => compileScenePrompt({
-    userPrompt,
-    styleBible: '',
-    vibe: '',
-    shot,
-    index: i,
-    total: clipCount,
-    clipDur: segLen
-  }));
-  prompts.meta = {
-    title: (userPrompt.split(/[.\n]/)[0] || 'Your Video').slice(0, 60).trim() || 'Your Video',
-    script_summary: userPrompt,
-    style_bible: '',
-    shots
-  };
-  console.log(`[veo storyboard] literal-prompt mode — ${clipCount} clips × ${segLen}s, no AI director, user prompt verbatim`);
-  return prompts;
+  const directed = await generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur);
+  if (directed && directed.length === clipCount) {
+    console.log(`[veo storyboard] AI director succeeded — ${clipCount} cinematic clips`);
+    return directed;
+  }
+  console.log(`[veo storyboard] AI director unavailable, using brief-anchored fallback`);
+  return buildAnchoredFallback(prompt, clipCount, clipDur);
 }
 
 // Compile one clip prompt from edited meta (used when user edits the plan card).
@@ -2751,13 +2745,20 @@ function compileScenePrompt({ userPrompt, styleBible, vibe, shot, index, total, 
   // happily render the bible's paraphrase instead of the brief itself.
   // New order: USER BRIEF → SHOT BEAT → SUPPORTING STYLE → minimal continuity.
   // Continuity language is trimmed to one short line and moved to the bottom.
+  // Task #31: Softened the brief framing. The strict
+  // "[USER REQUEST — RENDER THIS EXACTLY]" + "do not override" language
+  // from Task #28 was bullying Veo into literal, uncinematic shots even
+  // when the director gave us a rich style bible. We keep the user brief
+  // first (Veo still attends most to the opening lines) but use a calmer
+  // "User brief:" label so Veo treats the style bible and shot beat as
+  // collaborators rather than warnings.
   const briefBlock = userPrompt
-    ? `[USER REQUEST — RENDER THIS EXACTLY]\n${userPrompt}\n\n`
+    ? `User brief:\n${userPrompt}\n\n`
     : '';
-  const shotBlock = `[THIS SEGMENT — ${index + 1} of ${total} (${t0}-${t1}s)]\n${shot}\n\n`;
+  const shotBlock = `Segment ${index + 1} of ${total} (${t0}-${t1}s):\n${shot}\n\n`;
   const styleBlock = styleBible
-    ? `[SUPPORTING STYLE — do not override the user request above]\n${styleBible}${vibeLine}\n\n`
-    : (vibeLine ? `[SUPPORTING STYLE]\n${vibeLine.trim()}\n\n` : '');
+    ? `Style direction (consistent across every segment):\n${styleBible}${vibeLine}\n\n`
+    : (vibeLine ? `Style direction:\n${vibeLine.trim()}\n\n` : '');
   const continuity = index === 0
     ? `[CONTINUITY] Establish the look that every later segment will inherit.`
     : `[CONTINUITY] Same characters, wardrobe, location, lighting, and palette as segment ${index}. No hard cuts.`;
