@@ -741,14 +741,18 @@ def _get_institution_branding_for_email(cur, email):
     """, (email,))
     r = cur.fetchone()
     if not r:
+        print(f'🏛️  institution lookup: NO member row for email={email}')
         return None
     if r[7] != 'active':
+        print(f'🏛️  institution REJECT (member status): email={email} inst_id={r[0]} slug={r[1]} m.status={r[7]!r}')
         return None
     if not _institution_active((r[5], r[6])):
+        print(f'🏛️  institution REJECT (institution status/expiry): email={email} inst_id={r[0]} slug={r[1]} i.status={r[5]!r} i.expires_at={r[6]}')
         return None
     # Per-member expiry — must be enforced on every entitlement path. Without
     # this an expired member keeps branding + the institution Gemini key.
     if r[14] and r[14] < datetime.now():
+        print(f'🏛️  institution REJECT (member expires_at past): email={email} inst_id={r[0]} slug={r[1]} m.expires_at={r[14]}')
         return None
     print(f'🏛️  institution match: email={email} inst_id={r[0]} slug={r[1]} role={r[8]} key_policy={r[12]}')
     return {
