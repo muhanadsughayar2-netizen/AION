@@ -3678,9 +3678,10 @@ window.addEventListener('load', () => {{
       <div class="grow">
         <label style="font-size: 12px; color: #888; display: block; margin-bottom: 4px;">Brand color (hex):</label>
         <input id="brand-color-input" type="text" value="{html_escape_module.escape(brand_color)}" style="width: 140px;" {'disabled' if info.get('brandingLocked') else ''}>
-        <span style="display: inline-block; width: 24px; height: 24px; border-radius: 4px; vertical-align: middle; margin-left: 8px; background: {brand_color}; border: 1px solid #333;"></span>
+        <input id="brand-color-picker" type="color" value="{html_escape_module.escape(brand_color)}" style="width: 38px; height: 36px; padding: 2px; vertical-align: middle; margin-left: 6px; border: 1px solid #333; border-radius: 6px; background: #0f0f1a; cursor: pointer;" {'disabled' if info.get('brandingLocked') else ''} title="Pick a color">
         <button onclick="saveColor()" style="margin-left: 12px;" {'disabled' if info.get('brandingLocked') else ''}>Save Color</button>
         <span id="color-msg" style="color: #00ff88; font-size: 12px; margin-left: 8px;"></span>
+        <p style="font-size: 11px; color: #666; margin: 8px 0 0 0; max-width: 540px;">Members see this color in the extension. SnapToAI auto-adjusts it slightly so it stays readable in both Light and Dark mode — the previews below show what they'll actually see.</p>
       </div>
       <div style="min-width: 240px;">
         <label style="font-size: 12px; color: #888; display: block; margin-bottom: 4px;">Logo (PNG/JPG/SVG/WebP, max 2MB):</label>
@@ -3689,6 +3690,39 @@ window.addEventListener('load', () => {{
         <span id="logo-msg" style="color: #00ff88; font-size: 12px; margin-left: 8px;"></span>
       </div>
     </div>
+
+    <!-- Theme preview + contrast warnings (Task #19) -->
+    <div id="brand-preview-wrap" style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 760px;">
+      <div class="brand-preview" data-mode="light" style="border: 1px solid #2a2a3a; border-radius: 10px; overflow: hidden; background: #0f0f1a;">
+        <div style="padding: 6px 10px; font-size: 10px; letter-spacing: 1px; color: #888; text-transform: uppercase; background: #1a1a25; border-bottom: 1px solid #2a2a3a; display: flex; justify-content: space-between; align-items: center;">
+          <span>☀ Light mode preview</span>
+          <span class="bp-badge" data-mode="light" style="font-size: 10px; padding: 2px 7px; border-radius: 999px; background: #00ff88; color: #000; font-weight: 700;">OK</span>
+        </div>
+        <div class="bp-canvas" data-mode="light" style="padding: 14px; background: #ffffff; color: #1a1a1a; min-height: 96px;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <button class="bp-btn" data-mode="light" type="button" disabled style="border: none; padding: 7px 14px; border-radius: 7px; font-weight: 700; font-size: 12px; cursor: default;">Action</button>
+            <span class="bp-link" data-mode="light" style="font-size: 13px; font-weight: 600;">Accent text</span>
+            <span class="bp-chip" data-mode="light" style="display: inline-block; width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.15);" title="Adapted accent"></span>
+          </div>
+          <div style="margin-top: 8px; font-size: 11px; color: #555;">Picked <code class="bp-raw" data-mode="light">—</code> → rendered <code class="bp-rendered" data-mode="light">—</code></div>
+        </div>
+      </div>
+      <div class="brand-preview" data-mode="dark" style="border: 1px solid #2a2a3a; border-radius: 10px; overflow: hidden; background: #0f0f1a;">
+        <div style="padding: 6px 10px; font-size: 10px; letter-spacing: 1px; color: #888; text-transform: uppercase; background: #1a1a25; border-bottom: 1px solid #2a2a3a; display: flex; justify-content: space-between; align-items: center;">
+          <span>🌙 Dark mode preview</span>
+          <span class="bp-badge" data-mode="dark" style="font-size: 10px; padding: 2px 7px; border-radius: 999px; background: #00ff88; color: #000; font-weight: 700;">OK</span>
+        </div>
+        <div class="bp-canvas" data-mode="dark" style="padding: 14px; background: #0a0a0a; color: #e8e8e8; min-height: 96px;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <button class="bp-btn" data-mode="dark" type="button" disabled style="border: none; padding: 7px 14px; border-radius: 7px; font-weight: 700; font-size: 12px; cursor: default;">Action</button>
+            <span class="bp-link" data-mode="dark" style="font-size: 13px; font-weight: 600;">Accent text</span>
+            <span class="bp-chip" data-mode="dark" style="display: inline-block; width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15);" title="Adapted accent"></span>
+          </div>
+          <div style="margin-top: 8px; font-size: 11px; color: #aaa;">Picked <code class="bp-raw" data-mode="dark">—</code> → rendered <code class="bp-rendered" data-mode="dark">—</code></div>
+        </div>
+      </div>
+    </div>
+    <div id="brand-warning" style="display: none; margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 12px; background: rgba(255,165,0,0.10); border: 1px solid rgba(255,165,0,0.40); color: #ffb454; max-width: 760px;"></div>
   </div>
 
   <div class="section">
@@ -3804,6 +3838,128 @@ async function saveColor() {{
   if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Saved (members refresh to see it)'; }}
   else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
 }}
+
+// ---------- Brand color preview + warnings (Task #19) ----------
+// Mirrors the math in flow-premium/branding.js so the admin sees the
+// exact accent the extension will render after Light/Dark adaptation.
+function bpHexToRgb(hex) {{
+  if (!hex) return null;
+  let s = String(hex).trim().replace('#', '');
+  if (s.length === 3) s = s[0]+s[0]+s[1]+s[1]+s[2]+s[2];
+  if (!/^[0-9a-fA-F]{{6}}$/.test(s)) return null;
+  return {{ r: parseInt(s.slice(0,2),16), g: parseInt(s.slice(2,4),16), b: parseInt(s.slice(4,6),16) }};
+}}
+function bpClamp(n) {{ return Math.max(0, Math.min(255, Math.round(n))); }}
+function bpRgbToHex(c) {{
+  const to2 = (n) => {{ const s = bpClamp(n).toString(16); return s.length < 2 ? '0'+s : s; }};
+  return '#' + to2(c.r) + to2(c.g) + to2(c.b);
+}}
+function bpRelLum(c) {{
+  const f = (v) => {{ v = v/255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); }};
+  return 0.2126*f(c.r) + 0.7152*f(c.g) + 0.0722*f(c.b);
+}}
+function bpMix(a, b, t) {{ return {{ r:a.r+(b.r-a.r)*t, g:a.g+(b.g-a.g)*t, b:a.b+(b.b-a.b)*t }}; }}
+function bpLighten(c, t) {{ return bpMix(c, {{r:255,g:255,b:255}}, t); }}
+function bpDarken(c, t)  {{ return bpMix(c, {{r:0,g:0,b:0}}, t); }}
+function bpRgba(c, a) {{ return 'rgba('+bpClamp(c.r)+','+bpClamp(c.g)+','+bpClamp(c.b)+','+a+')'; }}
+function bpContrast(L1, L2) {{ const hi=Math.max(L1,L2), lo=Math.min(L1,L2); return (hi+0.05)/(lo+0.05); }}
+function bpAdapt(rgb, theme) {{
+  let out = {{ r:rgb.r, g:rgb.g, b:rgb.b }}, iter = 0;
+  if (theme === 'dark') {{
+    const Lbg = bpRelLum({{r:10,g:10,b:10}});
+    while (bpContrast(bpRelLum(out), Lbg) < 4.5 && iter < 10) {{ out = bpLighten(out, 0.22); iter++; }}
+  }} else {{
+    while (bpContrast(bpRelLum(out), 1) < 3.5 && iter < 12) {{ out = bpDarken(out, 0.16); iter++; }}
+  }}
+  return {{ rgb: out, iterations: iter }};
+}}
+function bpFg(rgb) {{
+  const L = bpRelLum(rgb);
+  return bpContrast(L, 0) >= bpContrast(L, 1) ? '#000000' : '#ffffff';
+}}
+function bpColorDistance(a, b) {{
+  // Quick perceptual-ish distance — enough to flag "drifted noticeably".
+  const dr = a.r - b.r, dg = a.g - b.g, db = a.b - b.b;
+  return Math.sqrt(dr*dr + dg*dg + db*db);
+}}
+
+function updateBrandPreview() {{
+  const rawInput = document.getElementById('brand-color-input');
+  const picker = document.getElementById('brand-color-picker');
+  const wrap = document.getElementById('brand-preview-wrap');
+  const warnEl = document.getElementById('brand-warning');
+  if (!rawInput || !wrap) return;
+  const raw = rawInput.value.trim();
+  const rgb = bpHexToRgb(raw);
+  if (!rgb) {{
+    // Invalid hex — gentle warning, leave previews neutral
+    if (warnEl) {{
+      warnEl.style.display = 'block';
+      warnEl.textContent = 'Enter a valid hex color (e.g. #00d9ff or #0c9) to see the preview.';
+    }}
+    return;
+  }}
+  // Keep the native picker in sync (it only accepts 6-digit hex).
+  if (picker && picker.value.toLowerCase() !== bpRgbToHex(rgb).toLowerCase()) {{
+    try {{ picker.value = bpRgbToHex(rgb); }} catch (e) {{}}
+  }}
+  const messages = [];
+  ['light', 'dark'].forEach((mode) => {{
+    const result = bpAdapt(rgb, mode);
+    const renderedHex = bpRgbToHex(result.rgb);
+    const rawHex = bpRgbToHex(rgb);
+    const fg = bpFg(result.rgb);
+    const bg = mode === 'light' ? {{r:255,g:255,b:255}} : {{r:10,g:10,b:10}};
+    const rawContrast = bpContrast(bpRelLum(rgb), bpRelLum(bg));
+    const drift = bpColorDistance(rgb, result.rgb);
+
+    const btn = wrap.querySelector('.bp-btn[data-mode="'+mode+'"]');
+    const link = wrap.querySelector('.bp-link[data-mode="'+mode+'"]');
+    const chip = wrap.querySelector('.bp-chip[data-mode="'+mode+'"]');
+    const badge = wrap.querySelector('.bp-badge[data-mode="'+mode+'"]');
+    const rawCode = wrap.querySelector('.bp-raw[data-mode="'+mode+'"]');
+    const renderedCode = wrap.querySelector('.bp-rendered[data-mode="'+mode+'"]');
+
+    if (btn) {{ btn.style.background = renderedHex; btn.style.color = fg; }}
+    if (link) {{ link.style.color = renderedHex; }}
+    if (chip) {{ chip.style.background = renderedHex; }}
+    if (rawCode) {{ rawCode.textContent = rawHex; rawCode.style.color = rawHex; }}
+    if (renderedCode) {{ renderedCode.textContent = renderedHex; renderedCode.style.color = renderedHex; }}
+
+    // Status badge: OK / Adjusted / Drifted (drift > ~60 = visibly different)
+    let label = 'OK', bgc = '#00ff88', fgc = '#000';
+    if (drift > 90) {{ label = 'Heavily adjusted'; bgc = '#ffa500'; fgc = '#000'; }}
+    else if (drift > 35) {{ label = 'Adjusted'; bgc = '#ffd166'; fgc = '#000'; }}
+    if (badge) {{ badge.textContent = label; badge.style.background = bgc; badge.style.color = fgc; }}
+
+    if (rawContrast < 3 || drift > 90) {{
+      const labelMode = mode === 'light' ? 'Light mode' : 'Dark mode';
+      const bgLabel = mode === 'light' ? 'white' : 'near-black';
+      messages.push(labelMode + ': contrast vs ' + bgLabel + ' is only ' + rawContrast.toFixed(1) + ':1 — SnapToAI ' + (mode === 'light' ? 'darkened' : 'lightened') + ' it to ' + renderedHex + ' so members can read it. Pick a ' + (mode === 'light' ? 'darker' : 'lighter') + ' shade for an exact match.');
+    }}
+  }});
+  if (warnEl) {{
+    if (messages.length) {{
+      warnEl.style.display = 'block';
+      warnEl.innerHTML = '<strong>⚠ Heads-up:</strong><br>' + messages.map(m => '• ' + m).join('<br>');
+    }} else {{
+      warnEl.style.display = 'none';
+      warnEl.textContent = '';
+    }}
+  }}
+}}
+
+(function bpInit() {{
+  const txt = document.getElementById('brand-color-input');
+  const pick = document.getElementById('brand-color-picker');
+  if (txt) txt.addEventListener('input', updateBrandPreview);
+  if (pick) pick.addEventListener('input', () => {{
+    if (txt && !txt.disabled) {{ txt.value = pick.value; }}
+    updateBrandPreview();
+  }});
+  // First paint
+  try {{ updateBrandPreview(); }} catch (e) {{ console.log('[brand preview]', e); }}
+}})();
 async function uploadLogo() {{
   const f = document.getElementById('logo-file').files[0];
   const msg = document.getElementById('logo-msg');
