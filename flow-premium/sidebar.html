@@ -1482,6 +1482,17 @@
     }
     body.sidebar-mode .main-content {
       flex-direction: column;
+      /* min-height:0 is required so this flex child of <body> can shrink
+         below its content height. Without it, .chat-panel grows to fit
+         the full thread and the inner .chat-thread cannot scroll — the
+         input row gets pushed off-screen and no scrollbar appears. */
+      min-height: 0;
+    }
+    /* Same reason: .chat-panel is a flex column whose .chat-thread child
+       uses overflow-y:auto. Both need min-height:0 so the thread is the
+       part that scrolls instead of growing the panel. */
+    body.sidebar-mode .chat-panel {
+      min-height: 0;
     }
 
     /* ============== Task #29 — Draggable hero/chat splitter ==============
@@ -1677,6 +1688,30 @@
     body.sidebar-mode .chat-thread {
       padding: 14px 12px;
       gap: 12px;
+      /* Allow the thread to shrink below its content height so
+         overflow-y:auto produces a real scrollbar in the sidebar. */
+      min-height: 0;
+      /* Defensive: make scrolling work on touch devices and ensure the
+         scrollbar is always visible (some Chromium builds hide thin
+         scrollbars on overlay until hover, which made users think the
+         chat wasn't scrolling at all). */
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+    }
+    body.sidebar-mode .chat-thread::-webkit-scrollbar {
+      width: 8px;
+    }
+    body.sidebar-mode .chat-thread::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.18);
+      border-radius: 4px;
+    }
+    body.sidebar-mode .chat-thread::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 217, 255, 0.45);
+    }
+    body.sidebar-mode .chat-thread::-webkit-scrollbar-track {
+      background: transparent;
     }
     body.sidebar-mode .chat-bubble {
       max-width: 92%;
