@@ -2535,12 +2535,12 @@ function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, 
           </div>`
         : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
             <div>
-              <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin-bottom:4px;">SCRIPT</div>
-              <div style="font-size:12px;color:#cdd6e0;line-height:1.5;">${escapeHtml(draft.script_summary)}</div>
+              <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin-bottom:4px;">YOUR PROMPT</div>
+              <div style="font-size:12px;color:#cdd6e0;line-height:1.5;white-space:pre-wrap;">${escapeHtml(draft.script_summary)}</div>
             </div>
             <div>
               <div style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;margin-bottom:4px;">STYLE</div>
-              <div style="font-size:12px;color:#cdd6e0;line-height:1.5;">${escapeHtml(draft.style_bible)}</div>
+              <div style="font-size:12px;color:${draft.style_bible ? '#cdd6e0' : '#667788'};line-height:1.5;font-style:${draft.style_bible ? 'normal' : 'italic'};">${draft.style_bible ? escapeHtml(draft.style_bible) : 'Literal mode — your prompt is sent verbatim with no extra style direction. Click ✎ Edit to add style notes.'}</div>
             </div>
           </div>`;
 
@@ -2712,13 +2712,18 @@ async function buildClipScenes(prompt, clipCount, apiKey, clipDur) {
     if (i === clipCount - 1) return 'Continue the same scene to a natural close — same characters, same setting, no cut.';
     return 'Continue the same scene from the previous segment — same characters, same setting, no cut.';
   });
-  const prompts = shots.map((shot, i) => {
-    const t0 = i * segLen, t1 = (i + 1) * segLen;
-    const continuity = i === 0
-      ? '[CONTINUITY] Establish the look that every later segment will inherit.'
-      : `[CONTINUITY] Same characters, wardrobe, location, lighting, and palette as segment ${i}. No hard cuts.`;
-    return `${userPrompt}\n\n[THIS SEGMENT — ${i + 1} of ${clipCount} (${t0}-${t1}s)]\n${shot}\n\n${continuity}`;
-  });
+  // Route through compileScenePrompt with empty style/vibe so the prompt
+  // shape matches what the Edit→Save flow emits via recompileScenesFromMeta.
+  // That avoids a subtle format drift between edited and non-edited clips.
+  const prompts = shots.map((shot, i) => compileScenePrompt({
+    userPrompt,
+    styleBible: '',
+    vibe: '',
+    shot,
+    index: i,
+    total: clipCount,
+    clipDur: segLen
+  }));
   prompts.meta = {
     title: (userPrompt.split(/[.\n]/)[0] || 'Your Video').slice(0, 60).trim() || 'Your Video',
     script_summary: userPrompt,
