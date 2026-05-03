@@ -4253,16 +4253,41 @@ async function applyInstitutionBranding() {
       if (headerImg) headerImg.style.display = 'none';
       if (headerText) { headerText.style.display = ''; headerText.innerHTML = '<span class="logo-snap">SNAP</span> <span class="logo-highlight">TO AI</span>'; }
     }
-    if (b && b.brandColor) {
+    var resolved = null;
+    if (window.SnapToAIBranding) {
+      resolved = (b && b.brandColor) ? window.SnapToAIBranding.apply(b.brandColor)
+                                     : window.SnapToAIBranding.clear();
+    } else if (b && b.brandColor) {
+      // Fallback if branding.js failed to load — preserve old behavior.
       document.documentElement.style.setProperty('--st-accent', b.brandColor);
       document.documentElement.style.setProperty('--accent', b.brandColor);
+    }
+    // If we just left an institution (signed out / plan changed) make sure
+    // the Upgrade button doesn't keep stale inline brand colors that would
+    // override its class-based Trial/Pro styling.
+    if (!isInst && upgradeBtn) {
+      upgradeBtn.style.background = '';
+      upgradeBtn.style.color = '';
+      upgradeBtn.style.borderColor = '';
     }
     // Institution members never need to see "Pro / Trial" upgrade nudges
     if (isInst && upgradeBtn) {
       upgradeBtn.textContent = b ? ('✓ ' + (b.name || 'Institution')) : '✓ Pro';
       upgradeBtn.className = 'upgrade-btn upgrade-btn-pro';
       upgradeBtn.style.visibility = 'visible';
-      if (b && b.brandColor) upgradeBtn.style.background = b.brandColor;
+      if (resolved) {
+        // Use the contrast-adapted accent + matching foreground so the label
+        // never disappears against the brand color.
+        upgradeBtn.style.background = resolved.accent;
+        upgradeBtn.style.color = resolved.accentFg;
+        upgradeBtn.style.borderColor = resolved.accentBorder;
+      } else if (b && b.brandColor) {
+        upgradeBtn.style.background = b.brandColor;
+      } else {
+        upgradeBtn.style.background = '';
+        upgradeBtn.style.color = '';
+        upgradeBtn.style.borderColor = '';
+      }
     }
   } catch (e) {
     console.log('[SnapToAI] applyInstitutionBranding error:', e);
@@ -4278,6 +4303,14 @@ try {
       applyInstitutionBranding();
     }
   });
+} catch (e) {}
+// Re-evaluate branding (accent contrast + upgrade button) when the user
+// switches Light↔Dark↔Auto so a deep navy / pale yellow brand color stays
+// readable without needing to close and reopen the popup.
+try {
+  if (window.SnapToAITheme && window.SnapToAITheme.onChange) {
+    window.SnapToAITheme.onChange(() => { applyInstitutionBranding(); });
+  }
 } catch (e) {}
 // Apply on first paint with whatever's cached locally
 try { applyInstitutionBranding(); } catch (e) {}

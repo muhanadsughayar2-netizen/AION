@@ -90,6 +90,31 @@
 }
 
 /* ============================================================
+   Institution logo — adaptive chip
+   White-label logos arrive in many flavors (light-on-dark,
+   dark-on-light, full-color). Wrap them in a subtle padded
+   chip whose background hints in the *opposite* direction of
+   the surface they sit on, so a logo designed for the wrong
+   side doesn't disappear. The chip is intentionally faint so
+   logos that were already designed for the current theme
+   still look untouched.
+   ============================================================ */
+#authBrandLogo,
+#headerBrandLogo,
+#sbBrandLogo,
+#welcomeBrandLogo {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+:root[data-theme="light"] #authBrandLogo,
+:root[data-theme="light"] #headerBrandLogo,
+:root[data-theme="light"] #sbBrandLogo,
+:root[data-theme="light"] #welcomeBrandLogo {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+/* ============================================================
    Theme cycle button (shared between popup + sidebar headers)
    ============================================================ */
 .theme-cycle-btn {

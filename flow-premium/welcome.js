@@ -1,13 +1,22 @@
-(async function applyBranding() {
+async function applyBranding() {
   try {
     if (!chrome || !chrome.storage || !chrome.storage.local) return;
     const { snaptoai_branding } = await chrome.storage.local.get(['snaptoai_branding']);
     const b = snaptoai_branding;
-    if (!b) return;
+    if (!b) {
+      if (window.SnapToAIBranding) window.SnapToAIBranding.clear();
+      return;
+    }
+    let resolved = null;
     if (b.brandColor) {
-      document.documentElement.style.setProperty('--accent', b.brandColor);
+      if (window.SnapToAIBranding) {
+        resolved = window.SnapToAIBranding.apply(b.brandColor);
+      } else {
+        document.documentElement.style.setProperty('--accent', b.brandColor);
+      }
       const cyans = document.querySelectorAll('h1 .cyan');
-      cyans.forEach((c) => { c.style.color = b.brandColor; });
+      const tint = resolved ? resolved.accent : b.brandColor;
+      cyans.forEach((c) => { c.style.color = tint; });
     }
     if (b.logoUrl) {
       const img = document.getElementById('welcomeBrandLogo');
@@ -24,7 +33,15 @@
       if (nameEl) { nameEl.textContent = 'Welcome to ' + b.name; nameEl.style.display = 'block'; }
     }
   } catch (e) { /* ignore */ }
-})();
+}
+applyBranding();
+// Keep the welcome page's hero accent legible if the visitor toggles
+// Light/Dark while the page is open.
+try {
+  if (window.SnapToAITheme && window.SnapToAITheme.onChange) {
+    window.SnapToAITheme.onChange(() => { applyBranding(); });
+  }
+} catch (e) {}
 
 (function inviteCodeForm() {
   try {

@@ -492,7 +492,10 @@
         if (img) img.style.display = 'none';
         if (text) { text.style.display = ''; text.innerHTML = '<span class="sb-logo-emoji">📸</span> <span>Snap <span class="sb-logo-accent">To AI</span></span>'; }
       }
-      if (b && b.brandColor) {
+      if (window.SnapToAIBranding) {
+        if (b && b.brandColor) window.SnapToAIBranding.apply(b.brandColor);
+        else window.SnapToAIBranding.clear();
+      } else if (b && b.brandColor) {
         document.documentElement.style.setProperty('--st-accent', b.brandColor);
         document.documentElement.style.setProperty('--accent', b.brandColor);
       }
@@ -506,6 +509,13 @@
         applyInstitutionBranding();
       }
     });
+  } catch (e) {}
+  // Re-adapt institution accent when the user flips Light/Dark/Auto so it
+  // stays readable against the new background without reopening the panel.
+  try {
+    if (window.SnapToAITheme && window.SnapToAITheme.onChange) {
+      window.SnapToAITheme.onChange(() => { applyInstitutionBranding(); });
+    }
   } catch (e) {}
 
   // ---------- Queue Strip (recent snaps) ----------
