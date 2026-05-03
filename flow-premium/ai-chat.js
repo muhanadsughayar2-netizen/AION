@@ -2483,12 +2483,15 @@ function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, 
           if (!isNaN(idx)) draft.shots[idx] = ta.value.trim();
         });
         // Recompile the actual prompts that go to Veo from the edited draft.
+        // Pass `prompt` (the raw user request) so it gets re-injected at the
+        // top of every clip — otherwise editing the plan strips the user's
+        // literal script from what Veo actually sees.
         liveScenes = recompileScenesFromMeta({
           title: draft.title,
           script_summary: draft.script_summary,
           style_bible: draft.style_bible,
           shots: [...draft.shots]
-        }, clipCount, segLen, draft.vibe);
+        }, clipCount, segLen, draft.vibe, prompt);
         editing = false;
         render();
       };
@@ -2525,8 +2528,13 @@ async function buildClipScenes(prompt, clipCount, apiKey, clipDur) {
 }
 
 // Compile one clip prompt from edited meta (used when user edits the plan card).
-// Always includes the production rules + style bible + this segment's shot text.
-function compileScenePrompt({ styleBible, vibe, shot, index, total, clipDur }) {
+// Always includes the user's original request + production rules + style bible
+// + this segment's shot text. The [USER ORIGINAL REQUEST] block at the top
+// MIRRORS what generateAnchoredStoryboard emits — without it, the moment the
+// user clicks Edit → Save, their literal script vanishes from the Veo prompt
+// and only the AI's paraphrase reaches the model. That was the #1 cause of
+// "Veo isn't following my instructions" complaints.
+function compileScenePrompt({ userPrompt, styleBible, vibe, shot, index, total, clipDur }) {
   const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
   const t0 = index * segLen, t1 = (index + 1) * segLen;
   const vibeLine = vibe ? `Vibe: ${vibe}.` : '';
@@ -2537,7 +2545,10 @@ function compileScenePrompt({ styleBible, vibe, shot, index, total, clipDur }) {
   // now sent via parameters.negativePrompt on the Veo call (see
   // VEO_NEGATIVE_PROMPT). Inline negation primes the model on the very
   // tokens we want to suppress.
-  return `[PRODUCTION RULES — APPLY TO EVERY SHOT]
+  const userBlock = userPrompt
+    ? `[USER ORIGINAL REQUEST]\n${userPrompt}\n\n`
+    : '';
+  return `${userBlock}[PRODUCTION RULES — APPLY TO EVERY SHOT]
 ${styleBible}
 ${vibeLine}
 
@@ -2548,10 +2559,12 @@ ${continuity}`;
 
 // Recompile the full scenes array from current meta state.
 // Returns a new array with .meta attached, ready to feed generateMultiClip.
-function recompileScenesFromMeta(meta, clipCount, clipDur, vibe) {
+// `userPrompt` MUST be the raw user prompt — see compileScenePrompt header.
+function recompileScenesFromMeta(meta, clipCount, clipDur, vibe, userPrompt) {
   const out = [];
   for (let i = 0; i < clipCount; i++) {
     out.push(compileScenePrompt({
+      userPrompt: userPrompt || '',
       styleBible: meta.style_bible || '',
       vibe: vibe || meta.vibe || '',
       shot: (meta.shots && meta.shots[i]) || '',
@@ -2736,7 +2749,14 @@ async function refreshTransitionFrame(ctx, idx) {
 // Task #14: heuristic for whether a shot description references a person.
 // When true and we have a character anchor from clip 0, prefer the anchor
 // over the rolling last frame so identity doesn't drift compoundingly.
-const SNAPTOAI_CHARACTER_REGEX = /\b(person|people|man|men|woman|women|girl|boy|child|kid|baby|character|protagonist|hero|heroine|figure|silhouette|portrait|she|he|her|him|hers|his|they|them|their|chef|cook|driver|player|actor|actress|dancer|singer|model|warrior|soldier|knight|wizard|witch|rider|pilot|ninja|samurai|astronaut|king|queen|prince|princess|villain|guard|teacher|student|doctor|nurse|cop|police|officer|detective|spy|musician|painter|artist|farmer|worker|elder|teen|teenager|adult|stranger|face|eyes|smile|hair|hand|arm|leg|body|torso|shoulder|head)\b/i;
+//
+// IMPORTANT: bare pronouns (he/she/his/her/them/...) are intentionally
+// EXCLUDED. They appear in incidental phrases like "the camera follows his
+// car" or "her house at dawn" where the shot isn't actually about a person.
+// Triggering the character anchor on those would override the rolling
+// last-frame chain with a face shot and break continuity for object/location
+// scenes. We require a concrete person noun (or body part) instead.
+const SNAPTOAI_CHARACTER_REGEX = /\b(person|people|man|men|woman|women|girl|boy|child|kid|baby|character|protagonist|hero|heroine|figure|silhouette|portrait|chef|cook|driver|player|actor|actress|dancer|singer|model|warrior|soldier|knight|wizard|witch|rider|pilot|ninja|samurai|astronaut|king|queen|prince|princess|villain|guard|teacher|student|doctor|nurse|cop|police|officer|detective|spy|musician|painter|artist|farmer|worker|elder|teen|teenager|adult|stranger|face|eyes|smile|hair|hand|arm|leg|body|torso|shoulder|head)\b/i;
 function clipMentionsCharacter(text) {
   if (!text || typeof text !== 'string') return false;
   return SNAPTOAI_CHARACTER_REGEX.test(text);
