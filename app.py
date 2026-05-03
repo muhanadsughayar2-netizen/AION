@@ -4785,12 +4785,25 @@ async function editExpiry(memberId, email, currentExpiry) {{
   }} else {{
     body = {{ expiresAt: trimmed }};
   }}
-  const r = await fetch(API_BASE + '/members/' + memberId + '/expiry', {{
-    method: 'PUT', headers: {{'Content-Type':'application/json'}},
-    body: JSON.stringify(body)
-  }});
-  const d = await r.json();
-  if (d.success) load(); else alert('Failed: ' + (d.error || 'Unknown error'));
+  let r, d = null;
+  try {{
+    r = await fetch(API_BASE + '/members/' + memberId + '/expiry', {{
+      method: 'PUT', headers: {{'Content-Type':'application/json'}},
+      credentials: 'same-origin',
+      body: JSON.stringify(body)
+    }});
+  }} catch (e) {{
+    alert('✗ Set Expiry failed (network): ' + (e && e.message || e));
+    return;
+  }}
+  try {{ d = await r.json(); }} catch (_) {{}}
+  if (r.status === 401) {{
+    alert('✗ Your admin session expired. Sign in again and retry.');
+    setTimeout(() => location.reload(), 800);
+    return;
+  }}
+  if (r.ok && d && d.success) load();
+  else alert('✗ Set Expiry failed (HTTP ' + r.status + '): ' + ((d && d.error) || r.statusText || 'Unknown error'));
 }}
 async function saveDomains() {{
   const v = document.getElementById('domains-input').value;
@@ -5042,18 +5055,39 @@ async function clearLogo(which) {{
   }}
   else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
 }}
+async function _memberAction(url, method, label) {{
+  // Centralized error handling so silent failures (auth expired, network
+  // error, 5xx, non-JSON response) become visible to the admin instead of
+  // looking like the button "did nothing".
+  let r;
+  try {{
+    r = await fetch(url, {{method, credentials: 'same-origin'}});
+  }} catch (e) {{
+    alert('✗ ' + label + ' failed (network): ' + (e && e.message || e));
+    return false;
+  }}
+  let d = null;
+  try {{ d = await r.json(); }} catch (_) {{}}
+  if (r.status === 401) {{
+    alert('✗ Your admin session expired. Sign in again and retry.');
+    setTimeout(() => location.reload(), 800);
+    return false;
+  }}
+  if (!r.ok || !d || !d.success) {{
+    alert('✗ ' + label + ' failed (HTTP ' + r.status + '): ' + ((d && d.error) || r.statusText || 'Unknown error'));
+    return false;
+  }}
+  return true;
+}}
 async function suspend(id) {{
-  const r = await fetch(API_BASE + '/members/' + id + '/suspend', {{method:'POST'}});
-  const d = await r.json(); if (d.success) load(); else alert(d.error||'Failed');
+  if (await _memberAction(API_BASE + '/members/' + id + '/suspend', 'POST', 'Suspend')) load();
 }}
 async function reactivate(id) {{
-  const r = await fetch(API_BASE + '/members/' + id + '/reactivate', {{method:'POST'}});
-  const d = await r.json(); if (d.success) load(); else alert(d.error||'Failed');
+  if (await _memberAction(API_BASE + '/members/' + id + '/reactivate', 'POST', 'Reactivate')) load();
 }}
 async function removeMember(id, email) {{
   if (!confirm('Remove ' + email + ' from the institution? They lose pro access immediately.')) return;
-  const r = await fetch(API_BASE + '/members/' + id, {{method:'DELETE'}});
-  const d = await r.json(); if (d.success) load(); else alert(d.error||'Failed');
+  if (await _memberAction(API_BASE + '/members/' + id, 'DELETE', 'Remove')) load();
 }}
 function copyLink(url) {{ navigator.clipboard.writeText(url).then(()=>alert('Copied: '+url)); }}
 
