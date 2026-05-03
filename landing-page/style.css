@@ -5,6 +5,11 @@
 }
 
 :root {
+    /* Landing-page palette also re-exposes the shared --st-* design-system
+       tokens defined in flow-premium/theme.css so future palette tweaks
+       made to the extension theme can ripple into the landing surface
+       without separate edits. The local --primary/--bg-* aliases below
+       are kept for source compatibility with existing rules. */
     --primary: #06b6d4;
     --primary-dark: #0891b2;
     --bg-dark: #0f172a;
@@ -16,6 +21,47 @@
     --border-color: rgba(6, 182, 212, 0.2);
     --glow: 0 0 20px rgba(6, 182, 212, 0.3);
     --glow-bright: 0 0 40px rgba(6, 182, 212, 0.5);
+
+    /* Shared design tokens (mirror of flow-premium/theme.css) */
+    --st-accent: #06b6d4;
+    --st-accent-2: #0891b2;
+    --st-accent-soft: rgba(6, 182, 212, 0.10);
+    --st-accent-soft-2: rgba(6, 182, 212, 0.15);
+    --st-accent-border: rgba(6, 182, 212, 0.30);
+    --st-accent-glow: rgba(6, 182, 212, 0.50);
+    --st-bg-app: #0f172a;
+    --st-bg-app-2: #0a0f1b;
+    --st-bg-surface: rgba(15, 23, 42, 0.8);
+    --st-text-primary: #f1f5f9;
+    --st-text-secondary: #cbd5e1;
+    --st-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --st-radius-sm: 6px;
+    --st-radius-md: 8px;
+    --st-radius-lg: 12px;
+    --st-radius-xl: 16px;
+    --st-radius-pill: 9999px;
+    --st-motion-fast: 0.15s;
+    --st-motion-base: 0.22s;
+    --st-motion-slow: 0.35s;
+    --st-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --st-focus-ring: 0 0 0 3px rgba(6, 182, 212, 0.15), 0 0 0 1px #06b6d4;
+}
+
+/* Global keyboard focus ring — landing page parity with extension surfaces */
+:where(button, [role="button"], a, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: none;
+    box-shadow: var(--st-focus-ring);
+    border-radius: var(--st-radius-sm);
+}
+
+/* Reduced-motion silencer — match extension behavior */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 
 html {

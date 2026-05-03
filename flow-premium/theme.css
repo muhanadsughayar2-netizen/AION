@@ -12,6 +12,11 @@
   --st-bg-surface: #151515;
   --st-bg-elevated: #1a1a1a;
   --st-bg-input: #1a1a1a;
+  --st-bg-deep: #0d0d0d;     /* between bg-app and bg-surface — sidebar/ai-chat shells */
+  --st-bg-rail: #121212;     /* between bg-deep and bg-elevated — gradient stops, modal inputs */
+  --st-bg-card: #16213e;     /* mid-blue gradient stop — modal/card endpoints */
+  --st-bg-card-2: #0f3460;   /* deep blue gradient stop — options page background bottom */
+  --st-bg-control: #2a2a2a;  /* button/control fill — neutral elevated */
   --st-bg-overlay: rgba(0, 0, 0, 0.85);
   --st-bg-soft: rgba(255, 255, 255, 0.05);
   --st-bg-soft-2: rgba(255, 255, 255, 0.08);
@@ -54,6 +59,11 @@
   --st-bg-surface: #ffffff;
   --st-bg-elevated: #ffffff;
   --st-bg-input: #ffffff;
+  --st-bg-deep: #eef1f6;     /* light-mode equivalent of dark --st-bg-deep */
+  --st-bg-rail: #f4f6fa;     /* light-mode equivalent of dark --st-bg-rail */
+  --st-bg-card: #e3eaf3;     /* light-mode equivalent of dark --st-bg-card */
+  --st-bg-card-2: #d8e1ec;   /* light-mode equivalent of dark --st-bg-card-2 */
+  --st-bg-control: #e9eef5;  /* light-mode equivalent of dark --st-bg-control */
   --st-bg-overlay: rgba(15, 23, 42, 0.55);
   --st-bg-soft: rgba(15, 23, 42, 0.04);
   --st-bg-soft-2: rgba(15, 23, 42, 0.07);

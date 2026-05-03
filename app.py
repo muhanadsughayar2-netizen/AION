@@ -3647,13 +3647,33 @@ window.addEventListener('load', () => {{
   .header img {{ height: 56px; max-width: 200px; object-fit: contain; background: #fff; border-radius: 8px; padding: 6px; }}
   h1 {{ color: {brand_color}; margin: 0; font-size: 24px; }}
   .subtitle {{ color: #888; margin: 4px 0 0 0; font-size: 13px; }}
+  /* Shared design-system tokens (mirror of flow-premium/theme.css) so this
+     server-rendered surface uses the same vocabulary as the extension. */
+  :root {{
+    --st-accent: {brand_color};
+    --st-bg-app: #0f0f1a;
+    --st-bg-surface: #1a1a2e;
+    --st-bg-elevated: #16213e;
+    --st-border-default: #2a2a4a;
+    --st-text-secondary: #888;
+    --st-radius-sm: 6px;
+    --st-radius-md: 8px;
+    --st-radius-lg: 12px;
+    --st-focus-ring: 0 0 0 3px {brand_color}26, 0 0 0 1px {brand_color};
+  }}
+  :where(button, [role="button"], a, input, select, textarea, summary, [tabindex]):focus-visible {{
+    outline: none; box-shadow: var(--st-focus-ring); border-radius: var(--st-radius-sm);
+  }}
+  @media (prefers-reduced-motion: reduce) {{
+    *, *::before, *::after {{ animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }}
+  }}
   .stats {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }}
-  .card {{ background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 18px; }}
-  .card-num {{ font-size: 28px; font-weight: bold; color: {brand_color}; }}
-  .card-label {{ font-size: 11px; color: #888; text-transform: uppercase; margin-top: 4px; }}
-  .section {{ background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 20px; margin-bottom: 20px; }}
-  .section h2 {{ color: {brand_color}; margin: 0 0 12px 0; font-size: 16px; }}
-  input, select, textarea {{ background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px; font-family: inherit; font-size: 13px; }}
+  .card {{ background: var(--st-bg-surface); border: 1px solid var(--st-border-default); border-radius: var(--st-radius-lg); padding: 18px; }}
+  .card-num {{ font-size: 28px; font-weight: bold; color: var(--st-accent); }}
+  .card-label {{ font-size: 11px; color: var(--st-text-secondary); text-transform: uppercase; margin-top: 4px; }}
+  .section {{ background: var(--st-bg-surface); border: 1px solid var(--st-border-default); border-radius: var(--st-radius-lg); padding: 20px; margin-bottom: 20px; }}
+  .section h2 {{ color: var(--st-accent); margin: 0 0 12px 0; font-size: 16px; }}
+  input, select, textarea {{ background: var(--st-bg-app); border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: var(--st-radius-sm); font-family: inherit; font-size: 13px; }}
   textarea {{ width: 100%; min-height: 100px; resize: vertical; }}
   button {{ background: {brand_color}; color: #000; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }}
   button.secondary {{ background: #333; color: #fff; }}

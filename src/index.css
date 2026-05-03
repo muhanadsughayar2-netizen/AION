@@ -8,6 +8,48 @@
     --brand: 189 100% 50%;
     --font-display: 'Space Grotesk', sans-serif;
     --font-body: 'Inter', sans-serif;
+
+    /* Shared design-system tokens (mirror of flow-premium/theme.css) so the
+       Vite/React studio uses the same vocabulary as the extension surfaces.
+       Tailwind arbitrary values can reference these via bg-[var(--st-accent)]. */
+    --st-accent: #00d9ff;
+    --st-accent-2: #00b8d4;
+    --st-accent-soft: rgba(0, 217, 255, 0.10);
+    --st-accent-soft-2: rgba(0, 217, 255, 0.15);
+    --st-accent-border: rgba(0, 217, 255, 0.30);
+    --st-accent-glow: rgba(0, 217, 255, 0.50);
+    --st-bg-app: #0a0a1a;
+    --st-bg-app-2: #050510;
+    --st-bg-surface: #0d1b2a;
+    --st-text-primary: #ffffff;
+    --st-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --st-radius-sm: 6px;
+    --st-radius-md: 8px;
+    --st-radius-lg: 12px;
+    --st-radius-xl: 16px;
+    --st-radius-pill: 9999px;
+    --st-motion-fast: 0.15s;
+    --st-motion-base: 0.22s;
+    --st-motion-slow: 0.35s;
+    --st-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --st-focus-ring: 0 0 0 3px rgba(0, 217, 255, 0.15), 0 0 0 1px #00d9ff;
+  }
+
+  /* Global keyboard focus ring — studio parity with extension surfaces */
+  :where(button, [role="button"], a, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: none;
+    box-shadow: var(--st-focus-ring);
+    border-radius: var(--st-radius-sm);
+  }
+
+  /* Reduced-motion silencer — match extension behavior */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   body {

@@ -31,7 +31,7 @@ export default function App() {
   }, [currentScene]);
 
   return (
-    <div className="w-full h-screen bg-[#0a0a1a] overflow-hidden text-white font-body relative">
+    <div className="w-full h-screen bg-[var(--st-bg-app)] overflow-hidden text-white font-body relative">
       {/* Persistent Background - subtle animated gradient */}
       <div className="absolute inset-0 z-0" style={{
         background: 'radial-gradient(ellipse at 50% 50%, #0d1b2a 0%, #0a0a1a 60%, #050510 100%)'
@@ -49,7 +49,7 @@ export default function App() {
       
       {/* Floating Orbs */}
       <motion.div
-        className="absolute top-[60%] left-[10%] w-[30vw] h-[30vw] rounded-full bg-[#00d9ff] blur-[120px] mix-blend-screen z-[2]"
+        className="absolute top-[60%] left-[10%] w-[30vw] h-[30vw] rounded-full bg-[var(--st-accent)] blur-[120px] mix-blend-screen z-[2]"
         animate={{
           x: currentScene % 2 === 0 ? '5vw' : '-5vw',
           y: currentScene % 3 === 0 ? '5vh' : '-5vh',
@@ -109,7 +109,7 @@ function Scene1Hook() {
         transition={{ delay: 0.5, type: "spring", stiffness: 100, damping: 20 }}
       >
         <span className="text-white" style={{ textShadow: '0 0 30px rgba(255,255,255,0.3)' }}>SNAP</span>
-        <span className="text-[#00d9ff]" style={{ textShadow: '0 0 60px rgba(0,217,255,0.8), 0 0 120px rgba(0,217,255,0.4)' }}>TO AI</span>
+        <span className="text-[var(--st-accent)]" style={{ textShadow: '0 0 60px rgba(0,217,255,0.8), 0 0 120px rgba(0,217,255,0.4)' }}>TO AI</span>
         <motion.span 
           className="text-[7vw]"
           animate={{ rotate: [0, 15, -15, 0] }}
@@ -217,12 +217,12 @@ function Scene3Capture() {
         {modes.map((mode, i) => (
           <motion.div 
             key={i}
-            className="flex items-center gap-[2vw] glass p-[2vw] rounded-2xl border-l-4 border-l-[#00d9ff]"
+            className="flex items-center gap-[2vw] glass p-[2vw] rounded-2xl border-l-4 border-l-[var(--st-accent)]"
             initial={{ x: -50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.5 + i * 0.4, type: "spring", stiffness: 100 }}
           >
-            <div className="text-[#00d9ff]">{mode.icon}</div>
+            <div className="text-[var(--st-accent)]">{mode.icon}</div>
             <div>
               <h3 className="text-[2.5vw] font-display font-bold">{mode.title}</h3>
               <p className="text-[1.5vw] text-gray-400">{mode.desc}</p>
@@ -249,7 +249,7 @@ function Scene3Capture() {
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 2 + i * 0.3, type: "spring" }}
             >
-              <div className="absolute inset-0 bg-[#00d9ff]/20 animate-pulse" />
+              <div className="absolute inset-0 bg-[var(--st-accent)]/20 animate-pulse" />
             </motion.div>
           ))}
         </div>
@@ -276,12 +276,12 @@ function Scene4Analysis() {
         transition={{ delay: 0.5 }}
       >
         Instant AI analysis<br/>
-        <span className="text-[#00d9ff]" style={{ textShadow: '0 0 40px rgba(0,217,255,0.6)' }}>powered by Google Gemini</span>
+        <span className="text-[var(--st-accent)]" style={{ textShadow: '0 0 40px rgba(0,217,255,0.6)' }}>powered by Google Gemini</span>
       </motion.h2>
 
       <div className="w-[70vw] h-[50vh] glass rounded-2xl p-[2vw] relative overflow-hidden flex flex-col">
         <motion.div 
-          className="w-full h-2 bg-[#00d9ff] absolute top-0 left-0"
+          className="w-full h-2 bg-[var(--st-accent)] absolute top-0 left-0"
           initial={{ scaleX: 0, originX: 0 }}
           animate={{ scaleX: 1 }}
           transition={{ duration: 6, ease: "linear" }}
@@ -414,7 +414,7 @@ function Scene6Privacy() {
         transition={{ delay: 1 }}
       >
         Your data stays<br/>
-        <span className="text-[#00d9ff]" style={{ textShadow: '0 0 40px rgba(0,217,255,0.6)' }}>in your browser</span>
+        <span className="text-[var(--st-accent)]" style={{ textShadow: '0 0 40px rgba(0,217,255,0.6)' }}>in your browser</span>
       </motion.h2>
 
       <motion.div 
@@ -466,7 +466,7 @@ function Scene7Closing() {
 
   return (
     <motion.div
-      className="absolute inset-0 flex flex-col items-center justify-center bg-[#0a0a1a]"
+      className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--st-bg-app)]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -479,7 +479,7 @@ function Scene7Closing() {
         transition={{ duration: 1.5, ease: "circOut" }}
       >
         <span className="text-white" style={{ textShadow: '0 0 40px rgba(255,255,255,0.4)' }}>SNAP</span>
-        <span className="text-[#00d9ff]" style={{ textShadow: '0 0 80px rgba(0,217,255,0.8), 0 0 150px rgba(0,217,255,0.4)' }}>TO AI</span>
+        <span className="text-[var(--st-accent)]" style={{ textShadow: '0 0 80px rgba(0,217,255,0.8), 0 0 150px rgba(0,217,255,0.4)' }}>TO AI</span>
       </motion.div>
 
       <motion.h2 
@@ -502,7 +502,7 @@ function Scene7Closing() {
           Available on Chrome Web Store
         </div>
         <div className="glass px-8 py-4 rounded-2xl flex items-center gap-4 border-[#00d9ff]/30 border shadow-[0_0_30px_rgba(0,217,255,0.1)]">
-          <Sparkles className="text-[#00d9ff]" size="2vw" />
+          <Sparkles className="text-[var(--st-accent)]" size="2vw" />
           <span className="text-[2.5vw] font-mono font-bold text-white">
             {users.toLocaleString()}+ <span className="text-gray-400 font-sans text-[1.5vw]">users</span>
           </span>
