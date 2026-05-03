@@ -4057,8 +4057,13 @@ async function fixWebmDuration(blob, durationMs) {
     }
     if (infoDataStart < 0) return blob;
 
-    // Inside SegmentInfo, find Duration (id 0x4489) — a Float (4 or 8 bytes).
+    // Inside SegmentInfo, find Duration (id 0x4489) — a Float (4 or 8 bytes) —
+    // AND TimecodeScale (id 0x2AD7B1) so we don't blindly assume the default
+    // 1,000,000 ns/tick. Duration's units are TimecodeScale-relative, so if
+    // someone (or a future Chrome change) writes a non-default scale, we'd
+    // otherwise compute a wildly wrong duration.
     let durIdOffset = -1, durSizeBytes = 0, durDataOffset = -1, durValueBytes = 0;
+    let timecodeScale = 1000000; // default per Matroska spec
     cursor = infoDataStart;
     while (cursor < infoDataEnd) {
       const idInfo = readId(cursor);
@@ -4072,15 +4077,19 @@ async function fixWebmDuration(blob, durationMs) {
         durSizeBytes = sizeInfo.size;
         durDataOffset = dataStart;
         durValueBytes = sizeInfo.value;
-        break;
+      } else if (idInfo.id === 0x2AD7B1 && sizeInfo.value >= 1 && sizeInfo.value <= 8) {
+        // Parse TimecodeScale (unsigned int, big-endian, 1..8 bytes).
+        let scale = 0;
+        for (let k = 0; k < sizeInfo.value; k++) scale = scale * 256 + view.getUint8(dataStart + k);
+        if (scale > 0) timecodeScale = scale;
       }
       cursor = dataEnd;
     }
 
-    // TimecodeScale defaults to 1,000,000 (1ms units). MediaRecorder always
-    // uses the default and the Duration field is in TimecodeScale units, so
-    // value = durationMs is correct.
-    const newDuration = Math.max(1, Math.round(durationMs));
+    // Duration is in TimecodeScale units. Default scale = 1,000,000 ns
+    // (i.e. 1 unit = 1 ms), so for the Chrome MediaRecorder common case
+    // newDuration === durationMs. For any other scale: value = ms * 1e6 / scale.
+    const newDuration = Math.max(1, Math.round(durationMs * 1000000 / timecodeScale));
     if (durDataOffset >= 0 && durValueBytes >= 4) {
       // Overwrite existing Duration float in place — preserves all offsets.
       const out = new Uint8Array(buf.slice(0));
@@ -4105,9 +4114,12 @@ async function fixWebmDuration(blob, durationMs) {
     new DataView(insertion.buffer).setFloat64(3, newDuration, false);
 
     // Re-encode SegmentInfo's size VINT to (oldPayloadSize + 11).
+    // NOTE on math: must use `2 ** (7*bytes)` not `1 << (7*bytes)` because
+    // bitwise shift is 32-bit only — for bytes>=5 the shift overflows and
+    // the loop would terminate too early or wrap to a negative number.
     function encodeVint(value, minBytes) {
       let bytes = Math.max(minBytes || 1, 1);
-      while (bytes <= 8 && value >= (1 << (7 * bytes)) - 1) bytes++;
+      while (bytes <= 8 && value >= (2 ** (7 * bytes)) - 1) bytes++;
       if (bytes > 8) return null;
       const out = new Uint8Array(bytes);
       out[0] = (1 << (8 - bytes));
@@ -4167,11 +4179,16 @@ async function stitchVideos(videoUrls, stitchCtx) {
   const _realtimeMs = videoUrls.length * (typeof selectedVideoDuration === 'number' ? selectedVideoDuration : 8) * 1000;
   const STITCH_TIMEOUT_MS = Math.max(30000, Math.min(120000, _realtimeMs * 2.5 + 8000));
   let timeoutHandle = null;
+  // Shared cancel flag the inner pipeline polls so that on timeout the
+  // recorder/audio/<video> elements actually shut down — the previous
+  // Promise.race left the inner promise running, holding 4–8 MB blobs +
+  // an active MediaRecorder + AudioContext alive in the background.
+  if (!stitchCtx) stitchCtx = {};
   const timeoutPromise = new Promise((_, reject) => {
-    timeoutHandle = setTimeout(
-      () => reject(new Error(`Stitch timeout (${Math.round(STITCH_TIMEOUT_MS/1000)}s) — falling back to clips`)),
-      STITCH_TIMEOUT_MS
-    );
+    timeoutHandle = setTimeout(() => {
+      stitchCtx.aborted = true;
+      reject(new Error(`Stitch timeout (${Math.round(STITCH_TIMEOUT_MS/1000)}s) — falling back to clips`));
+    }, STITCH_TIMEOUT_MS);
   });
 
   const stitchPromise = (async () => {
@@ -4181,7 +4198,7 @@ async function stitchVideos(videoUrls, stitchCtx) {
     // stitched video would have a frozen patch).
     const blobs = [];
     for (const url of videoUrls) {
-      if (stitchCtx && stitchCtx.userStopped) throw new Error('User stopped');
+      if (stitchCtx && (stitchCtx.userStopped || stitchCtx.aborted)) throw new Error('User stopped');
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`Failed to fetch clip: ${resp.status}`);
       blobs.push(await resp.blob());
@@ -4232,7 +4249,7 @@ async function stitchVideos(videoUrls, stitchCtx) {
     const sources = [];
     const gains = [];
     for (let i = 0; i < blobs.length; i++) {
-      if (stitchCtx && stitchCtx.userStopped) throw new Error('User stopped');
+      if (stitchCtx && (stitchCtx.userStopped || stitchCtx.aborted)) throw new Error('User stopped');
       const v = document.createElement('video');
       v.src = blobUrls[i];
       v.muted = false;
@@ -4342,7 +4359,7 @@ async function stitchVideos(videoUrls, stitchCtx) {
     const recordStartMs = performance.now();
     try {
       for (let i = 0; i < videos.length; i++) {
-        if (stitchCtx && stitchCtx.userStopped) throw new Error('User stopped');
+        if (stitchCtx && (stitchCtx.userStopped || stitchCtx.aborted)) throw new Error('User stopped');
         const v = videos[i];
 
         // Connect this clip's audio (clip 0 was already connected above).
@@ -4368,14 +4385,22 @@ async function stitchVideos(videoUrls, stitchCtx) {
 
         const dur = (v.duration && isFinite(v.duration) && v.duration > 0) ? v.duration : 8;
 
-        // Draw loop: rAF foreground + 100ms setInterval backstop for
-        // backgrounded tabs (rAF throttles to 1Hz when hidden).
+        // Draw loop: ONE rAF chain (foreground) + a 200ms setInterval that
+        // ONLY runs when rAF has stalled (tab hidden, throttled, etc).
+        // Architect flagged that the previous version had setInterval calling
+        // tick() AND tick() scheduling rAF, so every 100ms a NEW persistent
+        // rAF chain was spawned → over an 8s clip dozens of concurrent draw
+        // loops piled up, blowing CPU and triggering false stalls. Here we
+        // gate with `rafPending` and `lastTickTs` so exactly one loop is
+        // active at a time.
         // Per-clip hard ceiling at dur*1.5+3s in case `ended` never fires
         // (some short Veo clips don't emit the event reliably) — without
         // this the whole stitch would hang until the global 120s timeout.
         await new Promise((resolveClip) => {
           let stopped = false;
           let interval = null;
+          let rafPending = false;
+          let lastTickTs = performance.now();
           let lastProgressTs = performance.now();
           let lastTime = -1;
           const clipDeadline = performance.now() + (dur * 1500) + 3000;
@@ -4386,24 +4411,46 @@ async function stitchVideos(videoUrls, stitchCtx) {
             resolveClip();
           };
           v.onended = done;
-          const tick = () => {
-            if (stopped) return;
-            if (stitchCtx && stitchCtx.userStopped) { done(); return; }
+          const drawAndCheck = () => {
+            if (stopped) return false;
+            if ((stitchCtx && stitchCtx.userStopped) || (stitchCtx && stitchCtx.aborted)) { done(); return false; }
             try { ctx2d.drawImage(v, 0, 0, canvasW, canvasH); } catch (_) {}
             const now = performance.now();
+            lastTickTs = now;
             if (v.currentTime !== lastTime) { lastTime = v.currentTime; lastProgressTs = now; }
             // currentTime hasn't advanced for 2.5s AND we've been playing for
             // over 1s → element is stuck. Bail out of this clip.
             const stalled = (now - lastProgressTs > 2500) && (now - recordStartMs > 1000);
             if (v.ended || (v.currentTime >= dur - 0.02) || stalled || now > clipDeadline) {
               if (stalled) console.log(`[SnapToAI Video] Clip ${i+1} stalled at ${v.currentTime.toFixed(2)}s — advancing`);
-              done(); return;
+              done(); return false;
             }
-            if (typeof requestAnimationFrame === 'function') requestAnimationFrame(tick);
-            else setTimeout(tick, 33);
+            return true;
           };
-          interval = setInterval(tick, 100);
-          tick();
+          const rafTick = () => {
+            rafPending = false;
+            if (!drawAndCheck()) return;
+            if (typeof requestAnimationFrame === 'function') {
+              rafPending = true;
+              requestAnimationFrame(rafTick);
+            }
+          };
+          // Backstop: only nudges drawAndCheck if rAF has gone silent for
+          // 200ms+ (tab hidden, browser throttling). Does NOT spawn a new
+          // rAF chain — that's what caused the fan-out bug.
+          interval = setInterval(() => {
+            if (stopped) return;
+            if (performance.now() - lastTickTs < 200) return;
+            drawAndCheck();
+          }, 200);
+          if (typeof requestAnimationFrame === 'function') {
+            rafPending = true;
+            requestAnimationFrame(rafTick);
+          } else {
+            // No rAF (very rare) — fall back to interval-only at higher rate.
+            clearInterval(interval);
+            interval = setInterval(() => { if (!drawAndCheck()) return; }, 33);
+          }
         });
 
         // Disconnect THIS clip's audio so the destination is silent for the
