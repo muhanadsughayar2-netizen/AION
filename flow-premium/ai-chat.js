@@ -1276,7 +1276,13 @@ const VEO_PRICING = {
 // very tokens we want to suppress, increasing the chance of garbled writing
 // in the frame. The dedicated parameter routes through a separate
 // suppression head and works far better in practice.
-const VEO_NEGATIVE_PROMPT = 'on-screen text, subtitles, captions, watermarks, logos, lower thirds, gibberish writing, distorted faces, extra limbs, blurry';
+// Task #31: Trimmed to only true rendering defects. The previous list
+// also banned on-screen text / captions / watermarks / logos, which
+// suppressed perfectly valid user requests like "title card that says
+// HELLO" or "a coffee mug with the Starbucks logo". Veo's own model
+// already avoids gibberish reasonably well; this list now just cleans
+// up the worst residual artifacts.
+const VEO_NEGATIVE_PROMPT = 'gibberish writing, distorted faces, extra limbs, blurry';
 
 // Lyria music pricing (Vertex AI, USD per second of audio).
 const LYRIA_PRICING = {
@@ -1329,8 +1335,6 @@ function showVideoStudio(thread) {
         <button class="veo-clip-btn selected" data-clips="1" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">1x · 8s</button>
         <button class="veo-clip-btn" data-clips="2" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">2x · 16s</button>
         <button class="veo-clip-btn" data-clips="3" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">3x · 24s</button>
-        <button class="veo-clip-btn" data-clips="4" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;" title="4×8s = 32s, perfect for Reels &amp; TikTok">4x · 32s 🎬</button>
-        <span style="font-size:10px;color:#667788;width:100%;margin-top:2px;font-style:italic;">Capped at 4 — 32s lands in the engagement sweet spot for Reels, TikTok &amp; Shorts.</span>
       </div>
       <textarea class="studio-desc" placeholder="Describe the video scene you want to create..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;margin-bottom:8px;"></textarea>
       ${hasScreenshots ? `
@@ -2277,13 +2281,12 @@ function _veoDebugLogEnabled() {
 function slimSceneForChainImage(scenePrompt, fallbackBrief) {
   const header = '[CONTINUES FROM ATTACHED FRAME — same look, same characters, no cut]';
   const text = String(scenePrompt || '');
-  // Task #31: labels were softened from "[SUPPORTING STYLE]" /
-  // "[USER REQUEST...]" to "Style direction:" / "User brief:". Updated
-  // the regexes to match the new shape, with the old labels kept as a
-  // fallback so any in-flight prompts compiled by an older copy of the
-  // page still get trimmed correctly.
+  // Task #31: only the [USER REQUEST] label was softened to "User brief:".
+  // The [SUPPORTING STYLE] / [CONTINUITY] block structure is preserved,
+  // so the original regex still works as-is. We accept either the new
+  // "User brief:" prefix or the legacy "[USER REQUEST" tag when checking
+  // whether the trimmed prompt is in a recognized shape.
   const trimmed = text
-    .replace(/\n*Style direction[^\n]*:[\s\S]*?(?=\n\[CONTINUITY\]|$)/i, '')
     .replace(/\n*\[SUPPORTING STYLE[^\]]*\][\s\S]*?(?=\n\[CONTINUITY\]|$)/i, '')
     .replace(/\n*\[CONTINUITY\][^\n]*\n?/i, '')
     .trim();
@@ -2745,20 +2748,22 @@ function compileScenePrompt({ userPrompt, styleBible, vibe, shot, index, total, 
   // happily render the bible's paraphrase instead of the brief itself.
   // New order: USER BRIEF → SHOT BEAT → SUPPORTING STYLE → minimal continuity.
   // Continuity language is trimmed to one short line and moved to the bottom.
-  // Task #31: Softened the brief framing. The strict
+  // Task #31: Softened ONLY the user-brief framing. The strict
   // "[USER REQUEST — RENDER THIS EXACTLY]" + "do not override" language
   // from Task #28 was bullying Veo into literal, uncinematic shots even
   // when the director gave us a rich style bible. We keep the user brief
   // first (Veo still attends most to the opening lines) but use a calmer
-  // "User brief:" label so Veo treats the style bible and shot beat as
-  // collaborators rather than warnings.
+  // "User brief:" label. The [THIS SEGMENT] / [SUPPORTING STYLE] /
+  // [CONTINUITY] block structure is preserved unchanged so downstream
+  // utilities (slimSceneForChainImage, the editor's recompile flow)
+  // and Veo's existing parsing all continue to work.
   const briefBlock = userPrompt
     ? `User brief:\n${userPrompt}\n\n`
     : '';
-  const shotBlock = `Segment ${index + 1} of ${total} (${t0}-${t1}s):\n${shot}\n\n`;
+  const shotBlock = `[THIS SEGMENT — ${index + 1} of ${total} (${t0}-${t1}s)]\n${shot}\n\n`;
   const styleBlock = styleBible
-    ? `Style direction (consistent across every segment):\n${styleBible}${vibeLine}\n\n`
-    : (vibeLine ? `Style direction:\n${vibeLine.trim()}\n\n` : '');
+    ? `[SUPPORTING STYLE]\n${styleBible}${vibeLine}\n\n`
+    : (vibeLine ? `[SUPPORTING STYLE]\n${vibeLine.trim()}\n\n` : '');
   const continuity = index === 0
     ? `[CONTINUITY] Establish the look that every later segment will inherit.`
     : `[CONTINUITY] Same characters, wardrobe, location, lighting, and palette as segment ${index}. No hard cuts.`;
