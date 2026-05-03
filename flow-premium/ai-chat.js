@@ -2337,26 +2337,31 @@ USER'S BRIEF (this is the contract — every subject, action, and concrete detai
 ${prompt}
 """
 
-YOUR ONLY JOB is to add SUPPORTING DETAIL (lighting, camera language, palette, mood, lens) around the user's brief. You are FORBIDDEN from:
-- replacing or paraphrasing the subject (e.g. if the brief says "golden retriever", you must not write "dog" or "puppy" or invent a different breed),
-- replacing or paraphrasing the action (e.g. if the brief says "surfing a wave", you must not write "swimming" or "playing in water"),
-- changing the location, time of day, or any concrete noun the user named,
-- adding a different premise or "creative reinterpretation" of the brief.
+YOUR JOB is to direct this scene cinematically — adding lighting, camera language, palette, mood, and lens choices — while staying true to the subject and action the user described. Treat the brief as the spine of the story:
+- keep the same subject (e.g. if the brief says "golden retriever", don't swap in a different breed or animal),
+- keep the same action (e.g. if the brief says "surfing a wave", the dog should still be surfing — you can vary how you frame it shot-to-shot),
+- keep the same location and time of day the user named,
+- don't invent a different premise or pivot to a "creative reinterpretation."
+
+You CAN, and should:
+- vary camera angle, lens, framing, and lighting between segments to give the cut real cinematic motion,
+- describe the subject with pronouns or short descriptors after the first mention if it reads more naturally,
+- pick beats that progress the action (setup → peak → resolve) rather than repeating the same moment.
 
 Return STRICT JSON ONLY (no markdown, no commentary) in this exact shape:
 {
   "title": "Max 6 words, title-case, no quotes.",
-  "script_summary": "1-2 sentence pitch that uses the user's exact subject and action verbatim.",
-  "style_bible": "3-5 sentences of SUPPORTING DETAIL only: lighting setup, color palette, lens / camera language, mood. You may describe the character's physical appearance ONLY using nouns the user already used (or generic descriptors if the user gave none). Do not restate the action here.",
+  "script_summary": "1-2 sentence pitch grounded in the user's subject and action.",
+  "style_bible": "3-5 sentences of cinematic direction: lighting setup, color palette, lens / camera language, mood. You may describe the character's physical appearance using nouns the user already used (or generic descriptors if the user gave none). Don't restate the action here.",
   "clips": [
-    { "shot": "What concretely happens in this ${segLen}s segment. The user's exact subject and action MUST appear in this sentence verbatim. Then add one camera move." },
+    { "shot": "What concretely happens in this ${segLen}s segment, grounded in the user's subject and action. Add one camera move or framing choice." },
     ... exactly ${clipCount} entries ...
   ]
 }
 
 Hard rules:
 - The clips must read like one continuous take.
-- The user's subject and action appear verbatim in EVERY clip's shot description.
+- The user's subject and action are clearly recognizable across the sequence (the style bible plus most shot descriptions should reference them).
 - Never introduce new characters mid-sequence unless the user brief explicitly asks for it.
 - Never cut to a different location.
 - Keep each "shot" description under 50 words.`;
