@@ -1850,12 +1850,29 @@ async function generateOneVeoClip(clipIdx, ctx) {
         // generates the next clip starting from that exact frame.
         // This ALSO injects a continuity prefix into the text prompt so the
         // storyboard can't override the image (e.g. "cut to wide aerial").
+        //
+        // Task #14 + #16 priority order for the conditioning image:
+        //   1. ctx.userTransitionFrames[clipIdx-1] — admin-uploaded reference
+        //      (rescues broken auto-extracts; honored even on clip 1 for #16)
+        //   2. ctx.characterAnchor for clip ≥2 if the shot mentions a person —
+        //      keeps identity stable across long videos (#14)
+        //   3. ctx.transitionFrames[clipIdx-1] — rolling last frame (default)
         let attachedChainImage = null;
+        let chainSourceLabel = '';
         if (clipIdx > 0) {
           await refreshTransitionFrame(ctx, clipIdx - 1);
-          const prevFrame = Array.isArray(ctx.transitionFrames) && ctx.transitionFrames[clipIdx - 1];
-          if (prevFrame && prevFrame.base64) {
-            attachedChainImage = prevFrame;
+          const userOverride = (ctx.userTransitionFrames || {})[clipIdx - 1];
+          const rollingFrame = Array.isArray(ctx.transitionFrames) && ctx.transitionFrames[clipIdx - 1];
+          const sceneText = clipScenes[clipIdx] || prompt || '';
+          if (userOverride && userOverride.base64) {
+            attachedChainImage = userOverride;
+            chainSourceLabel = 'user-supplied reference';
+          } else if (clipIdx >= 2 && ctx.characterAnchor && ctx.characterAnchor.base64 && clipMentionsCharacter(sceneText)) {
+            attachedChainImage = ctx.characterAnchor;
+            chainSourceLabel = 'character anchor (clip 1)';
+          } else if (rollingFrame && rollingFrame.base64) {
+            attachedChainImage = rollingFrame;
+            chainSourceLabel = 'rolling last frame';
           }
         }
 
@@ -1895,7 +1912,7 @@ async function generateOneVeoClip(clipIdx, ctx) {
             mimeType: attachedChainImage.mimeType
           };
           const kb = Math.round(attachedChainImage.base64.length * 0.75 / 1024);
-          console.log(`[SnapToAI Video] ✓ Clip ${clipNum} CHAINED to last frame of clip ${clipIdx} (model=${modelName}, image=${attachedChainImage.mimeType} ~${kb}KB) + continuity prefix`);
+          console.log(`[SnapToAI Video] ✓ Clip ${clipNum} CHAINED via ${chainSourceLabel || 'last frame'} (model=${modelName}, image=${attachedChainImage.mimeType} ~${kb}KB) + continuity prefix`);
         } else if (clipIdx > 0) {
           console.log(`[SnapToAI Video] ✗ Clip ${clipNum} NOT chained — no previous frame available (text-only continuity, expect visual jump)`);
         } else if (requestBody.instances[0].image) {
@@ -2584,7 +2601,19 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
                 // v2.4.9: cache of last-frame images, indexed by clip idx.
                 // transitionFrames[i] = last frame of clip i, used as the
                 // starting image for clip i+1 to enforce visual continuity.
-                transitionFrames: [] };
+                transitionFrames: [],
+                // Task #14: Character anchor — clip 0's last frame, captured
+                // ONCE and reused for any later clip whose shot mentions a
+                // person. Prevents linear identity drift across long videos.
+                characterAnchor: null,
+                // Task #16: Per-clip extraction failure reasons. transitionFailures[i]
+                // holds the error message from the failed extractLastFrame() for
+                // clip i, so the UI can show "chain weakened" warnings.
+                transitionFailures: {},
+                // Task #16: User-uploaded reference frames keyed by predecessor
+                // clip idx. userTransitionFrames[i] overrides transitionFrames[i]
+                // when generating clip i+1. Lets users rescue a broken auto-chain.
+                userTransitionFrames: {} };
 
   // Wire the Stop button. Sets a flag that all wait loops + the batch loop
   // observe; the user keeps every clip already rendered, no further Veo
@@ -2632,6 +2661,14 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
           console.log(`[SnapToAI Video] Clip ${i + 1} last-frame extraction failed — clip ${i + 2} will use text-only continuity.`);
         }
       }
+
+      // Task #14: capture clip 0's last frame as a stable character anchor.
+      // Reused for any clip 2+ whose shot mentions a person, instead of the
+      // rolling last frame, so identity drift doesn't compound linearly.
+      if (i === 0 && ctx.transitionFrames[0] && !ctx.characterAnchor) {
+        ctx.characterAnchor = ctx.transitionFrames[0];
+        console.log('[SnapToAI Video] ✓ Character anchor captured from clip 1 last frame');
+      }
     }
 
     if (result.billingAbort) {
@@ -2661,21 +2698,48 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
 // original batch run), and AFTER replacing clipResults[idx].url (so the
 // next chain uses the freshly rendered clip).
 //
+// Task #16: also stashes the failure reason in ctx.transitionFailures[idx]
+// so the UI can show a "chain weakened — clip N+1 may visually jump" badge
+// and offer the user a manual reference-image upload.
+//
 // Cheap if already cached for the same URL (early return).
 async function refreshTransitionFrame(ctx, idx) {
   if (!ctx || idx < 0 || !Array.isArray(ctx.clipResults)) return;
   const r = ctx.clipResults[idx];
   if (!r || !r.url) return;
   const cached = ctx.transitionFrames[idx];
-  if (cached && cached._sourceUrl === r.url) return;
-  const frame = await extractLastFrame(r.url);
+  if (cached && cached._sourceUrl === r.url) {
+    if (ctx.transitionFailures) delete ctx.transitionFailures[idx];
+    return;
+  }
+  let frame = null;
+  let err = null;
+  try {
+    frame = await extractLastFrame(r.url);
+  } catch (e) {
+    err = (e && e.message) || String(e);
+  }
+  if (!ctx.transitionFailures) ctx.transitionFailures = {};
   if (frame) {
     frame._sourceUrl = r.url;
     ctx.transitionFrames[idx] = frame;
-  } else if (cached) {
-    // Best-effort: keep stale cache rather than wipe it.
-    console.log(`[SnapToAI Video] Could not refresh transition frame for clip ${idx + 1}; keeping cached frame.`);
+    delete ctx.transitionFailures[idx];
+  } else {
+    ctx.transitionFailures[idx] = err || 'unknown extraction failure';
+    if (cached) {
+      // Best-effort: keep stale cache rather than wipe it.
+      console.log(`[SnapToAI Video] Could not refresh transition frame for clip ${idx + 1}; keeping cached frame. (${ctx.transitionFailures[idx]})`);
+    }
   }
+}
+
+// Task #14: heuristic for whether a shot description references a person.
+// When true and we have a character anchor from clip 0, prefer the anchor
+// over the rolling last frame so identity doesn't drift compoundingly.
+const SNAPTOAI_CHARACTER_REGEX = /\b(person|people|man|men|woman|women|girl|boy|child|kid|baby|character|protagonist|hero|heroine|figure|silhouette|portrait|she|he|her|him|hers|his|they|them|their|chef|cook|driver|player|actor|actress|dancer|singer|model|warrior|soldier|knight|wizard|witch|rider|pilot|ninja|samurai|astronaut|king|queen|prince|princess|villain|guard|teacher|student|doctor|nurse|cop|police|officer|detective|spy|musician|painter|artist|farmer|worker|elder|teen|teenager|adult|stranger|face|eyes|smile|hair|hand|arm|leg|body|torso|shoulder|head)\b/i;
+function clipMentionsCharacter(text) {
+  if (!text || typeof text !== 'string') return false;
+  return SNAPTOAI_CHARACTER_REGEX.test(text);
 }
 
 async function extractLastFrame(videoUrl) {
@@ -2825,8 +2889,10 @@ async function extractLastFrame(videoUrl) {
     console.log(`[SnapToAI Video] extractLastFrame OK ${w}x${h} ~${finalKb}KB ${mimeType.split('/')[1]} from t=${best.t.toFixed(2)}s/${duration.toFixed(2)}s (sharpest of ${candidateOffsets.length}, var=${bestScore.toFixed(0)})`);
     return { base64, mimeType };
   } catch (e) {
+    // Task #16: re-throw so refreshTransitionFrame can capture the reason
+    // and surface it to the user as a "chain weakened" badge.
     console.log('[SnapToAI Video] extractLastFrame failed:', e.message);
-    return null;
+    throw e;
   } finally {
     if (video && video.parentNode) { try { video.parentNode.removeChild(video); } catch (_) {} }
     if (blobUrl) { try { URL.revokeObjectURL(blobUrl); } catch (_) {} }
@@ -2915,6 +2981,9 @@ function buildVeoRerenderPanel(ctx) {
   const perClipCost = perSecond * (durationSeconds || 8);
   const costStr = perClipCost > 0 ? `≈ $${perClipCost.toFixed(2)}/clip` : '';
 
+  const failures = ctx.transitionFailures || {};
+  const userRefs = ctx.userTransitionFrames || {};
+
   const rows = clipResults.map((r, idx) => {
     if (!r.url) return '';
     const prompt = (clipScenes && clipScenes[idx]) || '';
@@ -2924,6 +2993,31 @@ function buildVeoRerenderPanel(ctx) {
     const fixStitchBtn = prevHasUrl
       ? `<button class="veo-fix-stitch-btn" data-clip-idx="${idx}" title="Re-render this clip starting from the LAST FRAME of clip ${idx} so the join looks seamless." style="padding:4px 10px;border-radius:6px;border:1px solid rgba(0,217,255,0.4);background:rgba(0,217,255,0.1);color:#00d9ff;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">✂ Fix stitch (${idx}→${idx + 1})</button>`
       : '';
+
+    // Task #16: surface a "chain weakened" warning when the previous clip's
+    // last-frame extraction failed. Lets the user upload their own reference
+    // image to rescue the visual handoff into this clip.
+    let chainWarning = '';
+    if (idx > 0 && (failures[idx - 1] || userRefs[idx - 1])) {
+      const failReason = failures[idx - 1];
+      const hasUserRef = !!(userRefs[idx - 1] && userRefs[idx - 1].base64);
+      if (hasUserRef) {
+        chainWarning = `<div style="margin-top:6px;padding:8px 10px;background:rgba(0,217,255,0.08);border:1px solid rgba(0,217,255,0.3);border-radius:8px;font-size:11px;color:#7fe7ff;line-height:1.5;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span>✓ Custom reference image set for the chain into clip ${idx + 1}. Click <b>Fix stitch</b> above to apply it.</span>
+          <button class="veo-clear-userref-btn" data-prev-idx="${idx - 1}" style="padding:3px 8px;border-radius:5px;border:1px solid rgba(0,217,255,0.4);background:transparent;color:#7fe7ff;font-size:10px;font-weight:600;cursor:pointer;">Clear</button>
+        </div>`;
+      } else if (failReason) {
+        chainWarning = `<div style="margin-top:6px;padding:8px 10px;background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.3);border-radius:8px;font-size:11px;color:#ffd180;line-height:1.5;">
+          <div style="font-weight:600;margin-bottom:4px;">⚠ Chain weakened — clip ${idx + 1} may visually jump</div>
+          <div style="color:#caa066;font-size:10px;font-family:ui-monospace,monospace;margin-bottom:6px;">extractLastFrame failed: ${escapeHtml(failReason)}</div>
+          <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:4px 10px;border-radius:5px;border:1px dashed rgba(255,165,0,0.5);background:rgba(255,165,0,0.06);color:#ffa500;font-weight:600;">
+            📎 Use my own reference image
+            <input type="file" accept="image/*" class="veo-userref-input" data-prev-idx="${idx - 1}" data-clip-idx="${idx}" style="display:none;">
+          </label>
+        </div>`;
+      }
+    }
+
     return `<div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;margin-bottom:8px;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
         <span style="font-size:12px;font-weight:600;color:#cdd6e0;">🎬 Clip ${r.n}</span>
@@ -2932,6 +3026,7 @@ function buildVeoRerenderPanel(ctx) {
           <button class="veo-rerender-toggle" data-clip-idx="${idx}" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,165,0,0.4);background:rgba(255,165,0,0.1);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">✎ Re-render this clip</button>
         </div>
       </div>
+      ${chainWarning}
       <div class="veo-rerender-editor" data-clip-idx="${idx}" style="display:none;margin-top:6px;">
         <div style="font-size:10px;color:#667788;letter-spacing:1px;font-weight:600;margin-bottom:4px;">PROMPT FOR THIS CLIP (edit then confirm)</div>
         <textarea class="veo-rerender-prompt" data-clip-idx="${idx}" rows="6" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:6px;border:1px solid rgba(255,165,0,0.3);background:rgba(0,0,0,0.3);color:#e6ecf3;font-size:11px;line-height:1.5;font-family:ui-monospace,monospace;resize:vertical;">${escapeHtml(prompt)}</textarea>
@@ -2957,6 +3052,56 @@ function buildVeoRerenderPanel(ctx) {
 
 function wireVeoRerenderButtons(ctx) {
   const { progressBubble, clipScenes, clipResults } = ctx;
+
+  // Task #16: file-picker for "Use my own reference image" — stores the
+  // uploaded image in ctx.userTransitionFrames[prevIdx] so the next re-render
+  // of clip prevIdx+1 will use it as the conditioning frame instead of the
+  // (failed) auto-extracted last frame.
+  progressBubble.querySelectorAll('.veo-userref-input').forEach(input => {
+    if (input.dataset.wired === '1') return;
+    input.dataset.wired = '1';
+    input.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const prevIdx = parseInt(input.dataset.prevIdx, 10);
+      if (isNaN(prevIdx) || prevIdx < 0) return;
+      if (!/^image\//.test(file.type)) {
+        alert('Please choose an image file.');
+        return;
+      }
+      if (file.size > 7 * 1024 * 1024) {
+        alert('Reference image is too large (max 7 MB).');
+        return;
+      }
+      try {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result);
+          fr.onerror = () => reject(new Error('FileReader error'));
+          fr.readAsDataURL(file);
+        });
+        const base64 = String(dataUrl).split(',')[1] || '';
+        if (!base64 || base64.length < 100) throw new Error('Empty file');
+        if (!ctx.userTransitionFrames) ctx.userTransitionFrames = {};
+        ctx.userTransitionFrames[prevIdx] = { base64, mimeType: file.type };
+        console.log(`[SnapToAI Video] User reference image set for chain into clip ${prevIdx + 2} (${file.type}, ~${Math.round(base64.length * 0.75 / 1024)}KB)`);
+        await renderVeoBatchOutcome(ctx);
+      } catch (err) {
+        alert(`Could not read image: ${err.message}`);
+      }
+    });
+  });
+
+  progressBubble.querySelectorAll('.veo-clear-userref-btn').forEach(btn => {
+    if (btn.dataset.wired === '1') return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', async () => {
+      const prevIdx = parseInt(btn.dataset.prevIdx, 10);
+      if (isNaN(prevIdx)) return;
+      if (ctx.userTransitionFrames) delete ctx.userTransitionFrames[prevIdx];
+      await renderVeoBatchOutcome(ctx);
+    });
+  });
 
   // v2.4.9: Fix Stitch — re-render clip `idx` using clip `idx-1`'s last frame
   // as the starting image. Same prompt, just visually chained. This is the
@@ -3079,6 +3224,19 @@ function wireVeoRerenderButtons(ctx) {
           // chains to the freshly rendered version, not the old one.
           ctx.transitionFrames[idx] = null;
           await refreshTransitionFrame(ctx, idx);
+          // Task #14: refresh the character anchor when clip 0 (UI "Clip 1")
+          // is re-rendered — that's a deliberate identity change by the user.
+          // If extraction failed for the new clip 0, clear the stale anchor so
+          // we don't keep applying an outdated identity to later clips.
+          if (idx === 0) {
+            if (ctx.transitionFrames[0]) {
+              ctx.characterAnchor = ctx.transitionFrames[0];
+              console.log('[SnapToAI Video] ✓ Character anchor refreshed from re-rendered clip 1');
+            } else {
+              ctx.characterAnchor = null;
+              console.log('[SnapToAI Video] ⚠ Character anchor cleared — new clip 1 last-frame extraction failed');
+            }
+          }
           await renderVeoBatchOutcome(ctx);
         } else {
           ctx.clipScenes[idx] = priorPrompt;
@@ -3462,100 +3620,247 @@ async function stitchVideos(videoUrls, stitchCtx) {
     const recordingDone = new Promise(resolve => { recorder.onstop = resolve; });
     recorder.start();
 
-    // Audio crossfade duration (seconds). 50ms is the sweet spot — long
-    // enough to mask the click/pop at clip boundaries, short enough that
-    // the user doesn't perceive an audible "duck."
+    // Task #15: Crossfade durations.
+    //   FADE_S — short anti-click ramp at the very start of clip 1 and the
+    //            very end of the final clip. Avoids any audible pop on the
+    //            outer edges of the stitched output.
+    //   XFADE_S — visual + audio crossfade window between consecutive clips.
+    //            500ms is long enough that the human eye reads it as a
+    //            deliberate dissolve rather than a hard cut, while short
+    //            enough that motion in the clips still feels continuous.
     const FADE_S = 0.05;
+    const XFADE_S = 0.5;
+
+    // Pre-create one bookkeeping record per clip. Videos and gain nodes
+    // are constructed lazily by prepareItem() to keep memory + CPU low.
+    const items = blobs.map((blob, idx) => ({
+      idx,
+      blobUrl: URL.createObjectURL(blob),
+      video: null,
+      gainNode: null,
+      duration: 8,
+      ready: false,
+      started: false,
+      ended: false
+    }));
+
+    // Idempotent: if prep is already in flight, return the same promise so
+    // the crossfade prep and the late-start fallback can never trigger two
+    // concurrent prepares for the same clip (which would create duplicate
+    // <video> elements and double-connect to the audio destination).
+    function prepareItem(item) {
+      if (item.ready) return Promise.resolve();
+      if (item._prepPromise) return item._prepPromise;
+      item._prepPromise = (async () => {
+        const v = document.createElement('video');
+        v.src = item.blobUrl;
+        v.muted = false;
+        v.crossOrigin = 'anonymous';
+        v.playsInline = true;
+        v.preload = 'auto';
+        // Park off-screen so the browser keeps decoding frames.
+        v.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:64px;height:64px;opacity:0;pointer-events:none;z-index:-1;';
+        document.body.appendChild(v);
+        await new Promise((resolve, reject) => {
+          const t = setTimeout(() => reject(new Error('Stitch video load timeout')), 15000);
+          v.onloadedmetadata = () => { clearTimeout(t); resolve(); };
+          v.onerror = () => { clearTimeout(t); reject(new Error('Stitch video load error')); };
+        });
+        item.video = v;
+        item.duration = (v.duration && isFinite(v.duration) && v.duration > 0) ? v.duration : 8;
+        try {
+          const source = audioCtx.createMediaElementSource(v);
+          const g = audioCtx.createGain();
+          g.gain.setValueAtTime(0, audioCtx.currentTime);
+          source.connect(g);
+          g.connect(dest);
+          item.gainNode = g;
+        } catch (e) {
+          console.log('[SnapToAI Video] Audio connect skipped on clip', item.idx + 1, ':', e.message);
+        }
+        item.ready = true;
+      })();
+      return item._prepPromise;
+    }
+
+    function startItem(item, isFirst, isLast) {
+      if (item._startPromise) return item._startPromise;
+      item._startPromise = (async () => {
+        item.started = true;
+        try { await item.video.play(); } catch (e) {
+          console.log('[SnapToAI Video] play() rejected on clip', item.idx + 1, ':', e.message);
+        }
+        if (item.gainNode) {
+          const t0 = audioCtx.currentTime;
+          const g = item.gainNode.gain;
+          g.cancelScheduledValues(t0);
+          g.setValueAtTime(0, t0);
+          // First clip uses the short anti-click fade-in; later clips ramp up
+          // over the full XFADE window so they crossfade with the previous.
+          const fadeIn = isFirst ? FADE_S : XFADE_S;
+          g.linearRampToValueAtTime(1, t0 + fadeIn);
+          // Final clip uses the short anti-click fade-out; earlier clips
+          // ramp out over the full XFADE window so the next clip can ramp in.
+          const fadeOut = isLast ? FADE_S : XFADE_S;
+          const fadeOutStart = t0 + Math.max(fadeIn, item.duration - fadeOut);
+          g.setValueAtTime(1, fadeOutStart);
+          g.linearRampToValueAtTime(0, fadeOutStart + fadeOut);
+        }
+      })();
+      return item._startPromise;
+    }
 
     try {
-      for (let i = 0; i < blobs.length; i++) {
-        if (stitchCtx && stitchCtx.userStopped) throw new Error('User stopped');
+      // Pre-warm clip 0 so the first frame is ready when the loop starts.
+      await prepareItem(items[0]);
+      await startItem(items[0], /*isFirst*/ true, /*isLast*/ items.length === 1);
 
-        const blobUrl = URL.createObjectURL(blobs[i]);
-        const video = document.createElement('video');
-        video.src = blobUrl;
-        video.muted = false;
-        video.crossOrigin = 'anonymous';
-        video.playsInline = true;
+      // Single combined draw loop that handles all clips end-to-end with
+      // crossfade. Uses an "active" slot for the clip currently dominating
+      // the canvas and an "overlap" slot for the incoming clip during the
+      // crossfade window. When the active clip ends, overlap becomes active.
+      await new Promise((resolveLoop) => {
+        let activeIdx = 0;
+        let overlappingIdx = -1;
+        let overlapStartCtxTime = 0;
+        let overlapPrepInFlight = false;
+        let stopped = false;
+        let interval = null;
 
-        await new Promise((resolve, reject) => {
-          video.onloadedmetadata = () => resolve();
-          video.onerror = () => reject(new Error('Video load error'));
-        });
+        const finish = () => {
+          if (stopped) return;
+          stopped = true;
+          if (interval) { clearInterval(interval); interval = null; }
+          resolveLoop();
+        };
 
-        // Per-clip GainNode so we can ramp audio in (start of clip) and out
-        // (just before clip ends). Without these ramps, MediaRecorder
-        // captures the abrupt waveform discontinuity at every clip boundary
-        // as an audible click/pop. The ramps make the joins inaudible.
-        let gainNode = null;
-        try {
-          const source = audioCtx.createMediaElementSource(video);
-          gainNode = audioCtx.createGain();
-          gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-          source.connect(gainNode);
-          gainNode.connect(dest);
-        } catch (e) {
-          console.log('[SnapToAI Video] Audio connect skipped:', e.message);
-        }
+        // True while we've finished the active clip but the next one isn't
+        // ready to take over yet — we hold the last drawn frame and wait,
+        // rather than swapping activeIdx prematurely (which could race the
+        // tick into the `!active.video` early-return and end stitching).
+        let awaitingNext = false;
+        let lateStartFailed = false;
 
-        // FIX: actually wait for play() to start before entering the draw
-        // loop, otherwise the first iteration sees `video.paused === true`
-        // and resolves immediately, drawing zero frames for that clip.
-        try { await video.play(); } catch (e) {
-          console.log('[SnapToAI Video] play() rejected:', e.message);
-        }
+        const tick = () => {
+          if (stopped) return;
+          if (stitchCtx && stitchCtx.userStopped) { finish(); return; }
+          // If a late-start prep threw, exit immediately instead of holding
+          // the previous active clip's last frame all the way to the 90s
+          // outer STITCH_TIMEOUT_MS. The caller falls back to per-clip links.
+          if (lateStartFailed) { finish(); return; }
+          const active = items[activeIdx];
+          // Defensive: shouldn't happen because we only swap activeIdx when
+          // the next clip is fully ready, but if it does, just wait one tick.
+          if (!active || !active.video) {
+            if (typeof requestAnimationFrame === 'function') requestAnimationFrame(tick);
+            else setTimeout(tick, 33);
+            return;
+          }
 
-        // Schedule the fade-in (now) and fade-out (just before clip ends).
-        if (gainNode) {
-          const t0 = audioCtx.currentTime;
-          gainNode.gain.cancelScheduledValues(t0);
-          gainNode.gain.setValueAtTime(0, t0);
-          gainNode.gain.linearRampToValueAtTime(1, t0 + FADE_S);
-          // Schedule the fade-out relative to playback duration. If
-          // duration isn't known yet, default to clip 8s — the fade is
-          // additionally clamped by video.onended below.
-          const dur = (video.duration && isFinite(video.duration) && video.duration > 0) ? video.duration : 8;
-          const fadeOutStart = t0 + Math.max(FADE_S, dur - FADE_S);
-          gainNode.gain.setValueAtTime(1, fadeOutStart);
-          gainNode.gain.linearRampToValueAtTime(0, fadeOutStart + FADE_S);
-        }
-
-        await new Promise((resolve) => {
-          let resolved = false;
-          const finish = () => { if (!resolved) { resolved = true; resolve(); } };
-          const drawFrame = () => {
-            if (resolved) return;
-            if (stitchCtx && stitchCtx.userStopped) { finish(); return; }
-            if (video.ended) { finish(); return; }
-            try { ctx2d.drawImage(video, 0, 0, canvas.width, canvas.height); } catch (_) {}
-            // FIX: requestAnimationFrame pauses in background tabs, which is
-            // the #1 cause of hangs. Pair it with a setTimeout so we keep
-            // making progress even when the user clicks away.
-            if (typeof requestAnimationFrame === 'function') {
-              requestAnimationFrame(drawFrame);
-            } else {
-              setTimeout(drawFrame, 33);
+          // Decide whether to begin crossfade with the next clip.
+          if (overlappingIdx === -1 && !overlapPrepInFlight && activeIdx + 1 < items.length) {
+            const remaining = active.duration - active.video.currentTime;
+            if (remaining <= XFADE_S && remaining > 0) {
+              overlapPrepInFlight = true;
+              const nextIdx = activeIdx + 1;
+              (async () => {
+                try {
+                  await prepareItem(items[nextIdx]);
+                  if (stopped) return;
+                  await startItem(items[nextIdx], /*isFirst*/ false, /*isLast*/ nextIdx === items.length - 1);
+                  overlapStartCtxTime = audioCtx.currentTime;
+                  overlappingIdx = nextIdx;
+                } catch (e) {
+                  console.log('[SnapToAI Video] Crossfade prep failed for clip', nextIdx + 1, ':', e.message);
+                } finally {
+                  overlapPrepInFlight = false;
+                }
+              })();
             }
-          };
-          // Belt-and-suspenders fallback that fires regardless of rAF state.
-          // Crucially, this also DRAWS frames — when the tab is backgrounded
-          // requestAnimationFrame is throttled/paused, so without this the
-          // canvas would never update and the stitched output would be a
-          // single static frame per clip. Drawing on a 100ms interval gives
-          // ~10fps stitched output in background tabs (acceptable fallback).
-          const tickInterval = setInterval(() => {
-            if (resolved) { clearInterval(tickInterval); return; }
-            if (stitchCtx && stitchCtx.userStopped) { clearInterval(tickInterval); finish(); return; }
-            if (video.ended) { clearInterval(tickInterval); finish(); return; }
-            try { ctx2d.drawImage(video, 0, 0, canvas.width, canvas.height); } catch (_) {}
-          }, 100);
-          video.onended = () => { clearInterval(tickInterval); finish(); };
-          drawFrame();
-        });
+          }
 
-        URL.revokeObjectURL(blobUrl);
-      }
+          // Draw the active (outgoing) clip at full opacity.
+          try { ctx2d.drawImage(active.video, 0, 0, canvas.width, canvas.height); } catch (_) {}
+
+          // Overlay the incoming clip with a linear-alpha ramp. Using the
+          // AudioContext clock keeps the visual ramp in lockstep with the
+          // gain ramps already scheduled on the audio side.
+          if (overlappingIdx !== -1 && items[overlappingIdx] && items[overlappingIdx].video) {
+            const overlap = items[overlappingIdx];
+            const elapsed = audioCtx.currentTime - overlapStartCtxTime;
+            const alpha = Math.max(0, Math.min(1, elapsed / XFADE_S));
+            try {
+              ctx2d.globalAlpha = alpha;
+              ctx2d.drawImage(overlap.video, 0, 0, canvas.width, canvas.height);
+              ctx2d.globalAlpha = 1;
+            } catch (_) {}
+          }
+
+          // Hand off when the active clip is done. We accept either an
+          // explicit `ended` signal or a near-EOF timestamp because some
+          // browsers don't reliably fire `ended` on MediaSource-blob videos.
+          const activeDone = active.video.ended || (active.video.currentTime >= active.duration - 0.02);
+          if (activeDone) {
+            if (overlappingIdx !== -1) {
+              // The crossfade has reached EOF on the outgoing clip — promote.
+              activeIdx = overlappingIdx;
+              overlappingIdx = -1;
+              awaitingNext = false;
+            } else if (activeIdx + 1 < items.length) {
+              // Edge case: crossfade prep didn't get a chance (e.g. the clip
+              // was shorter than XFADE_S, or prep is still in flight). Kick
+              // off the next clip if we haven't yet, but DO NOT swap activeIdx
+              // until it's fully ready — otherwise the next tick sees
+              // `active.video === null` and would have ended stitching early.
+              if (!awaitingNext) {
+                awaitingNext = true;
+                const nextIdx = activeIdx + 1;
+                (async () => {
+                  try {
+                    await prepareItem(items[nextIdx]);
+                    if (stopped) return;
+                    await startItem(items[nextIdx], false, nextIdx === items.length - 1);
+                    if (stopped) return;
+                    activeIdx = nextIdx;
+                    awaitingNext = false;
+                  } catch (e) {
+                    console.log('[SnapToAI Video] Late-start failed for clip', nextIdx + 1, ':', e.message);
+                    awaitingNext = false;
+                    lateStartFailed = true;
+                  }
+                })();
+              }
+              // While awaitingNext, keep ticking and just hold the active
+              // clip's last drawn frame (drawImage above will draw it again).
+            } else {
+              finish();
+              return;
+            }
+          }
+
+          if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(tick);
+          } else {
+            setTimeout(tick, 33);
+          }
+        };
+
+        // Belt-and-suspenders fallback for backgrounded tabs where rAF is
+        // throttled. Without it the canvas would freeze on a single frame
+        // per clip and the stitched output would be a slideshow.
+        interval = setInterval(() => {
+          if (stopped) { clearInterval(interval); return; }
+          tick();
+        }, 100);
+        tick();
+      });
     } finally {
+      for (const it of items) {
+        if (it.video && it.video.parentNode) {
+          try { it.video.parentNode.removeChild(it.video); } catch (_) {}
+        }
+        if (it.blobUrl) { try { URL.revokeObjectURL(it.blobUrl); } catch (_) {} }
+      }
       try { recorder.stop(); } catch (_) {}
       try { await audioCtx.close(); } catch (_) {}
       await recordingDone;
