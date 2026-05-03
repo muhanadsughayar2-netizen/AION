@@ -242,7 +242,23 @@ def init_db():
             )
         ''')
         cur.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS institution_id INTEGER')
-        print('✅ institutions, institution_members, institution_invites tables ready')
+        # Task #37 — admin accountability audit log. Records who did what
+        # inside an institution (invites, suspends, key rotations, branding
+        # edits, policy changes, etc.) so admins can answer "who suspended
+        # Alice last week?" without digging through server logs.
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS institution_audit_log (
+                id SERIAL PRIMARY KEY,
+                institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
+                actor_email TEXT,
+                action VARCHAR(60) NOT NULL,
+                target TEXT,
+                meta JSONB,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        ''')
+        cur.execute('CREATE INDEX IF NOT EXISTS idx_inst_audit_inst_time ON institution_audit_log(institution_id, created_at DESC)')
+        print('✅ institutions, institution_members, institution_invites, institution_audit_log tables ready')
 
         conn.commit()
         
@@ -4401,6 +4417,23 @@ window.addEventListener('load', () => {{
   </div>
 
   <div class="section">
+    <h2>📜 Activity log <span style="font-size: 11px; color: #888; font-weight: normal; margin-left: 8px;">(who did what, last 100 events)</span></h2>
+    <div class="row" style="margin-bottom: 10px; gap: 8px;">
+      <input id="activity-search" class="grow" placeholder="🔍 Search by actor, action, or target email…" style="min-width: 220px;" oninput="renderActivity()">
+      <select id="activity-filter" onchange="renderActivity()" style="min-width: 180px;" title="Filter by action type">
+        <option value="">All actions</option>
+        <option value="member.">Members</option>
+        <option value="branding.">Branding</option>
+        <option value="domains.">Domains</option>
+        <option value="gemini_key.">Gemini key</option>
+      </select>
+      <button class="secondary" onclick="loadActivity()" title="Refresh">↻ Refresh</button>
+      <a href="/api/institution/{html_escape_module.escape(slug)}/activity/export.csv" class="secondary" style="background:#333; color:#fff; padding:8px 14px; border-radius:6px; text-decoration:none; font-size:12px; font-weight:bold;" title="Download activity log as CSV">⬇ Export CSV</a>
+    </div>
+    <div id="activity-list" style="font-size: 13px; color: #888;">Loading…</div>
+  </div>
+
+  <div class="section">
     <h2>👥 Members</h2>
     <div class="row" style="margin-bottom: 10px; gap: 8px;">
       <input id="members-search" class="grow" placeholder="🔍 Search by email…" style="min-width: 220px;" oninput="renderMembers()">
@@ -5021,6 +5054,101 @@ document.getElementById('gk-remove').addEventListener('click', gkRemove);
 document.getElementById('gk-save-policy').addEventListener('click', gkSavePolicy);
 loadGeminiKey();
 
+// ---------- Task #37 — Activity log ----------
+let ACTIVITY_CACHE = [];
+const ACTION_LABELS = {{
+  'member.invite': '✉️ Invited member',
+  'member.invite_bulk': '📥 Bulk invite',
+  'member.suspend': '⛔ Suspended member',
+  'member.reactivate': '✅ Reactivated member',
+  'member.delete': '🗑 Removed member',
+  'member.expiry_change': '⏱ Changed expiry',
+  'domains.set': '🌐 Updated auto-join domains',
+  'branding.color': '🎨 Changed brand color',
+  'branding.logo_upload': '🖼 Uploaded logo',
+  'branding.logo_delete': '🖼 Removed logo',
+  'gemini_key.set': '🔑 Set Gemini key',
+  'gemini_key.rotate': '🔄 Rotated Gemini key',
+  'gemini_key.delete': '🔓 Removed Gemini key',
+  'gemini_key.policy': '⚙️ Changed key policy'
+}};
+async function loadActivity() {{
+  const el = document.getElementById('activity-list');
+  if (!el) return;
+  el.textContent = 'Loading…';
+  try {{
+    const r = await fetch(API_BASE + '/activity?limit=100');
+    const d = await r.json();
+    if (!d.success) {{ el.textContent = 'Error: ' + (d.error || ''); return; }}
+    ACTIVITY_CACHE = d.events || [];
+    renderActivity();
+  }} catch (e) {{ el.textContent = 'Error: ' + e; }}
+}}
+function _fmtRelative(iso) {{
+  if (!iso) return '—';
+  const t = new Date(iso).getTime();
+  const diff = Math.floor((Date.now() - t) / 1000);
+  if (diff < 60) return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  if (diff < 86400*7) return Math.floor(diff/86400) + 'd ago';
+  return new Date(iso).toLocaleDateString();
+}}
+function renderActivity() {{
+  const el = document.getElementById('activity-list');
+  if (!el) return;
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}})[c]);
+  const q = (document.getElementById('activity-search')?.value || '').trim().toLowerCase();
+  const f = document.getElementById('activity-filter')?.value || '';
+  const filtered = ACTIVITY_CACHE.filter(ev => {{
+    if (f && !(String(ev.action||'').startsWith(f))) return false;
+    if (q) {{
+      const hay = (ev.actor + ' ' + ev.action + ' ' + ev.target + ' ' + JSON.stringify(ev.meta||{{}})).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }}
+    return true;
+  }});
+  if (!filtered.length) {{
+    el.innerHTML = '<div style="padding:18px; text-align:center; color:#888;">No activity yet. Admin actions (invites, suspends, branding edits, key rotations…) will appear here.</div>';
+    return;
+  }}
+  let html = '<table><tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Details</th></tr>';
+  for (const ev of filtered) {{
+    const when = ev.createdAt ? new Date(ev.createdAt).toLocaleString() : '—';
+    const rel = _fmtRelative(ev.createdAt);
+    const label = ACTION_LABELS[ev.action] || ev.action;
+    let detail = '';
+    const meta = ev.meta || {{}};
+    const bits = [];
+    if (meta.expiresAt) bits.push('expires: ' + new Date(meta.expiresAt).toLocaleDateString());
+    if (meta.expiresAt === null && ev.action === 'member.expiry_change') bits.push('expiry cleared');
+    if (meta.added != null) bits.push('added: ' + meta.added);
+    if (meta.alreadyMember) bits.push('already: ' + meta.alreadyMember);
+    if (meta.invalidEmail) bits.push('invalid: ' + meta.invalidEmail);
+    if (meta.noSeats) bits.push('no seats: ' + meta.noSeats);
+    if (meta.brandColor) bits.push('color: ' + meta.brandColor);
+    if (meta.allowedDomains) bits.push('domains: ' + meta.allowedDomains);
+    if (meta.allowedDomains === null) bits.push('domains: (cleared)');
+    if (meta.keyHint) bits.push('key …' + meta.keyHint);
+    if (meta.keyPolicy) bits.push('policy: ' + meta.keyPolicy);
+    if (meta.billingBehavior) bits.push('billing: ' + meta.billingBehavior);
+    if (meta.variant) bits.push('variant: ' + meta.variant);
+    if (meta.result) bits.push(meta.result);
+    detail = bits.map(esc).join(' · ');
+    html += '<tr>' +
+      '<td title="' + esc(when) + '">' + esc(rel) + '</td>' +
+      '<td>' + esc(ev.actor || '—') + '</td>' +
+      '<td>' + esc(label) + '</td>' +
+      '<td>' + esc(ev.target || '—') + '</td>' +
+      '<td style="color:#aaa; font-size:12px;">' + detail + '</td>' +
+      '</tr>';
+  }}
+  html += '</table>';
+  html += '<div style="margin-top:6px; font-size:11px; color:#666;">Showing ' + filtered.length + ' of ' + ACTIVITY_CACHE.length + ' events.</div>';
+  el.innerHTML = html;
+}}
+loadActivity();
+
 load();
 </script>
 </body></html>'''
@@ -5067,6 +5195,32 @@ def api_inst_members(slug):
         return _cors(jsonify({'success': False, 'error': str(e)})), 500
 
 _EMAIL_RE = re.compile(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$')
+
+
+def _log_inst_action(cur, inst_id, actor, action, target=None, meta=None):
+    """Task #37 — record an admin action against an institution.
+
+    Best-effort: any failure is swallowed so an audit-log glitch never breaks
+    the underlying admin operation. `meta` should be a small JSON-serializable
+    dict (we coerce non-serializable values to strings)."""
+    try:
+        if not inst_id or not action:
+            return
+        meta_json = None
+        if meta is not None:
+            try:
+                meta_json = json.dumps(meta, default=str)[:4000]
+            except Exception:
+                meta_json = json.dumps({'_unserializable': str(meta)[:500]})
+        cur.execute(
+            "INSERT INTO institution_audit_log (institution_id, actor_email, action, target, meta) "
+            "VALUES (%s,%s,%s,%s,%s::jsonb)",
+            (inst_id, (actor or 'unknown')[:200], action[:60],
+             (target or '')[:300] if target else None, meta_json)
+        )
+    except Exception as _audit_err:
+        print(f'⚠ audit log insert failed: {_audit_err}')
+
 
 def _add_member(cur, inst_id, email, invited_by, role='member', expires_at=None):
     """Returns 'added', 'already', or 'invalid'.
@@ -5169,6 +5323,12 @@ def api_inst_invite(slug):
             cur.close(); conn.close()
             return _cors(jsonify({'success': False, 'error': 'Seat limit reached. Increase the limit or remove inactive members.'})), 400
         result = _add_member(cur, inst_id, email, admin_email or 'inst-admin', expires_at=expires_at)
+        if result in ('added', 'already'):
+            _log_inst_action(cur, inst_id, admin_email or 'inst-admin',
+                             'member.invite', email,
+                             {'result': result,
+                              'expiresAt': expires_at.isoformat() if expires_at else None,
+                              'sendWelcome': bool(send_welcome)})
         conn.commit()
         cur.close(); conn.close()
         if result == 'invalid':
@@ -5224,7 +5384,7 @@ def api_inst_member_set_expiry(slug, member_id):
     to clear expiry (lifetime access). Mirrors expiry into subscriptions table."""
     if request.method == 'OPTIONS':
         return _options('PUT, OPTIONS')
-    ok, _ = _verify_inst_admin(slug)
+    ok, admin_email = _verify_inst_admin(slug)
     if not ok:
         return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
     if not ensure_db():
@@ -5251,6 +5411,13 @@ def api_inst_member_set_expiry(slug, member_id):
             UPDATE subscriptions SET subscription_end=%s, last_verified=NOW(), updated_at=NOW()
               WHERE LOWER(email)=%s
         """, (expires_at, _norm_email(email)))
+        cur.execute("SELECT id FROM institutions WHERE slug=%s", (slug,))
+        _r = cur.fetchone()
+        if _r:
+            _log_inst_action(cur, _r[0], admin_email or 'inst-admin',
+                             'member.expiry_change', email,
+                             {'expiresAt': expires_at.isoformat() if expires_at else None,
+                              'memberId': member_id})
         conn.commit()
         cur.close(); conn.close()
         return _cors(jsonify({
@@ -5347,6 +5514,13 @@ def api_inst_invite_bulk(slug):
                 already_member += 1
             else:
                 invalid_email += 1
+        _log_inst_action(cur, inst_id, admin_email or 'inst-admin',
+                         'member.invite_bulk', None,
+                         {'added': added, 'alreadyMember': already_member,
+                          'invalidEmail': invalid_email, 'noSeats': no_seats,
+                          'total': len(candidates) + len(invalid_format),
+                          'expiresAt': bulk_expires_at.isoformat() if bulk_expires_at else None,
+                          'sendWelcome': bool(send_welcome)})
         conn.commit()
         cur.close(); conn.close()
         emails_sent = 0
@@ -5383,7 +5557,7 @@ def api_inst_set_domains(slug):
     Public-email domains (gmail/outlook/etc.) are stripped server-side."""
     if request.method == 'OPTIONS':
         return _options('POST, OPTIONS')
-    ok, _ = _verify_inst_admin(slug)
+    ok, admin_email = _verify_inst_admin(slug)
     if not ok:
         return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
     if not ensure_db():
@@ -5402,7 +5576,12 @@ def api_inst_set_domains(slug):
     final = ','.join(cleaned)
     try:
         conn = get_db(); cur = conn.cursor()
-        cur.execute("UPDATE institutions SET allowed_domains=%s, updated_at=NOW() WHERE slug=%s", (final or None, slug))
+        cur.execute("UPDATE institutions SET allowed_domains=%s, updated_at=NOW() WHERE slug=%s RETURNING id", (final or None, slug))
+        _r = cur.fetchone()
+        if _r:
+            _log_inst_action(cur, _r[0], admin_email or 'inst-admin',
+                             'domains.set', None,
+                             {'allowedDomains': final or None})
         conn.commit()
         cur.close(); conn.close()
         return _cors(jsonify({'success': True, 'allowedDomains': final}))
@@ -5416,7 +5595,7 @@ def api_inst_set_branding(slug):
     Logo upload uses the dedicated /branding/logo endpoint below."""
     if request.method == 'OPTIONS':
         return _options('POST, OPTIONS')
-    ok, _ = _verify_inst_admin(slug)
+    ok, admin_email = _verify_inst_admin(slug)
     if not ok:
         return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
     if not ensure_db():
@@ -5431,7 +5610,11 @@ def api_inst_set_branding(slug):
             cur.close(); conn.close()
             return _cors(jsonify({'success': False, 'error': 'Branding is locked by your account manager. Contact SnapToAI support.'})), 403
         if color:
-            cur.execute("UPDATE institutions SET brand_color=%s, updated_at=NOW() WHERE slug=%s", (color, slug))
+            cur.execute("UPDATE institutions SET brand_color=%s, updated_at=NOW() WHERE slug=%s RETURNING id", (color, slug))
+            _r = cur.fetchone()
+            if _r:
+                _log_inst_action(cur, _r[0], admin_email or 'inst-admin',
+                                 'branding.color', None, {'brandColor': color})
         conn.commit()
         cur.close(); conn.close()
         return _cors(jsonify({'success': True, 'brandColor': color}))
@@ -5487,6 +5670,8 @@ def api_inst_gemini_key(slug):
                     key_last_rotated_at=NOW(), updated_at=NOW()
                 WHERE id=%s
             """, (inst_id,))
+            _log_inst_action(cur, inst_id, admin_email or 'inst-admin',
+                             'gemini_key.delete', None, {'previousHint': row[2] or ''})
             conn.commit()
             cur.close(); conn.close()
             return _cors(jsonify({'success': True}))
@@ -5530,6 +5715,10 @@ def api_inst_gemini_key(slug):
                     key_set_at=NOW(), key_last_rotated_at=NOW(), updated_at=NOW()
                 WHERE id=%s
             """, (encrypted, hint, inst_id))
+        _log_inst_action(cur, inst_id, admin_email or 'inst-admin',
+                         'gemini_key.rotate' if was_already_set else 'gemini_key.set',
+                         None,
+                         {'keyHint': hint, 'skipTest': bool(skip_test)})
         conn.commit()
         cur.close(); conn.close()
         return _cors(jsonify({'success': True, 'rotated': was_already_set, 'keyHint': hint}))
@@ -5577,7 +5766,7 @@ def api_inst_gemini_key_policy(slug):
     """Update key_policy + billing_behavior."""
     if request.method == 'OPTIONS':
         return _options('PUT, OPTIONS')
-    ok, _ = _verify_inst_admin(slug)
+    ok, admin_email = _verify_inst_admin(slug)
     if not ok:
         return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
     if not ensure_db():
@@ -5593,8 +5782,13 @@ def api_inst_gemini_key_policy(slug):
         conn = get_db(); cur = conn.cursor()
         cur.execute("""
             UPDATE institutions SET key_policy=%s, billing_behavior=%s, updated_at=NOW()
-            WHERE slug=%s
+            WHERE slug=%s RETURNING id
         """, (policy, billing, slug))
+        _r = cur.fetchone()
+        if _r:
+            _log_inst_action(cur, _r[0], admin_email or 'inst-admin',
+                             'gemini_key.policy', None,
+                             {'keyPolicy': policy, 'billingBehavior': billing})
         conn.commit()
         cur.close(); conn.close()
         return _cors(jsonify({'success': True, 'keyPolicy': policy, 'billingBehavior': billing}))
@@ -5610,7 +5804,7 @@ def api_inst_upload_logo(slug):
     just that variant."""
     if request.method == 'OPTIONS':
         return _options('POST, DELETE, OPTIONS')
-    ok, _ = _verify_inst_admin(slug)
+    ok, admin_email = _verify_inst_admin(slug)
     if not ok:
         return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
     if not ensure_db():
@@ -5636,7 +5830,12 @@ def api_inst_upload_logo(slug):
                         try: os.remove(os.path.join(INSTITUTION_LOGO_DIR, old))
                         except Exception: pass
             conn = get_db(); cur = conn.cursor()
-            cur.execute(f"UPDATE institutions SET {column}=NULL, updated_at=NOW() WHERE slug=%s", (slug,))
+            cur.execute(f"UPDATE institutions SET {column}=NULL, updated_at=NOW() WHERE slug=%s RETURNING id", (slug,))
+            _r = cur.fetchone()
+            if _r:
+                _log_inst_action(cur, _r[0], admin_email or 'inst-admin',
+                                 'branding.logo_delete', None,
+                                 {'variant': suffix or 'default', 'column': column})
             conn.commit()
             cur.close(); conn.close()
             return _cors(jsonify({'success': True, resp_key: None}))
@@ -5684,7 +5883,13 @@ def api_inst_upload_logo(slug):
             out.write(blob)
         logo_url = f'/static/institution-logos/{slug}{suffix}{ext}?v={int(time.time())}'
         conn = get_db(); cur = conn.cursor()
-        cur.execute(f"UPDATE institutions SET {column}=%s, updated_at=NOW() WHERE slug=%s", (logo_url, slug))
+        cur.execute(f"UPDATE institutions SET {column}=%s, updated_at=NOW() WHERE slug=%s RETURNING id", (logo_url, slug))
+        _r = cur.fetchone()
+        if _r:
+            _log_inst_action(cur, _r[0], admin_email or 'inst-admin',
+                             'branding.logo_upload', None,
+                             {'variant': suffix or 'default', 'column': column,
+                              'ext': ext, 'bytes': len(blob)})
         conn.commit()
         cur.close(); conn.close()
         return _cors(jsonify({'success': True, resp_key: logo_url}))
@@ -5760,11 +5965,106 @@ def api_inst_members_export_csv(slug):
         return Response(f'Error: {e}', status=500)
 
 
+@app.route('/api/institution/<slug>/activity', methods=['GET', 'OPTIONS'])
+def api_inst_activity(slug):
+    """Task #37 — return the most recent ~100 admin audit-log entries for
+    this institution. Admin-only. Powers the Activity section of the
+    institution dashboard."""
+    if request.method == 'OPTIONS':
+        return _options('GET, OPTIONS')
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    try:
+        try:
+            limit = int(request.args.get('limit', '100'))
+        except Exception:
+            limit = 100
+        limit = max(1, min(500, limit))
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("SELECT id FROM institutions WHERE slug=%s", (slug,))
+        r = cur.fetchone()
+        if not r:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Not found'})), 404
+        inst_id = r[0]
+        cur.execute("""
+            SELECT id, actor_email, action, target, meta, created_at
+            FROM institution_audit_log
+            WHERE institution_id=%s
+            ORDER BY created_at DESC, id DESC
+            LIMIT %s
+        """, (inst_id, limit))
+        events = []
+        for row in cur.fetchall():
+            meta = row[4]
+            # JSONB returns dict already in psycopg2; coerce string just in case.
+            if isinstance(meta, str):
+                try: meta = json.loads(meta)
+                except Exception: meta = {'raw': meta}
+            events.append({
+                'id': row[0],
+                'actor': row[1] or '',
+                'action': row[2] or '',
+                'target': row[3] or '',
+                'meta': meta or {},
+                'createdAt': row[5].isoformat() if row[5] else None,
+            })
+        cur.close(); conn.close()
+        return _cors(jsonify({'success': True, 'events': events, 'total': len(events)}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+
+@app.route('/api/institution/<slug>/activity/export.csv', methods=['GET'])
+def api_inst_activity_export_csv(slug):
+    """Task #37 — admin-only CSV export of the audit log so admins can keep
+    an offline accountability record (or send to compliance)."""
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return Response('Unauthorized', status=401)
+    if not ensure_db():
+        return Response('Database not available', status=503)
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("""
+            SELECT a.created_at, a.actor_email, a.action, a.target, a.meta
+            FROM institution_audit_log a
+            JOIN institutions i ON i.id = a.institution_id
+            WHERE i.slug=%s
+            ORDER BY a.created_at DESC, a.id DESC
+        """, (slug,))
+        rows = cur.fetchall()
+        cur.close(); conn.close()
+        import io, csv
+        buf = io.StringIO()
+        w = csv.writer(buf)
+        w.writerow(['timestamp', 'actor_email', 'action', 'target', 'meta_json'])
+        for created_at, actor, action, target, meta in rows:
+            if isinstance(meta, (dict, list)):
+                meta_str = json.dumps(meta, default=str)
+            elif meta is None:
+                meta_str = ''
+            else:
+                meta_str = str(meta)
+            w.writerow([
+                created_at.isoformat() if created_at else '',
+                actor or '', action or '', target or '', meta_str
+            ])
+        resp = Response(buf.getvalue(), mimetype='text/csv')
+        resp.headers['Content-Disposition'] = f'attachment; filename="{slug}-activity-{datetime.now().strftime("%Y%m%d")}.csv"'
+        return resp
+    except Exception as e:
+        return Response(f'Error: {e}', status=500)
+
+
 @app.route('/api/institution/<slug>/members/<int:member_id>/suspend', methods=['POST', 'OPTIONS'])
 def api_inst_member_suspend(slug, member_id):
     if request.method == 'OPTIONS':
         return _options('POST, OPTIONS')
-    ok, _ = _verify_inst_admin(slug)
+    ok, admin_email = _verify_inst_admin(slug)
     if not ok:
         return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
     if not ensure_db():
@@ -5774,11 +6074,13 @@ def api_inst_member_suspend(slug, member_id):
         cur.execute("""
             UPDATE institution_members SET status='suspended'
             WHERE id=%s AND institution_id=(SELECT id FROM institutions WHERE slug=%s)
-            RETURNING email
+            RETURNING email, institution_id
         """, (member_id, slug))
         r = cur.fetchone()
         if r:
             cur.execute("UPDATE subscriptions SET status='inactive', updated_at=NOW() WHERE LOWER(email)=%s AND plan_type='institution'", (_norm_email(r[0]),))
+            _log_inst_action(cur, r[1], admin_email or 'inst-admin',
+                             'member.suspend', r[0], {'memberId': member_id})
         conn.commit()
         cur.close(); conn.close()
         return _cors(jsonify({'success': True}))
@@ -5789,7 +6091,7 @@ def api_inst_member_suspend(slug, member_id):
 def api_inst_member_reactivate(slug, member_id):
     if request.method == 'OPTIONS':
         return _options('POST, OPTIONS')
-    ok, _ = _verify_inst_admin(slug)
+    ok, admin_email = _verify_inst_admin(slug)
     if not ok:
         return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
     if not ensure_db():
@@ -5799,11 +6101,13 @@ def api_inst_member_reactivate(slug, member_id):
         cur.execute("""
             UPDATE institution_members SET status='active'
             WHERE id=%s AND institution_id=(SELECT id FROM institutions WHERE slug=%s)
-            RETURNING email
+            RETURNING email, institution_id
         """, (member_id, slug))
         r = cur.fetchone()
         if r:
             cur.execute("UPDATE subscriptions SET status='active', updated_at=NOW() WHERE LOWER(email)=%s AND plan_type='institution'", (_norm_email(r[0]),))
+            _log_inst_action(cur, r[1], admin_email or 'inst-admin',
+                             'member.reactivate', r[0], {'memberId': member_id})
         conn.commit()
         cur.close(); conn.close()
         return _cors(jsonify({'success': True}))
@@ -5814,7 +6118,7 @@ def api_inst_member_reactivate(slug, member_id):
 def api_inst_member_delete(slug, member_id):
     if request.method == 'OPTIONS':
         return _options('DELETE, OPTIONS')
-    ok, _ = _verify_inst_admin(slug)
+    ok, admin_email = _verify_inst_admin(slug)
     if not ok:
         return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
     if not ensure_db():
@@ -5830,6 +6134,8 @@ def api_inst_member_delete(slug, member_id):
         if r:
             cur.execute("UPDATE subscriptions SET status='inactive', plan_type='unknown', updated_at=NOW() WHERE LOWER(email)=%s AND plan_type='institution'", (_norm_email(r[0]),))
             cur.execute("UPDATE users SET institution_id=NULL WHERE LOWER(email)=%s AND institution_id=%s", (_norm_email(r[0]), r[1]))
+            _log_inst_action(cur, r[1], admin_email or 'inst-admin',
+                             'member.delete', r[0], {'memberId': member_id})
         conn.commit()
         cur.close(); conn.close()
         return _cors(jsonify({'success': True}))
