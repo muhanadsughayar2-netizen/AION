@@ -4225,16 +4225,16 @@ window.addEventListener('load', () => {{
       <div style="min-width: 240px;">
         <label style="font-size: 12px; color: #888; display: block; margin-bottom: 4px;">Logo (PNG/JPG/SVG/WebP, max 2MB):</label>
         {('<div style="margin-bottom:6px;"><img src="' + html_escape_module.escape(info.get('logoUrl') or '') + '" alt="" style="max-height:36px;max-width:160px;background:#fff;padding:4px;border-radius:4px;"></div>') if info.get('logoUrl') else ''}
-        <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" style="font-size: 12px;" {'disabled' if info.get('brandingLocked') else ''}>
-        <button onclick="uploadLogo()" style="margin-top: 6px;" {'disabled' if info.get('brandingLocked') else ''}>Upload Logo</button>
+        <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" style="font-size: 12px;" onchange="uploadLogo()" {'disabled' if info.get('brandingLocked') else ''}>
+        <button onclick="uploadLogo()" style="margin-top: 6px;" {'disabled' if info.get('brandingLocked') else ''}>Save Logo</button>
         {('<button class="danger" onclick="clearLogo(' + "'default'" + ')" style="margin-top: 6px;" ' + ('disabled' if info.get('brandingLocked') else '') + '>Clear</button>') if info.get('logoUrl') else ''}
         <span id="logo-msg" style="color: #00ff88; font-size: 12px; margin-left: 8px;"></span>
       </div>
       <div style="min-width: 240px;">
         <label style="font-size: 12px; color: #888; display: block; margin-bottom: 4px;">Light-mode logo <span style="color:#666;">(optional — used when viewers are in Light mode)</span>:</label>
         {('<div style="margin-bottom:6px;"><img src="' + html_escape_module.escape(info.get('logoUrlLight') or '') + '" alt="" style="max-height:36px;max-width:160px;background:#1a1a2a;padding:4px;border-radius:4px;"></div>') if info.get('logoUrlLight') else ''}
-        <input id="logo-file-light" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" style="font-size: 12px;" {'disabled' if info.get('brandingLocked') else ''}>
-        <button onclick="uploadLogoLight()" style="margin-top: 6px;" {'disabled' if info.get('brandingLocked') else ''}>Upload Light Logo</button>
+        <input id="logo-file-light" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" style="font-size: 12px;" onchange="uploadLogoLight()" {'disabled' if info.get('brandingLocked') else ''}>
+        <button onclick="uploadLogoLight()" style="margin-top: 6px;" {'disabled' if info.get('brandingLocked') else ''}>Save Light Logo</button>
         {('<button class="danger" onclick="clearLogo(' + "'light'" + ')" style="margin-top: 6px;" ' + ('disabled' if info.get('brandingLocked') else '') + '>Clear</button>') if info.get('logoUrlLight') else ''}
         <span id="logo-light-msg" style="color: #00ff88; font-size: 12px; margin-left: 8px;"></span>
       </div>
@@ -4581,27 +4581,50 @@ function updateBrandPreview() {{
   // First paint
   try {{ updateBrandPreview(); }} catch (e) {{ console.log('[brand preview]', e); }}
 }})();
+// Auto-uploads on file pick AND works as a click handler on the Save
+// button. Re-entrancy guard via _logoUploading prevents the change-event
+// + button-click double-fire from running two parallel uploads.
+let _logoUploading = false;
 async function uploadLogo() {{
-  const f = document.getElementById('logo-file').files[0];
+  if (_logoUploading) return;
+  const input = document.getElementById('logo-file');
+  const f = input && input.files && input.files[0];
   const msg = document.getElementById('logo-msg');
   if (!f) {{ msg.style.color='#ff4757'; msg.textContent='Pick a file first'; return; }}
-  msg.style.color='#888'; msg.textContent='Uploading...';
-  const fd = new FormData(); fd.append('logo', f);
-  const r = await fetch(API_BASE + '/branding/logo', {{method:'POST', body: fd}});
-  const d = await r.json();
-  if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Uploaded'; setTimeout(()=>location.reload(), 800); }}
-  else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
+  _logoUploading = true;
+  msg.style.color='#888'; msg.textContent='Saving...';
+  try {{
+    const fd = new FormData(); fd.append('logo', f);
+    const r = await fetch(API_BASE + '/branding/logo', {{method:'POST', body: fd}});
+    const d = await r.json();
+    if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Saved'; setTimeout(()=>location.reload(), 800); }}
+    else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
+  }} catch (e) {{
+    msg.style.color='#ff4757'; msg.textContent = '✗ ' + (e.message || 'upload failed');
+  }} finally {{
+    _logoUploading = false;
+  }}
 }}
+let _logoLightUploading = false;
 async function uploadLogoLight() {{
-  const f = document.getElementById('logo-file-light').files[0];
+  if (_logoLightUploading) return;
+  const input = document.getElementById('logo-file-light');
+  const f = input && input.files && input.files[0];
   const msg = document.getElementById('logo-light-msg');
   if (!f) {{ msg.style.color='#ff4757'; msg.textContent='Pick a file first'; return; }}
-  msg.style.color='#888'; msg.textContent='Uploading...';
-  const fd = new FormData(); fd.append('logo', f); fd.append('variant', 'light');
-  const r = await fetch(API_BASE + '/branding/logo', {{method:'POST', body: fd}});
-  const d = await r.json();
-  if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Uploaded'; setTimeout(()=>location.reload(), 800); }}
-  else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
+  _logoLightUploading = true;
+  msg.style.color='#888'; msg.textContent='Saving...';
+  try {{
+    const fd = new FormData(); fd.append('logo', f); fd.append('variant', 'light');
+    const r = await fetch(API_BASE + '/branding/logo', {{method:'POST', body: fd}});
+    const d = await r.json();
+    if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Saved'; setTimeout(()=>location.reload(), 800); }}
+    else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
+  }} catch (e) {{
+    msg.style.color='#ff4757'; msg.textContent = '✗ ' + (e.message || 'upload failed');
+  }} finally {{
+    _logoLightUploading = false;
+  }}
 }}
 async function clearLogo(which) {{
   const isLight = which === 'light';

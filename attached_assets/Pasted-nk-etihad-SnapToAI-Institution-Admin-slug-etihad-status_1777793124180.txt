@@ -1,0 +1,73 @@
+nk etihad
+SnapToAI Institution Admin · slug: etihad · status: active · expires: 2026-05-02T00:00:00
+
+1 / 50
+Seats Used
+1
+Active Members
+0
+Suspended
+0
+Pre-Invited
+(none)
+Auto-Join Domains
+✉️ Invite users
+user@example.com
+Invite by Email
+Bulk invite — upload a CSV file or paste emails below: No file chosen 
+muhanadsughayar+1@gmail.com
+ Bulk Invite
++ Generate Invite Link
+🌐 Auto-join domains
+Anyone signing in with an email at one of these domains is automatically added as a member (public domains like gmail.com are blocked).
+
+acme.com, eng.acme.com
+Save Domains
+✓ Saved
+🎨 Branding
+Brand color (hex):
+#8c00ff
+ 
+ Save Color ✓ Saved (members refresh to see it)
+Members see this color in the extension. SnapToAI auto-adjusts it slightly so it stays readable in both Light and Dark mode — the previews below show what they'll actually see.
+
+Logo (PNG/JPG/SVG/WebP, max 2MB):
+snaptoai-image (71).png Upload Logo Pick a file first
+Light-mode logo (optional — used when viewers are in Light mode):
+Untitled design (51).png Upload Light Logo Pick a file first
+☀ Light mode preview
+OK
+Action
+Accent text
+Picked #8c00ff → rendered #8c00ff
+🌙 Dark mode preview
+Heavily adjusted
+Action
+Accent text
+Picked #8c00ff → rendered #b964ff
+⚠ Heads-up:
+• Dark mode: contrast vs near-black is only 3.4:1 — SnapToAI lightened it to #b964ff so members can read it. Pick a lighter shade for an exact match.
+🔑 Agentic AI / API key
+Provide a Google Gemini / Vertex API key for your members. The key is encrypted at rest, never sent to the extension, and used transparently by every active member of this institution. Plaintext is shown only at the moment you paste it.
+
+⚠ No institution key set. Members fall back to their personal key or the SnapToAI shared key.
+Paste Gemini/Vertex API key (e.g. AIza…)
+Save key
+Test
+Test stored key
+Remove key
+Key policy
+Controls what happens when a member also has their own personal Gemini key in the extension.
+
+
+Institution key only (hide member BYOK input)
+Billing behavior
+Controls whether AI calls made with the institution key still count against members' SnapToAI free-prompt quota.
+
+
+Bypass — institution pays Google directly, no metering
+Save policy & billing ✓ Saved
+🔧 Key first set: never
+♻️ Last rotated: never
+✨ Last successfully used: never
+👥 Members
