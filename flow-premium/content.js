@@ -19,8 +19,34 @@
   // Cached locally; updated live via chrome.storage.onChanged so already-
   // injected UI re-skins instantly when the user flips themes elsewhere.
   let __snapThemePref = 'dark';
+  // Auto-mode resolution priority (per Task #21 spec):
+  //   1. Host page's declared color-scheme (meta name="color-scheme" or
+  //      computed style on <html>). If the page explicitly says "light"
+  //      or "dark", honor it so our overlay blends with the surrounding
+  //      page chrome.
+  //   2. OS prefers-color-scheme as a fallback.
+  function __snapHostPageScheme() {
+    try {
+      const root = document.documentElement;
+      if (root) {
+        const cs = (getComputedStyle(root).colorScheme || '').toLowerCase();
+        // 'light dark' / 'normal' / '' → ambiguous, ignore
+        if (cs.includes('light') && !cs.includes('dark')) return 'light';
+        if (cs.includes('dark') && !cs.includes('light')) return 'dark';
+      }
+      const meta = document.querySelector('meta[name="color-scheme"]');
+      if (meta) {
+        const v = (meta.getAttribute('content') || '').toLowerCase();
+        if (v.includes('light') && !v.includes('dark')) return 'light';
+        if (v.includes('dark') && !v.includes('light')) return 'dark';
+      }
+    } catch (e) {}
+    return null;
+  }
   function __snapResolveTheme(pref) {
     if (pref === 'auto') {
+      const host = __snapHostPageScheme();
+      if (host) return host;
       try { return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; }
       catch (e) { return 'dark'; }
     }
