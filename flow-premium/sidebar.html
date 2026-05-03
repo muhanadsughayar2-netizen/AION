@@ -1283,6 +1283,171 @@
     }
     .sb-key-pill .sb-key-action:hover { opacity: 1; background: rgba(255,255,255,0.08); }
 
+    /* ============== Queue Strip (recent snaps) ============== */
+    .sb-queue {
+      display: none; /* shown by JS only when snaps exist */
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 10px 10px;
+      background: linear-gradient(180deg, rgba(0,217,255,0.04), rgba(124,92,252,0.04));
+      border: 1px solid rgba(0,217,255,0.18);
+      border-radius: 12px;
+      animation: sbQueueIn 0.28s cubic-bezier(.2,.9,.3,1.2);
+    }
+    .sb-queue.has-snaps { display: flex; }
+    @keyframes sbQueueIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .sb-queue-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      letter-spacing: 0.8px;
+      color: rgba(255,255,255,0.55);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .sb-queue-head .sb-queue-title { display: inline-flex; align-items: center; gap: 5px; }
+    .sb-queue-head .sb-queue-count {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 7px;
+      background: rgba(0,217,255,0.14);
+      border: 1px solid rgba(0,217,255,0.3);
+      border-radius: 999px;
+      color: #00d9ff;
+      font-size: 9px;
+      font-weight: 700;
+    }
+    .sb-queue-head .sb-queue-spacer { flex: 1; }
+    .sb-queue-head .sb-queue-clear {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.55);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.15s;
+    }
+    .sb-queue-clear:hover { color: #ff6b6b; border-color: rgba(255,107,107,0.4); background: rgba(255,107,107,0.08); }
+    .sb-queue-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 2px 0 6px;
+      scroll-snap-type: x proximity;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0,217,255,0.35) transparent;
+    }
+    .sb-queue-scroll::-webkit-scrollbar { height: 6px; }
+    .sb-queue-scroll::-webkit-scrollbar-thumb { background: rgba(0,217,255,0.3); border-radius: 3px; }
+    .sb-queue-scroll::-webkit-scrollbar-track { background: transparent; }
+    .sb-queue-thumb {
+      position: relative;
+      flex: 0 0 auto;
+      width: 56px;
+      height: 56px;
+      border-radius: 9px;
+      overflow: hidden;
+      border: 1.5px solid rgba(255,255,255,0.12);
+      background: #0a0a0a;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(.2,.9,.3,1.2);
+      scroll-snap-align: start;
+      animation: sbThumbIn 0.32s cubic-bezier(.2,.9,.3,1.2);
+    }
+    @keyframes sbThumbIn {
+      from { opacity: 0; transform: scale(0.6); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .sb-queue-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+    .sb-queue-thumb:hover {
+      transform: translateY(-2px) scale(1.04);
+      border-color: rgba(0,217,255,0.7);
+      box-shadow: 0 6px 16px rgba(0,217,255,0.25), 0 0 0 2px rgba(0,217,255,0.15);
+    }
+    .sb-queue-thumb:active { transform: translateY(0) scale(0.96); }
+    .sb-queue-thumb.attached {
+      border-color: rgba(0,255,136,0.7);
+      box-shadow: 0 0 0 2px rgba(0,255,136,0.2);
+    }
+    .sb-queue-thumb .sb-queue-num {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      min-width: 14px;
+      height: 14px;
+      padding: 0 4px;
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      backdrop-filter: blur(2px);
+    }
+    .sb-queue-thumb .sb-queue-x {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 16px;
+      height: 16px;
+      background: rgba(0,0,0,0.65);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      font-size: 11px;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      opacity: 0.55;
+      transition: opacity 0.15s, background 0.15s, transform 0.15s;
+      backdrop-filter: blur(2px);
+    }
+    .sb-queue-thumb:hover .sb-queue-x,
+    .sb-queue-thumb:focus-within .sb-queue-x { opacity: 1; }
+    .sb-queue-thumb .sb-queue-x:hover { background: #ff4757; transform: scale(1.1); }
+    @media (hover: none) {
+      .sb-queue-thumb .sb-queue-x { opacity: 0.85; }
+    }
+    .sb-queue-thumb .sb-queue-attached-tick {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      width: 14px;
+      height: 14px;
+      background: #00ff88;
+      color: #000;
+      font-size: 9px;
+      font-weight: 900;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 6px rgba(0,255,136,0.6);
+    }
+    .sb-queue-thumb.attached .sb-queue-attached-tick { display: inline-flex; }
+
     /* Toast */
     .sb-toast {
       position: fixed;
@@ -1388,16 +1553,9 @@
       max-height: none;
     }
 
-    /* Wider sidebars (>= 700px): show inline image-panel again so attached images are visible */
-    @media (min-width: 700px) {
-      body.sidebar-mode .image-panel {
-        display: flex !important;
-        width: 32%;
-        min-width: 200px;
-        max-width: 280px;
-      }
-      body.sidebar-mode .main-content { flex-direction: row; }
-    }
+    /* Wider sidebars: keep chat full width — the queue strip + inline file
+       cards already surface attached images, so resurrecting the side
+       image-panel here would just squish the chat. */
 
     /* Very narrow: stack capture buttons in 2 cols */
     @media (max-width: 320px) {
@@ -1459,6 +1617,17 @@
       <span class="sb-key-dot"></span>
       <span class="sb-key-text" id="sbKeyText">Checking AI key…</span>
       <button class="sb-key-action" id="sbKeyAction">Manage</button>
+    </div>
+
+    <!-- Recent snaps queue (auto-shown when snaps exist) -->
+    <div class="sb-queue" id="sbQueue" aria-label="Recent screenshots">
+      <div class="sb-queue-head">
+        <span class="sb-queue-title">📥 Recent snaps</span>
+        <span class="sb-queue-count" id="sbQueueCount">0 / 10</span>
+        <span class="sb-queue-spacer"></span>
+        <button class="sb-queue-clear" id="sbQueueClear" title="Clear all snaps">Clear</button>
+      </div>
+      <div class="sb-queue-scroll" id="sbQueueScroll"></div>
     </div>
   </div>
 

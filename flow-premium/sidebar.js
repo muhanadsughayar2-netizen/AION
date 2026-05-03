@@ -508,12 +508,242 @@
     });
   } catch (e) {}
 
+  // ---------- Queue Strip (recent snaps) ----------
+  const queueEls = {
+    root: $('sbQueue'),
+    scroll: $('sbQueueScroll'),
+    count: $('sbQueueCount'),
+    clear: $('sbQueueClear'),
+  };
+  let queueSnaps = [];               // dataUrls, mirrored from chrome.storage.local.snaps
+  const attachedSnapKeys = new Set(); // stable keys (snapKey()) of snaps currently attached to chat
+  const MAX_SNAPS = 10;
+
+  // Stable per-snap key — survives reordering / FIFO trims in other surfaces.
+  // We hash a short window of the dataUrl tail (which is the unique base64
+  // payload) plus the length, so identical pixels produce identical keys
+  // without us scanning megabytes of base64.
+  function snapKey(dataUrl) {
+    if (!dataUrl) return '';
+    const len = dataUrl.length;
+    const tail = dataUrl.slice(Math.max(0, len - 96));
+    return len + ':' + tail;
+  }
+
+  function reconcileAttachedKeys() {
+    const live = new Set(queueSnaps.map(snapKey));
+    for (const k of Array.from(attachedSnapKeys)) {
+      if (!live.has(k)) attachedSnapKeys.delete(k);
+    }
+  }
+
+  async function loadQueueSnaps() {
+    try {
+      const { snaps } = await chrome.storage.local.get({ snaps: [] });
+      queueSnaps = Array.isArray(snaps) ? snaps : [];
+      reconcileAttachedKeys();
+      renderQueue();
+    } catch (e) {
+      console.log('[SnapToAI sidebar] loadQueueSnaps failed:', e && e.message);
+    }
+  }
+
+  function renderQueue() {
+    if (!queueEls.root || !queueEls.scroll || !queueEls.count) return;
+    const n = queueSnaps.length;
+    queueEls.count.textContent = `${n} / ${MAX_SNAPS}`;
+    queueEls.root.classList.toggle('has-snaps', n > 0);
+    // Diff-render only when count is unchanged so we don't replay the
+    // scale-in animation on every keystroke. Attach state is keyed by
+    // dataUrl, so it stays correct even after reorder/trim elsewhere.
+    const existing = queueEls.scroll.children;
+    if (existing.length === n) {
+      for (let i = 0; i < n; i++) {
+        const tile = existing[i];
+        const key = snapKey(queueSnaps[i]);
+        tile.classList.toggle('attached', attachedSnapKeys.has(key));
+        tile.dataset.key = key;
+        const img = tile.querySelector('img');
+        if (img && img.src !== queueSnaps[i]) img.src = queueSnaps[i];
+        const num = tile.querySelector('.sb-queue-num');
+        if (num) num.textContent = String(i + 1);
+        tile.title = `Tap to attach snap #${(i + 1)} to chat`;
+      }
+      return;
+    }
+    queueEls.scroll.innerHTML = '';
+    queueSnaps.forEach((dataUrl, idx) => {
+      const key = snapKey(dataUrl);
+      const tile = document.createElement('div');
+      tile.className = 'sb-queue-thumb' + (attachedSnapKeys.has(key) ? ' attached' : '');
+      tile.title = `Tap to attach snap #${idx + 1} to chat`;
+      tile.dataset.key = key;
+      tile.innerHTML =
+        '<span class="sb-queue-num">' + (idx + 1) + '</span>' +
+        '<button class="sb-queue-x" aria-label="Remove snap" title="Remove">×</button>' +
+        '<img alt="Snap ' + (idx + 1) + '" />' +
+        '<span class="sb-queue-attached-tick" title="Attached to chat">✓</span>';
+      const img = tile.querySelector('img');
+      img.src = dataUrl;
+      // Resolve the key from the tile's dataset at click time — the diff
+      // path reuses tiles and rewrites dataset.key when the queue is
+      // reordered, so closing over the creation-time key would mis-target
+      // attach/remove after a reorder.
+      tile.addEventListener('click', (ev) => {
+        if (ev.target && ev.target.classList && ev.target.classList.contains('sb-queue-x')) return;
+        attachSnapByKey(tile.dataset.key);
+      });
+      tile.querySelector('.sb-queue-x').addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        removeSnapByKey(tile.dataset.key);
+      });
+      queueEls.scroll.appendChild(tile);
+    });
+  }
+
+  function dataUrlToParts(dataUrl) {
+    // "data:image/png;base64,XXXX" → { mimeType, data }
+    const m = /^data:([^;,]+)(?:;base64)?,(.*)$/.exec(dataUrl || '');
+    if (!m) return null;
+    return { mimeType: m[1] || 'image/png', data: m[2] || '' };
+  }
+
+  function findSnapByKey(key) {
+    for (let i = 0; i < queueSnaps.length; i++) {
+      if (snapKey(queueSnaps[i]) === key) return { idx: i, dataUrl: queueSnaps[i] };
+    }
+    return null;
+  }
+
+  function attachSnapByKey(key) {
+    const found = findSnapByKey(key);
+    if (!found) {
+      toast('That snap is no longer in the queue', 'error');
+      renderQueue();
+      return;
+    }
+    if (attachedSnapKeys.has(key)) {
+      toast('Already attached to chat', '', 1500);
+      return;
+    }
+    const { idx, dataUrl } = found;
+    const parts = dataUrlToParts(dataUrl);
+    if (!parts) {
+      toast('Could not attach this snap', 'error');
+      return;
+    }
+    // ai-chat.js owns `filesQueue` (a top-level `let`) and #filePreviewZone.
+    // sidebar.html loads ai-chat.js BEFORE sidebar.js, so the identifier is
+    // in the shared script-level lexical scope reachable from this IIFE.
+    const fileData = {
+      mimeType: parts.mimeType,
+      data: parts.data,
+      name: `Snap #${idx + 1}`,
+    };
+    try {
+      let pushed = false;
+      try {
+        // eslint-disable-next-line no-undef
+        if (typeof filesQueue !== 'undefined' && Array.isArray(filesQueue)) {
+          // eslint-disable-next-line no-undef
+          filesQueue.push(fileData);
+          pushed = true;
+        }
+      } catch (e) { /* ReferenceError if scope changes — fall through */ }
+      if (!pushed) {
+        toast('Chat not ready yet — try again', 'error');
+        return;
+      }
+      const zone = document.getElementById('filePreviewZone');
+      if (zone) {
+        const card = document.createElement('div');
+        card.className = 'file-card';
+        // Name is fixed text we control ("Snap #N") — safe.
+        card.innerHTML = '🖼️ <span>' + fileData.name + '</span> <div class="remove-btn">×</div>';
+        card.querySelector('.remove-btn').onclick = () => {
+          try {
+            // eslint-disable-next-line no-undef
+            if (typeof filesQueue !== 'undefined' && Array.isArray(filesQueue)) {
+              // eslint-disable-next-line no-undef
+              const i = filesQueue.indexOf(fileData);
+              // eslint-disable-next-line no-undef
+              if (i > -1) filesQueue.splice(i, 1);
+            }
+          } catch (e) {}
+          card.remove();
+          attachedSnapKeys.delete(key);
+          renderQueue();
+        };
+        zone.appendChild(card);
+      }
+      attachedSnapKeys.add(key);
+      renderQueue();
+      toast(`Snap #${idx + 1} attached to chat ✓`, 'success', 1800);
+      // Bring the chat into focus so the user sees what just happened.
+      const input = document.getElementById('chatInput');
+      if (input) {
+        try { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+        try { input.focus({ preventScroll: true }); } catch (e) { try { input.focus(); } catch (e2) {} }
+      }
+    } catch (e) {
+      console.log('[SnapToAI sidebar] attachSnapByKey failed:', e && e.message);
+      toast('Could not attach this snap', 'error');
+    }
+  }
+
+  async function removeSnapByKey(key) {
+    try {
+      const { snaps = [], snapMetadata = [] } = await chrome.storage.local.get(['snaps', 'snapMetadata']);
+      const idx = snaps.findIndex(d => snapKey(d) === key);
+      if (idx < 0) return;
+      snaps.splice(idx, 1);
+      if (Array.isArray(snapMetadata) && idx < snapMetadata.length) {
+        snapMetadata.splice(idx, 1);
+      }
+      await chrome.storage.local.set({ snaps, snapMetadata });
+      attachedSnapKeys.delete(key);
+      // chrome.storage.onChanged will also trigger; render now for snappiness.
+      queueSnaps = snaps;
+      reconcileAttachedKeys();
+      renderQueue();
+      try { chrome.action.setBadgeText({ text: snaps.length ? String(snaps.length) : '' }); } catch (e) {}
+    } catch (e) {
+      console.log('[SnapToAI sidebar] removeSnapByKey failed:', e && e.message);
+    }
+  }
+
+  async function clearAllSnaps() {
+    try {
+      await chrome.storage.local.set({ snaps: [], snapMetadata: [] });
+      attachedSnapKeys.clear();
+      queueSnaps = [];
+      renderQueue();
+      try { chrome.action.setBadgeText({ text: '' }); } catch (e) {}
+      toast('Queue cleared', 'success', 1500);
+    } catch (e) {
+      console.log('[SnapToAI sidebar] clearAllSnaps failed:', e && e.message);
+    }
+  }
+
+  if (queueEls.clear) queueEls.clear.addEventListener('click', clearAllSnaps);
+
+  if (chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes.snaps) {
+        queueSnaps = Array.isArray(changes.snaps.newValue) ? changes.snaps.newValue : [];
+        reconcileAttachedKeys();
+        renderQueue();
+      }
+    });
+  }
+
   // ---------- Init ----------
   function init() {
     refreshKeyPill();
     refreshAccount();
     startPreviewLoop();
     applyInstitutionBranding();
+    loadQueueSnaps();
 
     // Persist that the user is now using sidebar mode AND ask the
     // background to wire up the action click so future icon clicks
