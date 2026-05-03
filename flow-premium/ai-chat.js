@@ -4033,20 +4033,78 @@ async function stitchVideos(videoUrls, stitchCtx) {
     }
     console.log(`[SnapToAI Video] stitch canvas ${canvasW}x${canvasH} (aspect: ${stitchCtx && stitchCtx.aspectRatio || 'auto'})`);
 
-    // ---- 3. Build the output pipeline ONCE. Single canvas → single video
-    // track. Single AudioContext → one MediaStreamDestination → single audio
-    // track. Single MediaRecorder consumes both for the entire run.
+    // ---- 3. Pre-create AND pre-load EVERY clip's <video> + metadata up
+    // front. Doing this before recording starts means the per-clip
+    // transition has zero "await loadedmetadata" latency — the gap between
+    // clip N ending and clip N+1 starting collapses to ~one frame, so the
+    // recorded output has no micro-freezes between clips.
+    const blobUrls = blobs.map(b => URL.createObjectURL(b));
+    const videos = [];
+    const sources = [];
+    const gains = [];
+    for (let i = 0; i < blobs.length; i++) {
+      if (stitchCtx && stitchCtx.userStopped) throw new Error('User stopped');
+      const v = document.createElement('video');
+      v.src = blobUrls[i];
+      v.muted = false;
+      v.crossOrigin = 'anonymous';
+      v.playsInline = true;
+      v.preload = 'auto';
+      v.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:64px;height:64px;opacity:0;pointer-events:none;z-index:-1;';
+      document.body.appendChild(v);
+      videos.push(v);
+      await new Promise((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error(`Clip ${i+1} load timeout`)), 15000);
+        v.onloadedmetadata = () => { clearTimeout(t); resolve(); };
+        v.onerror = () => { clearTimeout(t); reject(new Error(`Clip ${i+1} load error`)); };
+      });
+    }
+
+    // ---- 4. Build the output pipeline. Order matters here:
+    //   a) create canvas + AudioContext + MediaStreamDestination
+    //   b) connect clip 0's MediaElementSource to the destination FIRST so
+    //      audioDest.stream actually has an audio track (architect flagged
+    //      that an empty MediaStreamDestination has no tracks at construction
+    //      in some Chrome builds — connecting a source guarantees the track
+    //      exists before MediaRecorder reads the stream layout)
+    //   c) build the combined MediaStream (canvas video track + audioDest
+    //      audio track) — track count is now stable
+    //   d) draw clip 0's first frame BEFORE recorder.start() so the output
+    //      doesn't begin with ~100ms of black
+    //   e) start the recorder and the playback loop
     const canvas = document.createElement('canvas');
     canvas.width = canvasW;
     canvas.height = canvasH;
     const ctx2d = canvas.getContext('2d', { alpha: false, desynchronized: true });
 
-    const FPS = 30;
-    const stream = canvas.captureStream(FPS);
     const audioCtx = new AudioContext();
     try { await audioCtx.resume(); } catch (_) {}
     const audioDest = audioCtx.createMediaStreamDestination();
-    audioDest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+
+    // Connect clip 0's audio NOW so audioDest has a live track when the
+    // recorder is constructed.
+    {
+      try {
+        const src = audioCtx.createMediaElementSource(videos[0]);
+        const g = audioCtx.createGain();
+        g.gain.value = 1;
+        src.connect(g);
+        g.connect(audioDest);
+        sources.push(src);
+        gains.push(g);
+      } catch (e) {
+        console.log('[SnapToAI Video] Audio connect failed on clip 1:', e.message);
+        sources.push(null);
+        gains.push(null);
+      }
+    }
+
+    const FPS = 30;
+    const videoStream = canvas.captureStream(FPS);
+    const combined = new MediaStream();
+    videoStream.getVideoTracks().forEach(t => combined.addTrack(t));
+    audioDest.stream.getAudioTracks().forEach(t => combined.addTrack(t));
+    console.log(`[SnapToAI Video] combined stream: ${combined.getVideoTracks().length}v + ${combined.getAudioTracks().length}a tracks`);
 
     const codecCandidates = [
       'video/webm;codecs=vp9,opus',
@@ -4062,65 +4120,49 @@ async function stitchVideos(videoUrls, stitchCtx) {
         break;
       }
     }
-    // Bumped bitrate: 8 Mbps video + 192 kbps audio. The previous default
-    // (~2.5 Mbps) is what made the recorded output look soft / "slow"
-    // compared to the 1080p MP4 source clips.
+    // 8 Mbps video + 192 kbps audio. Previous default (~2.5 Mbps) is what
+    // made recorded output look soft compared to the 1080p MP4 source clips.
     const recorderOpts = { videoBitsPerSecond: 8_000_000, audioBitsPerSecond: 192_000 };
     if (chosenMime) recorderOpts.mimeType = chosenMime;
-    const recorder = new MediaRecorder(stream, recorderOpts);
+    const recorder = new MediaRecorder(combined, recorderOpts);
     console.log(`[SnapToAI Video] MediaRecorder mime=${chosenMime || '(default)'} @ 8Mbps`);
     const chunks = [];
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
     const recordingDone = new Promise(resolve => { recorder.onstop = resolve; });
+
+    // Paint clip 0's first frame BEFORE the recorder starts, so the output
+    // doesn't begin with a black gap.
+    try { ctx2d.drawImage(videos[0], 0, 0, canvasW, canvasH); } catch (_) {}
+
     // timeslice=250ms so chunks flush regularly. A single giant final chunk
     // sometimes shows up as a corrupt/0-byte file in Chrome.
     recorder.start(250);
 
-    // ---- 4. Hard-cut sequential playback. One clip at a time. No crossfade,
-    // no overlap, no async race. Each clip:
-    //   * load metadata
-    //   * connect its MediaElementSource through a unity-gain node into the
-    //     shared destination (gain stays at 1 — no ramps, no clicks because
-    //     Veo clips already start/end on quiet frames)
-    //   * play()
-    //   * draw to canvas via rAF + setInterval backstop
-    //   * await `ended`, then disconnect + dispose before moving on
-    //
-    // Disconnecting the previous clip's audio BEFORE the next clip starts is
-    // what eliminates the audio glitching that the old crossfader produced —
-    // the destination only ever has ONE active source at a time.
-    const blobUrls = blobs.map(b => URL.createObjectURL(b));
-    const playedNodes = []; // for cleanup in finally
-
+    // ---- 5. Sequential playback. All metadata is preloaded so the only
+    // per-clip awaits are v.play() (resolves in <50ms) and the draw promise.
+    // Audio is connected just-in-time per clip and disconnected before the
+    // next clip's source attaches, so audioDest only ever has ONE active
+    // source feeding it — no glitching, no ducking, no overlap.
     try {
-      for (let i = 0; i < blobs.length; i++) {
+      for (let i = 0; i < videos.length; i++) {
         if (stitchCtx && stitchCtx.userStopped) throw new Error('User stopped');
+        const v = videos[i];
 
-        const v = document.createElement('video');
-        v.src = blobUrls[i];
-        v.muted = false;
-        v.crossOrigin = 'anonymous';
-        v.playsInline = true;
-        v.preload = 'auto';
-        v.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:64px;height:64px;opacity:0;pointer-events:none;z-index:-1;';
-        document.body.appendChild(v);
-        playedNodes.push(v);
-
-        await new Promise((resolve, reject) => {
-          const t = setTimeout(() => reject(new Error(`Clip ${i+1} load timeout`)), 15000);
-          v.onloadedmetadata = () => { clearTimeout(t); resolve(); };
-          v.onerror = () => { clearTimeout(t); reject(new Error(`Clip ${i+1} load error`)); };
-        });
-
-        let audioSource = null, gainNode = null;
-        try {
-          audioSource = audioCtx.createMediaElementSource(v);
-          gainNode = audioCtx.createGain();
-          gainNode.gain.value = 1;
-          audioSource.connect(gainNode);
-          gainNode.connect(audioDest);
-        } catch (e) {
-          console.log(`[SnapToAI Video] Audio connect skipped on clip ${i+1}:`, e.message);
+        // Connect this clip's audio (clip 0 was already connected above).
+        if (i > 0) {
+          try {
+            const src = audioCtx.createMediaElementSource(v);
+            const g = audioCtx.createGain();
+            g.gain.value = 1;
+            src.connect(g);
+            g.connect(audioDest);
+            sources.push(src);
+            gains.push(g);
+          } catch (e) {
+            console.log(`[SnapToAI Video] Audio connect skipped on clip ${i+1}:`, e.message);
+            sources.push(null);
+            gains.push(null);
+          }
         }
 
         try { await v.play(); } catch (e) {
@@ -4129,10 +4171,8 @@ async function stitchVideos(videoUrls, stitchCtx) {
 
         const dur = (v.duration && isFinite(v.duration) && v.duration > 0) ? v.duration : 8;
 
-        // Realtime draw loop. rAF for foreground smoothness, setInterval as a
-        // 100ms backstop for backgrounded tabs (rAF gets throttled to 1Hz
-        // when hidden — without the backstop the canvas would freeze and
-        // captureStream would emit the same frame for the whole clip).
+        // Draw loop: rAF foreground + 100ms setInterval backstop for
+        // backgrounded tabs (rAF throttles to 1Hz when hidden).
         await new Promise((resolveClip) => {
           let stopped = false;
           let interval = null;
@@ -4155,20 +4195,20 @@ async function stitchVideos(videoUrls, stitchCtx) {
           tick();
         });
 
-        // Tear THIS clip down before starting the next. Critical: disconnect
-        // the audio graph so only one source ever feeds the destination.
-        try { gainNode && gainNode.disconnect(); } catch (_) {}
-        try { audioSource && audioSource.disconnect(); } catch (_) {}
+        // Disconnect THIS clip's audio so the destination is silent for the
+        // microsecond gap before the next clip's audio attaches.
+        try { gains[i] && gains[i].disconnect(); } catch (_) {}
+        try { sources[i] && sources[i].disconnect(); } catch (_) {}
         try { v.pause(); } catch (_) {}
-        try { v.removeAttribute('src'); v.load(); } catch (_) {}
       }
 
-      // Draw the final frame one more time so the recorded video doesn't end
-      // on a black gap between the last drawImage and recorder.stop().
-      // (Some chunks flush with a slight lag; this gives them content.)
+      // Hold the last frame for ~150ms so the recorder's tail chunks have
+      // content to flush (avoids ending on a black gap).
       await new Promise(r => setTimeout(r, 150));
     } finally {
-      for (const v of playedNodes) {
+      for (const v of videos) {
+        try { v.pause(); } catch (_) {}
+        try { v.removeAttribute('src'); v.load(); } catch (_) {}
         if (v && v.parentNode) {
           try { v.parentNode.removeChild(v); } catch (_) {}
         }
