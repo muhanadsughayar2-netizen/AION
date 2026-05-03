@@ -3848,6 +3848,18 @@ def api_inst_admin_google_login(slug):
     return resp
 
 
+@app.route('/api/institution/<slug>/admin-logout', methods=['POST', 'OPTIONS'])
+def api_inst_admin_logout(slug):
+    """Clear the inst-admin session cookie for this slug. Idempotent — safe to
+    call even when no cookie is set; always returns success so the dashboard
+    can redirect to the sign-in gate."""
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    resp = _cors(jsonify({'success': True, 'redirect': f'/institution/{slug}/admin'}))
+    resp.delete_cookie(INST_ADMIN_COOKIE_PREFIX + slug, samesite='Lax')
+    return resp
+
+
 @app.route('/api/institution/<slug>/admin-magic-link', methods=['POST', 'OPTIONS'])
 def api_inst_admin_magic_link_request(slug):
     """Email a one-time sign-in link to an authorized institution admin.
@@ -4153,10 +4165,11 @@ window.addEventListener('load', () => {{
 <body>
   <div class="header">
     {('<img src="' + html_escape_module.escape(logo_url) + '" alt="logo">') if logo_url else ''}
-    <div>
+    <div style="flex: 1;">
       <h1>{name}</h1>
-      <p class="subtitle">SnapToAI Institution Admin · slug: <code>{html_escape_module.escape(slug)}</code> · status: <strong>{status}</strong> · expires: {expires}</p>
+      <p class="subtitle">SnapToAI Institution Admin · slug: <code>{html_escape_module.escape(slug)}</code> · status: <strong>{status}</strong> · expires: {expires}{(' · signed in as <strong>' + html_escape_module.escape(admin_email) + '</strong>') if admin_email else ''}</p>
     </div>
+    <button class="secondary" id="signout-btn" onclick="signOut()" title="Clear this device's admin session">Sign out</button>
   </div>
 
   <div class="stats">
@@ -4369,6 +4382,18 @@ async function load() {{
     }}
   }}
   document.getElementById('links-list').innerHTML = lhtml;
+}}
+
+async function signOut() {{
+  const btn = document.getElementById('signout-btn');
+  if (btn) {{ btn.disabled = true; btn.textContent = 'Signing out…'; }}
+  try {{
+    const r = await fetch(API_BASE + '/admin-logout', {{method: 'POST', headers: {{'Content-Type':'application/json'}}}});
+    const d = await r.json().catch(() => ({{}}));
+    window.location.href = (d && d.redirect) ? d.redirect : ('/institution/' + SLUG + '/admin');
+  }} catch (e) {{
+    window.location.href = '/institution/' + SLUG + '/admin';
+  }}
 }}
 
 async function inviteOne() {{
