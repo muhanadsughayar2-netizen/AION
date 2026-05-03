@@ -618,7 +618,8 @@ def _get_institution_branding_for_email(cur, email):
     cur.execute("""
         SELECT i.id, i.slug, i.name, i.logo_url, i.brand_color, i.status, i.expires_at,
                m.status, m.role, i.logo_url_light,
-               i.gemini_key_encrypted, i.gemini_key_hint, i.key_policy, i.billing_behavior
+               i.gemini_key_encrypted, i.gemini_key_hint, i.key_policy, i.billing_behavior,
+               m.expires_at
         FROM institution_members m JOIN institutions i ON i.id = m.institution_id
         WHERE LOWER(m.email) = %s LIMIT 1
     """, (email,))
@@ -628,6 +629,10 @@ def _get_institution_branding_for_email(cur, email):
     if r[7] != 'active':
         return None
     if not _institution_active((r[5], r[6])):
+        return None
+    # Per-member expiry — must be enforced on every entitlement path. Without
+    # this an expired member keeps branding + the institution Gemini key.
+    if r[14] and r[14] < datetime.now():
         return None
     return {
         'institutionId': r[0],
@@ -640,7 +645,8 @@ def _get_institution_branding_for_email(cur, email):
         'hasInstitutionKey': bool(r[10]),
         'keyHint': r[11] or '',
         'keyPolicy': r[12] or 'prefer-user-key',
-        'billingBehavior': r[13] or 'count-against-snaptoai-quota'
+        'billingBehavior': r[13] or 'count-against-snaptoai-quota',
+        'expiresAt': r[14].isoformat() if r[14] else None
     }
 
 
@@ -702,7 +708,7 @@ def _resolve_institution_key_for_email(cur, email):
         return None
     cur.execute("""
         SELECT i.id, i.name, i.gemini_key_encrypted, i.key_policy, i.billing_behavior,
-               i.status, i.expires_at, m.status
+               i.status, i.expires_at, m.status, m.expires_at
         FROM institution_members m JOIN institutions i ON i.id = m.institution_id
         WHERE LOWER(m.email) = %s LIMIT 1
     """, (email,))
@@ -710,6 +716,10 @@ def _resolve_institution_key_for_email(cur, email):
     if not r:
         return None
     if r[7] != 'active' or not _institution_active((r[5], r[6])):
+        return None
+    # Per-member expiry — must block key resolution too. Without this an
+    # expired member would keep using the institution's Gemini key.
+    if r[8] and r[8] < datetime.now():
         return None
     if not r[2]:
         # Institution exists but no key set — return tuple with None key so the
@@ -774,7 +784,9 @@ def _is_inst_admin(cur, slug, email):
         return True
     cur.execute("""
         SELECT 1 FROM institution_members
-        WHERE institution_id=%s AND LOWER(email)=%s AND role='admin' AND status='active' LIMIT 1
+        WHERE institution_id=%s AND LOWER(email)=%s AND role='admin' AND status='active'
+          AND (expires_at IS NULL OR expires_at > NOW())
+        LIMIT 1
     """, (r[0], email))
     return cur.fetchone() is not None
 
@@ -4128,6 +4140,7 @@ window.addEventListener('load', () => {{
     <button class="secondary" id="signout-btn" onclick="signOut()" title="Clear this device's admin session">Sign out</button>
   </div>
   {('<div style="background: #ff475715; border: 1px solid #ff4757; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; color: #ffb3bb;"><strong style="color:#ff4757;">⚠ This institution is currently ' + html_escape_module.escape(status) + '.</strong><br><span style="font-size:13px;">Members cannot sign in to the extension and existing members lose institution access until SnapToAI re-activates this institution. Please contact <a href="mailto:support@snaptoai.com" style="color:#ff8a95;">support@snaptoai.com</a>.</span></div>') if status != 'active' else ''}
+  <div id="seat-warning" style="display:none; background: #ffa50015; border: 1px solid #ffa500; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; color: #ffd089; font-size: 13px;"></div>
 
   <div class="stats">
     <div class="card"><div class="card-num" id="stat-seats">{seats_used} / {seat_limit_display}</div><div class="card-label">Seats Used</div></div>
@@ -4296,6 +4309,18 @@ window.addEventListener('load', () => {{
 
   <div class="section">
     <h2>👥 Members</h2>
+    <div class="row" style="margin-bottom: 10px; gap: 8px;">
+      <input id="members-search" class="grow" placeholder="🔍 Search by email…" style="min-width: 220px;" oninput="renderMembers()">
+      <select id="members-filter" onchange="renderMembers()" style="min-width: 160px;" title="Filter by status">
+        <option value="">All members</option>
+        <option value="active">Active only</option>
+        <option value="suspended">Suspended only</option>
+        <option value="pending">Not signed in yet</option>
+        <option value="expired">Expired</option>
+      </select>
+      <a href="/api/institution/{html_escape_module.escape(slug)}/members/export.csv" class="secondary" style="background:#333; color:#fff; padding:8px 14px; border-radius:6px; text-decoration:none; font-size:12px; font-weight:bold;" title="Download all members as CSV">⬇ Export CSV</a>
+    </div>
+    <div id="members-summary" style="font-size: 11px; color: #888; margin-bottom: 6px;"></div>
     <div id="members-list">Loading...</div>
   </div>
 
@@ -4303,23 +4328,67 @@ window.addEventListener('load', () => {{
 const SLUG = {json.dumps(slug)};
 const API_BASE = '/api/institution/' + SLUG;
 
+let MEMBERS_CACHE = [];
+const INST_NAME = {json.dumps(info['name'])};
+const STORE_URL = 'https://chromewebstore.google.com/detail/snaptoai';
+
 async function load() {{
   const r = await fetch(API_BASE + '/members');
   const d = await r.json();
   if (!d.success) {{ document.getElementById('members-list').innerHTML = 'Error: ' + (d.error||''); return; }}
+  MEMBERS_CACHE = d.members || [];
   let active=0, suspended=0, pending=0;
-  for (const m of d.members) {{
+  for (const m of MEMBERS_CACHE) {{
     if (m.status === 'active') active++;
     else if (m.status === 'suspended') suspended++;
-    else pending++;
+    // "Awaiting first sign-in" = anyone the admin added by email who hasn't
+    // signed in to the extension yet (last_seen is still NULL).
+    if (!m.lastSeen) pending++;
   }}
   document.getElementById('stat-active').textContent = active;
   document.getElementById('stat-suspended').textContent = suspended;
   document.getElementById('stat-pending').textContent = pending;
 
+  // Seat-limit pressure warning. The header card shows raw "used / limit"
+  // but a banner makes the threshold impossible to miss.
+  const seatTxt = document.getElementById('stat-seats').textContent || '';
+  const m_ = seatTxt.match(/(\d+)\s*\/\s*(\d+)/);
+  const warn = document.getElementById('seat-warning');
+  if (m_ && warn) {{
+    const used = parseInt(m_[1],10), cap = parseInt(m_[2],10);
+    if (cap > 0 && used / cap >= 0.8) {{
+      warn.style.display = 'block';
+      warn.textContent = (used >= cap)
+        ? '⚠ All ' + cap + ' seats are in use. New members can\\'t auto-join — remove inactive members or contact SnapToAI to raise the cap.'
+        : '⚠ ' + used + ' of ' + cap + ' seats used (' + Math.round(used/cap*100) + '%). Plan ahead before you hit the cap.';
+    }} else if (warn) {{ warn.style.display = 'none'; }}
+  }}
+
+  renderMembers();
+}}
+
+function renderMembers() {{
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}})[c]);
+  const q = (document.getElementById('members-search')?.value || '').trim().toLowerCase();
+  const f = document.getElementById('members-filter')?.value || '';
+  const filtered = MEMBERS_CACHE.filter(m => {{
+    if (q && !(String(m.email||'').toLowerCase().includes(q))) return false;
+    if (f === 'active') return m.status === 'active' && !m.expired;
+    if (f === 'suspended') return m.status === 'suspended';
+    if (f === 'pending') return !m.lastSeen;
+    if (f === 'expired') return !!m.expired;
+    return true;
+  }});
+  const sum = document.getElementById('members-summary');
+  if (sum) sum.textContent = (q || f)
+    ? 'Showing ' + filtered.length + ' of ' + MEMBERS_CACHE.length + ' members'
+    : MEMBERS_CACHE.length + ' member' + (MEMBERS_CACHE.length === 1 ? '' : 's');
+  if (!filtered.length) {{
+    document.getElementById('members-list').innerHTML = '<div style="padding:24px; text-align:center; color:#888; font-size:13px;">No members match this filter.</div>';
+    return;
+  }}
   let html = '<table><tr><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Last Seen</th><th>Access Until</th><th>Actions</th></tr>';
-  for (const m of d.members) {{
+  for (const m of filtered) {{
     const badgeClass = m.status === 'active' ? 'badge-active' : (m.status === 'suspended' ? 'badge-suspended' : 'badge-pending');
     const mid = parseInt(m.id, 10) || 0;
     let expiryCell = '<span style="color:#888;">Never</span>';
@@ -4334,8 +4403,11 @@ async function load() {{
         expiryCell = '<span style="color:' + tone + ';" title="' + daysLeft + ' day(s) remaining">' + dateStr + '</span>';
       }}
     }}
+    const pendingPill = !m.lastSeen
+      ? ' <span class="badge badge-pending" style="margin-left:6px;" title="This member has not signed in to the extension yet">Not signed in yet</span>'
+      : '';
     html += '<tr>' +
-      '<td>' + esc(m.email) + '</td>' +
+      '<td>' + esc(m.email) + pendingPill + '</td>' +
       '<td>' + esc(m.role) + '</td>' +
       '<td><span class="badge ' + badgeClass + '">' + esc(m.status) + '</span></td>' +
       '<td>' + (m.joinedAt ? new Date(m.joinedAt).toLocaleDateString() : '—') + '</td>' +
@@ -4346,11 +4418,26 @@ async function load() {{
           ? '<button class="danger" onclick="suspend(' + mid + ')">Suspend</button> '
           : '<button onclick="reactivate(' + mid + ')">Reactivate</button> ') +
         '<button class="secondary" onclick="editExpiry(' + mid + ', ' + JSON.stringify(String(m.email||'')) + ', ' + JSON.stringify(m.expiresAt || '') + ')" title="Change access duration">Set Expiry</button> ' +
+        '<button class="secondary" onclick="copyWelcome(' + JSON.stringify(String(m.email||'')) + ')" title="Copy a ready-to-send welcome message for this member">📋 Copy welcome</button> ' +
         '<button class="secondary" onclick="removeMember(' + mid + ', ' + JSON.stringify(String(m.email||'')) + ')">Remove</button>' +
       '</td></tr>';
   }}
   html += '</table>';
   document.getElementById('members-list').innerHTML = html;
+}}
+
+async function copyWelcome(email) {{
+  const msg = 'Hi! You have been added to ' + INST_NAME + ' on SnapToAI.\\n\\n' +
+    '1. Install the SnapToAI Chrome extension: ' + STORE_URL + '\\n' +
+    '2. Sign in with Google using this email: ' + email + '\\n' +
+    '3. Your branded license unlocks automatically — no code needed.\\n\\n' +
+    'Questions? Reply to this email.';
+  try {{
+    await navigator.clipboard.writeText(msg);
+    alert('✓ Welcome message copied to clipboard. Paste it into an email to ' + email + '.');
+  }} catch (e) {{
+    prompt('Copy this welcome message:', msg);
+  }}
 }}
 
 async function signOut() {{
@@ -4867,11 +4954,16 @@ def _add_member(cur, inst_id, email, invited_by, role='member', expires_at=None)
     email = _norm_email(email)
     if not email or not _EMAIL_RE.match(email):
         return 'invalid'
+    # On conflict, refresh the expiry but PRESERVE a 'suspended' status so
+    # bulk re-add doesn't silently un-suspend a member the admin previously
+    # blocked. Use the explicit Reactivate button for that.
     cur.execute("""
         INSERT INTO institution_members (institution_id, email, role, status, invited_by, joined_at, expires_at)
         VALUES (%s,%s,%s,'active',%s,NOW(),%s)
         ON CONFLICT (institution_id, email) DO UPDATE
-            SET status='active', expires_at=EXCLUDED.expires_at
+            SET status = CASE WHEN institution_members.status = 'suspended'
+                              THEN 'suspended' ELSE 'active' END,
+                expires_at = EXCLUDED.expires_at
         RETURNING (xmax = 0) AS inserted
     """, (inst_id, email, role, invited_by or 'inst-admin', expires_at))
     row = cur.fetchone()
@@ -5432,6 +5524,51 @@ def api_inst_invite_link_delete(slug, link_id):
     if request.method == 'OPTIONS':
         return _options('DELETE, OPTIONS')
     return _cors(jsonify({'success': False, 'error': 'invite_links_retired', 'message': _INVITE_RETIRED_MSG})), 410
+
+@app.route('/api/institution/<slug>/members/export.csv', methods=['GET'])
+def api_inst_members_export_csv(slug):
+    """Admin-only CSV export of the full member roster. Mirrors the columns
+    shown in the dashboard table so admins can keep an offline backup or
+    re-import elsewhere."""
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return Response('Unauthorized', status=401)
+    if not ensure_db():
+        return Response('Database not available', status=503)
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("""
+            SELECT m.email, m.role, m.status, m.joined_at, m.last_seen, m.expires_at, m.invited_by
+            FROM institution_members m
+            JOIN institutions i ON i.id = m.institution_id
+            WHERE i.slug=%s
+            ORDER BY m.joined_at DESC NULLS LAST, m.email ASC
+        """, (slug,))
+        rows = cur.fetchall()
+        cur.close(); conn.close()
+        import io, csv
+        buf = io.StringIO()
+        w = csv.writer(buf)
+        w.writerow(['email', 'role', 'status', 'joined_at', 'last_seen', 'expires_at', 'expired', 'invited_by'])
+        now = datetime.now()
+        for r in rows:
+            email, role, status, joined, seen, exp, invited = r
+            expired = bool(exp and exp < now)
+            w.writerow([
+                email or '', role or '', status or '',
+                joined.isoformat() if joined else '',
+                seen.isoformat() if seen else '',
+                exp.isoformat() if exp else '',
+                'yes' if expired else '',
+                invited or ''
+            ])
+        resp = Response(buf.getvalue(), mimetype='text/csv')
+        resp.headers['Content-Disposition'] = f'attachment; filename="{slug}-members-{datetime.now().strftime("%Y%m%d")}.csv"'
+        resp.headers['Cache-Control'] = 'no-store'
+        return resp
+    except Exception as e:
+        return Response(f'Error: {e}', status=500)
+
 
 @app.route('/api/institution/<slug>/members/<int:member_id>/suspend', methods=['POST', 'OPTIONS'])
 def api_inst_member_suspend(slug, member_id):

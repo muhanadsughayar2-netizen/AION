@@ -175,8 +175,12 @@ async function checkSubscription() {
 
   if (local.subscriptionActive) {
     const hoursSinceVerify = local.lastVerified ? (Date.now() - local.lastVerified) / 3600000 : 999;
+    // Institution members revalidate hourly so admin actions (suspend, remove,
+    // expiry change, branding/logo update, key rotation) take effect quickly
+    // instead of waiting up to 24h.
+    const cacheWindow = (local.subscriptionPlan === 'institution') ? 1 : VERIFY_INTERVAL_HOURS;
 
-    if (hoursSinceVerify < VERIFY_INTERVAL_HOURS) {
+    if (hoursSinceVerify < cacheWindow) {
       return { status: 'subscribed', planType: local.subscriptionPlan, canUseAI: true, isEarlyAccess: false, daysRemaining: null, needsApiKey: false };
     }
 
