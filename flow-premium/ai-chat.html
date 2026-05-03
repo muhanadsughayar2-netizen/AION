@@ -30,7 +30,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 16px 24px;
-      background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
+      background: linear-gradient(180deg, var(--st-bg-elevated) 0%, #121212 100%);
       border-bottom: 1px solid rgba(0, 217, 255, 0.3);
     }
     
@@ -47,7 +47,7 @@
     }
     
     .logo span {
-      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
+      background: linear-gradient(135deg, var(--st-accent) 0%, var(--st-accent-2) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -84,7 +84,7 @@
       width: 25%;
       min-width: 180px;
       max-width: 280px;
-      background: #151515;
+      background: var(--st-bg-surface);
       border-right: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
       flex-direction: column;
@@ -127,7 +127,7 @@
     .sidebar-toggle:hover {
       background: rgba(0, 217, 255, 0.2);
       border-color: rgba(0, 217, 255, 0.4);
-      color: #00d9ff;
+      color: var(--st-accent);
     }
     
     .image-label {
@@ -143,7 +143,7 @@
       display: block;
       overflow-y: auto;
       border-radius: 12px;
-      background: #0a0a0a;
+      background: var(--st-bg-app);
       border: 1px solid rgba(255, 255, 255, 0.05);
       min-height: 0;
       max-height: calc(100vh - 150px);
@@ -208,7 +208,7 @@
     }
     
     .multi-image-grid .grid-image:hover {
-      border-color: #00d9ff;
+      border-color: var(--st-accent);
       transform: scale(1.05);
     }
     
@@ -216,7 +216,7 @@
       position: absolute;
       bottom: 8px;
       right: 8px;
-      background: linear-gradient(135deg, #00d9ff, #00b8d4);
+      background: linear-gradient(135deg, var(--st-accent), var(--st-accent-2));
       color: #000;
       padding: 4px 10px;
       border-radius: 12px;
@@ -232,7 +232,7 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
+      background: linear-gradient(180deg, var(--st-bg-elevated) 0%, #121212 100%);
     }
     
     .chat-thread {
@@ -285,7 +285,7 @@
     }
     
     .credits-banner-text .amount {
-      color: #00d9ff;
+      color: var(--st-accent);
       font-weight: 700;
     }
     
@@ -328,7 +328,7 @@
     
     .chat-bubble.user {
       align-self: flex-end;
-      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
+      background: linear-gradient(135deg, var(--st-accent) 0%, var(--st-accent-2) 100%);
       color: #000;
       border-bottom-right-radius: 4px;
     }
@@ -340,18 +340,18 @@
       border-bottom-left-radius: 4px;
     }
     
-    .chat-bubble.ai strong { color: #00d9ff; }
+    .chat-bubble.ai strong { color: var(--st-accent); }
     .chat-bubble.ai ul, .chat-bubble.ai ol { margin: 8px 0; padding-left: 20px; }
     .chat-bubble.ai li { margin: 4px 0; }
     .chat-bubble.ai code { 
-      background: #1a1a1a; 
+      background: var(--st-bg-elevated); 
       padding: 2px 6px; 
       border-radius: 4px; 
       font-size: 13px; 
       word-break: break-all;
     }
     .chat-bubble.ai pre { 
-      background: #1a1a1a; 
+      background: var(--st-bg-elevated); 
       padding: 12px; 
       border-radius: 8px; 
       overflow-x: auto; 
@@ -390,18 +390,18 @@
     .bubble-actions button:hover {
       background: rgba(0, 217, 255, 0.2);
       border-color: rgba(0, 217, 255, 0.4);
-      color: #00d9ff;
+      color: var(--st-accent);
     }
     
     .continue-btn {
       background: rgba(0, 217, 255, 0.15) !important;
       border-color: rgba(0, 217, 255, 0.4) !important;
-      color: #00d9ff !important;
+      color: var(--st-accent) !important;
     }
     
     .chat-bubble.loading {
       background: #2a2a2a;
-      color: #00d9ff;
+      color: var(--st-accent);
       display: flex;
       align-items: center;
       gap: 10px;
@@ -410,7 +410,7 @@
     .star {
       width: 18px;
       height: 18px;
-      background: linear-gradient(45deg, #4285f4, #9b72cb, #d96570, #00d9ff);
+      background: linear-gradient(45deg, #4285f4, #9b72cb, #d96570, var(--st-accent));
       mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>');
       -webkit-mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>');
       animation: spin 2s infinite linear;
@@ -489,7 +489,7 @@
     .mode-btn.active::before { opacity: 1; }
     .mode-btn[data-mode="vision"].active {
       border-color: rgba(0,217,255,0.5);
-      color: #00d9ff;
+      color: var(--st-accent);
       box-shadow: 0 0 12px rgba(0,217,255,0.2), 0 0 4px rgba(0,217,255,0.1) inset;
     }
     .mode-btn[data-mode="image"].active {
@@ -584,7 +584,7 @@
     .chat-input {
       flex: 1;
       padding: 16px 20px;
-      background: #1a1a1a;
+      background: var(--st-bg-elevated);
       border: 1px solid rgba(0, 217, 255, 0.3);
       border-radius: 12px;
       color: #fff;
@@ -601,7 +601,7 @@
     }
     
     .chat-input:focus {
-      border-color: #00d9ff;
+      border-color: var(--st-accent);
     }
     
     .chat-input::placeholder {
@@ -610,7 +610,7 @@
     
     .send-btn {
       padding: 16px 28px;
-      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
+      background: linear-gradient(135deg, var(--st-accent) 0%, var(--st-accent-2) 100%);
       border: none;
       border-radius: 12px;
       color: #000;
@@ -622,7 +622,7 @@
     }
     
     .send-btn:hover {
-      background: linear-gradient(135deg, #00e8ff 0%, #00d9ff 100%);
+      background: linear-gradient(135deg, #00e8ff 0%, var(--st-accent) 100%);
       box-shadow: 0 4px 15px rgba(0, 217, 255, 0.5);
       transform: translateY(-1px);
     }
@@ -648,7 +648,7 @@
       background: rgba(0, 217, 255, 0.15);
       border: 1px solid rgba(0, 217, 255, 0.4);
       border-radius: 8px;
-      color: #00d9ff;
+      color: var(--st-accent);
       font-size: 13px;
       cursor: pointer;
       transition: all 0.2s;
@@ -663,7 +663,7 @@
     .test-btn {
       background: rgba(0, 217, 255, 0.1);
       border-color: rgba(0, 217, 255, 0.3);
-      color: #00d9ff;
+      color: var(--st-accent);
     }
     
     .test-btn:hover {
@@ -1038,7 +1038,7 @@
       color: #fff;
     }
     .header-tagline span {
-      background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
+      background: linear-gradient(135deg, var(--st-accent) 0%, var(--st-accent-2) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -1168,12 +1168,12 @@
       <div class="magic-modal-body" style="max-height: none; overflow: visible;">
         <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
           <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(0,217,255,0.15); border: 1px solid rgba(0,217,255,0.3); color: #00d9ff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">1</span>
+            <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(0,217,255,0.15); border: 1px solid rgba(0,217,255,0.3); color: var(--st-accent); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">1</span>
             <span style="font-size: 12px; color: rgba(255,255,255,0.8);">Open Google AI Studio</span>
           </div>
-          <a href="https://aistudio.google.com/apikey" target="_blank" style="display: block; width: 100%; padding: 10px; background: linear-gradient(135deg, #00d9ff, #00b8d4); border: none; border-radius: 8px; color: #000; font-size: 13px; font-weight: 700; text-align: center; text-decoration: none; margin-bottom: 4px; box-sizing: border-box;">Go to AI Studio &#x2197;</a>
+          <a href="https://aistudio.google.com/apikey" target="_blank" style="display: block; width: 100%; padding: 10px; background: linear-gradient(135deg, var(--st-accent), var(--st-accent-2)); border: none; border-radius: 8px; color: #000; font-size: 13px; font-weight: 700; text-align: center; text-decoration: none; margin-bottom: 4px; box-sizing: border-box;">Go to AI Studio &#x2197;</a>
           <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(0,217,255,0.15); border: 1px solid rgba(0,217,255,0.3); color: #00d9ff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">2</span>
+            <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(0,217,255,0.15); border: 1px solid rgba(0,217,255,0.3); color: var(--st-accent); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">2</span>
             <span style="font-size: 12px; color: rgba(255,255,255,0.8);">Click "Create API key" and copy it</span>
           </div>
           <div class="aichat-step-demo">
@@ -1195,15 +1195,15 @@
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(0,217,255,0.15); border: 1px solid rgba(0,217,255,0.3); color: #00d9ff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">3</span>
+            <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(0,217,255,0.15); border: 1px solid rgba(0,217,255,0.3); color: var(--st-accent); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">3</span>
             <span style="font-size: 12px; color: rgba(255,255,255,0.8);">Paste it below</span>
           </div>
         </div>
         <input type="password" id="geminiKeyModalInput" placeholder="Paste your key here..." style="width: 100%; padding: 8px 10px; background: #121212; border: 1px dashed rgba(0,217,255,0.4); border-radius: 6px; color: #fff; font-size: 12px; margin-bottom: 10px; box-sizing: border-box;">
         <div style="margin: 8px 0;">
           <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #aaa; line-height: 1.4; cursor: pointer;">
-            <input type="checkbox" id="geminiKeyModalCompliance" style="margin-top: 2px; flex-shrink: 0; accent-color: #00d9ff;">
-            <span>I'm 18+ and agree to <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener" style="color: #00d9ff; text-decoration: none;">Gemini API Terms</a>.</span>
+            <input type="checkbox" id="geminiKeyModalCompliance" style="margin-top: 2px; flex-shrink: 0; accent-color: var(--st-accent);">
+            <span>I'm 18+ and agree to <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener" style="color: var(--st-accent); text-decoration: none;">Gemini API Terms</a>.</span>
           </label>
         </div>
       </div>
@@ -1295,7 +1295,7 @@
     .aichat-demo-key-text {
       font-family: monospace;
       font-size: 12px;
-      color: #00d9ff;
+      color: var(--st-accent);
       background: rgba(0,217,255,0.08);
       padding: 3px 8px;
       border-radius: 4px;
@@ -1348,7 +1348,7 @@
   <div id="trialEndedModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(8px); z-index:9999; align-items:center; justify-content:center; animation:trialOverlayIn 0.25s ease;">
     <div id="trialEndedCard" style="background:linear-gradient(160deg,#0d1520 0%,#0a1118 100%); border:1px solid rgba(0,217,255,0.2); border-radius:20px; padding:28px 24px; max-width:340px; width:90%; box-shadow:0 0 40px rgba(0,217,255,0.08), 0 20px 60px rgba(0,0,0,0.6); text-align:center; animation:trialCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1);">
       <div id="trialEndedEmoji" style="font-size:44px; margin-bottom:4px; display:block; animation:trialBounce 0.6s 0.2s cubic-bezier(0.34,1.56,0.64,1) both;">🎯</div>
-      <h2 style="font-size:18px; font-weight:800; margin:8px 0 6px; background:linear-gradient(135deg,#00d9ff,#7c5cfc); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Trial Complete!</h2>
+      <h2 style="font-size:18px; font-weight:800; margin:8px 0 6px; background:linear-gradient(135deg,var(--st-accent),#7c5cfc); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Trial Complete!</h2>
       <p id="trialEndedMessage" style="font-size:13px; color:rgba(255,255,255,0.65); margin:0 0 16px; line-height:1.6;">Your 30-day trial was amazing — you clearly love SnapToAI! Keep the momentum going with a Pro plan.</p>
       <div style="background:rgba(0,217,255,0.06); border:1px solid rgba(0,217,255,0.15); border-radius:10px; padding:10px 14px; font-size:12px; color:rgba(0,217,255,0.85); margin-bottom:16px; font-weight:600;">🚀 Less than a coffee per month for unlimited AI</div>
       <div style="display:flex; gap:10px; margin-bottom:14px;">
@@ -1358,14 +1358,14 @@
           <div style="font-size:10px; color:rgba(255,255,255,0.4);">per month</div>
         </button>
         <button id="trialYearlyBtn" style="flex:1; padding:14px 8px; background:rgba(0,217,255,0.06); border:2px solid rgba(0,217,255,0.45); border-radius:12px; cursor:pointer; color:#fff; transition:all 0.2s; position:relative;">
-          <div style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg,#00d9ff,#7c5cfc); color:#000; font-size:9px; font-weight:800; padding:2px 8px; border-radius:20px; white-space:nowrap;">BEST VALUE</div>
+          <div style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg,var(--st-accent),#7c5cfc); color:#000; font-size:9px; font-weight:800; padding:2px 8px; border-radius:20px; white-space:nowrap;">BEST VALUE</div>
           <div style="font-size:11px; color:rgba(0,217,255,0.7); margin-bottom:4px;">Yearly</div>
-          <div style="font-size:18px; font-weight:800; color:#00d9ff;">$39</div>
+          <div style="font-size:18px; font-weight:800; color:var(--st-accent);">$39</div>
           <div style="font-size:10px; color:rgba(0,217,255,0.6);">~$3.25/mo · save 35%</div>
         </button>
       </div>
       <div style="font-size:10px; color:rgba(255,255,255,0.25); margin-bottom:12px;">Subscription activates automatically after payment</div>
-      <button id="trialCheckStatusBtn" style="width:100%; padding:11px; background:rgba(0,217,255,0.08); border:1.5px solid rgba(0,217,255,0.3); border-radius:10px; color:#00d9ff; font-size:13px; font-weight:600; cursor:pointer; margin-bottom:8px; transition:all 0.2s;">🔄 Check subscription status</button>
+      <button id="trialCheckStatusBtn" style="width:100%; padding:11px; background:rgba(0,217,255,0.08); border:1.5px solid rgba(0,217,255,0.3); border-radius:10px; color:var(--st-accent); font-size:13px; font-weight:600; cursor:pointer; margin-bottom:8px; transition:all 0.2s;">🔄 Check subscription status</button>
       <p id="trialStatusMsg" style="font-size:11px; color:#ff6b6b; display:none; margin:0 0 8px;"></p>
       <button id="trialContinueCaptureBtn" style="width:100%; padding:9px; background:transparent; border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:rgba(255,255,255,0.35); font-size:12px; cursor:pointer; transition:all 0.2s;">Continue with Capture Only</button>
     </div>
