@@ -1818,6 +1818,12 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
     }
 
     console.log(`[SnapToAI Video] Starting generation with ${modelName}`);
+    // Task #28: dev-only log of the final prompt sent to Veo (single-clip path).
+    try {
+      const _p = requestBody.instances[0].prompt || '';
+      const _t = _p.length > 700 ? _p.slice(0, 700) + `… [+${_p.length - 700} chars]` : _p;
+      console.log(`[veo prompt] single clip (${modelName}):\n${_t}`);
+    } catch {}
     let resp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1957,15 +1963,30 @@ async function generateOneVeoClip(clipIdx, ctx) {
         }
 
         let scenePrompt = clipScenes[clipIdx] || prompt;
-        // When an image is attached, Veo already conditions on that exact
-        // frame. Restating "keep the same character / lighting / lens" in
-        // 50+ words of English (a) wastes ~50 tokens of attention budget,
-        // (b) pushes the user's actual scene description ~9 lines down, and
-        // (c) contradicts the per-segment shot text. A single short tag
-        // preserves intent without dominating the prompt.
+        // Task #28: When a chain image is attached, Veo already conditions on
+        // that exact frame so the long style bible is redundant — and worse,
+        // it crowds out the user's brief in Veo's attention budget. Build a
+        // short prompt: continuation tag → user brief verbatim → this shot's
+        // beat. The image carries the look; words carry the action.
         if (attachedChainImage) {
-          scenePrompt = `This shot continues directly from the attached starting frame. ${scenePrompt}`;
+          const meta = (clipScenes && clipScenes.meta) || {};
+          const shotBeat = (Array.isArray(meta.shots) && meta.shots[clipIdx])
+            ? String(meta.shots[clipIdx]).trim()
+            : '';
+          const briefLine = (prompt || '').trim();
+          const beatBlock = shotBeat ? `\n\n[THIS SEGMENT]\n${shotBeat}` : '';
+          scenePrompt = `[CONTINUES FROM ATTACHED FRAME — same look, same characters, no cut]\n\n[USER REQUEST — RENDER THIS EXACTLY]\n${briefLine}${beatBlock}`;
         }
+
+        // Task #28: dev-only log of the final prompt sent to Veo for each
+        // clip. Truncated so the console stays readable; full prompt is
+        // visible in network devtools if needed.
+        try {
+          const _truncated = scenePrompt.length > 700
+            ? scenePrompt.slice(0, 700) + `… [+${scenePrompt.length - 700} chars]`
+            : scenePrompt;
+          console.log(`[veo prompt] clip ${clipNum}/${clipCount} (${modelName}, chain=${attachedChainImage ? 'yes' : 'no'}):\n${_truncated}`);
+        } catch {}
 
         const requestBody = {
           instances: [{ prompt: scenePrompt }],
@@ -2051,6 +2072,11 @@ async function generateOneVeoClip(clipIdx, ctx) {
             // a "provided starting frame" that doesn't exist and produce
             // worse transitions than no chaining at all.
             requestBody.instances[0].prompt = clipScenes[clipIdx] || prompt;
+            try {
+              const _p2 = requestBody.instances[0].prompt || '';
+              const _t2 = _p2.length > 700 ? _p2.slice(0, 700) + `… [+${_p2.length - 700} chars]` : _p2;
+              console.log(`[veo prompt] clip ${clipNum}/${clipCount} text-only fallback:\n${_t2}`);
+            } catch {}
             try {
               resp = await fetch(url, {
                 method: 'POST',
@@ -2171,54 +2197,71 @@ async function generateOneVeoClip(clipIdx, ctx) {
 
 function buildAnchoredFallback(prompt, clipCount, clipDur) {
   const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
-  // The fallback used to (a) hard-code "Cinematic photoreal" — overriding
-  // anime/8mm/claymation users; (b) burn an inline negative-prompt line that
-  // primes Veo on the very tokens we want to suppress (now in the
-  // negativePrompt parameter); (c) override every per-segment beat with a
-  // generic phrase from a static 8-string array ("calm resolution, hold on
-  // the scene") that often contradicted the user's request. The rewrite
-  // keeps continuity rules (the actual point of the fallback) but lets the
-  // user's literal brief drive every segment instead of canned beats.
-  const anchor =
-`[PRODUCTION RULES — APPLY TO EVERY SHOT]
-- VISUAL CONSISTENCY IS MANDATORY across all ${clipCount} segments.
-- Same characters, same wardrobe, same location, same lighting, same color palette in every shot.
-- Smooth, intentional camera motion. No abrupt cuts.
-
-[USER BRIEF]
-${prompt}`;
-
+  // Task #28: Fallback also routes through compileScenePrompt so the user's
+  // verbatim brief leads every clip and continuity language stays at the
+  // bottom — same shape as the AI-generated path.
+  const styleBible =
+    `Visual consistency across all ${clipCount} segments: same characters, wardrobe, location, lighting, and color palette in every shot. Smooth, intentional camera motion — no abrupt cuts.`;
   const shots = [];
   const prompts = Array.from({length: clipCount}, (_, i) => {
-    const t0 = i * segLen, t1 = (i + 1) * segLen;
-    // Per-segment beat keyed off the user's brief, not a canned array. Each
-    // beat is phrased as "this segment of the user's request" so Veo sees
-    // the user's actual subject in every clip prompt, not just clip 1.
     let beat;
     if (i === 0) {
-      beat = `Opening shot — establish the scene from the user brief above.`;
+      beat = `Opening — establish the scene exactly as described in the user brief above.`;
     } else if (i === clipCount - 1) {
-      beat = `Final shot — bring the scene from the user brief to a natural close.`;
+      beat = `Final beat — bring the scene from the user brief to a natural close. Same characters and setting.`;
     } else {
-      beat = `Continuation of the user brief above — develop the action naturally without changing scene or characters.`;
+      beat = `Continue the action from the user brief — develop it naturally without changing scene or characters.`;
     }
     shots.push(beat);
-    const continuity = i === 0
-      ? `This is the OPENING segment — establish the baseline scene. Lock in the characters, location, lighting, and color palette; every following segment will inherit from this shot.`
-      : `This segment must visually continue from segment ${i}: identical characters, wardrobe, location, lighting, and color palette. No hard cuts, no scene changes, no new characters.`;
-    return `${anchor}
-
-[SEGMENT ${i + 1} of ${clipCount}  (${t0}-${t1}s)]
-${beat}
-${continuity}`;
+    return compileScenePrompt({
+      userPrompt: prompt,
+      styleBible,
+      vibe: '',
+      shot: beat,
+      index: i,
+      total: clipCount,
+      clipDur: segLen
+    });
   });
   prompts.meta = {
     title: (prompt || 'Your Video').split(/[.\n]/)[0].slice(0, 50).trim() || 'Your Video',
     script_summary: prompt,
-    style_bible: `User brief (locked across every clip): ${prompt}. Same characters, location, lighting, and color palette in every shot.`,
+    style_bible: styleBible,
     shots
   };
   return prompts;
+}
+
+// Task #28: Brief-adherence guard — verifies Gemini's storyboard didn't
+// paraphrase the user's subject/action away. Returns false when the
+// storyboard is so unmoored that we should throw it away and use the
+// brief-anchored fallback template instead.
+const _BRIEF_STOPWORDS = new Set([
+  'the','and','for','with','that','this','from','into','onto','over','under',
+  'about','their','they','your','have','will','would','could','should','then',
+  'than','very','some','just','also','more','most','make','like','really',
+  'video','clip','clips','shot','scene','please','make','using','around','while',
+  'where','when','what','which','being','there','these','those','here'
+]);
+function _briefTokens(text) {
+  return Array.from(new Set(
+    String(text || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s'-]+/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length >= 4 && !_BRIEF_STOPWORDS.has(w))
+  ));
+}
+function briefAdheres(userPrompt, parsed) {
+  const tokens = _briefTokens(userPrompt);
+  if (tokens.length === 0) return true; // brief too short to check meaningfully
+  const inText = (s) => {
+    const lower = String(s || '').toLowerCase();
+    return tokens.some(t => lower.includes(t));
+  };
+  if (!inText(parsed?.style_bible)) return false;
+  if (!Array.isArray(parsed?.clips)) return false;
+  return parsed.clips.every(c => inText(c?.shot));
 }
 
 // Ask Gemini to produce a continuity-anchored storyboard.
@@ -2230,30 +2273,34 @@ async function generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur) {
   const directorBrief =
 `You are a film director planning a ${clipCount * segLen}-second cinematic video that will be rendered by Google Veo as ${clipCount} sequential ${segLen}-second clips, then stitched together.
 
-The biggest failure mode is visual drift: characters change face, the location shifts, lighting jumps. Your job is to PREVENT that.
-
-USER'S BRIEF (this is what they actually asked for — preserve every concrete subject and verb):
+USER'S BRIEF (this is the contract — every subject, action, and concrete detail in here is non-negotiable):
 """
 ${prompt}
 """
 
+YOUR ONLY JOB is to add SUPPORTING DETAIL (lighting, camera language, palette, mood, lens) around the user's brief. You are FORBIDDEN from:
+- replacing or paraphrasing the subject (e.g. if the brief says "golden retriever", you must not write "dog" or "puppy" or invent a different breed),
+- replacing or paraphrasing the action (e.g. if the brief says "surfing a wave", you must not write "swimming" or "playing in water"),
+- changing the location, time of day, or any concrete noun the user named,
+- adding a different premise or "creative reinterpretation" of the brief.
+
 Return STRICT JSON ONLY (no markdown, no commentary) in this exact shape:
 {
-  "title": "A short punchy title for the video (max 6 words, title-case, no quotes).",
-  "script_summary": "A single 1-2 sentence pitch describing what the viewer will experience. Stay faithful to the user brief — do not invent a different premise.",
-  "style_bible": "A 3-5 sentence locked description of: main character(s) (only invent specifics like age/wardrobe if the user brief did NOT specify them — otherwise quote the brief verbatim), exact location, lighting setup, color palette, lens / camera style, mood. This text will be repeated verbatim at the top of every clip — be specific and unambiguous.",
+  "title": "Max 6 words, title-case, no quotes.",
+  "script_summary": "1-2 sentence pitch that uses the user's exact subject and action verbatim.",
+  "style_bible": "3-5 sentences of SUPPORTING DETAIL only: lighting setup, color palette, lens / camera language, mood. You may describe the character's physical appearance ONLY using nouns the user already used (or generic descriptors if the user gave none). Do not restate the action here.",
   "clips": [
-    { "shot": "What concretely happens in this ${segLen}s segment. Lead with the SUBJECT and ACTION from the user brief, then describe the camera. Keep the same characters, location, and lighting as every other clip." },
+    { "shot": "What concretely happens in this ${segLen}s segment. The user's exact subject and action MUST appear in this sentence verbatim. Then add one camera move." },
     ... exactly ${clipCount} entries ...
   ]
 }
 
-Rules:
-- The clips must read like one continuous take, not ${clipCount} separate videos.
-- The user's literal subject and action MUST appear in every clip's shot description — do not paraphrase them away.
-- NEVER introduce new characters mid-sequence unless the user brief explicitly asks for it.
-- NEVER cut to a different location.
-- Keep each "shot" description under 60 words.`;
+Hard rules:
+- The clips must read like one continuous take.
+- The user's subject and action appear verbatim in EVERY clip's shot description.
+- Never introduce new characters mid-sequence unless the user brief explicitly asks for it.
+- Never cut to a different location.
+- Keep each "shot" description under 50 words.`;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
@@ -2290,35 +2337,40 @@ Rules:
   }
 
   try {
-    let parsed = await callGemini(directorBrief, 0.4);
+    let parsed = await callGemini(directorBrief, 0.25);
     if (!isValidParse(parsed)) {
       console.warn('[veo storyboard] first parse invalid, retrying with stricter brief');
       const stricter = directorBrief + `\n\nIMPORTANT: Your previous response was invalid. Return ONLY a single JSON object matching the schema above — no markdown fences, no preamble, no trailing text. The clips array MUST have exactly ${clipCount} entries.`;
-      parsed = await callGemini(stricter, 0.3);
+      parsed = await callGemini(stricter, 0.2);
       if (!isValidParse(parsed)) return null;
+    }
+
+    // Task #28: Brief-adherence guard. If Gemini paraphrased the user's
+    // brief away (no significant subject token survives in the bible AND in
+    // every clip's shot text), discard its output entirely so the
+    // brief-anchored fallback template runs instead. Better to ship a plain
+    // template that quotes the user verbatim than a polished storyboard
+    // about a different scene.
+    if (!briefAdheres(prompt, parsed)) {
+      console.warn('[veo storyboard] adherence check FAILED — Gemini drifted from user brief, falling back to template');
+      return null;
     }
 
     const bible = String(parsed.style_bible).trim();
     const prompts = parsed.clips.map((c, i) => {
       const shot = String(c.shot).trim();
-      const t0 = i * segLen, t1 = (i + 1) * segLen;
-      const continuity = i === 0
-        ? `This is the OPENING segment — establish the baseline scene exactly as the style bible describes. Every following segment will inherit these characters, wardrobe, location, lighting, and palette.`
-        : `This segment must visually continue from segment ${i}: identical characters, wardrobe, location, lighting, and color palette. No hard cuts or new characters.`;
-      // Echo the user's literal request at the top of every clip prompt so
-      // Gemini's paraphrase can never fully orphan the user's actual
-      // subject/verbs. The "STRICT DIRECTIVE" inline negation that used to
-      // live below the style bible is now sent via the negativePrompt
-      // parameter on the Veo call — see VEO_NEGATIVE_PROMPT.
-      return `[USER ORIGINAL REQUEST]
-${prompt}
-
-[PRODUCTION RULES — APPLY TO EVERY SHOT]
-${bible}
-
-[SEGMENT ${i + 1} of ${clipCount}  (${t0}-${t1}s)]
-${shot}
-${continuity}`;
+      // Use the same compileScenePrompt template the editor's Save flow uses
+      // so the user's verbatim brief always leads the prompt and the
+      // production rules / continuity language stay short and at the bottom.
+      return compileScenePrompt({
+        userPrompt: prompt,
+        styleBible: bible,
+        vibe: '',
+        shot,
+        index: i,
+        total: clipCount,
+        clipDur: segLen
+      });
     });
     // Decorate the array with title / summary / bible for the preview card.
     prompts.meta = {
@@ -2617,24 +2669,24 @@ async function buildClipScenes(prompt, clipCount, apiKey, clipDur) {
 function compileScenePrompt({ userPrompt, styleBible, vibe, shot, index, total, clipDur }) {
   const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
   const t0 = index * segLen, t1 = (index + 1) * segLen;
-  const vibeLine = vibe ? `Vibe: ${vibe}.` : '';
-  const continuity = index === 0
-    ? `This is the OPENING segment — establish the baseline scene exactly as the style bible describes. Every following segment will inherit these characters, wardrobe, location, lighting, and palette.`
-    : `This segment must visually continue from segment ${index}: identical characters, wardrobe, location, lighting, and color palette. No hard cuts or new characters.`;
-  // Inline "STRICT DIRECTIVE: zero on-screen text..." was removed — it's
-  // now sent via parameters.negativePrompt on the Veo call (see
-  // VEO_NEGATIVE_PROMPT). Inline negation primes the model on the very
-  // tokens we want to suppress.
-  const userBlock = userPrompt
-    ? `[USER ORIGINAL REQUEST]\n${userPrompt}\n\n`
+  const vibeLine = vibe ? ` Vibe: ${vibe}.` : '';
+  // Task #28: User brief MUST lead the prompt. Veo gives the strongest
+  // attention to the first lines; previously the user's literal request was
+  // buried under production rules and a long style bible, so Veo would
+  // happily render the bible's paraphrase instead of the brief itself.
+  // New order: USER BRIEF → SHOT BEAT → SUPPORTING STYLE → minimal continuity.
+  // Continuity language is trimmed to one short line and moved to the bottom.
+  const briefBlock = userPrompt
+    ? `[USER REQUEST — RENDER THIS EXACTLY]\n${userPrompt}\n\n`
     : '';
-  return `${userBlock}[PRODUCTION RULES — APPLY TO EVERY SHOT]
-${styleBible}
-${vibeLine}
-
-[SEGMENT ${index + 1} of ${total}  (${t0}-${t1}s)]
-${shot}
-${continuity}`;
+  const shotBlock = `[THIS SEGMENT — ${index + 1} of ${total} (${t0}-${t1}s)]\n${shot}\n\n`;
+  const styleBlock = styleBible
+    ? `[SUPPORTING STYLE — do not override the user request above]\n${styleBible}${vibeLine}\n\n`
+    : (vibeLine ? `[SUPPORTING STYLE]\n${vibeLine.trim()}\n\n` : '');
+  const continuity = index === 0
+    ? `[CONTINUITY] Establish the look that every later segment will inherit.`
+    : `[CONTINUITY] Same characters, wardrobe, location, lighting, and palette as segment ${index}. No hard cuts.`;
+  return `${briefBlock}${shotBlock}${styleBlock}${continuity}`;
 }
 
 // Recompile the full scenes array from current meta state.
