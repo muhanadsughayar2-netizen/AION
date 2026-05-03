@@ -569,9 +569,17 @@
     scroll: $('sbQueueScroll'),
     count: $('sbQueueCount'),
     clear: $('sbQueueClear'),
+    modeBtn: $('sbQueueModeBtn'),
+    selBar: $('sbSelectionBar'),
+    selAll: $('sbSelAllBtn'),
+    selAi: $('sbSelAiBtn'),
+    selCopy: $('sbSelCopyBtn'),
   };
   let queueSnaps = [];               // dataUrls, mirrored from chrome.storage.local.snaps
   const attachedSnapKeys = new Set(); // stable keys (snapKey()) of snaps currently attached to chat
+  const selectedKeys = new Set();    // keys selected in grid mode
+  let gridMode = false;
+  const GRID_MODE_KEY = 'sidebar_queue_grid_mode_v1';
   const MAX_SNAPS = 10;
 
   // Stable per-snap key — survives reordering / FIFO trims in other surfaces.
@@ -590,6 +598,11 @@
     for (const k of Array.from(attachedSnapKeys)) {
       if (!live.has(k)) attachedSnapKeys.delete(k);
     }
+    // Same liveness rule for grid-mode selection — drop selections whose
+    // underlying snap was deleted/trimmed elsewhere.
+    for (const k of Array.from(selectedKeys)) {
+      if (!live.has(k)) selectedKeys.delete(k);
+    }
   }
 
   async function loadQueueSnaps() {
@@ -603,41 +616,49 @@
     }
   }
 
-  function renderQueue() {
+  function renderQueue(force) {
     if (!queueEls.root || !queueEls.scroll || !queueEls.count) return;
     const n = queueSnaps.length;
     queueEls.count.textContent = `${n} / ${MAX_SNAPS}`;
     queueEls.root.classList.toggle('has-snaps', n > 0);
+    const tileTitle = (i) => gridMode
+      ? `Click to ${selectedKeys.has(snapKey(queueSnaps[i])) ? 'deselect' : 'select'} snap #${i + 1}`
+      : `Tap to attach snap #${i + 1} to chat`;
     // Diff-render only when count is unchanged so we don't replay the
     // scale-in animation on every keystroke. Attach state is keyed by
     // dataUrl, so it stays correct even after reorder/trim elsewhere.
     const existing = queueEls.scroll.children;
-    if (existing.length === n) {
+    if (!force && existing.length === n) {
       for (let i = 0; i < n; i++) {
         const tile = existing[i];
         const key = snapKey(queueSnaps[i]);
         tile.classList.toggle('attached', attachedSnapKeys.has(key));
+        tile.classList.toggle('sb-selected', selectedKeys.has(key));
         tile.dataset.key = key;
         const img = tile.querySelector('img');
         if (img && img.src !== queueSnaps[i]) img.src = queueSnaps[i];
         const num = tile.querySelector('.sb-queue-num');
         if (num) num.textContent = String(i + 1);
-        tile.title = `Tap to attach snap #${(i + 1)} to chat`;
+        tile.title = tileTitle(i);
       }
+      updateSelectionBar();
       return;
     }
     queueEls.scroll.innerHTML = '';
     queueSnaps.forEach((dataUrl, idx) => {
       const key = snapKey(dataUrl);
       const tile = document.createElement('div');
-      tile.className = 'sb-queue-thumb' + (attachedSnapKeys.has(key) ? ' attached' : '');
-      tile.title = `Tap to attach snap #${idx + 1} to chat`;
+      tile.className = 'sb-queue-thumb'
+        + (attachedSnapKeys.has(key) ? ' attached' : '')
+        + (selectedKeys.has(key) ? ' sb-selected' : '');
+      tile.title = tileTitle(idx);
       tile.dataset.key = key;
       tile.innerHTML =
         '<span class="sb-queue-num">' + (idx + 1) + '</span>' +
         '<button class="sb-queue-x" aria-label="Remove snap" title="Remove">×</button>' +
         '<img alt="Snap ' + (idx + 1) + '" />' +
-        '<span class="sb-queue-attached-tick" title="Attached to chat">✓</span>';
+        '<span class="sb-queue-attached-tick" title="Attached to chat">✓</span>' +
+        '<span class="sb-queue-check" aria-label="Toggle selection"></span>';
       const img = tile.querySelector('img');
       img.src = dataUrl;
       // Resolve the key from the tile's dataset at click time — the diff
@@ -645,8 +666,17 @@
       // reordered, so closing over the creation-time key would mis-target
       // attach/remove after a reorder.
       tile.addEventListener('click', (ev) => {
-        if (ev.target && ev.target.classList && ev.target.classList.contains('sb-queue-x')) return;
-        attachSnapByKey(tile.dataset.key);
+        const t = ev.target;
+        if (t && t.classList && t.classList.contains('sb-queue-x')) return;
+        // The checkbox is CSS-hidden in strip mode; only honour its
+        // selection toggle when grid mode is active so a stray bubbled
+        // click in strip mode doesn't silently mutate selection state
+        // that the user can't see.
+        if (gridMode) {
+          toggleSelectKey(tile.dataset.key);
+        } else {
+          attachSnapByKey(tile.dataset.key);
+        }
       });
       tile.querySelector('.sb-queue-x').addEventListener('click', (ev) => {
         ev.stopPropagation();
@@ -654,6 +684,248 @@
       });
       queueEls.scroll.appendChild(tile);
     });
+    updateSelectionBar();
+  }
+
+  // ---------- Multi-select (grid mode) ----------
+  function toggleSelectKey(key) {
+    if (!key) return;
+    if (selectedKeys.has(key)) selectedKeys.delete(key);
+    else selectedKeys.add(key);
+    // Lightweight class toggle — no need to re-render whole list.
+    const tile = queueEls.scroll && queueEls.scroll.querySelector(`.sb-queue-thumb[data-key="${CSS.escape(key)}"]`);
+    if (tile) tile.classList.toggle('sb-selected', selectedKeys.has(key));
+    updateSelectionBar();
+  }
+
+  function updateSelectionBar() {
+    if (!queueEls.selBar) return;
+    const count = selectedKeys.size;
+    if (queueEls.selAi) {
+      queueEls.selAi.disabled = count === 0;
+      queueEls.selAi.textContent = count > 0 ? `✦ Send ${count} to AI` : '✦ Send to AI';
+    }
+    if (queueEls.selCopy) {
+      queueEls.selCopy.disabled = count === 0;
+      queueEls.selCopy.textContent = count > 0 ? `Copy ${count}` : 'Copy';
+    }
+    if (queueEls.selAll) {
+      const total = queueSnaps.length;
+      queueEls.selAll.textContent = (total > 0 && count === total) ? 'Deselect All' : 'Select All';
+      queueEls.selAll.disabled = total === 0;
+    }
+  }
+
+  function applyGridMode() {
+    if (!queueEls.root) return;
+    queueEls.root.classList.toggle('grid-mode', gridMode);
+    if (queueEls.modeBtn) {
+      queueEls.modeBtn.textContent = gridMode ? 'Strip' : 'Select';
+      queueEls.modeBtn.title = gridMode
+        ? 'Switch back to compact strip'
+        : 'Switch to multi-select grid';
+    }
+    if (!gridMode) selectedKeys.clear();
+    renderQueue(true);
+  }
+
+  function toggleGridMode() {
+    gridMode = !gridMode;
+    try { chrome.storage.local.set({ [GRID_MODE_KEY]: gridMode }); } catch (e) {}
+    applyGridMode();
+  }
+
+  async function loadGridMode() {
+    try {
+      const got = await chrome.storage.local.get(GRID_MODE_KEY);
+      gridMode = !!got[GRID_MODE_KEY];
+    } catch (e) {}
+    applyGridMode();
+  }
+
+  function selectAllToggle() {
+    const total = queueSnaps.length;
+    if (total === 0) return;
+    if (selectedKeys.size === total) {
+      selectedKeys.clear();
+    } else {
+      selectedKeys.clear();
+      queueSnaps.forEach(d => selectedKeys.add(snapKey(d)));
+    }
+    if (queueEls.scroll) {
+      Array.from(queueEls.scroll.children).forEach(t => {
+        t.classList.toggle('sb-selected', selectedKeys.has(t.dataset.key));
+      });
+    }
+    updateSelectionBar();
+  }
+
+  async function sendSelectedToAi() {
+    if (selectedKeys.size === 0) return;
+    // Preserve queue order and skip already-attached snaps. Reuses the
+    // existing attachSnapByKey path so the chat-side preview cards and
+    // attachedSnapKeys state stay in lockstep.
+    const ordered = queueSnaps.filter(d => selectedKeys.has(snapKey(d)));
+    let attached = 0;
+    for (const d of ordered) {
+      const k = snapKey(d);
+      if (attachedSnapKeys.has(k)) continue;
+      attachSnapByKey(k);
+      attached++;
+    }
+    if (attached === 0) {
+      toast('All selected snaps are already attached', '', 1800);
+    }
+    // Keep grid mode on — user may want to copy too.
+  }
+
+  function loadImage(dataUrl) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('image load failed'));
+      img.src = dataUrl;
+    });
+  }
+
+  async function buildCompositePngBlob(dataUrls) {
+    const imgs = await Promise.all(dataUrls.map(loadImage));
+    if (imgs.length === 1) {
+      const c = document.createElement('canvas');
+      c.width = imgs[0].naturalWidth;
+      c.height = imgs[0].naturalHeight;
+      c.getContext('2d').drawImage(imgs[0], 0, 0);
+      return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('toBlob failed')), 'image/png'));
+    }
+    const maxW = Math.max(...imgs.map(i => i.naturalWidth));
+    const heights = imgs.map(i => Math.round(i.naturalHeight * (maxW / i.naturalWidth)));
+    const totalH = heights.reduce((a, b) => a + b, 0);
+    const canvas = document.createElement('canvas');
+    canvas.width = maxW;
+    canvas.height = totalH;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, maxW, totalH);
+    let y = 0;
+    for (let i = 0; i < imgs.length; i++) {
+      ctx.drawImage(imgs[i], 0, y, maxW, heights[i]);
+      y += heights[i];
+    }
+    return new Promise((res, rej) => canvas.toBlob(b => b ? res(b) : rej(new Error('toBlob failed')), 'image/png'));
+  }
+
+  async function copySelectedToClipboard() {
+    if (selectedKeys.size === 0) return;
+    const ordered = queueSnaps.filter(d => selectedKeys.has(snapKey(d)));
+    if (!ordered.length) return;
+    try {
+      const blob = await buildCompositePngBlob(ordered);
+      // ClipboardItem requires the same MIME we asked toBlob for.
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      toast(`Copied ${ordered.length} snap${ordered.length > 1 ? 's' : ''} to clipboard ✓`, 'success', 1800);
+    } catch (e) {
+      console.log('[SnapToAI sidebar] copySelectedToClipboard failed:', e && e.message);
+      toast('Copy failed: ' + (e && e.message ? e.message : e), 'error');
+    }
+  }
+
+  if (queueEls.modeBtn) queueEls.modeBtn.addEventListener('click', toggleGridMode);
+  if (queueEls.selAll) queueEls.selAll.addEventListener('click', selectAllToggle);
+  if (queueEls.selAi) queueEls.selAi.addEventListener('click', sendSelectedToAi);
+  if (queueEls.selCopy) queueEls.selCopy.addEventListener('click', copySelectedToClipboard);
+
+  // ---------- Hero / chat splitter ----------
+  const SPLIT_KEY = 'sidebar_split_v1';
+  const HERO_MIN = 220;
+  const CHAT_MIN = 280;
+
+  function clampHero(h) {
+    const total = window.innerHeight || 800;
+    const max = Math.max(HERO_MIN, total - CHAT_MIN);
+    return Math.max(HERO_MIN, Math.min(h, max));
+  }
+  function setHeroHeight(h) {
+    const clamped = clampHero(h);
+    document.documentElement.style.setProperty('--sb-hero-h', clamped + 'px');
+    const resizer = $('sbResizer');
+    if (resizer) {
+      const total = window.innerHeight || 800;
+      resizer.setAttribute('aria-valuemin', String(HERO_MIN));
+      resizer.setAttribute('aria-valuemax', String(Math.max(HERO_MIN, total - CHAT_MIN)));
+      resizer.setAttribute('aria-valuenow', String(Math.round(clamped)));
+    }
+  }
+  function getHeroHeight() {
+    const hero = document.querySelector('.sb-hero');
+    return hero ? hero.getBoundingClientRect().height : HERO_MIN;
+  }
+  async function loadHeroHeight() {
+    try {
+      const got = await chrome.storage.local.get(SPLIT_KEY);
+      const h = got[SPLIT_KEY];
+      if (typeof h === 'number' && isFinite(h) && h > 0) setHeroHeight(h);
+    } catch (e) {}
+  }
+  function persistHeroHeight(h) {
+    try { chrome.storage.local.set({ [SPLIT_KEY]: clampHero(h) }); } catch (e) {}
+  }
+
+  function initResizer() {
+    const resizer = $('sbResizer');
+    if (!resizer) return;
+    let dragging = false;
+    let startY = 0;
+    let startH = 0;
+    const onMove = (e) => {
+      if (!dragging) return;
+      const y = e.touches ? e.touches[0].clientY : e.clientY;
+      setHeroHeight(startH + (y - startY));
+      if (e.cancelable) e.preventDefault();
+    };
+    const onUp = () => {
+      if (!dragging) return;
+      dragging = false;
+      resizer.classList.remove('dragging');
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+      persistHeroHeight(getHeroHeight());
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+      window.removeEventListener('touchcancel', onUp);
+    };
+    const onDown = (e) => {
+      dragging = true;
+      resizer.classList.add('dragging');
+      startY = e.touches ? e.touches[0].clientY : e.clientY;
+      startH = getHeroHeight();
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'row-resize';
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('touchend', onUp);
+      window.addEventListener('touchcancel', onUp);
+      if (e.cancelable) e.preventDefault();
+    };
+    resizer.addEventListener('mousedown', onDown);
+    resizer.addEventListener('touchstart', onDown, { passive: false });
+    resizer.addEventListener('keydown', (e) => {
+      const STEP = e.shiftKey ? 64 : 24;
+      let next;
+      if (e.key === 'ArrowUp') next = getHeroHeight() - STEP;
+      else if (e.key === 'ArrowDown') next = getHeroHeight() + STEP;
+      else if (e.key === 'Home') next = HERO_MIN;
+      else if (e.key === 'End') next = (window.innerHeight || 800) - CHAT_MIN;
+      else return;
+      e.preventDefault();
+      setHeroHeight(next);
+      persistHeroHeight(next);
+    });
+    // Re-clamp when the window/side-panel resizes so the chat region keeps
+    // its minimum room even if the user shrinks the panel vertically.
+    window.addEventListener('resize', () => setHeroHeight(getHeroHeight()));
   }
 
   function dataUrlToParts(dataUrl) {
@@ -798,6 +1070,9 @@
     refreshAccount();
     startPreviewLoop();
     applyInstitutionBranding();
+    loadHeroHeight();
+    initResizer();
+    loadGridMode();
     loadQueueSnaps();
 
     // Persist that the user is now using sidebar mode AND ask the

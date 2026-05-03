@@ -1483,6 +1483,197 @@
     body.sidebar-mode .main-content {
       flex-direction: column;
     }
+
+    /* ============== Task #29 — Draggable hero/chat splitter ==============
+       The hero (Screenshots region) gets a fixed height the user can drag.
+       Without this, widening the side panel grows the 16:9 live preview
+       and squeezes the chat thread to a few lines. We also cap the preview
+       so the hero stays sensible at any width. Persisted via chrome.storage
+       (`sidebar_split_v1`) and clamped on window resize. */
+    :root { --sb-hero-h: 360px; }
+    body.sidebar-mode .sb-hero {
+      flex: 0 0 auto;
+      height: var(--sb-hero-h);
+      min-height: 220px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    body.sidebar-mode .sb-preview-wrap {
+      aspect-ratio: auto;
+      height: clamp(120px, 26vh, 220px);
+    }
+    .sb-resizer {
+      flex: 0 0 8px;
+      height: 8px;
+      width: 100%;
+      cursor: row-resize;
+      position: relative;
+      z-index: 50;
+      background: transparent;
+      transition: background 0.15s ease;
+      touch-action: none;
+    }
+    .sb-resizer::before {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; top: 50%;
+      transform: translateY(-50%);
+      height: 1px;
+      background: rgba(0, 217, 255, 0.18);
+    }
+    .sb-resizer::after {
+      content: '';
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 36px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.22);
+      border-radius: 2px;
+      transition: background 0.15s ease;
+    }
+    .sb-resizer:hover, .sb-resizer.dragging, .sb-resizer:focus-visible {
+      background: rgba(0, 217, 255, 0.06);
+    }
+    .sb-resizer:hover::after,
+    .sb-resizer.dragging::after,
+    .sb-resizer:focus-visible::after {
+      background: var(--st-accent);
+    }
+    :root[data-theme="light"] .sb-resizer::before { background: rgba(8, 145, 178, 0.22); }
+    :root[data-theme="light"] .sb-resizer::after  { background: rgba(15, 23, 42, 0.30); }
+
+    /* ============== Task #29 — Queue grid mode (multi-select) ==============
+       Strip mode (default) keeps the existing horizontal scroll for quick
+       attach. Grid mode wraps thumbnails so nothing is clipped on the sides
+       and exposes popup-style checkboxes + a selection bar with
+       "Send to AI" / "Copy" actions. */
+    .sb-queue-mode-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.55);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.15s;
+      margin-right: 4px;
+    }
+    .sb-queue-mode-btn:hover { color: var(--st-accent); border-color: rgba(0,217,255,0.4); background: rgba(0,217,255,0.08); }
+    .sb-queue.grid-mode .sb-queue-mode-btn {
+      color: var(--st-accent);
+      border-color: rgba(0,217,255,0.45);
+      background: rgba(0,217,255,0.12);
+    }
+    /* Stop horizontal clipping in strip mode by giving the rail a tiny side
+       inset and a focus-safe overflow padding, so border/shadow on the
+       end tiles isn't chopped by the rounded queue container. */
+    .sb-queue-scroll {
+      padding-left: 2px;
+      padding-right: 2px;
+    }
+    .sb-queue.grid-mode .sb-queue-scroll {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+      gap: 8px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      max-height: 260px;
+      padding: 4px;
+      scroll-snap-type: none;
+    }
+    .sb-queue.grid-mode .sb-queue-thumb {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      flex: none;
+    }
+    .sb-queue-thumb .sb-queue-check {
+      position: absolute;
+      bottom: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background: rgba(0, 0, 0, 0.7);
+      border: 1.5px solid rgba(0, 217, 255, 0.55);
+      border-radius: 4px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 900;
+      color: transparent;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      z-index: 4;
+      backdrop-filter: blur(2px);
+    }
+    .sb-queue.grid-mode .sb-queue-thumb .sb-queue-check { display: inline-flex; }
+    .sb-queue-thumb.sb-selected .sb-queue-check {
+      background: var(--st-accent);
+      border-color: var(--st-accent);
+      color: var(--st-text-on-accent, #000);
+    }
+    .sb-queue-thumb.sb-selected .sb-queue-check::after { content: '✓'; }
+    .sb-queue-thumb.sb-selected {
+      border-color: var(--st-accent);
+      box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.35), 0 4px 12px rgba(0, 217, 255, 0.2);
+    }
+    :root[data-theme="light"] .sb-queue-thumb.sb-selected {
+      box-shadow: 0 0 0 2px var(--st-accent), 0 4px 12px rgba(8, 145, 178, 0.25);
+    }
+    .sb-selection-bar {
+      display: none;
+      gap: 6px;
+      margin-top: 6px;
+      padding: 6px;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 8px;
+    }
+    .sb-queue.grid-mode .sb-selection-bar { display: flex; }
+    .sb-selection-bar button {
+      flex: 1;
+      padding: 7px 8px;
+      background: rgba(0, 217, 255, 0.10);
+      border: 1px solid rgba(0, 217, 255, 0.30);
+      color: var(--st-accent);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .sb-selection-bar button:hover:not(:disabled) {
+      background: rgba(0, 217, 255, 0.20);
+      border-color: var(--st-accent);
+    }
+    .sb-selection-bar button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .sb-selection-bar .sb-sel-ai {
+      background: linear-gradient(135deg, rgba(124, 92, 252, 0.18), rgba(0, 217, 255, 0.12));
+      border-color: rgba(124, 92, 252, 0.4);
+      color: #c4b5fd;
+    }
+    .sb-selection-bar .sb-sel-ai:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(124, 92, 252, 0.30), rgba(0, 217, 255, 0.20));
+      color: #fff;
+    }
+    :root[data-theme="light"] .sb-selection-bar { background: rgba(15, 23, 42, 0.05); }
+    :root[data-theme="light"] .sb-selection-bar button {
+      background: rgba(8, 145, 178, 0.10);
+      border-color: rgba(8, 145, 178, 0.35);
+      color: var(--st-accent-2);
+    }
+    :root[data-theme="light"] .sb-selection-bar .sb-sel-ai {
+      background: linear-gradient(135deg, rgba(124, 92, 252, 0.14), rgba(8, 145, 178, 0.10));
+      border-color: rgba(124, 92, 252, 0.45);
+      color: #6d28d9;
+    }
     body.sidebar-mode .chat-thread {
       padding: 14px 12px;
       gap: 12px;
@@ -1626,13 +1817,25 @@
         <span class="sb-queue-title">📥 Recent snaps</span>
         <span class="sb-queue-count" id="sbQueueCount">0 / 10</span>
         <span class="sb-queue-spacer"></span>
+        <button class="sb-queue-mode-btn" id="sbQueueModeBtn" title="Toggle multi-select grid">Select</button>
         <button class="sb-queue-clear" id="sbQueueClear" title="Clear all snaps">Clear</button>
       </div>
       <div class="sb-queue-scroll" id="sbQueueScroll"></div>
+      <div class="sb-selection-bar" id="sbSelectionBar" role="toolbar" aria-label="Selected snap actions">
+        <button id="sbSelAllBtn" type="button">Select All</button>
+        <button id="sbSelAiBtn" class="sb-sel-ai" type="button" disabled>✦ Send to AI</button>
+        <button id="sbSelCopyBtn" type="button" disabled>Copy</button>
+      </div>
     </div>
   </div>
 
   <div id="sbToast" class="sb-toast"></div>
+
+  <!-- Drag handle: lets the user resize the screenshots region vs the chat
+       region independently (Task #29). Persisted across reloads. -->
+  <div class="sb-resizer" id="sbResizer" tabindex="0" role="separator"
+       aria-orientation="horizontal" aria-label="Resize screenshots vs chat"
+       title="Drag to resize Screenshots / Chat (↑/↓ to nudge)"></div>
 
   <!-- ============== EXISTING AI CHAT (kept verbatim so ai-chat.js wires up unchanged) ============== -->
   <div class="header">
