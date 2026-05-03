@@ -21,16 +21,14 @@
     return 'auto';
   }
 
-  function resolveTheme(theme) {
-    if (theme === 'auto') {
-      try {
-        return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-      } catch (e) { return 'dark'; }
-    }
-    return theme === 'light' ? 'light' : 'dark';
-  }
+  // TEMPORARILY DISABLED: light/dark theme switching is hidden from
+  // users while we sort out the design. Force every surface to render
+  // in dark mode regardless of stored preference, OS preference, or
+  // cross-surface storage updates. The full theme machinery is left in
+  // place so we can re-enable later without re-implementing it.
+  function resolveTheme(/* theme */) { return 'dark'; }
 
-  var current = getCachedTheme();
+  var current = 'dark';
   var listeners = [];
 
   function applyTheme(theme) {
