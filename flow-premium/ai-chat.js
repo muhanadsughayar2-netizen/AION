@@ -3394,25 +3394,19 @@ async function renderVeoBatchOutcome(ctx) {
   // WebCodecs / mp4-muxer / ffmpeg.wasm faster-than-realtime path, NOT this
   // canvas-record approach which can never produce a smooth result on average
   // hardware.
-  const ENABLE_BROWSER_STITCHING = false;
   try {
     if (successUrls.length === 1) {
       showVideoResult(progressBubble, successUrls[0], thread);
-    } else if (ENABLE_BROWSER_STITCHING) {
+    } else {
       const fill = progressBubble.querySelector('.video-progress-fill');
       const text = progressBubble.querySelector('.video-progress-text');
       if (fill) fill.style.width = '85%';
-      if (text) text.textContent = 'Stitching clips together...';
+      const _approxSecs = Math.round(successUrls.length * (typeof selectedVideoDuration === 'number' ? selectedVideoDuration : 8));
+      if (text) text.textContent = `Combining ${successUrls.length} clips... (~${_approxSecs}s)`;
       const stitchedUrl = await stitchVideos(successUrls, ctx);
       ctx.lastStitchedUrl = stitchedUrl;
       if (fill) fill.style.width = '100%';
       showStitchedVideoResult(progressBubble, stitchedUrl, successUrls, thread);
-    } else {
-      // Multi-clip path: skip stitching, go straight to the friendly
-      // per-clip view (the same banner the timeout-fallback uses).
-      const fill = progressBubble.querySelector('.video-progress-fill');
-      if (fill) fill.style.width = '100%';
-      showMultiClipFallback(progressBubble, successUrls, thread);
     }
   } catch (err) {
     console.log('[SnapToAI Video] Stitch error:', err.message);
