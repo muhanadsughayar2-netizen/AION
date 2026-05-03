@@ -2948,6 +2948,50 @@ async function renderVeoBatchOutcome(ctx) {
     ctx.lastStitchedUrl = null;
   }
 
+  // One-time teardown hook: when the result bubble is removed from the DOM
+  // (chat clear, navigation, history nuke), revoke any in-flight stitched
+  // blob URL so we don't leak memory across long sessions. The audit found
+  // we previously revoked ONLY on re-render, missing this path entirely.
+  // Re-binds to a new parent if the bubble is moved (rare but possible when
+  // chat is cleared and restored), so the teardown still fires on real
+  // detach. Single-shot: the revoke and disconnect happen exactly once.
+  if (!ctx._teardownObserver && progressBubble && progressBubble.parentNode) {
+    const cleanup = () => {
+      if (ctx.lastStitchedUrl) {
+        try { URL.revokeObjectURL(ctx.lastStitchedUrl); } catch (_) {}
+        ctx.lastStitchedUrl = null;
+      }
+      if (ctx._teardownObserver) {
+        try { ctx._teardownObserver.disconnect(); } catch (_) {}
+        ctx._teardownObserver = null;
+      }
+    };
+    const observer = new MutationObserver(() => {
+      if (!progressBubble.isConnected) {
+        cleanup();
+        return;
+      }
+      // Bubble was moved to a different parent — rebind so we still see the
+      // eventual real removal.
+      const currentParent = progressBubble.parentNode;
+      if (currentParent && currentParent !== ctx._teardownTarget) {
+        try { observer.disconnect(); } catch (_) {}
+        try {
+          observer.observe(currentParent, { childList: true });
+          ctx._teardownTarget = currentParent;
+        } catch (_) {
+          ctx._teardownObserver = null;
+          ctx._teardownTarget = null;
+        }
+      }
+    });
+    try {
+      observer.observe(progressBubble.parentNode, { childList: true });
+      ctx._teardownObserver = observer;
+      ctx._teardownTarget = progressBubble.parentNode;
+    } catch (_) {}
+  }
+
   // --- Case A: 0 successful clips ---
   if (successUrls.length === 0) {
     progressBubble.innerHTML = buildVeoSummaryCard(ctx, billingAbortAt, /*hasSuccess*/ false, null);
@@ -3717,12 +3761,23 @@ async function stitchVideos(videoUrls, stitchCtx) {
           g.setValueAtTime(0, t0);
           // First clip uses the short anti-click fade-in; later clips ramp up
           // over the full XFADE window so they crossfade with the previous.
-          const fadeIn = isFirst ? FADE_S : XFADE_S;
-          g.linearRampToValueAtTime(1, t0 + fadeIn);
+          let fadeIn = isFirst ? FADE_S : XFADE_S;
           // Final clip uses the short anti-click fade-out; earlier clips
           // ramp out over the full XFADE window so the next clip can ramp in.
-          const fadeOut = isLast ? FADE_S : XFADE_S;
-          const fadeOutStart = t0 + Math.max(fadeIn, item.duration - fadeOut);
+          let fadeOut = isLast ? FADE_S : XFADE_S;
+          // Clamp fades for very short clips (e.g. < 1.0 s test clips) so the
+          // fade-out always begins BEFORE end-of-media. Without this, when
+          // duration ≤ fadeIn + fadeOut, fadeOutStart could land at/after EOF
+          // and the anti-pop ramp never executes — audible click on the join.
+          // Reserve ≥ 25 % of the clip for sustain in extreme cases.
+          const dur = Math.max(0.05, item.duration);
+          if (fadeIn + fadeOut > dur * 0.75) {
+            const scale = (dur * 0.75) / (fadeIn + fadeOut);
+            fadeIn *= scale;
+            fadeOut *= scale;
+          }
+          g.linearRampToValueAtTime(1, t0 + fadeIn);
+          const fadeOutStart = t0 + Math.max(fadeIn, dur - fadeOut);
           g.setValueAtTime(1, fadeOutStart);
           g.linearRampToValueAtTime(0, fadeOutStart + fadeOut);
         }
