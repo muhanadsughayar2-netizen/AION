@@ -1,0 +1,101 @@
+This information is provided for educational and informational context only regarding software engineering and AI video generation pipelines.
+
+I understand the frustration. If it was making "wonderful" videos before but they didn't "cover what you needed," it’s because the individual clips looked great, but they didn't tell a story or show your brand. You have a powerful engine, but the instructions and the stitching are currently working against each other.
+
+To fix your code and get that "spectacular" trailer, you need to swap out three specific functions. Here is exactly what is wrong and the code to fix it.
+
+### 1. The Fix for buildClipScenes (Line 2706)
+The Problem: Currently, this function sends your entire trailer script to every single 8-second clip. Veo gets overwhelmed trying to fit a 30-second script into 8 seconds, and since every clip gets the same script, you just get the same scene repeated three times.
+
+The Solution: Use Gemini to "Storyboard" the script into 3 distinct visual scenes.
+
+Replace your current buildClipScenes with this:
+
+async function buildClipScenes(prompt, clipCount, apiKey, clipDur) {
+  if (clipCount < 2) return [prompt];
+  
+  // 1. Call Gemini to act as the "Director" and break the prompt into parts
+  const directorUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+  const directorPrompt = `You are a Cinematographer. Take this video request: "${prompt}". 
+    Break it into ${clipCount} distinct visual scenes for an 8-second clip each. 
+    Scene 1: The Hook. Scene 2: The Action. Scene 3: The Result.
+    Return ONLY a JSON array of strings. No extra text.`;
+
+  try {
+    const response = await fetch(directorUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: directorPrompt }] }] })
+    });
+    const data = await response.json();
+    const storyboard = JSON.parse(data.candidates[0].content.parts[0].text.match(/\[[\s\S]*\]/)[0]);
+    
+    // 2. Map these unique scenes to your compiler
+    return storyboard.map((scene, i) => compileScenePrompt({
+      userPrompt: scene, // Each clip now gets a UNIQUE visual instruction
+      styleBible: "Cinematic, 4k, professional lighting",
+      vibe: "Tech Trailer",
+      shot: scene,
+      index: i,
+      total: clipCount,
+      clipDur
+    }));
+  } catch (e) {
+    console.error("Director failed, falling back to literal prompts", e);
+    return Array(clipCount).fill(prompt); // Fallback if API fails
+  }
+}
+### 2. The Fix for compileScenePrompt (Line 2744)
+The Problem: Your current code wraps prompts in brackets like [USER REQUEST]. This is "token noise." AI models like Veo treat brackets as literal characters or confusing metadata, which degrades the visual quality.
+
+The Solution: Use clean, natural language bridges.
+
+Replace your compileScenePrompt with this:
+
+function compileScenePrompt({ userPrompt, styleBible, vibe, index, total }) {
+  const style = styleBible ? ` Style: ${styleBible}.` : '';
+  const energy = vibe ? ` Mood: ${vibe}.` : '';
+  
+  if (index === 0) {
+    return `Scene Start: ${userPrompt}.${style}${energy} Establish the cinematic look.`;
+  } else {
+    return `Continuing the scene: ${userPrompt}.${style}${energy} Maintain the same characters and lighting from the previous shot. No hard cuts.`;
+  }
+}
+### 3. The Fix for stitchVideos (Line 3789)
+The Problem: You are asking the AI to draw your "SnapToAI" logo and text. AI cannot do this yet; it creates "gibberish." This is why your trailer looked messy.
+
+The Solution: Layer the text and logo on top of the video using the Canvas API during the stitching process. This ensures the text is 100% crisp and professional.
+
+Add this logic inside your stitchVideos draw loop (where it says ctx2d.drawImage):
+
+// 1. Draw the AI Video frame first
+ctx2d.drawImage(activeVideo, 0, 0, canvasW, canvasH);
+
+// 2. OVERLAY: Draw your branding on top of every frame
+ctx2d.save();
+ctx2d.font = "bold 50px sans-serif";
+ctx2d.fillStyle = "white";
+ctx2d.shadowBlur = 15;
+ctx2d.shadowColor = "black";
+ctx2d.textAlign = "right";
+
+// This puts "SnapToAI" in the bottom right corner of the video
+ctx2d.fillText("SnapToAI", canvasW - 40, canvasH - 60);
+
+// Optional: Add a tagline
+ctx2d.font = "20px sans-serif";
+ctx2d.fillText("Capture. Send. Create.", canvasW - 40, canvasH - 30);
+ctx2d.restore();
+### 4. Technical Mechanics: Why these fixes work
+Narrative Arc: By using the "Director" logic in buildClipScenes, you move from 3 identical loops to a 3-act structure (Hook → Action → Payoff).
+Visual Fidelity: Removing the [BRACKETS] allows the model to focus 100% on the imagery rather than trying to interpret your code's metadata.
+Brand Integrity: By drawing the logo with the Canvas API instead of the AI, you guarantee that your brand name is legible. This is how professional "AI Trailers" are actually made.
+### 5. Actionable Steps: What to do next
+Update the three functions above in your Replit editor.
+Check your VEO_NEGATIVE_PROMPT: Ensure it is not blocking things you actually want (like "neon lights" or "ui").
+Run a test: Use a simple prompt like "A futuristic trailer for an AI screen capture tool."
+### SnapToAI Core Engine Status
+The code you have is a "Ferrari" with the wrong GPS coordinates. By updating these three functions, you are giving the engine the right directions to produce a Spectacular result. You've built the production pipeline; now let's make the output match the quality of your domain.
+
+Do you need the specific code to handle audio crossfading in the stitcher so the music doesn't "pop" between clips?
