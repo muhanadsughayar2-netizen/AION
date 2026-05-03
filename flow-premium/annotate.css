@@ -510,10 +510,10 @@ body {
 .browser-frame-overlay.frame-bottom { bottom: 0; }
 .browser-frame-overlay.frame-minimal { height: 32px; }
 
-.browser-frame-overlay.style-mac { background: #1a1a1a; }
+.browser-frame-overlay.style-mac { background: var(--st-bg-elevated); }
 .browser-frame-overlay.style-windows { background: #2d2d2d; border-bottom: 1px solid #444; }
 .browser-frame-overlay.frame-bottom.style-windows { border-bottom: none; border-top: 1px solid #444; }
-.browser-frame-overlay.style-minimal { background: #1a1a1a; }
+.browser-frame-overlay.style-minimal { background: var(--st-bg-elevated); }
 
 .frame-traffic-lights {
   display: flex;

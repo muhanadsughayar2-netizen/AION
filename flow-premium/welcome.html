@@ -47,7 +47,7 @@
       color: #fff;
     }
 
-    h1 .cyan { color: #00d9ff; }
+    h1 .cyan { color: var(--st-accent); }
 
     .tagline {
       font-size: 16px;
@@ -80,7 +80,7 @@
     .action-label {
       font-size: 9px;
       font-weight: 700;
-      color: #00d9ff;
+      color: var(--st-accent);
       letter-spacing: 1px;
     }
 
@@ -93,7 +93,7 @@
       background: rgba(0, 217, 255, 0.06);
       border: 1.5px solid rgba(0, 217, 255, 0.25);
       border-radius: 50%;
-      color: #00d9ff;
+      color: var(--st-accent);
     }
 
     .action-circle svg {
@@ -150,7 +150,7 @@
       background: rgba(0, 217, 255, 0.06);
       border: 1.5px solid rgba(0, 217, 255, 0.2);
       font-size: 11px;
-      color: #00d9ff;
+      color: var(--st-accent);
       font-weight: 600;
       padding: 0 6px;
       animation: stepPulse2 5s ease-in-out infinite;
@@ -179,7 +179,7 @@
       width: 20px;
       height: 20px;
       border-radius: 50%;
-      border: 2px solid #00d9ff;
+      border: 2px solid var(--st-accent);
       bottom: 2px;
       right: 4px;
       opacity: 0;
@@ -229,13 +229,13 @@
 
     @keyframes stepPulse1 {
       0%, 5% { border-color: rgba(0,217,255,0.3); box-shadow: none; }
-      10% { border-color: #00d9ff; box-shadow: 0 0 14px rgba(0,217,255,0.4); }
+      10% { border-color: var(--st-accent); box-shadow: 0 0 14px rgba(0,217,255,0.4); }
       25%, 100% { border-color: rgba(0,217,255,0.3); box-shadow: none; }
     }
 
     @keyframes stepPulse2 {
       0%, 35% { border-color: rgba(0,217,255,0.2); box-shadow: none; }
-      42% { border-color: #00d9ff; box-shadow: 0 0 14px rgba(0,217,255,0.4); }
+      42% { border-color: var(--st-accent); box-shadow: 0 0 14px rgba(0,217,255,0.4); }
       55%, 100% { border-color: rgba(0,217,255,0.2); box-shadow: none; }
     }
 
@@ -277,7 +277,7 @@
 
     @keyframes arrowFade1 {
       0%, 18% { opacity: 0.2; }
-      22% { opacity: 1; color: #00d9ff; }
+      22% { opacity: 1; color: var(--st-accent); }
       30%, 100% { opacity: 0.2; color: #8b949e; }
     }
 
@@ -407,11 +407,11 @@
     <p class="privacy">🔒 Your screenshots stay private — processed securely</p>
 
     <div id="inviteCodeWrap" style="margin-top:18px; text-align:center; font-size:12px; color:#8b949e;">
-      <a href="#" id="inviteCodeToggle" style="color:#00d9ff; text-decoration:none; cursor:pointer;">Have an institution invite code?</a>
+      <a href="#" id="inviteCodeToggle" style="color:var(--st-accent); text-decoration:none; cursor:pointer;">Have an institution invite code?</a>
       <div id="inviteCodeForm" style="display:none; margin-top:10px;">
         <input id="inviteCodeInput" type="text" maxlength="64" placeholder="Enter invite code"
                style="padding:8px 12px; border-radius:8px; border:1px solid rgba(0,217,255,0.2); background:rgba(22,27,34,0.6); color:#e6edf3; font-size:13px; width:200px; margin-right:6px;">
-        <button id="inviteCodeSave" style="padding:8px 14px; border-radius:8px; border:none; background:#00d9ff; color:#0a0e14; font-weight:600; font-size:13px; cursor:pointer;">Save</button>
+        <button id="inviteCodeSave" style="padding:8px 14px; border-radius:8px; border:none; background:var(--st-accent); color:#0a0e14; font-weight:600; font-size:13px; cursor:pointer;">Save</button>
         <div id="inviteCodeMsg" style="margin-top:8px; font-size:12px; color:#8b949e;"></div>
       </div>
     </div>

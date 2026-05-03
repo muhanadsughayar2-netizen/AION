@@ -1594,7 +1594,7 @@ def admin_panel():
     <style>
         * {{ box-sizing: border-box; }}
         body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f1a; color: #e0e0e0; padding: 20px; margin: 0; }}
-        h1 {{ color: #00d4ff; margin-bottom: 5px; }}
+        h1 {{ color: #00d9ff; margin-bottom: 5px; }}
         .subtitle {{ color: #666; margin-bottom: 20px; }}
         .stats {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 20px 0; }}
         .stat-box {{ background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #2a2a4a; }}
@@ -1606,10 +1606,10 @@ def admin_panel():
         .filters {{ background: #1a1a2e; padding: 15px; border-radius: 10px; margin: 20px 0; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }}
         .filters label {{ color: #888; font-size: 12px; text-transform: uppercase; }}
         .filters select, .filters input {{ background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px; }}
-        .filters button {{ background: #00d4ff; color: #000; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }}
-        .filters button:hover {{ background: #00b8e6; }}
+        .filters button {{ background: #00d9ff; color: #000; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }}
+        .filters button:hover {{ background: #00b8d4; }}
         table {{ width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }}
-        th {{ background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left; position: sticky; top: 0; }}
+        th {{ background: #16213e; color: #00d9ff; padding: 12px 8px; text-align: left; position: sticky; top: 0; }}
         td {{ padding: 10px 8px; border-bottom: 1px solid #222; }}
         tr:hover {{ background: #1a1a2e; }}
         .badge {{ padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }}
@@ -1617,7 +1617,7 @@ def admin_panel():
         .badge-expired {{ background: #ff475720; color: #ff4757; }}
         .badge-paid {{ background: #ffd70020; color: #ffd700; }}
         .usage-bar {{ background: #333; border-radius: 4px; height: 6px; width: 60px; display: inline-block; }}
-        .usage-fill {{ background: #00d4ff; height: 100%; border-radius: 4px; }}
+        .usage-fill {{ background: #00d9ff; height: 100%; border-radius: 4px; }}
         .hash {{ font-family: monospace; font-size: 12px; color: #888; }}
         .export-btn {{ background: #333; color: #fff; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-left: auto; }}
     </style>
@@ -1628,7 +1628,7 @@ def admin_panel():
     
     <div class="stats">
         <div class="stat-box">
-            <div class="stat-number" style="color: #00d4ff;">{total_users}</div>
+            <div class="stat-number" style="color: #00d9ff;">{total_users}</div>
             <div class="stat-label">Total Users</div>
         </div>
         <div class="stat-box">
@@ -1784,7 +1784,7 @@ def admin_panel():
         <tr>
             <td>{i}</td>
             <td class="hash" title="{r['full_hash']}">{r['hash']}</td>
-            <td style="font-size: 11px;"><span style="color: #00d4ff;">{location_str}</span><br><span style="color:#a855f7;font-size:10px;">{r['ip']}</span><br><span style="color:#666;font-size:10px;">{r['timezone']}</span></td>
+            <td style="font-size: 11px;"><span style="color: #00d9ff;">{location_str}</span><br><span style="color:#a855f7;font-size:10px;">{r['ip']}</span><br><span style="color:#666;font-size:10px;">{r['timezone']}</span></td>
             <td style="font-size: 11px;">{device_str}</td>
             <td><span class="badge {badge_class}">{status_text}</span></td>
             <td>{r['days']}</td>
@@ -1804,18 +1804,18 @@ def admin_panel():
 '''
 
         html += f'''
-    <div style="background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 150, 200, 0.08)); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 12px; padding: 20px; margin: 30px 0;">
-        <h2 style="color: #00d4ff; margin: 0 0 5px 0;">👥 Registered Users</h2>
+    <div style="background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(0, 184, 212, 0.08)); border: 1px solid rgba(0, 217, 255, 0.3); border-radius: 12px; padding: 20px; margin: 30px 0;">
+        <h2 style="color: #00d9ff; margin: 0 0 5px 0;">👥 Registered Users</h2>
         <p style="color: #888; font-size: 12px; margin: 0 0 15px 0;">Users who signed in with Google — {len(registered_users_rows)} total</p>
         <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
             <tr>
-                <th style="background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left;">#</th>
-                <th style="background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left;">Photo</th>
-                <th style="background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left;">Name</th>
-                <th style="background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left;">Email</th>
-                <th style="background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left;">Captures</th>
-                <th style="background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left;">First Seen</th>
-                <th style="background: #16213e; color: #00d4ff; padding: 12px 8px; text-align: left;">Last Seen</th>
+                <th style="background: #16213e; color: #00d9ff; padding: 12px 8px; text-align: left;">#</th>
+                <th style="background: #16213e; color: #00d9ff; padding: 12px 8px; text-align: left;">Photo</th>
+                <th style="background: #16213e; color: #00d9ff; padding: 12px 8px; text-align: left;">Name</th>
+                <th style="background: #16213e; color: #00d9ff; padding: 12px 8px; text-align: left;">Email</th>
+                <th style="background: #16213e; color: #00d9ff; padding: 12px 8px; text-align: left;">Captures</th>
+                <th style="background: #16213e; color: #00d9ff; padding: 12px 8px; text-align: left;">First Seen</th>
+                <th style="background: #16213e; color: #00d9ff; padding: 12px 8px; text-align: left;">Last Seen</th>
             </tr>
 '''
 

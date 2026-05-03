@@ -52,7 +52,7 @@
 .tour-demo-thumb.tour-demo-thumb--2 { background: linear-gradient(135deg, #2a1a5c, #6a3fc8 60%, #c9a8ff); }
 .tour-demo-thumb.tour-demo-thumb--3 { background: linear-gradient(135deg, #1a4a2e, #2fa86b 60%, #8cf2c0); }
 .tour-demo-thumb.tour-demo-selected {
-  border-color: #00d9ff;
+  border-color: var(--st-accent);
   box-shadow: 0 0 12px rgba(0, 217, 255, 0.6);
 }
 .tour-demo-thumb .tour-demo-num {
@@ -70,7 +70,7 @@
   top: 2px; left: 2px;
   width: 16px; height: 16px;
   border-radius: 4px;
-  background: #00d9ff;
+  background: var(--st-accent);
   color: #001220;
   font-size: 11px;
   font-weight: 900;
@@ -198,7 +198,7 @@
   width: 28px;
   height: 16px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #00d9ff, #0099cc);
+  background: linear-gradient(135deg, var(--st-accent), #0099cc);
   position: relative;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
 }
@@ -317,7 +317,7 @@
 .tour-tooltip-title {
   font-size: 15px;
   font-weight: 700;
-  color: #00d9ff;
+  color: var(--st-accent);
   margin-bottom: 8px;
 }
 
@@ -350,7 +350,7 @@
 }
 
 .tour-progress span.active {
-  background: #00d9ff;
+  background: var(--st-accent);
   width: 18px;
   border-radius: 4px;
 }
@@ -381,7 +381,7 @@
 }
 
 .tour-btn-next {
-  background: linear-gradient(135deg, #00d9ff, #0099cc);
+  background: linear-gradient(135deg, var(--st-accent), #0099cc);
   color: #001220;
   box-shadow: 0 2px 10px rgba(0, 217, 255, 0.4);
 }
@@ -418,7 +418,7 @@
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding: 10px 14px;
   font-size: 12px;
-  color: #00d9ff;
+  color: var(--st-accent);
   cursor: pointer;
   font-family: inherit;
   transition: background 0.15s ease;

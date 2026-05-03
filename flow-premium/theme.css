@@ -90,6 +90,56 @@
 }
 
 /* ============================================================
+   Theme-invariant design tokens (Task #26 polish pass)
+   Typography, spacing rhythm (4/8), motion, radius, focus.
+   Identical in dark + light so layout/timing stays stable
+   across themes; only color tokens flip.
+   ============================================================ */
+:root {
+  /* Typography — single sans family across every surface */
+  --st-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --st-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* Spacing rhythm — multiples of 4px (8px from --st-space-2 onward) */
+  --st-space-1: 4px;
+  --st-space-2: 8px;
+  --st-space-3: 12px;
+  --st-space-4: 16px;
+  --st-space-5: 20px;
+  --st-space-6: 24px;
+  --st-space-8: 32px;
+  --st-space-10: 40px;
+
+  /* Radii */
+  --st-radius-sm: 6px;
+  --st-radius-md: 8px;
+  --st-radius-lg: 12px;
+  --st-radius-xl: 16px;
+  --st-radius-pill: 9999px;
+
+  /* Motion — single ease + three durations everything should reach for */
+  --st-motion-fast: 0.15s;
+  --st-motion-base: 0.22s;
+  --st-motion-slow: 0.35s;
+  --st-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Focus ring — used by global :focus-visible polish below */
+  --st-focus-ring: 0 0 0 3px var(--st-accent-soft-2), 0 0 0 1px var(--st-accent);
+}
+
+/* ============================================================
+   Global accessibility polish (Task #26)
+   Keyboard focus is visible on every interactive surface, and
+   reduced-motion preferences silence non-essential animations
+   across the whole extension (not just the theme cycle button).
+   ============================================================ */
+:where(button, [role="button"], a, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--st-focus-ring);
+  border-radius: var(--st-radius-sm);
+}
+
+/* ============================================================
    Institution logo — adaptive chip
    White-label logos arrive in many flavors (light-on-dark,
    dark-on-light, full-color). Wrap them in a subtle padded
@@ -901,4 +951,13 @@
 @media (prefers-reduced-motion: reduce) {
   .theme-cycle-btn { transition: none; }
   .theme-cycle-btn:hover { transform: none; }
+  /* Global silencer — keep animations functional but instant.
+     Uses 0.01ms (not 0) so JS that listens for transitionend
+     still fires. */
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

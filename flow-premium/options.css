@@ -29,7 +29,7 @@ header h1 {
 }
 
 .version {
-  color: #00bcd4;
+  color: var(--st-accent);
   font-size: 14px;
 }
 
@@ -44,7 +44,7 @@ header h1 {
 
 .settings-group h2 {
   font-size: 18px;
-  color: #00bcd4;
+  color: var(--st-accent);
   margin-bottom: 16px;
   padding-bottom: 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -80,8 +80,8 @@ header h1 {
 .setting-item select:focus,
 .setting-item input[type="text"]:focus {
   outline: none;
-  border-color: #00bcd4;
-  box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.2);
+  border-color: var(--st-accent);
+  box-shadow: 0 0 0 3px var(--st-accent-soft-2);
 }
 
 .setting-item input[type="color"] {
@@ -110,7 +110,7 @@ header h1 {
 .toggle-label input[type="checkbox"] {
   width: 20px;
   height: 20px;
-  accent-color: #00bcd4;
+  accent-color: var(--st-accent);
   cursor: pointer;
 }
 
@@ -138,7 +138,7 @@ header h1 {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #00bcd4;
+  background: var(--st-accent);
   cursor: pointer;
 }
 
@@ -146,7 +146,7 @@ header h1 {
   min-width: 40px;
   text-align: right;
   font-weight: 600;
-  color: #00bcd4;
+  color: var(--st-accent);
 }
 
 .actions {
@@ -168,13 +168,13 @@ header h1 {
 }
 
 .primary-btn {
-  background: linear-gradient(135deg, #00bcd4 0%, #00838f 100%);
+  background: linear-gradient(135deg, var(--st-accent) 0%, var(--st-accent-2) 100%);
   color: #000;
 }
 
 .primary-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 188, 212, 0.4);
+  box-shadow: 0 6px 20px var(--st-accent-border);
 }
 
 .secondary-btn {
@@ -220,7 +220,7 @@ footer {
 }
 
 footer a {
-  color: #00bcd4;
+  color: var(--st-accent);
   text-decoration: none;
 }
 
@@ -387,7 +387,7 @@ footer a:hover {
 
 .sub-action-link:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(0, 188, 212, 0.4);
+  border-color: var(--st-accent-border);
   transform: translateX(4px);
 }
 
@@ -422,7 +422,7 @@ footer a:hover {
 
 .sub-action-link:hover .sub-action-arrow {
   transform: translateX(4px);
-  color: #00bcd4;
+  color: var(--st-accent);
 }
 
 @media (max-width: 500px) {
