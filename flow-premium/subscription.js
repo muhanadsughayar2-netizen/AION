@@ -106,10 +106,24 @@ async function checkSubscriptionWithServer(email) {
     });
     if (!response.ok) return null;
     const data = await response.json();
+    console.log('[SnapToAI] /api/subscription/status →', data.planType || data.status, data.branding ? `(branded: ${data.branding.name}, policy=${data.branding.keyPolicy})` : '(no branding)');
+    // Guard against late responses from a previous account: if the user has
+    // signed out or switched accounts while this request was in flight,
+    // discard the response so we don't overwrite the new account's cache or
+    // re-paint stale institution branding.
+    const currentEmailNow = (await getSignedInEmail() || '').toLowerCase();
+    const requestedEmail = (email || '').toLowerCase();
+    if (currentEmailNow !== requestedEmail) {
+      console.log('[SnapToAI] Discarding stale subscription response (account switched mid-flight).');
+      return null;
+    }
     if (data.success) {
       const updates = {
         subscriptionActive: data.canUseAI && data.status === 'subscribed',
         subscriptionPlan: data.planType || null,
+        // Email-scope the cache so a different signed-in account doesn't
+        // inherit the previous user's plan/branding.
+        subscriptionEmail: (email || '').toLowerCase(),
         lastVerified: Date.now(),
         cachedSubStatus: data
       };
@@ -171,9 +185,15 @@ async function checkSubscription() {
     return { status: 'no_sign_in', planType: null, canUseAI: false, isEarlyAccess: false, daysRemaining: TRIAL_DAYS, needsApiKey: false, needsSignIn: true };
   }
 
-  const local = await chrome.storage.local.get(['subscriptionActive', 'subscriptionPlan', 'lastVerified', 'cachedSubStatus']);
+  const local = await chrome.storage.local.get(['subscriptionActive', 'subscriptionPlan', 'lastVerified', 'cachedSubStatus', 'subscriptionEmail']);
 
-  if (local.subscriptionActive) {
+  // If the cached email belongs to a different account, force a fresh server
+  // check — otherwise signing in as user B inherits user A's plan/branding.
+  const cachedEmail = (local.subscriptionEmail || '').toLowerCase();
+  const currentEmail = (email || '').toLowerCase();
+  const emailMatches = cachedEmail && cachedEmail === currentEmail;
+
+  if (local.subscriptionActive && emailMatches) {
     const hoursSinceVerify = local.lastVerified ? (Date.now() - local.lastVerified) / 3600000 : 999;
     // Institution members revalidate hourly so admin actions (suspend, remove,
     // expiry change, branding/logo update, key rotation) take effect quickly
@@ -245,7 +265,10 @@ async function refreshSubscription() {
     return { success: false, error: 'Please sign in with Google first' };
   }
 
+  // Hard-invalidate the cache so checkSubscriptionWithServer always re-hits
+  // the server and refreshes branding / key policy / member last_seen.
   await chrome.storage.local.set({ lastVerified: 0 });
+  await chrome.storage.local.remove(['snaptoai_branding']);
   const result = await checkSubscriptionWithServer(email);
 
   if (result && result.canUseAI && result.status === 'subscribed') {

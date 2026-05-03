@@ -132,6 +132,21 @@ async function handleGoogleSignIn() {
       tokenObtainedAt: Date.now()
     };
 
+    // Wipe any cached subscription/branding from a previous account BEFORE
+    // we save the new user, so the very next checkSubscription pulls a fresh
+    // server response (and immediately activates institution branding/policy
+    // for members like a bank's admin/users).
+    try {
+      await chrome.storage.local.remove([
+        'subscriptionActive',
+        'subscriptionPlan',
+        'subscriptionEmail',
+        'lastVerified',
+        'cachedSubStatus',
+        'snaptoai_branding'
+      ]);
+    } catch (_) {}
+
     await chrome.storage.local.set({ snaptoai_user: userData });
 
     const deviceResult = await chrome.storage.local.get('snaptoai_device_id');
@@ -163,7 +178,16 @@ async function handleGoogleSignIn() {
     }
 
     await checkAuthState();
+    // Force a server-side subscription check so institution branding / key
+    // policy activate within seconds of sign-in (don't wait for the cache
+    // window to expire).
+    try {
+      if (window.SnapToAISubscription && window.SnapToAISubscription.refresh) {
+        await window.SnapToAISubscription.refresh();
+      }
+    } catch (_) {}
     await refreshSubscriptionUI();
+    try { await applyInstitutionBranding(); } catch (_) {}
     updateAiButtonState();
 
     if (pendingAfterSignIn === 'geminiModal') {
@@ -196,7 +220,18 @@ async function handleGoogleSignIn() {
 
 async function handleSignOut() {
   try {
-    await chrome.storage.local.remove('snaptoai_user');
+    // Clear ALL cached entitlement / branding so the previous user's
+    // institution logo, plan, and key policy don't leak into the next
+    // signed-in (or anonymous) session.
+    await chrome.storage.local.remove([
+      'snaptoai_user',
+      'subscriptionActive',
+      'subscriptionPlan',
+      'subscriptionEmail',
+      'lastVerified',
+      'cachedSubStatus',
+      'snaptoai_branding'
+    ]);
     try {
       await chrome.identity.clearAllCachedAuthTokens();
     } catch (e) {}
@@ -204,6 +239,7 @@ async function handleSignOut() {
     if (accountPopover) accountPopover.style.display = 'none';
     await checkAuthState();
     await refreshSubscriptionUI();
+    try { await applyInstitutionBranding(); } catch (_) {}
     updateAiButtonState();
   } catch (error) {
     console.log('[SnapToAI] Sign-out error:', error);
@@ -4204,10 +4240,23 @@ async function refreshSubscriptionUI() {
     return;
   }
   try {
-    const { snaptoai_dev_override, cachedSubStatus } = await chrome.storage.local.get(['snaptoai_dev_override', 'cachedSubStatus']);
+    const { snaptoai_dev_override, cachedSubStatus, snaptoai_user, lastVerified } = await chrome.storage.local.get(['snaptoai_dev_override', 'cachedSubStatus', 'snaptoai_user', 'lastVerified']);
 
     if (cachedSubStatus && upgradeBtn) {
       applySubscriptionBadge(upgradeBtn, cachedSubStatus, snaptoai_dev_override);
+    }
+
+    // Auto-refresh on popup open: if the user is signed in and our cached
+    // entitlement is older than 5 minutes (or we have no branding yet for an
+    // account that might be an institution member), force a fresh server
+    // check so admin-side changes (added member, key policy switch, branding
+    // update) take effect within seconds instead of waiting up to an hour.
+    if (snaptoai_user && snaptoai_user.email && window.SnapToAISubscription.refresh) {
+      const ageMs = Date.now() - (lastVerified || 0);
+      const stale = !lastVerified || ageMs > 5 * 60 * 1000;
+      if (stale) {
+        try { await window.SnapToAISubscription.refresh(); } catch (_) {}
+      }
     }
 
     const status = await window.SnapToAISubscription.check();

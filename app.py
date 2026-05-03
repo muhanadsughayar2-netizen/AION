@@ -640,10 +640,20 @@ def _resolve_institution_for_email(cur, email):
     email = _norm_email(email)
     if not email or '@' not in email:
         return None, None, 'none'
+    # Deterministic ordering: prefer an active member row in an active
+    # institution over any suspended/removed/expired row. Without this,
+    # Postgres can return a stale inactive row first when an email exists
+    # in multiple institution_members rows (historical or moved-between-orgs).
     cur.execute("""
         SELECT m.institution_id, m.status, i.status, i.expires_at, i.slug, i.name, i.logo_url, i.brand_color, m.role, i.logo_url_light, m.expires_at
         FROM institution_members m JOIN institutions i ON i.id = m.institution_id
-        WHERE LOWER(m.email) = %s LIMIT 1
+        WHERE LOWER(m.email) = %s
+        ORDER BY
+          CASE WHEN m.status='active' THEN 0 ELSE 1 END,
+          CASE WHEN i.status='active' THEN 0 ELSE 1 END,
+          CASE WHEN m.expires_at IS NULL OR m.expires_at > NOW() THEN 0 ELSE 1 END,
+          m.joined_at DESC NULLS LAST
+        LIMIT 1
     """, (email,))
     row = cur.fetchone()
     if row:
@@ -714,13 +724,21 @@ def _get_institution_branding_for_email(cur, email):
     email = _norm_email(email)
     if not email:
         return None
+    # Deterministic ordering: prefer an active row in an active institution
+    # so a stale suspended/removed row never wins the lookup.
     cur.execute("""
         SELECT i.id, i.slug, i.name, i.logo_url, i.brand_color, i.status, i.expires_at,
                m.status, m.role, i.logo_url_light,
                i.gemini_key_encrypted, i.gemini_key_hint, i.key_policy, i.billing_behavior,
                m.expires_at
         FROM institution_members m JOIN institutions i ON i.id = m.institution_id
-        WHERE LOWER(m.email) = %s LIMIT 1
+        WHERE LOWER(m.email) = %s
+        ORDER BY
+          CASE WHEN m.status='active' THEN 0 ELSE 1 END,
+          CASE WHEN i.status='active' THEN 0 ELSE 1 END,
+          CASE WHEN m.expires_at IS NULL OR m.expires_at > NOW() THEN 0 ELSE 1 END,
+          m.joined_at DESC NULLS LAST
+        LIMIT 1
     """, (email,))
     r = cur.fetchone()
     if not r:
@@ -733,6 +751,7 @@ def _get_institution_branding_for_email(cur, email):
     # this an expired member keeps branding + the institution Gemini key.
     if r[14] and r[14] < datetime.now():
         return None
+    print(f'🏛️  institution match: email={email} inst_id={r[0]} slug={r[1]} role={r[8]} key_policy={r[12]}')
     return {
         'institutionId': r[0],
         'slug': r[1],
@@ -809,7 +828,13 @@ def _resolve_institution_key_for_email(cur, email):
         SELECT i.id, i.name, i.gemini_key_encrypted, i.key_policy, i.billing_behavior,
                i.status, i.expires_at, m.status, m.expires_at
         FROM institution_members m JOIN institutions i ON i.id = m.institution_id
-        WHERE LOWER(m.email) = %s LIMIT 1
+        WHERE LOWER(m.email) = %s
+        ORDER BY
+          CASE WHEN m.status='active' THEN 0 ELSE 1 END,
+          CASE WHEN i.status='active' THEN 0 ELSE 1 END,
+          CASE WHEN m.expires_at IS NULL OR m.expires_at > NOW() THEN 0 ELSE 1 END,
+          m.joined_at DESC NULLS LAST
+        LIMIT 1
     """, (email,))
     r = cur.fetchone()
     if not r:
