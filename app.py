@@ -4224,18 +4224,18 @@ window.addEventListener('load', () => {{
       </div>
       <div style="min-width: 240px;">
         <label style="font-size: 12px; color: #888; display: block; margin-bottom: 4px;">Logo (PNG/JPG/SVG/WebP, max 2MB):</label>
-        {('<div style="margin-bottom:6px;"><img src="' + html_escape_module.escape(info.get('logoUrl') or '') + '" alt="" style="max-height:36px;max-width:160px;background:#fff;padding:4px;border-radius:4px;"></div>') if info.get('logoUrl') else ''}
+        <div id="logo-preview-wrap" style="margin-bottom:6px;{'' if info.get('logoUrl') else 'display:none;'}"><img id="logo-preview-img" src="{html_escape_module.escape(info.get('logoUrl') or '')}" alt="" style="max-height:36px;max-width:160px;background:#fff;padding:4px;border-radius:4px;"></div>
         <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" style="font-size: 12px;" onchange="uploadLogo()" {'disabled' if info.get('brandingLocked') else ''}>
         <button onclick="uploadLogo()" style="margin-top: 6px;" {'disabled' if info.get('brandingLocked') else ''}>Save Logo</button>
-        {('<button class="danger" onclick="clearLogo(' + "'default'" + ')" style="margin-top: 6px;" ' + ('disabled' if info.get('brandingLocked') else '') + '>Clear</button>') if info.get('logoUrl') else ''}
+        <button id="logo-clear-btn" class="danger" onclick="clearLogo('default')" style="margin-top: 6px;{'' if info.get('logoUrl') else 'display:none;'}" {'disabled' if info.get('brandingLocked') else ''}>Clear</button>
         <span id="logo-msg" style="color: #00ff88; font-size: 12px; margin-left: 8px;"></span>
       </div>
       <div style="min-width: 240px;">
         <label style="font-size: 12px; color: #888; display: block; margin-bottom: 4px;">Light-mode logo <span style="color:#666;">(optional — used when viewers are in Light mode)</span>:</label>
-        {('<div style="margin-bottom:6px;"><img src="' + html_escape_module.escape(info.get('logoUrlLight') or '') + '" alt="" style="max-height:36px;max-width:160px;background:#1a1a2a;padding:4px;border-radius:4px;"></div>') if info.get('logoUrlLight') else ''}
+        <div id="logo-light-preview-wrap" style="margin-bottom:6px;{'' if info.get('logoUrlLight') else 'display:none;'}"><img id="logo-light-preview-img" src="{html_escape_module.escape(info.get('logoUrlLight') or '')}" alt="" style="max-height:36px;max-width:160px;background:#1a1a2a;padding:4px;border-radius:4px;"></div>
         <input id="logo-file-light" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" style="font-size: 12px;" onchange="uploadLogoLight()" {'disabled' if info.get('brandingLocked') else ''}>
         <button onclick="uploadLogoLight()" style="margin-top: 6px;" {'disabled' if info.get('brandingLocked') else ''}>Save Light Logo</button>
-        {('<button class="danger" onclick="clearLogo(' + "'light'" + ')" style="margin-top: 6px;" ' + ('disabled' if info.get('brandingLocked') else '') + '>Clear</button>') if info.get('logoUrlLight') else ''}
+        <button id="logo-light-clear-btn" class="danger" onclick="clearLogo('light')" style="margin-top: 6px;{'' if info.get('logoUrlLight') else 'display:none;'}" {'disabled' if info.get('brandingLocked') else ''}>Clear</button>
         <span id="logo-light-msg" style="color: #00ff88; font-size: 12px; margin-left: 8px;"></span>
       </div>
     </div>
@@ -4584,6 +4584,30 @@ function updateBrandPreview() {{
 // Auto-uploads on file pick AND works as a click handler on the Save
 // button. Re-entrancy guard via _logoUploading prevents the change-event
 // + button-click double-fire from running two parallel uploads.
+//
+// Task #36: After save, swap the preview image INLINE instead of full-page
+// reloading. The previous reload cleared the file input + the success
+// message in under a second and made users (correctly) think their file
+// disappeared into nowhere. Now the new logo appears immediately right
+// above the picker, the success banner stays put, and the user can see
+// what they uploaded.
+function _swapLogoPreview(wrapId, imgId, clearBtnId, newUrl) {{
+  const wrap = document.getElementById(wrapId);
+  const img  = document.getElementById(imgId);
+  const clr  = document.getElementById(clearBtnId);
+  if (img && newUrl) {{
+    // cache-buster — same filename / new bytes would otherwise show the old image
+    img.src = newUrl + (newUrl.indexOf('?') === -1 ? '?' : '&') + 't=' + Date.now();
+  }}
+  if (wrap) wrap.style.display = newUrl ? '' : 'none';
+  if (clr)  clr.style.display  = newUrl ? '' : 'none';
+}}
+function _bigSavedBanner(msgEl, label) {{
+  if (!msgEl) return;
+  msgEl.style.color = '#00ff88';
+  msgEl.style.fontWeight = '700';
+  msgEl.textContent = '✓ ' + label + ' saved! Preview updated above ↑';
+}}
 let _logoUploading = false;
 async function uploadLogo() {{
   if (_logoUploading) return;
@@ -4597,7 +4621,13 @@ async function uploadLogo() {{
     const fd = new FormData(); fd.append('logo', f);
     const r = await fetch(API_BASE + '/branding/logo', {{method:'POST', body: fd}});
     const d = await r.json();
-    if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Saved'; setTimeout(()=>location.reload(), 800); }}
+    if (d.success) {{
+      _swapLogoPreview('logo-preview-wrap', 'logo-preview-img', 'logo-clear-btn', d.logoUrl || '');
+      _bigSavedBanner(msg, 'Logo');
+      // Clear the file input so picking a different file later doesn't
+      // confuse the user with the old filename hanging around.
+      try {{ input.value = ''; }} catch (_) {{}}
+    }}
     else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
   }} catch (e) {{
     msg.style.color='#ff4757'; msg.textContent = '✗ ' + (e.message || 'upload failed');
@@ -4618,7 +4648,11 @@ async function uploadLogoLight() {{
     const fd = new FormData(); fd.append('logo', f); fd.append('variant', 'light');
     const r = await fetch(API_BASE + '/branding/logo', {{method:'POST', body: fd}});
     const d = await r.json();
-    if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Saved'; setTimeout(()=>location.reload(), 800); }}
+    if (d.success) {{
+      _swapLogoPreview('logo-light-preview-wrap', 'logo-light-preview-img', 'logo-light-clear-btn', d.logoUrlLight || '');
+      _bigSavedBanner(msg, 'Light-mode logo');
+      try {{ input.value = ''; }} catch (_) {{}}
+    }}
     else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
   }} catch (e) {{
     msg.style.color='#ff4757'; msg.textContent = '✗ ' + (e.message || 'upload failed');
@@ -4634,7 +4668,11 @@ async function clearLogo(which) {{
   const url = API_BASE + '/branding/logo' + (isLight ? '?variant=light' : '');
   const r = await fetch(url, {{method:'DELETE'}});
   const d = await r.json();
-  if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Cleared'; setTimeout(()=>location.reload(), 600); }}
+  if (d.success) {{
+    if (isLight) _swapLogoPreview('logo-light-preview-wrap', 'logo-light-preview-img', 'logo-light-clear-btn', '');
+    else         _swapLogoPreview('logo-preview-wrap', 'logo-preview-img', 'logo-clear-btn', '');
+    msg.style.color='#00ff88'; msg.textContent='✓ Cleared';
+  }}
   else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
 }}
 async function createLink() {{
