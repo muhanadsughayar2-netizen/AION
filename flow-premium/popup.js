@@ -1755,7 +1755,7 @@ async function handleOrbClick() {
     } else {
       // Check if queue is full - show alert for this specific error
       if (response.queueFull) {
-        alert(response.error || 'Queue full (9/9). Delete some images first.');
+        alert(response.error || 'Queue full (10/10). Delete some images first.');
       }
       
       statusError(response.error || 'Capture failed');
@@ -1947,7 +1947,7 @@ function showQueueFullModal(chunksNeeded, availableSlots) {
   if (modal && slotsNeededEl && slotsAvailableEl && messageEl) {
     if (availableSlots <= 0) {
       // Queue completely full
-      slotsNeededEl.textContent = 'Queue: 9/9';
+      slotsNeededEl.textContent = 'Queue: 10/10';
       slotsAvailableEl.textContent = 'No slots available';
       messageEl.textContent = 'Queue is full! Clear some snaps to capture.';
     } else {
