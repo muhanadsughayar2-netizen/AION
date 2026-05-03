@@ -427,6 +427,82 @@ def _verify_admin_token(slug, email, token):
         return False
     return token == _gen_admin_token(slug, email)
 
+# --- Magic-link sign-in for institution admins ----------------------------
+# Short-lived (15 min), single-use HMAC tokens that an authorized institution
+# admin can request by email when Google Sign-In is unavailable. Single-use is
+# enforced via an in-process set of consumed tokens (sufficient for our single
+# Flask worker; tokens also auto-expire by signature so a worker restart at
+# worst lets a not-yet-expired token be used twice within its 15-min window).
+import hmac
+import threading as _threading_for_magic
+import urllib.parse
+_MAGIC_LINK_TTL_SECONDS = 15 * 60
+_USED_MAGIC_TOKENS = {}  # token_sig -> exp_ts
+_USED_MAGIC_LOCK = _threading_for_magic.Lock()
+
+def _gen_magic_link_token(slug, email, exp_ts):
+    payload = f"magic|{slug}|{_norm_email(email)}|{int(exp_ts)}|{ADMIN_SESSION_SECRET}"
+    return hashlib.sha256(payload.encode('utf-8')).hexdigest()
+
+def _verify_magic_link_token(slug, email, exp_ts, token):
+    try:
+        exp_ts = int(exp_ts)
+    except (TypeError, ValueError):
+        return False, 'Bad link'
+    if not (slug and email and token):
+        return False, 'Bad link'
+    now = int(time.time())
+    if exp_ts < now:
+        return False, 'This sign-in link has expired. Please request a new one.'
+    expected = _gen_magic_link_token(slug, email, exp_ts)
+    if not hmac.compare_digest(expected, token):
+        return False, 'Bad link'
+    sig_key = f"{slug}|{_norm_email(email)}|{exp_ts}|{token}"
+    with _USED_MAGIC_LOCK:
+        # Opportunistic GC of expired entries
+        if len(_USED_MAGIC_TOKENS) > 256:
+            for k in [k for k, v in _USED_MAGIC_TOKENS.items() if v < now]:
+                _USED_MAGIC_TOKENS.pop(k, None)
+        if sig_key in _USED_MAGIC_TOKENS:
+            return False, 'This sign-in link has already been used. Please request a new one.'
+        _USED_MAGIC_TOKENS[sig_key] = exp_ts
+    return True, None
+
+def _send_inst_admin_email(to_email, subject, body_text):
+    """Send a plain-text email via SMTP env vars. Returns (ok, error_message).
+    Required env vars: SMTP_HOST. Optional: SMTP_PORT (default 587),
+    SMTP_USER, SMTP_PASSWORD, SMTP_FROM (default SMTP_USER), SMTP_USE_TLS
+    (default '1'). If SMTP_HOST is missing, returns (False, friendly_msg)."""
+    host = os.environ.get('SMTP_HOST', '').strip()
+    if not host:
+        return False, ("Email delivery isn't set up on this server. "
+                       "Ask the super-admin to send you a sign-in link.")
+    try:
+        import smtplib
+        from email.message import EmailMessage
+        port = int(os.environ.get('SMTP_PORT', '587'))
+        user = os.environ.get('SMTP_USER', '').strip()
+        pw = os.environ.get('SMTP_PASSWORD', '')
+        sender = os.environ.get('SMTP_FROM', '').strip() or user or 'no-reply@snaptoai.com'
+        use_tls = os.environ.get('SMTP_USE_TLS', '1') not in ('0', 'false', 'False', '')
+        msg = EmailMessage()
+        msg['Subject'] = subject
+        msg['From'] = sender
+        msg['To'] = to_email
+        msg.set_content(body_text)
+        with smtplib.SMTP(host, port, timeout=15) as s:
+            s.ehlo()
+            if use_tls:
+                s.starttls()
+                s.ehlo()
+            if user:
+                s.login(user, pw)
+            s.send_message(msg)
+        return True, None
+    except Exception as e:
+        print(f'❌ admin magic-link email send: {e}')
+        return False, f'Email delivery failed: {e}'
+
 def _institution_active(row):
     """row = (status, expires_at) — true iff active and not expired."""
     if not row:
@@ -2071,7 +2147,7 @@ def admin_panel():
             '<td style="padding: 8px; color:#ccc; font-size: 12px;">' + (inst.expiresAt ? new Date(inst.expiresAt).toLocaleDateString() : 'never') + '</td>' +
             '<td style="padding: 8px;">' +
               '<button onclick="copyAdminLink(\\'' + inst.slug + '\\')" style="background: #06b6d4; color: #000; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 4px;" title="Copy admin URL (admin signs in with Google)">📋 Admin URL</button>' +
-              '<a href="/institution/' + inst.slug + '/admin" target="_blank" style="background: #a855f7; color: #fff; padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 11px; margin-right: 4px;">Open</a>' +
+              '<a href="/institution/' + inst.slug + '/admin?password=' + encodeURIComponent(ADMIN_PW) + '" target="_blank" style="background: #a855f7; color: #fff; padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 11px; margin-right: 4px;" title="One-click entry as super-admin (no Google sign-in required)">→ Enter admin dashboard</a>' +
               '<label style="background: #333; color: #fff; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 4px;">📤 Logo<input type="file" accept="image/*" style="display:none;" onchange="uploadLogo(' + inst.id + ', this)"></label>' +
               '<button onclick="toggleStatus(' + inst.id + ', \\'' + (inst.status === 'active' ? 'suspended' : 'active') + '\\')" style="background: #f97316; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 4px;">' + (inst.status === 'active' ? '⏸ Suspend' : '▶ Activate') + '</button>' +
               '<button onclick="deleteInstitution(' + inst.id + ', \\'' + inst.name.replace(/\\'/g, "\\\\'") + '\\')" style="background: #ff4757; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">🗑</button>' +
@@ -3772,13 +3848,120 @@ def api_inst_admin_google_login(slug):
     return resp
 
 
+@app.route('/api/institution/<slug>/admin-magic-link', methods=['POST', 'OPTIONS'])
+def api_inst_admin_magic_link_request(slug):
+    """Email a one-time sign-in link to an authorized institution admin.
+    Verifies the email is an admin for this slug (`_is_inst_admin`); if not,
+    returns the same generic success message to avoid leaking which emails
+    are admins. Sends a short-lived (15 min) signed link via SMTP."""
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    data = request.get_json(silent=True) or {}
+    email = _norm_email(data.get('email', ''))
+    generic_ok = ('If that email is an admin for this institution, '
+                  'a sign-in link is on its way (check spam too). The link expires in 15 minutes.')
+    if not email or '@' not in email:
+        return _cors(jsonify({'success': False, 'error': 'Enter a valid email address.'})), 400
+    try:
+        conn = get_db(); cur = conn.cursor()
+        is_admin = _is_inst_admin(cur, slug, email)
+        row = _institution_by_slug(cur, slug)
+        cur.close(); conn.close()
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+    if not row:
+        return _cors(jsonify({'success': False, 'error': 'Institution not found'})), 404
+    if not is_admin:
+        # Don't reveal admin membership; same generic message as success.
+        return _cors(jsonify({'success': True, 'message': generic_ok}))
+    inst_name = row[2]
+    exp_ts = int(time.time()) + _MAGIC_LINK_TTL_SECONDS
+    token = _gen_magic_link_token(slug, email, exp_ts)
+    # Build the magic-link base from a trusted, configured value (APP_BASE_URL)
+    # to defeat host-header poisoning attacks against bearer-token URLs.
+    # Only fall back to request.host_url when APP_BASE_URL is not set.
+    base = (os.environ.get('APP_BASE_URL', '').strip() or (request.host_url or '')).rstrip('/')
+    link = (f"{base}/institution/{slug}/admin/magic-login?"
+            f"email={urllib.parse.quote(email)}&exp={exp_ts}&token={token}")
+    body = (
+        f"Hi,\n\n"
+        f"You requested a sign-in link for the {inst_name} admin dashboard on SnapToAI.\n\n"
+        f"Click this link to sign in (valid for 15 minutes, one-time use):\n\n"
+        f"{link}\n\n"
+        f"If you didn't request this, you can ignore this email — your account is safe.\n"
+    )
+    sent, err = _send_inst_admin_email(email,
+                                       f"{inst_name} — your SnapToAI admin sign-in link",
+                                       body)
+    if not sent:
+        return _cors(jsonify({'success': False, 'error': err or 'Could not send email.'})), 503
+    return _cors(jsonify({'success': True, 'message': generic_ok}))
+
+
+@app.route('/institution/<slug>/admin/magic-login', methods=['GET'])
+def institution_admin_magic_login(slug):
+    """Verify a magic-link token and, if valid, set the inst-admin session
+    cookie and redirect to the dashboard. Re-checks `_is_inst_admin` so a
+    revoked admin can't reuse an old link before it expires."""
+    if not ensure_db():
+        return Response("Database not available", status=503)
+    email = _norm_email(request.args.get('email', ''))
+    exp_raw = request.args.get('exp', '')
+    token = (request.args.get('token') or '').strip()
+    ok, err = _verify_magic_link_token(slug, email, exp_raw, token)
+    def _fail(msg, status=400):
+        body = (f"<!DOCTYPE html><html><head><meta charset='UTF-8'>"
+                f"<title>Sign-in link problem</title>"
+                f"<style>body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;"
+                f"background:#0f0f1a;color:#fff;min-height:100vh;margin:0;display:flex;align-items:center;"
+                f"justify-content:center;padding:24px;}}.card{{max-width:440px;background:rgba(255,255,255,0.04);"
+                f"border:1px solid #ff475755;border-radius:18px;padding:36px;text-align:center;}}"
+                f"a{{color:#00d9ff;}}</style></head><body><div class='card'>"
+                f"<h2 style='color:#ff4757;margin-top:0;'>Sign-in link problem</h2>"
+                f"<p>{html_escape_module.escape(msg)}</p>"
+                f"<p><a href='/institution/{html_escape_module.escape(slug)}/admin'>Back to sign-in</a></p>"
+                f"</div></body></html>")
+        return Response(body, mimetype='text/html', status=status)
+    if not ok:
+        return _fail(err or 'This sign-in link is invalid.', status=400)
+    try:
+        conn = get_db(); cur = conn.cursor()
+        is_admin = _is_inst_admin(cur, slug, email)
+        cur.close(); conn.close()
+    except Exception as e:
+        return _fail(f'Server error: {e}', status=500)
+    if not is_admin:
+        return _fail('This email is no longer an admin for this institution.', status=403)
+    resp = redirect(f'/institution/{slug}/admin')
+    cookie_value = f"{email}|{_gen_admin_token(slug, email)}"
+    resp.set_cookie(INST_ADMIN_COOKIE_PREFIX + slug, cookie_value,
+                    httponly=True, samesite='Lax', max_age=86400 * 30)
+    return resp
+
+
 @app.route('/institution/<slug>/admin', methods=['GET'])
 def institution_admin_page(slug):
     if not ensure_db():
         return Response("Database not available", status=503)
     ok, admin_email = _verify_inst_admin(slug)
+    # Super-admin one-click entry: when the caller is the super-admin but has
+    # no inst-admin cookie yet, identify them as the institution's primary
+    # admin email and drop the inst-admin session cookie below.
+    if ok and not admin_email and _require_super_admin():
+        try:
+            conn = get_db(); cur = conn.cursor()
+            r0 = _institution_by_slug(cur, slug)
+            cur.close(); conn.close()
+            if r0 and r0[5]:
+                admin_email = _norm_email(r0[5])
+        except Exception:
+            pass
     if not ok:
-        # Render a Google Sign-In gate so the admin can authenticate with their Google identity
+        # Render a sign-in gate offering BOTH Google Sign-In and an emailed
+        # one-time link, so admins are not dead-ended when Google is
+        # misconfigured or refuses their email.
         try:
             conn = get_db(); cur = conn.cursor()
             row = _institution_by_slug(cur, slug)
@@ -3791,28 +3974,53 @@ def institution_admin_page(slug):
         # CSS-context: only allow validated hex colors. html-escape is NOT enough.
         _raw = row[4] or '#00d9ff'
         inst_color = _raw if re.match(r'^#[0-9a-fA-F]{3,8}$', str(_raw)) else '#00d9ff'
-        client_id = html_escape_module.escape(GOOGLE_CLIENT_ID or '')
-        slug_safe = html_escape_module.escape(slug)
+        client_id = GOOGLE_CLIENT_ID or ''
+        has_google = bool(client_id)
+        google_block = ('<div id="g-btn"></div>'
+                        '<div class="hint" id="g-empty" style="display:none;">'
+                        'Google Sign-In is not configured for this server. '
+                        'Use the email sign-in link below instead.</div>') if has_google else (
+                        '<div class="hint">Google Sign-In is not configured for this server. '
+                        'Use the email sign-in link below to access the dashboard.</div>')
         gate = f'''<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>{inst_name} — Admin Sign-In</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f1a; color: #fff; min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center; padding: 24px; }}
-  .card {{ max-width: 440px; background: rgba(255,255,255,0.04); border: 1px solid {inst_color}55; border-radius: 18px; padding: 36px; text-align: center; }}
+  .card {{ max-width: 460px; width: 100%; background: rgba(255,255,255,0.04); border: 1px solid {inst_color}55; border-radius: 18px; padding: 36px; text-align: center; }}
   h1 {{ color: {inst_color}; margin: 0 0 8px 0; font-size: 22px; }}
   p {{ color: #ccc; line-height: 1.5; font-size: 14px; }}
-  #g-btn {{ display: flex; justify-content: center; margin: 24px 0 8px; }}
+  #g-btn {{ display: flex; justify-content: center; margin: 20px 0 4px; }}
+  .divider {{ display: flex; align-items: center; gap: 10px; color: #666; font-size: 11px; margin: 18px 0 14px; text-transform: uppercase; letter-spacing: 0.08em; }}
+  .divider::before, .divider::after {{ content: ''; flex: 1; height: 1px; background: #333; }}
+  .ml-form {{ display: flex; flex-direction: column; gap: 10px; text-align: left; }}
+  .ml-form label {{ font-size: 12px; color: #aaa; }}
+  .ml-form input {{ background: #0f0f1a; border: 1px solid #333; color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 14px; }}
+  .ml-form button {{ background: {inst_color}; color: #000; border: none; padding: 10px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }}
+  .ml-form button[disabled] {{ opacity: 0.6; cursor: progress; }}
+  .hint {{ color: #888; font-size: 12px; margin-top: 8px; line-height: 1.45; }}
   .err {{ color: #ff4757; font-size: 13px; margin-top: 12px; min-height: 18px; }}
+  .ok {{ color: #00ff88; font-size: 13px; margin-top: 12px; min-height: 18px; }}
 </style></head>
 <body><div class="card">
   <h1>{inst_name}</h1>
-  <p>Sign in with your <strong>institution admin email</strong> to manage members, invites and branding.</p>
-  <div id="g-btn"></div>
+  <p>Sign in as an <strong>institution admin</strong> to manage members, invites, and branding. Choose either option below.</p>
+  {google_block}
+  <div class="divider">or</div>
+  <form class="ml-form" onsubmit="event.preventDefault(); requestMagic();">
+    <label for="ml-email">Email me a one-time sign-in link</label>
+    <input id="ml-email" type="email" placeholder="admin@yourschool.edu" autocomplete="email" required>
+    <button type="submit" id="ml-btn">Email me a sign-in link</button>
+    <div class="hint">We'll send a single-use link valid for 15 minutes. Only authorized admin emails for this institution can request it.</div>
+  </form>
+  <div class="ok" id="ok"></div>
   <div class="err" id="err"></div>
 </div>
 <script>
 const SLUG = {json.dumps(slug)};
+const HAS_GOOGLE = {json.dumps(has_google)};
+const GOOGLE_CLIENT_ID = {json.dumps(client_id)};
 function onGoogle(resp) {{
   fetch('/api/institution/' + SLUG + '/admin-login', {{
     method: 'POST', headers: {{'Content-Type':'application/json'}},
@@ -3822,12 +4030,34 @@ function onGoogle(resp) {{
     else document.getElementById('err').textContent = d.error || 'Sign-in failed';
   }}).catch(e => document.getElementById('err').textContent = String(e));
 }}
+async function requestMagic() {{
+  const email = (document.getElementById('ml-email').value || '').trim();
+  const okEl = document.getElementById('ok');
+  const errEl = document.getElementById('err');
+  const btn = document.getElementById('ml-btn');
+  okEl.textContent = ''; errEl.textContent = '';
+  if (!email) {{ errEl.textContent = 'Enter your admin email.'; return; }}
+  btn.disabled = true;
+  try {{
+    const r = await fetch('/api/institution/' + SLUG + '/admin-magic-link', {{
+      method: 'POST', headers: {{'Content-Type':'application/json'}},
+      body: JSON.stringify({{email}})
+    }});
+    const d = await r.json();
+    if (d.success) okEl.textContent = d.message || 'Check your email for a sign-in link.';
+    else errEl.textContent = d.error || 'Could not send sign-in link.';
+  }} catch (e) {{
+    errEl.textContent = String(e);
+  }} finally {{ btn.disabled = false; }}
+}}
 window.addEventListener('load', () => {{
-  if (!window.google || !{json.dumps(bool(client_id))}) {{
-    document.getElementById('err').textContent = 'Google Sign-In is not configured. Contact SnapToAI support.';
+  if (!HAS_GOOGLE) return;
+  if (!window.google) {{
+    const el = document.getElementById('g-empty');
+    if (el) {{ el.style.display = 'block'; el.textContent = 'Google Sign-In could not load. Use the email sign-in link below instead.'; }}
     return;
   }}
-  google.accounts.id.initialize({{ client_id: {json.dumps(client_id)}, callback: onGoogle }});
+  google.accounts.id.initialize({{ client_id: GOOGLE_CLIENT_ID, callback: onGoogle }});
   google.accounts.id.renderButton(document.getElementById('g-btn'), {{ theme: 'filled_black', size: 'large', width: 320 }});
 }});
 </script></body></html>'''
