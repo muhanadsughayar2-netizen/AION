@@ -225,6 +225,9 @@ def init_db():
             )
         ''')
         cur.execute('CREATE INDEX IF NOT EXISTS idx_inst_members_email ON institution_members(LOWER(email))')
+        # Per-member access expiry — admin can grant 1-month / 3-month / etc.
+        # access. NULL = no expiry (lifetime, until removed/suspended).
+        cur.execute("ALTER TABLE institution_members ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP")
         cur.execute('''
             CREATE TABLE IF NOT EXISTS institution_invites (
                 id SERIAL PRIMARY KEY,
@@ -539,18 +542,20 @@ def _resolve_institution_for_email(cur, email):
     if not email or '@' not in email:
         return None, None, 'none'
     cur.execute("""
-        SELECT m.institution_id, m.status, i.status, i.expires_at, i.slug, i.name, i.logo_url, i.brand_color, m.role, i.logo_url_light
+        SELECT m.institution_id, m.status, i.status, i.expires_at, i.slug, i.name, i.logo_url, i.brand_color, m.role, i.logo_url_light, m.expires_at
         FROM institution_members m JOIN institutions i ON i.id = m.institution_id
         WHERE LOWER(m.email) = %s LIMIT 1
     """, (email,))
     row = cur.fetchone()
     if row:
-        if row[1] == 'active' and _institution_active((row[2], row[3])):
+        member_expired = bool(row[10] and row[10] < datetime.now())
+        if row[1] == 'active' and _institution_active((row[2], row[3])) and not member_expired:
             return row[0], {
                 'institutionId': row[0], 'slug': row[4], 'name': row[5],
                 'logoUrl': row[6], 'logoUrlLight': row[9],
                 'brandColor': row[7] or '#00d9ff',
-                'role': row[8] or 'member'
+                'role': row[8] or 'member',
+                'expiresAt': row[10].isoformat() if row[10] else None
             }, 'matched_active'
         return None, None, 'member_inactive'
 
@@ -4139,12 +4144,34 @@ window.addEventListener('load', () => {{
     </p>
     <div class="row">
       <input id="invite-email" class="grow" placeholder="user@example.com" type="email">
+      <select id="invite-duration" title="How long this member's access lasts" style="min-width: 150px;">
+        <option value="">No expiry (lifetime)</option>
+        <option value="30">1 month (30 days)</option>
+        <option value="90">3 months (90 days)</option>
+        <option value="180">6 months (180 days)</option>
+        <option value="365">1 year (365 days)</option>
+        <option value="custom">Custom date…</option>
+      </select>
+      <input id="invite-custom-date" type="date" style="display:none; min-width: 150px;">
       <button onclick="inviteOne()">Add Member</button>
     </div>
+    <p style="font-size: 11px; color: #777; margin: 8px 0 0 0;">Tip: when access ends the member is automatically blocked from institution features. You can extend or shorten any member's expiry from the table below.</p>
     <div style="margin-top: 14px;">
       <label style="font-size: 12px; color: #888;">Bulk add — upload a CSV file <em>or</em> paste emails below:</label>
       <input id="invite-csv-file" type="file" accept=".csv,text/csv,text/plain" style="margin: 6px 0; font-size: 12px;">
       <textarea id="invite-csv" placeholder="alice@example.com&#10;bob@example.com,carol@example.com"></textarea>
+      <div class="row" style="margin-top: 6px;">
+        <label style="font-size: 12px; color: #888;">Access duration for everyone in this batch:</label>
+        <select id="bulk-duration" title="Applies to every email in the batch">
+          <option value="">No expiry (lifetime)</option>
+          <option value="30">1 month (30 days)</option>
+          <option value="90">3 months (90 days)</option>
+          <option value="180">6 months (180 days)</option>
+          <option value="365">1 year (365 days)</option>
+          <option value="custom">Custom date…</option>
+        </select>
+        <input id="bulk-custom-date" type="date" style="display:none;">
+      </div>
       <button onclick="inviteBulk()" style="margin-top: 8px;">Bulk Add</button>
       <span id="bulk-msg" style="margin-left: 10px; color: #00ff88; font-size: 12px;"></span>
     </div>
@@ -4291,20 +4318,34 @@ async function load() {{
   document.getElementById('stat-pending').textContent = pending;
 
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}})[c]);
-  let html = '<table><tr><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Last Seen</th><th>Actions</th></tr>';
+  let html = '<table><tr><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Last Seen</th><th>Access Until</th><th>Actions</th></tr>';
   for (const m of d.members) {{
     const badgeClass = m.status === 'active' ? 'badge-active' : (m.status === 'suspended' ? 'badge-suspended' : 'badge-pending');
     const mid = parseInt(m.id, 10) || 0;
+    let expiryCell = '<span style="color:#888;">Never</span>';
+    if (m.expiresAt) {{
+      const dt = new Date(m.expiresAt);
+      const dateStr = dt.toLocaleDateString();
+      if (m.expired) {{
+        expiryCell = '<span style="color:#ff4757;" title="Expired — member is blocked">⏱ Expired ' + dateStr + '</span>';
+      }} else {{
+        const daysLeft = Math.ceil((dt.getTime() - Date.now()) / 86400000);
+        const tone = daysLeft <= 7 ? '#ffa500' : '#e0e0e0';
+        expiryCell = '<span style="color:' + tone + ';" title="' + daysLeft + ' day(s) remaining">' + dateStr + '</span>';
+      }}
+    }}
     html += '<tr>' +
       '<td>' + esc(m.email) + '</td>' +
       '<td>' + esc(m.role) + '</td>' +
       '<td><span class="badge ' + badgeClass + '">' + esc(m.status) + '</span></td>' +
       '<td>' + (m.joinedAt ? new Date(m.joinedAt).toLocaleDateString() : '—') + '</td>' +
       '<td>' + (m.lastSeen ? new Date(m.lastSeen).toLocaleDateString() : '—') + '</td>' +
+      '<td>' + expiryCell + '</td>' +
       '<td>' +
         (m.status === 'active'
           ? '<button class="danger" onclick="suspend(' + mid + ')">Suspend</button> '
           : '<button onclick="reactivate(' + mid + ')">Reactivate</button> ') +
+        '<button class="secondary" onclick="editExpiry(' + mid + ', ' + JSON.stringify(String(m.email||'')) + ', ' + JSON.stringify(m.expiresAt || '') + ')" title="Change access duration">Set Expiry</button> ' +
         '<button class="secondary" onclick="removeMember(' + mid + ', ' + JSON.stringify(String(m.email||'')) + ')">Remove</button>' +
       '</td></tr>';
   }}
@@ -4324,24 +4365,72 @@ async function signOut() {{
   }}
 }}
 
+// Read access-duration choice from a paired <select> + <input type=date>.
+// Returns {{durationDays, expiresAt}} suitable for posting to invite endpoints.
+function _readDurationFields(selectId, dateId) {{
+  const sel = document.getElementById(selectId);
+  const dateInput = document.getElementById(dateId);
+  if (!sel) return {{}};
+  const v = (sel.value || '').trim();
+  if (!v) return {{}};
+  if (v === 'custom') {{
+    const d = (dateInput && dateInput.value || '').trim();
+    if (!d) {{ alert('Pick a custom expiry date or choose another option.'); throw new Error('no-date'); }}
+    return {{ expiresAt: d }};
+  }}
+  return {{ durationDays: parseInt(v, 10) || 0 }};
+}}
+
+// Toggle the custom-date input visibility based on the duration <select>.
+function _wireDurationToggle(selectId, dateId) {{
+  const sel = document.getElementById(selectId);
+  const dateInput = document.getElementById(dateId);
+  if (!sel || !dateInput) return;
+  sel.addEventListener('change', () => {{
+    dateInput.style.display = sel.value === 'custom' ? '' : 'none';
+    if (sel.value === 'custom' && !dateInput.value) {{
+      // Default the picker one month out for convenience.
+      const d = new Date(); d.setDate(d.getDate() + 30);
+      dateInput.value = d.toISOString().slice(0, 10);
+    }}
+  }});
+}}
+document.addEventListener('DOMContentLoaded', () => {{
+  _wireDurationToggle('invite-duration', 'invite-custom-date');
+  _wireDurationToggle('bulk-duration', 'bulk-custom-date');
+}});
+
 async function inviteOne() {{
   const email = document.getElementById('invite-email').value.trim();
   if (!email) return;
-  const r = await fetch(API_BASE + '/invite', {{method: 'POST', headers: {{'Content-Type':'application/json'}}, body: JSON.stringify({{email}})}});
+  let extra;
+  try {{ extra = _readDurationFields('invite-duration', 'invite-custom-date'); }} catch (_) {{ return; }}
+  const body = Object.assign({{email}}, extra);
+  const r = await fetch(API_BASE + '/invite', {{method: 'POST', headers: {{'Content-Type':'application/json'}}, body: JSON.stringify(body)}});
   const d = await r.json();
-  if (d.success) {{ document.getElementById('invite-email').value=''; load(); }} else alert('Failed: ' + (d.error||''));
+  if (d.success) {{
+    document.getElementById('invite-email').value='';
+    const sel = document.getElementById('invite-duration'); if (sel) sel.value = '';
+    const dt = document.getElementById('invite-custom-date'); if (dt) {{ dt.value = ''; dt.style.display = 'none'; }}
+    load();
+  }} else alert('Failed: ' + (d.error||''));
 }}
 async function inviteBulk() {{
   const text = document.getElementById('invite-csv').value;
   const file = document.getElementById('invite-csv-file') ? document.getElementById('invite-csv-file').files[0] : null;
   const msg = document.getElementById('bulk-msg');
+  let extra;
+  try {{ extra = _readDurationFields('bulk-duration', 'bulk-custom-date'); }} catch (_) {{ return; }}
   let resp;
   if (file) {{
     const fd = new FormData(); fd.append('file', file);
+    if (extra.expiresAt) fd.append('expiresAt', extra.expiresAt);
+    if (extra.durationDays) fd.append('durationDays', String(extra.durationDays));
     resp = await fetch(API_BASE + '/invite-bulk', {{method:'POST', body: fd}});
   }} else {{
     if (!text.trim()) return;
-    resp = await fetch(API_BASE + '/invite-bulk', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{csv: text}})}});
+    const body = Object.assign({{csv: text}}, extra);
+    resp = await fetch(API_BASE + '/invite-bulk', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify(body)}});
   }}
   const d = await resp.json();
   if (d.success) {{
@@ -4351,6 +4440,31 @@ async function inviteBulk() {{
     if (document.getElementById('invite-csv-file')) document.getElementById('invite-csv-file').value='';
     load();
   }} else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
+}}
+
+async function editExpiry(memberId, email, currentExpiry) {{
+  const currentDate = currentExpiry ? new Date(currentExpiry).toISOString().slice(0, 10) : '';
+  const prompt1 = 'Set access expiry for ' + email + '\\n\\n' +
+    'Type a number of days (e.g. 30, 90, 365), or a date (YYYY-MM-DD), or leave empty for no expiry.\\n' +
+    (currentDate ? 'Current expiry: ' + currentDate : 'Currently: no expiry');
+  const v = window.prompt(prompt1, currentDate);
+  if (v === null) return;
+  const trimmed = (v || '').trim();
+  let body = {{}};
+  if (!trimmed) {{
+    // Empty = clear expiry.
+    body = {{ durationDays: 0 }};
+  }} else if (/^\\d+$/.test(trimmed)) {{
+    body = {{ durationDays: parseInt(trimmed, 10) }};
+  }} else {{
+    body = {{ expiresAt: trimmed }};
+  }}
+  const r = await fetch(API_BASE + '/members/' + memberId + '/expiry', {{
+    method: 'PUT', headers: {{'Content-Type':'application/json'}},
+    body: JSON.stringify(body)
+  }});
+  const d = await r.json();
+  if (d.success) load(); else alert('Failed: ' + (d.error || 'Unknown error'));
 }}
 async function saveDomains() {{
   const v = document.getElementById('domains-input').value;
@@ -4724,14 +4838,17 @@ def api_inst_members(slug):
             return _cors(jsonify({'success': False, 'error': 'Not found'})), 404
         inst_id = r[0]
         cur.execute("""
-            SELECT id, email, role, status, invited_by, joined_at, last_seen
+            SELECT id, email, role, status, invited_by, joined_at, last_seen, expires_at
             FROM institution_members WHERE institution_id=%s ORDER BY joined_at DESC
         """, (inst_id,))
+        now_dt = datetime.now()
         members = [{
             'id': row[0], 'email': row[1], 'role': row[2], 'status': row[3],
             'invitedBy': row[4],
             'joinedAt': row[5].isoformat() if row[5] else None,
-            'lastSeen': row[6].isoformat() if row[6] else None
+            'lastSeen': row[6].isoformat() if row[6] else None,
+            'expiresAt': row[7].isoformat() if row[7] else None,
+            'expired': bool(row[7] and row[7] < now_dt)
         } for row in cur.fetchall()]
         cur.close(); conn.close()
         return _cors(jsonify({'success': True, 'members': members, 'total': len(members)}))
@@ -4740,32 +4857,71 @@ def api_inst_members(slug):
 
 _EMAIL_RE = re.compile(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$')
 
-def _add_member(cur, inst_id, email, invited_by, role='member'):
-    """Returns 'added', 'already', or 'invalid'."""
+def _add_member(cur, inst_id, email, invited_by, role='member', expires_at=None):
+    """Returns 'added', 'already', or 'invalid'.
+    `expires_at` is a `datetime` (or None for no expiry). When set, the member's
+    institution access is revoked once the date passes — the resolve function
+    treats them as inactive, and their subscription row's `subscription_end`
+    is mirrored so the existing paywall logic also cuts them off.
+    """
     email = _norm_email(email)
     if not email or not _EMAIL_RE.match(email):
         return 'invalid'
     cur.execute("""
-        INSERT INTO institution_members (institution_id, email, role, status, invited_by, joined_at)
-        VALUES (%s,%s,%s,'active',%s,NOW())
-        ON CONFLICT (institution_id, email) DO UPDATE SET status='active'
+        INSERT INTO institution_members (institution_id, email, role, status, invited_by, joined_at, expires_at)
+        VALUES (%s,%s,%s,'active',%s,NOW(),%s)
+        ON CONFLICT (institution_id, email) DO UPDATE
+            SET status='active', expires_at=EXCLUDED.expires_at
         RETURNING (xmax = 0) AS inserted
-    """, (inst_id, email, role, invited_by or 'inst-admin'))
+    """, (inst_id, email, role, invited_by or 'inst-admin', expires_at))
     row = cur.fetchone()
     is_new = bool(row and row[0])
-    # Activate paywall bypass for already-registered users
+    # Mirror the member expiry onto the subscription row so the existing
+    # paywall logic naturally cuts them off (NULL = no expiry).
     cur.execute("""
         UPDATE subscriptions SET plan_type=CASE WHEN plan_type IN ('monthly','yearly') AND status='active' THEN plan_type ELSE 'institution' END,
-                                  status='active', subscription_end=NULL, last_verified=NOW(), updated_at=NOW()
+                                  status='active', subscription_end=%s, last_verified=NOW(), updated_at=NOW()
         WHERE LOWER(email)=%s
-    """, (email,))
+    """, (expires_at, email))
     cur.execute("""
-        INSERT INTO subscriptions (email, plan_type, status, subscription_start, last_verified, created_at, updated_at)
-        VALUES (%s,'institution','active',NOW(),NOW(),NOW(),NOW())
+        INSERT INTO subscriptions (email, plan_type, status, subscription_start, subscription_end, last_verified, created_at, updated_at)
+        VALUES (%s,'institution','active',NOW(),%s,NOW(),NOW(),NOW())
         ON CONFLICT (email) DO NOTHING
-    """, (email,))
+    """, (email, expires_at))
     cur.execute("UPDATE users SET institution_id=%s WHERE LOWER(email)=%s", (inst_id, email))
     return 'added' if is_new else 'already'
+
+
+def _parse_expiry_input(data):
+    """Parse `expiresAt` (ISO8601 date/datetime) or `durationDays` (positive int)
+    from a request payload. Returns a `datetime` or None. Raises ValueError on
+    malformed input."""
+    if not data:
+        return None
+    raw = data.get('expiresAt')
+    if raw:
+        s = str(raw).strip()
+        if not s:
+            return None
+        try:
+            # Accept date-only ('YYYY-MM-DD') and full ISO8601 datetimes.
+            if len(s) == 10 and s[4] == '-' and s[7] == '-':
+                return datetime.strptime(s, '%Y-%m-%d')
+            return datetime.fromisoformat(s.replace('Z', '+00:00')).replace(tzinfo=None)
+        except Exception:
+            raise ValueError('expiresAt must be YYYY-MM-DD or ISO8601 datetime')
+    days = data.get('durationDays')
+    if days in (None, '', 0, '0'):
+        return None
+    try:
+        n = int(days)
+    except Exception:
+        raise ValueError('durationDays must be an integer')
+    if n <= 0:
+        return None
+    if n > 3650:
+        raise ValueError('durationDays cannot exceed 3650 (10 years)')
+    return datetime.now() + timedelta(days=n)
 
 @app.route('/api/institution/<slug>/invite', methods=['POST', 'OPTIONS'])
 def api_inst_invite(slug):
@@ -4781,6 +4937,10 @@ def api_inst_invite(slug):
     if not email or '@' not in email:
         return _cors(jsonify({'success': False, 'error': 'Valid email required'})), 400
     try:
+        expires_at = _parse_expiry_input(data)
+    except ValueError as ve:
+        return _cors(jsonify({'success': False, 'error': str(ve)})), 400
+    try:
         conn = get_db(); cur = conn.cursor()
         cur.execute("SELECT id, seat_limit FROM institutions WHERE slug=%s", (slug,))
         r = cur.fetchone()
@@ -4791,12 +4951,59 @@ def api_inst_invite(slug):
         if seat_limit and _seats_used(cur, inst_id) >= seat_limit:
             cur.close(); conn.close()
             return _cors(jsonify({'success': False, 'error': 'Seat limit reached. Increase the limit or remove inactive members.'})), 400
-        result = _add_member(cur, inst_id, email, admin_email or 'inst-admin')
+        result = _add_member(cur, inst_id, email, admin_email or 'inst-admin', expires_at=expires_at)
         conn.commit()
         cur.close(); conn.close()
         if result == 'invalid':
             return _cors(jsonify({'success': False, 'error': 'Invalid email format'})), 400
-        return _cors(jsonify({'success': True, 'result': result}))
+        return _cors(jsonify({
+            'success': True, 'result': result,
+            'expiresAt': expires_at.isoformat() if expires_at else None
+        }))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+
+@app.route('/api/institution/<slug>/members/<int:member_id>/expiry', methods=['PUT', 'OPTIONS'])
+def api_inst_member_set_expiry(slug, member_id):
+    """Update an existing member's access expiry. Body accepts `expiresAt`
+    (ISO date/datetime) or `durationDays` (positive int). Pass either as null/0
+    to clear expiry (lifetime access). Mirrors expiry into subscriptions table."""
+    if request.method == 'OPTIONS':
+        return _options('PUT, OPTIONS')
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    data = request.get_json(silent=True) or {}
+    try:
+        expires_at = _parse_expiry_input(data)
+    except ValueError as ve:
+        return _cors(jsonify({'success': False, 'error': str(ve)})), 400
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("""
+            UPDATE institution_members SET expires_at=%s
+              WHERE id=%s AND institution_id=(SELECT id FROM institutions WHERE slug=%s)
+            RETURNING email
+        """, (expires_at, member_id, slug))
+        row = cur.fetchone()
+        if not row:
+            cur.close(); conn.close()
+            return _cors(jsonify({'success': False, 'error': 'Member not found'})), 404
+        email = row[0]
+        # Mirror onto subscriptions so the existing paywall logic respects it.
+        cur.execute("""
+            UPDATE subscriptions SET subscription_end=%s, last_verified=NOW(), updated_at=NOW()
+              WHERE LOWER(email)=%s
+        """, (expires_at, _norm_email(email)))
+        conn.commit()
+        cur.close(); conn.close()
+        return _cors(jsonify({
+            'success': True,
+            'expiresAt': expires_at.isoformat() if expires_at else None
+        }))
     except Exception as e:
         return _cors(jsonify({'success': False, 'error': str(e)})), 500
 
@@ -4810,15 +5017,26 @@ def api_inst_invite_bulk(slug):
     if not ensure_db():
         return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
     raw = ''
+    expiry_input = {}
     upload = request.files.get('file') or request.files.get('csv')
     if upload and upload.filename:
         try:
             raw = upload.read(200 * 1024).decode('utf-8', errors='ignore')
         except Exception as e:
             return _cors(jsonify({'success': False, 'error': f'Could not read CSV file: {e}'})), 400
+        # Form fields ride alongside the file upload.
+        expiry_input = {
+            'expiresAt': request.form.get('expiresAt'),
+            'durationDays': request.form.get('durationDays')
+        }
     else:
         data = request.get_json(silent=True) or {}
         raw = str(data.get('csv', ''))[:50000]
+        expiry_input = data
+    try:
+        bulk_expires_at = _parse_expiry_input(expiry_input)
+    except ValueError as ve:
+        return _cors(jsonify({'success': False, 'error': str(ve)})), 400
     if not raw.strip():
         return _cors(jsonify({'success': False, 'error': 'csv empty'})), 400
     parts = []
@@ -4854,7 +5072,7 @@ def api_inst_invite_bulk(slug):
             if seat_limit and _seats_used(cur, inst_id) >= seat_limit:
                 no_seats += 1
                 continue
-            res = _add_member(cur, inst_id, e, admin_email or 'csv-bulk')
+            res = _add_member(cur, inst_id, e, admin_email or 'csv-bulk', expires_at=bulk_expires_at)
             if res == 'added':
                 added += 1
             elif res == 'already':
