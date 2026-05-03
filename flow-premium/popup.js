@@ -1043,6 +1043,11 @@ function getCanvasImageData(canvas, bottomRows) {
 
 // Initialize popup on load
 document.addEventListener('DOMContentLoaded', async () => {
+  // Invite codes were retired (Task #36). Purge any legacy pending-invite
+  // key on first popup launch after upgrade so it can never be sent or
+  // surface stale UI again.
+  try { await chrome.storage.local.remove('snaptoai_pending_invite'); } catch (_) {}
+
   translateUI(); // Add translation support
   await loadSnaps();
   setupEventListeners();
