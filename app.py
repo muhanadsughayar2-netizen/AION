@@ -507,6 +507,89 @@ def _send_inst_admin_email(to_email, subject, body_text):
         return False, ("We couldn't send the email right now — "
                        "please try again in a moment, or ask the super-admin for help.")
 
+def _send_html_email(to_email, subject, html_body, text_body):
+    """Send a multipart (text + HTML) email via the same SMTP env vars as
+    `_send_inst_admin_email`. Returns (ok, error_message). Required env vars:
+    SMTP_HOST. Optional: SMTP_PORT (587), SMTP_USER, SMTP_PASS (or
+    SMTP_PASSWORD), SMTP_FROM, SMTP_USE_TLS ('1')."""
+    host = os.environ.get('SMTP_HOST', '').strip()
+    if not host:
+        return False, "Email delivery isn't set up on this server (SMTP_HOST is missing)."
+    try:
+        import smtplib
+        from email.message import EmailMessage
+        port = int(os.environ.get('SMTP_PORT', '587'))
+        user = os.environ.get('SMTP_USER', '').strip()
+        pw = os.environ.get('SMTP_PASS', '') or os.environ.get('SMTP_PASSWORD', '')
+        sender = os.environ.get('SMTP_FROM', '').strip() or user or 'no-reply@snaptoai.com'
+        use_tls = os.environ.get('SMTP_USE_TLS', '1') not in ('0', 'false', 'False', '')
+        msg = EmailMessage()
+        msg['Subject'] = subject
+        msg['From'] = sender
+        msg['To'] = to_email
+        msg.set_content(text_body)
+        msg.add_alternative(html_body, subtype='html')
+        with smtplib.SMTP(host, port, timeout=15) as s:
+            s.ehlo()
+            if use_tls:
+                s.starttls()
+                s.ehlo()
+            if user:
+                s.login(user, pw)
+            s.send_message(msg)
+        return True, None
+    except Exception as e:
+        print(f'❌ welcome email send to {to_email}: {type(e).__name__}: {e}')
+        return False, f'{type(e).__name__}: {e}'
+
+
+SNAPTOAI_STORE_URL = 'https://chromewebstore.google.com/detail/snaptoai'
+
+
+def _send_welcome_email(email, inst_name, brand_color=None, logo_url=None):
+    """Send a branded welcome email to a newly-added institution member.
+    Returns (ok, error_message). If SMTP isn't configured, returns
+    (False, friendly_msg) without raising — callers can keep going."""
+    safe_color = brand_color if (brand_color and re.match(r'^#[0-9a-fA-F]{3,8}$', str(brand_color))) else '#00d9ff'
+    name_for_subject = inst_name or 'your team'
+    safe_name = html_escape_module.escape(name_for_subject)
+    safe_email = html_escape_module.escape(email)
+    install_url = SNAPTOAI_STORE_URL
+    logo_html = ''
+    if logo_url:
+        full_logo = logo_url
+        if full_logo.startswith('/'):
+            base = (os.environ.get('PUBLIC_BASE_URL') or os.environ.get('REPLIT_DEV_DOMAIN') or '').strip()
+            if base and not base.startswith('http'):
+                base = 'https://' + base
+            full_logo = (base.rstrip('/') + full_logo) if base else full_logo
+        logo_html = f'<img src="{html_escape_module.escape(full_logo)}" alt="" style="max-height:60px;max-width:200px;display:block;margin:0 auto 18px;background:#fff;border-radius:6px;padding:6px;">'
+    subject = f'You have been added to {name_for_subject} on SnapToAI'
+    html_body = f'''<!DOCTYPE html>
+<html><body style="margin:0;padding:24px;background:#f6f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#222;">
+<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:28px;border-top:4px solid {safe_color};box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+{logo_html}
+<h1 style="color:{safe_color};margin:0 0 12px;font-size:22px;">Welcome to {safe_name} on SnapToAI</h1>
+<p style="font-size:15px;line-height:1.5;margin:0 0 16px;">Your administrator has added you to <strong>{safe_name}</strong>. Your branded SnapToAI license is ready — you just need to install the Chrome extension and sign in.</p>
+<ol style="font-size:15px;line-height:1.7;padding-left:20px;margin:0 0 20px;">
+  <li>Install the SnapToAI Chrome extension: <a href="{install_url}" style="color:{safe_color};">{install_url}</a></li>
+  <li>Sign in with Google using <strong>this exact email address</strong>:<br><code style="background:#f0f0f5;padding:3px 8px;border-radius:4px;display:inline-block;margin-top:4px;">{safe_email}</code></li>
+  <li>Your license unlocks automatically — no code or invite link needed.</li>
+</ol>
+<p style="text-align:center;margin:24px 0;"><a href="{install_url}" style="background:{safe_color};color:#000;text-decoration:none;font-weight:bold;padding:12px 26px;border-radius:8px;display:inline-block;">Install the extension</a></p>
+<p style="font-size:13px;color:#777;border-top:1px solid #eee;padding-top:14px;margin:0;">Important: sign in with <strong>{safe_email}</strong>. Using a different email means SnapToAI will not be able to apply your {safe_name} license.</p>
+</div></body></html>'''
+    text_body = (
+        f'Welcome to {name_for_subject} on SnapToAI\n\n'
+        f'Your administrator has added you to {name_for_subject}. Your branded SnapToAI license is ready.\n\n'
+        f'1. Install the SnapToAI Chrome extension:\n   {install_url}\n'
+        f'2. Sign in with Google using THIS exact email: {email}\n'
+        f'3. Your license unlocks automatically — no code needed.\n\n'
+        f'Important: if you sign in with a different email, the {name_for_subject} license will not apply.\n'
+    )
+    return _send_html_email(email, subject, html_body, text_body)
+
+
 def _institution_active(row):
     """row = (status, expires_at) — true iff active and not expired."""
     if not row:
@@ -4168,6 +4251,12 @@ window.addEventListener('load', () => {{
       <input id="invite-custom-date" type="date" style="display:none; min-width: 150px;">
       <button onclick="inviteOne()">Add Member</button>
     </div>
+    <div style="margin-top: 8px;">
+      <label style="font-size: 12px; color: #ccc; cursor: pointer;">
+        <input type="checkbox" id="invite-send-welcome" checked style="vertical-align: middle; margin-right: 4px;">
+        Send welcome email (branded — install link + sign-in instructions)
+      </label>
+    </div>
     <p style="font-size: 11px; color: #777; margin: 8px 0 0 0;">Tip: when access ends the member is automatically blocked from institution features. You can extend or shorten any member's expiry from the table below.</p>
     <div style="margin-top: 14px;">
       <label style="font-size: 12px; color: #888;">Bulk add — upload a CSV file <em>or</em> paste emails below:</label>
@@ -4186,6 +4275,10 @@ window.addEventListener('load', () => {{
         <input id="bulk-custom-date" type="date" style="display:none;">
       </div>
       <button onclick="inviteBulk()" style="margin-top: 8px;">Bulk Add</button>
+      <label style="font-size: 12px; color: #ccc; margin-left: 12px; cursor: pointer;">
+        <input type="checkbox" id="bulk-send-welcome" checked style="vertical-align: middle; margin-right: 4px;">
+        Send welcome email to each new member
+      </label>
       <span id="bulk-msg" style="margin-left: 10px; color: #00ff88; font-size: 12px;"></span>
     </div>
   </div>
@@ -4419,6 +4512,7 @@ function renderMembers() {{
           : '<button onclick="reactivate(' + mid + ')">Reactivate</button> ') +
         '<button class="secondary" onclick="editExpiry(' + mid + ', ' + JSON.stringify(String(m.email||'')) + ', ' + JSON.stringify(m.expiresAt || '') + ')" title="Change access duration">Set Expiry</button> ' +
         '<button class="secondary" onclick="copyWelcome(' + JSON.stringify(String(m.email||'')) + ')" title="Copy a ready-to-send welcome message for this member">📋 Copy welcome</button> ' +
+        '<button class="secondary" onclick="resendWelcome(' + mid + ', ' + JSON.stringify(String(m.email||'')) + ')" title="Send the branded welcome email to this member again">✉️ Resend email</button> ' +
         '<button class="secondary" onclick="removeMember(' + mid + ', ' + JSON.stringify(String(m.email||'')) + ')">Remove</button>' +
       '</td></tr>';
   }}
@@ -4492,13 +4586,18 @@ async function inviteOne() {{
   if (!email) return;
   let extra;
   try {{ extra = _readDurationFields('invite-duration', 'invite-custom-date'); }} catch (_) {{ return; }}
-  const body = Object.assign({{email}}, extra);
+  const sw = document.getElementById('invite-send-welcome');
+  const sendWelcome = sw ? !!sw.checked : true;
+  const body = Object.assign({{email, sendWelcome}}, extra);
   const r = await fetch(API_BASE + '/invite', {{method: 'POST', headers: {{'Content-Type':'application/json'}}, body: JSON.stringify(body)}});
   const d = await r.json();
   if (d.success) {{
     document.getElementById('invite-email').value='';
     const sel = document.getElementById('invite-duration'); if (sel) sel.value = '';
     const dt = document.getElementById('invite-custom-date'); if (dt) {{ dt.value = ''; dt.style.display = 'none'; }}
+    if (sendWelcome && d.result === 'added' && !d.emailSent) {{
+      alert('Member added, but the welcome email could not be sent: ' + (d.emailError || 'unknown error') + '\\n\\nUse the Resend email button on the row, or check SMTP env vars (SMTP_HOST/PORT/USER/PASS/FROM).');
+    }}
     load();
   }} else alert('Failed: ' + (d.error||''));
 }}
@@ -4508,25 +4607,50 @@ async function inviteBulk() {{
   const msg = document.getElementById('bulk-msg');
   let extra;
   try {{ extra = _readDurationFields('bulk-duration', 'bulk-custom-date'); }} catch (_) {{ return; }}
+  const sw = document.getElementById('bulk-send-welcome');
+  const sendWelcome = sw ? !!sw.checked : true;
   let resp;
   if (file) {{
     const fd = new FormData(); fd.append('file', file);
     if (extra.expiresAt) fd.append('expiresAt', extra.expiresAt);
     if (extra.durationDays) fd.append('durationDays', String(extra.durationDays));
+    fd.append('sendWelcome', sendWelcome ? '1' : '0');
     resp = await fetch(API_BASE + '/invite-bulk', {{method:'POST', body: fd}});
   }} else {{
     if (!text.trim()) return;
-    const body = Object.assign({{csv: text}}, extra);
+    const body = Object.assign({{csv: text, sendWelcome}}, extra);
     resp = await fetch(API_BASE + '/invite-bulk', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify(body)}});
   }}
   const d = await resp.json();
   if (d.success) {{
     msg.style.color='#00ff88';
-    msg.textContent = '✓ Added ' + d.added + ' · already: ' + (d.alreadyMember||0) + ' · invalid: ' + (d.invalidEmail||0) + ' · no seats: ' + (d.noSeats||0);
+    let summary = '✓ Added ' + d.added + ' · already: ' + (d.alreadyMember||0) + ' · invalid: ' + (d.invalidEmail||0) + ' · no seats: ' + (d.noSeats||0);
+    if (sendWelcome && d.added > 0) {{
+      summary += ' · emails sent: ' + (d.emailsSent||0);
+      if (d.emailsFailed) summary += ' · email failed: ' + d.emailsFailed;
+    }}
+    msg.textContent = summary;
+    if (sendWelcome && d.emailsFailed) {{
+      alert('Some welcome emails failed to send: ' + (d.emailError || 'unknown error') + '\\n\\nCheck SMTP env vars (SMTP_HOST/PORT/USER/PASS/FROM) or use Resend per row.');
+    }}
     document.getElementById('invite-csv').value='';
     if (document.getElementById('invite-csv-file')) document.getElementById('invite-csv-file').value='';
     load();
   }} else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
+}}
+async function resendWelcome(memberId, email) {{
+  if (!confirm('Send the branded welcome email to ' + email + ' again?')) return;
+  try {{
+    const r = await fetch(API_BASE + '/members/' + memberId + '/resend-welcome', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: '{{}}'}});
+    const d = await r.json();
+    if (d.success) {{
+      alert('✓ Welcome email sent to ' + email);
+    }} else {{
+      alert('✗ Could not send: ' + (d.error || 'unknown error') + '\\n\\nIf SMTP is not configured, set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and SMTP_FROM environment variables.');
+    }}
+  }} catch (e) {{
+    alert('✗ Network error: ' + e);
+  }}
 }}
 
 async function editExpiry(memberId, email, currentExpiry) {{
@@ -5032,14 +5156,15 @@ def api_inst_invite(slug):
         expires_at = _parse_expiry_input(data)
     except ValueError as ve:
         return _cors(jsonify({'success': False, 'error': str(ve)})), 400
+    send_welcome = data.get('sendWelcome', True)
     try:
         conn = get_db(); cur = conn.cursor()
-        cur.execute("SELECT id, seat_limit FROM institutions WHERE slug=%s", (slug,))
+        cur.execute("SELECT id, seat_limit, name, brand_color, logo_url FROM institutions WHERE slug=%s", (slug,))
         r = cur.fetchone()
         if not r:
             cur.close(); conn.close()
             return _cors(jsonify({'success': False, 'error': 'Not found'})), 404
-        inst_id, seat_limit = r[0], r[1]
+        inst_id, seat_limit, inst_name, brand_color, logo_url = r[0], r[1], r[2], r[3], r[4]
         if seat_limit and _seats_used(cur, inst_id) >= seat_limit:
             cur.close(); conn.close()
             return _cors(jsonify({'success': False, 'error': 'Seat limit reached. Increase the limit or remove inactive members.'})), 400
@@ -5048,10 +5173,46 @@ def api_inst_invite(slug):
         cur.close(); conn.close()
         if result == 'invalid':
             return _cors(jsonify({'success': False, 'error': 'Invalid email format'})), 400
+        email_sent = False
+        email_error = None
+        if send_welcome and result == 'added':
+            email_sent, email_error = _send_welcome_email(email, inst_name, brand_color, logo_url)
         return _cors(jsonify({
             'success': True, 'result': result,
-            'expiresAt': expires_at.isoformat() if expires_at else None
+            'expiresAt': expires_at.isoformat() if expires_at else None,
+            'emailSent': email_sent,
+            'emailError': email_error if (send_welcome and result == 'added' and not email_sent) else None
         }))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
+
+
+@app.route('/api/institution/<slug>/members/<int:member_id>/resend-welcome', methods=['POST', 'OPTIONS'])
+def api_inst_member_resend_welcome(slug, member_id):
+    """Resend the branded welcome email to an existing institution member."""
+    if request.method == 'OPTIONS':
+        return _options('POST, OPTIONS')
+    ok, _ = _verify_inst_admin(slug)
+    if not ok:
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("""
+            SELECT m.email, i.name, i.brand_color, i.logo_url
+              FROM institution_members m JOIN institutions i ON i.id = m.institution_id
+              WHERE m.id=%s AND i.slug=%s
+        """, (member_id, slug))
+        row = cur.fetchone()
+        cur.close(); conn.close()
+        if not row:
+            return _cors(jsonify({'success': False, 'error': 'Member not found'})), 404
+        email, inst_name, brand_color, logo_url = row
+        ok_send, err = _send_welcome_email(email, inst_name, brand_color, logo_url)
+        if not ok_send:
+            return _cors(jsonify({'success': False, 'error': err or 'Email send failed'})), 502
+        return _cors(jsonify({'success': True, 'email': email}))
     except Exception as e:
         return _cors(jsonify({'success': False, 'error': str(e)})), 500
 
@@ -5148,18 +5309,32 @@ def api_inst_invite_bulk(slug):
         if e not in seen:
             seen.add(e)
             candidates.append(e)
+    # Toggle defaults to ON. Normalize for both content types: form field for
+    # multipart and JSON key for application/json. Strings like "false"/"0"
+    # must NOT be coerced to True via bool().
+    def _truthy(v, default=True):
+        if v is None:
+            return default
+        if isinstance(v, bool):
+            return v
+        return str(v).strip().lower() not in ('0', 'false', 'no', 'off', '')
+    if upload and upload.filename:
+        send_welcome = _truthy(request.form.get('sendWelcome'))
+    else:
+        send_welcome = _truthy(expiry_input.get('sendWelcome') if isinstance(expiry_input, dict) else None)
     try:
         conn = get_db(); cur = conn.cursor()
-        cur.execute("SELECT id, seat_limit FROM institutions WHERE slug=%s", (slug,))
+        cur.execute("SELECT id, seat_limit, name, brand_color, logo_url FROM institutions WHERE slug=%s", (slug,))
         r = cur.fetchone()
         if not r:
             cur.close(); conn.close()
             return _cors(jsonify({'success': False, 'error': 'Not found'})), 404
-        inst_id, seat_limit = r[0], r[1]
+        inst_id, seat_limit, inst_name, brand_color, logo_url = r[0], r[1], r[2], r[3], r[4]
         added = 0
         already_member = 0
         invalid_email = len(invalid_format)
         no_seats = 0
+        newly_added_emails = []
         for e in candidates:
             if seat_limit and _seats_used(cur, inst_id) >= seat_limit:
                 no_seats += 1
@@ -5167,12 +5342,24 @@ def api_inst_invite_bulk(slug):
             res = _add_member(cur, inst_id, e, admin_email or 'csv-bulk', expires_at=bulk_expires_at)
             if res == 'added':
                 added += 1
+                newly_added_emails.append(e)
             elif res == 'already':
                 already_member += 1
             else:
                 invalid_email += 1
         conn.commit()
         cur.close(); conn.close()
+        emails_sent = 0
+        emails_failed = 0
+        last_email_error = None
+        if send_welcome and newly_added_emails:
+            for e in newly_added_emails:
+                ok_send, err = _send_welcome_email(e, inst_name, brand_color, logo_url)
+                if ok_send:
+                    emails_sent += 1
+                else:
+                    emails_failed += 1
+                    last_email_error = err
         skipped = already_member + invalid_email + no_seats
         return _cors(jsonify({
             'success': True,
@@ -5182,7 +5369,10 @@ def api_inst_invite_bulk(slug):
             'noSeats': no_seats,
             'skipped': skipped,
             'total': len(candidates) + len(invalid_format),
-            'invalidSamples': invalid_format[:5]
+            'invalidSamples': invalid_format[:5],
+            'emailsSent': emails_sent,
+            'emailsFailed': emails_failed,
+            'emailError': last_email_error if emails_failed else None
         }))
     except Exception as e:
         return _cors(jsonify({'success': False, 'error': str(e)})), 500
