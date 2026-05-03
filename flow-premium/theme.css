@@ -93,6 +93,7 @@
    Theme cycle button (shared between popup + sidebar headers)
    ============================================================ */
 .theme-cycle-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -107,6 +108,28 @@
   cursor: pointer;
   transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.18s;
   flex-shrink: 0;
+  overflow: visible;
+}
+
+/* "AUTO" hint badge — only when the user's preference is Auto. Lets the
+   user tell Auto apart from a fixed Light/Dark choice that happens to
+   resolve to the same appearance. */
+:root[data-theme-pref="auto"] .theme-cycle-btn::after {
+  content: "AUTO";
+  position: absolute;
+  bottom: -6px;
+  right: -10px;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 6px;
+  background: var(--st-accent);
+  color: var(--st-text-on-accent);
+  border: 1px solid var(--st-bg-app);
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 .theme-cycle-btn:hover {
   background: var(--st-cycle-bg-hover);
@@ -208,32 +231,102 @@
 }
 :root[data-theme="light"] .status { color: var(--st-text-primary); }
 
-:root[data-theme="light"] .hero-panel,
-:root[data-theme="light"] .panel-card,
-:root[data-theme="light"] .thumbnails-container,
-:root[data-theme="light"] .selection-bar {
-  background: var(--st-bg-surface) !important;
-  border-color: var(--st-border-default) !important;
+:root[data-theme="light"] .hero-panel {
+  background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%) !important;
+  border: 1px solid var(--st-border-default) !important;
   color: var(--st-text-primary);
   box-shadow: var(--st-shadow-card);
 }
+:root[data-theme="light"] .panel-card,
+:root[data-theme="light"] .thumbnails-container {
+  background: var(--st-bg-surface) !important;
+  border: 1px solid var(--st-border-default) !important;
+  color: var(--st-text-primary);
+  box-shadow: var(--st-shadow-card);
+}
+:root[data-theme="light"] .selection-bar {
+  background: linear-gradient(180deg, #ffffff 0%, #f4f6fa 100%) !important;
+  border: 1px solid var(--st-border-default) !important;
+  color: var(--st-text-primary);
+  box-shadow: var(--st-shadow-card);
+  backdrop-filter: none !important;
+}
 
-:root[data-theme="light"] .hero-action-label,
-:root[data-theme="light"] .hero-action-label.ai-label { color: var(--st-accent-2); }
+:root[data-theme="light"] .hero-action-label { color: var(--st-accent-2); }
+/* Ask-AI star keeps an amber accent in light mode for emphasis */
+:root[data-theme="light"] .hero-action-label.ai-label { color: #b45309; }
 
 :root[data-theme="light"] .hero-action-btn {
   background: rgba(8, 145, 178, 0.08);
-  border: 1px solid rgba(8, 145, 178, 0.30);
+  border: 2px solid rgba(8, 145, 178, 0.30);
   color: var(--st-accent-2);
+  box-shadow: none;
 }
 :root[data-theme="light"] .hero-action-btn:hover {
   background: rgba(8, 145, 178, 0.18);
+  border-color: rgba(8, 145, 178, 0.55);
   color: var(--st-accent);
+  box-shadow: 0 4px 14px rgba(8, 145, 178, 0.18);
+}
+
+/* Re-skin the Ask-AI star button — in dark mode it carries a heavy amber
+   glow that looks broken on a white card. Replace with a warm amber fill
+   that reads as a first-class CTA in light mode. */
+:root[data-theme="light"] .hero-action-btn.ai-btn {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+  border: 2px solid rgba(180, 83, 9, 0.45) !important;
+  color: #b45309 !important;
+  box-shadow: 0 2px 10px rgba(180, 83, 9, 0.18) !important;
+  animation: none !important;
+}
+:root[data-theme="light"] .hero-action-btn.ai-btn:hover {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+  border-color: rgba(180, 83, 9, 0.65) !important;
+  color: #92400e !important;
+  box-shadow: 0 4px 16px rgba(180, 83, 9, 0.28) !important;
 }
 
 :root[data-theme="light"] .ai-status-row { color: var(--st-text-secondary); }
 :root[data-theme="light"] .ai-status-text { color: var(--st-text-secondary); }
 :root[data-theme="light"] .ai-manage-link { color: var(--st-accent-2); }
+:root[data-theme="light"] .ai-manage-link:hover { color: var(--st-accent); }
+
+/* Selection bar buttons — give Select All / Send to AI / Copy real
+   button styling in light mode (in dark mode they inherit cyan-on-black). */
+:root[data-theme="light"] .select-all-btn {
+  background: var(--st-bg-soft) !important;
+  border: 1px solid var(--st-border-default) !important;
+  color: var(--st-text-primary) !important;
+}
+:root[data-theme="light"] .select-all-btn:hover {
+  background: var(--st-bg-soft-hover) !important;
+  border-color: rgba(8, 145, 178, 0.45) !important;
+  color: var(--st-accent-2) !important;
+}
+:root[data-theme="light"] .selection-bar .action-btn {
+  background: rgba(8, 145, 178, 0.10) !important;
+  border: 1px solid rgba(8, 145, 178, 0.35) !important;
+  color: var(--st-accent-2) !important;
+  box-shadow: none !important;
+}
+:root[data-theme="light"] .selection-bar .action-btn:hover {
+  background: rgba(8, 145, 178, 0.20) !important;
+  border-color: rgba(8, 145, 178, 0.55) !important;
+  color: var(--st-accent) !important;
+  box-shadow: 0 2px 8px rgba(8, 145, 178, 0.18) !important;
+}
+/* Send-to-AI variant gets the warm amber accent to match Ask-AI */
+:root[data-theme="light"] .selection-bar .action-btn.ai-action {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+  border-color: rgba(180, 83, 9, 0.45) !important;
+  color: #b45309 !important;
+}
+:root[data-theme="light"] .selection-bar .action-btn.ai-action:hover {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+  border-color: rgba(180, 83, 9, 0.65) !important;
+  color: #92400e !important;
+  box-shadow: 0 2px 10px rgba(180, 83, 9, 0.22) !important;
+}
 
 :root[data-theme="light"] .clear-button,
 :root[data-theme="light"] .bottom-save-btn {
@@ -244,15 +337,48 @@
 :root[data-theme="light"] .clear-button:hover,
 :root[data-theme="light"] .bottom-save-btn:hover {
   background: var(--st-bg-soft-hover) !important;
+  border-color: rgba(8, 145, 178, 0.40) !important;
 }
 
-/* Thumbnails */
-:root[data-theme="light"] .thumbnail,
+/* Thumbnails — visible frame, clean number badge, obvious selection */
+:root[data-theme="light"] .thumbnail {
+  background: #f4f6fa !important;
+  border: 1px solid var(--st-border-default) !important;
+  color: var(--st-text-primary);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+:root[data-theme="light"] .thumbnail:hover {
+  border-color: var(--st-accent) !important;
+  box-shadow: 0 4px 12px rgba(8, 145, 178, 0.22) !important;
+}
+:root[data-theme="light"] .thumbnail.selected {
+  border-color: var(--st-accent) !important;
+  box-shadow: 0 0 0 2px var(--st-accent), 0 4px 14px rgba(8, 145, 178, 0.25) !important;
+}
 :root[data-theme="light"] .thumb-item,
 :root[data-theme="light"] .queue-item {
   background: var(--st-bg-surface) !important;
   border-color: var(--st-border-default) !important;
   color: var(--st-text-primary);
+}
+:root[data-theme="light"] .thumbnail-number {
+  background: var(--st-accent) !important;
+  color: var(--st-text-on-accent) !important;
+}
+:root[data-theme="light"] .thumbnail-checkbox {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(8, 145, 178, 0.50) !important;
+}
+:root[data-theme="light"] .thumbnail-checkbox:hover {
+  background: rgba(8, 145, 178, 0.15) !important;
+  border-color: var(--st-accent) !important;
+}
+:root[data-theme="light"] .thumbnail-checkbox.checked {
+  background: var(--st-accent) !important;
+  border-color: var(--st-accent) !important;
+}
+:root[data-theme="light"] .thumbnail-checkbox.checked::after {
+  color: var(--st-text-on-accent) !important;
 }
 :root[data-theme="light"] .thumb-checkbox label,
 :root[data-theme="light"] .thumb-meta { color: var(--st-text-secondary); }

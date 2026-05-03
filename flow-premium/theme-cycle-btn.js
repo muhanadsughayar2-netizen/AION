@@ -1,7 +1,8 @@
 (function () {
   'use strict';
 
-  var labels = { light: 'Light', dark: 'Dark', auto: 'Auto (matches system)' };
+  var labels = { light: 'Light', dark: 'Dark', auto: 'Auto' };
+  var nextLabels = { light: 'Light', dark: 'Dark', auto: 'Auto (matches system)' };
   var nextOf = { light: 'dark', dark: 'auto', auto: 'light' };
 
   function wire() {
@@ -12,9 +13,17 @@
 
     function refresh() {
       var pref = window.SnapToAITheme.get();
-      btn.title = 'Theme: ' + labels[pref] + ' — click for ' + labels[nextOf[pref]];
+      var resolved = window.SnapToAITheme.getResolved();
+      var prefLabel = labels[pref];
+      // When in Auto, surface the OS-resolved appearance so the user can
+      // tell Auto apart from a fixed Light/Dark choice that happens to
+      // look the same right now.
+      var current = pref === 'auto'
+        ? prefLabel + ' (currently ' + labels[resolved] + ')'
+        : prefLabel;
+      btn.title = 'Theme: ' + current + ' — click for ' + nextLabels[nextOf[pref]];
       btn.setAttribute('aria-label',
-        'Theme: ' + labels[pref] + '. Click to switch to ' + labels[nextOf[pref]] + '.');
+        'Theme: ' + current + '. Click to switch to ' + nextLabels[nextOf[pref]] + '.');
     }
 
     btn.addEventListener('click', function () {
