@@ -741,20 +741,20 @@ def _get_institution_branding_for_email(cur, email):
     """, (email,))
     r = cur.fetchone()
     if not r:
-        print(f'🏛️  institution lookup: NO member row for email={email}')
+        print(f'INST_LOOKUP NO_MEMBER email={email}', flush=True)
         return None
     if r[7] != 'active':
-        print(f'🏛️  institution REJECT (member status): email={email} inst_id={r[0]} slug={r[1]} m.status={r[7]!r}')
+        print(f'INST_LOOKUP REJECT_MEMBER_STATUS email={email} inst_id={r[0]} slug={r[1]} m.status={r[7]!r}', flush=True)
         return None
     if not _institution_active((r[5], r[6])):
-        print(f'🏛️  institution REJECT (institution status/expiry): email={email} inst_id={r[0]} slug={r[1]} i.status={r[5]!r} i.expires_at={r[6]}')
+        print(f'INST_LOOKUP REJECT_INSTITUTION email={email} inst_id={r[0]} slug={r[1]} i.status={r[5]!r} i.expires_at={r[6]}', flush=True)
         return None
     # Per-member expiry — must be enforced on every entitlement path. Without
     # this an expired member keeps branding + the institution Gemini key.
     if r[14] and r[14] < datetime.now():
-        print(f'🏛️  institution REJECT (member expires_at past): email={email} inst_id={r[0]} slug={r[1]} m.expires_at={r[14]}')
+        print(f'INST_LOOKUP REJECT_MEMBER_EXPIRY email={email} inst_id={r[0]} slug={r[1]} m.expires_at={r[14]}', flush=True)
         return None
-    print(f'🏛️  institution match: email={email} inst_id={r[0]} slug={r[1]} role={r[8]} key_policy={r[12]}')
+    print(f'INST_LOOKUP MATCH email={email} inst_id={r[0]} slug={r[1]} role={r[8]} key_policy={r[12]}', flush=True)
     return {
         'institutionId': r[0],
         'slug': r[1],
@@ -3510,6 +3510,60 @@ def _institution_to_dict(cur, row):
 def _require_super_admin():
     pw = request.args.get('password', '')
     return pw == ADMIN_PASSWORD or verify_admin_session()
+
+@app.route('/api/admin/diag/member', methods=['GET', 'OPTIONS'])
+def api_admin_diag_member():
+    """TEMP diagnostic — returns institution + member row state for an email
+    so we can see why _get_institution_branding_for_email rejects it.
+    No secrets returned. Super-admin auth required."""
+    if request.method == 'OPTIONS':
+        return _options('GET, OPTIONS')
+    if not _require_super_admin():
+        return _cors(jsonify({'success': False, 'error': 'Unauthorized'})), 401
+    if not ensure_db():
+        return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
+    email = _norm_email(request.args.get('email', ''))
+    if not email:
+        return _cors(jsonify({'success': False, 'error': 'email required'})), 400
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("""
+            SELECT i.id, i.slug, i.name, i.status, i.expires_at,
+                   i.logo_url, i.logo_url_light, i.key_policy,
+                   i.gemini_key_encrypted IS NOT NULL,
+                   m.status, m.role, m.expires_at, m.joined_at, m.last_seen
+            FROM institution_members m JOIN institutions i ON i.id = m.institution_id
+            WHERE LOWER(m.email)=%s
+            ORDER BY
+              CASE WHEN m.status='active' THEN 0 ELSE 1 END,
+              CASE WHEN i.status='active' THEN 0 ELSE 1 END,
+              CASE WHEN m.expires_at IS NULL OR m.expires_at > NOW() THEN 0 ELSE 1 END,
+              m.joined_at DESC NULLS LAST
+        """, (email,))
+        rows = cur.fetchall()
+        cur.execute("SELECT NOW()")
+        server_now = cur.fetchone()[0]
+        cur.close(); conn.close()
+        out = []
+        for r in rows:
+            out.append({
+                'institution': {
+                    'id': r[0], 'slug': r[1], 'name': r[2],
+                    'status': r[3],
+                    'expires_at': r[4].isoformat() if r[4] else None,
+                    'logo_url': r[5], 'logo_url_light': r[6],
+                    'key_policy': r[7], 'has_gemini_key': bool(r[8]),
+                },
+                'member': {
+                    'status': r[9], 'role': r[10],
+                    'expires_at': r[11].isoformat() if r[11] else None,
+                    'joined_at': r[12].isoformat() if r[12] else None,
+                    'last_seen': r[13].isoformat() if r[13] else None,
+                },
+            })
+        return _cors(jsonify({'success': True, 'email': email, 'server_now': server_now.isoformat(), 'matches': out, 'total': len(out)}))
+    except Exception as e:
+        return _cors(jsonify({'success': False, 'error': str(e)})), 500
 
 @app.route('/api/admin/institutions/create', methods=['POST', 'OPTIONS'])
 def api_admin_inst_create():
