@@ -3964,11 +3964,15 @@ async function stitchVideos(videoUrls, stitchCtx) {
   // ---- Hard timeout: if anything hangs, give up cleanly so the caller can
   // fall back to showing individual clip download links instead of a frozen
   // "Stitching..." progress bar forever.
-  const STITCH_TIMEOUT_MS = 90000;
+  // Sized to ~2× the realtime playback length of all clips combined, so 3×8s
+  // clips never wait more than ~50s before we surface the clean fallback.
+  // Floors at 30s for tiny outputs, caps at 90s for very long ones.
+  const _realtimeMs = videoUrls.length * (typeof selectedVideoDuration === 'number' ? selectedVideoDuration : 8) * 1000;
+  const STITCH_TIMEOUT_MS = Math.max(30000, Math.min(90000, _realtimeMs * 2 + 5000));
   let timeoutHandle = null;
   const timeoutPromise = new Promise((_, reject) => {
     timeoutHandle = setTimeout(
-      () => reject(new Error('Stitch timeout (90s) — falling back to clips')),
+      () => reject(new Error(`Stitch timeout (${Math.round(STITCH_TIMEOUT_MS/1000)}s) — falling back to clips`)),
       STITCH_TIMEOUT_MS
     );
   });
@@ -4369,23 +4373,32 @@ function showStitchedVideoResult(bubble, stitchedUrl, clipUrls, thread) {
 
 function showMultiClipFallback(bubble, clipUrls, thread) {
   let clipsHtml = clipUrls.map((url, i) => `
-    <div style="margin-bottom:10px;">
-      <div style="font-size:11px;color:#8899aa;margin-bottom:4px;">Clip ${i + 1}</div>
-      <video controls muted playsinline style="width:100%;max-width:480px;border-radius:10px;" src="${url}"></video>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:600;color:#cdd6e0;margin-bottom:6px;">🎬 Clip ${i + 1} of ${clipUrls.length}</div>
+      <video controls muted playsinline style="width:100%;max-width:480px;border-radius:10px;display:block;" src="${url}"></video>
     </div>
   `).join('');
 
+  // Task #36: Make the fallback unmistakably clear when stitching couldn't
+  // join the clips. The previous tiny gray "Auto-stitch wasn't possible"
+  // text made users (correctly) think the whole feature broke. The new
+  // banner reassures them that every clip rendered successfully and
+  // gives them a single obvious download button.
   bubble.innerHTML = `
     <div style="margin:8px 0;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-        <span style="font-size:18px;">🎬</span>
-        <span style="font-size:13px;font-weight:600;color:#ffa500;">${clipUrls.length} clips ready!</span>
+      <div style="background:linear-gradient(135deg,rgba(0,200,136,0.15),rgba(0,200,136,0.05));border:1px solid rgba(0,200,136,0.4);border-radius:12px;padding:14px 16px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <span style="font-size:22px;">✅</span>
+          <span style="font-size:15px;font-weight:700;color:#00cc88;">Your ${clipUrls.length} clips are ready and saved below</span>
+        </div>
+        <div style="font-size:13px;color:#cdd6e0;line-height:1.55;">
+          The clips themselves came out fine — the only thing that didn't finish was the auto-join into a single file. You can play each one below, download them all with one click, or join them in any video editor (iMovie, CapCut, Premiere, etc.).
+        </div>
+        <div style="margin-top:12px;">
+          <button class="video-save-clips-btn" style="background:#00cc88;border:none;color:#0b1118;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📥 Download all clips</button>
+        </div>
       </div>
-      <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">Auto-stitch wasn't possible. Here are your individual clips:</div>
       ${clipsHtml}
-      <div style="margin-top:10px;">
-        <button class="video-save-clips-btn" style="background:rgba(0,200,136,0.1);border:1px solid rgba(0,200,136,0.3);color:#00cc88;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;">📥 Save All Clips</button>
-      </div>
     </div>
   `;
 
