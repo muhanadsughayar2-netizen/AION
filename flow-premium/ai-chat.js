@@ -2736,6 +2736,7 @@ function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, 
               <span style="font-size:10px;color:#667788;letter-spacing:1.2px;font-weight:700;">ASPECT</span>
               <button class="edit-aspect" data-val="16:9" style="padding:5px 10px;border-radius:6px;border:1px solid ${draft.aspectRatio === '16:9' ? 'rgba(255,165,0,0.6)' : 'rgba(255,255,255,0.1)'};background:${draft.aspectRatio === '16:9' ? 'rgba(255,165,0,0.15)' : 'rgba(0,0,0,0.3)'};color:#e6ecf3;font-size:11px;font-weight:600;cursor:pointer;">16:9</button>
               <button class="edit-aspect" data-val="9:16" style="padding:5px 10px;border-radius:6px;border:1px solid ${draft.aspectRatio === '9:16' ? 'rgba(255,165,0,0.6)' : 'rgba(255,255,255,0.1)'};background:${draft.aspectRatio === '9:16' ? 'rgba(255,165,0,0.15)' : 'rgba(0,0,0,0.3)'};color:#e6ecf3;font-size:11px;font-weight:600;cursor:pointer;">9:16</button>
+              <button class="edit-aspect" data-val="1:1" style="padding:5px 10px;border-radius:6px;border:1px solid ${draft.aspectRatio === '1:1' ? 'rgba(255,165,0,0.6)' : 'rgba(255,255,255,0.1)'};background:${draft.aspectRatio === '1:1' ? 'rgba(255,165,0,0.15)' : 'rgba(0,0,0,0.3)'};color:#e6ecf3;font-size:11px;font-weight:600;cursor:pointer;">1:1</button>
             </div>
           </div>`
         : '';
@@ -3875,12 +3876,19 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
     let pollCount = 0;
     const maxPolls = 60;  // bumped 40 → 60 (= 15 min max per clip; high-quality clips can take 10+)
     let consecutiveErrors = 0;
+    let stopped = false;
+    const POLL_INTERVAL_MS = 15000;
 
-    const timer = setInterval(async () => {
+    // Recursive setTimeout (NOT setInterval) so a slow poll request can never
+    // overlap with the next tick. Under a slow CDN setInterval would queue
+    // multiple in-flight pollers that each duplicate work and confuse the
+    // resolve race.
+    const tick = async () => {
+      if (stopped) return;
       pollCount++;
 
       if (pollCount > maxPolls) {
-        clearInterval(timer);
+        stopped = true;
         const text = progressBubble.querySelector('.video-progress-text');
         if (text) text.textContent = `Clip ${clipNum} timed out.`;
         resolve({ url: null, status: 'timeout' });
@@ -3893,11 +3901,11 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
         const data = await resp.json().catch(() => ({}));
 
         if (!resp.ok) {
-          if (resp.status === 429) { consecutiveErrors = 0; return; } // keep polling — quota will reset
+          if (resp.status === 429) { consecutiveErrors = 0; setTimeout(tick, POLL_INTERVAL_MS); return; } // keep polling — quota will reset
           consecutiveErrors++;
           // Tolerate up to 3 transient HTTP errors before giving up on polling
-          if (consecutiveErrors < 3) return;
-          clearInterval(timer);
+          if (consecutiveErrors < 3) { setTimeout(tick, POLL_INTERVAL_MS); return; }
+          stopped = true;
           resolve({ url: null, status: 'transient' });
           return;
         }
@@ -3907,10 +3915,11 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
           const pct = data.metadata?.percentComplete || Math.min(pollCount * 5, 90);
           const text = progressBubble.querySelector('.video-progress-text');
           if (text) text.textContent = `Clip ${clipNum}/${totalClips}: Rendering... ${pct}%`;
+          setTimeout(tick, POLL_INTERVAL_MS);
           return;
         }
 
-        clearInterval(timer);
+        stopped = true;
         console.log('[SnapToAI Video] Clip done:', JSON.stringify(data).substring(0, 500));
 
         if (data.error) {
@@ -3946,11 +3955,14 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
         console.log(`[SnapToAI Video] Poll error clip ${clipNum}:`, err.message);
         consecutiveErrors++;
         if (consecutiveErrors >= 3) {
-          clearInterval(timer);
+          stopped = true;
           resolve({ url: null, status: 'transient' });
+          return;
         }
+        setTimeout(tick, POLL_INTERVAL_MS);
       }
-    }, 15000);
+    };
+    setTimeout(tick, POLL_INTERVAL_MS);
   });
 }
 
@@ -4184,6 +4196,11 @@ async function stitchVideos(videoUrls, stitchCtx) {
   // Promise.race left the inner promise running, holding 4–8 MB blobs +
   // an active MediaRecorder + AudioContext alive in the background.
   if (!stitchCtx) stitchCtx = {};
+  // Critical: reset cancel flags from any PREVIOUS stitch run on the same
+  // ctx (e.g., user retried after a timeout). Without this the next stitch
+  // throws "User stopped" instantly because aborted is still true from before.
+  stitchCtx.aborted = false;
+  stitchCtx.userStopped = false;
   const timeoutPromise = new Promise((_, reject) => {
     timeoutHandle = setTimeout(() => {
       stitchCtx.aborted = true;
@@ -4580,16 +4597,28 @@ function showMultiClipFallback(bubble, clipUrls, thread) {
 }
 
 async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
-  if (activeVideoPollTimer) clearInterval(activeVideoPollTimer);
+  if (activeVideoPollTimer) { clearTimeout(activeVideoPollTimer); activeVideoPollTimer = null; }
+  // Invalidate any closure from a previous pollVideoStatus call: the old
+  // tick may already be mid-fetch (clearTimeout only cancels the scheduled
+  // timer, not an in-flight request) and would otherwise schedule a new
+  // tick after we returned, racing the new poller on shared global state.
+  pollVideoStatus._gen = (pollVideoStatus._gen || 0) + 1;
+  const myGen = pollVideoStatus._gen;
+  let stopped = false;
 
   let pollCount = 0;
   const maxPolls = 40;
+  const POLL_INTERVAL_MS = 15000;
 
-  activeVideoPollTimer = setInterval(async () => {
+  // Recursive setTimeout (NOT setInterval) — a slow poll under bad network
+  // would otherwise overlap multiple in-flight pollers, racing on the same
+  // progressBubble and confusing the completion handler.
+  const tick = async () => {
+    if (stopped || pollVideoStatus._gen !== myGen) return;
     pollCount++;
 
     if (pollCount > maxPolls) {
-      clearInterval(activeVideoPollTimer);
+      stopped = true;
       activeVideoPollTimer = null;
       progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">⏰</span> Video generation timed out. Please try again.</div>`;
       return;
@@ -4605,9 +4634,10 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         if (resp.status === 429) {
           const text = progressBubble.querySelector('.video-progress-text');
           if (text) text.textContent = 'Rate limit — retrying shortly...';
+          activeVideoPollTimer = setTimeout(tick, POLL_INTERVAL_MS);
           return;
         }
-        clearInterval(activeVideoPollTimer);
+        stopped = true;
         activeVideoPollTimer = null;
         const errLower = errMsg.toLowerCase();
         if (isBillingError(resp.status, errMsg)) {
@@ -4626,8 +4656,9 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         const text = progressBubble.querySelector('.video-progress-text');
         if (fill) fill.style.width = `${pct}%`;
         if (text) text.textContent = `Rendering... ${pct}%`;
+        activeVideoPollTimer = setTimeout(tick, POLL_INTERVAL_MS);
       } else {
-        clearInterval(activeVideoPollTimer);
+        stopped = true;
         activeVideoPollTimer = null;
 
         console.log('[SnapToAI Video] Done response:', JSON.stringify(data).substring(0, 1000));
@@ -4675,8 +4706,10 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
       }
     } catch (err) {
       console.log(`[SnapToAI Video] Poll error:`, err.message);
+      activeVideoPollTimer = setTimeout(tick, POLL_INTERVAL_MS);
     }
-  }, 15000);
+  };
+  activeVideoPollTimer = setTimeout(tick, POLL_INTERVAL_MS);
 }
 
 function showVideoResult(bubble, videoUrl, thread) {
