@@ -3380,20 +3380,6 @@ async function renderVeoBatchOutcome(ctx) {
   }
 
   // --- Case B: at least 1 successful clip → render video, append retry panel ---
-  // Task #36 (UX): Browser-side stitching via canvas.captureStream + MediaRecorder
-  // is REAL-TIME (a 24s output takes 24s+ to capture) and CPU-bound, which made
-  // the combined output look slow / juddery / "broken" even when individual Veo
-  // clips were perfect. Per direct user feedback ("when it was seprate it was
-  // amazin... stiching not make the vdeo slow and brokedn") we now always
-  // present the clean per-clip view for multi-clip outputs and skip the
-  // captureStream pipeline entirely.
-  //
-  // Hide-don't-delete: stitchVideos / showStitchedVideoResult and the dynamic
-  // STITCH_TIMEOUT_MS work are kept intact. To re-enable browser stitching,
-  // flip ENABLE_BROWSER_STITCHING back to true. The proper long-term fix is a
-  // WebCodecs / mp4-muxer / ffmpeg.wasm faster-than-realtime path, NOT this
-  // canvas-record approach which can never produce a smooth result on average
-  // hardware.
   try {
     if (successUrls.length === 1) {
       showVideoResult(progressBubble, successUrls[0], thread);
@@ -3973,17 +3959,24 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
 //
 // `stitchCtx` is optional. If provided we honour stitchCtx.userStopped so the
 // generation Stop button also aborts during stitching.
+// Task #36 rewrite: previous stitcher used a complex crossfade state machine
+// (AudioContext gain ramps + canvas globalAlpha overlays + async overlap-prep
+// racing the rAF tick). On average hardware that produced "slow / broken"
+// output even when individual clips were perfect. New approach is the
+// simplest thing that can possibly work: hard cuts, one clip at a time,
+// single MediaRecorder consuming a single canvas+audio MediaStream from
+// start to finish. Realtime playback is still required (canvas.captureStream
+// is wall-clock based) but with no crossfade contention the recorded frames
+// are smooth and the audio doesn't glitch at clip boundaries.
 async function stitchVideos(videoUrls, stitchCtx) {
-  console.log(`[SnapToAI Video] Stitching ${videoUrls.length} clips...`);
+  console.log(`[SnapToAI Video] Stitching ${videoUrls.length} clips (hard-cut mode)...`);
 
   // ---- Hard timeout: if anything hangs, give up cleanly so the caller can
   // fall back to showing individual clip download links instead of a frozen
-  // "Stitching..." progress bar forever.
-  // Sized to ~2× the realtime playback length of all clips combined, so 3×8s
-  // clips never wait more than ~50s before we surface the clean fallback.
-  // Floors at 30s for tiny outputs, caps at 90s for very long ones.
+  // "Combining..." progress bar forever. Sized to ~2.5× realtime so a typical
+  // 3×8s render has up to ~65s before fallback. Floors at 30s, caps at 120s.
   const _realtimeMs = videoUrls.length * (typeof selectedVideoDuration === 'number' ? selectedVideoDuration : 8) * 1000;
-  const STITCH_TIMEOUT_MS = Math.max(30000, Math.min(90000, _realtimeMs * 2 + 5000));
+  const STITCH_TIMEOUT_MS = Math.max(30000, Math.min(120000, _realtimeMs * 2.5 + 8000));
   let timeoutHandle = null;
   const timeoutPromise = new Promise((_, reject) => {
     timeoutHandle = setTimeout(
@@ -3993,6 +3986,10 @@ async function stitchVideos(videoUrls, stitchCtx) {
   });
 
   const stitchPromise = (async () => {
+    // ---- 1. Fetch every clip into a Blob up front. Doing this BEFORE any
+    // recording starts means a slow CDN won't stretch the recorded timeline
+    // (the recorder is wall-clock; if we stalled on fetch mid-recording, the
+    // stitched video would have a frozen patch).
     const blobs = [];
     for (const url of videoUrls) {
       if (stitchCtx && stitchCtx.userStopped) throw new Error('User stopped');
@@ -4001,10 +3998,9 @@ async function stitchVideos(videoUrls, stitchCtx) {
       blobs.push(await resp.blob());
     }
 
-    // Probe the FIRST clip to learn its native dimensions, so the canvas
-    // matches the real aspect ratio. Hard-coding 1280x720 used to squash
-    // 9:16 portrait Veo outputs into a landscape frame — the single most
-    // viscerally bad failure mode for any user who picked vertical.
+    // ---- 2. Probe the first clip for native dimensions so the output canvas
+    // matches the real aspect ratio (hard-coding 1280×720 used to squash
+    // 9:16 portrait Veo outputs into a landscape frame — visceral fail).
     const firstBlobUrl = URL.createObjectURL(blobs[0]);
     let canvasW = 1280, canvasH = 720;
     try {
@@ -4037,28 +4033,21 @@ async function stitchVideos(videoUrls, stitchCtx) {
     }
     console.log(`[SnapToAI Video] stitch canvas ${canvasW}x${canvasH} (aspect: ${stitchCtx && stitchCtx.aspectRatio || 'auto'})`);
 
+    // ---- 3. Build the output pipeline ONCE. Single canvas → single video
+    // track. Single AudioContext → one MediaStreamDestination → single audio
+    // track. Single MediaRecorder consumes both for the entire run.
     const canvas = document.createElement('canvas');
     canvas.width = canvasW;
     canvas.height = canvasH;
-    const ctx2d = canvas.getContext('2d');
+    const ctx2d = canvas.getContext('2d', { alpha: false, desynchronized: true });
 
-    const stream = canvas.captureStream(30);
+    const FPS = 30;
+    const stream = canvas.captureStream(FPS);
     const audioCtx = new AudioContext();
-    // Resume in case the browser created it in a suspended state — common
-    // with autoplay policies. await is safe even if already running.
     try { await audioCtx.resume(); } catch (_) {}
-    const dest = audioCtx.createMediaStreamDestination();
+    const audioDest = audioCtx.createMediaStreamDestination();
+    audioDest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
 
-    const audioTracks = dest.stream.getAudioTracks();
-    if (audioTracks.length > 0) {
-      stream.addTrack(audioTracks[0]);
-    }
-
-    // MediaRecorder.isTypeSupported guard — vp9+opus is preferred for
-    // quality, but some hardened browser builds (corporate Chrome MSI,
-    // some Linux distros, older Edge) don't support it and constructing
-    // throws NotSupportedError. Walk a fallback chain so stitching keeps
-    // working everywhere.
     const codecCandidates = [
       'video/webm;codecs=vp9,opus',
       'video/webm;codecs=vp8,opus',
@@ -4073,270 +4062,123 @@ async function stitchVideos(videoUrls, stitchCtx) {
         break;
       }
     }
-    const recorder = chosenMime
-      ? new MediaRecorder(stream, { mimeType: chosenMime })
-      : new MediaRecorder(stream);
-    console.log(`[SnapToAI Video] MediaRecorder mime=${chosenMime || '(default)'}`);
+    // Bumped bitrate: 8 Mbps video + 192 kbps audio. The previous default
+    // (~2.5 Mbps) is what made the recorded output look soft / "slow"
+    // compared to the 1080p MP4 source clips.
+    const recorderOpts = { videoBitsPerSecond: 8_000_000, audioBitsPerSecond: 192_000 };
+    if (chosenMime) recorderOpts.mimeType = chosenMime;
+    const recorder = new MediaRecorder(stream, recorderOpts);
+    console.log(`[SnapToAI Video] MediaRecorder mime=${chosenMime || '(default)'} @ 8Mbps`);
     const chunks = [];
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
     const recordingDone = new Promise(resolve => { recorder.onstop = resolve; });
-    recorder.start();
+    // timeslice=250ms so chunks flush regularly. A single giant final chunk
+    // sometimes shows up as a corrupt/0-byte file in Chrome.
+    recorder.start(250);
 
-    // Task #15: Crossfade durations.
-    //   FADE_S — short anti-click ramp at the very start of clip 1 and the
-    //            very end of the final clip. Avoids any audible pop on the
-    //            outer edges of the stitched output.
-    //   XFADE_S — visual + audio crossfade window between consecutive clips.
-    //            500ms is long enough that the human eye reads it as a
-    //            deliberate dissolve rather than a hard cut, while short
-    //            enough that motion in the clips still feels continuous.
-    const FADE_S = 0.05;
-    const XFADE_S = 0.5;
+    // ---- 4. Hard-cut sequential playback. One clip at a time. No crossfade,
+    // no overlap, no async race. Each clip:
+    //   * load metadata
+    //   * connect its MediaElementSource through a unity-gain node into the
+    //     shared destination (gain stays at 1 — no ramps, no clicks because
+    //     Veo clips already start/end on quiet frames)
+    //   * play()
+    //   * draw to canvas via rAF + setInterval backstop
+    //   * await `ended`, then disconnect + dispose before moving on
+    //
+    // Disconnecting the previous clip's audio BEFORE the next clip starts is
+    // what eliminates the audio glitching that the old crossfader produced —
+    // the destination only ever has ONE active source at a time.
+    const blobUrls = blobs.map(b => URL.createObjectURL(b));
+    const playedNodes = []; // for cleanup in finally
 
-    // Pre-create one bookkeeping record per clip. Videos and gain nodes
-    // are constructed lazily by prepareItem() to keep memory + CPU low.
-    const items = blobs.map((blob, idx) => ({
-      idx,
-      blobUrl: URL.createObjectURL(blob),
-      video: null,
-      gainNode: null,
-      duration: 8,
-      ready: false,
-      started: false,
-      ended: false
-    }));
+    try {
+      for (let i = 0; i < blobs.length; i++) {
+        if (stitchCtx && stitchCtx.userStopped) throw new Error('User stopped');
 
-    // Idempotent: if prep is already in flight, return the same promise so
-    // the crossfade prep and the late-start fallback can never trigger two
-    // concurrent prepares for the same clip (which would create duplicate
-    // <video> elements and double-connect to the audio destination).
-    function prepareItem(item) {
-      if (item.ready) return Promise.resolve();
-      if (item._prepPromise) return item._prepPromise;
-      item._prepPromise = (async () => {
         const v = document.createElement('video');
-        v.src = item.blobUrl;
+        v.src = blobUrls[i];
         v.muted = false;
         v.crossOrigin = 'anonymous';
         v.playsInline = true;
         v.preload = 'auto';
-        // Park off-screen so the browser keeps decoding frames.
         v.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:64px;height:64px;opacity:0;pointer-events:none;z-index:-1;';
         document.body.appendChild(v);
+        playedNodes.push(v);
+
         await new Promise((resolve, reject) => {
-          const t = setTimeout(() => reject(new Error('Stitch video load timeout')), 15000);
+          const t = setTimeout(() => reject(new Error(`Clip ${i+1} load timeout`)), 15000);
           v.onloadedmetadata = () => { clearTimeout(t); resolve(); };
-          v.onerror = () => { clearTimeout(t); reject(new Error('Stitch video load error')); };
+          v.onerror = () => { clearTimeout(t); reject(new Error(`Clip ${i+1} load error`)); };
         });
-        item.video = v;
-        item.duration = (v.duration && isFinite(v.duration) && v.duration > 0) ? v.duration : 8;
+
+        let audioSource = null, gainNode = null;
         try {
-          const source = audioCtx.createMediaElementSource(v);
-          const g = audioCtx.createGain();
-          g.gain.setValueAtTime(0, audioCtx.currentTime);
-          source.connect(g);
-          g.connect(dest);
-          item.gainNode = g;
+          audioSource = audioCtx.createMediaElementSource(v);
+          gainNode = audioCtx.createGain();
+          gainNode.gain.value = 1;
+          audioSource.connect(gainNode);
+          gainNode.connect(audioDest);
         } catch (e) {
-          console.log('[SnapToAI Video] Audio connect skipped on clip', item.idx + 1, ':', e.message);
+          console.log(`[SnapToAI Video] Audio connect skipped on clip ${i+1}:`, e.message);
         }
-        item.ready = true;
-      })();
-      return item._prepPromise;
-    }
 
-    function startItem(item, isFirst, isLast) {
-      if (item._startPromise) return item._startPromise;
-      item._startPromise = (async () => {
-        item.started = true;
-        try { await item.video.play(); } catch (e) {
-          console.log('[SnapToAI Video] play() rejected on clip', item.idx + 1, ':', e.message);
+        try { await v.play(); } catch (e) {
+          console.log(`[SnapToAI Video] play() rejected on clip ${i+1}:`, e.message);
         }
-        if (item.gainNode) {
-          const t0 = audioCtx.currentTime;
-          const g = item.gainNode.gain;
-          g.cancelScheduledValues(t0);
-          g.setValueAtTime(0, t0);
-          // First clip uses the short anti-click fade-in; later clips ramp up
-          // over the full XFADE window so they crossfade with the previous.
-          let fadeIn = isFirst ? FADE_S : XFADE_S;
-          // Final clip uses the short anti-click fade-out; earlier clips
-          // ramp out over the full XFADE window so the next clip can ramp in.
-          let fadeOut = isLast ? FADE_S : XFADE_S;
-          // Clamp fades for very short clips (e.g. < 1.0 s test clips) so the
-          // fade-out always begins BEFORE end-of-media. Without this, when
-          // duration ≤ fadeIn + fadeOut, fadeOutStart could land at/after EOF
-          // and the anti-pop ramp never executes — audible click on the join.
-          // Reserve ≥ 25 % of the clip for sustain in extreme cases.
-          const dur = Math.max(0.05, item.duration);
-          if (fadeIn + fadeOut > dur * 0.75) {
-            const scale = (dur * 0.75) / (fadeIn + fadeOut);
-            fadeIn *= scale;
-            fadeOut *= scale;
-          }
-          g.linearRampToValueAtTime(1, t0 + fadeIn);
-          const fadeOutStart = t0 + Math.max(fadeIn, dur - fadeOut);
-          g.setValueAtTime(1, fadeOutStart);
-          g.linearRampToValueAtTime(0, fadeOutStart + fadeOut);
-        }
-      })();
-      return item._startPromise;
-    }
 
-    try {
-      // Pre-warm clip 0 so the first frame is ready when the loop starts.
-      await prepareItem(items[0]);
-      await startItem(items[0], /*isFirst*/ true, /*isLast*/ items.length === 1);
+        const dur = (v.duration && isFinite(v.duration) && v.duration > 0) ? v.duration : 8;
 
-      // Single combined draw loop that handles all clips end-to-end with
-      // crossfade. Uses an "active" slot for the clip currently dominating
-      // the canvas and an "overlap" slot for the incoming clip during the
-      // crossfade window. When the active clip ends, overlap becomes active.
-      await new Promise((resolveLoop) => {
-        let activeIdx = 0;
-        let overlappingIdx = -1;
-        let overlapStartCtxTime = 0;
-        let overlapPrepInFlight = false;
-        let stopped = false;
-        let interval = null;
-
-        const finish = () => {
-          if (stopped) return;
-          stopped = true;
-          if (interval) { clearInterval(interval); interval = null; }
-          resolveLoop();
-        };
-
-        // True while we've finished the active clip but the next one isn't
-        // ready to take over yet — we hold the last drawn frame and wait,
-        // rather than swapping activeIdx prematurely (which could race the
-        // tick into the `!active.video` early-return and end stitching).
-        let awaitingNext = false;
-        let lateStartFailed = false;
-
-        const tick = () => {
-          if (stopped) return;
-          if (stitchCtx && stitchCtx.userStopped) { finish(); return; }
-          // If a late-start prep threw, exit immediately instead of holding
-          // the previous active clip's last frame all the way to the 90s
-          // outer STITCH_TIMEOUT_MS. The caller falls back to per-clip links.
-          if (lateStartFailed) { finish(); return; }
-          const active = items[activeIdx];
-          // Defensive: shouldn't happen because we only swap activeIdx when
-          // the next clip is fully ready, but if it does, just wait one tick.
-          if (!active || !active.video) {
+        // Realtime draw loop. rAF for foreground smoothness, setInterval as a
+        // 100ms backstop for backgrounded tabs (rAF gets throttled to 1Hz
+        // when hidden — without the backstop the canvas would freeze and
+        // captureStream would emit the same frame for the whole clip).
+        await new Promise((resolveClip) => {
+          let stopped = false;
+          let interval = null;
+          const done = () => {
+            if (stopped) return;
+            stopped = true;
+            if (interval) { clearInterval(interval); interval = null; }
+            resolveClip();
+          };
+          v.onended = done;
+          const tick = () => {
+            if (stopped) return;
+            if (stitchCtx && stitchCtx.userStopped) { done(); return; }
+            try { ctx2d.drawImage(v, 0, 0, canvasW, canvasH); } catch (_) {}
+            if (v.ended || (v.currentTime >= dur - 0.02)) { done(); return; }
             if (typeof requestAnimationFrame === 'function') requestAnimationFrame(tick);
             else setTimeout(tick, 33);
-            return;
-          }
-
-          // Decide whether to begin crossfade with the next clip.
-          if (overlappingIdx === -1 && !overlapPrepInFlight && activeIdx + 1 < items.length) {
-            const remaining = active.duration - active.video.currentTime;
-            if (remaining <= XFADE_S && remaining > 0) {
-              overlapPrepInFlight = true;
-              const nextIdx = activeIdx + 1;
-              (async () => {
-                try {
-                  await prepareItem(items[nextIdx]);
-                  if (stopped) return;
-                  await startItem(items[nextIdx], /*isFirst*/ false, /*isLast*/ nextIdx === items.length - 1);
-                  overlapStartCtxTime = audioCtx.currentTime;
-                  overlappingIdx = nextIdx;
-                } catch (e) {
-                  console.log('[SnapToAI Video] Crossfade prep failed for clip', nextIdx + 1, ':', e.message);
-                } finally {
-                  overlapPrepInFlight = false;
-                }
-              })();
-            }
-          }
-
-          // Draw the active (outgoing) clip at full opacity.
-          try { ctx2d.drawImage(active.video, 0, 0, canvas.width, canvas.height); } catch (_) {}
-
-          // Overlay the incoming clip with a linear-alpha ramp. Using the
-          // AudioContext clock keeps the visual ramp in lockstep with the
-          // gain ramps already scheduled on the audio side.
-          if (overlappingIdx !== -1 && items[overlappingIdx] && items[overlappingIdx].video) {
-            const overlap = items[overlappingIdx];
-            const elapsed = audioCtx.currentTime - overlapStartCtxTime;
-            const alpha = Math.max(0, Math.min(1, elapsed / XFADE_S));
-            try {
-              ctx2d.globalAlpha = alpha;
-              ctx2d.drawImage(overlap.video, 0, 0, canvas.width, canvas.height);
-              ctx2d.globalAlpha = 1;
-            } catch (_) {}
-          }
-
-          // Hand off when the active clip is done. We accept either an
-          // explicit `ended` signal or a near-EOF timestamp because some
-          // browsers don't reliably fire `ended` on MediaSource-blob videos.
-          const activeDone = active.video.ended || (active.video.currentTime >= active.duration - 0.02);
-          if (activeDone) {
-            if (overlappingIdx !== -1) {
-              // The crossfade has reached EOF on the outgoing clip — promote.
-              activeIdx = overlappingIdx;
-              overlappingIdx = -1;
-              awaitingNext = false;
-            } else if (activeIdx + 1 < items.length) {
-              // Edge case: crossfade prep didn't get a chance (e.g. the clip
-              // was shorter than XFADE_S, or prep is still in flight). Kick
-              // off the next clip if we haven't yet, but DO NOT swap activeIdx
-              // until it's fully ready — otherwise the next tick sees
-              // `active.video === null` and would have ended stitching early.
-              if (!awaitingNext) {
-                awaitingNext = true;
-                const nextIdx = activeIdx + 1;
-                (async () => {
-                  try {
-                    await prepareItem(items[nextIdx]);
-                    if (stopped) return;
-                    await startItem(items[nextIdx], false, nextIdx === items.length - 1);
-                    if (stopped) return;
-                    activeIdx = nextIdx;
-                    awaitingNext = false;
-                  } catch (e) {
-                    console.log('[SnapToAI Video] Late-start failed for clip', nextIdx + 1, ':', e.message);
-                    awaitingNext = false;
-                    lateStartFailed = true;
-                  }
-                })();
-              }
-              // While awaitingNext, keep ticking and just hold the active
-              // clip's last drawn frame (drawImage above will draw it again).
-            } else {
-              finish();
-              return;
-            }
-          }
-
-          if (typeof requestAnimationFrame === 'function') {
-            requestAnimationFrame(tick);
-          } else {
-            setTimeout(tick, 33);
-          }
-        };
-
-        // Belt-and-suspenders fallback for backgrounded tabs where rAF is
-        // throttled. Without it the canvas would freeze on a single frame
-        // per clip and the stitched output would be a slideshow.
-        interval = setInterval(() => {
-          if (stopped) { clearInterval(interval); return; }
+          };
+          interval = setInterval(tick, 100);
           tick();
-        }, 100);
-        tick();
-      });
+        });
+
+        // Tear THIS clip down before starting the next. Critical: disconnect
+        // the audio graph so only one source ever feeds the destination.
+        try { gainNode && gainNode.disconnect(); } catch (_) {}
+        try { audioSource && audioSource.disconnect(); } catch (_) {}
+        try { v.pause(); } catch (_) {}
+        try { v.removeAttribute('src'); v.load(); } catch (_) {}
+      }
+
+      // Draw the final frame one more time so the recorded video doesn't end
+      // on a black gap between the last drawImage and recorder.stop().
+      // (Some chunks flush with a slight lag; this gives them content.)
+      await new Promise(r => setTimeout(r, 150));
     } finally {
-      for (const it of items) {
-        if (it.video && it.video.parentNode) {
-          try { it.video.parentNode.removeChild(it.video); } catch (_) {}
+      for (const v of playedNodes) {
+        if (v && v.parentNode) {
+          try { v.parentNode.removeChild(v); } catch (_) {}
         }
-        if (it.blobUrl) { try { URL.revokeObjectURL(it.blobUrl); } catch (_) {} }
+      }
+      for (const u of blobUrls) {
+        try { URL.revokeObjectURL(u); } catch (_) {}
       }
       try { recorder.stop(); } catch (_) {}
-      try { await audioCtx.close(); } catch (_) {}
       await recordingDone;
+      try { await audioCtx.close(); } catch (_) {}
     }
 
     const stitchedBlob = new Blob(chunks, { type: 'video/webm' });
