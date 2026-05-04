@@ -4540,6 +4540,21 @@ let MEMBERS_CACHE = [];
 const INST_NAME = {json.dumps(info['name'])};
 const STORE_URL = 'https://chromewebstore.google.com/detail/snaptoai';
 
+// Render a JS literal that is SAFE to embed inside a double-quoted HTML
+// attribute (e.g. onclick="..."). JSON.stringify alone returns "foo" with
+// real double quotes, which collides with the surrounding onclick="..." and
+// silently breaks the handler — so we entity-encode the quotes (and & < >)
+// after stringifying. Without this fix, every action button that takes a
+// string argument (Set Expiry / Copy welcome / Resend email / Remove) had
+// a corrupted onclick attribute and clicks did nothing.
+function attrJs(v) {{
+  return JSON.stringify(v)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}}
+
 async function load() {{
   const r = await fetch(API_BASE + '/members');
   const d = await r.json();
@@ -4625,10 +4640,10 @@ function renderMembers() {{
         (m.status === 'active'
           ? '<button class="danger" onclick="suspend(' + mid + ')">Suspend</button> '
           : '<button onclick="reactivate(' + mid + ')">Reactivate</button> ') +
-        '<button class="secondary" onclick="editExpiry(' + mid + ', ' + JSON.stringify(String(m.email||'')) + ', ' + JSON.stringify(m.expiresAt || '') + ')" title="Change access duration">Set Expiry</button> ' +
-        '<button class="secondary" onclick="copyWelcome(' + JSON.stringify(String(m.email||'')) + ')" title="Copy a ready-to-send welcome message for this member">📋 Copy welcome</button> ' +
-        '<button class="secondary" onclick="resendWelcome(' + mid + ', ' + JSON.stringify(String(m.email||'')) + ')" title="Send the branded welcome email to this member again">✉️ Resend email</button> ' +
-        '<button class="secondary" onclick="removeMember(' + mid + ', ' + JSON.stringify(String(m.email||'')) + ')">Remove</button>' +
+        '<button class="secondary" onclick="editExpiry(' + mid + ', ' + attrJs(String(m.email||'')) + ', ' + attrJs(m.expiresAt || '') + ')" title="Change access duration">Set Expiry</button> ' +
+        '<button class="secondary" onclick="copyWelcome(' + attrJs(String(m.email||'')) + ')" title="Copy a ready-to-send welcome message for this member">📋 Copy welcome</button> ' +
+        '<button class="secondary" onclick="resendWelcome(' + mid + ', ' + attrJs(String(m.email||'')) + ')" title="Send the branded welcome email to this member again">✉️ Resend email</button> ' +
+        '<button class="secondary" onclick="removeMember(' + mid + ', ' + attrJs(String(m.email||'')) + ')">Remove</button>' +
       '</td></tr>';
   }}
   html += '</table>';
