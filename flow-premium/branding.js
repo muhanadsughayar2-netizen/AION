@@ -272,11 +272,15 @@
         // (the Ask AI star) so it can be driven by the highlightColor
         // slot below — that lets admin keep the star visually distinct
         // from the regular capture buttons.
+        // SOLID-FILL bank style: hero buttons get a strong brand fill and
+        // the icon flips to the contrast color (white on orange / black on
+        // pale brands) — `resolved.accentFg` already handles luminance.
         var heroSel = '.hero-action-btn:not(.ai-btn)';
-        rules.push(heroSel + ' { background: ' + t08 + ' !important; border-color: ' + t30 + ' !important; color: ' + solid + ' !important; }');
-        rules.push(heroSel + ':hover { background: ' + t15 + ' !important; border-color: ' + t50 + ' !important; box-shadow: 0 0 20px ' + t30 + ' !important; }');
-        rules.push(heroSel + ' svg { color: ' + solid + ' !important; }');
-        rules.push(heroSel + ' svg path, ' + heroSel + ' svg circle, ' + heroSel + ' svg rect, ' + heroSel + ' svg line, ' + heroSel + ' svg polygon { stroke: ' + solid + ' !important; }');
+        var fg = resolved.accentFg || '#ffffff';
+        rules.push(heroSel + ' { background: ' + solid + ' !important; border-color: ' + solid + ' !important; color: ' + fg + ' !important; }');
+        rules.push(heroSel + ':hover { background: ' + solid2 + ' !important; border-color: ' + solid2 + ' !important; box-shadow: 0 4px 18px ' + t50 + ' !important; transform: scale(1.05); }');
+        rules.push(heroSel + ' svg { color: ' + fg + ' !important; }');
+        rules.push(heroSel + ' svg path, ' + heroSel + ' svg circle, ' + heroSel + ' svg rect, ' + heroSel + ' svg line, ' + heroSel + ' svg polygon { stroke: ' + fg + ' !important; }');
         rules.push('.hero-action-label:not(.ai-label) { color: ' + solid + ' !important; }');
         // Legacy .orb selectors (other surfaces still use them).
         rules.push('.orb { background: ' + t08 + ' !important; border-color: ' + t30 + ' !important; }');
@@ -284,14 +288,11 @@
         rules.push('.orb:active { background: ' + t20 + ' !important; }');
         rules.push('.orb-label, .orb-inner, .orb svg { color: ' + solid + ' !important; }');
         rules.push('.orb svg path, .orb svg circle, .orb svg rect { stroke: ' + solid + ' !important; }');
-        // Generic action-row buttons (Select All / Send to AI / Copy /
-        // Delete). These use rgba(0,217,255,X) hardcodes in popup.css.
-        rules.push('.select-all-btn { background: ' + t08 + ' !important; border-color: ' + t30 + ' !important; color: ' + solid + ' !important; }');
-        rules.push('.select-all-btn:hover { background: ' + t15 + ' !important; border-color: ' + solid + ' !important; }');
-
-        // Generic action buttons (Select All / Send to AI / Copy / Delete).
-        rules.push('.action-btn, .ai-action-btn, .footer-btn { background: ' + t08 + ' !important; border-color: ' + t30 + ' !important; color: ' + solid + ' !important; }');
-        rules.push('.action-btn:hover, .ai-action-btn:hover, .footer-btn:hover { background: ' + t15 + ' !important; border-color: ' + t50 + ' !important; box-shadow: 0 4px 12px ' + t20 + ' !important; }');
+        // Solid-fill action buttons: Select All / Send to AI / Copy /
+        // Delete — orange bg, white text/svg, hover deepens to accent2.
+        rules.push('.select-all-btn, .action-btn, .ai-action-btn, .footer-btn { background: ' + solid + ' !important; border-color: ' + solid + ' !important; color: ' + fg + ' !important; }');
+        rules.push('.select-all-btn:hover, .action-btn:hover, .ai-action-btn:hover, .footer-btn:hover { background: ' + solid2 + ' !important; border-color: ' + solid2 + ' !important; box-shadow: 0 4px 12px ' + t50 + ' !important; }');
+        rules.push('.select-all-btn svg, .action-btn svg, .ai-action-btn svg, .footer-btn svg { color: ' + fg + ' !important; fill: ' + fg + ' !important; }');
 
         // Primary CTA gradient buttons (was hardcoded #00e8ff → #00c8e8).
         var grad = 'linear-gradient(135deg, ' + solid + ' 0%, ' + solid2 + ' 100%)';
