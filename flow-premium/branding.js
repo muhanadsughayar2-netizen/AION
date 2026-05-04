@@ -264,13 +264,30 @@
         rules.push('.sign-in-header-btn, .open-sidebar-btn, .status-pill, .ai-status-pill { background: ' + t08 + ' !important; border-color: ' + t20 + ' !important; color: ' + solid + ' !important; }');
         rules.push('.sign-in-header-btn:hover, .open-sidebar-btn:hover, .status-pill:hover { background: ' + t15 + ' !important; border-color: ' + t30 + ' !important; }');
 
-        // Main orb buttons (SNAP / SNIP / FULL PAGE / ASK AI) — the cyan
-        // flash on press was these.
+        // Main orb / hero buttons (SNAP / SNIP / FULL PAGE) — the cyan
+        // ring + glow that flashed through ITIHAD bank's brand. NOTE:
+        // popup.html uses `.hero-action-btn` for these, NOT `.orb` — the
+        // earlier `.orb` selector never matched anything in the live UI.
+        // We tint .hero-action-btn here and explicitly EXCLUDE `.ai-btn`
+        // (the Ask AI star) so it can be driven by the highlightColor
+        // slot below — that lets admin keep the star visually distinct
+        // from the regular capture buttons.
+        var heroSel = '.hero-action-btn:not(.ai-btn)';
+        rules.push(heroSel + ' { background: ' + t08 + ' !important; border-color: ' + t30 + ' !important; color: ' + solid + ' !important; }');
+        rules.push(heroSel + ':hover { background: ' + t15 + ' !important; border-color: ' + t50 + ' !important; box-shadow: 0 0 20px ' + t30 + ' !important; }');
+        rules.push(heroSel + ' svg { color: ' + solid + ' !important; }');
+        rules.push(heroSel + ' svg path, ' + heroSel + ' svg circle, ' + heroSel + ' svg rect, ' + heroSel + ' svg line, ' + heroSel + ' svg polygon { stroke: ' + solid + ' !important; }');
+        rules.push('.hero-action-label:not(.ai-label) { color: ' + solid + ' !important; }');
+        // Legacy .orb selectors (other surfaces still use them).
         rules.push('.orb { background: ' + t08 + ' !important; border-color: ' + t30 + ' !important; }');
         rules.push('.orb:hover { background: ' + t15 + ' !important; border-color: ' + t50 + ' !important; box-shadow: 0 4px 14px ' + t20 + ' !important; }');
         rules.push('.orb:active { background: ' + t20 + ' !important; }');
         rules.push('.orb-label, .orb-inner, .orb svg { color: ' + solid + ' !important; }');
         rules.push('.orb svg path, .orb svg circle, .orb svg rect { stroke: ' + solid + ' !important; }');
+        // Generic action-row buttons (Select All / Send to AI / Copy /
+        // Delete). These use rgba(0,217,255,X) hardcodes in popup.css.
+        rules.push('.select-all-btn { background: ' + t08 + ' !important; border-color: ' + t30 + ' !important; color: ' + solid + ' !important; }');
+        rules.push('.select-all-btn:hover { background: ' + t15 + ' !important; border-color: ' + solid + ' !important; }');
 
         // Generic action buttons (Select All / Send to AI / Copy / Delete).
         rules.push('.action-btn, .ai-action-btn, .footer-btn { background: ' + t08 + ' !important; border-color: ' + t30 + ' !important; color: ' + solid + ' !important; }');
@@ -338,6 +355,18 @@
     }
     if (palette.highlightColor) {
       rules.push('.badge-premium, .badge-pro, .ask-ai-badge, .highlight-pill, [data-highlight] { background: ' + palette.highlightColor + ' !important; }');
+      // Task #41 — route the Ask AI star (the gold/yellow ⭐ orb) through
+      // highlightColor so admins can recolor it. Build an alpha tint of
+      // the highlight color so the soft glow matches.
+      var hRgb = hexToRgb(palette.highlightColor);
+      if (hRgb) {
+        var h08 = rgba(hRgb, 0.08), h15 = rgba(hRgb, 0.15);
+        var h25 = rgba(hRgb, 0.25), h35 = rgba(hRgb, 0.35), h50 = rgba(hRgb, 0.50);
+        rules.push('.ai-btn { background: ' + h08 + ' !important; border-color: ' + h35 + ' !important; color: ' + palette.highlightColor + ' !important; box-shadow: 0 0 18px ' + h15 + ', 0 0 40px ' + h08 + ' !important; }');
+        rules.push('.ai-btn:hover { background: ' + h25 + ' !important; border-color: ' + h50 + ' !important; box-shadow: 0 0 28px ' + h35 + ', 0 0 50px ' + h15 + ' !important; }');
+        rules.push('.ai-btn svg, .ai-btn svg polygon, .ai-btn svg path { color: ' + palette.highlightColor + ' !important; stroke: ' + palette.highlightColor + ' !important; }');
+        rules.push('.ai-label { color: ' + palette.highlightColor + ' !important; }');
+      }
     }
     // Task #41 — slot 9: kill the default browser "canyon blue" highlight
     // (Chrome's #2563eb / #3b82f6) and replace with the institution color

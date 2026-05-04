@@ -5038,8 +5038,17 @@ async function saveDomains() {{
   if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Saved'; document.getElementById('stat-domains').textContent = d.allowedDomains || '(none)'; }}
   else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
 }}
+// Task #41 — track which slots the admin EXPLICITLY clicked Reset on.
+// Without this, every Save was nulling slots that just happened to be
+// blank in the form, which silently wiped customizations across all
+// institutions every time anyone saved any color. Now Save only touches:
+//   - slots the admin filled with a non-empty hex
+//   - slots they explicitly reset (via the per-slot Reset button)
+// All other slots are skipped, so previous values survive Save → restart
+// → reload → Save again indefinitely.
+window.__paletteToReset = window.__paletteToReset || new Set();
+
 async function saveColor() {{
-  // Task #40 — collect all 8 palette slots, validate hex, send as one POST.
   const msg = document.getElementById('color-msg');
   const inputs = document.querySelectorAll('#palette-grid input[type="text"][data-pal-key]');
   const payload = {{}};
@@ -5051,9 +5060,18 @@ async function saveColor() {{
       msg.style.color = '#ff4757';
       msg.textContent = '✗ ' + key + ' is not a valid hex color (e.g. #00d9ff)';
       el.focus();
+      // Don't clear __paletteToReset — admin will fix the hex and re-Save,
+      // but if they instead tab away and Reset something else, we don't
+      // want the prior Reset intent to silently leak. Safe to clear here.
+      window.__paletteToReset.clear();
       return;
     }}
-    payload[key] = v;
+    if (v) {{
+      payload[key] = v;                       // user set a color → save it
+    }} else if (window.__paletteToReset.has(key)) {{
+      payload[key] = '';                       // user explicitly reset → null it
+    }}
+    // else: blank + not explicitly reset → SKIP, leave DB untouched
   }}
   // Keep the legacy hidden mirror in sync so the contrast preview reads
   // the up-to-date Primary action value after Save.
@@ -5066,6 +5084,7 @@ async function saveColor() {{
   if (d.success) {{
     msg.style.color = '#00ff88';
     msg.textContent = '✓ All colors saved (members refresh to see)';
+    window.__paletteToReset.clear();   // reset tracking after a successful save
     try {{ updateBrandPreview(); }} catch (e) {{}}
   }} else {{
     msg.style.color = '#ff4757';
@@ -5074,9 +5093,16 @@ async function saveColor() {{
 }}
 
 function clearPaletteSlot(slotId) {{
-  // Reset a single slot to default (empty input → backend stores NULL).
+  // Reset a single slot to default. We MUST also remember this intent so
+  // the next Save actually nulls the column (vs. silently leaving it).
   const txt = document.getElementById('pal-' + slotId + '-input');
-  if (txt && !txt.disabled) {{ txt.value = ''; txt.dispatchEvent(new Event('input', {{bubbles:true}})); }}
+  if (txt && !txt.disabled) {{
+    txt.value = '';
+    // Map slotId → JSON key so the save payload knows what to null.
+    const key = txt.getAttribute('data-pal-key');
+    if (key) {{ window.__paletteToReset.add(key); }}
+    txt.dispatchEvent(new Event('input', {{bubbles:true}}));
+  }}
 }}
 
 // Wire each palette picker so changing the color picker updates the
