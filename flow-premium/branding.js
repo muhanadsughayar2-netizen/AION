@@ -281,12 +281,17 @@
         rules.push(heroSel + ':hover { background: ' + solid2 + ' !important; border-color: ' + solid2 + ' !important; box-shadow: 0 4px 18px ' + t50 + ' !important; transform: scale(1.05); }');
         rules.push(heroSel + ' svg { color: ' + fg + ' !important; }');
         rules.push(heroSel + ' svg path, ' + heroSel + ' svg circle, ' + heroSel + ' svg rect, ' + heroSel + ' svg line, ' + heroSel + ' svg polygon { stroke: ' + fg + ' !important; }');
-        rules.push('.hero-action-label:not(.ai-label) { color: ' + solid + ' !important; }');
+        // Labels above the hero buttons — default to text-primary if the
+        // admin set it (so "all text white" actually means all text white),
+        // otherwise fall back to the brand color accent.
+        var labelColor = palette.textPrimary || solid;
+        rules.push('.hero-action-label:not(.ai-label) { color: ' + labelColor + ' !important; }');
         // Legacy .orb selectors (other surfaces still use them).
         rules.push('.orb { background: ' + t08 + ' !important; border-color: ' + t30 + ' !important; }');
         rules.push('.orb:hover { background: ' + t15 + ' !important; border-color: ' + t50 + ' !important; box-shadow: 0 4px 14px ' + t20 + ' !important; }');
         rules.push('.orb:active { background: ' + t20 + ' !important; }');
-        rules.push('.orb-label, .orb-inner, .orb svg { color: ' + solid + ' !important; }');
+        rules.push('.orb-label { color: ' + labelColor + ' !important; }');
+        rules.push('.orb-inner, .orb svg { color: ' + solid + ' !important; }');
         rules.push('.orb svg path, .orb svg circle, .orb svg rect { stroke: ' + solid + ' !important; }');
         // Solid-fill action buttons: Select All / Send to AI / Copy /
         // Delete — orange bg, white text/svg, hover deepens to accent2.
@@ -342,11 +347,15 @@
       rules.push('.header, .top-bar, .app-header { background: ' + palette.headerColor + ' !important; background-image: none !important; }');
     }
     if (palette.textPrimary) {
-      // body has hardcoded color:#fff — that has to be overridden too,
-      // otherwise white-on-white makes everything invisible. Apply only
-      // to text containers (NOT to every div/span — that nuked badges
-      // and orb labels). Specific accents keep their own colors.
-      rules.push('html, body, .container, p, label, h1, h2, h3, h4, h5, h6 { color: ' + palette.textPrimary + '; }');
+      // Force ALL body text to text-primary (with !important so popup.css
+      // hardcodes don't win). Excludes elements that have their own
+      // intentional accent color: hero/orb/ai labels (driven by brand
+      // / highlight slots above), badges, pills, and links.
+      rules.push('html, body, .container, p, label, h1, h2, h3, h4, h5, h6, div, span, li, td, dd, dt, .ai-status-row, #aiStatusText, .status-text, .footer-hint, .prompt-counter, .free-prompt-counter, .ai-manage-link, .review-text { color: ' + palette.textPrimary + ' !important; }');
+      // Re-assert the accent overrides AFTER the broad rule so they win.
+      // (The selectors with brand/highlight/fg colors below get appended
+      // later in the stylesheet, but our broad rule uses tag selectors
+      // with low specificity so class-based rules naturally override.)
     }
     if (palette.textMuted) {
       rules.push('.muted, .hint, .subtitle, .timestamp, ::placeholder, [data-muted] { color: ' + palette.textMuted + ' !important; }');
