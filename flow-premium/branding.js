@@ -114,7 +114,9 @@
     // borders
     '--st-border-default', '--st-border-strong', '--st-border-subtle',
     // new explicit zone vars
-    '--st-brand-header', '--st-brand-highlight'
+    '--st-brand-header', '--st-brand-highlight',
+    // Task #41 — slot 9: text selection / "canyon blue"
+    '--st-selection-bg', '--st-selection-fg'
   ];
 
   var lastBrandColor = null;
@@ -211,6 +213,13 @@
         if (palette.highlightColor) {
           root.style.setProperty('--st-brand-highlight', palette.highlightColor);
         }
+        if (palette.selectionColor) {
+          root.style.setProperty('--st-selection-bg', palette.selectionColor);
+          // Auto-pick readable text color over the selection background.
+          var selRgb = hexToRgb(palette.selectionColor);
+          var selFg = (selRgb && (selRgb.r * 299 + selRgb.g * 587 + selRgb.b * 114) / 1000 > 150) ? '#000' : '#fff';
+          root.style.setProperty('--st-selection-fg', selFg);
+        }
       }
 
       // Task #40 (fix) — many surfaces in popup.css / sidebar.css / ai-chat
@@ -232,7 +241,7 @@
     var existing = document.getElementById(STYLE_ID);
     var hasPalette = palette && (palette.pageBg || palette.cardBg ||
       palette.textPrimary || palette.textMuted || palette.headerColor ||
-      palette.highlightColor || palette.borderColor);
+      palette.highlightColor || palette.borderColor || palette.selectionColor);
     var hasBrand = !!(resolved && brandColorHex);
     if (!hasPalette && !hasBrand) {
       if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
@@ -329,6 +338,18 @@
     }
     if (palette.highlightColor) {
       rules.push('.badge-premium, .badge-pro, .ask-ai-badge, .highlight-pill, [data-highlight] { background: ' + palette.highlightColor + ' !important; }');
+    }
+    // Task #41 — slot 9: kill the default browser "canyon blue" highlight
+    // (Chrome's #2563eb / #3b82f6) and replace with the institution color
+    // EVERYWHERE in the popup, side panel, and AI chat. Also drives the
+    // checkbox / radio / range / progress accent so those native widgets
+    // pick up the brand color too.
+    if (palette.selectionColor) {
+      var selRgb2 = hexToRgb(palette.selectionColor);
+      var selFg2 = (selRgb2 && (selRgb2.r * 299 + selRgb2.g * 587 + selRgb2.b * 114) / 1000 > 150) ? '#000' : '#fff';
+      rules.push('::selection { background: ' + palette.selectionColor + ' !important; color: ' + selFg2 + ' !important; }');
+      rules.push('::-moz-selection { background: ' + palette.selectionColor + ' !important; color: ' + selFg2 + ' !important; }');
+      rules.push('html, body, input, textarea, select, button { accent-color: ' + palette.selectionColor + '; }');
     }
     var css = rules.join('\n');
     if (existing) {

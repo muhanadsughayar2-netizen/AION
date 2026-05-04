@@ -541,13 +541,13 @@
         // Task #40 — full 8-slot palette propagation (pass through any
         // slots the admin set; missing slots fall back to theme.css).
         if (b && (b.brandColor || b.pageBg || b.cardBg || b.textPrimary ||
-                  b.textMuted || b.headerColor || b.highlightColor || b.borderColor)) {
+                  b.textMuted || b.headerColor || b.highlightColor || b.borderColor || b.selectionColor)) {
           window.SnapToAIBranding.apply({
             brand: b.brandColor,
             pageBg: b.pageBg, cardBg: b.cardBg,
             textPrimary: b.textPrimary, textMuted: b.textMuted,
             headerColor: b.headerColor, highlightColor: b.highlightColor,
-            borderColor: b.borderColor
+            borderColor: b.borderColor, selectionColor: b.selectionColor
           });
         } else {
           window.SnapToAIBranding.clear();

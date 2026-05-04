@@ -4317,13 +4317,13 @@ async function applyInstitutionBranding() {
       // cards, text, borders, header strip and highlight chips reflect the
       // institution's brand instead of just the primary accent.
       if (b && (b.brandColor || b.pageBg || b.cardBg || b.textPrimary || b.textMuted ||
-                b.headerColor || b.highlightColor || b.borderColor)) {
+                b.headerColor || b.highlightColor || b.borderColor || b.selectionColor)) {
         resolved = window.SnapToAIBranding.apply({
           brand: b.brandColor,
           pageBg: b.pageBg, cardBg: b.cardBg,
           textPrimary: b.textPrimary, textMuted: b.textMuted,
           headerColor: b.headerColor, highlightColor: b.highlightColor,
-          borderColor: b.borderColor
+          borderColor: b.borderColor, selectionColor: b.selectionColor
         });
       } else {
         resolved = window.SnapToAIBranding.clear();
