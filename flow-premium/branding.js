@@ -212,9 +212,71 @@
           root.style.setProperty('--st-brand-highlight', palette.highlightColor);
         }
       }
+
+      // Task #40 (fix) — many surfaces in popup.css / sidebar.css / ai-chat
+      // hardcode their background/color (e.g. body uses a fixed gradient,
+      // .status-row uses rgba(10,10,20,.95), .auth-overlay uses a dark
+      // gradient, body has color:#fff). Setting CSS variables alone can't
+      // override those hardcoded rules, so we ALSO inject a <style> block
+      // with high-specificity !important overrides that pin the major
+      // visible surfaces to the palette colors when the institution sets
+      // pageBg / cardBg / textPrimary. Removed when no palette is active.
+      injectPaletteOverrides(palette);
     }
     notify();
     return r;
+  }
+
+  function injectPaletteOverrides(palette) {
+    var STYLE_ID = 'snaptoai-palette-overrides';
+    var existing = document.getElementById(STYLE_ID);
+    var hasAny = palette && (palette.pageBg || palette.cardBg ||
+      palette.textPrimary || palette.textMuted || palette.headerColor ||
+      palette.highlightColor || palette.borderColor);
+    if (!hasAny) {
+      if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+      return;
+    }
+    var rules = [];
+    if (palette.pageBg) {
+      // Kill the dark body gradient + auth overlay so the page truly
+      // becomes the picked color (works for popup, sidebar, ai-chat).
+      rules.push('html, body { background: ' + palette.pageBg + ' !important; background-image: none !important; }');
+      rules.push('.auth-overlay, #authOverlay { background: ' + palette.pageBg + ' !important; background-image: none !important; }');
+    }
+    if (palette.cardBg) {
+      // Surfaces that sit on top of the page background.
+      rules.push('.status-row, .container, .card, .panel, .modal, .modal-content, .orb, .agent-orb { background: ' + palette.cardBg + ' !important; background-image: none !important; }');
+    }
+    if (palette.headerColor) {
+      // Headers across surfaces (popup .header, ai-chat .header).
+      rules.push('.header, .top-bar, .app-header { background: ' + palette.headerColor + ' !important; background-image: none !important; }');
+    }
+    if (palette.textPrimary) {
+      // body has hardcoded color:#fff — that has to be overridden too,
+      // otherwise white-on-white makes everything invisible. Apply to the
+      // common text containers; specific accents (buttons, badges) keep
+      // their own colors.
+      rules.push('html, body, .container, .panel, .card, .modal-content, p, span, div, label, h1, h2, h3, h4, h5, h6 { color: ' + palette.textPrimary + '; }');
+    }
+    if (palette.textMuted) {
+      rules.push('.muted, .hint, .subtitle, .timestamp, ::placeholder, [data-muted] { color: ' + palette.textMuted + ' !important; }');
+    }
+    if (palette.borderColor) {
+      rules.push('.card, .panel, .status-row, .modal-content, input, select, textarea, button { border-color: ' + palette.borderColor + ' !important; }');
+    }
+    if (palette.highlightColor) {
+      rules.push('.badge-premium, .badge-pro, .ask-ai-badge, .highlight-pill, [data-highlight] { background: ' + palette.highlightColor + ' !important; }');
+    }
+    var css = rules.join('\n');
+    if (existing) {
+      existing.textContent = css;
+    } else {
+      var styleEl = document.createElement('style');
+      styleEl.id = STYLE_ID;
+      styleEl.textContent = css;
+      (document.head || document.documentElement).appendChild(styleEl);
+    }
   }
 
   // Re-evaluate against the new theme whenever it changes. Re-pass the
