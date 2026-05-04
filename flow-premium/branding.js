@@ -221,23 +221,70 @@
       // with high-specificity !important overrides that pin the major
       // visible surfaces to the palette colors when the institution sets
       // pageBg / cardBg / textPrimary. Removed when no palette is active.
-      injectPaletteOverrides(palette);
+      injectPaletteOverrides(palette, r, brandColor);
     }
     notify();
     return r;
   }
 
-  function injectPaletteOverrides(palette) {
+  function injectPaletteOverrides(palette, resolved, brandColorHex) {
     var STYLE_ID = 'snaptoai-palette-overrides';
     var existing = document.getElementById(STYLE_ID);
-    var hasAny = palette && (palette.pageBg || palette.cardBg ||
+    var hasPalette = palette && (palette.pageBg || palette.cardBg ||
       palette.textPrimary || palette.textMuted || palette.headerColor ||
       palette.highlightColor || palette.borderColor);
-    if (!hasAny) {
+    var hasBrand = !!(resolved && brandColorHex);
+    if (!hasPalette && !hasBrand) {
       if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
       return;
     }
     var rules = [];
+
+    // Brand-tinted overrides for the ~100 hardcoded `rgba(0, 217, 255, X)`
+    // cyan references in popup.css / sidebar.css / ai-chat. The institution's
+    // brand color now drives every hover/active/focus/glow/ring/spinner state
+    // instead of cyan flashing through. Derive 6 alpha tints from brand RGB.
+    if (hasBrand) {
+      var brgb = hexToRgb(brandColorHex) || hexToRgb(resolved.accent);
+      if (brgb) {
+        var t08 = rgba(brgb, 0.08), t12 = rgba(brgb, 0.12), t15 = rgba(brgb, 0.15);
+        var t20 = rgba(brgb, 0.20), t30 = rgba(brgb, 0.30), t50 = rgba(brgb, 0.50);
+        var solid = resolved.accent, solid2 = resolved.accent2;
+
+        // Pill-style header buttons (sign in / sidebar / status pill).
+        rules.push('.sign-in-header-btn, .open-sidebar-btn, .status-pill, .ai-status-pill { background: ' + t08 + ' !important; border-color: ' + t20 + ' !important; color: ' + solid + ' !important; }');
+        rules.push('.sign-in-header-btn:hover, .open-sidebar-btn:hover, .status-pill:hover { background: ' + t15 + ' !important; border-color: ' + t30 + ' !important; }');
+
+        // Main orb buttons (SNAP / SNIP / FULL PAGE / ASK AI) — the cyan
+        // flash on press was these.
+        rules.push('.orb { background: ' + t08 + ' !important; border-color: ' + t30 + ' !important; }');
+        rules.push('.orb:hover { background: ' + t15 + ' !important; border-color: ' + t50 + ' !important; box-shadow: 0 4px 14px ' + t20 + ' !important; }');
+        rules.push('.orb:active { background: ' + t20 + ' !important; }');
+        rules.push('.orb-label, .orb-inner, .orb svg { color: ' + solid + ' !important; }');
+        rules.push('.orb svg path, .orb svg circle, .orb svg rect { stroke: ' + solid + ' !important; }');
+
+        // Generic action buttons (Select All / Send to AI / Copy / Delete).
+        rules.push('.action-btn, .ai-action-btn, .footer-btn { background: ' + t08 + ' !important; border-color: ' + t30 + ' !important; color: ' + solid + ' !important; }');
+        rules.push('.action-btn:hover, .ai-action-btn:hover, .footer-btn:hover { background: ' + t15 + ' !important; border-color: ' + t50 + ' !important; box-shadow: 0 4px 12px ' + t20 + ' !important; }');
+
+        // Primary CTA gradient buttons (was hardcoded #00e8ff → #00c8e8).
+        var grad = 'linear-gradient(135deg, ' + solid + ' 0%, ' + solid2 + ' 100%)';
+        rules.push('.send-to-ai-btn, .primary-btn, .cta-btn, .unlock-btn, .ai-send-btn { background: ' + grad + ' !important; border: none !important; color: #fff !important; box-shadow: 0 4px 15px ' + t30 + ' !important; }');
+
+        // Focus / outline ring across all interactive elements.
+        rules.push('button:focus-visible, a:focus-visible, [role="button"]:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid ' + solid + ' !important; outline-offset: 2px !important; box-shadow: 0 0 0 3px ' + t20 + ' !important; }');
+
+        // Loading spinners (the cyan rotating ring).
+        rules.push('.spinner, .loader, .loading-ring { border-color: ' + t20 + ' !important; border-top-color: ' + solid + ' !important; }');
+
+        // Inline link-style accent text.
+        rules.push('a, .accent-text, [data-accent] { color: ' + solid + ' !important; }');
+
+        // Snapshot card selection highlight (was cyan border).
+        rules.push('.snapshot.selected, .snap-card.selected, [data-selected="true"] { border-color: ' + solid + ' !important; box-shadow: 0 0 0 2px ' + t30 + ' !important; }');
+      }
+    }
+
     if (palette.pageBg) {
       // Kill the dark body gradient + auth overlay so the page truly
       // becomes the picked color (works for popup, sidebar, ai-chat).
