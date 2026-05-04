@@ -282,6 +282,18 @@
 
         // Snapshot card selection highlight (was cyan border).
         rules.push('.snapshot.selected, .snap-card.selected, [data-selected="true"] { border-color: ' + solid + ' !important; box-shadow: 0 0 0 2px ' + t30 + ' !important; }');
+
+        // Thumbnail strip — the "1, 2, 3, 4, 5" number badges and the
+        // top-left selection checkboxes were the last visible cyan spots.
+        rules.push('.thumbnail { border-color: ' + t20 + ' !important; }');
+        rules.push('.thumbnail:hover { border-color: ' + solid + ' !important; box-shadow: 0 0 10px ' + t30 + ' !important; }');
+        rules.push('.thumbnail.selected { border-color: ' + solid + ' !important; box-shadow: 0 0 12px ' + t50 + ' !important; }');
+        rules.push('.thumbnail-number { background: ' + rgba(brgb, 0.9) + ' !important; color: ' + resolved.accentFg + ' !important; }');
+        rules.push('.thumbnail-checkbox { border-color: ' + rgba(brgb, 0.5) + ' !important; }');
+        rules.push('.thumbnail-checkbox:hover { background: ' + t20 + ' !important; border-color: ' + solid + ' !important; }');
+        rules.push('.thumbnail-checkbox.checked { background: ' + solid + ' !important; border-color: ' + solid + ' !important; }');
+        rules.push('.thumbnail-checkbox.checked::after { color: ' + resolved.accentFg + ' !important; }');
+        rules.push('.capture-type-badge.type-snap { background: ' + rgba(brgb, 0.9) + ' !important; color: ' + resolved.accentFg + ' !important; }');
       }
     }
 

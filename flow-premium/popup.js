@@ -2115,7 +2115,7 @@ function updateThumbnails() {
           </svg>
         </div>
         <div style="font-size:14px;white-space:nowrap;text-align:center;">
-          <strong style="color:#00d9ff;">Right-click</strong><span style="color:rgba(255,255,255,0.7);"> anywhere to get started</span>
+          <strong style="color:var(--st-accent);">Right-click</strong><span style="color:var(--st-text-secondary);"> anywhere to get started</span>
         </div>
         <div style="display:flex;gap:22px;margin-top:14px;font-size:11px;white-space:nowrap;">
           <span style="color:rgba(255,255,255,0.7);">📷 Snap</span>
@@ -3845,7 +3845,7 @@ async function _popupDetectTier(apiKey) {
         70%  { transform: scale(1.35); opacity: 0; }
         100% { transform: scale(1.35); opacity: 0; }
       }
-      #apiKeyVideoCard:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(0,217,255,0.22); transition: all 0.2s ease; }
+      #apiKeyVideoCard:hover { transform: translateY(-1px); box-shadow: 0 6px 28px var(--st-accent-glow, rgba(0,217,255,0.22)); transition: all 0.2s ease; }
     `;
     document.head.appendChild(st);
   }
@@ -3888,10 +3888,10 @@ async function saveGeminiKey() {
   const verdict = _ensureVerdictArea();
   if (verdict) {
     verdict.style.display = 'block';
-    verdict.style.background = 'rgba(0,217,255,0.08)';
-    verdict.style.border = '1px solid rgba(0,217,255,0.25)';
+    verdict.style.background = 'var(--st-accent-soft, rgba(0,217,255,0.08))';
+    verdict.style.border = '1px solid var(--st-accent-border, rgba(0,217,255,0.25))';
     verdict.style.color = '#9be7ff';
-    verdict.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border:2px solid #00d9ff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;"></span>Checking your account for video & image model access…';
+    verdict.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border:2px solid var(--st-accent);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;"></span>Checking your account for video & image model access…';
   }
   if (geminiSaveBtn) {
     geminiSaveBtn.disabled = true;
@@ -3942,7 +3942,7 @@ async function saveGeminiKey() {
           <span style="width:8px;height:8px;border-radius:50%;background:#ffaa00;"></span>Free tier detected — Vision only
         </div>
         <div style="color:rgba(255,255,255,0.85);">Image, Music and Video need a prepaid Google Cloud billing account.${extra}</div>
-        <div style="margin-top:6px;"><a href="https://console.cloud.google.com/billing" target="_blank" style="color:#00d9ff;">Add billing →</a></div>
+        <div style="margin-top:6px;"><a href="https://console.cloud.google.com/billing" target="_blank" style="color:var(--st-accent);">Add billing →</a></div>
       `;
     }
   }
