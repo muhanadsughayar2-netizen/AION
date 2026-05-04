@@ -245,8 +245,11 @@
       rules.push('.auth-overlay, #authOverlay { background: ' + palette.pageBg + ' !important; background-image: none !important; }');
     }
     if (palette.cardBg) {
-      // Surfaces that sit on top of the page background.
-      rules.push('.status-row, .container, .card, .panel, .modal, .modal-content, .orb, .agent-orb { background: ' + palette.cardBg + ' !important; background-image: none !important; }');
+      // Only paint actual CARD-like surfaces with cardBg — NOT .container
+      // (which is the whole popup wrapper) and NOT .orb (which keeps its
+      // brand-tinted look). Add a soft shadow so cards look elevated on
+      // the page background instead of flat gray boxes.
+      rules.push('.card, .panel, .modal, .modal-content, .action-row, .snapshot-list, .footer-actions, .status-row { background: ' + palette.cardBg + ' !important; background-image: none !important; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }');
     }
     if (palette.headerColor) {
       // Headers across surfaces (popup .header, ai-chat .header).
@@ -254,16 +257,16 @@
     }
     if (palette.textPrimary) {
       // body has hardcoded color:#fff — that has to be overridden too,
-      // otherwise white-on-white makes everything invisible. Apply to the
-      // common text containers; specific accents (buttons, badges) keep
-      // their own colors.
-      rules.push('html, body, .container, .panel, .card, .modal-content, p, span, div, label, h1, h2, h3, h4, h5, h6 { color: ' + palette.textPrimary + '; }');
+      // otherwise white-on-white makes everything invisible. Apply only
+      // to text containers (NOT to every div/span — that nuked badges
+      // and orb labels). Specific accents keep their own colors.
+      rules.push('html, body, .container, p, label, h1, h2, h3, h4, h5, h6 { color: ' + palette.textPrimary + '; }');
     }
     if (palette.textMuted) {
       rules.push('.muted, .hint, .subtitle, .timestamp, ::placeholder, [data-muted] { color: ' + palette.textMuted + ' !important; }');
     }
     if (palette.borderColor) {
-      rules.push('.card, .panel, .status-row, .modal-content, input, select, textarea, button { border-color: ' + palette.borderColor + ' !important; }');
+      rules.push('.card, .panel, .modal-content, input, select, textarea { border-color: ' + palette.borderColor + ' !important; }');
     }
     if (palette.highlightColor) {
       rules.push('.badge-premium, .badge-pro, .ask-ai-badge, .highlight-pill, [data-highlight] { background: ' + palette.highlightColor + ' !important; }');
