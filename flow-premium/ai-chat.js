@@ -401,6 +401,80 @@ async function sendViaProxy(prompt, imageBase64) {
 // Task #27 — Read cached institution branding (set by subscription.js) and
 // return key-policy info so other UI can hide/disable BYOK and route through
 // the proxy when the institution mandates its own key.
+// Task #40 — apply the institution's full 8-slot palette to the AI chat
+// shell and swap the top-right pill from the SnapToAI model name to the
+// institution name (with optional logo). Called once on load and refreshed
+// when subscription.js writes a new snaptoai_branding cache entry.
+async function applyInstitutionBrandingToChat() {
+  try {
+    const { snaptoai_branding, cachedSubStatus } = await chrome.storage.local.get(['snaptoai_branding', 'cachedSubStatus']);
+    const isInst = cachedSubStatus && cachedSubStatus.planType === 'institution';
+    const pill = document.getElementById('institutionNamePill');
+    const pillText = document.getElementById('institutionNamePillText');
+    const pillLogo = document.getElementById('institutionNamePillLogo');
+    if (!isInst || !snaptoai_branding) {
+      if (window.SnapToAIBranding) window.SnapToAIBranding.clear();
+      if (pill) pill.style.display = 'none';
+      return;
+    }
+    const b = snaptoai_branding;
+    if (window.SnapToAIBranding) {
+      window.SnapToAIBranding.apply({
+        brand: b.brandColor,
+        pageBg: b.pageBg, cardBg: b.cardBg,
+        textPrimary: b.textPrimary, textMuted: b.textMuted,
+        headerColor: b.headerColor, highlightColor: b.highlightColor,
+        borderColor: b.borderColor
+      });
+    }
+    if (pill && pillText) {
+      const name = b.name || 'Institution';
+      pillText.textContent = name;
+      pill.title = name;
+      // Pick the right logo variant for the active theme (matches welcome.js).
+      const themeResolved = (window.SnapToAITheme && window.SnapToAITheme.getResolved)
+        ? window.SnapToAITheme.getResolved() : 'dark';
+      const logoSrc = (themeResolved === 'light' && b.logoUrlLight)
+        ? b.logoUrlLight
+        : (b.logoUrl || b.logoUrlLight || '');
+      if (pillLogo) {
+        if (logoSrc) { pillLogo.src = logoSrc; pillLogo.style.display = ''; }
+        else { pillLogo.style.display = 'none'; pillLogo.removeAttribute('src'); }
+      }
+      pill.style.display = 'inline-flex';
+    }
+  } catch (e) {
+    console.log('[SnapToAI] applyInstitutionBrandingToChat error:', e);
+  }
+}
+
+// Refresh the pill + palette whenever subscription.js updates the cached
+// branding (e.g. user signed in, subscription status refreshed, admin
+// changed colors and member re-opened the chat).
+try {
+  if (chrome && chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && (changes.snaptoai_branding || changes.cachedSubStatus)) {
+        applyInstitutionBrandingToChat();
+      }
+    });
+  }
+} catch (e) {}
+
+// Re-apply when theme flips so the logo variant + accent re-resolve.
+try {
+  if (window.SnapToAITheme && window.SnapToAITheme.onChange) {
+    window.SnapToAITheme.onChange(() => { applyInstitutionBrandingToChat(); });
+  }
+} catch (e) {}
+
+// Run as soon as DOM is ready so the pill appears with the chat header.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', applyInstitutionBrandingToChat);
+} else {
+  applyInstitutionBrandingToChat();
+}
+
 async function getInstitutionKeyInfo() {
   try {
     const { snaptoai_branding, cachedSubStatus } = await chrome.storage.local.get(['snaptoai_branding', 'cachedSubStatus']);

@@ -538,8 +538,20 @@
         if (text) { text.style.display = ''; text.innerHTML = '<span class="sb-logo-emoji">📸</span> <span>Snap <span class="sb-logo-accent">To AI</span></span>'; }
       }
       if (window.SnapToAIBranding) {
-        if (b && b.brandColor) window.SnapToAIBranding.apply(b.brandColor);
-        else window.SnapToAIBranding.clear();
+        // Task #40 — full 8-slot palette propagation (pass through any
+        // slots the admin set; missing slots fall back to theme.css).
+        if (b && (b.brandColor || b.pageBg || b.cardBg || b.textPrimary ||
+                  b.textMuted || b.headerColor || b.highlightColor || b.borderColor)) {
+          window.SnapToAIBranding.apply({
+            brand: b.brandColor,
+            pageBg: b.pageBg, cardBg: b.cardBg,
+            textPrimary: b.textPrimary, textMuted: b.textMuted,
+            headerColor: b.headerColor, highlightColor: b.highlightColor,
+            borderColor: b.borderColor
+          });
+        } else {
+          window.SnapToAIBranding.clear();
+        }
       } else if (b && b.brandColor) {
         document.documentElement.style.setProperty('--st-accent', b.brandColor);
         document.documentElement.style.setProperty('--accent', b.brandColor);

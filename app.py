@@ -193,6 +193,17 @@ def init_db():
         # Optional light-mode logo variant (Task #20). Falls back to logo_url
         # when NULL so existing single-logo institutions keep working untouched.
         cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_url_light TEXT")
+        # Task #40 — full 8-slot brand palette. brand_color (slot 5 = primary
+        # action) already exists. The 7 columns below are nullable so any
+        # institution that hasn't customized them keeps falling back to the
+        # default dark theme — zero visual regression for existing tenants.
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_page_bg VARCHAR(20)")
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_card_bg VARCHAR(20)")
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_text_primary VARCHAR(20)")
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_text_muted VARCHAR(20)")
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_header_color VARCHAR(20)")
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_highlight_color VARCHAR(20)")
+        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_border_color VARCHAR(20)")
         # Task #27 — institution-shared Gemini/Vertex key.
         # gemini_key_encrypted holds a Fernet ciphertext (never plaintext); gemini_key_hint
         # stores the last 4 visible chars for the masked admin preview. key_policy controls
@@ -644,7 +655,9 @@ def _resolve_institution_for_email(cur, email):
     # Postgres can return a stale inactive row first when an email exists
     # in multiple institution_members rows (historical or moved-between-orgs).
     cur.execute("""
-        SELECT m.institution_id, m.status, i.status, i.expires_at, i.slug, i.name, i.logo_url, i.brand_color, m.role, i.logo_url_light, m.expires_at
+        SELECT m.institution_id, m.status, i.status, i.expires_at, i.slug, i.name, i.logo_url, i.brand_color, m.role, i.logo_url_light, m.expires_at,
+               i.brand_page_bg, i.brand_card_bg, i.brand_text_primary, i.brand_text_muted,
+               i.brand_header_color, i.brand_highlight_color, i.brand_border_color
         FROM institution_members m JOIN institutions i ON i.id = m.institution_id
         WHERE LOWER(m.email) = %s
         ORDER BY
@@ -662,6 +675,10 @@ def _resolve_institution_for_email(cur, email):
                 'institutionId': row[0], 'slug': row[4], 'name': row[5],
                 'logoUrl': row[6], 'logoUrlLight': row[9],
                 'brandColor': row[7] or '#00d9ff',
+                'pageBg': row[11], 'cardBg': row[12],
+                'textPrimary': row[13], 'textMuted': row[14],
+                'headerColor': row[15], 'highlightColor': row[16],
+                'borderColor': row[17],
                 'role': row[8] or 'member',
                 'expiresAt': row[10].isoformat() if row[10] else None
             }, 'matched_active'
@@ -671,12 +688,15 @@ def _resolve_institution_for_email(cur, email):
     if not domain or domain in PUBLIC_DOMAINS:
         return None, None, 'none'
     cur.execute("""
-        SELECT id, slug, name, logo_url, brand_color, allowed_domains, status, expires_at, seat_limit, logo_url_light
+        SELECT id, slug, name, logo_url, brand_color, allowed_domains, status, expires_at, seat_limit, logo_url_light,
+               brand_page_bg, brand_card_bg, brand_text_primary, brand_text_muted,
+               brand_header_color, brand_highlight_color, brand_border_color
         FROM institutions WHERE allowed_domains IS NOT NULL AND allowed_domains <> ''
     """)
     seat_full_match = False
     for r in cur.fetchall():
-        inst_id, slug, name, logo_url, brand_color, allowed, status, expires_at, seat_limit, logo_url_light = r
+        (inst_id, slug, name, logo_url, brand_color, allowed, status, expires_at, seat_limit, logo_url_light,
+         page_bg, card_bg, text_primary, text_muted, header_color, highlight_color, border_color) = r
         if not _institution_active((status, expires_at)):
             continue
         domains = [d.strip().lower() for d in (allowed or '').split(',') if d.strip()]
@@ -694,6 +714,10 @@ def _resolve_institution_for_email(cur, email):
             'institutionId': inst_id, 'slug': slug, 'name': name,
             'logoUrl': logo_url, 'logoUrlLight': logo_url_light,
             'brandColor': brand_color or '#00d9ff',
+            'pageBg': page_bg, 'cardBg': card_bg,
+            'textPrimary': text_primary, 'textMuted': text_muted,
+            'headerColor': header_color, 'highlightColor': highlight_color,
+            'borderColor': border_color,
             'role': 'member'
         }, 'matched_active'
     return (None, None, 'seat_limit') if seat_full_match else (None, None, 'none')
@@ -729,7 +753,9 @@ def _get_institution_branding_for_email(cur, email):
         SELECT i.id, i.slug, i.name, i.logo_url, i.brand_color, i.status, i.expires_at,
                m.status, m.role, i.logo_url_light,
                i.gemini_key_encrypted, i.gemini_key_hint, i.key_policy, i.billing_behavior,
-               m.expires_at
+               m.expires_at,
+               i.brand_page_bg, i.brand_card_bg, i.brand_text_primary, i.brand_text_muted,
+               i.brand_header_color, i.brand_highlight_color, i.brand_border_color
         FROM institution_members m JOIN institutions i ON i.id = m.institution_id
         WHERE LOWER(m.email) = %s
         ORDER BY
@@ -767,7 +793,14 @@ def _get_institution_branding_for_email(cur, email):
         'keyHint': r[11] or '',
         'keyPolicy': r[12] or 'prefer-user-key',
         'billingBehavior': r[13] or 'count-against-snaptoai-quota',
-        'expiresAt': r[14].isoformat() if r[14] else None
+        'expiresAt': r[14].isoformat() if r[14] else None,
+        # Task #40 — full 8-slot palette. Any NULL falls back client-side
+        # to the default theme value, so old single-color institutions
+        # keep their existing look.
+        'pageBg': r[15], 'cardBg': r[16],
+        'textPrimary': r[17], 'textMuted': r[18],
+        'headerColor': r[19], 'highlightColor': r[20],
+        'borderColor': r[21],
     }
 
 
@@ -887,7 +920,9 @@ def _institution_by_slug(cur, slug):
         SELECT id, slug, name, logo_url, brand_color, primary_admin_email, seat_limit,
                expires_at, status, allowed_domains, notes, created_at, branding_locked, logo_url_light,
                gemini_key_encrypted, gemini_key_hint, key_policy, billing_behavior,
-               key_set_at, key_last_rotated_at, key_last_used_at
+               key_set_at, key_last_rotated_at, key_last_used_at,
+               brand_page_bg, brand_card_bg, brand_text_primary, brand_text_muted,
+               brand_header_color, brand_highlight_color, brand_border_color
         FROM institutions WHERE slug=%s
     """, (slug,))
     return cur.fetchone()
@@ -3502,6 +3537,15 @@ def _institution_to_dict(cur, row):
         'geminiKeyHint': (row[15] if len(row) > 15 else None) or '',
         'keyPolicy': (row[16] if len(row) > 16 else None) or 'prefer-user-key',
         'billingBehavior': (row[17] if len(row) > 17 else None) or 'count-against-snaptoai-quota',
+        # Task #40 — 8-slot palette (slot 5 = brandColor above; slots 1-4, 6-8 below).
+        # Returned to admin UI so the dashboard can pre-fill the color pickers.
+        'pageBg': row[21] if len(row) > 21 else None,
+        'cardBg': row[22] if len(row) > 22 else None,
+        'textPrimary': row[23] if len(row) > 23 else None,
+        'textMuted': row[24] if len(row) > 24 else None,
+        'headerColor': row[25] if len(row) > 25 else None,
+        'highlightColor': row[26] if len(row) > 26 else None,
+        'borderColor': row[27] if len(row) > 27 else None,
         'keySetAt': row[18].isoformat() if (len(row) > 18 and row[18]) else None,
         'keyLastRotatedAt': row[19].isoformat() if (len(row) > 19 and row[19]) else None,
         'keyLastUsedAt': row[20].isoformat() if (len(row) > 20 and row[20]) else None,
@@ -3643,7 +3687,12 @@ def api_admin_inst_list():
         conn = get_db(); cur = conn.cursor()
         cur.execute("""
             SELECT id, slug, name, logo_url, brand_color, primary_admin_email, seat_limit,
-                   expires_at, status, allowed_domains, notes, created_at, branding_locked, logo_url_light
+                   expires_at, status, allowed_domains, notes, created_at, branding_locked, logo_url_light,
+                   NULL::text AS gemini_key_encrypted, NULL::text AS gemini_key_hint,
+                   NULL::text AS key_policy, NULL::text AS billing_behavior,
+                   NULL::timestamp AS key_set_at, NULL::timestamp AS key_last_rotated_at, NULL::timestamp AS key_last_used_at,
+                   brand_page_bg, brand_card_bg, brand_text_primary, brand_text_muted,
+                   brand_header_color, brand_highlight_color, brand_border_color
             FROM institutions ORDER BY created_at DESC
         """)
         rows = cur.fetchall()
@@ -4246,6 +4295,40 @@ window.addEventListener('load', () => {{
     info['brandColor'] = _bc_raw
     logo_url = info['logoUrl'] or ''
     brand_color = info['brandColor'] or '#00d9ff'
+
+    # Task #40 — build the 8-slot palette grid HTML in Python so the
+    # outer admin-page f-string stays simple (nested f-strings inside
+    # an outer triple-quoted f-string are not legal in Python 3.11).
+    _branding_locked_disabled = 'disabled' if info.get('brandingLocked') else ''
+    _palette_slots = [
+        ('pageBg',         'pageBg',         '1. Page background',                'Main outer background of the popup, side panel, and modal backdrops.', '#0a0a0a'),
+        ('cardBg',         'cardBg',         '2. Card / panel background',        'Cards, message bubbles, modals, sidebar surfaces.',                    '#1a1a1a'),
+        ('textPrimary',    'textPrimary',    '3. Primary text',                   'Headings, body text, member names, conversation content.',             '#ffffff'),
+        ('textMuted',      'textMuted',      '4. Muted text',                     'Subtitles, hints, timestamps, placeholder text, disabled labels.',     '#888888'),
+        ('brand',          'brandColor',     '5. Primary action / accent (★ main brand)', 'Primary buttons, links, focus rings, action highlights. Auto-adapted for contrast.', '#00d9ff'),
+        ('header',         'headerColor',    '6. Header bar',                     'Top header strip in popup and AI chat. Used as the chat header background tint.', '#16213e'),
+        ('highlight',      'highlightColor', '7. Highlight / badge',              'Premium / pro / "Ask AI" badges, special call-out chips and active pills.',       '#7c5cfc'),
+        ('border',         'borderColor',    '8. Borders / dividers',             'Lines between sections, input outlines, card borders.',                '#2a2a3a'),
+    ]
+    _palette_cards = []
+    for _sid, _key, _label, _help, _default in _palette_slots:
+        _stored = info.get(_key) or ''
+        # Slot 5 (Primary action) is non-nullable in spirit — show the
+        # current brand_color so the picker is never empty for that slot.
+        _txt_val = _stored if _stored else (brand_color if _sid == 'brand' else '')
+        _pick_val = _stored if _stored else (brand_color if _sid == 'brand' else _default)
+        _palette_cards.append(
+            f'<div style="background: #0f0f1a; border: 1px solid #2a2a3a; border-radius: 8px; padding: 10px;">'
+            f'<label style="font-size: 12px; color: #ddd; display: block; margin-bottom: 2px; font-weight: 600;">{html_escape_module.escape(_label)}</label>'
+            f'<p style="font-size: 11px; color: #888; margin: 0 0 8px 0; line-height: 1.4;">{html_escape_module.escape(_help)}</p>'
+            f'<div style="display: flex; align-items: center; gap: 6px;">'
+            f'<input id="pal-{_sid}-input" data-pal-key="{_key}" type="text" placeholder="(default)" value="{html_escape_module.escape(_txt_val)}" style="width: 100px; font-family: ui-monospace, monospace;" {_branding_locked_disabled}>'
+            f'<input id="pal-{_sid}-picker" data-pal-key="{_key}" type="color" value="{html_escape_module.escape(_pick_val)}" style="width: 32px; height: 32px; padding: 2px; border: 1px solid #333; border-radius: 6px; background: #0f0f1a; cursor: pointer;" {_branding_locked_disabled} title="Pick a color">'
+            f'<button onclick="clearPaletteSlot(\'{_sid}\')" style="background: transparent; color: #888; border: 1px solid #333; padding: 4px 8px; font-size: 11px;" {_branding_locked_disabled}>Reset</button>'
+            f'</div></div>'
+        )
+    palette_grid_html = '\n'.join(_palette_cards)
+
     seat_limit = info['seatLimit']
     seat_limit_display = '∞' if seat_limit in (None, 0) else seat_limit
     seats_used = info['seatsUsed']
@@ -4393,15 +4476,33 @@ window.addEventListener('load', () => {{
 
   <div class="section">
     <h2>🎨 Branding{(' <span style="font-size: 11px; color: #ffa500; margin-left: 8px;">🔒 Locked by SnapToAI — contact support to change</span>') if info.get('brandingLocked') else ''}</h2>
+
+    <!-- Task #40: full 8-slot palette. Slot 5 (Primary action) is the
+         existing brand_color and stays in its original position so the
+         contrast preview keeps wiring up to it. The other 7 are nullable
+         (empty hex = reset → falls back to default theme value). -->
+    <div style="margin-bottom: 14px; padding: 10px 12px; background: rgba(0,217,255,0.06); border: 1px solid rgba(0,217,255,0.2); border-radius: 8px; font-size: 12px; color: #ccc;">
+      <strong style="color: var(--st-accent);">Customize all 8 colors</strong> to fully reskin the extension popup and AI chat for your members. Leave any field blank to fall back to the default dark theme. Click <em>Save All Colors</em> when done.
+    </div>
+    <div id="palette-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 14px; max-width: 900px;">
+      {palette_grid_html}
+    </div>
+    <div class="row" style="align-items: center; margin-bottom: 14px;">
+      <button onclick="saveColor()" style="background: var(--st-accent); color: #000; font-weight: 700; padding: 10px 20px;" {'disabled' if info.get('brandingLocked') else ''}>💾 Save All Colors</button>
+      <span id="color-msg" style="color: #00ff88; font-size: 12px; margin-left: 12px;"></span>
+      <span style="color: #666; font-size: 11px; margin-left: 12px;">Members see changes after refreshing the extension popup.</span>
+    </div>
+    <p style="font-size: 11px; color: #666; margin: 4px 0 12px 0; max-width: 720px;">SnapToAI auto-adjusts the <strong>Primary action</strong> color slightly so it stays readable in both Light and Dark mode — the previews below show what members will actually see for that slot. Status colors (success green, error red) stay reserved.</p>
+
+    <!-- Hidden inputs that mirror the slot 5 (Primary action) picker so
+         the existing brand-preview JS at lines ~4886-5020 keeps working
+         without touching it. -->
+    <div style="display: none;">
+      <input id="brand-color-input" type="text" value="{html_escape_module.escape(brand_color)}">
+      <input id="brand-color-picker" type="color" value="{html_escape_module.escape(brand_color)}">
+    </div>
     <div class="row" style="align-items: flex-start;">
-      <div class="grow">
-        <label style="font-size: 12px; color: #888; display: block; margin-bottom: 4px;">Brand color (hex):</label>
-        <input id="brand-color-input" type="text" value="{html_escape_module.escape(brand_color)}" style="width: 140px;" {'disabled' if info.get('brandingLocked') else ''}>
-        <input id="brand-color-picker" type="color" value="{html_escape_module.escape(brand_color)}" style="width: 38px; height: 36px; padding: 2px; vertical-align: middle; margin-left: 6px; border: 1px solid #333; border-radius: 6px; background: #0f0f1a; cursor: pointer;" {'disabled' if info.get('brandingLocked') else ''} title="Pick a color">
-        <button onclick="saveColor()" style="margin-left: 12px;" {'disabled' if info.get('brandingLocked') else ''}>Save Color</button>
-        <span id="color-msg" style="color: #00ff88; font-size: 12px; margin-left: 8px;"></span>
-        <p style="font-size: 11px; color: #666; margin: 8px 0 0 0; max-width: 540px;">Members see this color in the extension. SnapToAI auto-adjusts it slightly so it stays readable in both Light and Dark mode — the previews below show what they'll actually see.</p>
-      </div>
+      <div class="grow"></div>
       <div style="min-width: 240px;">
         <label style="font-size: 12px; color: #888; display: block; margin-bottom: 4px;">Logo (PNG/JPG/SVG/WebP, max 2MB):</label>
         <div id="logo-preview-wrap" style="margin-bottom:6px;{'' if info.get('logoUrl') else 'display:none;'}"><img id="logo-preview-img" src="{html_escape_module.escape(info.get('logoUrl') or '')}" alt="" style="max-height:36px;max-width:160px;background:#fff;padding:4px;border-radius:4px;"></div>
@@ -4830,14 +4931,76 @@ async function saveDomains() {{
   else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
 }}
 async function saveColor() {{
-  const v = document.getElementById('brand-color-input').value.trim();
+  // Task #40 — collect all 8 palette slots, validate hex, send as one POST.
   const msg = document.getElementById('color-msg');
-  msg.textContent = 'Saving...';
-  const r = await fetch(API_BASE + '/branding', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify({{brandColor: v}})}});
+  const inputs = document.querySelectorAll('#palette-grid input[type="text"][data-pal-key]');
+  const payload = {{}};
+  const hexRe = /^#[0-9a-fA-F]{{3,8}}$/;
+  for (const el of inputs) {{
+    const key = el.getAttribute('data-pal-key');
+    const v = (el.value || '').trim();
+    if (v && !hexRe.test(v)) {{
+      msg.style.color = '#ff4757';
+      msg.textContent = '✗ ' + key + ' is not a valid hex color (e.g. #00d9ff)';
+      el.focus();
+      return;
+    }}
+    payload[key] = v;
+  }}
+  // Keep the legacy hidden mirror in sync so the contrast preview reads
+  // the up-to-date Primary action value after Save.
+  const legacy = document.getElementById('brand-color-input');
+  if (legacy && payload.brandColor) {{ legacy.value = payload.brandColor; }}
+  msg.style.color = '#888';
+  msg.textContent = 'Saving…';
+  const r = await fetch(API_BASE + '/branding', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body: JSON.stringify(payload)}});
   const d = await r.json();
-  if (d.success) {{ msg.style.color='#00ff88'; msg.textContent = '✓ Saved (members refresh to see it)'; }}
-  else {{ msg.style.color='#ff4757'; msg.textContent = '✗ ' + (d.error||''); }}
+  if (d.success) {{
+    msg.style.color = '#00ff88';
+    msg.textContent = '✓ All colors saved (members refresh to see)';
+    try {{ updateBrandPreview(); }} catch (e) {{}}
+  }} else {{
+    msg.style.color = '#ff4757';
+    msg.textContent = '✗ ' + (d.error || 'Save failed');
+  }}
 }}
+
+function clearPaletteSlot(slotId) {{
+  // Reset a single slot to default (empty input → backend stores NULL).
+  const txt = document.getElementById('pal-' + slotId + '-input');
+  if (txt && !txt.disabled) {{ txt.value = ''; txt.dispatchEvent(new Event('input', {{bubbles:true}})); }}
+}}
+
+// Wire each palette picker so changing the color picker updates the
+// matching text input and re-runs the contrast preview when slot 5
+// (Primary action) is involved.
+(function wirePalettePickers() {{
+  document.querySelectorAll('#palette-grid input[type="color"][data-pal-key]').forEach((pick) => {{
+    pick.addEventListener('input', () => {{
+      const key = pick.getAttribute('data-pal-key');
+      const txt = document.querySelector('#palette-grid input[type="text"][data-pal-key="' + key + '"]');
+      if (txt && !txt.disabled) {{ txt.value = pick.value; }}
+      if (key === 'brandColor') {{
+        const legacy = document.getElementById('brand-color-input');
+        if (legacy) {{ legacy.value = pick.value; }}
+        try {{ updateBrandPreview(); }} catch (e) {{}}
+      }}
+    }});
+  }});
+  document.querySelectorAll('#palette-grid input[type="text"][data-pal-key]').forEach((txt) => {{
+    txt.addEventListener('input', () => {{
+      const key = txt.getAttribute('data-pal-key');
+      const pick = document.querySelector('#palette-grid input[type="color"][data-pal-key="' + key + '"]');
+      const v = (txt.value || '').trim();
+      if (pick && /^#[0-9a-fA-F]{{6}}$/.test(v)) {{ pick.value = v; }}
+      if (key === 'brandColor') {{
+        const legacy = document.getElementById('brand-color-input');
+        if (legacy) {{ legacy.value = txt.value; }}
+        try {{ updateBrandPreview(); }} catch (e) {{}}
+      }}
+    }});
+  }});
+}})();
 
 // ---------- Brand color preview + warnings (Task #19) ----------
 // Mirrors the math in flow-premium/branding.js so the admin sees the
@@ -5732,23 +5895,52 @@ def api_inst_set_branding(slug):
     if not ensure_db():
         return _cors(jsonify({'success': False, 'error': 'Database not available'})), 503
     data = request.get_json(silent=True) or {}
-    color = str(data.get('brandColor') or '').strip()[:20]
-    if color and not re.match(r'^#[0-9a-fA-F]{3,8}$', color):
-        return _cors(jsonify({'success': False, 'error': 'brandColor must be a hex color like #00d9ff'})), 400
+    # Task #40 — 8-slot palette. Slot 5 (brandColor) is the existing primary
+    # action color; the 7 below are nullable. An empty string from the picker
+    # means "reset to default" so we store NULL (NOT empty string).
+    PALETTE_SLOTS = [
+        ('brandColor',     'brand_color'),
+        ('pageBg',         'brand_page_bg'),
+        ('cardBg',         'brand_card_bg'),
+        ('textPrimary',    'brand_text_primary'),
+        ('textMuted',      'brand_text_muted'),
+        ('headerColor',    'brand_header_color'),
+        ('highlightColor', 'brand_highlight_color'),
+        ('borderColor',    'brand_border_color'),
+    ]
+    sets, vals, log_payload = [], [], {}
+    for json_key, col in PALETTE_SLOTS:
+        if json_key not in data:
+            continue
+        raw = data.get(json_key)
+        if raw is None or str(raw).strip() == '':
+            # Reset to default. brand_color has a NOT NULL-ish meaning (theme
+            # falls back to '#00d9ff' if NULL via COALESCE in SELECTs that
+            # return it), so even brand_color can be cleared safely.
+            sets.append(f'{col}=NULL')
+            log_payload[json_key] = None
+            continue
+        v = str(raw).strip()[:20]
+        if not re.match(r'^#[0-9a-fA-F]{3,8}$', v):
+            return _cors(jsonify({'success': False, 'error': f'{json_key} must be a hex color like #00d9ff'})), 400
+        sets.append(f'{col}=%s'); vals.append(v)
+        log_payload[json_key] = v
+    if not sets:
+        return _cors(jsonify({'success': True, 'brandColor': '', 'noop': True}))
     try:
         conn = get_db(); cur = conn.cursor()
         if _is_branding_locked(cur, slug):
             cur.close(); conn.close()
             return _cors(jsonify({'success': False, 'error': 'Branding is locked by your account manager. Contact SnapToAI support.'})), 403
-        if color:
-            cur.execute("UPDATE institutions SET brand_color=%s, updated_at=NOW() WHERE slug=%s RETURNING id", (color, slug))
-            _r = cur.fetchone()
-            if _r:
-                _log_inst_action(cur, _r[0], admin_email or 'inst-admin',
-                                 'branding.color', None, {'brandColor': color})
+        vals.append(slug)
+        cur.execute(f"UPDATE institutions SET {', '.join(sets)}, updated_at=NOW() WHERE slug=%s RETURNING id", tuple(vals))
+        _r = cur.fetchone()
+        if _r:
+            _log_inst_action(cur, _r[0], admin_email or 'inst-admin',
+                             'branding.palette', None, log_payload)
         conn.commit()
         cur.close(); conn.close()
-        return _cors(jsonify({'success': True, 'brandColor': color}))
+        return _cors(jsonify({'success': True, **log_payload}))
     except Exception as e:
         return _cors(jsonify({'success': False, 'error': str(e)})), 500
 

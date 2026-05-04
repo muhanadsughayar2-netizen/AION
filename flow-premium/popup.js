@@ -4313,8 +4313,21 @@ async function applyInstitutionBranding() {
     }
     var resolved = null;
     if (window.SnapToAIBranding) {
-      resolved = (b && b.brandColor) ? window.SnapToAIBranding.apply(b.brandColor)
-                                     : window.SnapToAIBranding.clear();
+      // Task #40 — pass the full 8-slot palette so the popup background,
+      // cards, text, borders, header strip and highlight chips reflect the
+      // institution's brand instead of just the primary accent.
+      if (b && (b.brandColor || b.pageBg || b.cardBg || b.textPrimary || b.textMuted ||
+                b.headerColor || b.highlightColor || b.borderColor)) {
+        resolved = window.SnapToAIBranding.apply({
+          brand: b.brandColor,
+          pageBg: b.pageBg, cardBg: b.cardBg,
+          textPrimary: b.textPrimary, textMuted: b.textMuted,
+          headerColor: b.headerColor, highlightColor: b.highlightColor,
+          borderColor: b.borderColor
+        });
+      } else {
+        resolved = window.SnapToAIBranding.clear();
+      }
     } else if (b && b.brandColor) {
       // Fallback if branding.js failed to load — preserve old behavior.
       document.documentElement.style.setProperty('--st-accent', b.brandColor);

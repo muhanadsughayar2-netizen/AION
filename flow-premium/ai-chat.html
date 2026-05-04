@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SnapToAI - AI Chat</title>
   <script src="theme.js"></script>
+  <script src="branding.js"></script>
   <link rel="stylesheet" href="theme.css">
   <script src="marked.min.js"></script>
   <script src="jspdf.min.js"></script>
@@ -1049,6 +1050,14 @@
   <div class="header">
     <div class="header-left">
       <div class="logo" id="modelLogo">Gemini 3 <span>Flash (Preview)</span></div>
+    </div>
+    <!-- Task #40: institution-name pill. Hidden by default; shown by
+         ai-chat.js on load when the signed-in user is an institution
+         member. Sits between the model logo (left) and credits banner /
+         close button (right) so it never collides with either. -->
+    <div id="institutionNamePill" style="display:none; align-items:center; gap:8px; padding:6px 14px; border-radius:999px; background: var(--st-brand-header, rgba(0,217,255,0.10)); border: 1px solid var(--st-border-default, rgba(255,255,255,0.15)); font-size: 13px; font-weight: 600; color: var(--st-text-primary, #fff); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="">
+      <img id="institutionNamePillLogo" alt="" style="display:none; height:18px; max-width:24px; object-fit:contain;">
+      <span id="institutionNamePillText"></span>
     </div>
     <div class="credits-banner" id="creditsBanner">
       <span class="credits-banner-text">

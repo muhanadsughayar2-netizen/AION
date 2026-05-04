@@ -8,12 +8,22 @@ async function applyBranding() {
       return;
     }
     let resolved = null;
+    // Task #40 — pass full palette so the welcome page's background, text,
+    // and borders also reflect the institution's full theme, not just the
+    // accent color on the heading.
+    if (window.SnapToAIBranding && (b.brandColor || b.pageBg || b.cardBg ||
+        b.textPrimary || b.textMuted || b.headerColor || b.highlightColor || b.borderColor)) {
+      resolved = window.SnapToAIBranding.apply({
+        brand: b.brandColor,
+        pageBg: b.pageBg, cardBg: b.cardBg,
+        textPrimary: b.textPrimary, textMuted: b.textMuted,
+        headerColor: b.headerColor, highlightColor: b.highlightColor,
+        borderColor: b.borderColor
+      });
+    } else if (b.brandColor) {
+      document.documentElement.style.setProperty('--accent', b.brandColor);
+    }
     if (b.brandColor) {
-      if (window.SnapToAIBranding) {
-        resolved = window.SnapToAIBranding.apply(b.brandColor);
-      } else {
-        document.documentElement.style.setProperty('--accent', b.brandColor);
-      }
       const cyans = document.querySelectorAll('h1 .cyan');
       const tint = resolved ? resolved.accent : b.brandColor;
       cyans.forEach((c) => { c.style.color = tint; });

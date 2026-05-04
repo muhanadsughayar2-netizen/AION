@@ -99,8 +99,27 @@
     '--accent', '--st-brand-raw'
   ];
 
+  // Task #40 — full 8-slot palette CSS vars. When the institution sets any
+  // of these, branding.js overrides the matching theme.css default on
+  // :root so existing extension HTML/CSS that already reads these vars
+  // automatically picks up the institution color — no per-element rewiring
+  // needed for the bg / text / border slots.
+  var PALETTE_VARS = [
+    // pageBg → page-level backgrounds (popup, side panel, ai-chat shell)
+    '--st-bg-deep', '--st-bg-app', '--st-bg-app-2', '--st-bg-rail',
+    // cardBg → cards, modals, surfaces
+    '--st-bg-elevated', '--st-bg-surface', '--st-bg-card', '--st-bg-input',
+    // textPrimary / textMuted
+    '--st-text-primary', '--st-text-secondary', '--st-text-tertiary', '--st-text-muted',
+    // borders
+    '--st-border-default', '--st-border-strong', '--st-border-subtle',
+    // new explicit zone vars
+    '--st-brand-header', '--st-brand-highlight'
+  ];
+
   var lastBrandColor = null;
   var lastResolved = null;
+  var lastPalette = null;
   var listeners = [];
 
   function notify() {
@@ -109,48 +128,102 @@
     }
   }
 
-  function apply(brandColor) {
+  // Accept either a brand-color string (legacy single-color callers) OR an
+  // object { brand, pageBg, cardBg, textPrimary, textMuted, headerColor,
+  // highlightColor, borderColor }. Each palette slot is optional — anything
+  // missing falls back to the theme.css default (i.e. the existing dark UI).
+  function apply(input) {
     var root = document.documentElement;
-    if (!brandColor) {
-      lastBrandColor = null;
-      lastResolved = null;
+    var brandColor = null;
+    var palette = null;
+    if (input && typeof input === 'object') {
+      brandColor = input.brand || input.brandColor || null;
+      palette = input;
+    } else if (typeof input === 'string') {
+      brandColor = input;
+    }
+
+    if (!brandColor && !palette) {
+      lastBrandColor = null; lastResolved = null; lastPalette = null;
       if (root) {
         for (var i = 0; i < ACCENT_VARS.length; i++) root.style.removeProperty(ACCENT_VARS[i]);
+        for (var j = 0; j < PALETTE_VARS.length; j++) root.style.removeProperty(PALETTE_VARS[j]);
       }
       notify();
       return null;
     }
+
     lastBrandColor = brandColor;
+    lastPalette = palette;
     var theme = (window.SnapToAITheme && window.SnapToAITheme.getResolved)
       ? window.SnapToAITheme.getResolved()
       : (root && root.getAttribute('data-theme')) || 'dark';
-    var r = resolveBranding(brandColor, theme === 'light' ? 'light' : 'dark');
-    if (!r) {
-      lastResolved = null;
-      notify();
-      return null;
-    }
+    var r = brandColor ? resolveBranding(brandColor, theme === 'light' ? 'light' : 'dark') : null;
     lastResolved = r;
     if (root) {
-      root.style.setProperty('--st-accent', r.accent);
-      root.style.setProperty('--st-accent-2', r.accent2);
-      root.style.setProperty('--st-accent-soft', r.accentSoft);
-      root.style.setProperty('--st-accent-soft-2', r.accentSoft2);
-      root.style.setProperty('--st-accent-border', r.accentBorder);
-      root.style.setProperty('--st-accent-glow', r.accentGlow);
-      root.style.setProperty('--st-text-on-accent', r.accentFg);
-      root.style.setProperty('--accent', r.accent);
-      root.style.setProperty('--st-brand-raw', r.rawCss);
+      // Reset the palette vars first so a previously-applied palette doesn't
+      // leak into a new institution that customized fewer slots.
+      for (var k = 0; k < PALETTE_VARS.length; k++) root.style.removeProperty(PALETTE_VARS[k]);
+
+      if (r) {
+        root.style.setProperty('--st-accent', r.accent);
+        root.style.setProperty('--st-accent-2', r.accent2);
+        root.style.setProperty('--st-accent-soft', r.accentSoft);
+        root.style.setProperty('--st-accent-soft-2', r.accentSoft2);
+        root.style.setProperty('--st-accent-border', r.accentBorder);
+        root.style.setProperty('--st-accent-glow', r.accentGlow);
+        root.style.setProperty('--st-text-on-accent', r.accentFg);
+        root.style.setProperty('--accent', r.accent);
+        root.style.setProperty('--st-brand-raw', r.rawCss);
+      }
+
+      if (palette) {
+        // Map each optional palette slot to the matching CSS var(s). Skip
+        // any slot the admin didn't set so theme.css defaults apply.
+        if (palette.pageBg) {
+          root.style.setProperty('--st-bg-deep', palette.pageBg);
+          root.style.setProperty('--st-bg-app', palette.pageBg);
+          root.style.setProperty('--st-bg-app-2', palette.pageBg);
+          root.style.setProperty('--st-bg-rail', palette.pageBg);
+        }
+        if (palette.cardBg) {
+          root.style.setProperty('--st-bg-elevated', palette.cardBg);
+          root.style.setProperty('--st-bg-surface', palette.cardBg);
+          root.style.setProperty('--st-bg-card', palette.cardBg);
+          root.style.setProperty('--st-bg-input', palette.cardBg);
+        }
+        if (palette.textPrimary) {
+          root.style.setProperty('--st-text-primary', palette.textPrimary);
+        }
+        if (palette.textMuted) {
+          root.style.setProperty('--st-text-secondary', palette.textMuted);
+          root.style.setProperty('--st-text-tertiary', palette.textMuted);
+          root.style.setProperty('--st-text-muted', palette.textMuted);
+        }
+        if (palette.borderColor) {
+          root.style.setProperty('--st-border-default', palette.borderColor);
+          root.style.setProperty('--st-border-strong', palette.borderColor);
+          root.style.setProperty('--st-border-subtle', palette.borderColor);
+        }
+        if (palette.headerColor) {
+          root.style.setProperty('--st-brand-header', palette.headerColor);
+        }
+        if (palette.highlightColor) {
+          root.style.setProperty('--st-brand-highlight', palette.highlightColor);
+        }
+      }
     }
     notify();
     return r;
   }
 
-  // Re-evaluate against the new theme whenever it changes.
+  // Re-evaluate against the new theme whenever it changes. Re-pass the
+  // last palette so all 8 slots survive a Light↔Dark flip.
   try {
     if (window.SnapToAITheme && window.SnapToAITheme.onChange) {
       window.SnapToAITheme.onChange(function () {
-        if (lastBrandColor) apply(lastBrandColor);
+        if (lastPalette) apply(lastPalette);
+        else if (lastBrandColor) apply(lastBrandColor);
       });
     }
   } catch (e) {}
