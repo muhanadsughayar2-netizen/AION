@@ -996,6 +996,9 @@ function speakText(text, langCode = null) {
 let currentImages = []; // Support multiple images
 let currentPageText = '';
 let conversationHistory = [];
+const CHAT_HISTORY_STORAGE_KEY = 'snaptoai_chat_history';
+const CHAT_HISTORY_MAX_ITEMS = 20;
+let chatHistorySaveTimer = null;
 let filesQueue = []; // Multi-file upload queue (Gemini-style)
 
 // Get config from prompts.js (user-editable) or use defaults
@@ -5474,6 +5477,7 @@ function addBubble(text, type) {
   bubble.textContent = text;
   thread.appendChild(bubble);
   thread.scrollTop = thread.scrollHeight;
+  scheduleChatHistorySave();
   return bubble;
 }
 
@@ -6782,6 +6786,46 @@ function clearChat() {
   const thread = document.getElementById('chatThread');
   thread.innerHTML = '<div class="welcome-message">I\'m your AI partner. Ask me anything about this image!</div>';
   conversationHistory = [];
+  saveChatHistoryToLocal();
+}
+
+function buildChatHistorySnapshot() {
+  return {
+    ts: Date.now(),
+    conversationHistory: conversationHistory.slice(-200),
+    chatHtml: document.getElementById('chatThread')?.innerHTML || ''
+  };
+}
+
+async function saveChatHistoryToLocal() {
+  try {
+    if (!chrome?.storage?.local) return;
+    const result = await chrome.storage.local.get([CHAT_HISTORY_STORAGE_KEY]);
+    const all = Array.isArray(result[CHAT_HISTORY_STORAGE_KEY]) ? result[CHAT_HISTORY_STORAGE_KEY] : [];
+    const next = [buildChatHistorySnapshot(), ...all.filter(item => item && item.chatHtml)].slice(0, CHAT_HISTORY_MAX_ITEMS);
+    await chrome.storage.local.set({ [CHAT_HISTORY_STORAGE_KEY]: next });
+  } catch (e) {}
+}
+
+function scheduleChatHistorySave() {
+  if (chatHistorySaveTimer) clearTimeout(chatHistorySaveTimer);
+  chatHistorySaveTimer = setTimeout(() => {
+    saveChatHistoryToLocal();
+  }, 400);
+}
+
+async function restoreLastChatHistory() {
+  try {
+    if (!chrome?.storage?.local) return;
+    const result = await chrome.storage.local.get([CHAT_HISTORY_STORAGE_KEY]);
+    const items = Array.isArray(result[CHAT_HISTORY_STORAGE_KEY]) ? result[CHAT_HISTORY_STORAGE_KEY] : [];
+    const last = items.find(item => item && item.chatHtml);
+    if (!last) return;
+    const thread = document.getElementById('chatThread');
+    if (!thread || thread.querySelector('.chat-bubble')) return;
+    thread.innerHTML = last.chatHtml;
+    conversationHistory = Array.isArray(last.conversationHistory) ? last.conversationHistory : conversationHistory;
+  } catch (e) {}
 }
 
 // Copy chat with rich HTML formatting (preserves bold, links, etc in Google Docs)
