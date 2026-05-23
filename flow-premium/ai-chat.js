@@ -4322,6 +4322,7 @@ async function stitchVideos(videoUrls, stitchCtx) {
   const timeoutPromise = new Promise((_, reject) => {
     timeoutHandle = setTimeout(() => {
       stitchCtx.aborted = true;
+      if (stitchCtx._fetchAbort) stitchCtx._fetchAbort.abort();
       reject(new Error(`Stitch timeout (${Math.round(STITCH_TIMEOUT_MS/1000)}s) — falling back to clips`));
     }, STITCH_TIMEOUT_MS);
   });
@@ -4331,10 +4332,16 @@ async function stitchVideos(videoUrls, stitchCtx) {
     // recording starts means a slow CDN won't stretch the recorded timeline
     // (the recorder is wall-clock; if we stalled on fetch mid-recording, the
     // stitched video would have a frozen patch).
+    // One AbortController for all clip fetches — aborted on timeout or user stop.
+    const fetchAbort = new AbortController();
+    stitchCtx._fetchAbort = fetchAbort;
     const blobs = [];
     for (const url of videoUrls) {
-      if (stitchCtx && (stitchCtx.userStopped || stitchCtx.aborted)) throw new Error('User stopped');
-      const resp = await fetch(url);
+      if (stitchCtx && (stitchCtx.userStopped || stitchCtx.aborted)) {
+        fetchAbort.abort();
+        throw new Error('User stopped');
+      }
+      const resp = await fetch(url, { signal: fetchAbort.signal });
       if (!resp.ok) throw new Error(`Failed to fetch clip: ${resp.status}`);
       blobs.push(await resp.blob());
     }
@@ -4744,42 +4751,38 @@ function showMultiClipFallback(bubble, clipUrls, thread) {
 }
 
 async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
+  // Cancel any prior single-clip poll (timer + in-flight fetch) before starting.
   if (activeVideoPollTimer) { clearTimeout(activeVideoPollTimer); activeVideoPollTimer = null; }
-  // Invalidate any closure from a previous pollVideoStatus call: the old
-  // tick may already be mid-fetch (clearTimeout only cancels the scheduled
-  // timer, not an in-flight request) and would otherwise schedule a new
-  // tick after we returned, racing the new poller on shared global state.
-  pollVideoStatus._gen = (pollVideoStatus._gen || 0) + 1;
-  const myGen = pollVideoStatus._gen;
+  if (pollVideoStatus._abort) { pollVideoStatus._abort.abort(); }
+  // Per-invocation AbortController so a stale in-flight fetch from a prior call
+  // can be cancelled even if it slipped past the clearTimeout above.
+  const abortCtrl = new AbortController();
+  pollVideoStatus._abort = abortCtrl;
+
   let stopped = false;
+  let localTimer = null;
 
   let pollCount = 0;
   const maxPolls = 40;
-  // Adaptive cadence — fast at first so users see status updates quickly
-  // after submit, then back off so we don't burn API quota on long renders.
   const FAST_POLL_MS = 5000;
   const SLOW_POLL_MS = 15000;
   const FAST_POLL_COUNT = 6;
-  const POLL_INTERVAL_MS = SLOW_POLL_MS; // legacy alias retained
   const nextDelay = () => (pollCount < FAST_POLL_COUNT ? FAST_POLL_MS : SLOW_POLL_MS);
 
-  // Recursive setTimeout (NOT setInterval) — a slow poll under bad network
-  // would otherwise overlap multiple in-flight pollers, racing on the same
-  // progressBubble and confusing the completion handler.
   const tick = async () => {
-    if (stopped || pollVideoStatus._gen !== myGen) return;
+    if (stopped || abortCtrl.signal.aborted) return;
     pollCount++;
 
     if (pollCount > maxPolls) {
       stopped = true;
-      activeVideoPollTimer = null;
+      localTimer = null;
       progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">⏰</span> Video generation timed out. Please try again.</div>`;
       return;
     }
 
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/${operationId}?key=${apiKey}`;
-      const resp = await fetch(url);
+      const resp = await fetch(url, { signal: abortCtrl.signal });
       const data = await resp.json();
 
       if (!resp.ok) {
@@ -4787,11 +4790,11 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         if (resp.status === 429) {
           const text = progressBubble.querySelector('.video-progress-text');
           if (text) text.textContent = 'Rate limit — retrying shortly...';
-          activeVideoPollTimer = setTimeout(tick, nextDelay());
+          localTimer = setTimeout(tick, nextDelay());
           return;
         }
         stopped = true;
-        activeVideoPollTimer = null;
+        localTimer = null;
         const errLower = errMsg.toLowerCase();
         if (isBillingError(resp.status, errMsg)) {
           progressBubble.innerHTML = buildUnlockCard('video');
@@ -4809,10 +4812,10 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         const text = progressBubble.querySelector('.video-progress-text');
         if (fill) fill.style.width = `${pct}%`;
         if (text) text.textContent = `Rendering... ${pct}%`;
-        activeVideoPollTimer = setTimeout(tick, nextDelay());
+        localTimer = setTimeout(tick, nextDelay());
       } else {
         stopped = true;
-        activeVideoPollTimer = null;
+        localTimer = null;
 
         console.log('[SnapToAI Video] Done response:', JSON.stringify(data).substring(0, 1000));
 
@@ -4880,11 +4883,12 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         showVideoResult(progressBubble, authedUrl, thread);
       }
     } catch (err) {
+      if (err.name === 'AbortError') return; // cancelled by a newer poll — stop silently
       console.log(`[SnapToAI Video] Poll error:`, err.message);
-      activeVideoPollTimer = setTimeout(tick, nextDelay());
+      localTimer = setTimeout(tick, nextDelay());
     }
   };
-  activeVideoPollTimer = setTimeout(tick, FAST_POLL_MS);
+  localTimer = setTimeout(tick, FAST_POLL_MS);
 }
 
 function showVideoResult(bubble, videoUrl, thread) {
