@@ -1,0 +1,584 @@
+stallwart.build.js:1 stallwart: failed ping 1
+0aq7tw8ved0dt.js:21 
+      /////////////////////
+   ///////////////////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////        Curious and driven?
+  ///////////////@@@@@@@///////        Work with us!
+  ///////////////@@@@@@@///////
+  ///////////////@@@@@@@///////        https://join.replit.com/hack.with.us
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+   ///////////////////////////
+      /////////////////////
+      
+0aq7tw8ved0dt.js:21 Download the Apollo DevTools for a better development experience: https://chrome.google.com/webstore/detail/apollo-client-developer-t/jdkknkkbebbapilgoeccciglkfbmbnfm
+0aq7tw8ved0dt.js:21 [LaunchDarkly] LaunchDarkly client initialized
+stallwart.build.js:1 stallwart: failed ping 1
+0aq7tw8ved0dt.js:21 Cache data may be lost when replacing the currentUserSettings field of a Repl object.
+
+This could cause additional (usually avoidable) network requests to fetch data that were otherwise cached.
+
+To address this problem (which is not a bug in Apollo Client), either ensure all objects of type UserReplSettings have an ID or a custom merge function, or define a custom merge function for the Repl.currentUserSettings field, so InMemoryCache can safely merge these objects:
+
+  existing: {"__typename":"UserReplSettings","isBootstrapped":true,"agentSettings":{"__typename":"UserReplAgentSettings","explicitFields":["MODEL_TIER","IS_TURBO_ENABLED","IS_PLAN_MODE_ENABLED","IS_APP_TESTING_ENABLED","IS_CODE_OPTIMIZATION_ENABLED"],"modelTier":"POWER","isTurboEnabled":false,"isPlanModeEnabled":false,"isAppTestingEnabled":false,"isCodeOptimizationEnabled":true,"isAutoCheckpointingEnabled":null},"taskSettings":null}
+  incoming: {"__typename":"UserReplSettings","agentSettings":{"__typename":"UserReplAgentSettings","explicitFields":["MODEL_TIER","IS_TURBO_ENABLED","IS_PLAN_MODE_ENABLED","IS_APP_TESTING_ENABLED","IS_CODE_OPTIMIZATION_ENABLED"],"modelTier":"POWER","isTurboEnabled":false,"isPlanModeEnabled":false,"isAppTestingEnabled":false,"isCodeOptimizationEnabled":true,"isAutoCheckpointingEnabled":null},"taskSettings":null}
+
+For more information about these options, please refer to the documentation:
+
+  * Ensuring entity objects have IDs: https://go.apollo.dev/c/generating-unique-identifiers
+  * Defining custom merge functions: https://go.apollo.dev/c/merging-non-normalized-objects
+
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+SnapToAI:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Unrecognized feature: 'ambient-light-sensor'.
+Unrecognized feature: 'ambient-light-sensor'.
+Unrecognized feature: 'ambient-light-sensor'.
+Unrecognized feature: 'ambient-light-sensor'.
+Unrecognized feature: 'ambient-light-sensor'.
+Unrecognized feature: 'ambient-light-sensor'.
+Unrecognized feature: 'battery'.
+Unrecognized feature: 'battery'.
+Unrecognized feature: 'battery'.
+Unrecognized feature: 'battery'.
+Unrecognized feature: 'battery'.
+Unrecognized feature: 'battery'.
+Unrecognized feature: 'execution-while-not-rendered'.
+Unrecognized feature: 'execution-while-not-rendered'.
+Unrecognized feature: 'execution-while-not-rendered'.
+Unrecognized feature: 'execution-while-not-rendered'.
+Unrecognized feature: 'execution-while-not-rendered'.
+Unrecognized feature: 'execution-while-not-rendered'.
+Unrecognized feature: 'execution-while-out-of-viewport'.
+Unrecognized feature: 'execution-while-out-of-viewport'.
+Unrecognized feature: 'execution-while-out-of-viewport'.
+Unrecognized feature: 'execution-while-out-of-viewport'.
+Unrecognized feature: 'execution-while-out-of-viewport'.
+Unrecognized feature: 'execution-while-out-of-viewport'.
+Unrecognized feature: 'layout-animations'.
+Unrecognized feature: 'layout-animations'.
+Unrecognized feature: 'layout-animations'.
+Unrecognized feature: 'layout-animations'.
+Unrecognized feature: 'layout-animations'.
+Unrecognized feature: 'layout-animations'.
+Unrecognized feature: 'legacy-image-formats'.
+Unrecognized feature: 'legacy-image-formats'.
+Unrecognized feature: 'legacy-image-formats'.
+Unrecognized feature: 'legacy-image-formats'.
+Unrecognized feature: 'legacy-image-formats'.
+Unrecognized feature: 'legacy-image-formats'.
+Unrecognized feature: 'navigation-override'.
+Unrecognized feature: 'navigation-override'.
+Unrecognized feature: 'navigation-override'.
+Unrecognized feature: 'navigation-override'.
+Unrecognized feature: 'navigation-override'.
+Unrecognized feature: 'navigation-override'.
+Unrecognized feature: 'oversized-images'.
+Unrecognized feature: 'oversized-images'.
+Unrecognized feature: 'oversized-images'.
+Unrecognized feature: 'oversized-images'.
+Unrecognized feature: 'oversized-images'.
+Unrecognized feature: 'oversized-images'.
+Unrecognized feature: 'publickey-credentials'.
+Unrecognized feature: 'publickey-credentials'.
+Unrecognized feature: 'publickey-credentials'.
+Unrecognized feature: 'publickey-credentials'.
+Unrecognized feature: 'publickey-credentials'.
+Unrecognized feature: 'publickey-credentials'.
+Unrecognized feature: 'speaker-selection'.
+Unrecognized feature: 'speaker-selection'.
+Unrecognized feature: 'speaker-selection'.
+Unrecognized feature: 'speaker-selection'.
+Unrecognized feature: 'speaker-selection'.
+Unrecognized feature: 'speaker-selection'.
+Unrecognized feature: 'unoptimized-images'.
+Unrecognized feature: 'unoptimized-images'.
+Unrecognized feature: 'unoptimized-images'.
+Unrecognized feature: 'unoptimized-images'.
+Unrecognized feature: 'unoptimized-images'.
+Unrecognized feature: 'unoptimized-images'.
+Unrecognized feature: 'unsized-media'.
+Unrecognized feature: 'unsized-media'.
+Unrecognized feature: 'unsized-media'.
+Unrecognized feature: 'unsized-media'.
+Unrecognized feature: 'unsized-media'.
+Unrecognized feature: 'unsized-media'.
+0i8wy8tbht2ow.js:2 Unrecognized feature: 'pointer-lock'.
+C @ 0i8wy8tbht2ow.js:2
+Allow attribute will take precedence over 'allowfullscreen'.
+Allow attribute will take precedence over 'allowfullscreen'.
+Allow attribute will take precedence over 'allowfullscreen'.
+Allow attribute will take precedence over 'allowfullscreen'.
+Allow attribute will take precedence over 'allowfullscreen'.
+Allow attribute will take precedence over 'allowfullscreen'.
+Allow attribute will take precedence over 'allowpaymentrequest'.
+Allow attribute will take precedence over 'allowpaymentrequest'.
+Allow attribute will take precedence over 'allowpaymentrequest'.
+Allow attribute will take precedence over 'allowpaymentrequest'.
+Allow attribute will take precedence over 'allowpaymentrequest'.
+Allow attribute will take precedence over 'allowpaymentrequest'.
+Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('<URL>') does not match the recipient window's origin ('<URL>').
+Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('<URL>') does not match the recipient window's origin ('<URL>').
+Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('<URL>') does not match the recipient window's origin ('<URL>').
+Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('<URL>') does not match the recipient window's origin ('<URL>').
+Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('<URL>') does not match the recipient window's origin ('<URL>').
+04jn~arkt42bd.js:20 [Intervention] Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://replit.com/public/fonts/replit-icons.woff
+OptionA:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionA:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionA:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionA:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionA:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionB:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionB:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionB:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionB:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionB:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionD:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionD:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionD:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionD:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionD:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionC:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionC:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionC:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionC:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionC:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionB:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionB:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionB:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionB:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionB:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionD:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionD:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionD:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionD:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionD:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionC:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionC:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionC:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionC:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionC:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionA:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionA:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionA:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionA:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+OptionA:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+stallwart.build.js:1 stallwart: failed ping 1
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+injected.js:37 cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
+(anonymous) @ injected.js:37
+0aq7tw8ved0dt.js:21 Haven't heard from the server in a while, resetting connection...
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 Haven't heard from the server in a while, resetting connection...
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 Haven't heard from the server in a while, resetting connection...
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+0aq7tw8ved0dt.js:21 If you do not provide children, you must specify an aria-label for accessibility
+(anonymous) @ 0aq7tw8ved0dt.js:21
+stallwart.build.js:1 stallwart: failed ping 1
+stallwart.build.js:1 stallwart: failed ping 2
+stallwart.build.js:1 stallwart: failed ping 3
+stallwart.build.js:1 stallwart: failed ping 1
+stallwart.build.js:1 stallwart: failed ping 2
+stallwart.build.js:1 stallwart: failed ping 1
+stallwart.build.js:1 stallwart: failed ping 2
+stallwart.build.js:1 stallwart: failed ping 3
+stallwart.build.js:1 stallwart: failed ping 1
+stallwart.build.js:1 stallwart: failed ping 2
+stallwart.build.js:1 stallwart: failed ping 3
+stallwart.build.js:1 stallwart: failed ping 1
+stallwart.build.js:1 stallwart: failed ping 2
+stallwart.build.js:1 stallwart: failed ping 3
+stallwart.build.js:1 stallwart: failed ping 4
+stallwart.build.js:1 stallwart: failed ping 5
+0aq7tw8ved0dt.js:21 Haven't heard from the server in a while, resetting connection...
+(anonymous) @ 0aq7tw8ved0dt.js:21
+(anonymous) @ 05j6-ddb71352.js:54
+0aq7tw8ved0dt.js:21 task queue exceeded allotted deadline by 786ms
+(anonymous) @ 0aq7tw8ved0dt.js:21
+_process @ 0ifc_4ep-c~fn.js:14
+(anonymous) @ 0ifc_4ep-c~fn.js:14
+setTimeout
+_requestCallback @ 0ifc_4ep-c~fn.js:14
+_start @ 0ifc_4ep-c~fn.js:14
+enqueue @ 0ifc_4ep-c~fn.js:14
+set @ 0ifc_4ep-c~fn.js:14
+handleResize @ 0ifc_4ep-c~fn.js:14
+(anonymous) @ 0ifc_4ep-c~fn.js:18
+_deliver @ 0ifc_4ep-c~fn.js:12
+_deliverQueue @ 0ifc_4ep-c~fn.js:12
+fire @ 0ifc_4ep-c~fn.js:12
+(anonymous) @ 0ifc_4ep-c~fn.js:8
+_deliver @ 0ifc_4ep-c~fn.js:12
+_deliverQueue @ 0ifc_4ep-c~fn.js:12
+fire @ 0ifc_4ep-c~fn.js:12
+resize @ 0ifc_4ep-c~fn.js:16
+resize @ 0ifc_4ep-c~fn.js:16
+resize @ 0ifc_4ep-c~fn.js:18
+resize @ 0ifc_4ep-c~fn.js:18
+(anonymous) @ 04jn~arkt42bd.js:28
+uI @ 0i8wy8tbht2ow.js:2
+oU @ 0i8wy8tbht2ow.js:2
+o_ @ 0i8wy8tbht2ow.js:2
+r8 @ 0i8wy8tbht2ow.js:2
+(anonymous) @ 0i8wy8tbht2ow.js:2
+oI @ 0i8wy8tbht2ow.js:2
+oS @ 0i8wy8tbht2ow.js:2
+E @ 0i8wy8tbht2ow.js:2
+L @ 0i8wy8tbht2ow.js:2
+postMessage
+o @ 0i8wy8tbht2ow.js:2
+L @ 0i8wy8tbht2ow.js:2
+postMessage
+o @ 0i8wy8tbht2ow.js:2
+R @ 0i8wy8tbht2ow.js:2
+(anonymous) @ 0i8wy8tbht2ow.js:2
+ow @ 0i8wy8tbht2ow.js:2
+ok @ 0i8wy8tbht2ow.js:2
+aQ @ 0i8wy8tbht2ow.js:2
+(anonymous) @ 0m62tue3vh93p.js:39
+setTimeout
+(anonymous) @ 0m62tue3vh93p.js:39
+uI @ 0i8wy8tbht2ow.js:2
+oU @ 0i8wy8tbht2ow.js:2
+(anonymous) @ 0i8wy8tbht2ow.js:2
+E @ 0i8wy8tbht2ow.js:2
+L @ 0i8wy8tbht2ow.js:2
+postMessage
+o @ 0i8wy8tbht2ow.js:2
+R @ 0i8wy8tbht2ow.js:2
+(anonymous) @ 0i8wy8tbht2ow.js:2
+ow @ 0i8wy8tbht2ow.js:2
+ok @ 0i8wy8tbht2ow.js:2
+aQ @ 0i8wy8tbht2ow.js:2
+(anonymous) @ 0m62tue3vh93p.js:39
+setTimeout
+(anonymous) @ 0m62tue3vh93p.js:39
+uI @ 0i8wy8tbht2ow.js:2
+oU @ 0i8wy8tbht2ow.js:2
+(anonymous) @ 0i8wy8tbht2ow.js:2
+E @ 0i8wy8tbht2ow.js:2
+L @ 0i8wy8tbht2ow.js:2
+postMessage
+o @ 0i8wy8tbht2ow.js:2
+R @ 0i8wy8tbht2ow.js:2
+(anonymous) @ 0i8wy8tbht2ow.js:2
+ow @ 0i8wy8tbht2ow.js:2
+ok @ 0i8wy8tbht2ow.js:2
+aQ @ 0i8wy8tbht2ow.js:2
+(anonymous) @ 0d8m39gnuw1wh.js:2
