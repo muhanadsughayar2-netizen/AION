@@ -1786,7 +1786,8 @@ async function startVideoGeneration(prompt, thread) {
   const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
   const apiKey = keyResult.geminiApiKey;
   if (!apiKey) {
-    addBubble('Please set your Gemini API key in settings to use video generation.', 'error');
+    addBubble('🔑 Video needs your own Gemini API key. Opening the key setup for you...', 'ai');
+    try { await showProxyKeyPrompt(); } catch (e) {}
     return;
   }
 
