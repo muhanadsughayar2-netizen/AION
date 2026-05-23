@@ -3091,6 +3091,8 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
     stopBtn.addEventListener('click', () => {
       if (ctx.userStopped) return;
       ctx.userStopped = true;
+      // Immediately abort any in-flight stitch clip fetch so it doesn't hang
+      if (ctx._fetchAbort) ctx._fetchAbort.abort();
       stopBtn.textContent = '⏹ Stopping...';
       stopBtn.disabled = true;
       stopBtn.style.opacity = '0.6';
@@ -4657,6 +4659,9 @@ async function stitchVideos(videoUrls, stitchCtx) {
     // missing Duration in the WebM EBML header so the downloaded file is
     // seekable (without this, players hang on playback / show duration N/A).
     const recordedMs = Math.max(1, performance.now() - recordStartMs);
+    // Guard: if stitch was aborted/stopped while recording was finishing,
+    // don't create a URL that will never be surfaced — avoids a permanent leak.
+    if (stitchCtx && (stitchCtx.aborted || stitchCtx.userStopped)) throw new Error('User stopped');
     const rawBlob = new Blob(chunks, { type: chosenMime || 'video/webm' });
     const fixedBlob = await fixWebmDuration(rawBlob, recordedMs);
     console.log(`[SnapToAI Video] WebM duration repair: ${recordedMs.toFixed(0)}ms · raw=${rawBlob.size}B · fixed=${fixedBlob.size}B`);
