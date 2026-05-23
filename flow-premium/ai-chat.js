@@ -3940,6 +3940,8 @@ async function retryVeoClip(clipIdx, ctx) {
   }
 }
 
+// pollVideoStatusAsync, fetchWithTimeout, and fetchClipsWithAbort are defined
+// in video-pipeline-core.js which is loaded before this script.
 // Returns { url, status } where status is one of:
 //   'success'         → got a video URL
 //   'transient'       → network/HTTP error (caller should RETRY same clip)
@@ -3948,6 +3950,8 @@ async function retryVeoClip(clipIdx, ctx) {
 //   'safety_blocked'  → content/safety filter rejection (skip clip, keep going)
 //   'no_uri'          → completed but no video URI returned (skip clip, keep going)
 //   'job_error'       → operation completed with a permanent error (skip clip, keep going)
+// REMOVED: pollVideoStatusAsync definition moved to video-pipeline-core.js
+/* BEGIN_REMOVED_pollVideoStatusAsync
 function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, totalClips) {
   return new Promise((resolve) => {
     let pollCount = 0;
@@ -4087,6 +4091,7 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
     setTimeout(tick, FAST_POLL_MS);
   });
 }
+// END_REMOVED_pollVideoStatusAsync */
 
 // v2.4.7: Hardened stitcher with timeout, Stop-button support, play() race
 // fix, and a setTimeout fallback so background tabs still make progress.
@@ -4103,24 +4108,8 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
 // is wall-clock based) but with no crossfade contention the recorded frames
 // are smooth and the audio doesn't glitch at clip boundaries.
 // ---------------------------------------------------------------------------
-// fetchWithTimeout — wraps fetch with a per-request timeout + optional abort
-// signal. If the timeout fires first, an AbortError is thrown (same as a
-// cancelled request) so callers can treat both cases identically.
-function fetchWithTimeout(url, { signal, timeoutMs = 20000 } = {}) {
-  const timeoutCtrl = new AbortController();
-  const timer = setTimeout(() => timeoutCtrl.abort(), timeoutMs);
-  // Combine caller signal + timeout into a single signal (AbortSignal.any if
-  // available in the environment, otherwise manual forwarding).
-  let combined = timeoutCtrl.signal;
-  if (signal) {
-    const relay = new AbortController();
-    const done = () => relay.abort();
-    signal.addEventListener('abort', done, { once: true });
-    timeoutCtrl.signal.addEventListener('abort', done, { once: true });
-    combined = relay.signal;
-  }
-  return fetch(url, { signal: combined }).finally(() => clearTimeout(timer));
-}
+// fetchWithTimeout — defined in video-pipeline-core.js (loaded before this
+// script). See that file for the implementation and inline documentation.
 
 // fixWebmDuration — repair the missing Duration in a MediaRecorder-produced
 // WebM. Chrome's MediaRecorder writes EBML clusters but never back-fills the
@@ -4355,19 +4344,9 @@ async function stitchVideos(videoUrls, stitchCtx) {
     // recording starts means a slow CDN won't stretch the recorded timeline
     // (the recorder is wall-clock; if we stalled on fetch mid-recording, the
     // stitched video would have a frozen patch).
-    // One AbortController for all clip fetches — aborted on timeout or user stop.
-    const fetchAbort = new AbortController();
-    stitchCtx._fetchAbort = fetchAbort;
-    const blobs = [];
-    for (const url of videoUrls) {
-      if (stitchCtx && (stitchCtx.userStopped || stitchCtx.aborted)) {
-        fetchAbort.abort();
-        throw new Error('User stopped');
-      }
-      const resp = await fetch(url, { signal: fetchAbort.signal });
-      if (!resp.ok) throw new Error(`Failed to fetch clip: ${resp.status}`);
-      blobs.push(await resp.blob());
-    }
+    // Delegated to fetchClipsWithAbort (video-pipeline-core.js) which handles
+    // the stop-flag checks between fetches and is independently unit-tested.
+    const blobs = await fetchClipsWithAbort(videoUrls, stitchCtx);
 
     // ---- 2. Probe the first clip for native dimensions so the output canvas
     // matches the real aspect ratio (hard-coding 1280×720 used to squash
