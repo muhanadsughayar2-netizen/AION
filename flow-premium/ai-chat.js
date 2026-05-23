@@ -3982,7 +3982,7 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
 
       try {
         const url = `https://generativelanguage.googleapis.com/v1beta/${operationId}?key=${apiKey}`;
-        const resp = await fetch(url);
+        const resp = await fetchWithTimeout(url, { timeoutMs: 20000 });
         const data = await resp.json().catch(() => ({}));
 
         if (!resp.ok) {
@@ -4050,16 +4050,18 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
           // and we keep waiting rather than declaring no_uri immediately.
           const pollUrl = `https://generativelanguage.googleapis.com/v1beta/${operationId}?key=${apiKey}`;
           for (let attempt = 1; attempt <= 5 && !videoUri; attempt++) {
+            if (stopped) break; // invocation was cancelled — don't keep fetching
             await new Promise(r => setTimeout(r, attempt <= 2 ? 3000 : 5000));
+            if (stopped) break;
             try {
-              const r2 = await fetch(pollUrl);
+              const r2 = await fetchWithTimeout(pollUrl, { timeoutMs: 20000 });
               if (!r2.ok) continue; // transient HTTP error — keep waiting
               const d2 = await r2.json().catch(() => ({}));
               if (!d2.done) continue; // still rendering — keep waiting
               if (d2.error) break;    // permanent error — stop re-polling
               console.log(`[SnapToAI Video] no_uri re-poll ${attempt}:`, JSON.stringify(d2).substring(0, 400));
               videoUri = extractUri(d2);
-            } catch (_) {}
+            } catch (_) { if (_.name === 'AbortError') break; }
           }
         }
 
@@ -4101,6 +4103,25 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
 // is wall-clock based) but with no crossfade contention the recorded frames
 // are smooth and the audio doesn't glitch at clip boundaries.
 // ---------------------------------------------------------------------------
+// fetchWithTimeout — wraps fetch with a per-request timeout + optional abort
+// signal. If the timeout fires first, an AbortError is thrown (same as a
+// cancelled request) so callers can treat both cases identically.
+function fetchWithTimeout(url, { signal, timeoutMs = 20000 } = {}) {
+  const timeoutCtrl = new AbortController();
+  const timer = setTimeout(() => timeoutCtrl.abort(), timeoutMs);
+  // Combine caller signal + timeout into a single signal (AbortSignal.any if
+  // available in the environment, otherwise manual forwarding).
+  let combined = timeoutCtrl.signal;
+  if (signal) {
+    const relay = new AbortController();
+    const done = () => relay.abort();
+    signal.addEventListener('abort', done, { once: true });
+    timeoutCtrl.signal.addEventListener('abort', done, { once: true });
+    combined = relay.signal;
+  }
+  return fetch(url, { signal: combined }).finally(() => clearTimeout(timer));
+}
+
 // fixWebmDuration — repair the missing Duration in a MediaRecorder-produced
 // WebM. Chrome's MediaRecorder writes EBML clusters but never back-fills the
 // Segment Info Duration field, which is why downloaded files report
@@ -4787,7 +4808,7 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
 
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/${operationId}?key=${apiKey}`;
-      const resp = await fetch(url, { signal: abortCtrl.signal });
+      const resp = await fetchWithTimeout(url, { signal: abortCtrl.signal, timeoutMs: 20000 });
       const data = await resp.json();
 
       if (!resp.ok) {
@@ -4860,16 +4881,18 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         if (!videoUri) {
           const pollUrl2 = `https://generativelanguage.googleapis.com/v1beta/${operationId}?key=${apiKey}`;
           for (let _a = 1; _a <= 5 && !videoUri; _a++) {
+            if (abortCtrl.signal.aborted) break; // newer generation started — stop immediately
             await new Promise(r => setTimeout(r, _a <= 2 ? 3000 : 5000));
+            if (abortCtrl.signal.aborted) break;
             try {
-              const r2 = await fetch(pollUrl2);
+              const r2 = await fetchWithTimeout(pollUrl2, { signal: abortCtrl.signal, timeoutMs: 20000 });
               if (!r2.ok) continue;
               const d2 = await r2.json().catch(() => ({}));
               if (!d2.done) continue;
               if (d2.error) break;
               console.log(`[SnapToAI Video] single no_uri re-poll ${_a}:`, JSON.stringify(d2).substring(0, 400));
               videoUri = _extractUri(d2);
-            } catch (_) {}
+            } catch (_) { if (_.name === 'AbortError') break; }
           }
         }
 
