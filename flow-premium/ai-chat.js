@@ -4003,7 +4003,7 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
         }
 
         stopped = true;
-        console.log('[SnapToAI Video] Clip done:', JSON.stringify(data).substring(0, 500));
+        console.log('[SnapToAI Video] Clip done raw:', JSON.stringify(data).substring(0, 800));
 
         if (data.error) {
           const errMsg = (data.error.message || '').toLowerCase();
@@ -4021,12 +4021,40 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
           return;
         }
 
-        let videoUri = '';
-        const gvr = data.response?.generateVideoResponse;
-        if (gvr?.generatedSamples?.[0]?.video?.uri) videoUri = gvr.generatedSamples[0].video.uri;
-        else if (gvr?.generatedSamples?.[0]?.uri)   videoUri = gvr.generatedSamples[0].uri;
-        if (!videoUri && data.response?.videos?.[0]?.uri) videoUri = data.response.videos[0].uri;
-        if (!videoUri && data.response?.generatedSamples?.[0]?.video?.uri) videoUri = data.response.generatedSamples[0].video.uri;
+        const extractUri = (d) => {
+          const gvr = d.response?.generateVideoResponse;
+          if (gvr?.generatedSamples?.[0]?.video?.uri) return gvr.generatedSamples[0].video.uri;
+          if (gvr?.generatedSamples?.[0]?.uri)        return gvr.generatedSamples[0].uri;
+          if (d.response?.videos?.[0]?.uri)           return d.response.videos[0].uri;
+          if (d.response?.videos?.[0]?.video?.uri)    return d.response.videos[0].video.uri;
+          if (d.response?.generatedSamples?.[0]?.video?.uri) return d.response.generatedSamples[0].video.uri;
+          if (d.response?.generatedSamples?.[0]?.uri) return d.response.generatedSamples[0].uri;
+          if (d.predictions?.[0]?.video?.uri)         return d.predictions[0].video.uri;
+          if (d.predictions?.[0]?.uri)                return d.predictions[0].uri;
+          if (d.response?.predictions?.[0]?.video?.uri) return d.response.predictions[0].video.uri;
+          if (d.response?.predictions?.[0]?.uri)      return d.response.predictions[0].uri;
+          const str = JSON.stringify(d);
+          const m = str.match(/"uri"\s*:\s*"(https?:\/\/[^"]+\.mp4[^"]*)"/);
+          if (m) return m[1];
+          return '';
+        };
+
+        let videoUri = extractUri(data);
+
+        if (!videoUri) {
+          // Veo sometimes marks done=true but video propagation lags by a few seconds.
+          // Re-poll the same operation up to 3 times before giving up.
+          const pollUrl = `https://generativelanguage.googleapis.com/v1beta/${operationId}?key=${apiKey}`;
+          for (let attempt = 1; attempt <= 3 && !videoUri; attempt++) {
+            await new Promise(r => setTimeout(r, 3000));
+            try {
+              const r2 = await fetch(pollUrl);
+              const d2 = await r2.json().catch(() => ({}));
+              console.log(`[SnapToAI Video] no_uri re-poll ${attempt}:`, JSON.stringify(d2).substring(0, 400));
+              videoUri = extractUri(d2);
+            } catch (_) {}
+          }
+        }
 
         if (videoUri) {
           const authedUrl = `${videoUri}${videoUri.includes('?') ? '&' : '?'}key=${apiKey}`;
@@ -4796,27 +4824,46 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
           return;
         }
 
-        let videoUri = '';
-        const gvr = data.response?.generateVideoResponse;
-        if (gvr?.generatedSamples?.[0]?.video?.uri) {
-          videoUri = gvr.generatedSamples[0].video.uri;
-        } else if (gvr?.generatedSamples?.[0]?.uri) {
-          videoUri = gvr.generatedSamples[0].uri;
-        }
-        if (!videoUri && data.response?.videos?.[0]?.uri) {
-          videoUri = data.response.videos[0].uri;
-        }
-        if (!videoUri && data.response?.generatedSamples?.[0]?.video?.uri) {
-          videoUri = data.response.generatedSamples[0].video.uri;
-        }
+        const _extractUri = (d) => {
+          const gvr2 = d.response?.generateVideoResponse;
+          if (gvr2?.generatedSamples?.[0]?.video?.uri) return gvr2.generatedSamples[0].video.uri;
+          if (gvr2?.generatedSamples?.[0]?.uri)        return gvr2.generatedSamples[0].uri;
+          if (d.response?.videos?.[0]?.uri)            return d.response.videos[0].uri;
+          if (d.response?.videos?.[0]?.video?.uri)     return d.response.videos[0].video.uri;
+          if (d.response?.generatedSamples?.[0]?.video?.uri) return d.response.generatedSamples[0].video.uri;
+          if (d.response?.generatedSamples?.[0]?.uri)  return d.response.generatedSamples[0].uri;
+          if (d.predictions?.[0]?.video?.uri)          return d.predictions[0].video.uri;
+          if (d.predictions?.[0]?.uri)                 return d.predictions[0].uri;
+          if (d.response?.predictions?.[0]?.video?.uri) return d.response.predictions[0].video.uri;
+          if (d.response?.predictions?.[0]?.uri)       return d.response.predictions[0].uri;
+          const s = JSON.stringify(d);
+          const m = s.match(/"uri"\s*:\s*"(https?:\/\/[^"]+\.mp4[^"]*)"/);
+          if (m) return m[1];
+          return '';
+        };
+
+        let videoUri = _extractUri(data);
+
         if (!videoUri) {
-          const respStr = JSON.stringify(data.response || data).substring(0, 300);
-          console.log('[SnapToAI Video] Could not find video URI in:', respStr);
+          const pollUrl2 = `https://generativelanguage.googleapis.com/v1beta/${operationId}?key=${apiKey}`;
+          for (let _a = 1; _a <= 3 && !videoUri; _a++) {
+            await new Promise(r => setTimeout(r, 3000));
+            try {
+              const r2 = await fetch(pollUrl2);
+              const d2 = await r2.json().catch(() => ({}));
+              console.log(`[SnapToAI Video] single no_uri re-poll ${_a}:`, JSON.stringify(d2).substring(0, 400));
+              videoUri = _extractUri(d2);
+            } catch (_) {}
+          }
+        }
+
+        if (!videoUri) {
+          console.log('[SnapToAI Video] no URI after re-polls:', JSON.stringify(data.response || data).substring(0, 300));
           const filtered = data.response?.generateVideoResponse?.raiMediaFilteredReasons;
           if (filtered && filtered.length > 0) {
             progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">🛡️</span> Video was blocked by safety filters. Try a different prompt.</div>`;
           } else {
-            progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> Video generation completed but no video was returned. This can happen when the prompt triggers content filters. Try rephrasing your description.</div>`;
+            progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> Video generation completed but no video was returned. Try rephrasing your description.</div>`;
           }
           return;
         }
