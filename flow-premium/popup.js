@@ -3850,14 +3850,22 @@ async function _popupDetectTier(apiKey) {
     document.head.appendChild(st);
   }
 
-  const videoEl = document.getElementById('apiKeyVideoEl');
+  const frameWrap = document.getElementById('apiKeyVideoFrameWrap');
 
   poster.addEventListener('click', () => {
-    if (!videoEl) return;
+    if (!frameWrap) return;
     poster.style.display = 'none';
-    videoEl.style.display = 'block';
-    if (!videoEl.src) videoEl.src = chrome.runtime.getURL('flow-premium/snaptoai-demo.webm');
-    videoEl.play().catch(err => console.log('[SnapToAI] Play blocked, user can click ▶:', err));
+    frameWrap.style.display = 'block';
+    if (!frameWrap.querySelector('iframe')) {
+      const iframe = document.createElement('iframe');
+      iframe.src = 'https://www.youtube.com/embed/JZ64eBFlL2g?autoplay=1&rel=0';
+      iframe.title = 'SnapToAI tutorial';
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+      iframe.allowFullscreen = true;
+      iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;';
+      frameWrap.appendChild(iframe);
+    }
   });
 })();
 
