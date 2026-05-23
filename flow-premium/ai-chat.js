@@ -1933,13 +1933,7 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
         aspectRatio: aspectRatio || '16:9',
         sampleCount: 1,
         durationSeconds: selectedVideoDuration,
-        negativePrompt: VEO_NEGATIVE_PROMPT,
-        // Task #31: Disable Google's silent prompt-rewriter. enhancePrompt
-        // defaults to true on Veo, which means Google paraphrases our
-        // carefully-built director output (Style Bible + per-shot beats)
-        // before sending it to the model — we'd lose all the cinematic
-        // direction we just generated. Off = Veo sees exactly what we
-        // wrote.
+        // negativePrompt removed — current Veo models reject it
         enhancePrompt: false
       }
     };
@@ -2160,11 +2154,7 @@ async function generateOneVeoClip(clipIdx, ctx) {
             aspectRatio: ctx.aspectRatio || '16:9',
             sampleCount: 1,
             durationSeconds: durationSeconds,
-            negativePrompt: VEO_NEGATIVE_PROMPT,
-            // Task #31: Disable Google's silent prompt-rewriter so Veo
-            // sees our director's exact Style Bible + per-shot beat
-            // instead of a paraphrased version. See generateSingleClip
-            // for the same flag and rationale.
+            // negativePrompt removed — current Veo models reject it
             enhancePrompt: false
           }
         };
