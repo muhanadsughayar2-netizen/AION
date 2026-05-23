@@ -423,6 +423,7 @@ def check_video_support():
         }), 500
 
 OWNER_EMAILS_SET = {
+    'muhanadsughayar@gmail.com',
     'muhanadsughayar2@gmail.com',
     'muhanadsughayar1@gmail.com',
     'joseph@smartconnects.com'

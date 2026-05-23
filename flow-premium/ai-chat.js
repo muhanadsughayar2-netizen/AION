@@ -4043,13 +4043,18 @@ function pollVideoStatusAsync(operationId, apiKey, progressBubble, clipNum, tota
 
         if (!videoUri) {
           // Veo sometimes marks done=true but video propagation lags by a few seconds.
-          // Re-poll the same operation up to 3 times before giving up.
+          // Re-poll the same operation — status-aware: only accept a clean done=true
+          // response with no error before extracting URI. 429/5xx count as transient
+          // and we keep waiting rather than declaring no_uri immediately.
           const pollUrl = `https://generativelanguage.googleapis.com/v1beta/${operationId}?key=${apiKey}`;
-          for (let attempt = 1; attempt <= 3 && !videoUri; attempt++) {
-            await new Promise(r => setTimeout(r, 3000));
+          for (let attempt = 1; attempt <= 5 && !videoUri; attempt++) {
+            await new Promise(r => setTimeout(r, attempt <= 2 ? 3000 : 5000));
             try {
               const r2 = await fetch(pollUrl);
+              if (!r2.ok) continue; // transient HTTP error — keep waiting
               const d2 = await r2.json().catch(() => ({}));
+              if (!d2.done) continue; // still rendering — keep waiting
+              if (d2.error) break;    // permanent error — stop re-polling
               console.log(`[SnapToAI Video] no_uri re-poll ${attempt}:`, JSON.stringify(d2).substring(0, 400));
               videoUri = extractUri(d2);
             } catch (_) {}
@@ -4846,11 +4851,14 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
 
         if (!videoUri) {
           const pollUrl2 = `https://generativelanguage.googleapis.com/v1beta/${operationId}?key=${apiKey}`;
-          for (let _a = 1; _a <= 3 && !videoUri; _a++) {
-            await new Promise(r => setTimeout(r, 3000));
+          for (let _a = 1; _a <= 5 && !videoUri; _a++) {
+            await new Promise(r => setTimeout(r, _a <= 2 ? 3000 : 5000));
             try {
               const r2 = await fetch(pollUrl2);
+              if (!r2.ok) continue;
               const d2 = await r2.json().catch(() => ({}));
+              if (!d2.done) continue;
+              if (d2.error) break;
               console.log(`[SnapToAI Video] single no_uri re-poll ${_a}:`, JSON.stringify(d2).substring(0, 400));
               videoUri = _extractUri(d2);
             } catch (_) {}
@@ -5730,6 +5738,16 @@ async function handleSend() {
         return;
       }
       const clipCount = selectedClipCount || 1;
+      // Check for API key BEFORE showing the paid confirmation — no point asking
+      // the user to confirm spending money if they don't have a key yet.
+      const _keyCheck = await chrome.storage.sync.get(['geminiApiKey']);
+      if (!_keyCheck.geminiApiKey) {
+        removeLoading();
+        sendBtn.disabled = false;
+        releaseRequestLock();
+        try { await showProxyKeyPrompt(); } catch (e) {}
+        return;
+      }
       const costInfo = getPaidModeEstimate('video', clipCount, selectedVideoDuration || 8);
       const ok = await confirmPaidGeneration('video', costInfo);
       if (!ok) {
