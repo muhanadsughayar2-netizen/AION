@@ -3856,7 +3856,7 @@ async function _popupDetectTier(apiKey) {
     if (!videoEl) return;
     poster.style.display = 'none';
     videoEl.style.display = 'block';
-    if (!videoEl.src) videoEl.src = 'https://www.snaptoai.com/static/snaptoai-rap-tutorial.webm';
+    if (!videoEl.src) videoEl.src = chrome.runtime.getURL('flow-premium/snaptoai-demo.webm');
     videoEl.play().catch(err => console.log('[SnapToAI] Play blocked, user can click ▶:', err));
   });
 })();
