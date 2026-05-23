@@ -281,24 +281,21 @@ async function confirmPaidGeneration(mode, details) {
 
     const preset = mode === 'video'
       ? {
-          title: 'Authorize Video Generation',
-          message: 'This premium video request uses high-compute AI and is billed per clip by Google. Note: clips that start a job but fail mid-render (timeouts, transient errors) may still be billed. Failed-before-job clips are not billed.'
+          title: 'Ready to create your video?',
+          message: 'Your video will be generated using Google\'s top-quality AI. We\'ve picked the most cost-friendly settings for you.'
         }
       : {
-          title: 'Authorize Music Generation',
-          message: 'This premium music request uses high-compute AI and is billed per request. Automatic retries are disabled so you are only charged once per click.'
+          title: 'Ready to create your music?',
+          message: 'Your music will be generated using Google\'s premium AI. We\'ve picked the most cost-friendly settings for you.'
         };
 
     const spendLine = details?.cost
-      ? `Expected spend: ${details.cost}${details?.label ? ` for ${details.label}` : ''}.`
-      : 'Expected spend: shown as estimate.';
-    const savingsLine = mode === 'video'
-      ? 'Default settings are set to the lowest-cost option so you avoid paying extra vendor markups or upsells from third-party competitors.'
-      : 'This is set to the lowest-cost option so you avoid paying extra vendor markups or upsells from third-party competitors.';
+      ? `Estimated cost: ${details.cost}${details?.label ? ` (${details.label})` : ''}.`
+      : '';
 
     titleEl.textContent = preset.title;
-    estimateEl.textContent = `Estimated cost: ${details?.cost || 'unknown'}`;
-    messageEl.textContent = `${preset.message} ${spendLine} ${savingsLine}`;
+    estimateEl.textContent = spendLine || '';
+    messageEl.textContent = preset.message;
     modal.style.display = 'block';
 
     const cleanup = (result) => {
