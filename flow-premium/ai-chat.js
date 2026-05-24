@@ -7016,7 +7016,8 @@ document.getElementById('summarizeBtn')?.addEventListener('click', summarizeChat
 document.getElementById('clearBtn')?.addEventListener('click', clearChat);
 document.getElementById('exportBtn')?.addEventListener('click', exportToPDF);
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;       // 10 MB for images / docs
+const MAX_VIDEO_FILE_SIZE = 100 * 1024 * 1024; // 100 MB for video files
 const MAX_FILES = 20;
 
 document.getElementById('fileInput').addEventListener('change', (e) => {
@@ -7026,8 +7027,11 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
     addBubble(`Can only attach ${slotsAvailable} more file(s). Maximum is ${MAX_FILES}.`, 'error');
   }
   files.slice(0, Math.max(0, slotsAvailable)).forEach(file => {
-    if (file.size > MAX_FILE_SIZE) {
-      addBubble(`"${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max file size is 10MB.`, 'error');
+    const isVideo = file.type.startsWith('video/');
+    const limit = isVideo ? MAX_VIDEO_FILE_SIZE : MAX_FILE_SIZE;
+    const limitLabel = isVideo ? '100MB' : '10MB';
+    if (file.size > limit) {
+      addBubble(`"${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max file size is ${limitLabel}.`, 'error');
       return;
     }
     const reader = new FileReader();
