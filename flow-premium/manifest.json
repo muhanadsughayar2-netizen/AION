@@ -46,7 +46,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["content.js", "popup.html", "popup.css", "popup.js", "annotate.html", "annotate.css", "annotate.js", "options.html", "options.css", "options.js", "ai-chat.html", "ai-chat.js", "video-pipeline-core.js", "prompts.js", "magic-card.html", "magic-card.js", "sidebar.html", "sidebar.js", "theme.js", "theme.css", "branding.js"],
+      "resources": ["content.js", "popup.html", "popup.css", "popup.js", "annotate.html", "annotate.css", "annotate.js", "options.html", "options.css", "options.js", "ai-chat.html", "ai-chat.js", "video-pipeline-core.js", "prompts.js", "magic-card.html", "magic-card.js", "sidebar.html", "sidebar.js", "theme.js", "theme.css", "branding.js", "preview-output.html", "preview-output.js"],
       "matches": ["<all_urls>"]
     }
   ],

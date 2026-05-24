@@ -1189,9 +1189,10 @@
       <div id="previewWrapper" style="display:none; margin:8px 10px 0; border:1.5px solid rgba(255,160,50,0.4); border-radius:12px; overflow:hidden; background:#fff; flex-shrink:0;">
         <div style="background:rgba(30,30,40,0.97); padding:7px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,160,50,0.25);">
           <span style="font-size:11px; font-weight:600; color:#ffa032; letter-spacing:0.5px;">🏗️ LIVE PREVIEW</span>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button id="previewCopyBtn" style="font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.35);color:#ffa032;cursor:pointer;">Copy Code</button>
-            <button onclick="document.getElementById('previewWrapper').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.5);cursor:pointer;font-size:14px;line-height:1;">✕</button>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button id="previewOpenTabBtn" style="font-size:10px;padding:3px 9px;border-radius:10px;background:rgba(0,217,255,0.12);border:1px solid rgba(0,217,255,0.35);color:#00d9ff;cursor:pointer;font-weight:600;">🔗 Full Page</button>
+            <button id="previewCopyBtn" style="font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(255,160,50,0.12);border:1px solid rgba(255,160,50,0.3);color:#ffa032;cursor:pointer;">Copy Code</button>
+            <button onclick="document.getElementById('previewWrapper').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:14px;line-height:1;">✕</button>
           </div>
         </div>
         <iframe id="livePreview" sandbox="allow-scripts allow-forms" style="width:100%;height:320px;border:none;display:block;"></iframe>

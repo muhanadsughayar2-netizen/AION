@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SnapToAI — Live Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0e0e14; color: #fff; height: 100vh; display: flex; flex-direction: column; }
+  #topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 18px; background: rgba(20,20,32,0.98);
+    border-bottom: 1px solid rgba(255,160,50,0.25);
+    flex-shrink: 0; gap: 12px;
+  }
+  #topbar .brand { font-size: 13px; font-weight: 700; color: #ffa032; letter-spacing: 0.5px; display: flex; align-items: center; gap: 7px; }
+  #topbar .brand span { color: rgba(255,255,255,0.5); font-weight: 400; font-size: 12px; }
+  #topbar .actions { display: flex; gap: 8px; }
+  .tb-btn {
+    padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1px solid; transition: all 0.15s; letter-spacing: 0.2px;
+  }
+  #copyBtn { background: rgba(255,160,50,0.12); border-color: rgba(255,160,50,0.4); color: #ffa032; }
+  #copyBtn:hover { background: rgba(255,160,50,0.22); }
+  #newTabBtn { background: rgba(0,217,255,0.1); border-color: rgba(0,217,255,0.35); color: #00d9ff; }
+  #newTabBtn:hover { background: rgba(0,217,255,0.2); }
+  #codeViewBtn { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.6); }
+  #codeViewBtn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  #main { flex: 1; position: relative; overflow: hidden; }
+  #previewFrame { width: 100%; height: 100%; border: none; display: block; background: #fff; }
+  #codePanel {
+    display: none; position: absolute; inset: 0;
+    background: #0a0a10; overflow: auto; padding: 20px 24px;
+  }
+  #codePanel pre {
+    font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 13px; line-height: 1.65; color: #c9d1d9; white-space: pre-wrap; word-break: break-all;
+  }
+  #emptyState {
+    display: none; position: absolute; inset: 0;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; color: rgba(255,255,255,0.35);
+  }
+  #emptyState .big { font-size: 48px; }
+  #emptyState p { font-size: 15px; }
+  #emptyState small { font-size: 12px; opacity: 0.6; }
+</style>
+</head>
+<body>
+<div id="topbar">
+  <div class="brand">🏗️ SnapToAI Build Preview <span id="titleSub">— loading…</span></div>
+  <div class="actions">
+    <button class="tb-btn" id="codeViewBtn">📄 View Code</button>
+    <button class="tb-btn" id="copyBtn">Copy Code</button>
+    <button class="tb-btn" id="newTabBtn">🔗 Open Standalone</button>
+  </div>
+</div>
+<div id="main">
+  <iframe id="previewFrame" sandbox="allow-scripts allow-forms allow-modals"></iframe>
+  <div id="codePanel"><pre id="codePre"></pre></div>
+  <div id="emptyState">
+    <div class="big">🏗️</div>
+    <p>No build found</p>
+    <small>Go back to the extension, enable Build Mode and generate something first.</small>
+  </div>
+</div>
+<script src="preview-output.js"></script>
+</body>
+</html>

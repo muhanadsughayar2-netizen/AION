@@ -7077,6 +7077,8 @@ function renderLivePreview(responseText) {
   else if (fencedAny) code = fencedAny[1].trim();
   if (!code) return;
   _lastBuiltCode = code;
+  // Save to storage so preview-output.html can read it in a full tab
+  chrome.storage.local.set({ snaptoai_built_code: code });
   const wrapper = document.getElementById('previewWrapper');
   const iframe  = document.getElementById('livePreview');
   if (!wrapper || !iframe) return;
@@ -7103,6 +7105,10 @@ document.getElementById('previewCopyBtn')?.addEventListener('click', () => {
       if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy Code'; }, 1800); }
     });
   }
+});
+
+document.getElementById('previewOpenTabBtn')?.addEventListener('click', () => {
+  chrome.tabs.create({ url: chrome.runtime.getURL('preview-output.html') });
 });
 // ──────────────────────────────────────────────────────────────────────────────
 
