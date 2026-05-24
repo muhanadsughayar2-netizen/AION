@@ -1433,8 +1433,6 @@ function showVideoStudio(thread) {
         <button class="veo-clip-btn selected" data-clips="1" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">1x · 8s</button>
         <button class="veo-clip-btn" data-clips="2" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">2x · 16s</button>
         <button class="veo-clip-btn" data-clips="3" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">3x · 24s</button>
-        <button class="veo-clip-btn" data-clips="4" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">4x · 32s</button>
-        <button class="veo-clip-btn" data-clips="5" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">5x · 40s</button>
       </div>
       <div class="veo-creativity-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center;" title="Controls how much creative license the AI director takes when planning your storyboard.">
         <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Creativity:</span>
@@ -2553,29 +2551,34 @@ USER'S BRIEF (this is the contract — every subject, action, and concrete detai
 ${prompt}
 """
 
-YOUR JOB is to direct this scene cinematically — adding lighting, camera language, palette, mood, and lens choices — while staying true to the subject and action the user described. Treat the brief as the spine of the story.
+YOUR JOB is to direct this scene cinematically — adding lighting, camera language, palette, mood, and lens choices — while staying true to the subject and action the user described. Treat the brief as the spine of the story:
+- keep the same subject (e.g. if the brief says "golden retriever", don't swap in a different breed or animal),
+- keep the same action (e.g. if the brief says "surfing a wave", the dog should still be surfing — you can vary how you frame it shot-to-shot),
+- keep the same location and time of day the user named,
+- don't invent a different premise or pivot to a "creative reinterpretation."
 
-CRITICAL RULES FOR VEO COMPATIBILITY:
-1. PURGE AUDIO/VOICEOVER: Veo is a purely visual model. You MUST completely ignore and remove any mentions of "AUDIO", "MUSIC", "SOUNDTRACK", or "VOICEOVER" from the user's brief. Do not include audio cues in your output.
-2. NO COMPLEX TEXT RENDERING: Do not ask Veo to render exact URLs, complex UI alerts, or long text strings. Translate text requests into abstract visual actions (e.g., instead of "a shield that says 5G Failover", write "a glowing digital shield").
-3. PROPER PACING: Do not cram all the action into the first clip. Distribute the narrative logically across all ${clipCount} clips.
+You CAN, and should:
+- vary camera angle, lens, framing, and lighting between segments to give the cut real cinematic motion,
+- describe the subject with pronouns or short descriptors after the first mention if it reads more naturally,
+- pick beats that progress the action (setup → peak → resolve) rather than repeating the same moment.
 
 Return STRICT JSON ONLY (no markdown, no commentary) in this exact shape:
 {
   "title": "Max 6 words, title-case, no quotes.",
-  "script_summary": "1-2 sentence pitch grounded in the user's subject and action. No audio mentions.",
-  "style_bible": "3-5 sentences of cinematic direction: lighting setup, color palette, lens / camera language, mood. No audio mentions.",
+  "script_summary": "1-2 sentence pitch grounded in the user's subject and action.",
+  "style_bible": "3-5 sentences of cinematic direction: lighting setup, color palette, lens / camera language, mood. You may describe the character's physical appearance using nouns the user already used (or generic descriptors if the user gave none). Don't restate the action here.",
   "clips": [
-    { "shot": "What concretely happens in this ${segLen}s segment. Purely visual. Under 50 words." },
+    { "shot": "What concretely happens in this ${segLen}s segment, grounded in the user's subject and action. Add one camera move or framing choice." },
     ... exactly ${clipCount} entries ...
   ]
 }
 
 Hard rules:
 - The clips must read like one continuous take.
-- The user's subject and action are clearly recognizable across the sequence.
-- Never introduce new characters mid-sequence unless explicitly asked.
-- Never cut to a different location.`;
+- The user's subject and action are clearly recognizable across the sequence (the style bible plus most shot descriptions should reference them).
+- Never introduce new characters mid-sequence unless the user brief explicitly asks for it.
+- Never cut to a different location.
+- Keep each "shot" description under 50 words.`;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
@@ -4293,11 +4296,10 @@ async function stitchVideos(videoUrls, stitchCtx) {
 
   // ---- Hard timeout: if anything hangs, give up cleanly so the caller can
   // fall back to showing individual clip download links instead of a frozen
-  // "Combining..." progress bar forever. Formula: 3.5× realtime + 15s per clip
-  // so every extra clip contributes meaningful headroom for fetch + canvas draw.
-  // 1 clip=43s  2 clips=86s  3 clips=129s  4 clips=172s  5 clips=215s. Floors at 30s, caps at 240s.
+  // "Combining..." progress bar forever. Sized to ~2.5× realtime so a typical
+  // 3×8s render has up to ~65s before fallback. Floors at 30s, caps at 120s.
   const _realtimeMs = videoUrls.length * (typeof selectedVideoDuration === 'number' ? selectedVideoDuration : 8) * 1000;
-  const STITCH_TIMEOUT_MS = Math.max(30000, Math.min(240000, _realtimeMs * 3.5 + videoUrls.length * 15000));
+  const STITCH_TIMEOUT_MS = Math.max(30000, Math.min(120000, _realtimeMs * 2.5 + 8000));
   let timeoutHandle = null;
   // Shared cancel flag the inner pipeline polls so that on timeout the
   // recorder/audio/<video> elements actually shut down — the previous
@@ -4325,13 +4327,6 @@ async function stitchVideos(videoUrls, stitchCtx) {
     // Delegated to fetchClipsWithAbort (video-pipeline-core.js) which handles
     // the stop-flag checks between fetches and is independently unit-tested.
     const blobs = await fetchClipsWithAbort(videoUrls, stitchCtx);
-
-    // Guard: ensure every clip blob was fetched before attempting to stitch.
-    // A partial fetch (e.g. one clip 404'd or was aborted mid-loop) must throw
-    // rather than silently producing a truncated video.
-    if (blobs.length < videoUrls.length) {
-      throw new Error(`STITCH_INCOMPLETE_WAITING_FOR_CLIPS: got ${blobs.length} of ${videoUrls.length}`);
-    }
 
     // ---- 2. Probe the first clip for native dimensions so the output canvas
     // matches the real aspect ratio (hard-coding 1280×720 used to squash
@@ -7032,9 +7027,7 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
     addBubble(`Can only attach ${slotsAvailable} more file(s). Maximum is ${MAX_FILES}.`, 'error');
   }
   files.slice(0, Math.max(0, slotsAvailable)).forEach(file => {
-    // Some OS/browser combos report empty or generic MIME for .webm — fall back
-    // to extension check so stitched videos always get the 100MB allowance.
-    const isVideo = file.type.startsWith('video/') || /\.(webm|mp4|mov|avi|mkv|m4v)$/i.test(file.name);
+    const isVideo = file.type.startsWith('video/');
     const limit = isVideo ? MAX_VIDEO_FILE_SIZE : MAX_FILE_SIZE;
     const limitLabel = isVideo ? '100MB' : '10MB';
     if (file.size > limit) {
