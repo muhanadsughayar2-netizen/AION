@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnapAI | Professional Trading Studio</title>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-deep: #0b0e11;
+            --bg-card: rgba(22, 27, 34, 0.7);
+            --accent-glow: #bc85ff;
+            --accent-blue: #58a6ff;
+            --text-main: #ffffff;
+            --text-sub: #8b949e;
+            --glass: rgba(255, 255, 255, 0.03);
+        }
+
+        body, html { 
+            margin: 0; padding: 0; height: 100vh; width: 100vw; 
+            background: var(--bg-deep); color: var(--text-main); 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            overflow: hidden; 
+        }
+
+        .studio-layout { display: flex; flex-direction: column; height: 100vh; background: radial-gradient(circle at top right, #1a1a2e 0%, #0b0e11 70%); }
+        
+        header { 
+            height: 60px; display: flex; align-items: center; padding: 0 24px; 
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            background: rgba(11, 14, 17, 0.8); backdrop-filter: blur(20px);
+        }
+
+        .brand-logo { font-weight: 800; font-size: 1.2rem; background: linear-gradient(90deg, #58a6ff, #bc85ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .main-workspace { display: flex; flex: 1; padding: 20px; gap: 20px; }
+
+        .chart-area { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+        .chart-card { 
+            flex: 1; background: var(--bg-card); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; backdrop-filter: blur(10px); padding: 20px;
+            display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .ai-sidebar { 
+            width: 340px; background: var(--bg-card); border-radius: 16px;
+            border: 1px solid var(--accent-glow); padding: 24px; position: relative;
+        }
+
+        .insight-box {
+            background: var(--glass); border: 1px solid rgba(255,255,255,0.05);
+            padding: 15px; border-radius: 12px; margin-top: 15px;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, #58a6ff 0%, #bc85ff 100%);
+            border: none; color: white; padding: 10px 20px; border-radius: 8px;
+            font-weight: 600; cursor: pointer; transition: 0.3s;
+        }
+
+        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(188, 133, 255, 0.4); }
+    </style>
+</head>
+<body>
+
+<div class="studio-layout">
+    <header>
+        <div class="brand-logo">SnapToAI Studio</div>
+        <div style="flex:1"></div>
+        <button class="action-btn">Launch Trading Session</button>
+    </header>
+
+    <div class="main-workspace">
+        <div class="chart-area">
+            <div class="chart-card" id="main-chart">
+                <div style="margin-bottom: 10px; font-weight: 600;">Market Performance</div>
+            </div>
+            <div class="chart-card" style="height: 120px;">
+                <div style="font-size: 0.8rem; color: var(--text-sub);">AI Insight Stream</div>
+                <p style="font-size: 0.9rem; margin-top: 10px;">Volatility Detected: Automated hedging strategies recommended for current position.</p>
+            </div>
+        </div>
+
+        <div class="ai-sidebar">
+            <h2 style="margin-top:0; color:var(--accent-glow);">Studio Analysis</h2>
+            <p style="color:var(--text-sub); font-size: 0.9rem;">
+                Our AI agents have analyzed your snapshot. Sentiment is showing high volatility in the current sector. 
+            </p>
+            <div class="insight-box">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <span>Confidence</span><span style="color:var(--accent-blue)">94%</span>
+                </div>
+                <div style="height:4px; background:#333; border-radius:2px;"><div style="width:94%; height:100%; background:var(--accent-blue);"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const chartContainer = document.getElementById('main-chart');
+    const chart = LightweightCharts.createChart(chartContainer, {
+        layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#c9d1d9' },
+        grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.05)' } },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
+    });
+
+    const areaSeries = chart.addAreaSeries({
+        topColor: 'rgba(88, 166, 255, 0.4)',
+        bottomColor: 'rgba(88, 166, 255, 0)',
+        lineColor: 'rgba(88, 166, 255, 1)',
+        lineWidth: 3
+    });
+
+    areaSeries.setData([
+        { time: '2026-05-20', value: 65000 },
+        { time: '2026-05-21', value: 66200 },
+        { time: '2026-05-22', value: 65800 },
+        { time: '2026-05-23', value: 67100 },
+    ]);
+</script>
+</body>
+</html>
