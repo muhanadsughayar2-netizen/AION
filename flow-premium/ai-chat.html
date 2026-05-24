@@ -577,29 +577,43 @@
 
     .input-area {
       display: flex;
-      gap: 12px;
-      padding: 20px 24px;
+      flex-direction: column;
+      gap: 0;
+      padding: 12px 14px 8px;
       background: var(--st-bg-deep);
       border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .tools-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 2px 2px;
     }
     
     .chat-input {
       flex: 1;
-      padding: 16px 20px;
+      padding: 14px 16px;
       background: var(--st-bg-elevated);
       border: 1px solid rgba(0, 217, 255, 0.3);
-      border-radius: 12px;
+      border-radius: 14px;
       color: #fff;
-      font-size: 15px;
+      font-size: 14px;
       font-family: inherit;
       outline: none;
-      transition: border-color 0.2s, height 0.12s ease;
+      transition: border-color 0.2s;
       resize: none;
-      height: 52px;
-      min-height: 52px;
-      max-height: 140px;
-      overflow-y: hidden;
-      line-height: 1.4;
+      height: 72px;
+      min-height: 72px;
+      max-height: 180px;
+      overflow-y: auto;
+      line-height: 1.5;
     }
     
     .chat-input:focus {
@@ -685,18 +699,24 @@
     }
     
     .upload-btn {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 18px;
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      color: rgba(255,255,255,0.5);
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.18s ease;
     }
     
     .upload-btn:hover {
-      background: rgba(0, 217, 255, 0.2);
+      background: rgba(0, 217, 255, 0.15);
       border-color: rgba(0, 217, 255, 0.4);
+      color: #00d9ff;
     }
     
     .file-preview-zone {
@@ -1161,16 +1181,17 @@
           gap: 4px;
           flex-shrink: 0;
           align-items: center;
+          flex-wrap: wrap;
         }
         .tool-toggle-btn {
           display: flex;
           align-items: center;
-          gap: 4px;
+          gap: 5px;
           background: rgba(255,255,255,0.05);
           border: 1px solid rgba(255,255,255,0.1);
-          color: rgba(255,255,255,0.45);
+          color: rgba(255,255,255,0.4);
           border-radius: 20px;
-          padding: 5px 10px;
+          padding: 5px 11px 5px 8px;
           font-size: 11px;
           font-weight: 500;
           cursor: pointer;
@@ -1178,33 +1199,58 @@
           flex-shrink: 0;
           white-space: nowrap;
           letter-spacing: 0.2px;
+          line-height: 1;
         }
-        .tool-toggle-btn .tool-icon { font-size: 13px; line-height: 1; }
+        .tool-svg {
+          width: 13px;
+          height: 13px;
+          flex-shrink: 0;
+          stroke: currentColor;
+        }
         .tool-toggle-btn .tool-label { font-size: 11px; }
         .tool-toggle-btn:hover {
-          background: rgba(0,217,255,0.12);
+          background: rgba(0,217,255,0.1);
           border-color: rgba(0,217,255,0.35);
-          color: rgba(255,255,255,0.85);
+          color: #00d9ff;
           transform: translateY(-1px);
+          box-shadow: 0 3px 10px rgba(0,217,255,0.15);
         }
         .tool-toggle-btn.tool-btn-active {
-          background: rgba(0,217,255,0.18);
-          border-color: rgba(0,217,255,0.65);
+          background: rgba(0,217,255,0.14);
+          border-color: rgba(0,217,255,0.6);
           color: #00d9ff;
-          box-shadow: 0 0 10px rgba(0,217,255,0.25), inset 0 0 8px rgba(0,217,255,0.08);
+          box-shadow: 0 0 12px rgba(0,217,255,0.22), inset 0 0 8px rgba(0,217,255,0.06);
           font-weight: 600;
         }
-        #researchToggleBtn.tool-btn-active {
-          background: rgba(180,100,255,0.18);
-          border-color: rgba(180,100,255,0.65);
-          color: #c478ff;
-          box-shadow: 0 0 10px rgba(180,100,255,0.25), inset 0 0 8px rgba(180,100,255,0.08);
+        #buildToggleBtn:hover, #buildToggleBtn.tool-btn-active {
+          background: rgba(255,160,50,0.12);
+          border-color: rgba(255,160,50,0.55);
+          color: #ffa032;
+          box-shadow: 0 0 12px rgba(255,160,50,0.22);
         }
-        #codeToggleBtn.tool-btn-active {
-          background: rgba(80,220,120,0.18);
-          border-color: rgba(80,220,120,0.65);
+        #researchToggleBtn:hover, #researchToggleBtn.tool-btn-active {
+          background: rgba(180,100,255,0.12);
+          border-color: rgba(180,100,255,0.55);
+          color: #c478ff;
+          box-shadow: 0 0 12px rgba(180,100,255,0.22);
+        }
+        #searchToggleBtn:hover, #searchToggleBtn.tool-btn-active {
+          background: rgba(0,217,255,0.12);
+          border-color: rgba(0,217,255,0.55);
+          color: #00d9ff;
+          box-shadow: 0 0 12px rgba(0,217,255,0.22);
+        }
+        #urlToggleBtn:hover, #urlToggleBtn.tool-btn-active {
+          background: rgba(50,200,255,0.12);
+          border-color: rgba(50,200,255,0.55);
+          color: #32c8ff;
+          box-shadow: 0 0 12px rgba(50,200,255,0.22);
+        }
+        #codeToggleBtn:hover, #codeToggleBtn.tool-btn-active {
+          background: rgba(80,220,120,0.12);
+          border-color: rgba(80,220,120,0.55);
           color: #50dc78;
-          box-shadow: 0 0 10px rgba(80,220,120,0.25), inset 0 0 8px rgba(80,220,120,0.08);
+          box-shadow: 0 0 12px rgba(80,220,120,0.22);
         }
       </style>
       <div id="previewWrapper" style="display:none; margin:8px 10px 0; border:1.5px solid rgba(255,160,50,0.4); border-radius:12px; overflow:hidden; background:#fff; flex-shrink:0;">
@@ -1226,10 +1272,14 @@
         <button class="magic-add-btn" id="openAgentsBtn" style="background:linear-gradient(135deg,#6c3fc5,#bc85ff);border-color:rgba(188,133,255,0.4);">🤖 Agents</button>
         <button class="magic-add-btn" id="addMagicBtn">+ Magic Agents</button>
         <button class="verdict-btn" id="verdictBtn" style="display:none !important;">⚖️ The Verdict</button>
-        <button class="action-btn continue-btn" id="continueBtn">▶ Continue</button>
-        <button class="action-btn" id="summarizeBtn">📋 Summarize</button>
-        <button class="action-btn" id="clearBtn">🗑 Clear</button>
-        <button class="action-btn" id="exportBtn">💾 Save Full Chat</button>
+        <button class="action-btn continue-btn" id="continueBtn" style="display:none;">▶ Continue</button>
+        <button class="action-btn" id="summarizeBtn" style="display:none;">📋 Summarize</button>
+        <button class="action-btn" id="clearBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>Clear
+        </button>
+        <button class="action-btn" id="exportBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Save
+        </button>
       </div>
     </div>
   </div>
