@@ -1119,6 +1119,46 @@
         <span>Want to analyze code? Go to your code, press <kbd>Ctrl+A</kbd> (<kbd>⌘+A</kbd> on Mac) to select all, <kbd>Ctrl+C</kbd> to copy, then paste it right here.</span>
         <button class="tip-dismiss" id="dismissTip" title="Dismiss">✕</button>
       </div>
+      <!-- Build Mode suggestion chips — shown only when Build is active -->
+      <div id="buildSuggestions" style="display:none; padding:8px 14px 4px; border-bottom:1px solid rgba(255,160,50,0.12); background:rgba(255,160,50,0.03); overflow-x:auto; scrollbar-width:none; white-space:nowrap;">
+        <div style="font-size:10px; color:rgba(255,160,50,0.7); font-weight:600; letter-spacing:0.5px; margin-bottom:6px; text-transform:uppercase;">✨ Tap to build instantly</div>
+        <div style="display:flex; gap:6px; flex-wrap:nowrap;">
+          <button class="build-chip" data-prompt="Build a beautiful SaaS landing page with hero section, features grid, pricing table, and a call-to-action. Make it look premium and modern.">🚀 SaaS Landing Page</button>
+          <button class="build-chip" data-prompt="Build a personal portfolio website for a designer/developer. Include a hero section, about me, skills, projects grid, and contact form.">🎨 Portfolio Site</button>
+          <button class="build-chip" data-prompt="Build a to-do app with add, complete, and delete tasks. Include categories, a progress bar, and save everything to localStorage.">✅ To-Do App</button>
+          <button class="build-chip" data-prompt="Build a personal finance dashboard with income vs expenses chart, recent transactions list, savings goal tracker, and monthly summary cards.">💰 Finance Dashboard</button>
+          <button class="build-chip" data-prompt="Build a fully playable Snake game with score counter, speed increase, high score saved in localStorage, and a game over screen.">🐍 Snake Game</button>
+          <button class="build-chip" data-prompt="Build a restaurant landing page with a hero image, menu section with cards, opening hours, location map placeholder, and online reservation form.">🍽️ Restaurant Page</button>
+          <button class="build-chip" data-prompt="Build a countdown timer app where users can set a target date/time, showing days, hours, minutes, seconds. Include multiple timers with labels.">⏱️ Countdown Timer</button>
+          <button class="build-chip" data-prompt="Build a markdown editor with a split view: left side is a textarea for typing markdown, right side shows the live rendered preview. Include a toolbar with bold, italic, heading, link buttons.">📝 Markdown Editor</button>
+          <button class="build-chip" data-prompt="Build a weather app UI that shows current weather, a 5-day forecast, temperature toggle (°C/°F), wind speed, humidity, and UV index cards. Use mock data.">🌤️ Weather App</button>
+          <button class="build-chip" data-prompt="Build a music player UI with album art, song title, artist, progress bar, play/pause, next/previous, volume slider, and a playlist. Use mock songs.">🎵 Music Player</button>
+        </div>
+      </div>
+      <style>
+        .build-chip {
+          flex-shrink: 0;
+          padding: 6px 13px;
+          background: rgba(255,160,50,0.1);
+          border: 1px solid rgba(255,160,50,0.25);
+          border-radius: 20px;
+          color: #ffa032;
+          font-size: 11px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.18s ease;
+          white-space: nowrap;
+          font-family: inherit;
+        }
+        .build-chip:hover {
+          background: rgba(255,160,50,0.22);
+          border-color: rgba(255,160,50,0.55);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(255,160,50,0.2);
+        }
+        #buildSuggestions::-webkit-scrollbar { display: none; }
+      </style>
+
       <div id="modeBar" style="display: flex; gap: 6px; padding: 7px 10px; background: rgba(0,217,255,0.03); border-bottom: 1px solid rgba(0,217,255,0.08); overflow-x: auto; scrollbar-width: none;">
         <button class="mode-btn active" data-mode="vision" title="Analyze screenshots & text"><span class="mode-emoji">🔍</span> Vision</button>
         <button class="mode-btn" data-mode="image" id="imageModeBtn" style="display:none;" title="Generate images from text"><span class="mode-emoji">🎨</span> Image</button>
