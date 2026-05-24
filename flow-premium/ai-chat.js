@@ -1433,6 +1433,7 @@ function showVideoStudio(thread) {
         <button class="veo-clip-btn selected" data-clips="1" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.5);background:rgba(255,165,0,0.15);color:#ffa500;font-size:11px;font-weight:600;cursor:pointer;">1x · 8s</button>
         <button class="veo-clip-btn" data-clips="2" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">2x · 16s</button>
         <button class="veo-clip-btn" data-clips="3" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">3x · 24s</button>
+        <button class="veo-clip-btn" data-clips="4" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">4x · 32s</button>
       </div>
       <div class="veo-creativity-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center;" title="Controls how much creative license the AI director takes when planning your storyboard.">
         <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Creativity:</span>
@@ -4299,7 +4300,7 @@ async function stitchVideos(videoUrls, stitchCtx) {
   // "Combining..." progress bar forever. Sized to ~2.5× realtime so a typical
   // 3×8s render has up to ~65s before fallback. Floors at 30s, caps at 120s.
   const _realtimeMs = videoUrls.length * (typeof selectedVideoDuration === 'number' ? selectedVideoDuration : 8) * 1000;
-  const STITCH_TIMEOUT_MS = Math.max(30000, Math.min(120000, _realtimeMs * 2.5 + 8000));
+  const STITCH_TIMEOUT_MS = Math.max(30000, Math.min(180000, _realtimeMs * 2.5 + 8000));
   let timeoutHandle = null;
   // Shared cancel flag the inner pipeline polls so that on timeout the
   // recorder/audio/<video> elements actually shut down — the previous
