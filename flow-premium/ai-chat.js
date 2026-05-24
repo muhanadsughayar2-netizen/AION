@@ -998,6 +998,11 @@ const CHAT_HISTORY_MAX_ITEMS = 20;
 let chatHistorySaveTimer = null;
 let filesQueue = []; // Multi-file upload queue (Gemini-style)
 
+// Search grounding & URL context toggles
+let searchGroundingEnabled = false;
+let urlContextEnabled = false;
+let currentPageUrl = '';
+
 // Get config from prompts.js (user-editable) or use defaults
 const getConfig = (key, defaultVal) => (window.SNAPTOAI_CONFIG && window.SNAPTOAI_CONFIG[key]) || defaultVal;
 
@@ -5587,6 +5592,10 @@ async function sendToGemini(prompt, imageDataUrls) {
       userParts.push({ inlineData: { mimeType, data: base64Data } });
     }
   }
+  // Inject URL as context hint when URL mode is active
+  if (urlContextEnabled && currentPageUrl) {
+    userParts.unshift({ text: `Analyze the following webpage: ${currentPageUrl}\n\n` });
+  }
   userParts.push({ text: prompt });
   contents.push({ role: 'user', parts: userParts });
   
@@ -5595,27 +5604,30 @@ async function sendToGemini(prompt, imageDataUrls) {
   
   // Wait for rate limit before making request
   await waitForRateLimit();
-  
+
+  // Build tools array based on active toggles
+  const _tools1 = [];
+  if (searchGroundingEnabled) _tools1.push({ googleSearch: {} });
+
   const selectedModel = await getSelectedModel();
+  const _body1 = {
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents: contents,
+    generationConfig: {
+      maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
+      temperature: getConfig('TEMPERATURE', 0.7),
+      topP: 0.95,
+      topK: 40
+    }
+  };
+  if (_tools1.length > 0) _body1.tools = _tools1;
+
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{
-            text: systemPrompt
-          }]
-        },
-        contents: contents,
-        generationConfig: {
-          maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
-          temperature: getConfig('TEMPERATURE', 0.7),
-          topP: 0.95,
-          topK: 40
-        }
-      })
+      body: JSON.stringify(_body1)
     }
   );
   
@@ -6328,21 +6340,28 @@ async function handleSend() {
         systemPrompt = SMART_SYSTEM_PROMPT;
       }
       
+      // Build tools array based on active toggles
+      const _tools2 = [];
+      if (searchGroundingEnabled) _tools2.push({ googleSearch: {} });
+
+      const _body2 = {
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: contents,
+        generationConfig: {
+          maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
+          temperature: getConfig('TEMPERATURE', 0.7),
+          topP: 0.95,
+          topK: 40
+        }
+      };
+      if (_tools2.length > 0) _body2.tools = _tools2;
+
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:streamGenerateContent?alt=sse&key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents: contents,
-            generationConfig: { 
-              maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
-              temperature: getConfig('TEMPERATURE', 0.7),
-              topP: 0.95,
-              topK: 40
-            }
-          })
+          body: JSON.stringify(_body2)
         }
       );
       
@@ -7015,6 +7034,35 @@ document.getElementById('continueBtn')?.addEventListener('click', continueRespon
 document.getElementById('summarizeBtn')?.addEventListener('click', summarizeChat);
 document.getElementById('clearBtn')?.addEventListener('click', clearChat);
 document.getElementById('exportBtn')?.addEventListener('click', exportToPDF);
+
+// Search grounding toggle
+document.getElementById('searchToggleBtn')?.addEventListener('click', (e) => {
+  searchGroundingEnabled = !searchGroundingEnabled;
+  e.currentTarget.classList.toggle('tool-btn-active', searchGroundingEnabled);
+  e.currentTarget.title = searchGroundingEnabled
+    ? 'Google Search ON — responses grounded in live web data'
+    : 'Search the web for real-time facts';
+});
+
+// URL context toggle — grabs the active tab URL when turned on
+document.getElementById('urlToggleBtn')?.addEventListener('click', async (e) => {
+  urlContextEnabled = !urlContextEnabled;
+  e.currentTarget.classList.toggle('tool-btn-active', urlContextEnabled);
+  if (urlContextEnabled) {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      currentPageUrl = tab?.url || '';
+      e.currentTarget.title = currentPageUrl
+        ? `Reading: ${currentPageUrl.substring(0, 60)}…`
+        : 'URL Context ON (no URL detected)';
+    } catch (_) {
+      currentPageUrl = '';
+    }
+  } else {
+    currentPageUrl = '';
+    e.currentTarget.title = 'Read the current page';
+  }
+});
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;       // 10 MB for images / docs
 const MAX_VIDEO_FILE_SIZE = 100 * 1024 * 1024; // 100 MB for video files

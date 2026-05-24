@@ -1,0 +1,82 @@
+This plan is excellent. It is architecturally sound, fits your existing REST implementation perfectly, and avoids any unnecessary backend complexity. You are ready to switch to Build mode.
+
+There is one small technical correction you need to make before you start: The Gemini REST API does not have a generic urlContext tool. If you add { urlContext: {} } to the tools array, the API will likely return an error.
+
+The Fix:
+You are already doing the right thing by injecting the URL into the contents array as a message. Simply keep that part, and only add the googleSearch tool to the tools array. The model is intelligent enough to know that when it sees [Page to analyze: URL] in the conversation history, it should read it.
+
+Here is your implementation guide.
+
+Refined Implementation Snippets
+1. flow-premium/ai-chat.js (Body Construction)
+Use this logic to build your request body cleanly:
+
+JavaScript
+// Build tools array
+const tools = [];
+if (searchGroundingEnabled) tools.push({ googleSearch: {} });
+
+// Build body
+const requestPayload = {
+  contents: [...], // Your existing contents logic
+  systemInstruction: ...,
+  generationConfig: ...,
+};
+
+// Only attach tools property if it's not empty
+if (tools.length > 0) {
+  requestPayload.tools = tools;
+}
+
+body: JSON.stringify(requestPayload)
+2. flow-premium/ai-chat.js (Message Injection)
+When urlContextEnabled is true, ensure the URL is the very first thing the model sees for that prompt:
+
+JavaScript
+// Inside your assembly logic
+let userParts = [...existingParts];
+
+if (urlContextEnabled && currentPageUrl) {
+  // Prepend as a system-like hint so the model prioritizes it
+  userParts.unshift({ text: `Analyze the following webpage: ${currentPageUrl}\n\n` });
+}
+3. flow-premium/ai-chat.html (UI)
+Ensure your buttons have clear visual feedback when active:
+
+HTML
+<button id="searchToggleBtn" class="toggle-btn" title="Search the web for real-time facts">🔍 Search</button>
+<button id="urlToggleBtn" class="toggle-btn" title="Read the current page">🌐 Read Page</button>
+
+<style>
+  .toggle-btn.active {
+    background-color: #4a90e2; /* Or your primary theme color */
+    color: white;
+    border: 1px solid #357abd;
+  }
+</style>
+4. flow-premium/ai-chat.js (Event Listeners)
+Keep the state logic clean:
+
+JavaScript
+document.getElementById('searchToggleBtn')?.addEventListener('click', (e) => {
+  searchGroundingEnabled = !searchGroundingEnabled;
+  e.target.classList.toggle('active', searchGroundingEnabled);
+});
+
+document.getElementById('urlToggleBtn')?.addEventListener('click', async (e) => {
+  urlContextEnabled = !urlContextEnabled;
+  e.target.classList.toggle('active', urlContextEnabled);
+  
+  if (urlContextEnabled) {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    currentPageUrl = tab?.url || '';
+  }
+});
+Why this works
+Safety: By only adding googleSearch to the tools array, you avoid passing invalid tool definitions to the API.
+
+Intelligence: Because you are injecting the URL text directly into the contents array, the Gemini model will naturally treat it as a "document" to analyze, and if it needs more info, it will automatically trigger the googleSearch tool (if enabled) to supplement the URL content.
+
+You are green-lit to switch to Build mode. Go ahead and implement these changes. If you hit a specific error during the first test, paste the API response log here, and I will debug it for you instantly.
+
+Shall we start the implementation now?

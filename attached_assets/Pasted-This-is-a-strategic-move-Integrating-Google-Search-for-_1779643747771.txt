@@ -1,0 +1,48 @@
+This is a strategic move. Integrating Google Search (for real-time facts) and URL Context (for deep reading of pages) will immediately elevate "SnapToAI" from a simple interface to a research-grade assistant.
+
+To give you the exact, production-ready code that fits your existing architecture, I need to understand your current setup. Below is the checklist of what I need to know before we start coding.
+
+Phase 1: Information Needed
+Please answer these 4 questions so I can tailor the implementation to your extension:
+
+Where are you calling the Gemini API?
+
+Directly in the Extension? (Are you making the fetch calls directly from your content.js or popup.js?)
+
+Via a Backend Proxy? (Do you have a server—e.g., Node.js/Python—sitting between your extension and Gemini?)
+
+Critical Note: If you are calling the API directly from the browser, your API key is exposed to the user. I need to know this to suggest a secure way to obfuscate it or move to a proxy.
+
+What is your current implementation library?
+
+Are you using the official @google/generative-ai SDK, or are you using raw fetch calls to the REST API?
+
+What is your manifest version?
+
+Are you running Manifest V3? (This dictates how we handle the service_worker background tasks for searching/fetching.)
+
+How do you want to handle User Privacy/CORS?
+
+If a user visits a page behind a login (e.g., their private Gmail or a paywall), the API cannot scrape it. I need to know if you want the extension to "scrape" the text from the browser's current DOM and send it as text to Gemini, or if you want the extension to just pass the URL to the API and let Gemini fetch it.
+
+Phase 2: The Implementation Logic
+Once you provide the above, here is the architecture we will implement. You don't need to do anything with this yet, but it helps to see the "why":
+
+1. Enabling Google Search (Grounding)
+We will simply add the Google Search tool definition to your existing API request. The Gemini model handles the "deciding" part—if the user asks about the weather, Gemini calls the tool. If they ask to write a poem, it skips the tool.
+
+JSON
+// Conceptually, your payload changes from this:
+{ "contents": [...] }
+
+// To this:
+{
+  "contents": [...],
+  "tools": [{ "googleSearch": {} }] 
+}
+2. Enabling URL Context
+This is the most powerful "snap" feature. We will modify your call to accept the current URL and tell Gemini to ingest it.
+
+Option A (The "Live Fetch"): You pass the URL string to the url_context tool. Gemini crawls the live site (as long as it’s public).
+
+Option B (The "DOM Snap"): If you want to support internal/private pages, we will have your extension extract the text from the DOM first, then pass it as a user message with the context of "Analyze this text from [URL]: {scraped_content}".

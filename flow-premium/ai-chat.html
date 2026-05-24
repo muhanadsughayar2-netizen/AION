@@ -1109,8 +1109,33 @@
         <input type="file" id="fileInput" accept="image/*,.pdf,.txt,.md,.json,.csv" multiple hidden>
         <label for="fileInput" class="upload-btn" title="Attach files">+</label>
         <textarea class="chat-input" id="chatInput" placeholder="Ask about your screenshot..." rows="1"></textarea>
+        <button class="tool-toggle-btn" id="searchToggleBtn" title="Search the web for real-time facts">🔍</button>
+        <button class="tool-toggle-btn" id="urlToggleBtn" title="Read the current page">🌐</button>
         <button class="send-btn" id="sendBtn">Send</button>
       </div>
+      <style>
+        .tool-toggle-btn {
+          background: rgba(0,217,255,0.07);
+          border: 1px solid rgba(0,217,255,0.2);
+          color: rgba(255,255,255,0.55);
+          border-radius: 8px;
+          padding: 0 9px;
+          font-size: 14px;
+          cursor: pointer;
+          transition: background 0.2s, color 0.2s, border-color 0.2s;
+          flex-shrink: 0;
+        }
+        .tool-toggle-btn:hover {
+          background: rgba(0,217,255,0.15);
+          color: #fff;
+        }
+        .tool-toggle-btn.tool-btn-active {
+          background: rgba(0,217,255,0.22);
+          border-color: rgba(0,217,255,0.7);
+          color: #00d9ff;
+          box-shadow: 0 0 8px rgba(0,217,255,0.3);
+        }
+      </style>
       <div class="ai-disclaimer">Gemini can make mistakes, so double-check it</div>
       
       <div class="magic-buttons" id="magicButtons" style="padding: 8px 12px; min-height: 40px;"></div>

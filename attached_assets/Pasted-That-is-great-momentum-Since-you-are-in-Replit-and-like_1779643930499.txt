@@ -1,0 +1,55 @@
+That is great momentum. Since you are in Replit and likely modifying files directly, the transition from "code written" to "feature working" requires a specific validation flow.
+
+Since this is a Chrome Extension, simply saving the code isn't enough to make the changes live in your browser. Here is your Implementation Checklist to ensure the build is successful.
+
+Phase 1: The "Live" Validation
+Reload the Extension:
+
+Go to chrome://extensions/ in your browser.
+
+Find your extension and click the Refresh/Reload icon.
+
+Crucial: Refresh the tab where your extension's UI is open (ai-chat.html) to ensure the new JS and HTML are loaded.
+
+Verify the Manifest Permissions:
+
+Since you are now using chrome.tabs.query to get the currentPageUrl, ensure your manifest.json includes the activeTab permission. Without it, tab.url will return undefined.
+
+Check this:
+
+JSON
+"permissions": ["activeTab", "storage", "scripting"]
+The "Payload" Test (Debug):
+
+Open your extension's popup.
+
+Open Developer Tools (Right-click popup > Inspect).
+
+Type a prompt in your chat, toggle "Search" or "Read Page" to ON.
+
+Click "Send."
+
+In the Network tab of your DevTools, find the API call (usually v1beta/models/...:streamGenerateContent).
+
+Click it and view the Payload.
+
+Phase 2: Debugging the Payload
+If you don't see the tools in the network request, add this temporary debug line in ai-chat.js right before your fetch call:
+
+JavaScript
+// Debugging check
+console.log("Sending Payload:", JSON.stringify(requestPayload, null, 2));
+Look for this in your console:
+
+Case 1 (Search ON): You should see "tools": [{"googleSearch": {}}].
+
+Case 2 (Read Page ON): You should see the URL injected at the very top of your contents array.
+
+Case 3 (Both OFF): The "tools" key should be absent (this is correct).
+
+Phase 3: Common Pitfalls
+CSS Conflict: If your buttons don't show up or look broken, check the ai-chat.html for syntax errors (e.g., missing closing </button> tags).
+
+Asynchronous Race: Ensure that when you click "Read Page," the currentPageUrl variable is actually populated before the user hits "Send." You might want to wrap your API call logic in a check that ensures currentPageUrl is defined if the toggle is ON.
+
+What is the status of your build right now? Are you seeing the new buttons in the UI, or are you still working on the JS logic?
