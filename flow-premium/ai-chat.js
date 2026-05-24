@@ -998,10 +998,11 @@ const CHAT_HISTORY_MAX_ITEMS = 20;
 let chatHistorySaveTimer = null;
 let filesQueue = []; // Multi-file upload queue (Gemini-style)
 
-// Search grounding & URL context toggles
+// Search grounding, URL context & Code Execution toggles
 let searchGroundingEnabled = false;
 let urlContextEnabled = false;
 let currentPageUrl = '';
+let codeExecutionEnabled = false;
 
 // Get config from prompts.js (user-editable) or use defaults
 const getConfig = (key, defaultVal) => (window.SNAPTOAI_CONFIG && window.SNAPTOAI_CONFIG[key]) || defaultVal;
@@ -5608,6 +5609,7 @@ async function sendToGemini(prompt, imageDataUrls) {
   // Build tools array based on active toggles
   const _tools1 = [];
   if (searchGroundingEnabled) _tools1.push({ googleSearch: {} });
+  if (codeExecutionEnabled) _tools1.push({ codeExecution: {} });
 
   const selectedModel = await getSelectedModel();
   const _body1 = {
@@ -6343,6 +6345,7 @@ async function handleSend() {
       // Build tools array based on active toggles
       const _tools2 = [];
       if (searchGroundingEnabled) _tools2.push({ googleSearch: {} });
+      if (codeExecutionEnabled) _tools2.push({ codeExecution: {} });
 
       const _body2 = {
         systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -7042,6 +7045,15 @@ document.getElementById('searchToggleBtn')?.addEventListener('click', (e) => {
   e.currentTarget.title = searchGroundingEnabled
     ? 'Google Search ON — responses grounded in live web data'
     : 'Search the web for real-time facts';
+});
+
+// Code Execution toggle
+document.getElementById('codeToggleBtn')?.addEventListener('click', (e) => {
+  codeExecutionEnabled = !codeExecutionEnabled;
+  e.currentTarget.classList.toggle('tool-btn-active', codeExecutionEnabled);
+  e.currentTarget.title = codeExecutionEnabled
+    ? 'Code Execution ON — Gemini will run Python to solve math & data tasks'
+    : 'Let Gemini run Python code to solve problems';
 });
 
 // URL context toggle — grabs the active tab URL when turned on
