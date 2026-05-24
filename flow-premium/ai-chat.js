@@ -6207,11 +6207,13 @@ async function handleSend() {
             generationConfig: { responseModalities: ['AUDIO'] }
           };
         } else {
+          const selectedVoice = document.getElementById('voiceSelector')?.value || 'Puck';
           bodyPayload = {
-            contents: [{ role: 'user', parts: [{ text: `Say the following: ${prompt}` }] }],
+            systemInstruction: { parts: [{ text: 'You are a natural, expressive podcast host. Speak clearly with good pacing and natural intonation. Do not say "here is the text" or any meta-commentary — just speak the content directly.' }] },
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
             generationConfig: {
               responseModalities: ['AUDIO'],
-              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: document.getElementById('voiceSelector')?.value || 'Kore' } } }
+              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: selectedVoice } } }
             }
           };
         }

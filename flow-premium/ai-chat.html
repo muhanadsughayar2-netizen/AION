@@ -1109,53 +1109,80 @@
         <input type="file" id="fileInput" accept="image/*,.pdf,.txt,.md,.json,.csv" multiple hidden>
         <label for="fileInput" class="upload-btn" title="Attach files">+</label>
         <textarea class="chat-input" id="chatInput" placeholder="Ask about your screenshot..." rows="1"></textarea>
-        <select id="voiceSelector" title="TTS Voice (Music mode)" style="display:none; padding:4px 6px; border-radius:8px; background:rgba(0,255,136,0.08); color:#00ff88; border:1px solid rgba(0,255,136,0.3); font-size:12px; cursor:pointer; flex-shrink:0;">
-          <option value="Kore">Kore — Firm</option>
-          <option value="Puck">Puck — Upbeat</option>
-          <option value="Zephyr">Zephyr — Bright</option>
-          <option value="Aoede">Aoede — Breezy</option>
-          <option value="Charon">Charon — Informative</option>
-          <option value="Fenrir">Fenrir — Excitable</option>
-          <option value="Leda">Leda — Youthful</option>
-          <option value="Orus">Orus — Firm</option>
-          <option value="Callirrhoe">Callirrhoe — Easy-going</option>
-          <option value="Autonoe">Autonoe — Bright</option>
-          <option value="Enceladus">Enceladus — Breathy</option>
-          <option value="Iapetus">Iapetus — Clear</option>
-          <option value="Umbriel">Umbriel — Easy-going</option>
-          <option value="Achernar">Achernar — Soft</option>
-          <option value="Gacrux">Gacrux — Mature</option>
-          <option value="Achird">Achird — Friendly</option>
-          <option value="Sulafat">Sulafat — Warm</option>
-          <option value="Sadachbia">Sadachbia — Lively</option>
+        <select id="voiceSelector" title="TTS Voice — pick a voice for Music mode" style="display:none; padding:5px 8px; border-radius:20px; background:rgba(0,255,136,0.07); color:#00ff88; border:1px solid rgba(0,255,136,0.25); font-size:11px; font-weight:500; cursor:pointer; flex-shrink:0; outline:none;">
+          <option value="Puck">🎙 Puck — Upbeat</option>
+          <option value="Aoede">🎙 Aoede — Breezy</option>
+          <option value="Zephyr">🎙 Zephyr — Bright</option>
+          <option value="Achird">🎙 Achird — Friendly</option>
+          <option value="Sulafat">🎙 Sulafat — Warm</option>
+          <option value="Sadachbia">🎙 Sadachbia — Lively</option>
+          <option value="Leda">🎙 Leda — Youthful</option>
+          <option value="Fenrir">🎙 Fenrir — Excitable</option>
+          <option value="Achernar">🎙 Achernar — Soft</option>
+          <option value="Charon">🎙 Charon — Informative</option>
+          <option value="Kore">🎙 Kore — Firm</option>
+          <option value="Enceladus">🎙 Enceladus — Breathy</option>
+          <option value="Gacrux">🎙 Gacrux — Mature</option>
+          <option value="Umbriel">🎙 Umbriel — Easy-going</option>
         </select>
-        <button class="tool-toggle-btn" id="researchToggleBtn" title="Research Agent — auto-searches, reads sources and writes a structured report">🧠</button>
-        <button class="tool-toggle-btn" id="searchToggleBtn" title="Search the web for real-time facts">🔍</button>
-        <button class="tool-toggle-btn" id="urlToggleBtn" title="Read the current page">🌐</button>
-        <button class="tool-toggle-btn" id="codeToggleBtn" title="Let Gemini run Python code to solve problems">💻</button>
+        <div class="tool-btn-group">
+          <button class="tool-toggle-btn" id="researchToggleBtn" title="Research Agent — auto-searches, reads sources and writes a structured report"><span class="tool-icon">🧠</span><span class="tool-label">Research</span></button>
+          <button class="tool-toggle-btn" id="searchToggleBtn" title="Search the web for real-time facts"><span class="tool-icon">🔍</span><span class="tool-label">Search</span></button>
+          <button class="tool-toggle-btn" id="urlToggleBtn" title="Read the current page"><span class="tool-icon">🌐</span><span class="tool-label">Read</span></button>
+          <button class="tool-toggle-btn" id="codeToggleBtn" title="Let Gemini run Python code to solve problems"><span class="tool-icon">💻</span><span class="tool-label">Code</span></button>
+        </div>
         <button class="send-btn" id="sendBtn">Send</button>
       </div>
       <style>
-        .tool-toggle-btn {
-          background: rgba(0,217,255,0.07);
-          border: 1px solid rgba(0,217,255,0.2);
-          color: rgba(255,255,255,0.55);
-          border-radius: 8px;
-          padding: 0 9px;
-          font-size: 14px;
-          cursor: pointer;
-          transition: background 0.2s, color 0.2s, border-color 0.2s;
+        .tool-btn-group {
+          display: flex;
+          gap: 4px;
           flex-shrink: 0;
+          align-items: center;
         }
+        .tool-toggle-btn {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          color: rgba(255,255,255,0.45);
+          border-radius: 20px;
+          padding: 5px 10px;
+          font-size: 11px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.18s ease;
+          flex-shrink: 0;
+          white-space: nowrap;
+          letter-spacing: 0.2px;
+        }
+        .tool-toggle-btn .tool-icon { font-size: 13px; line-height: 1; }
+        .tool-toggle-btn .tool-label { font-size: 11px; }
         .tool-toggle-btn:hover {
-          background: rgba(0,217,255,0.15);
-          color: #fff;
+          background: rgba(0,217,255,0.12);
+          border-color: rgba(0,217,255,0.35);
+          color: rgba(255,255,255,0.85);
+          transform: translateY(-1px);
         }
         .tool-toggle-btn.tool-btn-active {
-          background: rgba(0,217,255,0.22);
-          border-color: rgba(0,217,255,0.7);
+          background: rgba(0,217,255,0.18);
+          border-color: rgba(0,217,255,0.65);
           color: #00d9ff;
-          box-shadow: 0 0 8px rgba(0,217,255,0.3);
+          box-shadow: 0 0 10px rgba(0,217,255,0.25), inset 0 0 8px rgba(0,217,255,0.08);
+          font-weight: 600;
+        }
+        #researchToggleBtn.tool-btn-active {
+          background: rgba(180,100,255,0.18);
+          border-color: rgba(180,100,255,0.65);
+          color: #c478ff;
+          box-shadow: 0 0 10px rgba(180,100,255,0.25), inset 0 0 8px rgba(180,100,255,0.08);
+        }
+        #codeToggleBtn.tool-btn-active {
+          background: rgba(80,220,120,0.18);
+          border-color: rgba(80,220,120,0.65);
+          color: #50dc78;
+          box-shadow: 0 0 10px rgba(80,220,120,0.25), inset 0 0 8px rgba(80,220,120,0.08);
         }
       </style>
       <div class="ai-disclaimer">Gemini can make mistakes, so double-check it</div>
