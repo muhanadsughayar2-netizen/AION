@@ -2552,34 +2552,29 @@ USER'S BRIEF (this is the contract — every subject, action, and concrete detai
 ${prompt}
 """
 
-YOUR JOB is to direct this scene cinematically — adding lighting, camera language, palette, mood, and lens choices — while staying true to the subject and action the user described. Treat the brief as the spine of the story:
-- keep the same subject (e.g. if the brief says "golden retriever", don't swap in a different breed or animal),
-- keep the same action (e.g. if the brief says "surfing a wave", the dog should still be surfing — you can vary how you frame it shot-to-shot),
-- keep the same location and time of day the user named,
-- don't invent a different premise or pivot to a "creative reinterpretation."
+YOUR JOB is to direct this scene cinematically — adding lighting, camera language, palette, mood, and lens choices — while staying true to the subject and action the user described. Treat the brief as the spine of the story.
 
-You CAN, and should:
-- vary camera angle, lens, framing, and lighting between segments to give the cut real cinematic motion,
-- describe the subject with pronouns or short descriptors after the first mention if it reads more naturally,
-- pick beats that progress the action (setup → peak → resolve) rather than repeating the same moment.
+CRITICAL RULES FOR VEO COMPATIBILITY:
+1. PURGE AUDIO/VOICEOVER: Veo is a purely visual model. You MUST completely ignore and remove any mentions of "AUDIO", "MUSIC", "SOUNDTRACK", or "VOICEOVER" from the user's brief. Do not include audio cues in your output.
+2. NO COMPLEX TEXT RENDERING: Do not ask Veo to render exact URLs, complex UI alerts, or long text strings. Translate text requests into abstract visual actions (e.g., instead of "a shield that says 5G Failover", write "a glowing digital shield").
+3. PROPER PACING: Do not cram all the action into the first clip. Distribute the narrative logically across all ${clipCount} clips.
 
 Return STRICT JSON ONLY (no markdown, no commentary) in this exact shape:
 {
   "title": "Max 6 words, title-case, no quotes.",
-  "script_summary": "1-2 sentence pitch grounded in the user's subject and action.",
-  "style_bible": "3-5 sentences of cinematic direction: lighting setup, color palette, lens / camera language, mood. You may describe the character's physical appearance using nouns the user already used (or generic descriptors if the user gave none). Don't restate the action here.",
+  "script_summary": "1-2 sentence pitch grounded in the user's subject and action. No audio mentions.",
+  "style_bible": "3-5 sentences of cinematic direction: lighting setup, color palette, lens / camera language, mood. No audio mentions.",
   "clips": [
-    { "shot": "What concretely happens in this ${segLen}s segment, grounded in the user's subject and action. Add one camera move or framing choice." },
+    { "shot": "What concretely happens in this ${segLen}s segment. Purely visual. Under 50 words." },
     ... exactly ${clipCount} entries ...
   ]
 }
 
 Hard rules:
 - The clips must read like one continuous take.
-- The user's subject and action are clearly recognizable across the sequence (the style bible plus most shot descriptions should reference them).
-- Never introduce new characters mid-sequence unless the user brief explicitly asks for it.
-- Never cut to a different location.
-- Keep each "shot" description under 50 words.`;
+- The user's subject and action are clearly recognizable across the sequence.
+- Never introduce new characters mid-sequence unless explicitly asked.
+- Never cut to a different location.`;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
