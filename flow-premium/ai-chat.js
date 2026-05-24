@@ -28,6 +28,7 @@ function acquireRequestLock() {
 function releaseRequestLock() {
   isRequestInProgress = false;
 }
+function isRequestLocked() { return isRequestInProgress; }
 // ============ END RATE LIMITER ============
 
 function getPaidModeEstimate(mode, clipCount = 1, durationSeconds = 8) {
@@ -6085,7 +6086,20 @@ async function handleSend() {
         if (currentImages.length > 0 && currentImages[0]) {
           imageBase64 = currentImages[0].split(',')[1] || '';
         }
-        const proxyResult = await sendViaProxy(prompt, imageBase64);
+        // Bug fix: proxy path was ignoring all mode toggles. Build the effective
+        // system context and prepend it so free-tier users get the same behaviour.
+        let proxySystemCtx = '';
+        if (buildModeEnabled) {
+          proxySystemCtx = BUILD_SYSTEM_PROMPT;
+        } else if (activeSpecialistAgent) {
+          proxySystemCtx = activeSpecialistAgent.prompt;
+        } else if (researchMode) {
+          proxySystemCtx = 'You are an expert Research Agent. Find real-time facts, cite every source inline with [1],[2]… and list them at the end. Structure: Summary, Key Findings, Sources.';
+        }
+        const proxyPrompt = proxySystemCtx
+          ? `[SYSTEM INSTRUCTION — follow exactly]\n${proxySystemCtx}\n\n[USER]\n${prompt}`
+          : prompt;
+        const proxyResult = await sendViaProxy(proxyPrompt, imageBase64);
         removeLoading();
         const aiText = proxyResult.text || 'No response';
         const proxyBubble = document.createElement('div');
@@ -7431,6 +7445,10 @@ document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
   if (!buildModeEnabled) {
     const w = document.getElementById('previewWrapper');
     if (w) w.style.display = 'none';
+    // Bug fix: clear srcdoc so hidden iframe scripts stop executing
+    const iframe = document.getElementById('livePreview');
+    if (iframe) iframe.srcdoc = '';
+    _lastBuiltCode = '';
   }
 });
 
@@ -7444,7 +7462,8 @@ document.getElementById('buildSuggestions')?.addEventListener('click', (e) => {
     input.dispatchEvent(new Event('input'));
     input.focus();
   }
-  // Auto-send
+  // Bug fix: don't auto-send while a request is already in flight
+  if (isRequestLocked()) return;
   setTimeout(() => {
     document.getElementById('sendBtn')?.click();
   }, 80);
