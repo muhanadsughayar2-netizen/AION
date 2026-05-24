@@ -5606,8 +5606,11 @@ async function sendToGemini(prompt, imageDataUrls) {
   userParts.push({ text: prompt });
   contents.push({ role: 'user', parts: userParts });
   
-  // Use multi-image prompt if multiple images; Research Mode overrides with agent persona
-  const systemPrompt = researchMode
+  // Use multi-image prompt if multiple images; Build/Research Mode overrides with agent persona
+  const BUILD_SYSTEM_PROMPT = `You are an expert web developer and app builder. When asked to create a website, app, tool, game, or any UI, you MUST respond with a single, complete, self-contained HTML file inside a \`\`\`html code block. Requirements: (1) include all CSS inside <style> tags, (2) include all JavaScript inside <script> tags, (3) no external dependencies unless from a CDN, (4) make it visually polished with a modern dark theme by default, (5) make it fully functional — not a mockup. Do not add explanation text before or after the code block.`;
+  const systemPrompt = buildModeEnabled
+    ? BUILD_SYSTEM_PROMPT
+    : researchMode
     ? `You are an expert Research Agent. Follow these rules strictly:\n1. Use Google Search to find real-time facts before answering.\n2. If a URL is provided, read and synthesize its content.\n3. Cite every source inline with [1], [2], etc. and list them at the end.\n4. Structure your response with: **Summary**, **Key Findings**, **Sources**.\n5. Be thorough, factual, and never guess — if unsure, say so and search again.`
     : images.length > 1 ? MULTI_IMAGE_PROMPT : SYSTEM_PROMPT;
   
@@ -5624,8 +5627,8 @@ async function sendToGemini(prompt, imageDataUrls) {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: contents,
     generationConfig: {
-      maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
-      temperature: getConfig('TEMPERATURE', 0.7),
+      maxOutputTokens: buildModeEnabled ? 8192 : getConfig('MAX_OUTPUT_TOKENS', 2048),
+      temperature: buildModeEnabled ? 0.9 : getConfig('TEMPERATURE', 0.7),
       topP: 0.95,
       topK: 40
     }
@@ -6365,8 +6368,8 @@ async function handleSend() {
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: contents,
         generationConfig: {
-          maxOutputTokens: getConfig('MAX_OUTPUT_TOKENS', 2048),
-          temperature: getConfig('TEMPERATURE', 0.7),
+          maxOutputTokens: buildModeEnabled ? 8192 : getConfig('MAX_OUTPUT_TOKENS', 2048),
+          temperature: buildModeEnabled ? 0.9 : getConfig('TEMPERATURE', 0.7),
           topP: 0.95,
           topK: 40
         }
