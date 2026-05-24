@@ -1434,6 +1434,7 @@ function showVideoStudio(thread) {
         <button class="veo-clip-btn" data-clips="2" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">2x · 16s</button>
         <button class="veo-clip-btn" data-clips="3" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">3x · 24s</button>
         <button class="veo-clip-btn" data-clips="4" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">4x · 32s</button>
+        <button class="veo-clip-btn" data-clips="5" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,165,0,0.2);background:rgba(255,165,0,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">5x · 40s</button>
       </div>
       <div class="veo-creativity-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center;" title="Controls how much creative license the AI director takes when planning your storyboard.">
         <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Creativity:</span>
@@ -4294,9 +4295,9 @@ async function stitchVideos(videoUrls, stitchCtx) {
   // fall back to showing individual clip download links instead of a frozen
   // "Combining..." progress bar forever. Formula: 3.5× realtime + 15s per clip
   // so every extra clip contributes meaningful headroom for fetch + canvas draw.
-  // 1 clip=43s  2 clips=86s  3 clips=129s  4 clips=172s. Floors at 30s, caps at 180s.
+  // 1 clip=43s  2 clips=86s  3 clips=129s  4 clips=172s  5 clips=215s. Floors at 30s, caps at 240s.
   const _realtimeMs = videoUrls.length * (typeof selectedVideoDuration === 'number' ? selectedVideoDuration : 8) * 1000;
-  const STITCH_TIMEOUT_MS = Math.max(30000, Math.min(180000, _realtimeMs * 3.5 + videoUrls.length * 15000));
+  const STITCH_TIMEOUT_MS = Math.max(30000, Math.min(240000, _realtimeMs * 3.5 + videoUrls.length * 15000));
   let timeoutHandle = null;
   // Shared cancel flag the inner pipeline polls so that on timeout the
   // recorder/audio/<video> elements actually shut down — the previous
@@ -4324,6 +4325,13 @@ async function stitchVideos(videoUrls, stitchCtx) {
     // Delegated to fetchClipsWithAbort (video-pipeline-core.js) which handles
     // the stop-flag checks between fetches and is independently unit-tested.
     const blobs = await fetchClipsWithAbort(videoUrls, stitchCtx);
+
+    // Guard: ensure every clip blob was fetched before attempting to stitch.
+    // A partial fetch (e.g. one clip 404'd or was aborted mid-loop) must throw
+    // rather than silently producing a truncated video.
+    if (blobs.length < videoUrls.length) {
+      throw new Error(`STITCH_INCOMPLETE_WAITING_FOR_CLIPS: got ${blobs.length} of ${videoUrls.length}`);
+    }
 
     // ---- 2. Probe the first clip for native dimensions so the output canvas
     // matches the real aspect ratio (hard-coding 1280×720 used to squash
