@@ -7753,30 +7753,6 @@ const DEFAULT_MAGIC_BUTTONS = [
     colorIndex: 0,
     isDefault: true,
     isFallback: true
-  },
-  {
-    name: 'Explain',
-    emoji: '💡',
-    prompt: 'Explain this simply like I\'m 15.',
-    hint: 'Simple explanation',
-    colorIndex: 1,
-    isDefault: true
-  },
-  {
-    name: 'Extract',
-    emoji: '🔍',
-    prompt: 'Extract all text and data from this image.',
-    hint: 'Pull out all data',
-    colorIndex: 2,
-    isDefault: true
-  },
-  {
-    name: 'Roast It',
-    emoji: '🔥',
-    prompt: 'Honest review. What\'s good, what\'s bad? Rate it /10.',
-    hint: 'Brutally honest feedback',
-    colorIndex: 3,
-    isDefault: true
   }
 ];
 
