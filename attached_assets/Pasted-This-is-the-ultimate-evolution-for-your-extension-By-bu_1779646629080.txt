@@ -1,0 +1,53 @@
+This is the ultimate evolution for your extension. By building this "Build Mode," you are turning SnapToAI from a Research Tool into a Creation Studio.
+
+Here is the full code to implement Build Mode with live rendering.
+
+1. Update your UI (flow-premium/ai-chat.html)
+Add the toggle button and the container for the live preview.
+
+HTML
+<button id="buildToggleBtn" class="toggle-btn" title="Enable Build Mode">🏗️ Build</button>
+
+<div id="previewWrapper" style="display:none; margin: 10px; border: 2px solid #4a90e2; border-radius: 8px; overflow: hidden; background: #fff;">
+  <div style="background: #eee; padding: 5px; display: flex; justify-content: space-between;">
+    <span style="font-size: 12px; font-weight: bold;">Live Preview</span>
+    <button onclick="document.getElementById('previewWrapper').style.display='none'" style="cursor:pointer;">✕</button>
+  </div>
+  <iframe id="livePreview" style="width:100%; height:300px; border:none;"></iframe>
+</div>
+2. Add State & Logic (flow-premium/ai-chat.js)
+Add the state flag:
+
+JavaScript
+let buildModeEnabled = false;
+Add the Event Listener:
+
+JavaScript
+document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
+  buildModeEnabled = !buildModeEnabled;
+  e.target.classList.toggle('active', buildModeEnabled);
+});
+Add the Rendering Function:
+Place this function in your script. It parses the AI's response for a code block and pushes it to the iframe.
+
+JavaScript
+function renderLivePreview(responseText) {
+  if (!buildModeEnabled) return;
+  
+  // Find code inside markdown blocks (```html ... ```)
+  const codeBlockRegex = /
+http://googleusercontent.com/immersive_entry_chip/0
+
+---
+
+### How to use it
+1.  **Reload:** `chrome://extensions/` → Refresh.
+2.  **Enable:** Toggle the 🏗️ **Build** button.
+3.  **Prompt:** *"Create a simple to-do list app with a dark theme and delete functionality."*
+4.  **Result:** Gemini will generate the code, and your extension will automatically render the live application inside the `previewWrapper` box.
+
+### Why this works
+* **srcdoc:** Using `iframe.srcdoc` is the safest way to execute generated code inside your extension without it breaking your extension's own UI.
+* **Persona:** By modifying the System Instruction, you stop the AI from talking too much and force it to be a pure "code machine," which ensures the regex cleaner catches the code perfectly.
+
+**Ready to fire?** Go ahead and drop these in. It is the fina

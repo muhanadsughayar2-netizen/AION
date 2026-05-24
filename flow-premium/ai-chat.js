@@ -1004,6 +1004,7 @@ let urlContextEnabled = false;
 let currentPageUrl = '';
 let codeExecutionEnabled = false;
 let researchMode = false;
+let buildModeEnabled = false;
 
 // Get config from prompts.js (user-editable) or use defaults
 const getConfig = (key, defaultVal) => (window.SNAPTOAI_CONFIG && window.SNAPTOAI_CONFIG[key]) || defaultVal;
@@ -6345,7 +6346,9 @@ async function handleSend() {
     } else {
       // === VISION / GEMINI (streaming text) ===
       let systemPrompt = SYSTEM_PROMPT;
-      if (researchMode) {
+      if (buildModeEnabled) {
+        systemPrompt = `You are an expert web developer and app builder. When asked to create a website, app, tool, game, or any UI, you MUST respond with a single, complete, self-contained HTML file inside a \`\`\`html code block. Requirements: (1) include all CSS inside <style> tags, (2) include all JavaScript inside <script> tags, (3) no external dependencies unless from a CDN, (4) make it visually polished with a modern dark theme by default, (5) make it fully functional — not a mockup. Do not add explanation text before or after the code block.`;
+      } else if (researchMode) {
         systemPrompt = `You are an expert Research Agent. Follow these rules strictly:\n1. Use Google Search to find real-time facts before answering.\n2. If a URL is provided, read and synthesize its content.\n3. Cite every source inline with [1], [2], etc. and list them at the end.\n4. Structure your response with: **Summary**, **Key Findings**, **Sources**.\n5. Be thorough, factual, and never guess — if unsure, say so and search again.`;
       } else if (currentImages.length > 1) {
         systemPrompt = MULTI_IMAGE_PROMPT;
@@ -6439,6 +6442,7 @@ async function handleSend() {
       }
       
       addBubbleActions(responseBubble, fullText);
+      renderLivePreview(fullText);
     }
     
     const userHistoryEntry = { role: 'user', text: prompt };
@@ -7057,6 +7061,50 @@ document.getElementById('searchToggleBtn')?.addEventListener('click', (e) => {
     ? 'Google Search ON — responses grounded in live web data'
     : 'Search the web for real-time facts';
 });
+
+// ── Build Mode ────────────────────────────────────────────────────────────────
+let _lastBuiltCode = '';
+
+function renderLivePreview(responseText) {
+  if (!buildModeEnabled) return;
+  // Extract first ```html ... ``` or ``` ... ``` block, or bare <html>...</html>
+  let code = '';
+  const fencedHtml = responseText.match(/```html\s*([\s\S]*?)```/i);
+  const fencedAny  = responseText.match(/```(?:\w*\n)?([\s\S]*?)```/);
+  const bareHtml   = responseText.match(/<html[\s\S]*<\/html>/i);
+  if (fencedHtml) code = fencedHtml[1].trim();
+  else if (bareHtml) code = bareHtml[0].trim();
+  else if (fencedAny) code = fencedAny[1].trim();
+  if (!code) return;
+  _lastBuiltCode = code;
+  const wrapper = document.getElementById('previewWrapper');
+  const iframe  = document.getElementById('livePreview');
+  if (!wrapper || !iframe) return;
+  wrapper.style.display = 'block';
+  iframe.srcdoc = code;
+}
+
+document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
+  buildModeEnabled = !buildModeEnabled;
+  e.currentTarget.classList.toggle('tool-btn-active', buildModeEnabled);
+  e.currentTarget.title = buildModeEnabled
+    ? 'Build Mode ON — AI will generate full HTML/CSS/JS apps with live preview'
+    : 'Build Mode — generate and preview websites & apps live';
+  if (!buildModeEnabled) {
+    const w = document.getElementById('previewWrapper');
+    if (w) w.style.display = 'none';
+  }
+});
+
+document.getElementById('previewCopyBtn')?.addEventListener('click', () => {
+  if (_lastBuiltCode) {
+    navigator.clipboard.writeText(_lastBuiltCode).then(() => {
+      const btn = document.getElementById('previewCopyBtn');
+      if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy Code'; }, 1800); }
+    });
+  }
+});
+// ──────────────────────────────────────────────────────────────────────────────
 
 // Research Mode toggle — auto-enables Search and forces the Research Agent system prompt
 document.getElementById('researchToggleBtn')?.addEventListener('click', (e) => {

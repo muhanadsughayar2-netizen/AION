@@ -1126,6 +1126,7 @@
           <option value="Umbriel">🎙 Umbriel — Easy-going</option>
         </select>
         <div class="tool-btn-group">
+          <button class="tool-toggle-btn" id="buildToggleBtn" title="Build Mode — generate and preview websites &amp; apps live"><span class="tool-icon">🏗️</span><span class="tool-label">Build</span></button>
           <button class="tool-toggle-btn" id="researchToggleBtn" title="Research Agent — auto-searches, reads sources and writes a structured report"><span class="tool-icon">🧠</span><span class="tool-label">Research</span></button>
           <button class="tool-toggle-btn" id="searchToggleBtn" title="Search the web for real-time facts"><span class="tool-icon">🔍</span><span class="tool-label">Search</span></button>
           <button class="tool-toggle-btn" id="urlToggleBtn" title="Read the current page"><span class="tool-icon">🌐</span><span class="tool-label">Read</span></button>
@@ -1185,6 +1186,16 @@
           box-shadow: 0 0 10px rgba(80,220,120,0.25), inset 0 0 8px rgba(80,220,120,0.08);
         }
       </style>
+      <div id="previewWrapper" style="display:none; margin:8px 10px 0; border:1.5px solid rgba(255,160,50,0.4); border-radius:12px; overflow:hidden; background:#fff; flex-shrink:0;">
+        <div style="background:rgba(30,30,40,0.97); padding:7px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,160,50,0.25);">
+          <span style="font-size:11px; font-weight:600; color:#ffa032; letter-spacing:0.5px;">🏗️ LIVE PREVIEW</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button id="previewCopyBtn" style="font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.35);color:#ffa032;cursor:pointer;">Copy Code</button>
+            <button onclick="document.getElementById('previewWrapper').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.5);cursor:pointer;font-size:14px;line-height:1;">✕</button>
+          </div>
+        </div>
+        <iframe id="livePreview" sandbox="allow-scripts allow-forms" style="width:100%;height:320px;border:none;display:block;"></iframe>
+      </div>
       <div class="ai-disclaimer">Gemini can make mistakes, so double-check it</div>
       
       <div class="magic-buttons" id="magicButtons" style="padding: 8px 12px; min-height: 40px;"></div>
