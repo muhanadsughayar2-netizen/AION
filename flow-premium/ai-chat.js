@@ -2486,25 +2486,25 @@ function _veoDebugLogEnabled() {
 // Falls back to a brief-only prompt if the scene prompt isn't recognizable
 // (e.g. legacy or hand-edited shape).
 function slimSceneForChainImage(scenePrompt, fallbackBrief) {
-  const header = '[CONTINUES FROM ATTACHED FRAME — same look, same characters, no cut]';
+  const header = '[CONTINUES FROM ATTACHED FRAME — same look, same subjects, no cut]';
   const text = String(scenePrompt || '');
-  // Task #31: only the [USER REQUEST] label was softened to "User brief:".
-  // The [SUPPORTING STYLE] / [CONTINUITY] block structure is preserved,
-  // so the original regex still works as-is. We accept either the new
-  // "User brief:" prefix or the legacy "[USER REQUEST" tag when checking
-  // whether the trimmed prompt is in a recognized shape.
+
+  // Strip out the style and continuity blocks so Veo focuses on the action and the chained image.
+  // Updated to match the new block tags used by compileScenePrompt.
   const trimmed = text
-    .replace(/\n*\[SUPPORTING STYLE[^\]]*\][\s\S]*?(?=\n\[CONTINUITY\]|$)/i, '')
-    .replace(/\n*\[CONTINUITY\][^\n]*\n?/i, '')
+    .replace(/\n*\[VISUAL STYLE[^\]]*\][\s\S]*?(?=\n\[DIRECTOR'S NOTE\]|$)/i, '')
+    .replace(/\n*\[DIRECTOR'S NOTE\][^\n]*\n?/i, '')
     .trim();
-  if (trimmed && /(User brief:|\[USER REQUEST)/i.test(trimmed)) {
+
+  // If we successfully trimmed it down to just the action block, use it.
+  if (trimmed && trimmed.includes('[ACTION FOR THIS SEGMENT')) {
     return `${header}\n\n${trimmed}`;
   }
-  // Legacy / unrecognized shape — fall back to brief + raw scene prompt
-  // so we still preserve any per-clip text the caller passed in.
+
+  // Legacy fallback if shape isn't recognized
   const brief = String(fallbackBrief || '').trim();
   const tail = trimmed || text.trim();
-  const briefBlock = brief ? `User brief:\n${brief}\n\n` : '';
+  const briefBlock = brief ? `[ORIGINAL SCRIPT]:\n${brief}\n\n` : '';
   return `${header}\n\n${briefBlock}${tail}`.trim();
 }
 
@@ -2974,32 +2974,22 @@ function compileScenePrompt({ userPrompt, styleBible, vibe, shot, index, total, 
   const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
   const t0 = index * segLen, t1 = (index + 1) * segLen;
   const vibeLine = vibe ? ` Vibe: ${vibe}.` : '';
-  // Task #28: User brief MUST lead the prompt. Veo gives the strongest
-  // attention to the first lines; previously the user's literal request was
-  // buried under production rules and a long style bible, so Veo would
-  // happily render the bible's paraphrase instead of the brief itself.
-  // New order: USER BRIEF → SHOT BEAT → SUPPORTING STYLE → minimal continuity.
-  // Continuity language is trimmed to one short line and moved to the bottom.
-  // Task #31: Softened ONLY the user-brief framing. The strict
-  // "[USER REQUEST — RENDER THIS EXACTLY]" + "do not override" language
-  // from Task #28 was bullying Veo into literal, uncinematic shots even
-  // when the director gave us a rich style bible. We keep the user brief
-  // first (Veo still attends most to the opening lines) but use a calmer
-  // "User brief:" label. The [THIS SEGMENT] / [SUPPORTING STYLE] /
-  // [CONTINUITY] block structure is preserved unchanged so downstream
-  // utilities (slimSceneForChainImage, the editor's recompile flow)
-  // and Veo's existing parsing all continue to work.
-  const briefBlock = userPrompt
-    ? `User brief:\n${userPrompt}\n\n`
-    : '';
-  const shotBlock = `[THIS SEGMENT — ${index + 1} of ${total} (${t0}-${t1}s)]\n${shot}\n\n`;
+
+  // Lead strictly with the AI Director's chunked action for this specific time window.
+  // The full userPrompt is intentionally omitted here — including it caused Veo to
+  // try to cram the entire story (including the ending) into Clip 1 because Veo
+  // pays the most attention to the first few lines of the prompt.
+  const shotBlock = `[ACTION FOR THIS SEGMENT — ${t0}s to ${t1}s]\n${shot}\n\n`;
+
   const styleBlock = styleBible
-    ? `[SUPPORTING STYLE]\n${styleBible}${vibeLine}\n\n`
-    : (vibeLine ? `[SUPPORTING STYLE]\n${vibeLine.trim()}\n\n` : '');
+    ? `[VISUAL STYLE & CONTINUITY]\n${styleBible}${vibeLine}\n\n`
+    : (vibeLine ? `[VISUAL STYLE & CONTINUITY]\n${vibeLine.trim()}\n\n` : '');
+
   const continuity = index === 0
-    ? `[CONTINUITY] Establish the look that every later segment will inherit.`
-    : `[CONTINUITY] Same characters, wardrobe, location, lighting, and palette as segment ${index}. No hard cuts.`;
-  return `${briefBlock}${shotBlock}${styleBlock}${continuity}`;
+    ? `[DIRECTOR'S NOTE] Establish the scene exactly. Do not rush to the end of the story.`
+    : `[DIRECTOR'S NOTE] Same subjects, wardrobe, location, lighting, and palette as the previous segment.`;
+
+  return `${shotBlock}${styleBlock}${continuity}`;
 }
 
 // Recompile the full scenes array from current meta state.
