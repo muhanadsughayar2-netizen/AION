@@ -1,0 +1,179 @@
+Find Skills
+
+vercel-labs/skills
+•
+9.7K installs
+
+Installed
+Helps users discover and install agent skills when they ask questions like "how do I do X", "find a skill for X", "is there a skill that can...", or express interest in extending capabilities. This skill should be used when the user is looking for functionality that might exist as an installable skill.
+
+Vercel React Best Practices
+
+vercel-labs/agent-skills
+•
+6.8K installs
+
+Installed
+React composition patterns that scale. Use when refactoring components with boolean prop proliferation, building flexible component libraries, or designing reusable APIs. Triggers on tasks involving compound components, render props, context providers, or component architecture. Includes React 19 API changes.
+
+Web Design Guidelines
+
+vercel-labs/agent-skills
+•
+10K installs
+
+Installed
+Review UI code for Web Interface Guidelines compliance. Use when asked to "review my UI", "check accessibility", "audit design", "review UX", or "check my site against best practices".
+
+Remotion Best Practices
+
+remotion-dev/skills
+•
+5.2K installs
+
+Installed
+Best practices for Remotion - Video creation in React
+
+Frontend Design
+
+anthropics/skills
+•
+12.6K installs
+
+Installed
+Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, artifacts, posters, or applications (examples include websites, landing pages, dashboards, React components, HTML/CSS layouts, or when styling/beautifying any web UI). Generates creative, polished code and UI design that avoids generic AI aesthetics.
+
+Vercel Composition Patterns
+
+vercel-labs/agent-skills
+•
+5.3K installs
+
+Installed
+React composition patterns that scale. Use when refactoring components with boolean prop proliferation, building flexible component libraries, or designing reusable APIs. Triggers on tasks involving compound components, render props, context providers, or component architecture. Includes React 19 API changes.
+
+Skill Creator
+
+anthropics/skills
+•
+7.5K installs
+
+Installed
+Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Claude's capabilities with specialized knowledge, workflows, or tool integrations.
+
+Browser Use
+
+browser-use/browser-use
+•
+7.3K installs
+
+Installed
+Automates browser interactions for web testing, form filling, screenshots, and data extraction. Use when the user needs to navigate websites, interact with web pages, fill forms, take screenshots, or extract information from web pages.
+
+Vercel React Native Skills
+
+vercel-labs/agent-skills
+•
+5.5K installs
+
+Installed
+React composition patterns that scale. Use when refactoring components with boolean prop proliferation, building flexible component libraries, or designing reusable APIs. Triggers on tasks involving compound components, render props, context providers, or component architecture. Includes React 19 API changes.
+
+Ui Ux Pro Max
+
+nextlevelbuilder/ui-ux-pro-max-skill
+•
+10.9K installs
+
+Installed
+UI/UX design intelligence. 50 styles, 21 palettes, 50 font pairings, 20 charts, 9 stacks (React, Next.js, Vue, Svelte, SwiftUI, React Native, Flutter, Tailwind, shadcn/ui). Actions: plan, build, create, design, implement, review, fix, improve, optimize, enhance, refactor, check UI/UX code. Projects: website, landing page, dashboard, admin panel, e-commerce, SaaS, portfolio, blog, mobile app, .html, .tsx, .vue, .svelte. Elements: button, modal, navbar, sidebar, card, table, form, chart. Styles: glassmorphism, claymorphism, minimalism, brutalism, neumorphism, bento grid, dark mode, responsive, skeuomorphism, flat design. Topics: color palette, accessibility, animation, layout, typography, font pairing, spacing, hover, shadow, gradient. Integrations: shadcn/ui MCP for component search and examples.
+
+Audit Website
+
+squirrelscan/skills
+•
+7.6K installs
+
+Installed
+Audit websites for SEO, performance, security, technical, content, and 15 other issue cateories with 230+ rules using the squirrelscan CLI. Returns LLM-optimized reports with health scores, broken links, meta tag analysis, and actionable recommendations. Use to discover and asses website or webapp issues and health.
+
+Brainstorming
+
+obra/superpowers
+•
+8.2K installs
+
+Installed
+You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation.
+
+Seo Audit
+
+coreyhaines31/marketingskills
+•
+6.2K installs
+
+Installed
+When the user wants to audit, review, or diagnose SEO issues on their site. Also use when the user mentions "SEO audit," "technical SEO," "why am I not ranking," "SEO issues," "on-page SEO," "meta tags review," or "SEO health check." For building pages at scale to target keywords, see programmatic-seo. For adding structured data, see schema-markup.
+
+Supabase Postgres Best Practices
+
+supabase/agent-skills
+•
+5.5K installs
+
+Installed
+Postgres performance optimization and best practices from Supabase. Use this skill when writing, reviewing, or optimizing Postgres queries, schema designs, or database configurations.
+
+Pdf
+
+anthropics/skills
+•
+6.1K installs
+
+Installed
+Use this skill whenever the user wants to do anything with PDF files. This includes reading or extracting text/tables from PDFs, combining or merging multiple PDFs into one, splitting PDFs apart, rotating pages, adding watermarks, creating new PDFs, filling PDF forms, encrypting/decrypting PDFs, extracting images, and OCR on scanned PDFs to make them searchable. If the user mentions a .pdf file or asks to produce one, use this skill.
+
+Copywriting
+
+coreyhaines31/marketingskills
+•
+6.2K installs
+
+Installed
+When the user wants to write, rewrite, or improve marketing copy for any page — including homepage, landing pages, pricing pages, feature pages, about pages, or product pages. Also use when the user says "write copy for," "improve this copy," "rewrite this page," "marketing copy," "headline help," or "CTA copy." For email copy, see email-sequence. For popup copy, see popup-cro.
+
+Pptx
+
+anthropics/skills
+•
+4.6K installs
+
+Installed
+Use this skill any time a .pptx file is involved in any way — as input, output, or both. This includes: creating slide decks, pitch decks, or presentations; reading, parsing, or extracting text from any .pptx file (even if the extracted content will be used elsewhere, like in an email or summary); editing, modifying, or updating existing presentations; combining or splitting slide files; working with templates, layouts, speaker notes, or comments. Trigger whenever the user mentions "deck," "slides," "presentation," or references a .pptx filename, regardless of what they plan to do with the content afterward. If a .pptx file needs to be opened, created, or touched, use this skill.
+
+Next Best Practices
+
+vercel-labs/next-skills
+•
+5.8K installs
+
+Installed
+Next.js best practices - file conventions, RSC boundaries, data patterns, async APIs, metadata, error handling, route handlers, image/font optimization, bundling
+
+Better Auth Best Practices
+
+better-auth/skills
+•
+5.7K installs
+
+Installed
+Skill for integrating Better Auth - the comprehensive TypeScript authentication framework.
+
+Agent Tools
+
+inf-sh/skills
+•
+9K installs
+
+Installed
+Run 150+ AI apps via inference.sh CLI - image generation, video creation, LLMs, search, 3D, Twitter automation. Models: FLUX, Veo, Gemini, Grok, Claude, Seedance, OmniHuman, Tavily, Exa, OpenRouter, and many more. Use when running AI apps, generating images/videos, calling LLMs, web search, or automating Twitter. Triggers: inference.sh, infsh, ai model, run ai, serverless ai, ai api, flux, veo, claude api, image generation, video generation, openrouter, tavily, exa search, twitter api, grok
