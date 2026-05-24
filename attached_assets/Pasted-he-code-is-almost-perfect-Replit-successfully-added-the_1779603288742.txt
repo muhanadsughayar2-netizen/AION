@@ -1,0 +1,51 @@
+he code is almost perfect! Replit successfully added the 32-second option and increased the timeout, but it completely missed adding the prompt sanitization rules we discussed earlier.
+
+Here is the exact breakdown of what was done correctly and what still needs to be fixed.
+
+✅ What Replit Did Correctly
+The UI Button (Line 766): The <button class="veo-clip-btn" data-clips="4"...>4x · 32s</button> was added perfectly. Users will now see the 32s option in the video studio.
+
+The Stitcher Timeout (Line ~3985):
+Replit successfully updated Math.min(180000, _realtimeMs * 2.5 + 8000). This gives the browser 3 full minutes to stitch the 4 clips together, which will prevent the timeout errors. (Note: on line 3983, the comment still says caps at 120s — this won't break the code, but you might want to change the comment to 180s just to keep your notes accurate).
+
+❌ The Missing Piece: The Prompt Sanitization
+If you look at line ~2085 inside the generateAnchoredStoryboard function, the directorBrief template is exactly the same as it used to be. Replit did not add the rules to strip out audio, voiceovers, and complex text.
+
+If you run this code as-is, Veo will still try to visually render the audio and URL instructions from your master prompt, and your video will likely come out garbled again.
+
+🛠️ How to Fix It Manually
+Instead of asking Replit to do it, just copy and paste this updated string directly into your code. Replace your existing directorBrief (around lines 2085–2119) with this updated version:
+
+JavaScript
+  const directorBrief =
+`You are a film director planning a ${clipCount * segLen}-second cinematic video that will be rendered by Google Veo as ${clipCount} sequential ${segLen}-second clips, then stitched together.
+
+USER'S BRIEF (this is the contract — every subject, action, and concrete detail in here is non-negotiable):
+"""
+${prompt}
+"""
+
+YOUR JOB is to direct this scene cinematically — adding lighting, camera language, palette, mood, and lens choices — while staying true to the subject and action the user described. Treat the brief as the spine of the story.
+
+CRITICAL RULES FOR VEO COMPATIBILITY:
+1. PURGE AUDIO/VOICEOVER: Veo is a purely visual model. You MUST completely ignore and remove any mentions of "AUDIO", "MUSIC", "SOUNDTRACK", or "VOICEOVER" from the user's brief. Do not include audio cues in your output.
+2. NO COMPLEX TEXT RENDERING: Do not ask Veo to render exact URLs, complex UI alerts, or long text. Translate text requests into abstract visual actions (e.g., instead of "a shield that says 5G Failover", write "a glowing digital shield").
+3. PROPER PACING: Do not cram all the action into the first clip. Distribute the narrative logically across all ${clipCount} clips.
+
+Return STRICT JSON ONLY (no markdown, no commentary) in this exact shape:
+{
+  "title": "Max 6 words, title-case, no quotes.",
+  "script_summary": "1-2 sentence pitch grounded in the user's subject and action. No audio mentions.",
+  "style_bible": "3-5 sentences of cinematic direction: lighting setup, color palette, lens / camera language, mood. No audio mentions.",
+  "clips": [
+    { "shot": "What concretely happens in this ${segLen}s segment. Purely visual. Under 50 words." },
+    ... exactly ${clipCount} entries ...
+  ]
+}
+
+Hard rules:
+- The clips must read like one continuous take.
+- The user's subject and action are clearly recognizable across the sequence.
+- Never introduce new characters mid-sequence unless explicitly asked.
+- Never cut to a different location.`;
+Once you paste that in, your 32-second video generation will be fully functional, and your prompt will safely ignore the audio and voiceover instructions!

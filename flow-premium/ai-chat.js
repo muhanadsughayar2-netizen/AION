@@ -4297,10 +4297,11 @@ async function stitchVideos(videoUrls, stitchCtx) {
 
   // ---- Hard timeout: if anything hangs, give up cleanly so the caller can
   // fall back to showing individual clip download links instead of a frozen
-  // "Combining..." progress bar forever. Sized to ~2.5× realtime so a typical
-  // 3×8s render has up to ~65s before fallback. Floors at 30s, caps at 120s.
+  // "Combining..." progress bar forever. Formula: 3.5× realtime + 15s per clip
+  // so every extra clip contributes meaningful headroom for fetch + canvas draw.
+  // 1 clip=43s  2 clips=86s  3 clips=129s  4 clips=172s. Floors at 30s, caps at 180s.
   const _realtimeMs = videoUrls.length * (typeof selectedVideoDuration === 'number' ? selectedVideoDuration : 8) * 1000;
-  const STITCH_TIMEOUT_MS = Math.max(30000, Math.min(180000, _realtimeMs * 2.5 + 8000));
+  const STITCH_TIMEOUT_MS = Math.max(30000, Math.min(180000, _realtimeMs * 3.5 + videoUrls.length * 15000));
   let timeoutHandle = null;
   // Shared cancel flag the inner pipeline polls so that on timeout the
   // recorder/audio/<video> elements actually shut down — the previous
@@ -7028,7 +7029,9 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
     addBubble(`Can only attach ${slotsAvailable} more file(s). Maximum is ${MAX_FILES}.`, 'error');
   }
   files.slice(0, Math.max(0, slotsAvailable)).forEach(file => {
-    const isVideo = file.type.startsWith('video/');
+    // Some OS/browser combos report empty or generic MIME for .webm — fall back
+    // to extension check so stitched videos always get the 100MB allowance.
+    const isVideo = file.type.startsWith('video/') || /\.(webm|mp4|mov|avi|mkv|m4v)$/i.test(file.name);
     const limit = isVideo ? MAX_VIDEO_FILE_SIZE : MAX_FILE_SIZE;
     const limitLabel = isVideo ? '100MB' : '10MB';
     if (file.size > limit) {
