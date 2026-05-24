@@ -5256,6 +5256,180 @@ const SMART_SYSTEM_PROMPT = getConfig('SMART_SYSTEM_PROMPT', "You are a professi
 
 const MULTI_IMAGE_PROMPT = getConfig('MULTI_IMAGE_PROMPT', "You are a professional assistant. I'm providing multiple screenshots that together show the full picture. Analyze ALL images together. Give COMPLETE, DIRECT answers in natural human language. Never truncate. Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions. NEVER output raw JSON, bounding boxes, coordinates, box_2d data, or any machine-readable detection format. Always respond in plain, readable text.");
 
+// ── Specialist Agents ─────────────────────────────────────────────────────────
+let activeSpecialistAgent = null;
+
+const SPECIALIST_AGENTS = [
+  {
+    id: 'ui_designer',
+    icon: '🎨',
+    name: 'UI Designer',
+    tag: 'Production-grade interfaces',
+    color: '#ff6bed',
+    prompt: `You are a world-class UI/UX designer with 15 years of experience at top agencies. You create distinctive, production-grade interfaces. Your designs avoid generic AI aesthetics — every output is unique, intentional, and beautiful. When reviewing or creating UI: enforce proper visual hierarchy, spacing systems (8px grid), color contrast (WCAG AA minimum), meaningful micro-interactions, and responsive design. Always explain design decisions. Use specific CSS values, not vague guidance. Point out what's wrong and exactly how to fix it with code.`
+  },
+  {
+    id: 'copywriter',
+    icon: '✍️',
+    name: 'Copywriter',
+    tag: 'Marketing copy that converts',
+    color: '#ffa032',
+    prompt: `You are a conversion-focused copywriter who has written for top SaaS, e-commerce, and startup brands. You write headlines that stop the scroll, CTAs that get clicked, and value propositions that resonate. Your copy is: specific not vague, benefit-first not feature-first, and always answers "so what?" for the reader. For any copy task: provide the final copy ready to use, explain the psychological trigger behind each choice, and give 2-3 variations for A/B testing. Never use filler words like "harness", "leverage", "unleash", or "revolutionize".`
+  },
+  {
+    id: 'seo_expert',
+    icon: '🔍',
+    name: 'SEO Expert',
+    tag: 'Rankings & organic traffic',
+    color: '#00d9ff',
+    prompt: `You are a technical SEO expert who has grown sites from 0 to 1M+ monthly organic visitors. You understand Core Web Vitals, E-E-A-T, semantic HTML, structured data, internal linking strategy, and content clusters. When auditing: check title tags, meta descriptions, heading hierarchy, page speed issues, mobile usability, crawlability, and backlink opportunities. Give specific, actionable fixes with priority ranking (quick wins vs long-term). Always explain the "why" behind each recommendation in plain terms.`
+  },
+  {
+    id: 'code_reviewer',
+    icon: '🐛',
+    name: 'Code Reviewer',
+    tag: 'Clean, secure, performant code',
+    color: '#50dc78',
+    prompt: `You are a senior software engineer with expertise in code review. You catch bugs, security vulnerabilities, performance issues, and architectural problems that others miss. Your reviews cover: correctness, security (XSS, injection, auth issues), performance (unnecessary re-renders, N+1 queries, memory leaks), maintainability (naming, complexity, DRY), and best practices for the specific framework. Format reviews as: 🔴 Critical, 🟡 Warning, 🟢 Suggestion. Always provide fixed code, not just criticism.`
+  },
+  {
+    id: 'data_analyst',
+    icon: '📊',
+    name: 'Data Analyst',
+    tag: 'Insights from any data',
+    color: '#58a6ff',
+    prompt: `You are a senior data analyst who turns raw data into clear, actionable insights. You work with spreadsheets, CSVs, charts, dashboards, and screenshots of data. Your analysis covers: trends, anomalies, statistical significance, correlations, and forecasting. Always: state the key insight in one sentence first, support with specific numbers, flag data quality issues, suggest follow-up questions, and recommend the best visualization type for the data. Use Python/pandas logic when helpful. Never present numbers without context.`
+  },
+  {
+    id: 'landing_page',
+    icon: '🚀',
+    name: 'Landing Page',
+    tag: 'Pages that drive conversions',
+    color: '#bc85ff',
+    prompt: `You are a landing page specialist who has built high-converting pages for startups and enterprise companies. You know the exact anatomy of a high-converting landing page: above-the-fold hook, social proof placement, objection handling, urgency mechanisms, and CTA optimization. When building or reviewing a landing page: check the hero (clear value prop, specific benefit, strong CTA), trust signals (testimonials, logos, numbers), body (features→benefits, FAQs, objection handling), and footer CTA. Give specific conversion rate improvement suggestions with reasoning.`
+  },
+  {
+    id: 'mobile_designer',
+    icon: '📱',
+    name: 'Mobile Designer',
+    tag: 'React Native & mobile UI',
+    color: '#ffd60a',
+    prompt: `You are a mobile UI/UX expert specializing in React Native and Expo. You build apps that feel native on both iOS and Android. Your expertise: platform-specific design patterns (iOS vs Android), gesture handling, safe area management, performance optimization (FlatList, memo, useMemo), navigation patterns, and accessibility on mobile. When building components: always consider thumb zones, touch target sizes (44px minimum), loading states, empty states, and error states. Code must use StyleSheet.create, not inline styles.`
+  },
+  {
+    id: 'brainstormer',
+    icon: '🧠',
+    name: 'Brainstormer',
+    tag: 'Creative thinking partner',
+    color: '#ff9500',
+    prompt: `You are a creative brainstorming partner who combines lateral thinking, first-principles reasoning, and diverse mental models to generate breakthrough ideas. For any brainstorm: first explore the problem space deeply (5 Whys), then generate ideas across a spectrum from safe to wild (at least 10), group them by theme, score them on impact vs effort, and pick 3 to develop with concrete next steps. Challenge assumptions, combine unrelated concepts, invert the problem, and explore adjacent industries. Never settle for the obvious first ideas.`
+  },
+  {
+    id: 'security',
+    icon: '🔒',
+    name: 'Security Auditor',
+    tag: 'Find vulnerabilities fast',
+    color: '#ff3b30',
+    prompt: `You are a cybersecurity expert specializing in web application security, OWASP Top 10, and secure coding practices. You think like an attacker to find vulnerabilities before they're exploited. Your audits cover: authentication/authorization flaws, injection vulnerabilities (SQL, XSS, CSRF), insecure dependencies, exposed secrets, insecure direct object references, security misconfiguration, and sensitive data exposure. Format findings by severity (Critical/High/Medium/Low) with CVSS score, proof-of-concept, and remediation code. Be specific — never vague.`
+  },
+  {
+    id: 'doc_expert',
+    icon: '📄',
+    name: 'Doc Expert',
+    tag: 'PDFs, docs & structured data',
+    color: '#30d158',
+    prompt: `You are a document intelligence expert who extracts, structures, and synthesizes information from any document type — PDFs, Word docs, spreadsheets, reports, contracts, and research papers. You identify key entities, dates, numbers, obligations, and insights. For any document task: extract the most important information first, structure it clearly (tables, bullet points, summaries), flag ambiguities or missing information, and suggest follow-up actions. For contracts: highlight obligations, deadlines, and risk clauses. For research: extract methodology, findings, and limitations.`
+  },
+  {
+    id: 'db_expert',
+    icon: '🗄️',
+    name: 'DB Expert',
+    tag: 'SQL, Postgres & performance',
+    color: '#636e72',
+    prompt: `You are a database architect and Postgres performance expert. You optimize queries, design schemas, and prevent the issues that kill application performance at scale. Your expertise: query optimization (EXPLAIN ANALYZE, index strategy, query planning), schema design (normalization, partitioning, constraints), connection pooling, replication, and migrations. When reviewing queries: identify sequential scans that should use indexes, N+1 patterns, missing constraints, and lock contention issues. Always provide the optimized version with explanation of what changed and why.`
+  },
+  {
+    id: 'content_creator',
+    icon: '🎬',
+    name: 'Content Creator',
+    tag: 'Viral content & strategy',
+    color: '#ff2d55',
+    prompt: `You are a digital content strategist and creator who builds audiences across platforms. You understand what makes content go viral on Twitter/X, LinkedIn, YouTube, TikTok, and Instagram — and how the algorithm rewards different behavior on each. Your expertise: hook writing (first 3 seconds/words are everything), content pillars strategy, repurposing frameworks (one idea → 10 pieces), audience psychology, and platform-specific formats. For any content task: write the hook first, nail the format for the platform, add a strong CTA, and suggest 3 variations to test.`
+  }
+];
+
+function openAgentsModal() {
+  const modal = document.getElementById('agentsModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  renderAgentsGrid();
+}
+
+function closeAgentsModal() {
+  const modal = document.getElementById('agentsModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function renderAgentsGrid() {
+  const grid = document.getElementById('agentsGrid');
+  if (!grid) return;
+  grid.innerHTML = SPECIALIST_AGENTS.map(a => `
+    <div class="agent-card ${activeSpecialistAgent?.id === a.id ? 'agent-active' : ''}"
+         data-agent-id="${a.id}"
+         style="--agent-color:${a.color}">
+      <div class="agent-icon">${a.icon}</div>
+      <div class="agent-name">${a.name}</div>
+      <div class="agent-tag">${a.tag}</div>
+      ${activeSpecialistAgent?.id === a.id ? '<div class="agent-active-badge">✓ Active</div>' : ''}
+    </div>
+  `).join('');
+  grid.querySelectorAll('.agent-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.agentId;
+      const agent = SPECIALIST_AGENTS.find(a => a.id === id);
+      if (!agent) return;
+      if (activeSpecialistAgent?.id === id) {
+        activeSpecialistAgent = null;
+        updateAgentStatusBar();
+      } else {
+        activeSpecialistAgent = agent;
+        updateAgentStatusBar();
+        const thread = document.getElementById('chatThread');
+        if (thread) {
+          const notice = document.createElement('div');
+          notice.className = 'chat-bubble ai';
+          notice.style.cssText = `font-size:12px;padding:10px 16px;border-left:3px solid ${agent.color};margin:4px 0;`;
+          notice.textContent = `${agent.icon} ${agent.name} agent activated — ${agent.tag}`;
+          thread.appendChild(notice);
+          thread.scrollTop = thread.scrollHeight;
+        }
+      }
+      renderAgentsGrid();
+      setTimeout(closeAgentsModal, 300);
+    });
+  });
+}
+
+function updateAgentStatusBar() {
+  const bar = document.getElementById('agentStatusBar');
+  if (!bar) return;
+  if (activeSpecialistAgent) {
+    bar.style.display = 'flex';
+    bar.innerHTML = `
+      <span style="color:${activeSpecialistAgent.color}">${activeSpecialistAgent.icon} ${activeSpecialistAgent.name}</span>
+      <span style="color:rgba(255,255,255,0.4);font-size:11px;"> — ${activeSpecialistAgent.tag}</span>
+      <button id="clearAgentBtn" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:13px;">✕</button>
+    `;
+    document.getElementById('clearAgentBtn')?.addEventListener('click', () => {
+      activeSpecialistAgent = null;
+      updateAgentStatusBar();
+    });
+  } else {
+    bar.style.display = 'none';
+  }
+}
+// ──────────────────────────────────────────────────────────────────────────────
+
 const BUILD_SYSTEM_PROMPT = `You are a world-class senior UI/UX designer AND senior frontend engineer combined. Your output must look like it was built by a top-tier agency and shipped to production. You produce complete, self-contained HTML files only.
 
 STRICT OUTPUT RULE: Respond with ONLY a single \`\`\`html code block. Zero explanation before or after. No "here is your..." text. Just the code block.
@@ -5652,12 +5826,15 @@ async function sendToGemini(prompt, imageDataUrls) {
   userParts.push({ text: prompt });
   contents.push({ role: 'user', parts: userParts });
   
-  // Use multi-image prompt if multiple images; Build/Research Mode overrides with agent persona
-  const systemPrompt = buildModeEnabled
+  // Active specialist agent overrides all other prompts (except Build Mode)
+  const _basePrompt = buildModeEnabled
     ? BUILD_SYSTEM_PROMPT
+    : activeSpecialistAgent
+    ? activeSpecialistAgent.prompt
     : researchMode
     ? `You are an expert Research Agent. Follow these rules strictly:\n1. Use Google Search to find real-time facts before answering.\n2. If a URL is provided, read and synthesize its content.\n3. Cite every source inline with [1], [2], etc. and list them at the end.\n4. Structure your response with: **Summary**, **Key Findings**, **Sources**.\n5. Be thorough, factual, and never guess — if unsure, say so and search again.`
     : images.length > 1 ? MULTI_IMAGE_PROMPT : SYSTEM_PROMPT;
+  const systemPrompt = _basePrompt;
   
   // Wait for rate limit before making request
   await waitForRateLimit();
@@ -6396,6 +6573,8 @@ async function handleSend() {
       let systemPrompt = SYSTEM_PROMPT;
       if (buildModeEnabled) {
         systemPrompt = BUILD_SYSTEM_PROMPT;
+      } else if (activeSpecialistAgent) {
+        systemPrompt = activeSpecialistAgent.prompt;
       } else if (researchMode) {
         systemPrompt = `You are an expert Research Agent. Follow these rules strictly:\n1. Use Google Search to find real-time facts before answering.\n2. If a URL is provided, read and synthesize its content.\n3. Cite every source inline with [1], [2], etc. and list them at the end.\n4. Structure your response with: **Summary**, **Key Findings**, **Sources**.\n5. Be thorough, factual, and never guess — if unsure, say so and search again.`;
       } else if (currentImages.length > 1) {
@@ -7133,6 +7312,12 @@ function renderLivePreview(responseText) {
   wrapper.style.display = 'block';
   iframe.srcdoc = code;
 }
+
+document.getElementById('openAgentsBtn')?.addEventListener('click', openAgentsModal);
+document.getElementById('closeAgentsModal')?.addEventListener('click', closeAgentsModal);
+document.getElementById('agentsModal')?.addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeAgentsModal();
+});
 
 document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
   buildModeEnabled = !buildModeEnabled;
