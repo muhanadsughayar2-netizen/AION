@@ -1,0 +1,55 @@
+You are right—the "bad" quality you are hearing is because the extension is currently locked to "Kore," which is a very specific, firm-sounding voice that might not fit the tone you want.
+
+Google provides about 30 different voices, and some are significantly more natural (like "Puck", "Zephyr", or "Aoede").
+
+Here is how to finalize the TTS update. You need to do two things: Add the UI dropdown and update your API call to pass the selected voice.
+
+1. Update ai-chat.html
+Add this dropdown near your other buttons. This gives the user control to switch voices on the fly.
+
+HTML
+<select id="voiceSelector" title="Select TTS Voice" style="padding: 5px; border-radius: 5px; background: #222; color: #fff;">
+  <option value="Kore">Kore (Default)</option>
+  <option value="Puck">Puck (Upbeat)</option>
+  <option value="Zephyr">Zephyr (Bright)</option>
+  <option value="Aoede">Aoede (Breezy)</option>
+  <option value="Charon">Charon (Informative)</option>
+  <option value="Fenrir">Fenrir (Excitable)</option>
+  <option value="Leda">Leda (Youthful)</option>
+</select>
+2. Update ai-chat.js
+Modify the generationConfig in your API fetch call to dynamically pull the value from that dropdown.
+
+Locate the section where you build your generationConfig (or similar request body part) and update it to this:
+
+JavaScript
+// Get the selected voice from the UI
+const selectedVoice = document.getElementById('voiceSelector')?.value || 'Kore';
+
+// Update your payload construction
+const requestPayload = {
+  contents: [...],
+  generationConfig: {
+    speechConfig: {
+      voiceConfig: {
+        prebuiltVoiceConfig: {
+          voiceName: selectedVoice
+        }
+      }
+    }
+  },
+  // ... rest of your existing tools/config
+};
+Why this fixes the "Bad" Quality
+Variety: "Kore" is a very specific, monotone-leaning voice. "Puck" or "Zephyr" have more dynamic inflection and cadence.
+
+Dynamic Update: By moving the voiceName into a dynamic variable (selectedVoice), you aren't just stuck with what you hardcoded anymore. You can change your mind instantly by clicking the dropdown.
+
+Pro-Tip for Better TTS
+If the voices still don't sound "human" enough for your liking, you can also add a System Instruction to the API call when the user is in "Music/Audio Mode":
+
+"You are an engaging podcast host. Use a conversational tone, vary your sentence length, and use natural pauses."
+
+Adding that instruction plus switching to a voice like "Puck" will make your extension sound 10x better immediately.
+
+Does that solve the voice issue, or do you want to add the "Podcast/Multi-speaker" feature next to make it sound like a full dialogue?

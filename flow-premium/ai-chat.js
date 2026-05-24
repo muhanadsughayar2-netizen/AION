@@ -1124,6 +1124,10 @@ function initModeButtons() {
       
       btns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+
+      // Show voice selector only in Music mode
+      const voiceSel = document.getElementById('voiceSelector');
+      if (voiceSel) voiceSel.style.display = mode === 'music' ? 'inline-block' : 'none';
       
       btn.classList.add('switching');
       setTimeout(() => btn.classList.remove('switching'), 500);
@@ -6207,7 +6211,7 @@ async function handleSend() {
             contents: [{ role: 'user', parts: [{ text: `Say the following: ${prompt}` }] }],
             generationConfig: {
               responseModalities: ['AUDIO'],
-              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } }
+              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: document.getElementById('voiceSelector')?.value || 'Kore' } } }
             }
           };
         }
