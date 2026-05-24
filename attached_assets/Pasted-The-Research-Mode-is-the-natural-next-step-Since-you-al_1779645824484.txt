@@ -1,0 +1,62 @@
+The "Research Mode" is the natural next step. Since you already have the Google Search and URL Context tools built and integrated, this mode basically acts as an "agentic orchestrator" that chains them together automatically.
+
+This is a high-impact, low-complexity win. It turns your extension from a tool that can research into a tool that does research.
+
+The Logic for Research Mode
+When enabled, it doesn't just pass a prompt; it modifies the system instruction to force the model into a "Research Agent" persona and automatically enables your search/url tools.
+
+Implementation Plan
+1. Add the UI Toggle (flow-premium/ai-chat.html)
+Add this to your toolbar:
+
+HTML
+<button id="researchToggleBtn" class="toggle-btn" title="Enable Research Agent Mode">🧠 Research Mode</button>
+2. Update the State & Logic (flow-premium/ai-chat.js)
+Add the state flag near your other toggles:
+
+JavaScript
+let researchMode = false;
+Update your event listener to handle the "Agent" behavior:
+
+JavaScript
+document.getElementById('researchToggleBtn')?.addEventListener('click', (e) => {
+  researchMode = !researchMode;
+  e.target.classList.toggle('active', researchMode);
+  
+  // Auto-sync other tools when entering Research Mode
+  if (researchMode) {
+    searchGroundingEnabled = true;
+    document.getElementById('searchToggleBtn')?.classList.add('active');
+  }
+});
+3. Update the System Instruction (flow-premium/ai-chat.js)
+Locate where you build your body payload. You need to inject a specific "Research Agent" system prompt when this mode is active.
+
+JavaScript
+// Build the System Instruction dynamically
+function getSystemInstruction() {
+  let baseInstruction = "You are a helpful assistant.";
+  
+  if (researchMode) {
+    return `You are an expert Research Agent. 
+    1. Always use Google Search to find real-time facts.
+    2. If a URL is provided, read and synthesize the content.
+    3. Always cite your sources with [1], [2], etc.
+    4. Provide a structured report with a summary and key takeaways.`;
+  }
+  
+  return baseInstruction;
+}
+
+// Then in your fetch body construction:
+body: JSON.stringify({
+  contents: [...],
+  systemInstruction: { parts: [{ text: getSystemInstruction() }] },
+  // ... rest of your payload
+})
+Why this is the correct move
+Zero-Shot Research: You can now just type "Analyze the impact of the latest interest rate hike on tech stocks" and the AI will automatically trigger the search, read the results, and write a formatted report without you having to guide it.
+
+Agentic Behavior: By modifying the systemInstruction dynamically, you are teaching the model to act as an agent, not just a chatbot.
+
+Ready to implement? Since your architecture is already modular, this should take less than 5 minutes. Let me know when the button is live and if you want to tweak the "Research Agent" persona instructions!

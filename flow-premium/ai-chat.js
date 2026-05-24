@@ -1003,6 +1003,7 @@ let searchGroundingEnabled = false;
 let urlContextEnabled = false;
 let currentPageUrl = '';
 let codeExecutionEnabled = false;
+let researchMode = false;
 
 // Get config from prompts.js (user-editable) or use defaults
 const getConfig = (key, defaultVal) => (window.SNAPTOAI_CONFIG && window.SNAPTOAI_CONFIG[key]) || defaultVal;
@@ -5600,8 +5601,10 @@ async function sendToGemini(prompt, imageDataUrls) {
   userParts.push({ text: prompt });
   contents.push({ role: 'user', parts: userParts });
   
-  // Use multi-image prompt if multiple images
-  const systemPrompt = images.length > 1 ? MULTI_IMAGE_PROMPT : SYSTEM_PROMPT;
+  // Use multi-image prompt if multiple images; Research Mode overrides with agent persona
+  const systemPrompt = researchMode
+    ? `You are an expert Research Agent. Follow these rules strictly:\n1. Use Google Search to find real-time facts before answering.\n2. If a URL is provided, read and synthesize its content.\n3. Cite every source inline with [1], [2], etc. and list them at the end.\n4. Structure your response with: **Summary**, **Key Findings**, **Sources**.\n5. Be thorough, factual, and never guess — if unsure, say so and search again.`
+    : images.length > 1 ? MULTI_IMAGE_PROMPT : SYSTEM_PROMPT;
   
   // Wait for rate limit before making request
   await waitForRateLimit();
@@ -6336,7 +6339,9 @@ async function handleSend() {
     } else {
       // === VISION / GEMINI (streaming text) ===
       let systemPrompt = SYSTEM_PROMPT;
-      if (currentImages.length > 1) {
+      if (researchMode) {
+        systemPrompt = `You are an expert Research Agent. Follow these rules strictly:\n1. Use Google Search to find real-time facts before answering.\n2. If a URL is provided, read and synthesize its content.\n3. Cite every source inline with [1], [2], etc. and list them at the end.\n4. Structure your response with: **Summary**, **Key Findings**, **Sources**.\n5. Be thorough, factual, and never guess — if unsure, say so and search again.`;
+      } else if (currentImages.length > 1) {
         systemPrompt = MULTI_IMAGE_PROMPT;
       } else if (currentPageText && currentPageText.length > 800) {
         systemPrompt = SMART_SYSTEM_PROMPT;
@@ -7045,6 +7050,20 @@ document.getElementById('searchToggleBtn')?.addEventListener('click', (e) => {
   e.currentTarget.title = searchGroundingEnabled
     ? 'Google Search ON — responses grounded in live web data'
     : 'Search the web for real-time facts';
+});
+
+// Research Mode toggle — auto-enables Search and forces the Research Agent system prompt
+document.getElementById('researchToggleBtn')?.addEventListener('click', (e) => {
+  researchMode = !researchMode;
+  e.currentTarget.classList.toggle('tool-btn-active', researchMode);
+  e.currentTarget.title = researchMode
+    ? 'Research Agent ON — will search, read sources and write a structured report'
+    : 'Research Agent — auto-searches, reads sources and writes a structured report';
+  // Auto-enable Google Search when Research Mode turns on
+  if (researchMode && !searchGroundingEnabled) {
+    searchGroundingEnabled = true;
+    document.getElementById('searchToggleBtn')?.classList.add('tool-btn-active');
+  }
 });
 
 // Code Execution toggle
