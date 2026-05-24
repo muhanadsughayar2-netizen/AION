@@ -6102,6 +6102,7 @@ async function handleSend() {
         }
         thread.appendChild(proxyBubble);
         addBubbleActions(proxyBubble, aiText);
+        renderLivePreview(aiText);
         thread.scrollTop = thread.scrollHeight;
         conversationHistory.push({ role: 'user', text: prompt });
         conversationHistory.push({ role: 'model', text: aiText });
@@ -6283,6 +6284,7 @@ async function handleSend() {
         responseBubble.innerHTML = typeof marked !== 'undefined' ? (typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(marked.parse(combinedResult)) : marked.parse(combinedResult)) : combinedResult;
         thread.appendChild(responseBubble);
         addBubbleActions(responseBubble, combinedResult);
+        renderLivePreview(combinedResult);
         thread.scrollTop = thread.scrollHeight;
         
         const batchHistoryEntry = { role: 'user', text: prompt };
@@ -7367,26 +7369,50 @@ document.getElementById('searchToggleBtn')?.addEventListener('click', (e) => {
 // ── Build Mode ────────────────────────────────────────────────────────────────
 let _lastBuiltCode = '';
 
+function extractHtmlFromResponse(text) {
+  if (!text) return '';
+  // 1. ```html ... ```
+  const m1 = text.match(/```html\s*([\s\S]*?)```/i);
+  if (m1) return m1[1].trim();
+  // 2. ``` ... ``` (any fence)
+  const m2 = text.match(/```[\w]*\n?([\s\S]*?)```/);
+  if (m2 && m2[1].trim().toLowerCase().startsWith('<!doctype')) return m2[1].trim();
+  if (m2 && m2[1].trim().toLowerCase().startsWith('<html')) return m2[1].trim();
+  // 3. Bare <!DOCTYPE html> ... </html>
+  const m3 = text.match(/<!DOCTYPE\s+html[\s\S]*<\/html>/i);
+  if (m3) return m3[0].trim();
+  // 4. Bare <html> ... </html>
+  const m4 = text.match(/<html[\s\S]*<\/html>/i);
+  if (m4) return m4[0].trim();
+  return '';
+}
+
 function renderLivePreview(responseText) {
   if (!buildModeEnabled) return;
-  // Extract first ```html ... ``` or ``` ... ``` block, or bare <html>...</html>
-  let code = '';
-  const fencedHtml = responseText.match(/```html\s*([\s\S]*?)```/i);
-  const fencedAny  = responseText.match(/```(?:\w*\n)?([\s\S]*?)```/);
-  const bareHtml   = responseText.match(/<html[\s\S]*<\/html>/i);
-  if (fencedHtml) code = fencedHtml[1].trim();
-  else if (bareHtml) code = bareHtml[0].trim();
-  else if (fencedAny) code = fencedAny[1].trim();
+  const code = extractHtmlFromResponse(responseText);
   if (!code) return;
   _lastBuiltCode = code;
-  // Save to storage so preview-output.html can read it in a full tab
-  chrome.storage.local.set({ snaptoai_built_code: code });
+  // Save for Full Page tab
+  try { chrome.storage.local.set({ snaptoai_built_code: code }); } catch(e) {}
   const wrapper = document.getElementById('previewWrapper');
   const iframe  = document.getElementById('livePreview');
   if (!wrapper || !iframe) return;
-  wrapper.style.display = 'block';
-  iframe.srcdoc = code;
+  // Reset iframe completely before injecting new content
+  iframe.removeAttribute('src');
+  iframe.srcdoc = '';
+  requestAnimationFrame(() => {
+    iframe.srcdoc = code;
+    wrapper.style.display = 'block';
+    wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
 }
+
+document.getElementById('closePreviewBtn')?.addEventListener('click', () => {
+  const w = document.getElementById('previewWrapper');
+  if (w) { w.style.display = 'none'; }
+  const iframe = document.getElementById('livePreview');
+  if (iframe) { iframe.srcdoc = ''; }
+});
 
 document.getElementById('openAgentsBtn')?.addEventListener('click', openAgentsModal);
 document.getElementById('closeAgentsModal')?.addEventListener('click', closeAgentsModal);
