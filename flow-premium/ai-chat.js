@@ -5537,6 +5537,15 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
    For smaller cards use w=800 instead of w=1200.
    Always set: object-fit:cover; width:100%; height:100% on every img element. Descriptive alt text required.
 
+   BROKEN IMAGE PROTECTION — every <img> MUST have an onerror handler:
+   <img src="https://images.pexels.com/photos/{ID}/pexels-photo-{ID}.jpeg?auto=compress&cs=tinysrgb&w=1200"
+        alt="descriptive text"
+        onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)'"
+        style="object-fit:cover;width:100%;height:100%">
+   The onerror hides the broken <img> tag and replaces it with a dark gradient on the parent div,
+   keeping layout intact. Adapt the gradient colours to match the site's palette.
+   NEVER leave an <img> without onerror — broken image icons destroy the visual quality of the site.
+
    VERIFIED PEXELS IDs — pick the closest match to the content:
 
    🍊 FOOD / WELLNESS / NUTRITION:
@@ -5657,6 +5666,8 @@ These are what every average AI defaults to. You never produce these unless expl
 ✗ Emoji used as icons in premium or professional contexts (🛡️🧬💎🔥)
 ✗ Lorem ipsum or generic copy ("Transforming the future of innovation")
 ✗ Colored divs pretending to be photos — always use real Pexels URLs from the verified ID list
+✗ <img> tags without onerror fallback — a broken Pexels link shows an ugly broken icon; always add
+  onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(...)'"
 ✗ opacity:0 on entire page sections — causes blank preview, never do this
 ✗ Applying .reveal class to <section>, <div class="container">, nav, or footer — only apply to
   individual cards/images/paragraphs inside sections; whole-section reveal makes sections disappear
@@ -5711,6 +5722,7 @@ These are what every average AI defaults to. You never produce these unless expl
 ✓ legalModal + openLegal() + closeLegal() present if any legal/footer links exist?
 ✓ NO section, container, or heading group has opacity:0 or .reveal — only individual leaf cards?
 ✓ .reveal CSS has opacity:1 as default (not 0) so content shows even if JS never runs?
+✓ Every <img> has onerror fallback so broken images show a gradient instead of a broken icon?
 ✓ Viewport meta + Google Fonts + CSS reset present?
 ✓ Only ONE primary CTA per section?
 ✓ Content max-width 1100px?
