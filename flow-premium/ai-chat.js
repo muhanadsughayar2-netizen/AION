@@ -6867,21 +6867,42 @@ async function getFriendlyErrorMessage(errorMsg) {
 function addBubbleActions(bubble, text) {
   const actions = document.createElement('div');
   actions.className = 'bubble-actions';
-  // Show "Open Preview" button only when build mode is on AND response contains HTML
-  const hasHtml = buildModeEnabled && !!extractHtmlFromResponse(text);
+
+  // In Build Mode: extract HTML from THIS response (may be truncated but usable)
+  // Fallback to previous _lastBuiltCode so the button always appears if any build exists
+  const thisCode = buildModeEnabled ? extractHtmlFromResponse(text) : '';
+  const isTruncated = thisCode && !thisCode.toLowerCase().includes('</html>');
+  const showPreview = buildModeEnabled && (!!thisCode || !!_lastBuiltCode);
+
+  let previewBtnHtml = '';
+  if (showPreview) {
+    const label = thisCode
+      ? (isTruncated ? '🏗️ Open Preview ⚠️' : '🏗️ Open Preview')
+      : '🏗️ Open Previous Build';
+    previewBtnHtml = `<button class="open-preview-btn" style="background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.5);color:#ffa032;border-radius:12px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:0.2px;">${label}</button>`;
+  }
+
   actions.innerHTML = `
     <button class="copy-single-btn">📋 Copy</button>
     <button class="read-aloud-btn">🔊 Read</button>
     <button class="magic-card-btn">✨ Magic Card</button>
-    ${hasHtml ? '<button class="open-preview-btn" style="background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.5);color:#ffa032;border-radius:12px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:0.2px;">🏗️ Open Preview</button>' : ''}
+    ${previewBtnHtml}
   `;
   bubble.appendChild(actions);
 
-  // Open Preview button — saves HTML then opens preview-output.html
+  // Truncation warning note — shown below button when AI cut off mid-code
+  if (isTruncated) {
+    const warn = document.createElement('div');
+    warn.style.cssText = 'font-size:11px;color:rgba(255,160,50,0.75);margin-top:4px;padding:0 4px;';
+    warn.textContent = '⚠️ Response was cut off — preview shows partial build. Type "continue the code from where you stopped" to complete it.';
+    actions.appendChild(warn);
+  }
+
+  // Open Preview button — uses current response code, or falls back to last build
   const prevBtn = actions.querySelector('.open-preview-btn');
   if (prevBtn) {
     prevBtn.addEventListener('click', () => {
-      const code = extractHtmlFromResponse(text);
+      const code = thisCode || _lastBuiltCode;
       if (!code) return;
       _lastBuiltCode = code;
       try { chrome.storage.local.set({ snaptoai_built_code: code }, () => {
@@ -7433,19 +7454,53 @@ let _lastBuiltCode = '';
 
 function extractHtmlFromResponse(text) {
   if (!text) return '';
-  // 1. ```html ... ```
+
+  // Helper: close off a truncated HTML document so it renders instead of going blank
+  function ensureClosed(html) {
+    const t = html.trim();
+    if (!t.toLowerCase().includes('</html>')) {
+      // Close any open tags minimally so the browser can render what exists
+      return t + '\n</body></html>';
+    }
+    return t;
+  }
+
+  // 1. ```html ... ``` (complete fenced block)
   const m1 = text.match(/```html\s*([\s\S]*?)```/i);
-  if (m1) return m1[1].trim();
-  // 2. ``` ... ``` (any fence)
+  if (m1) return ensureClosed(m1[1].trim());
+
+  // 2. ```html ... (truncated — no closing fence, AI ran out of tokens)
+  const m1t = text.match(/```html\s*([\s\S]*)/i);
+  if (m1t) {
+    const candidate = m1t[1].trim();
+    if (candidate.toLowerCase().startsWith('<!doctype') || candidate.toLowerCase().startsWith('<html')) {
+      return ensureClosed(candidate);
+    }
+  }
+
+  // 3. Any ``` fence starting with <!DOCTYPE or <html (complete)
   const m2 = text.match(/```[\w]*\n?([\s\S]*?)```/);
-  if (m2 && m2[1].trim().toLowerCase().startsWith('<!doctype')) return m2[1].trim();
-  if (m2 && m2[1].trim().toLowerCase().startsWith('<html')) return m2[1].trim();
-  // 3. Bare <!DOCTYPE html> ... </html>
-  const m3 = text.match(/<!DOCTYPE\s+html[\s\S]*<\/html>/i);
+  if (m2) {
+    const c = m2[1].trim().toLowerCase();
+    if (c.startsWith('<!doctype') || c.startsWith('<html')) return ensureClosed(m2[1].trim());
+  }
+
+  // 4. Bare <!DOCTYPE html> ... </html> (complete)
+  const m3 = text.match(/<!DOCTYPE\s+html[\s\S]*?<\/html>/i);
   if (m3) return m3[0].trim();
-  // 4. Bare <html> ... </html>
-  const m4 = text.match(/<html[\s\S]*<\/html>/i);
+
+  // 5. Bare <!DOCTYPE html> ... (truncated — grab from doctype to end of text)
+  const m3t = text.match(/<!DOCTYPE\s+html[\s\S]*/i);
+  if (m3t) return ensureClosed(m3t[0]);
+
+  // 6. Bare <html> ... </html> (complete)
+  const m4 = text.match(/<html[\s\S]*?<\/html>/i);
   if (m4) return m4[0].trim();
+
+  // 7. Bare <html> ... (truncated)
+  const m4t = text.match(/<html[\s\S]*/i);
+  if (m4t) return ensureClosed(m4t[0]);
+
   return '';
 }
 
