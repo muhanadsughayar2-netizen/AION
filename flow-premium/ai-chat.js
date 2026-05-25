@@ -1082,19 +1082,33 @@ function initModeButtons() {
       if (mode === currentAiMode) return;
 
       if (mode !== 'vision') {
+        // Flash button immediately so click feels responsive
+        btn.classList.add('active');
         try {
           const synced = await chrome.storage.sync.get(['geminiApiKey']);
           const local = await chrome.storage.local.get(['snaptoai_key_tier', 'snaptoai_key_tier_key']);
           const apiKey = synced.geminiApiKey;
           const tierMatchesKey = local.snaptoai_key_tier_key === apiKey;
-          const isPrepaid = apiKey && tierMatchesKey && local.snaptoai_key_tier === 'prepaid';
+          let isPrepaid = apiKey && tierMatchesKey && local.snaptoai_key_tier === 'prepaid';
+
+          if (apiKey && !isPrepaid) {
+            try {
+              const fresh = await detectKeyTier(apiKey);
+              await chrome.storage.local.set({
+                snaptoai_key_tier: fresh,
+                snaptoai_key_tier_key: apiKey,
+                snaptoai_key_tier_ts: Date.now()
+              });
+              if (fresh === 'prepaid') {
+                isPrepaid = true;
+                showPromptToast('🎉 Prepaid plan verified — all AI features unlocked!', 3500);
+              }
+            } catch (_) {}
+          }
 
           if (!apiKey || !isPrepaid) {
-            // Flash the button briefly so click feels responsive, then revert
-            btn.classList.add('active');
-            setTimeout(() => {
-              btns.forEach(b => b.classList.toggle('active', b.dataset.mode === currentAiMode));
-            }, 600);
+            // Revert active state back to current mode
+            btns.forEach(b => b.classList.toggle('active', b.dataset.mode === currentAiMode));
             const thread = document.getElementById('chatThread');
             if (thread) {
               const card = document.createElement('div');
@@ -1106,7 +1120,10 @@ function initModeButtons() {
             }
             return;
           }
-        } catch (_) {}
+        } catch (_) {
+          btns.forEach(b => b.classList.toggle('active', b.dataset.mode === currentAiMode));
+          return;
+        }
       }
 
       currentAiMode = mode;
