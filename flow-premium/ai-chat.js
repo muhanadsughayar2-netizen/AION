@@ -5499,11 +5499,53 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
 ① TYPOGRAPHY HIERARCHY — never same font-size for different levels:
    H1: clamp(2.8rem,6vw,5rem) | H2: clamp(1.8rem,3.5vw,3rem) | H3: 1.25rem | Body: 1rem/1.7
 
-② REAL IMAGERY — never ship blank colored divs as "images":
-   Use real Unsplash URLs: https://images.unsplash.com/photo-[ID]?w=1200&q=80&auto=format&fit=crop
-   Choose photos that match the content (food, tech, nature, people, abstract macro).
-   Always set: object-fit:cover; width:100%; height:100% on every image element.
-   Descriptive alt text on every img tag.
+② REAL IMAGERY — always use working photo URLs from this verified list. NEVER make up a photo ID.
+   Format: https://images.unsplash.com/photo-{ID}?w=1200&q=80&auto=format&fit=crop
+   Always set: object-fit:cover; width:100%; height:100% on every img element. Descriptive alt text required.
+
+   VERIFIED PHOTO IDs — pick the closest match to the content:
+
+   🍊 FOOD / WELLNESS / NUTRITION:
+   1610832958506-aa56368176cf  — blood oranges, citrus macro
+   1512621776951-a57141f2eefd  — fresh vegetables, greens
+   1490645935967-10de6ba17061  — healthy grain bowl
+   1546069901-ba9599a7e63c     — avocado halves
+   1571019613454-1cb2f99b2d8b  — green salad, fresh
+   1498837167922-d6e400aa7a9a  — sliced fruit assortment
+   1559847844-5315695dadae     — superfoods flatlay
+   1540420773-f7818d9aef64     — mushrooms macro
+   1414235077081-a1c7d1ef1081  — broccoli close-up
+   1504674900247-0877df9cc836  — colorful food spread
+
+   🧘 HEALTH / LIFESTYLE / WELLNESS:
+   1571019613454-1cb2f99b2d8b  — person active, wellness
+   1584308666744-24d5c474f2ae  — supplements, capsules, lab
+   1506126613898-deefb373a359  — yoga, meditation
+   1544367654-51e08a3a67af     — nature walk, lifestyle
+   1559757148-461cbdcaf6f6     — healthy lifestyle portrait
+
+   💻 TECH / SAAS / PRODUCTIVITY:
+   1515879218367-8466d910aaa4  — laptop with code, dark
+   1488590528505-98d2b5aba04b  — laptop on desk, minimal
+   1518770660439-4636190af475  — circuit board macro
+   1522071820887-954dbb8eb3fc  — team working, office
+   1467232004584-a241de8bcf5d  — coding workspace
+
+   🎨 ABSTRACT / GRADIENT / BACKGROUNDS:
+   1557682250-33bd709cbe85     — purple abstract gradient
+   1536304993-c6bbfe419b93     — soft abstract shapes
+   1618005182384-a83a8bd57fbe  — fluid gradient, blue pink
+   1614850523296-d0dc81383ad1  — light abstract texture
+
+   🌿 NATURE / OUTDOOR:
+   1441974231531-c6227db76b6e  — forest path, green
+   1518495973-a010bc978048     — mountain lake
+   1500534314209-a157d0e4f2c4  — nature macro, leaves
+
+   👥 PEOPLE / PORTRAITS:
+   1560250097-0b93528c311a     — professional person, confident
+   1507003211169-0a1dd7228f2d  — smiling person, warm light
+   1573496359142-b8d87734a5a2  — person working, casual
 
 ③ ICONS — inline SVG only (1.5px stroke, no fill), never emoji in professional contexts:
    Tech: terminal brackets, arrows, circuits | Wellness: leaf, drop, helix, sprout, shield | Luxury: minimal geometric
