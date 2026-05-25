@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Activation Lab | Bio-Metabolic Architecture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F9FBF9;
+      --text: #0A2E36;
+      --surface: #ffffff;
+      --sage: #76A08A;
+      --accent: #FF7043; /* Blood Orange */
+      --glass: rgba(249, 251, 249, 0.9);
+      --border: rgba(10, 46, 54, 0.08);
+      --transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.7;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Playfair Display', serif;
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* --- Navigation --- */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 1000;
+      padding: 32px 0;
+      transition: var(--transition);
+    }
+
+    nav.scrolled {
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      text-decoration: none;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      transition: color 0.3s;
+    }
+
+    .nav-links a:hover { color: var(--accent); }
+
+    /* --- Hero Section --- */
+    .hero {
+      padding: 220px 0 120px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .hero-content h1 {
+      font-size: clamp(3.5rem, 7vw, 5rem);
+      margin-bottom: 24px;
+    }
+
+    .hero-content p {
+      font-size: 1.2rem;
+      color: #556b70;
+      max-width: 480px;
+      margin-bottom: 48px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 20px 44px;
+      background: var(--accent);
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      border-radius: 2px;
+      transition: var(--transition);
+      border: none;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    .btn:hover {
+      background: #e65b2e;
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px rgba(255, 112, 67, 0.2);
+    }
+
+    .hero-image-wrap {
+      position: relative;
+      height: 640px;
+      background: #eee;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .hero-image-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: contrast(1.05) saturate(1.1);
+    }
+
+    /* --- The 5 Shields Grid --- */
+    .section-header {
+      text-align: center;
+      margin-bottom: 80px;
+      padding-top: 100px;
+    }
+
+    .section-tag {
+      color: var(--sage);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      font-size: 0.75rem;
+      margin-bottom: 20px;
+      display: block;
+    }
+
+    .shields-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+
+    .shield-card {
+      background: var(--bg);
+      padding: 60px 24px;
+      text-align: center;
+      transition: var(--transition);
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .shield-card:hover {
+      background: var(--surface);
+      z-index: 2;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+    }
+
+    .shield-img-peek {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      opacity: 0;
+      transition: var(--transition);
+      z-index: 0;
+    }
+
+    .shield-img-peek img {
+      width: 100%; height: 100%; object-fit: cover;
+      filter: grayscale(0.5) opacity(0.15);
+    }
+
+    .shield-card:hover .shield-img-peek { opacity: 1; }
+
+    .shield-icon {
+      width: 32px; height: 32px;
+      margin-bottom: 24px;
+      stroke: var(--sage);
+      fill: none;
+      stroke-width: 1.5;
+      position: relative;
+      z-index: 1;
+    }
+
+    .shield-card h3 {
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* --- Macro Bioactive Gallery --- */
+    .gallery-section {
+      padding: 160px 0;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-auto-rows: 400px;
+      gap: 24px;
+    }
+
+    .gallery-item {
+      position: relative;
+      overflow: hidden;
+      border-radius: 2px;
+    }
+
+    .gallery-item img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: var(--transition);
+    }
+
+    .gallery-item:hover img {
+      transform: scale(1.05);
+    }
+
+    .gallery-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 30px;
+      background: linear-gradient(transparent, rgba(10, 46, 54, 0.8));
+      color: white;
+      opacity: 0;
+      transition: 0.4s ease;
+    }
+
+    .gallery-item:hover .gallery-overlay { opacity: 1; }
+
+    .gallery-item.large { grid-column: span 2; }
+
+    /* --- Story Section --- */
+    .story-section {
+      padding: 160px 0;
+      background: #f0f4f0;
+    }
+
+    .story-flex {
+      display: flex;
+      align-items: center;
+      gap: 100px;
+    }
+
+    .story-image {
+      flex: 1;
+      height: 600px;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .story-text {
+      flex: 1;
+    }
+
+    .story-text h2 { font-size: 3rem; margin-bottom: 30px; }
+
+    /* --- Pricing Tiers --- */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      margin-top: 60px;
+    }
+
+    .price-card {
+      background: white;
+      padding: 60px 40px;
+      border: 1px solid var(--border);
+      text-align: center;
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .price-card.featured {
+      border: 1px solid var(--accent);
+      transform: scale(1.05);
+      box-shadow: 0 30px 60px rgba(0,0,0,0.05);
+      z-index: 2;
+    }
+
+    .price-card h4 { font-size: 1.5rem; margin-bottom: 10px; }
+    .price { font-size: 3.5rem; font-family: 'Playfair Display', serif; margin-bottom: 30px; }
+    .price span { font-size: 1rem; color: var(--sage); }
+
+    .feature-list {
+      list-style: none;
+      margin-bottom: 40px;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    .feature-list li {
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .feature-list li::before {
+      content: "—";
+      color: var(--accent);
+    }
+
+    /* --- Forms --- */
+    .assessment-box {
+      background: var(--text);
+      color: white;
+      padding: 100px 60px;
+      margin-top: 100px;
+      border-radius: 4px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 40px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 18px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: white;
+      font-family: inherit;
+      margin-bottom: 20px;
+      border-radius: 2px;
+    }
+
+    input:focus, select:focus, textarea:focus { 
+      outline: 1px solid var(--accent);
+      background: rgba(255,255,255,0.1);
+    }
+
+    /* --- Modal --- */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 46, 54, 0.95);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-content {
+      background: var(--bg);
+      max-width: 600px;
+      padding: 60px;
+      position: relative;
+      text-align: center;
+      border-radius: 2px;
+      animation: modalEnter 0.5s ease;
+    }
+
+    @keyframes modalEnter {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 20px; right: 20px;
+      cursor: pointer;
+      font-size: 1.8rem;
+      color: var(--text);
+    }
+
+    @media (max-width: 900px) {
+      .hero, .story-flex, .pricing-grid, .shields-grid, .gallery-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-image-wrap { height: 350px; }
+      .story-image { height: 300px; }
+      .gallery-item.large { grid-column: span 1; }
+      .pricing-grid { gap: 60px; }
+      .price-card.featured { transform: scale(1); }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav id="navbar">
+    <div class="container nav-content">
+      <a href="#" class="logo">Activation Lab</a>
+      <ul class="nav-links">
+        <li><a href="#how">Methodology</a></li>
+        <li><a href="#library">Bioactives</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#assessment" style="color: var(--accent)">Start Journey</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero container">
+    <div class="hero-content">
+      <span class="section-tag">Metabolic Health</span>
+      <h1>Hardwire Your Body for Longevity.</h1>
+      <p>Move beyond restriction. Learn to activate your five health defense systems through the clinical science of bioactive nutrition.</p>
+      <button class="btn" onclick="scrollToSection('assessment')">Begin Assessment</button>
+    </div>
+    <div class="hero-image-wrap">
+      <img src="https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Vibrant healthy food spread">
+    </div>
+  </section>
+
+  <!-- The 5 Shields -->
+  <section class="container" id="how">
+    <div class="section-header">
+      <span class="section-tag">Biological Defense</span>
+      <h2>The Five Shields of Health</h2>
+    </div>
+    <div class="shields-grid">
+      <div class="shield-card" onclick="openShield('Angiogenesis', 'Regulate your blood supply to starve disease and feed your organs.', '1132047')">
+        <div class="shield-img-peek"><img src="https://images.pexels.com/photos/1132047/pexels-photo-1132047.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Berries"></div>
+        <svg class="shield-icon" viewBox="0 0 24 24"><path d="M12 2L12 22M2 12L22 12M12 2C15.5 2 17 5 17 12C17 19 15.5 22 12 22M12 2C8.5 2 7 5 7 12C7 19 8.5 22 12 22"/></svg>
+        <h3>Angiogenesis</h3>
+      </div>
+      <div class="shield-card" onclick="openShield('Regeneration', 'Trigger your body’s stem cells to renew and repair aging tissues.', '1367240')">
+        <div class="shield-img-peek"><img src="https://images.pexels.com/photos/1367240/pexels-photo-1367240.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Walnuts"></div>
+        <svg class="shield-icon" viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+        <h3>Regeneration</h3>
+      </div>
+      <div class="shield-card" onclick="openShield('Microbiome', 'Optimize 39 trillion bacteria that manage weight, mood, and inflammation.', '1640773')">
+        <div class="shield-img-peek"><img src="https://images.pexels.com/photos/1640773/pexels-photo-1640773.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Healthy greens"></div>
+        <svg class="shield-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+        <h3>Microbiome</h3>
+      </div>
+      <div class="shield-card" onclick="openShield('DNA Protection', 'Strengthen your internal repair mechanisms to fight environmental toxins.', '1640775')">
+        <div class="shield-img-peek"><img src="https://images.pexels.com/photos/1640775/pexels-photo-1640775.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Broccoli salad"></div>
+        <svg class="shield-icon" viewBox="0 0 24 24"><path d="M4.5 7L19.5 7M4.5 12L19.5 12M4.5 17L19.5 17"/></svg>
+        <h3>DNA Protection</h3>
+      </div>
+      <div class="shield-card" onclick="openShield('Immunity', 'Equip your immune system with the molecular intelligence to protect you.', '1279330')">
+        <div class="shield-img-peek"><img src="https://images.pexels.com/photos/1279330/pexels-photo-1279330.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Mushrooms"></div>
+        <svg class="shield-icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <h3>Immunity</h3>
+      </div>
+    </div>
+  </section>
+
+  <!-- Macro Bioactive Gallery -->
+  <section class="gallery-section container" id="library">
+    <div class="section-header">
+      <span class="section-tag">Bioactive Library</span>
+      <h2>Nature’s Molecular Pharmacy</h2>
+    </div>
+    <div class="gallery-grid">
+      <div class="gallery-item large">
+        <img src="https://images.pexels.com/photos/3493777/pexels-photo-3493777.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Citrus cross section">
+        <div class="gallery-overlay"><h4>Limonene & Vitamin C</h4><p>Potent metabolic triggers found in citrus rinds.</p></div>
+      </div>
+      <div class="gallery-item">
+        <img src="https://images.pexels.com/photos/1092730/pexels-photo-1092730.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Avocado macro">
+        <div class="gallery-overlay"><h4>Avocatin B</h4><p>Unique fatty acids that support cellular regeneration.</p></div>
+      </div>
+      <div class="gallery-item">
+        <img src="https://images.pexels.com/photos/1410235/pexels-photo-1410235.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Smoothie bowl">
+        <div class="gallery-overlay"><h4>Anthocyanins</h4><p>Vibrant pigments that shield your DNA from damage.</p></div>
+      </div>
+      <div class="gallery-item large">
+        <img src="https://images.pexels.com/photos/1640774/pexels-photo-1640774.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Vegetable flatlay">
+        <div class="gallery-overlay"><h4>Sulforaphane</h4><p>The detoxifying power hidden in cruciferous greens.</p></div>
+      </div>
+      <div class="gallery-item">
+        <img src="https://images.pexels.com/photos/1367240/pexels-photo-1367240.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Walnuts macro">
+        <div class="gallery-overlay"><h4>Omega-3 Alpha-Linolenic Acid</h4><p>Brain preservation and heart defense.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Story Section -->
+  <section class="story-section">
+    <div class="container story-flex">
+      <div class="story-image">
+        <img src="https://images.pexels.com/photos/3757954/pexels-photo-3757954.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Modern wellness lifestyle">
+      </div>
+      <div class="story-text">
+        <span class="section-tag">Our Philosophy</span>
+        <h2>Abundance, Not Restriction.</h2>
+        <p>Most health plans focus on what to remove. We focus on what to add. By introducing specific molecular compounds into your daily routine, you activate dormant biological defenses that naturally regulate weight, repair cells, and boost immunity.</p>
+        <p style="margin-top:20px;">Inspired by the MediterAsian protocol, our system blends Western clinical precision with Eastern dietary wisdom.</p>
+        <button class="btn" style="margin-top: 30px;" onclick="scrollToSection('pricing')">View Optimization Plans</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="container" id="pricing" style="padding: 120px 0;">
+    <div class="section-header">
+      <span class="section-tag">Optimization Plans</span>
+      <h2>Begin Your Transformation</h2>
+    </div>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <h4>The Roadmap</h4>
+        <div class="price">$199<span>/one-time</span></div>
+        <ul class="feature-list">
+          <li>Initial Bio-Assessment</li>
+          <li>Personalized Food Library</li>
+          <li>12-Hour Reset Protocol</li>
+          <li>PDF Strategy Guide</li>
+        </ul>
+        <button class="btn" style="background:#0A2E36; width: 100%;" onclick="selectPlan('The Roadmap')">Get Started</button>
+      </div>
+      <div class="price-card featured">
+        <h4>Transformation</h4>
+        <div class="price">$349<span>/month</span></div>
+        <ul class="feature-list">
+          <li>Weekly Metabolic Analysis</li>
+          <li>Direct Messaging Access</li>
+          <li>Microbiome Optimization</li>
+          <li>Custom Recipe Database</li>
+        </ul>
+        <button class="btn" style="width: 100%;" onclick="selectPlan('Transformation')">Start Transformation</button>
+      </div>
+      <div class="price-card">
+        <h4>VIP Defense</h4>
+        <div class="price">$899<span>/month</span></div>
+        <ul class="feature-list">
+          <li>24/7 Priority Concierge</li>
+          <li>Functional Lab Interpretation</li>
+          <li>Bespoke Meal Architecture</li>
+          <li>Monthly Family Health Audit</li>
+        </ul>
+        <button class="btn" style="background:#0A2E36; width: 100%;" onclick="selectPlan('VIP Defense')">Apply for VIP</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Assessment -->
+  <section class="container" id="assessment">
+    <div class="assessment-box">
+      <div style="text-align:center; max-width: 600px; margin: 0 auto;">
+        <span class="section-tag" style="color:var(--accent)">Bio-Analysis</span>
+        <h2 style="font-size: 3rem; margin-bottom: 20px;">The Activation Intake</h2>
+        <p style="color: rgba(255,255,255,0.6)">Provide your baseline data to begin your metabolic architectural plan.</p>
+      </div>
+      <form id="main-form" class="form-grid">
+        <input type="text" placeholder="Full Name" required>
+        <input type="email" placeholder="Email Address" required>
+        <select required>
+          <option value="">Primary Bio-Goal</option>
+          <option>Weight Loss & Metabolism</option>
+          <option>Neurological Support</option>
+          <option>Immune Fortification</option>
+          <option>Longevity Optimization</option>
+        </select>
+        <input type="text" placeholder="Current Health Challenges (Optional)">
+        <textarea style="grid-column: span 2;" rows="4" placeholder="Briefly describe your current relationship with food and energy..."></textarea>
+        <button type="submit" class="btn" style="grid-column: span 2; width: 100%;">Submit Bio-Assessment</button>
+      </form>
+      <div id="form-success" style="display:none; text-align:center; padding: 40px 0;">
+        <h3 style="color:var(--accent); font-size: 2.5rem; margin-bottom: 10px;">Submission Complete</h3>
+        <p>Your profile is being processed. An architect will contact you within 24 hours.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="padding: 120px 0 60px; text-align: center; background: white;">
+    <div class="container">
+      <div class="logo" style="margin-bottom: 30px;">Activation Lab</div>
+      <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 50px;">
+        <div style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden;">
+          <img src="https://images.pexels.com/photos/3822621/pexels-photo-3822621.jpeg?auto=compress&cs=tinysrgb&w=200" alt="Wellness pose" style="width:100%; height:100%; object-fit:cover;">
+        </div>
+        <div style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden;">
+          <img src="https://images.pexels.com/photos/3757942/pexels-photo-3757942.jpeg?auto=compress&cs=tinysrgb&w=200" alt="Meditation" style="width:100%; height:100%; object-fit:cover;">
+        </div>
+        <div style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden;">
+          <img src="https://images.pexels.com/photos/255379/pexels-photo-255379.jpeg?auto=compress&cs=tinysrgb&w=200" alt="Nature macro" style="width:100%; height:100%; object-fit:cover;">
+        </div>
+      </div>
+      <p style="font-size: 0.8rem; color: var(--sage); max-width: 600px; margin: 0 auto 40px; line-height: 1.5;">
+        Information on this site is provided for educational purposes only. It is not intended to substitute for professional medical advice. Always consult with a physician before starting any new dietary or health program.
+      </p>
+      <p style="font-size: 0.7rem; opacity: 0.4;">&copy; 2024 ACTIVATION LAB LLC. ALL RIGHTS RESERVED.</p>
+    </div>
+  </footer>
+
+  <!-- Shield Modal -->
+  <div class="modal" id="shieldModal">
+    <div class="modal-content">
+      <div class="close-modal" onclick="closeModal()">×</div>
+      <div style="height: 250px; overflow: hidden; margin-bottom: 30px; border-radius: 2px;">
+        <img id="modalImg" src="" style="width: 100%; height: 100%; object-fit: cover;">
+      </div>
+      <h2
+</body></html>

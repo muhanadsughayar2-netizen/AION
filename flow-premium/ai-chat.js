@@ -7121,7 +7121,7 @@ function addBubbleActions(bubble, text) {
 
     // Try Gemini TTS first (Neural voice — far better than browser TTS)
     try {
-      // KEY FIX: API key is always stored in chrome.storage.sync, not local
+      // API key is always stored in chrome.storage.sync
       const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
       const apiKey = keyResult.geminiApiKey;
       if (!apiKey) throw new Error('no_key');
@@ -7133,25 +7133,35 @@ function addBubbleActions(bubble, text) {
         if (lastDot > 3000) ttsInput = ttsInput.slice(0, lastDot + 1);
       }
 
-      // Kore = clear, warm, professional female voice (better than Aoede for reading)
-      const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: ttsInput }] }],
-            generationConfig: {
-              responseModalities: ['AUDIO'],
-              speechConfig: {
-                voiceConfig: {
-                  prebuiltVoiceConfig: { voiceName: 'Kore' }
+      // 20-second timeout — prevents the button freezing at "Loading…" forever
+      const ttsAbort = new AbortController();
+      const ttsTimer = setTimeout(() => ttsAbort.abort(), 20000);
+
+      // Kore = clear, warm, professional female voice
+      let resp;
+      try {
+        resp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: ttsAbort.signal,
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: ttsInput }] }],
+              generationConfig: {
+                responseModalities: ['AUDIO'],
+                speechConfig: {
+                  voiceConfig: {
+                    prebuiltVoiceConfig: { voiceName: 'Kore' }
+                  }
                 }
               }
-            }
-          })
-        }
-      );
+            })
+          }
+        );
+      } finally {
+        clearTimeout(ttsTimer);
+      }
 
       if (!resp.ok) {
         const errText = await resp.text().catch(() => '');
@@ -7159,46 +7169,57 @@ function addBubbleActions(bubble, text) {
         throw new Error('gemini_tts_failed');
       }
       const data = await resp.json();
-      const audioB64 = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      const part = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+      const audioB64 = part?.data;
       if (!audioB64) {
-        console.warn('[SnapToAI TTS] No audio data in response', data);
+        console.warn('[SnapToAI TTS] No audio data in response', JSON.stringify(data).slice(0, 400));
         throw new Error('no_audio_data');
       }
 
-      // Decode base64 PCM → WAV → play
-      const pcm = Uint8Array.from(atob(audioB64), c => c.charCodeAt(0));
-      const sampleRate = 24000;
-      const numChannels = 1;
-      const bitsPerSample = 16;
-      const byteRate = sampleRate * numChannels * bitsPerSample / 8;
-      const blockAlign = numChannels * bitsPerSample / 8;
-      const wavHeader = new ArrayBuffer(44);
-      const dv = new DataView(wavHeader);
-      const writeStr = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
-      writeStr(0, 'RIFF');
-      dv.setUint32(4, 36 + pcm.byteLength, true);
-      writeStr(8, 'WAVE');
-      writeStr(12, 'fmt ');
-      dv.setUint32(16, 16, true);
-      dv.setUint16(20, 1, true);
-      dv.setUint16(22, numChannels, true);
-      dv.setUint32(24, sampleRate, true);
-      dv.setUint32(28, byteRate, true);
-      dv.setUint16(32, blockAlign, true);
-      dv.setUint16(34, bitsPerSample, true);
-      writeStr(36, 'data');
-      dv.setUint32(40, pcm.byteLength, true);
-      const wav = new Blob([wavHeader, pcm], { type: 'audio/wav' });
-      ttsObjectUrl = URL.createObjectURL(wav);
+      // Build a playable blob.
+      // The API may return PCM (audio/pcm) or a container format (audio/mp3, audio/ogg, etc.)
+      // For raw PCM we must wrap it in a WAV header; everything else plays directly.
+      const mimeType = (part.mimeType || '').toLowerCase();
+      const rawBytes = Uint8Array.from(atob(audioB64), c => c.charCodeAt(0));
+      let audioBlob;
+      if (mimeType.includes('pcm') || mimeType === '' || mimeType === 'audio/l16') {
+        // Wrap raw 16-bit LE PCM @ 24 kHz mono in a WAV container
+        const sampleRate = 24000, numChannels = 1, bitsPerSample = 16;
+        const byteRate = sampleRate * numChannels * bitsPerSample / 8;
+        const blockAlign = numChannels * bitsPerSample / 8;
+        const wavHeader = new ArrayBuffer(44);
+        const dv = new DataView(wavHeader);
+        const writeStr = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+        writeStr(0, 'RIFF');
+        dv.setUint32(4, 36 + rawBytes.byteLength, true);
+        writeStr(8, 'WAVE');
+        writeStr(12, 'fmt ');
+        dv.setUint32(16, 16, true);
+        dv.setUint16(20, 1, true);
+        dv.setUint16(22, numChannels, true);
+        dv.setUint32(24, sampleRate, true);
+        dv.setUint32(28, byteRate, true);
+        dv.setUint16(32, blockAlign, true);
+        dv.setUint16(34, bitsPerSample, true);
+        writeStr(36, 'data');
+        dv.setUint32(40, rawBytes.byteLength, true);
+        audioBlob = new Blob([wavHeader, rawBytes], { type: 'audio/wav' });
+      } else {
+        // MP3, OGG, AAC, etc. — play the container directly
+        audioBlob = new Blob([rawBytes], { type: mimeType });
+      }
+
+      ttsObjectUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(ttsObjectUrl);
       ttsAudio = audio;
       readBtn.textContent = '⏹ Stop';
       readBtn.disabled = false;
-      audio.play();
+      audio.play().catch(() => stopTts());
       audio.onended = () => { stopTts(); };
       audio.onerror = () => { stopTts(); };
       return; // Success — skip browser TTS fallback
     } catch (e) {
+      console.warn('[SnapToAI TTS] Gemini TTS failed, falling back to browser TTS:', e.message || e);
       // Fall through to browser TTS
     }
 
