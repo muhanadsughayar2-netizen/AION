@@ -5649,6 +5649,18 @@ These are what every average AI defaults to. You never produce these unless expl
 ✗ opacity:0 on entire page sections — causes blank preview, never do this
 ✗ Content area wider than 1100px
 ✗ Non-functional "coming soon" interactive placeholders
+✗ href="#" on footer links (Medical Disclaimer, Privacy Policy, Terms, Newsletter, etc.) — every
+  footer link MUST open a modal with real written content. Create a single reusable legal modal:
+  <div id="legalModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;display:none;align-items:center;justify-content:center;padding:24px;">
+    <div style="background:#fff;max-width:640px;width:100%;max-height:80vh;overflow-y:auto;padding:48px;position:relative;border-radius:4px;">
+      <button onclick="closeLegal()" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:1.8rem;cursor:pointer;">&times;</button>
+      <h2 id="legalTitle" style="margin-bottom:24px;"></h2>
+      <div id="legalBody" style="line-height:1.8;font-size:0.95rem;"></div>
+    </div>
+  </div>
+  Then define openLegal(title, html) and closeLegal() at top level of the script.
+  Footer links: onclick="openLegal('Medical Disclaimer','<p>..real content..</p>')"
+  Write 2-4 real paragraphs of genuine content for each legal page — not placeholder text.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   MANDATORY HTML SKELETON
@@ -5680,6 +5692,8 @@ These are what every average AI defaults to. You never produce these unless expl
 ✓ Thin-line SVG icons (not emoji in professional contexts)?
 ✓ One wow detail added (matching the chosen profile)?
 ✓ All interactive elements fully functional?
+✓ Every footer link opens a modal with real content (NO href="#" dead links)?
+✓ legalModal + openLegal() + closeLegal() present if any legal/footer links exist?
 ✓ NO entire section starts at opacity:0?
 ✓ Viewport meta + Google Fonts + CSS reset present?
 ✓ Only ONE primary CTA per section?
