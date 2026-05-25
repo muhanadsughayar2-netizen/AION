@@ -6165,10 +6165,10 @@ async function handleSend() {
         let proxySystemCtx = '';
         if (buildModeEnabled) {
           proxySystemCtx = BUILD_SYSTEM_PROMPT;
-        } else if (activeSpecialistAgent) {
-          proxySystemCtx = activeSpecialistAgent.prompt;
         } else if (researchMode) {
           proxySystemCtx = 'You are an expert Research Agent. Find real-time facts, cite every source inline with [1],[2]… and list them at the end. Structure: Summary, Key Findings, Sources.';
+        } else if (activeSpecialistAgent) {
+          proxySystemCtx = activeSpecialistAgent.prompt;
         }
         const proxyPrompt = proxySystemCtx
           ? `[SYSTEM INSTRUCTION — follow exactly]\n${proxySystemCtx}\n\n[USER]\n${prompt}`
@@ -6912,8 +6912,9 @@ function addBubbleActions(bubble, text) {
 
   // In Build Mode: extract HTML from THIS response (may be truncated but usable)
   // Fallback to previous _lastBuiltCode so the button always appears if any build exists
-  const thisCode = buildModeEnabled ? extractHtmlFromResponse(text) : '';
-  const isTruncated = thisCode && !thisCode.toLowerCase().includes('</html>');
+  const _extracted = buildModeEnabled ? extractHtmlFromResponse(text) : { html: '', truncated: false };
+  const thisCode = _extracted.html;
+  const isTruncated = _extracted.truncated;
   const showPreview = buildModeEnabled && (!!thisCode || !!_lastBuiltCode);
 
   let previewBtnHtml = '';
@@ -6987,15 +6988,27 @@ function addBubbleActions(bubble, text) {
   
   // Read aloud — Gemini TTS (natural voice), fallback to browser TTS if no API key
   const readBtn = actions.querySelector('.read-aloud-btn');
-  let ttsAudio = null; // currently playing Audio object
+  let ttsAudio = null;    // currently playing Audio object
+  let ttsObjectUrl = null; // blob URL — must be revoked on both end AND manual stop
 
-  readBtn.addEventListener('click', async () => {
-    // Stop if already playing
+  function stopTts() {
     if (ttsAudio) {
       ttsAudio.pause();
       ttsAudio = null;
-      synth.cancel();
-      readBtn.textContent = '🔊 Read';
+    }
+    if (ttsObjectUrl) {
+      URL.revokeObjectURL(ttsObjectUrl);
+      ttsObjectUrl = null;
+    }
+    synth.cancel();
+    readBtn.textContent = '🔊 Read';
+    readBtn.disabled = false;
+  }
+
+  readBtn.addEventListener('click', async () => {
+    // Stop if already playing (Gemini audio OR browser TTS)
+    if (ttsAudio || synth.speaking) {
+      stopTts();
       return;
     }
 
@@ -7072,22 +7085,14 @@ function addBubbleActions(bubble, text) {
       writeStr(36, 'data');
       dv.setUint32(40, pcm.byteLength, true);
       const wav = new Blob([wavHeader, pcm], { type: 'audio/wav' });
-      const url = URL.createObjectURL(wav);
-      const audio = new Audio(url);
+      ttsObjectUrl = URL.createObjectURL(wav);
+      const audio = new Audio(ttsObjectUrl);
       ttsAudio = audio;
       readBtn.textContent = '⏹ Stop';
       readBtn.disabled = false;
       audio.play();
-      audio.onended = () => {
-        ttsAudio = null;
-        readBtn.textContent = '🔊 Read';
-        URL.revokeObjectURL(url);
-      };
-      audio.onerror = () => {
-        ttsAudio = null;
-        readBtn.textContent = '🔊 Read';
-        URL.revokeObjectURL(url);
-      };
+      audio.onended = () => { stopTts(); };
+      audio.onerror = () => { stopTts(); };
       return; // Success — skip browser TTS fallback
     } catch (e) {
       // Fall through to browser TTS
@@ -7546,61 +7551,57 @@ document.getElementById('searchToggleBtn')?.addEventListener('click', (e) => {
 // ── Build Mode ────────────────────────────────────────────────────────────────
 let _lastBuiltCode = '';
 
+// Returns { html: string, truncated: boolean }
 function extractHtmlFromResponse(text) {
-  if (!text) return '';
+  if (!text) return { html: '', truncated: false };
 
-  // Helper: close off a truncated HTML document so it renders instead of going blank
-  function ensureClosed(html) {
-    const t = html.trim();
-    if (!t.toLowerCase().includes('</html>')) {
-      // Close any open tags minimally so the browser can render what exists
-      return t + '\n</body></html>';
-    }
-    return t;
+  function makeResult(raw) {
+    const t = raw.trim();
+    const wasTruncated = !t.toLowerCase().includes('</html>');
+    const html = wasTruncated ? t + '\n</body></html>' : t;
+    return { html, truncated: wasTruncated };
   }
 
   // 1. ```html ... ``` (complete fenced block)
   const m1 = text.match(/```html\s*([\s\S]*?)```/i);
-  if (m1) return ensureClosed(m1[1].trim());
+  if (m1) return makeResult(m1[1]);
 
-  // 2. ```html ... (truncated — no closing fence, AI ran out of tokens)
+  // 2. ```html ... (truncated — no closing fence)
   const m1t = text.match(/```html\s*([\s\S]*)/i);
   if (m1t) {
-    const candidate = m1t[1].trim();
-    if (candidate.toLowerCase().startsWith('<!doctype') || candidate.toLowerCase().startsWith('<html')) {
-      return ensureClosed(candidate);
-    }
+    const c = m1t[1].trim().toLowerCase();
+    if (c.startsWith('<!doctype') || c.startsWith('<html')) return makeResult(m1t[1]);
   }
 
-  // 3. Any ``` fence starting with <!DOCTYPE or <html (complete)
+  // 3. Any ``` fence starting with <!DOCTYPE or <html
   const m2 = text.match(/```[\w]*\n?([\s\S]*?)```/);
   if (m2) {
     const c = m2[1].trim().toLowerCase();
-    if (c.startsWith('<!doctype') || c.startsWith('<html')) return ensureClosed(m2[1].trim());
+    if (c.startsWith('<!doctype') || c.startsWith('<html')) return makeResult(m2[1]);
   }
 
   // 4. Bare <!DOCTYPE html> ... </html> (complete)
   const m3 = text.match(/<!DOCTYPE\s+html[\s\S]*?<\/html>/i);
-  if (m3) return m3[0].trim();
+  if (m3) return makeResult(m3[0]);
 
-  // 5. Bare <!DOCTYPE html> ... (truncated — grab from doctype to end of text)
+  // 5. Bare <!DOCTYPE html> ... (truncated)
   const m3t = text.match(/<!DOCTYPE\s+html[\s\S]*/i);
-  if (m3t) return ensureClosed(m3t[0]);
+  if (m3t) return makeResult(m3t[0]);
 
-  // 6. Bare <html> ... </html> (complete)
+  // 6. Bare <html> ... </html>
   const m4 = text.match(/<html[\s\S]*?<\/html>/i);
-  if (m4) return m4[0].trim();
+  if (m4) return makeResult(m4[0]);
 
   // 7. Bare <html> ... (truncated)
   const m4t = text.match(/<html[\s\S]*/i);
-  if (m4t) return ensureClosed(m4t[0]);
+  if (m4t) return makeResult(m4t[0]);
 
-  return '';
+  return { html: '', truncated: false };
 }
 
 function renderLivePreview(responseText) {
   if (!buildModeEnabled) return;
-  const code = extractHtmlFromResponse(responseText);
+  const { html: code } = extractHtmlFromResponse(responseText);
   if (!code) return;
   _lastBuiltCode = code;
   // Save for preview-output.html to load
