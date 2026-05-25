@@ -1205,12 +1205,7 @@ function showPaidModes() {
 
 function hidePaidModes() {
   isPrepaidKey = false;
-  const imageBtn = document.getElementById('imageModeBtn');
-  const musicBtn = document.getElementById('musicModeBtn');
-  const videoBtn = document.getElementById('videoModeBtn');
-  if (imageBtn) imageBtn.style.display = 'none';
-  if (musicBtn) musicBtn.style.display = 'none';
-  if (videoBtn) videoBtn.style.display = 'none';
+  // Buttons stay visible — clicking them without a prepaid key shows the upgrade prompt.
 
   if (currentAiMode !== 'vision') {
     currentAiMode = 'vision';
