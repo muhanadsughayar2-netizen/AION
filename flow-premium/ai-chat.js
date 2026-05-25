@@ -5469,6 +5469,11 @@ const BUILD_SYSTEM_PROMPT = `You are a world-class UI engineer and visual design
 STRICT OUTPUT RULE: Respond with ONLY a \`\`\`html code block. Zero prose before or after. Just the code.
 Iterate requests: output the FULL improved file — never partial diffs.
 
+EXCEPTION — CONTINUE_BUILD: If the user message starts with "CONTINUE_BUILD:", the previous
+response was cut off by token limits. Output ONLY the remaining HTML from where you stopped —
+starting at the next complete opening tag (e.g. <div, <section, <footer, <script).
+Never restart from <!DOCTYPE html>. Never repeat code already written. No prose, no fences.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   STEP 1 — READ THE REQUEST, PICK AN AESTHETIC
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -5498,7 +5503,7 @@ PROFILE B — EDITORIAL LIGHT (Aesop / Sakara / Daily Harvest — wellness / foo
   Colors: --bg:#F9FBF9; --text:#0A2E36; --surface:#ffffff; --accent:#FF7043; --sage:#76A08A
   Fonts: Playfair Display 400 (headings, tight tracking) + Inter 400 (body) from Google Fonts
   Radius: 4px (sharp) | Section padding: 160px 24px | Max-width: 1100px
-  Signature moves: cream base, deep-forest text, sage secondary color, generous whitespace, thin-line SVG icons (vessel/sprout/helix/shield), real Unsplash macro photography, ONE blood-orange CTA per section
+  Signature moves: cream base, deep-forest text, sage secondary color, generous whitespace, thin-line SVG icons (vessel/sprout/helix/shield), real Pexels macro photography, ONE blood-orange CTA per section
   BANNED: dark backgrounds, glassmorphism, glow shadows, gradient-clipped text, emoji icons, "Trusted by" strips, two CTAs in hero
 
 PROFILE C — LUXURY MINIMAL (Apple / Arc / Rauno / premium product)
@@ -5745,7 +5750,7 @@ These are what every average AI defaults to. You never produce these unless expl
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✓ Correct aesthetic profile chosen — NOT defaulted to dark SaaS?
 ✓ Right font pairing for this profile (not just Inter for everything)?
-✓ Real Unsplash images used (not colored placeholder divs)?
+✓ Real Pexels images used (not colored placeholder divs)?
 ✓ Real specific copy (not lorem ipsum or generic filler)?
 ✓ Thin-line SVG icons (not emoji in professional contexts)?
 ✓ One wow detail added (matching the chosen profile)?
@@ -7089,6 +7094,12 @@ function addBubbleActions(bubble, text) {
   if (_continuationPending && _extracted.html) _continuationPending = false;
   const thisCode = _extracted.html;
   const isTruncated = _extracted.truncated;
+  // Persist merged code immediately so a second "Continue Build" uses the
+  // correct merged base, not the stale partial from before the first continuation.
+  if (thisCode) {
+    _lastBuiltCode = thisCode;
+    try { chrome.storage.local.set({ snaptoai_built_code: thisCode }); } catch(e) {}
+  }
   const showPreview = buildModeEnabled && (!!thisCode || !!_lastBuiltCode);
 
   let previewBtnHtml = '';
@@ -7119,7 +7130,7 @@ function addBubbleActions(bubble, text) {
       _continuationPending = true;
       const input = document.getElementById('chatInput');
       if (input) {
-        input.value = 'Continue the HTML code from exactly where you left off. IMPORTANT: start your output at the beginning of the next COMPLETE HTML element (opening tag like <div, <section, <footer, <script etc.) — never start mid-attribute or mid-tag. Output only the remaining HTML — do not restart from <!DOCTYPE html>.';
+        input.value = 'CONTINUE_BUILD: output only the remaining HTML from where the previous response cut off. Start at the beginning of the next complete HTML element (opening tag like <div, <section, <footer, <script). Never restart from <!DOCTYPE html>. Never repeat already-written code.';
         const btn = document.getElementById('sendBtn');
         if (btn) btn.click();
       }
@@ -7859,7 +7870,9 @@ function extractHtmlFromResponse(text, partialCode) {
 
 function renderLivePreview(responseText) {
   if (!buildModeEnabled) return;
-  const { html: code } = extractHtmlFromResponse(responseText);
+  // Pass partialCode when a continuation is in progress so streaming
+  // updates correctly merge onto the existing build, not re-parse empty chunk.
+  const { html: code } = extractHtmlFromResponse(responseText, _continuationPending ? _lastBuiltCode : null);
   if (!code) return;
   _lastBuiltCode = code;
   // Save for preview-output.html to load

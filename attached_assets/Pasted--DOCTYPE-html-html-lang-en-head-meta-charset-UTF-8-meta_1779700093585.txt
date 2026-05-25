@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metabolic Matrix | Dr. William Li</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #030408;
+      --surface: rgba(255, 255, 255, 0.04);
+      --surface-hover: rgba(255, 255, 255, 0.08);
+      --text: #f0f0ff;
+      --text-muted: #8b949e;
+      --accent: #00f2ff;
+      --accent-glow: rgba(0, 242, 255, 0.2);
+      --vitality: #ff4d4d;
+      --vitality-glow: rgba(255, 77, 77, 0.2);
+      --border: rgba(255, 255, 255, 0.1);
+      --radius-lg: 24px;
+      --radius-md: 12px;
+      --max-width: 1100px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { 
+      background-color: var(--bg); 
+      color: var(--text); 
+      font-family: 'Inter', sans-serif; 
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Ambient Orbs */
+    .orb {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      z-index: -1;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    .orb-1 { top: -200px; right: -100px; }
+    .orb-2 { bottom: -200px; left: -100px; opacity: 0.5; background: radial-gradient(circle, var(--vitality-glow) 0%, transparent 70%); }
+
+    .container { max-width: var(--max-width); margin: 0 auto; padding: 0 24px; position: relative; z-index: 10; }
+
+    /* Navigation */
+    nav {
+      height: 80px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      background: rgba(3, 4, 8, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 1000;
+    }
+    .nav-inner { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+    .logo { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 1.25rem; letter-spacing: -0.5px; text-transform: uppercase; }
+    .logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a { text-decoration: none; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--accent); }
+    .cta-mini { background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: 40px; font-weight: 700; text-decoration: none; font-size: 0.85rem; transition: transform 0.2s; }
+    .cta-mini:hover { transform: scale(1.05); }
+
+    /* Hero Section */
+    .hero { padding: 100px 0 80px; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 80px; align-items: center; }
+    .hero-tag { 
+      display: inline-block; padding: 6px 14px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 100px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+      margin-bottom: 24px; color: var(--accent);
+    }
+    h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: clamp(2.8rem, 6vw, 4.2rem); line-height: 1.1; font-weight: 800; margin-bottom: 24px; letter-spacing: -2px; }
+    .gradient-text { background: linear-gradient(135deg, #fff 0%, #94a3b8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-p { font-size: 1.25rem; color: var(--text-muted); margin-bottom: 40px; max-width: 540px; font-weight: 300; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 12px; padding: 16px 32px; border-radius: var(--radius-md);
+      font-weight: 700; text-decoration: none; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer; border: none;
+      font-size: 0.95rem;
+    }
+    .btn-primary { background: var(--accent); color: var(--bg); box-shadow: 0 0 20px var(--accent-glow); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 40px var(--accent-glow); }
+
+    .hero-visual { position: relative; display: flex; justify-content: center; }
+    .floating-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 16px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      animation: float 6s ease-in-out infinite;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+      width: 100%;
+      max-width: 360px;
+      aspect-ratio: 4/5;
+      overflow: hidden;
+      position: relative;
+    }
+    .floating-card img {
+      width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-md); filter: brightness(0.9);
+    }
+    .floating-card .overlay-card-text {
+      position: absolute; bottom: 30px; left: 30px; right: 30px;
+      background: rgba(3, 4, 8, 0.85); backdrop-filter: blur(8px);
+      border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 16px; text-align: center;
+    }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+    /* Interactive Tabs: 5 Defense Systems */
+    .section-header { text-align: center; margin-bottom: 60px; }
+    .section-header h2 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 2.5rem; margin-bottom: 16px; letter-spacing: -1px; }
+    .section-header p { color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+    
+    .systems-widget { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 40px; }
+    .tab-nav { display: flex; justify-content: center; gap: 12px; margin-bottom: 40px; flex-wrap: wrap; }
+    .tab-btn {
+      background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 12px 24px;
+      border-radius: 100px; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700;
+      transition: all 0.2s; font-size: 0.85rem;
+    }
+    .tab-btn:hover { border-color: var(--accent); color: var(--text); }
+    .tab-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+    
+    .tab-panel { display: none; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+    .tab-panel.active { display: grid; animation: slideUp 0.6s ease forwards; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    .panel-visual { height: 380px; border-radius: var(--radius-md); overflow: hidden; position: relative; border: 1px solid var(--border); }
+    .panel-visual img { width: 100%; height: 100%; object-fit: cover; }
+    .panel-content h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 2rem; margin-bottom: 16px; color: var(--accent); }
+    .panel-content p { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 24px; }
+    .food-tag { display: inline-block; padding: 6px 14px; background: rgba(0, 242, 255, 0.1); border-radius: 6px; color: var(--accent); font-size: 0.8rem; font-weight: 600; margin: 0 8px 8px 0; border: 1px solid rgba(0, 242, 255, 0.15); }
+
+    /* WOW Detail: The Metabolic Visualizer */
+    .visualizer-box {
+      background: radial-gradient(circle at top right, #0a0e1a, #030408);
+      border: 1px solid var(--border); border-radius: 40px; padding: 80px 40px; text-align: center; margin: 120px 0;
+      position: relative; overflow: hidden;
+    }
+    .ring-container { width: 300px; height: 300px; margin: 0 auto 40px; position: relative; display: flex; align-items: center; justify-content: center; }
+    .ring-svg { transform: rotate(-90deg); width: 300px; height: 300px; }
+    .ring-track { fill: none; stroke: var(--border); stroke-width: 12; }
+    .ring-fill { 
+      fill: none; stroke: var(--accent); stroke-width: 12; stroke-linecap: round; 
+      stroke-dasharray: 816.814; /* 2 * PI * 130 */
+      stroke-dashoffset: 816.814; 
+      transition: stroke-dashoffset 1.5s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.5s ease;
+    }
+    .ring-label { position: absolute; }
+    .ring-val { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 3.5rem; font-weight: 800; display: block; line-height: 1; }
+    .ring-sub { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); margin-top: 4px; }
+    
+    .food-selection { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 32px; }
+    .bio-food-btn {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.9rem;
+      transition: all 0.25s ease;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .bio-food-btn:hover { border-color: var(--accent); background: var(--surface-hover); }
+    .bio-food-btn.active {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: var(--accent);
+      box-shadow: 0 0 15px rgba(0, 242, 255, 0.35);
+    }
+    .bio-food-btn .symbol {
+      width: 20px; height: 20px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+      display: grid; place-items: center;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    .bio-food-btn.active .symbol { background: var(--bg); color: var(--accent); transform: rotate(45deg); }
+
+    /* Marketing & Feature Grid */
+    .matrix-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin: 80px 0; }
+    .matrix-card { 
+      background: var(--surface); padding: 40px; border-radius: var(--radius-lg); border: 1px solid var(--border);
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .matrix-card:hover { background: var(--surface-hover); border-color: var(--accent); }
+    .matrix-card svg { width: 40px; height: 40px; color: var(--accent); margin-bottom: 24px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+    .matrix-card h4 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.4rem; margin-bottom: 12px; }
+    .matrix-card p { color: var(--text-muted); font-size: 0.95rem; }
+
+    /* Pricing Section */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      margin-top: 60px;
+    }
+    .price-card {
+      background: var(--surface);
+      padding: 60px 40px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s, border-color 0.3s;
+    }
+    .price-card:hover { transform: translateY(-5px); border-color: rgba(255, 255, 255, 0.2); }
+    .price-card.featured { border-color: var(--accent); position: relative; box-shadow: 0 20px 40px rgba(0, 242, 255, 0.05); }
+    .price-card.featured::after {
+      content: "RECOMMENDED";
+      position: absolute;
+      top: 0; left: 50%; transform: translate(-50%, -50%);
+      background: var(--accent); color: var(--bg); font-size: 0.65rem; font-weight: 800; letter-spacing: 1.5px; padding: 6px 16px;
+      border-radius: 20px;
+    }
+    .price-amount { font-size: 3rem; font-family: 'Plus Jakarta Sans'; font-weight: 800; margin: 32px 0; display: flex; align-items: baseline; }
+    .price-amount span { font-size: 1rem; opacity: 0.5; font-family: 'Inter'; font-weight: 400; }
+    .price-features { list-style: none; margin-bottom: 40px; }
+    .price-features li { font-size: 0.95rem; margin-bottom: 16px; color: var(--text-muted); display: flex; gap: 12px; align-items: center; }
+    .price-features svg { width: 18px; height: 18px; stroke: var(--accent); stroke-width: 2.5; fill: none; flex-shrink: 0; }
+
+    /* Footer */
+    footer { border-top: 1px solid var(--border); padding: 80px 0 40px; margin-top: 100px; background: #020305; }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 80px; margin-bottom: 60px; }
+    .footer-brand p { color: var(--text-muted); margin-top: 16px; max-width: 320px; }
+    .footer-col h5 { font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 24px; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px; color: #fff; }
+    .footer-links { list-style: none; }
+    .footer-links li { margin-bottom: 12px; }
+    .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; transition: color 0.3s; cursor: pointer; }
+    .footer-links a:hover { color: var(--accent); }
+    .copyright { text-align: center; border-top: 1px solid var(--border); padding-top: 40px; color: var(--text-muted); font-size: 0.8rem; }
+
+    /* Custom Modals */
+    #legalModal {
+      position: fixed; inset: 0; background: rgba(3, 4, 8, 0.95); z-index: 9999;
+      display: none; align-items: center; justify-content: center; padding: 24px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .modal-content {
+      background: #090d16; border: 1px solid var(--border); max-width: 600px; width: 100%;
+      max-height: 80vh; overflow-y: auto; padding: 48px; border-radius: var(--radius-lg); position: relative;
+    }
+    .close-modal { position: absolute; top: 24px; right: 24px; background: none; border: none; color: #fff; font-size: 2rem; cursor: pointer; }
+    
+    /* Reveal Animation Class */
+    .reveal { opacity: 0; transform: translateY(24px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 900px) {
+      .hero, .tab-panel, .pricing-grid, .footer-grid { grid-template-columns: 1fr; }
+      .hero-p { margin: 0 auto 40px; text-align: center; }
+      .hero-content { text-align: center; }
+      .nav-links { display: none; }
+      .floating-card { order: -1; margin-bottom: 40px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <nav>
+    <div class="container nav-inner">
+      <div class="logo">METABOLIC <span>MATRIX</span></div>
+      <ul class="nav-links">
+        <li><a href="#systems">5 Defense Systems</a></li>
+        <li><a href="#visualizer">Bio-Visualizer</a></li>
+        <li><a href="#matrix-details">Our Framework</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+      </ul>
+      <a href="#pricing" class="cta-mini">Join Masterclass</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <!-- Hero Section -->
+    <header class="hero">
+      <div class="hero-content reveal">
+        <span class="hero-tag">New York Times Bestseller</span>
+        <h1>Eat More.<br><span class="gradient-text">Beat Your Diet.</span></h1>
+        <p class="hero-p">Welcome to the medical-grade nutritional revolution. We don't restrict foods; we focus on molecular bioactives that actively fortify your 5 defense systems.</p>
+        <div>
+          <a href="#visualizer" class="btn btn-primary">TRY THE BIO-VISUALIZER</a>
+        </div>
+      </div>
+      <div class="hero-visual reveal">
+        <div class="floating-card">
+          <img src="https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Beautiful fresh healthy salad and ingredients">
+          <div class="overlay-card-text">
+            <h4 style="font-size:1.1rem; font-family:'Plus Jakarta Sans'; margin-bottom:4px;">Food is Medicine</h4>
+            <p style="font-size:0.8rem; color: var(--accent);">Dr. William Li, MD</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Systems Panel -->
+    <section id="systems" style="padding: 100px 0;">
+      <div class="section-header reveal">
+        <h2>The 5 Health Defense Shields</h2>
+        <p>Decades of clinical research have mapped five distinct pathways. By selecting specific bioactive foods, we directly activate these surveillance shields.</p>
+      </div>
+
+      <div class="systems-widget reveal">
+        <div class="tab-nav">
+          <button class="tab-btn active" onclick="showTab('sys1', this)">Angiogenesis</button>
+          <button class="tab-btn" onclick="showTab('sys2', this)">Regeneration</button>
+          <button class="tab-btn" onclick="showTab('sys3', this)">Microbiome</button>
+          <button class="tab-btn" onclick="showTab('sys4', this)">DNA Protection</button>
+          <button class="tab-btn" onclick="showTab('sys5', this)">Immunity</button>
+        </div>
+
+        <!-- Tab Panels with stunning visual backups -->
+        <div id="sys1" class="tab-panel active">
+          <div class="panel-visual">
+            <img src="https://images.pexels.com/photos/1132047/pexels-photo-1132047.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Vibrant fresh berries" onerror="this.style.display='none';this.parentElement.style.background='radial-gradient(#111, #222)'">
+          </div>
+          <div class="panel-content">
+            <h3>Angiogenesis Control</h3>
+            <p>Managing microvascular balance is critical. Your blood vessels deliver vital nutrients, but abnormal vessel growth feeds chronic illness. Certain bioactives prune excess vessels to keep your ecosystem protected.</p>
+            <div>
+              <span class="food-tag">Wild Berries (Lycopene)</span>
+              <span class="food-tag">Green Tea (EGCG)</span>
+              <span class="food-tag">Tomatoes</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="sys2" class="tab-panel">
+          <div class="panel-visual">
+            <img src="https://images.pexels.com/photos/1367240/pexels-photo-1367240.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Natural walnuts" onerror="this.style.display='none';this.parentElement.style.background='radial-gradient(#111, #222)'">
+          </div>
+          <div class="panel-content">
+            <h3>Regeneration (Stem Cells)</h3>
+            <p>Your body is constantly self-repairing. Deep inside, adult stem cells stand ready to rebuild liver tissue, repair cardiovascular lining, and reverse physiological wear-and-tear.</p>
+            <div>
+              <span class="food-tag">Dark Chocolate (85%+)</span>
+              <span class="food-tag">Black Tea</span>
+              <span class="food-tag">Extra Virgin Olive Oil</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="sys3" class="tab-panel">
+          <div class="panel-visual">
+            <img src="https://images.pexels.com/photos/4052861/pexels-photo-4052861.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Healthy raw food layout" onerror="this.style.display='none';this.parentElement.style.background='radial-gradient(#111, #222)'">
+          </div>
+          <div class="panel-content">
+            <h3>Microbiome Harmony</h3>
+            <p>With over 39 trillion microbes operating inside your digestive tract, gut architecture dictates immune modulation, blood pressure health, and metabolic energy expenditure.</p>
+            <div>
+              <span class="food-tag">Kiwi</span>
+              <span class="food-tag">Kimchi & Sourdough</span>
+              <span class="food-tag">Prebiotic Asparagus</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="sys4" class="tab-panel">
+          <div class="panel-visual">
+            <img src="https://images.pexels.com/photos/4113888/pexels-photo-4113888.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Fresh green broccoli details" onerror="this.style.display='none';this.parentElement.style.background='radial-gradient(#111, #222)'">
+          </div>
+          <div class="panel-content">
+            <h3>DNA Protection</h3>
+            <p>DNA is your biological blueprint, but environmental oxidative strain attacks it daily. Bioactive inputs act as a structural shield, accelerating cell-repair mechanisms and shielding your telomeres.</p>
+            <div>
+              <span class="food-tag">Broccoli Sprouts</span>
+              <span class="food-tag">Spinach (Folate)</span>
+              <span class="food-tag">Berries (Antioxidants)</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="sys5" class="tab-panel">
+          <div class="panel-visual">
+            <img src="https://images.pexels.com/photos/1435904/pexels-photo-1435904.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Mushrooms and botanicals" onerror="this.style.display='none';this.parentElement.style.background='radial-gradient(#111, #222)'">
+          </div>
+          <div class="panel-content">
+            <h3>Immune Reboot</h3>
+            <p>Your immune defense constantly patrols for anomalies. Dietary inputs containing beta-glucan markers immediately wake up your natural killer cells, modulating inflammation and fortifying immunity.</p>
+            <div>
+              <span class="food-tag">Shiitake Mushrooms</span>
+              <span class="food-tag">White Button Mushrooms</span>
+              <span class="food-tag">Grapes & Blueberries</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bio-Visualizer -->
+    <section id="visualizer">
+      <div class="visualizer-box reveal">
+        <span class="hero-tag" style="background: rgba(0, 242, 255, 0.05); color: var(--accent);">Interactive Experience</span>
+        <h2 style="font-family:'Plus Jakarta Sans'; font-size:2.5rem; margin-top: 12px; margin-bottom:20px;">The Bio-Metabolic Matrix</h2>
+        <p style="color:var(--text-muted); margin-bottom:40px; max-width:600px; margin-left:auto; margin-right:auto;">Toggle your favorite dietary bioactives below. Watch how they cumulatively charge your Metabolic score and activate your health systems.</p>
+        
+        <div class="ring-container">
+          <svg class="ring-svg" viewBox="0 0 280 280">
+            <circle class="ring-track" cx="140" cy="140" r="130"></circle>
+            <circle id="progressCircle" class="ring-fill" cx="140" cy="140" r="130"></circle>
+          </svg>
+          <div class="ring-label">
+            <span id="percentText" class="ring-val">0%</span>
+            <span class="ring-sub">Activation Score</span>
+          </div>
+        </div>
+
+        <h3 id="activeFoodName" style="color:var(--accent); font-family:'Plus Jakarta Sans'; min-height:1.5em; font-size: 1.4rem;">Select your bioactives</h3>
+        
+        <div class="food-selection">
+          <button class="bio-food-btn" data-value="25" data-color="#00f2ff" data-name="Wild Berries (Angiogenesis & DNA)">
+            <span class="symbol">+</span> Berries
+          </button>
+          <button class="bio-food-btn" data-value="20" data-color="#10b981" data-name="Leafy Greens (DNA & Immune)">
+            <span class="symbol">+</span> Leafy Greens
+          </button>
+          <button class="bio-food-btn" data-value="25" data-color="#ff9f1c" data-name="Shiitake Mushrooms (Immunity Reboot)">
+            <span class="symbol">+</span> Mushrooms
+          </button>
+          <button class="bio-food-btn" data-value="30" data-color="#ff4d4d" data-name="Fatty Salmon (Regeneration & Cellular Repair)">
+            <span class="symbol">+</span> Fatty Salmon
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature Block -->
+    <section id="matrix-details">
+      <div class="matrix-grid">
+        <div class="matrix-card reveal">
+          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <h4>The 5x5x5 Framework</h4>
+          <p>Optimize your dietary checklist: select five metabolic-boosting foods and integrate them throughout the day to support every primary pathway.</p>
+        </div>
+        <div class="matrix-card reveal">
+          <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          <h4>Brown Fat Optimization</h4>
+          <p>Scientific dietary strategies that activate your cellular heaters, triggering thermogenesis to safely burn visceral fat reserves.</p>
+        </div>
+        <div class="matrix-card reveal">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <h4>Med-Asian Fusion</h4>
+          <p>An elegant synthesis of the Mediterranean and East Asian culinary models, formulated solely around nutrient-dense ingredients.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing">
+      <div class="section-header reveal">
+        <h2>Membership Options</h2>
+        <p>Invest in your biological wellness with tailored advisory schedules.</p>
+      </div>
+
+      <div class="pricing-grid">
+        <!-- Tier 1 -->
+        <div class="price-card reveal">
+          <h3>Basic Roadmap</h3>
+          <p style="opacity:0.6; font-size:0.9rem; margin-top: 4px;">Initial Bio-Audit</p>
+          <div class="price-amount">$50</div>
+          <ul class="price-features">
+            <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Core Bio-Assessment</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Tailored Food Blueprint</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Initial 5-Shield Strategy</li>
+          </ul>
+          <button class="btn btn-primary" style="background:transparent; border:1px solid var(--text); color: var(--text); margin-top: auto; box-shadow:none;">GET ROADMAP</button>
+        </div>
+
+        <!-- Tier 2 -->
+        <div class="price-card featured reveal">
+          <h3>Bio-Fortify Plan</h3>
+          <p style="opacity:0.6; font-size:0.9rem; margin-top: 4px;">Monthly Adaptation</p>
+          <div class="price-amount">$100<span>/mo</span></div>
+          <ul class="price-features">
+            <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Includes All Roadmap Assets</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Weekly Calibration Sessions</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Direct Email Counseling</li>
+          </ul>
+          <button class="btn btn-primary" style="margin-top: auto;">START TRANSFORMATION</button>
+        </div>
+
+        <!-- Tier 3 -->
+        <div class="price-card reveal">
+          <h3>VIP Advisory</h3>
+          <p style="opacity:0.6; font-size:0.9rem; margin-top: 4px;">Concierge Strategy</p>
+          <div class="price-amount">$120<span>/mo</span></div>
+          <ul class="price-features">
+            <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Premium Metabolic Tracking</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> 24/7 Concierge Messaging</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Direct Bi-Weekly Diagnostics</li>
+          </ul>
+          <button class="btn btn-primary" style="background:transparent; border:1px solid var(--text); color: var(--text); margin-top: auto; box-shadow:none;">APPLY FOR VIP</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="logo">METABOLIC <span>MATRIX</span></div>
+          <p>Advocating for the therapeutic deployment of molecular bioactives. Built on the medical guidelines of the Dr. William Li Health Institutes.</p>
+        </div>
+        <div class="footer-col">
+          <h5>Platform</h5>
+          <ul class="footer-links">
+            <li><a href="#systems">Defense Systems</a></li>
+            <li><a href="#visualizer">Bio-Visualizer</a></li>
+            <li><a href="#matrix-details">The 5 Shields</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h5>Scientific Legal</h5>
+          <ul class="footer-links">
+            <li><a onclick="openLegal('Clinical Disclaimer', '<p>The assessments provided on this platform are structured strictly for nutritional coaching purposes and do not represent a clinical diagnosis or official medical prescription.</p><p>Please review potential diet alterations alongside your general practitioner, especially when modulating existing therapies.</p>')">Medical Disclaimer</a></li>
+            <li><a onclick="openLegal('Data Privacy', '<p>All genetic metrics, biomarker entries, and dietary profiles entered on our platform are secured under fully integrated cryptographic protocols. We enforce strict non-disclosure terms regarding third-party diagnostics.</p>')">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="copyright">
+        &copy; 2026 Dr. William Li Health Institute. Designed for Optimal Metabolism.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal Structure -->
+  <div id="legalModal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeLegal()">&times;</button>
+      <h2 id="legalTitle" style="font-family:'Plus Jakarta Sans'; margin-bottom:24px; color:var(--accent);"></h2>
+      <div id="legalBody" style="line-height:1.8; color:var(--text-muted);"></div>
+    </div>
+  </div>
+
+  <script>
+    // 1. Reveal Elements on Scroll
+    const _io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          _io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+    document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+
+    // 2. Tab Menu Toggling
+    function showTab(id, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      
+      const targetPanel = document.getElementById(id);
+      if (targetPanel) targetPanel.classList.add('active');
+      if (btn) btn.classList.add('active');
+    }
+
+    // 3. Metabolic Cumulative Selector Logic
+    let runningScore = 0;
+    const textPercent = document.getElementById('percentText');
+    const visualCircle = document.getElementById('progressCircle');
+    const activeLabel = document.getElementById('activeFoodName');
+    const circleCircumference = 2 * Math.PI * 130; // 816.814 px
+
+    document.querySelectorAll('.bio-food-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const value = parseInt(btn.getAttribute('data-value'));
+        const color = btn.getAttribute('data-color');
+        const name = btn.getAttribute('data-name');
+        
+        if (btn.classList.contains('active')) {
+          btn.classList.remove('active');
+          runningScore -= value;
+          activeLabel.innerText = "Deactivated bioactive path.";
+          activeLabel.style.color = "var(--text-muted)";
+        } else {
+          btn.classList.add('active');
+          runningScore += value;
+          activeLabel.innerText = "Activated: " + name;
+          activeLabel.style.color = color;
+        }
+
+        updateDashboard(runningScore, color);
+      });
+    });
+
+    function updateDashboard(score, colorCode) {
+      const displayScore = Math.min(Math.max(score, 0), 100);
+      
+      // Compute progress ring stroke-dashoffset
+      const targetOffset = circleCircumference - (displayScore / 100) * circleCircumference;
+      visualCircle.style.stroke = score > 0 ? colorCode : 'var(--accent)';
+      visualCircle.style.strokeDashoffset = targetOffset;
+
+      // Animate percentage label counter
+      const currentNumber = parseInt(textPercent.textContent);
+      const duration = 500;
+      const startTime = performance.now();
+
+      function stepAnimation(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const interpolatedValue = Math.floor(currentNumber + (displayScore - currentNumber) * progress);
+        textPercent.innerText = interpolatedValue + '%';
+
+        if (progress < 1) requestAnimationFrame(stepAnimation);
+      }
+      requestAnimationFrame(stepAnimation);
+    }
+
+    // 4. Smooth Scrolling with Offset Target Logic
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href');
+        const targetElement = document.querySelector(targetId);
+        
+        if (targetElement) {
+          const headerOffset = 90; // Fixed navbar height offset guard
+          const elementPosition = targetElement.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+  
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: "smooth"
+          });
+        }
+      });
+    });
+
+    // 5. Connect Dead Pricing/CTAs to Scroll directly to Visualizer Tool
+    document.querySelectorAll('.price-card .btn, .pricing-grid .btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetElement = document.getElementById('visualizer');
+        if (targetElement) {
+          const headerOffset = 90;
+          const elementPosition = targetElement.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: "smooth"
+          });
+
+          // Pulse visualizer box border to draw immediate attention
+          const visBox = document.querySelector('.visualizer-box');
+          visBox.style.borderColor = "var(--accent)";
+          visBox.style.boxShadow = "0 0 30px var(--accent-glow)";
+          setTimeout(() => {
+            visBox.style.borderColor = "var(--border)";
+            visBox.style.boxShadow = "none";
+          }, 1500);
+        }
+      });
+    });
+
+    // 6. Modal Functions
+    function openLegal(title, bodyHtml) {
+      const modal = document.getElementById('legalModal');
+      document.getElementById('legalTitle').innerText = title;
+      document.getElementById('legalBody').innerHTML = bodyHtml;
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLegal() {
+      document.getElementById('legalModal').style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+
+    // Modal close guard when clicking outside box boundary
+    window.onclick = function(e) {
+      const modal = document.getElementById('legalModal');
+      if (e.target === modal) closeLegal();
+    }
+
+    // Inital Setup
+    window.onload = function() {
+      updateDashboard(0, 'var(--accent)');
+    }
+  </script>
+</body>
+</html>
