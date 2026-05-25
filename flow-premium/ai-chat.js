@@ -4901,6 +4901,7 @@ function showVideoResult(bubble, videoUrl, thread) {
       <video controls autoplay muted playsinline style="width:100%;max-width:480px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);" src="${videoUrl}"></video>
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="video-save-btn" style="background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.3);color:#ffa500;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">💾 Save Video</button>
+        <button class="video-use-build-btn" style="background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.4);color:#ffa032;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">📌 Use in Build</button>
       </div>
     </div>
   `;
@@ -4910,6 +4911,38 @@ function showVideoResult(bubble, videoUrl, thread) {
     a.href = videoUrl;
     a.download = 'snaptoai-video.mp4';
     a.click();
+  });
+
+  bubble.querySelector('.video-use-build-btn')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.textContent = '⏳ Preparing…';
+    btn.disabled = true;
+    try {
+      const resp = await fetch(videoUrl);
+      const blob = await resp.blob();
+      const mimeType = blob.type || 'video/webm';
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result.split(',')[1];
+        setStagedMedia('video', mimeType, base64, 'Video');
+        btn.textContent = '✅ Staged!';
+        btn.style.background = 'rgba(0,200,136,0.2)';
+        btn.style.borderColor = 'rgba(0,200,136,0.5)';
+        btn.style.color = '#00cc88';
+        btn.disabled = false;
+        setTimeout(() => {
+          btn.textContent = '📌 Use in Build';
+          btn.style.background = 'rgba(255,160,50,0.15)';
+          btn.style.borderColor = 'rgba(255,160,50,0.4)';
+          btn.style.color = '#ffa032';
+        }, 2000);
+      };
+      reader.readAsDataURL(blob);
+    } catch (err) {
+      btn.textContent = '❌ Failed';
+      btn.disabled = false;
+      setTimeout(() => { btn.textContent = '📌 Use in Build'; }, 2000);
+    }
   });
 
   thread.scrollTop = thread.scrollHeight;
@@ -5982,6 +6015,20 @@ async function sendToGemini(prompt, imageDataUrls) {
     userParts.unshift({ text: `Analyze the following webpage: ${currentPageUrl}\n\n` });
   }
   userParts.push({ text: prompt });
+
+  // If user staged an image/video for Build Mode, inject it as a media part
+  if (buildModeEnabled && _stagedBuildMedia) {
+    const m = _stagedBuildMedia;
+    if (m.type === 'image') {
+      // Gemini can see the image — inject as inlineData + instruction text
+      userParts.push({ inlineData: { mimeType: m.mimeType, data: m.data } });
+      userParts.push({ text: `\n\n[USER MEDIA] The user has attached their own generated image above. You MUST embed it prominently in the page using: <img src="data:${m.mimeType};base64,${m.data}" style="..."> — place it as the hero image or in a dedicated section. Do not use any other image for this spot.` });
+    } else if (m.type === 'video') {
+      userParts.push({ text: `\n\n[USER MEDIA] The user has a generated video to embed. Use this exact data URL as the video src: data:${m.mimeType};base64,${m.data}\nEmbed it as: <video src="data:${m.mimeType};base64,${m.data}" controls playsinline style="width:100%;max-width:800px;border-radius:12px;display:block;margin:0 auto;"> in a dedicated full-width section of the page.` });
+    }
+    clearStagedMedia(); // consume after one build
+  }
+
   contents.push({ role: 'user', parts: userParts });
   
   // Active specialist agent overrides all other prompts (except Build Mode)
@@ -6531,7 +6578,7 @@ async function handleSend() {
         if (part.inlineData) {
           hasImage = true;
           rawImageSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-          htmlContent += `<div style="margin:10px 0;" class="generated-image-container"><img class="generated-img" src="${rawImageSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);" title="Click to save full size"><div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"><button class="img-save-btn" style="background:rgba(255,107,237,0.15);border:1px solid rgba(255,107,237,0.3);color:#ff6bed;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Image</button></div></div>`;
+          htmlContent += `<div style="margin:10px 0;" class="generated-image-container" data-src="${rawImageSrc}"><img class="generated-img" src="${rawImageSrc}" style="max-width:100%;border-radius:12px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);" title="Click to save full size"><div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"><button class="img-save-btn" style="background:rgba(255,107,237,0.15);border:1px solid rgba(255,107,237,0.3);color:#ff6bed;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Image</button><button class="img-use-build-btn" style="background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.4);color:#ffa032;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">📌 Use in Build</button></div></div>`;
         }
       }
       
@@ -6561,6 +6608,26 @@ async function handleSend() {
             a.download = 'snaptoai-image.png';
             a.click();
           }
+        });
+      });
+      responseBubble.querySelectorAll('.img-use-build-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const container = btn.closest('.generated-image-container');
+          const src = container?.dataset.src || container?.querySelector('img')?.src;
+          if (!src) return;
+          const base64 = src.split(',')[1];
+          const mimeType = src.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+          setStagedMedia('image', mimeType, base64, 'Image');
+          btn.textContent = '✅ Staged!';
+          btn.style.background = 'rgba(0,200,136,0.2)';
+          btn.style.borderColor = 'rgba(0,200,136,0.5)';
+          btn.style.color = '#00cc88';
+          setTimeout(() => {
+            btn.textContent = '📌 Use in Build';
+            btn.style.background = 'rgba(255,160,50,0.15)';
+            btn.style.borderColor = 'rgba(255,160,50,0.4)';
+            btn.style.color = '#ffa032';
+          }, 2000);
         });
       });
       
@@ -7490,6 +7557,7 @@ if (sidebarToggle && imagePanel) {
 
 // Event listeners
 document.getElementById('closeBtn')?.addEventListener('click', () => window.close());
+document.getElementById('clearStagedBtn')?.addEventListener('click', clearStagedMedia);
 document.getElementById('sendBtn')?.addEventListener('click', handleSend);
 
 const chatInput = document.getElementById('chatInput');
@@ -7566,6 +7634,26 @@ document.getElementById('searchToggleBtn')?.addEventListener('click', (e) => {
 
 // ── Build Mode ────────────────────────────────────────────────────────────────
 let _lastBuiltCode = '';
+
+// ── Staged Media for Build Mode ────────────────────────────────────────────
+// Holds an image or video the user tagged to embed in the next build.
+let _stagedBuildMedia = null; // { type, mimeType, data (base64), label }
+
+function setStagedMedia(type, mimeType, data, label) {
+  _stagedBuildMedia = { type, mimeType, data, label };
+  const el = document.getElementById('stagedMediaIndicator');
+  if (el) {
+    el.style.display = 'flex';
+    const lbl = el.querySelector('#stagedMediaLabel');
+    if (lbl) lbl.textContent = `📌 ${label} staged for Build Mode`;
+  }
+}
+
+function clearStagedMedia() {
+  _stagedBuildMedia = null;
+  const el = document.getElementById('stagedMediaIndicator');
+  if (el) el.style.display = 'none';
+}
 
 // Returns { html: string, truncated: boolean }
 function extractHtmlFromResponse(text) {
