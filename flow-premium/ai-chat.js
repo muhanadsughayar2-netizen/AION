@@ -5640,7 +5640,31 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
    MODAL / OVERLAY: toggle style.display between 'flex' and 'none'.
    GAUGE / PROGRESS RINGS: animate stroke-dashoffset with setTimeout(fn, 100).
    TOGGLES / FOOD BUTTONS: classList.toggle('active') — also update any linked counter or gauge.
-   TABS / ACCORDIONS: show/hide via style.display or classList — must respond instantly.
+   TABS — COPY THIS EXACT PATTERN (do not invent a different approach):
+     HTML:
+       <div class="tab-bar">
+         <button class="tab-btn active" onclick="showTab('t1',this)">Tab One</button>
+         <button class="tab-btn" onclick="showTab('t2',this)">Tab Two</button>
+         <button class="tab-btn" onclick="showTab('t3',this)">Disclaimer</button>
+       </div>
+       <div id="t1" class="tab-panel">...real content, at least 2-3 paragraphs...</div>
+       <div id="t2" class="tab-panel" style="display:none">...real content...</div>
+       <div id="t3" class="tab-panel" style="display:none">...real written disclaimer text...</div>
+     CSS:
+       .tab-panel { display: block; }
+       .tab-btn { opacity:0.55; border-bottom: 2px solid transparent; }
+       .tab-btn.active { opacity:1; border-bottom-color: currentColor; }
+     JS (top-level function — NOT inside any callback):
+       function showTab(id, btn) {
+         document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+         document.getElementById(id).style.display = 'block';
+         if (btn) btn.classList.add('active');
+       }
+     CONTENT RULE: every tab panel MUST have real written content matching the tab label.
+     Disclaimer tab → write a real 2-paragraph medical/legal disclaimer specific to the site topic.
+     Protocol tab → write real protocol steps. Interactions tab → real interaction list. No empty panels.
+   ACCORDIONS: same idea — show/hide via style.display, toggle active class on the header button.
    FORMS: preventDefault() + show a visible success message inline — no page reload.
    DO NOT wrap code in DOMContentLoaded. DO NOT leave any button as a visual-only stub.
 
@@ -5675,6 +5699,9 @@ These are what every average AI defaults to. You never produce these unless expl
   that is never added, or an IntersectionObserver that never fires for above-the-fold content)
 ✗ Content area wider than 1100px
 ✗ Non-functional "coming soon" interactive placeholders
+✗ Tabs that don't switch when clicked — always use the exact showTab(id,btn) pattern above
+✗ Empty tab panels — every tab must have real written content (at least 2 paragraphs), including
+  Disclaimer, Protocol, Interactions, About, FAQ etc. — never leave a tab with placeholder text
 ✗ href="#" on footer links (Medical Disclaimer, Privacy Policy, Terms, Newsletter, etc.) — every
   footer link MUST open a modal with real written content. Create a single reusable legal modal:
   <div id="legalModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;display:none;align-items:center;justify-content:center;padding:24px;">
@@ -5723,6 +5750,7 @@ These are what every average AI defaults to. You never produce these unless expl
 ✓ NO section, container, or heading group has opacity:0 or .reveal — only individual leaf cards?
 ✓ .reveal CSS has opacity:1 as default (not 0) so content shows even if JS never runs?
 ✓ Every <img> has onerror fallback so broken images show a gradient instead of a broken icon?
+✓ Tabs use showTab(id,btn) pattern and every tab panel has real written content (no empty panels)?
 ✓ Viewport meta + Google Fonts + CSS reset present?
 ✓ Only ONE primary CTA per section?
 ✓ Content max-width 1100px?
