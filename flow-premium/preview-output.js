@@ -39,6 +39,20 @@ document.getElementById('copyBtn').addEventListener('click', () => {
   });
 });
 
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  if (!_code) return;
+  const blob = new Blob([_code], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'my-site.html';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  const btn = document.getElementById('downloadBtn');
+  btn.textContent = '✓ Downloaded!';
+  setTimeout(() => { btn.textContent = '⬇ Download Site'; }, 2000);
+});
+
 document.getElementById('newTabBtn').addEventListener('click', () => {
   if (!_code) return;
   const blob = new Blob([_code], { type: 'text/html' });
