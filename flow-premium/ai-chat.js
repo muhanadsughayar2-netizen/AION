@@ -5605,16 +5605,22 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
    COPY THIS EXACTLY — do not invent a different pattern:
 
    CSS (inside <style>):
-     .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1); }
-     .reveal.visible { opacity: 1; transform: none; }
+     /* .reveal has NO opacity:0 — content is always visible if JS fails */
+     .reveal.visible { animation: revealUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+     @keyframes revealUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
 
    JS (in your <script> block, run directly — no wrapper):
      const _io = new IntersectionObserver(entries => entries.forEach(e => {
        if (e.isIntersecting) { e.target.classList.add('visible'); _io.unobserve(e.target); }
      }), { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
      document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
-     // MANDATORY safety net — directly forces opacity:1 after 1s (class-name agnostic):
+     // MANDATORY safety net — forces all elements visible after 1s even if observer never fires:
      setTimeout(function(){ document.querySelectorAll('.reveal').forEach(function(el){ el.style.opacity='1'; el.style.transform='none'; }); }, 1000);
+
+   WHY THIS PATTERN IS SAFE: `.reveal` has no opacity:0 in CSS. Without `.visible`, content
+   is fully visible (opacity defaults to 1). When observer fires, `.visible` triggers the animation
+   (animation-fill-mode:both applies the `from` state briefly, then animates in). If JS crashes,
+   zero content is hidden. NEVER write `.reveal { opacity: 0 }` — that makes a blank site on JS errors.
 
 ⑤ FULLY WORKING JS — every button, toggle, tab, gauge, and form MUST actually work:
 
@@ -5727,6 +5733,8 @@ These are what every average AI defaults to. You never produce these unless expl
 ✗ style.display='block' inside showTab() — this overrides CSS display:grid on panels, breaking
   two-column layouts. Always use classList.add/remove('active') in tab JS, let CSS control display.
 ✗ Tabs that don't switch when clicked — always use the classList-based showTab(id,btn) pattern
+✗ .reveal { opacity: 0 } in CSS — this blanks the entire page if JS crashes or is slow.
+  The ONLY safe pattern: .reveal has NO opacity set; .reveal.visible triggers the animation via @keyframes
 ✗ No safety-net setTimeout after IntersectionObserver — always include the 1s inline-style fallback
 ✗ Content area wider than 1100px
 ✗ Non-functional "coming soon" interactive placeholders
@@ -5780,7 +5788,9 @@ These are what every average AI defaults to. You never produce these unless expl
 ✓ All interactive elements fully functional?
 ✓ Every footer link opens a modal with real content (NO href="#" dead links)?
 ✓ legalModal + openLegal() + closeLegal() present if any legal/footer links exist?
-✓ .reveal uses opacity:0 + transition CSS, .visible adds opacity:1, 1s style-based safety net present?
+✓ .reveal has NO opacity:0 in CSS (content visible if JS fails) — only .reveal.visible adds animation?
+✓ @keyframes revealUp used (from opacity:0 to opacity:1, both fill) NOT transition on .reveal itself?
+✓ 1s style-based safety net present (el.style.opacity='1') after IntersectionObserver setup?
 ✓ Every <img> has onerror fallback so broken images show a gradient instead of a broken icon?
 ✓ Tabs use classList showTab(id,btn) — NOT style.display — so display:grid is preserved in panels?
 ✓ Every tab panel has real written content (no empty or placeholder panels)?

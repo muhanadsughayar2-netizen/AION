@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI | Google AI Studio Chrome Extension</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,700;0,800;1,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050508;
+      --text: #f0f0ff;
+      --text-dim: #9494b8;
+      --surface: rgba(255, 255, 255, 0.03);
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --accent-blue: #078EFA;
+      --accent-purple: #AD89EB;
+      --accent-rainbow: linear-gradient(90deg, #4285F4, #EA4335, #FBBC05, #34A853);
+      --gemini-gradient: linear-gradient(135deg, #078EFA 0%, #AD89EB 100%);
+      --radius: 16px;
+      --max-width: 1100px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; background: var(--bg); }
+    body { 
+      font-family: 'Inter', sans-serif; 
+      color: var(--text); 
+      line-height: 1.6; 
+      overflow-x: hidden;
+      background: var(--bg);
+    }
+
+    h1, h2, h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: -0.02em; }
+
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1); }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* Background Magic */
+    .bg-glow {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at 50% -20%, rgba(7, 142, 250, 0.15) 0%, transparent 50%),
+                  radial-gradient(circle at 0% 100%, rgba(173, 137, 235, 0.08) 0%, transparent 40%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .grid-overlay {
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0);
+      background-size: 40px 40px;
+      z-index: -1;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0; width: 100%;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      background: rgba(5, 5, 8, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--surface-border);
+      z-index: 1000;
+    }
+
+    .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: white; font-weight: 700; font-size: 1.2rem; }
+    .logo-icon { width: 32px; height: 32px; background: var(--gemini-gradient); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a { text-decoration: none; color: var(--text-dim); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; transition: 0.3s; }
+    .nav-links a:hover { color: white; }
+
+    .btn-chrome {
+      background: var(--gemini-gradient);
+      color: white;
+      padding: 10px 24px;
+      border-radius: 100px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s;
+      box-shadow: 0 4px 20px rgba(7, 142, 250, 0.3);
+    }
+    .btn-chrome:hover { transform: scale(1.04); box-shadow: 0 8px 30px rgba(173, 137, 235, 0.4); }
+
+    /* Hero Section */
+    section { max-width: var(--max-width); margin: 0 auto; padding: 140px 24px 80px; }
+
+    .hero-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 60px; align-items: center; }
+    
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background: rgba(7, 142, 250, 0.1);
+      border: 1px solid rgba(7, 142, 250, 0.2);
+      color: var(--accent-blue);
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 24px;
+    }
+
+    .hero-title { font-size: clamp(3rem, 6vw, 5rem); line-height: 1; margin-bottom: 32px; }
+    .hero-title span { color: var(--accent-purple); }
+
+    .hero-desc { font-size: 1.1rem; color: var(--text-dim); max-width: 500px; margin-bottom: 40px; }
+
+    /* Extension Mockup UI */
+    .mockup-container {
+      position: relative;
+      background: #0d0d12;
+      border: 1px solid var(--surface-border);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+    }
+
+    .mockup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .status-pill { background: rgba(52, 168, 83, 0.1); color: #34A853; font-size: 0.65rem; padding: 4px 10px; border-radius: 100px; font-weight: 700; }
+
+    .tool-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .tool-btn { 
+      background: var(--surface); 
+      border: 1px solid var(--surface-border); 
+      border-radius: 12px; 
+      padding: 16px 8px; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      gap: 8px; 
+      transition: 0.3s;
+      cursor: pointer;
+    }
+    .tool-btn.active { border-color: var(--accent-blue); background: rgba(7, 142, 250, 0.05); }
+    .tool-btn svg { width: 20px; height: 20px; stroke: var(--text-dim); transition: 0.3s; }
+    .tool-btn.active svg { stroke: var(--accent-blue); }
+    .tool-btn span { font-size: 0.6rem; text-transform: uppercase; font-weight: 700; color: var(--text-dim); }
+    .tool-btn.active span { color: var(--accent-blue); }
+
+    .preview-window {
+      background: #16161f;
+      border-radius: 12px;
+      aspect-ratio: 16/10;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .process-bar {
+      margin-top: 20px;
+      background: var(--gemini-gradient);
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+    }
+
+    /* Stats Strip */
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+      margin-top: 60px;
+      border-top: 1px solid var(--surface-border);
+      padding-top: 40px;
+    }
+    .stat-item h4 { font-size: 2.5rem; line-height: 1; }
+    .stat-item p { font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); font-weight: 700; letter-spacing: 0.05em; }
+
+    /* Feature Cards */
+    .feature-section { padding: 100px 24px; }
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
+    
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius);
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+      transition: 0.4s cubic-bezier(0.16,1,0.3,1);
+    }
+    .card:hover { transform: translateY(-8px); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); }
+    
+    .card-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 24px;
+      background: rgba(255,255,255,0.05);
+    }
+    .card-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--accent-purple); margin-bottom: 12px; display: block; letter-spacing: 0.1em; }
+    .card h3 { font-size: 1.25rem; margin-bottom: 16px; }
+    .card p { font-size: 0.9rem; color: var(--text-dim); }
+
+    /* Legal Modal */
+    #legalModal {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.9);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: none;
+      align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .modal-content {
+      background: #0d0d12;
+      max-width: 640px; width: 100%;
+      max-height: 80vh; overflow-y: auto;
+      padding: 60px;
+      position: relative;
+      border-radius: 24px;
+      border: 1px solid var(--surface-border);
+    }
+    .close-modal { position: absolute; top: 24px; right: 24px; background: none; border: none; color: white; font-size: 2rem; cursor: pointer; }
+
+    footer {
+      border-top: 1px solid var(--surface-border);
+      padding: 80px 24px;
+      text-align: center;
+    }
+    .footer-links { display: flex; justify-content: center; gap: 40px; margin-bottom: 32px; }
+    .footer-links a { text-decoration: none; color: var(--text-dim); font-size: 0.8rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; transition: 0.3s; }
+    .footer-links a:hover { color: white; }
+    .copyright { font-size: 0.8rem; color: rgba(255,255,255,0.2); }
+
+    /* Animations */
+    @keyframes pulse-glow {
+      0% { box-shadow: 0 0 20px rgba(7, 142, 250, 0.2); }
+      50% { box-shadow: 0 0 40px rgba(173, 137, 235, 0.4); }
+      100% { box-shadow: 0 0 20px rgba(7, 142, 250, 0.2); }
+    }
+    .pulse { animation: pulse-glow 3s infinite; }
+
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; }
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      .hero-title { font-size: 3.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-glow"></div>
+  <div class="grid-overlay"></div>
+
+  <nav>
+    <a href="#" class="logo">
+      <div class="logo-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2v20M2 12h20M5.5 5.5l13 13M18.5 5.5l-13 13"/></svg>
+      </div>
+      <span>SnapToAI</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Capabilities</a>
+      <a href="#studio">Studio</a>
+      <a href="#" onclick="openLegal('Privacy Protocol', privacyContent)">Privacy</a>
+      <button class="btn-chrome">Add to Chrome</button>
+    </div>
+  </nav>
+
+  <main>
+    <!-- HERO SECTION -->
+    <section class="hero-section">
+      <div class="hero-grid">
+        <div class="reveal">
+          <div class="badge">Google AI Studio Payload Active</div>
+          <h1 class="hero-title">
+            SNAP THE PIXEL, <span>UNLEASH THE STUDIO.</span>
+          </h1>
+          <p class="hero-desc">
+            Capture any screen, then chat with AI, generate photoreal images, original music, and cinematic 64-second videos — all powered by Google Gemini, free in your browser.
+          </p>
+          
+          <div class="stats-strip">
+            <div class="stat-item">
+              <h4>64<span>s</span></h4>
+              <p>Stitched Video</p>
+            </div>
+            <div class="stat-item">
+              <h4>55<span>+</span></h4>
+              <p>Languages</p>
+            </div>
+            <div class="stat-item">
+              <h4>$300</h4>
+              <p>Free Google Credit</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="reveal" style="transition-delay: 0.2s">
+          <div class="mockup-container pulse">
+            <div class="mockup-header">
+              <div class="logo" style="font-size: 0.9rem">
+                <div class="logo-icon" style="width:24px; height:24px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M12 2v20M2 12h20"/></svg></div>
+                SnapToAI
+              </div>
+              <div class="status-pill">AI READY • V2.4</div>
+            </div>
+
+            <div class="tool-grid">
+              <div class="tool-btn active" onclick="toggleTool(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span>Snap</span>
+              </div>
+              <div class="tool-btn" onclick="toggleTool(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 3L20 12L6 21V3Z"/></svg>
+                <span>Veo</span>
+              </div>
+              <div class="tool-btn" onclick="toggleTool(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                <span>Lyria</span>
+              </div>
+              <div class="tool-btn" onclick="toggleTool(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                <span>Info</span>
+              </div>
+            </div>
+
+            <div class="preview-window">
+              <img id="previewImg" src="https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                   alt="AI Interface Preview"
+                   onerror="this.style.display='none';this.parentElement.style.background='var(--gemini-gradient)'"
+                   style="width:100%; height:100%; object-fit:cover; opacity: 0.6;">
+              <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
+                <div style="background:rgba(0,0,0,0.5); padding:8px 16px; border-radius:100px; font-size:0.6rem; font-weight:700;">CAPTURE ACTIVE</div>
+              </div>
+            </div>
+
+            <div class="process-bar" onclick="alert('Google AI Studio processing started...')">
+              + Process in Studio
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <section id="features" class="feature-section">
+      <div class="reveal" style="text-align: center; margin-bottom: 60px;">
+        <h2 style="font-size: 2.5rem; margin-bottom: 16px;">INTEGRATED INTELLIGENCE</h2>
+        <p style="color: var(--text-dim); max-width: 600px; margin: 0 auto;">The pinnacle of generative AI, stitched directly into your browser workflow. One snap, infinite modes.</p>
+      </div>
+
+      <div class="feature-grid">
+        <!-- VEO -->
+        <div class="card reveal">
+          <div class="card-label">Production</div>
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+          </div>
+          <h3>VEO 3.1 PRODUCTION</h3>
+          <p>8x stitching engine. Turn snaps into 64-second cinematic narratives in 4K with editable per-clip prompts.</p>
+        </div>
+
+        <!-- LYRIA -->
+        <div class="card reveal" style="transition-delay: 0.1s">
+          <div class="card-label">Scoring</div>
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
+          <h3>LYRIA 3 AUDIO</h3>
+          <p>Original music and studio-grade soundscapes tied to your visual context — built with a guided Song Studio.</p>
+        </div>
+
+        <!-- GEMINI -->
+        <div class="card reveal" style="transition-delay: 0.2s">
+          <div class="card-label">Intelligence</div>
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34A853" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 5V3M12 21v-2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </div>
+          <h3>GEMINI 3 VISION</h3>
+          <p>Pro-grade multi-source reasoning. Analyze up to 10 captures simultaneously with code-aware context.</p>
+        </div>
+
+        <!-- NANO BANANA -->
+        <div class="card reveal" style="transition-delay: 0.3s">
+          <div class="card-label">Creation</div>
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FBBC05" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </div>
+          <h3>NANO BANANA</h3>
+          <p>Next-gen photorealistic image generation. Infinite creativity from your daily captures with zero latency.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section style="text-align: center; padding-bottom: 140px;">
+      <div class="card reveal" style="padding: 80px 40px; background: radial-gradient(circle at top right, rgba(173, 137, 235, 0.1), transparent);">
+        <h2 style="font-size: 3rem; margin-bottom: 24px;">READY TO BUILD?</h2>
+        <p style="color: var(--text-dim); margin-bottom: 40px; max-width: 500px; margin-inline: auto;">Join 2,400+ developers using the SnapToAI Chrome Extension to bridge the gap between browsing and building.</p>
+        <button class="btn-chrome" style="padding: 18px 48px; font-size: 1rem;">Add to Chrome — Free Forever</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL STRUCTURE -->
+  <div id="legalModal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeLegal()">&times;</button>
+      <h2 id="modalTitle" style="margin-bottom: 24px; color: var(--accent-blue);"></h2>
+      <div id="modalBody" style="line-height: 1.8; color: var(--text-dim);"></div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-links">
+      <a href="#" onclick="openLegal('Privacy Protocol', privacyContent)">Privacy Protocol</a>
+      <a href="#" onclick="openLegal('Terms of Service', termsContent)">Terms</a>
+      <a href="#" onclick="openLegal('Google AI Studio Disclaimer', disclaimerContent)">AI Disclaimer</a>
+      <a href="mailto:hello@snaptoai.com">Support</a>
+    </div>
+    <div class="copyright">© 2024 SnapToAI. Built for the Google AI Studio Ecosystem.</div>
+  </footer>
+
+  <script>
+    // Reveal Animation Logic
+    const _io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (e.isIntersecting) { 
+        e.target.classList.add('visible'); 
+        _io.unobserve(e.target); 
+      }
+    }), { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+
+    // Safety fallback for reveal
+    setTimeout(() => {
+      document.querySelectorAll('.reveal').forEach(el => {
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+      });
+    }, 1200);
+
+    // Extension Mockup Tool Toggles
+    function toggleTool(btn) {
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      const img = document.getElementById('previewImg');
+      const modes = [
+        "https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg?auto=compress&cs=tinysrgb&w=800",
+        "https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800",
+        "https://images.pexels.com/photos/3585078/pexels-photo-3585078.jpeg?auto=compress&cs=tinysrgb&w=800",
+        "https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800"
+      ];
+      const idx = Array.from(btn.parentNode.children).indexOf(btn);
+      img.style.opacity = '0';
+      setTimeout(() => {
+        img.src = modes[idx];
+        img.style.opacity = '0.6';
+      }, 200);
+    }
+
+    // Modal Content
+    const privacyContent = `
+      <p>Your privacy is our core architecture. SnapToAI is a client-side chrome extension that prioritizes local data handling.</p>
+      <br>
+      <p><strong>1. Local Storage:</strong> All screen captures and temporary prompts are stored in your browser's local sandbox. We do not maintain a central database of your captures.</p>
+      <br>
+      <p><strong>2. API Transmission:</strong> Data is transmitted directly to Google AI Studio (Gemini API) using your own API key. SnapToAI acts as the bridge, not a middleman.</p>
+      <br>
+      <p><strong>3. Zero Tracking:</strong> We do not use third-party analytics or tracking pixels. Your workflow remains yours alone.</p>
+    `;
+
+    const termsContent = `
+      <p>By using the SnapToAI Chrome Extension, you agree to the following conditions:</p>
+      <br>
+      <ul>
+        <li>You will not use the tool to capture or process sensitive PII (Personally Identifiable Information).</li>
+        <li>You acknowledge that AI outputs are generative and may contain hallucinations.</li>
+        <li>The $300 credit is provided by Google Cloud, and SnapToAI is not responsible for credit management or billing.</li>
+      </ul>
+    `;
+
+    const disclaimerContent = `
+      <p>SnapToAI is an independent tool built to enhance the Google AI Studio experience. While it utilizes Gemini, Veo, and Lyria models, it is not an official Google product.</p>
+<script>
+    function openLegal(title, content) {
+      const modal = document.getElementById('legalModal');
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalBody').innerHTML = content;
+      modal.style.display = 'flex';
+    }
+
+    function closeLegal() {
+      document.getElementById('legalModal').style.display = 'none';
+    }
+
+    // Modal Background Click Close
+    window.addEventListener('click', (e) => {
+      const modal = document.getElementById('legalModal');
+      if (e.target === modal) closeLegal();
+    });
+
+    // Content variables for legal modals
+    const privacyContent = `
+      <p>Your privacy is our core architecture. SnapToAI is a client-side chrome extension that prioritizes local data handling.</p>
+      <br>
+      <p><strong>1. Local Storage:</strong> All screen captures and temporary prompts are stored in your browser's local sandbox. We do not maintain a central database of your captures.</p>
+      <br>
+      <p><strong>2. API Transmission:</strong> Data is transmitted directly to Google AI Studio (Gemini API) using your own API key. SnapToAI acts as the bridge, not a middleman.</p>
+      <br>
+      <p><strong>3. Zero Tracking:</strong> We do not use third-party analytics or tracking pixels. Your workflow remains yours alone.</p>
+    `;
+
+    const termsContent = `
+      <p>By using the SnapToAI Chrome Extension, you agree to the following conditions:</p>
+      <br>
+      <ul>
+        <li>You will not use the tool to capture or process sensitive PII (Personally Identifiable Information).</li>
+        <li>You acknowledge that AI outputs are generative and may contain hallucinations.</li>
+        <li>The $300 credit is provided by Google Cloud, and SnapToAI is not responsible for credit management or billing.</li>
+      </ul>
+    `;
+
+    const disclaimerContent = `
+      <p>SnapToAI is an independent tool built to enhance the Google AI Studio experience. While it utilizes Gemini, Veo, and Lyria models, it is not an official Google product. Performance and availability are subject to Google's API terms and regional restrictions.</p>
+    `;
+
+    // Smooth scroll for anchors with 90px offset
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+        if (href === '#') return;
+        
+        e.preventDefault();
+        const target = document.querySelector(href);
+        if (target) {
+          const offset = 90;
+          const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - offset;
+          window.scrollTo({
+            top: targetPosition,
+            behavior: 'smooth'
+          });
+        }
+      });
+    });
+
+    // Re-initialize intersection observer just in case the previous block was truncated
+    const _io_final = new IntersectionObserver(entries => entries.forEach(e => {
+      if (e.isIntersecting) { 
+        e.target.classList.add('visible'); 
+        _io_final.unobserve(e.target); 
+      }
+    }), { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => _io_final.observe(el));
+    
+    // Safety reveal
+    setTimeout(() => {
+      document.querySelectorAll('.reveal').forEach(el => {
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+      });
+    }, 1500);
+  </script>
+<section id="protocol" class="reveal" style="padding-bottom: 120px;">
+    <div style="max-width: var(--max-width); margin: 0 auto; padding: 0 24px;">
+      <div style="margin-bottom: 48px;">
+        <h2 style="font-size: 2rem; margin-bottom: 12px;">SYSTEM PROTOCOLS</h2>
+        <p style="color: var(--text-dim);">Deep-dive into the Studio integration architecture.</p>
+      </div>
+
+      <div class="tab-bar" style="display: flex; gap: 12px; margin-bottom: 32px; border-bottom: 1px solid var(--surface-border); padding-bottom: 12px;">
+        <button class="tab-btn active" onclick="showTab('t1', this)" style="background: none; border: none; color: var(--text); padding: 8px 20px; font-weight: 700; cursor: pointer; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.5; transition: 0.3s;">Integration</button>
+        <button class="tab-btn" onclick="showTab('t2', this)" style="background: none; border: none; color: var(--text); padding: 8px 20px; font-weight: 700; cursor: pointer; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.5; transition: 0.3s;">Security</button>
+        <button class="tab-btn" onclick="showTab('t3', this)" style="background: none; border: none; color: var(--text); padding: 8px 20px; font-weight: 700; cursor: pointer; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.5; transition: 0.3s;">Compliance</button>
+      </div>
+
+      <div id="t1" class="tab-panel active" style="display: grid; grid-template-columns: 1fr 1fr; gap: 48px; animation: slideUp 0.5s ease forwards;">
+        <div>
+          <h3 style="margin-bottom: 16px; color: var(--accent-blue);">ZERO-LATENCY PIPELINE</h3>
+          <p style="color: var(--text-dim); margin-bottom: 24px;">SnapToAI utilizes a custom-built WebGPU bridge to process visual data before it ever hits the Gemini API. This allows for instant 'snapping' and pre-optimization of images, ensuring your $300 Google Cloud credits are spent on intelligence, not data transfer overhead.</p>
+          <ul style="list-style: none; color: var(--text-dim); font-size: 0.9rem;">
+            <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;"><span style="color: var(--accent-blue);">●</span> WebSocket-based streaming for Veo 3.1 video stitching.</li>
+            <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;"><span style="color: var(--accent-blue);">●</span> Vector-embedded search for browser history context.</li>
+          </ul>
+        </div>
+        <div style="background: var(--surface); border-radius: 12px; padding: 32px; border: 1px solid var(--surface-border);">
+          <code style="font-family: monospace; font-size: 0.8rem; color: #AD89EB;">
+            // Studio Initialization<br>
+            const studio = await SnapToAI.connect({<br>
+            &nbsp;&nbsp;engine: 'gemini-3-pro',<br>
+            &nbsp;&nbsp;mode: 'payload-active',<br>
+            &nbsp;&nbsp;credits: 'google-studio-sync'<br>
+            });<br><br>
+            studio.on('snap', (pixelData) => {<br>
+            &nbsp;&nbsp;return studio.process(pixelData);<br>
+            });
+          </code>
+        </div>
+      </div>
+
+      <div id="t2" class="tab-panel" style="display: none; grid-template-columns: 1fr 1fr; gap: 48px; animation: slideUp 0.5s ease forwards;">
+        <div>
+          <h3 style="margin-bottom: 16px; color: var(--accent-purple);">SANDBOXED EXECUTION</h3>
+          <p style="color: var(--text-dim); margin-bottom: 24px;">Security isn't an afterthought; it's the foundation. Every snap you take is processed within a transient Chrome Extension sandbox. We utilize AES-256 encryption for any API keys stored locally, and our 'Neural Masking' technology automatically blurs sensitive fields before AI analysis.</p>
+          <p style="color: var(--text-dim);">Our protocol ensures that neither SnapToAI nor any third party can intercept your creative stream. The connection is peer-to-peer between your browser and Google AI Studio.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 8px; border: 1px solid var(--surface-border);">
+            <div style="color: #34A853; font-weight: 800; font-size: 0.7rem; margin-bottom: 8px;">ENCRYPTION</div>
+            <div style="font-size: 0.9rem;">AES-256 GCM</div>
+          </div>
+          <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 8px; border: 1px solid var(--surface-border);">
+            <div style="color: #4285F4; font-weight: 800; font-size: 0.7rem; margin-bottom: 8px;">AUTH</div>
+            <div style="font-size: 0.9rem;">OAuth2 Studio</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="t3" class="tab-panel" style="display: none; grid-template-columns: 1fr; gap: 24px; animation: slideUp 0.5s ease forwards;">
+        <div style="background: rgba(234, 67, 53, 0.05); border: 1px solid rgba(234, 67, 53, 0.2); padding: 32px; border-radius: 12px;">
+          <h3 style="margin-bottom: 16px; color: #EA4335;">LEGAL & AI ETHICS DISCLOSURE</h3>
+          <p style="color: var(--text-dim); margin-bottom: 16px; font-size: 0.95rem;">SnapToAI is a wrapper for Google AI Studio services. By using this extension, you acknowledge that all generated content (Images via Nano Banana, Video via Veo, Audio via Lyria) is subject to Google's Generative AI Prohibited Use Policy. You are responsible for the content you generate and must not use these tools to create deceptive or harmful media.</p>
+          <p style="color: var(--text-dim); font-size: 0.95rem;">The $300 credit is a promotional offer from Google Cloud and is subject to their specific eligibility requirements. SnapToAI does not manage billing, payments, or credit allocation. Use of the Gemini API through this extension requires an active Google Cloud project with the Generative AI SDK enabled.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="reveal">
+    <div style="max-width: var(--max-width); margin: 0 auto; padding: 0 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; flex-wrap: wrap; gap: 24px;">
+        <a href="#" class="logo">
+          <div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M12 2v20M2 12h20"/></svg></div>
+          <span>SnapToAI</span>
+        </a>
+        <div class="footer-links">
+          <a href="#" onclick="openLegal('Privacy Protocol', privacyContent)">Privacy</a>
+          <a href="#" onclick="openLegal('Terms of Service', termsContent)">Terms</a>
+          <a href="#" onclick="openLegal('AI Studio Disclaimer', disclaimerContent)">Disclaimer</a>
+          <a href="https://github.com/google/generative-ai-js" target="_blank">Documentation</a>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 32px; border-top: 1px solid var(--surface-border); font-size: 0.75rem; color: var(--text-dim);">
+        <p>© 2024 SnapToAI Labs. Built on Gemini 1.5 Pro.</p>
+        <p>A chrome extension for Google AI Studio enthusiasts.</p>
+      </div>
+    </div>
+  </footer>
+
+  <div id="legalModal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeLegal()">&times;</button>
+      <h2 id="modalTitle" style="margin-bottom: 24px; color: var(--accent-blue); text-transform: uppercase;"></h2>
+      <div id="modalBody" style="line-height: 1.8; color: var(--text-dim);"></div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .tab-btn.active { opacity: 1 !important; color: var(--accent-blue) !important; border-bottom: 2px solid var(--accent-blue) !important; }
+  </style>
+
+  <script>
+    // Tab System Logic
+    function showTab(id, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      
+      const panel = document.getElementById(id);
+      if (panel) {
+        panel.style.display = (id === 't3') ? 'block' : 'grid';
+      }
+      if (btn) btn.classList.add('active');
+    }
+
+    // Modal Logic
+    function openLegal(title, html) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalBody').innerHTML = html;
+      document.getElementById('legalModal').style.display = 'flex';
+    }
+
+    function closeLegal() {
+      document.getElementById('legalModal').style.display = 'none';
+    }
+
+    // Stats Counter Animation
+    function animateCounters() {
+      document.querySelectorAll('.stat-item h4').forEach(el => {
+        const target = parseInt(el.textContent.replace(/[^0-9]/g, ''));
+        let count = 0;
+        const duration = 2000;
+        const increment = target / (duration / 16);
+        
+        const update = () => {
+          count += increment;
+          if (count < target) {
+            el.innerHTML = Math.floor(count) + (el.innerHTML.includes('s') ? '<span>s</span>' : el.innerHTML.includes('+') ? '<span>+</span>' : '');
+            requestAnimationFrame(update);
+          } else {
+            el.innerHTML = target + (el.innerHTML.includes('s') ? '<span>s</span>' : el.innerHTML.includes('+') ? '<span>+</span>' : '');
+          }
+        };
+        update();
+      });
+    }
+
+    // Intersection Observer
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          if (entry.target.classList.contains('stats-strip')) animateCounters();
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    
+    // Safety Net
+    setTimeout(() => {
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+    }, 1000);
+
+    // Neural Expressive background travel
+    window.addEventListener('mousemove', (e) => {
+      const moveX = (e.clientX / window.innerWidth - 0.5) * 20;
+      const moveY = (e.clientY / window.innerHeight - 0.5) * 20;
+      document.querySelector('.bg-glow').style.transform = `translate(${moveX}px, ${moveY}px)`;
+    });
+  </script>
+</body>
+</html>
