@@ -1160,9 +1160,9 @@ function initModeButtons() {
       btns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
-      // Show voice selector only in Music mode
+      // Voice selector is for TTS read-aloud only — never show in Music/Song mode
       const voiceSel = document.getElementById('voiceSelector');
-      if (voiceSel) voiceSel.style.display = mode === 'music' ? 'inline-block' : 'none';
+      if (voiceSel) voiceSel.style.display = 'none';
       
       btn.classList.add('switching');
       setTimeout(() => btn.classList.remove('switching'), 500);
@@ -5045,26 +5045,6 @@ function showSongStudio(thread) {
         </div>
       </div>
 
-      <div style="margin:10px 0;background:rgba(255,255,255,0.02);border:1px solid rgba(0,255,136,0.12);border-radius:10px;padding:10px 12px;">
-        <div style="font-size:10px;color:#667788;margin-bottom:6px;">💰 Pay-per-use (billed by Google to your own API key) — <em>estimated</em> cost per ~30s clip:</div>
-        <div style="display:flex;flex-direction:column;gap:3px;font-size:11px;">
-          ${LYRIA_MODELS_DISPLAY.map(m => {
-            const rate = LYRIA_PRICING[m.id];
-            if (rate == null) return '';
-            const total30 = (rate * 30).toFixed(2);
-            const isDefault = m.id === 'lyria-3-clip-preview';
-            const color = isDefault ? '#00ff88' : '#aabbcc';
-            const weight = isDefault ? '700' : '500';
-            const bg = isDefault ? 'rgba(0,255,136,0.06)' : 'transparent';
-            const marker = isDefault ? '▸ ' : '  ';
-            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 6px;border-radius:6px;background:${bg};color:${color};font-weight:${weight};">
-              <span>${marker}${m.label}</span>
-              <span style="font-variant-numeric:tabular-nums;">$${rate.toFixed(3)}/s · <strong>~$${total30}</strong></span>
-            </div>`;
-          }).join('')}
-          <div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(0,255,136,0.15);font-size:10px;color:#667788;">SnapToAI uses <strong style="color:#00ff88;">Lyria 3</strong> by default and falls back automatically if a model is unavailable on your key.</div>
-        </div>
-      </div>
 
       ${currentImages.length > 0 ? `
       <div style="background:linear-gradient(135deg, rgba(255,170,0,0.08), rgba(255,100,0,0.04));border:1px solid rgba(255,170,0,0.2);border-radius:12px;padding:14px;margin:10px 0;">
@@ -6802,15 +6782,85 @@ async function handleSend() {
       addBubbleActions(responseBubble, fullText);
       
     } else if (modeConfig.type === 'gemini-audio') {
-      const costInfo = getPaidModeEstimate('music');
-      const ok = await confirmPaidGeneration('music', costInfo);
-      if (!ok) {
-        removeLoading();
-        sendBtn.disabled = false;
-        releaseRequestLock();
-        return;
-      }
       // === MUSIC / AUDIO GENERATION (Lyria or TTS) ===
+
+      // Expand short user inputs like "jazz" or "slow sad" into rich Lyria prompts
+      function buildMusicPrompt(raw) {
+        if (!raw || raw.trim().length === 0) {
+          return 'Create an original, professional instrumental piece with a clear structure: intro, development, climax, and outro. Choose the best genre, instruments, and tempo automatically. Make it polished and complete.';
+        }
+        const input = raw.trim();
+        // Already a detailed prompt — just wrap it
+        if (input.length > 40) {
+          return `Create a song: ${input}. Give it a clear musical structure with an intro, development, and outro. Make it sound professional and polished.`;
+        }
+        const lower = input.toLowerCase();
+        const genreMap = [
+          ['jazz',      'jazz featuring piano, upright bass, and brushed drums'],
+          ['rock',      'rock with electric guitar, bass, and powerful drums'],
+          ['pop',       'pop with a catchy melody and modern production'],
+          ['classical', 'classical with orchestral strings and piano'],
+          ['hip hop',   'hip hop with boom-bap beats and urban bass'],
+          ['hiphop',    'hip hop with boom-bap beats and urban bass'],
+          ['r&b',       'R&B with soulful melody and smooth groove'],
+          ['rnb',       'R&B with soulful melody and smooth groove'],
+          ['reggae',    'reggae with offbeat guitar and relaxed groove'],
+          ['country',   'country with acoustic guitar and steel guitar'],
+          ['edm',       'electronic dance music with synths and energetic drops'],
+          ['electronic','electronic music with synthesizers and futuristic sound'],
+          ['metal',     'metal with heavy distorted guitars and powerful drums'],
+          ['folk',      'folk with acoustic guitar and natural instruments'],
+          ['blues',     'blues with expressive guitar and emotional depth'],
+          ['lo-fi',     'lo-fi hip hop with warm, mellow beats and dusty textures'],
+          ['lofi',      'lo-fi hip hop with warm, mellow beats and dusty textures'],
+          ['ambient',   'ambient music with atmospheric pads and peaceful flow'],
+          ['funk',      'funk with tight bass groove and punchy horns'],
+          ['latin',     'Latin music with rhythmic percussion and vibrant guitars'],
+          ['trap',      'trap with 808 bass and modern hi-hat patterns'],
+          ['k-pop',     'K-pop with a catchy melody and polished arrangement'],
+          ['afrobeat',  'Afrobeat with rhythmic percussion and vibrant African influences'],
+          ['indie',     'indie with guitar-driven sound and authentic feel'],
+        ];
+        const tempoMap = [
+          ['very fast', 'a very fast tempo (160+ BPM)'],
+          ['uptempo',   'an upbeat tempo (120–140 BPM)'],
+          ['fast',      'a fast, energetic tempo (130–150 BPM)'],
+          ['slow',      'a slow, relaxed tempo (60–80 BPM)'],
+          ['downtempo', 'a slow, downtempo feel (60–80 BPM)'],
+          ['medium',    'a medium tempo (90–110 BPM)'],
+        ];
+        const moodMap = [
+          ['happy',     'happy and uplifting'],
+          ['joyful',    'joyful and bright'],
+          ['sad',       'sad and melancholic'],
+          ['chill',     'relaxed and chill'],
+          ['epic',      'epic and cinematic'],
+          ['romantic',  'romantic and tender'],
+          ['dark',      'dark and mysterious'],
+          ['energetic', 'energetic and exciting'],
+          ['peaceful',  'peaceful and serene'],
+          ['nostalgic', 'nostalgic and bittersweet'],
+          ['party',     'fun and celebratory'],
+          ['powerful',  'powerful and intense'],
+        ];
+
+        let genre = null, tempo = null, mood = null;
+        for (const [key, val] of genreMap) { if (lower.includes(key)) { genre = val; break; } }
+        for (const [key, val] of tempoMap) { if (lower.includes(key)) { tempo = val; break; } }
+        for (const [key, val] of moodMap)  { if (lower.includes(key)) { mood  = val; break; } }
+
+        if (!genre && !tempo && !mood) {
+          return `Create a song described as: "${input}". Make it professional and polished with a clear musical structure (intro, development, outro).`;
+        }
+        let p = 'Create';
+        if (mood) p += ` a ${mood}`;
+        if (genre) p += ` ${genre} song`;
+        else p += ' an original song';
+        if (tempo) p += ` at ${tempo}`;
+        p += '. Give it a clear structure: intro, development sections, a climax, and an outro. Make it sound authentic and professionally produced.';
+        return p;
+      }
+
       const musicModels = [modeConfig.model, 'lyria-3-pro-preview', 'gemini-2.5-flash-preview-tts'];
       let audioData = null;
       let audioError = '';
@@ -6833,7 +6883,7 @@ async function handleSend() {
             }
             contentParts.push({ text: prompt || 'Create music that captures the mood, atmosphere, and emotion of this image. Make it a complete, polished musical piece.' });
           } else {
-            contentParts.push({ text: prompt });
+            contentParts.push({ text: buildMusicPrompt(prompt) });
           }
           bodyPayload = {
             contents: [{ role: 'user', parts: contentParts }],
