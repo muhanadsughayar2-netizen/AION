@@ -1,5 +1,20 @@
 let _code = '';
 let _codeVisible = false;
+let _previewBlobUrl = null;
+
+function loadPreview(code) {
+  // Revoke any previous blob to avoid memory leaks
+  if (_previewBlobUrl) {
+    URL.revokeObjectURL(_previewBlobUrl);
+    _previewBlobUrl = null;
+  }
+  // Use a blob URL as iframe src instead of srcdoc.
+  // This runs the built HTML outside the extension's CSP context so
+  // Google Fonts and inline scripts work correctly.
+  const blob = new Blob([code], { type: 'text/html' });
+  _previewBlobUrl = URL.createObjectURL(blob);
+  document.getElementById('previewFrame').src = _previewBlobUrl;
+}
 
 chrome.storage.local.get('snaptoai_built_code', (res) => {
   const code = res.snaptoai_built_code || '';
@@ -12,7 +27,7 @@ chrome.storage.local.get('snaptoai_built_code', (res) => {
   _code = code;
   document.getElementById('titleSub').textContent = '— ready';
   document.getElementById('codePre').textContent = code;
-  document.getElementById('previewFrame').srcdoc = code;
+  loadPreview(code);
 });
 
 document.getElementById('copyBtn').addEventListener('click', () => {
