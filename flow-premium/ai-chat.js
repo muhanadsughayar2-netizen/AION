@@ -5499,53 +5499,57 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
 ① TYPOGRAPHY HIERARCHY — never same font-size for different levels:
    H1: clamp(2.8rem,6vw,5rem) | H2: clamp(1.8rem,3.5vw,3rem) | H3: 1.25rem | Body: 1rem/1.7
 
-② REAL IMAGERY — always use working photo URLs from this verified list. NEVER make up a photo ID.
-   Format: https://images.unsplash.com/photo-{ID}?w=1200&q=80&auto=format&fit=crop
+② REAL IMAGERY — use Pexels CDN (always works, no CORS). NEVER make up a photo ID.
+   Format: https://images.pexels.com/photos/{ID}/pexels-photo-{ID}.jpeg?auto=compress&cs=tinysrgb&w=1200
+   For smaller cards use w=800 instead of w=1200.
    Always set: object-fit:cover; width:100%; height:100% on every img element. Descriptive alt text required.
 
-   VERIFIED PHOTO IDs — pick the closest match to the content:
+   VERIFIED PEXELS IDs — pick the closest match to the content:
 
    🍊 FOOD / WELLNESS / NUTRITION:
-   1610832958506-aa56368176cf  — blood oranges, citrus macro
-   1512621776951-a57141f2eefd  — fresh vegetables, greens
-   1490645935967-10de6ba17061  — healthy grain bowl
-   1546069901-ba9599a7e63c     — avocado halves
-   1571019613454-1cb2f99b2d8b  — green salad, fresh
-   1498837167922-d6e400aa7a9a  — sliced fruit assortment
-   1559847844-5315695dadae     — superfoods flatlay
-   1540420773-f7818d9aef64     — mushrooms macro
-   1414235077081-a1c7d1ef1081  — broccoli close-up
-   1504674900247-0877df9cc836  — colorful food spread
+   1640777  — vibrant healthy food spread, hero-worthy
+   1132047  — red berries macro
+   1367240  — walnuts close-up
+   1640775  — green salad bowl, fresh
+   1640774  — colorful vegetables flatlay
+   1640773  — fruit and greens arrangement
+   1092730  — avocado and greens
+   1279330  — mushrooms macro close-up
+   1410235  — superfood smoothie bowl
+   3493777  — citrus cross-section macro
 
    🧘 HEALTH / LIFESTYLE / WELLNESS:
-   1571019613454-1cb2f99b2d8b  — person active, wellness
-   1584308666744-24d5c474f2ae  — supplements, capsules, lab
-   1506126613898-deefb373a359  — yoga, meditation
-   1544367654-51e08a3a67af     — nature walk, lifestyle
-   1559757148-461cbdcaf6f6     — healthy lifestyle portrait
+   3822621  — yoga pose, calm, outdoor
+   3757942  — meditation, seated, serene
+   3757954  — wellness lifestyle, warm light
+   4056723  — supplements, capsules on clean surface
+   3958794  — active healthy woman, running
 
    💻 TECH / SAAS / PRODUCTIVITY:
-   1515879218367-8466d910aaa4  — laptop with code, dark
-   1488590528505-98d2b5aba04b  — laptop on desk, minimal
-   1518770660439-4636190af475  — circuit board macro
-   1522071820887-954dbb8eb3fc  — team working, office
-   1467232004584-a241de8bcf5d  — coding workspace
+   574071   — laptop on clean desk, minimal
+   1181244  — code on screen, developer
+   92904    — workspace with monitor
+   577585   — startup team working, modern office
+   3861969  — abstract technology blue
 
    🎨 ABSTRACT / GRADIENT / BACKGROUNDS:
-   1557682250-33bd709cbe85     — purple abstract gradient
-   1536304993-c6bbfe419b93     — soft abstract shapes
-   1618005182384-a83a8bd57fbe  — fluid gradient, blue pink
-   1614850523296-d0dc81383ad1  — light abstract texture
+   1103970  — purple-teal gradient, abstract
+   1266808  — warm orange abstract bokeh
+   4559555  — soft pastel gradient texture
+   3585078  — dark moody abstract
 
    🌿 NATURE / OUTDOOR:
-   1441974231531-c6227db76b6e  — forest path, green
-   1518495973-a010bc978048     — mountain lake
-   1500534314209-a157d0e4f2c4  — nature macro, leaves
+   414612   — forest green path, sunlight
+   158028   — mountain lake, still water
+   255379   — green leaves macro, nature
+   33109    — ocean waves, horizon
+   2387793  — wildflower meadow
 
    👥 PEOPLE / PORTRAITS:
-   1560250097-0b93528c311a     — professional person, confident
-   1507003211169-0a1dd7228f2d  — smiling person, warm light
-   1573496359142-b8d87734a5a2  — person working, casual
+   774909   — professional woman, confident, natural light
+   220453   — smiling man, warm tone
+   1239291  — person at work, casual focus
+   2379004  — team meeting, diverse, modern
 
 ③ ICONS — inline SVG only (1.5px stroke, no fill), never emoji in professional contexts:
    Tech: terminal brackets, arrows, circuits | Wellness: leaf, drop, helix, sprout, shield | Luxury: minimal geometric
@@ -5557,10 +5561,14 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
    @keyframes fadeUp { from { opacity:0.85; transform:translateY(18px); } to { opacity:1; transform:none; } }
    IntersectionObserver: { threshold:0.05, rootMargin:"0px 0px -5% 0px" }
 
-⑤ FULLY WORKING JS — zero fake/broken components:
-   To-do: add, delete, check off, localStorage persist | Calculator: all operators | Games: fully playable
-   Charts: real animated SVG or Canvas | Forms: real validation + success state
-   Rule: addEventListener only — NEVER onclick="" inline handlers (CSP violation)
+⑤ FULLY WORKING JS — every button, toggle, tab, gauge, and form MUST actually work:
+   WIRING RULE: wrap ALL event listeners in document.addEventListener('DOMContentLoaded', () => { ... })
+   so elements exist before the script runs. querySelector the element, then addEventListener('click', ...).
+   GAUGE / PROGRESS RINGS: animate stroke-dashoffset with setTimeout(fn, 300) after DOMContentLoaded.
+   FOOD / TOGGLE BUTTONS: classList.toggle('active') on click — also update any linked counter or gauge.
+   TABS / ACCORDIONS: show/hide sections via style.display or classList — must respond instantly to clicks.
+   FORMS: preventDefault() + show a visible success message in the DOM — no page reload.
+   DO NOT use onclick="" attributes — always addEventListener. DO NOT leave any button as a visual-only stub.
 
 ⑥ SPACING — Max content width 1100px (margin:0 auto). Min gap between cards: 24px. Never overflow-x.
 
@@ -5583,7 +5591,7 @@ These are what every average AI defaults to. You never produce these unless expl
 ✗ Two CTAs in the hero — pick ONE
 ✗ Emoji used as icons in premium or professional contexts (🛡️🧬💎🔥)
 ✗ Lorem ipsum or generic copy ("Transforming the future of innovation")
-✗ Colored divs pretending to be photos — always use real Unsplash URLs
+✗ Colored divs pretending to be photos — always use real Pexels URLs from the verified ID list
 ✗ opacity:0 on entire page sections — causes blank preview, never do this
 ✗ Content area wider than 1100px
 ✗ Non-functional "coming soon" interactive placeholders

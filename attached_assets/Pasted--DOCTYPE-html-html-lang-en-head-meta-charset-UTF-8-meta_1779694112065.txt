@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Bio-Metabolic Architect | Personalized Health Optimization</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F9FBF9;
+      --text: #0A2E36;
+      --surface: #ffffff;
+      --accent: #FF7043; /* Blood Orange */
+      --sage: #76A08A;
+      --sage-light: #E8F0EB;
+      --border: rgba(10, 46, 54, 0.08);
+      --radius: 4px;
+      --max-width: 1100px;
+    }
+
+    *, *::before, *::after { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+    }
+
+    html { 
+      scroll-behavior: smooth; 
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body { 
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3 {
+      font-family: 'Playfair Display', serif;
+      font-weight: 400;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+    }
+
+    a { text-decoration: none; color: inherit; }
+    ul { list-style: none; }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(249, 251, 249, 0.9);
+      backdrop-filter: blur(12px);
+      z-index: 1000;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-inner {
+      height: 90px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 18px 40px;
+      background: var(--accent);
+      color: white;
+      border-radius: var(--radius);
+      font-weight: 600;
+      transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+      cursor: pointer;
+      border: none;
+      letter-spacing: 0.05em;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 30px rgba(255, 112, 67, 0.25);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding-top: 200px;
+      padding-bottom: 100px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .hero-content h1 {
+      font-size: clamp(3.2rem, 7vw, 4.8rem);
+      margin-bottom: 32px;
+    }
+
+    .hero-content p {
+      font-size: 1.25rem;
+      color: rgba(10, 46, 54, 0.75);
+      margin-bottom: 48px;
+      max-width: 520px;
+      font-weight: 300;
+    }
+
+    .hero-image-wrap {
+      position: relative;
+      height: 640px;
+    }
+
+    .hero-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 2px;
+      box-shadow: 60px 60px 0px var(--sage-light);
+    }
+
+    /* UPGRADED SECTION: The 5 Pillars of Vitality */
+    .pillars-luxury-section {
+      background: var(--bg);
+      padding: 160px 0;
+    }
+
+    .editorial-header {
+      text-align: center;
+      margin-bottom: 100px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .editorial-header h2 {
+      font-size: clamp(2.8rem, 6vw, 4rem);
+      margin-bottom: 24px;
+      color: var(--text);
+    }
+
+    .editorial-header p {
+      font-size: 1.1rem;
+      color: var(--text);
+      opacity: 0.7;
+      line-height: 1.8;
+      font-weight: 300;
+    }
+
+    /* The Remarkable Grid */
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      grid-template-rows: repeat(2, 450px);
+      gap: 24px;
+    }
+
+    .pillar-item {
+      position: relative;
+      overflow: hidden;
+      border-radius: 2px;
+      cursor: pointer;
+      background: #eee;
+    }
+
+    /* Grid Layout Logic */
+    .p-angiogenesis { grid-column: 1 / 4; grid-row: 1; }
+    .p-regeneration { grid-column: 4 / 7; grid-row: 1; }
+    .p-microbiome { grid-column: 1 / 3; grid-row: 2; }
+    .p-dna { grid-column: 3 / 5; grid-row: 2; }
+    .p-immunity { grid-column: 5 / 7; grid-row: 2; }
+
+    .pillar-img-box {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0; left: 0;
+      transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    .pillar-img-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: brightness(0.85) contrast(1.1);
+    }
+
+    .pillar-item:hover .pillar-img-box {
+      transform: scale(1.08);
+    }
+
+    .pillar-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      padding: 40px;
+      background: linear-gradient(to top, rgba(10, 46, 54, 0.8), transparent);
+      color: white;
+      transition: transform 0.4s ease;
+    }
+
+    .pillar-item:hover .pillar-overlay {
+      transform: translateY(-10px);
+    }
+
+    .pillar-overlay h3 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+      font-family: 'Playfair Display', serif;
+    }
+
+    .pillar-overlay p {
+      font-size: 0.95rem;
+      opacity: 0.9;
+      font-weight: 300;
+      max-width: 300px;
+    }
+
+    .pillar-tag {
+      display: inline-block;
+      padding: 4px 12px;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(4px);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+      border-radius: 20px;
+    }
+
+    /* Roadmap Section */
+    .roadmap-split {
+      padding: 140px 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 120px;
+      align-items: center;
+    }
+
+    .gauge-container {
+      background: #fff;
+      padding: 80px;
+      border: 1px solid var(--border);
+      text-align: center;
+      position: relative;
+    }
+
+    .circular-progress {
+      width: 240px;
+      height: 240px;
+      margin: 0 auto 40px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .circular-progress svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .circular-progress circle {
+      fill: none;
+      stroke-width: 6;
+      stroke-linecap: round;
+    }
+
+    .circle-bg { stroke: #f0f0f0; }
+    .circle-val { 
+      stroke: var(--accent); 
+      stroke-dasharray: 628.318; /* 2 * PI * 100 */
+      stroke-dashoffset: 628.318; 
+      transition: stroke-dashoffset 2.5s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    .percentage {
+      position: absolute;
+      font-size: 3.5rem;
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+    }
+
+    /* Pricing */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      margin-top: 80px;
+      padding-bottom: 140px;
+    }
+
+    .price-card {
+      background: white;
+      padding: 64px 48px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: all 0.4s ease;
+    }
+
+    .price-card.featured {
+      border: 1px solid var(--sage);
+      box-shadow: 0 30px 60px rgba(118, 160, 138, 0.1);
+      position: relative;
+    }
+
+    .price-card.featured::before {
+      content: "MOST POPULAR";
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--sage);
+      color: white;
+      font-size: 0.65rem;
+      padding: 6px 16px;
+      letter-spacing: 0.15em;
+      font-weight: 600;
+    }
+
+    .price-amount { 
+      font-size: 3.5rem; 
+      margin: 40px 0; 
+      font-family: 'Playfair Display', serif; 
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+    .price-amount span { font-size: 1.1rem; opacity: 0.4; font-family: 'Inter', sans-serif; }
+
+    .price-features li { 
+      font-size: 0.95rem; 
+      margin-bottom: 16px; 
+      display: flex; 
+      gap: 12px;
+      font-weight: 300;
+    }
+
+    .check-icon { 
+      width: 18px; height: 18px; stroke: var(--sage); stroke-width: 2.5; fill: none; flex-shrink: 0;
+    }
+
+    /* Reveal */
+    .reveal {
+      opacity: 0.85;
+      transform: translateY(20px);
+      transition: all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    footer {
+      background: var(--text);
+      color: white;
+      padding: 100px 0 60px;
+    }
+
+    .disclaimer {
+      margin-top: 80px;
+      padding-top: 40px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      opacity: 0.4;
+      font-size: 0.8rem;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 900px) {
+      .hero-grid, .roadmap-split, .pricing-grid { grid-template-columns: 1fr; }
+      .pillars-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+      }
+      .pillar-item { height: 400px; grid-column: auto !important; grid-row: auto !important; }
+      .hero-image-wrap { height: 450px; order: -1; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="container nav-inner">
+      <a href="#" class="logo">BIO-ARCHITECT</a>
+      <ul class="nav-links">
+        <li><a href="#how-it-works">The Pillars</a></li>
+        <li><a href="#roadmap">Method</a></li>
+        <li><a href="#pricing">Plans</a></li>
+      </ul>
+      <a href="#pricing" class="btn" style="padding: 12px 28px; font-size: 0.75rem;">START MY PLAN</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <h1 class="reveal">The Science of <br><i>Exceptional</i> Living.</h1>
+        <p class="reveal">Losing weight is a side effect. Our primary goal is bio-fortification: adding molecular defense to your biology through the foods you eat.</p>
+        <div class="reveal">
+          <a href="#pricing" class="btn">BEGIN BIO-ASSESSMENT</a>
+        </div>
+      </div>
+      <div class="hero-image-wrap reveal">
+        <img src="https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Vibrant healthy food layout" class="hero-image">
+      </div>
+    </div>
+  </header>
+
+  <!-- UPGRADED PILLARS SECTION -->
+  <section id="how-it-works" class="pillars-luxury-section">
+    <div class="container">
+      <div class="editorial-header reveal">
+        <h2>The 5 Pillars of Vitality</h2>
+        <p>Instead of counting calories, we count biological activations. Your health is protected by five distinct systems that respond directly to the food you choose. This is the foundation of the Bio-Metabolic Architect approach.</p>
+      </div>
+
+      <div class="pillars-grid">
+        <!-- Angiogenesis -->
+        <div class="pillar-item p-angiogenesis reveal">
+          <div class="pillar-img-box">
+            <img src="https://images.pexels.com/photos/1132047/pexels-photo-1132047.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Macro berries">
+          </div>
+          <div class="pillar-overlay">
+            <span class="pillar-tag">System 01</span>
+            <h3>Angiogenesis</h3>
+            <p>Regulating blood vessel growth to manage metabolic health and starve fat cells.</p>
+          </div>
+        </div>
+
+        <!-- Regeneration -->
+        <div class="pillar-item p-regeneration reveal">
+          <div class="pillar-img-box">
+            <img src="https://images.pexels.com/photos/1367240/pexels-photo-1367240.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Walnuts macro">
+          </div>
+          <div class="pillar-overlay">
+            <span class="pillar-tag">System 02</span>
+            <h3>Regeneration</h3>
+            <p>Activating adult stem cells to repair and renew your internal organs from the inside out.</p>
+          </div>
+        </div>
+
+        <!-- Microbiome -->
+        <div class="pillar-item p-microbiome reveal">
+          <div class="pillar-img-box">
+            <img src="https://images.pexels.com/photos/4052861/pexels-photo-4052861.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Healthy bowl">
+          </div>
+          <div class="pillar-overlay">
+            <span class="pillar-tag">System 03</span>
+            <h3>Microbiome</h3>
+            <p>Optimizing the 39 trillion bacteria that drive your immunity and mental clarity.</p>
+          </div>
+        </div>
+
+        <!-- DNA Protection -->
+        <div class="pillar-item p-dna reveal">
+          <div class="pillar-img-box">
+            <img src="https://images.pexels.com/photos/4113888/pexels-photo-4113888.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Broccoli detail">
+          </div>
+          <div class="pillar-overlay">
+            <span class="pillar-tag">System 04</span>
+            <h3>DNA Protection</h3>
+            <p>Shielding your genetic blueprint from daily environmental and metabolic stressors.</p>
+          </div>
+        </div>
+
+        <!-- Immunity -->
+        <div class="pillar-item p-immunity reveal">
+          <div class="pillar-img-box">
+            <img src="https://images.pexels.com/photos/1435904/pexels-photo-1435904.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Citrus macro">
+          </div>
+          <div class="pillar-overlay">
+            <span class="pillar-tag">System 05</span>
+            <h3>Immunity</h3>
+            <p>Fortifying your body's surveillance system to identify and eliminate threats early.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="roadmap" class="container">
+    <div class="roadmap-split">
+      <div class="gauge-container reveal" id="gauge-trigger">
+        <div class="circular-progress">
+          <svg>
+            <circle class="circle-bg" cx="120" cy="120" r="100"></circle>
+            <circle class="circle-val" cx="120" cy="120" r="100" id="gauge-val"></circle>
+          </svg>
+          <div class="percentage"><span id="percent-num">0</span>%</div>
+        </div>
+        <h3 style="margin-bottom: 8px;">Bio-Defense Score</h3>
+        <p style="font-size: 0.9rem; opacity: 0.5;">Personalized Metabolic Status</p>
+      </div>
+
+      <div class="roadmap-content">
+        <h2 class="reveal">The Weekly Refresh</h2>
+        <p class="reveal" style="margin: 24px 0 40px; font-weight: 300; font-size: 1.1rem;">Your metabolism isn't static, so your plan shouldn't be either. Every Sunday, we calibrate your list based on how your body responded to the previous week's bioactives.</p>
+        
+        <div class="reveal" style="display: flex; flex-direction: column; gap: 30px;">
+          <div style="display: flex; gap: 20px;">
+            <div style="width: 40px; height: 40px; background: var(--sage-light); color: var(--sage); display: grid; place-items: center; border-radius: 50%; font-weight: 600;">1</div>
+            <div><h4 style="margin-bottom: 5px;">Data Intake</h4><p style="font-size: 0.95rem; opacity: 0.7;">Submit your biomarkers and weekly energy audit.</p></div>
+          </div>
+          <div style="display: flex; gap: 20px;">
+            <div style="width: 40px; height: 40px; background: var(--sage-light); color: var(--sage); display: grid; place-items: center; border-radius: 50%; font-weight: 600;">2</div>
+            <div><h4 style="margin-bottom: 5px;">Calibration</h4><p style="font-size: 0.95rem; opacity: 0.7;">We adjust your MediterAsian protocol for the 5 systems.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing" class="container">
+    <div class="editorial-header reveal">
+      <h2>Choose Your Transformation</h2>
+      <p>Expert metabolic guidance, scaled to your needs.</p>
+    </div>
+
+    <div class="pricing-grid">
+      <!-- Tier 1 -->
+      <div class="price-card reveal">
+        <div class="price-header">
+          <h3>Metabolic Roadmap</h3>
+          <p>One-time assessment</p>
+        </div>
+        <div class="price-amount">$50</div>
+        <ul class="price-features">
+          <li><svg class="check-icon" viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Full Bio-Assessment</li>
+          <li><svg class="check-icon" viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Personal Food Library</li>
+          <li><svg class="check-icon" viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> 5-Shield Initial Strategy</li>
+        </ul>
+        <button class="btn" style="background: transparent; border: 1px solid var(--text); color: var(--text);">SELECT PLAN</button>
+      </div>
+
+      <!-- Tier 2 -->
+      <div class="price-card featured reveal">
+        <div class="price-header">
+          <h3>Bio-Fortify</h3>
+          <p>Monthly Coaching</p>
+        </div>
+        <div class="price-amount">$100<span>/mo</span></div>
+        <ul class="price-features">
+          <li><svg class="check-icon" viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Everything in Roadmap</li>
+          <li><svg class="check-icon" viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Weekly "Fresh Sheets"</li>
+          <li><svg class="check-icon" viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Personalized Adjustments</li>
+          <li><svg class="check-icon" viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Priority Support</li>
+        </ul>
+        <button class="btn">START TRANSFORMATION</button>
+      </div>
+
+      <!-- Tier 3 -->
+      <div class="price-card reveal">
+        <div class="price-header">
+          <h3>VIP Defense</h3>
+          <p>High-Touch Support</p>
+        </div>
+        <div class="price-amount">$120<span>/mo</span></div>
+        <ul class="price-features">
+          <li><svg class="check-icon" viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Everything in Bio-Fortify</li>
+          <li><svg class="check-icon" viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> 24/7 WhatsApp Access</li>
+          <li><svg class="check-icon" viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg> Bi-Weekly Video Audits</li>
+        </ul>
+        <button class="btn" style="background: transparent; border: 1px solid var(--text); color: var(--text);">APPLY NOW</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <!-- ... footer content remains the same ... -->
+  </footer>
+
+  <script>
+    // 1. Reveal Animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // 2. Interactive Bio-Audit Score Logic
+    let currentScore = 0;
+    const scoreVal = document.getElementById('score-val');
+    const gaugeFill = document.getElementById('gauge-fill');
+    const circumference = 2 * Math.PI * 100;
+
+    document.querySelectorAll('.food-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = parseInt(btn.getAttribute('data-value'));
+        
+        if (btn.classList.contains('active')) {
+          btn.classList.remove('active');
+          currentScore -= val;
+        } else {
+          btn.classList.add('active');
+          currentScore += val;
+        }
+
+        updateScore(currentScore);
+      });
+    });
+
+    function updateScore(score) {
+      const visualScore = Math.min(Math.max(score, 0), 100);
+      
+      const start = parseInt(scoreVal.textContent);
+      const duration = 600;
+      const startTime = performance.now();
+
+      function animate(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const currentNum = Math.floor(start + (score - start) * progress);
+        scoreVal.textContent = currentNum;
+
+        if (progress < 1) requestAnimationFrame(animate);
+      }
+      requestAnimationFrame(animate);
+
+      const offset = circumference - (visualScore / 100) * circumference;
+      gaugeFill.style.strokeDashoffset = offset;
+    }
+
+    // 3. FIX: Smooth Scrolling with Header Offset
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href');
+        const targetElement = document.querySelector(targetId);
+        
+        if (targetElement) {
+          const headerOffset = 90; // Height of your fixed nav
+          const elementPosition = targetElement.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+  
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: "smooth"
+          });
+        }
+      });
+    });
+
+    // 4. FIX: Safe Parallax
+    window.addEventListener('scroll', () => {
+      const scroll = window.pageYOffset;
+      const img = document.querySelector('.hero-image');
+      if (img) {
+        img.style.transform = `translateY(${scroll * 0.15}px)`;
+      }
+    });
+    
+    // 5. FIX: Make Pricing Buttons Work
+    document.querySelectorAll('.price-card .btn').forEach(btn => {
+       btn.addEventListener('click', (e) => {
+           e.preventDefault();
+           // Find the audit section and scroll to it
+           const targetElement = document.querySelector('#audit');
+           const headerOffset = 90;
+           const elementPosition = targetElement.getBoundingClientRect().top;
+           const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+           
+           window.scrollTo({
+             top: offsetPosition,
+             behavior: "smooth"
+           });
+           
+           // Highlight the audit box briefly to show them where they are
+           const gaugeBox = document.querySelector('.gauge-box');
+           gaugeBox.style.boxShadow = "0 0 40px rgba(255, 112, 67, 0.4)";
+           setTimeout(() => {
+               gaugeBox.style.boxShadow = "0 40px 80px rgba(10, 46, 54, 0.05)";
+           }, 2000);
+       });
+    });
+  </script>
+</body>
+</html>
