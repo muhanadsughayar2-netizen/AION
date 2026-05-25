@@ -6943,80 +6943,132 @@ function addBubbleActions(bubble, text) {
     }
   };
   
-  // Read aloud using FREE browser TTS with auto language detection
+  // Read aloud — Gemini TTS (natural voice), fallback to browser TTS if no API key
   const readBtn = actions.querySelector('.read-aloud-btn');
-  
-  let speakSessionId = 0;
+  let ttsAudio = null; // currently playing Audio object
 
-  readBtn.onclick = () => {
-    if (synth.speaking) {
-      speakSessionId++;
+  readBtn.addEventListener('click', async () => {
+    // Stop if already playing
+    if (ttsAudio) {
+      ttsAudio.pause();
+      ttsAudio = null;
       synth.cancel();
       readBtn.textContent = '🔊 Read';
       return;
     }
 
-    const cleanText = text.replace(/```[\s\S]*?```/g, ' code block ').replace(/[#*_~`>|]/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\s+/g, ' ').trim();
+    const cleanText = text
+      .replace(/```[\s\S]*?```/g, ' code block ')
+      .replace(/[#*_~`>|]/g, '')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim();
     if (!cleanText) return;
 
-    speakSessionId++;
-    const thisSession = speakSessionId;
-    synth.cancel();
+    readBtn.textContent = '⏳ Loading…';
+    readBtn.disabled = true;
 
-    setTimeout(() => {
-      if (thisSession !== speakSessionId) return;
-      voices = synth.getVoices();
-      const detectedLang = detectLanguage(cleanText);
-      const MAX_CHUNK = 200;
-      const sentences = cleanText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleanText];
-      const chunks = [];
-      let current = '';
-      for (const s of sentences) {
-        if ((current + s).length > MAX_CHUNK && current) {
-          chunks.push(current.trim());
-          current = s;
-        } else {
-          current += s;
-        }
+    // Try Gemini TTS first
+    try {
+      const keyResult = await chrome.storage.local.get('geminiApiKey');
+      const apiKey = keyResult.geminiApiKey;
+      if (!apiKey) throw new Error('no_key');
+
+      // Gemini TTS: gemini-2.5-flash-preview-tts
+      // Limit to 4800 chars (API cap); trim cleanly at sentence boundary
+      let ttsInput = cleanText.slice(0, 4800);
+      if (ttsInput.length === 4800) {
+        const lastDot = ttsInput.lastIndexOf('.');
+        if (lastDot > 3000) ttsInput = ttsInput.slice(0, lastDot + 1);
       }
-      if (current.trim()) chunks.push(current.trim());
 
-      let bestVoice = null;
-      const langPrefix = detectedLang;
-      bestVoice = voices.find(v => v.lang.startsWith(langPrefix) && v.name.includes('Google')) ||
-                  voices.find(v => v.lang.startsWith(langPrefix)) ||
-                  voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) ||
-                  voices.find(v => v.lang.startsWith('en'));
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: ttsInput }] }],
+            generationConfig: {
+              responseModalities: ['AUDIO'],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: 'Aoede' }
+                }
+              }
+            }
+          })
+        }
+      );
 
+      if (!resp.ok) throw new Error('gemini_tts_failed');
+      const data = await resp.json();
+      const audioB64 = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (!audioB64) throw new Error('no_audio_data');
+
+      // Decode base64 PCM → WAV → play
+      const pcm = Uint8Array.from(atob(audioB64), c => c.charCodeAt(0));
+      const sampleRate = 24000;
+      const numChannels = 1;
+      const bitsPerSample = 16;
+      const byteRate = sampleRate * numChannels * bitsPerSample / 8;
+      const blockAlign = numChannels * bitsPerSample / 8;
+      const wavHeader = new ArrayBuffer(44);
+      const dv = new DataView(wavHeader);
+      const writeStr = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      dv.setUint32(4, 36 + pcm.byteLength, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      dv.setUint32(16, 16, true);
+      dv.setUint16(20, 1, true);
+      dv.setUint16(22, numChannels, true);
+      dv.setUint32(24, sampleRate, true);
+      dv.setUint32(28, byteRate, true);
+      dv.setUint16(32, blockAlign, true);
+      dv.setUint16(34, bitsPerSample, true);
+      writeStr(36, 'data');
+      dv.setUint32(40, pcm.byteLength, true);
+      const wav = new Blob([wavHeader, pcm], { type: 'audio/wav' });
+      const url = URL.createObjectURL(wav);
+      const audio = new Audio(url);
+      ttsAudio = audio;
       readBtn.textContent = '⏹ Stop';
-      let chunkIndex = 0;
+      readBtn.disabled = false;
+      audio.play();
+      audio.onended = () => {
+        ttsAudio = null;
+        readBtn.textContent = '🔊 Read';
+        URL.revokeObjectURL(url);
+      };
+      audio.onerror = () => {
+        ttsAudio = null;
+        readBtn.textContent = '🔊 Read';
+        URL.revokeObjectURL(url);
+      };
+      return; // Success — skip browser TTS fallback
+    } catch (e) {
+      // Fall through to browser TTS
+    }
 
-      function speakNext() {
-        if (thisSession !== speakSessionId) return;
-        if (chunkIndex >= chunks.length) {
-          readBtn.textContent = '🔊 Read';
-          return;
-        }
-        const u = new SpeechSynthesisUtterance(chunks[chunkIndex]);
-        if (bestVoice) {
-          u.voice = bestVoice;
-          u.lang = bestVoice.lang;
-        } else {
-          u.lang = detectedLang;
-        }
-        u.rate = 1.0;
-        u.pitch = 1.0;
-        u.onend = () => {
-          chunkIndex++;
-          if (thisSession !== speakSessionId) return;
-          setTimeout(() => speakNext(), 150);
-        };
-        u.onerror = () => { readBtn.textContent = '🔊 Read'; };
-        synth.speak(u);
-      }
-      speakNext();
-    }, 100);
-  };
+    // Fallback: browser SpeechSynthesis
+    readBtn.textContent = '⏹ Stop';
+    readBtn.disabled = false;
+    synth.cancel();
+    const detectedLang = detectLanguage(cleanText);
+    const voices2 = synth.getVoices();
+    const bestVoice =
+      voices2.find(v => v.lang.startsWith(detectedLang) && v.name.includes('Google')) ||
+      voices2.find(v => v.lang.startsWith(detectedLang)) ||
+      voices2.find(v => v.lang.startsWith('en') && v.name.includes('Google')) ||
+      voices2.find(v => v.lang.startsWith('en'));
+    const u = new SpeechSynthesisUtterance(cleanText.slice(0, 3000));
+    if (bestVoice) { u.voice = bestVoice; u.lang = bestVoice.lang; }
+    u.rate = 1.0;
+    u.onend = () => { readBtn.textContent = '🔊 Read'; };
+    u.onerror = () => { readBtn.textContent = '🔊 Read'; };
+    synth.speak(u);
+  });
 }
 
 // Continue - ask AI to continue its response
