@@ -5609,9 +5609,14 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
        if (e.isIntersecting) { e.target.classList.add('in-view'); _io.unobserve(e.target); }
      }), { threshold: 0.05, rootMargin: '0px 0px -40px 0px' });
      document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+     // MANDATORY safety net — forces all reveal elements visible after 1s
+     // in case IntersectionObserver never fires (e.g. page already scrolled):
+     setTimeout(function(){ document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in-view'); }); }, 1000);
 
    APPLY .reveal ONLY to leaf-level elements: individual cards, images, paragraphs.
-   NEVER apply .reveal to: <section>, <div class="container">, heading groups, nav, footer.
+   NEVER apply .reveal to any of these — they will go blank and never recover:
+     ✗ <section>  ✗ <div class="container">  ✗ .section-label  ✗ .systems-container
+     ✗ .bio-visualizer  ✗ .hero  ✗ nav  ✗ footer  ✗ any tab-panel wrapper
    If a whole section has .reveal, the IntersectionObserver may never fire → entire section blank.
 
 ⑤ FULLY WORKING JS — every button, toggle, tab, gauge, and form MUST actually work:
@@ -7114,7 +7119,7 @@ function addBubbleActions(bubble, text) {
       _continuationPending = true;
       const input = document.getElementById('chatInput');
       if (input) {
-        input.value = 'Continue the HTML code from exactly where you left off. Output only the remaining code — do not restart from <!DOCTYPE html>.';
+        input.value = 'Continue the HTML code from exactly where you left off. IMPORTANT: start your output at the beginning of the next COMPLETE HTML element (opening tag like <div, <section, <footer, <script etc.) — never start mid-attribute or mid-tag. Output only the remaining HTML — do not restart from <!DOCTYPE html>.';
         const btn = document.getElementById('sendBtn');
         if (btn) btn.click();
       }
@@ -7833,9 +7838,16 @@ function extractHtmlFromResponse(text, partialCode) {
   // 8. Continuation mode — no full HTML doc found but we have a partial to merge with
   if (partialCode) {
     // Strip the </body></html> we appended to the incomplete partial code
-    const base = partialCode
+    let base = partialCode
       .replace(/\n?<\/body>\s*<\/html>\s*$/i, '')
       .replace(/\n?<\/html>\s*$/i, '');
+    // If the base ends mid-tag (last < has no matching >) truncate to last complete tag.
+    // This prevents <div id being merged with id="foo"> to create <div idid="foo">.
+    const lastOpen = base.lastIndexOf('<');
+    const lastClose = base.lastIndexOf('>');
+    if (lastOpen > lastClose) {
+      base = base.substring(0, lastOpen).trimEnd();
+    }
     // Strip any leading ``` fence markers the AI may have output
     const chunk = text.replace(/^```[\w]*\s*/i, '').replace(/\s*```\s*$/i, '').trim();
     const merged = base + '\n' + chunk;
