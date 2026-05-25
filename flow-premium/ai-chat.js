@@ -7318,32 +7318,104 @@ function addBubbleActions(bubble, text) {
     }
   };
   
-  // Read aloud — Gemini TTS (natural voice), fallback to browser TTS if no API key
+  // ── Read Aloud — Voice Picker + Gemini TTS ────────────────────────────────
   const readBtn = actions.querySelector('.read-aloud-btn');
-  let ttsAudio = null;    // currently playing Audio object
-  let ttsObjectUrl = null; // blob URL — must be revoked on both end AND manual stop
+  let ttsAudio = null;
+  let ttsObjectUrl = null;
+  let voicePickerEl = null;
+
+  // Inject picker animation CSS once
+  if (!document.getElementById('snaptoai-vp-style')) {
+    const s = document.createElement('style');
+    s.id = 'snaptoai-vp-style';
+    s.textContent = `
+      @keyframes vpIn { from { opacity:0; transform:translateY(-8px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+      @keyframes vpBarPulse { 0%,100% { transform:scaleY(0.5); } 50% { transform:scaleY(1); } }
+      .vp-card { transition: background 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s; }
+      .vp-card:hover { transform: translateY(-3px) !important; }
+      .vp-playing .vp-bar { animation: vpBarPulse 0.7s ease-in-out infinite; }
+      .vp-bar { transition: height 0.2s; }
+    `;
+    document.head.appendChild(s);
+  }
+
+  const TTS_VOICES = [
+    { name: 'Kore',   emoji: '🎙️', desc: 'Warm & Professional', color: '#8b5cf6', delays: [0,'0.1s','0.2s','0.1s','0s'] },
+    { name: 'Puck',   emoji: '🎤', desc: 'Bright & Expressive',  color: '#ec4899', delays: ['0.2s','0s','0.1s','0.2s','0.1s'] },
+    { name: 'Charon', emoji: '🎚️', desc: 'Deep & Authoritative', color: '#3b82f6', delays: ['0.1s','0.2s','0s','0.1s','0.2s'] },
+    { name: 'Aoede',  emoji: '🎵', desc: 'Melodic & Clear',       color: '#10b981', delays: [0,'0.15s','0.05s','0.15s','0s'] },
+  ];
 
   function stopTts() {
-    if (ttsAudio) {
-      ttsAudio.pause();
-      ttsAudio = null;
-    }
-    if (ttsObjectUrl) {
-      URL.revokeObjectURL(ttsObjectUrl);
-      ttsObjectUrl = null;
-    }
+    if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
+    if (ttsObjectUrl) { URL.revokeObjectURL(ttsObjectUrl); ttsObjectUrl = null; }
     synth.cancel();
     readBtn.textContent = '🔊 Read';
     readBtn.disabled = false;
+    if (voicePickerEl) { voicePickerEl.remove(); voicePickerEl = null; }
   }
 
-  readBtn.addEventListener('click', async () => {
-    // Stop if already playing (Gemini audio OR browser TTS)
-    if (ttsAudio || synth.speaking) {
-      stopTts();
-      return;
-    }
+  function showVoicePicker(onSelect) {
+    if (voicePickerEl) { voicePickerEl.remove(); voicePickerEl = null; return; }
+    const lastVoice = localStorage.getItem('snaptoai_tts_voice') || 'Kore';
+    const panel = document.createElement('div');
+    voicePickerEl = panel;
+    panel.style.cssText = 'animation:vpIn 0.25s cubic-bezier(0.16,1,0.3,1) both;margin-top:8px;background:rgba(8,8,16,0.96);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:14px 14px 12px;backdrop-filter:blur(20px);box-shadow:0 24px 64px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.04) inset;';
 
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'font-size:9.5px;font-weight:800;letter-spacing:0.18em;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:10px;padding-left:2px;';
+    hdr.textContent = '✦ Choose Your Voice';
+    panel.appendChild(hdr);
+
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:8px;';
+
+    TTS_VOICES.forEach(v => {
+      const isActive = v.name === lastVoice;
+      const card = document.createElement('button');
+      card.className = 'vp-card';
+      card.style.cssText = `background:${isActive ? `rgba(${_hexRgb(v.color)},0.18)` : 'rgba(255,255,255,0.04)'};border:1px solid ${isActive ? v.color : 'rgba(255,255,255,0.08)'};border-radius:13px;padding:11px 6px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;color:#fff;box-shadow:${isActive ? `0 0 16px rgba(${_hexRgb(v.color)},0.25)` : 'none'};`;
+      const bars = v.delays.map((d, i) => {
+        const h = [6, 10, 14, 10, 6][i];
+        return `<div class="vp-bar" style="width:2.5px;height:${h}px;background:${v.color};border-radius:2px;opacity:${isActive ? 1 : 0.5};animation-delay:${d};"></div>`;
+      }).join('');
+      card.innerHTML = `
+        <div style="font-size:20px;line-height:1;margin-bottom:1px;">${v.emoji}</div>
+        <div style="font-size:11px;font-weight:800;letter-spacing:0.01em;">${v.name}</div>
+        <div style="font-size:8.5px;opacity:0.45;text-align:center;line-height:1.3;padding:0 2px;">${v.desc}</div>
+        <div class="${isActive ? 'vp-playing' : ''}" style="display:flex;gap:2px;align-items:flex-end;height:16px;margin-top:2px;">${bars}</div>
+      `;
+      if (isActive) card.style.transform = 'translateY(-2px)';
+      card.addEventListener('mouseenter', () => {
+        card.style.background = `rgba(${_hexRgb(v.color)},0.18)`;
+        card.style.borderColor = v.color;
+        card.style.boxShadow = `0 0 16px rgba(${_hexRgb(v.color)},0.25)`;
+      });
+      card.addEventListener('mouseleave', () => {
+        if (v.name !== (localStorage.getItem('snaptoai_tts_voice') || 'Kore')) {
+          card.style.background = 'rgba(255,255,255,0.04)';
+          card.style.borderColor = 'rgba(255,255,255,0.08)';
+          card.style.boxShadow = 'none';
+        }
+      });
+      card.addEventListener('click', () => {
+        localStorage.setItem('snaptoai_tts_voice', v.name);
+        panel.remove(); voicePickerEl = null;
+        onSelect(v.name);
+      });
+      grid.appendChild(card);
+    });
+
+    panel.appendChild(grid);
+    // Insert right after the actions bar
+    actions.after(panel);
+  }
+
+  function _hexRgb(hex) {
+    return [1,3,5].map(i => parseInt(hex.slice(i,i+2),16)).join(',');
+  }
+
+  async function runTts(voiceName) {
     const cleanText = text
       .replace(/```[\s\S]*?```/g, ' code block ')
       .replace(/[#*_~`>|]/g, '')
@@ -7355,25 +7427,19 @@ function addBubbleActions(bubble, text) {
     readBtn.textContent = '⏳ Loading…';
     readBtn.disabled = true;
 
-    // Try Gemini TTS first (Neural voice — far better than browser TTS)
     try {
-      // API key is always stored in chrome.storage.sync
       const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
       const apiKey = keyResult.geminiApiKey;
       if (!apiKey) throw new Error('no_key');
 
-      // Limit to 4800 chars (API cap); trim cleanly at sentence boundary
       let ttsInput = cleanText.slice(0, 4800);
       if (ttsInput.length === 4800) {
         const lastDot = ttsInput.lastIndexOf('.');
         if (lastDot > 3000) ttsInput = ttsInput.slice(0, lastDot + 1);
       }
 
-      // 20-second timeout — prevents the button freezing at "Loading…" forever
       const ttsAbort = new AbortController();
       const ttsTimer = setTimeout(() => ttsAbort.abort(), 20000);
-
-      // Kore = clear, warm, professional female voice
       let resp;
       try {
         resp = await fetch(
@@ -7386,62 +7452,32 @@ function addBubbleActions(bubble, text) {
               contents: [{ parts: [{ text: ttsInput }] }],
               generationConfig: {
                 responseModalities: ['AUDIO'],
-                speechConfig: {
-                  voiceConfig: {
-                    prebuiltVoiceConfig: { voiceName: 'Kore' }
-                  }
-                }
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } }
               }
             })
           }
         );
-      } finally {
-        clearTimeout(ttsTimer);
-      }
+      } finally { clearTimeout(ttsTimer); }
 
-      if (!resp.ok) {
-        const errText = await resp.text().catch(() => '');
-        console.warn('[SnapToAI TTS] Gemini API error', resp.status, errText);
-        throw new Error('gemini_tts_failed');
-      }
+      if (!resp.ok) { const e = await resp.text().catch(()=>''); console.warn('[TTS]',resp.status,e); throw new Error('tts_api_err'); }
       const data = await resp.json();
       const part = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-      const audioB64 = part?.data;
-      if (!audioB64) {
-        console.warn('[SnapToAI TTS] No audio data in response', JSON.stringify(data).slice(0, 400));
-        throw new Error('no_audio_data');
-      }
+      if (!part?.data) throw new Error('no_audio');
 
-      // Build a playable blob.
-      // The API may return PCM (audio/pcm) or a container format (audio/mp3, audio/ogg, etc.)
-      // For raw PCM we must wrap it in a WAV header; everything else plays directly.
       const mimeType = (part.mimeType || '').toLowerCase();
-      const rawBytes = Uint8Array.from(atob(audioB64), c => c.charCodeAt(0));
+      const rawBytes = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
       let audioBlob;
       if (mimeType.includes('pcm') || mimeType === '' || mimeType === 'audio/l16') {
-        // Wrap raw 16-bit LE PCM @ 24 kHz mono in a WAV container
-        const sampleRate = 24000, numChannels = 1, bitsPerSample = 16;
-        const byteRate = sampleRate * numChannels * bitsPerSample / 8;
-        const blockAlign = numChannels * bitsPerSample / 8;
-        const wavHeader = new ArrayBuffer(44);
-        const dv = new DataView(wavHeader);
-        const writeStr = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
-        writeStr(0, 'RIFF');
-        dv.setUint32(4, 36 + rawBytes.byteLength, true);
-        writeStr(8, 'WAVE');
-        writeStr(12, 'fmt ');
-        dv.setUint32(16, 16, true);
-        dv.setUint16(20, 1, true);
-        dv.setUint16(22, numChannels, true);
-        dv.setUint32(24, sampleRate, true);
-        dv.setUint32(28, byteRate, true);
-        dv.setUint16(32, blockAlign, true);
-        dv.setUint16(34, bitsPerSample, true);
-        writeStr(36, 'data');
-        dv.setUint32(40, rawBytes.byteLength, true);
-        audioBlob = new Blob([wavHeader, rawBytes], { type: 'audio/wav' });
+        const sr = 24000, ch = 1, bps = 16;
+        const hdr = new ArrayBuffer(44); const dv = new DataView(hdr);
+        const ws = (o, s) => { for (let i=0;i<s.length;i++) dv.setUint8(o+i, s.charCodeAt(i)); };
+        ws(0,'RIFF'); dv.setUint32(4,36+rawBytes.byteLength,true); ws(8,'WAVE'); ws(12,'fmt ');
+        dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,ch,true);
+        dv.setUint32(24,sr,true); dv.setUint32(28,sr*ch*bps/8,true);
+        dv.setUint16(32,ch*bps/8,true); dv.setUint16(34,bps,true);
+        ws(36,'data'); dv.setUint32(40,rawBytes.byteLength,true);
+        audioBlob = new Blob([hdr, rawBytes], { type: 'audio/wav' });
       } else {
-        // MP3, OGG, AAC, etc. — play the container directly
         audioBlob = new Blob([rawBytes], { type: mimeType });
       }
 
@@ -7451,12 +7487,11 @@ function addBubbleActions(bubble, text) {
       readBtn.textContent = '⏹ Stop';
       readBtn.disabled = false;
       audio.play().catch(() => stopTts());
-      audio.onended = () => { stopTts(); };
-      audio.onerror = () => { stopTts(); };
-      return; // Success — skip browser TTS fallback
+      audio.onended = () => stopTts();
+      audio.onerror = () => stopTts();
+      return;
     } catch (e) {
-      console.warn('[SnapToAI TTS] Gemini TTS failed, falling back to browser TTS:', e.message || e);
-      // Fall through to browser TTS
+      console.warn('[SnapToAI TTS] Gemini failed, using browser TTS:', e.message || e);
     }
 
     // Fallback: browser SpeechSynthesis
@@ -7476,6 +7511,11 @@ function addBubbleActions(bubble, text) {
     u.onend = () => { readBtn.textContent = '🔊 Read'; };
     u.onerror = () => { readBtn.textContent = '🔊 Read'; };
     synth.speak(u);
+  }
+
+  readBtn.addEventListener('click', () => {
+    if (ttsAudio || synth.speaking) { stopTts(); return; }
+    showVoicePicker((voiceName) => runTts(voiceName));
   });
 }
 

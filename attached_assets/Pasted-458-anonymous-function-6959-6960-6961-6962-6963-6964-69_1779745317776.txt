@@ -1,0 +1,1505 @@
+458 (anonymous function)
+...
+6959
+6960
+6961
+6962
+6963
+6964
+6965
+6966
+6967
+6968
+6969
+6970
+6971
+6972
+6973
+6974
+6975
+6976
+6977
+6978
+6979
+6980
+6981
+6982
+6983
+6984
+6985
+6986
+6987
+6988
+6989
+6990
+6991
+6992
+6993
+6994
+6995
+6996
+6997
+6998
+6999
+7000
+7001
+7002
+7003
+7004
+7005
+7006
+7007
+7008
+7009
+7010
+7011
+7012
+7013
+7014
+7015
+7016
+7017
+7018
+7019
+7020
+7021
+7022
+7023
+7024
+7025
+7026
+7027
+7028
+7029
+7030
+7031
+7032
+7033
+7034
+7035
+7036
+7037
+7038
+7039
+7040
+7041
+7042
+7043
+7044
+7045
+7046
+7047
+7048
+7049
+7050
+7051
+7052
+7053
+7054
+7055
+7056
+7057
+7058
+7059
+7060
+7061
+7062
+7063
+7064
+7065
+7066
+7067
+7068
+7069
+7070
+7071
+7072
+7073
+7074
+7075
+7076
+7077
+7078
+7079
+7080
+7081
+7082
+7083
+7084
+7085
+7086
+7087
+7088
+7089
+7090
+7091
+7092
+7093
+7094
+7095
+7096
+7097
+7098
+7099
+7100
+7101
+7102
+7103
+7104
+7105
+7106
+7107
+7108
+7109
+7110
+7111
+7112
+7113
+7114
+7115
+7116
+7117
+7118
+7119
+7120
+7121
+7122
+7123
+7124
+7125
+7126
+7127
+7128
+7129
+7130
+7131
+7132
+7133
+7134
+7135
+7136
+7137
+7138
+7139
+7140
+7141
+7142
+7143
+7144
+7145
+7146
+7147
+7148
+7149
+7150
+7151
+7152
+7153
+7154
+7155
+7156
+7157
+7158
+7159
+7160
+7161
+7162
+7163
+7164
+7165
+7166
+7167
+7168
+7169
+7170
+7171
+7172
+7173
+7174
+7175
+7176
+7177
+7178
+7179
+7180
+7181
+7182
+7183
+7184
+7185
+7186
+7187
+7188
+7189
+7190
+7191
+7192
+7193
+7194
+7195
+7196
+7197
+7198
+7199
+7200
+7201
+7202
+7203
+7204
+7205
+7206
+7207
+7208
+7209
+7210
+7211
+7212
+7213
+7214
+7215
+7216
+7217
+7218
+7219
+7220
+7221
+7222
+7223
+7224
+7225
+7226
+7227
+7228
+7229
+7230
+7231
+7232
+7233
+7234
+7235
+7236
+7237
+7238
+7239
+7240
+7241
+7242
+7243
+7244
+7245
+7246
+7247
+7248
+7249
+7250
+7251
+7252
+7253
+7254
+7255
+7256
+7257
+7258
+7259
+7260
+7261
+7262
+7263
+7264
+7265
+7266
+7267
+7268
+7269
+7270
+7271
+7272
+7273
+7274
+7275
+7276
+7277
+7278
+7279
+7280
+7281
+7282
+7283
+7284
+7285
+7286
+7287
+7288
+7289
+7290
+7291
+7292
+7293
+7294
+7295
+7296
+7297
+7298
+7299
+7300
+7301
+7302
+7303
+7304
+7305
+7306
+7307
+7308
+7309
+7310
+7311
+7312
+7313
+7314
+7315
+7316
+7317
+7318
+7319
+7320
+7321
+7322
+7323
+7324
+7325
+7326
+7327
+7328
+7329
+7330
+7331
+7332
+7333
+7334
+7335
+7336
+7337
+7338
+7339
+7340
+7341
+7342
+7343
+7344
+7345
+7346
+7347
+7348
+7349
+7350
+7351
+7352
+7353
+7354
+7355
+7356
+7357
+7358
+7359
+7360
+7361
+7362
+7363
+7364
+7365
+7366
+7367
+7368
+7369
+7370
+7371
+7372
+7373
+7374
+7375
+7376
+7377
+7378
+7379
+7380
+7381
+7382
+7383
+7384
+7385
+7386
+7387
+7388
+7389
+7390
+7391
+7392
+7393
+7394
+7395
+7396
+7397
+7398
+7399
+7400
+7401
+7402
+7403
+7404
+7405
+7406
+7407
+7408
+7409
+7410
+7411
+7412
+7413
+7414
+7415
+7416
+7417
+7418
+7419
+7420
+7421
+7422
+7423
+7424
+7425
+7426
+7427
+7428
+7429
+7430
+7431
+7432
+7433
+7434
+7435
+7436
+7437
+7438
+7439
+7440
+7441
+7442
+7443
+7444
+7445
+7446
+7447
+7448
+7449
+7450
+7451
+7452
+7453
+7454
+7455
+7456
+7457
+7458
+7459
+7460
+7461
+7462
+7463
+7464
+7465
+7466
+7467
+7468
+7469
+7470
+7471
+7472
+7473
+7474
+7475
+7476
+7477
+7478
+7479
+7480
+7481
+7482
+7483
+7484
+7485
+7486
+7487
+7488
+7489
+7490
+7491
+7492
+7493
+7494
+7495
+7496
+7497
+7498
+7499
+7500
+7501
+7502
+7503
+7504
+7505
+7506
+7507
+7508
+7509
+7510
+7511
+7512
+7513
+7514
+7515
+7516
+7517
+7518
+7519
+7520
+7521
+7522
+7523
+7524
+7525
+7526
+7527
+7528
+7529
+7530
+7531
+7532
+7533
+7534
+7535
+7536
+7537
+7538
+7539
+7540
+7541
+7542
+7543
+7544
+7545
+7546
+7547
+7548
+7549
+7550
+7551
+7552
+7553
+7554
+7555
+7556
+7557
+7558
+7559
+7560
+7561
+7562
+7563
+7564
+7565
+7566
+7567
+7568
+7569
+7570
+7571
+7572
+7573
+7574
+7575
+7576
+7577
+7578
+7579
+7580
+7581
+7582
+7583
+7584
+7585
+7586
+7587
+7588
+7589
+7590
+7591
+7592
+7593
+7594
+7595
+7596
+7597
+7598
+7599
+7600
+7601
+7602
+7603
+7604
+7605
+7606
+7607
+7608
+7609
+7610
+7611
+7612
+7613
+7614
+7615
+7616
+7617
+7618
+7619
+7620
+7621
+7622
+7623
+7624
+7625
+7626
+7627
+7628
+7629
+7630
+7631
+7632
+7633
+7634
+7635
+7636
+7637
+7638
+7639
+7640
+7641
+7642
+7643
+7644
+7645
+7646
+7647
+7648
+7649
+7650
+7651
+7652
+7653
+7654
+7655
+7656
+7657
+7658
+7659
+7660
+7661
+7662
+7663
+7664
+7665
+7666
+7667
+7668
+7669
+7670
+7671
+7672
+7673
+7674
+7675
+7676
+7677
+7678
+7679
+7680
+7681
+7682
+7683
+7684
+7685
+7686
+7687
+7688
+7689
+7690
+7691
+7692
+7693
+7694
+7695
+7696
+7697
+7698
+7699
+7700
+7701
+7702
+7703
+7704
+7705
+7706
+7707
+7708
+7709
+7710
+7711
+7712
+7713
+7714
+7715
+7716
+7717
+7718
+7719
+7720
+7721
+7722
+7723
+7724
+7725
+7726
+7727
+7728
+7729
+7730
+7731
+7732
+7733
+7734
+7735
+7736
+7737
+7738
+7739
+7740
+7741
+7742
+7743
+7744
+7745
+7746
+7747
+7748
+7749
+7750
+7751
+7752
+7753
+7754
+7755
+7756
+7757
+7758
+7759
+7760
+7761
+7762
+7763
+7764
+7765
+7766
+7767
+7768
+7769
+7770
+7771
+7772
+7773
+7774
+7775
+7776
+7777
+7778
+7779
+7780
+7781
+7782
+7783
+7784
+7785
+7786
+7787
+7788
+7789
+7790
+7791
+7792
+7793
+7794
+7795
+7796
+7797
+7798
+7799
+7800
+7801
+7802
+7803
+7804
+7805
+7806
+7807
+7808
+7809
+7810
+7811
+7812
+7813
+7814
+7815
+7816
+7817
+7818
+7819
+7820
+7821
+7822
+7823
+7824
+7825
+7826
+7827
+7828
+7829
+7830
+7831
+7832
+7833
+7834
+7835
+7836
+7837
+7838
+7839
+7840
+7841
+7842
+7843
+7844
+7845
+7846
+7847
+7848
+7849
+7850
+7851
+7852
+7853
+7854
+7855
+7856
+7857
+7858
+7859
+7860
+7861
+7862
+7863
+7864
+7865
+7866
+7867
+7868
+7869
+7870
+7871
+7872
+7873
+7874
+7875
+7876
+7877
+7878
+7879
+7880
+7881
+7882
+7883
+7884
+7885
+7886
+7887
+7888
+7889
+7890
+7891
+7892
+7893
+7894
+7895
+7896
+7897
+7898
+7899
+7900
+7901
+7902
+7903
+7904
+7905
+7906
+7907
+7908
+7909
+7910
+7911
+7912
+7913
+7914
+7915
+7916
+7917
+7918
+7919
+7920
+7921
+7922
+7923
+7924
+7925
+7926
+7927
+7928
+7929
+7930
+7931
+7932
+7933
+7934
+7935
+7936
+7937
+7938
+7939
+7940
+7941
+7942
+7943
+7944
+7945
+7946
+7947
+7948
+7949
+7950
+7951
+7952
+7953
+7954
+7955
+7956
+7957
+...
+<6958 lines not shown>
+          releaseRequestLock();
+          return;
+        }
+        const friendlyAudioError = audioError?.toLowerCase().includes('failed to fetch')
+          ? 'Connection failed — please check your internet and try again.'
+          : (audioError || 'Music generation failed. Please try again.');
+        throw new Error(friendlyAudioError);
+      }
+      
+      const responseBubble = createResponseBubble();
+      const data = audioData;
+      const parts = data.candidates[0].content.parts;
+      console.log(`[SnapToAI Audio] Got ${parts.length} parts`);
+      let htmlContent = '';
+      let hasAudio = false;
+      
+      for (const part of parts) {
+        if (part.text) {
+          fullText += part.text;
+          const parsedHtml = typeof marked !== 'undefined' ? marked.parse(part.text) : part.text;
+          htmlContent += typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
+        }
+        if (part.inlineData && part.inlineData.mimeType?.startsWith('audio') && part.inlineData.data?.length > 5000) {
+          hasAudio = true;
+          const audioSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          const audioId = 'audio-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+          htmlContent += `<div id="wrap-${audioId}" style="margin:10px 0;">
+            <audio id="${audioId}" controls style="width:100%; border-radius:8px; outline:none;" src="${audioSrc}"></audio>
+            <div style="margin-top:8px; display:flex; gap:8px;">
+              <button class="audio-save-btn" style="background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.3);color:#00ff88;padding:5px 14px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;">💾 Save Audio</button>
+            </div>
+          </div>`;
+          setTimeout(() => {
+            const audioEl = document.getElementById(audioId);
+            if (!audioEl) return;
+            const checkDuration = () => {
+              if (audioEl.duration === 0 || isNaN(audioEl.duration)) {
+                const wrap = document.getElementById('wrap-' + audioId);
+                if (wrap) {
+                  wrap.closest('.chat-bubble')?.remove();
+                  const retryBubble = createResponseBubble();
+                  retryBubble.innerHTML = buildMusicRetryCard();
+                  thread.scrollTop = thread.scrollHeight;
+                }
+              }
+            };
+            audioEl.addEventListener('loadedmetadata', checkDuration);
+            setTimeout(checkDuration, 3000);
+          }, 100);
+        }
+      }
+      
+      if (!hasAudio && !fullText) {
+        htmlContent = buildMusicRetryCard();
+      } else if (!hasAudio) {
+        htmlContent = `<div style="font-size:13px;color:#aabbcc;">${fullText}</div>`;
+      } else {
+        fullText = fullText || `Audio for: "${prompt}"`;
+        htmlContent = `<div style="font-size:13px;color:#aabbcc;margin-bottom:6px;">🎵 ${fullText}</div>` + htmlContent;
+      }
+      
+      responseBubble.innerHTML = htmlContent;
+      
+      responseBubble.querySelectorAll('.audio-save-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const audioEl = btn.closest('div').parentElement.querySelector('audio');
+          if (audioEl) {
+            const a = document.createElement('a');
+            a.href = audioEl.src;
+            a.download = 'snaptoai-audio.wav';
+            a.click();
+          }
+        });
+      });
+      
+      thread.scrollTop = thread.scrollHeight;
+      addBubbleActions(responseBubble, fullText);
+      
+    } else {
+      // === VISION / GEMINI (streaming text) ===
+      let systemPrompt = SYSTEM_PROMPT;
+      if (buildModeEnabled) {
+        systemPrompt = BUILD_SYSTEM_PROMPT;
+      } else if (activeSpecialistAgent) {
+        systemPrompt = activeSpecialistAgent.prompt;
+      } else if (researchMode) {
+        systemPrompt = `You are an expert Research Agent. Follow these rules strictly:\n1. Use Google Search to find real-time facts before answering.\n2. If a URL is provided, read and synthesize its content.\n3. Cite every source inline with [1], [2], etc. and list them at the end.\n4. Structure your response with: **Summary**, **Key Findings**, **Sources**.\n5. Be thorough, factual, and never guess — if unsure, say so and search again.`;
+      } else if (currentImages.length > 1) {
+        systemPrompt = MULTI_IMAGE_PROMPT;
+      } else if (currentPageText && currentPageText.length > 800) {
+        systemPrompt = SMART_SYSTEM_PROMPT;
+      }
+      
+      // Build tools array based on active toggles
+      const _tools2 = [];
+      if (searchGroundingEnabled) _tools2.push({ googleSearch: {} });
+      if (codeExecutionEnabled) _tools2.push({ codeExecution: {} });
+
+      const _body2 = {
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: contents,
+        generationConfig: {
+          maxOutputTokens: buildModeEnabled ? 8192 : getConfig('MAX_OUTPUT_TOKENS', 2048),
+          temperature: buildModeEnabled ? 0.9 : getConfig('TEMPERATURE', 0.7),
+          topP: 0.95,
+          topK: 40
+        }
+      };
+      if (_tools2.length > 0) _body2.tools = _tools2;
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:streamGenerateContent?alt=sse&key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(_body2)
+        }
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+      }
+      
+      const responseBubble = createResponseBubble();
+      
+      if (!response.body) {
+        throw new Error('No response stream available');
+      }
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let sseBuffer = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        sseBuffer += decoder.decode(value, { stream: true });
+        const lines = sseBuffer.split('\n');
+        sseBuffer = lines.pop() || '';
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const jsonStr = line.slice(6).trim();
+              if (!jsonStr || jsonStr === '[DONE]') continue;
+              const data = JSON.parse(jsonStr);
+              const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (text) {
+                fullText += text;
+                try {
+                  if (typeof marked !== 'undefined') {
+                    const parsedHtml = marked.parse(fullText);
+                    responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
+                    responseBubble.querySelectorAll('a').forEach(link => {
+                      link.setAttribute('target', '_blank');
+                      link.setAttribute('rel', 'noopener noreferrer');
+                    });
+                  } else {
+                    responseBubble.textContent = fullText;
+                  }
+                } catch (renderErr) {
+                  responseBubble.textContent = fullText;
+                }
+                thread.scrollTop = thread.scrollHeight;
+              }
+            } catch (parseErr) {
+              // Skip malformed SSE chunks
+            }
+          }
+        }
+      }
+      
+      if (!fullText) {
+        responseBubble.innerHTML = '<div style="color:#ff6b6b;">No response received. Please try again.</div>';
+      }
+      
+      addBubbleActions(responseBubble, fullText);
+      renderLivePreview(fullText);
+    }
+    
+    const userHistoryEntry = { role: 'user', text: prompt };
+    if (isFirstMessage && currentImages.length > 0) {
+      userHistoryEntry.images = currentImages;
+    }
+    conversationHistory.push(userHistoryEntry);
+    conversationHistory.push({ role: 'model', text: fullText });
+    
+  } catch (error) {
+    removeLoading();
+    if (error.message === '__trial_ended__') {
+      // Modal already shown — don't add an error bubble
+    } else {
+      const lowerErr = error.message.toLowerCase();
+      const isQuotaError = lowerErr.match(/quota|rate|limit|429|exceeded|resource.exhausted/);
+      const isBilling = lowerErr.includes('billing') || lowerErr.includes('permission') || lowerErr.includes('not enabled') || lowerErr.includes('paid tier') || lowerErr.includes('precondition');
+      if (isQuotaError) {
+        const quotaBubble = createResponseBubble();
+        quotaBubble.innerHTML = buildRateLimitCard();
+        thread.scrollTop = thread.scrollHeight;
+      } else if (isBilling) {
+        const unlockBubble = createResponseBubble();
+        unlockBubble.innerHTML = buildUnlockCard('video');
+        thread.scrollTop = thread.scrollHeight;
+      } else {
+        const friendlyMsg = await getFriendlyErrorMessage(error.message);
+        addBubble(friendlyMsg, 'ai');
+      }
+    }
+  } finally {
+    releaseRequestLock(); // Always release the lock
+  }
+  
+  sendBtn.disabled = false;
+  input.focus();
+}
+
+// Convert scary API errors into friendly, helpful messages
+async function getFriendlyErrorMessage(errorMsg) {
+  const lowerMsg = errorMsg.toLowerCase();
+  
+  // Check if user has their own API key
+  const apiResult = await chrome.storage.sync.get(['geminiApiKey']);
+  const hasOwnApiKey = apiResult.geminiApiKey && apiResult.geminiApiKey.length > 20;
+  
+  // Quota/Rate limit errors — friendly non-scary messages
+  if (lowerMsg.includes('quota') || lowerMsg.includes('rate') || lowerMsg.includes('limit') || lowerMsg.includes('429') || lowerMsg.includes('exceeded') || lowerMsg.includes('resource')) {
+    if (hasOwnApiKey) {
+      return `⏳ Taking a quick breather! Google's API has a temporary limit. Just wait a moment and try again.`;
+    } else {
+      return `🌟 You've had a great session! Come back tomorrow for more free prompts, or get unlimited access with a free Gemini API key at aistudio.google.com`;
+    }
+  }
+  
+  // API key errors
+  if (lowerMsg.includes('api key') || lowerMsg.includes('invalid') || lowerMsg.includes('unauthorized') || lowerMsg.includes('401')) {
+    return `API key issue detected.\n\n` +
+           `Please check your API key in Settings. You can get a new one at aistudio.google.com — it takes about a minute.`;
+  }
+  
+  // Network errors
+  if (lowerMsg.includes('network') || lowerMsg.includes('fetch') || lowerMsg.includes('connection')) {
+    return `📡 Connection issue. Please check your internet and try again.`;
+  }
+  
+  // Default: return original message
+  return errorMsg;
+}
+
+// Add action buttons under each AI response
+function addBubbleActions(bubble, text) {
+  const actions = document.createElement('div');
+  actions.className = 'bubble-actions';
+
+  // In Build Mode: extract HTML from THIS response (may be truncated but usable).
+  // If _continuationPending, merge the chunk onto the previous partial code.
+  const _extracted = buildModeEnabled
+    ? extractHtmlFromResponse(text, _continuationPending ? _lastBuiltCode : null)
+    : { html: '', truncated: false };
+  if (_continuationPending && _extracted.html) _continuationPending = false;
+  const thisCode = _extracted.html;
+  const isTruncated = _extracted.truncated;
+  // Persist merged code immediately so a second "Continue Build" uses the
+  // correct merged base, not the stale partial from before the first continuation.
+  if (thisCode) {
+    _lastBuiltCode = thisCode;
+    try { chrome.storage.local.set({ snaptoai_built_code: thisCode }); } catch(e) {}
+  }
+  const showPreview = buildModeEnabled && (!!thisCode || !!_lastBuiltCode);
+
+  let previewBtnHtml = '';
+  if (showPreview) {
+    const label = thisCode
+      ? (isTruncated ? '🏗️ Open Preview ⚠️' : '🏗️ Open Preview')
+      : '🏗️ Open Previous Build';
+    previewBtnHtml = `<button class="open-preview-btn" style="background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.5);color:#ffa032;border-radius:12px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:0.2px;">${label}</button>`;
+  }
+
+  actions.innerHTML = `
+    <button class="copy-single-btn">📋 Copy</button>
+    <button class="read-aloud-btn">🔊 Read</button>
+    <button class="magic-card-btn">✨ Magic Card</button>
+    ${previewBtnHtml}
+  `;
+  bubble.appendChild(actions);
+
+  // Truncation warning — shown below button when AI cut off mid-code.
+  // Gives a one-click "Continue Build" button that auto-sends the right prompt
+  // and merges the continuation chunk back onto the partial code.
+  if (isTruncated) {
+    const warn = document.createElement('div');
+    warn.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,160,50,0.75);margin-top:5px;padding:0 2px;flex-wrap:wrap;';
+    warn.innerHTML = `<span>⚠️ Response was cut off</span>
+      <button style="background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.5);color:#ffa032;border-radius:10px;padding:2px 9px;font-size:11px;font-weight:600;cursor:pointer;">🔄 Continue Build</button>`;
+    warn.querySelector('button').addEventListener('click', () => {
+      _continuationPending = true;
+      // Ensure Build Mode is ON — if it was turned off the AI would respond
+      // in plain text instead of outputting HTML, breaking the continuation.
+      if (!buildModeEnabled) {
+        buildModeEnabled = true;
+        const buildBtn = document.getElementById('buildToggleBtn');
+        if (buildBtn) {
+          buildBtn.classList.add('tool-btn-active');
+          buildBtn.title = 'Build Mode ON — AI will generate full HTML/CSS/JS apps with live preview';
+        }
+      }
+      const input = document.getElementById('chatInput');
+      if (input) {
+        input.value = 'CONTINUE_BUILD: output only the remaining HTML from where the previous response cut off. Start at the beginning of the next complete HTML element (opening tag like <div, <section, <footer, <script). Never restart from <!DOCTYPE html>. Never repeat already-written code.';
+        const btn = document.getElementById('sendBtn');
+        if (btn) btn.click();
+      }
+    });
+    actions.appendChild(warn);
+  }
+
+  // Open Preview button — uses current response code, or falls back to last build
+  const prevBtn = actions.querySelector('.open-preview-btn');
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      const code = thisCode || _lastBuiltCode;
+      if (!code) return;
+      _lastBuiltCode = code;
+      try { chrome.storage.local.set({ snaptoai_built_code: code }, () => {
+        chrome.tabs.create({ url: chrome.runtime.getURL('preview-output.html') });
+      }); } catch(e) {}
+    });
+  }
+  
+  // Magic Card Button - Opens dedicated page to avoid CSP issues
+  actions.querySelector('.magic-card-btn').onclick = async () => {
+    const cardContent = typeof marked !== 'undefined' ? marked.parse(text) : text;
+    
+    // Store content in local storage for the magic card page to read
+    await chrome.storage.local.set({ magicCardContent: cardContent });
+    
+    // Open the dedicated magic card page
+    chrome.tabs.create({ url: chrome.runtime.getURL('magic-card.html') });
+  };
+  // Copy this response only
+  actions.querySelector('.copy-single-btn').onclick = async () => {
+    let html = bubble.innerHTML.replace(/<div class="bubble-actions">.*<\/div>/s, '');
+    html = html.replace(/<strong>/g, '<strong style="color: #0066cc; font-weight: bold;">');
+    html = html.replace(/<a /g, '<a style="color: #0066cc; text-decoration: underline;" ');
+    const styledHtml = `<div style="font-family: Arial, sans-serif; color: #000;">${html}</div>`;
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([styledHtml], { type: 'text/html' }),
+          'text/plain': new Blob([text], { type: 'text/plain' })
+        })
+      ]);
+      actions.querySelector('.copy-single-btn').textContent = '✓ Copied!';
+      setTimeout(() => actions.querySelector('.copy-single-btn').textContent = '📋 Copy', 2000);
+    } catch (e) {
+      await navigator.clipboard.writeText(text);
+      actions.querySelector('.copy-single-btn').textContent = '✓ Copied!';
+      setTimeout(() => actions.querySelector('.copy-single-btn').textContent = '📋 Copy', 2000);
+    }
+  };
+  
+  // Read aloud — Gemini TTS (natural voice), fallback to browser TTS if no API key
+  const readBtn = actions.querySelector('.read-aloud-btn');
+  let ttsAudio = null;    // currently playing Audio object
+  let ttsObjectUrl = null; // blob URL — must be revoked on both end AND manual stop
+
+  function stopTts() {
+    if (ttsAudio) {
+      ttsAudio.pause();
+      ttsAudio = null;
+    }
+    if (ttsObjectUrl) {
+      URL.revokeObjectURL(ttsObjectUrl);
+      ttsObjectUrl = null;
+    }
+    synth.cancel();
+    readBtn.textContent = '🔊 Read';
+    readBtn.disabled = false;
+  }
+
+  readBtn.addEventListener('click', async () => {
+    // Stop if already playing (Gemini audio OR browser TTS)
+    if (ttsAudio || synth.speaking) {
+      stopTts();
+      return;
+    }
+
+    const cleanText = text
+      .replace(/```[\s\S]*?```/g, ' code block ')
+      .replace(/[#*_~`>|]/g, '')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!cleanText) return;
+
+    readBtn.textContent = '⏳ Loading…';
+    readBtn.disabled = true;
+
+    // Try Gemini TTS first (Neural voice — far better than browser TTS)
+    try {
+      // API key is always stored in chrome.storage.sync
+      const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+      const apiKey = keyResult.geminiApiKey;
+      if (!apiKey) throw new Error('no_key');
+
+      // Limit to 4800 chars (API cap); trim cleanly at sentence boundary
+      let ttsInput = cleanText.slice(0, 4800);
+      if (ttsInput.length === 4800) {
+        const lastDot = ttsInput.lastIndexOf('.');
+        if (lastDot > 3000) ttsInput = ttsInput.slice(0, lastDot + 1);
+      }
+
+      // 20-second timeout — prevents the button freezing at "Loading…" forever
+      const ttsAbort = new AbortController();
+      const ttsTimer = setTimeout(() => ttsAbort.abort(), 20000);
+
+      // Kore = clear, warm, professional female voice
+      let resp;
+      try {
+        resp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: ttsAbort.signal,
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: ttsInput }] }],
+              generationConfig: {
+                responseModalities: ['AUDIO'],
+                speechConfig: {
+                  voiceConfig: {
+                    prebuiltVoiceConfig: { voiceName: 'Kore' }
+                  }
+                }
+              }
+            })
+          }
+        );
+      } finally {
+        clearTimeout(ttsTimer);
+      }
+
+      if (!resp.ok) {
+        const errText = await resp.text().catch(() => '');
+        console.warn('[SnapToAI TTS] Gemini API error', resp.status, errText);
+        throw new Error('gemini_tts_failed');
+      }
+      const data = await resp.json();
+      const part = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+      const audioB64 = part?.data;
+      if (!audioB64) {
+        console.warn('[SnapToAI TTS] No audio data in response', JSON.stringify(data).slice(0, 400));
+        throw new Error('no_audio_data');
+      }
+
+      // Build a playable blob.
+      // The API may return PCM (audio/pcm) or a container format (audio/mp3, audio/ogg, etc.)
+      // For raw PCM we must wrap it in a WAV header; everything else plays directly.
+      const mimeType = (part.mimeType || '').toLowerCase();
+      const rawBytes = Uint8Array.from(atob(audioB64), c => c.charCodeAt(0));
+      let audioBlob;
+      if (mimeType.includes('pcm') || mimeType === '' || mimeType === 'audio/l16') {
+        // Wrap raw 16-bit LE PCM @ 24 kHz mono in a WAV container
+        const sampleRate = 24000, numChannels = 1, bitsPerSample = 16;
+        const byteRate = sampleRate * numChannels * bitsPerSample / 8;
+        const blockAlign = numChannels * bitsPerSample / 8;
+        const wavHeader = new ArrayBuffer(44);
+        const dv = new DataView(wavHeader);
+        const writeStr = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+        writeStr(0, 'RIFF');
+        dv.setUint32(4, 36 + rawBytes.byteLength, true);
+        writeStr(8, 'WAVE');
+        writeStr(12, 'fmt ');
+        dv.setUint32(16, 16, true);
+        dv.setUint16(20, 1, true);
+        dv.setUint16(22, numChannels, true);
+        dv.setUint32(24, sampleRate, true);
+        dv.setUint32(28, byteRate, true);
+        dv.setUint16(32, blockAlign, true);
+        dv.setUint16(34, bitsPerSample, true);
+        writeStr(36, 'data');
+        dv.setUint32(40, rawBytes.byteLength, true);
+        audioBlob = new Blob([wavHeader, rawBytes], { type: 'audio/wav' });
+      } else {
+        // MP3, OGG, AAC, etc. — play the container directly
+        audioBlob = new Blob([rawBytes], { type: mimeType });
+      }
+
+      ttsObjectUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(ttsObjectUrl);
+      ttsAudio = audio;
+      readBtn.textContent = '⏹ Stop';
+      readBtn.disabled = false;
+      audio.play().catch(() => stopTts());
+      audio.onended = () => { stopTts(); };
+      audio.onerror = () => { stopTts(); };
+      return; // Success — skip browser TTS fallback
+    } catch (e) {
+      console.warn('[SnapToAI TTS] Gemini TTS failed, falling back to browser TTS:', e.message || e);
+      // Fall through to browser TTS
+    }
