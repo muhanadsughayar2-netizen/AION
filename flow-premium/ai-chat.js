@@ -5595,13 +5595,19 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
    IntersectionObserver: { threshold:0.05, rootMargin:"0px 0px -5% 0px" }
 
 ⑤ FULLY WORKING JS — every button, toggle, tab, gauge, and form MUST actually work:
-   WIRING RULE: wrap ALL event listeners in document.addEventListener('DOMContentLoaded', () => { ... })
-   so elements exist before the script runs. querySelector the element, then addEventListener('click', ...).
-   GAUGE / PROGRESS RINGS: animate stroke-dashoffset with setTimeout(fn, 300) after DOMContentLoaded.
-   FOOD / TOGGLE BUTTONS: classList.toggle('active') on click — also update any linked counter or gauge.
-   TABS / ACCORDIONS: show/hide sections via style.display or classList — must respond instantly to clicks.
-   FORMS: preventDefault() + show a visible success message in the DOM — no page reload.
-   DO NOT use onclick="" attributes — always addEventListener. DO NOT leave any button as a visual-only stub.
+   SCRIPT PLACEMENT: put the single <script> block as the very last element inside </body>.
+   Because the script runs after all HTML has been parsed, the DOM is already ready — DO NOT wrap
+   anything in DOMContentLoaded (the event may have already fired by then, making the callback
+   never execute and leaving every button broken).
+   WIRING PATTERN (run directly, not inside any callback):
+     const btn = document.getElementById('myBtn');
+     if (btn) btn.addEventListener('click', () => { /* handler */ });
+   MODAL / OVERLAY: toggle style.display between 'flex' and 'none'.
+   GAUGE / PROGRESS RINGS: animate stroke-dashoffset with setTimeout(fn, 100).
+   TOGGLES / FOOD BUTTONS: classList.toggle('active') on click — also update any linked counter or gauge.
+   TABS / ACCORDIONS: show/hide via style.display or classList — must respond instantly.
+   FORMS: preventDefault() + show a visible success message inline — no page reload.
+   DO NOT use onclick="" attributes. DO NOT wrap code in DOMContentLoaded. DO NOT leave any button as a stub.
 
 ⑥ SPACING — Max content width 1100px (margin:0 auto). Min gap between cards: 24px. Never overflow-x.
 
