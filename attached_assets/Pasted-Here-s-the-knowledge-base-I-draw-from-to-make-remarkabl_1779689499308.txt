@@ -1,0 +1,70 @@
+Here's the knowledge base I draw from to make remarkable sites. Feed these references to any AI (or me) and quality jumps immediately.
+
+1. Design awards & galleries (the "what's possible" bar)
+Awwwards.com — Site of the Day / SOTM winners
+Godly.website — curated Apple-tier sites
+Httpster.net — current trends, raw
+Land-book.com — landing pages, filterable by style
+Minimal.gallery — restrained, editorial
+SiteInspire — categorized by type/industry
+Lapa.ninja — landing pages by category
+Refero.design — UI flows screen-by-screen
+2. Studios to name-drop as references
+Naming these in a prompt is worth 1000 words of description:
+
+Linear, Vercel, Stripe — modern SaaS
+Aesop, Sakara, Daily Harvest — premium wellness
+Pentagram, Collins, Mother Design — branding
+Bruno Simon, Active Theory, Resn — interactive/WebGL
+Apple, Arc, Rauno Freiberg — product detail
+Kvell, Locomotive, Studio Brave — editorial
+3. Typography (specific pairings, not "Inter")
+Editorial: Playfair Display + Inter · GT Sectra + Söhne · Tiempos + Söhne
+Modern tech: Geist + Geist Mono · Söhne + JetBrains Mono
+Luxury: Cormorant + Karla · PP Editorial Old + ABC Diatype
+Brutalist: Neue Haas Grotesk + IBM Plex Mono
+Sources: Google Fonts, Pangram Pangram, Klim, Grilli Type, Pangaia
+4. Color systems
+Refactoring UI (Steve Schoger) — color & spacing rules
+OKLCH color picker (oklch.com) — perceptually uniform palettes
+Coolors, Huemint — palette generation
+Brand archetypes: Aesop = warm neutrals · Linear = cosmic violet · Notion = paper white
+5. Imagery sources (never ship blank divs)
+Unsplash, Pexels — free stock (curate hard)
+Midjourney, Nano Banana, DALL-E — generated hero shots
+Cosmos.so — mood board references
+Are.na — conceptual research
+6. Motion & interaction
+Motion (formerly Framer Motion) — React animation standard
+GSAP + ScrollTrigger — scroll-driven
+Lenis — smooth scroll
+Rauno.me, Emil Kowalski's blog — micro-interaction craft
+Easings.net — never use linear or default ease
+7. Component & UI libraries
+shadcn/ui — base primitives
+Aceternity UI, Magic UI, Cult UI — animated components
+Tailwind UI — production patterns
+Radix Primitives — accessibility foundation
+8. Foundational books/blogs
+Refactoring UI — Adam Wathan & Steve Schoger
+Practical Typography — Matthew Butterick
+Grid Systems — Josef Müller-Brockmann
+Rauno.me, Emil Kowalski, Brian Lovin, Linear's blog
+9. The anti-pattern checklist (always banned by default)
+Purple-to-pink gradient on white
+Glassmorphism + glow on a dark bg (the default AI slop)
+Inter for everything
+3-column feature grid with Lucide icons
+"Trusted by" logo strip
+Two CTAs in the hero
+Emoji as icons in a "premium" product
+Stock photos of diverse people laughing at laptops
+10. The 5 questions every brief must answer
+Era/movement? (Swiss, Memphis, Y2K, brutalist, editorial)
+3 brand references? ("like X, Y, Z")
+3 banned patterns? ("NOT dark SaaS, NOT glass, NOT gradient text")
+Locked tokens? (exact hexes, exact font names, exact radius)
+One emotional word? (calm / electric / sacred / clinical / playful)
+The shortcut: if you can fill in those 5 questions before prompting, you'll get remarkable output every time. If you can't, the AI will guess — and it always guesses "dark SaaS."
+
+Want me to apply this full stack to rebuild your Activation Lab site now?
