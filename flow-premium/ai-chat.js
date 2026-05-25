@@ -5595,19 +5595,34 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
    IntersectionObserver: { threshold:0.05, rootMargin:"0px 0px -5% 0px" }
 
 ⑤ FULLY WORKING JS — every button, toggle, tab, gauge, and form MUST actually work:
-   SCRIPT PLACEMENT: put the single <script> block as the very last element inside </body>.
-   Because the script runs after all HTML has been parsed, the DOM is already ready — DO NOT wrap
-   anything in DOMContentLoaded (the event may have already fired by then, making the callback
-   never execute and leaving every button broken).
-   WIRING PATTERN (run directly, not inside any callback):
+
+   SCRIPT PLACEMENT — CRITICAL: Write the <script> block BEFORE the footer and modal HTML
+   (i.e. before </section> of the last content section, not at the very end of </body>).
+   If the response is cut off by token limits, the footer/modal are lost but JS still runs.
+   Because the script executes after all content above it is parsed, the DOM is already ready —
+   DO NOT wrap anything in DOMContentLoaded (the event fires before inline scripts run when the
+   script is at end of body, making the callback never execute).
+
+   SCROLL LINKS — use plain anchor tags, never onclick for scrolling:
+     <a href="#sectionId" class="btn">Go There</a>   ← works with zero JavaScript
+   Never write onclick="scrollToSection('...')" — it requires a JS function that may be missing.
+
+   FUNCTIONS called by onclick="" MUST be defined at the TOP LEVEL of the script (not inside
+   any callback or block), so the browser can find them in global scope:
+     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+   Then in HTML: onclick="openModal('shieldModal')" — this is fine for simple function calls.
+
+   WIRING PATTERN for everything else (run directly, not inside any callback):
      const btn = document.getElementById('myBtn');
      if (btn) btn.addEventListener('click', () => { /* handler */ });
+
    MODAL / OVERLAY: toggle style.display between 'flex' and 'none'.
    GAUGE / PROGRESS RINGS: animate stroke-dashoffset with setTimeout(fn, 100).
-   TOGGLES / FOOD BUTTONS: classList.toggle('active') on click — also update any linked counter or gauge.
+   TOGGLES / FOOD BUTTONS: classList.toggle('active') — also update any linked counter or gauge.
    TABS / ACCORDIONS: show/hide via style.display or classList — must respond instantly.
    FORMS: preventDefault() + show a visible success message inline — no page reload.
-   DO NOT use onclick="" attributes. DO NOT wrap code in DOMContentLoaded. DO NOT leave any button as a stub.
+   DO NOT wrap code in DOMContentLoaded. DO NOT leave any button as a visual-only stub.
 
 ⑥ SPACING — Max content width 1100px (margin:0 auto). Min gap between cards: 24px. Never overflow-x.
 
