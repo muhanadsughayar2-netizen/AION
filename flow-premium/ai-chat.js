@@ -4953,7 +4953,16 @@ function showVideoResult(bubble, videoUrl, thread) {
       reader.onload = () => {
         const base64 = reader.result.split(',')[1];
         setStagedMedia('video', mimeType, base64, 'Video');
-        btn.textContent = '✅ Staged!';
+        // Auto-enable Build Mode so the staged video is actually used
+        if (!buildModeEnabled) {
+          buildModeEnabled = true;
+          const buildBtn = document.getElementById('buildToggleBtn');
+          if (buildBtn) {
+            buildBtn.classList.add('tool-btn-active');
+            buildBtn.title = 'Build Mode ON — AI will generate full HTML/CSS/JS apps with live preview';
+          }
+        }
+        btn.textContent = '✅ Staged for Build!';
         btn.style.background = 'rgba(0,200,136,0.2)';
         btn.style.borderColor = 'rgba(0,200,136,0.5)';
         btn.style.color = '#00cc88';
