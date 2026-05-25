@@ -1,0 +1,784 @@
+This information is provided for educational and informational context only regarding AI Website Design and Prompt Engineering. Deep-Dive: The "NEXUS" Evolution To transform the current "SnapToAI" landing page into a superior, "wow-factor" version that incorporates your new services (Build, Research, Search, Read, Code), we need to shift the aesthetic from a simple capture tool to an Omni-Intelligence OS. We will rename the platform to "NEXUS"—a name that implies the center of all connections. ### 1. The Visual Identity & Aesthetic Theme: "Hyper-Modern Obsidian." Color Palette: Deep #050505 background, Electric Ultraviolet (#9D00FF) primary accents, Cyber Lime (#CCFF00) for "Action" items, and Frosted Glass (Glassmorphism) for UI elements. Typography: Ultra-bold, wide-set sans-serif (like Monument Extended or Inter Tight) with heavy italics to convey speed and power. ### 2. The Hero Section (The "Wow" Factor) Instead of just a screenshot, the hero image will feature a 3D Floating Command Center. Headline: "ONE SNAP. TOTAL DOMINATION." Sub-headline: "Capture any pixel to Build, Research, and Code in real-time. The world is your IDE." The Mockup: A floating browser extension window showing five glowing icons representing your new core services, with a "Neural Link" connecting the screen to the AI engine. ### 3. The New Service Architecture We are replacing the standard AI models with a Custom Service Matrix: Service Technical Description Visual Icon BUILD Instant UI/UX prototyping from screen captures. A glowing 3D Cube. RESEARCH Deep-web synthesis and academic cross-referencing. A pulsing DNA strand. SEARCH Contextual neural search that "sees" what you see. A refractive lens. READ 100-page synthesis in 2 seconds with voice-cloned narration. An open digital book. CODE Autonomous repo generation from visual logic. A terminal cursor with a spark. ### 4. The "Full Prompt" for AI Image Generation (Midjourney/DALL-E) Use this prompt to generate the high-fidelity background and UI assets: Prompt: "A high-end SaaS landing page hero section for a platform named 'NEXUS'. Dark mode obsidian aesthetic. Central UI mockup showing a floating glassmorphism dashboard with 5 glowing neon icons (Build, Research, Search, Read, Code). Background is a subtle 3D grid with flowing data streams in electric purple and cyan. Large bold italic typography reading 'THE NEXUS ENGINE'. 8k resolution, cinematic lighting, unreal engine 5 render style, futuristic, clean, professional, minimal UI elements, hyper-realistic textures." ### 5. The "Full Prompt" for Web Development (React/Tailwind CSS) If you are handing this to a developer or a code AI (like Claude or GPT-4), use this: Prompt: "Create a React component for a high-converting landing page titled 'NEXUS'. The style must be 'Dark Tech' using Tailwind CSS. Header: Transparent with a 'Launch Nexus' button in a neon purple gradient. Hero: A split-screen layout. Left side: Huge italicized H1 'SNAP THE WORLD. BUILD THE FUTURE.' Right side: A floating card with a glassmorphism effect containing 5 interactive service tiles: Build, Research, Search, Read, Code. Grid Section: A 5-column bento-grid layout showcasing the services. Each card should have a hover-glow effect. Animation: Use Framer Motion for 'float' animations on the UI elements and a typing effect for the code service. Color Palette: Background: #050505. Accents: #9D00FF (Purple), #00F0FF (Cyan). Font: 'Inter' Bold." ### 6. Technical Mechanics: How it Works The Capture Engine: Uses a high-frequency screen-scraping API to feed visual data into a Multi-Modal LLM (like Gemini 1.5 Pro). The Orchestrator: Based on the user's choice (e.g., "Code"), the system routes the visual data to a specific sub-agent (e.g., a Python/React expert agent). The Output: Instead of just a chat response, NEXUS provides a "Live Artifact"—a downloadable file or a live-hosted preview of the code/research. ### 7. Actionable Steps to Launch Brand Transition: Update the logo from the camera icon to a "Nexus Node" (a stylized 'N' made of interconnected points). Service Integration: Map the "Capture" button to trigger a choice menu: [B] Build, [R] Research, [S] Search, [L] Read, [C] Code. The "Wow" Credit: Keep the "$300 Free Google Credit" badge from the original site—it adds immediate perceived value and trust. Would you like me to generate the specific "Research" and "Code" feature descriptions to make the site copy even more persuasive?
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEXUS — One Snap. Total Domination.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,700;0,900;1,900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050505;
+      --text: #ffffff;
+      --text-dim: #a1a1aa;
+      --accent: #9D00FF;
+      --accent-glow: rgba(157, 0, 255, 0.3);
+      --action: #CCFF00;
+      --surface: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.08);
+      --glass: rgba(10, 10, 10, 0.7);
+      --font-main: 'Inter', sans-serif;
+      --nav-height: 80px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-family: var(--font-main); background: var(--bg); color: var(--text); }
+    body { overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+
+    /* Background FX */
+    .bg-grid {
+      position: fixed; inset: 0; z-index: -1;
+      background-image: 
+        radial-gradient(circle at 50% 50%, var(--accent-glow) 0%, transparent 70%),
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 100% 100%, 40px 40px, 40px 40px;
+      opacity: 0.4;
+    }
+
+    .max-width { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* Navigation */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--nav-height);
+      background: var(--glass); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border); z-index: 1000;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo { font-weight: 900; font-style: italic; font-size: 1.4rem; letter-spacing: -1px; display: flex; align-items: center; gap: 8px; }
+    .logo svg { width: 28px; height: 28px; fill: var(--accent); }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+    .btn-action {
+      background: var(--accent); color: white; padding: 10px 20px;
+      border-radius: 6px; font-weight: 600; text-decoration: none;
+      box-shadow: 0 0 20px var(--accent-glow); transition: transform 0.2s;
+    }
+    .btn-action:hover { transform: scale(1.05); }
+
+    /* Hero */
+    .hero { padding: calc(var(--nav-height) + 80px) 0 100px; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 48px; align-items: center; }
+    .hero-content h1 { 
+      font-size: clamp(2.5rem, 6vw, 4.5rem); line-height: 0.9; font-weight: 900; 
+      font-style: italic; letter-spacing: -0.04em; margin-bottom: 24px; text-transform: uppercase;
+    }
+    .hero-content h1 span { display: block; background: linear-gradient(90deg, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-p { font-size: 1.2rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 40px; max-width: 500px; }
+    
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 8px; background: var(--surface);
+      border: 1px solid var(--border); padding: 6px 14px; border-radius: 100px;
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 24px; color: var(--action);
+    }
+    .status-dot { width: 6px; height: 6px; background: var(--action); border-radius: 50%; box-shadow: 0 0 8px var(--action); }
+
+    /* Visualizer */
+    .hero-visual { position: relative; }
+    .nexus-card {
+      background: var(--glass); border: 1px solid var(--border); border-radius: 24px;
+      padding: 32px; backdrop-filter: blur(20px); position: relative; overflow: hidden;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+    }
+    .nexus-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+    .nexus-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px; }
+    .nexus-item { 
+      background: var(--surface); border: 1px solid var(--border); padding: 20px; 
+      border-radius: 16px; transition: all 0.3s; cursor: pointer; text-align: center;
+    }
+    .nexus-item.active { border-color: var(--accent); background: rgba(157, 0, 255, 0.1); }
+    .nexus-item svg { width: 24px; height: 24px; margin-bottom: 8px; stroke: var(--text-dim); transition: stroke 0.3s; }
+    .nexus-item.active svg { stroke: var(--accent); }
+    .nexus-item span { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); }
+    .nexus-item.active span { color: var(--text); }
+
+    .nexus-process {
+      background: linear-gradient(90deg, var(--accent), #e0a3ff); color: white;
+      width: 100%; border: none; padding: 16px; border-radius: 12px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: opacity 0.2s;
+    }
+
+    /* Bento Grid */
+    section.features { padding: 100px 0; }
+    .section-title { margin-bottom: 60px; }
+    .section-title h2 { font-size: 3rem; font-weight: 900; font-style: italic; text-transform: uppercase; line-height: 1; }
+    
+    .bento { display: grid; grid-template-columns: repeat(12, 1fr); grid-auto-rows: 240px; gap: 24px; }
+    .bento-card { 
+      background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+      padding: 32px; position: relative; overflow: hidden; transition: transform 0.3s, border-color 0.3s;
+    }
+    .bento-card:hover { border-color: var(--accent); transform: translateY(-4px); }
+    .bento-card h3 { font-size: 1.5rem; font-weight: 800; margin-bottom: 12px; font-style: italic; }
+    .bento-card p { color: var(--text-dim); font-size: 0.95rem; line-height: 1.6; }
+    .tag { 
+      position: absolute; top: 24px; right: 24px; background: var(--accent); color: white;
+      font-size: 0.65rem; font-weight: 800; padding: 4px 10px; border-radius: 4px; text-transform: uppercase;
+    }
+
+    .c1 { grid-column: span 8; }
+    .c2 { grid-column: span 4; }
+    .c3 { grid-column: span 4; }
+    .c4 { grid-column: span 4; }
+    .c5 { grid-column: span 4; }
+
+    /* Footer */
+    footer { border-top: 1px solid var(--border); padding: 80px 0; background: #000; }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; }
+    .footer-col h4 { margin-bottom: 20px; font-size: 0.9rem; color: var(--text); }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 12px; }
+    .footer-col a { color: var(--text-dim); text-decoration: none; font-size: 0.9rem; cursor: pointer; }
+    .footer-col a:hover { color: var(--accent); }
+
+    /* Modal */
+    #legalModal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999;
+      display: none; align-items: center; justify-content: center; padding: 24px;
+    }
+    .modal-content {
+      background: #111; border: 1px solid var(--border); border-radius: 12px;
+      max-width: 600px; width: 100%; padding: 40px; position: relative;
+    }
+    .close-modal { position: absolute; top: 20px; right: 20px; background: none; border: none; color: #fff; font-size: 2rem; cursor: pointer; }
+
+    /* Animations */
+    .reveal { opacity: 1; transform: none; }
+    .reveal.visible { animation: revealUp 0.8s cubic-bezier(0.16,1,0.3,1) both; }
+    @keyframes revealUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:none; } }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; text-align: center; }
+      .hero-p { margin: 0 auto 40px; }
+      .bento { grid-template-columns: 1fr; grid-auto-rows: auto; }
+      .c1, .c2, .c3, .c4, .c5 { grid-column: span 12; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+
+  <nav>
+    <div class="max-width" style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+      <a href="#" class="logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+        NEXUS
+      </a>
+      <ul class="nav-links">
+        <li><a href="#services">Services</a></li>
+        <li><a href="#manifesto">Manifesto</a></li>
+        <li><a href="#pricing">Enterprise</a></li>
+      </ul>
+      <a href="#cta" class="btn-action">LAUNCH ENGINE</a>
+    </div>
+  </nav>
+
+  <header class="hero max-width">
+    <div class="hero-content reveal">
+      <div class="status-badge">
+        <div class="status-dot"></div>
+        Nexus V1.0 Orbiting Studio Payload
+      </div>
+      <h1><span>SNAP THE WORLD.</span> BUILD THE FUTURE.</h1>
+      <p class="hero-p">Capture any pixel to Build, Research, and Code in real-time. The world is your IDE, powered by multi-modal intelligence.</p>
+      <div style="display: flex; gap: 24px; align-items: center;">
+        <a href="#cta" class="btn-action" style="padding: 16px 32px; font-size: 1rem;">GET STARTED</a>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 1.1rem; font-weight: 800; font-style: italic;">$300 CREDIT</span>
+          <span style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">FREE GOOGLE AI STUDIO</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual reveal" style="animation-delay: 0.2s;">
+      <div class="nexus-card">
+        <div class="nexus-header">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 32px; height: 32px; background: var(--surface); border-radius: 8px;"></div>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: 0.8rem; font-weight: 800;">WORKSPACE</span>
+              <span style="font-size: 0.6rem; color: var(--text-dim);">SYSTEM ACTIVE</span>
+            </div>
+          </div>
+          <span style="color: var(--accent); font-size: 0.7rem; font-weight: 800; letter-spacing: 1px;">GEMINI 1.5 PRO</span>
+        </div>
+
+        <div class="nexus-grid">
+          <div class="nexus-item active" data-service="BUILD">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"></path></svg>
+            <span>BUILD</span>
+          </div>
+          <div class="nexus-item" data-service="RESEARCH">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zM12 6v6l4 2"></path></svg>
+            <span>RESEARCH</span>
+          </div>
+          <div class="nexus-item" data-service="SEARCH">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <span>SEARCH</span>
+          </div>
+          <div class="nexus-item" data-service="CODE">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+            <span>CODE</span>
+          </div>
+        </div>
+
+        <div id="output-preview" style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 16px; margin-bottom: 24px; border: 1px solid var(--border); font-family: monospace; font-size: 0.75rem; color: var(--action);">
+          <div id="typewriter">SYSTEM READY... SELECTION REQUIRED</div>
+        </div>
+
+        <button class="nexus-process">PROCESS IN STUDIO</button>
+      </div>
+    </div>
+  </header>
+
+  <section id="services" class="features max-width">
+    <div class="section-title reveal">
+      <h2>THE FULL STUDIO PAYLOAD.</h2>
+      <p style="color: var(--text-dim); margin-top: 12px;">Omni-intelligence stitched directly into your browser.</p>
+    </div>
+
+    <div class="bento">
+      <div class="bento-card c1 reveal">
+        <span class="tag">Production</span>
+        <h3>VEO 3.1 PRODUCTION</h3>
+        <p>Turn snaps into 64-second cinematic narratives in 4K with editable per-clip prompts. A new era of visual storytelling powered by Google's latest generative video model.</p>
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 120px; overflow: hidden; opacity: 0.3;">
+          <img src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Tech" onerror="this.style.display='none'">
+        </div>
+      </div>
+      <div class="bento-card c2 reveal" style="animation-delay: 0.1s;">
+        <span class="tag">Scoring</span>
+        <h3>LYRIA 3 AUDIO</h3>
+        <p>Studio-grade soundscapes tied to your visual context. Original music built with a guided Song Studio.</p>
+      </div>
+      <div class="bento-card c3 reveal" style="animation-delay: 0.2s;">
+        <span class="tag">Insight</span>
+        <h3>OMNI RESEARCH</h3>
+        <p>Transform snapshots into deep-dive knowledge graphs. Synthesis of complex data and charts instantly.</p>
+      </div>
+      <div class="bento-card c4 reveal" style="animation-delay: 0.3s;">
+        <span class="tag">Intelligence</span>
+        <h3>GEMINI 3 VISION</h3>
+        <p>Pro-grade multi-source reasoning. Analyze up to 10 captures simultaneously with code-aware context.</p>
+      </div>
+      <div class="bento-card c5 reveal" style="animation-delay: 0.4s;">
+        <span class="tag">Creation</span>
+        <h3>NANO BANANA</h3>
+        <p>Next-gen photorealistic image generation. Infinite creativity from your daily browser captures.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="cta" style="padding: 140px 0; background: radial-gradient(circle at center, #1a0029 0%, #050505 100%); text-align: center;">
+    <div class="max-width reveal">
+      <h2 style="font-size: clamp(2rem, 5vw, 4rem); font-weight: 900; font-style: italic; margin-bottom: 24px;">READY TO CAPTURE?</h2>
+      <p style="color: var(--text-dim); max-width: 600px; margin: 0 auto 40px;">Join 15,000+ developers and creators using Nexus to build the future of the web.</p>
+      <button class="btn-action" style="padding: 20px 48px; font-size: 1.2rem;" onclick="openLegal('Waitlist Joined','<p>Thank you for your interest in Nexus. We have added you to our priority early-access queue. You will receive an invitation email shortly.</p>')">ADD TO CHROME — FREE</button>
+    </div>
+  </section>
+
+  <footer>
+    <div class="max-width">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <a href="#" class="logo" style="margin-bottom: 20px;">
+            <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+            NEXUS
+          </a>
+          <p style="color: var(--text-dim); font-size: 0.85rem; line-height: 1.6;">The ultimate intelligence layer for your browser. From screen to solution in milliseconds.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#services">Services</a></li>
+            <li><a onclick="openLegal('Changelog','<p>v1.4.2: Integrated Gemini 1.5 Pro. Improved OCR latency by 40%. Added VEO 3.1 video stitching support.</p>')">Changelog</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a onclick="openLegal('Manifesto','<p>We believe that the screen is not a boundary, but a bridge. Nexus exists to dissolve the friction between seeing and building.</p>')">Manifesto</a></li>
+            <li><a onclick="openLegal('Contact','<p>Email: support@nexus-engine.ai<br>HQ: 101 California St, San Francisco, CA</p>')">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a onclick="openLegal('Privacy Policy','<p>Your privacy is paramount. Nexus only processes screen data when explicitly triggered by the user. We do not store persistent history of your sessions unless requested.</p>')">Privacy</a></li>
+            <li><a onclick="openLegal('Terms of Service','<p>By using Nexus, you agree to our fair use policy. Automated scraping of external sites must comply with their respective robots.txt and TOS.</p>')">Terms</a></li>
+          </ul>
+        </div>
+      </div>
+      <div style="margin-top: 60px; border-top: 1px solid var(--border); padding-top: 24px; display: flex; justify-content: space-between; color: var(--text-dim); font-size: 0.75rem;">
+        <span>© 2024 NEXUS ENGINE INC.</span>
+        <span>POWERED BY GOOGLE CLOUD</span>
+      </div>
+    </div>
+  </footer>
+
+  <div id="legalModal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeLegal()">&times;</button>
+      <h2 id="legalTitle" style="margin-bottom: 20px; font-style: italic; font-weight: 900; text-transform: uppercase;"></h2>
+      <div id="legalBody" style="color: var(--text-dim); line-height: 1.8;"></div>
+    </div>
+  </div>
+
+  <script>
+    // Intersection Observer for Reveal
+    const _io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (e.isIntersecting) { 
+        e.target.classList.add('visible'); 
+        _io.unobserve(e.target); 
+      }
+    }), { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+    
+    // Safety net
+    setTimeout(function(){ 
+      document.querySelectorAll('.reveal').forEach(function(el){ 
+        el.style.opacity='1'; el.style.transform='none'; 
+      }); 
+    }, 1200);
+
+    // Interactive Dashboard
+    const serviceDetails = {
+      BUILD: "PROTOTYPING INTERFACE... DETECTING CSS VARS... READY TO EXPORT TO REACT.",
+      RESEARCH: "ACCESSING KNOWLEDGE GRAPH... CROSS-REFERENCING WEB... SYNTHESIS COMPLETE.",
+      SEARCH: "NEURAL LENS ACTIVE... IDENTIFYING PIXELS... CONTEXTUAL LINKS FOUND.",
+      CODE: "ANALYZING LOGIC... GENERATING REPOSITORY... AUTONOMOUS AGENT STANDING BY."
+    };
+
+    const nexusItems = document.querySelectorAll('.nexus-item');
+    const typewriter = document.getElementById('typewriter');
+
+    nexusItems.forEach(item => {
+      item.addEventListener('click', () => {
+        nexusItems.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        const service = item.dataset.service;
+        typewriter.textContent = "INITIALIZING " + service + "...";
+        setTimeout(() => {
+          typewriter.textContent = serviceDetails[service];
+        }, 500);
+      });
+    });
+
+    // Legal Modal Functions
+    function openLegal(title, html) {
+      document.getElementById('legalTitle').innerText = title;
+      document.getElementById('legalBody').innerHTML = html;
+      document.getElementById('legalModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+    function closeLegal() {
+      document.getElementById('legalModal').style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+
+    // Smooth Scroll Offset
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href');
+        if (targetId === '#') return;
+        const el = document.querySelector(targetId);
+        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - 80, behavior: 'smooth' });
+      });
+    });
+
+    // Handle "Process" click animation
+    const processBtn = document.querySelector('.nexus-process');
+    processBtn.addEventListener('click', () => {
+      const originalText = processBtn.innerText;
+      processBtn.innerText = "CAPTURING PIXELS...";
+      processBtn.style.opacity = "0.7";
+      setTimeout(() => {
+        processBtn.innerText = "SUCCESS: OPENING STUDIO";
+        processBtn.style.background = "var(--action)";
+        processBtn.style.color = "#000";
+        setTimeout(() => {
+          processBtn.innerText = originalText;
+          processBtn.style.background = "";
+          processBtn.style.color = "";
+          processBtn.style.opacity = "1";
+        }, 2000);
+      }, 1500);
+    });
+  </script>
+</body>
+</html>
+📋 Copy
+🔊 Read
+✨ Magic Card
+🏗️ Open Preview
+i need to update the website we are building firsti need you to cahgne the anme torepresent google ai studio and then i need you to cover all the google ai stucio services ass attached in the third image attached
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI — The Google AI Studio Payload</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,700;0,800;1,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050505;
+      --text: #ffffff;
+      --text-dim: #94a3b8;
+      --surface: rgba(255, 255, 255, 0.03);
+      --border: rgba(255, 255, 255, 0.08);
+      --accent-grad: linear-gradient(135deg, #6366f1 0%, #d946ef 100%);
+      --radius: 18px;
+      
+      /* Service Tags */
+      --tag-production: #9D00FF;
+      --tag-scoring: #FF2D55;
+      --tag-intelligence: #00FF94;
+      --tag-creation: #FFB800;
+      --tag-insight: #3498FF;
+      --tag-discovery: #00E0A3;
+      --tag-development: #FF4B4B;
+      --tag-architecture: #7C3AED;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { 
+      background: var(--bg); 
+      color: var(--text); 
+      font-family: 'Inter', sans-serif; 
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+    h1, h2, h3 { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    /* Background Grid */
+    .grid-bg {
+      position: fixed; inset: 0; z-index: -1;
+      background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+      background-size: 40px 40px;
+    }
+    .glow {
+      position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+      width: 100vw; height: 60vh;
+      background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+      pointer-events: none; z-index: -1;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    /* Navbar */
+    nav {
+      height: 80px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 1000; background: rgba(5,5,5,0.8); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.25rem; font-style: italic; }
+    .logo-icon { width: 32px; height: 32px; background: var(--accent-grad); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .nav-right { display: flex; align-items: center; gap: 32px; }
+    .nav-link { color: var(--text-dim); text-decoration: none; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; transition: color 0.2s; }
+    .nav-link:hover { color: #fff; }
+    .btn-chrome { 
+      background: var(--accent-grad); color: #fff; padding: 10px 24px; border-radius: 100px; 
+      text-decoration: none; font-weight: 700; font-size: 0.85rem; text-transform: uppercase;
+      box-shadow: 0 4px 20px rgba(217, 70, 239, 0.3); transition: transform 0.2s;
+    }
+    .btn-chrome:hover { transform: translateY(-2px); }
+
+    /* Hero */
+    .hero { padding: 100px 0 60px; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 60px; align-items: center; }
+    .payload-badge {
+      display: inline-flex; align-items: center; gap: 8px; 
+      background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 6px 14px; border-radius: 100px; color: #a5b4fc; font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 24px;
+    }
+    .hero h1 { font-size: clamp(2.5rem, 6vw, 4.8rem); line-height: 0.95; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: -0.04em; margin-bottom: 32px; }
+    .hero p { font-size: 1.15rem; color: var(--text-dim); max-width: 540px; margin-bottom: 48px; line-height: 1.6; }
+
+    /* Hero Stats */
+    .hero-stats { display: flex; gap: 48px; border-top: 1px solid var(--border); padding-top: 32px; }
+    .stat-item { display: flex; flex-direction: column; }
+    .stat-val { font-size: 2rem; font-weight: 800; font-style: italic; background: var(--accent-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stat-label { font-size: 0.7rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+    /* Studio UI Mockup */
+    .studio-mockup {
+      background: #0a0a0a; border: 1px solid var(--border); border-radius: 32px;
+      padding: 24px; position: relative; box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+    }
+    .mock-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .mock-tools { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .tool-btn { 
+      background: var(--surface); border: 1px solid var(--border); aspect-ratio: 1; 
+      border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px; cursor: pointer; transition: all 0.2s;
+    }
+    .tool-btn.active { border-color: var(--accent-grad); background: rgba(255,255,255,0.08); }
+    .tool-btn svg { width: 20px; height: 20px; stroke: var(--text-dim); }
+    .tool-btn.active svg { stroke: #fff; }
+    .tool-btn span { font-size: 0.6rem; font-weight: 800; font-style: italic; color: var(--text-dim); text-transform: uppercase; }
+    .tool-btn.active span { color: #fff; }
+
+    .capture-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+    .capture-thumb { aspect-ratio: 16/9; background: #111; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid var(--border); }
+    .capture-label { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.8); padding: 2px 6px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; text-transform: uppercase; }
+
+    .btn-process {
+      width: 100%; padding: 16px; border-radius: 12px; border: none;
+      background: var(--accent-grad); color: #fff; font-weight: 800; font-style: italic;
+      text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+    }
+
+    /* Service Grid */
+    .services-section { padding: 100px 0; }
+    .service-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    .service-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+      padding: 32px; position: relative; transition: transform 0.3s, border-color 0.3s;
+      display: flex; flex-direction: column; min-height: 280px;
+    }
+    .service-card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-8px); }
+    .service-icon { 
+      width: 44px; height: 44px; background: rgba(255,255,255,0.05); border-radius: 10px; 
+      display: flex; align-items: center; justify-content: center; margin-bottom: 32px;
+    }
+    .service-icon svg { width: 22px; height: 22px; stroke: #fff; stroke-width: 1.5; fill: none; }
+    .service-card h3 { font-size: 1.15rem; font-weight: 800; font-style: italic; margin-bottom: 16px; text-transform: uppercase; letter-spacing: -0.02em; }
+    .service-card p { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; }
+    .service-tag { 
+      position: absolute; top: 32px; right: 32px; padding: 4px 10px; border-radius: 4px;
+      font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #fff;
+    }
+
+    /* Modal Styling */
+    #legalModal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 10000;
+      display: none; align-items: center; justify-content: center; padding: 24px;
+    }
+    .modal-box {
+      background: #0a0a0a; border: 1px solid var(--border); width: 100%; max-width: 600px;
+      padding: 48px; border-radius: 24px; position: relative; max-height: 90vh; overflow-y: auto;
+    }
+    .close-modal { position: absolute; top: 24px; right: 24px; background: none; border: none; color: #fff; font-size: 2rem; cursor: pointer; }
+
+    /* Animation */
+    .reveal { opacity: 1; transform: none; }
+    .reveal.visible { animation: revealUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+    @keyframes revealUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
+
+    @media (max-width: 1024px) {
+      .service-grid { grid-template-columns: repeat(2, 1fr); }
+      .hero { grid-template-columns: 1fr; text-align: center; }
+      .hero p, .hero-stats { margin-left: auto; margin-right: auto; }
+      .hero-stats { justify-content: center; }
+    }
+    @media (max-width: 640px) {
+      .service-grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 3rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="grid-bg"></div>
+  <div class="glow"></div>
+
+  <nav>
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+        SnapToAI
+      </div>
+      <div class="nav-right">
+        <a onclick="openLegal('Privacy Policy', '<p>SnapToAI is built on the foundation of user privacy. We process screen captures locally before routing encrypted tokens to Google Gemini Pro. No permanent storage of your visual history is maintained on our servers.</p>')" class="nav-link">Privacy</a>
+        <a href="#cta" class="btn-chrome">Add to Chrome</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero container">
+    <div class="hero-text reveal">
+      <div class="payload-badge">Google AI Studio Payload Active</div>
+      <h1>Snap the Pixel, Unleash the Studio.</h1>
+      <p>Capture any screen, then chat with AI, generate <strong>photoreal images</strong>, original <strong>music</strong>, and cinematic <strong>64-second videos</strong> — all powered by Google Gemini, right in your browser.</p>
+      
+      <div class="hero-stats">
+        <div class="stat-item">
+          <span class="stat-val">64s</span>
+          <span class="stat-label">Stitched Video</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-val">55+</span>
+          <span class="stat-label">Languages</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-val">$300</span>
+          <span class="stat-label">Free Google Credit</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual reveal" style="animation-delay: 0.2s;">
+      <div class="studio-mockup">
+        <div class="mock-header">
+          <div class="logo" style="font-size: 1rem;">
+            <div class="logo-icon" style="width: 24px; height: 24px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+            SnapToAI
+          </div>
+          <div style="font-size: 0.6rem; font-weight: 800; background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px;">PRO • <span style="color:#00FF94">READY</span></div>
+        </div>
+
+        <div class="mock-tools">
+          <div class="tool-btn active">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>Snap</span>
+          </div>
+          <div class="tool-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 3l12 18M18 3L6 21"/></svg>
+            <span>Snip</span>
+          </div>
+          <div class="tool-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span>Full</span>
+          </div>
+          <div class="tool-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span>Studio</span>
+          </div>
+        </div>
+
+        <div class="capture-grid">
+          <div class="capture-thumb">
+            <img src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Capture 1" onerror="this.style.display='none';this.parentElement.style.background='var(--accent-grad)'">
+            <span class="capture-label">Capture 1</span>
+          </div>
+          <div class="capture-thumb">
+            <img src="https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Capture 2" onerror="this.style.display='none';this.parentElement.style.background='var(--tag-scoring)'">
+            <span class="capture-label">Capture 2</span>
+          </div>
+          <div class="capture-thumb">
+            <img src="https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Capture 3" onerror="this.style.display='none';this.parentElement.style.background='var(--tag-intelligence)'">
+            <span class="capture-label">Capture 3</span>
+          </div>
+          <div class="capture-thumb">
+            <img src="https://images.pexels.com/photos/255379/pexels-photo-255379.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Capture 4" onerror="this.style.display='none';this.parentElement.style.background='var(--tag-creation)'">
+            <span class="capture-label">Capture 4</span>
+          </div>
+        </div>
+
+        <button class="btn-process">+ Process in Studio</button>
+        
+        <div style="display: flex; justify-content: space-between; margin-top: 16px;">
+          <div style="font-size: 0.55rem; color: var(--text-dim); display: flex; align-items: center; gap: 4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg> 64S VEO</div>
+          <div style="font-size: 0.55rem; color: var(--text-dim); display: flex; align-items: center; gap: 4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> LYRIA 3</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="services-section container">
+    <div class="service-grid">
+      <!-- Row 1 -->
+      <div class="service-card reveal">
+        <span class="service-tag" style="background: var(--tag-production)">Production</span>
+        <div class="service-icon"><svg viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></div>
+        <h3>Veo 3.1 Production</h3>
+        <p>8x stitching engine. Turn snaps into 64-second cinematic narratives in 4K with editable per-clip prompts.</p>
+      </div>
+
+      <div class="service-card reveal" style="animation-delay: 0.1s;">
+        <span class="service-tag" style="background: var(--tag-scoring)">Scoring</span>
+        <div class="service-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+        <h3>Lyria 3 Audio</h3>
+        <p>Original music and studio-grade soundscapes tied to your visual context — built with a guided Song Studio.</p>
+      </div>
+
+      <div class="service-card reveal" style="animation-delay: 0.2s;">
+        <span class="service-tag" style="background: var(--tag-intelligence)">Intelligence</span>
+        <div class="service-icon"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <h3>Gemini 3 Vision</h3>
+        <p>Pro-grade multi-source reasoning. Analyze up to 10 captures simultaneously with code-aware context.</p>
+      </div>
+
+      <div class="service-card reveal" style="animation-delay: 0.3s;">
+        <span class="service-tag" style="background: var(--tag-creation)">Creation</span>
+        <div class="service-icon"><svg viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg></div>
+        <h3>Nano Banana</h3>
+        <p>Next-gen photorealistic image generation. Infinite creativity from your daily browser captures.</p>
+      </div>
+
+      <!-- Row 2 -->
+      <div class="service-card reveal" style="animation-delay: 0.4s;">
+        <span class="service-tag" style="background: var(--tag-insight)">Insight</span>
+        <div class="service-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+        <h3>Omni Research</h3>
+        <p>Transform snapshots into deep-dive knowledge graphs. Synthesis of complex data and charts.</p>
+      </div>
+
+      <div class="service-card reveal" style="animation-delay: 0.5s;">
+        <span class="service-tag" style="background: var(--tag-discovery)">Discovery</span>
+        <div class="service-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg></div>
+        <h3>Visual Search</h3>
+        <p>Source products, documentation, and references across the live web using pixel-perfect recognition.</p>
+      </div>
+
+      <div class="service-card reveal" style="animation-delay: 0.6s;">
+        <span class="service-tag" style="background: var(--tag-development)">Development</span>
+        <div class="service-icon"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+        <h3>Rad Code V1</h3>
+        <p>Convert UI screenshots into clean, functional React, Tailwind, or Python code instantly.</p>
+      </div>
+
+      <div class="service-card reveal" style="animation-delay: 0.7s;">
+        <span class="service-tag" style="background: var(--tag-architecture)">Architecture</span>
+        <div class="service-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M15 21V9"/></svg></div>
+        <h3>Studio Build</h3>
+        <p>Orchestrate captures into full prototypes. A unified workspace for code, assets, and research.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer style="padding: 100px 0 60px; border-top: 1px solid var(--border);">
+    <div class="container">
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 80px;">
+        <div>
+          <div class="logo" style="margin-bottom: 24px;">
+            <div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 
+📋 Copy
+🔊 Read
+✨ Magic Card
+🏗️ Open Preview ⚠️
+⚠️ Response was cut off
+🔄 Continue Build
+CONTINUE_BUILD: output only the remaining HTML from where the previous response cut off. Start at the beginning of the next complete HTML element (opening tag like <div, <section, <footer, <script). Never restart from <!DOCTYPE html>. Never repeat already-written code.
+The ultimate intelligence layer for your browser. From screen to solution in milliseconds, powered by the full Google AI Studio payload.
+
+Platform
+Studio Features
+Changelog
+System Status
+Resources
+Guides
+Discord
+Legal
+Privacy
+Terms
+Medical Disclaimer
+© 2024 SnapToAI Engine Inc.
+Built for Google Cloud Ecosystem
+×
+📋 Copy
+🔊 Read
+✨ Magic Card
+🏗️ Open Preview

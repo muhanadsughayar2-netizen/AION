@@ -7253,6 +7253,16 @@ function addBubbleActions(bubble, text) {
       <button style="background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.5);color:#ffa032;border-radius:10px;padding:2px 9px;font-size:11px;font-weight:600;cursor:pointer;">🔄 Continue Build</button>`;
     warn.querySelector('button').addEventListener('click', () => {
       _continuationPending = true;
+      // Ensure Build Mode is ON — if it was turned off the AI would respond
+      // in plain text instead of outputting HTML, breaking the continuation.
+      if (!buildModeEnabled) {
+        buildModeEnabled = true;
+        const buildBtn = document.getElementById('buildToggleBtn');
+        if (buildBtn) {
+          buildBtn.classList.add('tool-btn-active');
+          buildBtn.title = 'Build Mode ON — AI will generate full HTML/CSS/JS apps with live preview';
+        }
+      }
       const input = document.getElementById('chatInput');
       if (input) {
         input.value = 'CONTINUE_BUILD: output only the remaining HTML from where the previous response cut off. Start at the beginning of the next complete HTML element (opening tag like <div, <section, <footer, <script). Never restart from <!DOCTYPE html>. Never repeat already-written code.';
