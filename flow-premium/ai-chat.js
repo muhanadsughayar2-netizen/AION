@@ -1121,7 +1121,18 @@ function initModeButtons() {
             return;
           }
         } catch (_) {
+          // Probe failed (network/timeout). Revert button and still show the card
+          // so the user gets visible feedback instead of a silent no-op.
           btns.forEach(b => b.classList.toggle('active', b.dataset.mode === currentAiMode));
+          const thread = document.getElementById('chatThread');
+          if (thread) {
+            const card = document.createElement('div');
+            card.className = 'chat-bubble ai';
+            card.style.cssText = 'background:transparent;padding:0;border:none;';
+            card.innerHTML = buildUnlockCard(mode);
+            thread.appendChild(card);
+            thread.scrollTop = thread.scrollHeight;
+          }
           return;
         }
       }
