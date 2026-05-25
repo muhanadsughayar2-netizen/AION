@@ -5605,24 +5605,16 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
    COPY THIS EXACTLY — do not invent a different pattern:
 
    CSS (inside <style>):
-     .reveal { opacity: 1; }  /* ← MUST stay opacity:1 so content is visible if JS is slow */
-     .reveal.in-view { animation: revealUp 0.55s cubic-bezier(0.16,1,0.3,1) both; }
-     @keyframes revealUp { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:none; } }
+     .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1); }
+     .reveal.visible { opacity: 1; transform: none; }
 
    JS (in your <script> block, run directly — no wrapper):
      const _io = new IntersectionObserver(entries => entries.forEach(e => {
-       if (e.isIntersecting) { e.target.classList.add('in-view'); _io.unobserve(e.target); }
-     }), { threshold: 0.05, rootMargin: '0px 0px -40px 0px' });
+       if (e.isIntersecting) { e.target.classList.add('visible'); _io.unobserve(e.target); }
+     }), { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
      document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
-     // MANDATORY safety net — forces all reveal elements visible after 1s
-     // in case IntersectionObserver never fires (e.g. page already scrolled):
-     setTimeout(function(){ document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in-view'); }); }, 1000);
-
-   APPLY .reveal ONLY to leaf-level elements: individual cards, images, paragraphs.
-   NEVER apply .reveal to any of these — they will go blank and never recover:
-     ✗ <section>  ✗ <div class="container">  ✗ .section-label  ✗ .systems-container
-     ✗ .bio-visualizer  ✗ .hero  ✗ nav  ✗ footer  ✗ any tab-panel wrapper
-   If a whole section has .reveal, the IntersectionObserver may never fire → entire section blank.
+     // MANDATORY safety net — directly forces opacity:1 after 1s (class-name agnostic):
+     setTimeout(function(){ document.querySelectorAll('.reveal').forEach(function(el){ el.style.opacity='1'; el.style.transform='none'; }); }, 1000);
 
 ⑤ FULLY WORKING JS — every button, toggle, tab, gauge, and form MUST actually work:
 
@@ -5650,31 +5642,61 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
    MODAL / OVERLAY: toggle style.display between 'flex' and 'none'.
    GAUGE / PROGRESS RINGS: animate stroke-dashoffset with setTimeout(fn, 100).
    TOGGLES / FOOD BUTTONS: classList.toggle('active') — also update any linked counter or gauge.
-   TABS — COPY THIS EXACT PATTERN (do not invent a different approach):
+   TABS — COPY THIS EXACT PATTERN (classList approach — preserves display:grid on panels):
      HTML:
        <div class="tab-bar">
          <button class="tab-btn active" onclick="showTab('t1',this)">Tab One</button>
          <button class="tab-btn" onclick="showTab('t2',this)">Tab Two</button>
          <button class="tab-btn" onclick="showTab('t3',this)">Disclaimer</button>
        </div>
-       <div id="t1" class="tab-panel">...real content, at least 2-3 paragraphs...</div>
-       <div id="t2" class="tab-panel" style="display:none">...real content...</div>
-       <div id="t3" class="tab-panel" style="display:none">...real written disclaimer text...</div>
+       <div id="t1" class="tab-panel active">...real content...</div>
+       <div id="t2" class="tab-panel">...real content...</div>
+       <div id="t3" class="tab-panel">...real written disclaimer text...</div>
      CSS:
-       .tab-panel { display: block; }
-       .tab-btn { opacity:0.55; border-bottom: 2px solid transparent; }
-       .tab-btn.active { opacity:1; border-bottom-color: currentColor; }
+       .tab-panel { display: none; }
+       .tab-panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+                           animation: slideUp 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
+       @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+       .tab-btn { opacity:0.5; border: 1px solid transparent; border-radius: 100px; }
+       .tab-btn.active { opacity:1; background: var(--accent); color: var(--bg); }
      JS (top-level function — NOT inside any callback):
        function showTab(id, btn) {
-         document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-         document.getElementById(id).style.display = 'block';
+         const panel = document.getElementById(id);
+         if (panel) panel.classList.add('active');
          if (btn) btn.classList.add('active');
        }
+     IMPORTANT: do NOT use style.display on panels — classList toggle preserves display:grid from CSS.
      CONTENT RULE: every tab panel MUST have real written content matching the tab label.
      Disclaimer tab → write a real 2-paragraph medical/legal disclaimer specific to the site topic.
      Protocol tab → write real protocol steps. Interactions tab → real interaction list. No empty panels.
-   ACCORDIONS: same idea — show/hide via style.display, toggle active class on the header button.
+
+   SMOOTH SCROLL — account for sticky nav height (90px offset):
+     document.querySelectorAll('a[href^="#"]').forEach(a => {
+       a.addEventListener('click', function(e) {
+         e.preventDefault();
+         const el = document.querySelector(this.getAttribute('href'));
+         if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - 90, behavior: 'smooth' });
+       });
+     });
+
+   INTERACTIVE VISUALIZER / TOGGLE BUTTONS — use data attributes + cumulative pattern:
+     HTML: <button class="bio-btn" data-value="25" data-color="#00f2ff" data-name="Wild Berries">+ Berries</button>
+     JS: let score = 0;
+         document.querySelectorAll('.bio-btn').forEach(btn => {
+           btn.addEventListener('click', () => {
+             const val = +btn.dataset.value, color = btn.dataset.color, name = btn.dataset.name;
+             if (btn.classList.contains('active')) { btn.classList.remove('active'); score -= val; }
+             else { btn.classList.add('active'); score += val; }
+             score = Math.max(0, Math.min(100, score));
+             // update ring: const offset = 816 - (score/100)*816; ring.style.strokeDashoffset = offset;
+             // update label: label.textContent = 'Activated: ' + name;
+           });
+         });
+
+   ACCORDIONS: classList.toggle('open') on parent, max-height:0→500px transition on content.
+   PRICING BUTTONS: wire to scroll to the relevant section (never leave as dead stubs).
    FORMS: preventDefault() + show a visible success message inline — no page reload.
    DO NOT wrap code in DOMContentLoaded. DO NOT leave any button as a visual-only stub.
 
@@ -5702,16 +5724,17 @@ These are what every average AI defaults to. You never produce these unless expl
 ✗ Colored divs pretending to be photos — always use real Pexels URLs from the verified ID list
 ✗ <img> tags without onerror fallback — a broken Pexels link shows an ugly broken icon; always add
   onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(...)'"
-✗ opacity:0 on entire page sections — causes blank preview, never do this
-✗ Applying .reveal class to <section>, <div class="container">, nav, or footer — only apply to
-  individual cards/images/paragraphs inside sections; whole-section reveal makes sections disappear
-✗ Any CSS rule that sets opacity:0 without a guaranteed way to set it back to 1 (e.g. a class
-  that is never added, or an IntersectionObserver that never fires for above-the-fold content)
+✗ style.display='block' inside showTab() — this overrides CSS display:grid on panels, breaking
+  two-column layouts. Always use classList.add/remove('active') in tab JS, let CSS control display.
+✗ Tabs that don't switch when clicked — always use the classList-based showTab(id,btn) pattern
+✗ No safety-net setTimeout after IntersectionObserver — always include the 1s inline-style fallback
 ✗ Content area wider than 1100px
 ✗ Non-functional "coming soon" interactive placeholders
-✗ Tabs that don't switch when clicked — always use the exact showTab(id,btn) pattern above
+✗ Pricing/CTA buttons that do nothing — wire every button to scroll to a real section
 ✗ Empty tab panels — every tab must have real written content (at least 2 paragraphs), including
   Disclaimer, Protocol, Interactions, About, FAQ etc. — never leave a tab with placeholder text
+✗ Missing smooth scroll offset — sticky nav is 80-90px tall; raw scrollIntoView() cuts off headings.
+  Use: el.getBoundingClientRect().top + window.pageYOffset - 90
 ✗ href="#" on footer links (Medical Disclaimer, Privacy Policy, Terms, Newsletter, etc.) — every
   footer link MUST open a modal with real written content. Create a single reusable legal modal:
   <div id="legalModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;display:none;align-items:center;justify-content:center;padding:24px;">
@@ -5757,10 +5780,12 @@ These are what every average AI defaults to. You never produce these unless expl
 ✓ All interactive elements fully functional?
 ✓ Every footer link opens a modal with real content (NO href="#" dead links)?
 ✓ legalModal + openLegal() + closeLegal() present if any legal/footer links exist?
-✓ NO section, container, or heading group has opacity:0 or .reveal — only individual leaf cards?
-✓ .reveal CSS has opacity:1 as default (not 0) so content shows even if JS never runs?
+✓ .reveal uses opacity:0 + transition CSS, .visible adds opacity:1, 1s style-based safety net present?
 ✓ Every <img> has onerror fallback so broken images show a gradient instead of a broken icon?
-✓ Tabs use showTab(id,btn) pattern and every tab panel has real written content (no empty panels)?
+✓ Tabs use classList showTab(id,btn) — NOT style.display — so display:grid is preserved in panels?
+✓ Every tab panel has real written content (no empty or placeholder panels)?
+✓ All CTA/pricing buttons wired to scroll somewhere — no dead stubs?
+✓ Smooth scroll uses 90px navbar offset (getBoundingClientRect approach)?
 ✓ Viewport meta + Google Fonts + CSS reset present?
 ✓ Only ONE primary CTA per section?
 ✓ Content max-width 1100px?
