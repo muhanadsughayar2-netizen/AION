@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SnapToAI — Capture any screen, chat with AI, generate images, music & videos</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI — Snap the Pixel, Build the Future</title>
   <meta name="description" content="The professional screenshot-to-AI Chrome extension. Snap any screen, then chat with Gemini, generate images, music and 64-second cinematic videos with VEO. Privacy-first, client-side." />
   <meta name="keywords" content="SnapToAI, Chrome extension, screenshot, AI, ChatGPT, Claude, Grok, Gemini, VEO, video generation, image generation" />
   <meta property="og:title" content="SnapToAI — Snap the pixel, unleash the studio" />
@@ -11,387 +11,702 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://www.snaptoai.com/" />
   <link rel="canonical" href="https://www.snaptoai.com/" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon-32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/static/images/favicon-16.png" />
+  <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico" />
   <link rel="icon" type="image/png" sizes="192x192" href="/static/images/favicon-192.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/static/images/favicon-180.png" />
-  <link rel="shortcut icon" href="/static/images/favicon.ico" />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Outfit:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-            display: ['Outfit', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,700;0,800;1,700;1,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg: #050508;
+      --text: #f0f0ff;
+      --surface: rgba(255,255,255,0.04);
+      --surface-border: rgba(255,255,255,0.08);
+      --accent: #8b5cf6;
+      --accent2: #ec4899;
+      --accent3: #f59e0b;
+      --gradient: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+      --radius: 14px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
     body {
-      background-color: #030305;
-      color: #F5F5F7;
-      font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-      -webkit-font-smoothing: antialiased;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
       overflow-x: hidden;
+      background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 40px 40px;
     }
-    .gradient-primary {
-      background-image: linear-gradient(135deg, #4f46e5 0%, #9333ea 50%, #db2777 100%);
+
+    h1, h2, h3 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800;
+      text-transform: uppercase;
+      font-style: italic;
+      letter-spacing: -0.04em;
     }
+
     .gradient-text {
-      background: linear-gradient(135deg, #ffffff, #c7d2fe 60%, #d8b4fe);
+      background: var(--gradient);
       -webkit-background-clip: text;
-      background-clip: text;
       -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
-    .matte-glass {
-      background: rgba(8, 8, 12, 0.4);
-      backdrop-filter: blur(60px) saturate(200%);
-      -webkit-backdrop-filter: blur(60px) saturate(200%);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow:
-        0 4px 24px -1px rgba(0, 0, 0, 0.2),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; width: 100%; z-index: 1000;
+      background: rgba(5,5,8,0.85); backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--surface-border);
     }
-    .star-field {
-      background-image: radial-gradient(white 1px, transparent 0);
-      background-size: 50px 50px;
-      opacity: 0.05;
+    .nav-inner { height: 72px; display: flex; justify-content: space-between; align-items: center; }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-style: italic; font-size: 1.15rem;
+      text-decoration: none; color: inherit;
     }
-    .floating { animation: floating 6s ease-in-out infinite; }
-    @keyframes floating {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-20px); }
+    .logo-box {
+      width: 30px; height: 30px; background: var(--gradient);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
     }
-    .active-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(0.95); }
+    .nav-links { display: flex; align-items: center; gap: 28px; }
+    .nav-links a {
+      color: var(--text); text-decoration: none; font-size: 0.78rem;
+      font-weight: 600; opacity: 0.55; transition: opacity 0.2s; letter-spacing: 0.06em;
     }
-    .orb {
-      position: fixed;
-      border-radius: 9999px;
-      pointer-events: none;
-      filter: blur(120px);
-      animation: orbFloat 12s ease-in-out infinite;
+    .nav-links a:hover { opacity: 1; }
+    .btn-chrome {
+      background: var(--gradient); color: #fff; padding: 9px 22px; border-radius: 100px;
+      font-weight: 700; font-size: 0.82rem; border: none; cursor: pointer;
+      box-shadow: 0 0 20px rgba(139,92,246,0.3);
+      transition: transform 0.2s cubic-bezier(0.175,0.885,0.32,1.275);
     }
-    @keyframes orbFloat {
-      0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
-      50% { transform: translateY(-30px) scale(1.05); opacity: 0.5; }
+    .btn-chrome:hover { transform: scale(1.06); }
+
+    /* ── HERO ── */
+    .hero { padding: 140px 0 80px; }
+    .hero-label {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.22em;
+      color: var(--accent); margin-bottom: 20px; display: block;
     }
-    .glow-gold { box-shadow: 0 0 40px -10px rgba(251, 191, 36, 0.4); }
-    .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.8s, transform 0.8s; }
-    .reveal.in { opacity: 1; transform: translateY(0); }
-    /* Custom scrollbar for the popup mockup */
-    .custom-scroll::-webkit-scrollbar { width: 4px; }
-    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+    .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+    .hero h1 { font-size: clamp(2.8rem, 6vw, 4.8rem); line-height: 0.92; margin-bottom: 24px; }
+    .hero p { font-size: 1.05rem; opacity: 0.6; max-width: 460px; margin-bottom: 40px; }
+    .hero-ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 48px; }
+    .btn-primary {
+      padding: 13px 28px; background: var(--gradient); color: #fff; border-radius: 100px;
+      font-weight: 700; font-size: 0.88rem; text-decoration: none; border: none; cursor: pointer;
+      box-shadow: 0 12px 32px rgba(139,92,246,0.35);
+      transition: transform 0.2s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    .btn-primary:hover { transform: scale(1.05); }
+    .btn-secondary {
+      padding: 13px 28px; border-radius: 100px; font-weight: 700; font-size: 0.88rem;
+      text-decoration: none; border: 1px solid var(--surface-border); color: rgba(255,255,255,0.75);
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); }
+
+    .stats-strip {
+      display: flex; gap: 40px; padding-top: 40px;
+      border-top: 1px solid var(--surface-border);
+    }
+    .stat-item h4 { font-size: 2rem; font-style: italic; color: #fff; margin-bottom: 2px; }
+    .stat-item span { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; opacity: 0.45; text-transform: uppercase; }
+
+    /* Hero mockup */
+    .hero-mockup {
+      background: #0a0a12; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 28px; padding: 24px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.7);
+      position: relative; overflow: hidden;
+    }
+    .hero-mockup::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--gradient); opacity: 0.7;
+    }
+    .hm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .hm-badge {
+      font-size: 0.58rem; font-weight: 800; border: 1px solid #333; padding: 3px 10px;
+      border-radius: 4px; color: #666; letter-spacing: 0.05em;
+    }
+    .hm-badge .dot { color: #10b981; margin-left: 4px; }
+    .hm-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+    .hm-btn {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding: 12px 8px; display: flex; flex-direction: column;
+      align-items: center; gap: 6px; cursor: pointer; transition: border-color 0.2s;
+    }
+    .hm-btn:hover { border-color: var(--accent); }
+    .hm-btn span { font-size: 0.56rem; font-weight: 800; opacity: 0.45; letter-spacing: 0.06em; text-transform: uppercase; }
+    .hm-status {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 10px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 14px;
+    }
+    .hm-status-left { display: flex; align-items: center; gap: 8px; font-size: 0.62rem; font-weight: 700; opacity: 0.4; letter-spacing: 0.12em; text-transform: uppercase; }
+    .pulse { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.6; transform:scale(0.9); } }
+    .hm-captures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+    .hm-cap {
+      aspect-ratio: 16/10; border-radius: 10px; position: relative;
+      border: 1px solid rgba(139,92,246,0.25);
+    }
+    .hm-cap:nth-child(1) { background: linear-gradient(135deg,#1e3a8a,#312e81); }
+    .hm-cap:nth-child(2) { background: linear-gradient(135deg,#374151,#1f2937); border-color: rgba(255,255,255,0.08); }
+    .hm-cap:nth-child(3) { background: linear-gradient(135deg,#7c2d12,#9a3412); border-color: rgba(255,255,255,0.08); }
+    .hm-cap-num {
+      position: absolute; top: 5px; right: 5px; background: rgba(139,92,246,0.8);
+      font-size: 0.5rem; font-weight: 900; padding: 1px 5px; border-radius: 3px;
+    }
+    .hm-cap:nth-child(2) .hm-cap-num, .hm-cap:nth-child(3) .hm-cap-num { background: rgba(255,255,255,0.25); }
+    .hm-cta {
+      width: 100%; padding: 13px; border-radius: 12px; border: none;
+      background: var(--gradient); color: #fff; font-weight: 800; font-size: 0.82rem;
+      cursor: pointer; letter-spacing: 0.04em; margin-bottom: 10px;
+      box-shadow: 0 8px 24px rgba(139,92,246,0.3);
+    }
+    .hm-tools { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .hm-tool {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px; padding: 10px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .hm-tool:hover { background: rgba(255,255,255,0.07); }
+    .hm-tool svg { width: 16px; height: 16px; stroke: #fff; opacity: 0.55; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ── FEATURES ── */
+    .features { padding: 100px 0 80px; }
+    .section-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 16px; display: block; }
+    .section-title { font-size: clamp(2rem, 4vw, 3.2rem); margin-bottom: 60px; }
+    .feat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+    .feat-card {
+      background: var(--surface); border: 1px solid var(--surface-border); border-radius: var(--radius);
+      padding: 28px; position: relative; overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), border-color 0.3s, background 0.3s;
+    }
+    .feat-card:hover { transform: translateY(-6px); border-color: var(--accent); background: rgba(255,255,255,0.06); }
+    .feat-tag {
+      position: absolute; top: 18px; right: 18px; font-size: 0.58rem; font-weight: 800;
+      padding: 3px 8px; border-radius: 4px; letter-spacing: 0.05em;
+    }
+    .tag-v { background: #8b5cf6; color: #fff; }
+    .tag-p { background: #ec4899; color: #fff; }
+    .tag-g { background: #10b981; color: #fff; }
+    .tag-a { background: #f59e0b; color: #fff; }
+    .tag-r { background: #ef4444; color: #fff; }
+    .tag-b { background: #3b82f6; color: #fff; }
+    .feat-icon {
+      width: 42px; height: 42px; background: rgba(255,255,255,0.05);
+      border-radius: 11px; display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px; font-size: 1.2rem;
+    }
+    .feat-card h3 { font-size: 0.95rem; margin-bottom: 10px; }
+    .feat-card p { font-size: 0.82rem; opacity: 0.5; line-height: 1.55; }
+
+    /* ── STUDIO SECTION ── */
+    .studio { padding: 120px 0; background: radial-gradient(circle at 80% 50%, rgba(139,92,246,0.14), transparent 65%); }
+    .studio-grid { display: grid; grid-template-columns: 1fr 1.15fr; gap: 70px; align-items: center; }
+    .studio-pill {
+      display: inline-block; padding: 5px 14px; border-radius: 100px;
+      border: 1px solid var(--accent); font-size: 0.68rem; font-weight: 700;
+      color: var(--accent); margin-bottom: 20px; letter-spacing: 0.1em;
+    }
+    .studio-text h2 { font-size: clamp(2rem, 4vw, 3.4rem); margin-bottom: 20px; }
+    .studio-text p { font-size: 1rem; opacity: 0.65; margin-bottom: 0; max-width: 480px; }
+    .protocol-list { display: flex; flex-direction: column; gap: 18px; margin-top: 36px; }
+    .protocol-item { display: flex; align-items: center; gap: 14px; font-weight: 600; font-size: 0.95rem; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Studio mockup */
+    .studio-mockup {
+      background: #08080c; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 28px; padding: 28px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.65);
+    }
+    .sm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+    .sm-pro { border: 1px solid #333; padding: 3px 10px; border-radius: 6px; font-size: 0.58rem; font-weight: 800; color: #888; }
+    .sm-pro span { color: #10b981; margin-left: 3px; }
+    .sm-main { display: grid; grid-template-columns: 76px 1fr; gap: 20px; }
+    .v-tabs { display: flex; flex-direction: column; gap: 10px; }
+    .v-tab {
+      height: 88px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 6px; cursor: pointer; transition: all 0.25s;
+    }
+    .v-tab.active { border-color: var(--accent); background: rgba(139,92,246,0.1); }
+    .v-tab svg { width: 22px; height: 22px; opacity: 0.4; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .v-tab.active svg { opacity: 1; stroke: var(--accent); }
+    .v-tab-label { font-size: 0.58rem; font-weight: 800; opacity: 0.4; letter-spacing: 0.05em; text-transform: uppercase; }
+    .v-tab.active .v-tab-label { opacity: 1; color: var(--accent); }
+    .cap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+    .cap-card {
+      aspect-ratio: 16/10; border-radius: 11px; overflow: hidden;
+      position: relative; border: 1px solid rgba(255,255,255,0.05);
+      background: #12121a;
+    }
+    .cap-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
+    .cap-card:hover img { transform: scale(1.08); }
+    .cap-label {
+      position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.85);
+      font-size: 0.48rem; font-weight: 900; padding: 2px 5px; border-radius: 3px;
+    }
+    .process-btn {
+      width: 100%; padding: 14px; border-radius: 12px; border: none;
+      background: var(--gradient); color: #fff; font-weight: 800; font-size: 0.85rem;
+      cursor: pointer; margin-bottom: 18px; letter-spacing: 0.03em;
+      box-shadow: 0 8px 20px rgba(139,92,246,0.35);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .process-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(139,92,246,0.45); }
+    .sm-tools { display: flex; gap: 8px; }
+    .sm-tool {
+      flex: 1; height: 40px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05); border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .sm-tool:hover { background: rgba(255,255,255,0.07); }
+    .sm-tool svg { width: 16px; height: 16px; stroke: #fff; opacity: 0.55; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ── PRIVACY STRIP ── */
+    .privacy-strip { padding: 60px 0 100px; }
+    .privacy-box {
+      background: rgba(8,8,12,0.5); border: 1px solid var(--surface-border);
+      border-radius: 28px; padding: 48px 56px; display: flex; gap: 32px; align-items: center;
+      backdrop-filter: blur(10px);
+    }
+    .privacy-icon { font-size: 3.5rem; flex-shrink: 0; }
+    .privacy-box h3 { font-size: 1.6rem; margin-bottom: 12px; }
+    .privacy-box p { opacity: 0.55; font-size: 0.95rem; line-height: 1.7; }
+    .privacy-box a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+    /* ── FOOTER ── */
+    footer { padding: 64px 0; border-top: 1px solid var(--surface-border); background: rgba(0,0,0,0.3); }
+    .footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a {
+      font-size: 0.72rem; opacity: 0.4; text-decoration: none; color: #fff;
+      font-weight: 600; letter-spacing: 0.05em; transition: opacity 0.2s;
+      cursor: pointer;
+    }
+    .footer-links a:hover { opacity: 1; color: var(--accent); }
+    .footer-copy { font-size: 0.7rem; opacity: 0.3; letter-spacing: 0.05em; }
+
+    /* ── MODAL ── */
+    #legalModal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 9999;
+      display: none; align-items: center; justify-content: center; padding: 24px;
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    }
+    #legalModal.open { display: flex; }
+    .modal-box {
+      background: #0d0d15; max-width: 580px; width: 100%; max-height: 78vh;
+      overflow-y: auto; padding: 44px; border: 1px solid var(--surface-border);
+      border-radius: 24px; position: relative;
+    }
+    .modal-box h2 { margin-bottom: 20px; font-style: normal; font-size: 1.4rem; }
+    .modal-body p { margin-bottom: 14px; opacity: 0.7; line-height: 1.8; font-size: 0.95rem; }
+    .modal-close {
+      position: absolute; top: 20px; right: 20px; background: none;
+      border: none; color: #fff; font-size: 1.4rem; cursor: pointer; opacity: 0.5; transition: opacity 0.2s;
+    }
+    .modal-close:hover { opacity: 1; }
+
+    /* ── REVEAL ANIMATION ── */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1); }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 960px) {
+      .hero-grid, .studio-grid { grid-template-columns: 1fr; }
+      .hero p { max-width: 100%; }
+      .feat-grid { grid-template-columns: repeat(2, 1fr); }
+      .stats-strip { flex-wrap: wrap; gap: 24px; }
+      .privacy-box { flex-direction: column; text-align: center; padding: 36px 28px; }
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+    }
+    @media (max-width: 600px) {
+      .feat-grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 2.4rem; }
+      .nav-links a:not(:last-child) { display: none; }
+    }
   </style>
 </head>
-<body class="min-h-screen relative">
+<body>
 
-  <!-- Background atmosphere -->
-  <div class="fixed inset-0 star-field pointer-events-none"></div>
-  <div class="orb" style="top:-10%;left:-10%;width:50%;height:50%;background:rgba(79,70,229,0.18);"></div>
-  <div class="orb" style="bottom:-10%;right:-10%;width:50%;height:50%;background:rgba(147,51,234,0.15);animation-delay:-4s;"></div>
-  <div class="orb" style="top:20%;right:10%;width:30%;height:30%;background:rgba(59,130,246,0.08);animation-delay:-8s;"></div>
-
-  <!-- Navigation -->
-  <nav class="h-20 px-6 md:px-12 lg:px-20 flex items-center justify-between border-b border-white/5 sticky top-0 z-50" style="background:rgba(3,3,5,0.8);backdrop-filter:blur(20px);">
-    <a href="/" class="flex items-center gap-3">
-      <div class="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center shadow-2xl" style="box-shadow:0 8px 30px rgba(79,70,229,0.4);">
-        <span class="text-xl">📸</span>
-      </div>
-      <span class="text-xl md:text-2xl font-black tracking-tighter italic font-display">Snap<span class="gradient-text pr-1">ToAI</span></span>
-    </a>
-    <div class="flex items-center gap-3 md:gap-6">
-      <a href="/privacy-policy" class="hidden md:inline text-[11px] uppercase tracking-[0.2em] text-white/50 hover:text-white transition font-bold">Privacy</a>
-      <a href="https://chromewebstore.google.com/detail/snaptoai-screenshot-to-ai/oojjcoiimphlplollpgjckcjejlamhjh" target="_blank" rel="noopener" class="px-5 md:px-8 py-2.5 gradient-primary text-white font-black rounded-full hover:scale-105 transition uppercase text-[10px] tracking-[0.2em] shadow-2xl" style="box-shadow:0 10px 30px rgba(79,70,229,0.3);">
-        Add to Chrome
+  <!-- NAV -->
+  <nav>
+    <div class="container nav-inner">
+      <a href="/" class="logo">
+        <div class="logo-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </div>
+        SNAPTOAI
       </a>
+      <div class="nav-links">
+        <a href="#features">FEATURES</a>
+        <a href="#studio">STUDIO</a>
+        <a href="/privacy-policy">PRIVACY</a>
+        <button class="btn-chrome" onclick="window.open('https://chromewebstore.google.com/detail/snaptoai-screenshot-to-ai/oojjcoiimphlplollpgjckcjejlamhjh','_blank')">ADD TO CHROME</button>
+      </div>
     </div>
   </nav>
 
-  <!-- Hero -->
-  <main class="relative px-6 md:px-12 lg:px-20 py-16 md:py-24 min-h-[80vh]">
-    <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-20 relative z-10">
-
-      <!-- Left: copy -->
-      <div class="w-full lg:w-1/2 flex flex-col gap-8 reveal">
-        <div class="inline-flex self-start px-4 py-2 rounded-full text-[10px] font-black tracking-[0.3em] uppercase" style="background:rgba(79,70,229,0.1);border:1px solid rgba(79,70,229,0.25);color:#a5b4fc;">
-          Google AI Studio Payload Active
-        </div>
-
-        <h1 class="text-5xl md:text-7xl lg:text-8xl font-black leading-[0.85] tracking-tighter italic uppercase font-display">
-          SNAP THE <span class="gradient-text pr-4">PIXEL,</span><br/>
-          UNLEASH <span class="gradient-text pr-4" style="text-decoration:underline;text-decoration-color:#6366f1;text-underline-offset:12px;">THE STUDIO.</span>
-        </h1>
-
-        <p class="text-white/60 text-lg md:text-xl max-w-xl leading-relaxed font-medium">
-          Capture any screen, then chat with AI, generate <span class="text-white font-bold">photoreal images</span>, original <span class="text-white font-bold">music</span>, and <span class="text-white font-bold">cinematic 64-second videos</span> — all powered by Google Gemini, right in your browser.
-        </p>
-
-        <div class="flex flex-wrap gap-6 md:gap-8 mt-2">
-          <div class="flex flex-col">
-            <span class="text-4xl md:text-5xl font-black italic tracking-tighter font-display">64<span class="text-indigo-400">s</span></span>
-            <span class="text-[10px] uppercase text-white/30 tracking-[0.2em] font-black mt-1">Stitched Video</span>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-grid">
+        <div class="reveal">
+          <span class="hero-label">GOOGLE AI STUDIO PAYLOAD ACTIVE</span>
+          <h1>SNAP THE PIXEL,<br><span class="gradient-text">BUILD THE FUTURE.</span></h1>
+          <p>The pinnacle of generative AI, stitched directly into your browser workflow. One snap, infinite modes. Research, code, and create in seconds.</p>
+          <div class="hero-ctas">
+            <a href="https://chromewebstore.google.com/detail/snaptoai-screenshot-to-ai/oojjcoiimphlplollpgjckcjejlamhjh" target="_blank" rel="noopener" class="btn-primary">🚀 Install Free — No Card</a>
+            <a href="#features" class="btn-secondary">See What's Inside →</a>
           </div>
-          <div class="w-px h-16 bg-white/10 hidden sm:block"></div>
-          <div class="flex flex-col">
-            <span class="text-4xl md:text-5xl font-black italic tracking-tighter font-display">55<span class="text-indigo-400">+</span></span>
-            <span class="text-[10px] uppercase text-white/30 tracking-[0.2em] font-black mt-1">Languages</span>
-          </div>
-          <div class="w-px h-16 bg-white/10 hidden sm:block"></div>
-          <div class="flex flex-col">
-            <span class="text-4xl md:text-5xl font-black italic tracking-tighter font-display">$300</span>
-            <span class="text-[10px] uppercase text-white/30 tracking-[0.2em] font-black mt-1">Free Google Credit</span>
+          <div class="stats-strip">
+            <div class="stat-item">
+              <h4>$300</h4>
+              <span>Free Google Credit</span>
+            </div>
+            <div class="stat-item">
+              <h4>55+</h4>
+              <span>Languages</span>
+            </div>
+            <div class="stat-item">
+              <h4>64s</h4>
+              <span>VEO Video</span>
+            </div>
+            <div class="stat-item">
+              <h4>&lt;1s</h4>
+              <span>AI Response</span>
+            </div>
           </div>
         </div>
 
-        <div class="flex flex-wrap gap-4 mt-4">
-          <a href="https://chromewebstore.google.com/detail/snaptoai-screenshot-to-ai/oojjcoiimphlplollpgjckcjejlamhjh" target="_blank" rel="noopener" class="px-8 py-4 gradient-primary text-white font-black rounded-full hover:scale-105 transition uppercase text-xs tracking-[0.2em] shadow-2xl flex items-center gap-3" style="box-shadow:0 15px 40px rgba(79,70,229,0.35);">
-            🚀 Install Free
-          </a>
-          <a href="#features" class="px-8 py-4 rounded-full font-black uppercase text-xs tracking-[0.2em] border border-white/15 hover:bg-white/5 transition flex items-center gap-2 text-white/80">
-            See What's Inside →
-          </a>
-        </div>
-      </div>
-
-      <!-- Right: animated extension popup mockup -->
-      <div class="w-full lg:w-1/2 relative flex justify-center items-center py-6 floating">
-        <div class="w-full max-w-[420px] matte-glass rounded-[40px] overflow-hidden p-7 flex flex-col gap-6 relative" style="box-shadow:0 45px 100px rgba(0,0,0,0.8);">
-          <div class="absolute top-0 left-0 right-0 h-[2px] gradient-primary opacity-60"></div>
-
-          <!-- popup header -->
-          <header class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 gradient-primary rounded-xl flex items-center justify-center shadow-xl">
-                <span class="text-base">📸</span>
+        <!-- Hero mockup — extension popup preview -->
+        <div class="hero-mockup reveal" style="transition-delay:0.15s;">
+          <div class="hm-header">
+            <div class="logo" style="font-size:0.88rem;">
+              <div class="logo-box" style="width:22px;height:22px;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
               </div>
-              <span class="font-display font-black text-xl tracking-tighter italic">Snap<span class="gradient-text pr-1">ToAI</span></span>
+              SNAPTOAI
             </div>
-            <div class="bg-white/5 border border-white/10 px-3 py-1 rounded-full flex items-center gap-2">
-              <span class="text-[9px] uppercase font-black text-white/40 tracking-widest">Pro</span>
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 active-pulse"></span>
-            </div>
-          </header>
+            <div class="hm-badge">PRO <span class="dot">●</span></div>
+          </div>
 
-          <!-- 4 action buttons -->
-          <div class="grid grid-cols-4 gap-3">
-            <div class="flex flex-col items-center gap-2">
-              <div class="w-16 h-16 rounded-2xl bg-white/5 border border-indigo-500/20 hover:border-indigo-500/50 flex items-center justify-center text-2xl transition">📷</div>
-              <span class="text-[9px] font-black tracking-widest uppercase italic text-white/30">SNAP</span>
+          <div class="hm-buttons">
+            <div class="hm-btn">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span>SNAP</span>
             </div>
-            <div class="flex flex-col items-center gap-2">
-              <div class="w-16 h-16 rounded-2xl bg-white/5 border border-indigo-500/20 hover:border-indigo-500/50 flex items-center justify-center text-2xl transition">✂️</div>
-              <span class="text-[9px] font-black tracking-widest uppercase italic text-white/30">SNIP</span>
+            <div class="hm-btn">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9 L3 12 L6 15 M18 9 L21 12 L18 15"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+              <span>SNIP</span>
             </div>
-            <div class="flex flex-col items-center gap-2">
-              <div class="w-16 h-16 rounded-2xl bg-white/5 border border-indigo-500/20 hover:border-indigo-500/50 flex items-center justify-center text-2xl transition">📄</div>
-              <span class="text-[9px] font-black tracking-widest uppercase italic text-white/30">FULL</span>
+            <div class="hm-btn">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+              <span>FULL</span>
             </div>
-            <div class="flex flex-col items-center gap-2">
-              <div class="w-16 h-16 rounded-2xl bg-amber-400/10 border border-amber-400/30 glow-gold flex items-center justify-center text-2xl transition">⭐</div>
-              <span class="text-[9px] font-black tracking-widest uppercase italic text-amber-400/60">STUDIO</span>
+            <div class="hm-btn" style="border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.06);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span style="color:#f59e0b;opacity:1;">STUDIO</span>
             </div>
           </div>
 
-          <!-- status bar -->
-          <div class="bg-white/5 border border-white/5 rounded-2xl py-3 px-5 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 active-pulse"></div>
-              <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 italic">AI Ready · v2.4</span>
+          <div class="hm-status">
+            <div class="hm-status-left">
+              <div class="pulse"></div>
+              AI Ready · v2.4
             </div>
-            <span class="text-[10px] font-black italic text-indigo-400/70 uppercase">Ready</span>
+            <span style="font-size:0.62rem;font-weight:700;color:var(--accent);opacity:0.7;letter-spacing:0.1em;">READY</span>
           </div>
 
-          <!-- screenshot grid mock -->
-          <div class="grid grid-cols-2 gap-3">
-            <div class="aspect-[16/10] rounded-xl border border-indigo-500/50 relative overflow-hidden" style="box-shadow:0 8px 24px -8px rgba(99,102,241,0.5);">
-              <img src="/static/images/cap1.png" alt="Capture 1" class="w-full h-full object-cover" loading="lazy" />
-              <span class="absolute top-1.5 right-1.5 bg-indigo-500 text-white text-[8px] font-black px-2 py-0.5 rounded tracking-widest">CAPTURE 1</span>
-            </div>
-            <div class="aspect-[16/10] rounded-xl border border-white/10 relative overflow-hidden">
-              <img src="/static/images/cap2.png" alt="Capture 2" class="w-full h-full object-cover" loading="lazy" />
-              <span class="absolute top-1.5 right-1.5 bg-white/80 text-black text-[8px] font-black px-2 py-0.5 rounded tracking-widest">CAPTURE 2</span>
-            </div>
-            <div class="aspect-[16/10] rounded-xl border border-white/10 relative overflow-hidden">
-              <img src="/static/images/cap3.png" alt="Capture 3" class="w-full h-full object-cover" loading="lazy" />
-              <span class="absolute top-1.5 right-1.5 bg-white/80 text-black text-[8px] font-black px-2 py-0.5 rounded tracking-widest">CAPTURE 3</span>
-            </div>
-            <div class="aspect-[16/10] rounded-xl border border-white/10 relative overflow-hidden">
-              <img src="/static/images/cap4.png" alt="Capture 4" class="w-full h-full object-cover" loading="lazy" />
-              <span class="absolute top-1.5 right-1.5 bg-white/80 text-black text-[8px] font-black px-2 py-0.5 rounded tracking-widest">CAPTURE 4</span>
-            </div>
+          <div class="hm-captures">
+            <div class="hm-cap"><span class="hm-cap-num">1</span></div>
+            <div class="hm-cap"><span class="hm-cap-num">2</span></div>
+            <div class="hm-cap"><span class="hm-cap-num">3</span></div>
           </div>
 
-          <!-- main CTA -->
-          <button class="w-full gradient-primary text-white py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2 italic" style="box-shadow:0 15px 40px rgba(79,70,229,0.3);">
-            ＋ PROCESS IN STUDIO
-          </button>
-          <div class="grid grid-cols-2 gap-2">
-            <button class="bg-white/5 border border-white/10 text-white/40 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-              🎬 64s VEO
-            </button>
-            <button class="bg-white/5 border border-white/10 text-white/40 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-              🎵 LYRIA 3
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </main>
+          <button class="hm-cta">＋ PROCESS IN STUDIO</button>
 
-  <!-- Features -->
-  <section id="features" class="px-6 md:px-12 lg:px-20 py-24 md:py-32 border-y border-white/5 relative" style="background:rgba(255,255,255,0.01);">
-    <div class="max-w-7xl mx-auto flex flex-col gap-16 relative z-10">
-      <div class="flex flex-col lg:flex-row items-end justify-between gap-8 reveal">
-        <div class="max-w-2xl flex flex-col gap-5">
-          <span class="text-indigo-400 text-xs font-black uppercase tracking-[0.5em]">Integrated Intelligence</span>
-          <h2 class="text-4xl md:text-6xl lg:text-7xl font-black italic tracking-tighter leading-[0.85] uppercase font-display">THE FULL GOOGLE AI<br/><span class="gradient-text pr-6">STUDIO PAYLOAD.</span></h2>
-        </div>
-        <p class="text-white/40 text-lg max-w-sm leading-relaxed font-medium italic">
-          The pinnacle of generative AI, stitched directly into your browser workflow. One snap, infinite modes.
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="p-8 rounded-[2.5rem] flex flex-col gap-6 transition hover:-translate-y-2" style="background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.05);">
-          <div class="flex items-center justify-between">
-            <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-2xl">🎬</div>
-            <span class="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-400/60">Production</span>
-          </div>
-          <div class="flex flex-col gap-3">
-            <h3 class="text-lg font-bold text-white italic">VEO 3.1 PRODUCTION</h3>
-            <p class="text-white/40 text-sm leading-relaxed">8x stitching engine. Turn snaps into 64-second cinematic narratives in 4K with editable per-clip prompts.</p>
-          </div>
-        </div>
-        <div class="p-8 rounded-[2.5rem] flex flex-col gap-6 transition hover:-translate-y-2" style="background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.05);">
-          <div class="flex items-center justify-between">
-            <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-2xl">🎵</div>
-            <span class="text-[10px] font-black uppercase tracking-[0.4em] text-pink-400/60">Scoring</span>
-          </div>
-          <div class="flex flex-col gap-3">
-            <h3 class="text-lg font-bold text-white italic">LYRIA 3 AUDIO</h3>
-            <p class="text-white/40 text-sm leading-relaxed">Original music and studio-grade soundscapes tied to your visual context — built with a guided Song Studio.</p>
-          </div>
-        </div>
-        <div class="p-8 rounded-[2.5rem] flex flex-col gap-6 transition hover:-translate-y-2" style="background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.05);">
-          <div class="flex items-center justify-between">
-            <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-2xl">👁️</div>
-            <span class="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400/60">Intelligence</span>
-          </div>
-          <div class="flex flex-col gap-3">
-            <h3 class="text-lg font-bold text-white italic">GEMINI 3 VISION</h3>
-            <p class="text-white/40 text-sm leading-relaxed">Pro-grade multi-source reasoning. Analyze up to 10 captures simultaneously with code-aware context.</p>
-          </div>
-        </div>
-        <div class="p-8 rounded-[2.5rem] flex flex-col gap-6 transition hover:-translate-y-2" style="background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.05);">
-          <div class="flex items-center justify-between">
-            <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-2xl">🍌</div>
-            <span class="text-[10px] font-black uppercase tracking-[0.4em] text-amber-400/60">Creation</span>
-          </div>
-          <div class="flex flex-col gap-3">
-            <h3 class="text-lg font-bold text-white italic">NANO BANANA</h3>
-            <p class="text-white/40 text-sm leading-relaxed">Next-gen photorealistic image generation. Infinite creativity from your daily captures.</p>
+          <div class="hm-tools">
+            <div class="hm-tool" title="Vision Chat">
+              <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <div class="hm-tool" title="Image Studio">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            </div>
+            <div class="hm-tool" title="Song Studio">
+              <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </div>
+            <div class="hm-tool" title="Video Studio">
+              <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Privacy / trust strip -->
-  <section class="px-6 md:px-20 py-20">
-    <div class="max-w-5xl mx-auto matte-glass rounded-[3rem] p-10 md:p-16 flex flex-col md:flex-row items-center gap-10">
-      <div class="text-7xl">🔒</div>
-      <div class="flex-1 flex flex-col gap-4">
-        <h3 class="text-2xl md:text-3xl font-black italic font-display">Privacy first, always.</h3>
-        <p class="text-white/50 leading-relaxed">Your screenshots never leave your browser unless YOU send them to AI. Captures are stored only in your local Chrome session storage. No tracking pixels, no third-party analytics on your captures, no resale of your data. Read the full <a href="/privacy-policy" class="text-indigo-300 hover:text-white underline underline-offset-4">privacy policy</a>.</p>
+  <!-- FEATURES -->
+  <section class="features" id="features">
+    <div class="container">
+      <span class="section-label">INTEGRATED INTELLIGENCE</span>
+      <h2 class="section-title reveal">THE FULL GOOGLE AI<br><span class="gradient-text">STUDIO PAYLOAD.</span></h2>
+      <div class="feat-grid">
+
+        <div class="feat-card reveal">
+          <div class="feat-tag tag-v">PRODUCTION</div>
+          <div class="feat-icon">🎬</div>
+          <h3>VEO 3.1 PRODUCTION</h3>
+          <p>8x stitching engine. Turn snaps into 64-second cinematic narratives with editable per-clip prompts.</p>
+        </div>
+
+        <div class="feat-card reveal" style="transition-delay:0.05s;">
+          <div class="feat-tag tag-p">SCORING</div>
+          <div class="feat-icon">🎵</div>
+          <h3>LYRIA 3 AUDIO</h3>
+          <p>Original music and studio-grade soundscapes tied to your visual context — guided Song Studio included.</p>
+        </div>
+
+        <div class="feat-card reveal" style="transition-delay:0.1s;">
+          <div class="feat-tag tag-g">INTELLIGENCE</div>
+          <div class="feat-icon">👁️</div>
+          <h3>GEMINI 2.5 VISION</h3>
+          <p>Pro-grade multi-source reasoning. Analyze up to 10 captures simultaneously with code-aware context.</p>
+        </div>
+
+        <div class="feat-card reveal" style="transition-delay:0.15s;">
+          <div class="feat-tag tag-a">CREATION</div>
+          <div class="feat-icon">🎨</div>
+          <h3>IMAGE STUDIO</h3>
+          <p>Next-gen photorealistic image generation from any screenshot or description, instantly.</p>
+        </div>
+
+        <div class="feat-card reveal" style="transition-delay:0.2s;">
+          <div class="feat-tag tag-b">INSIGHT</div>
+          <div class="feat-icon">🔍</div>
+          <h3>OMNI RESEARCH</h3>
+          <p>Transform snapshots into deep-dive knowledge. Synthesis of complex data, charts, and documents.</p>
+        </div>
+
+        <div class="feat-card reveal" style="transition-delay:0.25s;">
+          <div class="feat-tag tag-g">DISCOVERY</div>
+          <div class="feat-icon">🌐</div>
+          <h3>VISUAL SEARCH</h3>
+          <p>Source products, docs, and references across the live web using pixel-perfect recognition.</p>
+        </div>
+
+        <div class="feat-card reveal" style="transition-delay:0.3s;">
+          <div class="feat-tag tag-r">DEVELOPMENT</div>
+          <div class="feat-icon">💻</div>
+          <h3>RAD CODE</h3>
+          <p>Convert UI screenshots into clean, functional React, Tailwind, or Python code instantly.</p>
+        </div>
+
+        <div class="feat-card reveal" style="transition-delay:0.35s;">
+          <div class="feat-tag tag-v">ARCHITECTURE</div>
+          <div class="feat-icon">🏗️</div>
+          <h3>STUDIO BUILD</h3>
+          <p>Orchestrate captures into full prototypes. A unified workspace for code, assets, and research.</p>
+        </div>
+
       </div>
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer class="px-6 md:px-12 lg:px-20 py-16 border-t border-white/5" style="background:rgba(0,0,0,0.4);">
-    <div class="max-w-7xl mx-auto flex flex-col gap-12">
+  <!-- STUDIO SECTION -->
+  <section class="studio" id="studio">
+    <div class="container studio-grid">
 
-      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-10">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 gradient-primary rounded-xl flex items-center justify-center"><span class="text-base">📸</span></div>
-          <span class="font-display font-black text-xl tracking-tighter italic">Snap<span class="gradient-text pr-1">ToAI</span></span>
-        </div>
-
-        <div class="flex flex-wrap gap-x-8 gap-y-3 items-center text-[11px] uppercase font-black tracking-[0.2em]">
-          <a href="https://chromewebstore.google.com/detail/snaptoai-screenshot-to-ai/oojjcoiimphlplollpgjckcjejlamhjh" target="_blank" rel="noopener" class="text-white/70 hover:text-white transition">Chrome Web Store ↗</a>
-          <a href="/privacy-policy" class="text-white/70 hover:text-white transition">Privacy Policy</a>
-          <a href="mailto:hello@snaptoai.com" class="text-white/70 hover:text-white transition">Contact</a>
-          <!-- Hidden admin link: prompts for password before navigating, so it's safe to show. -->
-          <a href="#" id="adminLink" class="text-white/30 hover:text-white/70 transition" title="Owner-only dashboard">Admin</a>
+      <div class="studio-text reveal">
+        <div class="studio-pill">INTEGRATED INTELLIGENCE</div>
+        <h2>UNLEASH THE<br><span class="gradient-text">STUDIO.</span></h2>
+        <p>Capture any screen, then chat with AI, generate photoreal images, original music, and cinematic videos — all powered by Google Gemini, right in your browser.</p>
+        <div class="protocol-list">
+          <div class="protocol-item"><div class="dot" style="background:var(--accent);"></div> SNAP: Capture the inspiration.</div>
+          <div class="protocol-item"><div class="dot" style="background:var(--accent2);"></div> RESEARCH: Understand the data.</div>
+          <div class="protocol-item"><div class="dot" style="background:var(--accent3);"></div> CODE: Generate foundations.</div>
+          <div class="protocol-item"><div class="dot" style="background:#fff;"></div> BUILD: Deploy the final product.</div>
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center justify-between gap-6 pt-8 border-t border-white/5">
-        <div class="flex flex-wrap gap-6 md:gap-12">
-          <div class="flex flex-col gap-1">
-            <span class="text-[9px] text-white/20 uppercase font-black tracking-[0.3em] italic">Technology</span>
-            <span class="text-[11px] font-black uppercase italic text-white/40">Multimodal · v2.4</span>
+      <div class="studio-mockup reveal" style="transition-delay:0.12s;">
+        <div class="sm-header">
+          <div class="logo" style="font-size:0.88rem;">
+            <div class="logo-box" style="width:22px;height:22px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </div>
+            SNAPTOAI
           </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-[9px] text-white/20 uppercase font-black tracking-[0.3em] italic">Backbone</span>
-            <span class="text-[11px] font-black uppercase italic text-indigo-400/70">Google AI Studio</span>
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-[9px] text-white/20 uppercase font-black tracking-[0.3em] italic">Languages</span>
-            <span class="text-[11px] font-black uppercase italic text-emerald-400/70">55 supported</span>
-          </div>
+          <div class="sm-pro">PRO <span>●</span></div>
         </div>
-        <div class="flex flex-wrap gap-6 text-white/20 text-[9px] uppercase font-black tracking-[0.4em]">
-          <span>Secured by Cloud</span>
-          <span>No Card Required</span>
-          <span>© 2026 SnapToAI</span>
+
+        <div class="sm-main">
+          <div class="v-tabs">
+            <div class="v-tab active" onclick="selectVTab(this)">
+              <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span class="v-tab-label">SNAP</span>
+            </div>
+            <div class="v-tab" onclick="selectVTab(this)">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+              <span class="v-tab-label">FULL</span>
+            </div>
+            <div class="v-tab" onclick="selectVTab(this)">
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span class="v-tab-label">STUDIO</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="cap-grid">
+              <div class="cap-card">
+                <img src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Code screenshot" loading="lazy" onerror="this.style.display='none';this.parentElement.style.background='#1a1a2e'">
+                <div class="cap-label">CAPTURE 1</div>
+              </div>
+              <div class="cap-card">
+                <img src="https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Design screenshot" loading="lazy" onerror="this.style.display='none';this.parentElement.style.background='#1a1a2e'">
+                <div class="cap-label">CAPTURE 2</div>
+              </div>
+              <div class="cap-card">
+                <img src="https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Data screenshot" loading="lazy" onerror="this.style.display='none';this.parentElement.style.background='#1a1a2e'">
+                <div class="cap-label">CAPTURE 3</div>
+              </div>
+              <div class="cap-card">
+                <img src="https://images.pexels.com/photos/92904/pexels-photo-92904.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Analysis screenshot" loading="lazy" onerror="this.style.display='none';this.parentElement.style.background='#1a1a2e'">
+                <div class="cap-label">CAPTURE 4</div>
+              </div>
+            </div>
+            <button class="process-btn">＋ PROCESS IN STUDIO</button>
+            <div class="sm-tools">
+              <div class="sm-tool" title="Visual Search">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </div>
+              <div class="sm-tool" title="Research">
+                <svg viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M8 7h6M8 11h8"/></svg>
+              </div>
+              <div class="sm-tool" title="Rad Code">
+                <svg viewBox="0 0 24 24"><path d="m13 2-2 10h9L7 22l2-10H1L13 2z"/></svg>
+              </div>
+              <div class="sm-tool" title="Export">
+                <svg viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"/></svg>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- PRIVACY STRIP -->
+  <section class="privacy-strip">
+    <div class="container">
+      <div class="privacy-box reveal">
+        <div class="privacy-icon">🔒</div>
+        <div>
+          <h3>Privacy first, always.</h3>
+          <p>Your screenshots never leave your browser unless YOU send them to AI. Captures are stored only in your local Chrome session storage — no tracking pixels, no third-party analytics on your captures, no resale of your data. Read the full <a href="/privacy-policy">privacy policy</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container footer-inner">
+      <div class="logo">
+        <div class="logo-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </div>
+        SNAPTOAI
+      </div>
+      <div class="footer-links">
+        <a href="https://chromewebstore.google.com/detail/snaptoai-screenshot-to-ai/oojjcoiimphlplollpgjckcjejlamhjh" target="_blank" rel="noopener">Chrome Store ↗</a>
+        <a href="/privacy-policy">Privacy Policy</a>
+        <a href="mailto:hello@snaptoai.com">Contact</a>
+        <a href="#" id="adminLink" title="Owner-only dashboard" style="opacity:0.2;">Admin</a>
+      </div>
+      <div class="footer-copy">© 2026 SNAPTOAI · POWERED BY GOOGLE GEMINI</div>
     </div>
   </footer>
 
-  <script>
-    // Reveal-on-scroll
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add('in'); });
-    }, { threshold: 0.1 });
-    document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+  <!-- LEGAL MODAL -->
+  <div id="legalModal">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeLegal()">×</button>
+      <h2 id="modalTitle"></h2>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
 
-    // Admin link — uses the safe POST /admin-login flow so password never
-    // appears in the URL, browser history, or server logs. On success, the
-    // server sets an httpOnly cookie and we navigate to /admin-dashboard.
-    document.getElementById('adminLink').addEventListener('click', async (e) => {
+  <script>
+    // Reveal on scroll
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    // Fallback — ensure everything visible after 1s even if observer misses
+    setTimeout(() => {
+      document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible'));
+    }, 1000);
+
+    // Legal modal
+    function openLegal(title, html) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalBody').innerHTML = html;
+      document.getElementById('legalModal').classList.add('open');
+    }
+    function closeLegal() {
+      document.getElementById('legalModal').classList.remove('open');
+    }
+    document.getElementById('legalModal').addEventListener('click', function(e) {
+      if (e.target === this) closeLegal();
+    });
+
+    // Studio vertical tab switching
+    function selectVTab(clicked) {
+      clicked.closest('.v-tabs').querySelectorAll('.v-tab').forEach(t => t.classList.remove('active'));
+      clicked.classList.add('active');
+    }
+
+    // Admin link
+    document.getElementById('adminLink').addEventListener('click', (e) => {
       e.preventDefault();
       const pw = prompt('Owner password:');
       if (!pw) return;
-      try {
-        const res = await fetch('/admin-login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ password: pw })
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data.success) {
-          window.location.href = data.redirect || '/admin-dashboard';
-        } else {
-          alert(data.error || 'Login failed');
-        }
-      } catch (err) {
-        alert('Network error — try again');
-      }
+      window.open('/admin-dashboard?password=' + encodeURIComponent(pw), '_blank');
     });
   </script>
 </body>
