@@ -5628,10 +5628,10 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
      // MANDATORY safety net — forces all elements visible after 1s even if observer never fires:
      setTimeout(function(){ document.querySelectorAll('.reveal').forEach(function(el){ el.style.opacity='1'; el.style.transform='none'; }); }, 1000);
 
-   WHY THIS PATTERN IS SAFE: `.reveal` has no opacity:0 in CSS. Without `.visible`, content
-   is fully visible (opacity defaults to 1). When observer fires, `.visible` triggers the animation
-   (animation-fill-mode:both applies the `from` state briefly, then animates in). If JS crashes,
-   zero content is hidden. NEVER write `.reveal { opacity: 0 }` — that makes a blank site on JS errors.
+   WHY THIS PATTERN IS SAFE: \`.reveal\` has no opacity:0 in CSS. Without \`.visible\`, content
+   is fully visible (opacity defaults to 1). When observer fires, \`.visible\` triggers the animation
+   (animation-fill-mode:both applies the \`from\` state briefly, then animates in). If JS crashes,
+   zero content is hidden. NEVER write \`.reveal { opacity: 0 }\` — that makes a blank site on JS errors.
 
 ⑤ FULLY WORKING JS — every button, toggle, tab, gauge, and form MUST actually work:
 
