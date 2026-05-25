@@ -6985,9 +6985,12 @@ function addBubbleActions(bubble, text) {
   const actions = document.createElement('div');
   actions.className = 'bubble-actions';
 
-  // In Build Mode: extract HTML from THIS response (may be truncated but usable)
-  // Fallback to previous _lastBuiltCode so the button always appears if any build exists
-  const _extracted = buildModeEnabled ? extractHtmlFromResponse(text) : { html: '', truncated: false };
+  // In Build Mode: extract HTML from THIS response (may be truncated but usable).
+  // If _continuationPending, merge the chunk onto the previous partial code.
+  const _extracted = buildModeEnabled
+    ? extractHtmlFromResponse(text, _continuationPending ? _lastBuiltCode : null)
+    : { html: '', truncated: false };
+  if (_continuationPending && _extracted.html) _continuationPending = false;
   const thisCode = _extracted.html;
   const isTruncated = _extracted.truncated;
   const showPreview = buildModeEnabled && (!!thisCode || !!_lastBuiltCode);
@@ -7008,11 +7011,23 @@ function addBubbleActions(bubble, text) {
   `;
   bubble.appendChild(actions);
 
-  // Truncation warning note — shown below button when AI cut off mid-code
+  // Truncation warning — shown below button when AI cut off mid-code.
+  // Gives a one-click "Continue Build" button that auto-sends the right prompt
+  // and merges the continuation chunk back onto the partial code.
   if (isTruncated) {
     const warn = document.createElement('div');
-    warn.style.cssText = 'font-size:11px;color:rgba(255,160,50,0.75);margin-top:4px;padding:0 4px;';
-    warn.textContent = '⚠️ Response was cut off — preview shows partial build. Type "continue the code from where you stopped" to complete it.';
+    warn.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,160,50,0.75);margin-top:5px;padding:0 2px;flex-wrap:wrap;';
+    warn.innerHTML = `<span>⚠️ Response was cut off</span>
+      <button style="background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.5);color:#ffa032;border-radius:10px;padding:2px 9px;font-size:11px;font-weight:600;cursor:pointer;">🔄 Continue Build</button>`;
+    warn.querySelector('button').addEventListener('click', () => {
+      _continuationPending = true;
+      const input = document.getElementById('chatInput');
+      if (input) {
+        input.value = 'Continue the HTML code from exactly where you left off. Output only the remaining code — do not restart from <!DOCTYPE html>.';
+        const btn = document.getElementById('sendBtn');
+        if (btn) btn.click();
+      }
+    });
     actions.appendChild(warn);
   }
 
@@ -7634,6 +7649,8 @@ document.getElementById('searchToggleBtn')?.addEventListener('click', (e) => {
 
 // ── Build Mode ────────────────────────────────────────────────────────────────
 let _lastBuiltCode = '';
+// When true, the next build response is a continuation chunk — merge with _lastBuiltCode
+let _continuationPending = false;
 
 // ── Staged Media for Build Mode ────────────────────────────────────────────
 // Holds an image or video the user tagged to embed in the next build.
@@ -7656,7 +7673,8 @@ function clearStagedMedia() {
 }
 
 // Returns { html: string, truncated: boolean }
-function extractHtmlFromResponse(text) {
+// Pass partialCode when this response is a continuation of a cut-off build.
+function extractHtmlFromResponse(text, partialCode) {
   if (!text) return { html: '', truncated: false };
 
   function makeResult(raw) {
@@ -7699,6 +7717,18 @@ function extractHtmlFromResponse(text) {
   // 7. Bare <html> ... (truncated)
   const m4t = text.match(/<html[\s\S]*/i);
   if (m4t) return makeResult(m4t[0]);
+
+  // 8. Continuation mode — no full HTML doc found but we have a partial to merge with
+  if (partialCode) {
+    // Strip the </body></html> we appended to the incomplete partial code
+    const base = partialCode
+      .replace(/\n?<\/body>\s*<\/html>\s*$/i, '')
+      .replace(/\n?<\/html>\s*$/i, '');
+    // Strip any leading ``` fence markers the AI may have output
+    const chunk = text.replace(/^```[\w]*\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    const merged = base + '\n' + chunk;
+    return makeResult(merged);
+  }
 
   return { html: '', truncated: false };
 }
