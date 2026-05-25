@@ -5494,9 +5494,11 @@ Every file MUST open exactly like this (fill in values marked []):
    transition: all 0.22s cubic-bezier(.4,0,.2,1);
    hover → transform: translateY(-3px); box-shadow: 0 16px 48px rgba(var(--accent-rgb),0.55);
 
-⑤ SCROLL-TRIGGERED ANIMATIONS — use IntersectionObserver:
-   @keyframes fadeUp { from { opacity:0; transform:translateY(32px); } to { opacity:1; transform:translateY(0); } }
-   Add class "reveal" to every card/section. JS: new IntersectionObserver to add animation: fadeUp 0.55s ease forwards with staggered delay.
+⑤ SCROLL-TRIGGERED ANIMATIONS — CRITICAL RULES:
+   ALL sections and cards MUST be fully visible at opacity:1 from initial page load. NEVER hide content behind opacity:0 that only reveals on scroll — this causes blank pages in preview.
+   For animations: use class "reveal" on cards ONLY (not entire sections). IntersectionObserver adds class "visible" which triggers a subtle entrance: transform translateY(20px)→0 + opacity 0.85→1. The card is already readable BEFORE the animation triggers.
+   @keyframes fadeUp { from { opacity:0.85; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+   Use threshold:0.05 and rootMargin:"0px 0px -5% 0px" so animations fire almost immediately.
 
 ⑥ HOVER STATES — every card:
    transition: all 0.22s ease;
@@ -6835,12 +6837,28 @@ async function getFriendlyErrorMessage(errorMsg) {
 function addBubbleActions(bubble, text) {
   const actions = document.createElement('div');
   actions.className = 'bubble-actions';
+  // Show "Open Preview" button only when build mode is on AND response contains HTML
+  const hasHtml = buildModeEnabled && !!extractHtmlFromResponse(text);
   actions.innerHTML = `
     <button class="copy-single-btn">📋 Copy</button>
     <button class="read-aloud-btn">🔊 Read</button>
     <button class="magic-card-btn">✨ Magic Card</button>
+    ${hasHtml ? '<button class="open-preview-btn" style="background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.5);color:#ffa032;border-radius:12px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:0.2px;">🏗️ Open Preview</button>' : ''}
   `;
   bubble.appendChild(actions);
+
+  // Open Preview button — saves HTML then opens preview-output.html
+  const prevBtn = actions.querySelector('.open-preview-btn');
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      const code = extractHtmlFromResponse(text);
+      if (!code) return;
+      _lastBuiltCode = code;
+      try { chrome.storage.local.set({ snaptoai_built_code: code }, () => {
+        chrome.tabs.create({ url: chrome.runtime.getURL('preview-output.html') });
+      }); } catch(e) {}
+    });
+  }
   
   // Magic Card Button - Opens dedicated page to avoid CSP issues
   actions.querySelector('.magic-card-btn').onclick = async () => {
@@ -7406,19 +7424,10 @@ function renderLivePreview(responseText) {
   const code = extractHtmlFromResponse(responseText);
   if (!code) return;
   _lastBuiltCode = code;
-  // Save for Full Page tab
+  // Save for preview-output.html to load
   try { chrome.storage.local.set({ snaptoai_built_code: code }); } catch(e) {}
-  const wrapper = document.getElementById('previewWrapper');
-  const iframe  = document.getElementById('livePreview');
-  if (!wrapper || !iframe) return;
-  // Reset iframe completely before injecting new content
-  iframe.removeAttribute('src');
-  iframe.srcdoc = '';
-  requestAnimationFrame(() => {
-    iframe.srcdoc = code;
-    wrapper.style.display = 'block';
-    wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  });
+  // Do NOT show the inline preview panel — the chat must stay fully visible.
+  // A small "Open Preview" button is added to the bubble by addBubbleActions.
 }
 
 document.getElementById('closePreviewBtn')?.addEventListener('click', () => {
