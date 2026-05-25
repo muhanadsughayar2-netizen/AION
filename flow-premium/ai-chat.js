@@ -5587,12 +5587,23 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
 ③ ICONS — inline SVG only (1.5px stroke, no fill), never emoji in professional contexts:
    Tech: terminal brackets, arrows, circuits | Wellness: leaf, drop, helix, sprout, shield | Luxury: minimal geometric
 
-④ SCROLL ANIMATIONS — SAFETY RULE (prevents blank preview):
-   ALL page sections MUST render at full opacity:1 on first paint. Never use opacity:0 on an entire section.
-   Reveal animation applies ONLY to individual cards, not parent sections.
-   CSS: .reveal { } (no opacity:0 here!) — JS adds .visible → animation: fadeUp 0.5s ease forwards
-   @keyframes fadeUp { from { opacity:0.85; transform:translateY(18px); } to { opacity:1; transform:none; } }
-   IntersectionObserver: { threshold:0.05, rootMargin:"0px 0px -5% 0px" }
+④ SCROLL ANIMATIONS — SAFETY RULE (blank sections = broken site):
+   COPY THIS EXACTLY — do not invent a different pattern:
+
+   CSS (inside <style>):
+     .reveal { opacity: 1; }  /* ← MUST stay opacity:1 so content is visible if JS is slow */
+     .reveal.in-view { animation: revealUp 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+     @keyframes revealUp { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:none; } }
+
+   JS (in your <script> block, run directly — no wrapper):
+     const _io = new IntersectionObserver(entries => entries.forEach(e => {
+       if (e.isIntersecting) { e.target.classList.add('in-view'); _io.unobserve(e.target); }
+     }), { threshold: 0.05, rootMargin: '0px 0px -40px 0px' });
+     document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+
+   APPLY .reveal ONLY to leaf-level elements: individual cards, images, paragraphs.
+   NEVER apply .reveal to: <section>, <div class="container">, heading groups, nav, footer.
+   If a whole section has .reveal, the IntersectionObserver may never fire → entire section blank.
 
 ⑤ FULLY WORKING JS — every button, toggle, tab, gauge, and form MUST actually work:
 
@@ -5647,6 +5658,10 @@ These are what every average AI defaults to. You never produce these unless expl
 ✗ Lorem ipsum or generic copy ("Transforming the future of innovation")
 ✗ Colored divs pretending to be photos — always use real Pexels URLs from the verified ID list
 ✗ opacity:0 on entire page sections — causes blank preview, never do this
+✗ Applying .reveal class to <section>, <div class="container">, nav, or footer — only apply to
+  individual cards/images/paragraphs inside sections; whole-section reveal makes sections disappear
+✗ Any CSS rule that sets opacity:0 without a guaranteed way to set it back to 1 (e.g. a class
+  that is never added, or an IntersectionObserver that never fires for above-the-fold content)
 ✗ Content area wider than 1100px
 ✗ Non-functional "coming soon" interactive placeholders
 ✗ href="#" on footer links (Medical Disclaimer, Privacy Policy, Terms, Newsletter, etc.) — every
@@ -5694,7 +5709,8 @@ These are what every average AI defaults to. You never produce these unless expl
 ✓ All interactive elements fully functional?
 ✓ Every footer link opens a modal with real content (NO href="#" dead links)?
 ✓ legalModal + openLegal() + closeLegal() present if any legal/footer links exist?
-✓ NO entire section starts at opacity:0?
+✓ NO section, container, or heading group has opacity:0 or .reveal — only individual leaf cards?
+✓ .reveal CSS has opacity:1 as default (not 0) so content shows even if JS never runs?
 ✓ Viewport meta + Google Fonts + CSS reset present?
 ✓ Only ONE primary CTA per section?
 ✓ Content max-width 1100px?
