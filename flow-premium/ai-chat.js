@@ -7534,8 +7534,6 @@ document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
   e.currentTarget.title = buildModeEnabled
     ? 'Build Mode ON — AI will generate full HTML/CSS/JS apps with live preview'
     : 'Build Mode — generate and preview websites & apps live';
-  const suggestions = document.getElementById('buildSuggestions');
-  if (suggestions) suggestions.style.display = buildModeEnabled ? 'block' : 'none';
   if (!buildModeEnabled) {
     const w = document.getElementById('previewWrapper');
     if (w) w.style.display = 'none';
@@ -7546,22 +7544,6 @@ document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
   }
 });
 
-// Wire up build suggestion chips
-document.getElementById('buildSuggestions')?.addEventListener('click', (e) => {
-  const chip = e.target.closest('.build-chip');
-  if (!chip) return;
-  const input = document.getElementById('chatInput');
-  if (input) {
-    input.value = chip.dataset.prompt;
-    input.dispatchEvent(new Event('input'));
-    input.focus();
-  }
-  // Bug fix: don't auto-send while a request is already in flight
-  if (isRequestLocked()) return;
-  setTimeout(() => {
-    document.getElementById('sendBtn')?.click();
-  }, 80);
-});
 
 document.getElementById('previewCopyBtn')?.addEventListener('click', () => {
   if (_lastBuiltCode) {
