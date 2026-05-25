@@ -7023,13 +7023,13 @@ function addBubbleActions(bubble, text) {
     readBtn.textContent = '⏳ Loading…';
     readBtn.disabled = true;
 
-    // Try Gemini TTS first
+    // Try Gemini TTS first (Neural voice — far better than browser TTS)
     try {
-      const keyResult = await chrome.storage.local.get('geminiApiKey');
+      // KEY FIX: API key is always stored in chrome.storage.sync, not local
+      const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
       const apiKey = keyResult.geminiApiKey;
       if (!apiKey) throw new Error('no_key');
 
-      // Gemini TTS: gemini-2.5-flash-preview-tts
       // Limit to 4800 chars (API cap); trim cleanly at sentence boundary
       let ttsInput = cleanText.slice(0, 4800);
       if (ttsInput.length === 4800) {
@@ -7037,6 +7037,7 @@ function addBubbleActions(bubble, text) {
         if (lastDot > 3000) ttsInput = ttsInput.slice(0, lastDot + 1);
       }
 
+      // Kore = clear, warm, professional female voice (better than Aoede for reading)
       const resp = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
         {
@@ -7048,7 +7049,7 @@ function addBubbleActions(bubble, text) {
               responseModalities: ['AUDIO'],
               speechConfig: {
                 voiceConfig: {
-                  prebuiltVoiceConfig: { voiceName: 'Aoede' }
+                  prebuiltVoiceConfig: { voiceName: 'Kore' }
                 }
               }
             }
@@ -7056,10 +7057,17 @@ function addBubbleActions(bubble, text) {
         }
       );
 
-      if (!resp.ok) throw new Error('gemini_tts_failed');
+      if (!resp.ok) {
+        const errText = await resp.text().catch(() => '');
+        console.warn('[SnapToAI TTS] Gemini API error', resp.status, errText);
+        throw new Error('gemini_tts_failed');
+      }
       const data = await resp.json();
       const audioB64 = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (!audioB64) throw new Error('no_audio_data');
+      if (!audioB64) {
+        console.warn('[SnapToAI TTS] No audio data in response', data);
+        throw new Error('no_audio_data');
+      }
 
       // Decode base64 PCM → WAV → play
       const pcm = Uint8Array.from(atob(audioB64), c => c.charCodeAt(0));
