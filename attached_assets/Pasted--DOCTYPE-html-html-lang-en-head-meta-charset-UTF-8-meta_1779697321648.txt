@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Activation Lab | Bio-Metabolic Wellness by Dr. William Li</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F9FBF9;
+      --text: #0A2E36;
+      --surface: #ffffff;
+      --accent: #FF7043; /* Blood Orange */
+      --sage: #76A08A;
+      --border: rgba(10, 46, 54, 0.08);
+      --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    
+    body { 
+      font-family: 'Inter', sans-serif; 
+      background-color: var(--bg); 
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3 { 
+      font-family: 'Playfair Display', serif; 
+      font-weight: 400; 
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 1000;
+      padding: 24px 0;
+      background: rgba(249, 251, 249, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+    .nav-links a { 
+      text-decoration: none; 
+      color: var(--text); 
+      font-size: 0.9rem; 
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      transition: var(--transition);
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    /* Hero Section */
+    .hero {
+      padding: 180px 0 100px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+    .hero-content h1 {
+      font-size: clamp(3rem, 6vw, 4.5rem);
+      margin-bottom: 24px;
+    }
+    .hero-content p {
+      font-size: 1.2rem;
+      color: rgba(10, 46, 54, 0.8);
+      margin-bottom: 40px;
+      max-width: 500px;
+    }
+    .hero-image-wrap {
+      position: relative;
+      height: 600px;
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.1);
+    }
+    .hero-image-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.1);
+      transition: transform 10s ease-out;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-block;
+      padding: 18px 36px;
+      background: var(--accent);
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      border-radius: 4px;
+      transition: var(--transition);
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(255, 112, 67, 0.3);
+      filter: brightness(1.1);
+    }
+
+    /* The 5 Shields Section */
+    .section-padding { padding: 140px 0; }
+    .section-header { text-align: center; margin-bottom: 80px; }
+    .section-header h2 { font-size: 3rem; margin-bottom: 16px; }
+    .section-header p { color: var(--sage); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
+
+    .shields-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+    }
+
+    .shield-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 40px 30px;
+      text-align: center;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .shield-card:hover {
+      border-color: var(--sage);
+      transform: translateY(-8px);
+    }
+    .shield-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 24px;
+      color: var(--sage);
+    }
+    .shield-card h3 { margin-bottom: 12px; font-size: 1.4rem; }
+    .shield-foods {
+      margin-top: 20px;
+      font-size: 0.9rem;
+      color: var(--sage);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: var(--transition);
+    }
+    .shield-card:hover .shield-foods {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Featured Content / Macro Section */
+    .feature-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      margin-top: 100px;
+    }
+    .feature-image {
+      height: 500px;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .feature-image img { width: 100%; height: 100%; object-fit: cover; }
+    .feature-text h3 { font-size: 2.5rem; margin-bottom: 24px; }
+
+    /* Bio-Assessment Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 46, 54, 0.95);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      padding: 20px;
+    }
+    .modal-content {
+      background: var(--bg);
+      padding: 60px;
+      max-width: 600px;
+      width: 100%;
+      border-radius: 4px;
+      position: relative;
+    }
+    .close-modal {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      background: none;
+      border: none;
+      font-size: 2rem;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .form-group { margin-bottom: 24px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      background: white;
+      font-family: inherit;
+    }
+
+    /* Success Message */
+    #success-msg {
+      display: none;
+      text-align: center;
+      color: var(--sage);
+      font-weight: 600;
+    }
+
+    /* Reveal Animations */
+    .reveal {
+      opacity: 1; /* Initial state safety */
+    }
+    .reveal-ready {
+      animation: fadeUp 0.8s ease forwards;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    footer {
+      background: var(--text);
+      color: #fff;
+      padding: 100px 0 40px;
+      margin-top: 100px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 60px;
+      margin-bottom: 80px;
+    }
+    .footer-logo { font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 24px; display: block; }
+    .footer-links h4 { margin-bottom: 20px; color: var(--sage); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.1em; }
+    .footer-links a { color: rgba(255,255,255,0.6); text-decoration: none; display: block; margin-bottom: 12px; transition: 0.3s; }
+    .footer-links a:hover { color: #fff; }
+
+    @media (max-width: 768px) {
+      .hero, .feature-row, .footer-grid { grid-template-columns: 1fr; }
+      .hero { padding-top: 120px; text-align: center; }
+      .hero-image-wrap { height: 400px; }
+      .nav-links { display: none; }
+      .section-header h2 { font-size: 2.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="container nav-content">
+      <a href="#" class="logo">The Activation Lab</a>
+      <div class="nav-links">
+        <a href="#shields">The 5 Shields</a>
+        <a href="#process">Roadmap</a>
+        <a href="#about">Our Science</a>
+        <a href="javascript:void(0)" onclick="openModal()" class="btn" style="padding: 12px 24px;">Join Lab</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero container">
+    <div class="hero-content">
+      <h1>Don't Just Eat. <br>Activate Your <span style="font-style: italic;">Biology</span>.</h1>
+      <p>A personalized metabolic roadmap to hardwire your body for fat-burning, cellular repair, and longevity—without the hunger.</p>
+      <button onclick="openModal()" class="btn">Start My Bio-Assessment</button>
+    </div>
+    <div class="hero-image-wrap">
+      <img id="heroImage" src="https://images.pexels.com/photos/3493777/pexels-photo-3493777.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Bioactive Citrus Macro">
+    </div>
+  </section>
+
+  <section id="shields" class="section-padding container">
+    <div class="section-header reveal">
+      <p>The Science of Defense</p>
+      <h2>The 5 Health Defense Shields</h2>
+    </div>
+    
+    <div class="shields-grid">
+      <!-- Shield 1 -->
+      <div class="shield-card reveal">
+        <div class="shield-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h3>Angiogenesis</h3>
+        <p>Managing blood vessel growth to starve fat cells.</p>
+        <div class="shield-foods">Foods: Green Tea, Berries, Soy</div>
+      </div>
+      <!-- Shield 2 -->
+      <div class="shield-card reveal">
+        <div class="shield-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M2 12h20M5.6 5.6l12.8 12.8M5.6 18.4L18.4 5.6"/></svg>
+        </div>
+        <h3>Regeneration</h3>
+        <p>Activating stem cells to repair your vital organs.</p>
+        <div class="shield-foods">Foods: Dark Chocolate, Walnuts</div>
+      </div>
+      <!-- Shield 3 -->
+      <div class="shield-card reveal">
+        <div class="shield-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+        </div>
+        <h3>Microbiome</h3>
+        <p>Cultivating 39 trillion bacteria for metabolic health.</p>
+        <div class="shield-foods">Foods: Sauerkraut, Pears, Kiwi</div>
+      </div>
+      <!-- Shield 4 -->
+      <div class="shield-card reveal">
+        <div class="shield-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 3v18M15 3v18M9 7h6M9 12h6M9 17h6"/></svg>
+        </div>
+        <h3>DNA Protection</h3>
+        <p>Repairing genetic damage from environment and age.</p>
+        <div class="shield-foods">Foods: Broccoli, Carrots, Oranges</div>
+      </div>
+      <!-- Shield 5 -->
+      <div class="shield-card reveal">
+        <div class="shield-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3L4 9v11a2 2 0 002 2h12a2 2 0 002-2V9l-8-6z"/></svg>
+        </div>
+        <h3>Immunity</h3>
+        <p>Fortifying your internal army against inflammation.</p>
+        <div class="shield-foods">Foods: Mushrooms, Olive Oil</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-padding" style="background: #f1f4f1;">
+    <div class="container">
+      <div class="feature-row">
+        <div class="feature-image reveal">
+          <img src="https://images.pexels.com/photos/1640774/pexels-photo-1640774.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Fresh bioactives">
+        </div>
+        <div class="feature-text reveal">
+          <p style="color: var(--sage); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-bottom: 16px;">The MediterAsian Method</p>
+          <h3>Add, Don't Subtract.</h3>
+          <p>Most diets are defined by what you can't have. Our protocol is built on bioactive abundance. By adding the right foods at the right times, we flip your metabolic switch from "store" to "burn" naturally.</p>
+          <ul style="list-style: none; margin-top: 32px;">
+            <li style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              No Calorie Counting
+            </li>
+            <li style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              Science-Backed protocols
+            </li>
+            <li style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              Weekly Bio-Refreshes
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="process" class="section-padding container">
+    <div class="section-header reveal">
+      <p>Your Journey</p>
+      <h2>The Roadmap to Vitality</h2>
+    </div>
+    <div class="shields-grid">
+      <div class="shield-card reveal" style="text-align: left;">
+        <h4 style="color: var(--sage); margin-bottom: 10px;">01</h4>
+        <h3>Bio-Assessment</h3>
+        <p>We analyze your markers, goals, and history to identify which defense shields need support.</p>
+      </div>
+      <div class="shield-card reveal" style="text-align: left;">
+        <h4 style="color: var(--sage); margin-bottom: 10px;">02</h4>
+        <h3>Activation Plan</h3>
+        <p>A custom 5x5x5 protocol tailored to your metabolism and your kitchen.</p>
+      </div>
+      <div class="shield-card reveal" style="text-align: left;">
+        <h4 style="color: var(--sage); margin-bottom: 10px;">03</h4>
+        <h3>The Weekly Loop</h3>
+        <p>Submit your results every Sunday; receive your updated "Fresh Sheet" every Monday.</p>
+      </div>
+    </div>
+    <div style="text-align: center; margin-top: 60px;">
+      <button onclick="openModal()" class="btn">Apply for Coaching</button>
+    </div>
+  </section>
+
+  <div id="assessmentModal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal()">&times;</button>
+      <h2 style="margin-bottom: 16px;">Bio-Assessment Intake</h2>
+      <p style="margin-bottom: 32px; color: var(--sage);">Start your transition to a bioactive lifestyle.</p>
+      
+      <form id="intakeForm" onsubmit="handleForm(event)">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" required placeholder="John Doe">
+        </div>
+        <div class="form-group">
+          <label>Primary Health Goal</label>
+          <select required>
+            <option value="">Select a goal...</option>
+            <option>Metabolic Weight Loss</option>
+            <option>Neurological Support (Parkinson's/Vitality)</option>
+            <option>Energy & Longevity</option>
+            <option>Immune Fortification</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Current Health Challenges</label>
+          <textarea rows="3" placeholder="Tell us about your journey..."></textarea>
+        </div>
+        <button type="submit" class="btn" style="width: 100%;">Submit Assessment</button>
+      </form>
+      <div id="success-msg">
+        <h3>Assessment Received.</h3>
+        <p>We're calculating your bio-markers. Look for an email within 24 hours.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <span class="footer-logo">The Activation Lab</span>
+          <p style="color: rgba(255,255,255,0.5); max-width: 300px;">Optimizing human biology through the power of bioactive nutrition and scientific precision.</p>
+        </div>
+        <div class="footer-links">
+          <h4>Navigate</h4>
+          <a href="#shields">Shields</a>
+          <a href="#process">Roadmap</a>
+          <a href="#">Newsletter</a>
+        </div>
+        <div class="footer-links">
+          <h4>Legal</h4>
+          <a href="#">Medical Disclaimer</a>
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+        </div>
+      </div>
+      <div style="padding-top: 40px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; font-size: 0.8rem; color: rgba(255,255,255,0.4);">
+        &copy; 2024 The Activation Lab. Health Coaching Service. Not a replacement for medical advice.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Hero Parallax Effect
+    window.addEventListener('scroll', () => {
+      const scrolled = window.pageYOffset;
+      const img = document.getElementById('heroImage');
+      if (img) {
+        img.style.transform = `scale(1.1) translateY(${scrolled * 0.15}px)`;
+      }
+    });
+
+    // Modal Controls
+    function openModal() {
+      document.getElementById('assessmentModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      document.getElementById('assessmentModal').style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+
+    // Form Handling
+    function handleForm(e) {
+      e.preventDefault();
+      document.getElementById('intakeForm').style.display = 'none';
+      document.getElementById('success-msg').style.display = 'block';
+      
+      // Confetti burst simulation
+      for(let i=0; i<30; i++) {
+        createConfetti();
+      }
+      
+      setTimeout(closeModal, 4000);
+    }
+
+    function createConfetti() {
+      const colors = ['#FF7043', '#76A08A', '#0A2E36', '#ffffff'];
+      const conf = document.createElement('div');
+      conf.style.cssText = `
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        background: ${colors[Math.floor(Math.random()*colors.length)]};
+        left: 50%;
+        top: 50%;
+        z-index: 3000;
+        pointer-events: none;
+      `;
+      document.body.appendChild(conf);
+      
+      const destinationX = (Math.random() - 0.5) * 600;
+      const destinationY = (Math.random() - 0.5) * 600;
+      
+      conf.animate([
+        { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+        { transform: `translate(${destinationX}px, ${destinationY}px) scale(0)`, opacity: 0 }
+      ], {
+        duration: 1000 + Math.random() * 1000,
+        easing: 'cubic-bezier(0, .9, .57, 1)'
+      }).onfinish = () => conf.remove();
+    }
+
+    // Intersection Observer for Reveal Animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('reveal-ready');
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Shield card interaction - random bioactive tip on click
+    document.querySelectorAll('.shield-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const title = card.querySelector('h3').innerText;
+        console.log(`Exploring ${title} protocols...`);
+      });
+    });
+  </script>
+</body>
+</html>
