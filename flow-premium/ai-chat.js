@@ -6002,6 +6002,9 @@ async function initializeChat() {
     document.getElementById('previewImage').style.display = 'none';
   }
   
+  // Wire click-to-chat on left panel images
+  setupImagePanelClicks();
+
   // Focus input
   document.getElementById('chatInput').focus();
   
@@ -7731,6 +7734,60 @@ function autoResize(textarea) {
 function resetInputSize(textarea) {
   textarea.style.height = '52px';
   textarea.style.overflowY = 'hidden';
+}
+
+// Click-to-chat: tap any image in the left panel → it appears in the chat thread
+function setupImagePanelClicks() {
+  const previewContainer = document.querySelector('.image-preview');
+  const hint = document.getElementById('imageSendHint');
+
+  if (!previewContainer) return;
+
+  // Use event delegation so it covers both single #previewImage and .grid-image items
+  previewContainer.addEventListener('click', (e) => {
+    const img = e.target.closest('img');
+    if (!img || !img.src || img.src === window.location.href) return;
+
+    const thread = document.getElementById('chatThread');
+    if (!thread) return;
+
+    // Build a user-style bubble with a thumbnail of the image
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble user';
+    bubble.style.cssText = 'background:transparent;padding:0;border:none;display:flex;justify-content:flex-end;';
+
+    const inner = document.createElement('div');
+    inner.style.cssText = 'max-width:220px;border-radius:12px;overflow:hidden;border:1px solid rgba(0,217,255,0.3);box-shadow:0 4px 16px rgba(0,0,0,0.3);position:relative;';
+
+    const thumb = document.createElement('img');
+    thumb.src = img.src;
+    thumb.style.cssText = 'width:100%;display:block;border-radius:12px;';
+
+    const label = document.createElement('div');
+    label.style.cssText = 'position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:10px;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.45);padding:3px 0;';
+    label.textContent = '📸 sent to chat';
+
+    inner.appendChild(thumb);
+    inner.appendChild(label);
+    bubble.appendChild(inner);
+    thread.appendChild(bubble);
+    thread.scrollTop = thread.scrollHeight;
+
+    // Also stage it as the active image so the next message uses it
+    if (img.src && !currentImages.includes(img.src)) {
+      currentImages.unshift(img.src);
+    }
+
+    // Briefly highlight the image
+    img.style.outline = '2px solid var(--st-accent, #00d9ff)';
+    setTimeout(() => { img.style.outline = ''; }, 700);
+
+    // Focus input so user can immediately type
+    document.getElementById('chatInput')?.focus();
+  });
+
+  // Show the hint only when images are actually present
+  if (hint) hint.style.display = currentImages.length > 0 ? '' : 'none';
 }
 
 // Sidebar toggle

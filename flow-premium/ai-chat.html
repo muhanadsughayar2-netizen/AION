@@ -162,6 +162,19 @@
       max-height: 100%;
       object-fit: contain;
       border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.2s, outline 0.2s;
+    }
+    .image-preview img:hover {
+      opacity: 0.82;
+      outline: 2px solid var(--st-accent, #00d9ff);
+    }
+    .image-panel-send-hint {
+      font-size: 10px;
+      color: rgba(0,217,255,0.7);
+      text-align: center;
+      margin-top: 6px;
+      letter-spacing: 0.04em;
     }
     
     .image-preview img[src=""],
@@ -1097,7 +1110,7 @@
   <div class="main-content">
     <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">◀</button>
     <div class="image-panel" id="imagePanel">
-      <div class="image-label">Analyzing Image</div>
+      <div class="image-label">Screenshot</div>
       <div class="image-preview">
         <div class="image-placeholder" id="imagePlaceholder">
           <div class="image-placeholder-icon">📸</div>
@@ -1106,6 +1119,7 @@
         </div>
         <img id="previewImage" src="" alt="Screenshot">
       </div>
+      <div class="image-panel-send-hint" id="imageSendHint" style="display:none;">Tap image → send to chat</div>
     </div>
     
     <div class="chat-panel">
