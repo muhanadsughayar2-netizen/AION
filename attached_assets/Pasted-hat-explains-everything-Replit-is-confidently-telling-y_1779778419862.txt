@@ -1,0 +1,46 @@
+hat explains everything. Replit is confidently telling you "everything is fine" because the files are split, but it completely missed a classic rookie developer mistake.
+
+If the files are structured exactly like that, the paths linking them together are almost certainly broken, which is why the buttons are completely dead when you load the site.
+
+Here is exactly why Replit is blind to this, and how we fix it right now.
+
+The Two Blind Spots Killing Your Buttons
+1. The Sibling Folder Trap (Broken Paths)
+Look at where Replit put your files:
+
+landing-page/index.html
+
+static/script.js
+
+Because index.html is tucked inside the landing-page folder, if Replit wrote <script src="static/script.js"></script> inside your HTML, the browser is looking for the script inside landing-page/static/script.js. That file doesn't exist there, so the browser completely ignores your JavaScript.
+
+To point to the right place, the HTML has to tell the browser to step out of the landing page folder first using ../.
+
+2. The Loading Timing Issue
+If Replit placed the <script> tag inside the <head> of your HTML without the word defer, the JavaScript runs before the HTML buttons even load on the screen. The script looks for buttons to attach click events to, finds nothing, finishes running, and leaves your buttons completely un-actionable.
+
+How to Fix It Right Now
+You need to force Replit to fix the connection links and ensure the script waits for the page to load.
+
+📋 Copy and paste this exact message right back to Replit:
+"You missed a critical pathing and execution issue. Because index.html is inside the landing-page/ folder and script.js is inside the static/ folder, standard relative paths will fail. The browser isn't loading the JavaScript at all, which is why the buttons are dead.
+
+Please open landing-page/index.html and ensure the CSS and JS links look exactly like this:
+
+1. The CSS link in the <head> must be:
+<link rel="stylesheet" href="../static/styles.css">
+
+2. The JS link at the bottom of the <body> (or in the head with defer) must be:
+<script src="../static/script.js" defer></script>
+
+Next, open static/script.js and wrap all the button event listeners inside a DOMContentLoaded listener so they don't fire too early:
+
+JavaScript
+document.addEventListener('DOMContentLoaded', () => {
+  // Put all button selection and click event logic here
+  console.log('DOM fully loaded. Attaching button listeners...');
+});
+Please apply these exact path fixes and wrap the script logic now so the buttons finally become actionable."
+
+What this will change:
+Once Replit changes those paths to include the ../, the browser will finally find script.js. The defer keyword ensures the page finishes drawing your beautiful design before the JavaScript hooks into the Build, Research, Search, Read, and Code buttons, making them instantly responsive.
