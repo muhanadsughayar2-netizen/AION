@@ -8256,18 +8256,11 @@ document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
   buildModeEnabled = !buildModeEnabled;
   e.currentTarget.classList.toggle('tool-btn-active', buildModeEnabled);
   e.currentTarget.title = buildModeEnabled
-    ? 'Build Mode ON — use L1/L2/L3 buttons to build in stages'
+    ? 'Build Mode ON — describe a site and send to generate it'
     : 'Build Mode — generate and preview websites & apps live';
-  const stageBar = document.getElementById('buildStageBar');
-  if (stageBar) stageBar.style.display = buildModeEnabled ? 'flex' : 'none';
   if (!buildModeEnabled) {
     buildStage = null;
-    const w = document.getElementById('previewWrapper');
-    if (w) w.style.display = 'none';
-    const iframe = document.getElementById('livePreview');
-    if (iframe) iframe.srcdoc = '';
     _lastBuiltCode = '';
-    document.querySelectorAll('.build-stage-btn').forEach(b => b.classList.remove('stage-active'));
   }
 });
 
