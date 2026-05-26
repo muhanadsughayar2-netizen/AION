@@ -7340,7 +7340,7 @@ function addBubbleActions(bubble, text) {
   }
 
   const TTS_VOICES = [
-    { name: 'Zephyr', emoji: '📖', desc: 'Story & Kids',          color: '#f59e0b', delays: ['0s','0.12s','0.06s','0.12s','0s'] },
+    { name: 'Zephyr', emoji: '📖', desc: 'Story for Kids',         color: '#f59e0b', delays: ['0s','0.12s','0.06s','0.12s','0s'] },
     { name: 'Kore',   emoji: '🎙️', desc: 'Warm & Professional', color: '#8b5cf6', delays: ['0s','0.1s','0.2s','0.1s','0s'] },
     { name: 'Puck',   emoji: '🎤', desc: 'Bright & Expressive',  color: '#ec4899', delays: ['0.2s','0s','0.1s','0.2s','0.1s'] },
     { name: 'Aoede',  emoji: '🎵', desc: 'Melodic & Clear',       color: '#10b981', delays: ['0s','0.15s','0.05s','0.15s','0s'] },
