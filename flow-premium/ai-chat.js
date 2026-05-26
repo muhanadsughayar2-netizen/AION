@@ -7438,26 +7438,20 @@ function addBubbleActions(bubble, text) {
         if (lastDot > 3000) ttsInput = ttsInput.slice(0, lastDot + 1);
       }
 
-      const ttsAbort = new AbortController();
-      const ttsTimer = setTimeout(() => ttsAbort.abort(), 60000);
-      let resp;
-      try {
-        resp = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            signal: ttsAbort.signal,
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: ttsInput }] }],
-              generationConfig: {
-                responseModalities: ['AUDIO'],
-                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } }
-              }
-            })
-          }
-        );
-      } finally { clearTimeout(ttsTimer); }
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: ttsInput }] }],
+            generationConfig: {
+              responseModalities: ['AUDIO'],
+              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } }
+            }
+          })
+        }
+      );
 
       if (!resp.ok) { const e = await resp.text().catch(()=>''); console.warn('[TTS]',resp.status,e); throw new Error('tts_api_err'); }
       const data = await resp.json();
