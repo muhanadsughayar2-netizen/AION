@@ -7439,7 +7439,7 @@ function addBubbleActions(bubble, text) {
       }
 
       const ttsAbort = new AbortController();
-      const ttsTimer = setTimeout(() => ttsAbort.abort(), 20000);
+      const ttsTimer = setTimeout(() => ttsAbort.abort(), 60000);
       let resp;
       try {
         resp = await fetch(
