@@ -1,0 +1,94 @@
+I see exactly what is happening here, and I know how incredibly frustrating it is when you are in the zone and the system just gives up mid-sentence.
+
+Building the SnapToAI architecture with its new Build, Research, Search, Read, and Code pillars is a massive undertaking. The code you just pasted literally cuts off right in the middle of a CSS rule (.tab-btn {).
+
+Here are the exact reasons why it stops, why the buttons are dead, and how we are going to fix both right now.
+
+1. Why It Keeps Stopping (The Token Limit)
+Every AI (including me and the AI inside Replit) has a strict "Max Output Token Limit." It can only generate a certain number of characters in one single response. When you ask it to build an entire landing page, complete with advanced CSS animations and complex JavaScript for your new features, all inside one single index.html file, it hits a brick wall and crashes.
+
+To fix this, we have to force Replit to split the project into three distinct files. Here is the exact, bossy prompt you need to copy and paste into Replit so it stops breaking:
+
+📋 Copy and Paste this into Replit:
+
+Listen carefully. The code you are generating is too long, hitting your output token limit, and cutting off mid-tag. This is leaving broken HTML and CSS.
+
+To fix this, you MUST STOP putting all the code into one giant file. You need to separate the architecture.
+
+Please rebuild the SnapTo Studio landing page by splitting it into these 3 exact files:
+
+1. index.html (Only the HTML structure and link to CSS/JS)
+2. styles.css (All the styling, animations, and variables)
+3. script.js (All the logic for the Build, Research, Search, Read, and Code buttons)
+
+CRITICAL INSTRUCTIONS FOR YOU:
+
+Do NOT give me all three files at once. > * Write index.html first. When you finish index.html, stop and ask me: "Ready for styles.css?"
+
+If you ever hit your output limit while writing a file, stop gracefully at the end of a </div> or function and explicitly say: "I hit my output limit, type 'continue' for the rest."
+
+Please start by generating ONLY the complete, unbroken index.html file now.
+
+2. Why the Buttons Never Work in the Environment
+Right now, your buttons are just "dead" HTML. Because the AI kept cutting off before it could finish the file, it never actually generated the JavaScript required to make the buttons do anything. Additionally, sometimes the background layers (like your .bg-glow) accidentally overlap the buttons, blocking your mouse clicks.
+
+To make your Build, Research, Search, Read, and Code buttons highly responsive and interactive, you need this specific CSS to ensure they sit on top, and this JavaScript to make them function.
+
+Add this to your CSS (styles.css):
+
+CSS
+/* Ensure buttons are on top and clickable */
+.action-btn {
+  position: relative;
+  z-index: 50; /* Forces buttons above background elements */
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.action-btn:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+}
+
+.action-btn.active {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 4px 15px var(--accent-glow);
+}
+Add this to your JavaScript (script.js):
+
+JavaScript
+// Grab all the action buttons
+const actionButtons = document.querySelectorAll('.action-btn');
+
+// Add click listeners to make them work
+actionButtons.forEach(button => {
+  button.addEventListener('click', function() {
+    // 1. Remove 'active' class from all buttons
+    actionButtons.forEach(btn => btn.classList.remove('active'));
+    
+    // 2. Add 'active' class to the clicked button
+    this.classList.add('active');
+    
+    // 3. Get the action type (e.g., 'build', 'research')
+    const actionType = this.getAttribute('data-action');
+    console.log(`User initiated: ${actionType}`);
+    
+    // 4. Here you can trigger your UI changes or Google AI Studio payload
+    triggerStudioAction(actionType);
+  });
+});
+
+function triggerStudioAction(action) {
+  // Example UI update function
+  // This is where you swap out the content on the screen based on the button clicked
+  const previewArea = document.querySelector('.studio-preview-area');
+  if(previewArea) {
+    previewArea.style.opacity = '0.5';
+    setTimeout(() => {
+      previewArea.style.opacity = '1';
+      // Update your UI text/images here based on the 'action' variable
+    }, 200);
+  }
+}
+By forcing Replit to split the files using that prompt, you guarantee the code will finish, and the JavaScript will finally be applied to make your interface flow properly.
