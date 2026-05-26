@@ -7453,10 +7453,19 @@ function addBubbleActions(bubble, text) {
         }
       );
 
-      if (!resp.ok) { const e = await resp.text().catch(()=>''); console.warn('[TTS]',resp.status,e); throw new Error('tts_api_err'); }
+      if (!resp.ok) {
+        const errBody = await resp.text().catch(()=>'');
+        console.warn('[SnapToAI TTS] Gemini API error', resp.status, errBody.slice(0,400));
+        throw new Error('tts_api_err');
+      }
       const data = await resp.json();
+      console.log('[SnapToAI TTS] Response keys:', JSON.stringify(Object.keys(data)));
       const part = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-      if (!part?.data) throw new Error('no_audio');
+      if (!part?.data) {
+        console.warn('[SnapToAI TTS] No audio in response:', JSON.stringify(data).slice(0,400));
+        throw new Error('no_audio');
+      }
+      console.log('[SnapToAI TTS] Got audio mimeType:', part.mimeType, 'dataLen:', part.data.length);
 
       const mimeType = (part.mimeType || '').toLowerCase();
       const rawBytes = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
@@ -7492,19 +7501,40 @@ function addBubbleActions(bubble, text) {
     readBtn.textContent = '⏹ Stop';
     readBtn.disabled = false;
     synth.cancel();
-    const detectedLang = detectLanguage(cleanText);
+
+    function speakNow(voices2) {
+      const detectedLang = detectLanguage(cleanText);
+      const bestVoice =
+        voices2.find(v => v.lang.startsWith(detectedLang) && v.name.includes('Google')) ||
+        voices2.find(v => v.lang.startsWith(detectedLang)) ||
+        voices2.find(v => v.lang.startsWith('en') && v.name.includes('Google')) ||
+        voices2.find(v => v.lang.startsWith('en')) ||
+        voices2[0];
+      const u = new SpeechSynthesisUtterance(cleanText.slice(0, 3000));
+      if (bestVoice) { u.voice = bestVoice; u.lang = bestVoice.lang; }
+      u.rate = 1.0;
+      u.onend = () => { readBtn.textContent = '🔊 Read'; };
+      u.onerror = (e) => { console.warn('[SnapToAI TTS] Browser TTS error:', e); readBtn.textContent = '🔊 Read'; };
+      console.log('[SnapToAI TTS] Browser TTS using voice:', bestVoice?.name || 'default');
+      synth.speak(u);
+    }
+
     const voices2 = synth.getVoices();
-    const bestVoice =
-      voices2.find(v => v.lang.startsWith(detectedLang) && v.name.includes('Google')) ||
-      voices2.find(v => v.lang.startsWith(detectedLang)) ||
-      voices2.find(v => v.lang.startsWith('en') && v.name.includes('Google')) ||
-      voices2.find(v => v.lang.startsWith('en'));
-    const u = new SpeechSynthesisUtterance(cleanText.slice(0, 3000));
-    if (bestVoice) { u.voice = bestVoice; u.lang = bestVoice.lang; }
-    u.rate = 1.0;
-    u.onend = () => { readBtn.textContent = '🔊 Read'; };
-    u.onerror = () => { readBtn.textContent = '🔊 Read'; };
-    synth.speak(u);
+    if (voices2.length > 0) {
+      speakNow(voices2);
+    } else {
+      // Voices not loaded yet — wait for them
+      synth.onvoiceschanged = () => {
+        synth.onvoiceschanged = null;
+        speakNow(synth.getVoices());
+      };
+      // Safety: if onvoiceschanged never fires, try anyway after 500ms
+      setTimeout(() => {
+        if (synth.speaking || synth.pending) return;
+        const v = synth.getVoices();
+        if (v.length > 0) speakNow(v);
+      }, 500);
+    }
   }
 
   readBtn.addEventListener('click', () => {
