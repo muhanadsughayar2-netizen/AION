@@ -7424,7 +7424,7 @@ function addBubbleActions(bubble, text) {
       .trim();
     if (!cleanText) return;
 
-    readBtn.textContent = '⏳ Loading…';
+    readBtn.textContent = '⏳ Generating…';
     readBtn.disabled = true;
 
     try {
@@ -7432,11 +7432,10 @@ function addBubbleActions(bubble, text) {
       const apiKey = keyResult.geminiApiKey;
       if (!apiKey) throw new Error('no_key');
 
-      let ttsInput = cleanText.slice(0, 4800);
-      if (ttsInput.length === 4800) {
-        const lastDot = ttsInput.lastIndexOf('.');
-        if (lastDot > 3000) ttsInput = ttsInput.slice(0, lastDot + 1);
-      }
+      // 1200 chars max — shorter text = much faster generation (~3-5s)
+      let ttsInput = cleanText.slice(0, 1200);
+      const lastDot = ttsInput.lastIndexOf('.');
+      if (lastDot > 600) ttsInput = ttsInput.slice(0, lastDot + 1);
 
       const resp = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
@@ -7455,17 +7454,13 @@ function addBubbleActions(bubble, text) {
 
       if (!resp.ok) {
         const errBody = await resp.text().catch(()=>'');
-        console.warn('[SnapToAI TTS] Gemini API error', resp.status, errBody.slice(0,400));
-        throw new Error('tts_api_err');
+        console.warn('[SnapToAI TTS] API error', resp.status, errBody.slice(0, 300));
+        throw new Error(`API error ${resp.status}`);
       }
+
       const data = await resp.json();
-      console.log('[SnapToAI TTS] Response keys:', JSON.stringify(Object.keys(data)));
       const part = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-      if (!part?.data) {
-        console.warn('[SnapToAI TTS] No audio in response:', JSON.stringify(data).slice(0,400));
-        throw new Error('no_audio');
-      }
-      console.log('[SnapToAI TTS] Got audio mimeType:', part.mimeType, 'dataLen:', part.data.length);
+      if (!part?.data) throw new Error('no_audio_data');
 
       const mimeType = (part.mimeType || '').toLowerCase();
       const rawBytes = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
@@ -7473,12 +7468,12 @@ function addBubbleActions(bubble, text) {
       if (mimeType.includes('pcm') || mimeType === '' || mimeType === 'audio/l16') {
         const sr = 24000, ch = 1, bps = 16;
         const hdr = new ArrayBuffer(44); const dv = new DataView(hdr);
-        const ws = (o, s) => { for (let i=0;i<s.length;i++) dv.setUint8(o+i, s.charCodeAt(i)); };
-        ws(0,'RIFF'); dv.setUint32(4,36+rawBytes.byteLength,true); ws(8,'WAVE'); ws(12,'fmt ');
-        dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,ch,true);
-        dv.setUint32(24,sr,true); dv.setUint32(28,sr*ch*bps/8,true);
-        dv.setUint16(32,ch*bps/8,true); dv.setUint16(34,bps,true);
-        ws(36,'data'); dv.setUint32(40,rawBytes.byteLength,true);
+        const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+        ws(0,'RIFF'); dv.setUint32(4, 36 + rawBytes.byteLength, true); ws(8,'WAVE'); ws(12,'fmt ');
+        dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, ch, true);
+        dv.setUint32(24, sr, true); dv.setUint32(28, sr * ch * bps / 8, true);
+        dv.setUint16(32, ch * bps / 8, true); dv.setUint16(34, bps, true);
+        ws(36,'data'); dv.setUint32(40, rawBytes.byteLength, true);
         audioBlob = new Blob([hdr, rawBytes], { type: 'audio/wav' });
       } else {
         audioBlob = new Blob([rawBytes], { type: mimeType });
@@ -7492,53 +7487,16 @@ function addBubbleActions(bubble, text) {
       audio.play().catch(() => stopTts());
       audio.onended = () => stopTts();
       audio.onerror = () => stopTts();
-      return;
+
     } catch (e) {
-      console.warn('[SnapToAI TTS] Gemini failed, using browser TTS:', e.message || e);
-    }
-
-    // Fallback: browser SpeechSynthesis
-    readBtn.textContent = '⏹ Stop';
-    readBtn.disabled = false;
-    synth.cancel();
-
-    function speakNow(voices2) {
-      const detectedLang = detectLanguage(cleanText);
-      const bestVoice =
-        voices2.find(v => v.lang.startsWith(detectedLang) && v.name.includes('Google')) ||
-        voices2.find(v => v.lang.startsWith(detectedLang)) ||
-        voices2.find(v => v.lang.startsWith('en') && v.name.includes('Google')) ||
-        voices2.find(v => v.lang.startsWith('en')) ||
-        voices2[0];
-      const u = new SpeechSynthesisUtterance(cleanText.slice(0, 3000));
-      if (bestVoice) { u.voice = bestVoice; u.lang = bestVoice.lang; }
-      u.rate = 1.0;
-      u.onend = () => { readBtn.textContent = '🔊 Read'; };
-      u.onerror = (e) => { console.warn('[SnapToAI TTS] Browser TTS error:', e); readBtn.textContent = '🔊 Read'; };
-      console.log('[SnapToAI TTS] Browser TTS using voice:', bestVoice?.name || 'default');
-      synth.speak(u);
-    }
-
-    const voices2 = synth.getVoices();
-    if (voices2.length > 0) {
-      speakNow(voices2);
-    } else {
-      // Voices not loaded yet — wait for them
-      synth.onvoiceschanged = () => {
-        synth.onvoiceschanged = null;
-        speakNow(synth.getVoices());
-      };
-      // Safety: if onvoiceschanged never fires, try anyway after 500ms
-      setTimeout(() => {
-        if (synth.speaking || synth.pending) return;
-        const v = synth.getVoices();
-        if (v.length > 0) speakNow(v);
-      }, 500);
+      console.warn('[SnapToAI TTS] Failed:', e.message || e);
+      readBtn.textContent = '🔊 Read';
+      readBtn.disabled = false;
     }
   }
 
   readBtn.addEventListener('click', () => {
-    if (ttsAudio || synth.speaking) { stopTts(); return; }
+    if (ttsAudio) { stopTts(); return; }
     showVoicePicker((voiceName) => runTts(voiceName));
   });
 }
