@@ -1006,6 +1006,10 @@ let currentPageUrl = '';
 let codeExecutionEnabled = false;
 let researchMode = false;
 let buildModeEnabled = false;
+let buildStage = null; // null=classic, 'L1'=scaffold, 'L2'=design, 'L3'=activate, 'UPDATE'=patch
+let _buildBodyHtml = '';
+let _buildStyleCss = '';
+let _buildScriptJs = '';
 
 // Get config from prompts.js (user-editable) or use defaults
 const getConfig = (key, defaultVal) => (window.SNAPTOAI_CONFIG && window.SNAPTOAI_CONFIG[key]) || defaultVal;
@@ -5819,6 +5823,90 @@ These are what every average AI defaults to. You never produce these unless expl
 
 Output: \`\`\`html ... \`\`\` and nothing else.`;
 
+// ─── 3-LEVEL STAGED BUILD PROMPTS ────────────────────────────────────────────
+// Each level is small/focused — never hits token limits, buttons always work.
+
+const L1_SCAFFOLD_PROMPT = `You are building a website structure.
+
+LEVEL 1 — SCAFFOLD: Output ONLY the raw HTML body content.
+
+RULES (break any = broken build):
+• Output ONLY what goes between <body> and </body>. No <!DOCTYPE>. No <html>. No <head>. No <style> block. No <script> block.
+• No inline style="" attributes anywhere.
+• Every major section MUST have data-section-id on the wrapping element (e.g. data-section-id="hero", "features", "pricing", "faq", "footer").
+• Every interactive element that needs JS (button, tab, toggle, form, accordion) MUST have a unique id="..." attribute.
+• Use semantic HTML: <nav>, <header>, <section>, <footer>, <main>, <article>.
+• Write real, specific copy — no lorem ipsum, no "Coming Soon" stubs.
+• Output raw HTML only — NO markdown fences, NO prose before or after.`;
+
+const L2_DESIGN_PROMPT = `You are styling a website.
+
+LEVEL 2 — DESIGN: Output ONLY the CSS rules (no tags, no HTML, no JS).
+
+RULES:
+• Output ONLY the CSS content — NO <style> tags, NO HTML, NO JS, NO markdown fences, NO prose.
+• Start with @import for Google Fonts if needed (e.g. @import url('https://fonts.googleapis.com/css2?...'))
+• Choose the right aesthetic profile from the user's request:
+  PROFILE A (dark tech): bg:#07070f, text:#f0f0ff, accent: vivid cyan/violet/emerald, Plus Jakarta Sans + Inter
+  PROFILE B (editorial light): bg:#F9FBF9, text:#0A2E36, accent:#FF7043, Playfair Display + Inter
+  PROFILE C (luxury minimal): bg:#fafafa or #080808, accent: single muted tone, Cormorant Garamond + Karla
+  PROFILE D (brutalist): bg:#fff, text:#000, one punchy accent, Arial Black + Courier New
+  PROFILE E (playful): 3-color bright palette, Nunito + Inter, 20px+ radius
+• Use CSS custom properties (--bg, --text, --accent etc.) in :root.
+• .reveal has NO opacity:0 — content visible if JS fails. Only .reveal.visible triggers animation via @keyframes.
+• Every button/link must have a :hover state with visual feedback (transform, background shift, etc.).
+• Make it fully responsive with a mobile breakpoint at 768px.
+• Output raw CSS only — NO tags, NO prose, NO fences.`;
+
+const L3_ACTIVATE_PROMPT = `You are wiring a website's interactivity.
+
+LEVEL 3 — ACTIVATE: Output ONLY JavaScript (no tags, no HTML, no CSS).
+
+RULES:
+• Output ONLY JS content — NO <script> tags, NO HTML, NO CSS, NO markdown fences, NO prose.
+• Wire EVERY interactive element by its stable ID using getElementById or querySelectorAll.
+• NULL-CHECK every element: if (btn) btn.addEventListener('click', ...)
+• ALL functions at TOP LEVEL — never nested inside callbacks or blocks.
+• DO NOT wrap anything in DOMContentLoaded — script runs just before </body>, DOM is already ready.
+• SCROLL LINKS — wire smooth scroll with 90px nav offset:
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        const el = document.querySelector(this.getAttribute('href'));
+        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - 90, behavior: 'smooth' });
+      });
+    });
+• TABS: function showTab(id, btn) { document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); const p = document.getElementById(id); if (p) p.classList.add('active'); if (btn) btn.classList.add('active'); }
+• MODALS: function openModal(id) { const m = document.getElementById(id); if(m) m.style.display='flex'; } function closeModal(id) { const m = document.getElementById(id); if(m) m.style.display='none'; }
+• SCROLL REVEAL (always include):
+    const _io = new IntersectionObserver(entries => entries.forEach(e => { if(e.isIntersecting){e.target.classList.add('visible');_io.unobserve(e.target);} }), {threshold:0.08});
+    document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+    setTimeout(function(){ document.querySelectorAll('.reveal').forEach(function(el){ el.style.opacity='1'; el.style.transform='none'; }); }, 1000);
+• NO dead stubs — every button MUST do something (scroll, toggle, open modal, submit, etc.).
+• Output raw JS only — NO tags, NO prose, NO fences.`;
+
+const L_UPDATE_PROMPT = `You are surgically updating one section of a website.
+
+UPDATE MODE: Output ONLY the new inner HTML for the requested section.
+
+RULES:
+• Output ONLY the inner HTML that replaces the content inside the target section's data-section-id wrapper.
+• Do NOT output the section wrapper tag itself. Do NOT change any other section.
+• Keep all existing IDs and data attributes.
+• No markdown fences, no prose, just the raw HTML fragment.`;
+
+// Assemble full HTML from staged fragments
+function assembleStagedHtml(bodyHtml, styleCss, scriptJs) {
+  const style = styleCss ? '\n  <style>\n' + styleCss + '\n  </style>' : '';
+  const script = scriptJs ? '\n<script>\n' + scriptJs + '\n<\/script>' : '';
+  return '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>SnapToAI Build</title>' + style + '\n</head>\n<body>\n' + (bodyHtml || '') + script + '\n</body>\n</html>';
+}
+
+// Extract a raw text fragment from AI response (strips markdown fences)
+function extractFragment(text) {
+  if (!text) return '';
+  return text.replace(/^```[\w]*\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+}
 
 // Get images from IndexedDB (unlimited storage) or fallback to session storage
 async function initializeChat() {
@@ -7037,7 +7125,34 @@ async function handleSend() {
     } else {
       // === VISION / GEMINI (streaming text) ===
       let systemPrompt = SYSTEM_PROMPT;
-      if (buildModeEnabled) {
+      if (buildModeEnabled && buildStage === 'L1') {
+        systemPrompt = L1_SCAFFOLD_PROMPT;
+      } else if (buildModeEnabled && buildStage === 'L2') {
+        systemPrompt = L2_DESIGN_PROMPT;
+        if (_buildBodyHtml) {
+          const last = contents[contents.length - 1];
+          if (last && last.role === 'user') {
+            last.parts.push({ text: '\n\nHere is the HTML body structure to style:\n\n' + _buildBodyHtml });
+          }
+        }
+      } else if (buildModeEnabled && buildStage === 'L3') {
+        systemPrompt = L3_ACTIVATE_PROMPT;
+        if (_buildBodyHtml) {
+          const assembled = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, '');
+          const last = contents[contents.length - 1];
+          if (last && last.role === 'user') {
+            last.parts.push({ text: '\n\nHere is the full HTML with structure and styles to wire:\n\n' + assembled });
+          }
+        }
+      } else if (buildModeEnabled && buildStage === 'UPDATE') {
+        systemPrompt = L_UPDATE_PROMPT;
+        if (_lastBuiltCode) {
+          const last = contents[contents.length - 1];
+          if (last && last.role === 'user') {
+            last.parts.push({ text: '\n\nHere is the current full HTML to patch:\n\n' + _lastBuiltCode });
+          }
+        }
+      } else if (buildModeEnabled) {
         systemPrompt = BUILD_SYSTEM_PROMPT;
       } else if (activeSpecialistAgent) {
         systemPrompt = activeSpecialistAgent.prompt;
@@ -7211,17 +7326,49 @@ function addBubbleActions(bubble, text) {
   const actions = document.createElement('div');
   actions.className = 'bubble-actions';
 
-  // In Build Mode: extract HTML from THIS response (may be truncated but usable).
-  // If _continuationPending, merge the chunk onto the previous partial code.
-  const _extracted = buildModeEnabled
+  // ── STAGED BUILD: store fragment and assemble full HTML ──────────────────
+  if (buildModeEnabled && buildStage === 'L1') {
+    _buildBodyHtml = extractFragment(text);
+    _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, '', '');
+    try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode }); } catch(e) {}
+    // Advance stage indicator
+    document.querySelectorAll('.build-stage-btn').forEach(b => b.classList.remove('stage-active'));
+    document.getElementById('buildL1Btn')?.classList.add('stage-active');
+  } else if (buildModeEnabled && buildStage === 'L2') {
+    _buildStyleCss = extractFragment(text);
+    _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, '');
+    try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode }); } catch(e) {}
+    document.querySelectorAll('.build-stage-btn').forEach(b => b.classList.remove('stage-active'));
+    document.getElementById('buildL2Btn')?.classList.add('stage-active');
+  } else if (buildModeEnabled && buildStage === 'L3') {
+    _buildScriptJs = extractFragment(text);
+    _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, _buildScriptJs);
+    try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode }); } catch(e) {}
+    document.querySelectorAll('.build-stage-btn').forEach(b => b.classList.remove('stage-active'));
+    document.getElementById('buildL3Btn')?.classList.add('stage-active');
+  } else if (buildModeEnabled && buildStage === 'UPDATE') {
+    // Patch the targeted section in the existing body HTML
+    const fragment = extractFragment(text);
+    if (fragment && _buildBodyHtml) {
+      // Replace section content by data-section-id if possible, else append
+      const target = document.getElementById('chatInput')?.getAttribute('data-update-section');
+      if (target) {
+        const re = new RegExp('(data-section-id="' + target + '"[^>]*>)([\s\S]*?)(<\/)', 'i');
+        _buildBodyHtml = _buildBodyHtml.replace(re, '$1\n' + fragment + '\n$3');
+      }
+    }
+    _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, _buildScriptJs);
+    try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode }); } catch(e) {}
+  }
+
+  // ── CLASSIC BUILD MODE: extract full HTML from response ──────────────────
+  const _extracted = buildModeEnabled && !buildStage
     ? extractHtmlFromResponse(text, _continuationPending ? _lastBuiltCode : null)
     : { html: '', truncated: false };
   if (_continuationPending && _extracted.html) _continuationPending = false;
   const thisCode = _extracted.html;
-  const isTruncated = _extracted.truncated;
-  // Persist merged code immediately so a second "Continue Build" uses the
-  // correct merged base, not the stale partial from before the first continuation.
-  if (thisCode) {
+  const isTruncated = false; // Never show continuation button — stages handle this
+  if (thisCode && !buildStage) {
     _lastBuiltCode = thisCode;
     try { chrome.storage.local.set({ snaptoai_built_code: thisCode }); } catch(e) {}
   }
@@ -8109,17 +8256,45 @@ document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
   buildModeEnabled = !buildModeEnabled;
   e.currentTarget.classList.toggle('tool-btn-active', buildModeEnabled);
   e.currentTarget.title = buildModeEnabled
-    ? 'Build Mode ON — AI will generate full HTML/CSS/JS apps with live preview'
+    ? 'Build Mode ON — use L1/L2/L3 buttons to build in stages'
     : 'Build Mode — generate and preview websites & apps live';
+  const stageBar = document.getElementById('buildStageBar');
+  if (stageBar) stageBar.style.display = buildModeEnabled ? 'flex' : 'none';
   if (!buildModeEnabled) {
+    buildStage = null;
     const w = document.getElementById('previewWrapper');
     if (w) w.style.display = 'none';
-    // Bug fix: clear srcdoc so hidden iframe scripts stop executing
     const iframe = document.getElementById('livePreview');
     if (iframe) iframe.srcdoc = '';
     _lastBuiltCode = '';
+    document.querySelectorAll('.build-stage-btn').forEach(b => b.classList.remove('stage-active'));
   }
 });
+
+// Stage button handlers
+function _setStage(stage, btnId) {
+  buildStage = stage;
+  buildModeEnabled = true;
+  document.getElementById('buildToggleBtn')?.classList.add('tool-btn-active');
+  document.querySelectorAll('.build-stage-btn').forEach(b => b.classList.remove('stage-active'));
+  document.getElementById(btnId)?.classList.add('stage-active');
+  // Update input placeholder to guide user
+  const input = document.getElementById('chatInput');
+  if (input) {
+    const hints = {
+      L1: 'Describe the site (e.g. "landing page for a yoga studio") — L1 builds the structure',
+      L2: 'Describe the design style (e.g. "modern dark, accent violet") — L2 adds CSS',
+      L3: 'Type "activate" or describe any extra interactions — L3 wires all buttons',
+      UPDATE: 'Describe what to change (e.g. "update the hero headline") — Update patches only that section'
+    };
+    input.placeholder = hints[stage] || input.placeholder;
+  }
+}
+
+document.getElementById('buildL1Btn')?.addEventListener('click', () => _setStage('L1', 'buildL1Btn'));
+document.getElementById('buildL2Btn')?.addEventListener('click', () => _setStage('L2', 'buildL2Btn'));
+document.getElementById('buildL3Btn')?.addEventListener('click', () => _setStage('L3', 'buildL3Btn'));
+document.getElementById('buildUpdateBtn')?.addEventListener('click', () => _setStage('UPDATE', 'buildUpdateBtn'));
 
 
 document.getElementById('previewCopyBtn')?.addEventListener('click', () => {
