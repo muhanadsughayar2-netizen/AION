@@ -1010,6 +1010,7 @@ let buildStage = null; // null=classic, 'L1'=scaffold, 'L2'=design, 'L3'=activat
 let _buildBodyHtml = '';
 let _buildStyleCss = '';
 let _buildScriptJs = '';
+let _livePreviewBlobUrl = null;
 
 // Get config from prompts.js (user-editable) or use defaults
 const getConfig = (key, defaultVal) => (window.SNAPTOAI_CONFIG && window.SNAPTOAI_CONFIG[key]) || defaultVal;
@@ -7372,21 +7373,16 @@ function addBubbleActions(bubble, text) {
     _lastBuiltCode = thisCode;
     try { chrome.storage.local.set({ snaptoai_built_code: thisCode }); } catch(e) {}
   }
-  const showPreview = buildModeEnabled && (!!thisCode || !!_lastBuiltCode);
-
-  let previewBtnHtml = '';
-  if (showPreview) {
-    const label = thisCode
-      ? (isTruncated ? '🏗️ Open Preview ⚠️' : '🏗️ Open Preview')
-      : '🏗️ Open Previous Build';
-    previewBtnHtml = `<button class="open-preview-btn" style="background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.5);color:#ffa032;border-radius:12px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:0.2px;">${label}</button>`;
+  // Auto-show inline preview whenever build mode produced code
+  if (buildModeEnabled && (thisCode || _lastBuiltCode)) {
+    const finalCode = thisCode || _lastBuiltCode;
+    _showLivePreview(finalCode);
   }
 
   actions.innerHTML = `
     <button class="copy-single-btn">📋 Copy</button>
     <button class="read-aloud-btn">🔊 Read</button>
     <button class="magic-card-btn">✨ Magic Card</button>
-    ${previewBtnHtml}
   `;
   bubble.appendChild(actions);
 
@@ -7420,18 +7416,6 @@ function addBubbleActions(bubble, text) {
     actions.appendChild(warn);
   }
 
-  // Open Preview button — uses current response code, or falls back to last build
-  const prevBtn = actions.querySelector('.open-preview-btn');
-  if (prevBtn) {
-    prevBtn.addEventListener('click', () => {
-      const code = thisCode || _lastBuiltCode;
-      if (!code) return;
-      _lastBuiltCode = code;
-      try { chrome.storage.local.set({ snaptoai_built_code: code }, () => {
-        chrome.tabs.create({ url: chrome.runtime.getURL('preview-output.html') });
-      }); } catch(e) {}
-    });
-  }
   
   // Magic Card Button - Opens dedicated page to avoid CSP issues
   actions.querySelector('.magic-card-btn').onclick = async () => {
@@ -8226,24 +8210,56 @@ function extractHtmlFromResponse(text, partialCode) {
   return { html: '', truncated: false };
 }
 
+function _showLivePreview(code) {
+  const w = document.getElementById('previewWrapper');
+  const iframe = document.getElementById('livePreview');
+  const building = document.getElementById('previewBuilding');
+  const lbl = document.getElementById('previewLabel');
+  if (!w || !iframe) return;
+  // Revoke previous blob URL to avoid memory leaks
+  if (_livePreviewBlobUrl) {
+    URL.revokeObjectURL(_livePreviewBlobUrl);
+    _livePreviewBlobUrl = null;
+  }
+  const blob = new Blob([code], { type: 'text/html' });
+  _livePreviewBlobUrl = URL.createObjectURL(blob);
+  iframe.src = _livePreviewBlobUrl;
+  iframe.style.visibility = 'visible';
+  if (building) building.style.display = 'none';
+  if (lbl) lbl.textContent = '🏗️ LIVE PREVIEW';
+  w.style.display = 'block';
+}
+
 function renderLivePreview(responseText) {
   if (!buildModeEnabled) return;
-  // Pass partialCode when a continuation is in progress so streaming
-  // updates correctly merge onto the existing build, not re-parse empty chunk.
   const { html: code } = extractHtmlFromResponse(responseText, _continuationPending ? _lastBuiltCode : null);
   if (!code) return;
   _lastBuiltCode = code;
-  // Save for preview-output.html to load
   try { chrome.storage.local.set({ snaptoai_built_code: code }); } catch(e) {}
-  // Do NOT show the inline preview panel — the chat must stay fully visible.
-  // A small "Open Preview" button is added to the bubble by addBubbleActions.
+  // During streaming: show the wrapper with a "building" indicator so the user
+  // knows something is happening — but do NOT reload the iframe on every chunk.
+  // _showLivePreview() is called once by addBubbleActions when streaming ends.
+  const w = document.getElementById('previewWrapper');
+  const building = document.getElementById('previewBuilding');
+  const iframe = document.getElementById('livePreview');
+  const lbl = document.getElementById('previewLabel');
+  if (w) w.style.display = 'block';
+  if (building) { building.style.display = 'flex'; }
+  if (iframe) { iframe.style.visibility = 'hidden'; }
+  if (lbl) lbl.textContent = '⏳ Building…';
 }
 
 document.getElementById('closePreviewBtn')?.addEventListener('click', () => {
   const w = document.getElementById('previewWrapper');
   if (w) { w.style.display = 'none'; }
   const iframe = document.getElementById('livePreview');
-  if (iframe) { iframe.srcdoc = ''; }
+  if (iframe) { iframe.src = 'about:blank'; iframe.style.visibility = 'hidden'; }
+  const building = document.getElementById('previewBuilding');
+  if (building) building.style.display = 'none';
+  if (_livePreviewBlobUrl) {
+    URL.revokeObjectURL(_livePreviewBlobUrl);
+    _livePreviewBlobUrl = null;
+  }
 });
 
 document.getElementById('openAgentsBtn')?.addEventListener('click', openAgentsModal);
@@ -8284,10 +8300,6 @@ function _setStage(stage, btnId) {
   }
 }
 
-document.getElementById('buildL1Btn')?.addEventListener('click', () => _setStage('L1', 'buildL1Btn'));
-document.getElementById('buildL2Btn')?.addEventListener('click', () => _setStage('L2', 'buildL2Btn'));
-document.getElementById('buildL3Btn')?.addEventListener('click', () => _setStage('L3', 'buildL3Btn'));
-document.getElementById('buildUpdateBtn')?.addEventListener('click', () => _setStage('UPDATE', 'buildUpdateBtn'));
 
 
 document.getElementById('previewCopyBtn')?.addEventListener('click', () => {
