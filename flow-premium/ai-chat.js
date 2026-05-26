@@ -7155,6 +7155,14 @@ async function handleSend() {
         }
       } else if (buildModeEnabled) {
         systemPrompt = BUILD_SYSTEM_PROMPT;
+        // If the user already has a built site, inject it as context so the AI
+        // can update it instead of generating from scratch on follow-up prompts.
+        if (_lastBuiltCode) {
+          const last = contents[contents.length - 1];
+          if (last && last.role === 'user') {
+            last.parts.push({ text: '\n\n[CURRENT SITE — update this and output the full improved file]:\n```html\n' + _lastBuiltCode + '\n```' });
+          }
+        }
       } else if (activeSpecialistAgent) {
         systemPrompt = activeSpecialistAgent.prompt;
       } else if (researchMode) {
@@ -7373,10 +7381,19 @@ function addBubbleActions(bubble, text) {
     _lastBuiltCode = thisCode;
     try { chrome.storage.local.set({ snaptoai_built_code: thisCode }); } catch(e) {}
   }
-  // Auto-show inline preview whenever build mode produced code
-  if (buildModeEnabled && (thisCode || _lastBuiltCode)) {
+  // Always render the preview when build mode is on — even if the AI gave
+  // a plain-text reply (no new HTML). This ensures the spinner never sticks.
+  if (buildModeEnabled) {
     const finalCode = thisCode || _lastBuiltCode;
-    _showLivePreview(finalCode);
+    if (finalCode) {
+      _showLivePreview(finalCode);
+    } else {
+      // No code at all: hide the spinner without showing blank iframe
+      const building = document.getElementById('previewBuilding');
+      const lbl = document.getElementById('previewLabel');
+      if (building) building.style.display = 'none';
+      if (lbl) lbl.textContent = '🏗️ LIVE PREVIEW';
+    }
   }
 
   actions.innerHTML = `
@@ -8210,6 +8227,8 @@ function extractHtmlFromResponse(text, partialCode) {
   return { html: '', truncated: false };
 }
 
+let _previewExpanded = false;
+
 function _showLivePreview(code) {
   const w = document.getElementById('previewWrapper');
   const iframe = document.getElementById('livePreview');
@@ -8224,7 +8243,8 @@ function _showLivePreview(code) {
   const blob = new Blob([code], { type: 'text/html' });
   _livePreviewBlobUrl = URL.createObjectURL(blob);
   iframe.src = _livePreviewBlobUrl;
-  iframe.style.visibility = 'visible';
+  iframe.style.display = 'block';
+  iframe.style.height = _previewExpanded ? '420px' : '200px';
   if (building) building.style.display = 'none';
   if (lbl) lbl.textContent = '🏗️ LIVE PREVIEW';
   w.style.display = 'block';
@@ -8236,30 +8256,40 @@ function renderLivePreview(responseText) {
   if (!code) return;
   _lastBuiltCode = code;
   try { chrome.storage.local.set({ snaptoai_built_code: code }); } catch(e) {}
-  // During streaming: show the wrapper with a "building" indicator so the user
-  // knows something is happening — but do NOT reload the iframe on every chunk.
-  // _showLivePreview() is called once by addBubbleActions when streaming ends.
+  // During streaming: show the wrapper with a compact "building" bar.
+  // The iframe stays hidden (display:none) so it takes zero space —
+  // no more giant white void. _showLivePreview() renders once when streaming ends.
   const w = document.getElementById('previewWrapper');
   const building = document.getElementById('previewBuilding');
   const iframe = document.getElementById('livePreview');
   const lbl = document.getElementById('previewLabel');
   if (w) w.style.display = 'block';
-  if (building) { building.style.display = 'flex'; }
-  if (iframe) { iframe.style.visibility = 'hidden'; }
+  if (building) building.style.display = 'flex';
+  if (iframe) iframe.style.display = 'none';
   if (lbl) lbl.textContent = '⏳ Building…';
 }
 
 document.getElementById('closePreviewBtn')?.addEventListener('click', () => {
   const w = document.getElementById('previewWrapper');
-  if (w) { w.style.display = 'none'; }
+  if (w) w.style.display = 'none';
   const iframe = document.getElementById('livePreview');
-  if (iframe) { iframe.src = 'about:blank'; iframe.style.visibility = 'hidden'; }
+  if (iframe) { iframe.src = 'about:blank'; iframe.style.display = 'none'; }
   const building = document.getElementById('previewBuilding');
   if (building) building.style.display = 'none';
   if (_livePreviewBlobUrl) {
     URL.revokeObjectURL(_livePreviewBlobUrl);
     _livePreviewBlobUrl = null;
   }
+});
+
+document.getElementById('previewExpandBtn')?.addEventListener('click', () => {
+  _previewExpanded = !_previewExpanded;
+  const iframe = document.getElementById('livePreview');
+  const btn = document.getElementById('previewExpandBtn');
+  if (iframe && iframe.style.display !== 'none') {
+    iframe.style.height = _previewExpanded ? '420px' : '200px';
+  }
+  if (btn) btn.title = _previewExpanded ? 'Collapse preview' : 'Expand preview';
 });
 
 document.getElementById('openAgentsBtn')?.addEventListener('click', openAgentsModal);
