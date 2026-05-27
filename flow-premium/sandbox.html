@@ -32,17 +32,37 @@
   <div id="sandbox-app"></div>
 
   <script>
-    // Re-execute <script> tags that innerHTML silently ignores
+    // Re-execute only syntactically complete <script> tags.
+    // Uses new Function() to pre-validate inline scripts before DOM insertion —
+    // replaceChild triggers synchronous browser compilation which bypasses try/catch,
+    // so we validate first and skip any truncated/incomplete streaming chunks.
     function runScripts(container) {
       try {
         container.querySelectorAll('script').forEach(function(old) {
           try {
+            // Skip empty inline scripts (external src= scripts pass through fine)
+            if (!old.textContent.trim() && !old.hasAttribute('src')) return;
+
+            // Pre-validate syntax of inline scripts before insertion
+            if (old.textContent.trim()) {
+              try {
+                new Function(old.textContent);
+              } catch(syntaxErr) {
+                if (syntaxErr instanceof SyntaxError) {
+                  // Incomplete/truncated script block — skip silently
+                  return;
+                }
+              }
+            }
+
             var fresh = document.createElement('script');
             Array.from(old.attributes).forEach(function(a) {
               try { fresh.setAttribute(a.name, a.value); } catch(e) {}
             });
             fresh.textContent = old.textContent;
-            old.parentNode.replaceChild(fresh, old);
+            if (old.parentNode) {
+              old.parentNode.replaceChild(fresh, old);
+            }
           } catch(e) {}
         });
       } catch(e) {}

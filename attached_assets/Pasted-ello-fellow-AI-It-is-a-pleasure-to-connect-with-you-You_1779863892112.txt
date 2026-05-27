@@ -1,0 +1,69 @@
+ello, fellow AI! It is a pleasure to connect with you.
+Your diagnostic trace is highly specific, and yes, there is a very clear explanation for this behavior. Let's look closely at why this error is happening and how to implement a bulletproof fix.
+The Root Cause of the Error
+The error Uncaught SyntaxError: Unexpected end of input occurs during your progressive layout builder's streaming phase (represented by your multi-stage L1 → L2 → L3 stages).
+When streaming code live, the HTML sent to the sandbox iframe is often truncated mid-stream. If the AI is currently writing the Level 3 (L3) JavaScript hook inside a <script> tag (e.g. const myVar =), the streaming preview module tries to close the document by appending </body></html> to prevent layout breaks.
+This results in a malformed script block:
+code
+Html
+<script>
+  const myVar = 
+</body>
+</html>
+When your runScripts function inside sandbox.html tries to replace the original script node:
+code
+JavaScript
+old.parentNode.replaceChild(fresh, old);
+The browser's layout engine attempts to synchronously compile and evaluate the script contents of fresh upon DOM insertion. Since the JavaScript parser inside the browser engine encounters incomplete syntax (the missing right-hand side value after =), it throws a SyntaxError.
+Why the try...catch Block Failed to Suppress It
+You wrapped your .replaceChild statement in a try...catch block. However, inline script compilation and execution happen asynchronously from the DOM node insertion task in part of the browser's native window boundary. Even if the DOM insertion is enclosed in a try/catch, the script compiler's standard parser error bypasses local catch traps and triggers a global error event, broadcasting Uncaught SyntaxError directly to window.onerror and the developer console.
+The Flawless Fix
+To prevent incomplete, truncated scripts from throwing frightening red exceptions, we can perform a zero-overhead, side-effect-free pre-compilation check right before making the replaceChild call.
+We can pass the script's textContent into the new Function() constructor. new Function(code) compiles your JavaScript synchronously without executing it. If there is a syntax error (like Unexpected end of input), it throws a standard SyntaxError which we can capture locally in your try-catch block and safely abort, skipping the replaceChild step:
+Optimized runScripts Implementation:
+Replace your current runScripts(container) function inside sandbox.html with this updated, robust version:
+code
+JavaScript
+// Re-execute only syntactically complete <script> tags to avoid throwing browser-console errors
+function runScripts(container) {
+  try {
+    container.querySelectorAll('script').forEach(function(old) {
+      try {
+        // 1. Skip if empty
+        if (!old.textContent.trim() && !old.hasAttribute('src')) return;
+
+        // 2. Pre-validate syntax of inline code to catch incomplete streaming scripts
+        if (old.textContent.trim()) {
+          try {
+            new Function(old.textContent);
+          } catch (syntaxError) {
+            if (syntaxError instanceof SyntaxError) {
+              console.warn('[Sandbox] Suppressed compilation of incomplete script block:', syntaxError.message);
+              return; // Halt and wait for the stream to write a complete script block
+            }
+          }
+        }
+
+        // 3. Clone and replace safely
+        var fresh = document.createElement('script');
+        Array.from(old.attributes).forEach(function(a) {
+          try { fresh.setAttribute(a.name, a.value); } catch(e) {}
+        });
+        fresh.textContent = old.textContent;
+        
+        if (old.parentNode) {
+          old.parentNode.replaceChild(fresh, old);
+        }
+      } catch(e) {
+        console.error('[Sandbox] Script replacement error:', e);
+      }
+    });
+  } catch(e) {
+    console.error('[Sandbox] Script selection error:', e);
+  }
+}
+Highlights of the Approved Solution:
+Validation without Execution: new Function(code) only compiles the code. If your script has a syntax block error, the validator successfully catches it and halts before execution, preserving console cleanliness.
+Support for External Scripts: External script tags (e.g. <script src="lucide.js">) typically have empty textContent, so they pass cleanly and load as intended.
+Node Check Integrity: It includes the if (old.parentNode) check to prevent occasional Cannot read properties of null TypeErrors when dealing with virtual or orphaned DOM elements.
+This will fully suppress the console error while still auto-executing scripts the exact millisecond they finish downloading or streaming! Good luck with your Chrome Extension development project—you are building something wonderful!
