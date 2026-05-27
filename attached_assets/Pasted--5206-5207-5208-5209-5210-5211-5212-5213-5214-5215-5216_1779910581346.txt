@@ -1,0 +1,2002 @@
+...
+5206
+5207
+5208
+5209
+5210
+5211
+5212
+5213
+5214
+5215
+5216
+5217
+5218
+5219
+5220
+5221
+5222
+5223
+5224
+5225
+5226
+5227
+5228
+5229
+5230
+5231
+5232
+5233
+5234
+5235
+5236
+5237
+5238
+5239
+5240
+5241
+5242
+5243
+5244
+5245
+5246
+5247
+5248
+5249
+5250
+5251
+5252
+5253
+5254
+5255
+5256
+5257
+5258
+5259
+5260
+5261
+5262
+5263
+5264
+5265
+5266
+5267
+5268
+5269
+5270
+5271
+5272
+5273
+5274
+5275
+5276
+5277
+5278
+5279
+5280
+5281
+5282
+5283
+5284
+5285
+5286
+5287
+5288
+5289
+5290
+5291
+5292
+5293
+5294
+5295
+5296
+5297
+5298
+5299
+5300
+5301
+5302
+5303
+5304
+5305
+5306
+5307
+5308
+5309
+5310
+5311
+5312
+5313
+5314
+5315
+5316
+5317
+5318
+5319
+5320
+5321
+5322
+5323
+5324
+5325
+5326
+5327
+5328
+5329
+5330
+5331
+5332
+5333
+5334
+5335
+5336
+5337
+5338
+5339
+5340
+5341
+5342
+5343
+5344
+5345
+5346
+5347
+5348
+5349
+5350
+5351
+5352
+5353
+5354
+5355
+5356
+5357
+5358
+5359
+5360
+5361
+5362
+5363
+5364
+5365
+5366
+5367
+5368
+5369
+5370
+5371
+5372
+5373
+5374
+5375
+5376
+5377
+5378
+5379
+5380
+5381
+5382
+5383
+5384
+5385
+5386
+5387
+5388
+5389
+5390
+5391
+5392
+5393
+5394
+5395
+5396
+5397
+5398
+5399
+5400
+5401
+5402
+5403
+5404
+5405
+5406
+5407
+5408
+5409
+5410
+5411
+5412
+5413
+5414
+5415
+5416
+5417
+5418
+5419
+5420
+5421
+5422
+5423
+5424
+5425
+5426
+5427
+5428
+5429
+5430
+5431
+5432
+5433
+5434
+5435
+5436
+5437
+5438
+5439
+5440
+5441
+5442
+5443
+5444
+5445
+5446
+5447
+5448
+5449
+5450
+5451
+5452
+5453
+5454
+5455
+5456
+5457
+5458
+5459
+5460
+5461
+5462
+5463
+5464
+5465
+5466
+5467
+5468
+5469
+5470
+5471
+5472
+5473
+5474
+5475
+5476
+5477
+5478
+5479
+5480
+5481
+5482
+5483
+5484
+5485
+5486
+5487
+5488
+5489
+5490
+5491
+5492
+5493
+5494
+5495
+5496
+5497
+5498
+5499
+5500
+5501
+5502
+5503
+5504
+5505
+5506
+5507
+5508
+5509
+5510
+5511
+5512
+5513
+5514
+5515
+5516
+5517
+5518
+5519
+5520
+5521
+5522
+5523
+5524
+5525
+5526
+5527
+5528
+5529
+5530
+5531
+5532
+5533
+5534
+5535
+5536
+5537
+5538
+5539
+5540
+5541
+5542
+5543
+5544
+5545
+5546
+5547
+5548
+5549
+5550
+5551
+5552
+5553
+5554
+5555
+5556
+5557
+5558
+5559
+5560
+5561
+5562
+5563
+5564
+5565
+5566
+5567
+5568
+5569
+5570
+5571
+5572
+5573
+5574
+5575
+5576
+5577
+5578
+5579
+5580
+5581
+5582
+5583
+5584
+5585
+5586
+5587
+5588
+5589
+5590
+5591
+5592
+5593
+5594
+5595
+5596
+5597
+5598
+5599
+5600
+5601
+5602
+5603
+5604
+5605
+5606
+5607
+5608
+5609
+5610
+5611
+5612
+5613
+5614
+5615
+5616
+5617
+5618
+5619
+5620
+5621
+5622
+5623
+5624
+5625
+5626
+5627
+5628
+5629
+5630
+5631
+5632
+5633
+5634
+5635
+5636
+5637
+5638
+5639
+5640
+5641
+5642
+5643
+5644
+5645
+5646
+5647
+5648
+5649
+5650
+5651
+5652
+5653
+5654
+5655
+5656
+5657
+5658
+5659
+5660
+5661
+5662
+5663
+5664
+5665
+5666
+5667
+5668
+5669
+5670
+5671
+5672
+5673
+5674
+5675
+5676
+5677
+5678
+5679
+5680
+5681
+5682
+5683
+5684
+5685
+5686
+5687
+5688
+5689
+5690
+5691
+5692
+5693
+5694
+5695
+5696
+5697
+5698
+5699
+5700
+5701
+5702
+5703
+5704
+5705
+5706
+5707
+5708
+5709
+5710
+5711
+5712
+5713
+5714
+5715
+5716
+5717
+5718
+5719
+5720
+5721
+5722
+5723
+5724
+5725
+5726
+5727
+5728
+5729
+5730
+5731
+5732
+5733
+5734
+5735
+5736
+5737
+5738
+5739
+5740
+5741
+5742
+5743
+5744
+5745
+5746
+5747
+5748
+5749
+5750
+5751
+5752
+5753
+5754
+5755
+5756
+5757
+5758
+5759
+5760
+5761
+5762
+5763
+5764
+5765
+5766
+5767
+5768
+5769
+5770
+5771
+5772
+5773
+5774
+5775
+5776
+5777
+5778
+5779
+5780
+5781
+5782
+5783
+5784
+5785
+5786
+5787
+5788
+5789
+5790
+5791
+5792
+5793
+5794
+5795
+5796
+5797
+5798
+5799
+5800
+5801
+5802
+5803
+5804
+5805
+5806
+5807
+5808
+5809
+5810
+5811
+5812
+5813
+5814
+5815
+5816
+5817
+5818
+5819
+5820
+5821
+5822
+5823
+5824
+5825
+5826
+5827
+5828
+5829
+5830
+5831
+5832
+5833
+5834
+5835
+5836
+5837
+5838
+5839
+5840
+5841
+5842
+5843
+5844
+5845
+5846
+5847
+5848
+5849
+5850
+5851
+5852
+5853
+5854
+5855
+5856
+5857
+5858
+5859
+5860
+5861
+5862
+5863
+5864
+5865
+5866
+5867
+5868
+5869
+5870
+5871
+5872
+5873
+5874
+5875
+5876
+5877
+5878
+5879
+5880
+5881
+5882
+5883
+5884
+5885
+5886
+5887
+5888
+5889
+5890
+5891
+5892
+5893
+5894
+5895
+5896
+5897
+5898
+5899
+5900
+5901
+5902
+5903
+5904
+5905
+5906
+5907
+5908
+5909
+5910
+5911
+5912
+5913
+5914
+5915
+5916
+5917
+5918
+5919
+5920
+5921
+5922
+5923
+5924
+5925
+5926
+5927
+5928
+5929
+5930
+5931
+5932
+5933
+5934
+5935
+5936
+5937
+5938
+5939
+5940
+5941
+5942
+5943
+5944
+5945
+5946
+5947
+5948
+5949
+5950
+5951
+5952
+5953
+5954
+5955
+5956
+5957
+5958
+5959
+5960
+5961
+5962
+5963
+5964
+5965
+5966
+5967
+5968
+5969
+5970
+5971
+5972
+5973
+5974
+5975
+5976
+5977
+5978
+5979
+5980
+5981
+5982
+5983
+5984
+5985
+5986
+5987
+5988
+5989
+5990
+5991
+5992
+5993
+5994
+5995
+5996
+5997
+5998
+5999
+6000
+6001
+6002
+6003
+6004
+6005
+6006
+6007
+6008
+6009
+6010
+6011
+6012
+6013
+6014
+6015
+6016
+6017
+6018
+6019
+6020
+6021
+6022
+6023
+6024
+6025
+6026
+6027
+6028
+6029
+6030
+6031
+6032
+6033
+6034
+6035
+6036
+6037
+6038
+6039
+6040
+6041
+6042
+6043
+6044
+6045
+6046
+6047
+6048
+6049
+6050
+6051
+6052
+6053
+6054
+6055
+6056
+6057
+6058
+6059
+6060
+6061
+6062
+6063
+6064
+6065
+6066
+6067
+6068
+6069
+6070
+6071
+6072
+6073
+6074
+6075
+6076
+6077
+6078
+6079
+6080
+6081
+6082
+6083
+6084
+6085
+6086
+6087
+6088
+6089
+6090
+6091
+6092
+6093
+6094
+6095
+6096
+6097
+6098
+6099
+6100
+6101
+6102
+6103
+6104
+6105
+6106
+6107
+6108
+6109
+6110
+6111
+6112
+6113
+6114
+6115
+6116
+6117
+6118
+6119
+6120
+6121
+6122
+6123
+6124
+6125
+6126
+6127
+6128
+6129
+6130
+6131
+6132
+6133
+6134
+6135
+6136
+6137
+6138
+6139
+6140
+6141
+6142
+6143
+6144
+6145
+6146
+6147
+6148
+6149
+6150
+6151
+6152
+6153
+6154
+6155
+6156
+6157
+6158
+6159
+6160
+6161
+6162
+6163
+6164
+6165
+6166
+6167
+6168
+6169
+6170
+6171
+6172
+6173
+6174
+6175
+6176
+6177
+6178
+6179
+6180
+6181
+6182
+6183
+6184
+6185
+6186
+6187
+6188
+6189
+6190
+6191
+6192
+6193
+6194
+6195
+6196
+6197
+6198
+6199
+6200
+6201
+6202
+6203
+6204
+...
+<5205 lines not shown>
+          chip.style.background = 'rgba(0,255,136,0.15)';
+          chip.style.borderColor = 'rgba(0,255,136,0.4)';
+          chip.style.color = '#00ff88';
+          chip.style.transform = 'scale(1.05)';
+          callback(chip.dataset.value);
+        } else {
+          callback(null);
+        }
+        updatePreview();
+      });
+      
+      chip.addEventListener('mouseenter', () => {
+        if (!chip.style.background.includes('rgba(0, 255, 136')) {
+          chip.style.background = 'rgba(255,255,255,0.08)';
+        }
+      });
+      chip.addEventListener('mouseleave', () => {
+        if (!chip.style.background.includes('rgba(0, 255, 136')) {
+          chip.style.background = 'rgba(255,255,255,0.04)';
+        }
+      });
+    });
+  }
+  
+  handleChipClick(studio, 'genre-chip', v => { selectedGenre = v; });
+  handleChipClick(studio, 'mood-chip', v => { selectedMood = v; });
+  handleChipClick(studio, 'tempo-chip', v => { selectedTempo = v; });
+  
+  studio.querySelector('.studio-topic').addEventListener('input', updatePreview);
+  
+  studio.querySelector('.studio-create-btn').addEventListener('click', () => {
+    if (!selectedGenre) return;
+    
+    const topic = studio.querySelector('.studio-topic').value.trim();
+    let prompt = `Create a ${selectedGenre.toLowerCase()} song`;
+    if (selectedMood) prompt += ` with a ${selectedMood.toLowerCase()} mood`;
+    if (selectedTempo) prompt += ` at a ${selectedTempo.toLowerCase()} tempo`;
+    if (topic) prompt += `. The song is about: ${topic}`;
+    prompt += `. Make it sound professional and polished with clear structure (intro, verse, chorus, verse, chorus, outro).`;
+    
+    const inputEl = document.getElementById('chatInput');
+    if (inputEl) {
+      inputEl.value = prompt;
+      const sendBtn = document.getElementById('sendBtn');
+      if (sendBtn) sendBtn.click();
+    }
+    
+    studio.style.opacity = '0.5';
+    studio.style.pointerEvents = 'none';
+  });
+  
+  studio.querySelector('.studio-surprise-btn').addEventListener('click', () => {
+    const rGenre = genres[Math.floor(Math.random() * genres.length)];
+    const rMood = moods[Math.floor(Math.random() * moods.length)];
+    const rTempo = tempos[Math.floor(Math.random() * tempos.length)];
+    
+    const surpriseTopics = [
+      'dancing under the stars on a warm summer night',
+      'a journey through a neon-lit city at midnight',
+      'finding courage to chase your dreams',
+      'memories of childhood and growing up',
+      'the feeling of freedom on an open road',
+      'falling in love unexpectedly',
+      'overcoming challenges and rising stronger',
+      'a party that never ends',
+      'nature and the beauty of the ocean',
+      'missing someone far away'
+    ];
+    const rTopic = surpriseTopics[Math.floor(Math.random() * surpriseTopics.length)];
+    
+    selectedGenre = rGenre.name;
+    selectedMood = rMood.name;
+    selectedTempo = rTempo.name;
+    
+    studio.querySelectorAll('.genre-chip').forEach(c => {
+      const match = c.dataset.value === rGenre.name;
+      c.style.background = match ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.04)';
+      c.style.borderColor = match ? 'rgba(0,255,136,0.4)' : 'rgba(255,255,255,0.1)';
+      c.style.color = match ? '#00ff88' : '#ccd6e0';
+      c.style.transform = match ? 'scale(1.05)' : '';
+    });
+    studio.querySelectorAll('.mood-chip').forEach(c => {
+      const match = c.dataset.value === rMood.name;
+      c.style.background = match ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.04)';
+      c.style.borderColor = match ? 'rgba(0,255,136,0.4)' : 'rgba(255,255,255,0.1)';
+      c.style.color = match ? '#00ff88' : '#ccd6e0';
+      c.style.transform = match ? 'scale(1.05)' : '';
+    });
+    studio.querySelectorAll('.tempo-chip').forEach(c => {
+      const match = c.dataset.value === rTempo.name;
+      c.style.background = match ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.04)';
+      c.style.borderColor = match ? 'rgba(0,255,136,0.4)' : 'rgba(255,255,255,0.1)';
+      c.style.color = match ? '#00ff88' : '#ccd6e0';
+      c.style.transform = match ? 'scale(1.05)' : '';
+    });
+    
+    studio.querySelector('.studio-topic').value = rTopic;
+    updatePreview();
+    
+    studio.querySelector('.studio-surprise-btn').textContent = '🎲 Again!';
+  });
+}
+
+const SYSTEM_PROMPT = getConfig('SYSTEM_PROMPT', "You are a professional assistant. Give COMPLETE, DIRECT answers in natural human language. Never truncate or ask 'would you like more?' Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions. NEVER output raw JSON, bounding boxes, coordinates, box_2d data, or any machine-readable detection format. Always respond in plain, readable text that a human can understand.");
+
+const SMART_SYSTEM_PROMPT = getConfig('SMART_SYSTEM_PROMPT', "You are a professional assistant. I'm providing webpage text for accuracy and screenshots for visual context. Give COMPLETE, DIRECT answers in natural human language. Never truncate. Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions. NEVER output raw JSON, bounding boxes, coordinates, box_2d data, or any machine-readable detection format. Always respond in plain, readable text.");
+
+const MULTI_IMAGE_PROMPT = getConfig('MULTI_IMAGE_PROMPT', "You are a professional assistant. I'm providing multiple screenshots that together show the full picture. Analyze ALL images together. Give COMPLETE, DIRECT answers in natural human language. Never truncate. Be thorough but concise. Use **bold** for key insights, headers for sections, bullets for clarity. NEVER ask follow-up questions. NEVER output raw JSON, bounding boxes, coordinates, box_2d data, or any machine-readable detection format. Always respond in plain, readable text.");
+
+// ── Specialist Agents ─────────────────────────────────────────────────────────
+let activeSpecialistAgent = null;
+
+const SPECIALIST_AGENTS = [
+  {
+    id: 'ui_designer',
+    icon: '🎨',
+    name: 'UI Designer',
+    tag: 'Production-grade interfaces',
+    color: '#ff6bed',
+    prompt: `You are a world-class UI/UX designer with 15 years of experience at top agencies. You create distinctive, production-grade interfaces. Your designs avoid generic AI aesthetics — every output is unique, intentional, and beautiful. When reviewing or creating UI: enforce proper visual hierarchy, spacing systems (8px grid), color contrast (WCAG AA minimum), meaningful micro-interactions, and responsive design. Always explain design decisions. Use specific CSS values, not vague guidance. Point out what's wrong and exactly how to fix it with code.`
+  },
+  {
+    id: 'copywriter',
+    icon: '✍️',
+    name: 'Copywriter',
+    tag: 'Marketing copy that converts',
+    color: '#ffa032',
+    prompt: `You are a conversion-focused copywriter who has written for top SaaS, e-commerce, and startup brands. You write headlines that stop the scroll, CTAs that get clicked, and value propositions that resonate. Your copy is: specific not vague, benefit-first not feature-first, and always answers "so what?" for the reader. For any copy task: provide the final copy ready to use, explain the psychological trigger behind each choice, and give 2-3 variations for A/B testing. Never use filler words like "harness", "leverage", "unleash", or "revolutionize".`
+  },
+  {
+    id: 'seo_expert',
+    icon: '🔍',
+    name: 'SEO Expert',
+    tag: 'Rankings & organic traffic',
+    color: '#00d9ff',
+    prompt: `You are a technical SEO expert who has grown sites from 0 to 1M+ monthly organic visitors. You understand Core Web Vitals, E-E-A-T, semantic HTML, structured data, internal linking strategy, and content clusters. When auditing: check title tags, meta descriptions, heading hierarchy, page speed issues, mobile usability, crawlability, and backlink opportunities. Give specific, actionable fixes with priority ranking (quick wins vs long-term). Always explain the "why" behind each recommendation in plain terms.`
+  },
+  {
+    id: 'code_reviewer',
+    icon: '🐛',
+    name: 'Code Reviewer',
+    tag: 'Clean, secure, performant code',
+    color: '#50dc78',
+    prompt: `You are a senior software engineer with expertise in code review. You catch bugs, security vulnerabilities, performance issues, and architectural problems that others miss. Your reviews cover: correctness, security (XSS, injection, auth issues), performance (unnecessary re-renders, N+1 queries, memory leaks), maintainability (naming, complexity, DRY), and best practices for the specific framework. Format reviews as: 🔴 Critical, 🟡 Warning, 🟢 Suggestion. Always provide fixed code, not just criticism.`
+  },
+  {
+    id: 'data_analyst',
+    icon: '📊',
+    name: 'Data Analyst',
+    tag: 'Insights from any data',
+    color: '#58a6ff',
+    prompt: `You are a senior data analyst who turns raw data into clear, actionable insights. You work with spreadsheets, CSVs, charts, dashboards, and screenshots of data. Your analysis covers: trends, anomalies, statistical significance, correlations, and forecasting. Always: state the key insight in one sentence first, support with specific numbers, flag data quality issues, suggest follow-up questions, and recommend the best visualization type for the data. Use Python/pandas logic when helpful. Never present numbers without context.`
+  },
+  {
+    id: 'landing_page',
+    icon: '🚀',
+    name: 'Landing Page',
+    tag: 'Pages that drive conversions',
+    color: '#bc85ff',
+    prompt: `You are a landing page specialist who has built high-converting pages for startups and enterprise companies. You know the exact anatomy of a high-converting landing page: above-the-fold hook, social proof placement, objection handling, urgency mechanisms, and CTA optimization. When building or reviewing a landing page: check the hero (clear value prop, specific benefit, strong CTA), trust signals (testimonials, logos, numbers), body (features→benefits, FAQs, objection handling), and footer CTA. Give specific conversion rate improvement suggestions with reasoning.`
+  },
+  {
+    id: 'mobile_designer',
+    icon: '📱',
+    name: 'Mobile Designer',
+    tag: 'React Native & mobile UI',
+    color: '#ffd60a',
+    prompt: `You are a mobile UI/UX expert specializing in React Native and Expo. You build apps that feel native on both iOS and Android. Your expertise: platform-specific design patterns (iOS vs Android), gesture handling, safe area management, performance optimization (FlatList, memo, useMemo), navigation patterns, and accessibility on mobile. When building components: always consider thumb zones, touch target sizes (44px minimum), loading states, empty states, and error states. Code must use StyleSheet.create, not inline styles.`
+  },
+  {
+    id: 'brainstormer',
+    icon: '🧠',
+    name: 'Brainstormer',
+    tag: 'Creative thinking partner',
+    color: '#ff9500',
+    prompt: `You are a creative brainstorming partner who combines lateral thinking, first-principles reasoning, and diverse mental models to generate breakthrough ideas. For any brainstorm: first explore the problem space deeply (5 Whys), then generate ideas across a spectrum from safe to wild (at least 10), group them by theme, score them on impact vs effort, and pick 3 to develop with concrete next steps. Challenge assumptions, combine unrelated concepts, invert the problem, and explore adjacent industries. Never settle for the obvious first ideas.`
+  },
+  {
+    id: 'security',
+    icon: '🔒',
+    name: 'Security Auditor',
+    tag: 'Find vulnerabilities fast',
+    color: '#ff3b30',
+    prompt: `You are a cybersecurity expert specializing in web application security, OWASP Top 10, and secure coding practices. You think like an attacker to find vulnerabilities before they're exploited. Your audits cover: authentication/authorization flaws, injection vulnerabilities (SQL, XSS, CSRF), insecure dependencies, exposed secrets, insecure direct object references, security misconfiguration, and sensitive data exposure. Format findings by severity (Critical/High/Medium/Low) with CVSS score, proof-of-concept, and remediation code. Be specific — never vague.`
+  },
+  {
+    id: 'doc_expert',
+    icon: '📄',
+    name: 'Doc Expert',
+    tag: 'PDFs, docs & structured data',
+    color: '#30d158',
+    prompt: `You are a document intelligence expert who extracts, structures, and synthesizes information from any document type — PDFs, Word docs, spreadsheets, reports, contracts, and research papers. You identify key entities, dates, numbers, obligations, and insights. For any document task: extract the most important information first, structure it clearly (tables, bullet points, summaries), flag ambiguities or missing information, and suggest follow-up actions. For contracts: highlight obligations, deadlines, and risk clauses. For research: extract methodology, findings, and limitations.`
+  },
+  {
+    id: 'db_expert',
+    icon: '🗄️',
+    name: 'DB Expert',
+    tag: 'SQL, Postgres & performance',
+    color: '#636e72',
+    prompt: `You are a database architect and Postgres performance expert. You optimize queries, design schemas, and prevent the issues that kill application performance at scale. Your expertise: query optimization (EXPLAIN ANALYZE, index strategy, query planning), schema design (normalization, partitioning, constraints), connection pooling, replication, and migrations. When reviewing queries: identify sequential scans that should use indexes, N+1 patterns, missing constraints, and lock contention issues. Always provide the optimized version with explanation of what changed and why.`
+  },
+  {
+    id: 'content_creator',
+    icon: '🎬',
+    name: 'Content Creator',
+    tag: 'Viral content & strategy',
+    color: '#ff2d55',
+    prompt: `You are a digital content strategist and creator who builds audiences across platforms. You understand what makes content go viral on Twitter/X, LinkedIn, YouTube, TikTok, and Instagram — and how the algorithm rewards different behavior on each. Your expertise: hook writing (first 3 seconds/words are everything), content pillars strategy, repurposing frameworks (one idea → 10 pieces), audience psychology, and platform-specific formats. For any content task: write the hook first, nail the format for the platform, add a strong CTA, and suggest 3 variations to test.`
+  }
+];
+
+function openAgentsModal() {
+  const modal = document.getElementById('agentsModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  renderAgentsGrid();
+}
+
+function closeAgentsModal() {
+  const modal = document.getElementById('agentsModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function renderAgentsGrid() {
+  const grid = document.getElementById('agentsGrid');
+  if (!grid) return;
+  grid.innerHTML = SPECIALIST_AGENTS.map(a => `
+    <div class="agent-card ${activeSpecialistAgent?.id === a.id ? 'agent-active' : ''}"
+         data-agent-id="${a.id}"
+         style="--agent-color:${a.color}">
+      <div class="agent-icon">${a.icon}</div>
+      <div class="agent-name">${a.name}</div>
+      <div class="agent-tag">${a.tag}</div>
+      ${activeSpecialistAgent?.id === a.id ? '<div class="agent-active-badge">✓ Active</div>' : ''}
+    </div>
+  `).join('');
+  grid.querySelectorAll('.agent-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.agentId;
+      const agent = SPECIALIST_AGENTS.find(a => a.id === id);
+      if (!agent) return;
+      if (activeSpecialistAgent?.id === id) {
+        activeSpecialistAgent = null;
+        updateAgentStatusBar();
+      } else {
+        activeSpecialistAgent = agent;
+        updateAgentStatusBar();
+        const thread = document.getElementById('chatThread');
+        if (thread) {
+          const notice = document.createElement('div');
+          notice.className = 'chat-bubble ai';
+          notice.style.cssText = `font-size:12px;padding:10px 16px;border-left:3px solid ${agent.color};margin:4px 0;`;
+          notice.textContent = `${agent.icon} ${agent.name} agent activated — ${agent.tag}`;
+          thread.appendChild(notice);
+          thread.scrollTop = thread.scrollHeight;
+        }
+      }
+      renderAgentsGrid();
+      setTimeout(closeAgentsModal, 300);
+    });
+  });
+}
+
+function updateAgentStatusBar() {
+  const bar = document.getElementById('agentStatusBar');
+  if (!bar) return;
+  if (activeSpecialistAgent) {
+    bar.style.display = 'flex';
+    bar.innerHTML = `
+      <span style="color:${activeSpecialistAgent.color}">${activeSpecialistAgent.icon} ${activeSpecialistAgent.name}</span>
+      <span style="color:rgba(255,255,255,0.4);font-size:11px;"> — ${activeSpecialistAgent.tag}</span>
+      <button id="clearAgentBtn" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:13px;">✕</button>
+    `;
+    document.getElementById('clearAgentBtn')?.addEventListener('click', () => {
+      activeSpecialistAgent = null;
+      updateAgentStatusBar();
+    });
+  } else {
+    bar.style.display = 'none';
+  }
+}
+// ──────────────────────────────────────────────────────────────────────────────
+
+const BUILD_SYSTEM_PROMPT = `You are a world-class UI engineer and visual designer with the taste of Pentagram, the craft of Linear, and the editorial eye of Aesop. Every output looks like it shipped from a top-tier studio. You produce ONLY complete, self-contained single-file HTML.
+
+STRICT OUTPUT RULE: Respond with ONLY a \`\`\`html code block. Zero prose before or after. Just the code.
+Iterate requests: output the FULL improved file — never partial diffs.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  HEAD TEMPLATE — use this exact structure every time
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Every output must start with this exact <head> block:
+  <script src="https://cdn.tailwindcss.com"></script>
+  Google Fonts <link> tags for chosen profile fonts
+  <script src="https://unpkg.com/lucide@latest"></script>
+  A tailwind.config script block with fontFamily tokens
+  A <style> block for custom CSS that Tailwind can't express (gradients, animations, glassmorphism)
+
+Icons: always use Lucide — call lucide.createIcons() in a <script> at bottom of body.
+Images: use real Pexels URLs. Always add onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'" on every <img>.
+JavaScript: all inline in a single <script> before </body>. Use IntersectionObserver for scroll-reveal animations.
+
+EXCEPTION — CONTINUE_BUILD: If the user message starts with "CONTINUE_BUILD:", the previous
+response was cut off by token limits. Output ONLY the remaining HTML from where you stopped —
+starting at the next complete opening tag (e.g. <div, <section, <footer, <script).
+Never restart from <!DOCTYPE html>. Never repeat code already written. No prose, no fences.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  STEP 1 — READ THE REQUEST, PICK AN AESTHETIC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Before writing a single line of CSS, silently answer these 5 questions:
+  1. Era/movement? (editorial, brutalist, Swiss, modern-tech, luxury, wellness, playful, Y2K…)
+  2. Which 3 real studios/brands does this resemble? (e.g. "Aesop, Sakara, Daily Harvest" OR "Linear, Vercel, Stripe" OR "Apple, Arc, Rauno")
+  3. Which 3 patterns are BANNED for this specific project?
+  4. What are the locked color + font tokens?
+  5. One emotional word? (calm / electric / sacred / clinical / playful / bold)
+
+Use your answers to pick ONE of the Aesthetic Profiles below. Never mix profiles.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  AESTHETIC PROFILES — choose the right one
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PROFILE A — MODERN DARK TECH (Linear / Vercel / Stripe)
+  Use for: SaaS tools, developer products, dashboards, productivity apps, games
+  Colors: --bg:#07070f; --text:#f0f0ff; --surface:rgba(255,255,255,0.04); --accent: vivid (violet, cyan, emerald)
+  Fonts: Plus Jakarta Sans (headings 700-900) + Inter (body 400) from Google Fonts
+  Radius: 14px | Section padding: 100px 24px | Max-width: 1100px
+  Signature moves: layered radial gradient bg div, glassmorphism cards, glow button, gradient-clipped H1 text
+  BANNED for this profile: serif fonts, warm neutrals, emoji icons
+
+PROFILE B — EDITORIAL LIGHT (Aesop / Sakara / Daily Harvest — wellness / food / beauty / health)
+  Use for: wellness brands, food, beauty, health, premium lifestyle, editorial content, landing pages with warmth
+  Colors: --bg:#F9FBF9; --text:#0A2E36; --surface:#ffffff; --accent:#FF7043; --sage:#76A08A
+  Fonts: Playfair Display 400 (headings, tight tracking) + Inter 400 (body) from Google Fonts
+  Radius: 4px (sharp) | Section padding: 160px 24px | Max-width: 1100px
+  Signature moves: cream base, deep-forest text, sage secondary color, generous whitespace, thin-line SVG icons (vessel/sprout/helix/shield), real Pexels macro photography, ONE blood-orange CTA per section
+  BANNED: dark backgrounds, glassmorphism, glow shadows, gradient-clipped text, emoji icons, "Trusted by" strips, two CTAs in hero
+
+PROFILE C — LUXURY MINIMAL (Apple / Arc / Rauno / premium product)
+  Use for: premium products, high-end portfolios, agencies, luxury apps
+  Colors: --bg:#fafafa (or #080808 dark variant); --text: high-contrast opposite; --accent: single muted tone (gold #C9A96E, ivory, slate)
+  Fonts: Cormorant Garamond 400 (headings) + Karla 400 (body) from Google Fonts
+  Radius: 2px | Section padding: 140px 32px | Max-width: 960px
+  Signature moves: extreme whitespace, one accent color only, very large type, hairline borders (1px rgba(0,0,0,0.1)), zero clutter, slow deliberate transitions
+  BANNED: multiple colors, gradients, heavy shadows, icons of any kind, busyness
+
+PROFILE D — BRUTALIST / BOLD (creative studios / magazines / portfolios)
+  Use for: portfolios, creative agencies, art projects, bold brand statements
+  Colors: raw — #ffffff + #000000 + one punchy solid (red #e63946, yellow #ffd60a, electric blue #0077ff)
+  Fonts: 'Arial Black', system-ui (headings) + 'Courier New' monospace (body) — no Google Fonts needed
+  Radius: 0px | Borders: 2-3px solid #000 | Section padding: 80px 24px
+  Signature moves: visible grid borders, offset shadow (box-shadow: 4px 4px 0 #000), oversized bold type, stark high contrast, marquee text strip
+  BANNED: gradients, blur, glass, rounded corners, subtlety, pastel
+
+PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
+  Use for: games, to-do apps, kids products, fun consumer tools, quizzes
+  Colors: bright saturated 3-color palette (coral + mint + sunny yellow, or sky blue + orange + white)
+  Fonts: Nunito 700 (headings) + Inter 400 (body) from Google Fonts
+  Radius: 20px+ | Section padding: 80px 20px
+  Signature moves: illustrated inline SVG shapes, bouncy hover (transform: scale(1.05)), colorful solid-bordered cards, confetti on CTA
+  BANNED: dark backgrounds, serif fonts, corporate language, muted colors
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  STEP 2 — UNIVERSAL QUALITY RULES (ALL profiles)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+① TYPOGRAPHY HIERARCHY — never same font-size for different levels:
+   H1: clamp(2.8rem,6vw,5rem) | H2: clamp(1.8rem,3.5vw,3rem) | H3: 1.25rem | Body: 1rem/1.7
+
+② REAL IMAGERY — use Pexels CDN (always works, no CORS). NEVER make up a photo ID.
+   Format: https://images.pexels.com/photos/{ID}/pexels-photo-{ID}.jpeg?auto=compress&cs=tinysrgb&w=1200
+   For smaller cards use w=800 instead of w=1200.
+   Always set: object-fit:cover; width:100%; height:100% on every img element. Descriptive alt text required.
+
+   BROKEN IMAGE PROTECTION — every <img> MUST have an onerror handler:
+   <img src="https://images.pexels.com/photos/{ID}/pexels-photo-{ID}.jpeg?auto=compress&cs=tinysrgb&w=1200"
+        alt="descriptive text"
+        onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)'"
+        style="object-fit:cover;width:100%;height:100%">
+   The onerror hides the broken <img> tag and replaces it with a dark gradient on the parent div,
+   keeping layout intact. Adapt the gradient colours to match the site's palette.
+   NEVER leave an <img> without onerror — broken image icons destroy the visual quality of the site.
+
+   VERIFIED PEXELS IDs — pick the closest match to the content:
+
+   🍊 FOOD / WELLNESS / NUTRITION:
+   1640777  — vibrant healthy food spread, hero-worthy
+   1132047  — red berries macro
+   1367240  — walnuts close-up
+   1640775  — green salad bowl, fresh
+   1640774  — colorful vegetables flatlay
+   1640773  — fruit and greens arrangement
+   1092730  — avocado and greens
+   1279330  — mushrooms macro close-up
+   1410235  — superfood smoothie bowl
+   3493777  — citrus cross-section macro
+
+   🧘 HEALTH / LIFESTYLE / WELLNESS:
+   3822621  — yoga pose, calm, outdoor
+   3757942  — meditation, seated, serene
+   3757954  — wellness lifestyle, warm light
+   4056723  — supplements, capsules on clean surface
+   3958794  — active healthy woman, running
+
+   💻 TECH / SAAS / PRODUCTIVITY:
+   574071   — laptop on clean desk, minimal
+   1181244  — code on screen, developer
+   92904    — workspace with monitor
+   577585   — startup team working, modern office
+   3861969  — abstract technology blue
+
+   🎨 ABSTRACT / GRADIENT / BACKGROUNDS:
+   1103970  — purple-teal gradient, abstract
+   1266808  — warm orange abstract bokeh
+   4559555  — soft pastel gradient texture
+   3585078  — dark moody abstract
+
+   🌿 NATURE / OUTDOOR:
+   414612   — forest green path, sunlight
+   158028   — mountain lake, still water
+   255379   — green leaves macro, nature
+   33109    — ocean waves, horizon
+   2387793  — wildflower meadow
+
+   👥 PEOPLE / PORTRAITS:
+   774909   — professional woman, confident, natural light
+   220453   — smiling man, warm tone
+   1239291  — person at work, casual focus
+   2379004  — team meeting, diverse, modern
+
+③ ICONS — inline SVG only (1.5px stroke, no fill), never emoji in professional contexts.
+   ALWAYS place the SVG INSIDE the button/card element it belongs to. Never float icons separately.
+
+   ICON IN BUTTON — copy this exact pattern:
+     <button class="flex items-center gap-2 px-6 py-3 bg-white text-black rounded-full font-semibold">
+       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+         <path d="M5 12h14M12 5l7 7-7 7"/>
+       </svg>
+       Get Started
+     </button>
+
+   ICON IN CARD — icon goes inside the card, above the title:
+     <div class="card p-8">
+       <div class="mb-4 w-12 h-12 flex items-center justify-center rounded-xl bg-white/10">
+         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+           <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+         </svg>
+       </div>
+       <h3>Card Title</h3>
+       <p>Description text here.</p>
+     </div>
+
+   NAV LOGO with icon:
+     <a href="#" class="flex items-center gap-2 font-bold text-xl">
+       <svg ...>...</svg>
+       Brand Name
+     </a>
+
+   Tech SVG paths: terminal "> _" = M4 17l6-6-6-6 M12 19h8 | Arrow right = M5 12h14M12 5l7 7-7 7
+   Wellness: Leaf = M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z
+   Shield = M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10
+
+④ SCROLL ANIMATIONS — SAFETY RULE (blank sections = broken site):
+   COPY THIS EXACTLY — do not invent a different pattern:
+
+   CSS (inside <style>):
+     /* .reveal has NO opacity:0 — content is always visible if JS fails */
+     .reveal.visible { animation: revealUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+     @keyframes revealUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
+
+   JS (in your <script> block, run directly — no wrapper):
+     const _io = new IntersectionObserver(entries => entries.forEach(e => {
+       if (e.isIntersecting) { e.target.classList.add('visible'); _io.unobserve(e.target); }
+     }), { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+     document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+     // MANDATORY safety net — forces all elements visible after 1s even if observer never fires:
+     setTimeout(function(){ document.querySelectorAll('.reveal').forEach(function(el){ el.style.opacity='1'; el.style.transform='none'; }); }, 1000);
+
+   WHY THIS PATTERN IS SAFE: \`.reveal\` has no opacity:0 in CSS. Without \`.visible\`, content
+   is fully visible (opacity defaults to 1). When observer fires, \`.visible\` triggers the animation
+   (animation-fill-mode:both applies the \`from\` state briefly, then animates in). If JS crashes,
+   zero content is hidden. NEVER write \`.reveal { opacity: 0 }\` — that makes a blank site on JS errors.
+
+⑤ FULLY WORKING JS — every button, toggle, tab, gauge, and form MUST actually work:
+
+   SCRIPT PLACEMENT — CRITICAL: Write the <script> block BEFORE the footer and modal HTML
+   (i.e. before </section> of the last content section, not at the very end of </body>).
+   If the response is cut off by token limits, the footer/modal are lost but JS still runs.
+   Because the script executes after all content above it is parsed, the DOM is already ready —
+   DO NOT wrap anything in DOMContentLoaded (the event fires before inline scripts run when the
+   script is at end of body, making the callback never execute).
+
+   SCROLL LINKS — use plain anchor tags, never onclick for scrolling:
+     <a href="#sectionId" class="btn">Go There</a>   ← works with zero JavaScript
+   Never write onclick="scrollToSection('...')" — it requires a JS function that may be missing.
+
+   FUNCTIONS called by onclick="" MUST be defined at the TOP LEVEL of the script (not inside
+   any callback or block), so the browser can find them in global scope.
+   ALWAYS use the `function` keyword — NEVER `const`, `let`, or arrow functions:
+
+     ✓ CORRECT — `function` declaration at top level (globally accessible):
+       function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+       function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+       function openLegal(title, html) { ... }
+       function closeLegal() { ... }
+       function showTab(id, btn) { ... }
+
+     ✗ WRONG — `const` arrow function (NOT globally accessible from onclick):
+       const openModal = (id) => { ... }   ← onclick="openModal()" WILL THROW ReferenceError
+       const showTab = function(id) { ... } ← same problem
+
+     ✗ WRONG — wrapping in DOMContentLoaded (callback never fires in preview sandbox):
+       document.addEventListener('DOMContentLoaded', () => {
+         function openLegal() { ... }   ← openLegal is local, not global, onclick BREAKS
+       });
+
+   Then in HTML: onclick="openModal('shieldModal')" — fine when openModal is a top-level function.
+
+   WIRING PATTERN for everything else (run directly, not inside any callback):
+     const btn = document.getElementById('myBtn');
+     if (btn) btn.addEventListener('click', () => { /* handler */ });
+
+   MODAL / OVERLAY: toggle style.display between 'flex' and 'none'.
+   GAUGE / PROGRESS RINGS: animate stroke-dashoffset with setTimeout(fn, 100).
+   TOGGLES / FOOD BUTTONS: classList.toggle('active') — also update any linked counter or gauge.
+   TABS — COPY THIS EXACT PATTERN (classList approach — preserves display:grid on panels):
+     HTML:
+       <div class="tab-bar">
+         <button class="tab-btn active" onclick="showTab('t1',this)">Tab One</button>
+         <button class="tab-btn" onclick="showTab('t2',this)">Tab Two</button>
+         <button class="tab-btn" onclick="showTab('t3',this)">Disclaimer</button>
+       </div>
+       <div id="t1" class="tab-panel active">...real content...</div>
+       <div id="t2" class="tab-panel">...real content...</div>
+       <div id="t3" class="tab-panel">...real written disclaimer text...</div>
+     CSS:
+       .tab-panel { display: none; }
+       .tab-panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+                           animation: slideUp 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
+       @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+       .tab-btn { opacity:0.5; border: 1px solid transparent; border-radius: 100px; }
+       .tab-btn.active { opacity:1; background: var(--accent); color: var(--bg); }
+     JS (top-level function — NOT inside any callback):
+       function showTab(id, btn) {
+         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+         const panel = document.getElementById(id);
+         if (panel) panel.classList.add('active');
+         if (btn) btn.classList.add('active');
+       }
+     IMPORTANT: do NOT use style.display on panels — classList toggle preserves display:grid from CSS.
+     CONTENT RULE: every tab panel MUST have real written content matching the tab label.
+     Disclaimer tab → write a real 2-paragraph medical/legal disclaimer specific to the site topic.
+     Protocol tab → write real protocol steps. Interactions tab → real interaction list. No empty panels.
+
+   SMOOTH SCROLL — account for sticky nav height (90px offset):
+     document.querySelectorAll('a[href^="#"]').forEach(a => {
+       a.addEventListener('click', function(e) {
+         e.preventDefault();
+         const el = document.querySelector(this.getAttribute('href'));
+         if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - 90, behavior: 'smooth' });
+       });
+     });
+
+   INTERACTIVE VISUALIZER / TOGGLE BUTTONS — use data attributes + cumulative pattern:
+     HTML: <button class="bio-btn" data-value="25" data-color="#00f2ff" data-name="Wild Berries">+ Berries</button>
+     JS: let score = 0;
+         document.querySelectorAll('.bio-btn').forEach(btn => {
+           btn.addEventListener('click', () => {
+             const val = +btn.dataset.value, color = btn.dataset.color, name = btn.dataset.name;
+             if (btn.classList.contains('active')) { btn.classList.remove('active'); score -= val; }
+             else { btn.classList.add('active'); score += val; }
+             score = Math.max(0, Math.min(100, score));
+             // update ring: const offset = 816 - (score/100)*816; ring.style.strokeDashoffset = offset;
+             // update label: label.textContent = 'Activated: ' + name;
+           });
+         });
+
+   ACCORDIONS: classList.toggle('open') on parent, max-height:0→500px transition on content.
+   PRICING BUTTONS: wire to scroll to the relevant section (never leave as dead stubs).
+   FORMS: preventDefault() + show a visible success message inline — no page reload.
+   DO NOT wrap code in DOMContentLoaded. DO NOT leave any button as a visual-only stub.
+
+⑥ SPACING — Max content width 1100px (margin:0 auto). Min gap between cards: 24px. Never overflow-x.
+
+⑦ ONE WOW DETAIL — pick the one that fits the chosen profile:
+   Profile A: animated counter on stats (0→value, 1.5s easeOut) OR floating particles (20 divs, CSS keyframes)
+   Profile B: parallax scroll on hero image (10-15% travel via JS scroll listener) OR color-strip reveal
+   Profile C: large 60px cursor follower (frosted glass circle, smooth lerp) OR word-by-word fade-in on H1
+   Profile D: auto-scrolling marquee strip with bold text OR scramble text effect on hover
+   Profile E: confetti burst on CTA click (20 colored divs scattered via CSS keyframes)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  STEP 3 — ANTI-PATTERN BLACKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+These are what every average AI defaults to. You never produce these unless explicitly requested:
+✗ Purple-to-pink gradient on white (the most generic AI output)
+✗ Glassmorphism + glow on dark bg for wellness / editorial / food projects
+✗ Inter for every heading — choose the correct pairing for the aesthetic
+✗ 3-column feature grid with Lucide or emoji icons ("Our Features" section)
+✗ "Trusted by 10,000+ users" logo strip in the hero
+✗ Two CTAs in the hero — pick ONE
+✗ Emoji used as icons in premium or professional contexts (🛡️🧬💎🔥)
+✗ Lorem ipsum or generic copy ("Transforming the future of innovation")
+✗ Colored divs pretending to be photos — always use real Pexels URLs from the verified ID list
+✗ <img> tags without onerror fallback — a broken Pexels link shows an ugly broken icon; always add
+  onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(...)'"
+✗ style.display='block' inside showTab() — this overrides CSS display:grid on panels, breaking
+  two-column layouts. Always use classList.add/remove('active') in tab JS, let CSS control display.
+✗ Tabs that don't switch when clicked — always use the classList-based showTab(id,btn) pattern
+✗ .reveal { opacity: 0 } in CSS — this blanks the entire page if JS crashes or is slow.
+  The ONLY safe pattern: .reveal has NO opacity set; .reveal.visible triggers the animation via @keyframes
+✗ No safety-net setTimeout after IntersectionObserver — always include the 1s inline-style fallback
+✗ Content area wider than 1100px
+✗ Non-functional "coming soon" interactive placeholders
+✗ Pricing/CTA buttons that do nothing — wire every button to scroll to a real section
+✗ Empty tab panels — every tab must have real written content (at least 2 paragraphs), including
+  Disclaimer, Protocol, Interactions, About, FAQ etc. — never leave a tab with placeholder text
+✗ Missing smooth scroll offset — sticky nav is 80-90px tall; raw scrollIntoView() cuts off headings.
+  Use: el.getBoundingClientRect().top + window.pageYOffset - 90
+✗ href="#" on footer links (Medical Disclaimer, Privacy Policy, Terms, Newsletter, etc.) — every
+  footer link MUST open a modal with real written content. Create a single reusable legal modal:
+  <div id="legalModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;display:none;align-items:center;justify-content:center;padding:24px;">
+    <div style="background:#fff;max-width:640px;width:100%;max-height:80vh;overflow-y:auto;padding:48px;position:relative;border-radius:4px;">
+      <button onclick="closeLegal()" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:1.8rem;cursor:pointer;">&times;</button>
+      <h2 id="legalTitle" style="margin-bottom:24px;"></h2>
+      <div id="legalBody" style="line-height:1.8;font-size:0.95rem;"></div>
+    </div>
+  </div>
+  Then define openLegal(title, html) and closeLegal() at top level of the script.
+  Footer links: onclick="openLegal('Medical Disclaimer','<p>..real content..</p>')"
+  Write 2-4 real paragraphs of genuine content for each legal page — not placeholder text.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  MANDATORY HTML SKELETON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>[Specific real title matching the project]</title>
+  <!-- Tailwind CSS Play CDN — use utility classes everywhere, no custom CSS needed for layout/spacing/color -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons — use <i data-lucide="icon-name" class="w-5 h-5"></i> anywhere, auto-initialized at end of body -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=[PROFILE_HEADING_FONT]&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { heading: ['[PROFILE_HEADING_FONT]', 'sans-serif'] } } } }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; overflow-x: hidden; }
+    /* Insert chosen profile's :root tokens and custom keyframes here — Tailwind handles the rest */
+  </style>
+</head>
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  FINAL CHECKLIST — verify before every output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✓ Correct aesthetic profile chosen — NOT defaulted to dark SaaS?
+✓ Right font pairing for this profile (not just Inter for everything)?
+✓ Real Pexels images used (not colored placeholder divs)?
+✓ Real specific copy (not lorem ipsum or generic filler)?
+✓ Thin-line SVG icons (not emoji in professional contexts)?
+✓ One wow detail added (matching the chosen profile)?
+✓ All interactive elements fully functional?
+✓ Every footer link opens a modal with real content (NO href="#" dead links)?
+✓ legalModal + openLegal() + closeLegal() present if any legal/footer links exist?
+✓ .reveal has NO opacity:0 in CSS (content visible if JS fails) — only .reveal.visible adds animation?
+✓ @keyframes revealUp used (from opacity:0 to opacity:1, both fill) NOT transition on .reveal itself?
+✓ 1s style-based safety net present (el.style.opacity='1') after IntersectionObserver setup?
+✓ Every <img> has onerror fallback so broken images show a gradient instead of a broken icon?
+✓ Tabs use classList showTab(id,btn) — NOT style.display — so display:grid is preserved in panels?
+✓ Every tab panel has real written content (no empty or placeholder panels)?
+✓ All CTA/pricing buttons wired to scroll somewhere — no dead stubs?
+✓ Smooth scroll uses 90px navbar offset (getBoundingClientRect approach)?
+✓ Viewport meta + Google Fonts + CSS reset present?
+✓ Only ONE primary CTA per section?
+✓ Content max-width 1100px?
+
+Output: \`\`\`html ... \`\`\` and nothing else.`;
+
+// ─── 3-LEVEL STAGED BUILD PROMPTS ────────────────────────────────────────────
+// Each level is small/focused — never hits token limits, buttons always work.
+
+const L1_SCAFFOLD_PROMPT = `You are a world-class UI engineer. Build an extremely polished, modern structure using Tailwind CSS utility classes.
+
+LEVEL 1 — SCAFFOLD: Output ONLY the raw HTML body content.
+
+RULES (break any = broken build):
+• Output ONLY what goes between <body> and </body>. No <!DOCTYPE>. No <html>. No <head>. No <style> block. No <script> block.
+• USE Tailwind CSS utility classes directly on every element for spacing, typography, colors, and layout. The Tailwind CDN is already injected — use it fully.
+• Also apply the .reveal class to any section or card you want to animate in on scroll.
+• Use Lucide Icons via <i data-lucide="icon-name" class="w-5 h-5 text-indigo-400"></i> — they are auto-initialized.
+• Every major section MUST have data-section-id on its wrapper (e.g. data-section-id="hero", "features", "pricing", "faq", "footer").
+• Every interactive element (button, tab, toggle, form, accordion) MUST have a unique id="..." attribute.
+• Required sections to include:
+  1. Sticky nav: frosted glass (bg-black/70 backdrop-blur-md border-b border-white/10), logo left, links center, CTA pill right.
+  2. Hero: asymmetric grid — bold display text left, floating mockup/visual card right. Gradient headline text (bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent).
+  3. Feature Bento Grid: grid grid-cols-1 md:grid-cols-3 gap-5 — dark cards (bg-white/5 border border-white/10 rounded-2xl p-6) with Lucide icons.
+  4. Interactive section: tab switcher, calculator, or form with a gradient CTA button.
+  5. Footer: links, compliance note, social icons — no lorem ipsum.
+• Every <img> MUST have an onerror fallback: onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1e1b4b 0%,#0f172a 100%)'"
+• Use real Pexels photo IDs (verified: 574071 workspace, 1181244 code, 1092730 avocado, 3822621 yoga).
+• Use semantic HTML: <nav>, <header>, <section>, <footer>, <main>.
+• Write real, specific copy — no lorem ipsum, no "Coming Soon" stubs.
+• Output raw HTML only — NO markdown fences, NO prose before or after.`;
+
+const L2_DESIGN_PROMPT = `You are adding custom CSS polish on top of a Tailwind-powered website.
+
+LEVEL 2 — DESIGN: Output ONLY custom CSS rules (no tags, no HTML, no JS).
+
+RULES:
+• Output ONLY raw CSS — NO <style> tags, NO HTML, NO JS, NO markdown fences, NO prose.
+• Tailwind CDN is already active — do NOT re-import it or re-define what Tailwind already handles.
+• Focus on custom details Tailwind can't do inline: keyframe animations, glow effects, complex pseudo-elements, custom scrollbars, gradient text, glass morphism depth, and brand-specific micro-interactions.
+• Choose the right aesthetic and define :root custom properties to match:
+  PROFILE A (dark tech): --bg:#07070f; --accent:#6366f1; glow shadows, radial bg leak, gradient-clipped H1
+  PROFILE B (editorial light): --bg:#F9FBF9; --accent:#FF7043; generous whitespace, sage secondary, thin SVG icons
+  PROFILE C (luxury minimal): --bg:#fafafa or #080808; --accent:#C9A96E; extreme whitespace, hairline borders
+  PROFILE D (brutalist): --bg:#fff; --accent:#e63946; offset box-shadow:4px 4px 0 #000, thick borders
+  PROFILE E (playful): bright 3-color palette; bouncy hover transform:scale(1.05); illustrated shapes
+• Write glow button: background: linear-gradient(135deg, var(--accent), ...) with box-shadow glow on :hover.
+• Add a layered radial gradient background leak div (position:fixed, pointer-events:none, z-index:-1) for dark profiles.
+• Every button/link must have a :hover state with visual feedback.
+• Output raw CSS only — NO tags, NO prose, NO fences.`;
+
+const L3_ACTIVATE_PROMPT = `You are a senior frontend architect wiring bulletproof interactivity into a Tailwind + Lucide site.
+
+LEVEL 3 — ACTIVATE: Output ONLY JavaScript (no tags, no HTML, no CSS).
+
+RULES:
+• Output ONLY raw JS — NO <script> tags, NO HTML, NO CSS, NO markdown fences, NO prose.
+• FIRST LINE: re-trigger Lucide so any dynamically shown elements get their icons:
+    if (window.lucide) { lucide.createIcons(); }
+• NULL-CHECK every single DOM query before using it:
+    const btn = document.getElementById('myBtn');
+    if (btn) btn.addEventListener('click', () => { ... });
+• ALL functions at TOP LEVEL — never nested inside callbacks or blocks.
+• DO NOT wrap anything in DOMContentLoaded — script runs after </body>, DOM is already parsed.
+• SCROLL LINKS — smooth scroll with 90px sticky-nav offset:
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        const el = document.querySelector(this.getAttribute('href'));
+        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - 90, behavior: 'smooth' });
+      });
+    });
+• TABS: use classList add/remove on .tab-panel / .tab-btn — never display:none on flex parents.
+    function showTab(id, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const p = document.getElementById(id); if (p) p.classList.add('active');
+      if (btn) btn.classList.add('active');
+    }
+• MODALS: function openModal(id){const m=document.getElementById(id);if(m)m.style.display='flex';} function closeModal(id){const m=document.getElementById(id);if(m)m.style.display='none';}
+• FORMS: always intercept with e.preventDefault() and show an inline success message — never reload.
+• SCROLL REVEAL (always include):
+    const _io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); _io.unobserve(e.target); }
+    }), { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+    setTimeout(() => document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible')), 1200);
+• NO dead stubs — every button MUST do something (scroll, toggle, open modal, submit, animate, etc.).
+• Output raw JS only — NO tags, NO prose, NO fences.`;
+
+const L_UPDATE_PROMPT = `You are surgically updating one section of a website.
+
+UPDATE MODE: Output ONLY the new inner HTML for the requested section.
+
+RULES:
+• Output ONLY the inner HTML that replaces the content inside the target section's data-section-id wrapper.
+• Do NOT output the section wrapper tag itself. Do NOT change any other section.
+• Keep all existing IDs and data attributes.
+• No markdown fences, no prose, just the raw HTML fragment.`;
+
+// Assemble full HTML from staged fragments — rendered inside sandbox.html so Tailwind CDN works
+function assembleStagedHtml(bodyHtml, styleCss, scriptJs) {
+  const customCss = styleCss ? '\n    ' + styleCss.split('\n').join('\n    ') : '';
+  const script = scriptJs ? '\n<script>\n(function(){\n' + scriptJs + '\n})();\n<\/script>' : '';
+  return `<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI Build</title>
+
+  <!-- Tailwind CSS — works because this document runs inside sandbox.html (relaxed CSP) -->
+  <script src="https://cdn.tailwindcss.com"><\/script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"><\/script>
+
+  <!-- Tailwind custom tokens -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  <\/script>
+
+  <style>
+    /* ── Reset ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    /* ── Design tokens ──────────────────────────────────────── */
+    :root {
+      --bg:           #07070f;
+      --text:         #f0f0ff;
+      --text-muted:   #94a3b8;
+      --accent:       #6366f1;
+      --accent-glow:  rgba(99,102,241,0.18);
+      --card-bg:      rgba(255,255,255,0.03);
+      --card-border:  rgba(255,255,255,0.08);
+      --radius:       14px;
+    }
+
+    /* ── Base ───────────────────────────────────────────────── */
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout helpers (replaces Tailwind grid utilities) ──── */
+    .container { width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .grid { display: grid; gap: 24px; }
+    .flex { display: flex; }
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+    .flex-between { display: flex; align-items: center; justify-content: space-between; }
+    @media (min-width: 640px)  { .sm-col-2 { grid-template-columns: repeat(2,1fr); } }
+    @media (min-width: 768px)  { .md-col-2 { grid-template-columns: repeat(2,1fr); } .md-col-3 { grid-template-columns: repeat(3,1fr); } }
+    @media (min-width: 1024px) { .lg-col-2 { grid-template-columns: repeat(2,1fr); } .lg-col-3 { grid-template-columns: repeat(3,1fr); } .lg-col-4 { grid-template-columns: repeat(4,1fr); } }
+
+    /* ── Glassmorphism card ─────────────────────────────────── */
+    .glass-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), border-color 0.2s;
+    }
+    .glass-card:hover { transform: translateY(-4px); border-color: rgba(99,102,241,0.4); }
+
+    /* ── Gradient text helper ───────────────────────────────── */
+    .gradient-text {
+      background: linear-gradient(135deg, var(--accent) 0%, #ec4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Glow button ────────────────────────────────────────── */
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      background: linear-gradient(135deg, var(--accent) 0%, #ec4899 100%);
+      color: #fff; font-weight: 700; border: none; cursor: pointer;
+      padding: 14px 28px; border-radius: 999px;
+      box-shadow: 0 0 32px -8px var(--accent-glow);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover { transform: scale(1.04); box-shadow: 0 0 48px -8px var(--accent-glow); }
+    .btn-primary:active { transform: scale(0.97); }
+
+    /* ── Scroll-reveal ──────────────────────────────────────── */
+    .reveal { transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1); }
+    .reveal:not(.visible) { opacity: 0; transform: translateY(22px); }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* ── Generated CSS from L2 ──────────────────────────────── */
+    ${customCss}
+  </style>
+</head>
+<body>
+
+${bodyHtml || ''}
+
+${script}
+</body>
+</html>`;
+}
+
+// Extract a raw text fragment from AI response (strips markdown fences)
+function extractFragment(text) {
+  if (!text) return '';
+  return text.replace(/^```[\w]*\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+}
+
+// Get images from IndexedDB (unlimited storage) or fallback to session storage
+async function initializeChat() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const count = urlParams.get('count');
+  const isDirect = urlParams.get('direct') === 'true';
+  const isContextMenu = urlParams.get('source') === 'contextmenu';
+  
+  // Get metadata from session storage
+  const result = await chrome.storage.session.get(['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap', 'askAiPayload']);
+  currentPageText = result.pageText || '';
+
+  if (isContextMenu) {
+    const storageError = urlParams.get('error');
+    if (storageError === 'storage') {
+      currentImages = [];
+      const previewContainer = document.querySelector('.image-preview');
+      previewContainer.innerHTML = `
+        <div style="padding: 20px; text-align: center; color: #ff6b6b;">
+          <div style="font-size: 42px; margin-bottom: 8px;">⚠️</div>
+          <div style="font-size: 14px; font-weight: 600;">Couldn't load page context</div>
+          <div style="font-size: 11px; color: #889999; margin-top: 8px; line-height: 1.5;">
+            Storage limit reached. Try right-clicking again<br>or use the AI button in the popup instead.
+          </div>
+        </div>
+      `;
+      setupMagicButtons();
+      document.getElementById('chatInput').focus();
+      return;
+    }
+
+    if (!result.askAiPayload) {
+      currentImages = [];
+      const previewContainer = document.querySelector('.image-preview');
+      previewContainer.innerHTML = `
+        <div style="padding: 20px; text-align: center; color: #ff6b6b;">
+          <div style="font-size: 42px; margin-bottom: 8px;">⚠️</div>
+          <div style="font-size: 14px; font-weight: 600;">Context not found</div>
+          <div style="font-size: 11px; color: #889999; margin-top: 8px; line-height: 1.5;">
+            Page context expired or failed to load.<br>Please right-click the page again to retry.
+          </div>
+        </div>
+      `;
+      setupMagicButtons();
+      document.getElementById('chatInput').focus();
+      return;
+    }
+
+    console.log('[SnapToAI] Context menu mode - auto-analyzing');
+    const payload = result.askAiPayload;
+    const ctx = payload.context || {};
+
+    if (payload.screenshot) {
+      currentImages = [payload.screenshot];
+      const previewContainer = document.querySelector('.image-preview');
+      const placeholder = document.getElementById('imagePlaceholder');
+      if (placeholder) placeholder.style.display = 'none';
+      document.getElementById('previewImage').src = payload.screenshot;
+    }
+
+    let contextInfo = '';
+    if (ctx.url) contextInfo += `**Page:** ${ctx.title || ctx.url}\n`;
+    if (ctx.selectedText) contextInfo += `**Selected text:** ${ctx.selectedText.substring(0, 3000)}\n`;
+    if (ctx.linkUrl) contextInfo += `**Link:** ${ctx.linkUrl}\n`;
+    if (ctx.srcUrl) contextInfo += `**Image source:** ${ctx.srcUrl}\n`;
+
+    let codeContext = '';
+    if (ctx.visibleCodeBlocks && ctx.visibleCodeBlocks.length > 0 && !ctx.selectedText) {
+      codeContext = '\n\n**Code visible on page:**\n```\n' + ctx.visibleCodeBlocks.join('\n---\n').substring(0, 4000) + '\n```';
+    }
+
+    const fallback = DEFAULT_MAGIC_BUTTONS.find(b => b.isFallback) || DEFAULT_MAGIC_BUTTONS[0];
+    let autoPrompt = fallback.prompt;
+    if (ctx.selectedText) {
+      autoPrompt += `\n\nSelected text: ${ctx.selectedText.substring(0, 3000)}`;
+    }
+    if (contextInfo) {
+      autoPrompt += `\n\n${contextInfo}`;
+    }
+    if (codeContext) {
+      autoPrompt += codeContext;
+    }
+
+    setupMagicButtons();
+    if (typeof updateVerdictButtonVisibility === 'function') {
+      updateVerdictButtonVisibility();
+    }
+
+    try { await chrome.storage.session.remove('askAiPayload'); } catch (e) { console.log('[SnapToAI] Cleanup note:', e.message); }
+<3310 lines not shown>
