@@ -105,6 +105,24 @@
             container.appendChild(el);
           } catch(e) {}
         }
+
+        // Inline <script> tags from head — execute tailwind.config and other
+        // setup scripts so custom colors/fonts are registered BEFORE body is
+        // injected. Without this, Tailwind CDN never generates CSS for custom
+        // tokens like text-electric, bg-pitch, font-heading etc.
+        var headScriptRe = /<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/gi;
+        var hsMatch;
+        while ((hsMatch = headScriptRe.exec(headHtml)) !== null) {
+          try {
+            var code = hsMatch[1].trim();
+            if (!code) continue;
+            // Skip CDN loader stubs (very short or just comments)
+            if (code.length < 5) continue;
+            var el = document.createElement('script');
+            el.textContent = code;
+            container.appendChild(el);
+          } catch(e) {}
+        }
       } catch(e) {}
     }
 
@@ -132,7 +150,10 @@
         // cause "Unexpected end of input" SyntaxErrors when cloned.
         if (data.isFinal) {
           runScripts(app);
+          // Immediate call for icons already in DOM
           try { lucide.createIcons(); } catch(e) {}
+          // Delayed call catches icons created by scripts that ran async
+          setTimeout(function() { try { lucide.createIcons(); } catch(e) {} }, 150);
         }
       } catch(e) {}
     });
