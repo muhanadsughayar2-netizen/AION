@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus AI Studio — The Power of Gemini in your Browser</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Archivo Black', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            bg: '#030303',
+            surface: 'rgba(255,255,255,0.03)',
+            accent: '#A855F7',
+            pink: '#EC4899',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background-color: #030303; color: #fff; -webkit-font-smoothing: antialiased; }
+    
+    .gradient-text {
+      background: linear-gradient(135deg, #ffffff 30%, #A855F7 70%, #EC4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .studio-grid {
+      background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+      background-size: 24px 24px;
+    }
+
+    .glow-btn {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .glow-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.5s ease;
+    }
+    .glow-btn:hover::after { transform: translateX(100%); }
+
+    .reveal.visible { animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes revealUp { 
+      from { opacity: 0; transform: translateY(30px); } 
+      to { opacity: 1; transform: translateY(0); } 
+    }
+
+    .floating { animation: floating 3s ease-in-out infinite; }
+    @keyframes floating {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    /* Tabs display grid protection */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: grid; animation: fadeIn 0.4s ease forwards; }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  </style>
+</head>
+<body class="studio-grid">
+
+  <!-- NAVIGATION -->
+  <nav class="fixed top-0 w-full z-50 glass-card border-x-0 border-t-0 py-4 px-6 md:px-12 flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-gradient-to-br from-accent to-pink rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
+        <i data-lucide="zap" class="text-white w-6 h-6 fill-white"></i>
+      </div>
+      <span class="text-xl font-bold tracking-tight uppercase italic font-heading">Nexus AI Studio</span>
+    </div>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="#features" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">FEATURES</a>
+      <a href="#studio" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">THE STUDIO</a>
+      <button onclick="openLegal('Privacy Policy', privacyContent)" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">PRIVACY</button>
+      <a href="#add" class="glow-btn bg-gradient-to-r from-accent to-pink px-6 py-2.5 rounded-full font-bold text-sm shadow-xl shadow-purple-500/30">ADD TO CHROME</a>
+    </div>
+    <button class="md:hidden text-white"><i data-lucide="menu"></i></button>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section class="relative pt-40 pb-24 px-6 max-w-[1200px] mx-auto min-h-screen flex flex-col lg:flex-row gap-16 items-center">
+    <!-- Hero Text -->
+    <div class="flex-1 reveal">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-500/10 mb-8">
+        <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+        <span class="text-[10px] font-bold tracking-[0.2em] text-purple-300 uppercase">Google AI Studio Payload Active</span>
+      </div>
+      
+      <h1 class="text-6xl md:text-8xl font-heading italic leading-[0.85] mb-8 uppercase">
+        Snap the <br>
+        <span class="gradient-text">Pixel,</span> <br>
+        Unleash <br>
+        <span class="gradient-text">The Studio.</span>
+      </h1>
+      
+      <p class="text-gray-400 text-lg md:text-xl max-w-xl leading-relaxed mb-10">
+        Capture any screen, then chat with AI, generate <span class="text-white font-semibold italic">photoreal images</span>, original <span class="text-white font-semibold italic">music</span>, and cinematic <span class="text-white font-semibold italic">64-second videos</span>—all powered by Google Gemini, right in your browser.
+      </p>
+      
+      <div class="flex flex-wrap gap-12 border-t border-white/10 pt-10">
+        <div>
+          <div class="text-4xl font-heading italic">64<span class="text-accent">S</span></div>
+          <p class="text-[10px] font-bold text-gray-500 tracking-[0.2em] uppercase mt-1">Stitched Video</p>
+        </div>
+        <div>
+          <div class="text-4xl font-heading italic">55+</div>
+          <p class="text-[10px] font-bold text-gray-500 tracking-[0.2em] uppercase mt-1">Languages</p>
+        </div>
+        <div>
+          <div class="text-4xl font-heading italic">$300</div>
+          <p class="text-[10px] font-bold text-gray-500 tracking-[0.2em] uppercase mt-1">Free Google Credit</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero Mockup (The Extension) -->
+    <div class="flex-1 w-full max-w-[500px] reveal">
+      <div class="glass-card rounded-[32px] p-6 shadow-2xl shadow-purple-500/10 border-white/20 relative overflow-hidden floating">
+        <div class="flex justify-between items-center mb-8">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-gradient-to-br from-accent to-pink rounded-lg flex items-center justify-center">
+              <i data-lucide="zap" class="w-4 h-4 text-white"></i>
+            </div>
+            <span class="font-heading italic text-sm tracking-tighter">NexusAI Studio</span>
+          </div>
+          <div class="px-2 py-0.5 rounded border border-green-500/40 text-green-400 text-[10px] font-bold tracking-widest uppercase">
+            Ready • V2.4
+          </div>
+        </div>
+
+        <!-- Tool Selection -->
+        <div class="grid grid-cols-4 gap-3 mb-8">
+          <button class="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-all group">
+            <i data-lucide="camera" class="w-5 h-5 text-gray-400 group-hover:text-white"></i>
+            <span class="text-[9px] font-bold text-gray-500 group-hover:text-white uppercase tracking-tighter">Snap</span>
+          </button>
+          <button class="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-all group">
+            <i data-lucide="scissors" class="w-5 h-5 text-gray-400 group-hover:text-white"></i>
+            <span class="text-[9px] font-bold text-gray-500 group-hover:text-white uppercase tracking-tighter">Snip</span>
+          </button>
+          <button class="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-all group">
+            <i data-lucide="file-text" class="w-5 h-5 text-gray-400 group-hover:text-white"></i>
+            <span class="text-[9px] font-bold text-gray-500 group-hover:text-white uppercase tracking-tighter">Full</span>
+          </button>
+          <button class="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/10 border border-accent/50 shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all">
+            <i data-lucide="sparkles" class="w-5 h-5 text-accent"></i>
+            <span class="text-[9px] font-bold text-accent uppercase tracking-tighter">Studio</span>
+          </button>
+        </div>
+
+        <!-- Preview Grid -->
+        <div class="grid grid-cols-2 gap-3 mb-8">
+          <div class="aspect-video rounded-xl overflow-hidden bg-white/5 relative group">
+            <img src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#2e1065 0%,#000000 100%)'" 
+                 class="object-cover w-full h-full opacity-60 group-hover:scale-110 transition-transform duration-700" alt="AI Gen 1">
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-[9px] font-bold bg-black/50 px-2 py-1 rounded backdrop-blur">CAPTURE 1</span>
+            </div>
+          </div>
+          <div class="aspect-video rounded-xl overflow-hidden bg-white/5 relative group">
+            <img src="https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#701a75 0%,#000000 100%)'" 
+                 class="object-cover w-full h-full opacity-60 group-hover:scale-110 transition-transform duration-700" alt="AI Gen 2">
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-[9px] font-bold bg-black/50 px-2 py-1 rounded backdrop-blur">CAPTURE 2</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="w-full py-4 rounded-2xl bg-gradient-to-r from-accent to-pink font-heading italic text-sm tracking-widest uppercase hover:opacity-90 transition-all shadow-lg shadow-purple-500/20 mb-4">
+          + Process in Studio
+        </button>
+
+        <div class="flex justify-center gap-4">
+          <div class="flex items-center gap-1.5 text-[10px] text-gray-500 font-bold uppercase">
+            <i data-lucide="video" class="w-3 h-3"></i> 64s Veo
+          </div>
+          <div class="flex items-center gap-1.5 text-[10px] text-gray-500 font-bold uppercase">
+            <i data-lucide="music" class="w-3 h-3"></i> Lyria 3
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES BENTO GRID -->
+  <section id="features" class="py-32 px-6 max-w-[1200px] mx-auto">
+    <div class="text-center mb-20 reveal">
+      <h2 class="text-4xl md:text-6xl font-heading italic uppercase mb-4">A Multimodal <span class="gradient-text">Engine</span></h2>
+      <p class="text-gray-500 text-lg">One extension. Infinite possibilities. All Gemini 1.5 Pro powered.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Image & Vision -->
+      <div class="md:col-span-2 glass-card rounded-3xl p-8 flex flex-col justify-between group reveal">
+        <div>
+          <div class="w-12 h-12 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <i data-lucide="eye" class="text-accent"></i>
+          </div>
+          <h3 class="text-2xl font-heading italic uppercase mb-2">Vision & Image Gen</h3>
+          <p class="text-gray-400">Analyze any screen element or generate photorealistic 4K imagery from simple text prompts using the latest Imagen 3 models.</p>
+        </div>
+        <div class="mt-8 grid grid-cols-4 gap-2">
+          <div class="h-1 bg-accent/30 rounded-full"></div>
+          <div class="h-1 bg-accent/30 rounded-full"></div>
+          <div class="h-1 bg-accent rounded-full"></div>
+          <div class="h-1 bg-accent/30 rounded-full"></div>
+        </div>
+      </div>
+
+      <!-- Video & Music -->
+      <div class="glass-card rounded-3xl p-8 group reveal">
+        <div class="w-12 h-12 rounded-2xl bg-pink/10 border border-pink/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+          <i data-lucide="video" class="text-pink"></i>
+        </div>
+        <h3 class="text-2xl font-heading italic uppercase mb-2">Cinema Studio</h3>
+        <p class="text-gray-400">Stitch captures into 64-second cinematic videos with AI-composed soundtracks via Lyria.</p>
+      </div>
+
+      <!-- Code & Research -->
+      <div class="glass-card rounded-3xl p-8 group reveal">
+        <div class="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+          <i data-lucide="code" class="text-blue-400"></i>
+        </div>
+        <h3 class="text-2xl font-heading italic uppercase mb-2">Code & Read</h3>
+        <p class="text-gray-400">Instantly debug code from screenshots or summarize 50-page PDF research in seconds.</p>
+      </div>
+
+      <!-- TTS & Search -->
+      <div class="md:col-span-2 glass-card rounded-3xl p-8 flex flex-col md:flex-row gap-8 items-center group reveal">
+        <div class="flex-1">
+          <div class="w-12 h-12 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <i data-lucide="mic" class="text-green-400"></i>
+          </div>
+          <h3 class="text-2xl font-heading italic uppercase mb-2">TTS & Voice</h3>
+          <p class="text-gray-400">Convert any text to studio-quality speech. Perfect for reading long articles while you multitask.</p>
+        </div>
+        <div class="flex-1 w-full flex flex-col gap-2">
+            <div class="bg-white/5 p-3 rounded-lg flex items-center gap-3">
+                <i data-lucide="search" class="w-4 h-4 text-gray-500"></i>
+                <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div class="h-full bg-accent w-3/4 animate-pulse"></div>
+                </div>
+            </div>
+            <div class="bg-white/5 p-3 rounded-lg flex items-center gap-3">
+                <i data-lucide="radio" class="w-4 h-4 text-gray-500"></i>
+                <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div class="h-full bg-pink w-1/2 animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STUDIO TABS SECTION -->
+  <section id="studio" class="py-32 px-6 bg-white/[0.02]">
+    <div class="max-w-[1100px] mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-end gap-8 mb-16 reveal">
+            <div class="max-w-lg">
+                <h2 class="text-5xl font-heading italic uppercase leading-none mb-6">Built for the <br><span class="gradient-text">Creator</span></h2>
+                <p class="text-gray-400 text-lg">Every capability of Google AI Studio, miniaturized and supercharged for your browser workflow.</p>
+            </div>
+            <div class="flex gap-2 p-1 bg-white/5 rounded-full border border-white/10">
+                <button onclick="showTab('t1', this)" class="tab-btn active px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all">Workflow</button>
+                <button onclick="showTab('t2', this)" class="tab-btn px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all">Protocol</button>
+                <button onclick="showTab('t3', this)" class="tab-btn px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all">Safety</button>
+            </div>
+        </div>
+
+        <div id="t1" class="tab-panel active grid md:grid-cols-2 gap-12 items-center reveal">
+            <div class="order-2 md:order-1">
+                <h3 class="text-3xl font-heading italic uppercase mb-6">Seamless Creative Flow</h3>
+                <p class="text-gray-400 leading-relaxed mb-6">Nexus AI Studio removes the friction between seeing and creating. Whether you're a developer needing to turn a UI screenshot into code, or a content creator turning a webpage into a video narrative, the studio interface provides a unified command center.</p>
+                <ul class="space-y-4">
+                    <li class="flex items-start gap-3">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-accent mt-1"></i>
+                        <span class="text-gray-300">Instant background removal and upscaling</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-accent mt-1"></i>
+                        <span class="text-gray-300">Multi-tab context awareness for deep research</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-accent mt-1"></i>
+                        <span class="text-gray-300">One-click export to Google Drive or Sheets</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="order-1 md:order-2 rounded-3xl overflow-hidden glass-card aspect-square relative">
+                <img src="https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg?auto=compress&cs=tinysrgb&w=1200" 
+                     onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#000000 0%,#1e1e1e 100%)'"
+                     class="object-cover w-full h-full opacity-50" alt="Workspace">
+                <div class="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent"></div>
+            </div>
+        </div>
+
+        <div id="t2" class="tab-panel grid md:grid-cols-2 gap-12 items-center">
+            <div class="rounded-3xl overflow-hidden glass-card aspect-square relative">
+                <img src="https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=1200" 
+                     onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#000000 0%,#1e1e1e 100%)'"
+                     class="object-cover w-full h-full opacity-50" alt="Code">
+            </div>
+            <div>
+                <h3 class="text-3xl font-heading italic uppercase mb-6">The Gemini Protocol</h3>
+                <p class="text-gray-400 leading-relaxed mb-6">We utilize the Gemini 1.5 Flash and Pro API endpoints to ensure the fastest possible response times. Our proprietary caching layer ensures that repetitive tasks like translation and summarization happen nearly instantaneously without redundant API calls.</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 bg-white/5 rounded-xl border border-white/10">
+                        <div class="text-accent font-bold text-xl">1M+</div>
+                        <div class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Token Context</div>
+                    </div>
+                    <div class="p-4 bg-white/5 rounded-xl border border-white/10">
+                        <div class="text-pink font-bold text-xl">Low</div>
+                        <div class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Latency Mesh</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="t3" class="tab-panel grid md:grid-cols-2 gap-12 items-center">
+            <div>
+                <h3 class="text-3xl font-heading italic uppercase mb-6">Ethical AI Standards</h3>
+                <p class="text-gray-400 leading-relaxed mb-6">Nexus AI Studio is built with privacy-first principles. Your captures are processed in real-time and never stored on our servers. We adhere strictly to Google's Generative AI Prohibited Use Policy, ensuring a safe and creative environment for all users.</p>
+                <div class="p-6 bg-accent/5 border border-accent/20 rounded-2xl">
+                    <p class="text-sm italic text-gray-300">"We believe the most powerful AI is the one that respects the user's boundaries while expanding their creative horizon."</p>
+                </div>
+            </div>
+            <div class="rounded-3xl overflow-hidden glass-card aspect-square relative">
+                <img src="https://images.pexels.com/photos/3757942/pexels-photo-3757942.jpeg?auto=compress&cs=tinysrgb&w=1200" 
+                     onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#000000 0%,#1e1e1e 100%)'"
+                     class="object-cover w-full h-full opacity-50" alt="Meditation">
+            </div>
+        </div>
+    </div>
+  </section>
+
+  <!-- CTA SECTION -->
+  <section id="add" class="py-40 px-6 text-center">
+    <div class="max-w-[800px] mx-auto reveal">
+        <h2 class="text-5xl md:text-8xl font-heading italic uppercase mb-12 leading-[0.9]">Ready to <br><span class="gradient-text">Transcend?</span></h2>
+        <p class="text-gray-400 text-xl mb-12">Join 50,000+ creators using the most powerful AI studio ever built for a browser.</p>
+        <button class="glow-btn bg-gradient-to-r from-accent to-pink px-12 py-6 rounded-full font-heading italic text-xl tracking-widest uppercase shadow-2xl shadow-purple-500/50 hover:scale-105 transition-transform">
+            Add to Chrome — It's Free
+        </button>
+        <p class="text-gray-600 text-xs mt-8 uppercase tracking-[0.3em]">No credit card required. Powered by Gemini.</p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="py-20 px-6 border-t border-white/10 glass-card">
+    <div class="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+        <div class="col-span-1 md:col-span-2">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-8 h-8 bg-gradient-to-br from-accent to-pink rounded-lg flex items-center justify-center">
+                    <i data-lucide="zap" class="text-white w-4 h-4"></i>
+                </div>
+                <span class="text-lg font-heading italic tracking-tighter uppercase">NexusAI Studio</span>
+            </div>
+            <p class="text-gray-500 max-w-sm mb-8">Bringing the future of multimodal artificial intelligence to your fingertips. Built with passion for the global creative community.</p>
+            <div class="flex gap-4">
+                <a href="#" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"><i data-lucide="twitter" class="w-4 h-4"></i></a>
+                <a href="#" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"><i data-lucide="github" class="w-4 h-4"></i></a>
+            </div>
+        </div>
+        <div>
+            <h4 class="font-bold text-xs uppercase tracking-widest text-white mb-6">Product</h4>
+            <ul class="space-y-4 text-sm text-gray-500">
+                <li><a href="#features" class="hover:text-accent transition-colors">Features</a></li>
+                <li><a href="#studio" class="hover:text-accent transition-colors">The Studio</a></li>
+                <li><a href="#" class="hover:text-accent transition-colors">Chrome Web Store</a></li>
+                <li><a href="#" class="hover:text-accent transition-colors">Enterprise</a></li>
+            </ul>
+        </div>
+        <div>
+            <h4 class="font-bold text-xs uppercase tracking-widest text-white mb-6">Legal</h4>
+            <ul class="space-y-4 text-sm text-gray-500">
+                <li><button onclick="openLegal('Privacy Policy', privacyContent)" class="hover:text-accent transition-colors">Privacy Policy</button></li>
+                <li><button onclick="openLegal('Terms of Service', termsContent)" class="hover:text-accent transition-colors">Terms of Service</button></li>
+                <li><button onclick="openLegal('Medical Disclaimer', medicalContent)" class="hover:text-accent transition-colors">AI Disclaimer</button></li>
+            </ul>
+        </div>
+    </div>
+    <div class="max-w-[1200px] mx-auto mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-600 font-bold uppercase tracking-widest">
+        <p>© 2024 Nexus AI Studio. All rights reserved.</p>
+        <p>Supported by Google for Startups Cloud Program.</p>
+    </div>
+  </footer>
+
+  <!-- LEGAL MODAL -->
+  <
+</body></html>
