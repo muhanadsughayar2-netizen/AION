@@ -8402,17 +8402,13 @@ window.addEventListener('message', function(ev) {
 function _postToSandbox(code) {
   const iframe = document.getElementById('livePreview');
   if (!iframe) return;
-  // Never touch contentDocument — sandbox is cross-origin and that throws a DOMException
-  const send = () => {
-    if (iframe.contentWindow) {
-      iframe.contentWindow.postMessage({ htmlCode: code }, '*');
-    }
-  };
-  // contentWindow is available as soon as the element exists in the DOM
+  _lastBuiltCode = code; // always keep buffer fresh
+  // Gate on handshake — contentWindow is always truthy once element exists,
+  // so we must check _isSandboxReady explicitly. If sandbox isn't ready yet,
+  // the handshake listener will auto-flush _lastBuiltCode when it fires.
+  if (!_isSandboxReady) return;
   if (iframe.contentWindow) {
-    send();
-  } else {
-    iframe.addEventListener('load', send, { once: true });
+    iframe.contentWindow.postMessage({ htmlCode: code }, '*');
   }
 }
 
