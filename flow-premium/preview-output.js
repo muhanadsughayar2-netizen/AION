@@ -61,19 +61,20 @@ function sanitizeForPreview(code) {
 }
 
 function loadPreview(code) {
-  // Revoke any previous blob to avoid memory leaks
-  if (_previewBlobUrl) {
-    URL.revokeObjectURL(_previewBlobUrl);
-    _previewBlobUrl = null;
-  }
-  // Sanitize first — fixes opacity:0 blank-page bug in generated HTML
   const safeCode = sanitizeForPreview(code);
-  // Use a blob URL as iframe src instead of srcdoc.
-  // This runs the built HTML outside the extension's CSP context so
-  // Google Fonts and inline scripts work correctly.
-  const blob = new Blob([safeCode], { type: 'text/html' });
-  _previewBlobUrl = URL.createObjectURL(blob);
-  document.getElementById('previewFrame').src = _previewBlobUrl;
+  const frame = document.getElementById('previewFrame');
+  // Send via postMessage to sandbox.html — sandbox has relaxed CSP so
+  // Tailwind CDN and Lucide load correctly
+  const send = () => {
+    if (frame.contentWindow) {
+      frame.contentWindow.postMessage({ htmlCode: safeCode }, '*');
+    }
+  };
+  if (frame.contentWindow) {
+    send();
+  } else {
+    frame.addEventListener('load', send, { once: true });
+  }
 }
 
 chrome.storage.local.get('snaptoai_built_code', (res) => {
