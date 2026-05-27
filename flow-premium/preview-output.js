@@ -1,19 +1,15 @@
 let _code = '';
 let _codeVisible = false;
-let _previewBlobUrl = null;
+let _sandboxReady = false;
+let _pendingCode = null;
 
 // Fix generated HTML before preview:
 // 1. Remove opacity:0 from .reveal rules — prevents blank pages when JS is slow
 // 2. Inject a safety script that forces all .reveal elements visible after 600ms
 function sanitizeForPreview(code) {
-  // Step 1: strip opacity:0 from .reveal rules — but ONLY inside <style> blocks
-  // so we never accidentally mutate JS strings, comments, or multi-selector rules
-  // that happen to contain ".reveal { opacity:0 }" as text.
   const fixed = code.replace(
     /(<style[\s\S]*?>)([\s\S]*?)(<\/style>)/gi,
     (match, open, css, close) => {
-      // Within this style block, remove opacity:0/opacity: 0 only from rules
-      // whose selector is SOLELY .reveal (not ".foo, .reveal" etc.)
       const safeCss = css.replace(
         /((?:^|[{}])\s*\.reveal\s*\{[^}]*?)opacity\s*:\s*0\s*;?/g,
         '$1'
@@ -22,8 +18,6 @@ function sanitizeForPreview(code) {
     }
   );
 
-  // Step 2: safety script — forces all .reveal elements visible at 600ms + 2s.
-  // Runs IntersectionObserver first for smooth animation, then falls back hard.
   const safetyScript = `\n<script>
 (function(){
   function forceReveal(){
@@ -51,8 +45,6 @@ function sanitizeForPreview(code) {
 })();
 <\/script>`;
 
-  // Inject before the LAST </body> in the document (avoids false matches in
-  // inline JS strings that happen to contain the text "</body>").
   const bodyIdx = fixed.toLowerCase().lastIndexOf('</body>');
   if (bodyIdx !== -1) {
     return fixed.slice(0, bodyIdx) + safetyScript + '\n' + fixed.slice(bodyIdx);
@@ -60,22 +52,33 @@ function sanitizeForPreview(code) {
   return fixed + safetyScript;
 }
 
-function loadPreview(code) {
-  const safeCode = sanitizeForPreview(code);
+function sendToSandbox(safeCode) {
   const frame = document.getElementById('previewFrame');
-  // Send via postMessage to sandbox.html — sandbox has relaxed CSP so
-  // Tailwind CDN and Lucide load correctly
-  const send = () => {
-    if (frame.contentWindow) {
-      frame.contentWindow.postMessage({ htmlCode: safeCode }, '*');
-    }
-  };
-  if (frame.contentWindow) {
-    send();
-  } else {
-    frame.addEventListener('load', send, { once: true });
+  if (frame && frame.contentWindow) {
+    frame.contentWindow.postMessage({ htmlCode: safeCode }, '*');
   }
 }
+
+function loadPreview(code) {
+  const safeCode = sanitizeForPreview(code);
+  if (_sandboxReady) {
+    sendToSandbox(safeCode);
+  } else {
+    // Queue it — will be sent once sandboxReady fires
+    _pendingCode = safeCode;
+  }
+}
+
+// Listen for sandboxReady handshake from sandbox.html iframe
+window.addEventListener('message', (event) => {
+  if (event.data && event.data.sandboxReady) {
+    _sandboxReady = true;
+    if (_pendingCode !== null) {
+      sendToSandbox(_pendingCode);
+      _pendingCode = null;
+    }
+  }
+});
 
 chrome.storage.local.get('snaptoai_built_code', (res) => {
   const code = res.snaptoai_built_code || '';
