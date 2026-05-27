@@ -4,21 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SnapToAI Sandbox</title>
-  <!-- Tailwind + Lucide pre-loaded here — CSP is relaxed for declared sandbox pages -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-            serif: ['"Playfair Display"', 'serif'],
-            mono: ['"JetBrains Mono"', 'monospace'],
+    try {
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+              serif: ['"Playfair Display"', 'serif'],
+              mono: ['"JetBrains Mono"', 'monospace']
+            }
           }
         }
-      }
-    }
+      };
+    } catch(e) {}
   </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -33,71 +34,86 @@
   <script>
     // Re-execute <script> tags that innerHTML silently ignores
     function runScripts(container) {
-      container.querySelectorAll('script').forEach(function(old) {
-        var fresh = document.createElement('script');
-        Array.from(old.attributes).forEach(function(a) { fresh.setAttribute(a.name, a.value); });
-        fresh.textContent = old.textContent;
-        old.parentNode.replaceChild(fresh, old);
-      });
+      try {
+        container.querySelectorAll('script').forEach(function(old) {
+          try {
+            var fresh = document.createElement('script');
+            Array.from(old.attributes).forEach(function(a) {
+              try { fresh.setAttribute(a.name, a.value); } catch(e) {}
+            });
+            fresh.textContent = old.textContent;
+            old.parentNode.replaceChild(fresh, old);
+          } catch(e) {}
+        });
+      } catch(e) {}
     }
 
-    // Inject <style> and <link> tags from the generated <head> so custom
-    // CSS and Google Fonts from the AI output are preserved
+    // Inject <style> and <link> tags from the AI-generated <head>
     function injectHeadAssets(html) {
-      var headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
-      if (!headMatch) return;
-      var headHtml = headMatch[1];
-      var container = document.getElementById('sandbox-head-styles');
-      container.innerHTML = '';
+      try {
+        var headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+        if (!headMatch) return;
+        var headHtml = headMatch[1];
+        var container = document.getElementById('sandbox-head-styles');
+        if (!container) return;
+        container.innerHTML = '';
 
-      // Extract and inject <style> blocks — create nodes programmatically,
-      // not via innerHTML, which is unreliable for <style> in strict sandboxes
-      var styles = headHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
-      styles.forEach(function(s) {
-        var cleanCSS = s.replace(/<\/?style[^>]*>/gi, '');
-        var el = document.createElement('style');
-        el.textContent = cleanCSS;
-        container.appendChild(el);
-      });
+        // <style> blocks — create programmatically, never via innerHTML
+        var styles = headHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+        styles.forEach(function(s) {
+          try {
+            var css = s.replace(/<\/?style[^>]*>/gi, '');
+            var el = document.createElement('style');
+            el.textContent = css;
+            container.appendChild(el);
+          } catch(e) {}
+        });
 
-      // Extract and inject <link rel="stylesheet"> / Google Fonts links
-      var links = headHtml.match(/<link[^>]*>/gi) || [];
-      links.forEach(function(l) {
-        if (/fonts\.googleapis\.com|fonts\.gstatic\.com|stylesheet/i.test(l)) {
-          var tmp = document.createElement('div');
-          tmp.innerHTML = l;
-          var el = tmp.firstChild;
-          if (el) container.appendChild(el);
+        // <link> tags — create programmatically to avoid innerHTML issues
+        var linkRe = /<link([^>]*)>/gi;
+        var linkMatch;
+        while ((linkMatch = linkRe.exec(headHtml)) !== null) {
+          try {
+            var attrStr = linkMatch[1];
+            if (!/fonts\.googleapis\.com|fonts\.gstatic\.com|stylesheet/i.test(attrStr)) continue;
+            var el = document.createElement('link');
+            var attrRe = /(\w[\w-]*)=["']([^"']*)["']/g;
+            var am;
+            while ((am = attrRe.exec(attrStr)) !== null) {
+              try { el.setAttribute(am[1], am[2]); } catch(e) {}
+            }
+            container.appendChild(el);
+          } catch(e) {}
         }
-      });
+      } catch(e) {}
     }
 
-    // Extract <body> inner content from a full HTML document string
+    // Extract <body> content from a full HTML document string
     function extractBody(html) {
-      var m = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      if (m) return m[1];
-      // Fallback: strip everything up to </head>
-      var headEnd = html.search(/<\/head>/i);
-      if (headEnd !== -1) return html.slice(headEnd + 7);
-      // Last resort: return as-is
+      try {
+        var m = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        if (m) return m[1];
+        var headEnd = html.search(/<\/head>/i);
+        if (headEnd !== -1) return html.slice(headEnd + 7);
+      } catch(e) {}
       return html;
     }
 
     window.addEventListener('message', function(event) {
-      var data = event.data;
-      if (!data || !data.htmlCode) return;
-
-      injectHeadAssets(data.htmlCode);
-
-      var app = document.getElementById('sandbox-app');
-      app.innerHTML = extractBody(data.htmlCode);
-      runScripts(app);
-
-      try { lucide.createIcons(); } catch(e) {}
+      try {
+        var data = event.data;
+        if (!data || !data.htmlCode) return;
+        injectHeadAssets(data.htmlCode);
+        var app = document.getElementById('sandbox-app');
+        if (!app) return;
+        app.innerHTML = extractBody(data.htmlCode);
+        runScripts(app);
+        try { lucide.createIcons(); } catch(e) {}
+      } catch(e) {}
     });
 
-    // Tell the parent popup that the sandbox is ready
-    window.parent.postMessage({ sandboxReady: true }, '*');
+    // Notify parent popup that sandbox is ready
+    try { window.parent.postMessage({ sandboxReady: true }, '*'); } catch(e) {}
   </script>
 </body>
 </html>
