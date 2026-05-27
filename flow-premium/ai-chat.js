@@ -8397,15 +8397,32 @@ let _streamRenderPending = null; // latest partial HTML waiting to be rendered
 let _streamSafetyTimer = null;   // 90s safety net — spinner can never be stuck forever
 
 let _isSandboxReady = false;
+// True only once _showLivePreview has been called for the current build (final code ready).
+// Prevents sandboxReady from flushing a partial streaming chunk as "final".
+let _buildFinalReady = false;
 
 // Listen for sandbox boot handshake — sandbox.html posts this when it loads
 window.addEventListener('message', function(ev) {
   if (ev.data && ev.data.sandboxReady) {
     _isSandboxReady = true;
-    // If code was queued before the sandbox was ready, flush it now
-    if (_lastBuiltCode) _postToSandbox(_lastBuiltCode, true); // handshake flush = final
+    // Only flush when the final complete HTML is ready — not mid-stream partials
+    if (_lastBuiltCode && _buildFinalReady) {
+      _postToSandbox(_lastBuiltCode, true);
+    }
   }
 });
+
+// Reload the sandbox iframe so its global scope is fresh for a new build.
+// const/let declarations from the previous build linger in global scope and
+// cause uncatchable "Identifier already declared" SyntaxErrors on re-run.
+function _reloadSandbox() {
+  const iframe = document.getElementById('livePreview');
+  if (!iframe) return;
+  _isSandboxReady = false;
+  _buildFinalReady = false;
+  // Setting .src triggers a full reload; sandboxReady handshake re-fires when done
+  iframe.src = 'sandbox.html';
+}
 
 function _postToSandbox(code, isFinal) {
   const iframe = document.getElementById('livePreview');
@@ -8432,6 +8449,8 @@ function _showLivePreview(code) {
   const lbl = document.getElementById('previewLabel');
   if (!w || !iframe) return;
 
+  // Mark final code as ready so sandboxReady can flush it if sandbox reloads
+  _buildFinalReady = true;
   // Send HTML to sandbox.html via postMessage — sandbox page can load Tailwind CDN
   _postToSandbox(code, true);
   iframe.style.display = 'block';
@@ -8496,6 +8515,12 @@ function renderLivePreview(responseText) {
   if (lbl) lbl.textContent = '⏳ Building…';
   if (txt) txt.textContent = buildStage ? 'Compiling ' + buildStage + '…' : 'Compiling…';
   if (buildStage) _setBadgeActive(buildStage);
+
+  // First chunk of a new build: reload sandbox to clear previous build's global scope.
+  // const/let declarations from prior builds cause uncatchable re-declaration errors.
+  if (!_streamSafetyTimer && !_streamRenderTimer) {
+    _reloadSandbox();
+  }
 
   // Progressive streaming: push partial HTML to sandbox.html via postMessage
   // throttled to once every 900ms so we don't flood the sandbox on every chunk.
