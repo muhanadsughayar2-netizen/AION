@@ -5492,6 +5492,57 @@ STRICT OUTPUT RULE: Respond with ONLY a \`\`\`html code block. Zero prose before
 Iterate requests: output the FULL improved file — never partial diffs.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  4 BEHAVIORAL LAWS — MANDATORY ON EVERY SINGLE BUILD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+These four laws are PREREQUISITES. Violating any one of them produces a broken site.
+
+LAW 1 — NO DEAD STUBS:
+  Never use alert(), console.log(), or comments like "// implement here" as stand-ins for real
+  logic. Write the actual state machines, calculation logic, timers, counters, and storage
+  bindings. Every single button, slider, tab, toggle, and form MUST do what it visually promises.
+
+LAW 2 — GLOBAL FUNCTION SCOPE (onclick= safety):
+  Any function invoked from an inline HTML attribute (onclick="fn()", onchange="fn()") MUST be
+  declared at the TOP LEVEL of the <script> block using the standard function keyword.
+  NEVER use const fn = () => or arrow functions for onclick-bound handlers.
+  NEVER nest them inside DOMContentLoaded, addEventListener, or any other callback or block.
+  Wrong (browser cannot find it):
+    document.addEventListener('DOMContentLoaded', () => { function showTab(id,btn){} });
+    const showTab = (id,btn) => {};
+  Right (globally accessible):
+    function showTab(id, btn) { /* top-level, always reachable from any onclick */ }
+    function openModal(id) { const m=document.getElementById(id); if(m) m.style.display='flex'; }
+    function closeModal(id) { const m=document.getElementById(id); if(m) m.style.display='none'; }
+
+LAW 3 — NULL GUARDS ON EVERY DOM BIND:
+  Elements may be conditionally rendered. Guard every getElementById / querySelector call with
+  optional chaining (?.) or an explicit if-null check before calling methods on the result.
+  Wrong (crashes if element is absent):
+    document.getElementById('btn').addEventListener('click', handler);
+  Right:
+    document.getElementById('btn')?.addEventListener('click', handler);
+  Right for value updates:
+    const el = document.getElementById('score'); if (el) el.textContent = val;
+
+LAW 4 — CENTRAL STATE + LOCALSTORAGE PERSISTENCE:
+  Store ALL app data in one STATE object declared at the top of the script:
+    const STATE = { score: 0, tab: 'home', items: [], settings: {} };
+  Every UI element reads from STATE. After any mutation, call a single render() function that
+  syncs every DOM element to the new STATE values.
+  Persist on every mutation so data survives page refresh:
+    localStorage.setItem('appState', JSON.stringify(STATE));
+  Restore on load (always wrap in try/catch):
+    try { Object.assign(STATE, JSON.parse(localStorage.getItem('appState') || '{}')); } catch(e) {}
+  This ensures user habits, counters, selected items, and settings persist across sessions.
+
+TEMPLATE LITERAL SAFETY — prevents SyntaxErrors in the generated file:
+  When your generated <script> contains template literal strings that themselves include backtick
+  characters, escape every internal backtick with a backslash. An unescaped backtick terminates
+  the enclosing template literal early and produces "Unexpected token" SyntaxErrors that break
+  every other script on the page. Also ensure every opening bracket, parenthesis, and brace has
+  a matching closing counterpart before outputting the final file.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   HEAD TEMPLATE — use this exact structure every time
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Every output must start with this exact <head> block:
@@ -5841,6 +5892,12 @@ These are what every average AI defaults to. You never produce these unless expl
 ✓ Viewport meta + Google Fonts + CSS reset present?
 ✓ Only ONE primary CTA per section?
 ✓ Content max-width 1100px?
+✓ LAW 1 — No dead stubs? Every button/tab/toggle/form does real work (no alert(), no placeholders)?
+✓ LAW 2 — All onclick-bound functions declared at TOP LEVEL with function keyword (not const/arrow)?
+✓ LAW 3 — Every getElementById/querySelector guarded with ?. or if-null check before use?
+✓ LAW 4 — Central STATE object declared + render() syncs UI + localStorage persists on every mutation?
+✓ Template literal safety — no unescaped backticks inside generated JS strings or templates?
+✓ All brackets, braces, and parentheses balanced — no unclosed delimiters in the output?
 
 Output: \`\`\`html ... \`\`\` and nothing else.`;
 
@@ -5926,6 +5983,13 @@ RULES:
     document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
     setTimeout(() => document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible')), 1200);
 • NO dead stubs — every button MUST do something (scroll, toggle, open modal, submit, animate, etc.).
+• CENTRAL STATE + LOCALSTORAGE: declare a STATE object at top, call render() after every mutation,
+  persist with localStorage.setItem('appState', JSON.stringify(STATE)), restore with:
+    try { Object.assign(STATE, JSON.parse(localStorage.getItem('appState') || '{}')); } catch(e) {}
+• ONCLICK-SAFE FUNCTIONS: every function called from onclick="" must be top-level with function
+  keyword — NEVER const/arrow. Wrong: const showTab = () => {}  Right: function showTab(id,btn){}
+• TEMPLATE LITERAL SAFETY: if your JS output uses template literals containing backtick characters,
+  escape each internal backtick with a backslash to prevent SyntaxErrors.
 • Output raw JS only — NO tags, NO prose, NO fences.`;
 
 const L_UPDATE_PROMPT = `You are surgically updating one section of a website.
