@@ -62,7 +62,10 @@ function sanitizeForPreview(code) {
 function sendToSandbox(safeCode) {
   const frame = document.getElementById('previewFrame');
   if (frame && frame.contentWindow) {
-    frame.contentWindow.postMessage({ htmlCode: safeCode }, '*');
+    // isFinal: true is required — sandbox.html only runs scripts and
+    // initializes Lucide icons when isFinal is truthy. Without it,
+    // all JS (tabs, icons, animations) is silently skipped.
+    frame.contentWindow.postMessage({ htmlCode: safeCode, isFinal: true }, '*');
   }
 }
 
