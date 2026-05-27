@@ -5634,8 +5634,37 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
    1239291  — person at work, casual focus
    2379004  — team meeting, diverse, modern
 
-③ ICONS — inline SVG only (1.5px stroke, no fill), never emoji in professional contexts:
-   Tech: terminal brackets, arrows, circuits | Wellness: leaf, drop, helix, sprout, shield | Luxury: minimal geometric
+③ ICONS — inline SVG only (1.5px stroke, no fill), never emoji in professional contexts.
+   ALWAYS place the SVG INSIDE the button/card element it belongs to. Never float icons separately.
+
+   ICON IN BUTTON — copy this exact pattern:
+     <button class="flex items-center gap-2 px-6 py-3 bg-white text-black rounded-full font-semibold">
+       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+         <path d="M5 12h14M12 5l7 7-7 7"/>
+       </svg>
+       Get Started
+     </button>
+
+   ICON IN CARD — icon goes inside the card, above the title:
+     <div class="card p-8">
+       <div class="mb-4 w-12 h-12 flex items-center justify-center rounded-xl bg-white/10">
+         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+           <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+         </svg>
+       </div>
+       <h3>Card Title</h3>
+       <p>Description text here.</p>
+     </div>
+
+   NAV LOGO with icon:
+     <a href="#" class="flex items-center gap-2 font-bold text-xl">
+       <svg ...>...</svg>
+       Brand Name
+     </a>
+
+   Tech SVG paths: terminal "> _" = M4 17l6-6-6-6 M12 19h8 | Arrow right = M5 12h14M12 5l7 7-7 7
+   Wellness: Leaf = M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z
+   Shield = M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10
 
 ④ SCROLL ANIMATIONS — SAFETY RULE (blank sections = broken site):
    COPY THIS EXACTLY — do not invent a different pattern:
