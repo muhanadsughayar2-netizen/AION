@@ -8302,8 +8302,16 @@ function extractHtmlFromResponse(text, partialCode) {
 }
 
 let _previewExpanded = false;
+let _streamRenderTimer = null;   // throttle for progressive srcdoc updates
+let _streamRenderPending = null; // latest partial HTML waiting to be rendered
+let _streamSafetyTimer = null;   // 90s safety net — spinner can never be stuck forever
 
 function _showLivePreview(code) {
+  // Cancel any in-flight stream timers
+  if (_streamRenderTimer) { clearTimeout(_streamRenderTimer); _streamRenderTimer = null; }
+  if (_streamSafetyTimer) { clearTimeout(_streamSafetyTimer); _streamSafetyTimer = null; }
+  _streamRenderPending = null;
+
   const w = document.getElementById('previewWrapper');
   const iframe = document.getElementById('livePreview');
   const building = document.getElementById('previewBuilding');
@@ -8316,6 +8324,8 @@ function _showLivePreview(code) {
   }
   const blob = new Blob([code], { type: 'text/html' });
   _livePreviewBlobUrl = URL.createObjectURL(blob);
+  // Clear srcdoc before switching to blob src to avoid conflicts
+  iframe.removeAttribute('srcdoc');
   iframe.src = _livePreviewBlobUrl;
   iframe.style.display = 'block';
   iframe.style.height = _previewExpanded ? '420px' : '200px';
@@ -8367,33 +8377,58 @@ function renderLivePreview(responseText) {
   if (!code) return;
   _lastBuiltCode = code;
   try { chrome.storage.local.set({ snaptoai_built_code: code }); } catch(e) {}
-  // During streaming: show the wrapper with a compact "building" bar.
-  // The iframe stays hidden (display:none) so it takes zero space —
-  // no more giant white void. _showLivePreview() renders once when streaming ends.
+
   const w = document.getElementById('previewWrapper');
   const building = document.getElementById('previewBuilding');
   const iframe = document.getElementById('livePreview');
   const lbl = document.getElementById('previewLabel');
   const txt = document.getElementById('previewBuildingTxt');
+
   if (w) w.style.display = 'block';
   if (building) building.style.display = 'flex';
-  if (iframe) iframe.style.display = 'none';
   if (lbl) lbl.textContent = '⏳ Building…';
   if (txt) txt.textContent = buildStage ? 'Compiling ' + buildStage + '…' : 'Compiling…';
   if (buildStage) _setBadgeActive(buildStage);
+
+  // Progressive streaming: render partial HTML into the iframe via srcdoc
+  // as it arrives — throttled to once every 900ms so the iframe doesn't
+  // thrash on every chunk. The user sees the site being built in real time.
+  _streamRenderPending = code;
+  if (!_streamRenderTimer) {
+    _streamRenderTimer = setTimeout(() => {
+      _streamRenderTimer = null;
+      if (_streamRenderPending && iframe) {
+        iframe.removeAttribute('src');
+        iframe.srcdoc = _streamRenderPending;
+        iframe.style.display = 'block';
+        iframe.style.height = _previewExpanded ? '420px' : '200px';
+        _streamRenderPending = null;
+      }
+    }, 900);
+  }
+
+  // Safety net: if streaming never completes (network drop, stuck token),
+  // auto-resolve the spinner after 90 seconds using whatever HTML we have.
+  if (!_streamSafetyTimer) {
+    _streamSafetyTimer = setTimeout(() => {
+      _streamSafetyTimer = null;
+      if (_lastBuiltCode) _showLivePreview(_lastBuiltCode);
+    }, 90000);
+  }
 }
 
 document.getElementById('closePreviewBtn')?.addEventListener('click', () => {
   const w = document.getElementById('previewWrapper');
   if (w) w.style.display = 'none';
   const iframe = document.getElementById('livePreview');
-  if (iframe) { iframe.src = 'about:blank'; iframe.style.display = 'none'; }
+  if (iframe) { iframe.removeAttribute('srcdoc'); iframe.src = 'about:blank'; iframe.style.display = 'none'; }
   const building = document.getElementById('previewBuilding');
   if (building) building.style.display = 'none';
-  if (_livePreviewBlobUrl) {
-    URL.revokeObjectURL(_livePreviewBlobUrl);
-    _livePreviewBlobUrl = null;
-  }
+  if (_livePreviewBlobUrl) { URL.revokeObjectURL(_livePreviewBlobUrl); _livePreviewBlobUrl = null; }
+  if (_streamRenderTimer) { clearTimeout(_streamRenderTimer); _streamRenderTimer = null; }
+  if (_streamSafetyTimer) { clearTimeout(_streamSafetyTimer); _streamSafetyTimer = null; }
+  _streamRenderPending = null;
+  _resetBadges();
 });
 
 document.getElementById('previewExpandBtn')?.addEventListener('click', () => {
