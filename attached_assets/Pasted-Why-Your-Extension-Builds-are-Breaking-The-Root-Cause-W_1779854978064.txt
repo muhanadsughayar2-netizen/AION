@@ -1,0 +1,274 @@
+Why Your Extension Builds are Breaking (The Root Cause)
+When building Chrome Extensions (Manifest V3), the Content Security Policy (CSP) is strictly enforced at the extension container level. When you embed an iframe inside your extension popup page:
+Loading remote scripts via CDNs like <script src="https://cdn.tailwindcss.com"> or <script src="https://unpkg.com/lucide"> is permanently blocked. Standard Manifest V3 prevents the execution of any remote Javascript.
+Even inside high-security iFrames, these scripts cannot boot up, resulting in unstyled HTML text and non-functional JS.
+The Two Ways to Fix Your Code on Replit/Chrome
+You can solve this in your Chrome Extension in two ways:
+Option A (Recommended for standard extensions): Download tailwind.min.js and lucide.min.js locally, package them within your extension directory, and update your code to load them as 'self'.
+Option B (The Pure Way): Feed Gemini a specialized No-CDN system prompt that instructs the AI to generate modern, beautiful single-file HTML sites using Vanilla CSS templates and Custom Inline SVGs, entirely bypassing CDN scripts.
+Below are the direct files and code updates you should make to your Chrome Extension.
+Part 1: The Code Fix for chat.html & chat.js
+To resolve the stuck spinner, CSP blockages, and remote script errors, replace your current assembleStagedHtml function and streaming handlers in your files with the secure extension-native implementations below.
+Update 1: The Secure Sandbox Iframe in chat.html
+In your chat.html layout, ensure the <iframe> element has a robust sandbox attribute. This permits internal scripts to execute inside the iframe context while maintaining secure isolation:
+code
+Html
+<!-- In chat.html, update your iframe definition -->
+<iframe id="livePreview" 
+        sandbox="allow-scripts allow-popups allow-modalsallow-forms allow-same-origin" 
+        allow="fullscreen" 
+        style="width:100%; height:200px; border:none; display:none; background:#07070a;">
+</iframe>
+Update 2: The Manifest V3-Compliant chat.js Fix
+Replace the existing assembleStagedHtml function in your chat.js with this local-native assembly. This compiles Tailwind configuration using custom vanilla properties and removes remote script dependencies:
+code
+JavaScript
+// Replace this function in your chat.js file
+function assembleStagedHtml(bodyHtml, styleCss, scriptJs) {
+  const customCss = styleCss ? '\n    ' + styleCss.split('\n').join('\n    ') : '';
+  const script = scriptJs ? '\n<script>\n(function(){\n' + scriptJs + '\n})();\n<\/script>' : '';
+  
+  // Notice we use highly optimized inline vanilla wrappers to simulate utility layout systems
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI Build Preview</title>
+
+  <!-- Google Fonts allowed under font-src -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Global Reset & Base Setup */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      background-color: #030303;
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Core Layout Replacements for Grid & Bento Layouts */
+    .g-grid { display: grid; gap: 24px; }
+    @media (min-width: 768px) {
+      .g-col-2 { grid-template-columns: repeat(2, 1fr); }
+      .g-col-3 { grid-template-columns: repeat(3, 1fr); }
+      .g-col-4 { grid-template-columns: repeat(4, 1fr); }
+    }
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+    
+    /* Scroll-reveal system (safe default) */
+    .reveal { transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1); }
+    .reveal:not(.visible) { opacity: 0; transform: translateY(22px); }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* Inject Generated Custom CSS Layer */
+    ${customCss}
+  </style>
+</head>
+<body>
+
+  <!-- Assembled Body Layer -->
+  ${bodyHtml || ''}
+
+  <!-- Local Safe JS Script Block -->
+  ${script}
+</body>
+</html>`;
+}
+Update 3: The Live Progressive Streaming Handler in chat.js
+To resolve the stuck loading spinner bug, use this robust streaming detection pattern. It progressively writes text to the iframe's srcdoc using a throttled renderer. If the stream stops, a watchdog timer safely disables the spinner:
+code
+JavaScript
+let streamThrottleTimer = null;
+let pendingStreamHtml = null;
+let pageBuildWatchdog = null;
+
+// Call this during your API response streaming loop
+function handleHtmlStreamProgress(chunkText) {
+  const previewWrapper = document.getElementById('previewWrapper');
+  const buildingSpinner = document.getElementById('previewBuilding');
+  const iframe = document.getElementById('livePreview');
+  const previewLabel = document.getElementById('previewLabel');
+  const indicatorText = document.getElementById('previewBuildingTxt');
+
+  // Activate Visual Pipeline
+  if (previewWrapper) previewWrapper.style.display = 'block';
+  if (buildingSpinner) buildingSpinner.style.display = 'flex';
+  if (previewLabel) previewLabel.textContent = '⏳ COMPILING SITE...';
+  if (indicatorText) indicatorText.textContent = 'Synthesizing live layout layers...';
+
+  // Extract ongoing HTML
+  const { html, truncated } = extractHtmlFromResponse(chunkText, _continuationPending ? _lastBuiltCode : null);
+  if (!html) return;
+
+  _lastBuiltCode = html;
+  pendingStreamHtml = html;
+
+  // Progressive Rendering Throttle (every 800ms to avoid DOM thrashing)
+  if (!streamThrottleTimer) {
+    streamThrottleTimer = setTimeout(() => {
+      streamThrottleTimer = null;
+      if (pendingStreamHtml && iframe) {
+        iframe.removeAttribute('src'); // Switch away from blob if active
+        iframe.srcdoc = pendingStreamHtml;
+        iframe.style.display = 'block';
+        iframe.style.height = _previewExpanded ? '420px' : '200px';
+        pendingStreamHtml = null;
+      }
+    }, 800);
+  }
+
+  // Safety net: Spinner cannot lock up longer than 45 seconds
+  if (!pageBuildWatchdog) {
+    pageBuildWatchdog = setTimeout(() => {
+      pageBuildWatchdog = null;
+      _showLivePreview(_lastBuiltCode);
+    }, 45000);
+  }
+}
+
+// Call this when stream generator resolves complete (done === true)
+function handleHtmlStreamComplete(finalText) {
+  if (streamThrottleTimer) clearTimeout(streamThrottleTimer);
+  if (pageBuildWatchdog) clearTimeout(pageBuildWatchdog);
+  
+  const { html } = extractHtmlFromResponse(finalText, null);
+  if (html) {
+    _showLivePreview(html);
+  } else {
+    const spinner = document.getElementById('previewBuilding');
+    if (spinner) spinner.style.display = 'none';
+  }
+}
+Part 2: The Answers to the Specific System Prompt Questions
+Here are the concrete solutions you can feed directly to Gemini to generate fully offline, visually astonishing sites that run inside your Chrome extension.
+1. Token Strategy (For an 8192 token limit)
+When generating highly complex websites, do not attempt a single generation pass. It invites half-finished results, missing closure tags, and broken code.
+The Strategy: Use a 3-Level Generation Pass:
+L1 (Structure): Solicit only pure HTML tags inside <body> utilising semantic structures and explicit IDs.
+L2 (Design): Give Gemini the L1 HTML code and ask for only custom CSS rules within a <style> block.
+L3 (Interactivity): Take both outputs and ask Gemini to write modular vanilla Javascript.
+Why it works: Keeps the prompt window small (less than 2500 tokens per call), prevents memory overhead, and allows you to catch specific compiler errors before they show up in your preview.
+2. CSS Approach
+Custom CSS from scratch inside a <style> block beats Tailwind CDN in this specialized scenario.
+Why: The Tailwind CDN script runs a heavy runtime engine to find class names and compile styles. This is completely blocked by Manifest V3 because Chrome view filters detect it as dynamically executed evaluation. Custom CSS bypasses this entirely, compiles in milliseconds, and allows the AI to craft bespoke, non-generic glassmorphism layers.
+3. Complete, Manifest V3 CSP-Compliant <head> Template
+Copy and paste this exact template inside your generator prompts to stay perfectly inside extension bounds:
+code
+Html
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.gstatic.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* CSS Standard Reset */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    
+    :root {
+      --bg: #07070d;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.15);
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --radius: 12px;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      min-height: 100vh;
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+</head>
+4. Replicating Tailwind Utility Layout Systems
+Here is how to instruct Gemini to compose typical Tailwind-style responsive grids and cards using pure CSS:
+code
+CSS
+/* Responsive Grid System (replicates tailwind w-full max-w-6xl grid-cols-1 md:grid-cols-3) */
+.grid-container {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .grid-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Glassmorphism Card (replicates tailwind bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6) */
+.glass-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius);
+  padding: 24px;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+5. Icons without any CDN (Pure Inline SVGs)
+Do not use unpkg or font-awesome. Ask Gemini to use inline SVGs with standard stroke metrics. They render with high-contrast sharp vectors and require zero network connections:
+code
+Html
+<!-- Home Icon -->
+<svg class="ui-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+  <polyline points="9 22 9 12 15 12 15 22"/>
+</svg>
+
+<!-- Settings Icon -->
+<svg class="ui-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="3"/>
+  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+</svg>
+Part 3: The System Prompt to Copy & Paste
+Save this exact text and set it as the systemInstruction in your Gemini API caller:
+code
+Text
+You are an expert single-file web compiler optimized for strict Content Security Environments. Based on the user's instructions, write a responsive, professional single-file website.
+
+STRICT SANDBOX INSTRUCTIONS:
+1. DO NOT load remote CDN scripts or frameworks. 
+2. DO NOT use script-src targets: <script src="https://cdn.tailwindcss.com"> is strictly FORBIDDEN.
+3. DO NOT use unpkg or FontAwesome: lucide links are strictly FORBIDDEN.
+4. All styles must live inside a single <style> block in <head>. Replicate grid structures, margin paddings, and card components using semantic Vanilla CSS rules.
+5. All interactive elements (tabs, forms, accordion, modals) must have explicit id properties and working handlers inside an inline <script> block placed right before the closing </body> tag.
+6. Icons must be compiled strictly using inline raw <svg> stroke tags with class="ui-icon" and stroke-width="2". Excellent typography through Google Fonts is allowed via <link rel="stylesheet">.
+
+AESTHETIC & Polish:
+- Utilize a refined, modern presentation style (e.g. cyber-minimalism, editorial warm neutrals, or dark chrome glassmorphic layout).
+- Integrate custom slow-timed hover transforms on cards and glow parameters on buttons.
+- Implement an IntersectionObserver reveal up sequence on sections to smoothly fade elements on viewport scroll.
+- Protect all image elements by writing explicit inline onerror fallbacks on img tags to hide broken files and display modern CSS gradients.
+
+STRICT COMPILATION RULE:
+- Output ONLY the final plain HTML code inside a ```html block. Do not provide any descriptive prose, introduction, or markdown comments.
+Summary of Replit Development Step
+Just copy these updates directly into your Replit files. They are structured to respect standard linter passes, align with modern extension constraints, and allow your popup previews to load without any security blockages.

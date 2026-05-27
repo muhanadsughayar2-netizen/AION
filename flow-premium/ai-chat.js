@@ -5491,6 +5491,25 @@ const BUILD_SYSTEM_PROMPT = `You are a world-class UI engineer and visual design
 STRICT OUTPUT RULE: Respond with ONLY a \`\`\`html code block. Zero prose before or after. Just the code.
 Iterate requests: output the FULL improved file — never partial diffs.
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CSP SANDBOX RULES — MANDATORY, NO EXCEPTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This HTML runs inside a Chrome Extension iframe with a strict Content Security Policy.
+BANNED — never include these, they will be silently blocked and break all styling:
+  ✗ <script src="https://cdn.tailwindcss.com">
+  ✗ <script src="https://unpkg.com/lucide@latest">
+  ✗ Any external <script src="..."> of any kind
+  ✗ Any @import url() inside CSS pointing to a CDN script
+
+ALLOWED:
+  ✓ <link rel="stylesheet" href="https://fonts.googleapis.com/..."> — Google Fonts only
+  ✓ All CSS written inside a single <style> tag
+  ✓ All JavaScript written inside <script> tags (no src attribute)
+  ✓ Inline SVGs for every icon — never icon font CDNs
+  ✓ Real Pexels image URLs for photography (they load fine)
+
+CSS APPROACH: Write all styling as custom CSS inside <style>. Do NOT use Tailwind class names — they won't compile without the CDN runtime. Write real CSS properties. Use CSS variables in :root for design tokens. Use CSS Grid and Flexbox for layout.
+
 EXCEPTION — CONTINUE_BUILD: If the user message starts with "CONTINUE_BUILD:", the previous
 response was cut off by token limits. Output ONLY the remaining HTML from where you stopped —
 starting at the next complete opening tag (e.g. <div, <section, <footer, <script).
@@ -5929,53 +5948,100 @@ function assembleStagedHtml(bodyHtml, styleCss, scriptJs) {
   const customCss = styleCss ? '\n    ' + styleCss.split('\n').join('\n    ') : '';
   const script = scriptJs ? '\n<script>\n(function(){\n' + scriptJs + '\n})();\n<\/script>' : '';
   return `<!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SnapToAI Build</title>
 
-  <!-- Tailwind CSS Play CDN -->
-  <script src="https://cdn.tailwindcss.com"><\/script>
-
-  <!-- Google Fonts -->
+  <!-- Google Fonts only — the one external resource allowed by extension CSP font-src -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"><\/script>
-
-  <!-- Tailwind custom tokens -->
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-            serif: ['"Playfair Display"', 'serif'],
-            mono: ['"JetBrains Mono"', 'monospace'],
-          }
-        }
-      }
-    }
-  <\/script>
-
   <style>
-    /* Scroll-reveal base — visible without JS, animated when .visible added */
+    /* ── Reset ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    /* ── Design tokens ──────────────────────────────────────── */
+    :root {
+      --bg:           #07070f;
+      --text:         #f0f0ff;
+      --text-muted:   #94a3b8;
+      --accent:       #6366f1;
+      --accent-glow:  rgba(99,102,241,0.18);
+      --card-bg:      rgba(255,255,255,0.03);
+      --card-border:  rgba(255,255,255,0.08);
+      --radius:       14px;
+    }
+
+    /* ── Base ───────────────────────────────────────────────── */
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout helpers (replaces Tailwind grid utilities) ──── */
+    .container { width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .grid { display: grid; gap: 24px; }
+    .flex { display: flex; }
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+    .flex-between { display: flex; align-items: center; justify-content: space-between; }
+    @media (min-width: 640px)  { .sm-col-2 { grid-template-columns: repeat(2,1fr); } }
+    @media (min-width: 768px)  { .md-col-2 { grid-template-columns: repeat(2,1fr); } .md-col-3 { grid-template-columns: repeat(3,1fr); } }
+    @media (min-width: 1024px) { .lg-col-2 { grid-template-columns: repeat(2,1fr); } .lg-col-3 { grid-template-columns: repeat(3,1fr); } .lg-col-4 { grid-template-columns: repeat(4,1fr); } }
+
+    /* ── Glassmorphism card ─────────────────────────────────── */
+    .glass-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), border-color 0.2s;
+    }
+    .glass-card:hover { transform: translateY(-4px); border-color: rgba(99,102,241,0.4); }
+
+    /* ── Gradient text helper ───────────────────────────────── */
+    .gradient-text {
+      background: linear-gradient(135deg, var(--accent) 0%, #ec4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Glow button ────────────────────────────────────────── */
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      background: linear-gradient(135deg, var(--accent) 0%, #ec4899 100%);
+      color: #fff; font-weight: 700; border: none; cursor: pointer;
+      padding: 14px 28px; border-radius: 999px;
+      box-shadow: 0 0 32px -8px var(--accent-glow);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover { transform: scale(1.04); box-shadow: 0 0 48px -8px var(--accent-glow); }
+    .btn-primary:active { transform: scale(0.97); }
+
+    /* ── Scroll-reveal ──────────────────────────────────────── */
     .reveal { transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1); }
     .reveal:not(.visible) { opacity: 0; transform: translateY(22px); }
     .reveal.visible { opacity: 1; transform: none; }
-    /* Custom overrides from L2 */
+
+    /* ── Generated CSS from L2 ──────────────────────────────── */
     ${customCss}
   </style>
 </head>
-<body class="bg-black text-slate-100 font-sans antialiased min-h-screen">
+<body>
 
 ${bodyHtml || ''}
 
-  <!-- Init Lucide icons -->
-  <script>if(window.lucide){lucide.createIcons();}<\/script>
 ${script}
 </body>
 </html>`;
