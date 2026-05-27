@@ -3,6 +3,13 @@ let _codeVisible = false;
 let _sandboxReady = false;
 let _pendingCode = null;
 
+function hideLoader() {
+  const overlay = document.getElementById('loadingOverlay');
+  if (!overlay) return;
+  overlay.classList.add('hidden');
+  setTimeout(() => { overlay.style.display = 'none'; }, 320);
+}
+
 // Fix generated HTML before preview:
 // 1. Remove opacity:0 from .reveal rules — prevents blank pages when JS is slow
 // 2. Inject a safety script that forces all .reveal elements visible after 600ms
@@ -77,12 +84,26 @@ window.addEventListener('message', (event) => {
       sendToSandbox(_pendingCode);
       _pendingCode = null;
     }
+    hideLoader();
   }
 });
+
+// Safety net — if CDNs are slow or sandbox fails to handshake within 5s,
+// force-send queued code and dismiss the spinner anyway
+setTimeout(() => {
+  if (!_sandboxReady) {
+    if (_pendingCode !== null) {
+      sendToSandbox(_pendingCode);
+      _pendingCode = null;
+    }
+    hideLoader();
+  }
+}, 5000);
 
 chrome.storage.local.get('snaptoai_built_code', (res) => {
   const code = res.snaptoai_built_code || '';
   if (!code) {
+    hideLoader();
     document.getElementById('previewFrame').style.display = 'none';
     document.getElementById('emptyState').style.display = 'flex';
     document.getElementById('titleSub').textContent = '— nothing built yet';
