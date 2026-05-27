@@ -5492,23 +5492,18 @@ STRICT OUTPUT RULE: Respond with ONLY a \`\`\`html code block. Zero prose before
 Iterate requests: output the FULL improved file — never partial diffs.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  CSP SANDBOX RULES — MANDATORY, NO EXCEPTIONS
+  HEAD TEMPLATE — use this exact structure every time
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-This HTML runs inside a Chrome Extension iframe with a strict Content Security Policy.
-BANNED — never include these, they will be silently blocked and break all styling:
-  ✗ <script src="https://cdn.tailwindcss.com">
-  ✗ <script src="https://unpkg.com/lucide@latest">
-  ✗ Any external <script src="..."> of any kind
-  ✗ Any @import url() inside CSS pointing to a CDN script
+Every output must start with this exact <head> block:
+  <script src="https://cdn.tailwindcss.com"></script>
+  Google Fonts <link> tags for chosen profile fonts
+  <script src="https://unpkg.com/lucide@latest"></script>
+  A tailwind.config script block with fontFamily tokens
+  A <style> block for custom CSS that Tailwind can't express (gradients, animations, glassmorphism)
 
-ALLOWED:
-  ✓ <link rel="stylesheet" href="https://fonts.googleapis.com/..."> — Google Fonts only
-  ✓ All CSS written inside a single <style> tag
-  ✓ All JavaScript written inside <script> tags (no src attribute)
-  ✓ Inline SVGs for every icon — never icon font CDNs
-  ✓ Real Pexels image URLs for photography (they load fine)
-
-CSS APPROACH: Write all styling as custom CSS inside <style>. Do NOT use Tailwind class names — they won't compile without the CDN runtime. Write real CSS properties. Use CSS variables in :root for design tokens. Use CSS Grid and Flexbox for layout.
+Icons: always use Lucide — call lucide.createIcons() in a <script> at bottom of body.
+Images: use real Pexels URLs. Always add onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'" on every <img>.
+JavaScript: all inline in a single <script> before </body>. Use IntersectionObserver for scroll-reveal animations.
 
 EXCEPTION — CONTINUE_BUILD: If the user message starts with "CONTINUE_BUILD:", the previous
 response was cut off by token limits. Output ONLY the remaining HTML from where you stopped —
@@ -5943,21 +5938,42 @@ RULES:
 • Keep all existing IDs and data attributes.
 • No markdown fences, no prose, just the raw HTML fragment.`;
 
-// Assemble full HTML from staged fragments — injects Tailwind, Fonts, Lucide
+// Assemble full HTML from staged fragments — rendered inside sandbox.html so Tailwind CDN works
 function assembleStagedHtml(bodyHtml, styleCss, scriptJs) {
   const customCss = styleCss ? '\n    ' + styleCss.split('\n').join('\n    ') : '';
   const script = scriptJs ? '\n<script>\n(function(){\n' + scriptJs + '\n})();\n<\/script>' : '';
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SnapToAI Build</title>
 
-  <!-- Google Fonts only — the one external resource allowed by extension CSP font-src -->
+  <!-- Tailwind CSS — works because this document runs inside sandbox.html (relaxed CSP) -->
+  <script src="https://cdn.tailwindcss.com"><\/script>
+
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"><\/script>
+
+  <!-- Tailwind custom tokens -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  <\/script>
 
   <style>
     /* ── Reset ─────────────────────────────────────────────── */
@@ -8372,6 +8388,21 @@ let _streamRenderTimer = null;   // throttle for progressive srcdoc updates
 let _streamRenderPending = null; // latest partial HTML waiting to be rendered
 let _streamSafetyTimer = null;   // 90s safety net — spinner can never be stuck forever
 
+function _postToSandbox(code) {
+  const iframe = document.getElementById('livePreview');
+  if (!iframe) return;
+  const send = () => {
+    if (iframe.contentWindow) {
+      iframe.contentWindow.postMessage({ htmlCode: code }, '*');
+    }
+  };
+  if (iframe.contentDocument && iframe.contentDocument.readyState !== 'loading') {
+    send();
+  } else {
+    iframe.addEventListener('load', send, { once: true });
+  }
+}
+
 function _showLivePreview(code) {
   // Cancel any in-flight stream timers
   if (_streamRenderTimer) { clearTimeout(_streamRenderTimer); _streamRenderTimer = null; }
@@ -8383,16 +8414,9 @@ function _showLivePreview(code) {
   const building = document.getElementById('previewBuilding');
   const lbl = document.getElementById('previewLabel');
   if (!w || !iframe) return;
-  // Revoke previous blob URL to avoid memory leaks
-  if (_livePreviewBlobUrl) {
-    URL.revokeObjectURL(_livePreviewBlobUrl);
-    _livePreviewBlobUrl = null;
-  }
-  const blob = new Blob([code], { type: 'text/html' });
-  _livePreviewBlobUrl = URL.createObjectURL(blob);
-  // Clear srcdoc before switching to blob src to avoid conflicts
-  iframe.removeAttribute('srcdoc');
-  iframe.src = _livePreviewBlobUrl;
+
+  // Send HTML to sandbox.html via postMessage — sandbox page can load Tailwind CDN
+  _postToSandbox(code);
   iframe.style.display = 'block';
   iframe.style.height = _previewExpanded ? '420px' : '200px';
   if (building) building.style.display = 'none';
@@ -8456,16 +8480,14 @@ function renderLivePreview(responseText) {
   if (txt) txt.textContent = buildStage ? 'Compiling ' + buildStage + '…' : 'Compiling…';
   if (buildStage) _setBadgeActive(buildStage);
 
-  // Progressive streaming: render partial HTML into the iframe via srcdoc
-  // as it arrives — throttled to once every 900ms so the iframe doesn't
-  // thrash on every chunk. The user sees the site being built in real time.
+  // Progressive streaming: push partial HTML to sandbox.html via postMessage
+  // throttled to once every 900ms so we don't flood the sandbox on every chunk.
   _streamRenderPending = code;
   if (!_streamRenderTimer) {
     _streamRenderTimer = setTimeout(() => {
       _streamRenderTimer = null;
       if (_streamRenderPending && iframe) {
-        iframe.removeAttribute('src');
-        iframe.srcdoc = _streamRenderPending;
+        _postToSandbox(_streamRenderPending);
         iframe.style.display = 'block';
         iframe.style.height = _previewExpanded ? '420px' : '200px';
         _streamRenderPending = null;

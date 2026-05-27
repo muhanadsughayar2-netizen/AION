@@ -1,0 +1,245 @@
+The standard Tailwind CSS Play CDN (cdn.tailwindcss.com) and Lucide Script CDN (unpkg.com) fail to load under a Chrome Extension's strict Manifest V3 Content Security Policy. This causes the generated websites to load as plain, unstyled text.
+Below is a complete, step-by-step guide with exact copy-pasteable files, templates, and system prompts to make your extension popup websites load.
+Why Your Extension Builds are Breaking (The Root Cause)
+In Chrome Extensions (Manifest V3), the default Content Security Policy (CSP) is:
+code
+Text
+script-src 'self';
+object-src 'none';
+When you inject code into an inline <iframe> via srcdoc or a blob: URL inside your extension popup page:
+The iframe inherits the host popup's CSP limits because it shares the chrome-extension:// origin.
+Any attempt to execute a remote script (like <script src="https://cdn.tailwindcss.com"> or <script src="https://unpkg.com/..."></script>) is compiled as a major security violation and silently blocked by Chrome.
+Therefore, Tailwind utility classes are never compiled, Lucide icons are never initialized, and the page renders unstyled.
+To fix this, you must instruct Gemini to generate pure, self-contained HTML using custom vanilla CSS inside a <style> tag and pure inline SVGs for icons, completely bypassing CDN scripts.
+Step 1: The Exact System Prompt to Feed Gemini
+Use this exact text as the systemInstruction in your Gemini API call. It instructs the model to compile beautiful sites using only CSP-compliant local CSS grids and raw inline SVGs:
+code
+Text
+You are an expert single-file web compiler optimized for strict Content Security Policies (Chrome Extension Manifest V3 popup environments).
+
+STRICT COMPILATION RULES:
+1. DO NOT load remote CDN scripts or stylesheets in any tag (e.g., <script src="https://cdn.tailwindcss.com"> and <script src="https://unpkg.com/lucide"> are strictly FORBIDDEN).
+2. All styling must reside inside an inline <style> block in the <head>. Replicate common utility frameworks (like Tailwind grids, flex alignments, margins, and gradients) using native Vanilla CSS layouts.
+3. All interactive elements (tabs, accordions, modals, calculators) must work using inline Javascript in a single <script> tag placed right before the closing </body> tag.
+4. Icons must be written strictly as raw, inline <svg> vector tags. Excellent typography via Google Fonts <link> tags is allowed as your extension permits fonts.gstatic.com.
+
+AESTHETIC & POLISH:
+- Design spectacular modern interfaces: choose from refined glassmorphic dark tech, organic editorial light wellness, or bold high-contrast brutalist grids.
+- Implement soft radial leak background glows, custom hover scales on cards, and slow transitions on buttons.
+- Protect all image elements with inline scroll error handlers:
+  <img src="URL" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'" />
+- Include an IntersectionObserver script to fade-in sections as they enter the screen, with a 1-second timeout safety net.
+
+STRICT FORMATTING RULE:
+- Output ONLY the final plain HTML code inside a single ```html code block. Do not provide any conversational prologue, introduction, or markdown commentary before or after.
+Step 2: Minimal, CSP-Compliant <head> Template
+When Gemini generates code, instruct it to wrap it inside this exact <head> wrapper. It complies fully with your extension's CSP of style-src 'self' 'unsafe-inline' and font-src https://fonts.gstatic.com:
+code
+Html
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI Build Preview</title>
+
+  <!-- Google Fonts permitted under extension font-src -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Standard CSS Reset & Variables ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    
+    :root {
+      --bg: #07070c;
+      --text: #f1f5f9;
+      --text-muted: #64748b;
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.15);
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --radius: 12px;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+</head>
+Step 3: Replicating Tailwind Layout Patterns with Pure CSS
+Here is how Google's classic utility classes (grids, flex, bento layouts) are compiled into fast, custom vanilla templates inside the generated <style> layer:
+code
+CSS
+/* Responsive Grid (Replicates: grid grid-cols-1 md:grid-cols-3 gap-6) */
+.grid-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .grid-layout {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Glassmorphism Card (Replicates: bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl hover:scale-105) */
+.glass-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius);
+  padding: 24px;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+/* Gradient Hero text (Replicates: text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-pink-500) */
+.gradient-heading {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  line-height: 1.1;
+  background: linear-gradient(135deg, #818cf8 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+Step 4: Rendering SVG Icons Without CDNs
+Instruct Gemini to render standard thin UI vectors inline. They are fully localized and load with crisp, scale-independent assets instantly:
+code
+Html
+<!-- Home Icon -->
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+  <polyline points="9 22 9 12 15 12 15 22"/>
+</svg>
+
+<!-- Lightning Bold Icon -->
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+</svg>
+Step 5: Fixing chat.js Assembled Output
+Locate the assembleStagedHtml helper inside your chat.js extension popup file and replace it with this version. It configures default grid column templates and removes the blocked Tailwind/Lucide CDNs:
+code
+JavaScript
+function assembleStagedHtml(bodyHtml, styleCss, scriptJs) {
+  const customCss = styleCss ? '\n    ' + styleCss.split('\n').join('\n    ') : '';
+  const script = scriptJs ? '\n<script>\n(function(){\n' + scriptJs + '\n})();\n<\/script>' : '';
+  
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI Build Preview</title>
+
+  <!-- Google Fonts permitted under font-src -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Global Reset & Base Setup */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      background-color: #030303;
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Core Layout Replacements for Grid & Bento Layouts */
+    .g-grid { display: grid; gap: 24px; }
+    @media (min-width: 768px) {
+      .g-col-2 { grid-template-columns: repeat(2, 1fr); }
+      .g-col-3 { grid-template-columns: repeat(3, 1fr); }
+      .g-col-4 { grid-template-columns: repeat(4, 1fr); }
+    }
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+    
+    /* Scroll-reveal system (safe default) */
+    .reveal { transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1); }
+    .reveal:not(.visible) { opacity: 0; transform: translateY(22px); }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* Inject Generated Custom CSS Layer */
+    ${customCss}
+  </style>
+</head>
+<body>
+
+  <!-- Assembled Body Layer -->
+  ${bodyHtml || ''}
+
+  <!-- Local Safe JS Script Block -->
+  ${script}
+</body>
+</html>`;
+}
+Alternative Option: Running Full Tailwind inside Extension popup (A Secure Extension Hook)
+If you absolute must let Gemini output Tailwind code using the original prompts, you can create a sandbox context inside the extension.
+Create a file named sandbox.html inside your Chrome Extension directories:
+code
+Html
+<!-- sandbox.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    // Listen to code message updates from parent popup chat windows
+    window.addEventListener('message', (event) => {
+      const { htmlCode } = event.data;
+      if (htmlCode) {
+        document.getElementById('app').innerHTML = htmlCode;
+        try { lucide.createIcons(); } catch(e){}
+      }
+    });
+  </script>
+</body>
+</html>
+In your manifest.json:
+code
+JSON
+"sandbox": {
+  "pages": ["sandbox.html"]
+}
+Now, change your popup's main chat.html iframe:
+code
+Html
+<iframe id="livePreview" src="sandbox.html" allow="fullscreen" style="width:100%; height:200px; border:none; display:none; background:#07070a;"></iframe>
+And in chat.js:
+code
+JavaScript
+function _showLivePreview(code) {
+  const iframe = document.getElementById('livePreview');
+  if (iframe && iframe.contentWindow) {
+    // Securely post the message across the secure local sandbox boundary
+    iframe.contentWindow.postMessage({ htmlCode: code }, '*');
+    iframe.style.display = 'block';
+  }
+}
+Now, because the frame runs inside a declared extension sandbox, Chrome relaxes the CSP constraints, enabling remote scripts to compile smoothly while keeping the host popup completely secure.
+Both options compile successfully on Replit and prevent the stuck spinner or blocked loading frames inside your browser! Let me know if you would like me to adjust any of these prompt sections further.
