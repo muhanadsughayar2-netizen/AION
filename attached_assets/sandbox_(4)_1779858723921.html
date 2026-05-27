@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI Sandbox</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    try {
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+              serif: ['"Playfair Display"', 'serif'],
+              mono: ['"JetBrains Mono"', 'monospace']
+            }
+          }
+        }
+      };
+    } catch(e) {}
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; min-height: 100vh; }
+    body { background: #07070a; color: #f8fafc; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  </style>
+</head>
+<body>
+  <div id="sandbox-head-styles"></div>
+  <div id="sandbox-app"></div>
+
+  <script>
+    // Re-execute <script> tags that innerHTML silently ignores
+    function runScripts(container) {
+      try {
+        container.querySelectorAll('script').forEach(function(old) {
+          try {
+            var fresh = document.createElement('script');
+            Array.from(old.attributes).forEach(function(a) {
+              try { fresh.setAttribute(a.name, a.value); } catch(e) {}
+            });
+            fresh.textContent = old.textContent;
+            old.parentNode.replaceChild(fresh, old);
+          } catch(e) {}
+        });
+      } catch(e) {}
+    }
+
+    // Inject <style> and <link> tags from the AI-generated <head>
+    function injectHeadAssets(html) {
+      try {
+        var headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+        if (!headMatch) return;
+        var headHtml = headMatch[1];
+        var container = document.getElementById('sandbox-head-styles');
+        if (!container) return;
+        container.innerHTML = '';
+
+        // <style> blocks — create programmatically, never via innerHTML
+        var styles = headHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+        styles.forEach(function(s) {
+          try {
+            var css = s.replace(/<\/?style[^>]*>/gi, '');
+            var el = document.createElement('style');
+            el.textContent = css;
+            container.appendChild(el);
+          } catch(e) {}
+        });
+
+        // <link> tags — create programmatically to avoid innerHTML issues
+        var linkRe = /<link([^>]*)>/gi;
+        var linkMatch;
+        while ((linkMatch = linkRe.exec(headHtml)) !== null) {
+          try {
+            var attrStr = linkMatch[1];
+            if (!/fonts\.googleapis\.com|fonts\.gstatic\.com|stylesheet/i.test(attrStr)) continue;
+            var el = document.createElement('link');
+            var attrRe = /(\w[\w-]*)=["']([^"']*)["']/g;
+            var am;
+            while ((am = attrRe.exec(attrStr)) !== null) {
+              try { el.setAttribute(am[1], am[2]); } catch(e) {}
+            }
+            container.appendChild(el);
+          } catch(e) {}
+        }
+      } catch(e) {}
+    }
+
+    // Extract <body> content from a full HTML document string
+    function extractBody(html) {
+      try {
+        var m = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        if (m) return m[1];
+        var headEnd = html.search(/<\/head>/i);
+        if (headEnd !== -1) return html.slice(headEnd + 7);
+      } catch(e) {}
+      return html;
+    }
+
+    window.addEventListener('message', function(event) {
+      try {
+        var data = event.data;
+        if (!data || !data.htmlCode) return;
+        injectHeadAssets(data.htmlCode);
+        var app = document.getElementById('sandbox-app');
+        if (!app) return;
+        app.innerHTML = extractBody(data.htmlCode);
+        runScripts(app);
+        try { lucide.createIcons(); } catch(e) {}
+      } catch(e) {}
+    });
+
+    // Notify parent popup that sandbox is ready
+    try { window.parent.postMessage({ sandboxReady: true }, '*'); } catch(e) {}
+  </script>
+</body>
+</html>
