@@ -50,13 +50,14 @@
       var container = document.getElementById('sandbox-head-styles');
       container.innerHTML = '';
 
-      // Extract and inject <style> blocks
-      var styles = headHtml.match(/<style[^>]*>[\s\S]*?<\/style>/gi) || [];
+      // Extract and inject <style> blocks — create nodes programmatically,
+      // not via innerHTML, which is unreliable for <style> in strict sandboxes
+      var styles = headHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
       styles.forEach(function(s) {
-        var tmp = document.createElement('div');
-        tmp.innerHTML = s;
-        var el = tmp.firstChild;
-        if (el) container.appendChild(el);
+        var cleanCSS = s.replace(/<\/?style[^>]*>/gi, '');
+        var el = document.createElement('style');
+        el.textContent = cleanCSS;
+        container.appendChild(el);
       });
 
       // Extract and inject <link rel="stylesheet"> / Google Fonts links

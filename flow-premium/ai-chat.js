@@ -8388,15 +8388,28 @@ let _streamRenderTimer = null;   // throttle for progressive srcdoc updates
 let _streamRenderPending = null; // latest partial HTML waiting to be rendered
 let _streamSafetyTimer = null;   // 90s safety net — spinner can never be stuck forever
 
+let _isSandboxReady = false;
+
+// Listen for sandbox boot handshake — sandbox.html posts this when it loads
+window.addEventListener('message', function(ev) {
+  if (ev.data && ev.data.sandboxReady) {
+    _isSandboxReady = true;
+    // If code was queued before the sandbox was ready, flush it now
+    if (_lastBuiltCode) _postToSandbox(_lastBuiltCode);
+  }
+});
+
 function _postToSandbox(code) {
   const iframe = document.getElementById('livePreview');
   if (!iframe) return;
+  // Never touch contentDocument — sandbox is cross-origin and that throws a DOMException
   const send = () => {
     if (iframe.contentWindow) {
       iframe.contentWindow.postMessage({ htmlCode: code }, '*');
     }
   };
-  if (iframe.contentDocument && iframe.contentDocument.readyState !== 'loading') {
+  // contentWindow is available as soon as the element exists in the DOM
+  if (iframe.contentWindow) {
     send();
   } else {
     iframe.addEventListener('load', send, { once: true });
