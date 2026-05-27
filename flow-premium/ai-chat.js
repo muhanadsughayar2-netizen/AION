@@ -5782,19 +5782,25 @@ These are what every average AI defaults to. You never produce these unless expl
   MANDATORY HTML SKELETON
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>[Specific real title matching the project]</title>
+  <!-- Tailwind CSS Play CDN — use utility classes everywhere, no custom CSS needed for layout/spacing/color -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons — use <i data-lucide="icon-name" class="w-5 h-5"></i> anywhere, auto-initialized at end of body -->
+  <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=[PROFILE_HEADING_FONT]&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { heading: ['[PROFILE_HEADING_FONT]', 'sans-serif'] } } } }
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
     body { min-height: 100vh; overflow-x: hidden; }
-    /* Insert chosen profile's :root tokens and base styles here */
+    /* Insert chosen profile's :root tokens and custom keyframes here — Tailwind handles the rest */
   </style>
 </head>
 
@@ -5827,49 +5833,62 @@ Output: \`\`\`html ... \`\`\` and nothing else.`;
 // ─── 3-LEVEL STAGED BUILD PROMPTS ────────────────────────────────────────────
 // Each level is small/focused — never hits token limits, buttons always work.
 
-const L1_SCAFFOLD_PROMPT = `You are building a website structure.
+const L1_SCAFFOLD_PROMPT = `You are a world-class UI engineer. Build an extremely polished, modern structure using Tailwind CSS utility classes.
 
 LEVEL 1 — SCAFFOLD: Output ONLY the raw HTML body content.
 
 RULES (break any = broken build):
 • Output ONLY what goes between <body> and </body>. No <!DOCTYPE>. No <html>. No <head>. No <style> block. No <script> block.
-• No inline style="" attributes anywhere.
-• Every major section MUST have data-section-id on the wrapping element (e.g. data-section-id="hero", "features", "pricing", "faq", "footer").
-• Every interactive element that needs JS (button, tab, toggle, form, accordion) MUST have a unique id="..." attribute.
-• Use semantic HTML: <nav>, <header>, <section>, <footer>, <main>, <article>.
+• USE Tailwind CSS utility classes directly on every element for spacing, typography, colors, and layout. The Tailwind CDN is already injected — use it fully.
+• Also apply the .reveal class to any section or card you want to animate in on scroll.
+• Use Lucide Icons via <i data-lucide="icon-name" class="w-5 h-5 text-indigo-400"></i> — they are auto-initialized.
+• Every major section MUST have data-section-id on its wrapper (e.g. data-section-id="hero", "features", "pricing", "faq", "footer").
+• Every interactive element (button, tab, toggle, form, accordion) MUST have a unique id="..." attribute.
+• Required sections to include:
+  1. Sticky nav: frosted glass (bg-black/70 backdrop-blur-md border-b border-white/10), logo left, links center, CTA pill right.
+  2. Hero: asymmetric grid — bold display text left, floating mockup/visual card right. Gradient headline text (bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent).
+  3. Feature Bento Grid: grid grid-cols-1 md:grid-cols-3 gap-5 — dark cards (bg-white/5 border border-white/10 rounded-2xl p-6) with Lucide icons.
+  4. Interactive section: tab switcher, calculator, or form with a gradient CTA button.
+  5. Footer: links, compliance note, social icons — no lorem ipsum.
+• Every <img> MUST have an onerror fallback: onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1e1b4b 0%,#0f172a 100%)'"
+• Use real Pexels photo IDs (verified: 574071 workspace, 1181244 code, 1092730 avocado, 3822621 yoga).
+• Use semantic HTML: <nav>, <header>, <section>, <footer>, <main>.
 • Write real, specific copy — no lorem ipsum, no "Coming Soon" stubs.
 • Output raw HTML only — NO markdown fences, NO prose before or after.`;
 
-const L2_DESIGN_PROMPT = `You are styling a website.
+const L2_DESIGN_PROMPT = `You are adding custom CSS polish on top of a Tailwind-powered website.
 
-LEVEL 2 — DESIGN: Output ONLY the CSS rules (no tags, no HTML, no JS).
+LEVEL 2 — DESIGN: Output ONLY custom CSS rules (no tags, no HTML, no JS).
 
 RULES:
-• Output ONLY the CSS content — NO <style> tags, NO HTML, NO JS, NO markdown fences, NO prose.
-• Start with @import for Google Fonts if needed (e.g. @import url('https://fonts.googleapis.com/css2?...'))
-• Choose the right aesthetic profile from the user's request:
-  PROFILE A (dark tech): bg:#07070f, text:#f0f0ff, accent: vivid cyan/violet/emerald, Plus Jakarta Sans + Inter
-  PROFILE B (editorial light): bg:#F9FBF9, text:#0A2E36, accent:#FF7043, Playfair Display + Inter
-  PROFILE C (luxury minimal): bg:#fafafa or #080808, accent: single muted tone, Cormorant Garamond + Karla
-  PROFILE D (brutalist): bg:#fff, text:#000, one punchy accent, Arial Black + Courier New
-  PROFILE E (playful): 3-color bright palette, Nunito + Inter, 20px+ radius
-• Use CSS custom properties (--bg, --text, --accent etc.) in :root.
-• .reveal has NO opacity:0 — content visible if JS fails. Only .reveal.visible triggers animation via @keyframes.
-• Every button/link must have a :hover state with visual feedback (transform, background shift, etc.).
-• Make it fully responsive with a mobile breakpoint at 768px.
+• Output ONLY raw CSS — NO <style> tags, NO HTML, NO JS, NO markdown fences, NO prose.
+• Tailwind CDN is already active — do NOT re-import it or re-define what Tailwind already handles.
+• Focus on custom details Tailwind can't do inline: keyframe animations, glow effects, complex pseudo-elements, custom scrollbars, gradient text, glass morphism depth, and brand-specific micro-interactions.
+• Choose the right aesthetic and define :root custom properties to match:
+  PROFILE A (dark tech): --bg:#07070f; --accent:#6366f1; glow shadows, radial bg leak, gradient-clipped H1
+  PROFILE B (editorial light): --bg:#F9FBF9; --accent:#FF7043; generous whitespace, sage secondary, thin SVG icons
+  PROFILE C (luxury minimal): --bg:#fafafa or #080808; --accent:#C9A96E; extreme whitespace, hairline borders
+  PROFILE D (brutalist): --bg:#fff; --accent:#e63946; offset box-shadow:4px 4px 0 #000, thick borders
+  PROFILE E (playful): bright 3-color palette; bouncy hover transform:scale(1.05); illustrated shapes
+• Write glow button: background: linear-gradient(135deg, var(--accent), ...) with box-shadow glow on :hover.
+• Add a layered radial gradient background leak div (position:fixed, pointer-events:none, z-index:-1) for dark profiles.
+• Every button/link must have a :hover state with visual feedback.
 • Output raw CSS only — NO tags, NO prose, NO fences.`;
 
-const L3_ACTIVATE_PROMPT = `You are wiring a website's interactivity.
+const L3_ACTIVATE_PROMPT = `You are a senior frontend architect wiring bulletproof interactivity into a Tailwind + Lucide site.
 
 LEVEL 3 — ACTIVATE: Output ONLY JavaScript (no tags, no HTML, no CSS).
 
 RULES:
-• Output ONLY JS content — NO <script> tags, NO HTML, NO CSS, NO markdown fences, NO prose.
-• Wire EVERY interactive element by its stable ID using getElementById or querySelectorAll.
-• NULL-CHECK every element: if (btn) btn.addEventListener('click', ...)
+• Output ONLY raw JS — NO <script> tags, NO HTML, NO CSS, NO markdown fences, NO prose.
+• FIRST LINE: re-trigger Lucide so any dynamically shown elements get their icons:
+    if (window.lucide) { lucide.createIcons(); }
+• NULL-CHECK every single DOM query before using it:
+    const btn = document.getElementById('myBtn');
+    if (btn) btn.addEventListener('click', () => { ... });
 • ALL functions at TOP LEVEL — never nested inside callbacks or blocks.
-• DO NOT wrap anything in DOMContentLoaded — script runs just before </body>, DOM is already ready.
-• SCROLL LINKS — wire smooth scroll with 90px nav offset:
+• DO NOT wrap anything in DOMContentLoaded — script runs after </body>, DOM is already parsed.
+• SCROLL LINKS — smooth scroll with 90px sticky-nav offset:
     document.querySelectorAll('a[href^="#"]').forEach(a => {
       a.addEventListener('click', function(e) {
         e.preventDefault();
@@ -5877,13 +5896,22 @@ RULES:
         if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - 90, behavior: 'smooth' });
       });
     });
-• TABS: function showTab(id, btn) { document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); const p = document.getElementById(id); if (p) p.classList.add('active'); if (btn) btn.classList.add('active'); }
-• MODALS: function openModal(id) { const m = document.getElementById(id); if(m) m.style.display='flex'; } function closeModal(id) { const m = document.getElementById(id); if(m) m.style.display='none'; }
+• TABS: use classList add/remove on .tab-panel / .tab-btn — never display:none on flex parents.
+    function showTab(id, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const p = document.getElementById(id); if (p) p.classList.add('active');
+      if (btn) btn.classList.add('active');
+    }
+• MODALS: function openModal(id){const m=document.getElementById(id);if(m)m.style.display='flex';} function closeModal(id){const m=document.getElementById(id);if(m)m.style.display='none';}
+• FORMS: always intercept with e.preventDefault() and show an inline success message — never reload.
 • SCROLL REVEAL (always include):
-    const _io = new IntersectionObserver(entries => entries.forEach(e => { if(e.isIntersecting){e.target.classList.add('visible');_io.unobserve(e.target);} }), {threshold:0.08});
+    const _io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); _io.unobserve(e.target); }
+    }), { threshold: 0.08 });
     document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
-    setTimeout(function(){ document.querySelectorAll('.reveal').forEach(function(el){ el.style.opacity='1'; el.style.transform='none'; }); }, 1000);
-• NO dead stubs — every button MUST do something (scroll, toggle, open modal, submit, etc.).
+    setTimeout(() => document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible')), 1200);
+• NO dead stubs — every button MUST do something (scroll, toggle, open modal, submit, animate, etc.).
 • Output raw JS only — NO tags, NO prose, NO fences.`;
 
 const L_UPDATE_PROMPT = `You are surgically updating one section of a website.
@@ -5896,11 +5924,61 @@ RULES:
 • Keep all existing IDs and data attributes.
 • No markdown fences, no prose, just the raw HTML fragment.`;
 
-// Assemble full HTML from staged fragments
+// Assemble full HTML from staged fragments — injects Tailwind, Fonts, Lucide
 function assembleStagedHtml(bodyHtml, styleCss, scriptJs) {
-  const style = styleCss ? '\n  <style>\n' + styleCss + '\n  </style>' : '';
-  const script = scriptJs ? '\n<script>\n' + scriptJs + '\n<\/script>' : '';
-  return '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>SnapToAI Build</title>' + style + '\n</head>\n<body>\n' + (bodyHtml || '') + script + '\n</body>\n</html>';
+  const customCss = styleCss ? '\n    ' + styleCss.split('\n').join('\n    ') : '';
+  const script = scriptJs ? '\n<script>\n(function(){\n' + scriptJs + '\n})();\n<\/script>' : '';
+  return `<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI Build</title>
+
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://cdn.tailwindcss.com"><\/script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"><\/script>
+
+  <!-- Tailwind custom tokens -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  <\/script>
+
+  <style>
+    /* Scroll-reveal base — visible without JS, animated when .visible added */
+    .reveal { transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1); }
+    .reveal:not(.visible) { opacity: 0; transform: translateY(22px); }
+    .reveal.visible { opacity: 1; transform: none; }
+    /* Custom overrides from L2 */
+    ${customCss}
+  </style>
+</head>
+<body class="bg-black text-slate-100 font-sans antialiased min-h-screen">
+
+${bodyHtml || ''}
+
+  <!-- Init Lucide icons -->
+  <script>if(window.lucide){lucide.createIcons();}<\/script>
+${script}
+</body>
+</html>`;
 }
 
 // Extract a raw text fragment from AI response (strips markdown fences)
@@ -7340,21 +7418,17 @@ function addBubbleActions(bubble, text) {
     _buildBodyHtml = extractFragment(text);
     _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, '', '');
     try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode }); } catch(e) {}
-    // Advance stage indicator
-    document.querySelectorAll('.build-stage-btn').forEach(b => b.classList.remove('stage-active'));
-    document.getElementById('buildL1Btn')?.classList.add('stage-active');
+    _setBadgeDone('L1');
   } else if (buildModeEnabled && buildStage === 'L2') {
     _buildStyleCss = extractFragment(text);
     _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, '');
     try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode }); } catch(e) {}
-    document.querySelectorAll('.build-stage-btn').forEach(b => b.classList.remove('stage-active'));
-    document.getElementById('buildL2Btn')?.classList.add('stage-active');
+    _setBadgeDone('L2');
   } else if (buildModeEnabled && buildStage === 'L3') {
     _buildScriptJs = extractFragment(text);
     _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, _buildScriptJs);
     try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode }); } catch(e) {}
-    document.querySelectorAll('.build-stage-btn').forEach(b => b.classList.remove('stage-active'));
-    document.getElementById('buildL3Btn')?.classList.add('stage-active');
+    _setBadgeDone('L3');
   } else if (buildModeEnabled && buildStage === 'UPDATE') {
     // Patch the targeted section in the existing body HTML
     const fragment = extractFragment(text);
@@ -8250,6 +8324,43 @@ function _showLivePreview(code) {
   w.style.display = 'block';
 }
 
+// Highlight a stage badge as "active" (currently generating)
+function _setBadgeActive(stage) {
+  ['L1','L2','L3'].forEach(s => {
+    const b = document.getElementById('badge-' + s);
+    if (!b) return;
+    if (s === stage) {
+      b.style.color = '#ffa032';
+      b.style.background = 'rgba(255,160,50,0.18)';
+      b.style.borderColor = 'rgba(255,160,50,0.6)';
+    } else {
+      b.style.color = 'rgba(255,160,50,0.35)';
+      b.style.background = 'transparent';
+      b.style.borderColor = 'rgba(255,160,50,0.2)';
+    }
+  });
+}
+
+// Mark a stage badge as "done" (checkmark)
+function _setBadgeDone(stage) {
+  const b = document.getElementById('badge-' + stage);
+  if (!b) return;
+  b.style.color = '#50dc78';
+  b.style.background = 'rgba(80,220,120,0.12)';
+  b.style.borderColor = 'rgba(80,220,120,0.4)';
+}
+
+// Reset all badges to dim state
+function _resetBadges() {
+  ['L1','L2','L3'].forEach(s => {
+    const b = document.getElementById('badge-' + s);
+    if (!b) return;
+    b.style.color = 'rgba(255,160,50,0.35)';
+    b.style.background = 'transparent';
+    b.style.borderColor = 'rgba(255,160,50,0.2)';
+  });
+}
+
 function renderLivePreview(responseText) {
   if (!buildModeEnabled) return;
   const { html: code } = extractHtmlFromResponse(responseText, _continuationPending ? _lastBuiltCode : null);
@@ -8263,10 +8374,13 @@ function renderLivePreview(responseText) {
   const building = document.getElementById('previewBuilding');
   const iframe = document.getElementById('livePreview');
   const lbl = document.getElementById('previewLabel');
+  const txt = document.getElementById('previewBuildingTxt');
   if (w) w.style.display = 'block';
   if (building) building.style.display = 'flex';
   if (iframe) iframe.style.display = 'none';
   if (lbl) lbl.textContent = '⏳ Building…';
+  if (txt) txt.textContent = buildStage ? 'Compiling ' + buildStage + '…' : 'Compiling…';
+  if (buildStage) _setBadgeActive(buildStage);
 }
 
 document.getElementById('closePreviewBtn')?.addEventListener('click', () => {
@@ -8315,8 +8429,8 @@ function _setStage(stage, btnId) {
   buildStage = stage;
   buildModeEnabled = true;
   document.getElementById('buildToggleBtn')?.classList.add('tool-btn-active');
-  document.querySelectorAll('.build-stage-btn').forEach(b => b.classList.remove('stage-active'));
-  document.getElementById(btnId)?.classList.add('stage-active');
+  _resetBadges();
+  _setBadgeActive(stage);
   // Update input placeholder to guide user
   const input = document.getElementById('chatInput');
   if (input) {

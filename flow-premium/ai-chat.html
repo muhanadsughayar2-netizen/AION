@@ -1247,31 +1247,6 @@
           color: #ffa032;
           box-shadow: 0 0 12px rgba(255,160,50,0.22);
         }
-        .build-stage-btn {
-          background: rgba(255,160,50,0.08);
-          border: 1px solid rgba(255,160,50,0.3);
-          color: rgba(255,160,50,0.75);
-          border-radius: 10px;
-          padding: 3px 9px;
-          font-size: 10px;
-          font-weight: 700;
-          cursor: pointer;
-          letter-spacing: 0.02em;
-          transition: all 0.15s ease;
-          white-space: nowrap;
-        }
-        .build-stage-btn:hover {
-          background: rgba(255,160,50,0.18);
-          border-color: rgba(255,160,50,0.7);
-          color: #ffa032;
-          transform: translateY(-1px);
-        }
-        .build-stage-btn.stage-active {
-          background: rgba(255,160,50,0.22);
-          border-color: #ffa032;
-          color: #ffa032;
-          box-shadow: 0 0 8px rgba(255,160,50,0.3);
-        }
         @keyframes spin { to { transform: rotate(360deg); } }
         #researchToggleBtn:hover, #researchToggleBtn.tool-btn-active {
           background: rgba(180,100,255,0.12);
@@ -1298,21 +1273,30 @@
           box-shadow: 0 0 12px rgba(80,220,120,0.22);
         }
       </style>
-      <div id="previewWrapper" style="display:none; margin:8px 10px 0; border:1.5px solid rgba(255,160,50,0.4); border-radius:12px; overflow:hidden; background:#0b0e11;">
-        <div style="background:rgba(30,30,40,0.97); padding:7px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,160,50,0.25);">
-          <span id="previewLabel" style="font-size:11px; font-weight:600; color:#ffa032; letter-spacing:0.5px;">🏗️ LIVE PREVIEW</span>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <button id="previewExpandBtn" title="Expand / collapse preview" style="font-size:10px;padding:3px 7px;border-radius:10px;background:rgba(255,160,50,0.08);border:1px solid rgba(255,160,50,0.25);color:#ffa032;cursor:pointer;font-weight:700;line-height:1;">⤢</button>
-            <button id="previewOpenTabBtn" style="font-size:10px;padding:3px 9px;border-radius:10px;background:rgba(0,217,255,0.12);border:1px solid rgba(0,217,255,0.35);color:#00d9ff;cursor:pointer;font-weight:600;">🔗 Full Page</button>
-            <button id="previewCopyBtn" style="font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(255,160,50,0.12);border:1px solid rgba(255,160,50,0.3);color:#ffa032;cursor:pointer;">Copy Code</button>
-            <button id="closePreviewBtn" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:14px;line-height:1;">✕</button>
+      <div id="previewWrapper" style="display:none; margin:10px 12px 4px; border:1px solid rgba(255,160,50,0.3); border-radius:14px; overflow:hidden; background:#07070a; box-shadow:0 10px 36px rgba(0,0,0,0.55);">
+        <div style="background:rgba(12,12,18,0.98); padding:9px 14px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,160,50,0.15);">
+          <!-- Left: label + stage badges -->
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span id="previewLabel" style="font-size:10px; font-weight:800; font-family:monospace; color:#ffa032; letter-spacing:1px; text-transform:uppercase; white-space:nowrap;">🏗️ BUILD BUFFER</span>
+            <div id="buildStageBadges" style="display:flex; gap:3px;">
+              <span id="badge-L1" style="font-family:monospace; font-size:8px; font-weight:700; padding:2px 6px; border-radius:4px; border:1px solid rgba(255,160,50,0.25); color:rgba(255,160,50,0.4); background:transparent; transition:all 0.2s;">HTML</span>
+              <span id="badge-L2" style="font-family:monospace; font-size:8px; font-weight:700; padding:2px 6px; border-radius:4px; border:1px solid rgba(255,160,50,0.25); color:rgba(255,160,50,0.4); background:transparent; transition:all 0.2s;">CSS</span>
+              <span id="badge-L3" style="font-family:monospace; font-size:8px; font-weight:700; padding:2px 6px; border-radius:4px; border:1px solid rgba(255,160,50,0.25); color:rgba(255,160,50,0.4); background:transparent; transition:all 0.2s;">JS</span>
+            </div>
+          </div>
+          <!-- Right: action buttons -->
+          <div style="display:flex;gap:5px;align-items:center;">
+            <button id="previewExpandBtn" title="Expand / collapse preview" style="font-size:11px;padding:3px 7px;border-radius:7px;background:rgba(255,160,50,0.07);border:1px solid rgba(255,160,50,0.2);color:#ffa032;cursor:pointer;font-weight:700;line-height:1;">⤢</button>
+            <button id="previewOpenTabBtn" style="font-size:10px;padding:3px 9px;border-radius:7px;background:rgba(0,217,255,0.07);border:1px solid rgba(0,217,255,0.28);color:#00d9ff;cursor:pointer;font-weight:700;font-family:monospace;">↗ Open</button>
+            <button id="previewCopyBtn" style="font-size:10px;padding:3px 8px;border-radius:7px;background:rgba(255,160,50,0.09);border:1px solid rgba(255,160,50,0.22);color:#ffa032;cursor:pointer;font-weight:700;font-family:monospace;">Copy</button>
+            <button id="closePreviewBtn" style="background:none;border:none;color:rgba(255,255,255,0.35);cursor:pointer;font-size:13px;line-height:1;padding:0 2px;">✕</button>
           </div>
         </div>
-        <div id="previewBuilding" style="display:none;align-items:center;justify-content:center;gap:10px;height:44px;background:rgba(20,20,30,0.98);font-size:11px;font-weight:600;color:#ffa032;letter-spacing:0.5px;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffa032" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite;flex-shrink:0"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
-          <span>Building your site…</span>
+        <div id="previewBuilding" style="display:none;align-items:center;justify-content:center;gap:8px;height:46px;background:rgba(7,7,10,0.96);font-size:11px;font-weight:700;color:#ffa032;font-family:monospace;letter-spacing:0.5px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffa032" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite;flex-shrink:0;"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+          <span id="previewBuildingTxt">Compiling…</span>
         </div>
-        <iframe id="livePreview" allow="fullscreen" style="width:100%;height:200px;border:none;display:none;background:#0b0e11;"></iframe>
+        <iframe id="livePreview" allow="fullscreen" style="width:100%;height:200px;border:none;display:none;background:#07070a;"></iframe>
       </div>
       <div class="ai-disclaimer">Gemini can make mistakes, so double-check it</div>
       
