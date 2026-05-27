@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=1280">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SnapToAI Sandbox</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -57,19 +57,9 @@
 
             var fresh = document.createElement('script');
             Array.from(old.attributes).forEach(function(a) {
-              // Strip type="module" — module scope hides function declarations
-              // from the global window object, so onclick="showTab()" can't
-              // find them. Running as a plain script keeps everything global.
-              if (a.name === 'type' && /^module$/i.test(a.value)) return;
               try { fresh.setAttribute(a.name, a.value); } catch(e) {}
             });
-            // Strip import/export lines that would fail outside module context
-            var safeCode = old.textContent
-              .replace(/^\s*import\s+[\s\S]*?from\s+['"][^'"]*['"]\s*;?\s*$/gm, '')
-              .replace(/^\s*import\s+['"][^'"]*['"]\s*;?\s*$/gm, '')
-              .replace(/^\s*export\s+default\s+/gm, '')
-              .replace(/^\s*export\s+/gm, '');
-            fresh.textContent = safeCode;
+            fresh.textContent = old.textContent;
             if (old.parentNode) {
               old.parentNode.replaceChild(fresh, old);
             }
@@ -159,66 +149,7 @@
         // Partial streaming chunks may contain truncated <script> tags which
         // cause "Unexpected end of input" SyntaxErrors when cloned.
         if (data.isFinal) {
-          // ── DOMContentLoaded patch ─────────────────────────────────────────
-          // The sandbox page is already fully loaded when generated HTML arrives,
-          // so DOMContentLoaded has already fired. Any script that does:
-          //   document.addEventListener('DOMContentLoaded', fn)
-          // would queue fn into a callback that NEVER fires — meaning openLegal,
-          // showTab etc. defined inside that callback are never created globally.
-          //
-          // Fix: intercept DOMContentLoaded registrations and immediately run
-          // the callback body via indirect eval (0,eval) which executes in the
-          // global scope, so `function` declarations inside become window properties.
-          var _origDocEvt = document.addEventListener.bind(document);
-          document.addEventListener = function(type, fn, opts) {
-            if (type === 'DOMContentLoaded') {
-              try {
-                var src = fn.toString();
-                var ob = src.indexOf('{');
-                var cb = src.lastIndexOf('}');
-                if (ob !== -1 && cb > ob) {
-                  // Indirect eval → global scope → function declarations become global
-                  (0, eval)(src.slice(ob + 1, cb));
-                } else {
-                  fn.call(window);
-                }
-              } catch(e) { try { fn.call(window); } catch(e2) {} }
-              return;
-            }
-            _origDocEvt(type, fn, opts);
-          };
-
-          // ── Global stubs ───────────────────────────────────────────────────
-          // If the generated script defines these, it overwrites the stub.
-          // If the script fails to expose them globally (e.g. const scope),
-          // the stub provides working fallback behaviour so onclick never throws.
-          if (!window.openLegal) window.openLegal = function(title, html) {
-            var ov = document.querySelector('#legalOverlay,#legalModal,[id*=legal],[id*=modal]');
-            if (ov) {
-              var th = ov.querySelector('h2,h3,.modal-title,[id*=title]');
-              var bh = ov.querySelector('.modal-body,#legalBody,[id*=body],p');
-              if (th) th.textContent = title;
-              if (bh) bh.innerHTML = html;
-              ov.style.display = 'flex'; ov.classList.add('open','active','visible');
-            }
-          };
-          if (!window.closeLegal) window.closeLegal = function() {
-            var ov = document.querySelector('#legalOverlay,#legalModal,[id*=legal],[id*=modal]');
-            if (ov) { ov.style.display = 'none'; ov.classList.remove('open','active','visible'); }
-          };
-          if (!window.showTab) window.showTab = function(id, btn) {
-            document.querySelectorAll('[class*=tab-panel]').forEach(function(p) { p.classList.remove('active'); });
-            document.querySelectorAll('[class*=tab-btn],[class*=tab-button]').forEach(function(b) { b.classList.remove('active'); });
-            var panel = document.getElementById(id);
-            if (panel) panel.classList.add('active');
-            if (btn) btn.classList.add('active');
-          };
-
           runScripts(app);
-
-          // Restore the real addEventListener after all scripts have run
-          document.addEventListener = _origDocEvt;
-
           // Immediate call for icons already in DOM
           try { lucide.createIcons(); } catch(e) {}
           // Delayed call catches icons created by scripts that ran async
