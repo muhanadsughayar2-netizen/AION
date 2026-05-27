@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus AI Studio — Snap the Pixel, Unleash the Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@1,900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Archivo', 'sans-serif'],
+            body: ['Inter', 'sans-serif']
+          },
+          colors: {
+            pitch: '#050505',
+            electric: '#A855F7',
+            neon: '#EC4899',
+            surface: 'rgba(255,255,255,0.04)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background-color: #050505; color: #ffffff; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+    
+    .gradient-text {
+      background: linear-gradient(135deg, #A855F7 0%, #EC4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .btn-gradient {
+      background: linear-gradient(135deg, #A855F7 0%, #EC4899 100%);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.05);
+    }
+
+    .mockup-glow {
+      box-shadow: 0 0 80px -20px rgba(168, 85, 247, 0.2);
+    }
+
+    .scanning-line {
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #A855F7, transparent);
+      position: absolute;
+      top: 0;
+      left: 0;
+      animation: scan 4s linear infinite;
+      z-index: 20;
+      opacity: 0.5;
+    }
+
+    @keyframes scan {
+      0% { top: 0%; opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { top: 100%; opacity: 0; }
+    }
+
+    .reveal.visible { animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes revealUp { 
+      from { opacity: 0; transform: translateY(30px); } 
+      to { opacity: 1; transform: none; } 
+    }
+
+    .dot-grid {
+      background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    .stats-italic { font-family: 'Archivo', sans-serif; font-style: italic; font-weight: 900; }
+
+    .tool-chip {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      transition: all 0.2s ease;
+    }
+    .tool-chip:hover { border-color: #A855F7; color: white; background: rgba(168, 85, 247, 0.1); }
+  </style>
+</head>
+<body class="font-body">
+
+  <!-- NAVIGATION -->
+  <nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-6 py-4" id="mainNav">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-gradient-to-br from-electric to-neon rounded-lg flex items-center justify-center shadow-lg shadow-electric/20">
+          <i data-lucide="camera" class="w-5 h-5 text-white"></i>
+        </div>
+        <span class="text-xl font-bold tracking-tight">Nexus<span class="gradient-text">AI</span> Studio</span>
+      </div>
+      
+      <div class="hidden md:flex items-center gap-8">
+        <a href="javascript:void(0)" onclick="openLegal('Privacy Policy', privacyContent)" class="text-sm font-medium text-zinc-400 hover:text-white transition-colors">PRIVACY</a>
+        <a href="#install" class="btn-gradient px-6 py-2.5 rounded-full text-sm font-bold text-white hover:scale-105 active:scale-95 shadow-xl shadow-neon/10">
+          ADD TO CHROME
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden dot-grid">
+    <div class="absolute inset-0 bg-gradient-to-b from-pitch via-transparent to-pitch z-0"></div>
+    
+    <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center relative z-10">
+      
+      <!-- LEFT CONTENT -->
+      <div class="reveal">
+        <div class="inline-flex items-center px-3 py-1 rounded-full border border-electric/30 bg-electric/10 text-[10px] font-bold tracking-widest text-electric uppercase mb-8">
+          Google AI Studio Payload Active
+        </div>
+        
+        <h1 class="text-6xl md:text-8xl font-heading italic leading-[0.85] uppercase mb-8">
+          Snap the <br>
+          <span class="gradient-text">Pixel,</span> <br>
+          Unleash <br>
+          <span class="gradient-text">The Studio.</span>
+        </h1>
+        
+        <p class="text-lg text-zinc-400 max-w-lg mb-12 leading-relaxed">
+          Capture any screen, then chat with AI, generate <span class="text-zinc-100 font-semibold">photoreal images</span>, original <span class="text-zinc-100 font-semibold">music</span>, and <span class="text-zinc-100 font-semibold">cinematic 64-second videos</span> — all powered by Google Gemini, right in your browser.
+        </p>
+
+        <div class="flex flex-wrap gap-12 pt-8 border-t border-zinc-800/50">
+          <div>
+            <div class="stats-italic text-4xl mb-1">64<span class="text-electric">s</span></div>
+            <div class="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Stitched Video</div>
+          </div>
+          <div>
+            <div class="stats-italic text-4xl mb-1">55+</div>
+            <div class="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Languages</div>
+          </div>
+          <div>
+            <div class="stats-italic text-4xl mb-1">$300</div>
+            <div class="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Free Google Credit</div>
+          </div>
+        </div>
+
+        <div class="mt-12 flex flex-col sm:flex-row gap-4">
+          <a href="#install" class="btn-gradient px-8 py-4 rounded-xl font-bold text-center flex items-center justify-center gap-2">
+            <i data-lucide="rocket" class="w-5 h-5"></i> INSTALL FREE
+          </a>
+          <a href="#features" class="px-8 py-4 rounded-xl border border-zinc-800 hover:bg-zinc-900 transition-colors font-bold text-center flex items-center justify-center gap-2">
+            SEE WHAT'S INSIDE <i data-lucide="arrow-right" class="w-5 h-5"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- RIGHT MOCKUP -->
+      <div class="reveal relative">
+        <div class="glass-card mockup-glow rounded-[32px] p-1 overflow-hidden">
+          <div class="bg-pitch rounded-[31px] p-6 relative overflow-hidden">
+            <div class="scanning-line"></div>
+            
+            <!-- Mockup Header -->
+            <div class="flex justify-between items-center mb-8">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-electric/20 rounded-lg flex items-center justify-center">
+                  <i data-lucide="camera" class="w-4 h-4 text-electric"></i>
+                </div>
+                <span class="font-bold text-sm tracking-tight italic uppercase">NexusAI Studio</span>
+              </div>
+              <div class="px-2.5 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 text-[10px] font-bold flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> PRO
+              </div>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="grid grid-cols-4 gap-3 mb-6">
+              <div class="glass-card rounded-2xl p-4 flex flex-col items-center gap-2 opacity-50">
+                <i data-lucide="camera" class="w-5 h-5"></i>
+                <span class="text-[9px] font-bold uppercase tracking-wider">Snap</span>
+              </div>
+              <div class="glass-card rounded-2xl p-4 flex flex-col items-center gap-2 opacity-50">
+                <i data-lucide="scissors" class="w-5 h-5"></i>
+                <span class="text-[9px] font-bold uppercase tracking-wider">Snip</span>
+              </div>
+              <div class="glass-card rounded-2xl p-4 flex flex-col items-center gap-2 opacity-50">
+                <i data-lucide="file-text" class="w-5 h-5"></i>
+                <span class="text-[9px] font-bold uppercase tracking-wider">Full</span>
+              </div>
+              <div class="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-amber-500/50 rounded-2xl p-4 flex flex-col items-center gap-2 shadow-lg shadow-amber-500/10">
+                <i data-lucide="sparkles" class="w-5 h-5 text-amber-500"></i>
+                <span class="text-[9px] font-bold uppercase tracking-wider text-amber-500">Studio</span>
+              </div>
+            </div>
+
+            <!-- Capabilities Strip -->
+            <div class="flex flex-wrap gap-2 mb-8 justify-center">
+               <span class="tool-chip">Vision</span>
+               <span class="tool-chip">Image</span>
+               <span class="tool-chip">Music</span>
+               <span class="tool-chip">Video</span>
+               <span class="tool-chip">Research</span>
+               <span class="tool-chip">TTS</span>
+            </div>
+
+            <!-- Capture Grid -->
+            <div class="grid grid-cols-2 gap-3 mb-8">
+              <div class="relative aspect-video rounded-xl overflow-hidden group">
+                <img src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                     onerror="this.parentElement.style.background='linear-gradient(45deg, #1e1b4b, #312e81)'"
+                     class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-700" alt="Capture 1">
+                <div class="absolute top-2 left-2 px-2 py-0.5 rounded bg-electric/90 text-[8px] font-black uppercase">Capture 1</div>
+              </div>
+              <div class="relative aspect-video rounded-xl overflow-hidden group">
+                <img src="https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                     onerror="this.parentElement.style.background='linear-gradient(45deg, #4c1d95, #5b21b6)'"
+                     class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-700" alt="Capture 2">
+                <div class="absolute top-2 left-2 px-2 py-0.5 rounded bg-electric/90 text-[8px] font-black uppercase">Capture 2</div>
+              </div>
+              <div class="relative aspect-video rounded-xl overflow-hidden group">
+                <img src="https://images.pexels.com/photos/1266808/pexels-photo-1266808.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                     onerror="this.parentElement.style.background='linear-gradient(45deg, #831843, #9d174d)'"
+                     class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-700" alt="Capture 3">
+                <div class="absolute top-2 left-2 px-2 py-0.5 rounded bg-electric/90 text-[8px] font-black uppercase">Capture 3</div>
+              </div>
+              <div class="relative aspect-video rounded-xl overflow-hidden group">
+                <img src="https://images.pexels.com/photos/3585078/pexels-photo-3585078.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                     onerror="this.parentElement.style.background='linear-gradient(45deg, #1e293b, #334155)'"
+                     class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-700" alt="Capture 4">
+                <div class="absolute top-2 left-2 px-2 py-0.5 rounded bg-electric/90 text-[8px] font-black uppercase">Capture 4</div>
+              </div>
+            </div>
+
+            <!-- Action -->
+            <button class="w-full btn-gradient py-4 rounded-2xl font-black italic uppercase tracking-tighter text-lg shadow-lg shadow-neon/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+              + Process In Studio
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="py-32 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="reveal mb-20">
+        <div class="text-xs font-black tracking-[0.3em] text-electric uppercase mb-4">Integrated Intelligence</div>
+        <h2 class="text-5xl md:text-7xl font-heading italic leading-none uppercase">
+          The Full Google AI <br> <span class="gradient-text">Studio Payload.</span>
+        </h2>
+        <p class="mt-8 text-zinc-400 max-w-xl text-lg leading-relaxed">
+          The pinnacle of generative AI, stitched directly into your browser workflow. One snap, infinite modes.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- VEO -->
+        <div class="reveal glass-card p-8 rounded-[32px] group hover:bg-zinc-900/50 transition-all">
+          <div class="w-12 h-12 rounded-2xl bg-zinc-900 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+            <i data-lucide="clapperboard" class="w-6 h-6 text-electric"></i>
+          </div>
+          <div class="text-[10px] font-black tracking-widest text-electric uppercase mb-2">Production</div>
+          <h3 class="text-xl font-heading italic uppercase mb-4">Veo 3.1 Production</h3>
+          <p class="text-zinc-500 text-sm leading-relaxed">
+            8x stitching engine. Turn snaps into 64-second cinematic narratives in 4K with editable per-clip prompts.
+          </p>
+        </div>
+
+        <!-- LYRIA -->
+        <div class="reveal glass-card p-8 rounded-[32px] group hover:bg-zinc-900/50 transition-all">
+          <div class="w-12 h-12 rounded-2xl bg-zinc-900 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+            <i data-lucide="music" class="w-6 h-6 text-neon"></i>
+          </div>
+          <div class="text-[10px] font-black tracking-widest text-neon uppercase mb-2">Scoring</div>
+          <h3 class="text-xl font-heading italic uppercase mb-4">Lyria 3 Audio</h3>
+          <p class="text-zinc-500 text-sm leading-relaxed">
+            Original music and studio-grade soundscapes tied to your visual context — built with a guided Song Studio.
+          </p>
+        </div>
+
+        <!-- GEMINI -->
+        <div class="reveal glass-card p-8 rounded-[32px] group hover:bg-zinc-900/50 transition-all">
+          <div class="w-12 h-12 rounded-2xl bg-zinc-900 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+            <i data-lucide="eye" class="w-6 h-6 text-emerald-400"></i>
+          </div>
+          <div class="text-[10px] font-black tracking-widest text-emerald-400 uppercase mb-2">Intelligence</div>
+          <h3 class="text-xl font-heading italic uppercase mb-4">Gemini 3 Vision</h3>
+          <p class="text-zinc-500 text-sm leading-relaxed">
+            Pro-grade multi-source reasoning. Analyze up to 10 captures simultaneously with code-aware context.
+          </p>
+        </div>
+
+        <!-- NANO -->
+        <div class="reveal glass-card p-8 rounded-[32px] group hover:bg-zinc-900/50 transition-all">
+          <div class="w-12 h-12 rounded-2xl bg-zinc-900 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+            <i data-lucide="banana" class="w-6 h-6 text-amber-400"></i>
+          </div>
+          <div class="text-[10px] font-black tracking-widest text-amber-400 uppercase mb-2">Creation</div>
+          <h3 class="text-xl font-heading italic uppercase mb-4">Nano Banana</h3>
+          <p class="text-zinc-500 text-sm leading-relaxed">
+            Next-gen photorealistic image generation. Infinite creativity from your daily captures.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MULTIMODAL LIST -->
+  <section class="py-20 px-6">
+    <div class="max-w-7xl mx-auto reveal glass-card p-12 rounded-[40px] border-electric/20">
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-8 text-center">
+        <div class="space-y-4">
+          <i data-lucide="terminal" class="w-6 h-6 mx-auto text-zinc-600"></i>
+          <div class="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Code Analysis</div>
+        </div>
+        <div class="space-y-4">
+          <i data-lucide="search" class="w-6 h-6 mx-auto text-zinc-600"></i>
+          <div class="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Deep Research</div>
+        </div>
+        <div class="space-y-4">
+          <i data-lucide="book-open" class="w-6 h-6 mx-auto text-zinc-600"></i>
+          <div class="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Smart Read</div>
+        </div>
+        <div class="space-y-4">
+          <i data-lucide="mic-2" class="w-6 h-6 mx-auto text-zinc-600"></i>
+          <div class="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Pro TTS</div>
+        </div>
+        <div class="space-y-4">
+          <i data-lucide="globe" class="w-6 h-6 mx-auto text-zinc-600"></i>
+          <div class="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Live Search</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRIVACY -->
+  <section class="py-32 px-6 bg-zinc-900/30">
+    <div class="max-w-4xl mx-auto text-center reveal">
+      <div class="w-16 h-16 bg-emerald-500/10 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-emerald-500/20">
+        <i data-lucide="shield-check" class="w-8 h-8 text-emerald-500"></i>
+      </div>
+      <h2 class="text-4xl md:text-5xl font-heading italic uppercase mb-8">Privacy first, always.</h2>
+      <p class="text-zinc-400 text-lg leading-relaxed mb-12">
+        Your screenshots never leave your browser unless <span class="text-white font-bold">YOU</span> send them to AI. Captures are stored only in your local Chrome session storage. No tracking pixels, no third-party analytics on your captures, no resale of your data.
+      </p>
+      <a href="javascript:void(0)" onclick="openLegal('Privacy Policy', privacyContent)" class="text-electric font-bold hover:underline">Read the full privacy policy.</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="py-20 px-6 border-t border-zinc-800/50">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+      <div class="col-span-1 md:col-span-1">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-8 h-8 bg-gradient-to-br from-electric to-neon rounded-lg flex items-center justify-center">
+            <i data-lucide="camera" class="w-4 h-4 text-white"></i>
+          </div>
+          <span class="text-lg font-bold tracking-tight italic uppercase">NexusAI Studio</span>
+        </div>
+        <p class="text-zinc-500 text-sm leading-relaxed">
+          The ultimate creative bridge for the Gemini ecosystem. Build, snip, and generate in one browser-native workspace.
+        </p>
+      </div>
+
+      <div>
+        <div class="text-[10px] font-black tracking-widest text-zinc-300 uppercase mb-6">Legal & Contact</div>
+        <ul class="space-y-4">
+          <li><a href="javascript:void(0)" onclick="openLegal('Privacy Policy', privacyContent)" class="text-zinc-500 hover:text-white text-sm">Privacy Policy</a></li>
+          <li><a href="javascript:void(0)" onclick="openLegal('Terms of Service', termsContent)" class="text-zinc-500 hover:text-white text-sm">Terms of Service</a></li>
+          <li><a href="mailto:hello@nexusai.studio" class="text-zinc-500 hover:text-white text-sm transition-colors">Contact Support</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="text-[10px] font-black tracking-widest text-zinc-300 uppercase mb-6">Technology</div>
+        <ul class="space-y-2">
+          <li class="text-zinc-500 text-sm">Multimodal · V2.4</li>
+          <li class="text-zinc-500 text-sm">Backbone: Google AI Studio</li>
+          <li class="text-zinc-500 text-sm">55+ Supported Languages</li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="text-[10px] font-black tracking-widest text-zinc-300 uppercase mb-6">Status</div>
+        <div class="glass-card p-4 rounded-2xl">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-xs font-bold">ALL SYSTEMS LIVE</span>
+          </div>
+          <div class="text-[10px] text-zinc-500">Secured by Cloud Infrastructure. No credit card required.</div>
+        </div>
+      </div>
+    </div>
+    <div class="max-w-7xl mx-auto mt-20 pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="text-zinc-600 text-xs">© 2026 Nexus AI Studio. Built for Google AI Ecosystem.</div>
+      <div class="flex items-center gap-6">
+        <a href="#" class="text-zinc-600 hover:text-white transition-colors"><i data-lucide="twitter" class="w-4 h-4"></i></a>
+        <a href="#" class="text-zinc-600 hover:text-white transition-colors"><i data-lucide="github" class="w-4 h-4"></i></a>
+        <a href="#" class="text-zinc-600 hover:text-white transition-colors"><i data-lucide="chrome" class="w-4 h-4"></i></a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- LEGAL MODAL -->
+  <div id="legalModal" class="fixed inset-0 bg-black/90 z-[100] hidden items-center justify-center p-6 backdrop-blur-sm">
+    <div class="glass-card max-w-2xl w-full max-h-[80vh] overflow-y-auto p-12 relative rounded-[40px]">
+      <button onclick="closeLegal()" class="absolute top-8 right-8 text-zinc-500 hover:text-white transition-colors">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+      <h2 id="legalTitle" class="text-3xl font-heading italic uppercase mb-8"></h2>
+      <div id="legalBody" class="text-zinc-400 leading-relaxed space-y-4 text-sm"></div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Intersection Observer for reveal animations
+    const _io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (e.isIntersecting) { 
+        e.target.classList.add('visible'); 
+        _io.unobserve(e.target); 
+      }
+    }), { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+
+    // Safety net for animations (Forces visible if observer fails)
+    setTimeout(() => {
+      document.querySelectorAll('.reveal').forEach(el => {
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+      });
+    }, 1200);
+
+    // Navbar Scroll Effect
+    window.addEventListener('scroll', () => {
+      const nav = document.getElementById('mainNav');
+      if (window.scrollY > 50) {
+        nav.classList.add('bg-pitch/80', 'backdrop-blur-md', 'border-b', 'border-zinc-800/50');
+      } else {
+        nav.classList.remove('bg-pitch/80',
+</body></html>
