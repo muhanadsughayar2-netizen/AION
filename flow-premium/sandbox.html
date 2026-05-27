@@ -57,9 +57,19 @@
 
             var fresh = document.createElement('script');
             Array.from(old.attributes).forEach(function(a) {
+              // Strip type="module" — module scope hides function declarations
+              // from the global window object, so onclick="showTab()" can't
+              // find them. Running as a plain script keeps everything global.
+              if (a.name === 'type' && /^module$/i.test(a.value)) return;
               try { fresh.setAttribute(a.name, a.value); } catch(e) {}
             });
-            fresh.textContent = old.textContent;
+            // Strip import/export lines that would fail outside module context
+            var safeCode = old.textContent
+              .replace(/^\s*import\s+[\s\S]*?from\s+['"][^'"]*['"]\s*;?\s*$/gm, '')
+              .replace(/^\s*import\s+['"][^'"]*['"]\s*;?\s*$/gm, '')
+              .replace(/^\s*export\s+default\s+/gm, '')
+              .replace(/^\s*export\s+/gm, '');
+            fresh.textContent = safeCode;
             if (old.parentNode) {
               old.parentNode.replaceChild(fresh, old);
             }
