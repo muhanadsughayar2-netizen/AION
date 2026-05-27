@@ -8395,11 +8395,11 @@ window.addEventListener('message', function(ev) {
   if (ev.data && ev.data.sandboxReady) {
     _isSandboxReady = true;
     // If code was queued before the sandbox was ready, flush it now
-    if (_lastBuiltCode) _postToSandbox(_lastBuiltCode);
+    if (_lastBuiltCode) _postToSandbox(_lastBuiltCode, true); // handshake flush = final
   }
 });
 
-function _postToSandbox(code) {
+function _postToSandbox(code, isFinal) {
   const iframe = document.getElementById('livePreview');
   if (!iframe) return;
   _lastBuiltCode = code; // always keep buffer fresh
@@ -8408,7 +8408,7 @@ function _postToSandbox(code) {
   // the handshake listener will auto-flush _lastBuiltCode when it fires.
   if (!_isSandboxReady) return;
   if (iframe.contentWindow) {
-    iframe.contentWindow.postMessage({ htmlCode: code }, '*');
+    iframe.contentWindow.postMessage({ htmlCode: code, isFinal: !!isFinal }, '*');
   }
 }
 
@@ -8425,7 +8425,7 @@ function _showLivePreview(code) {
   if (!w || !iframe) return;
 
   // Send HTML to sandbox.html via postMessage — sandbox page can load Tailwind CDN
-  _postToSandbox(code);
+  _postToSandbox(code, true);
   iframe.style.display = 'block';
   iframe.style.height = _previewExpanded ? '420px' : '200px';
   if (building) building.style.display = 'none';
@@ -8496,7 +8496,7 @@ function renderLivePreview(responseText) {
     _streamRenderTimer = setTimeout(() => {
       _streamRenderTimer = null;
       if (_streamRenderPending && iframe) {
-        _postToSandbox(_streamRenderPending);
+        _postToSandbox(_streamRenderPending, false); // partial — skip script execution
         iframe.style.display = 'block';
         iframe.style.height = _previewExpanded ? '420px' : '200px';
         _streamRenderPending = null;
@@ -8518,7 +8518,8 @@ document.getElementById('closePreviewBtn')?.addEventListener('click', () => {
   const w = document.getElementById('previewWrapper');
   if (w) w.style.display = 'none';
   const iframe = document.getElementById('livePreview');
-  if (iframe) { iframe.removeAttribute('srcdoc'); iframe.src = 'about:blank'; iframe.style.display = 'none'; }
+  // Hide only — never navigate away from sandbox.html or future builds can't postMessage into it
+  if (iframe) { iframe.style.display = 'none'; }
   const building = document.getElementById('previewBuilding');
   if (building) building.style.display = 'none';
   if (_livePreviewBlobUrl) { URL.revokeObjectURL(_livePreviewBlobUrl); _livePreviewBlobUrl = null; }

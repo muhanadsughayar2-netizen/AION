@@ -107,8 +107,13 @@
         var app = document.getElementById('sandbox-app');
         if (!app) return;
         app.innerHTML = extractBody(data.htmlCode);
-        runScripts(app);
-        try { lucide.createIcons(); } catch(e) {}
+        // Only execute scripts on the final complete render.
+        // Partial streaming chunks may contain truncated <script> tags which
+        // cause "Unexpected end of input" SyntaxErrors when cloned.
+        if (data.isFinal) {
+          runScripts(app);
+          try { lucide.createIcons(); } catch(e) {}
+        }
       } catch(e) {}
     });
 
