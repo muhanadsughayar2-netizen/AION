@@ -8295,6 +8295,14 @@ let _lastBuiltCode = '';
 // When true, the next build response is a continuation chunk — merge with _lastBuiltCode
 let _continuationPending = false;
 
+// Restore last built code from storage on popup load so follow-up fix requests
+// work correctly even after the popup is closed and reopened
+chrome.storage.local.get('snaptoai_built_code', (res) => {
+  if (res.snaptoai_built_code) {
+    _lastBuiltCode = res.snaptoai_built_code;
+  }
+});
+
 // ── Staged Media for Build Mode ────────────────────────────────────────────
 // Holds an image or video the user tagged to embed in the next build.
 let _stagedBuildMedia = null; // { type, mimeType, data (base64), label }
@@ -8554,6 +8562,14 @@ document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
   if (!buildModeEnabled) {
     buildStage = null;
     _lastBuiltCode = '';
+  } else if (!_lastBuiltCode) {
+    // Restore any previously built site from storage so follow-up fix
+    // requests have the current HTML even if the popup was reopened
+    chrome.storage.local.get('snaptoai_built_code', (res) => {
+      if (res.snaptoai_built_code) {
+        _lastBuiltCode = res.snaptoai_built_code;
+      }
+    });
   }
 });
 

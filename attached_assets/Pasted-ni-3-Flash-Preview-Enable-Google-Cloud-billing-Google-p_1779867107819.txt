@@ -1,0 +1,1626 @@
+ni 3 Flash (Preview)
+🎁Enable Google Cloud billing → Google provides $300 in credits
+Add Billing
+✕
+▶
+To get an AI (like Cursor, Bolt.new, v0.dev, or Claude) to build this exactly as seen in the image, you need a highly specific Technical Specification Prompt. Copy and paste the text below into your AI builder. This prompt uses "System Instructions" to ensure the design, color palette, and specific features are perfectly aligned with your vision. The "Nexus AI Studio" Build Prompt Role: You are an expert Frontend Developer and UI/UX Designer specializing in Cyber-Minimalist aesthetics. Project Goal: Build a high-conversion landing page for a Chrome Extension called "Nexus AI Studio." This extension acts as a bridge to Google Gemini’s power. Design Language & Style: Color Palette: Use a "Pitch Black" background (#050505). Use a primary gradient of Electric Purple (#A855F7) to Neon Pink (#EC4899). Typography: Use 'Inter' for body text. For headings, use a heavy, italicized, uppercase Sans-Serif font (like Archivo Black or Montserrat 900) to create a sense of speed and power. Vibe: Professional, high-tech, "Google DeepMind" aesthetic. Use glassmorphism and subtle glow effects. Page Structure: Navigation: Left: Logo (A stylized square icon with a purple/pink gradient) + "Nexus AI Studio" in bold. Right: Links for "Privacy" and a high-contrast button labeled "ADD TO CHROME" (Gradient background, white text). Hero Section (Two-Column Layout): Left Column (Copy): Top Badge: A small pill-shaped border labeled "GOOGLE AI STUDIO PAYLOAD ACTIVE" in purple text. Main Headline: "SNAP THE PIXEL, UNLEASH THE STUDIO." (Apply the purple-to-pink gradient to "PIXEL" and "THE STUDIO"). Subtext: "Capture any screen, then chat with AI, generate photoreal images, original music, and cinematic 64-second videos—all powered by Google Gemini, right in your browser." Stats Row: Three columns showing: "64s Stitched Video", "55+ Languages", and "$300 Free Google Credit". Use large, bold, italic numbers. Right Column (The Extension Mockup): Create a floating "Extension Window" with a dark border and inner glow. Include a top-bar with "Nexus AI Studio" and a "PRO" badge. Tool Grid: 4 Icons for "SNAP", "SNIP", "FULL", and a highlighted "STUDIO" icon with a gold star. Feature List Integration: Under the "Studio" section, visually represent these capabilities: Vision, Image, Music, Video, Research, Search, Read, Code, and TTS. Capture Grid: A 2x2 grid of cinematic AI-generated thumbnails (Space/Cyberpunk themed). Action Button: A wide, glowing gradient button labeled "+ PROCESS IN STUDIO". Technical Requirements: Use Tailwind CSS for all styling. Ensure the design is fully responsive (stacks vertically on mobile). Add a subtle "scanning" animation to the extension mockup to make it feel alive. The "Add to Chrome" button should have a hover:scale-105 transition. 4. Deep-Dive: Why This Prompt Works ### The "Why" (First Principles) Modern AI tools (like Gemini or GPT-4) respond best to Structural Hierarchy. By defining the "Design Language" first, you prevent the AI from using generic "Bootstrap" or "Material Design" styles. We are forcing it into a Cyber-Minimalist framework which is the current gold standard for AI startups. ### Technical Mechanics Gradient Mapping: By specifying the Hex codes (#A855F7 to #EC4899), you ensure the AI doesn't pick a "muddy" purple or a "dull" pink. Typography Weights: Specifying "Montserrat 900" or "Archivo Black" ensures the text looks "heavy" and premium, rather than thin and academic. Glassmorphism: The prompt asks for "inner glow" and "dark borders," which creates that 3D layered look seen in the original "SnapToAI" site. ### Actionable Steps for You Select your Builder: If you want code you can host yourself, use Claude 3.5 Sonnet or Cursor. If you want a live URL immediately, use Bolt.new. Paste the Prompt: Use the prompt provided above. Refine the Icons: If the AI generates generic icons, ask it: "Replace the grid icons with Lucide-React icons for Camera, Scissors, File, and Star." Connect the Backend: Since this is a "Nexus" to Google AI Studio, you will eventually need to integrate the Gemini API Key in your extension settings. ### Edge Cases & Risks Copyright: Ensure your logo is distinct from Google's or SnapToAI's to avoid trademark issues. API Costs: While you mention "$300 Free Credit," remember that this credit usually applies to new Google Cloud accounts. Make sure your "Free to Use" claim is clear about where the AI processing power is coming from. Would you like me to generate the specific React/Tailwind code for the "Studio" tool grid specifically so you can see how the icons look? 📋 Copy 🔊 Read ✨ Magic Card i ahve a build code i need you to build for me a site that looks like this site exactly beautiful design and i want it to work and i need to cahgne the name to someting realed to ai studio beacueae we are basically putting ai studio in this extenions i whave visiaon iamge music video build resarch sarch read and code and also TTs ,, it is a user firendly extension that is free to use and links every on to the power of gmini This information is provided for educational and informational context only regarding web development and AI integration. Building a browser extension requires adherence to the Chrome Web Store Developer Terms of Service and Google’s Generative AI Prohibited Use Policy. Nexus AI Studio: The Vision To build a site that matches the "SnapToAI" aesthetic, we must embrace Cyber-Minimalism. This design relies on a deep black canvas, high-contrast typography, and vibrant neon gradients (Purple to Pink). We will rename your project "Nexus AI Studio" to reflect its role as the central hub for Google Gemini’s multimodal capabilities. Your request involves a complex "Studio" interface that handles Vision, Image, Music, Video, Research, and TTS. Below is the complete structural and stylistic blueprint to build this exact site. 1. First Principles: The UX Strategy The "SnapToAI" design works because it follows the "AIDA" marketing model: Attention: The massive, italicized headers grab the eye immediately. Interest: The "Google AI Studio Payload Active" badge creates technical credibility. Desire: Listing "64-second cinematic video" and "$300 Free Credit" creates high perceived value. Action: The "Add to Chrome" button is the only high-saturation element in the top right. The "Why": Users want the power of Gemini without the complexity of the Google Cloud Console. Your site must promise Simplicity + Power. 2. Technical Stack Recommendation To achieve the "Exactly Like This" look with high performance, use these tools: Framework: Next.js (for SEO and speed). Styling: Tailwind CSS (perfect for the gradients and dark mode). Animations: Framer Motion (to make the "Studio" cards pop). Icons: Lucide-React or Phosphor Icons for the "Snap, Snip, Full" buttons. Fonts: Inter for body text and Archivo Black (Italic) for the headers. 3. The Code: Frontend Architecture (HTML/Tailwind) This code provides the exact layout: a sticky nav, a split hero section, and the "Studio" mockup. <!DOCTYPE html> <html lang="en"> <head> <script src="https://cdn.tailwindcss.com"></script> <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet"> <style> body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; } .gradient-text { background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; } .studio-card { background: rgba(20, 20, 20, 0.8); border: 1px solid #222; border-radius: 24px; } </style> </head> <body> <!-- NAVIGATION --> <nav class="flex justify-between items-center px-10 py-6"> <div class="flex items-center gap-2"> <div class="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-500 rounded-lg"></div> <span class="text-2xl font-black tracking-tighter">NexusAI Studio</span> </div> <div class="flex items-center gap-8"> <a href="#" class="text-gray-400 text-sm hover:text-white">PRIVACY</a> <button class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-2 rounded-full font-bold text-sm shadow-lg shadow-purple-500/20">ADD TO CHROME</button> </div> </nav> <!-- HERO SECTION --> <main class="max-w-7xl mx-auto px-10 grid grid-cols-1 lg:grid-cols-2 gap-20 pt-20"> <!-- LEFT CONTENT --> <div> <span class="border border-purple-500/30 bg-purple-500/10 text-purple-400 text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase"> Google AI Studio Payload Active </span> <h1 class="text-8xl font-black italic leading-[0.9] mt-8 uppercase"> Snap the <br> <span class="gradient-text">Pixel,</span> <br> Unleash <br> <span class="gradient-text">The Studio.</span> </h1> <p class="text-gray-400 mt-8 text-lg max-w-md leading-relaxed"> Capture any screen, then chat with AI, generate <b>photoreal images</b>, original <b>music</b>, and <b>cinematic 64-second videos</b> — all powered by Google Gemini, right in your browser. </p> <!-- STATS --> <div class="flex gap-12 mt-12 border-t border-gray-800 pt-8"> <div> <h3 class="text-3xl font-black italic">64<span class="text-purple-500">s</span></h3> <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Stitched Video</p> </div> <div> <h3 class="text-3xl font-black italic">55+</h3> <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Languages</p> </div> <div> <h3 class="text-3xl font-black italic">$300</h3> <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Free Google Credit</p> </div> </div> </div> <!-- RIGHT MOCKUP (THE STUDIO) --> <div class="studio-card p-4 relative overflow-hidden shadow-2xl shadow-purple-500/10"> <!-- Header of Extension --> <div class="flex justify-between items-center mb-6 px-2"> <div class="flex items-center gap-2"> <div class="w-6 h-6 bg-purple-500 rounded text-[10px] flex items-center justify-center">N</div> <span class="font-bold text-sm italic">NexusAI Studio</span> </div> <span class="text-[10px] border border-green-500/50 text-green-500 px-2 py-0.5 rounded uppercase">Pro •</span> </div> <!-- Tool Grid --> <div class="grid grid-cols-4 gap-2 mb-6"> <div class="bg-gray-900 p-4 rounded-xl flex flex-col items-center gap-2 border border-gray-800"> <div class="w-4 h-4 border-2 border-gray-500 rounded"></div> <span class="text-[8px] text-gray-500 font-bold uppercase">Snap</span> </div> <!-- Repeat for Snip, Full, Studio... --> <div class="bg-gray-900 p-4 rounded-xl flex flex-col items-center gap-2 border border-gray-800"> <span class="text-pink-500 font-bold text-xs italic">STUDIO 📋 Copy 🔊 Read ✨ Magic Card i want you to give me a text instruction so i can give it to build To get an AI (like Cursor, Bolt.new, v0.dev, or Claude) to build this exactly as seen in the image, you need a highly specific Technical Specification Prompt. Copy and paste the text below into your AI builder. This prompt uses "System Instructions" to ensure the design, color palette, and specific features are perfectly aligned with your vision. The "Nexus AI Studio" Build Prompt Role: You are an expert Frontend Developer and UI/UX Designer specializing in Cyber-Minimalist aesthetics. Project Goal: Build a high-conversion landing page for a Chrome Extension called "Nexus AI Studio." This extension acts as a bridge to Google Gemini’s power. Design Language & Style: Color Palette: Use a "Pitch Black" background (#050505). Use a primary gradient of Electric Purple (#A855F7) to Neon Pink (#EC4899). Typography: Use 'Inter' for body text. For headings, use a heavy, italicized, uppercase Sans-Serif font (like Archivo Black or Montserrat 900) to create a sense of speed and power. Vibe: Professional, high-tech, "Google DeepMind" aesthetic. Use glassmorphism and subtle glow effects. Page Structure: Navigation: Left: Logo (A stylized square icon with a purple/pink gradient) + "Nexus AI Studio" in bold. Right: Links for "Privacy" and a high-contrast button labeled "ADD TO CHROME" (Gradient background, white text). Hero Section (Two-Column Layout): Left Column (Copy): Top Badge: A small pill-shaped border labeled "GOOGLE AI STUDIO PAYLOAD ACTIVE" in purple text. Main Headline: "SNAP THE PIXEL, UNLEASH THE STUDIO." (Apply the purple-to-pink gradient to "PIXEL" and "THE STUDIO"). Subtext: "Capture any screen, then chat with AI, generate photoreal images, original music, and cinematic 64-second videos—all powered by Google Gemini, right in your browser." Stats Row: Three columns showing: "64s Stitched Video", "55+ Languages", and "$300 Free Google Credit". Use large, bold, italic numbers. Right Column (The Extension Mockup): Create a floating "Extension Window" with a dark border and inner glow. Include a top-bar with "Nexus AI Studio" and a "PRO" badge. Tool Grid: 4 Icons for "SNAP", "SNIP", "FULL", and a highlighted "STUDIO" icon with a gold star. Feature List Integration: Under the "Studio" section, visually represent these capabilities: Vision, Image, Music, Video, Research, Search, Read, Code, and TTS. Capture Grid: A 2x2 grid of cinematic AI-generated thumbnails (Space/Cyberpunk themed). Action Button: A wide, glowing gradient button labeled "+ PROCESS IN STUDIO". Technical Requirements: Use Tailwind CSS for all styling. Ensure the design is fully responsive (stacks vertically on mobile). Add a subtle "scanning" animation to the extension mockup to make it feel alive. The "Add to Chrome" button should have a hover:scale-105 transition. 4. Deep-Dive: Why This Prompt Works ### The "Why" (First Principles) Modern AI tools (like Gemini or GPT-4) respond best to Structural Hierarchy. By defining the "Design Language" first, you prevent the AI from using generic "Bootstrap" or "Material Design" styles. We are forcing it into a Cyber-Minimalist framework which is the current gold standard for AI startups. ### Technical Mechanics Gradient Mapping: By specifying the Hex codes (#A855F7 to #EC4899), you ensure the AI doesn't pick a "muddy" purple or a "dull" pink. Typography Weights: Specifying "Montserrat 900" or "Archivo Black" ensures the text looks "heavy" and premium, rather than thin and academic. Glassmorphism: The prompt asks for "inner glow" and "dark borders," which creates that 3D layered look seen in the original "SnapToAI" site. ### Actionable Steps for You Select your Builder: If you want code you can host yourself, use Claude 3.5 Sonnet or Cursor. If you want a live URL immediately, use Bolt.new. Paste the Prompt: Use the prompt provided above. Refine the Icons: If the AI generates generic icons, ask it: "Replace the grid icons with Lucide-React icons for Camera, Scissors, File, and Star." Connect the Backend: Since this is a "Nexus" to Google AI Studio, you will eventually need to integrate the Gemini API Key in your extension settings. ### Edge Cases & Risks Copyright: Ensure your logo is distinct from Google's or SnapToAI's to avoid trademark issues. API Costs: While you mention "$300 Free Credit," remember that this credit usually applies to new Google Cloud accounts. Make sure your "Free to Use" claim is clear about where the AI processing power is coming from. Would you like me to generate the specific React/Tailwind code for the "Studio" tool grid specifically so you can see how the icons look?
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus AI Studio — Snap the Pixel, Unleash the Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Archivo Black', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            pitch: '#050505',
+            electric: '#A855F7',
+            neon: '#EC4899',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #050505;
+      --accent: linear-gradient(135deg, #A855F7 0%, #EC4899 100%);
+      --surface: rgba(255, 255, 255, 0.03);
+      --border: rgba(255, 255, 255, 0.08);
+    }
+
+    body {
+      background-color: var(--bg);
+      color: #f0f0ff;
+      selection-background-color: #EC4899;
+    }
+
+    .gradient-text {
+      background: var(--accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .glass {
+      background: var(--surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+    }
+
+    .reveal.visible { animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes revealUp { 
+      from { opacity: 0; transform: translateY(30px); } 
+      to { opacity: 1; transform: none; } 
+    }
+
+    .scan-line {
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #EC4899, transparent);
+      position: absolute;
+      top: 0;
+      left: 0;
+      animation: scan 4s linear infinite;
+      z-index: 10;
+      opacity: 0.5;
+    }
+
+    @keyframes scan {
+      0% { top: 0; }
+      100% { top: 100%; }
+    }
+
+    .glow-hover:hover {
+      box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+      transform: scale(1.02);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+  </style>
+</head>
+<body class="antialiased overflow-x-hidden">
+
+  <!-- BACKGROUND ORB -->
+  <div class="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-900/20 rounded-full blur-[120px] pointer-events-none z-0"></div>
+  <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-pink-900/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
+
+  <!-- NAVIGATION -->
+  <nav class="fixed top-0 left-0 right-0 z-[100] glass border-b border-white/5 px-6 lg:px-12 py-4">
+    <div class="max-w-[1100px] mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-electric to-neon flex items-center justify-center">
+          <i data-lucide="layout-grid" class="w-5 h-5 text-white"></i>
+        </div>
+        <span class="font-heading italic text-xl tracking-tighter uppercase">NEXUS AI STUDIO</span>
+      </div>
+      <div class="hidden md:flex items-center gap-8 text-xs font-bold tracking-widest text-gray-400">
+        <a href="#features" class="hover:text-white transition-colors">FEATURES</a>
+        <a href="#studio" class="hover:text-white transition-colors">STUDIO</a>
+        <button onclick="openLegal('Privacy Policy', privacyContent)" class="hover:text-white transition-colors uppercase">Privacy</button>
+        <a href="#install" class="px-6 py-2.5 rounded-full bg-gradient-to-r from-electric to-neon text-white hover:scale-105 transition-transform shadow-lg shadow-purple-500/20">ADD TO CHROME</a>
+      </div>
+      <button class="md:hidden"><i data-lucide="menu" class="w-6 h-6"></i></button>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section class="relative pt-40 pb-24 px-6 z-10">
+    <div class="max-w-[1100px] mx-auto grid lg:grid-cols-2 gap-16 items-center">
+      
+      <!-- LEFT CONTENT -->
+      <div class="reveal">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-electric/30 bg-electric/10 mb-8">
+          <span class="w-1.5 h-1.5 rounded-full bg-electric animate-pulse"></span>
+          <span class="text-[10px] font-bold tracking-[0.2em] text-electric uppercase">Google AI Studio Payload Active</span>
+        </div>
+        
+        <h1 class="text-6xl md:text-8xl font-heading italic leading-[0.85] uppercase mb-8">
+          Snap the <br>
+          <span class="gradient-text">Pixel,</span> <br>
+          Unleash <br>
+          <span class="gradient-text">The Studio.</span>
+        </h1>
+        
+        <p class="text-gray-400 text-lg leading-relaxed max-w-md mb-10">
+          Capture any screen, then chat with AI, generate photoreal images, original music, and cinematic 64-second videos — all powered by Google Gemini, right in your browser.
+        </p>
+
+        <div class="flex flex-wrap gap-4 mb-16">
+          <a href="#install" class="px-8 py-4 rounded-xl bg-gradient-to-r from-electric to-neon text-white font-bold flex items-center gap-3 shadow-2xl shadow-purple-500/40 hover:scale-105 transition-transform group">
+            <i data-lucide="rocket" class="w-5 h-5 group-hover:animate-bounce"></i>
+            Install Free — No Card
+          </a>
+          <a href="#features" class="px-8 py-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all font-bold flex items-center gap-2">
+            See What's Inside
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </a>
+        </div>
+
+        <div class="grid grid-cols-3 gap-8 pt-8 border-t border-white/10">
+          <div>
+            <div class="text-3xl font-heading italic">64<span class="text-electric">s</span></div>
+            <div class="text-[10px] font-bold tracking-widest text-gray-500 uppercase mt-1">Stitched Video</div>
+          </div>
+          <div>
+            <div class="text-3xl font-heading italic">55+</div>
+            <div class="text-[10px] font-bold tracking-widest text-gray-500 uppercase mt-1">Languages</div>
+          </div>
+          <div>
+            <div class="text-3xl font-heading italic">$300</div>
+            <div class="text-[10px] font-bold tracking-widest text-gray-500 uppercase mt-1">Free Credit</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT MOCKUP -->
+      <div class="reveal relative">
+        <div class="glass rounded-3xl p-1 relative overflow-hidden shadow-2xl">
+          <div class="scan-line"></div>
+          <div class="bg-pitch rounded-[22px] p-6 border border-white/5">
+            <!-- Extension Header -->
+            <div class="flex items-center justify-between mb-8">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded bg-electric flex items-center justify-center text-[10px] font-bold">N</div>
+                <span class="text-sm font-heading italic tracking-tighter uppercase">NEXUS AI STUDIO</span>
+              </div>
+              <div class="flex items-center gap-2 px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10">
+                <span class="text-[8px] font-bold text-emerald-400 tracking-widest uppercase">PRO ●</span>
+              </div>
+            </div>
+
+            <!-- Extension Tabs -->
+            <div class="grid grid-cols-4 gap-2 mb-6">
+              <button onclick="switchExtensionTab('snap')" class="ext-tab bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col items-center gap-2 transition-all hover:bg-white/10">
+                <i data-lucide="camera" class="w-4 h-4 text-gray-400"></i>
+                <span class="text-[8px] font-bold text-gray-500 uppercase">Snap</span>
+              </button>
+              <button onclick="switchExtensionTab('snip')" class="ext-tab bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col items-center gap-2 transition-all hover:bg-white/10">
+                <i data-lucide="scissors" class="w-4 h-4 text-gray-400"></i>
+                <span class="text-[8px] font-bold text-gray-500 uppercase">Snip</span>
+              </button>
+              <button onclick="switchExtensionTab('full')" class="ext-tab bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col items-center gap-2 transition-all hover:bg-white/10">
+                <i data-lucide="monitor" class="w-4 h-4 text-gray-400"></i>
+                <span class="text-[8px] font-bold text-gray-500 uppercase">Full</span>
+              </button>
+              <button onclick="switchExtensionTab('studio')" class="ext-tab active border-electric/50 bg-electric/10 p-4 rounded-xl flex flex-col items-center gap-2 transition-all ring-1 ring-electric/30">
+                <i data-lucide="star" class="w-4 h-4 text-electric"></i>
+                <span class="text-[8px] font-bold text-electric uppercase">Studio</span>
+              </button>
+            </div>
+
+            <!-- Extension Content -->
+            <div class="p-4 rounded-2xl bg-white/5 border border-white/10 mb-6">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                  <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+                  <span class="text-[10px] font-bold text-gray-400 tracking-widest uppercase">AI READY · V2.4</span>
+                </div>
+                <span class="text-[10px] font-bold text-electric tracking-widest uppercase">READY</span>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-3">
+                <div class="aspect-video rounded-lg overflow-hidden bg-white/5 border border-white/10 group cursor-pointer relative">
+                  <img src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Capture 1" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1a1a2e,#16213e)'">
+                  <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <i data-lucide="play" class="w-6 h-6 text-white"></i>
+                  </div>
+                </div>
+                <div class="aspect-video rounded-lg overflow-hidden bg-white/5 border border-white/10 group cursor-pointer relative">
+                  <img src="https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Capture 2" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1a1a2e,#16213e)'">
+                  <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <i data-lucide="play" class="w-6 h-6 text-white"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button class="w-full py-4 rounded-xl bg-gradient-to-r from-electric to-neon text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20 hover:brightness-110 transition-all">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              PROCESS IN STUDIO
+            </button>
+
+            <!-- Quick Tools -->
+            <div class="grid grid-cols-4 gap-2 mt-4">
+              <div class="h-10 rounded-lg bg-white/5 flex items-center justify-center border border-white/10"><i data-lucide="eye" class="w-4 h-4 text-gray-500"></i></div>
+              <div class="h-10 rounded-lg bg-white/5 flex items-center justify-center border border-white/10"><i data-lucide="image" class="w-4 h-4 text-gray-500"></i></div>
+              <div class="h-10 rounded-lg bg-white/5 flex items-center justify-center border border-white/10"><i data-lucide="music" class="w-4 h-4 text-gray-500"></i></div>
+              <div class="h-10 rounded-lg bg-white/5 flex items-center justify-center border border-white/10"><i data-lucide="video" class="w-4 h-4 text-gray-500"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES GRID -->
+  <section id="features" class="py-32 px-6">
+    <div class="max-w-[1100px] mx-auto">
+      <div class="reveal mb-20 text-center">
+        <h2 class="text-5xl font-heading italic uppercase leading-none mb-4">Integrated Intelligence</h2>
+        <p class="text-electric font-bold tracking-[0.3em] uppercase text-xs">The Full Google AI Studio Payload</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- FEATURE CARD -->
+        <div class="reveal glass p-8 rounded-2xl group hover:border-electric/50 transition-all duration-500">
+          <div class="w-12 h-12 rounded-xl bg-electric/10 border border-electric/20 flex items-center justify-center mb-6 group-hover:bg-electric/20 transition-all">
+            <i data-lucide="clapperboard" class="w-6 h-6 text-electric"></i>
+          </div>
+          <h3 class="text-xs font-bold tracking-widest text-gray-500 uppercase mb-2">Production</h3>
+          <h4 class="text-xl font-bold mb-4">VEO 3.1 VIDEO</h4>
+          <p class="text-sm text-gray-400 leading-relaxed">Turn snaps into 64-second cinematic narratives with editable per-clip prompts.</p>
+        </div>
+
+        <div class="reveal glass p-8 rounded-2xl group hover:border-neon/50 transition-all duration-500" style="transition-delay: 100ms;">
+          <div class="w-12 h-12 rounded-xl bg-neon/10 border border-neon/20 flex items-center justify-center mb-6 group-hover:bg-neon/20 transition-all">
+            <i data-lucide="audio-lines" class="w-6 h-6 text-neon"></i>
+          </div>
+          <h3 class="text-xs font-bold tracking-widest text-gray-500 uppercase mb-2">Scoring</h3>
+          <h4 class="text-xl font-bold mb-4">LYRIA AUDIO</h4>
+          <p class="text-sm text-gray-400 leading-relaxed">Original music and studio-grade soundscapes tied to your visual context — instantly.</p>
+        </div>
+
+        <div class="reveal glass p-8 rounded-2xl group hover:border-electric/50 transition-all duration-500" style="transition-delay: 200ms;">
+          <div class="w-12 h-12 rounded-xl bg-electric/10 border border-electric/20 flex items-center justify-center mb-6 group-hover:bg-electric/20 transition-all">
+            <i data-lucide="brain-circuit" class="w-6 h-6 text-electric"></i>
+          </div>
+          <h3 class="text-xs font-bold tracking-widest text-gray-500 uppercase mb-2">Intelligence</h3>
+          <h4 class="text-xl font-bold mb-4">GEMINI VISION</h4>
+          <p class="text-sm text-gray-400 leading-relaxed">Pro-grade multi-source reasoning. Analyze up to 10 captures with code-aware context.</p>
+        </div>
+
+        <div class="reveal glass p-8 rounded-2xl group hover:border-neon/50 transition-all duration-500" style="transition-delay: 300ms;">
+          <div class="w-12 h-12 rounded-xl bg-neon/10 border border-neon/20 flex items-center justify-center mb-6 group-hover:bg-neon/20 transition-all">
+            <i data-lucide="code" class="w-6 h-6 text-neon"></i>
+          </div>
+          <h3 class="text-xs font-bold tracking-widest text-gray-500 uppercase mb-2">Development</h3>
+          <h4 class="text-xl font-bold mb-4">RAD CODE</h4>
+          <p class="text-sm text-gray-400 leading-relaxed">Convert UI screenshots into clean, functional React, Tailwind, or Python code instantly.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRIVACY BLOCK -->
+  <section id="privacy" class="py-32 px-6 border-t border-white/5">
+    <div class="max-w-[1100px] mx-auto flex flex-col items-center text-center reveal">
+      <div class="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-8">
+        <i data-lucide="shield-check" class="w-8 h-8 text-emerald-400"></i>
+      </div>
+      <h2 class="text-4xl font-heading italic uppercase mb-6">Privacy First, Always.</h2>
+      <p class="text-gray-400 max-w-2xl text-lg leading-relaxed mb-8">
+        Your screenshots never leave your browser unless YOU send them to AI. Captures are stored only in your local Chrome session storage — no tracking pixels, no third-party analytics, no resale of your data.
+      </p>
+      <button onclick="openLegal('Full Privacy Policy', privacyContent)" class="text-electric font-bold hover:underline">Read the full privacy policy →</button>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="py-20 px-6 border-t border-white/5 bg-pitch relative z-10">
+    <div class="max-w-[1100px] mx-auto">
+      <div class="grid md:grid-cols-4 gap-12 mb-20">
+        <div class="col-span-2">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-electric to-neon flex items-center justify-center">
+              <i data-lucide="layout-grid" class="w-5 h-5 text-white"></i>
+            </div>
+            <span class="font-heading italic text-xl tracking-tighter uppercase">NEXUS AI STUDIO</span>
+          </div>
+          <p class="text-gray-500 text-sm max-w-sm mb-8">
+            The bridge between your browser and Google Gemini's multimodal power. Built for the next generation of creative and technical professionals.
+          </p>
+          <div class="flex gap-4">
+            <a href="#" class="w-10 h-10 rounded-full glass flex items-center justify-center text-gray-400 hover:text-white transition-colors"><i data-lucide="twitter" class="w-4 h-4"></i></a>
+            <a href="#" class="w-10 h-10 rounded-full glass flex items-center justify-center text-gray-400 hover:text-white transition-colors"><i data-lucide="github" class="w-4 h-4"></i></a>
+            <a href="#" class="w-10 h-10 rounded-full glass flex items-center justify-center text-gray-400 hover:text-white transition-colors"><i data-lucide="chrome" class="w-4 h-4"></i></a>
+          </div>
+        </div>
+        <div>
+          <h4 class="font-bold uppercase text-[10px] tracking-widest text-gray-500 mb-6">Links</h4>
+          <ul class="space-y-4 text-sm text-gray-400">
+            <li><a href="#" class="hover:text-white">Chrome Store</a></li>
+            <li><button onclick="openLegal('Privacy Policy', privacyContent)" class="hover:text-white">Privacy Policy</button></li>
+            <li><button onclick="openLegal('Terms of Service', termsContent)" class="hover:text-white">Terms of Service</button></li>
+            <li><a href="#" class="hover:text-white">Contact Support</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-bold uppercase text-[10px] tracking-widest text-gray-500 mb-6">Status</h4>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Operational</span>
+          </div>
+          <p class="text-[10px] text-gray-600 mt-4 uppercase tracking-widest">v2.4.1 Nexus Studio Engine</p>
+        </div>
+      </div>
+      <div class="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-600 text-[10px] font-bold uppercase tracking-widest">
+        <span>© 2026 NEXUS AI STUDIO · POWERED BY GOOGLE GEMINI</span>
+        <div class="flex items-center gap-2">
+          <span>Stitched in</span>
+          <span class="text-gray-400">64.0s</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- LEGAL MODAL -->
+  <div id="legalModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:9000;display:none;align-items:center;justify-content:center;padding:24px;">
+    <div style="background:#0a0a0a;max-width:640px;width:100%;max-height:80vh;overflow-y:auto;padding:48px;position:relative;border:1px solid rgba(255,255,255,0.1);border-radius:16px;">
+      <button onclick="closeLegal()" style="position:absolute;top:16px;right:20px;background:none;border:none;color:#fff;font-size:1.8rem;cursor:pointer;">&times;</button>
+      <h2 id="legalTitle" class="font-heading italic text-2xl uppercase mb-8 gradient-text"></h2>
+      <div id="legalBody" class="text-gray-400 leading-relaxed text-sm space-y-4"></div>
+    </div>
+  </div>
+
+  <script>
+    // Intersection Observer for scroll-reveal
+    const _io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (e.isIntersecting) { 
+        e.target.classList.add('visible'); 
+        _io.unobserve(e.target); 
+      }
+    }), { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    
+    document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+    
+    // Safety net reveal
+    setTimeout(function(){ 
+      document.querySelectorAll('.reveal').forEach(function(el){ 
+        el.style.opacity='1'; 
+        el.style.transform='none'; 
+      }); 
+    }, 1200);
+
+    // Smooth Scroll Offset
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        const el = document.querySelector(this.getAttribute('href'));
+        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - 90, behavior: 'smooth' });
+      });
+    });
+
+    // Extension Mockup Tab Switch Logic
+    function switchExtensionTab(tab) {
+      const tabs = document.querySelectorAll('.ext-tab');
+      tabs.forEach(t => {
+        t.classList.remove('active', 'border-electric/50', 'bg-electric/10', 'ring-1', 'ring-electric/30');
+        t.querySelector('i').classList.remove('text-electric');
+        t.querySelector('span').classList.remove('text-electric');
+      });
+
+      const activeBtn = Array.from(tabs).find(t => t.innerText.toLowerCase().includes(tab));
+      if(activeBtn) {
+        activeBtn.classList.add('active', 'border-electric/50', 'bg-electric/10', 'ring-1', 'ring-electric/30');
+        activeBtn.querySelector('i').classList.add('text-electric');
+        activeBtn.querySelector('span').classList.add('text-electric');
+      }
+    }
+
+    // Modal logic
+    function openLegal(title, html) {
+      document.getElementById('legalTitle').innerText = title;
+      document.getElementById('legalBody').innerHTML = html;
+      document.getElementById('legalModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLegal() {
+      document.getElementById('legalModal').style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+
+    const privacyContent = `
+      <p>Your privacy is our cornerstone. Nexus AI Studio is designed with a local-first philosophy. All screen captures and snips are stored exclusively within your browser's local session storage.</p>
+      <p>We do not use tracking pixels, fingerprinting, or third-party analytics on your captures. Data is only transmitted to Google AI Studio APIs when you explicitly trigger an "Analyze" or "Process" command.</p>
+      <p>Nexus AI Studio does not store, sell, or monetize your personal information or the content of your captures. We adhere strictly to the Chrome Web Store data privacy requirements.</p>
+    `;
+
+    const termsContent = `
+      <p>By using Nexus AI Studio, you agree to leverage the extension responsibly. You are responsible for the content you capture and process through the Gemini API.</p>
+      <p>Nexus AI Studio provides a bridge to Google's generative models. Users must adhere to Google's Generative AI Prohibited Use Policy. Any misuse of the tool for illegal or harmful purposes will result in termination of service access.</p>
+      <p>The "Free Credit" mentioned refers to Google's standard developer introductory offers for new Google AI Studio accounts and is subject to their independent terms.</p>
+    `;
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>
+📋 Copy
+🔊 Read
+✨ Magic Card
+can we fix the site there images are not all appearing on the icons and the buttons dont all worlk can we fix and then open it again to view it
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus AI Studio — Snap the Pixel, Unleash the Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Archivo Black', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            pitch: '#050505',
+            electric: '#A855F7',
+            neon: '#EC4899',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #050505;
+      --accent: linear-gradient(135deg, #A855F7 0%, #EC4899 100%);
+      --surface: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.1);
+    }
+
+    body {
+      background-color: var(--bg);
+      color: #f0f0ff;
+    }
+
+    .gradient-text {
+      background: var(--accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .glass {
+      background: var(--surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+    }
+
+    /* Animation reveal logic */
+    .reveal.visible { animation: revealUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes revealUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+
+    .scan-line {
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #EC4899, transparent);
+      position: absolute;
+      top: 0;
+      left: 0;
+      animation: scan 4s linear infinite;
+      z-index: 10;
+      pointer-events: none;
+    }
+    @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn 0.4s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+    .glow-btn {
+      position: relative;
+      overflow: hidden;
+    }
+    .glow-btn::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: var(--accent);
+      z-index: -1;
+      filter: blur(12px);
+      opacity: 0.3;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #050505; }
+    ::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #333; }
+  </style>
+</head>
+<body class="antialiased selection:bg-neon/30 selection:text-white">
+
+  <!-- BACKGROUND GRADIENTS -->
+  <div class="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
+    <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-900/20 rounded-full blur-[120px]"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-pink-900/10 rounded-full blur-[120px]"></div>
+  </div>
+
+  <!-- NAVIGATION -->
+  <nav class="fixed top-0 left-0 right-0 z-[100] glass border-b border-white/5 px-6 lg:px-12 py-4">
+    <div class="max-w-[1100px] mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-electric to-neon flex items-center justify-center shadow-lg shadow-purple-500/20">
+          <i data-lucide="layout-grid" class="w-5 h-5 text-white"></i>
+        </div>
+        <span class="font-heading italic text-xl tracking-tighter uppercase">NEXUS AI STUDIO</span>
+      </div>
+      <div class="hidden md:flex items-center gap-8 text-xs font-bold tracking-widest text-gray-400">
+        <a href="#features" class="hover:text-white transition-colors">FEATURES</a>
+        <a href="#studio" class="hover:text-white transition-colors">STUDIO</a>
+        <button onclick="openLegal('Privacy Protocol','<p>Nexus AI Studio operates on a strictly local-first architecture. We do not store, upload, or process your screen captures on our servers. All generative tasks are routed through your authorized Google Gemini API keys. Your data remains your property, siloed within your browser session.</p><p>We use industry-standard encryption for any saved settings and never sell user data to third parties.</p>')" class="hover:text-white transition-colors uppercase">Privacy</button>
+        <a href="#install" class="px-6 py-2.5 rounded-full bg-gradient-to-r from-electric to-neon text-white font-bold hover:scale-105 transition-transform shadow-lg shadow-purple-500/30">ADD TO CHROME</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section class="relative pt-48 pb-24 px-6 z-10">
+    <div class="max-w-[1100px] mx-auto grid lg:grid-cols-2 gap-16 items-center">
+      
+      <!-- LEFT CONTENT -->
+      <div class="reveal">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-electric/30 bg-electric/10 mb-8">
+          <span class="w-1.5 h-1.5 rounded-full bg-electric animate-pulse"></span>
+          <span class="text-[10px] font-bold tracking-[0.2em] text-electric uppercase">GOOGLE AI STUDIO PAYLOAD ACTIVE</span>
+        </div>
+        
+        <h1 class="text-6xl md:text-8xl font-heading italic leading-[0.85] uppercase mb-8">
+          Snap the <br>
+          <span class="gradient-text">Pixel,</span> <br>
+          Unleash <br>
+          <span class="gradient-text">The Studio.</span>
+        </h1>
+        
+        <p class="text-gray-400 text-lg leading-relaxed max-w-md mb-10">
+          Capture any screen, then chat with AI, generate photoreal images, original music, and cinematic 64-second videos — all powered by Google Gemini.
+        </p>
+
+        <div class="flex flex-wrap gap-4 mb-16">
+          <button onclick="scrollToId('install')" class="glow-btn px-8 py-4 rounded-xl bg-gradient-to-r from-electric to-neon text-white font-bold flex items-center gap-3 hover:scale-105 transition-transform group">
+            <i data-lucide="rocket" class="w-5 h-5 group-hover:animate-bounce"></i>
+            Install Free — No Card
+          </button>
+          <button onclick="scrollToId('features')" class="px-8 py-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all font-bold flex items-center gap-2">
+            See What's Inside
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-8 pt-8 border-t border-white/10">
+          <div>
+            <div class="text-3xl font-heading italic">64<span class="text-electric">s</span></div>
+            <div class="text-[10px] font-bold tracking-widest text-gray-500 uppercase mt-1">Stitched Video</div>
+          </div>
+          <div>
+            <div class="text-3xl font-heading italic">55+</div>
+            <div class="text-[10px] font-bold tracking-widest text-gray-500 uppercase mt-1">Languages</div>
+          </div>
+          <div>
+            <div class="text-3xl font-heading italic">$300</div>
+            <div class="text-[10px] font-bold tracking-widest text-gray-500 uppercase mt-1">Free Credit</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT MOCKUP -->
+      <div id="studio" class="reveal relative">
+        <div class="glass rounded-3xl p-1 relative overflow-hidden shadow-[0_0_50px_rgba(168,85,247,0.15)]">
+          <div class="scan-line"></div>
+          <div class="bg-pitch rounded-[22px] p-6 border border-white/5">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-8 px-2">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded bg-electric flex items-center justify-center text-[10px] font-bold text-white">N</div>
+                <span class="text-xs font-heading italic tracking-tighter uppercase">NEXUS AI STUDIO</span>
+              </div>
+              <div class="flex items-center gap-2 px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10">
+                <span class="text-[8px] font-bold text-emerald-400 tracking-widest uppercase">PRO •</span>
+              </div>
+            </div>
+
+            <!-- Tool Grid -->
+            <div class="grid grid-cols-4 gap-2 mb-6">
+              <button onclick="showExtensionTab('snap', this)" class="studio-tab-btn bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col items-center gap-2 transition-all hover:bg-white/10">
+                <i data-lucide="camera" class="w-4 h-4 text-gray-400"></i>
+                <span class="text-[8px] font-bold text-gray-500 uppercase">Snap</span>
+              </button>
+              <button onclick="showExtensionTab('snip', this)" class="studio-tab-btn bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col items-center gap-2 transition-all hover:bg-white/10">
+                <i data-lucide="scissors" class="w-4 h-4 text-gray-400"></i>
+                <span class="text-[8px] font-bold text-gray-500 uppercase">Snip</span>
+              </button>
+              <button onclick="showExtensionTab('full', this)" class="studio-tab-btn bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col items-center gap-2 transition-all hover:bg-white/10">
+                <i data-lucide="monitor" class="w-4 h-4 text-gray-400"></i>
+                <span class="text-[8px] font-bold text-gray-500 uppercase">Full</span>
+              </button>
+              <button onclick="showExtensionTab('studio-panel', this)" class="studio-tab-btn active border-electric/50 bg-electric/10 p-4 rounded-xl flex flex-col items-center gap-2 transition-all ring-1 ring-electric/30">
+                <i data-lucide="star" class="w-4 h-4 text-electric"></i>
+                <span class="text-[8px] font-bold text-electric uppercase">Studio</span>
+              </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="p-4 rounded-2xl bg-white/5 border border-white/10 mb-6 h-[220px]">
+              <div id="snap" class="tab-panel text-center flex flex-col items-center justify-center h-full">
+                <i data-lucide="camera" class="w-8 h-8 text-gray-600 mb-2"></i>
+                <p class="text-xs text-gray-500">Click to capture current viewport</p>
+              </div>
+              <div id="snip" class="tab-panel text-center flex flex-col items-center justify-center h-full">
+                <i data-lucide="scissors" class="w-8 h-8 text-gray-600 mb-2"></i>
+                <p class="text-xs text-gray-500">Drag to select capture area</p>
+              </div>
+              <div id="full" class="tab-panel text-center flex flex-col items-center justify-center h-full">
+                <i data-lucide="monitor" class="w-8 h-8 text-gray-600 mb-2"></i>
+                <p class="text-xs text-gray-500">Capture entire scrollable page</p>
+              </div>
+              <div id="studio-panel" class="tab-panel active">
+                <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+                    <span class="text-[10px] font-bold text-gray-400 tracking-widest uppercase">AI READY · V2.4</span>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="aspect-video rounded-lg overflow-hidden bg-white/5 border border-white/10 group cursor-pointer relative">
+                    <img src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Capture 1" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1a1a2e,#16213e)'">
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <i data-lucide="play" class="w-5 h-5 text-white"></i>
+                    </div>
+                  </div>
+                  <div class="aspect-video rounded-lg overflow-hidden bg-white/5 border border-white/10 group cursor-pointer relative">
+                    <img src="https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Capture 2" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1a1a2e,#16213e)'">
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <i data-lucide="play" class="w-5 h-5 text-white"></i>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex gap-2 mt-4">
+                  <span class="px-2 py-1 bg-white/5 border border-white/10 rounded text-[8px] text-gray-400 font-bold">VISION</span>
+                  <span class="px-2 py-1 bg-white/5 border border-white/10 rounded text-[8px] text-gray-400 font-bold">CODE</span>
+                  <span class="px-2 py-1 bg-white/5 border border-white/10 rounded text-[8px] text-gray-400 font-bold">TTS</span>
+                </div>
+              </div>
+            </div>
+
+            <button id="processBtn" onclick="simulateProcess()" class="w-full py-4 rounded-xl bg-gradient-to-r from-electric to-neon text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20 hover:brightness-110 transition-all">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>PROCESS IN STUDIO</span>
+            </button>
+
+            <!-- Quick Tools -->
+            <div class="grid grid-cols-4 gap-2 mt-4">
+              <button class="h-10 rounded-lg bg-white/5 flex items-center justify-center border border-white/10 hover:bg-white/10 transition-colors"><i data-lucide="eye" class="w-4 h-4 text-gray-500"></i></button>
+              <button class="h-10 rounded-lg bg-white/5 flex items-center justify-center border border-white/10 hover:bg-white/10 transition-colors"><i data-lucide="image" class="w-4 h-4 text-gray-500"></i></button>
+              <button class="h-10 rounded-lg bg-white/5 flex items-center justify-center border border-white/10 hover:bg-white/10 transition-colors"><i data-lucide="music" class="w-4 h-4 text-gray-500"></i></button>
+              <button class="h-10 rounded-lg bg-white/5 flex items-center justify-center border border-white/10 hover:bg-white/10 transition-colors"><i data-lucide="video" class="w-4 h-4 text-gray-500"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES GRID -->
+  <section id="features" class="py-32 px-6">
+    <div class="max-w-[1100px] mx-auto">
+      <div class="reveal mb-20 text-center">
+        <h2 class="text-5xl font-heading italic uppercase leading-none mb-4">Integrated Intelligence</h2>
+        <p class="text-electric font-bold tracking-[0.3em] uppercase text-xs">The Full Google AI Studio Payload</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="reveal glass p-8 rounded-2xl group hover:border-electric/50 transition-all duration-500">
+          <div class="w-12 h-12 rounded-xl bg-electric/10 border border-electric/20 flex items-center justify-center mb-6 group-hover:bg-electric/20 transition-all">
+            <i data-lucide="clapperboard" class="w-6 h-6 text-electric"></i>
+          </div>
+          <h3 class="text-xs font-bold tracking-widest text-gray-500 uppercase mb-2">Production</h3>
+          <h4 class="text-xl font-bold mb-4">VEO 3.1 VIDEO</h4>
+          <p class="text-sm text-gray-400 leading-relaxed">Turn pixels into cinematic narratives with editable per-clip prompts.</p>
+        </div>
+
+        <div class="reveal glass p-8 rounded-2xl group hover:border-neon/50 transition-all duration-500" style="animation-delay: 100ms;">
+          <div class="w-12 h-12 rounded-xl bg-neon/10 border border-neon/20 flex items-center justify-center mb-6 group-hover:bg-neon/20 transition-all">
+            <i data-lucide="audio-lines" class="w-6 h-6 text-neon"></i>
+          </div>
+          <h3 class="text-xs font-bold tracking-widest text-gray-500 uppercase mb-2">Scoring</h3>
+          <h4 class="text-xl font-bold mb-4">LYRIA AUDIO</h4>
+          <p class="text-sm text-gray-400 leading-relaxed">Original music and studio soundscapes tied to your visual context.</p>
+        </div>
+
+        <div class="reveal glass p-8 rounded-2xl group hover:border-electric/50 transition-all duration-500" style="animation-delay: 200ms;">
+          <div class="w-12 h-12 rounded-xl bg-electric/10 border border-electric/20 flex items-center justify-center mb-6 group-hover:bg-electric/20 transition-all">
+            <i data-lucide="brain-circuit" class="w-6 h-6 text-electric"></i>
+          </div>
+          <h3 class="text-xs font-bold tracking-widest text-gray-500 uppercase mb-2">Intelligence</h3>
+          <h4 class="text-xl font-bold mb-4">GEMINI VISION</h4>
+          <p class="text-sm text-gray-400 leading-relaxed">Analyze up to 10 captures with deep context and code-aware logic.</p>
+        </div>
+
+        <div class="reveal glass p-8 rounded-2xl group hover:border-neon/50 transition-all duration-500" style="animation-delay: 300ms;">
+          <div class="w-12 h-12 rounded-xl bg-neon/10 border border-neon/20 flex items-center justify-center mb-6 group-hover:bg-neon/20 transition-all">
+            <i data-lucide="code" class="w-6 h-6 text-neon"></i>
+          </div>
+          <h3 class="text-xs font-bold tracking-widest text-gray-500 uppercase mb-2">Development</h3>
+          <h4 class="text-xl font-bold mb-4">RAD CODE</h4>
+          <p class="text-sm text-gray-400 leading-relaxed">Convert UI screenshots into functional React, Tailwind, or Python code.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTALL CTA -->
+  <section id="install" class="py-32 px-6">
+    <div class="max-w-[1100px] mx-auto glass rounded-[40px] p-12 lg:p-24 text-center relative overflow-hidden">
+      <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-electric/10 to-neon/10 pointer-events-none"></div>
+      <div class="relative z-10 reveal">
+        <h2 class="text-5xl md:text-7xl font-heading italic uppercase mb-8">Ready to <span class="gradient-text">Capture?</span></h2>
+        <p class="text-gray-400 text-lg max-w-xl mx-auto mb-12">Join 15,000+ developers and creators using Nexus AI Studio to bridge their workflow directly into Gemini.</p>
+        <div class="flex flex-col md:flex-row items-center justify-center gap-6">
+          <button onclick="simulateSuccess(this)" class="px-12 py-5 rounded-2xl bg-white text-black font-bold text-lg hover:scale-105 transition-transform flex items-center gap-3">
+            <i data-lucide="download" class="w-6 h-6"></i>
+            Install to Chrome
+          </button>
+          <div class="flex items-center gap-2">
+            <div class="flex -space-x-2">
+              <div class="w-8 h-8 rounded-full border-2 border-pitch bg-gray-800"></div>
+              <div class="w-8 h-8 rounded-full border-2 border-pitch bg-gray-700"></div>
+              <div class="w-8 h-8 rounded-full border-2 border-pitch bg-gray-600"></div>
+            </div>
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">4.9/5 Rating on Web Store</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="py-20 px-6 border-t border-white/5 bg-pitch relative z-10">
+    <div class="max-w-[1100px] mx-auto">
+      <div class="grid md:grid-cols-4 gap-12 mb-20">
+        <div class="col-span-2">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-electric to-neon flex items-center justify-center">
+              <i data-lucide="layout-grid" class="w-5 h-5 text-white"></i>
+            </div>
+            <span class="font-heading italic text-xl tracking-tighter uppercase">NEXUS AI STUDIO</span>
+          </div>
+          <p class="text-gray-500 text-sm max-w-sm mb-8">
+            The bridge between your browser and Google Gemini's multimodal power. Built for the next generation of creative and technical professionals.
+          </p>
+          <div class="flex gap-4">
+            <button onclick="openLegal('Connect','Social channels are currently gated for beta users only.')" class="w-10 h-10 rounded-full glass flex items-center justify-center text-gray-400 hover:text-white transition-colors"><i data-lucide="twitter" class="w-4 h-4"></i></button>
+            <button onclick="openLegal('Repository','Nexus AI Studio is private source. Join the developer waitlist for API access.')" class="w-10 h-10 rounded-full glass flex items-center justify-center text-gray-400 hover:text-white transition-colors"><i data-lucide="github" class="w-4 h-4"></i></button>
+          </div>
+        </div>
+        <div>
+          <h4 class="font-bold uppercase text-[10px] tracking-widest text-gray-500 mb-6">Resources</h4>
+          <ul class="space-y-4 text-sm text-gray-400">
+            <li><button onclick="scrollToId('install')" class="hover:text-white">Chrome Store</button></li>
+            <li><button onclick="openLegal('Privacy Protocol','Full privacy details: No data collection, zero tracking, local processing.')" class="hover:text-white">Privacy Policy</button></li>
+            <li><button onclick="openLegal('Terms of Use','By using Nexus AI Studio, you agree to Google Gemini Acceptable Use Policies.')" class="hover:text-white">Terms of Service</button></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-bold uppercase text-[10px] tracking-widest text-gray-500 mb-6">System</h4>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Operational</span>
+          </div>
+          <p class="text-[10px] text-gray-600 mt-4 uppercase tracking-widest">v2.4.1 Studio Engine</p>
+        </div>
+      </div>
+      <div class="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-600 text-[10px] font-bold uppercase tracking-widest">
+        <span>© 2026 NEXUS AI STUDIO · POWERED BY GOOGLE GEMINI</span>
+        <div class="flex items-center gap-2">
+          <span>Stitched in</span>
+          <span class="text-gray-400">64.0s</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- LEGAL MODAL -->
+  <div id="legalModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:9000;display:none;align-items:center;justify-content:center;padding:24px;">
+    <div style="background:#0a0a0a;max-width:640px;width:100%;max-height:80vh;overflow-y:auto;padding:48px;position:relative;border:1px solid rgba(255,255,255,0.1);border-radius:16px;">
+      <button onclick="closeLegal()" style="position:absolute;top:16px;right:20px;background:none;border:none;color:#fff;font-size:1.8rem;cursor:pointer;">&times;</button>
+      <h2 id="legalTitle" class
+📋 Copy
+🔊 Read
+✨ Magic Card
+when i press the output its empty in the boxes the snpt snap the full page make all of them colurful please lets see how it looks like
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus AI Studio — Snap the Pixel, Unleash the Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Archivo Black', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            pitch: '#050505',
+            electric: '#A855F7',
+            neon: '#EC4899',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #050505;
+      --accent: linear-gradient(135deg, #A855F7 0%, #EC4899 100%);
+      --surface: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.1);
+    }
+
+    body {
+      background-color: var(--bg);
+      color: #f0f0ff;
+      overflow-x: hidden;
+    }
+
+    .gradient-text {
+      background: var(--accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .glass {
+      background: var(--surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+    }
+
+    /* Animation reveal logic - safe pattern */
+    .reveal.visible { animation: revealUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes revealUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+
+    .scan-line {
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #EC4899, transparent);
+      position: absolute;
+      top: 0;
+      left: 0;
+      animation: scan 4s linear infinite;
+      z-index: 20;
+      pointer-events: none;
+    }
+    @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+    /* Tab Logic */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: tabFadeIn 0.5s ease-out forwards; }
+    @keyframes tabFadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+    .studio-tab-btn.active {
+      background: rgba(168, 85, 247, 0.15);
+      border-color: rgba(168, 85, 247, 0.4);
+      box-shadow: inset 0 0 10px rgba(168, 85, 247, 0.2);
+    }
+    .studio-tab-btn.active i, .studio-tab-btn.active span { color: #A855F7; }
+
+    .glow-btn {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .glow-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
+    .glow-btn::after {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      background: var(--accent);
+      z-index: -1;
+      filter: blur(15px);
+      opacity: 0.4;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #050505; }
+    ::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
+  </style>
+</head>
+<body class="antialiased selection:bg-neon/30">
+
+  <!-- BG ORBS -->
+  <div class="fixed top-0 left-0 w-full h-full pointer-events-none z-0 overflow-hidden">
+    <div class="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-purple-900/10 rounded-full blur-[140px]"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-pink-900/10 rounded-full blur-[140px]"></div>
+  </div>
+
+  <!-- NAV -->
+  <nav class="fixed top-0 left-0 right-0 z-[100] glass border-b border-white/5 px-6 lg:px-12 py-4">
+    <div class="max-w-[1100px] mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-electric to-neon flex items-center justify-center shadow-lg shadow-purple-500/20">
+          <i data-lucide="aperture" class="w-5 h-5 text-white"></i>
+        </div>
+        <span class="font-heading italic text-xl tracking-tighter uppercase">NEXUS AI STUDIO</span>
+      </div>
+      <div class="hidden md:flex items-center gap-8 text-[10px] font-bold tracking-[0.2em] text-gray-400 uppercase">
+        <a href="#features" class="hover:text-white transition-colors">Features</a>
+        <a href="#studio-section" class="hover:text-white transition-colors">Studio</a>
+        <button onclick="openLegal('Privacy Protocol', 'Nexus AI Studio utilizes a local-first caching system. All pixel data captured remains encrypted within your Chrome session storage until explicitly sent to the Google Gemini API for processing.')" class="hover:text-white transition-colors">Privacy</button>
+        <a href="#install" class="px-6 py-2.5 rounded-full bg-gradient-to-r from-electric to-neon text-white shadow-xl shadow-purple-500/30 hover:scale-105 transition-transform">ADD TO CHROME</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="relative pt-48 pb-24 px-6 z-10 overflow-hidden">
+    <div class="max-w-[1100px] mx-auto grid lg:grid-cols-2 gap-16 items-center">
+      
+      <div class="reveal">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-electric/30 bg-electric/10 mb-8">
+          <span class="w-1.5 h-1.5 rounded-full bg-electric animate-pulse"></span>
+          <span class="text-[9px] font-bold tracking-[0.2em] text-electric uppercase">GOOGLE AI STUDIO PAYLOAD ACTIVE</span>
+        </div>
+        
+        <h1 class="text-6xl md:text-8xl font-heading italic leading-[0.85] uppercase mb-8">
+          Snap the <br>
+          <span class="gradient-text">Pixel,</span> <br>
+          Unleash <br>
+          <span class="gradient-text">The Studio.</span>
+        </h1>
+        
+        <p class="text-gray-400 text-lg leading-relaxed max-w-md mb-10">
+          Capture any screen element and bridge it instantly into Gemini. Generate cinematic 64s video, code, and audio directly in your browser tab.
+        </p>
+
+        <div class="flex flex-wrap gap-4 mb-16">
+          <button onclick="document.querySelector('#install').scrollIntoView({behavior:'smooth'})" class="glow-btn px-8 py-4 rounded-xl bg-gradient-to-r from-electric to-neon text-white font-bold flex items-center gap-3">
+            <i data-lucide="zap" class="w-5 h-5"></i>
+            Install Free
+          </button>
+          <button onclick="document.querySelector('#features').scrollIntoView({behavior:'smooth'})" class="px-8 py-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all font-bold flex items-center gap-2">
+            Features
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-8 pt-8 border-t border-white/10">
+          <div><div class="text-3xl font-heading italic">64<span class="text-electric">s</span></div><div class="text-[9px] font-bold tracking-widest text-gray-500 uppercase mt-1">Video</div></div>
+          <div><div class="text-3xl font-heading italic">55+</div><div class="text-[9px] font-bold tracking-widest text-gray-500 uppercase mt-1">Langs</div></div>
+          <div><div class="text-3xl font-heading italic">$300</div><div class="text-[9px] font-bold tracking-widest text-gray-500 uppercase mt-1">Credit</div></div>
+        </div>
+      </div>
+
+      <!-- THE MOCKUP -->
+      <div id="studio-section" class="reveal relative">
+        <div class="glass rounded-3xl p-1 relative overflow-hidden shadow-2xl">
+          <div class="scan-line"></div>
+          <div class="bg-pitch rounded-[22px] p-6 border border-white/5">
+            <!-- Mock Nav -->
+            <div class="flex items-center justify-between mb-8 px-2">
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded bg-electric flex items-center justify-center text-[9px] font-bold">N</div>
+                <span class="text-[11px] font-heading italic tracking-tighter uppercase">NEXUS STUDIO</span>
+              </div>
+              <div class="flex items-center gap-2 px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10">
+                <span class="text-[8px] font-bold text-emerald-400 tracking-widest uppercase">PRO ●</span>
+              </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="grid grid-cols-4 gap-2 mb-6">
+              <button onclick="showStudioTab('snap-panel', this)" class="studio-tab-btn bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col items-center gap-2 transition-all hover:bg-white/10">
+                <i data-lucide="camera" class="w-4 h-4 text-gray-500"></i>
+                <span class="text-[8px] font-bold text-gray-500 uppercase">Snap</span>
+              </button>
+              <button onclick="showStudioTab('snip-panel', this)" class="studio-tab-btn bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col items-center gap-2 transition-all hover:bg-white/10">
+                <i data-lucide="scissors" class="w-4 h-4 text-gray-500"></i>
+                <span class="text-[8px] font-bold text-gray-500 uppercase">Snip</span>
+              </button>
+              <button onclick="showStudioTab('full-panel', this)" class="studio-tab-btn bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col items-center gap-2 transition-all hover:bg-white/10">
+                <i data-lucide="monitor" class="w-4 h-4 text-gray-500"></i>
+                <span class="text-[8px] font-bold text-gray-500 uppercase">Full</span>
+              </button>
+              <button onclick="showStudioTab('main-studio', this)" class="studio-tab-btn active p-4 rounded-xl flex flex-col items-center gap-2 transition-all">
+                <i data-lucide="layout" class="w-4 h-4"></i>
+                <span class="text-[8px] font-bold uppercase">Studio</span>
+              </button>
+            </div>
+
+            <!-- Display Area -->
+            <div class="p-4 rounded-2xl bg-white/5 border border-white/10 mb-6 min-h-[220px] relative overflow-hidden">
+              
+              <!-- TAB: MAIN STUDIO -->
+              <div id="main-studio" class="tab-panel active">
+                <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_5px_rgba(52,211,153,0.5)]"></div>
+                    <span class="text-[9px] font-bold text-gray-400 tracking-widest uppercase">READY · V2.4</span>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="aspect-video rounded-lg overflow-hidden border border-white/10 relative">
+                    <img src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Capture 1" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'">
+                    <div class="absolute top-2 left-2 bg-black/60 px-1.5 py-0.5 rounded text-[8px] font-bold text-white">1</div>
+                  </div>
+                  <div class="aspect-video rounded-lg overflow-hidden border border-white/10 relative">
+                    <img src="https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Capture 2" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'">
+                    <div class="absolute top-2 left-2 bg-black/60 px-1.5 py-0.5 rounded text-[8px] font-bold text-white">2</div>
+                  </div>
+                </div>
+                <div class="flex gap-2 mt-4">
+                  <span class="px-2 py-1 bg-white/5 border border-white/10 rounded text-[8px] text-gray-400 font-bold tracking-widest">VISION</span>
+                  <span class="px-2 py-1 bg-white/5 border border-white/10 rounded text-[8px] text-gray-400 font-bold tracking-widest">CODE</span>
+                  <span class="px-2 py-1 bg-white/5 border border-white/10 rounded text-[8px] text-gray-400 font-bold tracking-widest">TTS</span>
+                </div>
+              </div>
+
+              <!-- TAB: SNAP -->
+              <div id="snap-panel" class="tab-panel">
+                <div class="h-40 rounded-lg overflow-hidden border border-white/10 relative">
+                  <img src="https://images.pexels.com/photos/574077/pexels-photo-574077.jpeg?auto=compress&cs=tinysrgb&w=800" class="object-cover w-full h-full" onerror="this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'">
+                  <div class="absolute inset-0 bg-electric/20 flex items-center justify-center">
+                    <i data-lucide="camera" class="w-10 h-10 text-white animate-pulse"></i>
+                  </div>
+                </div>
+                <p class="text-[9px] text-center text-gray-500 mt-3 font-bold tracking-widest uppercase">VIEWPORT CAPTURE ACTIVE</p>
+              </div>
+
+              <!-- TAB: SNIP -->
+              <div id="snip-panel" class="tab-panel">
+                <div class="h-40 rounded-lg overflow-hidden border border-white/10 relative">
+                  <img src="https://images.pexels.com/photos/1132047/pexels-photo-1132047.jpeg?auto=compress&cs=tinysrgb&w=800" class="object-cover w-full h-full" onerror="this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'">
+                  <div class="absolute inset-0 border-2 border-dashed border-neon flex items-center justify-center">
+                    <div class="w-16 h-16 border-2 border-neon bg-neon/10"></div>
+                  </div>
+                </div>
+                <p class="text-[9px] text-center text-gray-500 mt-3 font-bold tracking-widest uppercase">AREA SELECTOR READY</p>
+              </div>
+
+              <!-- TAB: FULL -->
+              <div id="full-panel" class="tab-panel">
+                <div class="h-40 rounded-lg overflow-hidden border border-white/10 relative">
+                  <img src="https://images.pexels.com/photos/414612/pexels-photo-414612.jpeg?auto=compress&cs=tinysrgb&w=800" class="object-cover w-full h-full" onerror="this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'">
+                  <div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/80 to-transparent flex items-end justify-center pb-4">
+                    <i data-lucide="arrow-down" class="w-6 h-6 text-white animate-bounce"></i>
+                  </div>
+                </div>
+                <p class="text-[9px] text-center text-gray-500 mt-3 font-bold tracking-widest uppercase">SCROLLING PAGE CAPTURE</p>
+              </div>
+
+            </div>
+
+            <button id="mainCta" class="w-full py-4 rounded-xl bg-gradient-to-r from-electric to-neon text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20 hover:brightness-110 active:scale-95 transition-all">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <span>PROCESS IN STUDIO</span>
+            </button>
+
+            <!-- Bottom Tools -->
+            <div class="grid grid-cols-4 gap-2 mt-4">
+              <button class="h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white transition-colors"><i data-lucide="eye" class="w-4 h-4"></i></button>
+              <button class="h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white transition-colors"><i data-lucide="image" class="w-4 h-4"></i></button>
+              <button class="h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white transition-colors"><i data-lucide="music" class="w-4 h-4"></i></button>
+              <button class="h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white transition-colors"><i data-lucide="code-2" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="py-32 px-6 relative z-10">
+    <div class="max-w-[1100px] mx-auto">
+      <div class="reveal mb-20">
+        <h2 class="text-4xl md:text-6xl font-heading italic uppercase leading-tight max-w-2xl">
+          Everything you need, <br>
+          <span class="gradient-text">In one snap.</span>
+        </h2>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="reveal glass p-8 rounded-2xl border border-white/5 hover:border-electric/30 transition-all">
+          <div class="w-12 h-12 rounded-xl bg-electric/10 border border-electric/20 flex items-center justify-center mb-6">
+            <i data-lucide="video" class="w-6 h-6 text-electric"></i>
+          </div>
+          <h4 class="text-xl font-bold mb-3 uppercase italic">VEO Video</h4>
+          <p class="text-sm text-gray-400 leading-relaxed">Turn static captures into 64-second cinematic narratives using Google's VEO 3.1 model.</p>
+        </div>
+        <div class="reveal glass p-8 rounded-2xl border border-white/5 hover:border-neon/30 transition-all" style="animation-delay: 0.1s">
+          <div class="w-12 h-12 rounded-xl bg-neon/10 border border-neon/20 flex items-center justify-center mb-6">
+            <i data-lucide="terminal" class="w-6 h-6 text-neon"></i>
+          </div>
+          <h4 class="text-xl font-bold mb-3 uppercase italic">UI to Code</h4>
+          <p class="text-sm text-gray-400 leading-relaxed">Instantly convert screenshots into clean Tailwind/React components with deep reasoning.</p>
+        </div>
+        <div class="reveal glass p-8 rounded-2xl border border-white/5 hover:border-electric/30 transition-all" style="animation-delay: 0.2s">
+          <div class="w-12 h-12 rounded-xl bg-electric/10 border border-electric/20 flex items-center justify-center mb-6">
+            <i data-lucide="mic" class="w-6 h-6 text-electric"></i>
+          </div>
+          <h4 class="text-xl font-bold mb-3 uppercase italic">Lyria Audio</h4>
+          <p class="text-sm text-gray-400 leading-relaxed">Compose studio-grade original music or voice-over tracks for your captured content.</p>
+        </div>
+        <div class="reveal glass p-8 rounded-2xl border border-white/5 hover:border-neon/30 transition-all" style="animation-delay: 0.3s">
+          <div class="w-12 h-12 rounded-xl bg-neon/10 border border-neon/20 flex items-center justify-center mb-6">
+            <i data-lucide="file-search" class="w-6 h-6 text-neon"></i>
+          </div>
+          <h4 class="text-xl font-bold mb-3 uppercase italic">Research</h4>
+          <p class="text-sm text-gray-400 leading-relaxed">Deep search and reasoning across up to 10 screenshots at once with multi-model focus.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTALL CTA -->
+  <section id="install" class="py-32 px-6 relative z-10">
+    <div class="max-w-[1100px] mx-auto glass rounded-[40px] p-12 lg:p-24 text-center relative overflow-hidden">
+      <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-electric/10 to-neon/5 pointer-events-none"></div>
+      <div class="relative z-10 reveal">
+        <h2 class="text-5xl md:text-7xl font-heading italic uppercase mb-8 leading-none">The Future of <br><span class="gradient-text">Browsing</span> is snap.</h2>
+        <p class="text-gray-400 text-lg max-w-xl mx-auto mb-12">Start using the power of Google Gemini Studio today. It's free, private, and powerful.</p>
+        <button onclick="simulateInstall(this)" class="px-12 py-5 rounded-2xl bg-white text-black font-bold text-lg hover:scale-105 transition-transform flex items-center gap-3 mx-auto">
+          <i data-lucide="download" class="w-6 h-6"></i>
+          Add to Chrome — Free
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="py-20 px-6 border-t border-white/5 bg-pitch relative z-10">
+    <div class="max-w-[1100px] mx-auto grid md:grid-cols-4 gap-12">
+      <div class="col-span-2">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-electric to-neon flex items-center justify-center">
+            <i data-lucide="aperture" class="w-4 h-4 text-white"></i>
+          </div>
+          <span class="font-heading italic text-lg tracking-tighter uppercase">NEXUS AI STUDIO</span>
+        </div>
+        <p class="text-gray-500 text-sm max-w-xs mb-8 leading-relaxed">The high-performance bridge to Google Gemini. Snap anything, build everything.</p>
+        <div class="flex gap-4">
+          <button onclick="openLegal('Twitter', 'Our social accounts are currently in beta mode. Stay tuned for official launches.')" class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-gray-500 hover:text-white transition-colors"><i data-lucide="twitter" class="w-4 h-4"></i></button>
+          <button onclick="openLegal('Github', 'Nexus AI Studio is a private build. Enterprise source access available upon request.')" class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-gray-500 hover:text-white transition-colors"><i data-lucide="github" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+      <div>
+        <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-6">Platform</h4>
+        <ul class="space-y-3 text-sm text-gray-400">
+          <li><button onclick="openLegal('Privacy Protocol', 'We prioritize user privacy. No tracking pixels. No data selling. Local-first capture processing.')" class="hover:text-white">Privacy Protocol</button></li>
+          <li><button onclick="openLegal('Terms of Use', 'By using Nexus AI Studio, you agree to Google Gemini Acceptable Use Policies.')" class="hover:text-white">Terms of Use</button></li>
+          <li><button onclick="openLegal('Security', 'Enterprise-grade encryption for all API key storage in your local keychain.')" class="hover:text-white">Security</button></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-6">Status</h4>
+        <div class="flex items-center gap-2 mb-4">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Operational</span>
+        </div>
+        <p class="text-[9px] text-gray-600 uppercase tracking-widest">Nexus v2.4.1 Build 902</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL -->
+  <div id="legalModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9000;display:none;align-items:center;justify-content:center;padding:24px; backdrop-filter: blur(10px);">
+    <div style="background:#0a0a0a;max-width:600px;width:100%;max-height:80vh;overflow-y:auto;padding:48px;position:relative;border-radius:24px;border:1px solid rgba(255,255,255,0.1);">
+      <button onclick="closeLegal()" style="position:absolute;top:24px;right:24px;background:none;border:none;color:#fff;font-size:1.8rem;cursor:pointer;"><i data-lucide="x"></i></button>
+      <h2 id="legalTitle" class="font-heading italic text-2xl uppercase mb-8 gradient-text"></h2>
+      <div id="legalBody" class="text-gray-400 leading-relaxed text-sm space-y-4"></div>
+    </div>
+  </div>
+
+  <script>
+    // Intersection Observer
+    const _io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); _io.unobserve(e.target); }
+    }), { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+    setTimeout(() => document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible')), 1000
+📋 Copy
+🔊 Read
+✨ Magic Card
+please the buttons are empty make the stylying better it is not doing it correct
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus AI Studio — Snap the Pixel, Unleash the Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Archivo Black', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            pitch: '#050505',
+            electric: '#A855F7',
+            neon: '#EC4899',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #050505;
+      --accent: linear-gradient(135deg, #A855F7 0%, #EC4899 100%);
+      --surface: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.1);
+    }
+
+    body {
+      background-color: var(--bg);
+      color: #f0f0ff;
+      overflow-x: hidden;
+    }
+
+    .gradient-text {
+      background: var(--accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .glass {
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+    }
+
+    .reveal.visible { animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes revealUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+
+    .scan-line {
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #EC4899, transparent);
+      position: absolute;
+      top: 0;
+      left: 0;
+      animation: scan 4s linear infinite;
+      z-index: 20;
+      pointer-events: none;
+    }
+    @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: tabFadeIn 0.5s ease-out forwards; }
+    @keyframes tabFadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+    .studio-tab-btn {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .studio-tab-btn.active {
+      background: rgba(168, 85, 247, 0.15);
+      border-color: rgba(168, 85, 247, 0.4);
+      box-shadow: inset 0 0 15px rgba(168, 85, 247, 0.2);
+    }
+    .studio-tab-btn.active i, .studio-tab-btn.active span { color: #A855F7 !important; }
+
+    .glow-btn {
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    .glow-btn:hover { transform: scale(1.02); filter: brightness(1.1); }
+    .glow-btn::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      background: var(--accent);
+      z-index: -1;
+      filter: blur(14px);
+      opacity: 0.3;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #050505; }
+    ::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
+  </style>
+</head>
+<body class="antialiased selection:bg-neon/30">
+
+  <!-- BACKGROUND EFFECTS -->
+  <div class="fixed top-0 left-0 w-full h-full pointer-events-none z-0 overflow-hidden">
+    <div class="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-purple-900/10 rounded-full blur-[140px]"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-pink-900/10 rounded-full blur-[140px]"></div>
+  </div>
+
+  <!-- NAVIGATION -->
+  <nav class="fixed top-0 left-0 right-0 z-[100] glass border-b border-white/5 px-6 lg:px-12 py-4">
+    <div class="max-w-[1100px] mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-electric to-neon flex items-center justify-center shadow-lg shadow-purple-500/20">
+          <i data-lucide="aperture" class="w-6 h-6 text-white"></i>
+        </div>
+        <span class="font-heading italic text-2xl tracking-tighter uppercase">NEXUS AI STUDIO</span>
+      </div>
+      <div class="hidden md:flex items-center gap-10 text-[10px] font-bold tracking-[0.25em] text-gray-400 uppercase">
+        <a href="#features" class="hover:text-white transition-colors">Features</a>
+        <a href="#studio" class="hover:text-white transition-colors">Studio</a>
+        <button onclick="openLegal('Privacy Protocol', 'Nexus AI Studio utilizes a local-first caching system. All pixel data captured remains encrypted within your Chrome session storage until explicitly sent to the Google Gemini API.')" class="hover:text-white transition-colors">Privacy</button>
+        <a href="#install" class="px-8 py-3 rounded-full bg-gradient-to-r from-electric to-neon text-white shadow-xl shadow-purple-500/30 hover:scale-105 transition-transform">ADD TO CHROME</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section class="relative pt-48 pb-24 px-6 z-10">
+    <div class="max-w-[1100px] mx-auto grid lg:grid-cols-2 gap-20 items-center">
+      
+      <div class="reveal">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-electric/30 bg-electric/10 mb-8">
+          <span class="w-1.5 h-1.5 rounded-full bg-electric animate-pulse"></span>
+          <span class="text-[10px] font-bold tracking-[0.2em] text-electric uppercase">GOOGLE AI STUDIO PAYLOAD ACTIVE</span>
+        </div>
+        
+        <h1 class="text-6xl md:text-8xl font-heading italic leading-[0.82] uppercase mb-8">
+          Snap the <br>
+          <span class="gradient-text">Pixel,</span> <br>
+          Unleash <br>
+          <span class="gradient-text">The Studio.</span>
+        </h1>
+        
+        <p class="text-gray-400 text-xl leading-relaxed max-w-md mb-10">
+          Capture any screen element and bridge it instantly into Gemini's power. Generate cinematic video, logic-aware code, and studio audio directly in your tab.
+        </p>
+
+        <div class="flex flex-wrap gap-4 mb-16">
+          <a href="#install" class="glow-btn px-10 py-5 rounded-2xl bg-gradient-to-r from-electric to-neon text-white font-bold flex items-center gap-3">
+            <i data-lucide="zap" class="w-5 h-5"></i>
+            Install Free — No Card
+          </a>
+          <a href="#features" class="px-10 py-5 rounded-2xl border border-white/10 hover:bg-white/5 transition-all font-bold flex items-center gap-2">
+            See What's Inside
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </a>
+        </div>
+
+        <div class="grid grid-cols-3 gap-12 pt-10 border-t border-white/10">
+          <div><div class="text-4xl font-heading italic">64<span class="text-electric">s</span></div><div class="text-[10px] font-bold tracking-widest text-gray-500 uppercase mt-1">Stitched Video</div></div>
+          <div><div class="text-4xl font-heading italic">55+</div><div class="text-[10px] font-bold tracking-widest text-gray-500 uppercase mt-1">Languages</div></div>
+          <div><div class="text-4xl font-heading italic">$300</div><div class="text-[10px] font-bold tracking-widest text-gray-500 uppercase mt-1">Free Credit</div></div>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE STUDIO MOCKUP -->
+      <div id="studio" class="reveal relative">
+        <div class="glass rounded-[32px] p-1 relative overflow-hidden shadow-2xl">
+          <div class="scan-line"></div>
+          <div class="bg-pitch rounded-[28px] p-8 border border-white/5">
+            <!-- Mock Header -->
+            <div class="flex items-center justify-between mb-10 px-2">
+              <div class="flex items-center gap-3">
+                <div class="w-6 h-6 rounded bg-electric flex items-center justify-center text-[10px] font-bold text-white shadow-lg shadow-purple-500/30">N</div>
+                <span class="text-sm font-heading italic tracking-tighter uppercase">NEXUS AI STUDIO</span>
+              </div>
+              <div class="flex items-center gap-2 px-3 py-1 rounded border border-emerald-500/30 bg-emerald-500/10">
+                <span class="text-[9px] font-bold text-emerald-400 tracking-widest uppercase">PRO VERSION ●</span>
+              </div>
+            </div>
+
+            <!-- Functionality Grid -->
+            <div class="grid grid-cols-4 gap-3 mb-8">
+              <button onclick="showTab('snap-panel', this)" class="studio-tab-btn bg-white/5 p-5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-white/10">
+                <i data-lucide="camera" class="w-5 h-5 text-gray-400"></i>
+                <span class="text-[9px] font-bold text-gray-500 uppercase">Snap</span>
+              </button>
+              <button onclick="showTab('snip-panel', this)" class="studio-tab-btn bg-white/5 p-5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-white/10">
+                <i data-lucide="scissors" class="w-5 h-5 text-gray-400"></i>
+                <span class="text-[9px] font-bold text-gray-500 uppercase">Snip</span>
+              </button>
+              <button onclick="showTab('full-panel', this)" class="studio-tab-btn bg-white/5 p-5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-white/10">
+                <i data-lucide="monitor" class="w-5 h-5 text-gray-400"></i>
+                <span class="text-[9px] font-bold text-gray-500 uppercase">Full</span>
+              </button>
+              <button onclick="showTab('studio-main', this)" class="studio-tab-btn active p-5 rounded-2xl flex flex-col items-center justify-center gap-3">
+                <i data-lucide="star" class="w-5 h-5 text-gray-400"></i>
+                <span class="text-[9px] font-bold text-gray-500 uppercase">Studio</span>
+              </button>
+            </div>
+
+            <!-- Content Workspace -->
+            <div class="p-6 rounded-3xl bg-white/[0.03] border border-white/5 mb-8 min-h-[260px] relative">
+              
+              <!-- TAB: STUDIO MAIN -->
+              <div id="studio-main" class="tab-panel active">
+                <div class="flex items-center justify-between mb-5">
+                  <div class="flex items-center gap-2">
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)]"></div>
+                    <span class="text-[10px] font-bold text-gray-400 tracking-widest uppercase">AI PAYLOAD READY · V2.4</span>
+                  </div>
+                  <span class="text-[10px] font-bold text-electric tracking-widest uppercase">READY</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="aspect-video rounded-xl overflow-hidden border border-white/10 relative group cursor-pointer shadow-xl">
+                    <img src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Mockup 1" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#111,#222)'">
+                    <div class="absolute inset-0 bg-electric/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="absolute top-2 left-2 bg-black/80 px-2 py-1 rounded text-[10px] font-bold text-white">1</div>
+                  </div>
+                  <div class="aspect-video rounded-xl overflow-hidden border border-white/10 relative group cursor-pointer shadow-xl">
+                    <img src="https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Mockup 2" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#222,#111)'">
+                    <div class="absolute inset-0 bg-neon/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="absolute top-2 left-2 bg-black/80 px-2 py-1 rounded text-[10px] font-bold text-white">2</div>
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2 mt-5">
+                  <span class="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[9px] text-gray-400 font-bold tracking-widest">VISION</span>
+                  <span class="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[9px] text-gray-400 font-bold tracking-widest">IMAGE</span>
+                  <span class="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[9px] text-gray-400 font-bold tracking-widest">MUSIC</span>
+                  <span class="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[9px] text-gray-400 font-bold tracking-widest">VIDEO</span>
+                </div>
+              </div>
+
+              <!-- TAB: SNAP PANEL -->
+              <div id="snap-panel" class="tab-panel">
+                <div class="aspect-video rounded-2xl overflow-hidden bg-white/5 border border-white/10 relative flex items-center justify-center">
+                   <img src="https://images.pexels.com/photos/574077/pexels-photo-574077.jpeg?auto=compress&cs=tinysrgb&w=800" class="object-cover w-full h-full opacity-40">
+                   <div class="absolute flex flex-col items-center">
+                     <i data-lucide="camera" class="w-12 h-12 text-white animate-pulse mb-3"></i>
+                     <span class="text-[10px] font-bold tracking-[0.3em] text-white">SNAPSHOT ACTIVE</span>
+                   </div>
+                </div>
+                <p class="text-[11px] text-gray-500 mt-6 text-center italic">Capture the current viewport as a reference for Gemini Vision.</p>
+              </div>
+
+              <!-- TAB: SNIP PANEL -->
+              <div id="snip-panel" class="tab-panel">
+                <div class="aspect-video rounded-2xl overflow-hidden bg-white/5 border border-white/10 relative flex items-center justify-center">
+                   <img src="https://images.pexels.com/photos/1132047/pexels-photo-1132047.jpeg?auto=compress&cs=tinysrgb&w=800" class="object-cover w-full h-full opacity-40">
+                   <div class="absolute w-24 h-24 border-2 border-dashed border-neon bg-neon/10 flex items-center justify-center">
+                     <i data-lucide="scissors" class="w-6 h-6 text-neon"></i>
+                   </div>
+                </div>
+                <p class="text-[11px] text-gray-500 mt-6 text-center italic">Select a custom area to isolate elements, code, or images.</p>
+              </div>
+
+              <!-- TAB: FULL PANEL -->
+              <div id="full-panel" class="tab-panel">
+                <div class="aspect-video rounded-2xl overflow-hidden bg-white/5 border border-white/10 relative">
+                   <img src="https://images.pexels.com/photos/414612/pexels-photo-414612.jpeg?auto=compress&cs=tinysrgb&w=800" class="object-cover w-full h-full opacity-40">
+                   <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/80 flex items-end justify-center pb-6">
+                     <i data-lucide="chevrons-down" class="w-8 h-8 text-white animate-bounce"></i>
+                   </div>
+                </div>
+                <p class="text-[11px] text-gray-500 mt-6 text-center italic">Automatic scrolling capture of the entire page layout.</p>
+              </div>
+
+            </div>
+
+            <button id="mainAction" onclick="simulateProcess(this)" class="w-full py-5 rounded-2xl bg-gradient-to-r from-electric to-neon text-white font-bold flex items-center justify-center gap-3 shadow-2xl shadow-purple-500/20 hover:brightness-110 active:scale-95 transition-all">
+              <i data-lucide="sparkles" class="w-5 h-5"></i>
+              <span>PROCESS IN STUDIO</span>
+            </button>
+
+            <!-- Bottom Tool Tray -->
+            <div class="grid grid-cols-4 gap-3 mt-6">
+              <button class="h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all"><i data-lucide="eye" class="w-5 h-5"></i></button>
+              <button class="h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all"><i data-lucide="image" class="w-5 h-5"></i></button>
+              <button class="h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all"><i data-lucide="music" class="w-5 h-5"></i></button>
+              <button class="h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all"><i data-lucide="code" class="w-5 h-5"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES GRID -->
+  <section id="features" class="py-32 px-6 relative z-10 bg-pitch/50">
+    <div class="max-w-[1100px] mx-auto">
+      <div class="reveal mb-24 text-center">
+        <h2 class="text-4xl md:text-6xl font-heading italic uppercase leading-none mb-6">Omni-Model Execution</h2>
+        <p class="text-electric font-bold tracking-[0.4em] uppercase text-xs">A unified workflow for the AI era</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="reveal glass p-10 rounded-3xl border border-white/5 hover:border-electric/30 transition-all duration-500">
+          <div class="w-14 h-14 rounded-2xl bg-electric/10 border border-electric/20 flex items-center justify-center mb-8">
+            <i data-lucide="clapperboard" class="w-7 h-7 text-electric"></i>
+          </div>
+          <h4 class="text-xs font-bold text-gray-500 tracking-widest uppercase mb-3">Cinema</h4>
+          <h5 class="text-2xl font-bold mb-4 italic uppercase">VEO Video</h5>
+          <p class="text-sm text-gray-400 leading-relaxed">Turn static snaps into 64s cinematic video with consistent lighting and temporal coherence.</p>
+        </div>
+        <div class="reveal glass p-10 rounded-3xl border border-white/5 hover:border-neon/30 transition-all duration-500" style="transition-delay: 100ms;">
+          <div class="w-14 h-14 rounded-2xl bg-neon/10 border border-neon/20 flex items-center justify-center mb-8">
+            <i data-lucide="binary" class="w-7 h-7 text-neon"></i>
+          </div>
+          <h4 class="text-xs font-bold text-gray-500 tracking-widest uppercase mb-3">Engine</h4>
+          <h5 class="text-2xl font-bold mb-4 italic uppercase">UI Reasoning</h5>
+          <p class="text-sm text-gray-400 leading-relaxed">Convert complex interface captures into clean, production-ready React or Tailwind components.</p>
+        </div>
+        <div class="reveal glass p-10 rounded-3xl border border-white/5 hover:border-electric/30 transition-all duration-500" style="transition-delay: 200ms;">
+          <div class="w-14 h-14 rounded-2xl bg-electric/10 border border-electric/20 flex items-center justify-center mb-8">
+            <i data-lucide="waveform" class="w-7 h-7 text-electric"></i>
+          </div>
+          <h4 class="text-xs font-bold text-gray-500 tracking-widest uppercase mb-3">Audio</h4>
+          <h5 class="text-2xl font-bold mb-4 italic uppercase">Lyria Scoring</h5>
+          <p class="text-sm text-gray-400 leading-relaxed">Generate original soundtrack compositions and studio voiceovers synced to your captures.</p>
+        </div>
+        <div class="reveal glass p-10 rounded-3xl border border-white/5 hover:border-neon/30 transition-all duration-500" style="transition-delay: 300ms;">
+          <div class="w-14 h-14 rounded-2xl bg-neon/10 border border-neon/20 flex items-center justify-center mb-8">
+            <i data-lucide="layers" class="w-7 h-7 text-neon"></i>
+          </div>
+          <h4 class="text-xs font-bold text-gray-500 tracking-widest uppercase mb-3">Context</h4>
+          <h5 class="text-2xl font-bold mb-4 italic uppercase">Multisearch</h5>
+          <p class="text-sm text-gray-400 leading-relaxed">Reason across up to 10 unique captures simultaneously with deep cross-reference intelligence.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTALL CTA -->
+  <section id="install" class="py-32 px-6 relative z-10">
+    <div class="max-w-[1100px] mx-auto glass rounded-[48px] p-16 lg:p-28 text-center relative overflow-hidden">
+      <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-electric/15 to-neon/5 pointer-events-none"></div>
+      <div class="relative z-10 reveal">
+        <h2 class="text-5xl md:text-8xl font-heading italic uppercase mb-10 leading-none">The Browser <br><span class="gradient-text">Redefined.</span></h2>
+        <p class="text-gray-400 text-xl max-w-xl mx-auto mb-14 leading-relaxed">Experience the full power of Gemini Studio with zero latency. Private, persistent, and powerful.</p>
+        <button onclick="simulateInstall(this)" class="px-14 py-6 rounded-3xl bg-white text-black font-bold text-xl hover:scale-105 transition-transform flex items-center gap-4 mx-auto shadow-2xl">
+          <i data-lucide="chrome" class="w-7 h-7"></i>
+          Add to Chrome — Free
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="py-24 px-6 border-t border-white/5 bg-pitch relative z-10">
+    <div class="max-w-[1100px] mx-auto">
+      <div class="grid md:grid-cols-4 gap-16 mb-24">
+        <div class="col-span-2">
+          <div class="flex items-center gap-3 mb-8">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-electric to-neon flex items-center justify-center">
+              <i data-lucide="aperture" class="w-4 h-4 text-white"></i>
+            </div>
+            <span class="font-heading italic text-xl tracking-tighter uppercase">NEXUS AI STUDIO</span>
+          </div>
+          <p class="text-gray-500 text-base max-w-sm mb-10 leading-relaxed">
+            Revolutionizing the browser experience by bridging local pixels with global intelligence.
+          </p>
+          <div class="flex gap-5">
+            <button onclick="openLegal('Twitter', 'Our social presence is currently restricted to beta participants. Follow @NexusStudioAI for updates.')" class="w-12 h-12 rounded-full glass flex items-center justify-center text-gray-500 hover:text-white transition-all"><i data-lucide="twitter" class="w-5 h-5"></i></button>
+            <button onclick="openLegal('Github', 'Nexus AI Studio is a proprietary implementation of the Gemini API. Repository access is restricted.')" class="w-12 h-12 rounded-full glass flex items-center justify-center text-gray-500 hover:text-white transition-all"><i data-lucide="github" class="w-5 h-5"></i></button>
+          </div>
+        </div>
+        <div>
+          <h4 class="text-[11px] font-bold text-gray-500 uppercase tracking-[0.3em] mb-8">Legal</h4>
+          <ul class="space-y-4 text-sm text-gray-400">
+            <li><button onclick="openLegal('Privacy Protocol', 'We utilize local-first storage. No tracking pixels. No data reselling. Encryption by default.')" class="hover:text-white transition-colors">Privacy Protocol</button></li>
+            <li><button onclick="openLegal('Terms of Service', 'Usage subject to the Google Gemini Acceptable Use Policy and developer terms.')" class="hover:text-white transition-colors">Terms of Service</button></li>
+            <li><button onclick="openLegal('Security', 'Enterprise-grade encryption for all stored API credentials in your local browser keychain.')" class="hover:text-white transition-colors">Security</button></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-[11px] font-bold text-gray-500 uppercase tracking-[0.3em] mb-8">Network</h4>
+          <div class="flex items-center gap-3 mb-6">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0
