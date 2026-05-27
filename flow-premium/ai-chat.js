@@ -5701,10 +5701,26 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
    Never write onclick="scrollToSection('...')" — it requires a JS function that may be missing.
 
    FUNCTIONS called by onclick="" MUST be defined at the TOP LEVEL of the script (not inside
-   any callback or block), so the browser can find them in global scope:
-     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-   Then in HTML: onclick="openModal('shieldModal')" — this is fine for simple function calls.
+   any callback or block), so the browser can find them in global scope.
+   ALWAYS use the `function` keyword — NEVER `const`, `let`, or arrow functions:
+
+     ✓ CORRECT — `function` declaration at top level (globally accessible):
+       function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+       function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+       function openLegal(title, html) { ... }
+       function closeLegal() { ... }
+       function showTab(id, btn) { ... }
+
+     ✗ WRONG — `const` arrow function (NOT globally accessible from onclick):
+       const openModal = (id) => { ... }   ← onclick="openModal()" WILL THROW ReferenceError
+       const showTab = function(id) { ... } ← same problem
+
+     ✗ WRONG — wrapping in DOMContentLoaded (callback never fires in preview sandbox):
+       document.addEventListener('DOMContentLoaded', () => {
+         function openLegal() { ... }   ← openLegal is local, not global, onclick BREAKS
+       });
+
+   Then in HTML: onclick="openModal('shieldModal')" — fine when openModal is a top-level function.
 
    WIRING PATTERN for everything else (run directly, not inside any callback):
      const btn = document.getElementById('myBtn');
