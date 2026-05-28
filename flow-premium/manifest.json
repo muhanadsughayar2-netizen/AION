@@ -22,7 +22,7 @@
     "default_path": "sidebar.html"
   },
   "oauth2": {
-    "client_id": "114083338605-8l3tglcrm0npscg721jd4tkjhlltujsm.apps.googleusercontent.com",
+    "client_id": "387241881832-ahid5mmlg35ncat1pofttmgv51fhcjrp.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/userinfo.email",
       "https://www.googleapis.com/auth/userinfo.profile",
