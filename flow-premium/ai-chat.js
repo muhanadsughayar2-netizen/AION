@@ -8479,13 +8479,34 @@ window.addEventListener('message', function(ev) {
 // Reload the sandbox iframe so its global scope is fresh for a new build.
 // const/let declarations from the previous build linger in global scope and
 // cause uncatchable "Identifier already declared" SyntaxErrors on re-run.
+//
+// WHY we remove+recreate instead of setting iframe.src:
+// Once the iframe is displaying the sandboxed page (null origin), Chrome blocks
+// any re-navigation with "Unsafe attempt to load from sandboxed frame" — it
+// treats the src= assignment as the sandboxed frame trying to navigate itself,
+// which is forbidden. Creating a fresh <iframe> element has no existing
+// sandboxed origin, so Chrome allows the initial load without restriction.
 function _reloadSandbox() {
-  const iframe = document.getElementById('livePreview');
-  if (!iframe) return;
+  const old = document.getElementById('livePreview');
+  if (!old) return;
   _isSandboxReady = false;
   _buildFinalReady = false;
-  // Setting .src triggers a full reload; sandboxReady handshake re-fires when done
-  iframe.src = 'sandbox.html';
+
+  const wrap = old.parentElement;
+  if (!wrap) return;
+
+  // Snapshot style so the new element looks identical
+  const cssText = old.style.cssText;
+  const displayVal = old.style.display;
+
+  const fresh = document.createElement('iframe');
+  fresh.id = 'livePreview';
+  fresh.src = 'sandbox.html';
+  fresh.allow = 'fullscreen';
+  fresh.style.cssText = cssText;
+  fresh.style.display = displayVal;
+  // Replace in DOM — sandboxReady postMessage will fire when sandbox.html loads
+  wrap.replaceChild(fresh, old);
 }
 
 function _postToSandbox(code, isFinal) {
