@@ -1,0 +1,245 @@
+Uncaught ReferenceError: showTab is not defined
+Uncaught SyntaxError: Failed to execute 'querySelector' on 'Document': '#' is not a valid selector.
+Context
+preview-output.html
+Stack Trace
+sandbox.html:60 (anonymous function)
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI Sandbox</title>
+  <script>
+    (function() {
+      try { window.localStorage; } catch (e) {
+        const mock = { getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {}, length: 0, key: () => null };
+        Object.defineProperty(window, 'localStorage', { value: mock });
+        Object.defineProperty(window, 'sessionStorage', { value: mock });
+      }
+    })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    try {
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+              serif: ['"Playfair Display"', 'serif'],
+              mono: ['"JetBrains Mono"', 'monospace']
+            }
+          }
+        }
+      };
+    } catch(e) {}
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; min-height: 100vh; }
+    body { background: #07070a; color: #f8fafc; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  </style>
+</head>
+<body>
+  <div id="sandbox-head-styles"></div>
+  <div id="sandbox-app"></div>
+
+  <script>
+    // Re-execute only syntactically complete <script> tags.
+    // Uses new Function() to pre-validate inline scripts before DOM insertion —
+    // replaceChild triggers synchronous browser compilation which bypasses try/catch,
+    // so we validate first and skip any truncated/incomplete streaming chunks.
+    function runScripts(container) {
+      try {
+        container.querySelectorAll('script').forEach(function(old) {
+          try {
+            // Skip empty inline scripts (external src= scripts pass through fine)
+            if (!old.textContent.trim() && !old.hasAttribute('src')) return;
+
+            // Pre-validate syntax of inline scripts before insertion
+            if (old.textContent.trim()) {
+              try {
+                new Function(old.textContent);
+              } catch(syntaxErr) {
+                if (syntaxErr instanceof SyntaxError) {
+                  // Incomplete/truncated script block — skip silently
+                  return;
+                }
+              }
