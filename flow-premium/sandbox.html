@@ -110,14 +110,21 @@
         // setup scripts so custom colors/fonts are registered BEFORE body is
         // injected. Without this, Tailwind CDN never generates CSS for custom
         // tokens like text-electric, bg-pitch, font-heading etc.
+        //
+        // IMPORTANT: appendChild of a syntactically invalid <script> triggers
+        // synchronous browser compilation that bypasses try/catch — same as
+        // replaceChild in runScripts. Pre-validate with new Function() first
+        // and skip silently on any SyntaxError so the sandbox never crashes.
         var headScriptRe = /<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/gi;
         var hsMatch;
         while ((hsMatch = headScriptRe.exec(headHtml)) !== null) {
           try {
             var code = hsMatch[1].trim();
-            if (!code) continue;
-            // Skip CDN loader stubs (very short or just comments)
-            if (code.length < 5) continue;
+            if (!code || code.length < 5) continue;
+            // Pre-validate — skip truncated or malformed scripts entirely
+            try { new Function(code); } catch(syntaxErr) {
+              if (syntaxErr instanceof SyntaxError) continue;
+            }
             var el = document.createElement('script');
             el.textContent = code;
             container.appendChild(el);
