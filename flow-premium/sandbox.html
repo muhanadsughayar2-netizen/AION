@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SnapToAI Sandbox</title>
+  <script>
+    (function() {
+      try { window.localStorage; } catch (e) {
+        const mock = { getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {}, length: 0, key: () => null };
+        Object.defineProperty(window, 'localStorage', { value: mock });
+        Object.defineProperty(window, 'sessionStorage', { value: mock });
+      }
+    })();
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>

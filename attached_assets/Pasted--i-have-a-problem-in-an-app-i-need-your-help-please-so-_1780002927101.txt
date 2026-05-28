@@ -1,0 +1,1372 @@
+
+i have a problem in an app i need your help please so if you could help me now my app is working but i need to make the bugs go but if fix the bugs the papa breaks and i dont know what to do next so what i have bugs now are the following Context
+ai-chat.html?count=1
+Stack Trace
+sandbox.html:1 (anonymous function)
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI Sandbox</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    try {Uncaught SecurityError: Failed to read the 'localStorage' property from 'Window': The document is sandboxed and lacks the 'allow-same-origin' flag.
+Context
+preview-output.html
+Stack Trace
+sandbox.html:200 (anonymous function)
+NContext
+ai-chat.html?count=1
+Stack Trace
+sandbox.html:1 (anonymous function)
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI Sandbox</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    try {ontext
+ai-chat.html?count=1
+Stack Trace
+sandbox.html:93 (anonymous function)
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI Sandbox</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    try {
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+              serif: ['"Playfair Display"', 'serif'],
+              mono: ['"JetBrains Mono"', 'monospace']
+            }
+          }
+        }
+      };
+    } catch(e) {}
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; min-height: 100vh; }
+    body { background: #07070a; color: #f8fafc; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  </style>
+</head>
+<body>
+  <div id="sandbox-head-styles"></div>
+  <div id="sandbox-app"></div>
+  <script>
+    // Re-execute only syntactically complete <script> tags.
+    // Uses new Function() to pre-validate inline scripts before DOM insertion —
+    // replaceChild triggers synchronous browser compilation which bypasses try/catch,
+    // so we validate first and skip any truncated/incomplete streaming chunks.
+    function runScripts(container) {
+      try {
+        container.querySelectorAll('script').forEach(function(old) {
+          try {
+            // Skip empty inline scripts (external src= scripts pass through fine)
+            if (!old.textContent.trim() && !old.hasAttribute('src')) return;
+
+            // Pre-validate syntax of inline scripts before insertion
+            if (old.textContent.trim()) {
+              try {
+                new Function(old.textContent);
+              } catch(syntaxErr) {
+                if (syntaxErr instanceof SyntaxError) {
+                  // Incomplete/truncated script block — skip silently
+                  return;
+                }
+              }
+            }
+
+            var fresh = document.createElement('script');
+            Array.from(old.attributes).forEach(function(a) {
+              try { fresh.setAttribute(a.name, a.value); } catch(e) {}
+            });
+            fresh.textContent = old.textContent;
+            if (old.parentNode) {
+              old.parentNode.replaceChild(fresh, old);
+            }
+          } catch(e) {}
+        });
+      } catch(e) {}
+    }
+
+    // Inject <style> and <link> tags from the AI-generated <head>
+    function injectHeadAssets(html) {
+      try {
+        var headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+        if (!headMatch) return;
+        var headHtml = headMatch[1];
+        var container = document.getElementById('sandbox-head-styles');
+        if (!container) return;
+        container.innerHTML = '';
+
+        // <style> blocks — create programmatically, never via innerHTML
+        var styles = headHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+        styles.forEach(function(s) {
+          try {
+            var css = s.replace(/<\/?style[^>]*>/gi, '');
+            var el = document.createElement('style');
+            el.textContent = css;
+            container.appendChild(el);
+          } catch(e) {}
+        });
+
+        // <link> tags — create programmatically to avoid innerHTML issues
+        var linkRe = /<link([^>]*)>/gi;
+        var linkMatch;
+        while ((linkMatch = linkRe.exec(headHtml)) !== null) {
+          try {
+            var attrStr = linkMatch[1];
+            if (!/fonts\.googleapis\.com|fonts\.gstatic\.com|stylesheet/i.test(attContext
+preview-output.html
+Stack Trace
+sandbox.html:164 (anonymous function)
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI Sandbox</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    try {
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+              serif: ['"Playfair Display"', 'serif'],
+              mono: ['"JetBrains Mono"', 'monospace']
+            }
+          }
+        }
+      };
+    } catch(e) {}
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; min-height: 100vh; }
+    body { background: #07070a; color: #f8fafc; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  </style>
+</head>
+<body>
+  <div id="sandbox-head-styles"></div>
+  <div id="sandbox-app"></div>
+  <script>
+    // Re-execute only syntactically complete <script> tags.
+    // Uses new Function() to pre-validate inline scripts before DOM insertion —
+    // replaceChild triggers synchronous browser compilation which bypasses try/catch,
+    // so we validate first and skip any truncated/incomplete streaming chunks.
+    function runScripts(container) {
+      try {
+        container.querySelectorAll('script').forEach(function(old) {
+          try {
+            // Skip empty inline scripts (external src= scripts pass through fine)
+            if (!old.textContent.trim() && !old.hasAttribute('src')) return;
+
+            // Pre-validate syntax of inline scripts before insertion
+            if (old.textContent.trim()) {
+              try {
+                new Function(old.textContent);
+              } catch(syntaxErr) {
+                if (syntaxErr instanceof SyntaxError) {
+                  // Incomplete/truncated script block — skip silently
+                  return;
+                }
+              }
+            }
+
+            var fresh = document.createElement('script');
+            Array.from(old.attributes).forEach(function(a) {
+              try { fresh.setAttribute(a.name, a.value); } catch(e) {}
+            });
+            fresh.textContent = old.textContent;
+            if (old.parentNode) {
+              old.parentNode.replaceChild(fresh, old);
+            }
+          } catch(e) {}
+        });
+      } catch(e) {}
+    }
+
+    // Inject <style> and <link> tags from the AI-generated <head>
+    function injectHeadAssets(html) {
+      try {
+        var headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+        if (!headMatch) return;
+        var headHtml = headMatch[1];
+        var container = document.getElementById('sandbox-head-styles');
+        if (!container) return;
+        container.innerHTML = '';
+
+        // <style> blocks — create programmatically, never via innerHTML
+        var styles = headHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+        styles.forEach(function(s) {
+          try {
+            var css = s.replace(/<\/?style[^>]*>/gi, '');
+            var el = document.createElement('style');
+            el.textContent = css;
+            container.appendChild(el);
+          } catch(e) {}
+        });
+
+        // <link> tags — create programmatically to avoid innerHTML issues
+        var linkRe = /<link([^>]*)>/gi;
+        var linkMatch;
+        while ((linkMatch = linkRe.exec(headHtml)) !== null) {
+          try {
+            var attrStr = linkMatch[1];
+            if (!/fonts\.googleapis\.com|fonts\.gstatic\.com|stylesheet/i.test(attrStr)) continue;
+            var el = document.createElement('link');
+            var attrRe = /(\w[\w-]*)=["']([^"']*)["']/g;
+            var am;
+            while ((am = attrRe.exec(attrStr)) !== null) {
+              try { el.setAttribute(am[1], am[2]); } catch(e) {}
+            }
+            container.appendChild(el);
+          } catch(e) {}
+        }
+
+        // Inline <script> tags from head — execute tailwind.config and other
+        // setup scripts so custom colors/fonts are registered BEFORE body is
+        // injected. Without this, Tailwind CDN never generates CSS for custom
+        // tokens like text-electric, bg-pitch, font-heading etc.
+        //
+        // IMPORTANT: appendChild of a syntactically invalid <script> triggers
+        // synchronous browser compilation that bypasses try/catch — same as
+        // replaceChild in runScripts. Pre-validate with new Function() first
+        // and skip silently on any SyntaxError so the sandbox never crashes.
+        var headScriptRe = /<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/gi;
+        var hsMatch;
+        while ((hsMatch = headScriptRe.exec(headHtml)) !== null) {
+          try {
+            var code = hsMatch[1].trim();
+            if (!code || code.length < 5) continue;
+            // Pre-validate — skip truncated or malformed scripts entirely
+            try { new Function(code); } catch(syntaxErr) {
+              if (syntaxErr instanceof SyntaxError) continue;
+            }
+            var el = document.createElement('script');
+            el.textContent = code;
+            container.appendChild(el);
+          } catch(e) {}
+        }
+      } catch(e) {}
+    }
+
+    // Extract <body> content from a full HTML document string
+    function extractBody(html) {
+      try {
+        var m = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        if (m) return m[1];
+        var headEnd = html.search(/<\/head>/i);
+        if (headEnd !== -1) return html.slice(headEnd + 7);
+      } catch(e) {}
+      return html;
+    }
+
+    window.addEventListener('message', function(event) {
+      try {
+        var data = event.data;
+        if (!data || !data.htmlCode) return;
+        injectHeadAssets(data.htmlCode);
+        var app = document.getElementById('sandbox-app');
+        if (!app) return;
+        app.innerHTML = extractBody(data.htmlCode);
+        // Only execute scripts on the final complete render.
+        // Partial streaming chunks may contain truncated <script> tags which
+        // cause "Unexpected end of input" SyntaxErrors when cloned.
+        if (data.isFinal) {
+          runScripts(app);
+          // Immediate call for icons already in DOM
+          try { lucide.createIcons(); } catch(e) {}
+          // Delayed call catches icons created by scripts that ran async
+          setTimeout(function() { try { lucide.createIcons(); } catch(e) {} }, 150);
+        }
+      } catch(e) {}
+    });
+
+    // Notify parent popup that sandbox is ready
+    try { window.parent.postMessage({ sandboxReady: true }, '*'); Context
+preview-output.html
+Stack Trace
+sandbox.html:1 (anonymous function)
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI Sandbox</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    try {Context
+preview-output.html
+Stack Trace
+sandbox.html:1 (anonymous function)
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI Sandbox</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    try {Content unavailable. Resource was not cachedUnsafe attempt to load URL chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/sandbox.html from frame with URL chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/sandbox.html. Domains, protocols and ports must match.
+Context
+ai-chat.html?count=1
+Stack Trace
+sandbox.html:0 (anonymous function)
