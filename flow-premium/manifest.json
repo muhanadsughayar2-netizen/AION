@@ -1,6 +1,5 @@
 {
   "manifest_version": 3,
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlIG09ROlrR5ZHRrDsnDdQV6HP2vG1hwjCrY15cbLBwdD2U2imhUv7nAf1qz6AVbEVfDWcLTgAe2FJzNVOfunzDq2yED7zGv0T+09GCfMzfPu6cPn9yhgWgojet3V9g9JpmxPKK7gsaCHu4ziGZLAbY267fE5xsDlah0x5aC78lRnyJS6Z2uHJRfWbfY8F5J1GqixXkM0JHCAmetJLiIMoNcSC1IpxOjuR29uuJfOEWgaT54FVvLnrB89EXB/bOo0juu2ofAUjeuW68Q57bWdcmTT0TZIctYem9A3joGq2jsLf2NuC/IAUZ/so6RjQCyArJItmoCppMmXq2MpJeBOPQIDAQAB",
   "name": "__MSG_extensionName__",
   "version": "2.7.4",
   "description": "__MSG_extensionDescription__",
@@ -22,7 +21,7 @@
     "default_path": "sidebar.html"
   },
   "oauth2": {
-    "client_id": "387241881832-ahid5mmlg35ncat1pofttmgv51fhcjrp.apps.googleusercontent.com",
+    "client_id": "114083338605-8l3tglcrm0npscg721jd4tkjhlltujsm.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/userinfo.email",
       "https://www.googleapis.com/auth/userinfo.profile",
@@ -47,7 +46,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["content.js", "popup.html", "popup.css", "popup.js", "annotate.html", "annotate.css", "annotate.js", "options.html", "options.css", "options.js", "ai-chat.html", "ai-chat.js", "video-pipeline-core.js", "prompts.js", "magic-card.html", "magic-card.js", "sidebar.html", "sidebar.js", "theme.js", "theme.css", "branding.js", "preview-output.html", "preview-output.js", "sandbox.html"],
+      "resources": ["content.js", "popup.html", "popup.css", "popup.js", "annotate.html", "annotate.css", "annotate.js", "options.html", "options.css", "options.js", "ai-chat.html", "ai-chat.js", "video-pipeline-core.js", "prompts.js", "magic-card.html", "magic-card.js", "sidebar.html", "sidebar.js", "theme.js", "theme.css", "branding.js", "preview-output.html", "preview-output.js"],
       "matches": ["<all_urls>"]
     }
   ],

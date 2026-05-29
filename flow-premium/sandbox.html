@@ -4,40 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SnapToAI Sandbox</title>
-  <script>
-    (function() {
-      // Storage shield: mock localStorage/sessionStorage if blocked by sandbox
-      try { window.localStorage; } catch (e) {
-        const mock = { getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {}, length: 0, key: () => null };
-        Object.defineProperty(window, 'localStorage', { value: mock });
-        Object.defineProperty(window, 'sessionStorage', { value: mock });
-      }
-
-      // querySelector safety: prevent crashes from invalid selectors like '#' or ''
-      const _qs  = document.querySelector.bind(document);
-      const _qsa = document.querySelectorAll.bind(document);
-      document.querySelector = function(sel) {
-        try { return (sel && sel.trim() && sel.trim() !== '#') ? _qs(sel) : null; } catch(e) { return null; }
-      };
-      document.querySelectorAll = function(sel) {
-        try { return (sel && sel.trim() && sel.trim() !== '#') ? _qsa(sel) : []; } catch(e) { return []; }
-      };
-
-      // Global function fallbacks — defined NOW so onclick="" handlers never get
-      // "X is not defined" even if the AI wrapped them in an IIFE by mistake.
-      window.showTab = function(id, btn) {
-        document.querySelectorAll('.tab-panel, [class*="tab-panel"]').forEach(function(p) { p.classList.remove('active'); });
-        document.querySelectorAll('.tab-btn, [class*="tab-btn"]').forEach(function(b) { b.classList.remove('active'); });
-        var panel = id ? document.getElementById(id) : null;
-        if (panel) panel.classList.add('active');
-        if (btn) btn.classList.add('active');
-      };
-      window.openModal = function(id) { var el = id ? document.getElementById(id) : null; if (el) el.style.display = 'flex'; };
-      window.closeModal = function(id) { var el = id ? document.getElementById(id) : null; if (el) el.style.display = 'none'; };
-      window.toggleMenu = function(id) { var el = id ? document.getElementById(id) : null; if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none'; };
-      window.scrollToSection = function(id) { var el = id ? document.getElementById(id) : null; if (el) el.scrollIntoView({ behavior: 'smooth' }); };
-    })();
-  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>

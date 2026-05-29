@@ -1470,7 +1470,7 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
     
     // Check queue capacity
     const currentSnaps = await chrome.runtime.sendMessage({ action: 'getSnaps' });
-    const availableSlots = 10 - (currentSnaps?.length || 0);
+    const availableSlots = 9 - (currentSnaps?.length || 0);
     
     if (estimatedChunks > availableSlots) {
       throw new Error(`Need ${estimatedChunks} slots but only ${availableSlots} available. Delete some images first.`);
@@ -1620,7 +1620,7 @@ async function stitchFullPageImagesChunked(screenshots, viewportWidth, viewportH
     
     // Re-check queue capacity before saving
     const currentSnapsBeforeSave = await chrome.runtime.sendMessage({ action: 'getSnaps' });
-    const availableSlotsNow = 10 - (currentSnapsBeforeSave?.length || 0);
+    const availableSlotsNow = 9 - (currentSnapsBeforeSave?.length || 0);
     
     if (totalChunks > availableSlotsNow) {
       throw new Error(`Need ${totalChunks} slots but only ${availableSlotsNow} available. Delete some images first.`);
@@ -1890,7 +1890,7 @@ async function handleFullPageClick() {
   
   if (fullPageButton) fullPageButton.disabled = true;
   
-  const availableSlots = 10 - currentSnaps.length;
+  const availableSlots = 9 - currentSnaps.length;
   
   if (availableSlots <= 0) {
     showQueueFullModal(0, 0);

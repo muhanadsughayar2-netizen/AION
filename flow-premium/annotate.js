@@ -2820,28 +2820,21 @@ async function saveFullPageWithAnnotations() {
     window.finalChunkWidth = null;
     window.finalChunkHeight = null;
     
-    // Guard: pages must be loaded
-    if (!pages || pages.length === 0) {
-      updateStatus('⚠️ No pages found. Please close and re-capture the page.');
-      return;
-    }
-    
     const totalPages = pages.length;
-    const PAGES_PER_CHUNK = 10; // 10 pages per chunk — safe memory limit (was 40, caused freeze)
+    const PAGES_PER_CHUNK = 40; // Larger chunks for full page capture (40 pages max)
     
     // Calculate how many chunks we need
     const totalChunks = Math.ceil(totalPages / PAGES_PER_CHUNK);
     
     // Check queue capacity first - NEVER save partial captures
     const queueStatus = await chrome.runtime.sendMessage({ action: 'getQueueStatus' });
-    const currentCount = queueStatus?.count ?? 0;
-    const maxSlots = queueStatus?.max ?? 10;
-    const availableSlots = queueStatus?.available ?? (maxSlots - currentCount);
+    const currentQueueSize = queueStatus?.count || 0;
+    const availableSlots = 9 - currentQueueSize;
     
     // CRITICAL: Refuse to save if we can't fit ALL chunks
     if (totalChunks > availableSlots) {
       const shortfall = totalChunks - availableSlots;
-      updateStatus(`⚠️ Queue full (${currentCount}/${maxSlots}). Delete ${shortfall} image${shortfall > 1 ? 's' : ''} from the extension first, then click Save All Pages again.`);
+      updateStatus(`⚠️ Need ${totalChunks} slots but only ${availableSlots} available. Clear ${shortfall} image${shortfall > 1 ? 's' : ''} first!`);
       
       // Flash the status bar to make it noticeable
       const statusBar = document.querySelector('.status-bar') || document.getElementById('status');
@@ -2854,7 +2847,7 @@ async function saveFullPageWithAnnotations() {
       return;
     }
     
-    updateStatus(`Saving ${totalPages} pages... (${currentCount}/${maxSlots} slots used)`);
+    updateStatus(`Splitting ${totalPages} pages into ${totalChunks} chunks for AI...`);
     await yieldToUI();
     
     // Save current page annotations first
@@ -2897,8 +2890,6 @@ async function saveFullPageWithAnnotations() {
     // STEP 2: Process each chunk
     const savedChunks = [];
     const savedChunkDataUrls = []; // For RE-EDIT functionality
-    // One shared ID so all chunks group together in the popup as a single capture
-    const captureGroupId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
     
     for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
       const startPage = chunkIndex * PAGES_PER_CHUNK;
@@ -3067,56 +3058,33 @@ async function saveFullPageWithAnnotations() {
       await yieldToUI();
       
       // PNG format for maximum text clarity - never use JPEG for screenshots with text
-      let chunkDataUrl = chunkCanvas.toDataURL('image/png');
+      const chunkDataUrl = chunkCanvas.toDataURL('image/png');
       
       // Release chunk canvas
       chunkCanvas.width = 0;
       chunkCanvas.height = 0;
       
       // Save to queue with part metadata
-      let response;
-      try {
-        response = await chrome.runtime.sendMessage({
-          action: 'snipComplete',
-          dataUrl: chunkDataUrl,
-          metadata: {
-            isChunk: true,
-            captureGroupId: captureGroupId,
-            part: chunkIndex + 1,
-            totalParts: totalChunks,
-            pagesInChunk: pagesInChunk,
-            startPage: startPage + 1,
-            endPage: endPage
-          }
-        });
-      } catch (msgErr) {
-        updateStatus('Save failed — extension was reloaded. Please close and reopen the editor.');
-        return;
-      }
+      const response = await chrome.runtime.sendMessage({
+        action: 'snipComplete',
+        dataUrl: chunkDataUrl,
+        metadata: {
+          isChunk: true,
+          part: chunkIndex + 1,
+          totalParts: totalChunks,
+          pagesInChunk: pagesInChunk,
+          startPage: startPage + 1,
+          endPage: endPage
+        }
+      });
       
-      if (!response) {
-        updateStatus('Save failed — no response from extension. Try reloading the extension.');
-        return;
-      }
-      
-      if (response.queueFull) {
-        updateStatus(`Queue full (${response.count ?? ''}). Open the extension popup, delete an image, then click Save All Pages again.`);
-        return;
-      }
-      
-      if (!response.success) {
-        updateStatus(`Save failed: ${response.error || 'unknown error'}. Please try again.`);
-        return;
+      if (response && response.queueFull) {
+        updateStatus(`Saved ${chunkIndex} chunks. Queue full - clear and retry for remaining.`);
+        break;
       }
       
       savedChunks.push(chunkIndex + 1);
-      // Only keep chunk URLs for re-edit if total is small (large captures would double RAM usage)
-      if (totalChunks <= 3) {
-        savedChunkDataUrls.push(chunkDataUrl);
-      }
-      
-      // Free chunk data from local scope immediately
-      chunkDataUrl = null;
+      savedChunkDataUrls.push(chunkDataUrl); // Store for RE-EDIT
       
       // Brief pause between chunks
       await yieldToUI();
@@ -3125,7 +3093,7 @@ async function saveFullPageWithAnnotations() {
     // Clear local storage (screenshots and viewport dimensions)
     await chrome.storage.local.remove(['fullPageScreenshots', 'fullPageViewportWidth', 'fullPageViewportHeight']);
     
-    // Save lastFullPageCapture for RE-EDIT — only when small enough to be safe
+    // Save lastFullPageCapture for RE-EDIT functionality
     if (savedChunkDataUrls.length > 0) {
       const urlParams = new URLSearchParams(window.location.search);
       const capturedUrl = urlParams.get('url') || window.location.href;
@@ -3135,7 +3103,7 @@ async function saveFullPageWithAnnotations() {
       const lastFullPageCapture = {
         smartName: smartName,
         timestamp: Date.now(),
-        captureGroupId: captureGroupId,
+        captureGroupId: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
         totalParts: savedChunkDataUrls.length,
         chunks: savedChunkDataUrls,
         url: capturedUrl,
@@ -3146,18 +3114,19 @@ async function saveFullPageWithAnnotations() {
       console.log('[SnapToAI] Saved lastFullPageCapture for RE-EDIT:', smartName);
     }
     
-    if (savedChunks.length > 0) {
-      updateStatus(`Saved ${savedChunks.length} chunk${savedChunks.length > 1 ? 's' : ''}! Upload to AI one at a time.`);
-    }
+    updateStatus(`Saved ${savedChunks.length} chunks! Upload to AI one at a time.`);
+    
+    // Notify background
+    chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
+    
+    // Signal batch capture that save completed
+    await signalBatchSaveSuccess();
+    
+    setTimeout(() => window.close(), 2000);
     
   } catch (error) {
     console.log('Save full page error:', error);
     updateStatus('Failed to save. Please try again.');
-  } finally {
-    // Always signal completion so the UI never stays stuck — runs on success, error, AND early return
-    chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
-    await signalBatchSaveSuccess().catch(() => {});
-    setTimeout(() => window.close(), 2000);
   }
 }
 
