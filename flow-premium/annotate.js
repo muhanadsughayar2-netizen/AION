@@ -2820,6 +2820,12 @@ async function saveFullPageWithAnnotations() {
     window.finalChunkWidth = null;
     window.finalChunkHeight = null;
     
+    // Guard: pages must be loaded
+    if (!pages || pages.length === 0) {
+      updateStatus('⚠️ No pages found. Please close and re-capture the page.');
+      return;
+    }
+    
     const totalPages = pages.length;
     const PAGES_PER_CHUNK = 40; // Larger chunks for full page capture (40 pages max)
     
@@ -2828,12 +2834,14 @@ async function saveFullPageWithAnnotations() {
     
     // Check queue capacity first - NEVER save partial captures
     const queueStatus = await chrome.runtime.sendMessage({ action: 'getQueueStatus' });
-    const availableSlots = queueStatus?.available ?? (10 - (queueStatus?.count || 0));
+    const currentCount = queueStatus?.count ?? 0;
+    const maxSlots = queueStatus?.max ?? 10;
+    const availableSlots = queueStatus?.available ?? (maxSlots - currentCount);
     
     // CRITICAL: Refuse to save if we can't fit ALL chunks
     if (totalChunks > availableSlots) {
       const shortfall = totalChunks - availableSlots;
-      updateStatus(`⚠️ Need ${totalChunks} slots but only ${availableSlots} available. Clear ${shortfall} image${shortfall > 1 ? 's' : ''} first!`);
+      updateStatus(`⚠️ Queue full (${currentCount}/${maxSlots}). Delete ${shortfall} image${shortfall > 1 ? 's' : ''} from the extension first, then click Save All Pages again.`);
       
       // Flash the status bar to make it noticeable
       const statusBar = document.querySelector('.status-bar') || document.getElementById('status');
@@ -2846,7 +2854,7 @@ async function saveFullPageWithAnnotations() {
       return;
     }
     
-    updateStatus(`Splitting ${totalPages} pages into ${totalChunks} chunks for AI...`);
+    updateStatus(`Saving ${totalPages} pages... (${currentCount}/${maxSlots} slots used)`);
     await yieldToUI();
     
     // Save current page annotations first
