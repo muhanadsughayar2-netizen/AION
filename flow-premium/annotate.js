@@ -3072,22 +3072,38 @@ async function saveFullPageWithAnnotations() {
       chunkCanvas.height = 0;
       
       // Save to queue with part metadata
-      const response = await chrome.runtime.sendMessage({
-        action: 'snipComplete',
-        dataUrl: chunkDataUrl,
-        metadata: {
-          isChunk: true,
-          part: chunkIndex + 1,
-          totalParts: totalChunks,
-          pagesInChunk: pagesInChunk,
-          startPage: startPage + 1,
-          endPage: endPage
-        }
-      });
+      let response;
+      try {
+        response = await chrome.runtime.sendMessage({
+          action: 'snipComplete',
+          dataUrl: chunkDataUrl,
+          metadata: {
+            isChunk: true,
+            part: chunkIndex + 1,
+            totalParts: totalChunks,
+            pagesInChunk: pagesInChunk,
+            startPage: startPage + 1,
+            endPage: endPage
+          }
+        });
+      } catch (msgErr) {
+        updateStatus('Save failed — extension was reloaded. Please close and reopen the editor.');
+        return;
+      }
       
-      if (response && response.queueFull) {
-        updateStatus(`Saved ${chunkIndex} chunks. Queue full - clear and retry for remaining.`);
-        break;
+      if (!response) {
+        updateStatus('Save failed — no response from extension. Try reloading the extension.');
+        return;
+      }
+      
+      if (response.queueFull) {
+        updateStatus(`Queue full (${response.count ?? ''}). Open the extension popup, delete an image, then click Save All Pages again.`);
+        return;
+      }
+      
+      if (!response.success) {
+        updateStatus(`Save failed: ${response.error || 'unknown error'}. Please try again.`);
+        return;
       }
       
       savedChunks.push(chunkIndex + 1);
