@@ -8051,6 +8051,18 @@ function clearChat() {
   thread.innerHTML = '<div class="welcome-message">I\'m your AI partner. Ask me anything about this image!</div>';
   conversationHistory = [];
   saveChatHistoryToLocal();
+
+  // Purge build cache so new builds start from a clean slate — not the previous
+  // site. Without this the AI gets the old HTML as context and tries to merge
+  // rather than starting fresh, producing "ghost" sites from prior sessions.
+  _lastBuiltCode = '';
+  try { chrome.storage.local.remove(['snaptoai_built_code']); } catch(e) {}
+
+  // Hide the live preview since there is nothing built in this session
+  const w = document.getElementById('previewWrapper');
+  if (w) w.style.display = 'none';
+  const iframe = document.getElementById('livePreview');
+  if (iframe) iframe.style.display = 'none';
 }
 
 function buildChatHistorySnapshot() {
@@ -8587,6 +8599,9 @@ document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
   if (!buildModeEnabled) {
     buildStage = null;
     _lastBuiltCode = '';
+    // Clear from storage too — prevents a stale site from reloading on next
+    // boot when the user explicitly turned Build Mode off
+    try { chrome.storage.local.remove(['snaptoai_built_code']); } catch(e) {}
   } else if (!_lastBuiltCode) {
     // Restore any previously built site from storage so follow-up fix
     // requests have the current HTML even if the popup was reopened

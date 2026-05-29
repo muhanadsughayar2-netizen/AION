@@ -1,0 +1,64 @@
+This is a really excellent and subtle catch!
+The reason why "Nano Banana" is showing up instead of "Amie Glow" in your Chrome Extension's preview pane is due to a persistent state-leakage (caching) issue in the extension's codebase.
+Here is exactly what is happening, where the bug is, and how to fix it on Replit.
+🔍 The Root Cause
+Persistent Build Cache: In your Chrome Extension, whenever a site is built successfully, the generated HTML code is saved to your browser's persistent storage under the key snaptoai_built_code and held in a global variable called _lastBuiltCode.
+Inherited Context: In ai-chat.js, when Build Mode is active, the extension automatically injects your previously generated site as context into any new prompt you send to the AI:
+[CURRENT SITE — update this and output the full improved file]: ...
+The "Ghost" Site: Because clicking Clear Chat or starting a new session resets the visual chat logs but does not clear this persistent build cache, the AI was being handed the previous "Nano Banana" code as the starting baseline. When you asked it to build "Amie Glow," the AI got confused trying to merge and update the existing "Nano Banana" code rather than starting fresh.
+🛠️ The File to Check & Fix: ai-chat.js
+You need to apply two quick, targeted fixes inside ai-chat.js to completely solve this.
+Fix 1: Reset the Build Cache when clicking "Clear"
+Find the clearChat() function in your ai-chat.js file and update it to completely purge the cached code and hide the previous preview frame:
+code
+JavaScript
+// Clear chat & reset build state
+function clearChat() {
+  const thread = document.getElementById('chatThread');
+  thread.innerHTML = '<div class="welcome-message">I\'m your AI partner. Ask me anything about this image!</div>';
+  conversationHistory = [];
+  saveChatHistoryToLocal();
+  
+  // ── FIX: Purge the persistent build state so new builds start fresh! ──
+  _lastBuiltCode = '';
+  _buildBodyHtml = '';
+  _buildStyleCss = '';
+  _buildScriptJs = '';
+  chrome.storage.local.remove(['snaptoai_built_code']);
+  
+  // Hide live preview wrapper
+  const w = document.getElementById('previewWrapper');
+  if (w) w.style.display = 'none';
+  const iframe = document.getElementById('livePreview');
+  if (iframe) iframe.style.display = 'none';
+}
+Fix 2: Clear Storage when Toggling Build Mode Off
+Find the event listener for the Build Mode button (buildToggleBtn) in ai-chat.js and modify the block where Build Mode is turned off to ensure the local storage cache is cleared:
+code
+JavaScript
+document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
+  buildModeEnabled = !buildModeEnabled;
+  e.currentTarget.classList.toggle('tool-btn-active', buildModeEnabled);
+  e.currentTarget.title = buildModeEnabled
+    ? 'Build Mode ON — describe a site and send to generate it'
+    : 'Build Mode — generate and preview websites & apps live';
+  
+  if (!buildModeEnabled) {
+    buildStage = null;
+    _lastBuiltCode = '';
+    
+    // ── FIX: Clear from storage so it won't reload on a totally fresh boot ──
+    chrome.storage.local.remove(['snaptoai_built_code']);
+  } else if (!_lastBuiltCode) {
+    // Restore any previously built site from storage if we are continuing
+    chrome.storage.local.get('snaptoai_built_code', (res) => {
+      if (res.snaptoai_built_code) {
+        _lastBuiltCode = res.snaptoai_built_code;
+      }
+    });
+  }
+});
+🚀 What happens next?
+Once you apply these two edits in your Replit codebase and reload the Chrome Extension:
+Clicking Clear in the popup will completely flush out the previous generation.
+The AI will receive a clean slate and build the true, stunning presentation for Amie Glow cleanly from scratch exactly as you requested!
