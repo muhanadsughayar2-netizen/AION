@@ -8598,10 +8598,9 @@ document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
     : 'Build Mode — generate and preview websites & apps live';
   if (!buildModeEnabled) {
     buildStage = null;
-    _lastBuiltCode = '';
-    // Clear from storage too — prevents a stale site from reloading on next
-    // boot when the user explicitly turned Build Mode off
-    try { chrome.storage.local.remove(['snaptoai_built_code']); } catch(e) {}
+    // Do NOT clear _lastBuiltCode or storage here — the user may toggle Build
+    // Mode off temporarily and back on to continue updating the same site.
+    // The cache is only purged when the user explicitly clicks Clear Chat.
   } else if (!_lastBuiltCode) {
     // Restore any previously built site from storage so follow-up fix
     // requests have the current HTML even if the popup was reopened
