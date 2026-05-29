@@ -2828,8 +2828,7 @@ async function saveFullPageWithAnnotations() {
     
     // Check queue capacity first - NEVER save partial captures
     const queueStatus = await chrome.runtime.sendMessage({ action: 'getQueueStatus' });
-    const currentQueueSize = queueStatus?.count || 0;
-    const availableSlots = 9 - currentQueueSize;
+    const availableSlots = queueStatus?.available ?? (10 - (queueStatus?.count || 0));
     
     // CRITICAL: Refuse to save if we can't fit ALL chunks
     if (totalChunks > availableSlots) {
