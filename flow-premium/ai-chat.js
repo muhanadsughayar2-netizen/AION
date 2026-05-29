@@ -5941,7 +5941,7 @@ RULES:
 // Assemble full HTML from staged fragments — rendered inside sandbox.html so Tailwind CDN works
 function assembleStagedHtml(bodyHtml, styleCss, scriptJs) {
   const customCss = styleCss ? '\n    ' + styleCss.split('\n').join('\n    ') : '';
-  const script = scriptJs ? '\n<script>\n(function(){\n' + scriptJs + '\n})();\n<\/script>' : '';
+  const script = scriptJs ? '\n<script>\n' + scriptJs + '\n<\/script>' : '';
   return `<!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
@@ -7499,17 +7499,17 @@ function addBubbleActions(bubble, text) {
   if (buildModeEnabled && buildStage === 'L1') {
     _buildBodyHtml = extractFragment(text);
     _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, '', '');
-    try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode }); } catch(e) {}
+    try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode, snaptoai_build_body: _buildBodyHtml }); } catch(e) {}
     _setBadgeDone('L1');
   } else if (buildModeEnabled && buildStage === 'L2') {
     _buildStyleCss = extractFragment(text);
     _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, '');
-    try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode }); } catch(e) {}
+    try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode, snaptoai_build_style: _buildStyleCss }); } catch(e) {}
     _setBadgeDone('L2');
   } else if (buildModeEnabled && buildStage === 'L3') {
     _buildScriptJs = extractFragment(text);
     _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, _buildScriptJs);
-    try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode }); } catch(e) {}
+    try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode, snaptoai_build_script: _buildScriptJs }); } catch(e) {}
     _setBadgeDone('L3');
   } else if (buildModeEnabled && buildStage === 'UPDATE') {
     // Patch the targeted section in the existing body HTML
@@ -7523,7 +7523,7 @@ function addBubbleActions(bubble, text) {
       }
     }
     _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, _buildScriptJs);
-    try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode }); } catch(e) {}
+    try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode, snaptoai_build_body: _buildBodyHtml }); } catch(e) {}
   }
 
   // ── CLASSIC BUILD MODE: extract full HTML from response ──────────────────
@@ -8307,12 +8307,18 @@ let _lastBuiltCode = '';
 // When true, the next build response is a continuation chunk — merge with _lastBuiltCode
 let _continuationPending = false;
 
-// Restore last built code from storage on popup load so follow-up fix requests
-// work correctly even after the popup is closed and reopened
-chrome.storage.local.get('snaptoai_built_code', (res) => {
-  if (res.snaptoai_built_code) {
-    _lastBuiltCode = res.snaptoai_built_code;
-  }
+// Restore full build state from storage on popup load so staged builds and
+// follow-up fix requests work correctly even after the popup is closed/reopened
+chrome.storage.local.get([
+  'snaptoai_built_code',
+  'snaptoai_build_body',
+  'snaptoai_build_style',
+  'snaptoai_build_script'
+], (res) => {
+  if (res.snaptoai_built_code) _lastBuiltCode = res.snaptoai_built_code;
+  if (res.snaptoai_build_body)  _buildBodyHtml = res.snaptoai_build_body;
+  if (res.snaptoai_build_style) _buildStyleCss  = res.snaptoai_build_style;
+  if (res.snaptoai_build_script) _buildScriptJs = res.snaptoai_build_script;
 });
 
 // ── Staged Media for Build Mode ────────────────────────────────────────────
