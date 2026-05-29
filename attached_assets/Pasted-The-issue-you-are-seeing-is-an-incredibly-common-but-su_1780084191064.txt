@@ -1,0 +1,41 @@
+The issue you are seeing is an incredibly common but subtle bug that happens when sandboxing or previewing dynamically generated code.
+Here is why it is happening and exactly how to fix it in your Replit project!
+🔍 The Root Cause
+In the ai-chat.js file you pasted, look at the assembleStagedHtml helper function where the final code is compiled:
+code
+JavaScript
+const script = scriptJs ? '\n<script>\n(function(){\n' + scriptJs + '\n})();\n<\/script>' : '';
+By wrapping the generated JavaScript (scriptJs) inside an Suddenly Invoked Function Expression (IIEF): (function(){ ... })(), all functions and variables declared inside the script (like addToCart, openModal, etc.) become confined to that local scope.
+When an HTML element in the preview uses an inline event listener like this:
+code
+Html
+<button onclick="addToCart(item)">Add to Cart</button>
+The browser's JavaScript engine searches for addToCart exclusively in the global scope (window.addToCart). Since it is nested inside the IIFE, the browser cannot see it, throwing:
+Uncaught ReferenceError: addToCart is not defined
+Once this exception is thrown, JavaScript execution inside the sandbox halts, making the preview completely unresponsive and preventing you from saving or interactive updating.
+🛠️ How to Fix It
+You have two excellent ways to solve this depending on your architectural preference.
+Option 1: Remove the IIFE Wrapper (Easiest & Recommended)
+Since the preview behaves like a standard standalone webpage, there is no need to protect variables with an IIFE. Removing it allows functions to naturally attach to the window scope so inline onclick handlers work instantly.
+Change this line in ai-chat.js:
+code
+JavaScript
+// ❌ OLD (Causes ReferenceError for inline onclicks)
+const script = scriptJs ? '\n<script>\n(function(){\n' + scriptJs + '\n})();\n<\/script>' : '';
+To this:
+code
+JavaScript
+// ✅ NEW (Exposes functions to global scope)
+const script = scriptJs ? '\n<script>\n' + scriptJs + '\n<\/script>' : '';
+Option 2: instruct your AI to be scope-safe (Prompt Engineering)
+If you prefer to keep the IIFE to prevent variable re-declaration errors when hot-reloading scripts, you can update your BUILD_SYSTEM_PROMPT inside ai-chat.js to instruct the generator to either attach global functions explicitly to window or use modern event listeners.
+Add this instruction to your BUILD_SYSTEM_PROMPT or L3_ACTIVATE_PROMPT:
+"When creating interactive functions called by inline HTML attributes (e.g. onclick="myFunction()"), always declare them on the window object (e.g. window.myFunction = function() { ... }) or use modern addEventListener event delegation on the document."
+For example, the AI should write:
+code
+JavaScript
+window.addToCart = function(item) {
+  // your add to cart logic...
+};
+Applying Option 1 will immediately resolve the crash in your Replit sandbox, allowing your built pages to render, update, and run seamlessly!
+lightbulb_tips
