@@ -1,0 +1,77 @@
+ have found the exact root causes for both issues in your Chrome extension codebase! Here is how to fix them so that your builder works perfectly.
+1. Fixing addToCart is not defined (ReferenceError)
+🔍 The Root Cause:
+In your ai-chat.js file, the generated JavaScript (scriptJs) is wrapped in an IIFE (Immediately Invoked Function Expression) inside the assembleStagedHtml function:
+code
+JavaScript
+const script = scriptJs ? '\n<script>\n(function(){\n' + scriptJs + '\n})();\n<\/script>' : '';
+Because of this IIFE wrapper:
+Any function declared in the build script (like function addToCart() { ... }) is locally scoped inside the IIFE and not exposed to the global window object.
+When HTML elements use standard inline event handlers (like <button onclick="addToCart()">Add to Cart</button>), the browser tries to find window.addToCart, which is undefined, resulting in the ReferenceError.
+🛠️ The Fix:
+Open ai-chat.js and locate the assembleStagedHtml function. Change it to run the script globally without the IIFE wrapping:
+code
+JavaScript
+// ❌ BEFORE (Locally scopes functions):
+const script = scriptJs ? '\n<script>\n(function(){\n' + scriptJs + '\n})();\n<\/script>' : '';
+
+//  AFTER (Exposes functions to the global window scope):
+const script = scriptJs ? '\n<script>\n' + scriptJs + '\n<\/script>' : '';
+2. Fixing "I can't update what I built"
+🔍 The Root Cause:
+When you load Build Mode to apply updates/patches (the UPDATE or iterative prompt flow), the extension relies on three critical state variables remaining alive:
+_buildBodyHtml (HTML mockup body structure)
+_buildStyleCss (Custom styling/Tailwind configs)
+_buildScriptJs (Dynamic client-side JavaScript)
+_lastBuiltCode (Full merged HTML code)
+When you close and reopen the Chrome extension popup, the popup's memory is fully cleared. If these variables aren't saved to and restored from chrome.storage.local, the AI receives empty state references and tries to generate the update from scratch.
+🛠️ The Fix:
+Update ai-chat.js to save/restore the full modular build states every time the code updates and when the popup is launched:
+At the top level of ai-chat.js (State Declaration):
+code
+JavaScript
+let _buildBodyHtml = '';
+let _buildStyleCss = '';
+let _buildScriptJs = '';
+let _lastBuiltCode = '';
+Add a state-loader inside your initialization flow in ai-chat.js:
+code
+JavaScript
+// Add this inside your popup load flow to restore prior state
+chrome.storage.local.get([
+  'snaptoai_built_code', 
+  'snaptoai_build_body', 
+  'snaptoai_build_style', 
+  'snaptoai_build_script'
+], (res) => {
+  if (res.snaptoai_built_code) _lastBuiltCode = res.snaptoai_built_code;
+  if (res.snaptoai_build_body) _buildBodyHtml = res.snaptoai_build_body;
+  if (res.snaptoai_build_style) _buildStyleCss = res.snaptoai_build_style;
+  if (res.snaptoai_build_script) _buildScriptJs = res.snaptoai_build_script;
+});
+Update the state save block in addBubbleActions inside ai-chat.js:
+code
+JavaScript
+if (buildModeEnabled && buildStage === 'L1') {
+  _buildBodyHtml = extractFragment(text);
+  _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, '', '');
+  chrome.storage.local.set({ 
+    snaptoai_built_code: _lastBuiltCode,
+    snaptoai_build_body: _buildBodyHtml
+  });
+} else if (buildModeEnabled && buildStage === 'L2') {
+  _buildStyleCss = extractFragment(text);
+  _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, '');
+  chrome.storage.local.set({ 
+    snaptoai_built_code: _lastBuiltCode,
+    snaptoai_build_style: _buildStyleCss
+  });
+} else if (buildModeEnabled && buildStage === 'L3') {
+  _buildScriptJs = extractFragment(text);
+  _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, _buildScriptJs);
+  chrome.storage.local.set({ 
+    snaptoai_built_code: _lastBuiltCode,
+    snaptoai_build_script: _buildScriptJs
+  });
+}
+These modifications resolve your scope issues and let you update, patch, and build interactive apps seamlessly. Let me know if you need any further adjustments to your files!
