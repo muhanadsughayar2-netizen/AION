@@ -3067,7 +3067,7 @@ async function saveFullPageWithAnnotations() {
       await yieldToUI();
       
       // PNG format for maximum text clarity - never use JPEG for screenshots with text
-      const chunkDataUrl = chunkCanvas.toDataURL('image/png');
+      let chunkDataUrl = chunkCanvas.toDataURL('image/png');
       
       // Release chunk canvas
       chunkCanvas.width = 0;
