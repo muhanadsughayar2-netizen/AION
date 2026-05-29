@@ -2897,6 +2897,8 @@ async function saveFullPageWithAnnotations() {
     // STEP 2: Process each chunk
     const savedChunks = [];
     const savedChunkDataUrls = []; // For RE-EDIT functionality
+    // One shared ID so all chunks group together in the popup as a single capture
+    const captureGroupId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
     
     for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
       const startPage = chunkIndex * PAGES_PER_CHUNK;
@@ -3079,6 +3081,7 @@ async function saveFullPageWithAnnotations() {
           dataUrl: chunkDataUrl,
           metadata: {
             isChunk: true,
+            captureGroupId: captureGroupId,
             part: chunkIndex + 1,
             totalParts: totalChunks,
             pagesInChunk: pagesInChunk,
@@ -3132,7 +3135,7 @@ async function saveFullPageWithAnnotations() {
       const lastFullPageCapture = {
         smartName: smartName,
         timestamp: Date.now(),
-        captureGroupId: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+        captureGroupId: captureGroupId,
         totalParts: savedChunkDataUrls.length,
         chunks: savedChunkDataUrls,
         url: capturedUrl,
