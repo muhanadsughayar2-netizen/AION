@@ -2827,7 +2827,7 @@ async function saveFullPageWithAnnotations() {
     }
     
     const totalPages = pages.length;
-    const PAGES_PER_CHUNK = 40; // Larger chunks for full page capture (40 pages max)
+    const PAGES_PER_CHUNK = 10; // 10 pages per chunk — safe memory limit (was 40, caused freeze)
     
     // Calculate how many chunks we need
     const totalChunks = Math.ceil(totalPages / PAGES_PER_CHUNK);
@@ -3107,7 +3107,13 @@ async function saveFullPageWithAnnotations() {
       }
       
       savedChunks.push(chunkIndex + 1);
-      savedChunkDataUrls.push(chunkDataUrl); // Store for RE-EDIT
+      // Only keep chunk URLs for re-edit if total is small (large captures would double RAM usage)
+      if (totalChunks <= 3) {
+        savedChunkDataUrls.push(chunkDataUrl);
+      }
+      
+      // Free chunk data from local scope immediately
+      chunkDataUrl = null;
       
       // Brief pause between chunks
       await yieldToUI();
@@ -3116,7 +3122,7 @@ async function saveFullPageWithAnnotations() {
     // Clear local storage (screenshots and viewport dimensions)
     await chrome.storage.local.remove(['fullPageScreenshots', 'fullPageViewportWidth', 'fullPageViewportHeight']);
     
-    // Save lastFullPageCapture for RE-EDIT functionality
+    // Save lastFullPageCapture for RE-EDIT — only when small enough to be safe
     if (savedChunkDataUrls.length > 0) {
       const urlParams = new URLSearchParams(window.location.search);
       const capturedUrl = urlParams.get('url') || window.location.href;
@@ -3137,19 +3143,18 @@ async function saveFullPageWithAnnotations() {
       console.log('[SnapToAI] Saved lastFullPageCapture for RE-EDIT:', smartName);
     }
     
-    updateStatus(`Saved ${savedChunks.length} chunks! Upload to AI one at a time.`);
-    
-    // Notify background
-    chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
-    
-    // Signal batch capture that save completed
-    await signalBatchSaveSuccess();
-    
-    setTimeout(() => window.close(), 2000);
+    if (savedChunks.length > 0) {
+      updateStatus(`Saved ${savedChunks.length} chunk${savedChunks.length > 1 ? 's' : ''}! Upload to AI one at a time.`);
+    }
     
   } catch (error) {
     console.log('Save full page error:', error);
     updateStatus('Failed to save. Please try again.');
+  } finally {
+    // Always signal completion so the UI never stays stuck — runs on success, error, AND early return
+    chrome.runtime.sendMessage({ action: 'fullPageStitchComplete' }).catch(() => {});
+    await signalBatchSaveSuccess().catch(() => {});
+    setTimeout(() => window.close(), 2000);
   }
 }
 
