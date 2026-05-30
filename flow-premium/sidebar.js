@@ -412,7 +412,9 @@
     const modal = document.getElementById('geminiKeyModal');
     if (modal) {
       modal.classList.add('open');
-      modal.style.display = 'flex';
+      // Do NOT set modal.style.display here — the CSS .magic-modal.open rule
+      // handles it. Setting an inline style would prevent closeModal() (which
+      // only removes the class) from ever hiding the modal again.
       const input = document.getElementById('geminiKeyModalInput');
       if (input) setTimeout(() => input.focus(), 80);
     } else {
