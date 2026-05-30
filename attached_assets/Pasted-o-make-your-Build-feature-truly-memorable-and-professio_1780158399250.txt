@@ -1,0 +1,81 @@
+o make your "Build" feature truly memorable and professional like Google AI Studio, we can implement a "Workspace Mode".
+
+Instead of just scrolling text, we will use the left sidebar (where your screenshots usually live) to show the File Explorer and use the chat area to display high-quality "Blueprint Cards" that summarize the build.
+
+The "Workspace Mode" Design
+Sidebar Swap: When you click "Build," the left sidebar automatically switches from "Screenshots" to a File Tree (index.html, style.css, script.js).
+Blueprint Cards: Before the code scrolls, the AI shows a beautiful card (like your Magic Cards) that explains the "Aesthetic" and "Plan" it chose.
+IDE HUD: The Preview area becomes a tabbed window where you can flip between the Live App and the Source Code.
+1. Update the Sidebar in ai-chat.html
+Find your <div class="image-panel"> and replace it with this "Dual-Mode" sidebar. It will show screenshots by default and the File Explorer in Build Mode.
+
+<div class="image-panel" id="imagePanel">
+  <!-- MODE A: SCREENSHOTS (Default) -->
+  <div id="sidebar-screenshots">
+    <div class="image-label">Screenshots</div>
+    <div class="image-preview" id="screenshot-container">
+      <div class="image-placeholder" id="imagePlaceholder">
+        <div class="image-placeholder-icon">📸</div>
+        <div>No snaps</div>
+      </div>
+      <img id="previewImage" src="" alt="Screenshot">
+    </div>
+  </div>
+
+  <!-- MODE B: FILE EXPLORER (Build Mode) -->
+  <div id="sidebar-files" style="display:none;">
+    <div class="image-label">Project Files</div>
+    <div class="file-tree">
+      <div class="file-item active" data-file="html"><span>📄</span> index.html</div>
+      <div class="file-item" data-file="css"><span>🎨</span> styles.css</div>
+      <div class="file-item" data-file="js"><span>⚡</span> main.js</div>
+      <div class="file-item" data-file="json"><span>⚙️</span> metadata.json</div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .file-tree { margin-top: 10px; }
+  .file-item {
+    padding: 8px 12px;
+    font-size: 11px;
+    color: #888;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.2s;
+  }
+  .file-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+  .file-item.active { background: rgba(255,160,50,0.15); color: #ffa032; font-weight: 700; }
+</style>
+2. Add the "Blueprint Card" Logic in ai-chat.js
+This makes the build "memorable." When the AI starts, it will drop a card in the chat that looks like a professional project brief.
+
+function showBuildBlueprint(prompt) {
+  const thread = document.getElementById('chatThread');
+  const card = document.createElement('div');
+  card.className = 'magic-card'; // Reuse your beautiful magic-card CSS
+  card.style.setProperty('--tone-color', '#ffa032');
+  
+  card.innerHTML = `
+    <div class="magic-card-header">
+      <span class="magic-emoji">🏗️</span>
+      <span class="magic-title">Project Blueprint</span>
+    </div>
+    <div style="font-size: 12px; color: #cdd6e0; margin-bottom: 15px; line-height: 1.4;">
+      " ${prompt.substring(0, 60)}... "
+    </div>
+    <div class="magic-section">
+      <div class="magic-section-label">BUILD STAGES</div>
+      <ul class="magic-items">
+        <li id="step-l1">⏳ Building Structure (HTML)</li>
+        <li id="step-l2">⏳ Injecting Design (CSS)</li>
+        <li id="step-l3">⏳ Activating Logic (JS)</li>
+      </ul>
+    </div>
+    <div class
+📋 Copy
+🔊 Read
+✨ Magic C
