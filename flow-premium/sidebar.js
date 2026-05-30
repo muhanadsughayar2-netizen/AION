@@ -255,7 +255,9 @@
     previewPaused = true;
     try {
       const response = await new Promise((resolve) => {
-        chrome.runtime.sendMessage({ action: 'capture' }, (resp) => {
+        // Pass tabId so the background captures the correct tab regardless of
+        // which window Chrome considers "current" from the service worker.
+        chrome.runtime.sendMessage({ action: 'capture', tabId: tab.id }, (resp) => {
           if (chrome.runtime.lastError) {
             resolve({ success: false, error: chrome.runtime.lastError.message });
           } else {
@@ -283,13 +285,23 @@
     disableCaptureButtons(true);
     previewPaused = true;
     try {
-      const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
-      if (!dataUrl) {
-        toast('Capture failed', 'error');
+      // Route through the background service worker — calling captureVisibleTab
+      // directly from the side panel page fails because side-panel pages don't
+      // hold an active activeTab grant the way the background service worker does.
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ action: 'captureForSnip', tabId: tab.id }, (resp) => {
+          if (chrome.runtime.lastError) {
+            resolve({ success: false, error: chrome.runtime.lastError.message });
+          } else {
+            resolve(resp || { success: false, error: 'No response' });
+          }
+        });
+      });
+      if (!response.success) {
+        toast(response.error || "Can't snip this page", 'error');
         return;
       }
-      const snipId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      await chrome.storage.local.set({ ['snipImage_' + snipId]: dataUrl });
+      const { snipId } = response;
       const width = 1200;
       const height = 800;
       const left = Math.round((screen.width - width) / 2);
@@ -316,7 +328,8 @@
     previewPaused = true;
     try {
       const response = await new Promise((resolve) => {
-        chrome.runtime.sendMessage({ action: 'startFullPageCapture' }, (resp) => {
+        // Pass tabId so the background targets the correct tab.
+        chrome.runtime.sendMessage({ action: 'startFullPageCapture', tabId: tab.id }, (resp) => {
           if (chrome.runtime.lastError) {
             resolve({ success: false, error: chrome.runtime.lastError.message });
           } else {

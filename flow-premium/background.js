@@ -601,7 +601,34 @@ chrome.action.onClicked.addListener(async (tab) => {
 // Listen for messages from popup and content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'capture') {
-    captureScreenshot().then(sendResponse);
+    // Accept an explicit tabId from the sidebar so the background captures
+    // the correct tab rather than querying currentWindow (unreliable from SW).
+    captureScreenshot(request.tabId || null).then(sendResponse);
+    return true;
+  } else if (request.action === 'captureForSnip') {
+    // Snip capture routed through the background service worker so that
+    // captureVisibleTab runs with full host-permission access rather than
+    // the weaker activeTab grant available to side-panel pages.
+    (async () => {
+      try {
+        let tab;
+        if (request.tabId) {
+          tab = await chrome.tabs.get(request.tabId);
+        } else {
+          const [activeTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+          tab = activeTab;
+        }
+        if (!tab) { sendResponse({ success: false, error: 'No active tab' }); return; }
+        if (!isCapturableUrl(tab.url)) { sendResponse({ success: false, error: "Can't snip this page" }); return; }
+        const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+        if (!dataUrl) { sendResponse({ success: false, error: 'Capture returned empty' }); return; }
+        const snipId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        await chrome.storage.local.set({ ['snipImage_' + snipId]: dataUrl });
+        sendResponse({ success: true, snipId });
+      } catch (e) {
+        sendResponse({ success: false, error: e.message || "Can't snip this page" });
+      }
+    })();
     return true;
   } else if (request.action === 'askAiDirect') {
     const sourceTabId = request.sourceTabId;
@@ -669,8 +696,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true;
   } else if (request.action === 'startFullPageCapture') {
-    // Start full page capture process
-    startFullPageCapture().then(sendResponse);
+    // Accept explicit tabId from sidebar for reliable tab targeting.
+    startFullPageCapture(request.tabId || null).then(sendResponse);
     return true;
   } else if (request.action === 'sidebarPreviewCapture') {
     // Throttled, mutex-guarded preview capture for the sidebar live preview.
