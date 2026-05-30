@@ -408,17 +408,19 @@
         return;
       }
     } catch (e) {}
-    // Reuse the in-chat key modal that ai-chat.js already wires up.
+    // Delegate to showProxyKeyPrompt() (defined in ai-chat.js, loaded first)
+    // which both opens the modal AND attaches all the event handlers (✕,
+    // Cancel, checkbox, Activate).  Touching the modal DOM directly here
+    // would skip handler wiring and leave the modal unresponsive.
+    if (typeof showProxyKeyPrompt === 'function') {
+      showProxyKeyPrompt();
+      return;
+    }
+    // Fallback if somehow the function isn't available yet.
     const modal = document.getElementById('geminiKeyModal');
     if (modal) {
       modal.classList.add('open');
-      // Do NOT set modal.style.display here — the CSS .magic-modal.open rule
-      // handles it. Setting an inline style would prevent closeModal() (which
-      // only removes the class) from ever hiding the modal again.
-      const input = document.getElementById('geminiKeyModalInput');
-      if (input) setTimeout(() => input.focus(), 80);
     } else {
-      // Fallback: open the options page
       try { chrome.runtime.openOptionsPage(); } catch (e) {}
     }
   }
