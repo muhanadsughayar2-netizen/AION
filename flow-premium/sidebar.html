@@ -1918,101 +1918,26 @@
       </div>
       <div id="modeBar" style="display: flex; gap: 6px; padding: 7px 10px; background: rgba(0,217,255,0.03); border-bottom: 1px solid rgba(0,217,255,0.08); overflow-x: auto; scrollbar-width: none;">
         <button class="mode-btn active" data-mode="vision" title="Analyze screenshots & text"><span class="mode-emoji">🔍</span> Vision</button>
-        <button class="mode-btn" data-mode="image" id="imageModeBtn" title="Generate images from text"><span class="mode-emoji">🎨</span> Image</button>
-        <button class="mode-btn" data-mode="music" id="musicModeBtn" title="Create music clips"><span class="mode-emoji">🎵</span> Music</button>
-        <button class="mode-btn" data-mode="video" id="videoModeBtn" title="Generate videos from prompts or screenshots"><span class="mode-emoji">🎬</span> Video</button>
+        <button class="mode-btn" data-mode="image" id="imageModeBtn" style="display:none;" title="Generate images from text"><span class="mode-emoji">🎨</span> Image</button>
+        <button class="mode-btn" data-mode="music" id="musicModeBtn" style="display:none;" title="Create music clips"><span class="mode-emoji">🎵</span> Music</button>
+        <button class="mode-btn" data-mode="video" id="videoModeBtn" style="display:none;" title="Generate videos from prompts or screenshots"><span class="mode-emoji">🎬</span> Video</button>
       </div>
       <div class="input-area">
         <input type="file" id="fileInput" accept="image/*,.pdf,.txt,.md,.json,.csv" multiple hidden>
-        <div id="stagedMediaIndicator" style="display:none;align-items:center;justify-content:space-between;background:rgba(255,160,50,0.1);border:1px solid rgba(255,160,50,0.35);border-radius:10px;padding:6px 12px;margin-bottom:8px;font-size:11px;">
-          <span id="stagedMediaLabel" style="color:#ffa032;font-weight:600;"></span>
-          <button id="clearStagedBtn" style="background:none;border:none;color:rgba(255,160,50,0.6);cursor:pointer;font-size:13px;padding:0 2px;line-height:1;" title="Remove staged media">✕</button>
-        </div>
-        <div class="input-row">
-          <textarea class="chat-input" id="chatInput" placeholder="Ask about your screenshot..." rows="2"></textarea>
-          <button class="send-btn" id="sendBtn">Send</button>
-        </div>
-        <div class="tools-row">
-          <label for="fileInput" class="upload-btn" title="Attach files">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-          </label>
-          <div class="tool-btn-group">
-            <button class="tool-toggle-btn" id="buildToggleBtn" title="Build Mode — generate and preview websites &amp; apps live">
-              <svg class="tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8l3 3-3 3"/><path d="M14 14h3"/></svg>
-              <span class="tool-label">Build</span>
-            </button>
-            <button class="tool-toggle-btn" id="researchToggleBtn" title="Research Agent — auto-searches, reads sources and writes a structured report">
-              <svg class="tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 015 5c0 1.5-.7 3.1-1.6 4.1L21 17l-4 4-5.7-5.7A6.6 6.6 0 017 16a5 5 0 010-10 5 5 0 015-4z"/><circle cx="10" cy="9" r="3"/></svg>
-              <span class="tool-label">Research</span>
-            </button>
-            <button class="tool-toggle-btn" id="searchToggleBtn" title="Search the web for real-time facts">
-              <svg class="tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <span class="tool-label">Search</span>
-            </button>
-            <button class="tool-toggle-btn" id="urlToggleBtn" title="Read the current page">
-              <svg class="tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-              <span class="tool-label">Read</span>
-            </button>
-            <button class="tool-toggle-btn" id="codeToggleBtn" title="Let Gemini run Python code to solve problems">
-              <svg class="tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-              <span class="tool-label">Code</span>
-            </button>
-          </div>
-          <select id="voiceSelector" title="TTS Voice" style="display:none; padding:5px 8px; border-radius:20px; background:rgba(0,255,136,0.07); color:#00ff88; border:1px solid rgba(0,255,136,0.25); font-size:11px; font-weight:500; cursor:pointer; flex-shrink:0; outline:none;">
-            <option value="Puck">🎙 Puck — Upbeat</option>
-            <option value="Aoede">🎙 Aoede — Breezy</option>
-            <option value="Zephyr">🎙 Zephyr — Bright</option>
-            <option value="Achird">🎙 Achird — Friendly</option>
-            <option value="Sulafat">🎙 Sulafat — Warm</option>
-            <option value="Sadachbia">🎙 Sadachbia — Lively</option>
-            <option value="Leda">🎙 Leda — Youthful</option>
-            <option value="Fenrir">🎙 Fenrir — Excitable</option>
-            <option value="Achernar">🎙 Achernar — Soft</option>
-            <option value="Charon">🎙 Charon — Informative</option>
-            <option value="Kore">🎙 Kore — Firm</option>
-            <option value="Enceladus">🎙 Enceladus — Breathy</option>
-            <option value="Gacrux">🎙 Gacrux — Mature</option>
-            <option value="Umbriel">🎙 Umbriel — Easy-going</option>
-          </select>
-        </div>
+        <label for="fileInput" class="upload-btn" title="Attach files">+</label>
+        <textarea class="chat-input" id="chatInput" placeholder="Ask about your screenshot..." rows="1"></textarea>
+        <button class="send-btn" id="sendBtn">Send</button>
       </div>
-      <style>
-        .tool-btn-group { display:flex; gap:4px; flex-shrink:0; align-items:center; flex-wrap:wrap; }
-        .tool-toggle-btn {
-          display:flex; align-items:center; gap:5px;
-          background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
-          color:rgba(255,255,255,0.4); border-radius:20px; padding:5px 11px 5px 8px;
-          font-size:11px; font-weight:500; cursor:pointer; transition:all 0.18s ease;
-          flex-shrink:0; white-space:nowrap; letter-spacing:0.2px; line-height:1;
-        }
-        .tool-svg { width:13px; height:13px; flex-shrink:0; stroke:currentColor; }
-        .tool-toggle-btn .tool-label { font-size:11px; }
-        .tool-toggle-btn:hover { background:rgba(0,217,255,0.1); border-color:rgba(0,217,255,0.35); color:#00d9ff; transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,217,255,0.15); }
-        .tool-toggle-btn.tool-btn-active { background:rgba(0,217,255,0.14); border-color:rgba(0,217,255,0.6); color:#00d9ff; box-shadow:0 0 12px rgba(0,217,255,0.22),inset 0 0 8px rgba(0,217,255,0.06); font-weight:600; }
-        #buildToggleBtn:hover, #buildToggleBtn.tool-btn-active { background:rgba(255,160,50,0.12); border-color:rgba(255,160,50,0.55); color:#ffa032; box-shadow:0 0 12px rgba(255,160,50,0.22); }
-        #researchToggleBtn:hover, #researchToggleBtn.tool-btn-active { background:rgba(180,100,255,0.12); border-color:rgba(180,100,255,0.55); color:#c478ff; box-shadow:0 0 12px rgba(180,100,255,0.22); }
-        #searchToggleBtn:hover, #searchToggleBtn.tool-btn-active { background:rgba(0,217,255,0.12); border-color:rgba(0,217,255,0.55); color:#00d9ff; box-shadow:0 0 12px rgba(0,217,255,0.22); }
-        #urlToggleBtn:hover, #urlToggleBtn.tool-btn-active { background:rgba(50,200,255,0.12); border-color:rgba(50,200,255,0.55); color:#32c8ff; box-shadow:0 0 12px rgba(50,200,255,0.22); }
-        #codeToggleBtn:hover, #codeToggleBtn.tool-btn-active { background:rgba(80,220,120,0.12); border-color:rgba(80,220,120,0.55); color:#50dc78; box-shadow:0 0 12px rgba(80,220,120,0.22); }
-        @keyframes spin { to { transform:rotate(360deg); } }
-        @keyframes pulseDot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.6)} }
-      </style>
       <div class="ai-disclaimer">Gemini can make mistakes, so double-check it</div>
-
-      <div id="agentStatusBar" style="display:none; align-items:center; gap:6px; padding:5px 14px; background:rgba(255,255,255,0.04); border-top:1px solid rgba(255,255,255,0.07); font-size:12px; font-weight:500;"></div>
+      
       <div class="magic-buttons" id="magicButtons" style="padding: 8px 12px; min-height: 40px;"></div>
       <div class="footer-actions">
-        <button class="magic-add-btn" id="openAgentsBtn" style="background:linear-gradient(135deg,#6c3fc5,#bc85ff);border-color:rgba(188,133,255,0.4);">🤖 Agents</button>
         <button class="magic-add-btn" id="addMagicBtn">+ Magic Agents</button>
         <button class="verdict-btn" id="verdictBtn" style="display:none !important;">⚖️ The Verdict</button>
         <button class="action-btn continue-btn" id="continueBtn">▶ Continue</button>
         <button class="action-btn" id="summarizeBtn">📋 Summarize</button>
-        <button class="action-btn" id="clearBtn">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>Clear
-        </button>
-        <button class="action-btn" id="exportBtn">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Save
-        </button>
+        <button class="action-btn" id="clearBtn">🗑 Clear</button>
+        <button class="action-btn" id="exportBtn">💾 Save Full Chat</button>
       </div>
     </div>
   </div>

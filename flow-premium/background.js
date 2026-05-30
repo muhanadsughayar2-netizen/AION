@@ -42,21 +42,18 @@ let sidebarPreviewInFlight = false;
 // from racing and toggling popup/sidebar state inconsistently.
 let _applyUiModeChain = Promise.resolve();
 function applyUiMode(mode) {
+  // TEMPORARILY DISABLED: sidebar mode is hidden from users while we
+  // sort out the side-panel UX. We force popup mode here so any
+  // previously-persisted `uiMode: 'sidebar'` preference is overridden
+  // on every load and the icon click always opens the popup.
+  const _ignoredMode = mode; // eslint-disable-line no-unused-vars
   const next = _applyUiModeChain.catch(() => {}).then(async () => {
     try {
-      if (mode === 'sidebar') {
-        if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
-          await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
-        }
-        await chrome.action.setPopup({ popup: '' });
-        console.log('[SnapToAI] UI mode: sidebar');
-      } else {
-        if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
-          await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
-        }
-        await chrome.action.setPopup({ popup: 'popup.html' });
-        console.log('[SnapToAI] UI mode: popup');
+      if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+        await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
       }
+      await chrome.action.setPopup({ popup: 'popup.html' });
+      console.log('[SnapToAI] UI mode: popup (sidebar entry point disabled)');
     } catch (e) {
       console.log('[SnapToAI] applyUiMode failed:', e && e.message);
     }
