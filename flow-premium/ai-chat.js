@@ -7364,8 +7364,19 @@ async function handleSend() {
         throw new Error(errorData.error?.message || `API Error: ${response.status}`);
       }
       
+      // For staged builds: show Blueprint Card before the response bubble
+      if (buildModeEnabled && buildStage && ['L1','L2','L3'].includes(buildStage)) {
+        if (!_blueprintCardEl) _showBlueprintCard(prompt);
+        _updateBlueprintStep(buildStage, 'active');
+      }
+
       const responseBubble = createResponseBubble();
-      
+      // For staged builds: start with a status message — raw code goes to Code tab
+      if (buildModeEnabled && buildStage && ['L1','L2','L3'].includes(buildStage)) {
+        const stageLabel = { L1: 'HTML structure', L2: 'CSS design', L3: 'JS logic' }[buildStage] || buildStage;
+        responseBubble.textContent = '⚙️ Generating ' + stageLabel + '…';
+      }
+
       if (!response.body) {
         throw new Error('No response stream available');
       }
@@ -7391,19 +7402,24 @@ async function handleSend() {
               const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
               if (text) {
                 fullText += text;
-                try {
-                  if (typeof marked !== 'undefined') {
-                    const parsedHtml = marked.parse(fullText);
-                    responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
-                    responseBubble.querySelectorAll('a').forEach(link => {
-                      link.setAttribute('target', '_blank');
-                      link.setAttribute('rel', 'noopener noreferrer');
-                    });
-                  } else {
+                // Staged build mode: don't stream raw code into chat — it goes to Code tab
+                if (buildModeEnabled && buildStage && ['L1','L2','L3'].includes(buildStage)) {
+                  // Keep the static "Generating…" message; renderLivePreview handles preview
+                } else {
+                  try {
+                    if (typeof marked !== 'undefined') {
+                      const parsedHtml = marked.parse(fullText);
+                      responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
+                      responseBubble.querySelectorAll('a').forEach(link => {
+                        link.setAttribute('target', '_blank');
+                        link.setAttribute('rel', 'noopener noreferrer');
+                      });
+                    } else {
+                      responseBubble.textContent = fullText;
+                    }
+                  } catch (renderErr) {
                     responseBubble.textContent = fullText;
                   }
-                } catch (renderErr) {
-                  responseBubble.textContent = fullText;
                 }
                 thread.scrollTop = thread.scrollHeight;
               }
@@ -7500,16 +7516,20 @@ function addBubbleActions(bubble, text) {
     _buildBodyHtml = extractFragment(text);
     _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, '', '');
     try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode, snaptoai_build_body: _buildBodyHtml }); } catch(e) {}
+    // Replace streaming status with a clean completion note
+    if (bubble) bubble.textContent = '✅ HTML structure ready — ' + (_buildBodyHtml.split('\n').length) + ' lines';
     _setBadgeDone('L1');
   } else if (buildModeEnabled && buildStage === 'L2') {
     _buildStyleCss = extractFragment(text);
     _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, '');
     try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode, snaptoai_build_style: _buildStyleCss }); } catch(e) {}
+    if (bubble) bubble.textContent = '✅ CSS design ready — ' + (_buildStyleCss.split('\n').length) + ' lines';
     _setBadgeDone('L2');
   } else if (buildModeEnabled && buildStage === 'L3') {
     _buildScriptJs = extractFragment(text);
     _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, _buildScriptJs);
     try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode, snaptoai_build_script: _buildScriptJs }); } catch(e) {}
+    if (bubble) bubble.textContent = '✅ JS logic ready — ' + (_buildScriptJs.split('\n').length) + ' lines';
     _setBadgeDone('L3');
   } else if (buildModeEnabled && buildStage === 'UPDATE') {
     // Patch the targeted section in the existing body HTML
@@ -8056,13 +8076,18 @@ function clearChat() {
   // site. Without this the AI gets the old HTML as context and tries to merge
   // rather than starting fresh, producing "ghost" sites from prior sessions.
   _lastBuiltCode = '';
-  try { chrome.storage.local.remove(['snaptoai_built_code']); } catch(e) {}
+  _buildBodyHtml = ''; _buildStyleCss = ''; _buildScriptJs = '';
+  _blueprintCardEl = null;
+  _clearPulse();
+  try { chrome.storage.local.remove(['snaptoai_built_code','snaptoai_build_body','snaptoai_build_style','snaptoai_build_script']); } catch(e) {}
 
   // Hide the live preview since there is nothing built in this session
   const w = document.getElementById('previewWrapper');
   if (w) w.style.display = 'none';
   const iframe = document.getElementById('livePreview');
   if (iframe) iframe.style.display = 'none';
+  const hudTabs = document.getElementById('hudTabs');
+  if (hudTabs) hudTabs.style.display = 'none';
 }
 
 function buildChatHistorySnapshot() {
@@ -8471,11 +8496,17 @@ function _showLivePreview(code) {
   _buildFinalReady = true;
   // Send HTML to sandbox.html via postMessage — sandbox page can load Tailwind CDN
   _postToSandbox(code, true);
-  iframe.style.display = 'block';
-  iframe.style.height = _previewExpanded ? '420px' : '200px';
-  if (building) building.style.display = 'none';
+  // Only show iframe if user is on Preview tab (Code tab may be active)
+  if (_activeHudTab !== 'code') {
+    iframe.style.display = 'block';
+    iframe.style.height = _previewExpanded ? '420px' : '200px';
+    if (building) building.style.display = 'none';
+  }
   if (lbl) lbl.textContent = '🏗️ LIVE PREVIEW';
   w.style.display = 'block';
+  // Show HUD tabs (Preview | Code) now that a site exists
+  const hudTabs = document.getElementById('hudTabs');
+  if (hudTabs) hudTabs.style.display = 'flex';
 }
 
 // Highlight a stage badge as "active" (currently generating)
@@ -8493,6 +8524,10 @@ function _setBadgeActive(stage) {
       b.style.borderColor = 'rgba(255,160,50,0.2)';
     }
   });
+  // Pulse the corresponding file button and mark blueprint step active
+  const fileMap = { L1: 'html', L2: 'css', L3: 'js' };
+  if (fileMap[stage]) _setPulseFile(fileMap[stage]);
+  _updateBlueprintStep(stage, 'active');
 }
 
 // Mark a stage badge as "done" (checkmark)
@@ -8502,6 +8537,15 @@ function _setBadgeDone(stage) {
   b.style.color = '#50dc78';
   b.style.background = 'rgba(80,220,120,0.12)';
   b.style.borderColor = 'rgba(80,220,120,0.4)';
+  // Update blueprint card + code view + clear pulse
+  _clearPulse();
+  _updateBlueprintStep(stage, 'done');
+  const fileMap = { L1: 'html', L2: 'css', L3: 'js' };
+  if (fileMap[stage]) {
+    // Auto-switch to Code tab to show the freshly generated file
+    _switchHudTab('code');
+    _updateCodeView(fileMap[stage]);
+  }
 }
 
 // Reset all badges to dim state
@@ -8513,6 +8557,101 @@ function _resetBadges() {
     b.style.background = 'transparent';
     b.style.borderColor = 'rgba(255,160,50,0.2)';
   });
+}
+
+// ── Blueprint Card ───────────────────────────────────────────────────────────
+let _blueprintCardEl = null; // persists across L1→L2→L3 stages in one session
+
+function _showBlueprintCard(prompt) {
+  const thread = document.getElementById('chatThread');
+  if (!thread) return;
+  if (_blueprintCardEl && _blueprintCardEl.parentNode) _blueprintCardEl.remove();
+  const card = document.createElement('div');
+  card.className = 'chat-bubble ai';
+  card.style.cssText = 'background:rgba(10,10,18,0.97);border:1px solid rgba(255,160,50,0.28);border-radius:12px;padding:13px 15px;font-family:monospace;';
+  const short = prompt && prompt.length > 55 ? prompt.slice(0, 55) + '…' : (prompt || 'Building…');
+  card.innerHTML = `
+    <div style="font-size:9px;font-weight:800;color:#ffa032;letter-spacing:1.2px;margin-bottom:9px;text-transform:uppercase;">🏗️ Project Blueprint</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:11px;font-style:italic;">"${short}"</div>
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div id="bp-step-L1" style="font-size:10px;color:rgba(255,255,255,0.35);display:flex;align-items:center;gap:7px;transition:color 0.2s;"><span id="bp-icon-L1">⏳</span> Structure (HTML)</div>
+      <div id="bp-step-L2" style="font-size:10px;color:rgba(255,255,255,0.35);display:flex;align-items:center;gap:7px;transition:color 0.2s;"><span id="bp-icon-L2">⏳</span> Design (CSS)</div>
+      <div id="bp-step-L3" style="font-size:10px;color:rgba(255,255,255,0.35);display:flex;align-items:center;gap:7px;transition:color 0.2s;"><span id="bp-icon-L3">⏳</span> Logic (JS)</div>
+    </div>`;
+  thread.appendChild(card);
+  thread.scrollTop = thread.scrollHeight;
+  _blueprintCardEl = card;
+}
+
+function _updateBlueprintStep(stage, active) {
+  if (!_blueprintCardEl) return;
+  const icon = _blueprintCardEl.querySelector('#bp-icon-' + stage);
+  const row  = _blueprintCardEl.querySelector('#bp-step-' + stage);
+  if (!icon || !row) return;
+  if (active === 'done') {
+    icon.textContent = '✅';
+    row.style.color = 'rgba(80,220,120,0.9)';
+  } else if (active === 'active') {
+    icon.textContent = '⚙️';
+    row.style.color = '#ffa032';
+  }
+  const thread = document.getElementById('chatThread');
+  if (thread) thread.scrollTop = thread.scrollHeight;
+}
+
+// ── HUD tab + code view ──────────────────────────────────────────────────────
+let _activeHudTab = 'preview';
+let _activeCodeFile = 'html';
+
+function _switchHudTab(tab) {
+  _activeHudTab = tab;
+  const iframe   = document.getElementById('livePreview');
+  const codePane = document.getElementById('buildCodePane');
+  const building = document.getElementById('previewBuilding');
+  const h = _previewExpanded ? '420px' : '200px';
+
+  if (tab === 'preview') {
+    if (codePane) codePane.style.display = 'none';
+    // Only show iframe if it had content (not hidden by spinner)
+    if (iframe && iframe.src) { iframe.style.display = 'block'; iframe.style.height = h; }
+    document.getElementById('hudTabPreview')?.classList.add('active');
+    document.getElementById('hudTabCode')?.classList.remove('active');
+  } else {
+    if (building) building.style.display = 'none';
+    if (iframe) iframe.style.display = 'none';
+    if (codePane) { codePane.style.display = 'flex'; codePane.style.height = h; }
+    document.getElementById('hudTabPreview')?.classList.remove('active');
+    document.getElementById('hudTabCode')?.classList.add('active');
+    _updateCodeView(_activeCodeFile);
+  }
+}
+
+function _updateCodeView(file) {
+  _activeCodeFile = file;
+  const pre = document.getElementById('buildCodeContent');
+  if (!pre) return;
+  if (file === 'html') pre.textContent = _buildBodyHtml  || '<!-- No HTML generated yet -->';
+  else if (file === 'css') pre.textContent = _buildStyleCss || '/* No CSS generated yet */';
+  else if (file === 'js')  pre.textContent = _buildScriptJs  || '// No JS generated yet';
+  document.querySelectorAll('.build-file-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.file === file);
+  });
+}
+
+function _setPulseFile(file) {
+  document.querySelectorAll('.build-file-btn').forEach(btn => {
+    const existing = btn.querySelector('.pulse-dot');
+    if (existing) existing.remove();
+    if (btn.dataset.file === file) {
+      const dot = document.createElement('span');
+      dot.className = 'pulse-dot';
+      btn.appendChild(dot);
+    }
+  });
+}
+
+function _clearPulse() {
+  document.querySelectorAll('.pulse-dot').forEach(d => d.remove());
 }
 
 function renderLivePreview(responseText) {
@@ -8582,11 +8721,12 @@ document.getElementById('closePreviewBtn')?.addEventListener('click', () => {
 
 document.getElementById('previewExpandBtn')?.addEventListener('click', () => {
   _previewExpanded = !_previewExpanded;
-  const iframe = document.getElementById('livePreview');
-  const btn = document.getElementById('previewExpandBtn');
-  if (iframe && iframe.style.display !== 'none') {
-    iframe.style.height = _previewExpanded ? '420px' : '200px';
-  }
+  const h = _previewExpanded ? '420px' : '200px';
+  const iframe    = document.getElementById('livePreview');
+  const codePane  = document.getElementById('buildCodePane');
+  const btn       = document.getElementById('previewExpandBtn');
+  if (iframe && iframe.style.display !== 'none') iframe.style.height = h;
+  if (codePane && codePane.style.display !== 'none') codePane.style.height = h;
   if (btn) btn.title = _previewExpanded ? 'Collapse preview' : 'Expand preview';
 });
 
@@ -8625,6 +8765,9 @@ function _setStage(stage, btnId) {
   document.getElementById('buildToggleBtn')?.classList.add('tool-btn-active');
   _resetBadges();
   _setBadgeActive(stage);
+  // Show HUD tabs whenever a staged build is triggered
+  const hudTabs = document.getElementById('hudTabs');
+  if (hudTabs) hudTabs.style.display = 'flex';
   // Update input placeholder to guide user
   const input = document.getElementById('chatInput');
   if (input) {
@@ -8651,6 +8794,16 @@ document.getElementById('previewCopyBtn')?.addEventListener('click', () => {
 
 document.getElementById('previewOpenTabBtn')?.addEventListener('click', () => {
   chrome.tabs.create({ url: chrome.runtime.getURL('preview-output.html') });
+});
+
+// ── HUD tab buttons ──────────────────────────────────────────────────────────
+document.getElementById('hudTabPreview')?.addEventListener('click', () => _switchHudTab('preview'));
+document.getElementById('hudTabCode')?.addEventListener('click',    () => _switchHudTab('code'));
+
+// ── Code pane file buttons (delegated — buttons exist at load time) ──────────
+document.getElementById('buildCodePane')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('.build-file-btn');
+  if (btn && btn.dataset.file) _updateCodeView(btn.dataset.file);
 });
 // ──────────────────────────────────────────────────────────────────────────────
 
