@@ -1,0 +1,171 @@
+This is a major architectural shift. To move from a "Chat-only" app to an IDE-style Workspace (like Google AI Studio), we need to change how your main-content is structured in ai-chat.html and how ai-chat.js handles the "Build" output.
+
+Here is the step-by-step code to transform your app into a 3-Pane Professional IDE.
+
+Step 1: Update the HTML Structure
+Replace the entire <div class="main-content"> block in your ai-chat.html (lines 623–720 approx) with this new 3-column structure:
+
+<div class="main-content">
+  <!-- COLUMN 1: SCREENSHOT SIDEBAR (Existing) -->
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">◀</button>
+  <div class="image-panel" id="imagePanel">
+    <div class="image-label">Screenshots</div>
+    <div class="image-preview">
+      <div class="image-placeholder" id="imagePlaceholder">
+        <div class="image-placeholder-icon">📸</div>
+        <div>No snaps</div>
+      </div>
+      <img id="previewImage" src="" alt="Screenshot">
+    </div>
+    <div class="image-panel-send-hint" id="imageSendHint" style="display:none;">Tap to chat</div>
+  </div>
+
+  <!-- COLUMN 2: THE IDE WORKSPACE (New - Center) -->
+  <div class="workspace-panel" id="workspacePanel">
+    <div class="workspace-tabs">
+      <button class="ws-tab active" data-tab="preview">🌐 Preview</button>
+      <button class="ws-tab" data-tab="code">📄 Code</button>
+      <div class="ws-status" id="wsStatus">Ready</div>
+    </div>
+    
+    <div class="ws-content">
+      <!-- Preview Tab -->
+      <div id="ws-preview" class="ws-pane active">
+        <iframe id="livePreview" src="sandbox.html" allow="fullscreen"></iframe>
+        <div id="previewBuilding" style="display:none;">
+           <div class="lo-spinner"></div>
+           <span>Compiling App...</span>
+        </div>
+      </div>
+      
+      <!-- Code Tab (File Explorer + Editor) -->
+      <div id="ws-code" class="ws-pane">
+        <div class="code-layout">
+          <div class="file-explorer">
+            <div class="fe-header">FILES</div>
+            <div class="fe-item active"><span>📄</span> index.html</div>
+            <div class="fe-item"><span>🎨</span> styles.css</div>
+            <div class="fe-item"><span>⚡</span> main.js</div>
+          </div>
+          <div class="code-editor-wrapper">
+            <pre id="codeDisplay"><code><!-- Code will stream here --></code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLUMN 3: GEMINI CHAT (Moved to Right) -->
+  <div class="chat-panel">
+    <div class="chat-thread" id="chatThread">
+      <div class="welcome-message">I'm your AI partner. Let's build something!</div>
+    </div>
+    <!-- ... (Keep your existing .input-area and tools-row here) ... -->
+  </div>
+</div>
+Step 2: Add the "IDE" CSS
+Add this to your <style> block in ai-chat.html. This creates the split-screen layout and the VS-Code-style file explorer.
+
+/* 3-COLUMN LAYOUT */
+.main-content {
+  display: flex;
+  flex-direction: row;
+  height: calc(100vh - 60px);
+}
+
+.workspace-panel {
+  flex: 2; /* Takes most space */
+  display: flex;
+  flex-direction: column;
+  background: #0d0d12;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.chat-panel {
+  flex: 1; /* Narrower chat sidebar */
+  min-width: 350px;
+  max-width: 450px;
+}
+
+/* TABS */
+.workspace-tabs {
+  display: flex;
+  background: #16161e;
+  padding: 0 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ws-tab {
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ws-tab.active {
+  color: var(--st-accent);
+  border-bottom: 2px solid var(--st-accent);
+}
+
+/* CODE VIEW */
+.code-layout {
+  display: flex;
+  height: 100%;
+}
+
+.file-explorer {
+  width: 180px;
+  background: #09090d;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 10px 0;
+}
+
+.fe-header {
+  font-size: 10px;
+  color: #555;
+  padding: 5px 15px;
+  letter-spacing: 1px;
+}
+
+.fe-item {
+  padding: 6px 15px;
+  font-size:
+📋 Copy
+🔊 Read
+✨ Magic Card
+Please continue your response from where you left off.
+Here is the continuation of the CSS and the necessary JavaScript logic to complete your Google AI Studio-style transformation.
+
+Step 2: Add the "IDE" CSS (Continued)
+Add this to your <style> block in ai-chat.html to finish the File Explorer and Editor styling:
+
+  padding: 6px 15px;
+  font-size: 12px;
+  color: #aaa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+
+.fe-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.fe-item.active {
+  background: rgba(0, 217, 255, 0.1);
+  color: var(--st-accent);
+  border-left: 2px solid var(--st-accent);
+}
+
+.code-editor-wrapper {
+  flex: 1;
+  background: #0d0d12;
+  overflow: auto;
+  position: relative...

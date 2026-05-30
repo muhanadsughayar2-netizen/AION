@@ -8081,13 +8081,11 @@ function clearChat() {
   _clearPulse();
   try { chrome.storage.local.remove(['snaptoai_built_code','snaptoai_build_body','snaptoai_build_style','snaptoai_build_script']); } catch(e) {}
 
-  // Hide the live preview since there is nothing built in this session
-  const w = document.getElementById('previewWrapper');
-  if (w) w.style.display = 'none';
+  // Hide the workspace panel since there is nothing built in this session
+  const w = document.getElementById('workspacePanel');
+  if (w) { w.classList.remove('open'); w.classList.remove('wide'); }
   const iframe = document.getElementById('livePreview');
   if (iframe) iframe.style.display = 'none';
-  const hudTabs = document.getElementById('hudTabs');
-  if (hudTabs) hudTabs.style.display = 'none';
 }
 
 function buildChatHistorySnapshot() {
@@ -8486,11 +8484,11 @@ function _showLivePreview(code) {
   if (_streamSafetyTimer) { clearTimeout(_streamSafetyTimer); _streamSafetyTimer = null; }
   _streamRenderPending = null;
 
-  const w = document.getElementById('previewWrapper');
+  const w = document.getElementById('workspacePanel');
   const iframe = document.getElementById('livePreview');
   const building = document.getElementById('previewBuilding');
   const lbl = document.getElementById('previewLabel');
-  if (!w || !iframe) return;
+  if (!iframe) return;
 
   // Mark final code as ready so sandboxReady can flush it if sandbox reloads
   _buildFinalReady = true;
@@ -8499,14 +8497,10 @@ function _showLivePreview(code) {
   // Only show iframe if user is on Preview tab (Code tab may be active)
   if (_activeHudTab !== 'code') {
     iframe.style.display = 'block';
-    iframe.style.height = _previewExpanded ? '420px' : '200px';
     if (building) building.style.display = 'none';
   }
   if (lbl) lbl.textContent = '🏗️ LIVE PREVIEW';
-  w.style.display = 'block';
-  // Show HUD tabs (Preview | Code) now that a site exists
-  const hudTabs = document.getElementById('hudTabs');
-  if (hudTabs) hudTabs.style.display = 'flex';
+  if (w) w.classList.add('open');
 }
 
 // Highlight a stage badge as "active" (currently generating)
@@ -8608,20 +8602,19 @@ function _switchHudTab(tab) {
   const iframe   = document.getElementById('livePreview');
   const codePane = document.getElementById('buildCodePane');
   const building = document.getElementById('previewBuilding');
-  const h = _previewExpanded ? '420px' : '200px';
 
   if (tab === 'preview') {
     if (codePane) codePane.style.display = 'none';
     // Only show iframe if it had content (not hidden by spinner)
-    if (iframe && iframe.src) { iframe.style.display = 'block'; iframe.style.height = h; }
-    document.getElementById('hudTabPreview')?.classList.add('active');
-    document.getElementById('hudTabCode')?.classList.remove('active');
+    if (iframe && iframe.src) iframe.style.display = 'block';
+    document.getElementById('wsTabPreview')?.classList.add('active');
+    document.getElementById('wsTabCode')?.classList.remove('active');
   } else {
     if (building) building.style.display = 'none';
     if (iframe) iframe.style.display = 'none';
-    if (codePane) { codePane.style.display = 'flex'; codePane.style.height = h; }
-    document.getElementById('hudTabPreview')?.classList.remove('active');
-    document.getElementById('hudTabCode')?.classList.add('active');
+    if (codePane) codePane.style.display = 'flex';
+    document.getElementById('wsTabPreview')?.classList.remove('active');
+    document.getElementById('wsTabCode')?.classList.add('active');
     _updateCodeView(_activeCodeFile);
   }
 }
@@ -8633,19 +8626,19 @@ function _updateCodeView(file) {
   if (file === 'html') pre.textContent = _buildBodyHtml  || '<!-- No HTML generated yet -->';
   else if (file === 'css') pre.textContent = _buildStyleCss || '/* No CSS generated yet */';
   else if (file === 'js')  pre.textContent = _buildScriptJs  || '// No JS generated yet';
-  document.querySelectorAll('.build-file-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.file === file);
+  document.querySelectorAll('.fe-item[data-file]').forEach(item => {
+    item.classList.toggle('active', item.dataset.file === file);
   });
 }
 
 function _setPulseFile(file) {
-  document.querySelectorAll('.build-file-btn').forEach(btn => {
-    const existing = btn.querySelector('.pulse-dot');
+  document.querySelectorAll('.fe-item[data-file]').forEach(item => {
+    const existing = item.querySelector('.pulse-dot');
     if (existing) existing.remove();
-    if (btn.dataset.file === file) {
+    if (item.dataset.file === file) {
       const dot = document.createElement('span');
       dot.className = 'pulse-dot';
-      btn.appendChild(dot);
+      item.appendChild(dot);
     }
   });
 }
@@ -8661,13 +8654,13 @@ function renderLivePreview(responseText) {
   _lastBuiltCode = code;
   try { chrome.storage.local.set({ snaptoai_built_code: code }); } catch(e) {}
 
-  const w = document.getElementById('previewWrapper');
+  const w = document.getElementById('workspacePanel');
   const building = document.getElementById('previewBuilding');
   const iframe = document.getElementById('livePreview');
   const lbl = document.getElementById('previewLabel');
   const txt = document.getElementById('previewBuildingTxt');
 
-  if (w) w.style.display = 'block';
+  if (w) w.classList.add('open');
   if (building) building.style.display = 'flex';
   if (lbl) lbl.textContent = '⏳ Building…';
   if (txt) txt.textContent = buildStage ? 'Compiling ' + buildStage + '…' : 'Compiling…';
@@ -8688,7 +8681,6 @@ function renderLivePreview(responseText) {
       if (_streamRenderPending && iframe) {
         _postToSandbox(_streamRenderPending, false); // partial — skip script execution
         iframe.style.display = 'block';
-        iframe.style.height = _previewExpanded ? '420px' : '200px';
         _streamRenderPending = null;
       }
     }, 900);
@@ -8705,8 +8697,8 @@ function renderLivePreview(responseText) {
 }
 
 document.getElementById('closePreviewBtn')?.addEventListener('click', () => {
-  const w = document.getElementById('previewWrapper');
-  if (w) w.style.display = 'none';
+  const w = document.getElementById('workspacePanel');
+  if (w) { w.classList.remove('open'); w.classList.remove('wide'); }
   const iframe = document.getElementById('livePreview');
   // Hide only — never navigate away from sandbox.html or future builds can't postMessage into it
   if (iframe) { iframe.style.display = 'none'; }
@@ -8721,13 +8713,10 @@ document.getElementById('closePreviewBtn')?.addEventListener('click', () => {
 
 document.getElementById('previewExpandBtn')?.addEventListener('click', () => {
   _previewExpanded = !_previewExpanded;
-  const h = _previewExpanded ? '420px' : '200px';
-  const iframe    = document.getElementById('livePreview');
-  const codePane  = document.getElementById('buildCodePane');
-  const btn       = document.getElementById('previewExpandBtn');
-  if (iframe && iframe.style.display !== 'none') iframe.style.height = h;
-  if (codePane && codePane.style.display !== 'none') codePane.style.height = h;
-  if (btn) btn.title = _previewExpanded ? 'Collapse preview' : 'Expand preview';
+  const wp  = document.getElementById('workspacePanel');
+  const btn = document.getElementById('previewExpandBtn');
+  if (wp) wp.classList.toggle('wide', _previewExpanded);
+  if (btn) btn.title = _previewExpanded ? 'Narrow workspace' : 'Widen workspace';
 });
 
 document.getElementById('openAgentsBtn')?.addEventListener('click', openAgentsModal);
@@ -8765,9 +8754,9 @@ function _setStage(stage, btnId) {
   document.getElementById('buildToggleBtn')?.classList.add('tool-btn-active');
   _resetBadges();
   _setBadgeActive(stage);
-  // Show HUD tabs whenever a staged build is triggered
-  const hudTabs = document.getElementById('hudTabs');
-  if (hudTabs) hudTabs.style.display = 'flex';
+  // Show workspace panel whenever a staged build is triggered
+  const wp = document.getElementById('workspacePanel');
+  if (wp) wp.classList.add('open');
   // Update input placeholder to guide user
   const input = document.getElementById('chatInput');
   if (input) {
@@ -8796,14 +8785,14 @@ document.getElementById('previewOpenTabBtn')?.addEventListener('click', () => {
   chrome.tabs.create({ url: chrome.runtime.getURL('preview-output.html') });
 });
 
-// ── HUD tab buttons ──────────────────────────────────────────────────────────
-document.getElementById('hudTabPreview')?.addEventListener('click', () => _switchHudTab('preview'));
-document.getElementById('hudTabCode')?.addEventListener('click',    () => _switchHudTab('code'));
+// ── Workspace tab buttons ─────────────────────────────────────────────────────
+document.getElementById('wsTabPreview')?.addEventListener('click', () => _switchHudTab('preview'));
+document.getElementById('wsTabCode')?.addEventListener('click',    () => _switchHudTab('code'));
 
-// ── Code pane file buttons (delegated — buttons exist at load time) ──────────
+// ── File explorer items (delegated click) ─────────────────────────────────────
 document.getElementById('buildCodePane')?.addEventListener('click', (e) => {
-  const btn = e.target.closest('.build-file-btn');
-  if (btn && btn.dataset.file) _updateCodeView(btn.dataset.file);
+  const item = e.target.closest('[data-file]');
+  if (item && item.dataset.file) _updateCodeView(item.dataset.file);
 });
 // ──────────────────────────────────────────────────────────────────────────────
 

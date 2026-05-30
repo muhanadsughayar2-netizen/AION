@@ -248,6 +248,68 @@
       display: flex;
       flex-direction: column;
       background: linear-gradient(180deg, var(--st-bg-elevated) 0%, var(--st-bg-rail) 100%);
+      min-width: 0;
+    }
+
+    /* ── Workspace Panel (IDE center column, appears when Build Mode is active) ── */
+    .workspace-panel {
+      display: none;
+      flex-direction: column;
+      background: #0a0a10;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      width: 390px;
+      min-width: 300px;
+      flex-shrink: 0;
+      overflow: hidden;
+      transition: width 0.25s ease;
+    }
+    .workspace-panel.open { display: flex; }
+    .workspace-panel.wide { width: 560px; }
+    /* Narrow chat when workspace is open */
+    .workspace-panel.open ~ .chat-panel { max-width: 400px; min-width: 280px; }
+
+    /* WS tab bar */
+    .ws-tabbar {
+      display: flex; align-items: stretch;
+      background: rgba(10,10,16,0.98);
+      border-bottom: 1px solid rgba(255,160,50,0.15);
+      height: 37px; flex-shrink: 0; padding: 0 6px; gap: 4px;
+    }
+    .ws-tabbar-left  { display: flex; align-items: stretch; gap: 1px; }
+    .ws-tabbar-center { display: flex; align-items: center; gap: 6px; flex: 1; padding: 0 6px; overflow: hidden; }
+    .ws-tabbar-right  { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
+    .ws-tab {
+      padding: 0 13px; background: transparent; border: none;
+      border-bottom: 2px solid transparent;
+      color: rgba(255,255,255,0.32); font-size: 11px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; gap: 5px;
+      transition: all 0.15s; white-space: nowrap; height: 100%;
+    }
+    .ws-tab.active { color: #ffa032; border-bottom-color: #ffa032; }
+    .ws-tab:hover:not(.active) { color: rgba(255,255,255,0.6); }
+
+    /* File explorer sidebar */
+    .file-explorer {
+      width: 148px; background: #07070c;
+      border-right: 1px solid rgba(255,255,255,0.05);
+      padding: 6px 0; flex-shrink: 0; overflow-y: auto;
+    }
+    .fe-header {
+      font-size: 9px; color: #444; padding: 4px 12px 8px;
+      letter-spacing: 1.5px; font-weight: 700; text-transform: uppercase;
+    }
+    .fe-item {
+      padding: 7px 12px; font-size: 11px; color: #777; cursor: pointer;
+      display: flex; align-items: center; gap: 7px;
+      transition: all 0.15s; font-family: monospace;
+      position: relative; border-left: 2px solid transparent;
+    }
+    .fe-item:hover { background: rgba(255,255,255,0.05); color: #ccc; }
+    .fe-item.active { background: rgba(255,160,50,0.1); color: #ffa032; font-weight: 700; border-left-color: #ffa032; }
+    .fe-item .pulse-dot {
+      position: absolute; right: 8px;
+      width: 5px; height: 5px; border-radius: 50%; background: #50dc78;
+      animation: pulseDot 0.8s ease-in-out infinite;
     }
     
     .chat-thread {
@@ -1121,7 +1183,52 @@
       </div>
       <div class="image-panel-send-hint" id="imageSendHint" style="display:none;">Tap image → send to chat</div>
     </div>
-    
+
+    <!-- ═══ WORKSPACE PANEL — IDE center column (shown when Build Mode is active) ═══ -->
+    <div class="workspace-panel" id="workspacePanel">
+      <!-- Tab bar -->
+      <div class="ws-tabbar">
+        <div class="ws-tabbar-left">
+          <button class="ws-tab active" id="wsTabPreview">🌐 Preview</button>
+          <button class="ws-tab" id="wsTabCode">📄 Code</button>
+        </div>
+        <div class="ws-tabbar-center">
+          <span id="previewLabel" style="font-size:10px;font-weight:800;font-family:monospace;color:#ffa032;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;flex-shrink:0;">🏗️ BUILD MODE</span>
+          <div id="buildStageBadges" style="display:flex;gap:3px;flex-shrink:0;">
+            <span id="badge-L1" style="font-family:monospace;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid rgba(255,160,50,0.25);color:rgba(255,160,50,0.4);background:transparent;transition:all 0.2s;">HTML</span>
+            <span id="badge-L2" style="font-family:monospace;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid rgba(255,160,50,0.25);color:rgba(255,160,50,0.4);background:transparent;transition:all 0.2s;">CSS</span>
+            <span id="badge-L3" style="font-family:monospace;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid rgba(255,160,50,0.25);color:rgba(255,160,50,0.4);background:transparent;transition:all 0.2s;">JS</span>
+          </div>
+        </div>
+        <div class="ws-tabbar-right">
+          <button id="previewExpandBtn" title="Widen workspace" style="font-size:11px;padding:3px 7px;border-radius:7px;background:rgba(255,160,50,0.07);border:1px solid rgba(255,160,50,0.2);color:#ffa032;cursor:pointer;font-weight:700;line-height:1;">⤢</button>
+          <button id="previewOpenTabBtn" style="font-size:10px;padding:3px 9px;border-radius:7px;background:rgba(0,217,255,0.07);border:1px solid rgba(0,217,255,0.28);color:#00d9ff;cursor:pointer;font-weight:700;font-family:monospace;">↗ Open</button>
+          <button id="previewCopyBtn" style="font-size:10px;padding:3px 8px;border-radius:7px;background:rgba(255,160,50,0.09);border:1px solid rgba(255,160,50,0.22);color:#ffa032;cursor:pointer;font-weight:700;font-family:monospace;">Copy</button>
+          <button id="closePreviewBtn" style="background:none;border:none;color:rgba(255,255,255,0.35);cursor:pointer;font-size:13px;line-height:1;padding:0 2px;">✕</button>
+        </div>
+      </div>
+
+      <!-- Spinner while AI is generating -->
+      <div id="previewBuilding" style="display:none;align-items:center;justify-content:center;gap:8px;height:46px;background:rgba(7,7,10,0.96);font-size:11px;font-weight:700;color:#ffa032;font-family:monospace;letter-spacing:0.5px;flex-shrink:0;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffa032" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite;flex-shrink:0;"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+        <span id="previewBuildingTxt">Compiling…</span>
+      </div>
+
+      <!-- Preview pane: live site in sandboxed iframe -->
+      <iframe id="livePreview" src="sandbox.html" allow="fullscreen" style="width:100%;flex:1;border:none;display:none;background:#07070a;min-height:0;"></iframe>
+
+      <!-- Code pane: VS Code-style file explorer + source viewer -->
+      <div id="buildCodePane" style="display:none;flex-direction:row;flex:1;overflow:hidden;min-height:0;">
+        <div class="file-explorer" id="buildFileExplorer">
+          <div class="fe-header">Project Files</div>
+          <div class="fe-item active" data-file="html"><span>📄</span> index.html</div>
+          <div class="fe-item" data-file="css"><span>🎨</span> styles.css</div>
+          <div class="fe-item" data-file="js"><span>⚡</span> main.js</div>
+        </div>
+        <pre id="buildCodeContent" style="margin:0;padding:14px 16px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:10px;line-height:1.55;color:#c9d1d9;white-space:pre-wrap;word-break:break-all;overflow-y:auto;flex:1;background:#0a0a10;min-width:0;"></pre>
+      </div>
+    </div>
+
     <div class="chat-panel">
       <div class="chat-thread" id="chatThread">
         <div class="welcome-message">I'm your AI partner. Ask me anything about this image!</div>
@@ -1248,28 +1355,6 @@
           box-shadow: 0 0 12px rgba(255,160,50,0.22);
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        /* ── Build HUD: Preview/Code tabs ── */
-        .hud-tab {
-          padding: 2px 8px; border-radius: 5px; font-size: 9px; font-weight: 700;
-          font-family: monospace; cursor: pointer; letter-spacing: 0.3px;
-          border: 1px solid rgba(255,160,50,0.2); background: transparent;
-          color: rgba(255,160,50,0.4); transition: all 0.15s;
-        }
-        .hud-tab.active { background: rgba(255,160,50,0.15); color: #ffa032; border-color: rgba(255,160,50,0.5); }
-        .hud-tab:hover:not(.active) { color: rgba(255,160,50,0.7); }
-        /* ── Build HUD: file switcher buttons ── */
-        .build-file-btn {
-          padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: 700;
-          font-family: monospace; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;
-          border: 1px solid rgba(255,255,255,0.1); background: transparent;
-          color: rgba(255,255,255,0.4); transition: all 0.15s;
-        }
-        .build-file-btn:hover { color: #fff; background: rgba(255,255,255,0.07); }
-        .build-file-btn.active { background: rgba(255,160,50,0.15); color: #ffa032; border-color: rgba(255,160,50,0.45); }
-        .build-file-btn .pulse-dot {
-          width: 5px; height: 5px; border-radius: 50%; background: #50dc78;
-          animation: pulseDot 0.8s ease-in-out infinite;
-        }
         @keyframes pulseDot {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.3; transform: scale(0.6); }
@@ -1299,45 +1384,6 @@
           box-shadow: 0 0 12px rgba(80,220,120,0.22);
         }
       </style>
-      <div id="previewWrapper" style="display:none; margin:10px 12px 4px; border:1px solid rgba(255,160,50,0.3); border-radius:14px; overflow:hidden; background:#07070a; box-shadow:0 10px 36px rgba(0,0,0,0.55);">
-        <div style="background:rgba(12,12,18,0.98); padding:9px 14px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,160,50,0.15);">
-          <!-- Left: label + stage badges -->
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span id="previewLabel" style="font-size:10px; font-weight:800; font-family:monospace; color:#ffa032; letter-spacing:1px; text-transform:uppercase; white-space:nowrap;">🏗️ BUILD BUFFER</span>
-            <div id="buildStageBadges" style="display:flex; gap:3px;">
-              <span id="badge-L1" style="font-family:monospace; font-size:8px; font-weight:700; padding:2px 6px; border-radius:4px; border:1px solid rgba(255,160,50,0.25); color:rgba(255,160,50,0.4); background:transparent; transition:all 0.2s;">HTML</span>
-              <span id="badge-L2" style="font-family:monospace; font-size:8px; font-weight:700; padding:2px 6px; border-radius:4px; border:1px solid rgba(255,160,50,0.25); color:rgba(255,160,50,0.4); background:transparent; transition:all 0.2s;">CSS</span>
-              <span id="badge-L3" style="font-family:monospace; font-size:8px; font-weight:700; padding:2px 6px; border-radius:4px; border:1px solid rgba(255,160,50,0.25); color:rgba(255,160,50,0.4); background:transparent; transition:all 0.2s;">JS</span>
-            </div>
-            <!-- Preview / Code tab switcher -->
-            <div id="hudTabs" style="display:none; align-items:center; gap:2px; margin-left:6px;">
-              <button id="hudTabPreview" class="hud-tab active">Preview</button>
-              <button id="hudTabCode" class="hud-tab">Code</button>
-            </div>
-          </div>
-          <!-- Right: action buttons -->
-          <div style="display:flex;gap:5px;align-items:center;">
-            <button id="previewExpandBtn" title="Expand / collapse preview" style="font-size:11px;padding:3px 7px;border-radius:7px;background:rgba(255,160,50,0.07);border:1px solid rgba(255,160,50,0.2);color:#ffa032;cursor:pointer;font-weight:700;line-height:1;">⤢</button>
-            <button id="previewOpenTabBtn" style="font-size:10px;padding:3px 9px;border-radius:7px;background:rgba(0,217,255,0.07);border:1px solid rgba(0,217,255,0.28);color:#00d9ff;cursor:pointer;font-weight:700;font-family:monospace;">↗ Open</button>
-            <button id="previewCopyBtn" style="font-size:10px;padding:3px 8px;border-radius:7px;background:rgba(255,160,50,0.09);border:1px solid rgba(255,160,50,0.22);color:#ffa032;cursor:pointer;font-weight:700;font-family:monospace;">Copy</button>
-            <button id="closePreviewBtn" style="background:none;border:none;color:rgba(255,255,255,0.35);cursor:pointer;font-size:13px;line-height:1;padding:0 2px;">✕</button>
-          </div>
-        </div>
-        <div id="previewBuilding" style="display:none;align-items:center;justify-content:center;gap:8px;height:46px;background:rgba(7,7,10,0.96);font-size:11px;font-weight:700;color:#ffa032;font-family:monospace;letter-spacing:0.5px;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffa032" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite;flex-shrink:0;"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
-          <span id="previewBuildingTxt">Compiling…</span>
-        </div>
-        <iframe id="livePreview" src="sandbox.html" allow="fullscreen" style="width:100%;height:200px;border:none;display:none;background:#07070a;"></iframe>
-        <!-- Code pane — shown when "Code" tab is active -->
-        <div id="buildCodePane" style="display:none;flex-direction:column;height:200px;background:#0a0a10;overflow:hidden;">
-          <div style="display:flex;align-items:center;gap:4px;padding:5px 10px;background:rgba(10,10,16,0.98);border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0;">
-            <button class="build-file-btn active" data-file="html">📄 HTML</button>
-            <button class="build-file-btn" data-file="css">🎨 CSS</button>
-            <button class="build-file-btn" data-file="js">⚡ JS</button>
-          </div>
-          <pre id="buildCodeContent" style="margin:0;padding:12px 14px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:10px;line-height:1.55;color:#c9d1d9;white-space:pre-wrap;word-break:break-all;overflow-y:auto;flex:1;background:#0a0a10;"></pre>
-        </div>
-      </div>
       <div class="ai-disclaimer">Gemini can make mistakes, so double-check it</div>
       
       <div id="agentStatusBar" style="display:none; align-items:center; gap:6px; padding:5px 14px; background:rgba(255,255,255,0.04); border-top:1px solid rgba(255,255,255,0.07); font-size:12px; font-weight:500;"></div>
