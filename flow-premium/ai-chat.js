@@ -6814,8 +6814,8 @@ async function handleSend() {
           proxyBubble.textContent = aiText;
         }
         thread.appendChild(proxyBubble);
-        addBubbleActions(proxyBubble, aiText);
         renderLivePreview(aiText);
+        addBubbleActions(proxyBubble, aiText);
         thread.scrollTop = thread.scrollHeight;
         conversationHistory.push({ role: 'user', text: prompt });
         conversationHistory.push({ role: 'model', text: aiText });
@@ -7585,8 +7585,8 @@ async function handleSend() {
         responseBubble.innerHTML = '<div style="color:#ff6b6b;">No response received. Please try again.</div>';
       }
       
-      addBubbleActions(responseBubble, fullText);
       renderLivePreview(fullText);
+      addBubbleActions(responseBubble, fullText);
     }
     
     const userHistoryEntry = { role: 'user', text: prompt };
