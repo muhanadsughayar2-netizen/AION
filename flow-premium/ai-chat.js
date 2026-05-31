@@ -7667,7 +7667,9 @@ function addBubbleActions(bubble, text) {
   // Always render the preview when build mode is on — even if the AI gave
   // a plain-text reply (no new HTML). This ensures the spinner never sticks.
   if (buildModeEnabled) {
-    const finalCode = thisCode || _lastBuiltCode;
+    // Use _lastBuiltCode (post-placeholder-swap) when available — thisCode is
+    // the raw AI response and still contains __SNAP_IMG_N__ / __SNAP_VID_N__.
+    const finalCode = _lastBuiltCode || thisCode;
     if (finalCode) {
       _showLivePreview(finalCode);
     } else {
