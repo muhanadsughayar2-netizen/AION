@@ -5926,6 +5926,7 @@ RULES:
     document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
     setTimeout(() => document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible')), 1200);
 • NO dead stubs — every button MUST do something (scroll, toggle, open modal, submit, animate, etc.).
+• FUNCTION COMPLETENESS: Every function called in an onclick/onchange/onsubmit/oninput attribute (e.g. showTab(), updatePillar(), openModal()) MUST be fully defined in the single <script> block. Never leave a referenced function undefined.
 • Output raw JS only — NO tags, NO prose, NO fences.`;
 
 const BUILD_PATCH_PROMPT = `You are a senior front-end engineer making a targeted edit to an existing website.
@@ -5939,6 +5940,7 @@ STRICT RULES:
 • Preserve every existing ID, class, data-attribute, and script exactly as-is unless directly involved in the change.
 • If adding an image: use a real Pexels URL matching the context, with onerror fallback, object-fit:cover.
 • If adding a section: match the exact same design language (colors, radius, fonts, spacing) already present.
+• FUNCTION COMPLETENESS: Every function called in an onclick/onchange/onsubmit/oninput attribute MUST be fully defined in the <script> block. If the existing site has broken onclick handlers (functions that are called but not defined), fix them as part of this response.
 • Output: ONLY a single \`\`\`html code block. Zero prose before or after.`;
 
 const L_UPDATE_PROMPT = `You are surgically updating one section of a website.
@@ -7547,8 +7549,12 @@ function addBubbleActions(bubble, text) {
     : { html: '', truncated: false };
   if (_continuationPending && _extracted.html) _continuationPending = false;
   const thisCode = _extracted.html;
-  const isTruncated = false; // Never show continuation button — stages handle this
-  if (thisCode && !buildStage) {
+  // Detect truncation: AI ran out of tokens and the file is incomplete.
+  // Only applies to classic (no-stage) build mode — staged builds use per-stage output.
+  const isTruncated = !buildStage && _extracted.truncated;
+  // Only commit to _lastBuiltCode when the output is complete. Saving a
+  // truncated partial would strip sections (e.g. pricing) from future edits.
+  if (thisCode && !buildStage && !isTruncated) {
     _lastBuiltCode = thisCode;
     try { chrome.storage.local.set({ snaptoai_built_code: thisCode }); } catch(e) {}
   }
@@ -7574,18 +7580,17 @@ function addBubbleActions(bubble, text) {
   `;
   bubble.appendChild(actions);
 
-  // Truncation warning — shown below button when AI cut off mid-code.
-  // Gives a one-click "Continue Build" button that auto-sends the right prompt
-  // and merges the continuation chunk back onto the partial code.
+  // Truncation recovery — when the AI ran out of tokens mid-file, automatically
+  // continue the build so missing sections (pricing, JS scripts, etc.) are never lost.
   if (isTruncated) {
     const warn = document.createElement('div');
     warn.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,160,50,0.75);margin-top:5px;padding:0 2px;flex-wrap:wrap;';
-    warn.innerHTML = `<span>⚠️ Response was cut off</span>
-      <button style="background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.5);color:#ffa032;border-radius:10px;padding:2px 9px;font-size:11px;font-weight:600;cursor:pointer;">🔄 Continue Build</button>`;
-    warn.querySelector('button').addEventListener('click', () => {
+    warn.innerHTML = `<span>⚠️ Site was too long — auto-continuing build…</span>`;
+    actions.appendChild(warn);
+
+    // Auto-fire the continuation after a short delay so the UI settles first.
+    setTimeout(() => {
       _continuationPending = true;
-      // Ensure Build Mode is ON — if it was turned off the AI would respond
-      // in plain text instead of outputting HTML, breaking the continuation.
       if (!buildModeEnabled) {
         buildModeEnabled = true;
         const buildBtn = document.getElementById('buildToggleBtn');
@@ -7600,8 +7605,7 @@ function addBubbleActions(bubble, text) {
         const btn = document.getElementById('sendBtn');
         if (btn) btn.click();
       }
-    });
-    actions.appendChild(warn);
+    }, 800);
   }
 
   
