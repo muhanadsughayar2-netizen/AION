@@ -6835,7 +6835,10 @@ async function handleSend() {
         addBubbleActions(proxyBubble, aiText);
         thread.scrollTop = thread.scrollHeight;
         conversationHistory.push({ role: 'user', text: prompt });
-        conversationHistory.push({ role: 'model', text: aiText });
+        // In Build Mode the current site is always injected fresh from _lastBuiltCode,
+        // so storing the full HTML in history would double-count it every turn and
+        // quickly blow the 1M-token limit. Store a compact summary instead.
+        conversationHistory.push({ role: 'model', text: buildModeEnabled ? '[Built/updated website — see current version]' : aiText });
         
         if (proxyResult.remaining !== undefined) {
           const remaining = proxyResult.remaining;
@@ -7611,7 +7614,10 @@ async function handleSend() {
       userHistoryEntry.images = currentImages;
     }
     conversationHistory.push(userHistoryEntry);
-    conversationHistory.push({ role: 'model', text: fullText });
+    // In Build Mode the current site is always injected fresh from _lastBuiltCode,
+    // so storing the full HTML in history would double-count it every turn and
+    // quickly blow the 1M-token limit. Store a compact summary instead.
+    conversationHistory.push({ role: 'model', text: buildModeEnabled ? '[Built/updated website — see current version]' : fullText });
     
   } catch (error) {
     removeLoading();
