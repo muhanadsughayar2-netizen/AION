@@ -5949,6 +5949,7 @@ STRICT RULES:
 • FUNCTION COMPLETENESS: Every function called in an onclick/onchange/onsubmit/oninput attribute MUST be fully defined in the <script> block. If the existing site has broken onclick handlers (functions that are called but not defined), fix them as part of this response.
 • YOUTUBE EMBEDS: When the user pastes any YouTube URL (youtube.com/watch?v=, youtu.be/, or youtube.com/embed/), ALWAYS embed it as a plain responsive iframe. NEVER build a custom video player, input box, or Upload & Play button. Extract the video ID, strip all tracking params (?si=, &feature=, etc.), and use this exact pattern: <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;"><iframe src="https://www.youtube.com/embed/VIDEO_ID" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
 • UPLOADED VIDEO FILES: When the prompt contains __SNAP_VID_0__ (or __SNAP_VID_1__, __SNAP_VID_2__ etc.), the user has attached a real mp4/webm video file they created. Place a <video> tag using that placeholder as the src — do NOT build a player UI, do NOT ask for a URL, just embed it directly: <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;"><video src="__SNAP_VID_0__" controls autoplay muted loop playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;border-radius:12px;"></video></div>
+• UPLOADED AUDIO FILES: When the prompt contains __SNAP_AUD_0__ (or __SNAP_AUD_1__ etc.), the user has attached a real mp3/wav/ogg audio file. Embed it directly using an HTML5 audio tag — do NOT build a custom player or ask for a URL: <audio src="__SNAP_AUD_0__" controls style="width:100%;border-radius:8px;margin:12px 0;"></audio>. Place it in the section the user specified, or the most fitting section if not specified.
 • Output: ONLY a single \`\`\`html code block. Zero prose before or after.`;
 
 const L_UPDATE_PROMPT = `You are surgically updating one section of a website.
@@ -6544,6 +6545,7 @@ async function handleSend() {
   if (!_isContinuationSend) {
     _pendingBuildImages = [];
     _pendingBuildVideos = [];
+    _pendingBuildAudio = [];
   }
   if (buildModeEnabled && _lastBuiltCode) {
     const imageParts = filesQueue.filter(f => f.mimeType && f.mimeType.startsWith('image/'));
@@ -6611,6 +6613,36 @@ async function handleSend() {
           `(3) If no section is specified — place in the most contextually fitting section. ` +
           `(4) NEVER output any actual base64 data — only use the placeholder strings. ` +
           `(5) Keep all other design completely unchanged.`;
+      }
+    }
+
+    // ── Audio embedding (mp3/wav/ogg) ────────────────────────────────────────
+    const audioParts = filesQueue.filter(f => f.mimeType && f.mimeType.startsWith('audio/'));
+    if (audioParts.length > 0) {
+      const BUILD_AUDIO_BYTE_LIMIT = 5 * 1024 * 1024; // 5 MB raw
+      const audioTooBig = audioParts.filter(f => Math.round((f.data.length * 3) / 4) > BUILD_AUDIO_BYTE_LIMIT);
+      const audioFits   = audioParts.filter(f => Math.round((f.data.length * 3) / 4) <= BUILD_AUDIO_BYTE_LIMIT);
+
+      if (audioTooBig.length > 0) {
+        addBubble(
+          `⚠️ "${audioTooBig.map(f => f.name).join(', ')}" is too large to embed directly ` +
+          `(limit is ~5 MB for audio). Please trim the clip or use a shorter section.`,
+          'error'
+        );
+        audioTooBig.forEach(f => { filesQueue = filesQueue.filter(q => q !== f); });
+      }
+
+      if (audioFits.length > 0) {
+        _pendingBuildAudio = audioFits.map(f => `data:${f.mimeType};base64,${f.data}`);
+        const audioPlaceholderList = _pendingBuildAudio.map((_, i) => `__SNAP_AUD_${i}__`).join(', ');
+        prompt += `\n\nAUDIO EMBED INSTRUCTION: The user attached ${audioFits.length} audio file(s). ` +
+          `Use these exact placeholder strings as the src values: ${audioPlaceholderList}. ` +
+          `CRITICAL RULES: ` +
+          `(1) Embed each audio file using an HTML5 <audio> tag with the placeholder as src. ` +
+          `Use this pattern: <audio src="__SNAP_AUD_0__" controls style="width:100%;border-radius:8px;margin:12px 0;"></audio> ` +
+          `(2) If the user named a section — place it exactly there. ` +
+          `(3) NEVER output actual base64 data — only use the placeholder strings. ` +
+          `(4) Keep all other design completely unchanged.`;
       }
     }
   }
@@ -7669,6 +7701,13 @@ function addBubbleActions(bubble, text) {
       });
       _pendingBuildVideos = [];
     }
+    // Swap in any audio files (mp3/wav/ogg) the user attached during this request
+    if (_pendingBuildAudio.length > 0) {
+      _pendingBuildAudio.forEach((dataUrl, i) => {
+        _lastBuiltCode = _lastBuiltCode.split(`__SNAP_AUD_${i}__`).join(dataUrl);
+      });
+      _pendingBuildAudio = [];
+    }
     try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode }); } catch(e) {}
     _updateBuildInput();
   }
@@ -8463,6 +8502,8 @@ let _lastBuiltCode = '';
 let _pendingBuildImages = [];
 // Short video files (webm/mp4) attached during a build patch — same placeholder approach
 let _pendingBuildVideos = [];
+// Audio files (mp3/wav/ogg) attached during a build patch — same placeholder approach
+let _pendingBuildAudio = [];
 // When true, the next build response is a continuation chunk — merge with _lastBuiltCode
 let _continuationPending = false;
 // Safety cap: stop auto-continuing after this many consecutive truncated responses
