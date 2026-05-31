@@ -7665,6 +7665,22 @@ function addBubbleActions(bubble, text) {
   // ── STAGED BUILD: store fragment and assemble full HTML ──────────────────
   if (buildModeEnabled && buildStage === 'L1') {
     _buildBodyHtml = extractFragment(text);
+    // Video/image/audio placeholders live in the body HTML — swap them here so
+    // every subsequent assembleStagedHtml call (L2, L3, UPDATE) uses real data.
+    // Must clear the arrays after consuming so the classic-path swap doesn't
+    // double-apply on a later patch.
+    if (_pendingBuildImages.length > 0) {
+      _pendingBuildImages.forEach((u, i) => { _buildBodyHtml = _buildBodyHtml.split(`__SNAP_IMG_${i}__`).join(u); });
+      _pendingBuildImages = [];
+    }
+    if (_pendingBuildVideos.length > 0) {
+      _pendingBuildVideos.forEach((u, i) => { _buildBodyHtml = _buildBodyHtml.split(`__SNAP_VID_${i}__`).join(u); });
+      _pendingBuildVideos = [];
+    }
+    if (_pendingBuildAudio.length > 0) {
+      _pendingBuildAudio.forEach((u, i) => { _buildBodyHtml = _buildBodyHtml.split(`__SNAP_AUD_${i}__`).join(u); });
+      _pendingBuildAudio = [];
+    }
     _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, '', '');
     try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode, snaptoai_build_body: _buildBodyHtml }); } catch(e) {}
     _setBadgeDone('L1'); _updateBuildInput();
