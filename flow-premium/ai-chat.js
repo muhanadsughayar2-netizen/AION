@@ -6530,6 +6530,26 @@ async function handleSend() {
   if (!prompt && filesQueue.length === 0) return;
   if (!prompt) prompt = 'Analyze this image.';
 
+  // ── Build Mode: image-to-site embedding ──────────────────────────────────
+  // When an image is attached while patching an existing site, store the
+  // base64 data URLs locally and give the AI placeholder strings as src
+  // values. After the AI responds we swap in the real data URLs client-side
+  // so the image is actually embedded without needing an external host.
+  _pendingBuildImages = [];
+  if (buildModeEnabled && _lastBuiltCode) {
+    const imageParts = filesQueue.filter(f => f.mimeType && f.mimeType.startsWith('image/'));
+    if (imageParts.length > 0) {
+      _pendingBuildImages = imageParts.map(f => `data:${f.mimeType};base64,${f.data}`);
+      const placeholderList = _pendingBuildImages.map((_, i) => `__SNAP_IMG_${i}__`).join(', ');
+      prompt += `\n\nIMAGE EMBED INSTRUCTION: The user attached ${imageParts.length} image(s). ` +
+        `In your HTML output use these exact placeholder strings as the src values: ${placeholderList} ` +
+        `(example: <img src="__SNAP_IMG_0__" alt="user image" style="width:100%;object-fit:cover;border-radius:12px;">). ` +
+        `Place each image in the most visually fitting section of the existing site. ` +
+        `NEVER output any actual base64 data — only use the placeholder strings. ` +
+        `Keep all other design completely unchanged.`;
+    }
+  }
+
   if (!acquireRequestLock()) {
     addBubble('Please wait for the current request to complete...', 'ai');
     return;
@@ -7530,17 +7550,17 @@ function addBubbleActions(bubble, text) {
     _buildBodyHtml = extractFragment(text);
     _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, '', '');
     try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode, snaptoai_build_body: _buildBodyHtml }); } catch(e) {}
-    _setBadgeDone('L1'); _updateQuickAdd();
+    _setBadgeDone('L1'); _updateBuildInput();
   } else if (buildModeEnabled && buildStage === 'L2') {
     _buildStyleCss = extractFragment(text);
     _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, '');
     try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode, snaptoai_build_style: _buildStyleCss }); } catch(e) {}
-    _setBadgeDone('L2'); _updateQuickAdd();
+    _setBadgeDone('L2'); _updateBuildInput();
   } else if (buildModeEnabled && buildStage === 'L3') {
     _buildScriptJs = extractFragment(text);
     _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, _buildScriptJs);
     try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode, snaptoai_build_script: _buildScriptJs }); } catch(e) {}
-    _setBadgeDone('L3'); _updateQuickAdd();
+    _setBadgeDone('L3'); _updateBuildInput();
   } else if (buildModeEnabled && buildStage === 'UPDATE') {
     // Patch the targeted section in the existing body HTML
     const fragment = extractFragment(text);
@@ -7554,7 +7574,7 @@ function addBubbleActions(bubble, text) {
     }
     _lastBuiltCode = assembleStagedHtml(_buildBodyHtml, _buildStyleCss, _buildScriptJs);
     try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode, snaptoai_build_body: _buildBodyHtml }); } catch(e) {}
-    _updateQuickAdd();
+    _updateBuildInput();
   }
 
   // ── CLASSIC BUILD MODE: extract full HTML from response ──────────────────
@@ -7570,8 +7590,15 @@ function addBubbleActions(bubble, text) {
   // truncated partial would strip sections (e.g. pricing) from future edits.
   if (thisCode && !buildStage && !isTruncated) {
     _lastBuiltCode = thisCode;
-    try { chrome.storage.local.set({ snaptoai_built_code: thisCode }); } catch(e) {}
-    _updateQuickAdd();
+    // Swap in any images the user attached during this request
+    if (_pendingBuildImages.length > 0) {
+      _pendingBuildImages.forEach((dataUrl, i) => {
+        _lastBuiltCode = _lastBuiltCode.split(`__SNAP_IMG_${i}__`).join(dataUrl);
+      });
+      _pendingBuildImages = [];
+    }
+    try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode }); } catch(e) {}
+    _updateBuildInput();
   }
   // Always render the preview when build mode is on — even if the AI gave
   // a plain-text reply (no new HTML). This ensures the spinner never sticks.
@@ -8110,7 +8137,7 @@ function clearChat() {
   // rather than starting fresh, producing "ghost" sites from prior sessions.
   _lastBuiltCode = '';
   try { chrome.storage.local.remove(['snaptoai_built_code']); } catch(e) {}
-  _updateQuickAdd();
+  _updateBuildInput();
 
   // Hide the live preview since there is nothing built in this session
   const w = document.getElementById('previewWrapper');
@@ -8358,6 +8385,8 @@ document.getElementById('searchToggleBtn')?.addEventListener('click', (e) => {
 
 // ── Build Mode ────────────────────────────────────────────────────────────────
 let _lastBuiltCode = '';
+// Base64 data URLs waiting to replace __SNAP_IMG_N__ placeholders after AI responds
+let _pendingBuildImages = [];
 // When true, the next build response is a continuation chunk — merge with _lastBuiltCode
 let _continuationPending = false;
 // Safety cap: stop auto-continuing after this many consecutive truncated responses
@@ -8503,7 +8532,7 @@ function _postToSandbox(code, isFinal) {
   const iframe = document.getElementById('livePreview');
   if (!iframe) return;
   _lastBuiltCode = code; // always keep buffer fresh
-  _updateQuickAdd();
+  _updateBuildInput();
   // Gate on handshake — contentWindow is always truthy once element exists,
   // so we must check _isSandboxReady explicitly. If sandbox isn't ready yet,
   // the handshake listener will auto-flush _lastBuiltCode when it fires.
@@ -8582,12 +8611,12 @@ function renderLivePreview(responseText) {
   if (!buildStage && !codeTruncated) {
     _lastBuiltCode = code;
     try { chrome.storage.local.set({ snaptoai_built_code: code }); } catch(e) {}
-    _updateQuickAdd();
+    _updateBuildInput();
   } else if (buildStage) {
     // Staged builds are always complete fragments — always save
     _lastBuiltCode = code;
     try { chrome.storage.local.set({ snaptoai_built_code: code }); } catch(e) {}
-    _updateQuickAdd();
+    _updateBuildInput();
   }
 
   const w = document.getElementById('previewWrapper');
@@ -8675,18 +8704,18 @@ document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
     // Do NOT clear _lastBuiltCode or storage here — the user may toggle Build
     // Mode off temporarily and back on to continue updating the same site.
     // The cache is only purged when the user explicitly clicks Clear Chat.
-    _updateQuickAdd();
+    _updateBuildInput();
   } else if (!_lastBuiltCode) {
     // Restore any previously built site from storage so follow-up fix
     // requests have the current HTML even if the popup was reopened
     chrome.storage.local.get('snaptoai_built_code', (res) => {
       if (res.snaptoai_built_code) {
         _lastBuiltCode = res.snaptoai_built_code;
-        _updateQuickAdd();
+        _updateBuildInput();
       }
     });
   } else {
-    _updateQuickAdd();
+    _updateBuildInput();
   }
 });
 
@@ -8721,76 +8750,19 @@ document.getElementById('previewCopyBtn')?.addEventListener('click', () => {
   }
 });
 
-// ── Quick-Add bar ──────────────────────────────────────────────────────────────
-// Shows/hides the "Add to site" button strip inside the preview panel
-function _updateQuickAdd() {
-  const bar = document.getElementById('buildQuickAdd');
-  if (bar) bar.style.display = (_lastBuiltCode && buildModeEnabled) ? 'flex' : 'none';
+// ── Build Mode UI helpers ──────────────────────────────────────────────────────
+// Update the chat input placeholder to guide the user when patching a site
+function _updateBuildInput() {
+  const input = document.getElementById('chatInput');
+  if (!input) return;
+  if (buildModeEnabled && _lastBuiltCode) {
+    input.placeholder = 'Describe a fix or what to add — e.g. "change hero to dark blue" or attach an image 📎';
+  } else if (buildModeEnabled) {
+    input.placeholder = 'Describe the site to build — e.g. "landing page for a yoga studio"';
+  } else {
+    input.placeholder = 'Ask about your screenshot...';
+  }
 }
-
-let _qaType = '';
-const _qaHints = {
-  image:   'Paste a Pexels or any image URL — e.g. https://images.pexels.com/photos/123/photo.jpeg',
-  logo:    'Paste the logo image URL to replace the current logo in the navigation',
-  video:   'Paste a YouTube, Vimeo, or direct .mp4 URL to embed',
-  section: 'Describe the new section — e.g. "FAQ with 5 questions" or "Team grid with 3 members"',
-  code:    'Paste raw HTML, CSS, or JS to inject — it will be placed in the right spot',
-  fix:     'Describe exactly what is broken — e.g. "the tab buttons don\'t switch panels"'
-};
-const _qaPrompts = {
-  image:   (v) => `Add this image URL to the most visually appropriate section of the existing site: ${v}\nUse object-fit:cover, descriptive alt text, and the onerror fallback. Keep all other design completely unchanged.`,
-  logo:    (v) => `Replace the existing logo / brand image in the navigation header with this image URL: ${v}\nKeep all other design, colors, fonts, and layout completely unchanged.`,
-  video:   (v) => `Embed this video in the most contextually appropriate section of the site: ${v}\nWrap it in a responsive 16:9 container. Keep all other design completely unchanged.`,
-  section: (v) => `Add a new section to the existing site: ${v}\nMatch the exact design language already present — same colors, fonts, radius, and spacing. Do NOT change any other section.`,
-  code:    (v) => `Insert this code into the existing site in the most appropriate location:\n\`\`\`\n${v}\n\`\`\`\nKeep all other design completely unchanged.`,
-  fix:     (v) => `Fix this specific issue in the existing site: ${v}\nChange ONLY the broken part — do not redesign or alter anything else.`
-};
-
-document.querySelectorAll('.qa-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    _qaType = btn.dataset.type || '';
-    const form = document.getElementById('buildQuickAddForm');
-    const input = document.getElementById('qaInput');
-    const hint = document.getElementById('qaHint');
-    if (form) form.style.display = 'block';
-    if (hint) hint.textContent = _qaHints[_qaType] || '';
-    if (input) {
-      input.placeholder = _qaHints[_qaType] || 'Paste URL or describe…';
-      input.value = '';
-      input.focus();
-    }
-  });
-});
-
-document.getElementById('qaSendBtn')?.addEventListener('click', () => {
-  const input = document.getElementById('qaInput');
-  const val = input?.value?.trim();
-  if (!val) return;
-  const makePrompt = _qaPrompts[_qaType];
-  const prompt = makePrompt ? makePrompt(val) : val;
-  const chatInput = document.getElementById('chatInput');
-  if (chatInput) {
-    chatInput.value = prompt;
-    document.getElementById('sendBtn')?.click();
-  }
-  // Close the form
-  const form = document.getElementById('buildQuickAddForm');
-  if (form) form.style.display = 'none';
-  if (input) input.value = '';
-});
-
-document.getElementById('qaCancelBtn')?.addEventListener('click', () => {
-  const form = document.getElementById('buildQuickAddForm');
-  if (form) form.style.display = 'none';
-});
-
-// Allow Enter key (without Shift) to submit the quick-add form
-document.getElementById('qaInput')?.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    document.getElementById('qaSendBtn')?.click();
-  }
-});
 
 document.getElementById('previewOpenTabBtn')?.addEventListener('click', () => {
   chrome.tabs.create({ url: chrome.runtime.getURL('preview-output.html') });
