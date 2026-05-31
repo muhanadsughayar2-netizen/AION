@@ -6565,10 +6565,12 @@ async function handleSend() {
     }
 
     if (videoParts.length > 0) {
-      // Safety cap: base64 embedding only works for short clips.
-      // Raw limit ~8 MB → ~10.7 MB base64 in the HTML — beyond this Gemini
-      // inline upload fails and storage writes become unreliable.
-      const BUILD_VIDEO_BYTE_LIMIT = 8 * 1024 * 1024; // 8 MB raw
+      // In Build Mode the video is never sent to Gemini — only the placeholder
+      // string __SNAP_VID_N__ travels to the API. The actual base64 data is held
+      // client-side and swapped in after the AI responds. So the only real limit
+      // is browser memory / storage, not Gemini's inline-data quota.
+      // 50 MB covers Veo's ~2700 kbps output for up to ~2.5 minutes.
+      const BUILD_VIDEO_BYTE_LIMIT = 50 * 1024 * 1024; // 50 MB raw
       const tooBig = videoParts.filter(f => {
         // f.data is base64 — raw size ≈ base64 length × 0.75
         const rawBytes = Math.round((f.data.length * 3) / 4);
@@ -6583,24 +6585,20 @@ async function handleSend() {
         // Tell the user before the request goes out — don't silently fail
         addBubble(
           `⚠️ "${tooBig.map(f => f.name).join(', ')}" is too large to embed directly ` +
-          `(limit is ~8 MB for direct video embedding). ` +
+          `(limit is ~50 MB — this clip is unusually long). ` +
           `Upload it to YouTube as unlisted, then paste the link and say "embed this video".`,
           'error'
         );
-        // Remove oversized parts from the queue so they don't get sent to Gemini
-        tooBig.forEach(f => {
-          filesQueue = filesQueue.filter(q => q !== f);
-        });
-        if (fitsInline.length === 0) {
-          // Nothing left to embed — abort video embed path
-          releaseRequestLock();
-          sendBtn.disabled = false;
-          return;
-        }
+        tooBig.forEach(f => { filesQueue = filesQueue.filter(q => q !== f); });
+        if (fitsInline.length === 0) return;
       }
 
       if (fitsInline.length > 0) {
         _pendingBuildVideos = fitsInline.map(f => `data:${f.mimeType};base64,${f.data}`);
+        // Remove the video data from filesQueue — Gemini only needs the placeholder
+        // text, not the actual binary. Keeping it would send tens of MB to the API
+        // unnecessarily and risk hitting Gemini's inline-data quota.
+        fitsInline.forEach(f => { filesQueue = filesQueue.filter(q => q !== f); });
         const videoPlaceholderList = _pendingBuildVideos.map((_, i) => `__SNAP_VID_${i}__`).join(', ');
         prompt += `\n\nVIDEO EMBED INSTRUCTION: The user attached ${fitsInline.length} video(s). ` +
           `Use these exact placeholder strings as the src values: ${videoPlaceholderList} ` +
