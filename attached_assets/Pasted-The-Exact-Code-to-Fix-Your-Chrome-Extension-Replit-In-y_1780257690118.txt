@@ -1,0 +1,60 @@
+The Exact Code to Fix Your Chrome Extension (Replit)
+In your Chrome Extension's preview-output.js (or where your runScripts function is declared), replace your script loader with this modern, leak-proof version. It isolates executed scripts inside an anonymous scope so const and let can be re-declared infinitely without crashing:
+code
+JavaScript
+function runScripts(container) {
+  try {
+    container.querySelectorAll('script').forEach(function(old) {
+      try {
+        if (!old.textContent.trim() && !old.hasAttribute('src')) return;
+
+        var fresh = document.createElement('script');
+        Array.from(old.attributes).forEach(function(a) {
+          try { fresh.setAttribute(a.name, a.value); } catch(e) {}
+        });
+
+        if (old.textContent.trim()) {
+          // SAFEGUARD IIFE: Wrap the inline script so const/let declarations
+          // don't leak into the global sandbox window namespace on updates.
+          fresh.textContent = ";(function(){\n" + old.textContent + "\n})();";
+        }
+
+        if (old.parentNode) {
+          old.parentNode.replaceChild(fresh, old);
+        }
+      } catch(e) {
+        console.error('[SnapToAI Sandbox Error]', e);
+      }
+    });
+  } catch(e) {}
+}
+2. The Prompt to give your Extension's AI (Replit / SnapToAI)
+Copy and paste this system instruction directly into your AI model's or extension's core instructions. It mandates that any video component supports offline file uploads and enforces leak-proof scripting:
+code
+Text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  OFFLINE SYSTEM POLICY & VIDEO UPLOAD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. OFFLINE VIDEO RECOVERY:
+   Whenever you generate a <video> element, you must ALWAYS overlay an offline-friendly upload catcher. This lets users select their downloaded Veo clips when previewing locally. 
+   Apply this pattern to every video tag:
+   ```html
+   <div style="position:relative; border-radius:12px; overflow:hidden; aspect-ratio:16/9; margin-bottom:20px;">
+       <video id="veoVid0" src="__SNAP_VID_0__" autoplay muted loop playsinline style="width:100%; height:100%; object-fit:cover; display:block;"></video>
+       <div onclick="document.getElementById('veoUpload0').click()" style="position:absolute; inset:0; background:rgba(0,0,0,0.55); opacity:0; transition:opacity .3s; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; cursor:pointer;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'">
+           <div style="width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); display:flex; align-items:center; justify-content:center; font-size:20px; color:#fff;">⬆</div>
+           <span style="color:#fff; font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;">Click to load your Veo video</span>
+       </div>
+       <input type="file" id="veoUpload0" accept="video/*" style="display:none" onchange="(function(input, vidId){ if(input.files[0]) { document.getElementById(vidId).src = URL.createObjectURL(input.files[0]); } })(this, 'veoVid0')">
+   </div>
+LEAK-PROOF SCRIPT SCOPING:
+To prevent global re-declaration crashes (SyntaxError: Identifier already declared) in Chrome Extension previews, you are strictly forbidden from placing bare "let" and "const" variables at the top level of style or visual script tags.
+Always seal your page-logic scripts inside an anonymous IIFE block:
+code
+JavaScript
+(function() {
+  // Your IntersectionObservers and variables go here
+  const observer = new IntersectionObserver(...);
+})();
+code
+Code

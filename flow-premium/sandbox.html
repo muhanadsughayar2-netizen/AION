@@ -59,7 +59,14 @@
             Array.from(old.attributes).forEach(function(a) {
               try { fresh.setAttribute(a.name, a.value); } catch(e) {}
             });
-            fresh.textContent = old.textContent;
+            // Wrap inline scripts in IIFE so const/let never leak into the
+            // global sandbox scope — prevents "already declared" crashes when
+            // the preview re-evaluates on each streaming update.
+            if (old.textContent.trim()) {
+              fresh.textContent = ";(function(){\n" + old.textContent + "\n})();";
+            } else {
+              fresh.textContent = old.textContent;
+            }
             if (old.parentNode) {
               old.parentNode.replaceChild(fresh, old);
             }
