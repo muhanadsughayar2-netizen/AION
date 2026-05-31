@@ -32,12 +32,12 @@
   --st-border-default: rgba(255, 255, 255, 0.1);
   --st-border-strong: rgba(255, 255, 255, 0.2);
 
-  --st-accent: #00d9ff;
-  --st-accent-2: #00b8d4;
-  --st-accent-soft: rgba(0, 217, 255, 0.1);
-  --st-accent-soft-2: rgba(0, 217, 255, 0.15);
-  --st-accent-border: rgba(0, 217, 255, 0.3);
-  --st-accent-glow: rgba(0, 217, 255, 0.5);
+  --st-accent: #ffffff;
+  --st-accent-2: #e0e0e0;
+  --st-accent-soft: rgba(255, 255, 255, 0.1);
+  --st-accent-soft-2: rgba(255, 255, 255, 0.15);
+  --st-accent-border: rgba(255, 255, 255, 0.3);
+  --st-accent-glow: rgba(255, 255, 255, 0.3);
 
   --st-success: #00ff88;
   --st-warning: #ffaa00;
@@ -47,10 +47,10 @@
 
   /* Theme cycle button (used by popup + sidebar headers) */
   --st-cycle-bg: rgba(255, 255, 255, 0.06);
-  --st-cycle-bg-hover: rgba(0, 217, 255, 0.18);
+  --st-cycle-bg-hover: rgba(255, 255, 255, 0.18);
   --st-cycle-color: rgba(255, 255, 255, 0.85);
   --st-cycle-border: rgba(255, 255, 255, 0.12);
-  --st-cycle-border-hover: rgba(0, 217, 255, 0.4);
+  --st-cycle-border-hover: rgba(255, 255, 255, 0.4);
 }
 
 :root[data-theme="light"] {

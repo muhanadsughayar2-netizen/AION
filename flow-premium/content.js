@@ -72,17 +72,17 @@
     }
     // Dark (byte-equivalent to v2.5.0 toast/overlay colors)
     return {
-      toastSuccessBg: 'rgba(0, 217, 255, 0.95)',
+      toastSuccessBg: 'rgba(255, 255, 255, 0.95)',
       toastErrorBg:   'rgba(255, 59, 48, 0.95)',
       toastText:      '#000',
-      toastShadow:    '0 4px 20px rgba(0, 217, 255, 0.4)',
+      toastShadow:    '0 4px 20px rgba(255, 255, 255, 0.4)',
       overlayBg:      'rgba(0, 0, 0, 0.85)',
-      overlayBorder:  'rgba(0, 217, 255, 0.5)',
+      overlayBorder:  'rgba(255, 255, 255, 0.5)',
       overlayShadow:  '0 4px 20px rgba(0, 0, 0, 0.5)',
       overlayText:    '#ffffff',
-      overlayAccent:  '#00d9ff',
-      spinnerTrack:   'rgba(0, 217, 255, 0.3)',
-      spinnerHead:    'rgba(0, 217, 255, 0.9)',
+      overlayAccent:  '#ffffff',
+      spinnerTrack:   'rgba(255, 255, 255, 0.3)',
+      spinnerHead:    'rgba(255, 255, 255, 0.9)',
       successCheck:   '#4ade80'
     };
   }
@@ -3801,7 +3801,7 @@
           width: 24px;
           height: 24px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #8a2be2 0%, #9945ff 50%, #00d4ff 100%);
+          background: linear-gradient(135deg, #8a2be2 0%, #9945ff 50%, #ffffff 100%);
           pointer-events: none;
           z-index: 2147483647;
           animation: snaptoai-cursor-pulse 1.5s ease-in-out infinite;
