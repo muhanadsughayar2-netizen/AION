@@ -5947,6 +5947,7 @@ STRICT RULES:
 • If adding an image: use a real Pexels URL matching the context, with onerror fallback, object-fit:cover.
 • If adding a section: match the exact same design language (colors, radius, fonts, spacing) already present.
 • FUNCTION COMPLETENESS: Every function called in an onclick/onchange/onsubmit/oninput attribute MUST be fully defined in the <script> block. If the existing site has broken onclick handlers (functions that are called but not defined), fix them as part of this response.
+• YOUTUBE EMBEDS: When the user pastes any YouTube URL (youtube.com/watch?v=, youtu.be/, or youtube.com/embed/), ALWAYS embed it as a plain responsive iframe. NEVER build a custom video player, input box, or Upload & Play button. Extract the video ID, strip all tracking params (?si=, &feature=, etc.), and use this exact pattern: <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;"><iframe src="https://www.youtube.com/embed/VIDEO_ID" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
 • Output: ONLY a single \`\`\`html code block. Zero prose before or after.`;
 
 const L_UPDATE_PROMPT = `You are surgically updating one section of a website.
