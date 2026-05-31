@@ -6480,7 +6480,7 @@ async function sendToGemini(prompt, imageDataUrls) {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: contents,
     generationConfig: {
-      maxOutputTokens: buildModeEnabled ? 8192 : getConfig('MAX_OUTPUT_TOKENS', 2048),
+      maxOutputTokens: buildModeEnabled ? 32768 : getConfig('MAX_OUTPUT_TOKENS', 2048),
       temperature: buildModeEnabled ? 0.75 : getConfig('TEMPERATURE', 0.7),
       topP: 0.95,
       topK: 40
@@ -7449,7 +7449,7 @@ async function handleSend() {
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: contents,
         generationConfig: {
-          maxOutputTokens: buildModeEnabled ? 8192 : getConfig('MAX_OUTPUT_TOKENS', 2048),
+          maxOutputTokens: buildModeEnabled ? 32768 : getConfig('MAX_OUTPUT_TOKENS', 2048),
           temperature: buildModeEnabled ? 0.75 : getConfig('TEMPERATURE', 0.7),
           topP: 0.95,
           topK: 40
