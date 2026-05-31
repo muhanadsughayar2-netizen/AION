@@ -6535,8 +6535,14 @@ async function handleSend() {
   // base64 data URLs locally and give the AI placeholder strings as src/src
   // values. After the AI responds we swap in the real data URLs client-side
   // so the media is embedded without needing an external host.
-  _pendingBuildImages = [];
-  _pendingBuildVideos = [];
+  // Do NOT clear pending media on continuation sends — the arrays hold the
+  // data needed to swap __SNAP_IMG_N__ / __SNAP_VID_N__ once the full site
+  // is assembled. Clearing them here would leave placeholders in the output.
+  const _isContinuationSend = prompt.startsWith('CONTINUE_BUILD:');
+  if (!_isContinuationSend) {
+    _pendingBuildImages = [];
+    _pendingBuildVideos = [];
+  }
   if (buildModeEnabled && _lastBuiltCode) {
     const imageParts = filesQueue.filter(f => f.mimeType && f.mimeType.startsWith('image/'));
     const videoParts = filesQueue.filter(f => f.mimeType && f.mimeType.startsWith('video/'));
