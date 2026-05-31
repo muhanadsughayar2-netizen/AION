@@ -6553,16 +6553,52 @@ async function handleSend() {
     }
 
     if (videoParts.length > 0) {
-      _pendingBuildVideos = videoParts.map(f => `data:${f.mimeType};base64,${f.data}`);
-      const videoPlaceholderList = _pendingBuildVideos.map((_, i) => `__SNAP_VID_${i}__`).join(', ');
-      prompt += `\n\nVIDEO EMBED INSTRUCTION: The user attached ${videoParts.length} video(s). ` +
-        `In your HTML output use these exact placeholder strings as the src values: ${videoPlaceholderList} ` +
-        `(example: <video src="__SNAP_VID_0__" controls autoplay muted loop playsinline ` +
-        `style="width:100%;border-radius:12px;display:block;"></video>). ` +
-        `Wrap each video in a responsive 16:9 container div. ` +
-        `Place each video in the most visually fitting section of the existing site. ` +
-        `NEVER output any actual base64 data — only use the placeholder strings. ` +
-        `Keep all other design completely unchanged.`;
+      // Safety cap: base64 embedding only works for short clips.
+      // Raw limit ~8 MB → ~10.7 MB base64 in the HTML — beyond this Gemini
+      // inline upload fails and storage writes become unreliable.
+      const BUILD_VIDEO_BYTE_LIMIT = 8 * 1024 * 1024; // 8 MB raw
+      const tooBig = videoParts.filter(f => {
+        // f.data is base64 — raw size ≈ base64 length × 0.75
+        const rawBytes = Math.round((f.data.length * 3) / 4);
+        return rawBytes > BUILD_VIDEO_BYTE_LIMIT;
+      });
+      const fitsInline = videoParts.filter(f => {
+        const rawBytes = Math.round((f.data.length * 3) / 4);
+        return rawBytes <= BUILD_VIDEO_BYTE_LIMIT;
+      });
+
+      if (tooBig.length > 0) {
+        // Tell the user before the request goes out — don't silently fail
+        addBubble(
+          `⚠️ "${tooBig.map(f => f.name).join(', ')}" is too large to embed directly ` +
+          `(limit is ~8 MB for direct video embedding). ` +
+          `Upload it to YouTube as unlisted, then paste the link and say "embed this video".`,
+          'error'
+        );
+        // Remove oversized parts from the queue so they don't get sent to Gemini
+        tooBig.forEach(f => {
+          filesQueue = filesQueue.filter(q => q !== f);
+        });
+        if (fitsInline.length === 0) {
+          // Nothing left to embed — abort video embed path
+          releaseRequestLock();
+          sendBtn.disabled = false;
+          return;
+        }
+      }
+
+      if (fitsInline.length > 0) {
+        _pendingBuildVideos = fitsInline.map(f => `data:${f.mimeType};base64,${f.data}`);
+        const videoPlaceholderList = _pendingBuildVideos.map((_, i) => `__SNAP_VID_${i}__`).join(', ');
+        prompt += `\n\nVIDEO EMBED INSTRUCTION: The user attached ${fitsInline.length} video(s). ` +
+          `In your HTML output use these exact placeholder strings as the src values: ${videoPlaceholderList} ` +
+          `(example: <video src="__SNAP_VID_0__" controls autoplay muted loop playsinline ` +
+          `style="width:100%;border-radius:12px;display:block;"></video>). ` +
+          `Wrap each video in a responsive 16:9 container div. ` +
+          `Place each video in the most visually fitting section of the existing site. ` +
+          `NEVER output any actual base64 data — only use the placeholder strings. ` +
+          `Keep all other design completely unchanged.`;
+      }
     }
   }
 
