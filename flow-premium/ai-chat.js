@@ -5948,7 +5948,7 @@ STRICT RULES:
 • If adding a section: match the exact same design language (colors, radius, fonts, spacing) already present.
 • FUNCTION COMPLETENESS: Every function called in an onclick/onchange/onsubmit/oninput attribute MUST be fully defined in the <script> block. If the existing site has broken onclick handlers (functions that are called but not defined), fix them as part of this response.
 • YOUTUBE EMBEDS: When the user pastes any YouTube URL (youtube.com/watch?v=, youtu.be/, or youtube.com/embed/), ALWAYS embed it as a plain responsive iframe. NEVER build a custom video player, input box, or Upload & Play button. Extract the video ID, strip all tracking params (?si=, &feature=, etc.), and use this exact pattern: <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;"><iframe src="https://www.youtube.com/embed/VIDEO_ID" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
-• UPLOADED VIDEO FILES: When the prompt contains __SNAP_VID_0__ (or __SNAP_VID_1__, __SNAP_VID_2__ etc.), the user has attached a real mp4/webm video file they created. Place a <video> tag using that placeholder as the src — do NOT build a player UI, do NOT ask for a URL, just embed it directly: <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;"><video src="__SNAP_VID_0__" controls autoplay muted loop playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;border-radius:12px;"></video></div>
+• UPLOADED VIDEO FILES: When the prompt contains __SNAP_VID_0__ (or __SNAP_VID_1__, __SNAP_VID_2__ etc.), the user has attached a real mp4/webm video file. Embed it using this EXACT pattern — it includes a hover overlay so users can re-upload their video in the downloaded HTML file: <div style="position:relative;border-radius:12px;overflow:hidden;aspect-ratio:16/9;"><video id="snapVid0" src="__SNAP_VID_0__" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video><div onclick="document.getElementById('snapUpload0').click()" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'"><div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;">⬆</div><span style="color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">Click to load your video</span></div><input type="file" id="snapUpload0" accept="video/*" style="display:none" onchange="(function(i,v){if(i.files[0])document.getElementById(v).src=URL.createObjectURL(i.files[0])})(this,'snapVid0')"></div> — adjust id/for numbering for VID_1, VID_2 etc. Do NOT ask for a URL or build a custom player.
 • UPLOADED AUDIO FILES: When the prompt contains __SNAP_AUD_0__ (or __SNAP_AUD_1__ etc.), the user has attached a real mp3/wav/ogg audio file. Embed it directly using an HTML5 audio tag — do NOT build a custom player or ask for a URL: <audio src="__SNAP_AUD_0__" controls style="width:100%;border-radius:8px;margin:12px 0;"></audio>. Place it in the section the user specified, or the most fitting section if not specified.
 • Output: ONLY a single \`\`\`html code block. Zero prose before or after.`;
 
@@ -6599,15 +6599,19 @@ async function handleSend() {
         fitsInline.forEach(f => { filesQueue = filesQueue.filter(q => q !== f); });
         const videoPlaceholderList = _pendingBuildVideos.map((_, i) => `__SNAP_VID_${i}__`).join(', ');
         prompt += `\n\nVIDEO EMBED INSTRUCTION: The user attached ${fitsInline.length} video(s). ` +
-          `Use these exact placeholder strings as the src values: ${videoPlaceholderList} ` +
-          `(example: <video src="__SNAP_VID_0__" controls autoplay muted loop playsinline ` +
-          `style="width:100%;border-radius:12px;display:block;"></video>). ` +
-          `Wrap each video in a responsive 16:9 container (aspect-ratio:16/9;overflow:hidden). ` +
+          `Use these exact placeholder strings as the src values: ${videoPlaceholderList}. ` +
+          `For each video use this pattern (adjusting id/for index per video): ` +
+          `<div style="position:relative;border-radius:12px;overflow:hidden;aspect-ratio:16/9;">` +
+          `<video id="snapVid0" src="__SNAP_VID_0__" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video>` +
+          `<div onclick="document.getElementById('snapUpload0').click()" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'">` +
+          `<div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;">⬆</div>` +
+          `<span style="color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">Click to load your video</span></div>` +
+          `<input type="file" id="snapUpload0" accept="video/*" style="display:none" onchange="(function(i,v){if(i.files[0])document.getElementById(v).src=URL.createObjectURL(i.files[0])})(this,'snapVid0')"></div>. ` +
           `CRITICAL RULES: ` +
-          `(1) If the user named a specific section (e.g. "features section", "hero", "about") — place the video EXACTLY there, not elsewhere. ` +
-          `(2) If the user said "replace" or "swap" an existing video — change ONLY that <video> tag's src attribute to the placeholder. Do NOT add a new video element. ` +
-          `(3) If no section is specified — place in the most contextually fitting section. ` +
-          `(4) NEVER output any actual base64 data — only use the placeholder strings. ` +
+          `(1) If the user named a specific section — place the video EXACTLY there. ` +
+          `(2) If replacing an existing video — update only its src and add the overlay wrapper. ` +
+          `(3) If no section specified — place in the most fitting section. ` +
+          `(4) NEVER output actual base64 data — only placeholder strings. ` +
           `(5) Keep all other design completely unchanged.`;
       }
     }
@@ -6651,11 +6655,15 @@ async function handleSend() {
     const stagedIdx = _pendingBuildVideos.length;
     _pendingBuildVideos.push(`data:${m.mimeType};base64,${m.data}`);
     prompt += `\n\n[USER MEDIA] The user has a Veo-generated video to embed. ` +
-      `Use this EXACT placeholder as the <video> src — do NOT output any base64 data: __SNAP_VID_${stagedIdx}__\n` +
-      `Embed it as: <video src="__SNAP_VID_${stagedIdx}__" controls autoplay muted loop playsinline ` +
-      `style="width:100%;border-radius:12px;display:block;"></video> ` +
-      `wrapped in a responsive 16:9 container (aspect-ratio:16/9;overflow:hidden) ` +
-      `in a dedicated full-width section of the page.`;
+      `Use __SNAP_VID_${stagedIdx}__ as the video src — do NOT output any base64 data. ` +
+      `Embed it using this EXACT wrapper (includes a hover-to-upload overlay for the downloaded HTML): ` +
+      `<div style="position:relative;border-radius:12px;overflow:hidden;aspect-ratio:16/9;">` +
+      `<video id="snapVid${stagedIdx}" src="__SNAP_VID_${stagedIdx}__" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video>` +
+      `<div onclick="document.getElementById('snapUpload${stagedIdx}').click()" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'">` +
+      `<div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;">⬆</div>` +
+      `<span style="color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">Click to load your video</span></div>` +
+      `<input type="file" id="snapUpload${stagedIdx}" accept="video/*" style="display:none" onchange="(function(i,v){if(i.files[0])document.getElementById(v).src=URL.createObjectURL(i.files[0])})(this,'snapVid${stagedIdx}')"></div>` +
+      ` — place in a dedicated full-width section of the page.`;
     clearStagedMedia();
   }
 
