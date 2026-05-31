@@ -5645,7 +5645,7 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
      .reveal.visible { animation: revealUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
      @keyframes revealUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
 
-   JS (in your <script> block, run directly — no wrapper):
+   JS (inside your IIFE — see ⑤ for the required IIFE wrapper):
      const _io = new IntersectionObserver(entries => entries.forEach(e => {
        if (e.isIntersecting) { e.target.classList.add('visible'); _io.unobserve(e.target); }
      }), { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
@@ -5667,17 +5667,31 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
    DO NOT wrap anything in DOMContentLoaded (the event fires before inline scripts run when the
    script is at end of body, making the callback never execute).
 
+   IIFE WRAPPER — REQUIRED FOR ALL SCRIPT CONTENT (prevents fatal redeclaration crashes):
+   The live preview re-evaluates the script on every update. If any const/let is declared at the
+   top level of a <script> block, re-evaluation throws: "Identifier 'x' has already been declared"
+   and all JS on the page dies. The ONLY safe pattern is ONE IIFE wrapping all logic:
+
+     <script>
+     (function() {
+       // ALL const/let/var declarations go inside here — safe from redeclaration forever.
+       const _io = new IntersectionObserver(...);
+
+       // Functions called by onclick="" must be attached to window so HTML can find them:
+       window.openModal = function(id) { document.getElementById(id).style.display = 'flex'; };
+       window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; };
+       window.showTab = function(id, btn) { /* ... */ };
+     })();
+     </script>
+
+   NEVER declare const/let at the top level of <script>. NEVER use function declarations for
+   onclick handlers — use window.fnName = function(){} inside the IIFE instead.
+
    SCROLL LINKS — use plain anchor tags, never onclick for scrolling:
      <a href="#sectionId" class="btn">Go There</a>   ← works with zero JavaScript
    Never write onclick="scrollToSection('...')" — it requires a JS function that may be missing.
 
-   FUNCTIONS called by onclick="" MUST be defined at the TOP LEVEL of the script (not inside
-   any callback or block), so the browser can find them in global scope:
-     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-   Then in HTML: onclick="openModal('shieldModal')" — this is fine for simple function calls.
-
-   WIRING PATTERN for everything else (run directly, not inside any callback):
+   WIRING PATTERN for everything else (inside the IIFE, not at top level):
      const btn = document.getElementById('myBtn');
      if (btn) btn.addEventListener('click', () => { /* handler */ });
 
@@ -5701,14 +5715,14 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
        @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
        .tab-btn { opacity:0.5; border: 1px solid transparent; border-radius: 100px; }
        .tab-btn.active { opacity:1; background: var(--accent); color: var(--bg); }
-     JS (top-level function — NOT inside any callback):
-       function showTab(id, btn) {
+     JS (window-attached inside IIFE — so onclick="" can find it):
+       window.showTab = function(id, btn) {
          document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
          const panel = document.getElementById(id);
          if (panel) panel.classList.add('active');
          if (btn) btn.classList.add('active');
-       }
+       };
      IMPORTANT: do NOT use style.display on panels — classList toggle preserves display:grid from CSS.
      CONTENT RULE: every tab panel MUST have real written content matching the tab label.
      Disclaimer tab → write a real 2-paragraph medical/legal disclaimer specific to the site topic.
@@ -5946,7 +5960,8 @@ STRICT RULES:
 • Preserve every existing ID, class, data-attribute, and script exactly as-is unless directly involved in the change.
 • If adding an image: use a real Pexels URL matching the context, with onerror fallback, object-fit:cover.
 • If adding a section: match the exact same design language (colors, radius, fonts, spacing) already present.
-• FUNCTION COMPLETENESS: Every function called in an onclick/onchange/onsubmit/oninput attribute MUST be fully defined in the <script> block. If the existing site has broken onclick handlers (functions that are called but not defined), fix them as part of this response.
+• IIFE WRAPPER — ALL script content MUST be inside a single (function(){ ... })(); wrapper. The live preview re-evaluates scripts on every update, so any top-level const/let throws "Identifier already declared" and kills all JS on the page. Functions called by onclick="" must be attached to window inside the IIFE: window.myFn = function(){ ... }; Never use top-level const/let or bare function declarations for onclick handlers.
+• FUNCTION COMPLETENESS: Every function called in an onclick/onchange/onsubmit/oninput attribute MUST be fully defined (as window.fn = function(){}) inside the IIFE. If the existing site has broken onclick handlers, fix them as part of this response.
 • YOUTUBE EMBEDS: When the user pastes any YouTube URL (youtube.com/watch?v=, youtu.be/, or youtube.com/embed/), ALWAYS embed it as a plain responsive iframe. NEVER build a custom video player, input box, or Upload & Play button. Extract the video ID, strip all tracking params (?si=, &feature=, etc.), and use this exact pattern: <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;"><iframe src="https://www.youtube.com/embed/VIDEO_ID" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
 • UPLOADED VIDEO FILES: When the prompt contains __SNAP_VID_0__ (or __SNAP_VID_1__, __SNAP_VID_2__ etc.), the user has attached a real mp4/webm video file. Embed it using this EXACT pattern — it includes a hover overlay so users can re-upload their video in the downloaded HTML file: <div style="position:relative;border-radius:12px;overflow:hidden;aspect-ratio:16/9;"><video id="snapVid0" src="__SNAP_VID_0__" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video><div onclick="document.getElementById('snapUpload0').click()" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'"><div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;">⬆</div><span style="color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">Click to load your video</span></div><input type="file" id="snapUpload0" accept="video/*" style="display:none" onchange="(function(i,v){if(i.files[0])document.getElementById(v).src=URL.createObjectURL(i.files[0])})(this,'snapVid0')"></div> — adjust id/for numbering for VID_1, VID_2 etc. Do NOT ask for a URL or build a custom player.
 • UPLOADED AUDIO FILES: When the prompt contains __SNAP_AUD_0__ (or __SNAP_AUD_1__ etc.), the user has attached a real mp3/wav/ogg audio file. Embed it directly using an HTML5 audio tag — do NOT build a custom player or ask for a URL: <audio src="__SNAP_AUD_0__" controls style="width:100%;border-radius:8px;margin:12px 0;"></audio>. Place it in the section the user specified, or the most fitting section if not specified.
