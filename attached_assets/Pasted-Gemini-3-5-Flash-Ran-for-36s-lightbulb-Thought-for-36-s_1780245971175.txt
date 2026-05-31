@@ -1,0 +1,103 @@
+Gemini 3.5 Flash
+Ran for 36s
+lightbulb
+Thought for 36 seconds
+1. Why Your Video Integration is Failing (The Technical "Wall")
+When you select the video you created in Veo and click "Use in Build," your current extension translates the video file into a raw base64 string and sends it to the AI.
+The AI is then instructed to output your video inside the HTML code block like this:
+code
+Html
+<video src="data:video/webm;base64,AAAAABBBCCCDDD..." controls></video>
+The Root Cause of the Failure:
+The Output Token Limit: The absolute maximum output limit of LLMs like Gemini is 8,192 tokens (roughly 35,000 characters of text).
+Base64 Payload Size: A high-definition, 8-second Veo video render at 8Mbps is between 8MB and 12MB. The base64 string for a 10MB video is 13.3 million characters long.
+The Result: The moment the AI starts streaming your code block, it writes src="data:video/webm;base64,AAAA...". Within a fraction of a second, the AI runs out of output tokens and truncates the response. This leaves you with half-written, broken HTML, causing the live preview to freeze, fail, or render a blank page.
+2. The Solution: The "Token Substitution" Pattern
+To fix this architectural flaw, your extension should never pass raw, massive base64 media blocks to the AI or ask the AI to output them. Instead, use a Placeholder-Substitution Pattern:
+Staging: When you stage a video, your extension assigns it a lightweight symbolic token (such as __VEO_VIDEO_0__).
+Prompting: Tell the AI to use __VEO_VIDEO_0__ as the src of your <video> tags. Since this token is only 15 characters, the AI will never fail, never truncate, and will generate your code flawlessly.
+Client-side Swapping: In your extension's rendering/preview layer (preview-output.js or ai-chat.js), intercept the generated HTML string and replace the __VEO_VIDEO_0__ token with the local, high-quality Base64 or Blob URL before loading it into your preview iframe.
+3. The Code to Update Your Extension
+Here is the exact code you need to modify in your extension files to implement this seamless replacement.
+Update ai-chat.js (How you send it to the AI):
+Find where you send the staged video in sendToGemini or handleSend, and update the prompt logic:
+code
+JavaScript
+// REPLACE your current staged video logic with this tokenized prompt:
+if (buildModeEnabled && _stagedBuildMedia) {
+  const m = _stagedBuildMedia;
+  if (m.type === 'video') {
+    // 1. We keep the massive video payload out of the prompt text!
+    // 2. We instruct the LLM to output a lightweight token instead.
+    userParts.push({ 
+      text: `\n\n[USER MEDIA] The user has generated a video for this website. 
+      To display this video, you MUST write the following exact placeholder in the src attribute: 
+      "__VEO_VIDEO_0__"
+      
+      Example:
+      <video src="__VEO_VIDEO_0__" autoplay muted loop playsinline class="w-full h-full object-cover"></video>
+      
+      Do NOT output the raw base64 data. Only write the exact string "__VEO_VIDEO_0__".`
+    });
+    
+    // Cache the real base64 in local state so the preview can swap it JIT
+    chrome.storage.local.set({ '_staged_video_data': `data:${m.mimeType};base64,${m.data}` });
+  }
+}
+Update ai-chat.js (Swapping inside renderLivePreview):
+Before you output code to the preview iframe/sandbox, swap the token back to the cached video data:
+code
+JavaScript
+// Locate inside your renderLivePreview(responseText) or similar function:
+async function renderLivePreview(responseText) {
+  if (!buildModeEnabled) return;
+  let { html: code } = extractHtmlFromResponse(responseText);
+  if (!code) return;
+
+  // Retrieve cached video base64, detect token, and swap it before rendering
+  const localData = await chrome.storage.local.get('_staged_video_data');
+  const realVideoUrl = localData._staged_video_data;
+  
+  if (realVideoUrl && code.includes('__VEO_VIDEO_0__')) {
+    console.log('[Token Swap] Swapping __VEO_VIDEO_0__ with real base64 video payload');
+    code = code.replaceAll('__VEO_VIDEO_0__', realVideoUrl);
+  }
+
+  _lastBuiltCode = code;
+  chrome.storage.local.set({ snaptoai_built_code: code });
+  
+  // Show preview with fully swapped video!
+  _showLivePreview(code);
+}
+Update preview-output.js (Standalone view swap):
+Do the same check in your standalone tab code so that when a user expands or saves their website, the video works perfectly:
+code
+JavaScript
+chrome.storage.local.get(['snaptoai_built_code', '_staged_video_data'], (res) => {
+  let code = res.snaptoai_built_code || '';
+  const realVideoUrl = res._staged_video_data;
+  
+  if (code && realVideoUrl && code.includes('__VEO_VIDEO_0__')) {
+    code = code.replaceAll('__VEO_VIDEO_0__', realVideoUrl);
+  }
+  
+  _code = code;
+  loadPreview(code);
+});
+4. Copy-Pasteable Prompt for Replit / Cursor / AI IDE
+If you are using Replit, Cursor, or another AI coding assistant to develop your extension, copy and paste this exact prompt to have it implement this architecture automatically:
+code
+Markdown
+We are building a Chrome Extension ("SnapToAI") that generates HTML/CSS/JS websites using Gemini while letting users embed generated Veo videos. 
+
+The current implementation fails because translating a 10MB video into base64 and passing it raw within the system prompt causes the AI to truncate mid-code due to its 8,192 output token limit.
+
+Please refactor our staged video pipeline ('_stagedBuildMedia' inside `ai-chat.js`, `preview-output.js`, and `sandbox.html` if present) to use the Token Substitution Pattern:
+1. When staging a video (`setStagedMedia('video')`), store the real base64 video in `chrome.storage.local` under '_staged_video_data'.
+2. Do not pass raw base64 text of the video to the AI. Hand the AI a lightweight token like `__VEO_VIDEO_0__` and instruct it to write `<video src="__VEO_VIDEO_0__" ...>` in the code block.
+3. In `renderLivePreview`, `preview-output.js` (and whenever loading the final code into the iframe or standalone preview), retrieve '_staged_video_data' and run `.replaceAll('__VEO_VIDEO_0__', realVideoData)` on the HTML string before rendering.
+4. Ensure when the user downloads or copies the code, they get the full file with correct paths.
+terminal
+1 error running the code
+lightbulb_tips
+Make changes, add new features, ask for anything
