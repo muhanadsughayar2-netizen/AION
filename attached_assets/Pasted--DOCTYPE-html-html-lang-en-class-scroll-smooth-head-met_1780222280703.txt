@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sughayar Bio-Nutrition | AI-Powered Health Defense</title>
+  
+  <!-- Tailwind CSS Engine -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icon Library -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Google Fonts pairing: "Plus Jakarta Sans" for modern tech-luxury titles and "Inter" for high legibility -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Plus Jakarta Sans', 'sans-serif'],
+            sans: ['Inter', 'sans-serif']
+          },
+          colors: {
+            bio: {
+              bg: '#05070a',
+              surface: '#0d1117',
+              accent: '#10b981', // Vibrant Leaf Green
+              secondary: '#3b82f6', // Electric Navy Blue
+              text: '#f8fafc',
+              muted: '#94a3b8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    :root {
+      --bg: #05070a;
+      --accent: #10b981;
+      --surface: #0d1117;
+    }
+    body {
+      background-color: var(--bg);
+      color: #f8fafc;
+      overflow-x: hidden;
+    }
+    .glass-nav {
+      background: rgba(5, 7, 10, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .hero-gradient {
+      background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.08) 0%, rgba(5, 7, 10, 0) 70%);
+    }
+    .pillar-card {
+      background: var(--surface);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .pillar-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 20px 40px -20px rgba(16, 185, 129, 0.25);
+    }
+    .reveal {
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal:not(.visible) {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 48px; 
+      align-items: center;
+      animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+    }
+    @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+    .tab-btn { opacity: 0.4; transition: all 0.3s ease; border-bottom: 2px solid transparent; }
+    .tab-btn.active { opacity: 1; color: var(--accent); border-bottom-color: var(--accent); }
+    
+    .glow-button {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .glow-button:hover {
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.4);
+      transform: translateY(-2px);
+    }
+    .logo-img {
+      filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.2));
+    }
+    @media (max-width: 768px) {
+      .tab-panel.active { grid-template-columns: 1fr; gap: 24px; }
+    }
+  </style>
+</head>
+<body class="font-sans antialiased selection:bg-bio-accent/30 selection:text-white">
+
+  <!-- Navigation Header -->
+  <nav class="fixed top-0 inset-x-0 z-50 glass-nav h-20 flex items-center">
+    <div class="max-w-6xl mx-auto w-full px-6 flex justify-between items-center">
+      <div class="flex items-center gap-4">
+        <!-- Brand Logo Frame -->
+        <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg border border-white/20">
+          <img src="https://replicate.delivery/xpbz/6VOfIuX5XG3YSCr6p6yXf6BvW0vUf4p3fL4oJ9A8y0m4eA4IA/out-0.png" 
+               alt="Sughayar Bio-Nutrition Logo" 
+               class="w-full h-full object-contain logo-img"
+               onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=MS&backgroundColor=10b981'">
+        </div>
+        <div class="flex flex-col">
+          <span class="font-heading text-lg font-bold leading-none tracking-tight text-white">SUGHAYAR</span>
+          <span class="text-[10px] font-bold text-bio-accent tracking-[0.2em] uppercase">Bio-Nutrition</span>
+        </div>
+      </div>
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-bio-muted">
+        <a href="#science" class="hover:text-bio-accent transition-colors">Science</a>
+        <a href="#pillars" class="hover:text-bio-accent transition-colors">5 Pillars</a>
+        <a href="#stages" class="hover:text-bio-accent transition-colors">Protocol Stages</a>
+        <a href="#pricing" class="hover:text-bio-accent transition-colors">Pricing</a>
+        <a href="#intake" class="bg-bio-accent text-bio-bg px-6 py-2.5 rounded-full font-bold glow-button">Book Now</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="relative pt-48 pb-32 overflow-hidden hero-gradient">
+    <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
+      <div class="reveal">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-bio-accent/10 border border-bio-accent/20 text-bio-accent text-[10px] font-bold mb-6 uppercase tracking-widest leading-none">
+          <i data-lucide="sparkles" class="w-3 h-3"></i>
+          AI-Powered Health Defense
+        </div>
+        <h1 class="font-heading text-6xl md:text-7xl font-extrabold leading-[1.08] mb-8 text-white">
+          Reprogram Your <br><span class="text-bio-accent bg-gradient-to-r from-bio-accent to-blue-400 bg-clip-text text-transparent">Biology.</span>
+        </h1>
+        <p class="text-xl text-bio-muted leading-relaxed mb-10 max-w-lg">
+          We don’t just prescribe diets. We engineer health. Using <strong>Artificial Intelligence</strong> to activate your body’s 5 Pillars of Defense against cancer, disease, and aging.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="#intake" class="px-8 py-4 bg-bio-accent text-bio-bg rounded-xl font-bold text-center glow-button">Start Bio-Analysis</a>
+          <a href="#science" class="px-8 py-4 border border-white/10 rounded-xl font-bold text-center hover:bg-white/5 transition-all flex items-center justify-center gap-2">
+            <i data-lucide="play" class="w-5 h-5 text-bio-accent text-center"></i>
+            Watch the Science
+          </a>
+        </div>
+      </div>
+      <div class="relative reveal" style="transition-delay: 150ms;">
+        <div class="aspect-square rounded-[48px] overflow-hidden border border-white/10 shadow-2xl relative">
+          <img src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=1200" 
+               alt="Molecular Science Visualization" 
+               class="w-full h-full object-cover grayscale-[0.2]"
+               onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#111827,#05070a)'">
+          <div class="absolute inset-0 bg-gradient-to-t from-bio-bg/85 via-transparent to-transparent"></div>
+        </div>
+        <!-- Floating Biological Stats -->
+        <div class="absolute -bottom-10 -left-10 bg-bio-surface/90 backdrop-blur-xl p-8 rounded-3xl border border-white/10 shadow-2xl reveal" style="transition-delay: 300ms;">
+          <div class="flex items-center gap-5">
+            <div class="w-14 h-14 bg-bio-accent/20 rounded-2xl flex items-center justify-center text-bio-accent">
+              <i data-lucide="dna" class="w-7 h-7"></i>
+            </div>
+            <div>
+              <div class="text-2xl font-bold text-white font-heading">5 Pillars</div>
+              <p class="text-[10px] text-bio-muted uppercase tracking-widest font-bold mt-0.5">Cellular Defense</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: Molecular Philosophy details -->
+  <section id="science" class="py-32 border-y border-white/5 bg-bio-bg relative">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid md:grid-cols-2 gap-24 items-center">
+        <div class="reveal">
+          <h2 class="font-heading text-4xl md:text-5xl font-extrabold mb-8 leading-tight text-white">
+            Precision is the Difference Between Nutrition and Medicine.
+          </h2>
+          <p class="text-bio-muted text-lg leading-relaxed mb-8">
+            At <strong>Sughayar Bio-Nutrition</strong>, we look past superficial restrictions directly at your biological systems. We treat food as <strong>molecular code</strong>, utilizing our AI precision engine to coordinate defense mechanics at a cellular level.
+          </p>
+          <div class="grid grid-cols-1 gap-6">
+            <div class="p-6 rounded-2xl bg-white/5 border border-white/5 flex gap-5 items-start">
+              <i data-lucide="cpu" class="text-bio-accent w-6 h-6 mt-1 shrink-0"></i>
+              <div>
+                <h4 class="font-bold text-white mb-2">Molecular Bioactive Loading</h4>
+                <p class="text-sm text-bio-muted">AI formulas calculate the exact coordinates of active plant compounds matched to clinical biometrics.</p>
+              </div>
+            </div>
+            <div class="p-6 rounded-2xl bg-white/5 border border-white/5 flex gap-5 items-start">
+              <i data-lucide="clock" class="text-bio-secondary w-6 h-6 mt-1 shrink-0"></i>
+              <div>
+                <h4 class="font-bold text-white mb-2">Pathogen Medication Syncing</h4>
+                <p class="text-sm text-bio-muted">We synchronize meal guidelines to support your specific treatments rather than interrupting clinical pathways.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="relative reveal" style="transition-delay: 200ms;">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="aspect-[4/5] rounded-3xl overflow-hidden mt-12 shadow-xl border border-white/5">
+              <img src="https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=800" class="w-full h-full object-cover" onerror="this.parentElement.style.background='#111827'">
+            </div>
+            <div class="aspect-[4/5] rounded-3xl overflow-hidden shadow-xl border border-white/5">
+              <img src="https://images.pexels.com/photos/1640773/pexels-photo-1640773.jpeg?auto=compress&cs=tinysrgb&w=800" class="w-full h-full object-cover" onerror="this.parentElement.style.background='#111827'">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: The 5 Pillars of Health Defense -->
+  <section id="pillars" class="py-32 bg-bio-surface/30">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-20 reveal">
+        <h2 class="font-heading text-5xl font-extrabold mb-6 text-white">The 5 Pillars of Health Defense</h2>
+        <p class="text-bio-muted max-w-2xl mx-auto text-base">These systems control the preservation and repair threshold of every human cell. All of our custom plans are targeted to activate and sustain them.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <!-- P1 -->
+        <div class="pillar-card p-8 rounded-[32px] reveal text-center flex flex-col items-center">
+          <div class="w-16 h-16 bg-bio-accent/10 rounded-full flex items-center justify-center text-bio-accent mb-6 shadow-inner">
+            <i data-lucide="activity" class="w-8 h-8"></i>
+          </div>
+          <h3 class="font-heading text-lg font-bold text-white mb-3">Angiogenesis</h3>
+          <p class="text-xs text-bio-muted leading-relaxed">Starves microscopic cancer bodies by blocking their vascular supply lines while feeding your heart and brain circulations.</p>
+        </div>
+        <!-- P2 -->
+        <div class="pillar-card p-8 rounded-[32px] reveal text-center flex flex-col items-center" style="transition-delay: 100ms;">
+          <div class="w-16 h-16 bg-bio-secondary/10 rounded-full flex items-center justify-center text-bio-secondary mb-6">
+            <i data-lucide="zap" class="w-8 h-8"></i>
+          </div>
+          <h3 class="font-heading text-lg font-bold text-white mb-3">Regeneration</h3>
+          <p class="text-xs text-bio-muted leading-relaxed">Mobilizes your intrinsic stem cells to repair damaged tissues and cognitive pathways considered unrepairable.</p>
+        </div>
+        <!-- P3 -->
+        <div class="pillar-card p-8 rounded-[32px] reveal text-center flex flex-col items-center" style="transition-delay: 200ms;">
+          <div class="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-400 mb-6">
+            <i data-lucide="database" class="w-8 h-8"></i>
+          </div>
+          <h3 class="font-heading text-lg font-bold text-white mb-3">Microbiome</h3>
+          <p class="text-xs text-bio-muted leading-relaxed">Balances the complex gut environment to mitigate systemic inflammatory flags and cognitive neurological decays.</p>
+        </div>
+        <!-- P4 -->
+        <div class="pillar-card p-8 rounded-[32px] reveal text-center flex flex-col items-center" style="transition-delay: 300ms;">
+          <div class="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center text-amber-400 mb-6">
+            <i data-lucide="shield" class="w-8 h-8"></i>
+          </div>
+          <h3 class="font-heading text-lg font-bold text-white mb-3">DNA Shield</h3>
+          <p class="text-xs text-bio-muted leading-relaxed">Polishes and patches genetic decay and telomere fraying caused by modern toxins and oxidative stress lines over time.</p>
+        </div>
+        <!-- P5 -->
+        <div class="pillar-card p-8 rounded-[32px] reveal text-center flex flex-col items-center" style="transition-delay: 400ms;">
+          <div class="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center text-rose-400 mb-6">
+            <i data-lucide="shield-check" class="w-8 h-8"></i>
+          </div>
+          <h3 class="font-heading text-lg font-bold text-white mb-3">Immunity</h3>
+          <p class="text-xs text-bio-muted leading-relaxed">Teaches white cells and defenders to detect pathogens and mutated growths while preventing general autoimmune attacks.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: 4-Stage Protocol Tabs -->
+  <section id="stages" class="py-32">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-16 reveal">
+        <h2 class="font-heading text-4xl font-extrabold mb-4 text-white">The Sughayar Biological Evolution</h2>
+        <p class="text-bio-muted text-base">A structured, clinical stage timeline designed by AI biological tracking systems.</p>
+      </div>
+      
+      <div class="flex flex-wrap justify-center gap-4 md:gap-12 mb-16 border-b border-white/5 reveal">
+        <button class="tab-btn pb-4 font-bold text-xs uppercase tracking-widest active" onclick="showTab('s1', this)">Stage 1: Reset</button>
+        <button class="tab-btn pb-4 font-bold text-xs uppercase tracking-widest" onclick="showTab('s2', this)">Stage 2: Activate</button>
+        <button class="tab-btn pb-4 font-bold text-xs uppercase tracking-widest" onclick="showTab('s3', this)">Stage 3: Regenerate</button>
+        <button class="tab-btn pb-4 font-bold text-xs uppercase tracking-widest" onclick="showTab('s4', this)">Stage 4: Longevity</button>
+      </div>
+
+      <!-- S1 Content -->
+      <div id="s1" class="tab-panel active">
+        <div class="reveal">
+          <h3 class="font-heading text-3xl font-bold mb-6 text-bio-accent">Phase 1: The Molecular Reset</h3>
+          <p class="text-bio-muted leading-relaxed mb-6 italic">Days 1-7: Purifying your biological baseline of inflammatory markers.</p>
+          <p class="text-bio-muted leading-relaxed mb-6">We focus first on recalibrating the complex gut-neural signaling pathway. This initial stage implements "The Holy Trinity of Bioactive Beverages"—Green Tea, Coffee, and Cocoa—to flush toxic metabolic debris.</p>
+          <div class="p-6 rounded-2xl bg-white/5 border border-white/5">
+            <h4 class="text-white font-bold mb-3 flex items-center gap-2"><i data-lucide="droplet" class="w-4 h-4 text-bio-accent"></i> Core Protocol Focus</h4>
+            <p class="text-xs text-bio-muted leading-relaxed">Systemic inflammatory cleanup and general elimination of food lectins to enhance target clinical treatments.</p>
+          </div>
+        </div>
+        <div class="rounded-[32px] overflow-hidden aspect-video shadow-2xl reveal relative border border-white/10" style="transition-delay: 200ms;">
+          <img src="https://images.pexels.com/photos/1410235/pexels-photo-1410235.jpeg?auto=compress&cs=tinysrgb&w=800" class="w-full h-full object-cover" alt="Detox Phase">
+        </div>
+      </div>
+
+      <!-- S2 Content -->
+      <div id="s2" class="tab-panel">
+        <div>
+          <h3 class="font-heading text-3xl font-bold mb-6 text-bio-accent">Phase 2: Bioactive Defense Activation</h3>
+          <p class="text-bio-muted leading-relaxed mb-6 italic">Days 8-21: Mobilizing specific compound loading protocols.</p>
+          <p class="text-bio-muted leading-relaxed mb-6">Introducing customized "Kinetic Meal Engineering." You will master and utilize the 10-minute enzyme activation rule for cruciferous plants and our lipid-synergy tomato rules to scale compound assimilation by up to 300%.</p>
+          <div class="p-6 rounded-2xl bg-white/5 border border-white/5">
+            <h4 class="text-white font-bold mb-3 flex items-center gap-2"><i data-lucide="flame" class="w-4 h-4 text-bio-accent"></i> Core Protocol Focus</h4>
+            <p class="text-xs text-bio-muted leading-relaxed">Directed anti-angiogenic food blocks and structural DNA protection mechanisms through cellular density tracking.</p>
+          </div>
+        </div>
+        <div class="rounded-[32px] overflow-hidden aspect-video shadow-2xl border border-white/10">
+          <img src="https://images.pexels.com/photos/1640774/pexels-photo-1640774.jpeg?auto=compress&cs=tinysrgb&w=800" class="w-full h-full object-cover" alt="Activation Phase">
+        </div>
+      </div>
+
+      <!-- S3 Content -->
+      <div id="s3" class="tab-panel">
+        <div>
+          <h3 class="font-heading text-3xl font-bold mb-6 text-bio-accent">Phase 3: Cellular Regeneration</h3>
+          <p class="text-bio-muted leading-relaxed mb-6 italic">Month 2+: Reciting and recruiting stem cells into repair zones.</p>
+          <p class="text-bio-muted leading-relaxed mb-6">The transition phase where we target recovery pathways of permanent tissue. By fortifying cellular stem cell releases, we aim to fast-track regeneration along the spinal, brain, and major organ networks.</p>
+          <div class="p-6 rounded-2xl bg-white/5 border border-white/5">
+            <h4 class="text-white font-bold mb-3 flex items-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4 text-bio-accent"></i> Core Protocol Focus</h4>
+            <p class="text-xs text-bio-muted leading-relaxed">Active stem cell recruitment, brain axis repairs, and targeted cognitive compound configurations.</p>
+          </div>
+        </div>
+        <div class="rounded-[32px] overflow-hidden aspect-video shadow-2xl border border-white/10">
+          <img src="https://images.pexels.com/photos/3757954/pexels-photo-3757954.jpeg?auto=compress&cs=tinysrgb&w=800" class="w-full h-full object-cover" alt="Regeneration Phase">
+        </div>
+      </div>
+
+      <!-- S4 Content -->
+      <div id="s4" class="tab-panel">
+        <div>
+          <h3 class="font-heading text-3xl font-bold mb-6 text-bio-accent">Phase 4: Infinite Lifespan & Longevity</h3>
+          <p class="text-bio-muted leading-relaxed mb-6 italic">Continuous: Long-range biomarker auditing & compound rotations.</p>
+          <p class="text-bio-muted leading-relaxed mb-6">Sustaining all 5 core defense pillars at peak efficiency. Our AI trackers continue monitoring biomarkers, updating seasonal meal compound guidelines to ensure deep cellular protection.</p>
+          <div class="p-6 rounded-2xl bg-white/5 border border-white/5">
+            <h4 class="text-white font-bold mb-3 flex items-center gap-2"><i data-lucide="infinity" class="w-4 h-4 text-bio-accent"></i> Core Protocol Focus</h4>
+            <p class="text-xs text-bio-muted leading-relaxed">Regular metabolic auditing, DNA degradation mitigation techniques, and endless longevity loops.</p>
+          </div>
+        </div>
+        <div class="rounded-[32px] overflow-hidden aspect-video shadow-2xl border border-white/10">
+          <img src="https://images.pexels.com/photos/3822621/pexels-photo-3822621.jpeg?auto=compress&cs=tinysrgb&w=800" class="w-full h-full object-cover" alt="Longevity Phase">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 5: Clinical Case Study -->
+  <section class="py-32 bg-bio-surface relative overflow-hidden bg-gradient-to-br from-bio-surface to-bio-bg">
+    <div class="max-w-6xl mx-auto px-6 relative z-10">
+      <div class="bg-bio-bg/50 border border-white/5 rounded-[48px] p-8 md:p-20 flex flex-col md:flex-row gap-20 items-center reveal">
+        <div class="w-full md:w-1/2">
+          <div class="text-bio-accent font-bold text-sm tracking-widest uppercase mb-6 flex items-center gap-3">
+            <span class="w-10 h-[1px] bg-bio-accent"></span> Proof of Concept
+          </div>
+          <h2 class="font-heading text-4xl md:text-5xl font-extrabold mb-8 leading-tight text-white">Case Study: The Michael Protocol.</h2>
+          <div class="space-y-6">
+            <p class="text-bio-muted text-lg leading-relaxed">
+              "When traditional medicine reached its limit, Bio-Nutrition began. By targeting the Regeneration and Microbiome pillars through AI-optimized molecular hacks, a client with severe neurological impairment regained the power of speech and mobility within weeks."
+            </p>
+            <div class="grid grid-cols-2 gap-4 pt-6">
+              <div class="p-4 rounded-2xl bg-white/5 border border-white/5">
+                <div class="text-white font-bold text-sm mb-1">Challenge</div>
+                <p class="text-xs text-bio-muted">Impaired motor patterns & language blockage</p>
+              </div>
+              <div class="p-4 rounded-2xl bg-white/5 border border-white/5">
+                <div class="text-bio-accent font-bold text-sm mb-1">Final Result</div>
+                <p class="text-xs text-bio-muted">Full speech articulation restored within 6 weeks</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="w-full md:w-1/2 relative">
+          <div class="aspect-square rounded-[40px] overflow-hidden border border-white/10 shadow-2xl relative">
+            <img src="https://images.pexels.com/photos/3757942/pexels-photo-3757942.jpeg?auto=compress&cs=tinysrgb&w=1200" class="w-full h-full object-cover grayscale" alt="Michael Recovery">
+            <div class="absolute top-6 right-6 w-16 h-16 bg-bio-accent rounded-full flex items-center justify-center text-bio-bg animate-pulse shadow-lg">
+              <i data-lucide="award" class="w-8 h-8"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 6: Pricing Pathways -->
+  <section id="pricing" class="py-32">
+    <div class="max-w-6xl mx-auto px-6 font-sans">
+      <div class="text-center mb-20 reveal">
+        <h2 class="font-heading text-5xl font-extrabold mb-6 text-white">Invest in Biological Resilience.</h2>
+        <p class="text-bio-muted max-w-xl mx-auto text-base">Select the targeted diagnostic path to address your cellular deficiencies.</p>
+      </div>
+      <div class="grid md:grid-cols-3 gap-8 items-end max-w-5xl mx-auto">
+        <!-- T1 -->
+        <div class="p-10 rounded-[32px] border border-white/10 bg-bio-surface/40 hover:bg-bio-surface transition-all duration-300 reveal flex flex-col justify-between h-[520px]">
+          <div>
+            <h3 class="font-heading text-xl font-bold text-white mb-2">The Consultation</h3>
+            <div class="text-4xl font-heading font-extrabold text-white mb-8 border-b border-white/5 pb-6">30 JOD</div>
+            <ul class="space-y-4 text-sm text-bio-muted">
+              <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-bio-accent shrink-0"></i> 1-on-1 Molecular Deep Dive</li>
+              <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-bio-accent shrink-0"></i> Biological Gap Analysis</li>
+              <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-bio-accent shrink-0"></i> Customized Action Sequence</li>
+            </ul>
+          </div>
+          <a href="#intake" class="block w-full py-4 rounded-xl border border-white/10 text-center font-bold hover:bg-white/5 transition-all text-white">Book Session</a>
+        </div>
+        
+        <!-- T2 -->
+        <div class="p-12 rounded-[40px] border-2 border-bio-accent bg-bio-surface relative scale-105 shadow-3xl reveal flex flex-col justify-between h-[550px]" style="transition-delay: 100ms;">
+          <div class="absolute -top-5 left-1/2 -translate-x-1/2 bg-bio-accent text-bio-bg px-6 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest leading-none">Most Popular</div>
+          <div>
+            <h3 class="font-heading text-2xl font-bold text-white mb-2">Monthly Mastery</h3>
+            <div class="text-5xl font-heading font-extrabold text-white mb-8 border-b border-white/5 pb-6">100 JOD <span class="text-base font-normal text-bio-muted">/mo</span></div>
+            <ul class="space-y-4 text-sm text-bio-muted">
+              <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-bio-accent shrink-0"></i> Full AI-Engineered 4-Stage Plan</li>
+              <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-bio-accent shrink-0"></i> Medication/Food Hour Syncing</li>
+              <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-bio-accent shrink-0"></i> 2-Hour Rapid WhatsApp Support</li>
+              <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-bio-accent shrink-0"></i> Weekly Bioactive Level Adjustments</li>
+            </ul>
+          </div>
+          <a href="#intake" class="block w-full py-4 rounded-xl bg-bio-accent text-bio-bg text-center font-extrabold shadow-[0_0_30px_rgba(16,185,129,0.3)] hover:scale-[1.02] transition-transform">Start Mastery</a>
+        </div>
+        
+        <!-- T3 -->
+        <div class="p-10 rounded-[32px] border border-white/10 bg-bio-surface/40 hover:bg-bio-surface transition-all duration-300 reveal flex flex-col justify-between h-[520px]" style="transition-delay: 200ms;">
+          <div>
+            <h3 class="font-heading text-xl font-bold text-white mb-2">The Legacy Plan</h3>
+            <div class="text-4xl font-heading font-extrabold text-white mb-8 border-b border-white/5 pb-6">Custom</div>
+            <ul class="space-y-4 text-sm text-bio-muted">
+              <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-bio-accent shrink-0"></i> Chronic Disease Defense Management</li>
+              <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-bio-accent shrink-0"></i> Longevity Bio-Hacking Protocols</li>
+              <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-bio-accent shrink-0"></i> 24/7 Priority Clinical Concierge</li>
+            </ul>
+          </div>
+          <a href="#intake" class="block w-full py-4 rounded-xl border border-white/10 text-center font-bold hover:bg-white/5 transition-all text-white">Inquire Now</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 7: Intake Form -->
+  <section id="intake" class="py-32 bg-bio-accent/5 relative border-t border-white/5 scroll-mt-20">
+    <div class="max-w-3xl mx-auto px-6 text-center reveal">
+      <h2 class="font-heading text-4xl font-extrabold text-white mb-6">Begin Your Bio-Analysis</h2>
+      <p class="text-bio-muted mb-12 text-sm sm:text-base leading-relaxed">Submit your biomarkers and diagnostic aims to receive an initial roadmap indicating which of your defense channels require activation.</p>
+      
+      <form class="space-y-4 text-left" id="bioIntakeForm">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <input type="text" id="intakeName" placeholder="Full Name" required class="w-full bg-bio-surface border border-white/10 rounded-xl px-5 py-4 focus:border-bio-accent focus:ring-1 focus:ring-bio-accent text-white outline-none placeholder-bio-muted text-sm transition-all">
+          <input type="email" id="intakeEmail" placeholder="Email Address" required class="w-full bg-bio-surface border border-white/10 rounded-xl px-5 py-4 focus:border-bio-accent focus:ring-1 focus:ring-bio-accent text-white outline-none placeholder-bio-muted text-sm transition-all">
+        </div>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-5 flex items-center text-bio-muted text-xs font-semibold select-none">
+            +962
+          </span>
+          <input type="tel" id="intakePhone" placeholder="WhatsApp Number (e.g. 791234567)" required class="w-full bg-bio-surface border border-white/10 rounded-xl pl-16 pr-5 py-4 focus:border-bio-accent focus:ring-1 focus:ring-bio-accent text-white outline-none placeholder-bio-muted text-sm transition-all">
+        </div>
+        <textarea id="intakeGoal" placeholder="Please describe your core medical support targets (Cancer Support, DNA protection, autoimmune inflammation recovery, etc...)" required class="w-full bg-bio-surface border border-white/10 rounded-xl px-5 py-4 focus:border-bio-accent focus:ring-1 focus:ring-bio-accent text-white outline-none h-36 placeholder-bio-muted text-sm transition-all resize-none"></textarea>
+        <button type="submit" class="w-full py-5 bg-bio-accent text-bio-bg font-extrabold rounded-xl transition-all duration-300 uppercase tracking-widest text-sm shadow-[0_0_30px_rgba(16,185,129,0.3)]">Request Bio-Analysis</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Footer Section & Strict Regulatory Notices -->
+  <footer class="py-20 border-t border-white/5 bg-bio-bg">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid md:grid-cols-4 gap-12 mb-20">
+        <div class="col-span-2">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-white p-1">
+              <img src="https://replicate.delivery/xpbz/6VOfIuX5XG3YSCr6p6yXf6BvW0vUf4p3fL4oJ9A8y0m4eA4IA/out-0.png" alt="Sughayar Logo" class="w-full h-full object-contain">
+            </div>
+            <span class="font-heading text-lg font-bold text-white">Sughayar Bio-Nutrition</span>
+          </div>
+          <p class="text-bio-muted text-sm max-w-sm leading-relaxed mb-6">
+            "I stopped looking at food as calories and started looking at it as code. Now, we use that same technology to help others achieve 'impossible' biological recoveries."
+          </p>
+          <div class="text-xs text-bio-muted font-medium">
+            <span class="text-white block font-semibold mb-1 border-b border-white/10 pb-2 w-fit">Muhanad Sughayar</span>
+            <span>Lead Bio-Nutrition Engineer & Analyst | Amman, Jordan</span>
+          </div>
+        </div>
+        <div>
+          <h4 class="font-bold mb-6 text-white text-sm uppercase tracking-wider">Molecular Science</h4>
+          <ul class="space-y-4 text-sm text-bio-muted">
+            <li><button onclick="openLegal('Angiogenesis Support', 'Angiogenesis balance is the process by which our body handles capillary flow. Through AI compound matrices we adjust levels to prevent blood flow triggers inside tumor zones.')" class="hover:text-bio-accent text-left">Capillary Circulation</button></li>
+            <li><button onclick="openLegal('Regeneration Activation', 'Activating circulating stem cell profiles directly from bone marrow to fast-track targeted tissues reconstruction.')" class="hover:text-bio-accent text-left">Stem Cell Targeting</button></li>
+            <li><button onclick="openLegal('Microbiome & Gut Axis', 'Cultivating short-chain chemical and prebiotic defenses to coordinate clean immune response times and mitigate neural declines.')" class="hover:text-bio-accent text-left">Microbiome Alignment</button></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-bold mb-6 text-white text-sm uppercase tracking-wider">Legal Framework</h4>
+          <ul class="space-y-4 text-sm text-bio-muted font-medium">
+            <li><button onclick="openLegal('Clinical Medical Disclaimer', 'The diagnostic parameters, health defensive pillars, bioactive loadings, and protocol advice here are designed for educational context only regarding health coaching. Always consult with your primary clinical doctor, oncologist, or accredited medical supervisor before scheduling changes or beginning protocols.')" class="hover:text-bio-accent text-rose-400 font-semibold text-left">Medical Disclaimer</button></li>
+            <li><button onclick="openLegal('Biometric Privacy Policy', 'All custom health goals, medication rosters, and biometrics processing pipelines operate with secure analytical channels. Your medical and private records are never sold or shared.')" class="hover:text-bio-accent text-left">Biometrics Privacy</button></li>
+            <li><button onclick="openLegal('Terms of Service', 'Sughayar Bio-Nutrition delivers advice, analyses, and precision frameworks based on biology and research. We are not a medical clinic and do not offer actual medical diagnose paths.')" class="hover:text-bio-accent text-left">Terms of Service</button></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="p-6 rounded-2xl bg-white/5 border border-white/5 mb-12 text-center text-xs text-bio-muted leading-relaxed">
+        <p class="font-bold text-white mb-2 uppercase tracking-wider">⚠ MANDATORY COMPLIANCE WARNING</p>
+        This information is provided for educational and informational context only regarding health coaching and nutritional frameworks. Always advise clients to consult with a medical professional before starting any new diet or lifestyle protocol, especially those with chronic conditions like cancer or neurological disorders.
+      </div>
+
+      <div class="flex flex-col md:flex-row justify-between items-center pt-10 border-t border-white/5 text-[10px] text-bio-muted uppercase tracking-widest font-bold">
+        <span>© 2026 Sughayar Bio-Nutrition. All Rights Reserved. Jordan.</span>
+        <div class="flex gap-6 mt-4 md:mt-0">
+          <a href="#" class="hover:text-bio-accent text-white">WhatsApp Direct</a>
+          <a href="#" class="hover:text-bio-accent">LinkedIn Profile</a>
+          <a href="#" class="hover:text-bio-accent">Instagram Page</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Legal Modal Display -->
+  <div id="legalModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9000;display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(10px);">
+    <div class="bg-bio-surface max-w-xl w-full p-10 rounded-[32px] border border-white/10 relative shadow-2xl">
+      <button onclick="closeLegal()" class="absolute top-6 right-6 text-bio-muted hover:text-white transition-colors" aria-label="Close modal">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+      <h2 id="legalTitle" class="text-2xl font-heading mb-6 font-bold text-bio-accent"></h2>
+      <div id="legalBody" class="text-bio-muted leading-relaxed space-y-4 text-sm sm:text-base"></div>
+      <button onclick="closeLegal()" class="mt-10 w-full py-4 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-colors">Close Portal Window</button>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Lucide Vector Icons
+    lucide.createIcons();
+
+    // Modal Control Functions (Top Scope for onclick access)
+    function openLegal(title, text) {
+      document.getElementById('legalTitle').textContent = title;
+      document.getElementById('legalBody').innerHTML = `<p>${text}</p>`;
+      document.getElementById('legalModal').style.display = 'flex';
+    }
+    function closeLegal() {
+      document.getElementById('legalModal').style.display = 'none';
+    }
+
+    // Interactive Tab Controller using classList display management over display:block/grid safety
+    function showTab(id, btn) {
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active');
+      });
+      const targetPanel = document.getElementById(id);
+      if (targetPanel) {
+        targetPanel.classList.add('active');
+      }
+      if (btn) {
+        btn.classList.add('active');
+      }
+    }
+
+    // Intersection Observer for graceful reveal animations
+    const _io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { 
+          e.target.classList.add('visible'); 
+          _io.unobserve(e.target); 
+        }
+      });
+    }, { threshold: 0.08 });
+    
+    document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+
+    // Force run standard reveal fallback after 1.2 seconds for speed safeties
+    setTimeout(() => {
+      document.querySelectorAll('.reveal').forEach(el => {
+        el.classList.add('visible');
+      });
+    }, 1200);
+
+    // Dynamic Intake form handler
+    const form = document.getElementById('bioIntakeForm');
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const name = document.getElementById('intakeName').value;
+        const email = document.getElementById('intakeEmail').value;
+        const phone = document.getElementById('intakePhone').value;
+        const goal = document.getElementById('intakeGoal').value;
+
+        // Custom whatsapp fast string compilation
+        const textStr = encodeURIComponent(
+          `Hello Muhanad Sughayar, I have completed the Bio-Analysis form on your Bio-Nutrition health defense portal.\n\n*Name:* ${name}\n*Email:* ${email}\n*WhatsApp:* +962${phone}\n*Health Goals:* ${goal}`
+        );
+        const waUrl = `https://wa.me/962790000000?text=${textStr}`;
+
+        // Transform form area with positive feedback & WhatsApp CTA
+        form.parentElement.innerHTML = `
+          <div class="p-10 rounded-[32px] border border-bio-accent bg-bio-surface/80 backdrop-blur-md shadow-2xl text-center">
+            <div class="w-16 h-16 bg-bio-accent/10 border border-bio-accent/20 rounded-full flex items-center justify-center text-bio-accent mx-auto mb-6">
+              <i data-lucide="check-circle" class="w-10 h-10"></i>
+            </div>
+            <h3 class="font-heading text-3xl font-extrabold text-white mb-3">Analysis Request Received</h3>
+            <p class="text-bio-muted text-base leading-relaxed mb-8 max-w-md mx-auto">
+              Diagnostic request logs registered. Muhanad will prioritize your clinical roster and connect with you on WhatsApp within 12-24 hours.
+            </p>
+            <a href="${waUrl}" target="_blank" class="px-8 py-4 bg-bio-accent text-bio-bg font-extrabold rounded-xl hover:bg-emerald-600 transition-all shadow-lg inline-flex items-center gap-2">
+              Send fast confirmation on WhatsApp
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </a>
+          </div>
+        `;
+        lucide.createIcons();
+      });
+    }
+
+    // Scroll navigation smoothing matching sticky offset height (90px)
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', function(e) {
+        const targetHref = this.getAttribute('href');
+        if (targetHref && targetHref.startsWith('#')) {
+          e.preventDefault();
+          const el = document.querySelector(targetHref);
+          if (el) {
+            window.scrollTo({
+              top: el.getBoundingClientRect().top + window.pageYOffset - 90,
+              behavior: 'smooth'
+            });
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
