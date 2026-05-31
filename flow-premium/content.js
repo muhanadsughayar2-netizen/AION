@@ -64,7 +64,7 @@
         overlayBorder:  'rgba(8, 145, 178, 0.45)',
         overlayShadow:  '0 4px 20px rgba(15, 23, 42, 0.18)',
         overlayText:    '#0f172a',
-        overlayAccent:  '#0891b2',
+        overlayAccent:  '#2563EB',
         spinnerTrack:   'rgba(8, 145, 178, 0.25)',
         spinnerHead:    'rgba(8, 145, 178, 0.95)',
         successCheck:   '#16a34a'
@@ -80,7 +80,7 @@
       overlayBorder:  'rgba(0, 217, 255, 0.5)',
       overlayShadow:  '0 4px 20px rgba(0, 0, 0, 0.5)',
       overlayText:    '#ffffff',
-      overlayAccent:  '#00d9ff',
+      overlayAccent:  '#3B7BFF',
       spinnerTrack:   'rgba(0, 217, 255, 0.3)',
       spinnerHead:    'rgba(0, 217, 255, 0.9)',
       successCheck:   '#4ade80'

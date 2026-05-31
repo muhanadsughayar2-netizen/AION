@@ -86,31 +86,31 @@ function isBillingError(status, message) {
 
 function buildNoKeyCard() {
   return `
-    <div style="padding:18px;border-radius:14px;background:linear-gradient(135deg, rgba(0,217,255,0.10), rgba(138,43,226,0.05));border:1px solid rgba(0,217,255,0.22);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div style="padding:18px;border-radius:14px;background:linear-gradient(135deg, rgba(59,123,255,0.10), rgba(138,43,226,0.05));border:1px solid rgba(59,123,255,0.22);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
       <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:6px;">Hey! Want this app to see pictures and understand them like magic? ✨</div>
       <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.85);margin-bottom:14px;">
         Just connect your Gemini key. It takes 1 minute.<br>
         With a key you get about <span style="color:#00ff88;font-weight:700;">20 tries every day</span> — perfect to play and test.
       </div>
       <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(59,123,255,0.06);border:1px solid rgba(59,123,255,0.12);">
           <span style="font-size:14px;">1️⃣</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Go to <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:#00d9ff;text-decoration:none;font-weight:600;">Google AI Studio</a></span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Go to <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:#3B7BFF;text-decoration:none;font-weight:600;">Google AI Studio</a></span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(59,123,255,0.06);border:1px solid rgba(59,123,255,0.12);">
           <span style="font-size:14px;">2️⃣</span>
           <span style="font-size:12px;color:rgba(255,255,255,0.85);">Click "Create API key"</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(59,123,255,0.06);border:1px solid rgba(59,123,255,0.12);">
           <span style="font-size:14px;">3️⃣</span>
           <span style="font-size:12px;color:rgba(255,255,255,0.85);">Copy the key</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(59,123,255,0.06);border:1px solid rgba(59,123,255,0.12);">
           <span style="font-size:14px;">4️⃣</span>
           <span style="font-size:12px;color:rgba(255,255,255,0.85);">Paste it here — done!</span>
         </div>
       </div>
-      <button class="unlock-billing-btn snaptoai-set-key-btn" style="display:block;width:100%;text-align:center;padding:11px;border-radius:10px;background:linear-gradient(135deg, #00d9ff, #8a2be2);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;">Enter My Key →</button>
+      <button class="unlock-billing-btn snaptoai-set-key-btn" style="display:block;width:100%;text-align:center;padding:11px;border-radius:10px;background:linear-gradient(135deg, #3B7BFF, #8a2be2);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;">Enter My Key →</button>
       <div style="margin-top:14px;padding:12px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.10), rgba(255,165,0,0.05));border:1px solid rgba(255,215,0,0.20);">
         <div style="font-size:13px;font-weight:700;color:#ffd700;margin-bottom:4px;">Want way more power? 🚀</div>
         <div style="font-size:12px;line-height:1.5;color:rgba(255,255,255,0.8);">Upgrade to prepaid and Google gives you <span style="color:#00ff88;font-weight:700;">$300 free credits</span>. Then you get tons of tries + <span style="color:#ffd700;font-weight:600;">Video & Music</span> unlock too!</div>
@@ -164,7 +164,7 @@ function buildDailyLimitCard() {
 
 function buildRateLimitCard() {
   return `
-    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(0,217,255,0.10), rgba(138,43,226,0.06));border:1px solid rgba(0,217,255,0.22);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(59,123,255,0.10), rgba(138,43,226,0.06));border:1px solid rgba(59,123,255,0.22);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <span style="font-size:24px;">⏳</span>
         <span style="font-size:15px;font-weight:800;color:#fff;">AI is Busy — Try Again Soon!</span>
@@ -226,7 +226,7 @@ function buildUnlockCard(mode) {
             <div style="font-size:11px;color:rgba(255,255,255,0.7);">New accounts get $300 to use on any Google Cloud AI service</div>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(59,123,255,0.06);border:1px solid rgba(59,123,255,0.12);">
           <span style="font-size:14px;">💳</span>
           <span style="font-size:12px;color:rgba(255,255,255,0.85);">Google verifies with a ~$1 hold (refunded instantly) — then you get $300 free</span>
         </div>
@@ -618,10 +618,10 @@ async function showProxyKeyPrompt() {
         const body = saveBtn.closest('.magic-modal-content')?.querySelector('.magic-modal-body');
         if (body) body.appendChild(statusEl);
       }
-      statusEl.style.background = 'rgba(0,217,255,0.08)';
-      statusEl.style.border = '1px solid rgba(0,217,255,0.25)';
+      statusEl.style.background = 'rgba(59,123,255,0.08)';
+      statusEl.style.border = '1px solid rgba(59,123,255,0.25)';
       statusEl.style.color = '#9be7ff';
-      statusEl.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border:2px solid #00d9ff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;"></span>Checking your account for video model access…';
+      statusEl.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border:2px solid #3B7BFF;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;"></span>Checking your account for video model access…';
 
       const probe = await detectKeyTierVerbose(key);
       const tier = probe.tier;
@@ -1053,14 +1053,14 @@ function getCurrentModeModel() {
 }
 
 const MODE_COLORS = {
-  'vision': 'rgba(0,217,255,0.06)',
+  'vision': 'rgba(59,123,255,0.06)',
   'image': 'rgba(255,107,237,0.06)',
   'music': 'rgba(0,255,136,0.06)',
   'video': 'rgba(255,165,0,0.06)'
 };
 
 const MODEL_NAMES = {
-  'vision': { name: 'Gemini 3', sub: 'Flash (Preview)', color: '#00d9ff' },
+  'vision': { name: 'Gemini 3', sub: 'Flash (Preview)', color: '#3B7BFF' },
   'image': { name: 'Nano', sub: 'Banana', color: '#ff6bed' },
   'music': { name: 'Lyria', sub: '', color: '#00ff88' },
   'video': { name: 'Veo', sub: '', color: '#ffa500' }
@@ -1191,8 +1191,8 @@ function initModeButtons() {
         const notice = document.createElement('div');
         notice.className = 'chat-bubble ai mode-switch-notice';
         notice.style.cssText = 'font-size: 12px; padding: 10px 16px; border-left: 3px solid; margin: 4px 0;';
-        const borderColors = { 'vision': '#00d9ff', 'image': '#ff6bed', 'music': '#00ff88', 'video': '#ffa500' };
-        notice.style.borderLeftColor = borderColors[mode] || '#00d9ff';
+        const borderColors = { 'vision': '#3B7BFF', 'image': '#ff6bed', 'music': '#00ff88', 'video': '#ffa500' };
+        notice.style.borderLeftColor = borderColors[mode] || '#3B7BFF';
         notice.textContent = cfg.welcome;
         thread.appendChild(notice);
         
@@ -3539,7 +3539,7 @@ function buildVeoRerenderPanel(ctx) {
     // clip whose final frame we can borrow. Show it on clips 2..N.
     const prevHasUrl = idx > 0 && clipResults[idx - 1] && clipResults[idx - 1].url;
     const fixStitchBtn = prevHasUrl
-      ? `<button class="veo-fix-stitch-btn" data-clip-idx="${idx}" title="Re-render this clip starting from the LAST FRAME of clip ${idx} so the join looks seamless." style="padding:4px 10px;border-radius:6px;border:1px solid rgba(0,217,255,0.4);background:rgba(0,217,255,0.1);color:#00d9ff;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">✂ Fix stitch (${idx}→${idx + 1})</button>`
+      ? `<button class="veo-fix-stitch-btn" data-clip-idx="${idx}" title="Re-render this clip starting from the LAST FRAME of clip ${idx} so the join looks seamless." style="padding:4px 10px;border-radius:6px;border:1px solid rgba(59,123,255,0.4);background:rgba(59,123,255,0.1);color:#3B7BFF;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">✂ Fix stitch (${idx}→${idx + 1})</button>`
       : '';
 
     // Task #16: surface a "chain weakened" warning when the previous clip's
@@ -3550,9 +3550,9 @@ function buildVeoRerenderPanel(ctx) {
       const failReason = failures[idx - 1];
       const hasUserRef = !!(userRefs[idx - 1] && userRefs[idx - 1].base64);
       if (hasUserRef) {
-        chainWarning = `<div style="margin-top:6px;padding:8px 10px;background:rgba(0,217,255,0.08);border:1px solid rgba(0,217,255,0.3);border-radius:8px;font-size:11px;color:#7fe7ff;line-height:1.5;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        chainWarning = `<div style="margin-top:6px;padding:8px 10px;background:rgba(59,123,255,0.08);border:1px solid rgba(59,123,255,0.3);border-radius:8px;font-size:11px;color:#7fe7ff;line-height:1.5;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
           <span>✓ Custom reference image set for the chain into clip ${idx + 1}. Click <b>Fix stitch</b> above to apply it.</span>
-          <button class="veo-clear-userref-btn" data-prev-idx="${idx - 1}" style="padding:3px 8px;border-radius:5px;border:1px solid rgba(0,217,255,0.4);background:transparent;color:#7fe7ff;font-size:10px;font-weight:600;cursor:pointer;">Clear</button>
+          <button class="veo-clear-userref-btn" data-prev-idx="${idx - 1}" style="padding:3px 8px;border-radius:5px;border:1px solid rgba(59,123,255,0.4);background:transparent;color:#7fe7ff;font-size:10px;font-weight:600;cursor:pointer;">Clear</button>
         </div>`;
       } else if (failReason) {
         chainWarning = `<div style="margin-top:6px;padding:8px 10px;background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.3);border-radius:8px;font-size:11px;color:#ffd180;line-height:1.5;">
@@ -3592,7 +3592,7 @@ function buildVeoRerenderPanel(ctx) {
   return `<div style="margin-top:12px;background:rgba(255,165,0,0.04);border:1px solid rgba(255,165,0,0.2);border-radius:10px;padding:12px;">
     <div style="font-weight:600;color:#ffa500;font-size:12px;margin-bottom:6px;">✎ Don't like one of the clips? Re-render only that one — pay just for one clip.</div>
     <div style="font-size:11px;color:#8899aa;margin-bottom:10px;line-height:1.5;">
-      <span style="color:#00d9ff;font-weight:600;">✂ Fix stitch</span> = same prompt, but the clip starts from the previous clip's last frame so the cut is invisible. Use this when the join looks jarring.
+      <span style="color:#3B7BFF;font-weight:600;">✂ Fix stitch</span> = same prompt, but the clip starts from the previous clip's last frame so the cut is invisible. Use this when the join looks jarring.
     </div>
     ${rows}
   </div>`;
@@ -3849,7 +3849,7 @@ function buildVeoSummaryCard(ctx, billingAbortAt, hasSuccess, successCount) {
       : r.status.replace(/_skipped$/,'').replace(/_/g,' ');
     const canRetry = RETRYABLE.has(r.status);
     const retryBtn = canRetry
-      ? `<button class="veo-retry-btn" data-clip-idx="${idx}" style="background:rgba(0,217,255,0.15);border:1px solid rgba(0,217,255,0.4);color:#00d9ff;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">🔄 Retry</button>`
+      ? `<button class="veo-retry-btn" data-clip-idx="${idx}" style="background:rgba(59,123,255,0.15);border:1px solid rgba(59,123,255,0.4);color:#3B7BFF;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">🔄 Retry</button>`
       : `<span style="font-size:10px;color:rgba(255,255,255,0.35);">cannot retry</span>`;
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);gap:10px;">
       <span style="flex:1;min-width:0;"><b>Clip ${r.n}</b> <span style="color:rgba(255,255,255,0.5);font-size:11px;">${tag}</span><br><span style="color:#ffaa00;font-size:11px;">${cleanStatus}</span></span>
@@ -3870,8 +3870,8 @@ function buildVeoSummaryCard(ctx, billingAbortAt, hasSuccess, successCount) {
   })();
 
   if (hasSuccess) {
-    return `<div style="margin-top:14px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.2);border-radius:10px;padding:12px;color:#fff;font-size:12px;">
-      <div style="font-weight:600;margin-bottom:8px;color:#00d9ff;">${successCount} of ${clipCount} clips succeeded · retry the rest below</div>
+    return `<div style="margin-top:14px;background:rgba(59,123,255,0.06);border:1px solid rgba(59,123,255,0.2);border-radius:10px;padding:12px;color:#fff;font-size:12px;">
+      <div style="font-weight:600;margin-bottom:8px;color:#3B7BFF;">${successCount} of ${clipCount} clips succeeded · retry the rest below</div>
       <div style="margin:8px 0;">${rows}</div>
       ${billingLine ? `<div style="margin-top:10px;color:rgba(255,255,255,0.7);font-size:11px;line-height:1.5;">${billingLine}</div>` : ''}
     </div>`;
@@ -5072,7 +5072,7 @@ function showSongStudio(thread) {
         <textarea class="img2music-desc" placeholder="Describe the music you want...&#10;&#10;e.g. Acoustic guitar, soft and peaceful&#10;e.g. Epic orchestral with drums&#10;e.g. Lo-fi hip hop, rainy day vibes" style="width:100%;box-sizing:border-box;min-height:70px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,170,0,0.2);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;margin-bottom:10px;line-height:1.4;"></textarea>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
           <button class="img2music-happy" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.08);color:#00ff88;font-size:11px;cursor:pointer;">😊 Happy</button>
-          <button class="img2music-chill" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(0,217,255,0.3);background:rgba(0,217,255,0.08);color:#00d9ff;font-size:11px;cursor:pointer;">😌 Chill</button>
+          <button class="img2music-chill" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(59,123,255,0.3);background:rgba(59,123,255,0.08);color:#3B7BFF;font-size:11px;cursor:pointer;">😌 Chill</button>
           <button class="img2music-epic" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,107,237,0.3);background:rgba(255,107,237,0.08);color:#ff6bed;font-size:11px;cursor:pointer;">🏔️ Epic</button>
           <button class="img2music-dark" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#aabbcc;font-size:11px;cursor:pointer;">🌑 Dark</button>
           <button class="img2music-romantic" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,100,100,0.3);background:rgba(255,100,100,0.08);color:#ff6464;font-size:11px;cursor:pointer;">💕 Romantic</button>
@@ -5337,7 +5337,7 @@ const SPECIALIST_AGENTS = [
     icon: '🔍',
     name: 'SEO Expert',
     tag: 'Rankings & organic traffic',
-    color: '#00d9ff',
+    color: '#3B7BFF',
     prompt: `You are a technical SEO expert who has grown sites from 0 to 1M+ monthly organic visitors. You understand Core Web Vitals, E-E-A-T, semantic HTML, structured data, internal linking strategy, and content clusters. When auditing: check title tags, meta descriptions, heading hierarchy, page speed issues, mobile usability, crawlability, and backlink opportunities. Give specific, actionable fixes with priority ranking (quick wins vs long-term). Always explain the "why" behind each recommendation in plain terms.`
   },
   {
@@ -6176,7 +6176,7 @@ async function initializeChat() {
     previewContainer.innerHTML = `
       <div style="padding: 20px; text-align: center; color: #8899aa;">
         <div style="font-size: 42px; margin-bottom: 8px;">✨</div>
-        <div style="font-size: 14px; font-weight: 600; color: #00d9ff;">Analyze Images with AI</div>
+        <div style="font-size: 14px; font-weight: 600; color: #3B7BFF;">Analyze Images with AI</div>
         <div style="font-size: 11px; color: #889999; margin-top: 8px; line-height: 1.5;">
           Select <b>one or multiple</b> images<br>
           from your queue, then click AI
@@ -7982,7 +7982,7 @@ function exportToPDF() {
   yPosition += 10;
   
   // Line separator
-  doc.setDrawColor(0, 217, 255);
+  doc.setDrawColor(59, 123, 255);
   doc.setLineWidth(0.5);
   doc.line(margin, yPosition, pageWidth - margin, yPosition);
   yPosition += 10;
@@ -8181,7 +8181,7 @@ function setupImagePanelClicks() {
     bubble.style.cssText = 'background:transparent;padding:0;border:none;display:flex;justify-content:flex-end;';
 
     const inner = document.createElement('div');
-    inner.style.cssText = 'max-width:220px;border-radius:12px;overflow:hidden;border:1px solid rgba(0,217,255,0.3);box-shadow:0 4px 16px rgba(0,0,0,0.3);position:relative;';
+    inner.style.cssText = 'max-width:220px;border-radius:12px;overflow:hidden;border:1px solid rgba(59,123,255,0.3);box-shadow:0 4px 16px rgba(0,0,0,0.3);position:relative;';
 
     const thumb = document.createElement('img');
     thumb.src = img.src;
@@ -8203,7 +8203,7 @@ function setupImagePanelClicks() {
     }
 
     // Briefly highlight the image
-    img.style.outline = '2px solid var(--st-accent, #00d9ff)';
+    img.style.outline = '2px solid var(--st-accent, #3B7BFF)';
     setTimeout(() => { img.style.outline = ''; }, 700);
 
     // Focus input so user can immediately type

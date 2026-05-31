@@ -302,12 +302,12 @@ export default function Dashboard() {
           {metrics.map((metric, idx) => {
             const Icon = metric.icon;
             return (
-              <div key={idx} className="bg-slate-800/50 rounded-lg p-6 border border-cyan-500/20 hover:border-cyan-500/50 transition-all">
+              <div key={idx} className="bg-slate-800/50 rounded-lg p-6 border border-blue-500/20 hover:border-blue-500/50 transition-all">
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-slate-400 text-sm font-medium">
                     {metric.title}
                   </span>
-                  <Icon className="w-5 h-5 text-cyan-400" />
+                  <Icon className="w-5 h-5 text-blue-400" />
                 </div>
                 <p className="text-3xl font-bold text-white mb-2">
                   {metric.value}
@@ -370,16 +370,16 @@ export default function Dashboard() {
 }`,
     hero: `export default function HeroSection() {
   return (
-    <section className="relative min-h-screen bg-gradient-to-br from-cyan-900 via-blue-900 to-slate-900 flex items-center justify-center overflow-hidden p-4">
+    <section className="relative min-h-screen bg-gradient-to-br from-blue-900 via-blue-900 to-slate-900 flex items-center justify-center overflow-hidden p-4">
       <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
         <div className="absolute top-40 right-10 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto text-center">
         <h1 className="text-6xl md:text-7xl font-black text-white mb-6 leading-tight">
           Convert Screenshots
-          <span className="block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
+          <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-400">
             to Code
           </span>
         </h1>
@@ -390,10 +390,10 @@ export default function Dashboard() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-slate-900 rounded-lg font-bold text-lg hover:shadow-2xl transition-all transform hover:scale-105">
+          <button className="px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-500 text-slate-900 rounded-lg font-bold text-lg hover:shadow-2xl transition-all transform hover:scale-105">
             Start For Free
           </button>
-          <button className="px-8 py-4 border-2 border-cyan-400 text-cyan-400 rounded-lg font-bold text-lg hover:bg-cyan-400/10 transition-all">
+          <button className="px-8 py-4 border-2 border-blue-400 text-blue-400 rounded-lg font-bold text-lg hover:bg-blue-400/10 transition-all">
             Watch Demo
           </button>
         </div>
