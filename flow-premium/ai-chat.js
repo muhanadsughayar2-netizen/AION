@@ -5918,7 +5918,13 @@ RULES:
       if (btn) btn.classList.add('active');
     }
 • MODALS: function openModal(id){const m=document.getElementById(id);if(m)m.style.display='flex';} function closeModal(id){const m=document.getElementById(id);if(m)m.style.display='none';}
-• FORMS: always intercept with e.preventDefault() and show an inline success message — never reload.
+    All modal overlays MUST use position:fixed; inset:0; z-index:9000 or higher — never lower.
+• FORMS — STRICT CONTRACT: If the page has a contact/intake/lead form, its submit handler MUST:
+    1. Use e.preventDefault() — never reload the page.
+    2. Replace the form's parentElement.innerHTML with a styled success card (not alert()).
+    3. Include a WhatsApp deep-link built from form values: https://wa.me/PHONE?text=ENCODED_MESSAGE
+    4. Call lucide.createIcons() immediately after the innerHTML replacement so new icons render.
+• LUCIDE RE-INIT: After ANY dynamic innerHTML/insertAdjacentHTML call that adds data-lucide icons, immediately call: if (window.lucide) { lucide.createIcons(); }
 • SCROLL REVEAL (always include):
     const _io = new IntersectionObserver(entries => entries.forEach(e => {
       if (e.isIntersecting) { e.target.classList.add('visible'); _io.unobserve(e.target); }
