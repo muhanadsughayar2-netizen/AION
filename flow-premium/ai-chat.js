@@ -6638,15 +6638,22 @@ async function handleSend() {
         // Bug fix: proxy path was ignoring all mode toggles. Build the effective
         // system context and prepend it so free-tier users get the same behaviour.
         let proxySystemCtx = '';
+        let proxyExistingSite = '';
         if (buildModeEnabled) {
-          proxySystemCtx = BUILD_SYSTEM_PROMPT;
+          if (_lastBuiltCode) {
+            // Follow-up edit — use surgical patch prompt + inject current site
+            proxySystemCtx = BUILD_PATCH_PROMPT;
+            proxyExistingSite = `\n\nHere is the EXISTING site. Make ONLY the change the user asked for and return the complete file:\n\n\`\`\`html\n${_lastBuiltCode}\n\`\`\``;
+          } else {
+            proxySystemCtx = BUILD_SYSTEM_PROMPT;
+          }
         } else if (researchMode) {
           proxySystemCtx = 'You are an expert Research Agent. Find real-time facts, cite every source inline with [1],[2]… and list them at the end. Structure: Summary, Key Findings, Sources.';
         } else if (activeSpecialistAgent) {
           proxySystemCtx = activeSpecialistAgent.prompt;
         }
         const proxyPrompt = proxySystemCtx
-          ? `[SYSTEM INSTRUCTION — follow exactly]\n${proxySystemCtx}\n\n[USER]\n${prompt}`
+          ? `[SYSTEM INSTRUCTION — follow exactly]\n${proxySystemCtx}\n\n[USER]\n${prompt}${proxyExistingSite}`
           : prompt;
         const proxyResult = await sendViaProxy(proxyPrompt, imageBase64);
         removeLoading();
@@ -7585,27 +7592,46 @@ function addBubbleActions(bubble, text) {
   if (isTruncated) {
     const warn = document.createElement('div');
     warn.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,160,50,0.75);margin-top:5px;padding:0 2px;flex-wrap:wrap;';
-    warn.innerHTML = `<span>⚠️ Site was too long — auto-continuing build…</span>`;
-    actions.appendChild(warn);
-
-    // Auto-fire the continuation after a short delay so the UI settles first.
-    setTimeout(() => {
-      _continuationPending = true;
-      if (!buildModeEnabled) {
-        buildModeEnabled = true;
-        const buildBtn = document.getElementById('buildToggleBtn');
-        if (buildBtn) {
-          buildBtn.classList.add('tool-btn-active');
-          buildBtn.title = 'Build Mode ON — AI will generate full HTML/CSS/JS apps with live preview';
+    if (_continuationCount < _CONTINUATION_MAX) {
+      warn.innerHTML = `<span>⚠️ Site was too long — auto-continuing build… (${_continuationCount + 1}/${_CONTINUATION_MAX})</span>`;
+      actions.appendChild(warn);
+      // Auto-fire the continuation after a short delay so the UI settles first.
+      setTimeout(() => {
+        _continuationCount++;
+        _continuationPending = true;
+        if (!buildModeEnabled) {
+          buildModeEnabled = true;
+          const buildBtn = document.getElementById('buildToggleBtn');
+          if (buildBtn) {
+            buildBtn.classList.add('tool-btn-active');
+            buildBtn.title = 'Build Mode ON — AI will generate full HTML/CSS/JS apps with live preview';
+          }
         }
-      }
-      const input = document.getElementById('chatInput');
-      if (input) {
-        input.value = 'CONTINUE_BUILD: output only the remaining HTML from where the previous response cut off. Start at the beginning of the next complete HTML element (opening tag like <div, <section, <footer, <script). Never restart from <!DOCTYPE html>. Never repeat already-written code.';
-        const btn = document.getElementById('sendBtn');
-        if (btn) btn.click();
-      }
-    }, 800);
+        const input = document.getElementById('chatInput');
+        if (input) {
+          input.value = 'CONTINUE_BUILD: output only the remaining HTML from where the previous response cut off. Start at the beginning of the next complete HTML element (opening tag like <div, <section, <footer, <script). Never restart from <!DOCTYPE html>. Never repeat already-written code.';
+          const btn = document.getElementById('sendBtn');
+          if (btn) btn.click();
+        }
+      }, 800);
+    } else {
+      // Cap reached — show a manual button instead of looping forever
+      warn.innerHTML = `<span>⚠️ Build incomplete after ${_CONTINUATION_MAX} attempts</span>
+        <button style="background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.5);color:#ffa032;border-radius:10px;padding:2px 9px;font-size:11px;font-weight:600;cursor:pointer;">🔄 Try Again</button>`;
+      warn.querySelector('button').addEventListener('click', () => {
+        _continuationCount = 0;
+        _continuationPending = true;
+        const input = document.getElementById('chatInput');
+        if (input) {
+          input.value = 'CONTINUE_BUILD: output only the remaining HTML from where the previous response cut off. Start at the beginning of the next complete HTML element (opening tag like <div, <section, <footer, <script). Never restart from <!DOCTYPE html>. Never repeat already-written code.';
+          document.getElementById('sendBtn')?.click();
+        }
+      });
+      actions.appendChild(warn);
+    }
+  } else {
+    // Successful complete response — reset the continuation counter
+    _continuationCount = 0;
   }
 
   
@@ -8325,6 +8351,9 @@ document.getElementById('searchToggleBtn')?.addEventListener('click', (e) => {
 let _lastBuiltCode = '';
 // When true, the next build response is a continuation chunk — merge with _lastBuiltCode
 let _continuationPending = false;
+// Safety cap: stop auto-continuing after this many consecutive truncated responses
+let _continuationCount = 0;
+const _CONTINUATION_MAX = 5;
 
 // Restore full build state from storage on popup load so staged builds and
 // follow-up fix requests work correctly even after the popup is closed/reopened
@@ -8536,10 +8565,18 @@ function _resetBadges() {
 
 function renderLivePreview(responseText) {
   if (!buildModeEnabled) return;
-  const { html: code } = extractHtmlFromResponse(responseText, _continuationPending ? _lastBuiltCode : null);
+  const { html: code, truncated: codeTruncated } = extractHtmlFromResponse(responseText, _continuationPending ? _lastBuiltCode : null);
   if (!code) return;
-  _lastBuiltCode = code;
-  try { chrome.storage.local.set({ snaptoai_built_code: code }); } catch(e) {}
+  // Only persist when the output is complete — truncated partials must not
+  // overwrite the last good site (mirrors the guard in addBubbleActions).
+  if (!buildStage && !codeTruncated) {
+    _lastBuiltCode = code;
+    try { chrome.storage.local.set({ snaptoai_built_code: code }); } catch(e) {}
+  } else if (buildStage) {
+    // Staged builds are always complete fragments — always save
+    _lastBuiltCode = code;
+    try { chrome.storage.local.set({ snaptoai_built_code: code }); } catch(e) {}
+  }
 
   const w = document.getElementById('previewWrapper');
   const building = document.getElementById('previewBuilding');
