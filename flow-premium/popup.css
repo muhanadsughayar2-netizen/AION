@@ -57,9 +57,9 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.8);
+  background: rgba(0, 217, 255, 0.08);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  color: rgba(0, 217, 255, 0.8);
   font-size: 11px;
   font-weight: 500;
   padding: 4px 10px;
@@ -69,8 +69,8 @@ body {
 }
 
 .sign-in-header-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(0, 217, 255, 0.15);
+  border-color: rgba(0, 217, 255, 0.4);
   color: var(--st-accent);
 }
 
@@ -78,9 +78,9 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.8);
+  background: rgba(0, 217, 255, 0.08);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  color: rgba(0, 217, 255, 0.8);
   font-size: 11px;
   font-weight: 500;
   padding: 4px 10px;
@@ -90,8 +90,8 @@ body {
 }
 
 .open-sidebar-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(0, 217, 255, 0.15);
+  border-color: rgba(0, 217, 255, 0.4);
   color: var(--st-accent);
 }
 
@@ -105,12 +105,12 @@ body {
 
 @keyframes glow-pulse {
   0%, 100% {
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3), 0 0 10px rgba(255, 255, 255, 0.2);
-    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.25)) drop-shadow(0 0 10px rgba(255, 255, 255, 0.15));
+    text-shadow: 0 0 5px rgba(0, 217, 255, 0.3), 0 0 10px rgba(0, 255, 255, 0.2);
+    filter: drop-shadow(0 0 5px rgba(0, 217, 255, 0.25)) drop-shadow(0 0 10px rgba(0, 255, 255, 0.15));
   }
   50% {
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.45), 0 0 20px rgba(255, 255, 255, 0.35);
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.4)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+    text-shadow: 0 0 10px rgba(0, 217, 255, 0.45), 0 0 20px rgba(0, 255, 255, 0.35);
+    filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.4)) drop-shadow(0 0 20px rgba(0, 255, 255, 0.3));
   }
 }
 
@@ -206,8 +206,8 @@ body {
 }
 
 .upgrade-btn-trial {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 217, 255, 0.15);
+  border: 1px solid rgba(0, 217, 255, 0.3);
   color: var(--st-accent);
 }
 
@@ -259,7 +259,7 @@ body {
   top: 0;
   z-index: 100;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(0, 217, 255, 0.15);
 }
 
 .status-dot {
@@ -267,7 +267,7 @@ body {
   height: 8px;
   border-radius: 50%;
   background: var(--st-accent);
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 6px rgba(0, 217, 255, 0.6);
   animation: dot-pulse 2s ease-in-out infinite;
   flex-shrink: 0;
 }
@@ -275,11 +275,11 @@ body {
 @keyframes dot-pulse {
   0%, 100% {
     opacity: 0.6;
-    box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 4px rgba(0, 217, 255, 0.4);
   }
   50% {
     opacity: 1;
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 8px rgba(0, 217, 255, 0.8);
   }
 }
 
@@ -379,8 +379,8 @@ body {
 .reedit-fullpage-btn {
   width: 100%;
   padding: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 217, 255, 0.1);
+  border: 1px solid rgba(0, 217, 255, 0.3);
   color: var(--st-accent);
   border-radius: 8px;
   font-size: 12px;
@@ -398,10 +398,10 @@ body {
 }
 
 .reedit-fullpage-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 217, 255, 0.2);
+  border-color: rgba(0, 217, 255, 0.5);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
 }
 
 .reedit-fullpage-btn:active {
@@ -446,8 +446,8 @@ body {
   width: 62px;
   height: 62px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(0, 217, 255, 0.3);
+  background: rgba(0, 217, 255, 0.1);
   backdrop-filter: blur(10px);
   position: relative;
   cursor: pointer;
@@ -456,8 +456,8 @@ body {
 
 .orb:hover {
   transform: scale(1.05);
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 217, 255, 0.15);
+  border-color: rgba(0, 217, 255, 0.5);
 }
 
 .orb:active {
@@ -526,8 +526,8 @@ body {
 
 .setup-cta {
   width: 100%;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 217, 255, 0.08);
+  border: 1px solid rgba(0, 217, 255, 0.3);
   color: var(--st-accent);
   font-size: 12px;
   cursor: pointer;
@@ -549,7 +549,7 @@ body {
 
 .setup-cta-sub {
   font-size: 9px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(0, 217, 255, 0.5);
   font-weight: 400;
 }
 
@@ -565,8 +565,8 @@ body {
 }
 
 .setup-cta:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(0, 217, 255, 0.12);
+  border-color: rgba(0, 217, 255, 0.45);
   transform: scale(1.02);
 }
 
@@ -617,7 +617,7 @@ body {
 
 .fullpage-progress {
   background: rgba(10, 10, 10, 0.95);
-  border: 2px solid rgba(255, 255, 255, 0.5);
+  border: 2px solid rgba(0, 217, 255, 0.5);
   border-radius: 12px;
   padding: 30px;
   text-align: center;
@@ -627,8 +627,8 @@ body {
 .fullpage-spinner {
   width: 50px;
   height: 50px;
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  border-top-color: rgba(255, 255, 255, 0.8);
+  border: 3px solid rgba(0, 217, 255, 0.2);
+  border-top-color: rgba(0, 217, 255, 0.8);
   border-radius: 50%;
   margin: 0 auto 20px;
   animation: spin 0.8s linear infinite;
@@ -668,7 +668,7 @@ body {
   padding: 6px;
   background: rgba(0, 0, 0, 0.3);
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(0, 217, 255, 0.2);
   text-align: center;
 }
 
@@ -699,7 +699,7 @@ body {
 
 .platform-selector select {
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(0, 217, 255, 0.2);
   color: #fff;
   padding: 6px 10px;
   border-radius: 6px;
@@ -710,14 +710,14 @@ body {
 }
 
 .platform-selector select:hover {
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(0, 217, 255, 0.4);
   background: rgba(255, 255, 255, 0.08);
 }
 
 .platform-selector select:focus {
   outline: none;
   border-color: var(--st-accent);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.2);
 }
 
 /* Selection Bar */
@@ -734,7 +734,7 @@ body {
 .select-all-btn {
   flex: 1;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(0, 217, 255, 0.2);
   color: var(--st-accent);
   padding: 8px 10px;
   border-radius: 6px;
@@ -755,14 +755,14 @@ body {
 }
 
 .select-all-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 217, 255, 0.1);
   border-color: var(--st-accent);
 }
 
 .action-btn {
   flex: 1;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 217, 255, 0.1);
+  border: 1px solid rgba(0, 217, 255, 0.3);
   color: var(--st-accent);
   padding: 8px 10px;
   border-radius: 6px;
@@ -783,9 +783,9 @@ body {
 }
 
 .action-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 217, 255, 0.2);
   border-color: var(--st-accent);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 8px rgba(0, 217, 255, 0.3);
 }
 
 .action-btn:active {
@@ -814,12 +814,12 @@ body {
 }
 
 .thumbnails-container::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 217, 255, 0.3);
   border-radius: 3px;
 }
 
 .thumbnails-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 217, 255, 0.5);
 }
 
 /* Thumbnails Grid */
@@ -836,7 +836,7 @@ body {
   aspect-ratio: 16 / 9;
   border-radius: 4px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(0, 217, 255, 0.2);
   transition: all 0.3s ease;
   cursor: pointer;
   position: relative;
@@ -846,12 +846,12 @@ body {
 .thumbnail:hover {
   border-color: var(--st-accent);
   transform: scale(1.05);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.4);
 }
 
 .thumbnail.selected {
   border-color: var(--st-accent);
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 12px rgba(0, 217, 255, 0.6);
 }
 
 .thumbnail img {
@@ -864,7 +864,7 @@ body {
   position: absolute;
   top: 2px;
   right: 2px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 217, 255, 0.9);
   color: #000;
   font-size: 9px;
   font-weight: 700;
@@ -902,7 +902,7 @@ body {
 }
 
 .capture-type-badge.type-snap {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 217, 255, 0.9);
   color: #000;
 }
 
@@ -923,7 +923,7 @@ body {
   width: 18px;
   height: 18px;
   background: rgba(0, 0, 0, 0.7);
-  border: 2px solid rgba(255, 255, 255, 0.5);
+  border: 2px solid rgba(0, 217, 255, 0.5);
   border-radius: 4px;
   cursor: pointer;
   display: flex;
@@ -934,7 +934,7 @@ body {
 }
 
 .thumbnail-checkbox:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 217, 255, 0.2);
   border-color: var(--st-accent);
 }
 
@@ -990,7 +990,7 @@ body {
   left: 4px;
   width: 24px;
   height: 24px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 217, 255, 0.9);
   border: 2px solid var(--st-accent);
   border-radius: 4px;
   cursor: pointer;
@@ -1009,7 +1009,7 @@ body {
 .thumbnail-annotate:hover {
   background: var(--st-accent);
   transform: scale(1.1);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
 }
 
 .thumbnail-annotate::after {
@@ -1025,7 +1025,7 @@ body {
   right: 4px;
   width: 24px;
   height: 24px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 217, 255, 0.9);
   border: 2px solid var(--st-accent);
   border-radius: 4px;
   cursor: pointer;
@@ -1044,7 +1044,7 @@ body {
 .thumbnail-copy:hover {
   background: var(--st-accent);
   transform: scale(1.1);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
 }
 
 .thumbnail-copy::after {
@@ -1090,7 +1090,7 @@ body {
 
 .thumbnail.drag-over {
   border-color: var(--st-accent);
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.6);
 }
 
 /* Empty State - Clean, comfortable style like button area */
@@ -1101,9 +1101,9 @@ body {
   color: var(--st-accent);
   font-size: 13px;
   line-height: 1.5;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 217, 255, 0.08);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(0, 217, 255, 0.25);
   min-height: 140px;
   height: auto;
   overflow: visible;
@@ -1118,16 +1118,16 @@ body {
 }
 
 .empty-state:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(0, 217, 255, 0.12);
+  border-color: rgba(0, 217, 255, 0.4);
 }
 
 .empty-icon {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  border: 2px solid rgba(255, 255, 255, 0.5);
+  background: rgba(0, 217, 255, 0.15);
+  border: 2px solid rgba(0, 217, 255, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1182,8 +1182,8 @@ body {
 .clear-button {
   width: 100%;
   padding: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 217, 255, 0.1);
+  border: 1px solid rgba(0, 217, 255, 0.3);
   color: var(--st-accent);
   border-radius: 8px;
   font-size: 12px;
@@ -1202,10 +1202,10 @@ body {
 }
 
 .clear-button:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 217, 255, 0.2);
+  border-color: rgba(0, 217, 255, 0.5);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
 }
 
 .clear-button:active {
@@ -1246,10 +1246,10 @@ body {
 .wow-mouse-body {
   width: 52px;
   height: 80px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  border: 2px solid rgba(0, 217, 255, 0.4);
   border-radius: 26px;
   position: relative;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(0, 217, 255, 0.03);
   overflow: hidden;
   z-index: 2;
 }
@@ -1270,7 +1270,7 @@ body {
 .wow-mouse-right {
   right: 0;
   border-radius: 0 26px 0 0;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 217, 255, 0.12);
   animation: rightClickPulse 2.5s ease-in-out infinite;
 }
 
@@ -1280,7 +1280,7 @@ body {
   left: 50%;
   width: 1px;
   height: 36px;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 217, 255, 0.3);
 }
 
 .wow-mouse-scroll {
@@ -1290,7 +1290,7 @@ body {
   transform: translateX(-50%);
   width: 6px;
   height: 12px;
-  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  border: 1.5px solid rgba(0, 217, 255, 0.5);
   border-radius: 4px;
 }
 
@@ -1300,7 +1300,7 @@ body {
   left: 50%;
   width: 16px;
   height: 16px;
-  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  border: 1.5px solid rgba(0, 217, 255, 0.6);
   border-radius: 50%;
   transform: translate(-50%, -50%) scale(0);
   animation: clickRing 2.5s ease-out infinite;
@@ -1316,7 +1316,7 @@ body {
   right: -8px;
   width: 40px;
   height: 40px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(0, 217, 255, 0.3) 0%, transparent 70%);
   border-radius: 50%;
   animation: glowPulse 2.5s ease-in-out infinite;
   z-index: 1;
@@ -1331,9 +1331,9 @@ body {
 }
 
 @keyframes rightClickPulse {
-  0%, 100% { background: rgba(255, 255, 255, 0.05); }
-  40% { background: rgba(255, 255, 255, 0.2); }
-  60% { background: rgba(255, 255, 255, 0.15); }
+  0%, 100% { background: rgba(0, 217, 255, 0.05); }
+  40% { background: rgba(0, 217, 255, 0.2); }
+  60% { background: rgba(0, 217, 255, 0.15); }
 }
 
 @keyframes clickRing {
@@ -1422,8 +1422,8 @@ body {
   max-width: 90%;
   max-height: 90%;
   border-radius: 8px;
-  box-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 40px rgba(0, 217, 255, 0.3);
+  border: 2px solid rgba(0, 217, 255, 0.4);
 }
 
 .preview-close {
@@ -1455,7 +1455,7 @@ body {
   position: absolute;
   top: 20px;
   left: 20px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 217, 255, 0.9);
   color: #000;
   padding: 8px 14px;
   border-radius: 8px;
@@ -1481,12 +1481,12 @@ body {
 
 .pdf-modal-content {
   background: linear-gradient(135deg, var(--st-bg-app-2) 0%, var(--st-bg-card) 100%);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(0, 217, 255, 0.3);
   border-radius: 16px;
   padding: 24px;
   width: 90%;
   max-width: 420px;
-  box-shadow: 0 8px 32px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 217, 255, 0.2);
 }
 
 .pdf-modal-header {
@@ -1535,8 +1535,8 @@ body {
   align-items: center;
   gap: 16px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 217, 255, 0.05);
+  border: 2px solid rgba(0, 217, 255, 0.2);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s;
@@ -1547,9 +1547,9 @@ body {
 }
 
 .pdf-option-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 217, 255, 0.1);
   border-color: var(--st-accent);
-  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 217, 255, 0.15);
 }
 
 .pdf-option-btn.disabled {
@@ -1674,7 +1674,7 @@ html[dir="rtl"] .logo-highlight {
 .processing-spinner {
   width: 48px;
   height: 48px;
-  border: 3px solid rgba(255, 255, 255, 0.2);
+  border: 3px solid rgba(0, 217, 255, 0.2);
   border-top-color: var(--st-accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -1724,12 +1724,12 @@ html[dir="rtl"] .logo-highlight {
 
 .queue-modal-content {
   background: linear-gradient(145deg, rgba(30, 40, 50, 0.95), rgba(20, 28, 36, 0.98));
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(0, 217, 255, 0.3);
   border-radius: 16px;
   padding: 24px;
   text-align: center;
   max-width: 320px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 217, 255, 0.1);
 }
 
 .queue-modal-icon {
@@ -1773,7 +1773,7 @@ html[dir="rtl"] .logo-highlight {
 
 #queueSlotsAvailable {
   color: var(--st-accent);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(0, 217, 255, 0.3);
 }
 
 .queue-modal-actions {
@@ -1798,7 +1798,7 @@ html[dir="rtl"] .logo-highlight {
 .queue-btn-primary:hover {
   background: linear-gradient(135deg, #00e8ff, #00c8e8);
   transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 217, 255, 0.4);
 }
 
 .queue-btn-secondary {
@@ -1847,7 +1847,7 @@ html[dir="rtl"] .logo-highlight {
   max-width: 320px;
   max-height: 90vh;
   overflow-y: auto;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(0, 217, 255, 0.3);
   transform: scale(0.95);
   transition: transform 0.3s ease;
   position: relative;
@@ -1862,7 +1862,7 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .gemini-modal-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 217, 255, 0.2);
   border-radius: 2px;
 }
 
@@ -1963,8 +1963,8 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .gemini-promo-box {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 217, 255, 0.08);
+  border: 1px solid rgba(0, 217, 255, 0.3);
   border-radius: 8px;
   padding: 10px;
   margin-bottom: 12px;
@@ -2010,8 +2010,8 @@ html[dir="rtl"] .logo-highlight {
   justify-content: center;
   width: 18px;
   height: 18px;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(0, 217, 255, 0.2);
+  border: 1px solid rgba(0, 217, 255, 0.4);
   border-radius: 50%;
   color: var(--st-accent);
   font-size: 10px;
@@ -2035,8 +2035,8 @@ html[dir="rtl"] .logo-highlight {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 217, 255, 0.15);
+  border: 1px solid rgba(0, 217, 255, 0.3);
   color: var(--st-accent);
   font-size: 11px;
   font-weight: 700;
@@ -2115,10 +2115,10 @@ html[dir="rtl"] .logo-highlight {
   font-family: monospace;
   font-size: 12px;
   color: var(--st-accent);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 217, 255, 0.08);
   padding: 3px 8px;
   border-radius: 4px;
-  border: 1px dashed rgba(255, 255, 255, 0.3);
+  border: 1px dashed rgba(0, 217, 255, 0.3);
   letter-spacing: 0.5px;
 }
 
@@ -2187,7 +2187,7 @@ html[dir="rtl"] .logo-highlight {
 
 .gemini-get-key-btn:hover {
   background: linear-gradient(135deg, #00e8ff, #00c8e4);
-  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 217, 255, 0.4);
 }
 
 .gemini-footer-note {
@@ -2207,7 +2207,7 @@ html[dir="rtl"] .logo-highlight {
   width: 100%;
   padding: 8px 10px;
   background: var(--st-bg-rail);
-  border: 1px dashed rgba(255, 255, 255, 0.4);
+  border: 1px dashed rgba(0, 217, 255, 0.4);
   border-radius: 6px;
   color: #fff;
   font-size: 12px;
@@ -2278,21 +2278,21 @@ html[dir="rtl"] .logo-highlight {
 
 .gemini-usage-link {
   display: inline-block;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(0, 217, 255, 0.7);
   text-decoration: none;
   font-size: 11px;
   font-weight: 600;
   padding: 6px 12px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 217, 255, 0.05);
+  border: 1px solid rgba(0, 217, 255, 0.15);
   transition: all 0.2s ease;
 }
 
 .gemini-usage-link:hover {
   color: var(--st-accent);
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(0, 217, 255, 0.1);
+  border-color: rgba(0, 217, 255, 0.4);
   transform: translateY(-1px);
 }
 
@@ -2311,7 +2311,7 @@ html[dir="rtl"] .logo-highlight {
 
 .gemini-btn-primary:hover {
   background: #00e8ff;
-  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.4);
+  box-shadow: 0 2px 10px rgba(0, 217, 255, 0.4);
 }
 
 .gemini-btn-secondary {
@@ -2349,13 +2349,13 @@ html[dir="rtl"] .logo-highlight {
   text-align: center;
   color: var(--st-accent);
   background: rgba(0, 0, 0, 0.7);
-  border: 2px solid rgba(255, 255, 255, 0.6);
+  border: 2px solid rgba(0, 217, 255, 0.6);
   border-radius: 50%;
   cursor: pointer;
   z-index: 10;
   opacity: 0;
   transition: all 0.3s ease;
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  text-shadow: 0 0 8px rgba(0, 217, 255, 0.5);
 }
 
 .thumbnail:hover .thumbnail-ai {
@@ -2363,11 +2363,11 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .thumbnail-ai:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 217, 255, 0.2);
   border-color: var(--st-accent);
   transform: translate(-50%, -50%) scale(1.15);
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
-  text-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 15px rgba(0, 217, 255, 0.6);
+  text-shadow: 0 0 12px rgba(0, 217, 255, 0.9);
 }
 
 .thumbnail-ai:active {
@@ -2403,8 +2403,8 @@ html[dir="rtl"] .logo-highlight {
   max-height: 100%;
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 0 30px rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(0, 217, 255, 0.4);
+  box-shadow: 0 0 30px rgba(0, 217, 255, 0.15);
   transform: scale(0.95);
   transition: transform 0.3s ease;
   overflow: hidden;
@@ -2420,14 +2420,14 @@ html[dir="rtl"] .logo-highlight {
   justify-content: space-between;
   padding: 16px 20px;
   background: linear-gradient(180deg, var(--st-bg-elevated) 0%, var(--st-bg-rail) 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  border-bottom: 1px solid rgba(0, 217, 255, 0.3);
 }
 
 .ai-portal-title {
   color: var(--st-accent);
   font-size: 18px;
   font-weight: 700;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  text-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
 }
 
 .ai-portal-close {
@@ -2511,7 +2511,7 @@ html[dir="rtl"] .logo-highlight {
   flex-shrink: 0;
   padding: 6px 10px;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(0, 217, 255, 0.4);
   border-radius: 15px;
   color: var(--st-accent);
   font-size: 11px;
@@ -2521,7 +2521,7 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .ai-preset-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 217, 255, 0.15);
   border-color: var(--st-accent);
 }
 
@@ -2537,7 +2537,7 @@ html[dir="rtl"] .logo-highlight {
   flex: 1;
   padding: 14px 16px;
   background: var(--st-bg-control);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(0, 217, 255, 0.3);
   border-radius: 10px;
   color: #fff;
   font-size: 14px;
@@ -2562,12 +2562,12 @@ html[dir="rtl"] .logo-highlight {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 217, 255, 0.3);
 }
 
 .ai-send-btn:hover {
   background: linear-gradient(135deg, #00e8ff 0%, var(--st-accent) 100%);
-  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 15px rgba(0, 217, 255, 0.5);
   transform: translateY(-1px);
 }
 
@@ -2712,7 +2712,7 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .verdict-section strong {
-  color: #ffffff;
+  color: #00ffff;
   display: block;
   margin-bottom: 4px;
 }
@@ -2784,12 +2784,12 @@ html[dir="rtl"] .logo-highlight {
 
 .subscription-modal-content {
   background: linear-gradient(135deg, var(--st-bg-app-2) 0%, var(--st-bg-card) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(0, 255, 255, 0.3);
   border-radius: 16px;
   padding: 24px;
   width: 90%;
   max-width: 370px;
-  box-shadow: 0 0 40px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 40px rgba(0, 255, 255, 0.2);
 }
 
 .subscription-modal-header {
@@ -2807,7 +2807,7 @@ html[dir="rtl"] .logo-highlight {
 .subscription-title {
   font-size: 20px;
   font-weight: 700;
-  background: linear-gradient(90deg, #ffffff, #ff00ff);
+  background: linear-gradient(90deg, #00ffff, #ff00ff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -2835,7 +2835,7 @@ html[dir="rtl"] .logo-highlight {
   font-weight: 500;
   margin-bottom: 16px;
   padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 217, 255, 0.1);
   border-radius: 20px;
 }
 
@@ -2859,14 +2859,14 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .subscription-btn:hover {
-  border-color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  border-color: #00ffff;
+  background: rgba(0, 255, 255, 0.1);
   transform: translateY(-2px);
 }
 
 .subscription-btn.yearly {
-  border-color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  border-color: #00ffff;
+  background: rgba(0, 255, 255, 0.1);
 }
 
 .plan-name {
@@ -2919,10 +2919,10 @@ html[dir="rtl"] .logo-highlight {
 .refresh-subscription-btn {
   width: 100%;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
   border-radius: 8px;
-  color: #ffffff;
+  color: #00ffff;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -2931,8 +2931,8 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .refresh-subscription-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: #ffffff;
+  background: rgba(0, 255, 255, 0.2);
+  border-color: #00ffff;
   transform: scale(1.02);
 }
 
@@ -2966,11 +2966,11 @@ html[dir="rtl"] .logo-highlight {
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 255, 255, 0.15);
+  border: 1px solid rgba(0, 255, 255, 0.3);
   border-radius: 12px;
   font-size: 10px;
-  color: #ffffff;
+  color: #00ffff;
   margin-left: 8px;
 }
 
@@ -3062,12 +3062,12 @@ html[dir="rtl"] .logo-highlight {
   color: #3c4043;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 217, 255, 0.1);
 }
 
 .google-signin-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 30px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 30px rgba(0, 217, 255, 0.2);
 }
 
 .google-signin-btn:active {
@@ -3119,8 +3119,8 @@ html[dir="rtl"] .logo-highlight {
   gap: 8px;
   margin-top: 12px;
   padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 217, 255, 0.08);
+  border: 1px solid rgba(0, 217, 255, 0.25);
   border-radius: 14px;
   color: var(--st-accent);
   font-size: 12px;
@@ -3176,14 +3176,14 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .user-avatar-container:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 217, 255, 0.1);
 }
 
 .user-avatar {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  border: 2px solid rgba(0, 217, 255, 0.4);
   object-fit: cover;
 }
 
@@ -3277,13 +3277,13 @@ html[dir="rtl"] .logo-highlight {
 
 .review-modal-content {
   background: linear-gradient(145deg, rgba(30, 40, 50, 0.95), rgba(20, 28, 36, 0.98));
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(0, 217, 255, 0.3);
   border-radius: 16px;
   padding: 28px 24px;
   text-align: center;
   max-width: 300px;
   width: 90%;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 217, 255, 0.1);
 }
 
 .review-modal-header {
@@ -3324,7 +3324,7 @@ html[dir="rtl"] .logo-highlight {
 .review-btn-primary:hover {
   background: linear-gradient(135deg, #00e8ff, #00c8e8);
   transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 217, 255, 0.4);
 }
 
 .review-btn-secondary {
@@ -3350,8 +3350,8 @@ html[dir="rtl"] .logo-highlight {
   display: inline-flex;
   align-items: center;
   gap: 1px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 217, 255, 0.1);
+  border: 1px solid rgba(0, 217, 255, 0.25);
   border-radius: 12px;
   padding: 2px 10px;
   font-size: 12px;
@@ -3375,8 +3375,8 @@ html[dir="rtl"] .logo-highlight {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(0, 184, 212, 0.05));
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.08), rgba(0, 184, 212, 0.05));
+  border: 1px solid rgba(0, 217, 255, 0.25);
   border-radius: 8px;
   padding: 10px 14px;
   margin-bottom: 10px;
@@ -3430,8 +3430,8 @@ html[dir="rtl"] .logo-highlight {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.06);
-  border: 2px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 217, 255, 0.06);
+  border: 2px solid rgba(0, 217, 255, 0.25);
   border-radius: 50%;
   color: var(--st-accent);
   cursor: pointer;
@@ -3439,10 +3439,10 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .hero-action-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 217, 255, 0.15);
+  border-color: rgba(0, 217, 255, 0.5);
   transform: scale(1.1);
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.25);
 }
 
 .hero-action-btn:active {
@@ -3509,8 +3509,8 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .ai-quick-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 217, 255, 0.1);
+  border-color: rgba(0, 217, 255, 0.3);
   color: #fff;
 }
 
@@ -3545,8 +3545,8 @@ html[dir="rtl"] .logo-highlight {
 .hero-key-btn {
   width: 100%;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 217, 255, 0.08);
+  border: 1px solid rgba(0, 217, 255, 0.3);
   border-radius: 10px;
   color: var(--st-accent);
   font-size: 13px;
@@ -3567,12 +3567,12 @@ html[dir="rtl"] .logo-highlight {
 .hero-key-sub {
   font-size: 10px;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(0, 217, 255, 0.6);
 }
 
 .hero-key-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 217, 255, 0.15);
+  border-color: rgba(0, 217, 255, 0.5);
 }
 
 .hero-key-btn.connected {
@@ -3600,7 +3600,7 @@ html[dir="rtl"] .logo-highlight {
 
 .hero-primary-btn:hover {
   background: linear-gradient(135deg, #00e8ff, #00c8e4);
-  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 217, 255, 0.35);
   transform: translateY(-1px);
 }
 
@@ -3618,20 +3618,20 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .hero-secondary-btn:hover {
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(0, 217, 255, 0.4);
   color: #fff;
 }
 
 .action-btn.ai-action {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(0, 184, 212, 0.15));
-  border-color: rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(0, 184, 212, 0.15));
+  border-color: rgba(0, 217, 255, 0.3);
   color: var(--st-accent);
   font-weight: 600;
 }
 
 .action-btn.ai-action:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(0, 184, 212, 0.25));
-  border-color: rgba(255, 255, 255, 0.5);
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.25), rgba(0, 184, 212, 0.25));
+  border-color: rgba(0, 217, 255, 0.5);
 }
 
 .trial-countdown-toast {
@@ -3689,7 +3689,7 @@ html[dir="rtl"] .logo-highlight {
   right: 0;
   min-width: 140px;
   background: linear-gradient(135deg, var(--st-bg-app-2), var(--st-bg-card));
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(0, 217, 255, 0.3);
   border-radius: 8px;
   overflow: hidden;
   z-index: 100;
@@ -3722,7 +3722,7 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .save-option:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 217, 255, 0.12);
   color: var(--st-accent);
 }
 
@@ -3743,162 +3743,3 @@ html[dir="rtl"] .logo-highlight {
   padding: 3px 8px;
   border-radius: 6px;
 }
-
-/* =========================================================
-   UNIVERSAL BLUE PILL BUTTON SYSTEM
-   Target: every interactive button in the popup.
-   Exceptions kept: thumbnail overlay icons, checkboxes,
-   Google sign-in (brand colours), ASK AI orb (gold).
-   ========================================================= */
-
-:root {
-  --btn-blue:       #3B7BFF;
-  --btn-blue-hover: #2B6AEE;
-  --btn-blue-dark:  #1A55D4;
-  --btn-radius:     50px;
-}
-
-/* ── 1. Broad catch-all ──────────────────────────────── */
-button:not(.google-signin-btn):not(.ai-btn):not(.thumbnail-delete):not(.thumbnail-copy):not(.platform-selector select) {
-  background: var(--btn-blue) !important;
-  color: #ffffff !important;
-  border: none !important;
-  border-radius: var(--btn-radius) !important;
-  font-weight: 600 !important;
-  cursor: pointer !important;
-  transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease !important;
-  box-shadow: 0 2px 10px rgba(59,123,255,0.30) !important;
-}
-
-button:not(.google-signin-btn):not(.ai-btn):not(.thumbnail-delete):not(.thumbnail-copy):hover {
-  background: var(--btn-blue-hover) !important;
-  box-shadow: 0 4px 18px rgba(59,123,255,0.45) !important;
-  transform: translateY(-1px) !important;
-}
-
-button:not(.google-signin-btn):not(.ai-btn):not(.thumbnail-delete):not(.thumbnail-copy):active {
-  background: var(--btn-blue-dark) !important;
-  transform: scale(0.97) translateY(0) !important;
-  box-shadow: 0 2px 8px rgba(59,123,255,0.25) !important;
-}
-
-/* ── 2. Specific named classes (belt-and-braces) ─────── */
-.sign-in-header-btn, .open-sidebar-btn,
-.upgrade-btn, .upgrade-btn-trial, .upgrade-btn-urgent,
-.upgrade-btn-expired, .upgrade-btn-pro,
-.reedit-fullpage-btn, .stop-fullpage-btn,
-.setup-cta, .bottom-save-btn,
-.select-all-btn, .action-btn, .ai-action-btn, .footer-btn,
-.send-to-ai-btn, .primary-btn, .cta-btn, .unlock-btn,
-.ai-send-btn, .ai-clear-btn, .ai-copy-btn,
-.gemini-btn-primary, .gemini-btn-secondary,
-.gemini-get-key-btn,
-.queue-btn-primary, .queue-btn-secondary,
-.review-btn-primary, .review-btn-secondary,
-.hero-primary-btn, .hero-secondary-btn,
-.hero-key-btn,
-.pdf-option-btn, .pdf-cancel-btn, .pdf-modal-close,
-.refresh-subscription-btn, .subscription-close-btn,
-.auth-close-btn, .verdict-action-btn, .verdict-close-btn,
-.gemini-modal-close, .ai-portal-close, .preview-close,
-.clear-button, .save-trigger,
-.demo-create-btn, .ai-quick-btn,
-.ai-preset-btn {
-  background: var(--btn-blue) !important;
-  color: #ffffff !important;
-  border: none !important;
-  border-radius: var(--btn-radius) !important;
-  font-weight: 600 !important;
-  box-shadow: 0 2px 10px rgba(59,123,255,0.30) !important;
-  transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease !important;
-}
-
-.sign-in-header-btn:hover, .open-sidebar-btn:hover,
-.upgrade-btn:hover, .setup-cta:hover,
-.bottom-save-btn:hover, .select-all-btn:hover,
-.action-btn:hover, .ai-send-btn:hover,
-.gemini-btn-primary:hover, .gemini-btn-secondary:hover,
-.queue-btn-primary:hover, .queue-btn-secondary:hover,
-.review-btn-primary:hover, .review-btn-secondary:hover,
-.hero-primary-btn:hover, .hero-secondary-btn:hover,
-.hero-key-btn:hover, .pdf-option-btn:hover,
-.refresh-subscription-btn:hover, .ai-quick-btn:hover,
-.ai-preset-btn:hover, .clear-button:hover, .demo-create-btn:hover {
-  background: var(--btn-blue-hover) !important;
-  box-shadow: 0 4px 18px rgba(59,123,255,0.45) !important;
-  transform: translateY(-1px) !important;
-}
-
-/* ── 3. Hero circle buttons (SNAP / SNIP / FULL PAGE) ── */
-.hero-action-btn:not(.ai-btn) {
-  background: rgba(59,123,255,0.15) !important;
-  border: 2px solid var(--btn-blue) !important;
-  color: #ffffff !important;
-  box-shadow: 0 0 14px rgba(59,123,255,0.25) !important;
-  border-radius: 50% !important;
-}
-
-.hero-action-btn:not(.ai-btn):hover {
-  background: rgba(59,123,255,0.30) !important;
-  border-color: var(--btn-blue-hover) !important;
-  box-shadow: 0 0 22px rgba(59,123,255,0.45) !important;
-  transform: scale(1.08) !important;
-}
-
-.hero-action-btn:not(.ai-btn) svg path,
-.hero-action-btn:not(.ai-btn) svg circle,
-.hero-action-btn:not(.ai-btn) svg rect,
-.hero-action-btn:not(.ai-btn) svg line {
-  stroke: #ffffff !important;
-}
-
-/* ── 4. Hero mode labels ─────────────────────────────── */
-.hero-action-label:not(.ai-label) {
-  color: var(--btn-blue) !important;
-}
-
-/* ── 5. Disabled state ───────────────────────────────── */
-button:disabled,
-.gemini-btn-primary:disabled,
-.ai-send-btn:disabled,
-.pdf-option-btn.disabled {
-  background: rgba(59,123,255,0.30) !important;
-  box-shadow: none !important;
-  transform: none !important;
-  cursor: not-allowed !important;
-  opacity: 0.6 !important;
-}
-
-/* ── 6. Destructive / Delete — keep red tint ─────────── */
-.thumbnail-delete {
-  background: rgba(255,71,87,0.15) !important;
-  border: 1px solid rgba(255,71,87,0.35) !important;
-  color: #ff4757 !important;
-  border-radius: 50% !important;
-  box-shadow: none !important;
-}
-
-.thumbnail-delete:hover {
-  background: rgba(255,71,87,0.30) !important;
-  box-shadow: 0 0 8px rgba(255,71,87,0.35) !important;
-  transform: scale(1.1) !important;
-}
-
-/* ── 7. Google Sign-In — preserve brand colours ─────── */
-.google-signin-btn {
-  background: #ffffff !important;
-  color: #3c4043 !important;
-  border: 1px solid #dadce0 !important;
-  border-radius: var(--btn-radius) !important;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.12) !important;
-}
-
-.google-signin-btn:hover:not(:disabled) {
-  background: #f8f8f8 !important;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.18) !important;
-  transform: none !important;
-}
-
-/* ── 8. Logo-highlight colour now matches brand blue ─── */
-.logo-highlight { color: var(--btn-blue) !important; }
-

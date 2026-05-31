@@ -17,7 +17,7 @@ const DEFAULT_SETTINGS = {
   autoDownload: false,
   fitGoogleDocsLimit: true,
   defaultBorderEnabled: true,
-  defaultBorderColor: '#ffffff',
+  defaultBorderColor: '#00d9ff',
   defaultBorderWidth: 8,
   defaultFrameStyle: 'none'
 };
