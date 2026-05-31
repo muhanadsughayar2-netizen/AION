@@ -1,1 +1,0 @@
-- [Sidebar GV2 migration](sidebar-gv2.md) — sidebar.html rewritten to 3-tab Google-style chrome; all IDs preserved; ai-chat.js/sidebar.js untouched.

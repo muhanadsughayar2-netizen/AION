@@ -255,9 +255,7 @@
     previewPaused = true;
     try {
       const response = await new Promise((resolve) => {
-        // Pass tabId so the background captures the correct tab regardless of
-        // which window Chrome considers "current" from the service worker.
-        chrome.runtime.sendMessage({ action: 'capture', tabId: tab.id }, (resp) => {
+        chrome.runtime.sendMessage({ action: 'capture' }, (resp) => {
           if (chrome.runtime.lastError) {
             resolve({ success: false, error: chrome.runtime.lastError.message });
           } else {
@@ -285,23 +283,13 @@
     disableCaptureButtons(true);
     previewPaused = true;
     try {
-      // Route through the background service worker — calling captureVisibleTab
-      // directly from the side panel page fails because side-panel pages don't
-      // hold an active activeTab grant the way the background service worker does.
-      const response = await new Promise((resolve) => {
-        chrome.runtime.sendMessage({ action: 'captureForSnip', tabId: tab.id }, (resp) => {
-          if (chrome.runtime.lastError) {
-            resolve({ success: false, error: chrome.runtime.lastError.message });
-          } else {
-            resolve(resp || { success: false, error: 'No response' });
-          }
-        });
-      });
-      if (!response.success) {
-        toast(response.error || "Can't snip this page", 'error');
+      const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+      if (!dataUrl) {
+        toast('Capture failed', 'error');
         return;
       }
-      const { snipId } = response;
+      const snipId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      await chrome.storage.local.set({ ['snipImage_' + snipId]: dataUrl });
       const width = 1200;
       const height = 800;
       const left = Math.round((screen.width - width) / 2);
@@ -328,8 +316,7 @@
     previewPaused = true;
     try {
       const response = await new Promise((resolve) => {
-        // Pass tabId so the background targets the correct tab.
-        chrome.runtime.sendMessage({ action: 'startFullPageCapture', tabId: tab.id }, (resp) => {
+        chrome.runtime.sendMessage({ action: 'startFullPageCapture' }, (resp) => {
           if (chrome.runtime.lastError) {
             resolve({ success: false, error: chrome.runtime.lastError.message });
           } else {
@@ -421,19 +408,15 @@
         return;
       }
     } catch (e) {}
-    // Delegate to showProxyKeyPrompt() (defined in ai-chat.js, loaded first)
-    // which both opens the modal AND attaches all the event handlers (✕,
-    // Cancel, checkbox, Activate).  Touching the modal DOM directly here
-    // would skip handler wiring and leave the modal unresponsive.
-    if (typeof showProxyKeyPrompt === 'function') {
-      showProxyKeyPrompt();
-      return;
-    }
-    // Fallback if somehow the function isn't available yet.
+    // Reuse the in-chat key modal that ai-chat.js already wires up.
     const modal = document.getElementById('geminiKeyModal');
     if (modal) {
       modal.classList.add('open');
+      modal.style.display = 'flex';
+      const input = document.getElementById('geminiKeyModalInput');
+      if (input) setTimeout(() => input.focus(), 80);
     } else {
+      // Fallback: open the options page
       try { chrome.runtime.openOptionsPage(); } catch (e) {}
     }
   }
