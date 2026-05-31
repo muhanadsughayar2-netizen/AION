@@ -6453,7 +6453,18 @@ async function sendToGemini(prompt, imageDataUrls) {
       userParts.push({ inlineData: { mimeType: m.mimeType, data: m.data } });
       userParts.push({ text: `\n\n[USER MEDIA] The user has attached their own generated image above. You MUST embed it prominently in the page using: <img src="data:${m.mimeType};base64,${m.data}" style="..."> — place it as the hero image or in a dedicated section. Do not use any other image for this spot.` });
     } else if (m.type === 'video') {
-      userParts.push({ text: `\n\n[USER MEDIA] The user has a generated video to embed. Use this exact data URL as the video src: data:${m.mimeType};base64,${m.data}\nEmbed it as: <video src="data:${m.mimeType};base64,${m.data}" controls playsinline style="width:100%;max-width:800px;border-radius:12px;display:block;margin:0 auto;"> in a dedicated full-width section of the page.` });
+      // NEVER send raw base64 video to Gemini — it blows the output token limit
+      // and truncates the HTML mid-generation. Use the same placeholder pattern
+      // as the file-attachment path: store the data client-side, send only the
+      // lightweight token, swap it in after the AI responds.
+      const stagedIdx = _pendingBuildVideos.length; // usually 0, but safe if both paths fire
+      _pendingBuildVideos.push(`data:${m.mimeType};base64,${m.data}`);
+      userParts.push({ text: `\n\n[USER MEDIA] The user has a Veo-generated video to embed. ` +
+        `Use this EXACT placeholder as the <video> src — do NOT output any base64 data: __SNAP_VID_${stagedIdx}__\n` +
+        `Embed it as: <video src="__SNAP_VID_${stagedIdx}__" controls autoplay muted loop playsinline ` +
+        `style="width:100%;border-radius:12px;display:block;"></video> ` +
+        `wrapped in a responsive 16:9 container (aspect-ratio:16/9;overflow:hidden) ` +
+        `in a dedicated full-width section of the page.` });
     }
     clearStagedMedia(); // consume after one build
   }
