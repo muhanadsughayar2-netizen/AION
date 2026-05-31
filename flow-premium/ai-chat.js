@@ -6593,13 +6593,16 @@ async function handleSend() {
         _pendingBuildVideos = fitsInline.map(f => `data:${f.mimeType};base64,${f.data}`);
         const videoPlaceholderList = _pendingBuildVideos.map((_, i) => `__SNAP_VID_${i}__`).join(', ');
         prompt += `\n\nVIDEO EMBED INSTRUCTION: The user attached ${fitsInline.length} video(s). ` +
-          `In your HTML output use these exact placeholder strings as the src values: ${videoPlaceholderList} ` +
+          `Use these exact placeholder strings as the src values: ${videoPlaceholderList} ` +
           `(example: <video src="__SNAP_VID_0__" controls autoplay muted loop playsinline ` +
           `style="width:100%;border-radius:12px;display:block;"></video>). ` +
-          `Wrap each video in a responsive 16:9 container div. ` +
-          `Place each video in the most visually fitting section of the existing site. ` +
-          `NEVER output any actual base64 data — only use the placeholder strings. ` +
-          `Keep all other design completely unchanged.`;
+          `Wrap each video in a responsive 16:9 container (aspect-ratio:16/9;overflow:hidden). ` +
+          `CRITICAL RULES: ` +
+          `(1) If the user named a specific section (e.g. "features section", "hero", "about") — place the video EXACTLY there, not elsewhere. ` +
+          `(2) If the user said "replace" or "swap" an existing video — change ONLY that <video> tag's src attribute to the placeholder. Do NOT add a new video element. ` +
+          `(3) If no section is specified — place in the most contextually fitting section. ` +
+          `(4) NEVER output any actual base64 data — only use the placeholder strings. ` +
+          `(5) Keep all other design completely unchanged.`;
       }
     }
   }
