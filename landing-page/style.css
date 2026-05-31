@@ -10,25 +10,25 @@
        made to the extension theme can ripple into the landing surface
        without separate edits. The local --primary/--bg-* aliases below
        are kept for source compatibility with existing rules. */
-    --primary: #3B7BFF;
-    --primary-dark: #2563EB;
+    --primary: #06b6d4;
+    --primary-dark: #0891b2;
     --bg-dark: #0f172a;
     --bg-darker: #0a0f1b;
     --bg-card: rgba(15, 23, 42, 0.8);
     --bg-glass: rgba(15, 23, 42, 0.4);
     --text-primary: #f1f5f9;
     --text-secondary: #cbd5e1;
-    --border-color: rgba(59, 123, 255, 0.2);
-    --glow: 0 0 20px rgba(59, 123, 255, 0.3);
-    --glow-bright: 0 0 40px rgba(59, 123, 255, 0.5);
+    --border-color: rgba(6, 182, 212, 0.2);
+    --glow: 0 0 20px rgba(6, 182, 212, 0.3);
+    --glow-bright: 0 0 40px rgba(6, 182, 212, 0.5);
 
     /* Shared design tokens (mirror of flow-premium/theme.css) */
-    --st-accent: #3B7BFF;
-    --st-accent-2: #2563EB;
-    --st-accent-soft: rgba(59, 123, 255, 0.10);
-    --st-accent-soft-2: rgba(59, 123, 255, 0.15);
-    --st-accent-border: rgba(59, 123, 255, 0.30);
-    --st-accent-glow: rgba(59, 123, 255, 0.50);
+    --st-accent: #06b6d4;
+    --st-accent-2: #0891b2;
+    --st-accent-soft: rgba(6, 182, 212, 0.10);
+    --st-accent-soft-2: rgba(6, 182, 212, 0.15);
+    --st-accent-border: rgba(6, 182, 212, 0.30);
+    --st-accent-glow: rgba(6, 182, 212, 0.50);
     --st-bg-app: #0f172a;
     --st-bg-app-2: #0a0f1b;
     --st-bg-surface: rgba(15, 23, 42, 0.8);
@@ -44,7 +44,7 @@
     --st-motion-base: 0.22s;
     --st-motion-slow: 0.35s;
     --st-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-    --st-focus-ring: 0 0 0 3px rgba(59, 123, 255, 0.15), 0 0 0 1px #3B7BFF;
+    --st-focus-ring: 0 0 0 3px rgba(6, 182, 212, 0.15), 0 0 0 1px #06b6d4;
 }
 
 /* Global keyboard focus ring — landing page parity with extension surfaces */
@@ -119,7 +119,7 @@ body {
 }
 
 .logo-text {
-    background: linear-gradient(135deg, #3B7BFF, #2563EB);
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -128,7 +128,7 @@ body {
 .logo-free {
     font-size: 0.65rem;
     font-weight: 900;
-    background: linear-gradient(135deg, #3B7BFF, #3B7BFF);
+    background: linear-gradient(135deg, #00f5ff, #06b6d4);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -151,11 +151,11 @@ body {
 }
 
 .logo-highlight {
-    color: #3B7BFF;
+    color: #06b6d4;
 }
 
 .lang-switch {
-    background: linear-gradient(135deg, rgba(59, 123, 255, 0.2), rgba(59, 123, 255, 0.1));
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(6, 182, 212, 0.1));
     border: 1px solid var(--border-color);
     color: var(--primary);
     padding: 0.5rem 1rem;
@@ -166,7 +166,7 @@ body {
 }
 
 .lang-switch:hover {
-    background: linear-gradient(135deg, rgba(59, 123, 255, 0.4), rgba(59, 123, 255, 0.2));
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.4), rgba(6, 182, 212, 0.2));
     box-shadow: var(--glow);
 }
 
@@ -199,7 +199,7 @@ body {
 }
 
 .logo-word {
-    background: linear-gradient(135deg, #3B7BFF, #2563EB);
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -254,7 +254,7 @@ html[lang="he"] .hero-proof {
     display: inline-flex;
     align-items: center;
     gap: 1rem;
-    background: linear-gradient(135deg, #3B7BFF, #2563EB);
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
     color: #0f172a;
     padding: 1rem 2rem;
     border-radius: 12px;
@@ -288,7 +288,7 @@ html[lang="he"] .hero-proof {
 
 .cta-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 20px 40px rgba(59, 123, 255, 0.4);
+    box-shadow: 0 20px 40px rgba(6, 182, 212, 0.4);
 }
 
 .cta-icon {
@@ -308,7 +308,7 @@ html[lang="he"] .hero-proof {
 /* Advantage Section - WOW Factor */
 .advantage-section {
     padding: 6rem 2rem;
-    background: linear-gradient(180deg, rgba(59, 123, 255, 0.08), rgba(8, 145, 178, 0.05));
+    background: linear-gradient(180deg, rgba(6, 182, 212, 0.08), rgba(8, 145, 178, 0.05));
     max-width: 100%;
     margin: 0 auto;
 }
@@ -319,7 +319,7 @@ html[lang="he"] .hero-proof {
 
 .advantage-intro {
     font-size: 1.4rem;
-    background: linear-gradient(135deg, #3B7BFF, #3B7BFF);
+    background: linear-gradient(135deg, #00f5ff, #06b6d4);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -337,9 +337,9 @@ html[lang="he"] .hero-proof {
 .advantage-item {
     position: relative;
     padding: 1.5rem;
-    background: linear-gradient(135deg, rgba(59, 123, 255, 0.1), rgba(8, 145, 178, 0.05));
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(8, 145, 178, 0.05));
     backdrop-filter: blur(20px);
-    border: 2px solid rgba(59, 123, 255, 0.3);
+    border: 2px solid rgba(6, 182, 212, 0.3);
     border-radius: 20px;
     text-align: center;
     transition: all 0.4s ease;
@@ -364,12 +364,12 @@ html[lang="he"] .hero-proof {
 .advantage-item:hover {
     transform: translateY(-12px) scale(1.02);
     border-color: rgba(0, 245, 255, 0.6);
-    box-shadow: 0 20px 60px rgba(59, 123, 255, 0.3), inset 0 0 40px rgba(0, 245, 255, 0.1);
+    box-shadow: 0 20px 60px rgba(6, 182, 212, 0.3), inset 0 0 40px rgba(0, 245, 255, 0.1);
 }
 
 .advantage-item:hover .advantage-badge {
     transform: scale(1.1);
-    box-shadow: 0 18px 40px rgba(59, 123, 255, 0.5);
+    box-shadow: 0 18px 40px rgba(6, 182, 212, 0.5);
 }
 
 .advantage-icon {
@@ -388,7 +388,7 @@ html[lang="he"] .hero-proof {
     font-size: 1.05rem;
     margin: 0.5rem 0;
     font-weight: 800;
-    background: linear-gradient(135deg, #3B7BFF, #3B7BFF);
+    background: linear-gradient(135deg, #00f5ff, #06b6d4);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -402,7 +402,7 @@ html[lang="he"] .hero-proof {
     position: relative;
     z-index: 1;
     display: inline-block;
-    background: linear-gradient(135deg, #3B7BFF, #2563EB);
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
     color: #0f172a;
     padding: 0.7rem 1.3rem;
     border-radius: 25px;
@@ -410,7 +410,7 @@ html[lang="he"] .hero-proof {
     font-size: 0.8rem;
     letter-spacing: 0.5px;
     margin-top: 1rem;
-    box-shadow: 0 12px 30px rgba(59, 123, 255, 0.4);
+    box-shadow: 0 12px 30px rgba(6, 182, 212, 0.4);
     transition: all 0.3s ease;
     text-transform: uppercase;
     align-self: center;
@@ -422,7 +422,7 @@ html[lang="he"] .hero-proof {
     font-size: 1.2rem;
     color: var(--text-primary);
     font-weight: 700;
-    background: linear-gradient(135deg, #3B7BFF, #3B7BFF);
+    background: linear-gradient(135deg, #00f5ff, #06b6d4);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -461,8 +461,8 @@ html[lang="he"] .hero-proof {
     align-items: center;
     gap: 0.75rem;
     padding: 0.9rem 1.3rem;
-    background: linear-gradient(135deg, rgba(59, 123, 255, 0.15), rgba(59, 123, 255, 0.05));
-    border: 2px solid rgba(59, 123, 255, 0.3);
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(6, 182, 212, 0.05));
+    border: 2px solid rgba(6, 182, 212, 0.3);
     color: var(--text-secondary);
     border-radius: 12px;
     text-decoration: none;
@@ -473,11 +473,11 @@ html[lang="he"] .hero-proof {
 }
 
 .browser-btn:hover {
-    background: linear-gradient(135deg, rgba(59, 123, 255, 0.3), rgba(59, 123, 255, 0.15));
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(6, 182, 212, 0.15));
     border-color: var(--primary);
     color: var(--primary);
     transform: translateY(-4px) scale(1.08);
-    box-shadow: 0 16px 32px rgba(59, 123, 255, 0.3), inset 0 0 20px rgba(0, 245, 255, 0.1);
+    box-shadow: 0 16px 32px rgba(6, 182, 212, 0.3), inset 0 0 20px rgba(0, 245, 255, 0.1);
 }
 
 .browser-btn-icon {
@@ -486,7 +486,7 @@ html[lang="he"] .hero-proof {
     justify-content: center;
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, rgba(59, 123, 255, 0.25), rgba(59, 123, 255, 0.15));
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(6, 182, 212, 0.15));
     border-radius: 8px;
     font-weight: 700;
     font-size: 1.3rem;
@@ -565,7 +565,7 @@ html[lang="he"] .hero-proof {
 .stat-number {
     font-size: 2.5rem;
     font-weight: 900;
-    background: linear-gradient(135deg, #3B7BFF, #2563EB);
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -674,7 +674,7 @@ html[lang="he"] .hero-proof {
 /* Browser Compatibility */
 .browser-compatibility {
     padding: 6rem 2rem;
-    background: linear-gradient(135deg, rgba(59, 123, 255, 0.05), rgba(8, 145, 178, 0.05));
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.05), rgba(8, 145, 178, 0.05));
     max-width: 1400px;
     margin: 0 auto;
 }
@@ -714,7 +714,7 @@ html[lang="he"] .hero-proof {
     justify-content: center;
     width: 60px;
     height: 60px;
-    background: linear-gradient(135deg, #3B7BFF, #2563EB);
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
     color: #0f172a;
     border-radius: 12px;
     font-weight: 900;
@@ -736,7 +736,7 @@ html[lang="he"] .hero-proof {
 .browser-link {
     display: inline-block;
     padding: 0.5rem 1.5rem;
-    background: linear-gradient(135deg, #3B7BFF, #2563EB);
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
     color: #0f172a;
     text-decoration: none;
     border-radius: 8px;
@@ -746,13 +746,13 @@ html[lang="he"] .hero-proof {
 
 .browser-link:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(59, 123, 255, 0.3);
+    box-shadow: 0 10px 20px rgba(6, 182, 212, 0.3);
 }
 
 /* How It Works */
 .how-it-works {
     padding: 6rem 2rem;
-    background: linear-gradient(180deg, transparent, rgba(59, 123, 255, 0.08));
+    background: linear-gradient(180deg, transparent, rgba(6, 182, 212, 0.08));
     max-width: 1400px;
     margin: 0 auto;
 }
@@ -769,9 +769,9 @@ html[lang="he"] .hero-proof {
     flex: 1;
     min-width: 280px;
     padding: 2.5rem;
-    background: linear-gradient(135deg, rgba(59, 123, 255, 0.1), rgba(8, 145, 178, 0.05));
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(8, 145, 178, 0.05));
     backdrop-filter: blur(20px);
-    border: 2px solid rgba(59, 123, 255, 0.3);
+    border: 2px solid rgba(6, 182, 212, 0.3);
     border-radius: 20px;
     text-align: center;
     transition: all 0.4s ease;
@@ -798,7 +798,7 @@ html[lang="he"] .hero-proof {
 .step:hover {
     transform: translateY(-10px) scale(1.02);
     border-color: rgba(0, 245, 255, 0.6);
-    box-shadow: 0 20px 60px rgba(59, 123, 255, 0.3), inset 0 0 40px rgba(0, 245, 255, 0.1);
+    box-shadow: 0 20px 60px rgba(6, 182, 212, 0.3), inset 0 0 40px rgba(0, 245, 255, 0.1);
 }
 
 .step-icon-large {
@@ -820,13 +820,13 @@ html[lang="he"] .hero-proof {
     justify-content: center;
     width: 60px;
     height: 60px;
-    background: linear-gradient(135deg, #3B7BFF, #2563EB);
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
     color: #0f172a;
     border-radius: 50%;
     font-weight: 900;
     font-size: 1.8rem;
     margin: 0 auto 1.5rem;
-    box-shadow: 0 8px 30px rgba(59, 123, 255, 0.4);
+    box-shadow: 0 8px 30px rgba(6, 182, 212, 0.4);
     position: relative;
     z-index: 1;
 }
@@ -835,7 +835,7 @@ html[lang="he"] .hero-proof {
     font-size: 1.3rem;
     margin: 1rem 0;
     font-weight: 700;
-    background: linear-gradient(135deg, #3B7BFF, #3B7BFF);
+    background: linear-gradient(135deg, #00f5ff, #06b6d4);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -853,7 +853,7 @@ html[lang="he"] .hero-proof {
 
 .step-arrow {
     font-size: 3rem;
-    color: #3B7BFF;
+    color: #00f5ff;
     font-weight: 900;
     animation: pulse-arrow 2s ease infinite;
     text-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
@@ -877,7 +877,7 @@ html[lang="he"] .hero-proof {
 /* Pricing */
 .pricing {
     padding: 6rem 2rem;
-    background: linear-gradient(135deg, rgba(59, 123, 255, 0.05), rgba(8, 145, 178, 0.05));
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.05), rgba(8, 145, 178, 0.05));
     max-width: 1400px;
     margin: 0 auto;
 }
@@ -899,7 +899,7 @@ html[lang="he"] .hero-proof {
     top: -12px;
     left: 50%;
     transform: translateX(-50%);
-    background: linear-gradient(135deg, #3B7BFF, #2563EB);
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
     color: #0f172a;
     padding: 0.5rem 1rem;
     border-radius: 20px;
@@ -917,7 +917,7 @@ html[lang="he"] .hero-proof {
     font-size: 3rem;
     font-weight: 900;
     margin: 2rem 0;
-    background: linear-gradient(135deg, #3B7BFF, #2563EB);
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -929,7 +929,7 @@ html[lang="he"] .hero-proof {
 .trial-info {
     margin: 1.5rem 0;
     padding: 1rem;
-    background: rgba(59, 123, 255, 0.1);
+    background: rgba(6, 182, 212, 0.1);
     border-radius: 8px;
     color: var(--primary);
     font-weight: 500;
@@ -1031,7 +1031,7 @@ html[lang="he"] .hero-proof {
     text-decoration: none;
     font-size: 0.85rem;
     font-weight: 600;
-    border-bottom: 1px solid rgba(59, 123, 255, 0.5);
+    border-bottom: 1px solid rgba(6, 182, 212, 0.5);
     transition: all 0.2s ease;
 }
 
@@ -1042,8 +1042,8 @@ html[lang="he"] .hero-proof {
 /* Case Studies */
 .case-studies {
     padding: 6rem 2rem;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(59, 123, 255, 0.05));
-    border-top: 1px solid rgba(59, 123, 255, 0.1);
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(6, 182, 212, 0.05));
+    border-top: 1px solid rgba(6, 182, 212, 0.1);
 }
 
 .case-studies-subtitle {
@@ -1078,7 +1078,7 @@ html[lang="he"] .hero-proof {
 
 .case-study-tag {
     display: inline-block;
-    background: linear-gradient(135deg, rgba(59, 123, 255, 0.2), rgba(139, 92, 246, 0.2));
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.2));
     color: var(--primary);
     padding: 0.5rem 1rem;
     border-radius: 20px;
@@ -1120,7 +1120,7 @@ html[lang="he"] .hero-proof {
 /* FAQ */
 .faq {
     padding: 6rem 2rem;
-    background: linear-gradient(180deg, transparent, rgba(59, 123, 255, 0.05));
+    background: linear-gradient(180deg, transparent, rgba(6, 182, 212, 0.05));
     max-width: 800px;
     margin: 0 auto;
 }
@@ -1250,7 +1250,7 @@ html[lang="he"] .hero-proof {
 }
 
 .language-btn.active {
-    background: linear-gradient(135deg, #3B7BFF, #2563EB);
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
     color: #0f172a;
     border-color: var(--primary);
 }
@@ -1259,7 +1259,7 @@ html[lang="he"] .hero-proof {
 .footer {
     padding: 4rem 2rem 2rem;
     background: rgba(15, 23, 42, 0.9);
-    border-top: 1px solid rgba(59, 123, 255, 0.1);
+    border-top: 1px solid rgba(6, 182, 212, 0.1);
     color: var(--text-secondary);
 }
 
@@ -1302,7 +1302,7 @@ html[lang="he"] .hero-proof {
 }
 
 .footer-bottom {
-    border-top: 1px solid rgba(59, 123, 255, 0.1);
+    border-top: 1px solid rgba(6, 182, 212, 0.1);
     padding-top: 2rem;
     text-align: center;
     color: var(--text-secondary);
@@ -1315,7 +1315,7 @@ html[lang="he"] .hero-proof {
 
 /* Taste Demo Button */
     border-color: var(--primary);
-    background: rgba(59, 123, 255, 0.1);
+    background: rgba(6, 182, 212, 0.1);
 }
 
 @keyframes fadeIn {
@@ -1953,7 +1953,7 @@ html[lang="he"] .hero-proof {
     right: 0;
     bottom: 0;
     background: radial-gradient(ellipse at 30% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 60%),
-                radial-gradient(ellipse at 70% 50%, rgba(59, 123, 255, 0.08) 0%, transparent 60%);
+                radial-gradient(ellipse at 70% 50%, rgba(6, 182, 212, 0.08) 0%, transparent 60%);
     pointer-events: none;
 }
 
@@ -2021,12 +2021,12 @@ html[lang="he"] .hero-proof {
 }
 
 .superpower-agents .superpower-glow {
-    background: radial-gradient(circle at center, rgba(59, 123, 255, 0.12) 0%, transparent 50%);
+    background: radial-gradient(circle at center, rgba(6, 182, 212, 0.12) 0%, transparent 50%);
 }
 
 .superpower-agents:hover {
-    border-color: rgba(59, 123, 255, 0.3);
-    box-shadow: 0 20px 60px rgba(59, 123, 255, 0.15), 0 0 40px rgba(59, 123, 255, 0.1);
+    border-color: rgba(6, 182, 212, 0.3);
+    box-shadow: 0 20px 60px rgba(6, 182, 212, 0.15), 0 0 40px rgba(6, 182, 212, 0.1);
 }
 
 .superpower-credit .superpower-glow {
