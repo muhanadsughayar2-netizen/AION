@@ -3743,3 +3743,162 @@ html[dir="rtl"] .logo-highlight {
   padding: 3px 8px;
   border-radius: 6px;
 }
+
+/* =========================================================
+   UNIVERSAL BLUE PILL BUTTON SYSTEM
+   Target: every interactive button in the popup.
+   Exceptions kept: thumbnail overlay icons, checkboxes,
+   Google sign-in (brand colours), ASK AI orb (gold).
+   ========================================================= */
+
+:root {
+  --btn-blue:       #3B7BFF;
+  --btn-blue-hover: #2B6AEE;
+  --btn-blue-dark:  #1A55D4;
+  --btn-radius:     50px;
+}
+
+/* ── 1. Broad catch-all ──────────────────────────────── */
+button:not(.google-signin-btn):not(.ai-btn):not(.thumbnail-delete):not(.thumbnail-copy):not(.platform-selector select) {
+  background: var(--btn-blue) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: var(--btn-radius) !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease !important;
+  box-shadow: 0 2px 10px rgba(59,123,255,0.30) !important;
+}
+
+button:not(.google-signin-btn):not(.ai-btn):not(.thumbnail-delete):not(.thumbnail-copy):hover {
+  background: var(--btn-blue-hover) !important;
+  box-shadow: 0 4px 18px rgba(59,123,255,0.45) !important;
+  transform: translateY(-1px) !important;
+}
+
+button:not(.google-signin-btn):not(.ai-btn):not(.thumbnail-delete):not(.thumbnail-copy):active {
+  background: var(--btn-blue-dark) !important;
+  transform: scale(0.97) translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(59,123,255,0.25) !important;
+}
+
+/* ── 2. Specific named classes (belt-and-braces) ─────── */
+.sign-in-header-btn, .open-sidebar-btn,
+.upgrade-btn, .upgrade-btn-trial, .upgrade-btn-urgent,
+.upgrade-btn-expired, .upgrade-btn-pro,
+.reedit-fullpage-btn, .stop-fullpage-btn,
+.setup-cta, .bottom-save-btn,
+.select-all-btn, .action-btn, .ai-action-btn, .footer-btn,
+.send-to-ai-btn, .primary-btn, .cta-btn, .unlock-btn,
+.ai-send-btn, .ai-clear-btn, .ai-copy-btn,
+.gemini-btn-primary, .gemini-btn-secondary,
+.gemini-get-key-btn,
+.queue-btn-primary, .queue-btn-secondary,
+.review-btn-primary, .review-btn-secondary,
+.hero-primary-btn, .hero-secondary-btn,
+.hero-key-btn,
+.pdf-option-btn, .pdf-cancel-btn, .pdf-modal-close,
+.refresh-subscription-btn, .subscription-close-btn,
+.auth-close-btn, .verdict-action-btn, .verdict-close-btn,
+.gemini-modal-close, .ai-portal-close, .preview-close,
+.clear-button, .save-trigger,
+.demo-create-btn, .ai-quick-btn,
+.ai-preset-btn {
+  background: var(--btn-blue) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: var(--btn-radius) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 10px rgba(59,123,255,0.30) !important;
+  transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease !important;
+}
+
+.sign-in-header-btn:hover, .open-sidebar-btn:hover,
+.upgrade-btn:hover, .setup-cta:hover,
+.bottom-save-btn:hover, .select-all-btn:hover,
+.action-btn:hover, .ai-send-btn:hover,
+.gemini-btn-primary:hover, .gemini-btn-secondary:hover,
+.queue-btn-primary:hover, .queue-btn-secondary:hover,
+.review-btn-primary:hover, .review-btn-secondary:hover,
+.hero-primary-btn:hover, .hero-secondary-btn:hover,
+.hero-key-btn:hover, .pdf-option-btn:hover,
+.refresh-subscription-btn:hover, .ai-quick-btn:hover,
+.ai-preset-btn:hover, .clear-button:hover, .demo-create-btn:hover {
+  background: var(--btn-blue-hover) !important;
+  box-shadow: 0 4px 18px rgba(59,123,255,0.45) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ── 3. Hero circle buttons (SNAP / SNIP / FULL PAGE) ── */
+.hero-action-btn:not(.ai-btn) {
+  background: rgba(59,123,255,0.15) !important;
+  border: 2px solid var(--btn-blue) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 14px rgba(59,123,255,0.25) !important;
+  border-radius: 50% !important;
+}
+
+.hero-action-btn:not(.ai-btn):hover {
+  background: rgba(59,123,255,0.30) !important;
+  border-color: var(--btn-blue-hover) !important;
+  box-shadow: 0 0 22px rgba(59,123,255,0.45) !important;
+  transform: scale(1.08) !important;
+}
+
+.hero-action-btn:not(.ai-btn) svg path,
+.hero-action-btn:not(.ai-btn) svg circle,
+.hero-action-btn:not(.ai-btn) svg rect,
+.hero-action-btn:not(.ai-btn) svg line {
+  stroke: #ffffff !important;
+}
+
+/* ── 4. Hero mode labels ─────────────────────────────── */
+.hero-action-label:not(.ai-label) {
+  color: var(--btn-blue) !important;
+}
+
+/* ── 5. Disabled state ───────────────────────────────── */
+button:disabled,
+.gemini-btn-primary:disabled,
+.ai-send-btn:disabled,
+.pdf-option-btn.disabled {
+  background: rgba(59,123,255,0.30) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+}
+
+/* ── 6. Destructive / Delete — keep red tint ─────────── */
+.thumbnail-delete {
+  background: rgba(255,71,87,0.15) !important;
+  border: 1px solid rgba(255,71,87,0.35) !important;
+  color: #ff4757 !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+}
+
+.thumbnail-delete:hover {
+  background: rgba(255,71,87,0.30) !important;
+  box-shadow: 0 0 8px rgba(255,71,87,0.35) !important;
+  transform: scale(1.1) !important;
+}
+
+/* ── 7. Google Sign-In — preserve brand colours ─────── */
+.google-signin-btn {
+  background: #ffffff !important;
+  color: #3c4043 !important;
+  border: 1px solid #dadce0 !important;
+  border-radius: var(--btn-radius) !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12) !important;
+}
+
+.google-signin-btn:hover:not(:disabled) {
+  background: #f8f8f8 !important;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.18) !important;
+  transform: none !important;
+}
+
+/* ── 8. Logo-highlight colour now matches brand blue ─── */
+.logo-highlight { color: var(--btn-blue) !important; }
+

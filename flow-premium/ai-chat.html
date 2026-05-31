@@ -1631,7 +1631,25 @@
     #trialYearlyBtn:hover { background:rgba(0,217,255,0.12) !important; }
     #trialCheckStatusBtn:hover { background:rgba(0,217,255,0.15) !important; }
     #trialContinueCaptureBtn:hover { color:rgba(255,255,255,0.6) !important; border-color:rgba(255,255,255,0.2) !important; }
-  </style>
+  
+/* ── UNIVERSAL BLUE PILL BUTTONS ── */
+:root { --btn-blue:#3B7BFF; --btn-blue-hover:#2B6AEE; --btn-radius:50px; }
+button:not(.google-signin-btn) {
+  background:var(--btn-blue)!important; color:#fff!important;
+  border:none!important; border-radius:var(--btn-radius)!important;
+  font-weight:600!important; cursor:pointer!important;
+  box-shadow:0 2px 10px rgba(59,123,255,.30)!important;
+  transition:background .18s,box-shadow .18s,transform .12s!important; }
+button:not(.google-signin-btn):hover {
+  background:var(--btn-blue-hover)!important;
+  box-shadow:0 4px 18px rgba(59,123,255,.45)!important;
+  transform:translateY(-1px)!important; }
+button:not(.google-signin-btn):active {
+  background:#1A55D4!important; transform:scale(.97)!important; }
+button:disabled { opacity:.5!important; cursor:not-allowed!important; transform:none!important; }
+.google-signin-btn { background:#fff!important; color:#3c4043!important;
+  border:1px solid #dadce0!important; border-radius:var(--btn-radius)!important; box-shadow:0 2px 6px rgba(0,0,0,.12)!important; }
+</style>
 
   <script src="purify.min.js"></script>
   <script src="subscription.js"></script>
