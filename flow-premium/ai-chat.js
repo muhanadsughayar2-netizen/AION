@@ -6530,14 +6530,17 @@ async function handleSend() {
   if (!prompt && filesQueue.length === 0) return;
   if (!prompt) prompt = 'Analyze this image.';
 
-  // ── Build Mode: image-to-site embedding ──────────────────────────────────
-  // When an image is attached while patching an existing site, store the
-  // base64 data URLs locally and give the AI placeholder strings as src
+  // ── Build Mode: image & video embedding ──────────────────────────────────
+  // When media files are attached while patching an existing site, store the
+  // base64 data URLs locally and give the AI placeholder strings as src/src
   // values. After the AI responds we swap in the real data URLs client-side
-  // so the image is actually embedded without needing an external host.
+  // so the media is embedded without needing an external host.
   _pendingBuildImages = [];
+  _pendingBuildVideos = [];
   if (buildModeEnabled && _lastBuiltCode) {
     const imageParts = filesQueue.filter(f => f.mimeType && f.mimeType.startsWith('image/'));
+    const videoParts = filesQueue.filter(f => f.mimeType && f.mimeType.startsWith('video/'));
+
     if (imageParts.length > 0) {
       _pendingBuildImages = imageParts.map(f => `data:${f.mimeType};base64,${f.data}`);
       const placeholderList = _pendingBuildImages.map((_, i) => `__SNAP_IMG_${i}__`).join(', ');
@@ -6545,6 +6548,19 @@ async function handleSend() {
         `In your HTML output use these exact placeholder strings as the src values: ${placeholderList} ` +
         `(example: <img src="__SNAP_IMG_0__" alt="user image" style="width:100%;object-fit:cover;border-radius:12px;">). ` +
         `Place each image in the most visually fitting section of the existing site. ` +
+        `NEVER output any actual base64 data — only use the placeholder strings. ` +
+        `Keep all other design completely unchanged.`;
+    }
+
+    if (videoParts.length > 0) {
+      _pendingBuildVideos = videoParts.map(f => `data:${f.mimeType};base64,${f.data}`);
+      const videoPlaceholderList = _pendingBuildVideos.map((_, i) => `__SNAP_VID_${i}__`).join(', ');
+      prompt += `\n\nVIDEO EMBED INSTRUCTION: The user attached ${videoParts.length} video(s). ` +
+        `In your HTML output use these exact placeholder strings as the src values: ${videoPlaceholderList} ` +
+        `(example: <video src="__SNAP_VID_0__" controls autoplay muted loop playsinline ` +
+        `style="width:100%;border-radius:12px;display:block;"></video>). ` +
+        `Wrap each video in a responsive 16:9 container div. ` +
+        `Place each video in the most visually fitting section of the existing site. ` +
         `NEVER output any actual base64 data — only use the placeholder strings. ` +
         `Keep all other design completely unchanged.`;
     }
@@ -7597,6 +7613,13 @@ function addBubbleActions(bubble, text) {
       });
       _pendingBuildImages = [];
     }
+    // Swap in any short videos (webm/mp4) the user attached during this request
+    if (_pendingBuildVideos.length > 0) {
+      _pendingBuildVideos.forEach((dataUrl, i) => {
+        _lastBuiltCode = _lastBuiltCode.split(`__SNAP_VID_${i}__`).join(dataUrl);
+      });
+      _pendingBuildVideos = [];
+    }
     try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode }); } catch(e) {}
     _updateBuildInput();
   }
@@ -8387,6 +8410,8 @@ document.getElementById('searchToggleBtn')?.addEventListener('click', (e) => {
 let _lastBuiltCode = '';
 // Base64 data URLs waiting to replace __SNAP_IMG_N__ placeholders after AI responds
 let _pendingBuildImages = [];
+// Short video files (webm/mp4) attached during a build patch — same placeholder approach
+let _pendingBuildVideos = [];
 // When true, the next build response is a continuation chunk — merge with _lastBuiltCode
 let _continuationPending = false;
 // Safety cap: stop auto-continuing after this many consecutive truncated responses
