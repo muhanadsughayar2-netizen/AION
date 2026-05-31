@@ -5928,6 +5928,19 @@ RULES:
 • NO dead stubs — every button MUST do something (scroll, toggle, open modal, submit, animate, etc.).
 • Output raw JS only — NO tags, NO prose, NO fences.`;
 
+const BUILD_PATCH_PROMPT = `You are a senior front-end engineer making a targeted edit to an existing website.
+
+THE GOLDEN RULE: Change ONLY what the user explicitly asked for. Nothing else moves.
+
+STRICT RULES:
+• Return the COMPLETE HTML file with the requested change applied.
+• Do NOT redesign, re-theme, or change colors, fonts, layout, spacing, or any section the user did not mention.
+• Do NOT pick a new aesthetic profile. Lock onto whatever design is already in the file.
+• Preserve every existing ID, class, data-attribute, and script exactly as-is unless directly involved in the change.
+• If adding an image: use a real Pexels URL matching the context, with onerror fallback, object-fit:cover.
+• If adding a section: match the exact same design language (colors, radius, fonts, spacing) already present.
+• Output: ONLY a single \`\`\`html code block. Zero prose before or after.`;
+
 const L_UPDATE_PROMPT = `You are surgically updating one section of a website.
 
 UPDATE MODE: Output ONLY the new inner HTML for the requested section.
@@ -7314,14 +7327,16 @@ async function handleSend() {
           }
         }
       } else if (buildModeEnabled) {
-        systemPrompt = BUILD_SYSTEM_PROMPT;
-        // If the user already has a built site, inject it as context so the AI
-        // can update it instead of generating from scratch on follow-up prompts.
         if (_lastBuiltCode) {
+          // Site already exists — surgical patch mode: change only what was asked
+          systemPrompt = BUILD_PATCH_PROMPT;
           const last = contents[contents.length - 1];
           if (last && last.role === 'user') {
-            last.parts.push({ text: '\n\n[CURRENT SITE — update this and output the full improved file]:\n```html\n' + _lastBuiltCode + '\n```' });
+            last.parts.push({ text: '\n\nHere is the EXISTING site. Make ONLY the change the user asked for and return the complete file:\n\n```html\n' + _lastBuiltCode + '\n```' });
           }
+        } else {
+          // No site yet — full build from scratch
+          systemPrompt = BUILD_SYSTEM_PROMPT;
         }
       } else if (activeSpecialistAgent) {
         systemPrompt = activeSpecialistAgent.prompt;
