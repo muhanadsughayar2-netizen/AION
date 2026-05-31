@@ -1292,6 +1292,27 @@
             <button id="closePreviewBtn" style="background:none;border:none;color:rgba(255,255,255,0.35);cursor:pointer;font-size:13px;line-height:1;padding:0 2px;">✕</button>
           </div>
         </div>
+        <!-- Quick-Add bar — appears when a site already exists -->
+        <div id="buildQuickAdd" style="display:none;padding:7px 10px;background:rgba(255,160,50,0.03);border-bottom:1px solid rgba(255,160,50,0.1);flex-wrap:wrap;gap:5px;align-items:center;">
+          <span style="font-size:9px;font-weight:800;color:rgba(255,160,50,0.45);text-transform:uppercase;letter-spacing:1.2px;white-space:nowrap;flex-shrink:0;">Add to site →</span>
+          <button class="qa-btn" data-type="image"   style="font-size:10px;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.65);cursor:pointer;font-weight:600;white-space:nowrap;">🖼 Image</button>
+          <button class="qa-btn" data-type="logo"    style="font-size:10px;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.65);cursor:pointer;font-weight:600;white-space:nowrap;">🏷 Logo</button>
+          <button class="qa-btn" data-type="video"   style="font-size:10px;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.65);cursor:pointer;font-weight:600;white-space:nowrap;">🎬 Video</button>
+          <button class="qa-btn" data-type="section" style="font-size:10px;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.65);cursor:pointer;font-weight:600;white-space:nowrap;">📄 Section</button>
+          <button class="qa-btn" data-type="code"    style="font-size:10px;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.65);cursor:pointer;font-weight:600;white-space:nowrap;">💻 Code</button>
+          <button class="qa-btn" data-type="fix"     style="font-size:10px;padding:3px 9px;border-radius:20px;background:rgba(255,100,100,0.08);border:1px solid rgba(255,100,100,0.25);color:rgba(255,130,130,0.8);cursor:pointer;font-weight:600;white-space:nowrap;">🔧 Fix</button>
+        </div>
+        <!-- Quick-Add input form — expands below bar on button click -->
+        <div id="buildQuickAddForm" style="display:none;padding:8px 10px;background:rgba(0,0,0,0.45);border-bottom:1px solid rgba(255,160,50,0.1);">
+          <div style="display:flex;gap:6px;align-items:center;">
+            <textarea id="qaInput" rows="2" placeholder="Paste URL or describe…" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,160,50,0.3);border-radius:9px;padding:6px 10px;color:#fff;font-size:11px;outline:none;resize:none;line-height:1.4;font-family:inherit;"></textarea>
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <button id="qaSendBtn" style="font-size:11px;padding:5px 12px;border-radius:8px;background:rgba(255,160,50,0.18);border:1px solid rgba(255,160,50,0.5);color:#ffa032;cursor:pointer;font-weight:700;white-space:nowrap;">Add ↗</button>
+              <button id="qaCancelBtn" style="font-size:11px;padding:5px 12px;border-radius:8px;background:none;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.35);cursor:pointer;font-weight:600;">Cancel</button>
+            </div>
+          </div>
+          <div id="qaHint" style="font-size:10px;color:rgba(255,160,50,0.4);margin-top:5px;padding-left:2px;line-height:1.5;"></div>
+        </div>
         <div id="previewBuilding" style="display:none;align-items:center;justify-content:center;gap:8px;height:46px;background:rgba(7,7,10,0.96);font-size:11px;font-weight:700;color:#ffa032;font-family:monospace;letter-spacing:0.5px;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffa032" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite;flex-shrink:0;"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
           <span id="previewBuildingTxt">Compiling…</span>
