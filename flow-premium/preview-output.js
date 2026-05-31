@@ -145,7 +145,16 @@ document.getElementById('newTabBtn').addEventListener('click', () => {
   if (!_code) return;
   const blob = new Blob([_code], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
+  // chrome.tabs.create is more reliable than window.open from extension pages
+  if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
+    chrome.tabs.create({ url });
+  } else {
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.click();
+  }
 });
 
 document.getElementById('codeViewBtn').addEventListener('click', () => {
