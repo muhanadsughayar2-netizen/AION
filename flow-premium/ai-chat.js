@@ -6545,11 +6545,13 @@ async function handleSend() {
       _pendingBuildImages = imageParts.map(f => `data:${f.mimeType};base64,${f.data}`);
       const placeholderList = _pendingBuildImages.map((_, i) => `__SNAP_IMG_${i}__`).join(', ');
       prompt += `\n\nIMAGE EMBED INSTRUCTION: The user attached ${imageParts.length} image(s). ` +
-        `In your HTML output use these exact placeholder strings as the src values: ${placeholderList} ` +
-        `(example: <img src="__SNAP_IMG_0__" alt="user image" style="width:100%;object-fit:cover;border-radius:12px;">). ` +
-        `Place each image in the most visually fitting section of the existing site. ` +
-        `NEVER output any actual base64 data — only use the placeholder strings. ` +
-        `Keep all other design completely unchanged.`;
+        `Use these exact placeholder strings as the src values: ${placeholderList} ` +
+        `(example: <img src="__SNAP_IMG_0__" alt="..." style="width:100%;object-fit:cover;">). ` +
+        `CRITICAL RULES: ` +
+        `(1) If the user said "replace", "change", "swap", or "update" an image — find that EXACT existing <img> tag and change ONLY its src attribute to the placeholder. Do NOT add a new img tag. ` +
+        `(2) If the user said "add" or gave no specific target — insert a new <img> tag in the most fitting section. ` +
+        `(3) NEVER output any actual base64 data — only use the placeholder strings. ` +
+        `(4) Keep all other design completely unchanged.`;
     }
 
     if (videoParts.length > 0) {
