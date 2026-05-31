@@ -6803,7 +6803,7 @@ async function handleSend() {
           if (_lastBuiltCode) {
             // Follow-up edit — use surgical patch prompt + inject current site
             proxySystemCtx = BUILD_PATCH_PROMPT;
-            proxyExistingSite = `\n\nHere is the EXISTING site. Make ONLY the change the user asked for and return the complete file:\n\n\`\`\`html\n${_lastBuiltCode}\n\`\`\``;
+            proxyExistingSite = `\n\nHere is the EXISTING site. Make ONLY the change the user asked for and return the complete file:\n\n\`\`\`html\n${_lastBuiltCodeForPatch || _lastBuiltCode}\n\`\`\``;
           } else {
             proxySystemCtx = BUILD_SYSTEM_PROMPT;
           }
@@ -7504,7 +7504,7 @@ async function handleSend() {
           systemPrompt = BUILD_PATCH_PROMPT;
           const last = contents[contents.length - 1];
           if (last && last.role === 'user') {
-            last.parts.push({ text: '\n\nHere is the EXISTING site. Make ONLY the change the user asked for and return the complete file:\n\n```html\n' + _lastBuiltCode + '\n```' });
+            last.parts.push({ text: '\n\nHere is the EXISTING site. Make ONLY the change the user asked for and return the complete file:\n\n```html\n' + (_lastBuiltCodeForPatch || _lastBuiltCode) + '\n```' });
           }
         } else {
           // No site yet — full build from scratch
@@ -7746,6 +7746,10 @@ function addBubbleActions(bubble, text) {
   // truncated partial would strip sections (e.g. pricing) from future edits.
   if (thisCode && !buildStage && !isTruncated) {
     _lastBuiltCode = thisCode;
+    // Save the pre-swap version (placeholders intact) for AI patch requests.
+    // The swapped version below embeds large base64 blobs that would exceed
+    // Gemini's 1M-token limit if sent back on follow-up edits.
+    _lastBuiltCodeForPatch = thisCode;
     // Swap in any images the user attached during this request
     if (_pendingBuildImages.length > 0) {
       _pendingBuildImages.forEach((dataUrl, i) => {
@@ -8308,6 +8312,7 @@ function clearChat() {
   // site. Without this the AI gets the old HTML as context and tries to merge
   // rather than starting fresh, producing "ghost" sites from prior sessions.
   _lastBuiltCode = '';
+  _lastBuiltCodeForPatch = '';
   try { chrome.storage.local.remove(['snaptoai_built_code']); } catch(e) {}
   _updateBuildInput();
 
@@ -8557,6 +8562,11 @@ document.getElementById('searchToggleBtn')?.addEventListener('click', (e) => {
 
 // ── Build Mode ────────────────────────────────────────────────────────────────
 let _lastBuiltCode = '';
+// Lightweight version of _lastBuiltCode for sending back to the AI during patch
+// edits. Holds the pre-swap HTML (placeholders like __SNAP_VID_0__ still intact,
+// NO base64 blobs). Sending base64 video/image data back to Gemini on every edit
+// quickly exceeds the 1M-token limit.
+let _lastBuiltCodeForPatch = '';
 // Base64 data URLs waiting to replace __SNAP_IMG_N__ placeholders after AI responds
 let _pendingBuildImages = [];
 // Short video files (webm/mp4) attached during a build patch — same placeholder approach
