@@ -1645,11 +1645,17 @@
         <h3 style="margin:0 0 6px;font-size:15px;font-weight:700;color:#fff;">Publish to Netlify — Free</h3>
         <p style="margin:0 0 16px;font-size:12px;color:rgba(255,255,255,0.55);line-height:1.5;">One-time setup. Your site goes live instantly with a free <code style="color:#00c794;">netlify.app</code> URL.</p>
 
-        <div style="background:rgba(0,199,148,0.07);border:1px solid rgba(0,199,148,0.2);border-radius:10px;padding:13px 14px;margin-bottom:16px;font-size:11.5px;color:rgba(255,255,255,0.7);line-height:1.8;">
+        <div style="background:rgba(0,199,148,0.07);border:1px solid rgba(0,199,148,0.2);border-radius:10px;padding:13px 14px;margin-bottom:16px;font-size:11.5px;color:rgba(255,255,255,0.7);line-height:2;">
           <b style="color:#00c794;">3 quick steps:</b><br>
-          1. Go to <b>app.netlify.com</b> → Sign up free<br>
-          2. Profile icon → <b>User settings → Applications</b><br>
-          3. Click <b>"New access token"</b> → copy it here
+          1. Open →
+            <a href="https://app.netlify.com" target="_blank"
+               style="color:#00c794;text-decoration:underline;cursor:pointer;"
+               onclick="chrome.tabs.create({url:'https://app.netlify.com'});return false;">
+              app.netlify.com
+            </a> (free account)<br>
+          2. Click your <b>name at the bottom-left</b> → <b>User settings</b><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;→ Security → <b>Applications</b><br>
+          3. Click <b>"New access token"</b> → paste it below
         </div>
 
         <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:6px;">Netlify Access Token</label>

@@ -6561,9 +6561,56 @@ async function handleSend() {
     _pendingBuildVideos = [];
     _pendingBuildAudio = [];
   }
+  // ── File-attached VIDEO embed (works on FIRST build AND patch edits) ─────────
+  // Must run BEFORE the _lastBuiltCode block so that video files are intercepted
+  // and removed from filesQueue before images are processed.
+  // Gating this behind _lastBuiltCode prevented users from embedding an uploaded
+  // video on a fresh build — it only worked for patch edits of existing sites.
+  if (buildModeEnabled) {
+    const videoParts = filesQueue.filter(f => f.mimeType && f.mimeType.startsWith('video/'));
+    if (videoParts.length > 0) {
+      const BUILD_VIDEO_BYTE_LIMIT = 50 * 1024 * 1024;
+      const tooBig = videoParts.filter(f => Math.round((f.data.length * 3) / 4) > BUILD_VIDEO_BYTE_LIMIT);
+      const fitsInline = videoParts.filter(f => Math.round((f.data.length * 3) / 4) <= BUILD_VIDEO_BYTE_LIMIT);
+      if (tooBig.length > 0) {
+        addBubble(
+          `⚠️ "${tooBig.map(f => f.name).join(', ')}" is too large to embed directly ` +
+          `(limit is ~50 MB). Upload it to YouTube as unlisted, then paste the link and say "embed this video".`,
+          'error'
+        );
+        tooBig.forEach(f => { filesQueue = filesQueue.filter(q => q !== f); });
+        if (fitsInline.length === 0 && !_lastBuiltCode) return;
+      }
+      if (fitsInline.length > 0) {
+        _pendingBuildVideos = fitsInline.map(f => `data:${f.mimeType};base64,${f.data}`);
+        fitsInline.forEach(f => { filesQueue = filesQueue.filter(q => q !== f); });
+        const _vidOffsetFile = Object.keys(_committedMediaMap).filter(k => k.startsWith('__SNAP_VID_')).length;
+        const videoPlaceholderList = _pendingBuildVideos.map((_, i) => `__SNAP_VID_${_vidOffsetFile + i}__`).join(', ');
+        // Use correct ids/indices in the embed template
+        const exVidIdx = _vidOffsetFile;
+        prompt += `\n\nVIDEO EMBED INSTRUCTION: The user attached ${fitsInline.length} video(s). ` +
+          `Use these exact placeholder strings as the src values: ${videoPlaceholderList}. ` +
+          `For each video use this pattern (adjusting id/for index per video): ` +
+          `<div style="position:relative;border-radius:12px;overflow:hidden;aspect-ratio:16/9;">` +
+          `<video id="snapVid${exVidIdx}" src="__SNAP_VID_${exVidIdx}__" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video>` +
+          `<div onclick="document.getElementById('snapUpload${exVidIdx}').click()" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'">` +
+          `<div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;">🔄</div>` +
+          `<span style="color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">Replace video</span></div>` +
+          `<button onclick="var v=document.getElementById('snapVid${exVidIdx}');v.muted=!v.muted;this.textContent=v.muted?'🔇':'🔊';" style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;color:#fff;z-index:10;padding:0;line-height:1;">🔇</button>` +
+          `<input type="file" id="snapUpload${exVidIdx}" accept="video/*" style="display:none" onchange="(function(i,v){if(i.files[0]){var r=new FileReader();r.onload=function(e){document.getElementById(v).src=e.target.result;};r.readAsDataURL(i.files[0]);}})(this,'snapVid${exVidIdx}')"></div>. ` +
+          `CRITICAL RULES: ` +
+          `(1) If the user named a specific section — place the video EXACTLY there. ` +
+          `(2) If replacing an existing video — update only its src and add the overlay wrapper. ` +
+          `(3) If no section specified — place prominently at the top of the page as the hero. ` +
+          `(4) NEVER output actual base64 data — only placeholder strings. ` +
+          `(5) Keep all other design completely unchanged. ` +
+          `(6) NEVER remove or replace any existing __SNAP_VID_N__, __SNAP_IMG_N__ placeholders.`;
+      }
+    }
+  }
+
   if (buildModeEnabled && _lastBuiltCode) {
     const imageParts = filesQueue.filter(f => f.mimeType && f.mimeType.startsWith('image/'));
-    const videoParts = filesQueue.filter(f => f.mimeType && f.mimeType.startsWith('video/'));
 
     if (imageParts.length > 0) {
       const _imgOffset = Object.keys(_committedMediaMap).filter(k => k.startsWith('__SNAP_IMG_')).length;
@@ -6579,62 +6626,6 @@ async function handleSend() {
         `(3) NEVER output any actual base64 data — only use the placeholder strings. ` +
         `(4) Keep all other design and content completely unchanged. ` +
         `(5) NEVER remove or replace any existing __SNAP_VID_N__, __SNAP_AUD_N__, or other __SNAP_*__ placeholder strings — they are live media references managed by the app.`;
-    }
-
-    if (videoParts.length > 0) {
-      // In Build Mode the video is never sent to Gemini — only the placeholder
-      // string __SNAP_VID_N__ travels to the API. The actual base64 data is held
-      // client-side and swapped in after the AI responds. So the only real limit
-      // is browser memory / storage, not Gemini's inline-data quota.
-      // 50 MB covers Veo's ~2700 kbps output for up to ~2.5 minutes.
-      const BUILD_VIDEO_BYTE_LIMIT = 50 * 1024 * 1024; // 50 MB raw
-      const tooBig = videoParts.filter(f => {
-        // f.data is base64 — raw size ≈ base64 length × 0.75
-        const rawBytes = Math.round((f.data.length * 3) / 4);
-        return rawBytes > BUILD_VIDEO_BYTE_LIMIT;
-      });
-      const fitsInline = videoParts.filter(f => {
-        const rawBytes = Math.round((f.data.length * 3) / 4);
-        return rawBytes <= BUILD_VIDEO_BYTE_LIMIT;
-      });
-
-      if (tooBig.length > 0) {
-        // Tell the user before the request goes out — don't silently fail
-        addBubble(
-          `⚠️ "${tooBig.map(f => f.name).join(', ')}" is too large to embed directly ` +
-          `(limit is ~50 MB — this clip is unusually long). ` +
-          `Upload it to YouTube as unlisted, then paste the link and say "embed this video".`,
-          'error'
-        );
-        tooBig.forEach(f => { filesQueue = filesQueue.filter(q => q !== f); });
-        if (fitsInline.length === 0) return;
-      }
-
-      if (fitsInline.length > 0) {
-        _pendingBuildVideos = fitsInline.map(f => `data:${f.mimeType};base64,${f.data}`);
-        // Remove the video data from filesQueue — Gemini only needs the placeholder
-        // text, not the actual binary. Keeping it would send tens of MB to the API
-        // unnecessarily and risk hitting Gemini's inline-data quota.
-        fitsInline.forEach(f => { filesQueue = filesQueue.filter(q => q !== f); });
-        const _vidOffsetFile = Object.keys(_committedMediaMap).filter(k => k.startsWith('__SNAP_VID_')).length;
-        const videoPlaceholderList = _pendingBuildVideos.map((_, i) => `__SNAP_VID_${_vidOffsetFile + i}__`).join(', ');
-        prompt += `\n\nVIDEO EMBED INSTRUCTION: The user attached ${fitsInline.length} video(s). ` +
-          `Use these exact placeholder strings as the src values: ${videoPlaceholderList}. ` +
-          `For each video use this pattern (adjusting id/for index per video): ` +
-          `<div style="position:relative;border-radius:12px;overflow:hidden;aspect-ratio:16/9;">` +
-          `<video id="snapVid0" src="__SNAP_VID_0__" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video>` +
-          `<div onclick="document.getElementById('snapUpload0').click()" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'">` +
-          `<div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;">🔄</div>` +
-          `<span style="color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">Replace video</span></div>` +
-          `<button onclick="var v=document.getElementById('snapVid0');v.muted=!v.muted;this.textContent=v.muted?'🔇':'🔊';" style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;color:#fff;z-index:10;padding:0;line-height:1;">🔇</button>` +
-          `<input type="file" id="snapUpload0" accept="video/*" style="display:none" onchange="(function(i,v){if(i.files[0]){var r=new FileReader();r.onload=function(e){document.getElementById(v).src=e.target.result;};r.readAsDataURL(i.files[0]);}})(this,'snapVid0')"></div>. ` +
-          `CRITICAL RULES: ` +
-          `(1) If the user named a specific section — place the video EXACTLY there. ` +
-          `(2) If replacing an existing video — update only its src and add the overlay wrapper. ` +
-          `(3) If no section specified — place in the most fitting section. ` +
-          `(4) NEVER output actual base64 data — only placeholder strings. ` +
-          `(5) Keep all other design completely unchanged.`;
-      }
     }
 
     // ── Audio embedding (mp3/wav/ogg) ────────────────────────────────────────
