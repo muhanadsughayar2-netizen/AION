@@ -78,3 +78,9 @@ id = "XNLnHJAUX88ef4pusVH5C"
 uri = "file://snaptoai-extension-v2.6.0.zip"
 type = "unspecified"
 title = "SnapToAI v2.6.0 — Light & Dark Theme (final)"
+
+[[outputs]]
+id = "FT80bGJ3fE3DICvdb39MF"
+uri = "file://snaptoai-designs.zip"
+type = "unspecified"
+title = "SnapToAI — All Design Files"
