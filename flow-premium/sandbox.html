@@ -62,8 +62,11 @@
             // Wrap inline scripts in IIFE so const/let never leak into the
             // global sandbox scope — prevents "already declared" crashes when
             // the preview re-evaluates on each streaming update.
+            // Inner try/catch absorbs runtime errors from AI-generated code
+            // (e.g. null.setAttribute, invalid selectors) so they never surface
+            // as "Uncaught" errors in the Chrome extension error panel.
             if (old.textContent.trim()) {
-              fresh.textContent = ";(function(){\n" + old.textContent + "\n})();";
+              fresh.textContent = ";(function(){\ntry{\n" + old.textContent + "\n}catch(_snapE){console.warn('[SnapToAI preview]',_snapE.message||_snapE);}\n})();";
             } else {
               fresh.textContent = old.textContent;
             }
@@ -164,6 +167,36 @@
         }
       } catch(e) {}
     });
+
+    // ── Defensive DOM patches ────────────────────────────────────────────────
+    // AI-generated code frequently calls document.querySelector('#') with an
+    // empty or invalid selector, or chains .setAttribute() onto a null element.
+    // Patching at the sandbox level means every generated page gets these guards
+    // for free, regardless of what the AI produces.
+    (function() {
+      // querySelector / querySelectorAll — validate selector before calling
+      var _qs  = Document.prototype.querySelector;
+      var _qsa = Document.prototype.querySelectorAll;
+      var _eqs  = Element.prototype.querySelector;
+      var _eqsa = Element.prototype.querySelectorAll;
+      function safeSelector(sel) {
+        if (!sel || typeof sel !== 'string') return false;
+        try { document.createDocumentFragment().querySelector(sel); return true; }
+        catch(e) { return false; }
+      }
+      Document.prototype.querySelector = function(sel) {
+        return safeSelector(sel) ? _qs.call(this, sel) : null;
+      };
+      Document.prototype.querySelectorAll = function(sel) {
+        return safeSelector(sel) ? _qsa.call(this, sel) : [];
+      };
+      Element.prototype.querySelector = function(sel) {
+        return safeSelector(sel) ? _eqs.call(this, sel) : null;
+      };
+      Element.prototype.querySelectorAll = function(sel) {
+        return safeSelector(sel) ? _eqsa.call(this, sel) : [];
+      };
+    })();
 
     // Notify parent popup that sandbox is ready
     try { window.parent.postMessage({ sandboxReady: true }, '*'); } catch(e) {}
