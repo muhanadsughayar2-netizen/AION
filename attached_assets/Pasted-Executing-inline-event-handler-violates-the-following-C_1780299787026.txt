@@ -1,0 +1,2006 @@
+Executing inline event handler violates the following Content Security Policy directive 'script-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-...'), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. The action has been blocked.
+Context
+ai-chat.html?count=1
+Stack Trace
+ai-chat.html?count=1:1653 (anonymous function)
+...
+701
+702
+703
+704
+705
+706
+707
+708
+709
+710
+711
+712
+713
+714
+715
+716
+717
+718
+719
+720
+721
+722
+723
+724
+725
+726
+727
+728
+729
+730
+731
+732
+733
+734
+735
+736
+737
+738
+739
+740
+741
+742
+743
+744
+745
+746
+747
+748
+749
+750
+751
+752
+753
+754
+755
+756
+757
+758
+759
+760
+761
+762
+763
+764
+765
+766
+767
+768
+769
+770
+771
+772
+773
+774
+775
+776
+777
+778
+779
+780
+781
+782
+783
+784
+785
+786
+787
+788
+789
+790
+791
+792
+793
+794
+795
+796
+797
+798
+799
+800
+801
+802
+803
+804
+805
+806
+807
+808
+809
+810
+811
+812
+813
+814
+815
+816
+817
+818
+819
+820
+821
+822
+823
+824
+825
+826
+827
+828
+829
+830
+831
+832
+833
+834
+835
+836
+837
+838
+839
+840
+841
+842
+843
+844
+845
+846
+847
+848
+849
+850
+851
+852
+853
+854
+855
+856
+857
+858
+859
+860
+861
+862
+863
+864
+865
+866
+867
+868
+869
+870
+871
+872
+873
+874
+875
+876
+877
+878
+879
+880
+881
+882
+883
+884
+885
+886
+887
+888
+889
+890
+891
+892
+893
+894
+895
+896
+897
+898
+899
+900
+901
+902
+903
+904
+905
+906
+907
+908
+909
+910
+911
+912
+913
+914
+915
+916
+917
+918
+919
+920
+921
+922
+923
+924
+925
+926
+927
+928
+929
+930
+931
+932
+933
+934
+935
+936
+937
+938
+939
+940
+941
+942
+943
+944
+945
+946
+947
+948
+949
+950
+951
+952
+953
+954
+955
+956
+957
+958
+959
+960
+961
+962
+963
+964
+965
+966
+967
+968
+969
+970
+971
+972
+973
+974
+975
+976
+977
+978
+979
+980
+981
+982
+983
+984
+985
+986
+987
+988
+989
+990
+991
+992
+993
+994
+995
+996
+997
+998
+999
+1000
+1001
+1002
+1003
+1004
+1005
+1006
+1007
+1008
+1009
+1010
+1011
+1012
+1013
+1014
+1015
+1016
+1017
+1018
+1019
+1020
+1021
+1022
+1023
+1024
+1025
+1026
+1027
+1028
+1029
+1030
+1031
+1032
+1033
+1034
+1035
+1036
+1037
+1038
+1039
+1040
+1041
+1042
+1043
+1044
+1045
+1046
+1047
+1048
+1049
+1050
+1051
+1052
+1053
+1054
+1055
+1056
+1057
+1058
+1059
+1060
+1061
+1062
+1063
+1064
+1065
+1066
+1067
+1068
+1069
+1070
+1071
+1072
+1073
+1074
+1075
+1076
+1077
+1078
+1079
+1080
+1081
+1082
+1083
+1084
+1085
+1086
+1087
+1088
+1089
+1090
+1091
+1092
+1093
+1094
+1095
+1096
+1097
+1098
+1099
+1100
+1101
+1102
+1103
+1104
+1105
+1106
+1107
+1108
+1109
+1110
+1111
+1112
+1113
+1114
+1115
+1116
+1117
+1118
+1119
+1120
+1121
+1122
+1123
+1124
+1125
+1126
+1127
+1128
+1129
+1130
+1131
+1132
+1133
+1134
+1135
+1136
+1137
+1138
+1139
+1140
+1141
+1142
+1143
+1144
+1145
+1146
+1147
+1148
+1149
+1150
+1151
+1152
+1153
+1154
+1155
+1156
+1157
+1158
+1159
+1160
+1161
+1162
+1163
+1164
+1165
+1166
+1167
+1168
+1169
+1170
+1171
+1172
+1173
+1174
+1175
+1176
+1177
+1178
+1179
+1180
+1181
+1182
+1183
+1184
+1185
+1186
+1187
+1188
+1189
+1190
+1191
+1192
+1193
+1194
+1195
+1196
+1197
+1198
+1199
+1200
+1201
+1202
+1203
+1204
+1205
+1206
+1207
+1208
+1209
+1210
+1211
+1212
+1213
+1214
+1215
+1216
+1217
+1218
+1219
+1220
+1221
+1222
+1223
+1224
+1225
+1226
+1227
+1228
+1229
+1230
+1231
+1232
+1233
+1234
+1235
+1236
+1237
+1238
+1239
+1240
+1241
+1242
+1243
+1244
+1245
+1246
+1247
+1248
+1249
+1250
+1251
+1252
+1253
+1254
+1255
+1256
+1257
+1258
+1259
+1260
+1261
+1262
+1263
+1264
+1265
+1266
+1267
+1268
+1269
+1270
+1271
+1272
+1273
+1274
+1275
+1276
+1277
+1278
+1279
+1280
+1281
+1282
+1283
+1284
+1285
+1286
+1287
+1288
+1289
+1290
+1291
+1292
+1293
+1294
+1295
+1296
+1297
+1298
+1299
+1300
+1301
+1302
+1303
+1304
+1305
+1306
+1307
+1308
+1309
+1310
+1311
+1312
+1313
+1314
+1315
+1316
+1317
+1318
+1319
+1320
+1321
+1322
+1323
+1324
+1325
+1326
+1327
+1328
+1329
+1330
+1331
+1332
+1333
+1334
+1335
+1336
+1337
+1338
+1339
+1340
+1341
+1342
+1343
+1344
+1345
+1346
+1347
+1348
+1349
+1350
+1351
+1352
+1353
+1354
+1355
+1356
+1357
+1358
+1359
+1360
+1361
+1362
+1363
+1364
+1365
+1366
+1367
+1368
+1369
+1370
+1371
+1372
+1373
+1374
+1375
+1376
+1377
+1378
+1379
+1380
+1381
+1382
+1383
+1384
+1385
+1386
+1387
+1388
+1389
+1390
+1391
+1392
+1393
+1394
+1395
+1396
+1397
+1398
+1399
+1400
+1401
+1402
+1403
+1404
+1405
+1406
+1407
+1408
+1409
+1410
+1411
+1412
+1413
+1414
+1415
+1416
+1417
+1418
+1419
+1420
+1421
+1422
+1423
+1424
+1425
+1426
+1427
+1428
+1429
+1430
+1431
+1432
+1433
+1434
+1435
+1436
+1437
+1438
+1439
+1440
+1441
+1442
+1443
+1444
+1445
+1446
+1447
+1448
+1449
+1450
+1451
+1452
+1453
+1454
+1455
+1456
+1457
+1458
+1459
+1460
+1461
+1462
+1463
+1464
+1465
+1466
+1467
+1468
+1469
+1470
+1471
+1472
+1473
+1474
+1475
+1476
+1477
+1478
+1479
+1480
+1481
+1482
+1483
+1484
+1485
+1486
+1487
+1488
+1489
+1490
+1491
+1492
+1493
+1494
+1495
+1496
+1497
+1498
+1499
+1500
+1501
+1502
+1503
+1504
+1505
+1506
+1507
+1508
+1509
+1510
+1511
+1512
+1513
+1514
+1515
+1516
+1517
+1518
+1519
+1520
+1521
+1522
+1523
+1524
+1525
+1526
+1527
+1528
+1529
+1530
+1531
+1532
+1533
+1534
+1535
+1536
+1537
+1538
+1539
+1540
+1541
+1542
+1543
+1544
+1545
+1546
+1547
+1548
+1549
+1550
+1551
+1552
+1553
+1554
+1555
+1556
+1557
+1558
+1559
+1560
+1561
+1562
+1563
+1564
+1565
+1566
+1567
+1568
+1569
+1570
+1571
+1572
+1573
+1574
+1575
+1576
+1577
+1578
+1579
+1580
+1581
+1582
+1583
+1584
+1585
+1586
+1587
+1588
+1589
+1590
+1591
+1592
+1593
+1594
+1595
+1596
+1597
+1598
+1599
+1600
+1601
+1602
+1603
+1604
+1605
+1606
+1607
+1608
+1609
+1610
+1611
+1612
+1613
+1614
+1615
+1616
+1617
+1618
+1619
+1620
+1621
+1622
+1623
+1624
+1625
+1626
+1627
+1628
+1629
+1630
+1631
+1632
+1633
+1634
+1635
+1636
+1637
+1638
+1639
+1640
+1641
+1642
+1643
+1644
+1645
+1646
+1647
+1648
+1649
+1650
+1651
+1652
+1653
+1654
+1655
+1656
+1657
+1658
+1659
+1660
+1661
+1662
+1663
+1664
+1665
+1666
+1667
+1668
+1669
+1670
+1671
+1672
+1673
+1674
+1675
+1676
+1677
+1678
+1679
+1680
+1681
+1682
+1683
+1684
+1685
+1686
+1687
+1688
+1689
+1690
+1691
+1692
+1693
+1694
+1695
+1696
+1697
+1698
+1699
+<700 lines not shown>
+    
+    .education-btn {
+      background: rgba(138, 43, 226, 0.15);
+      border-color: rgba(138, 43, 226, 0.4);
+      color: #a855f7;
+      font-weight: 500;
+    }
+    
+    .education-btn:hover {
+      background: rgba(138, 43, 226, 0.25);
+      color: #c084fc;
+    }
+    
+    .upload-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 10px;
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      color: rgba(255,255,255,0.5);
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    
+    .upload-btn:hover {
+      background: rgba(0, 217, 255, 0.15);
+      border-color: rgba(0, 217, 255, 0.4);
+      color: #00d9ff;
+    }
+    
+    .file-preview-zone {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 0 24px 8px;
+      max-height: 80px;
+      overflow-y: auto;
+    }
+    
+    .file-card {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #ccc;
+      animation: fadeIn 0.2s ease;
+    }
+    
+    .file-card span {
+      max-width: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .file-card .remove-btn {
+      color: #ff5252;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      padding: 0 2px;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    
+    .file-card .remove-btn:hover {
+      opacity: 1;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* The Verdict Button */
+    .verdict-btn {
+      background: linear-gradient(45deg, #00dbde, #fc00ff);
+      border: none;
+      color: white;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 25px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(0, 219, 222, 0.5);
+      transition: 0.3s;
+      animation: verdict-breathe 3s infinite ease-in-out;
+    }
+    @keyframes verdict-breathe {
+      0%, 100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.02); opacity: 1; }
+    }
+    .verdict-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 25px rgba(252, 0, 255, 0.6);
+    }
+    .verdict-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      animation: none;
+    }
+    .verdict-btn.gold { background: linear-gradient(45deg, #ffd700, #ffaa00); animation: pulse-gold 2s infinite; }
+    .verdict-btn.red { background: linear-gradient(45deg, #ff4444, #cc0000); animation: shake-warn 0.8s infinite; }
+    .verdict-btn.green { background: linear-gradient(45deg, #00ff88, #00cc66); animation: pulse-green 2s infinite; }
+    @keyframes pulse-gold { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); } }
+    @keyframes shake-warn { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-2px); } 40%, 80% { transform: translateX(2px); } }
+    @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(0, 255, 136, 0); } }
+    
+    /* OMNI-SCORE Card - Inline in Chat */
+    .verdict-card-inline {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      border-radius: 24px;
+      padding: 20px;
+      margin: 12px 0;
+      color: white;
+      animation: fadeIn 0.3s ease;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    .omni-score-header { text-align: center; margin-bottom: 20px; }
+    .score-label { display: block; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 3px; color: #64748b; margin-bottom: 4px; }
+    .score-value { font-size: 48px; font-weight: 900; letter-spacing: -2px; }
+    .score-value.gold { color: #fbbf24; }
+    .score-value.green { color: #34d399; }
+    .score-value.red { color: #f87171; }
+    .score-max { font-size: 18px; opacity: 0.5; }
+    
+    .verdict-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(148,163,184,0.2); }
+    .verdict-row:last-of-type { border-bottom: none; }
+    .verdict-label-block { display: flex; flex-direction: column; }
+    .verdict-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 2px; }
+    .verdict-value { font-size: 12px; font-weight: 600; color: #e2e8f0; }
+    .verdict-impact { font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 8px; }
+    .verdict-impact.green { color: #34d399; background: rgba(52,211,153,0.15); }
+    .verdict-impact.red { color: #f87171; background: rgba(248,113,113,0.15); }
+    
+    .verdict-bottom-line { background: linear-gradient(135deg, #3b82f6, #6366f1); border-radius: 16px; padding: 14px; margin-top: 16px; }
+    .bottom-label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; opacity: 0.7; display: block; margin-bottom: 6px; }
+    .bottom-verdict { font-size: 13px; font-weight: 600; line-height: 1.4; margin: 0; }
+    
+    /* Button glow states */
+    .verdict-btn.gold { background: linear-gradient(45deg, #ffd700, #ffaa00); box-shadow: 0 0 20px rgba(255,215,0,0.6); }
+    .verdict-btn.red { background: linear-gradient(45deg, #ff4444, #cc0000); box-shadow: 0 0 20px rgba(255,0,0,0.6); }
+    .verdict-btn.green { background: linear-gradient(45deg, #00ff88, #00cc66); box-shadow: 0 0 20px rgba(0,255,0,0.6); }
+    
+    /* Magic Buttons - User Created Agents (EXACT same size as + Magic Agents button) */
+    .magic-buttons { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0; min-height: 0; align-items: center; }
+    .magic-btn { border: none; border-radius: 12px; padding: 8px 14px; color: white; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s; height: 33px; box-sizing: border-box; }
+    .magic-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(139,92,246,0.5); }
+    .magic-btn:active { transform: scale(0.95); }
+    .magic-btn .edit-magic, .magic-btn .delete-magic { opacity: 0; margin-left: 4px; font-size: 10px; }
+    .magic-btn:hover .edit-magic, .magic-btn:hover .delete-magic { opacity: 0.7; }
+    .magic-btn .edit-magic:hover, .magic-btn .delete-magic:hover { opacity: 1; }
+    
+    /* AI Disclaimer */
+    .ai-disclaimer {
+      text-align: center;
+      padding: 6px 16px 0;
+      background: transparent;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.85);
+      font-weight: 400;
+    }
+    .magic-add-btn { background: linear-gradient(45deg, #8b5cf6, #ec4899); border: none; border-radius: 12px; padding: 8px 14px; color: white; font-size: 11px; font-weight: 700; cursor: pointer; height: 33px; box-sizing: border-box; display: inline-flex; align-items: center; }
+    .magic-add-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(139,92,246,0.5); }
+    
+    /* Magic Modal - Glassmorphism Style (matches payment modal) */
+    .magic-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+    .magic-modal.open { display: flex; }
+    .magic-modal-content { background: linear-gradient(135deg, var(--st-bg-app-2) 0%, var(--st-bg-card) 100%); border: 1px solid rgba(0, 255, 255, 0.3); border-radius: 16px; width: 90%; max-width: 340px; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column; animation: slideUp 0.3s ease; box-shadow: 0 0 40px rgba(0, 255, 255, 0.2); }
+    @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .magic-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid rgba(0, 255, 255, 0.15); flex-shrink: 0; }
+    .magic-modal-header span { font-size: 18px; font-weight: 700; background: linear-gradient(90deg, #00ffff, #ff00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .magic-close { background: none; border: none; color: #888; font-size: 18px; cursor: pointer; }
+    .magic-modal-body { 
+      padding: 20px; 
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    .magic-field { margin-bottom: 16px; }
+    .magic-field label { display: block; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; margin-bottom: 6px; }
+    .magic-field input, .magic-field textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px 12px; color: white; font-size: 13px; resize: none; box-sizing: border-box; }
+    .magic-field input:focus, .magic-field textarea:focus { outline: none; border-color: #8b5cf6; }
+    .char-count { display: block; text-align: right; font-size: 10px; color: #666; margin-top: 4px; }
+    .emoji-picker { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0; }
+    .emoji-option { font-size: 20px; cursor: pointer; padding: 6px; border-radius: 8px; transition: all 0.2s; }
+    .emoji-option:hover { background: rgba(255,255,255,0.1); }
+    .emoji-option.selected { background: rgba(139,92,246,0.3); box-shadow: 0 0 0 2px #8b5cf6; }
+    .magic-templates { margin-top: 12px; }
+    .template-categories { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+    .template-cat { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 5px 12px; color: #888; font-size: 11px; cursor: pointer; transition: all 0.2s; }
+    .template-cat:hover { background: rgba(139,92,246,0.15); color: #fff; }
+    .template-cat.active { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border-color: transparent; }
+    .template-grid { display: flex; flex-wrap: wrap; gap: 6px; max-height: 120px; overflow-y: auto; padding: 4px; }
+    .template-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 10px; color: #aaa; font-size: 10px; cursor: pointer; transition: all 0.2s; display: none; }
+    .template-btn.visible { display: inline-block; }
+    .template-btn:hover { background: rgba(139,92,246,0.2); border-color: #8b5cf6; color: white; }
+    .template-btn.selected { background: rgba(139,92,246,0.4); border-color: #8b5cf6; color: white; box-shadow: 0 0 10px rgba(139,92,246,0.3); }
+    
+    .template-detail { background: rgba(0,0,0,0.3); border: 1px solid rgba(139,92,246,0.3); border-radius: 12px; padding: 14px; margin-top: 12px; animation: fadeIn 0.2s ease; }
+    .template-detail-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .template-detail-icon { font-size: 24px; }
+    .template-detail-name { font-size: 15px; font-weight: 700; color: #fff; }
+    .template-detail-section { }
+    .template-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #8b5cf6; margin-bottom: 6px; }
+    .template-section-desc { font-size: 12px; color: #aaa; margin-bottom: 10px; }
+    .template-requirements { display: flex; flex-direction: column; gap: 8px; }
+    .template-req-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; }
+    .template-req-icon { color: #64748b; font-size: 14px; flex-shrink: 0; margin-top: 2px; }
+    .template-req-content { flex: 1; }
+    .template-req-name { font-size: 12px; font-weight: 600; color: #e2e8f0; }
+    .template-req-hint { font-size: 10px; color: #64748b; margin-top: 2px; }
+    .template-req-source { font-size: 9px; color: #8b5cf6; margin-top: 3px; font-style: italic; }
+    .magic-modal-footer { padding: 16px 20px; border-top: 1px solid rgba(0, 255, 255, 0.15); flex-shrink: 0; }
+    .magic-save-btn { width: 100%; background: linear-gradient(90deg, #8b5cf6, #ec4899); border: none; border-radius: 12px; padding: 14px; color: white; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); }
+    .magic-save-btn:hover { transform: scale(1.02); box-shadow: 0 0 25px rgba(139,92,246,0.6); }
+    
+    /* MAGIC CARD - Beautiful Results */
+    .magic-card {
+      --tone-color: #34d399;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      border-radius: 20px;
+      border: 2px solid var(--tone-color);
+      padding: 20px;
+      margin: 12px 0;
+      color: white;
+      box-shadow: 0 0 30px rgba(0,0,0,0.5), 0 0 15px color-mix(in srgb, var(--tone-color) 30%, transparent);
+      animation: magicAppear 0.4s ease;
+    }
+    @keyframes magicAppear { from { transform: scale(0.9) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+    .magic-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .magic-emoji { font-size: 28px; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    .magic-title { font-size: 18px; font-weight: 800; background: linear-gradient(90deg, #fff, var(--tone-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .magic-score-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+    .magic-score { font-size: 36px; font-weight: 900; }
+    .magic-score span { font-size: 14px; opacity: 0.5; }
+    .magic-highlight { flex: 1; font-size: 13px; color: var(--tone-color); font-weight: 600; padding: 8px 12px; background: color-mix(in srgb, var(--tone-color) 15%, transparent); border-radius: 8px; }
+    .magic-section { margin-bottom: 12px; }
+    .magic-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 6px; }
+    
+    /* DUAL STOCK OUTPUT - Card + Analysis */
+    .dual-stock-output {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin: 12px 0;
+    }
+    .stock-card-section, .stock-analysis-section {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .analysis-header {
+      padding: 12px 16px;
+      background: rgba(138, 43, 226, 0.2);
+      border-bottom: 1px solid rgba(138, 43, 226, 0.3);
+      font-weight: 700;
+      font-size: 14px;
+      color: #c084fc;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .analysis-content {
+      padding: 16px;
+      color: #e2e8f0;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .analysis-content h1, .analysis-content h2, .analysis-content h3 {
+      color: #a855f7;
+      margin: 16px 0 10px;
+    }
+    .analysis-content h1 { font-size: 20px; }
+    .analysis-content h2 { font-size: 17px; }
+    .analysis-content h3 { font-size: 15px; }
+    .analysis-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+    }
+    .analysis-content th, .analysis-content td {
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: left;
+    }
+    .analysis-content th {
+      background: rgba(138, 43, 226, 0.2);
+      color: #c084fc;
+    }
+    .analysis-content strong {
+      color: #fbbf24;
+    }
+    .dual-actions {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      background: rgba(0, 0, 0, 0.2);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .dual-print-btn, .dual-share-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .dual-print-btn {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+    }
+    .dual-print-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    .dual-share-btn {
+      background: rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .dual-share-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+    }
+    .magic-items { margin: 0; padding-left: 20px; font-size: 12px; color: #e2e8f0; line-height: 1.6; }
+    .magic-items li { margin-bottom: 4px; }
+    .magic-verdict { background: linear-gradient(135deg, #3b82f6, #6366f1); border-radius: 12px; padding: 14px; margin-top: 12px; }
+    .magic-verdict-label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; opacity: 0.7; margin-bottom: 4px; }
+    .magic-verdict-text { font-size: 13px; font-weight: 600; line-height: 1.4; }
+    .magic-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .magic-next { font-size: 11px; color: #94a3b8; font-style: italic; }
+    
+    /* Priority Tags */
+    .priority-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; margin-right: 6px; text-transform: uppercase; }
+    .priority-tag.critical { background: #dc2626; color: white; animation: pulse 1s infinite; }
+    .priority-tag.high { background: #f97316; color: white; }
+    .priority-tag.medium { background: #eab308; color: #000; }
+    .priority-tag.low { background: #22c55e; color: white; }
+    .priority-critical { border-left: 3px solid #dc2626; padding-left: 8px; }
+    .priority-high { border-left: 3px solid #f97316; padding-left: 8px; }
+    
+    /* Action Items */
+    .magic-actions { margin-top: 12px; padding: 12px; background: rgba(59,130,246,0.1); border-radius: 12px; border: 1px solid rgba(59,130,246,0.3); }
+    .action-list { margin-top: 8px; }
+    .action-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+    .action-num { background: linear-gradient(135deg, #3b82f6, #6366f1); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .action-text { font-size: 12px; color: #e2e8f0; line-height: 1.4; }
+    
+    /* Risk Meter */
+    .magic-risk { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+    .risk-label { font-size: 9px; color: #64748b; font-weight: 600; }
+    .risk-value { padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+    .risk-high { background: #dc2626; color: white; }
+    .risk-medium { background: #f97316; color: white; }
+    .risk-low { background: #22c55e; color: white; }
+    
+    /* Snap Intelligence Tagline - in header */
+    .header-tagline {
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      color: #fff;
+    }
+    .header-tagline span {
+      background: linear-gradient(135deg, var(--st-accent) 0%, var(--st-accent-2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <div class="logo" id="modelLogo">Gemini 3 <span>Flash (Preview)</span></div>
+    </div>
+    <!-- Task #40: institution-name pill. Hidden by default; shown by
+         ai-chat.js on load when the signed-in user is an institution
+         member. Sits between the model logo (left) and credits banner /
+         close button (right) so it never collides with either. -->
+    <div id="institutionNamePill" style="display:none; align-items:center; gap:8px; padding:6px 14px; border-radius:999px; background: var(--st-brand-header, rgba(0,217,255,0.10)); border: 1px solid var(--st-border-default, rgba(255,255,255,0.15)); font-size: 13px; font-weight: 600; color: var(--st-text-primary, #fff); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="">
+      <img id="institutionNamePillLogo" alt="" style="display:none; height:18px; max-width:24px; object-fit:contain;">
+      <span id="institutionNamePillText"></span>
+    </div>
+    <div class="credits-banner" id="creditsBanner">
+      <span class="credits-banner-text">
+        <span class="gift">🎁</span>Enable Google Cloud billing → Google provides <span class="amount">$300 in</span> credits
+      </span>
+      <a href="https://console.cloud.google.com/billing" target="_blank" class="credits-banner-link">
+        Add Billing
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M7 17L17 7M17 7H7M17 7V17"/>
+        </svg>
+      </a>
+    </div>
+    <button class="close-btn" id="closeBtn" aria-label="Close window">✕</button>
+  </div>
+  
+  <div class="main-content">
+    <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">◀</button>
+    <div class="image-panel" id="imagePanel">
+      <div class="image-label">Screenshot</div>
+      <div class="image-preview">
+        <div class="image-placeholder" id="imagePlaceholder">
+          <div class="image-placeholder-icon">📸</div>
+          <div>No screenshot yet</div>
+          <div style="font-size: 12px; margin-top: 8px; opacity: 0.7;">Snap or attach an image to analyze</div>
+        </div>
+        <img id="previewImage" src="" alt="Screenshot">
+      </div>
+      <div class="image-panel-send-hint" id="imageSendHint" style="display:none;">Tap image → send to chat</div>
+    </div>
+    
+    <div class="chat-panel">
+      <div class="chat-thread" id="chatThread">
+        <div class="welcome-message">I'm your AI partner. Ask me anything about this image!</div>
+      </div>
+      
+      <div class="file-preview-zone" id="filePreviewZone"></div>
+      <div class="code-tip" id="codeTip" style="display:none;">
+        <span class="tip-icon">💡</span>
+        <span>Want to analyze code? Go to your code, press <kbd>Ctrl+A</kbd> (<kbd>⌘+A</kbd> on Mac) to select all, <kbd>Ctrl+C</kbd> to copy, then paste it right here.</span>
+        <button class="tip-dismiss" id="dismissTip" title="Dismiss">✕</button>
+      </div>
+
+      <div id="modeBar" style="display: flex; gap: 6px; padding: 7px 10px; background: rgba(0,217,255,0.03); border-bottom: 1px solid rgba(0,217,255,0.08); overflow-x: auto; scrollbar-width: none;">
+        <button class="mode-btn active" data-mode="vision" title="Analyze screenshots & text"><span class="mode-emoji">🔍</span> Vision</button>
+        <button class="mode-btn" data-mode="image" id="imageModeBtn" title="Generate images from text"><span class="mode-emoji">🎨</span> Image</button>
+        <button class="mode-btn" data-mode="music" id="musicModeBtn" title="Create music clips"><span class="mode-emoji">🎵</span> Music</button>
+        <button class="mode-btn" data-mode="video" id="videoModeBtn" title="Generate videos from prompts or screenshots"><span class="mode-emoji">🎬</span> Video</button>
+      </div>
+      <div class="input-area">
+        <input type="file" id="fileInput" accept="image/*,video/webm,video/mp4,video/*,audio/*,.mp3,.wav,.ogg,.pdf,.txt,.md,.json,.csv" multiple hidden>
+        <div id="stagedMediaIndicator" style="display:none;align-items:center;justify-content:space-between;background:rgba(255,160,50,0.1);border:1px solid rgba(255,160,50,0.35);border-radius:10px;padding:6px 12px;margin-bottom:8px;font-size:11px;">
+          <span id="stagedMediaLabel" style="color:#ffa032;font-weight:600;"></span>
+          <button id="clearStagedBtn" style="background:none;border:none;color:rgba(255,160,50,0.6);cursor:pointer;font-size:13px;padding:0 2px;line-height:1;" title="Remove staged media">✕</button>
+        </div>
+        <div class="input-row">
+          <textarea class="chat-input" id="chatInput" placeholder="Ask about your screenshot..." rows="2"></textarea>
+          <button class="send-btn" id="sendBtn">Send</button>
+        </div>
+        <div class="tools-row">
+          <label for="fileInput" class="upload-btn" title="Attach files">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+          </label>
+          <div class="tool-btn-group">
+            <button class="tool-toggle-btn" id="buildToggleBtn" title="Build Mode — generate and preview websites &amp; apps live">
+              <svg class="tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8l3 3-3 3"/><path d="M14 14h3"/></svg>
+              <span class="tool-label">Build</span>
+            </button>
+            <button class="tool-toggle-btn" id="researchToggleBtn" title="Research Agent — auto-searches, reads sources and writes a structured report">
+              <svg class="tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 015 5c0 1.5-.7 3.1-1.6 4.1L21 17l-4 4-5.7-5.7A6.6 6.6 0 017 16a5 5 0 010-10 5 5 0 015-4z"/><circle cx="10" cy="9" r="3"/></svg>
+              <span class="tool-label">Research</span>
+            </button>
+            <button class="tool-toggle-btn" id="searchToggleBtn" title="Search the web for real-time facts">
+              <svg class="tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <span class="tool-label">Search</span>
+            </button>
+            <button class="tool-toggle-btn" id="urlToggleBtn" title="Read the current page">
+              <svg class="tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+              <span class="tool-label">Read</span>
+            </button>
+            <button class="tool-toggle-btn" id="codeToggleBtn" title="Let Gemini run Python code to solve problems">
+              <svg class="tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              <span class="tool-label">Code</span>
+            </button>
+          </div>
+          <select id="voiceSelector" title="TTS Voice" style="display:none; padding:5px 8px; border-radius:20px; background:rgba(0,255,136,0.07); color:#00ff88; border:1px solid rgba(0,255,136,0.25); font-size:11px; font-weight:500; cursor:pointer; flex-shrink:0; outline:none;">
+            <option value="Puck">🎙 Puck — Upbeat</option>
+            <option value="Aoede">🎙 Aoede — Breezy</option>
+            <option value="Zephyr">🎙 Zephyr — Bright</option>
+            <option value="Achird">🎙 Achird — Friendly</option>
+            <option value="Sulafat">🎙 Sulafat — Warm</option>
+            <option value="Sadachbia">🎙 Sadachbia — Lively</option>
+            <option value="Leda">🎙 Leda — Youthful</option>
+            <option value="Fenrir">🎙 Fenrir — Excitable</option>
+            <option value="Achernar">🎙 Achernar — Soft</option>
+            <option value="Charon">🎙 Charon — Informative</option>
+            <option value="Kore">🎙 Kore — Firm</option>
+            <option value="Enceladus">🎙 Enceladus — Breathy</option>
+            <option value="Gacrux">🎙 Gacrux — Mature</option>
+            <option value="Umbriel">🎙 Umbriel — Easy-going</option>
+          </select>
+        </div>
+      </div>
+      <style>
+        .tool-btn-group {
+          display: flex;
+          gap: 4px;
+          flex-shrink: 0;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        .tool-toggle-btn {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          color: rgba(255,255,255,0.4);
+          border-radius: 20px;
+          padding: 5px 11px 5px 8px;
+          font-size: 11px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.18s ease;
+          flex-shrink: 0;
+          white-space: nowrap;
+          letter-spacing: 0.2px;
+          line-height: 1;
+        }
+        .tool-svg {
+          width: 13px;
+          height: 13px;
+          flex-shrink: 0;
+          stroke: currentColor;
+        }
+        .tool-toggle-btn .tool-label { font-size: 11px; }
+        .tool-toggle-btn:hover {
+          background: rgba(0,217,255,0.1);
+          border-color: rgba(0,217,255,0.35);
+          color: #00d9ff;
+          transform: translateY(-1px);
+          box-shadow: 0 3px 10px rgba(0,217,255,0.15);
+        }
+        .tool-toggle-btn.tool-btn-active {
+          background: rgba(0,217,255,0.14);
+          border-color: rgba(0,217,255,0.6);
+          color: #00d9ff;
+          box-shadow: 0 0 12px rgba(0,217,255,0.22), inset 0 0 8px rgba(0,217,255,0.06);
+          font-weight: 600;
+        }
+        #buildToggleBtn:hover, #buildToggleBtn.tool-btn-active {
+          background: rgba(255,160,50,0.12);
+          border-color: rgba(255,160,50,0.55);
+          color: #ffa032;
+          box-shadow: 0 0 12px rgba(255,160,50,0.22);
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #researchToggleBtn:hover, #researchToggleBtn.tool-btn-active {
+          background: rgba(180,100,255,0.12);
+          border-color: rgba(180,100,255,0.55);
+          color: #c478ff;
+          box-shadow: 0 0 12px rgba(180,100,255,0.22);
+        }
+        #searchToggleBtn:hover, #searchToggleBtn.tool-btn-active {
+          background: rgba(0,217,255,0.12);
+          border-color: rgba(0,217,255,0.55);
+          color: #00d9ff;
+          box-shadow: 0 0 12px rgba(0,217,255,0.22);
+        }
+        #urlToggleBtn:hover, #urlToggleBtn.tool-btn-active {
+          background: rgba(50,200,255,0.12);
+          border-color: rgba(50,200,255,0.55);
+          color: #32c8ff;
+          box-shadow: 0 0 12px rgba(50,200,255,0.22);
+        }
+        #codeToggleBtn:hover, #codeToggleBtn.tool-btn-active {
+          background: rgba(80,220,120,0.12);
+          border-color: rgba(80,220,120,0.55);
+          color: #50dc78;
+          box-shadow: 0 0 12px rgba(80,220,120,0.22);
+        }
+      </style>
+      <div id="previewWrapper" style="display:none; margin:10px 12px 4px; border:1px solid rgba(255,160,50,0.3); border-radius:14px; overflow:hidden; background:#07070a; box-shadow:0 10px 36px rgba(0,0,0,0.55);">
+        <div style="background:rgba(12,12,18,0.98); padding:9px 14px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,160,50,0.15);">
+          <!-- Left: label + stage badges -->
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span id="previewLabel" style="font-size:10px; font-weight:800; font-family:monospace; color:#ffa032; letter-spacing:1px; text-transform:uppercase; white-space:nowrap;">🏗️ BUILD BUFFER</span>
+            <div id="buildStageBadges" style="display:flex; gap:3px;">
+              <span id="badge-L1" style="font-family:monospace; font-size:8px; font-weight:700; padding:2px 6px; border-radius:4px; border:1px solid rgba(255,160,50,0.25); color:rgba(255,160,50,0.4); background:transparent; transition:all 0.2s;">HTML</span>
+              <span id="badge-L2" style="font-family:monospace; font-size:8px; font-weight:700; padding:2px 6px; border-radius:4px; border:1px solid rgba(255,160,50,0.25); color:rgba(255,160,50,0.4); background:transparent; transition:all 0.2s;">CSS</span>
+              <span id="badge-L3" style="font-family:monospace; font-size:8px; font-weight:700; padding:2px 6px; border-radius:4px; border:1px solid rgba(255,160,50,0.25); color:rgba(255,160,50,0.4); background:transparent; transition:all 0.2s;">JS</span>
+            </div>
+          </div>
+          <!-- Right: action buttons -->
+          <div style="display:flex;gap:5px;align-items:center;">
+            <button id="previewExpandBtn" title="Expand / collapse preview" style="font-size:11px;padding:3px 7px;border-radius:7px;background:rgba(255,160,50,0.07);border:1px solid rgba(255,160,50,0.2);color:#ffa032;cursor:pointer;font-weight:700;line-height:1;">⤢</button>
+            <button id="previewOpenTabBtn" style="font-size:10px;padding:3px 9px;border-radius:7px;background:rgba(0,217,255,0.07);border:1px solid rgba(0,217,255,0.28);color:#00d9ff;cursor:pointer;font-weight:700;font-family:monospace;">↗ Open</button>
+            <button id="previewCopyBtn" style="font-size:10px;padding:3px 8px;border-radius:7px;background:rgba(255,160,50,0.09);border:1px solid rgba(255,160,50,0.22);color:#ffa032;cursor:pointer;font-weight:700;font-family:monospace;">Copy</button>
+            <button id="publishNetlifyBtn" title="Publish site live — free Netlify hosting" style="font-size:10px;padding:3px 9px;border-radius:7px;background:rgba(0,199,148,0.12);border:1px solid rgba(0,199,148,0.4);color:#00c794;cursor:pointer;font-weight:700;font-family:monospace;white-space:nowrap;">🌐 Publish</button>
+            <button id="closePreviewBtn" style="background:none;border:none;color:rgba(255,255,255,0.35);cursor:pointer;font-size:13px;line-height:1;padding:0 2px;">✕</button>
+          </div>
+        </div>
+        <div id="previewBuilding" style="display:none;align-items:center;justify-content:center;gap:8px;height:46px;background:rgba(7,7,10,0.96);font-size:11px;font-weight:700;color:#ffa032;font-family:monospace;letter-spacing:0.5px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffa032" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite;flex-shrink:0;"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+          <span id="previewBuildingTxt">Compiling…</span>
+        </div>
+        <iframe id="livePreview" src="sandbox.html" allow="fullscreen; autoplay; encrypted-media; picture-in-picture" style="width:100%;height:200px;border:none;display:none;background:#07070a;"></iframe>
+      </div>
+      <div class="ai-disclaimer">Gemini can make mistakes, so double-check it</div>
+      
+      <div id="agentStatusBar" style="display:none; align-items:center; gap:6px; padding:5px 14px; background:rgba(255,255,255,0.04); border-top:1px solid rgba(255,255,255,0.07); font-size:12px; font-weight:500;"></div>
+      <div class="magic-buttons" id="magicButtons" style="padding: 8px 12px; min-height: 40px;"></div>
+      <div class="footer-actions">
+        <button class="magic-add-btn" id="openAgentsBtn" style="background:linear-gradient(135deg,#6c3fc5,#bc85ff);border-color:rgba(188,133,255,0.4);">🤖 Agents</button>
+        <button class="magic-add-btn" id="addMagicBtn">+ Magic Agents</button>
+        <button class="verdict-btn" id="verdictBtn" style="display:none !important;">⚖️ The Verdict</button>
+        <button class="action-btn continue-btn" id="continueBtn">▶ Continue</button>
+        <button class="action-btn" id="summarizeBtn">📋 Summarize</button>
+        <button class="action-btn" id="clearBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>Clear
+        </button>
+        <button class="action-btn" id="exportBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Save
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Specialist Agents Modal -->
+  <div id="agentsModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#0e0e18; border:1px solid rgba(188,133,255,0.3); border-radius:20px; width:100%; max-width:520px; max-height:85vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 30px 80px rgba(0,0,0,0.7);">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 20px 14px; border-bottom:1px solid rgba(255,255,255,0.07);">
+        <div>
+          <div style="font-size:15px; font-weight:700; color:#fff;">🤖 Specialist Agents</div>
+          <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:2px;">Pick an expert — overrides the AI's default behaviour</div>
+        </div>
+        <button id="closeAgentsModal" style="background:none; border:none; color:rgba(255,255,255,0.4); cursor:pointer; font-size:18px; line-height:1; padding:4px;">✕</button>
+      </div>
+      <div id="agentsGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:16px; overflow-y:auto;"></div>
+    </div>
+  </div>
+  <style>
+    .agent-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 14px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      position: relative;
+    }
+    .agent-card:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: var(--agent-color, #bc85ff);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .agent-card.agent-active {
+      background: rgba(188,133,255,0.1);
+      border-color: var(--agent-color, #bc85ff);
+      box-shadow: 0 0 16px rgba(188,133,255,0.2);
+    }
+    .agent-icon { font-size: 22px; margin-bottom: 6px; }
+    .agent-name { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+    .agent-tag { font-size: 10px; color: rgba(255,255,255,0.4); line-height: 1.3; }
+    .agent-active-badge {
+      position: absolute; top: 8px; right: 10px;
+      font-size: 9px; font-weight: 700; color: var(--agent-color, #bc85ff);
+      background: rgba(188,133,255,0.15); border-radius: 20px; padding: 2px 7px;
+    }
+  </style>
+
+  <!-- Magic Button Creator Modal - Simple Version -->
+  <div id="magicModal" class="magic-modal">
+    <div class="magic-modal-content" style="max-width: 360px; max-height: none;">
+      <div class="magic-modal-header">
+        <span style="-webkit-text-fill-color: #fff;">⚡ Create Magic Agent</span>
+        <button class="magic-close" id="closeMagicModal" aria-label="Close modal">✕</button>
+      </div>
+      <div class="magic-modal-body" style="max-height: none; overflow: visible;">
+        <div class="magic-field">
+          <label>Name</label>
+          <input type="text" id="magicName" placeholder="e.g., Price Check" maxlength="12">
+        </div>
+        <div class="magic-field">
+          <label>Icon</label>
+          <div class="emoji-picker" id="emojiPicker">
+            <span class="emoji-option" data-emoji="🔍">🔍</span>
+            <span class="emoji-option" data-emoji="💰">💰</span>
+            <span class="emoji-option" data-emoji="📊">📊</span>
+            <span class="emoji-option" data-emoji="📈">📈</span>
+            <span class="emoji-option" data-emoji="💡">💡</span>
+            <span class="emoji-option" data-emoji="⚡">⚡</span>
+            <span class="emoji-option" data-emoji="🎯">🎯</span>
+            <span class="emoji-option" data-emoji="🛒">🛒</span>
+            <span class="emoji-option selected" data-emoji="✨">✨</span>
+            <span class="emoji-option" data-emoji="🚀">🚀</span>
+          </div>
+          <input type="hidden" id="selectedEmoji" value="✨">
+        </div>
+        <div class="magic-field">
+          <label>What should this do?</label>
+          <textarea id="magicPrompt" placeholder="Tell the AI what to analyze. Be specific about what you want it to look for and how to respond..." rows="6" maxlength="3000"></textarea>
+          <span class="char-count"><span id="promptCount">0</span>/3000</span>
+        </div>
+        <div class="magic-field">
+          <label>When clicked, box says (Hint)</label>
+          <input type="text" id="magicHint" placeholder="e.g., Snap anything to understand it..." maxlength="60">
+        </div>
+      </div>
+      <div class="magic-modal-footer">
+        <button class="magic-save-btn" id="saveMagicBtn">⚡ Create</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="geminiKeyModal" class="magic-modal">
+    <div class="magic-modal-content" style="max-width: 340px; max-height: none;">
+      <div class="magic-modal-header">
+        <span style="-webkit-text-fill-color: #fff;">✨ Activate AI Analysis</span>
+        <button class="magic-close" id="closeGeminiKeyModal" aria-label="Close">&#x2715;</button>
+      </div>
+      <div class="magic-modal-body" style="max-height: none; overflow: visible;">
+        <div style="background: linear-gradient(135deg, rgba(0,255,136,0.18), rgba(255,215,0,0.12)); border: 1.5px solid rgba(255,215,0,0.55); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; text-align: center;">
+          <div style="font-size: 15px; font-weight: 800; color: #ffd700; line-height: 1.35; margin-bottom: 6px;">
+            🎁 Google gives you <span style="color: #00ff88;">$300 FREE</span> credits
+          </div>
+          <div style="font-size: 12px; font-weight: 600; color: #fff; line-height: 1.45;">
+            Get your free Gemini API key in 30 seconds — just follow the 3 steps below.
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(0,217,255,0.15); border: 1px solid rgba(0,217,255,0.3); color: var(--st-accent); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">1</span>
+            <span style="font-size: 12px; color: rgba(255,255,255,0.8);">Open Google AI Studio</span>
+          </div>
+          <a href="https://aistudio.google.com/apikey" target="_blank" style="display: block; width: 100%; padding: 10px; background: linear-gradient(135deg, var(--st-accent), var(--st-accent-2)); border: none; border-radius: 8px; color: #000; font-size: 13px; font-weight: 700; text-align: center; text-decoration: none; margin-bottom: 4px; box-sizing: border-box;">Go to AI Studio &#x2197;</a>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(0,217,255,0.15); border: 1px solid rgba(0,217,255,0.3); color: var(--st-accent); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">2</span>
+            <span style="font-size: 12px; color: rgba(255,255,255,0.8);">Click "Create API key" and copy it</span>
+          </div>
+          <div class="aichat-step-demo">
+            <div style="display: flex; justify-content: center; margin-bottom: 8px;">
+              <div class="aichat-demo-create-btn">
+                <span style="font-size: 13px;">⊕</span> Create API key
+                <div class="aichat-demo-cursor">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M5 3l14 9-6 1.5L10 20z"/></svg>
+                </div>
+                <div class="aichat-demo-click-flash"></div>
+              </div>
+            </div>
+            <div class="aichat-demo-key-appear">
+              <span class="aichat-demo-key-text">AIza...x9Qk</span>
+              <span class="aichat-demo-copy-icon">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                <span class="aichat-demo-copied-badge">Copied!</span>
+              </span>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(0,217,255,0.15); border: 1px solid rgba(0,217,255,0.3); color: var(--st-accent); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">3</span>
+            <span style="font-size: 12px; color: rgba(255,255,255,0.8);">Paste it below</span>
+          </div>
+        </div>
+        <input type="password" id="geminiKeyModalInput" placeholder="Paste your key here..." style="width: 100%; padding: 8px 10px; background: var(--st-bg-rail); border: 1px dashed rgba(0,217,255,0.4); border-radius: 6px; color: #fff; font-size: 12px; margin-bottom: 10px; box-sizing: border-box;">
+        <div style="margin: 8px 0;">
+          <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #aaa; line-height: 1.4; cursor: pointer;">
+            <input type="checkbox" id="geminiKeyModalCompliance" style="margin-top: 2px; flex-shrink: 0; accent-color: var(--st-accent);">
+            <span>I'm 18+ and agree to <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener" style="color: var(--st-accent); text-decoration: none;">Gemini API Terms</a>.</span>
+          </label>
+        </div>
+      </div>
+      <div class="magic-modal-footer" style="display: flex; gap: 8px;">
+        <button class="magic-save-btn" id="geminiKeyModalSave" style="flex: 1; opacity: 0.5; cursor: not-allowed;" disabled>Activate</button>
+        <button id="geminiKeyModalCancel" style="padding: 10px 16px; background: transparent; border: 1px solid #555; border-radius: 8px; color: #888; font-size: 13px; cursor: pointer;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="premiumCostModal" class="magic-modal" style="display:none;">
+    <div class="magic-modal-content" style="max-width: 380px; max-height: none;">
+      <div class="magic-modal-header">
+        <span style="-webkit-text-fill-color: #fff;">🎬 Ready to Create</span>
+        <button class="magic-close" id="closePremiumCostModal" aria-label="Close">&#x2715;</button>
+      </div>
+      <div class="magic-modal-body" style="max-height: none; overflow: visible;">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:12px;border-radius:10px;background:linear-gradient(135deg, rgba(0,255,136,0.10), rgba(0,217,255,0.08));border:1px solid rgba(0,217,255,0.25);">
+          <div style="font-size:24px;">✨</div>
+          <div>
+            <div id="premiumCostTitle" style="font-size:14px;font-weight:700;color:#fff;">Ready to create your video?</div>
+            <div id="premiumCostEstimate" style="font-size:12px;color:#7fe7ff;margin-top:2px;">Estimated cost: ~$2.00</div>
+          </div>
+        </div>
+        <div id="premiumCostMessage" style="font-size:13px;line-height:1.5;color:rgba(255,255,255,0.82);margin-bottom:10px;">
+          Your video will be generated using Google's top-quality AI. We've picked the most cost-friendly settings for you.
+        </div>
+      </div>
+      <div class="magic-modal-footer" style="display:flex;gap:10px;">
+        <button id="premiumCostCancel" class="magic-save-btn" style="flex:1;background:transparent;border:1px solid #555;color:#ccc;">Not now</button>
+        <button id="premiumCostConfirm" class="magic-save-btn" style="flex:1;background:linear-gradient(135deg,#00d9ff,#00ff88);color:#111;">Create Video</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="promptToast" style="display: none; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 1px solid rgba(0,217,255,0.3); border-radius: 8px; padding: 10px 16px; color: rgba(255,255,255,0.85); font-size: 13px; z-index: 10001; backdrop-filter: blur(8px); animation: toastFadeIn 0.3s ease; max-width: 90%; text-align: center;"></div>
+  <style>
+    @keyframes toastFadeIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+    .prompt-toast-urgent { border-color: rgba(255,165,0,0.4) !important; }
+    .unlock-billing-btn:hover { opacity: 0.85; }
+
+    .aichat-step-demo {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 10px;
+      margin: 2px 0 6px;
+      overflow: hidden;
+    }
+    .aichat-demo-create-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: #4285f4;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .aichat-demo-cursor {
+      position: absolute;
+      bottom: -2px;
+      right: 4px;
+      opacity: 0;
+      animation: aichatCursorMove 4s ease-in-out infinite;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+    }
+    .aichat-demo-click-flash {
+      position: absolute;
+      inset: 0;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.4);
+      opacity: 0;
+      animation: aichatClickFlash 4s ease-in-out infinite;
+    }
+    .aichat-demo-key-appear {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      opacity: 0;
+      animation: aichatKeyAppear 4s ease-in-out infinite;
+    }
+    .aichat-demo-key-text {
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--st-accent);
+      background: rgba(0,217,255,0.08);
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px dashed rgba(0,217,255,0.3);
+    }
+    .aichat-demo-copy-icon {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .aichat-demo-copied-badge {
+      position: absolute;
+      left: 18px;
+      font-size: 9px;
+      font-weight: 700;
+      color: #00ff88;
+      white-space: nowrap;
+      opacity: 0;
+      animation: aichatCopiedPop 4s ease-in-out infinite;
+    }
+    @keyframes aichatCursorMove {
+      0%, 15% { opacity: 0; transform: translate(10px, 10px); }
+      25% { opacity: 1; transform: translate(0, 0); }
+      35% { opacity: 1; transform: translate(0, 0); }
+      40% { opacity: 0; transform: translate(0, -4px); }
+      100% { opacity: 0; }
+    }
+    @keyframes aichatClickFlash {
+      0%, 32% { opacity: 0; }
+      35% { opacity: 0.6; }
+      40% { opacity: 0; }
+      100% { opacity: 0; }
+    }
+    @keyframes aichatKeyAppear {
+      0%, 42% { opacity: 0; transform: translateY(6px); }
+      50% { opacity: 1; transform: translateY(0); }
+      85% { opacity: 1; transform: translateY(0); }
+      95%, 100% { opacity: 0; transform: translateY(0); }
+    }
+    @keyframes aichatCopiedPop {
+      0%, 55% { opacity: 0; transform: scale(0.5); }
+      62% { opacity: 1; transform: scale(1.1); }
+      68% { opacity: 1; transform: scale(1); }
+      85% { opacity: 1; transform: scale(1); }
+      95%, 100% { opacity: 0; transform: scale(1); }
+    }
+  </style>
+
+  <!-- Trial Ended Modal -->
+  <div id="trialEndedModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(8px); z-index:9999; align-items:center; justify-content:center; animation:trialOverlayIn 0.25s ease;">
+    <div id="trialEndedCard" style="background:linear-gradient(160deg,#0d1520 0%,#0a1118 100%); border:1px solid rgba(0,217,255,0.2); border-radius:20px; padding:28px 24px; max-width:340px; width:90%; box-shadow:0 0 40px rgba(0,217,255,0.08), 0 20px 60px rgba(0,0,0,0.6); text-align:center; animation:trialCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1);">
+      <div id="trialEndedEmoji" style="font-size:44px; margin-bottom:4px; display:block; animation:trialBounce 0.6s 0.2s cubic-bezier(0.34,1.56,0.64,1) both;">🎯</div>
+      <h2 style="font-size:18px; font-weight:800; margin:8px 0 6px; background:linear-gradient(135deg,var(--st-accent),#7c5cfc); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Trial Complete!</h2>
+      <p id="trialEndedMessage" style="font-size:13px; color:rgba(255,255,255,0.65); margin:0 0 16px; line-height:1.6;">Your 30-day trial was amazing — you clearly love SnapToAI! Keep the momentum going with a Pro plan.</p>
+      <div style="background:rgba(0,217,255,0.06); border:1px solid rgba(0,217,255,0.15); border-radius:10px; padding:10px 14px; font-size:12px; color:rgba(0,217,255,0.85); margin-bottom:16px; font-weight:600;">🚀 Less than a coffee per month for unlimited AI</div>
+      <div style="display:flex; gap:10px; margin-bottom:14px;">
+        <button id="trialMonthlyBtn" style="flex:1; padding:14px 8px; background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.12); border-radius:12px; cursor:pointer; color:#fff; transition:all 0.2s;">
+          <div style="font-size:11px; color:rgba(255,255,255,0.5); margin-bottom:4px;">Monthly</div>
+          <div style="font-size:18px; font-weight:800;">$4.99</div>
+          <div style="font-size:10px; color:rgba(255,255,255,0.4);">per month</div>
+        </button>
+        <button id="trialYearlyBtn" style="flex:1; padding:14px 8px; background:rgba(0,217,255,0.06); border:2px solid rgba(0,217,255,0.45); border-radius:12px; cursor:pointer; color:#fff; transition:all 0.2s; position:relative;">
+          <div style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg,var(--st-accent),#7c5cfc); color:#000; font-size:9px; font-weight:800; padding:2px 8px; border-radius:20px; white-space:nowrap;">BEST VALUE</div>
+          <div style="font-size:11px; color:rgba(0,217,255,0.7); margin-bottom:4px;">Yearly</div>
+          <div style="font-size:18px; font-weight:800; color:var(--st-accent);">$39</div>
+          <div style="font-size:10px; color:rgba(0,217,255,0.6);">~$3.25/mo · save 35%</div>
+        </button>
+      </div>
+      <div style="font-size:10px; color:rgba(255,255,255,0.25); margin-bottom:12px;">Subscription activates automatically after payment</div>
+      <button id="trialCheckStatusBtn" style="width:100%; padding:11px; background:rgba(0,217,255,0.08); border:1.5px solid rgba(0,217,255,0.3); border-radius:10px; color:var(--st-accent); font-size:13px; font-weight:600; cursor:pointer; margin-bottom:8px; transition:all 0.2s;">🔄 Check subscription status</button>
+      <p id="trialStatusMsg" style="font-size:11px; color:#ff6b6b; display:none; margin:0 0 8px;"></p>
+      <button id="trialContinueCaptureBtn" style="width:100%; padding:9px; background:transparent; border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:rgba(255,255,255,0.35); font-size:12px; cursor:pointer; transition:all 0.2s;">Continue with Capture Only</button>
+    </div>
+  </div>
+
+  <style>
+    @keyframes trialOverlayIn { from { opacity:0; } to { opacity:1; } }
+    @keyframes trialCardIn { from { opacity:0; transform:scale(0.85) translateY(20px); } to { opacity:1; transform:scale(1) translateY(0); } }
+    @keyframes trialBounce { 0% { transform:scale(0) rotate(-15deg); } 60% { transform:scale(1.2) rotate(8deg); } 80% { transform:scale(0.95) rotate(-3deg); } 100% { transform:scale(1) rotate(0); } }
+    #trialMonthlyBtn:hover { background:rgba(255,255,255,0.08) !important; border-color:rgba(255,255,255,0.25) !important; }
+    #trialYearlyBtn:hover { background:rgba(0,217,255,0.12) !important; }
+    #trialCheckStatusBtn:hover { background:rgba(0,217,255,0.15) !important; }
+    #trialContinueCaptureBtn:hover { color:rgba(255,255,255,0.6) !important; border-color:rgba(255,255,255,0.2) !important; }
+  </style>
+
+  <!-- ── Netlify Publish Modal ─────────────────────────────────────────────── -->
+  <div id="netlifyModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+    <div style="background:#0f1117;border:1px solid rgba(0,199,148,0.35);border-radius:18px;padding:28px 26px 24px;max-width:360px;width:90%;box-shadow:0 24px 64px rgba(0,0,0,0.7);position:relative;">
+      <button id="netlifyModalClose" style="position:absolute;top:14px;right:16px;background:none;border:none;color:rgba(255,255,255,0.4);font-size:17px;cursor:pointer;line-height:1;">✕</button>
+
+      <!-- Step 1: token setup -->
+      <div id="netlifyStep1">
+        <div style="font-size:22px;margin-bottom:8px;">🌐</div>
+        <h3 style="margin:0 0 6px;font-size:15px;font-weight:700;color:#fff;">Publish to Netlify — Free</h3>
+        <p style="margin:0 0 16px;font-size:12px;color:rgba(255,255,255,0.55);line-height:1.5;">One-time setup. Your site goes live instantly with a free <code style="color:#00c794;">netlify.app</code> URL.</p>
+
+        <div style="background:rgba(0,199,148,0.07);border:1px solid rgba(0,199,148,0.2);border-radius:10px;padding:13px 14px;margin-bottom:16px;font-size:11.5px;color:rgba(255,255,255,0.7);line-height:2;">
+          <b style="color:#00c794;">3 quick steps:</b><br>
+          1. Open →
+            <a href="https://app.netlify.com" target="_blank"
+               style="color:#00c794;text-decoration:underline;cursor:pointer;"
+               onclick="chrome.tabs.create({url:'https://app.netlify.com'});return false;">
+              app.netlify.com
+            </a> (free account)<br>
+          2. Click your <b>name at the bottom-left</b> → <b>User settings</b><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;→ Security → <b>Applications</b><br>
+          3. Click <b>"New access token"</b> → paste it below
+        </div>
+
+        <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:6px;">Netlify Access Token</label>
+        <input id="netlifyTokenInput" type="password" placeholder="Paste your token here…"
+          style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(0,199,148,0.3);border-radius:9px;padding:10px 12px;font-size:13px;color:#fff;outline:none;font-family:monospace;margin-bottom:14px;">
+
+        <div id="netlifyTokenError" style="display:none;font-size:11px;color:#ff6b6b;margin-bottom:10px;"></div>
+
+        <button id="netlifyTokenSaveBtn" style="width:100%;background:linear-gradient(135deg,#00c794,#00a37a);border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;letter-spacing:.03em;">
+          🚀 Save &amp; Publish Now
+        </button>
+      </div>
+
+      <!-- Step 2: publishing spinner -->
+      <div id="netlifyStep2" style="display:none;text-align:center;padding:12px 0;">
+        <div style="font-size:32px;margin-bottom:14px;animation:spin 1.2s linear infinite;display:inline-block;">🌀</div>
+        <p style="margin:0;font-size:13px;font-weight:700;color:#fff;" id="netlifyPublishingTxt">Uploading your site…</p>
+        <p style="margin:6px 0 0;font-size:11px;color:rgba(255,255,255,0.45);">Usually takes 5–15 seconds</p>
+      </div>
+
+      <!-- Step 3: success -->
+      <div id="netlifyStep3" style="display:none;text-align:center;">
+        <div style="font-size:32px;margin-bottom:10px;">🎉</div>
+        <h3 style="margin:0 0 6px;font-size:15px;font-weight:700;color:#fff;">Your site is live!</h3>
+        <a id="netlifySiteLink" href="#" target="_blank" style="display:block;margin:12px 0;font-size:12px;color:#00c794;word-break:break-all;text-decoration:none;background:rgba(0,199,148,0.08);border:1px solid rgba(0,199,148,0.25);border-radius:8px;padding:10px 12px;font-family:monospace;"></a>
+        <div style="display:flex;gap:8px;justify-content:center;">
+          <button id="netlifyOpenBtn" style="flex:1;background:rgba(0,199,148,0.15);border:1px solid rgba(0,199,148,0.4);border-radius:9px;padding:9px;font-size:12px;font-weight:700;color:#00c794;cursor:pointer;">↗ Open</button>
+          <button id="netlifyCopyUrlBtn" style="flex:1;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:9px;padding:9px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;">📋 Copy URL</button>
+        </div>
+        <p style="margin:14px 0 0;font-size:10.5px;color:rgba(255,255,255,0.35);">Next publish will update the same URL automatically.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="purify.min.js"></script>
+  <script src="subscription.js"></script>
+  <script src="prompts.js"></script>
+  <script src="ai-chat.js"></script>
+</body>
+</html>
+ 
+Executing inline event handler violates the following Content Security Policy directive 'script-src 'self' 'wasm-unsafe-eval' 'inline-speculation-rules' http://localhost:* http://127.0.0.1:*'. Either the 'unsafe-inline' keyword, a hash ('sha256-...'), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. The action has been blocked.
