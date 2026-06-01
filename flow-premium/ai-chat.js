@@ -9142,20 +9142,50 @@ document.getElementById('netlifyTokenSaveBtn')?.addEventListener('click', async 
     return;
   }
   // Quick validation — check token works
+  const saveBtn = document.getElementById('netlifyTokenSaveBtn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Checking…'; }
   try {
-    const test = await fetch('https://api.netlify.com/api/v1/user', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!test.ok) throw new Error('Invalid token');
-    const user = await test.json();
-    // Save token
+    let test;
+    try {
+      test = await fetch('https://api.netlify.com/api/v1/user', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    } catch (networkErr) {
+      // fetch() itself failed — almost always means the extension hasn't been
+      // reloaded after the manifest CSP change that allows api.netlify.com
+      if (errEl) {
+        errEl.innerHTML = '❌ Network error — Chrome blocked the request.<br>' +
+          'Go to <b>chrome://extensions</b>, find SnapToAI, click <b>🔄 the reload icon</b>, ' +
+          'then try again.';
+        errEl.style.display = 'block';
+      }
+      return;
+    }
+    if (test.status === 401) {
+      if (errEl) {
+        errEl.textContent = '❌ Token rejected (401). Make sure you copied the full token — ' +
+          'it should start with "nfp_" and be about 50 characters long.';
+        errEl.style.display = 'block';
+      }
+      return;
+    }
+    if (!test.ok) {
+      if (errEl) {
+        errEl.textContent = `❌ Netlify returned an error (${test.status}). Please try again.`;
+        errEl.style.display = 'block';
+      }
+      return;
+    }
+    // Save token and publish
     await chrome.storage.local.set({ netlify_token: token });
     await _netlifyRunPublish(token);
   } catch(e) {
     if (errEl) {
-      errEl.textContent = 'Token invalid or expired. Make sure you copied the full token from Netlify.';
+      errEl.textContent = '❌ Unexpected error: ' + (e.message || e);
       errEl.style.display = 'block';
     }
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Connect & Publish'; }
   }
 });
 
