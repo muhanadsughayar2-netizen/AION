@@ -1645,17 +1645,29 @@
         <h3 style="margin:0 0 6px;font-size:15px;font-weight:700;color:#fff;">Publish to Netlify — Free</h3>
         <p style="margin:0 0 16px;font-size:12px;color:rgba(255,255,255,0.55);line-height:1.5;">One-time setup. Your site goes live instantly with a free <code style="color:#00c794;">netlify.app</code> URL.</p>
 
-        <div style="background:rgba(0,199,148,0.07);border:1px solid rgba(0,199,148,0.2);border-radius:10px;padding:13px 14px;margin-bottom:16px;font-size:11.5px;color:rgba(255,255,255,0.7);line-height:2;">
-          <b style="color:#00c794;">3 quick steps:</b><br>
-          1. Open →
-            <a href="https://app.netlify.com" target="_blank"
-               style="color:#00c794;text-decoration:underline;cursor:pointer;"
-               onclick="chrome.tabs.create({url:'https://app.netlify.com'});return false;">
-              app.netlify.com
-            </a> (free account)<br>
-          2. Click your <b>name at the bottom-left</b> → <b>User settings</b><br>
-          &nbsp;&nbsp;&nbsp;&nbsp;→ Security → <b>Applications</b><br>
-          3. Click <b>"New access token"</b> → paste it below
+        <div style="background:rgba(0,199,148,0.07);border:1px solid rgba(0,199,148,0.2);border-radius:10px;padding:13px 14px;margin-bottom:16px;font-size:12px;color:rgba(255,255,255,0.75);line-height:1.7;">
+          <div style="margin-bottom:10px;"><b style="color:#00c794;font-size:12.5px;">How to get your free token:</b></div>
+
+          <div style="margin-bottom:7px;">
+            <span style="background:rgba(0,199,148,0.18);color:#00c794;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:10px;font-weight:800;margin-right:5px;vertical-align:middle;">1</span>
+            Open <a id="netlifyAppLink" href="#" style="color:#00c794;font-weight:700;text-decoration:underline;cursor:pointer;">app.netlify.com</a> &amp; sign up free
+          </div>
+
+          <div style="margin-bottom:7px;">
+            <span style="background:rgba(0,199,148,0.18);color:#00c794;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:10px;font-weight:800;margin-right:5px;vertical-align:middle;">2</span>
+            Click your <b style="color:#fff;">name</b> at the <b style="color:#fff;">bottom-left</b> → <b style="color:#fff;">User settings</b>
+          </div>
+
+          <div style="margin-bottom:7px;">
+            <span style="background:rgba(0,199,148,0.18);color:#00c794;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:10px;font-weight:800;margin-right:5px;vertical-align:middle;">3</span>
+            In the left menu → <b style="color:#fff;">Security</b> → <b style="color:#fff;">Applications</b>
+          </div>
+
+          <div style="margin-bottom:4px;">
+            <span style="background:rgba(0,199,148,0.18);color:#00c794;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:10px;font-weight:800;margin-right:5px;vertical-align:middle;">4</span>
+            Scroll <b style="color:#fff;">past "OAuth applications"</b> → find <b style="color:#fff;">"Personal access tokens"</b>
+            → click <b style="color:#00c794;">"New access token"</b> → copy &amp; paste below
+          </div>
         </div>
 
         <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:6px;">Netlify Access Token</label>

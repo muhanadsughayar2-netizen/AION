@@ -9133,6 +9133,11 @@ document.getElementById('publishNetlifyBtn')?.addEventListener('click', async ()
 
 document.getElementById('netlifyModalClose')?.addEventListener('click', _netlifyHideModal);
 
+document.getElementById('netlifyAppLink')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  chrome.tabs.create({ url: 'https://app.netlify.com' });
+});
+
 document.getElementById('netlifyTokenSaveBtn')?.addEventListener('click', async () => {
   const input = document.getElementById('netlifyTokenInput');
   const errEl = document.getElementById('netlifyTokenError');
