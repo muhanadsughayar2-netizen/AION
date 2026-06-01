@@ -42,7 +42,8 @@
     "https://generativelanguage.googleapis.com/*",
     "https://www.googleapis.com/*",
     "https://snaptoai.com/*",
-    "https://www.snaptoai.com/*"
+    "https://www.snaptoai.com/*",
+    "https://api.netlify.com/*"
   ],
   "web_accessible_resources": [
     {

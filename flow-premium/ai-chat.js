@@ -8985,6 +8985,189 @@ function _updateBuildInput() {
 document.getElementById('previewOpenTabBtn')?.addEventListener('click', () => {
   chrome.tabs.create({ url: chrome.runtime.getURL('preview-output.html') });
 });
+
+// ── Netlify One-Click Publish ──────────────────────────────────────────────────
+// Publishes the current built site to Netlify as a free static site.
+// Uses a Personal Access Token stored in chrome.storage.local — the token is
+// entered once and reused for every subsequent publish to the same site.
+
+async function _sha1Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function _netlifyPublish(token) {
+  const html = _lastBuiltCode;
+  if (!html) throw new Error('No site built yet.');
+
+  const setText = t => {
+    const el = document.getElementById('netlifyPublishingTxt');
+    if (el) el.textContent = t;
+  };
+
+  // Step 1 — get or create the Netlify site
+  setText('Creating your site…');
+  let siteId, siteName;
+  try {
+    const stored = await chrome.storage.local.get(['netlify_site_id', 'netlify_site_name']);
+    siteId = stored.netlify_site_id;
+    siteName = stored.netlify_site_name;
+  } catch(e) {}
+
+  if (!siteId) {
+    const res = await fetch('https://api.netlify.com/api/v1/sites', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'snaptoai-' + Math.random().toString(36).slice(2, 8) })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `Netlify error ${res.status} — check your token.`);
+    }
+    const site = await res.json();
+    siteId = site.id;
+    siteName = site.name;
+    try { await chrome.storage.local.set({ netlify_site_id: siteId, netlify_site_name: siteName }); } catch(e) {}
+  }
+
+  // Step 2 — compute SHA-1 of the HTML and create a deploy
+  setText('Preparing deploy…');
+  const digest = await _sha1Hex(html);
+
+  const deployRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ files: { '/index.html': digest } })
+  });
+  if (!deployRes.ok) {
+    const err = await deployRes.json().catch(() => ({}));
+    throw new Error(err.message || `Deploy failed (${deployRes.status}).`);
+  }
+  const deploy = await deployRes.json();
+
+  // Step 3 — upload the file if Netlify needs it (cache miss)
+  if (deploy.required && deploy.required.includes(digest)) {
+    setText('Uploading site…');
+    const bytes = new TextEncoder().encode(html);
+    const uploadRes = await fetch(`https://api.netlify.com/api/v1/deploys/${deploy.id}/files/index.html`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/octet-stream' },
+      body: bytes
+    });
+    if (!uploadRes.ok) throw new Error(`Upload failed (${uploadRes.status}).`);
+  }
+
+  // Step 4 — poll until deploy is ready (max ~60s)
+  setText('Going live…');
+  for (let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    const poll = await fetch(`https://api.netlify.com/api/v1/deploys/${deploy.id}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const status = await poll.json();
+    if (status.state === 'ready' || status.state === 'uploaded') {
+      const url = status.deploy_ssl_url || status.deploy_url || `https://${siteName}.netlify.app`;
+      try { await chrome.storage.local.set({ netlify_site_url: url }); } catch(e) {}
+      return url;
+    }
+    if (status.state === 'error') throw new Error('Netlify deploy failed. Try again.');
+  }
+  // Timed out but site may still be ready — return the expected URL
+  return `https://${siteName}.netlify.app`;
+}
+
+// ── Modal orchestration ──────────────────────────────────────────────────────
+
+function _netlifyShowModal(startAtStep) {
+  const modal = document.getElementById('netlifyModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  ['netlifyStep1','netlifyStep2','netlifyStep3'].forEach((id, idx) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (idx === startAtStep - 1) ? '' : 'none';
+  });
+  const errEl = document.getElementById('netlifyTokenError');
+  if (errEl) errEl.style.display = 'none';
+}
+
+function _netlifyHideModal() {
+  const modal = document.getElementById('netlifyModal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function _netlifyRunPublish(token) {
+  _netlifyShowModal(2); // spinner
+  try {
+    const url = await _netlifyPublish(token);
+    // Show success step
+    const link = document.getElementById('netlifySiteLink');
+    const openBtn = document.getElementById('netlifyOpenBtn');
+    if (link) { link.href = url; link.textContent = url; }
+    if (openBtn) openBtn.onclick = () => chrome.tabs.create({ url });
+    document.getElementById('netlifyCopyUrlBtn')?.addEventListener('click', () => {
+      navigator.clipboard.writeText(url).then(() => {
+        const btn = document.getElementById('netlifyCopyUrlBtn');
+        if (btn) { const old = btn.textContent; btn.textContent = '✓ Copied!'; setTimeout(() => { btn.textContent = old; }, 1800); }
+      });
+    });
+    _netlifyShowModal(3);
+    // Update publish button label
+    const pubBtn = document.getElementById('publishNetlifyBtn');
+    if (pubBtn) pubBtn.textContent = '🌐 Update Live';
+  } catch(err) {
+    _netlifyHideModal();
+    addBubble(`⚠️ Publish failed: ${err.message}`, 'error');
+  }
+}
+
+// ── Button click handler ─────────────────────────────────────────────────────
+document.getElementById('publishNetlifyBtn')?.addEventListener('click', async () => {
+  if (!_lastBuiltCode) {
+    addBubble('Build a site first, then click Publish.', 'error');
+    return;
+  }
+  try {
+    const stored = await chrome.storage.local.get(['netlify_token']);
+    if (stored.netlify_token) {
+      // Token already saved — publish immediately
+      await _netlifyRunPublish(stored.netlify_token);
+    } else {
+      // First time — show setup modal
+      _netlifyShowModal(1);
+    }
+  } catch(e) {
+    _netlifyShowModal(1);
+  }
+});
+
+document.getElementById('netlifyModalClose')?.addEventListener('click', _netlifyHideModal);
+
+document.getElementById('netlifyTokenSaveBtn')?.addEventListener('click', async () => {
+  const input = document.getElementById('netlifyTokenInput');
+  const errEl = document.getElementById('netlifyTokenError');
+  const token = input?.value.trim();
+  if (!token) {
+    if (errEl) { errEl.textContent = 'Please paste your Netlify access token.'; errEl.style.display = 'block'; }
+    return;
+  }
+  // Quick validation — check token works
+  try {
+    const test = await fetch('https://api.netlify.com/api/v1/user', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!test.ok) throw new Error('Invalid token');
+    const user = await test.json();
+    // Save token
+    await chrome.storage.local.set({ netlify_token: token });
+    await _netlifyRunPublish(token);
+  } catch(e) {
+    if (errEl) {
+      errEl.textContent = 'Token invalid or expired. Make sure you copied the full token from Netlify.';
+      errEl.style.display = 'block';
+    }
+  }
+});
+
 // ──────────────────────────────────────────────────────────────────────────────
 
 // Research Mode toggle — auto-enables Search and forces the Research Agent system prompt
