@@ -5962,6 +5962,7 @@ STRICT RULES:
 • If adding a section: match the exact same design language (colors, radius, fonts, spacing) already present.
 • IIFE WRAPPER — ALL script content MUST be inside a single (function(){ ... })(); wrapper. The live preview re-evaluates scripts on every update, so any top-level const/let throws "Identifier already declared" and kills all JS on the page. Functions called by onclick="" must be attached to window inside the IIFE: window.myFn = function(){ ... }; Never use top-level const/let or bare function declarations for onclick handlers.
 • FUNCTION COMPLETENESS: Every function called in an onclick/onchange/onsubmit/oninput attribute MUST be fully defined (as window.fn = function(){}) inside the IIFE. If the existing site has broken onclick handlers, fix them as part of this response.
+• PRESERVE MEDIA PLACEHOLDERS: NEVER remove, replace, or alter any __SNAP_VID_N__, __SNAP_IMG_N__, or __SNAP_AUD_N__ placeholder strings that exist in the current site. They are live media references managed by the app — removing them erases the user's video or image from the build.
 • YOUTUBE EMBEDS: When the user pastes any YouTube URL (youtube.com/watch?v=, youtu.be/, or youtube.com/embed/), ALWAYS embed it as a plain responsive iframe. NEVER build a custom video player, input box, or Upload & Play button. Extract the video ID, strip all tracking params (?si=, &feature=, etc.), and use this exact pattern: <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;"><iframe src="https://www.youtube.com/embed/VIDEO_ID" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
 • UPLOADED VIDEO FILES: When the prompt contains __SNAP_VID_0__ (or __SNAP_VID_1__, __SNAP_VID_2__ etc.), the user has attached a real mp4/webm video file. Embed it using this EXACT pattern — it includes a 🔇/🔊 unmute button and a hover overlay to replace the video in the downloaded file: <div style="position:relative;border-radius:12px;overflow:hidden;aspect-ratio:16/9;"><video id="snapVid0" src="__SNAP_VID_0__" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video><div onclick="document.getElementById('snapUpload0').click()" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'"><div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;">🔄</div><span style="color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">Replace video</span></div><button onclick="var v=document.getElementById('snapVid0');v.muted=!v.muted;this.textContent=v.muted?'🔇':'🔊';" style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;color:#fff;z-index:10;padding:0;line-height:1;">🔇</button><input type="file" id="snapUpload0" accept="video/*" style="display:none" onchange="(function(i,v){if(i.files[0]){var r=new FileReader();r.onload=function(e){document.getElementById(v).src=e.target.result;};r.readAsDataURL(i.files[0]);}})(this,'snapVid0')"></div> — adjust id/for numbering for VID_1, VID_2 etc. Do NOT ask for a URL or build a custom player.
 • UPLOADED AUDIO FILES: When the prompt contains __SNAP_AUD_0__ (or __SNAP_AUD_1__ etc.), the user has attached a real mp3/wav/ogg audio file. Embed it directly using an HTML5 audio tag — do NOT build a custom player or ask for a URL: <audio src="__SNAP_AUD_0__" controls style="width:100%;border-radius:8px;margin:12px 0;"></audio>. Place it in the section the user specified, or the most fitting section if not specified.
@@ -6565,16 +6566,19 @@ async function handleSend() {
     const videoParts = filesQueue.filter(f => f.mimeType && f.mimeType.startsWith('video/'));
 
     if (imageParts.length > 0) {
+      const _imgOffset = Object.keys(_committedMediaMap).filter(k => k.startsWith('__SNAP_IMG_')).length;
       _pendingBuildImages = imageParts.map(f => `data:${f.mimeType};base64,${f.data}`);
-      const placeholderList = _pendingBuildImages.map((_, i) => `__SNAP_IMG_${i}__`).join(', ');
+      const placeholderList = _pendingBuildImages.map((_, i) => `__SNAP_IMG_${_imgOffset + i}__`).join(', ');
+      const examplePlaceholder = `__SNAP_IMG_${_imgOffset}__`;
       prompt += `\n\nIMAGE EMBED INSTRUCTION: The user attached ${imageParts.length} image(s). ` +
         `Use these exact placeholder strings as the src values: ${placeholderList} ` +
-        `(example: <img src="__SNAP_IMG_0__" alt="..." style="width:100%;object-fit:cover;">). ` +
+        `(example: <img src="${examplePlaceholder}" alt="..." style="width:100%;height:100%;object-fit:cover;">). ` +
         `CRITICAL RULES: ` +
         `(1) If the user said "replace", "change", "swap", or "update" an image — find that EXACT existing <img> tag and change ONLY its src attribute to the placeholder. Do NOT add a new img tag. ` +
-        `(2) If the user said "add" or gave no specific target — insert a new <img> tag in the most fitting section. ` +
+        `(2) If the user said "add" or gave no specific target — place the image prominently above the fold: replace the hero image, or insert it as the first visual element after the headline. NEVER bury it at the bottom. ` +
         `(3) NEVER output any actual base64 data — only use the placeholder strings. ` +
-        `(4) Keep all other design completely unchanged.`;
+        `(4) Keep all other design and content completely unchanged. ` +
+        `(5) NEVER remove or replace any existing __SNAP_VID_N__, __SNAP_AUD_N__, or other __SNAP_*__ placeholder strings — they are live media references managed by the app.`;
     }
 
     if (videoParts.length > 0) {
@@ -6612,7 +6616,8 @@ async function handleSend() {
         // text, not the actual binary. Keeping it would send tens of MB to the API
         // unnecessarily and risk hitting Gemini's inline-data quota.
         fitsInline.forEach(f => { filesQueue = filesQueue.filter(q => q !== f); });
-        const videoPlaceholderList = _pendingBuildVideos.map((_, i) => `__SNAP_VID_${i}__`).join(', ');
+        const _vidOffsetFile = Object.keys(_committedMediaMap).filter(k => k.startsWith('__SNAP_VID_')).length;
+        const videoPlaceholderList = _pendingBuildVideos.map((_, i) => `__SNAP_VID_${_vidOffsetFile + i}__`).join(', ');
         prompt += `\n\nVIDEO EMBED INSTRUCTION: The user attached ${fitsInline.length} video(s). ` +
           `Use these exact placeholder strings as the src values: ${videoPlaceholderList}. ` +
           `For each video use this pattern (adjusting id/for index per video): ` +
@@ -6668,7 +6673,8 @@ async function handleSend() {
   // Placed AFTER the _pendingBuildVideos clear so the data survives the swap.
   if (buildModeEnabled && _stagedBuildMedia && _stagedBuildMedia.type === 'video') {
     const m = _stagedBuildMedia;
-    const stagedIdx = _pendingBuildVideos.length;
+    const _vidOffsetStaged = Object.keys(_committedMediaMap).filter(k => k.startsWith('__SNAP_VID_')).length;
+    const stagedIdx = _vidOffsetStaged + _pendingBuildVideos.length;
     _pendingBuildVideos.push(`data:${m.mimeType};base64,${m.data}`);
     prompt += `\n\n[USER MEDIA] The user has a Veo-generated video to embed. ` +
       `Use __SNAP_VID_${stagedIdx}__ as the video src — do NOT output any base64 data. ` +
@@ -7750,24 +7756,44 @@ function addBubbleActions(bubble, text) {
     // The swapped version below embeds large base64 blobs that would exceed
     // Gemini's 1M-token limit if sent back on follow-up edits.
     _lastBuiltCodeForPatch = thisCode;
-    // Swap in any images the user attached during this request
+
+    // Compute offsets so new media gets unique placeholder indices even when
+    // the committed map already has entries of the same type.
+    const _imgOffset = Object.keys(_committedMediaMap).filter(k => k.startsWith('__SNAP_IMG_')).length;
+    const _vidOffset = Object.keys(_committedMediaMap).filter(k => k.startsWith('__SNAP_VID_')).length;
+    const _audOffset = Object.keys(_committedMediaMap).filter(k => k.startsWith('__SNAP_AUD_')).length;
+
+    // Re-apply ALL previously committed media so placeholders left in _lastBuiltCodeForPatch
+    // (e.g. __SNAP_VID_0__ from a prior build) get swapped back into the new patch response.
+    // Without this, adding an image after a video causes the video to disappear.
+    Object.entries(_committedMediaMap).forEach(([placeholder, dataUrl]) => {
+      _lastBuiltCode = _lastBuiltCode.split(placeholder).join(dataUrl);
+    });
+
+    // Swap in any NEW images attached during this request and register them
     if (_pendingBuildImages.length > 0) {
       _pendingBuildImages.forEach((dataUrl, i) => {
-        _lastBuiltCode = _lastBuiltCode.split(`__SNAP_IMG_${i}__`).join(dataUrl);
+        const key = `__SNAP_IMG_${_imgOffset + i}__`;
+        _lastBuiltCode = _lastBuiltCode.split(key).join(dataUrl);
+        _committedMediaMap[key] = dataUrl;
       });
       _pendingBuildImages = [];
     }
-    // Swap in any short videos (webm/mp4) the user attached during this request
+    // Swap in any NEW videos attached during this request and register them
     if (_pendingBuildVideos.length > 0) {
       _pendingBuildVideos.forEach((dataUrl, i) => {
-        _lastBuiltCode = _lastBuiltCode.split(`__SNAP_VID_${i}__`).join(dataUrl);
+        const key = `__SNAP_VID_${_vidOffset + i}__`;
+        _lastBuiltCode = _lastBuiltCode.split(key).join(dataUrl);
+        _committedMediaMap[key] = dataUrl;
       });
       _pendingBuildVideos = [];
     }
-    // Swap in any audio files (mp3/wav/ogg) the user attached during this request
+    // Swap in any NEW audio files attached during this request and register them
     if (_pendingBuildAudio.length > 0) {
       _pendingBuildAudio.forEach((dataUrl, i) => {
-        _lastBuiltCode = _lastBuiltCode.split(`__SNAP_AUD_${i}__`).join(dataUrl);
+        const key = `__SNAP_AUD_${_audOffset + i}__`;
+        _lastBuiltCode = _lastBuiltCode.split(key).join(dataUrl);
+        _committedMediaMap[key] = dataUrl;
       });
       _pendingBuildAudio = [];
     }
@@ -8313,6 +8339,7 @@ function clearChat() {
   // rather than starting fresh, producing "ghost" sites from prior sessions.
   _lastBuiltCode = '';
   _lastBuiltCodeForPatch = '';
+  _committedMediaMap = {};
   try { chrome.storage.local.remove(['snaptoai_built_code']); } catch(e) {}
   _updateBuildInput();
 
@@ -8567,6 +8594,11 @@ let _lastBuiltCode = '';
 // NO base64 blobs). Sending base64 video/image data back to Gemini on every edit
 // quickly exceeds the 1M-token limit.
 let _lastBuiltCodeForPatch = '';
+// All media that has already been committed into the current build, keyed by placeholder.
+// e.g. { '__SNAP_VID_0__': 'data:video/mp4;base64,...', '__SNAP_IMG_0__': 'data:image/...;base64,...' }
+// On every patch response the AI preserves the placeholder strings from _lastBuiltCodeForPatch,
+// so we must re-apply ALL committed swaps — not just the ones pending in this request.
+let _committedMediaMap = {};
 // Base64 data URLs waiting to replace __SNAP_IMG_N__ placeholders after AI responds
 let _pendingBuildImages = [];
 // Short video files (webm/mp4) attached during a build patch — same placeholder approach
