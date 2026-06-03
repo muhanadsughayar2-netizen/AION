@@ -33,7 +33,7 @@
       justify-content: space-between;
       padding: 16px 24px;
       background: linear-gradient(180deg, var(--st-bg-elevated) 0%, var(--st-bg-rail) 100%);
-      border-bottom: 1px solid rgba(0, 217, 255, 0.3);
+      border-bottom: 1px solid rgba(66, 133, 244, 0.3);
     }
     
     .header-left {
@@ -127,8 +127,8 @@
     }
     
     .sidebar-toggle:hover {
-      background: rgba(0, 217, 255, 0.2);
-      border-color: rgba(0, 217, 255, 0.4);
+      background: rgba(66, 133, 244, 0.2);
+      border-color: rgba(66, 133, 244, 0.4);
       color: var(--st-accent);
     }
     
@@ -167,7 +167,7 @@
     }
     .image-preview img:hover {
       opacity: 0.82;
-      outline: 2px solid var(--st-accent, #00d9ff);
+      outline: 2px solid var(--st-accent, #4285F4);
     }
     .image-panel-send-hint {
       font-size: 10px;
@@ -272,7 +272,7 @@
       justify-content: center;
       gap: 10px;
       padding: 6px 14px;
-      background: linear-gradient(90deg, rgba(168, 85, 247, 0.15) 0%, rgba(0, 217, 255, 0.1) 100%);
+      background: linear-gradient(90deg, rgba(168, 85, 247, 0.15) 0%, rgba(66, 133, 244, 0.1) 100%);
       border: 1px solid rgba(168, 85, 247, 0.3);
       border-radius: 8px;
       font-size: 12px;
@@ -403,14 +403,14 @@
     }
     
     .bubble-actions button:hover {
-      background: rgba(0, 217, 255, 0.2);
-      border-color: rgba(0, 217, 255, 0.4);
+      background: rgba(66, 133, 244, 0.2);
+      border-color: rgba(66, 133, 244, 0.4);
       color: var(--st-accent);
     }
     
     .continue-btn {
-      background: rgba(0, 217, 255, 0.15) !important;
-      border-color: rgba(0, 217, 255, 0.4) !important;
+      background: rgba(66, 133, 244, 0.15) !important;
+      border-color: rgba(66, 133, 244, 0.4) !important;
       color: var(--st-accent) !important;
     }
     
@@ -443,9 +443,9 @@
     }
     
     .chat-bubble.system {
-      background: rgba(0, 217, 255, 0.08);
+      background: rgba(66, 133, 244, 0.08);
       color: rgba(255, 255, 255, 0.7);
-      border: 1px solid rgba(0, 217, 255, 0.2);
+      border: 1px solid rgba(66, 133, 244, 0.2);
       font-size: 12px;
       text-align: center;
       align-self: center;
@@ -554,7 +554,7 @@
       align-items: center;
       gap: 8px;
       padding: 6px 24px;
-      background: rgba(0, 217, 255, 0.04);
+      background: rgba(66, 133, 244, 0.04);
       border-top: 1px solid rgba(255, 255, 255, 0.03);
       font-size: 11px;
       color: #556677;
@@ -614,7 +614,7 @@
       flex: 1;
       padding: 14px 16px;
       background: var(--st-bg-elevated);
-      border: 1px solid rgba(0, 217, 255, 0.3);
+      border: 1px solid rgba(66, 133, 244, 0.3);
       border-radius: 14px;
       color: #fff;
       font-size: 14px;
@@ -630,7 +630,8 @@
     }
     
     .chat-input:focus {
-      border-color: var(--st-accent);
+      border-color: #4285F4;
+      box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.15);
     }
     
     .chat-input::placeholder {
@@ -639,20 +640,20 @@
     
     .send-btn {
       padding: 16px 28px;
-      background: linear-gradient(135deg, var(--st-accent) 0%, var(--st-accent-2) 100%);
+      background: linear-gradient(135deg, #4285F4 0%, #34A853 100%);
       border: none;
       border-radius: 12px;
-      color: #000;
+      color: #fff;
       font-size: 15px;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s;
-      box-shadow: 0 2px 8px rgba(0, 217, 255, 0.3);
+      box-shadow: 0 2px 8px rgba(66, 133, 244, 0.35);
     }
     
     .send-btn:hover {
-      background: linear-gradient(135deg, #00e8ff 0%, var(--st-accent) 100%);
-      box-shadow: 0 4px 15px rgba(0, 217, 255, 0.5);
+      background: linear-gradient(135deg, #5a95f5 0%, #3dbd62 100%);
+      box-shadow: 0 4px 15px rgba(66, 133, 244, 0.5);
       transform: translateY(-1px);
     }
     
@@ -674,29 +675,29 @@
     
     .action-btn {
       padding: 10px 18px;
-      background: rgba(0, 217, 255, 0.15);
-      border: 1px solid rgba(0, 217, 255, 0.4);
+      background: rgba(66, 133, 244, 0.12);
+      border: 1px solid rgba(66, 133, 244, 0.35);
       border-radius: 8px;
-      color: var(--st-accent);
+      color: #4285F4;
       font-size: 13px;
       cursor: pointer;
       transition: all 0.2s;
     }
     
     .action-btn:hover {
-      background: rgba(0, 217, 255, 0.25);
-      color: #00ffff;
-      box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+      background: rgba(66, 133, 244, 0.22);
+      color: #fff;
+      box-shadow: 0 0 10px rgba(66, 133, 244, 0.3);
     }
     
     .test-btn {
-      background: rgba(0, 217, 255, 0.1);
-      border-color: rgba(0, 217, 255, 0.3);
+      background: rgba(66, 133, 244, 0.1);
+      border-color: rgba(66, 133, 244, 0.3);
       color: var(--st-accent);
     }
     
     .test-btn:hover {
-      background: rgba(0, 217, 255, 0.2);
+      background: rgba(66, 133, 244, 0.2);
     }
     
     .education-btn {
@@ -727,9 +728,9 @@
     }
     
     .upload-btn:hover {
-      background: rgba(0, 217, 255, 0.15);
-      border-color: rgba(0, 217, 255, 0.4);
-      color: #00d9ff;
+      background: rgba(66, 133, 244, 0.15);
+      border-color: rgba(66, 133, 244, 0.4);
+      color: #4285F4;
     }
     
     .file-preview-zone {
@@ -1228,17 +1229,17 @@
         }
         .tool-toggle-btn .tool-label { font-size: 11px; }
         .tool-toggle-btn:hover {
-          background: rgba(0,217,255,0.1);
-          border-color: rgba(0,217,255,0.35);
-          color: #00d9ff;
+          background: rgba(66,133,244,0.12);
+          border-color: rgba(66,133,244,0.4);
+          color: #4285F4;
           transform: translateY(-1px);
-          box-shadow: 0 3px 10px rgba(0,217,255,0.15);
+          box-shadow: 0 3px 10px rgba(66,133,244,0.15);
         }
         .tool-toggle-btn.tool-btn-active {
-          background: rgba(0,217,255,0.14);
-          border-color: rgba(0,217,255,0.6);
-          color: #00d9ff;
-          box-shadow: 0 0 12px rgba(0,217,255,0.22), inset 0 0 8px rgba(0,217,255,0.06);
+          background: rgba(66,133,244,0.16);
+          border-color: rgba(66,133,244,0.6);
+          color: #4285F4;
+          box-shadow: 0 0 12px rgba(66,133,244,0.22), inset 0 0 8px rgba(66,133,244,0.06);
           font-weight: 600;
         }
         #buildToggleBtn:hover, #buildToggleBtn.tool-btn-active {
@@ -1255,9 +1256,9 @@
           box-shadow: 0 0 12px rgba(180,100,255,0.22);
         }
         #searchToggleBtn:hover, #searchToggleBtn.tool-btn-active {
-          background: rgba(0,217,255,0.12);
-          border-color: rgba(0,217,255,0.55);
-          color: #00d9ff;
+          background: rgba(66,133,244,0.12);
+          border-color: rgba(66,133,244,0.55);
+          color: #4285F4;
           box-shadow: 0 0 12px rgba(0,217,255,0.22);
         }
         #urlToggleBtn:hover, #urlToggleBtn.tool-btn-active {
@@ -1287,7 +1288,7 @@
           <!-- Right: action buttons -->
           <div style="display:flex;gap:5px;align-items:center;">
             <button id="previewExpandBtn" title="Expand / collapse preview" style="font-size:11px;padding:3px 7px;border-radius:7px;background:rgba(255,160,50,0.07);border:1px solid rgba(255,160,50,0.2);color:#ffa032;cursor:pointer;font-weight:700;line-height:1;">⤢</button>
-            <button id="previewOpenTabBtn" style="font-size:10px;padding:3px 9px;border-radius:7px;background:rgba(0,217,255,0.07);border:1px solid rgba(0,217,255,0.28);color:#00d9ff;cursor:pointer;font-weight:700;font-family:monospace;">↗ Open</button>
+            <button id="previewOpenTabBtn" style="font-size:10px;padding:3px 9px;border-radius:7px;background:rgba(0,217,255,0.07);border:1px solid rgba(0,217,255,0.28);color:#4285F4;cursor:pointer;font-weight:700;font-family:monospace;">↗ Open</button>
             <button id="previewCopyBtn" style="font-size:10px;padding:3px 8px;border-radius:7px;background:rgba(255,160,50,0.09);border:1px solid rgba(255,160,50,0.22);color:#ffa032;cursor:pointer;font-weight:700;font-family:monospace;">Copy</button>
             <button id="publishNetlifyBtn" title="Publish site live — free Netlify hosting" style="font-size:10px;padding:3px 9px;border-radius:7px;background:rgba(0,199,148,0.12);border:1px solid rgba(0,199,148,0.4);color:#00c794;cursor:pointer;font-weight:700;font-family:monospace;white-space:nowrap;">🌐 Publish</button>
             <button id="closePreviewBtn" style="background:none;border:none;color:rgba(255,255,255,0.35);cursor:pointer;font-size:13px;line-height:1;padding:0 2px;">✕</button>
@@ -1490,7 +1491,7 @@
       </div>
       <div class="magic-modal-footer" style="display:flex;gap:10px;">
         <button id="premiumCostCancel" class="magic-save-btn" style="flex:1;background:transparent;border:1px solid #555;color:#ccc;">Not now</button>
-        <button id="premiumCostConfirm" class="magic-save-btn" style="flex:1;background:linear-gradient(135deg,#00d9ff,#00ff88);color:#111;">Create Video</button>
+        <button id="premiumCostConfirm" class="magic-save-btn" style="flex:1;background:linear-gradient(135deg,#4285F4,#00ff88);color:#111;">Create Video</button>
       </div>
     </div>
   </div>
@@ -1601,7 +1602,7 @@
   <div id="trialEndedModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(8px); z-index:9999; align-items:center; justify-content:center; animation:trialOverlayIn 0.25s ease;">
     <div id="trialEndedCard" style="background:linear-gradient(160deg,#0d1520 0%,#0a1118 100%); border:1px solid rgba(0,217,255,0.2); border-radius:20px; padding:28px 24px; max-width:340px; width:90%; box-shadow:0 0 40px rgba(0,217,255,0.08), 0 20px 60px rgba(0,0,0,0.6); text-align:center; animation:trialCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1);">
       <div id="trialEndedEmoji" style="font-size:44px; margin-bottom:4px; display:block; animation:trialBounce 0.6s 0.2s cubic-bezier(0.34,1.56,0.64,1) both;">🎯</div>
-      <h2 style="font-size:18px; font-weight:800; margin:8px 0 6px; background:linear-gradient(135deg,var(--st-accent),#7c5cfc); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Trial Complete!</h2>
+      <h2 style="font-size:18px; font-weight:800; margin:8px 0 6px; background:linear-gradient(135deg,#4285F4,#34A853); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Trial Complete!</h2>
       <p id="trialEndedMessage" style="font-size:13px; color:rgba(255,255,255,0.65); margin:0 0 16px; line-height:1.6;">Your 30-day trial was amazing — you clearly love Aion! Keep the momentum going with a Pro plan.</p>
       <div style="background:rgba(0,217,255,0.06); border:1px solid rgba(0,217,255,0.15); border-radius:10px; padding:10px 14px; font-size:12px; color:rgba(0,217,255,0.85); margin-bottom:16px; font-weight:600;">🚀 Less than a coffee per month for unlimited AI</div>
       <div style="display:flex; gap:10px; margin-bottom:14px;">
@@ -1611,7 +1612,7 @@
           <div style="font-size:10px; color:rgba(255,255,255,0.4);">per month</div>
         </button>
         <button id="trialYearlyBtn" style="flex:1; padding:14px 8px; background:rgba(0,217,255,0.06); border:2px solid rgba(0,217,255,0.45); border-radius:12px; cursor:pointer; color:#fff; transition:all 0.2s; position:relative;">
-          <div style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg,var(--st-accent),#7c5cfc); color:#000; font-size:9px; font-weight:800; padding:2px 8px; border-radius:20px; white-space:nowrap;">BEST VALUE</div>
+          <div style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg,#4285F4,#34A853); color:#000; font-size:9px; font-weight:800; padding:2px 8px; border-radius:20px; white-space:nowrap;">BEST VALUE</div>
           <div style="font-size:11px; color:rgba(0,217,255,0.7); margin-bottom:4px;">Yearly</div>
           <div style="font-size:18px; font-weight:800; color:var(--st-accent);">$39</div>
           <div style="font-size:10px; color:rgba(0,217,255,0.6);">~$3.25/mo · save 35%</div>
@@ -1629,7 +1630,7 @@
     @keyframes trialCardIn { from { opacity:0; transform:scale(0.85) translateY(20px); } to { opacity:1; transform:scale(1) translateY(0); } }
     @keyframes trialBounce { 0% { transform:scale(0) rotate(-15deg); } 60% { transform:scale(1.2) rotate(8deg); } 80% { transform:scale(0.95) rotate(-3deg); } 100% { transform:scale(1) rotate(0); } }
     #trialMonthlyBtn:hover { background:rgba(255,255,255,0.08) !important; border-color:rgba(255,255,255,0.25) !important; }
-    #trialYearlyBtn:hover { background:rgba(0,217,255,0.12) !important; }
+    #trialYearlyBtn:hover { background:rgba(66,133,244,0.12) !important; }
     #trialCheckStatusBtn:hover { background:rgba(0,217,255,0.15) !important; }
     #trialContinueCaptureBtn:hover { color:rgba(255,255,255,0.6) !important; border-color:rgba(255,255,255,0.2) !important; }
   </style>
