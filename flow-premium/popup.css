@@ -176,8 +176,8 @@ body {
 .ami-icon-wrap {
   position: relative;
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 46px;
+  height: 46px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -210,8 +210,8 @@ body {
 
 /* The actual icon sits above the ring pseudo */
 .amiflo-icon {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
   position: relative;
   z-index: 2;
