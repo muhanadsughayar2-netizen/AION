@@ -110,45 +110,17 @@ body {
 /* Header card with aurora border */
 .ami-header {
   position: relative;
-  background: linear-gradient(135deg,
-    rgba(255,255,255,0.04) 0%,
-    rgba(66,133,244,0.05) 50%,
-    rgba(52,168,83,0.04) 100%);
-  border: 1px solid transparent;
-  border-radius: 14px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
   padding: 8px 10px;
-  margin-bottom: 10px;
-  overflow: hidden;
+  margin-bottom: 6px;
+  overflow: visible;
   isolation: isolate;
 }
 
-/* Animated aurora border */
 .ami-header::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 14px;
-  padding: 1px;
-  background: linear-gradient(
-    120deg,
-    #34A853 0%,
-    #4285F4 25%,
-    #FBBC05 50%,
-    #EA4335 75%,
-    #34A853 100%
-  );
-  background-size: 300% 300%;
-  -webkit-mask: linear-gradient(#fff 0 0) content-box,
-                linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  animation: ami-border-flow 4s linear infinite;
-  opacity: 0.7;
-}
-
-@keyframes ami-border-flow {
-  0%   { background-position: 0% 50%; }
-  100% { background-position: 300% 50%; }
+  display: none;
 }
 
 /* Ambient glow blob behind the header */
@@ -186,26 +158,14 @@ body {
 
 .ami-icon-ring {
   position: absolute;
-  inset: -3px;
+  inset: -2px;
   border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    #34A853, #4285F4, #FBBC05, #EA4335, #34A853
-  );
-  animation: ami-ring-spin 3s linear infinite;
-  opacity: 0.8;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  background: transparent;
 }
 
 .ami-icon-ring::after {
-  content: '';
-  position: absolute;
-  inset: 2px;
-  border-radius: 50%;
-  background: var(--st-bg-app, #0d1117);
-}
-
-@keyframes ami-ring-spin {
-  to { transform: rotate(360deg); }
+  display: none;
 }
 
 /* The actual icon sits above the ring pseudo */
@@ -275,22 +235,11 @@ body {
 }
 
 .ami-text-ami {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 900;
-  letter-spacing: 3px;
-  background: linear-gradient(90deg, #34A853 0%, #4285F4 35%, #FBBC05 65%, #EA4335 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: aion-gradient-shift 4s linear infinite;
-  filter: drop-shadow(0 0 8px rgba(66,133,244,0.6));
-}
-
-@keyframes aion-gradient-shift {
-  0%   { background-position: 0% center; }
-  50%  { background-position: 100% center; }
-  100% { background-position: 0% center; }
+  letter-spacing: 4px;
+  color: #ffffff;
+  text-shadow: 0 0 20px rgba(255,255,255,0.15);
 }
 
 .ami-text-ai {
@@ -340,11 +289,7 @@ body {
 }
 
 .header-sub {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 8px 0;
+  display: none !important;
 }
 
 .counter {
@@ -361,18 +306,7 @@ body {
 }
 
 .youtube-btn {
-  background: rgba(255, 0, 0, 0.12);
-  border: 1px solid rgba(255, 0, 0, 0.35);
-  border-radius: 20px;
-  padding: 4px 8px 4px 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: all 0.22s ease;
-  animation: yt-pulse 2.4s ease-in-out infinite;
-  text-decoration: none;
-  position: relative;
+  display: none !important;
 }
 
 .youtube-btn svg {
@@ -2977,6 +2911,16 @@ html[dir="rtl"] .logo-highlight {
 /* ========================================
    SUBSCRIPTION MODAL STYLES
    ======================================== */
+
+/* ── Payment/subscription UI permanently hidden ── */
+.subscription-modal,
+#subscriptionModal,
+#trialCountdownToast,
+#manageSubPopoverLink,
+.upgrade-btn,
+.trial-countdown-toast {
+  display: none !important;
+}
 
 .subscription-modal {
   position: fixed;
