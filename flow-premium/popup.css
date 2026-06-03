@@ -277,22 +277,24 @@ body {
 .ami-text-ami {
   font-size: 18px;
   font-weight: 900;
-  letter-spacing: 2px;
-  color: #ffffff;
-  text-shadow:
-    0 0 10px rgba(255,255,255,0.3),
-    0 1px 0 rgba(0,0,0,0.5);
-}
-
-.ami-text-ai {
-  font-size: 18px;
-  font-weight: 900;
-  letter-spacing: 2px;
-  background: linear-gradient(90deg, #4285F4 0%, #34A853 100%);
+  letter-spacing: 3px;
+  background: linear-gradient(90deg, #34A853 0%, #4285F4 35%, #FBBC05 65%, #EA4335 100%);
+  background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 6px rgba(66,133,244,0.5));
+  animation: aion-gradient-shift 4s linear infinite;
+  filter: drop-shadow(0 0 8px rgba(66,133,244,0.6));
+}
+
+@keyframes aion-gradient-shift {
+  0%   { background-position: 0% center; }
+  50%  { background-position: 100% center; }
+  100% { background-position: 0% center; }
+}
+
+.ami-text-ai {
+  display: none;
 }
 
 .ami-text-studio {
@@ -300,12 +302,9 @@ body {
   font-weight: 700;
   letter-spacing: 4.5px;
   text-transform: uppercase;
-  background: linear-gradient(90deg, #FBBC05 0%, #EA4335 50%, #4285F4 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-top: 1px;
-  opacity: 0.9;
+  color: rgba(255,255,255,0.65);
+  margin-top: 2px;
+  opacity: 1;
 }
 
 /* ── Legacy classes kept for backwards compat ── */
