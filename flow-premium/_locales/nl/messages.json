@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Amiflo: Ready",
+    "message": "Ami AI Studio: Ready",
     "description": "flowReady"
   },
   "oneClickOneFlow": {

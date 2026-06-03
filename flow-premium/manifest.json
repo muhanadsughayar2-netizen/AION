@@ -97,7 +97,7 @@
         "default": "Ctrl+Shift+A",
         "mac": "Command+Shift+A"
       },
-      "description": "Ask Amiflo about current page"
+      "description": "Ask Ami AI Studio about current page"
     }
   },
   "sandbox": {

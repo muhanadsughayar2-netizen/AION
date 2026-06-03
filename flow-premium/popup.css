@@ -103,60 +103,216 @@ body {
   color: var(--st-accent);
 }
 
-/* ── Amiflo premium header logo ── */
-.amiflo-logo-mark {
+/* ══════════════════════════════════════════
+   AMI AI STUDIO — Wow-factor header system
+   ══════════════════════════════════════════ */
+
+/* Header card with aurora border */
+.ami-header {
   position: relative;
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.04) 0%,
+    rgba(66,133,244,0.05) 50%,
+    rgba(52,168,83,0.04) 100%);
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Animated aurora border */
+.ami-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  padding: 1px;
+  background: linear-gradient(
+    120deg,
+    #34A853 0%,
+    #4285F4 25%,
+    #FBBC05 50%,
+    #EA4335 75%,
+    #34A853 100%
+  );
+  background-size: 300% 300%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box,
+                linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: ami-border-flow 4s linear infinite;
+  opacity: 0.7;
+}
+
+@keyframes ami-border-flow {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+/* Ambient glow blob behind the header */
+.ami-header-glow {
+  position: absolute;
+  top: -20px;
+  left: 10px;
+  width: 120px;
+  height: 60px;
+  background: radial-gradient(ellipse,
+    rgba(66,133,244,0.18) 0%,
+    rgba(52,168,83,0.10) 50%,
+    transparent 100%);
+  pointer-events: none;
+  animation: ami-glow-drift 5s ease-in-out infinite alternate;
+  z-index: 0;
+}
+
+@keyframes ami-glow-drift {
+  0%   { transform: translateX(0) scale(1);   opacity: 0.7; }
+  100% { transform: translateX(30px) scale(1.2); opacity: 1; }
+}
+
+/* Icon wrapper with spinning ring */
+.ami-icon-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  z-index: 1;
 }
 
+.ami-icon-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #34A853, #4285F4, #FBBC05, #EA4335, #34A853
+  );
+  animation: ami-ring-spin 3s linear infinite;
+  opacity: 0.8;
+}
+
+.ami-icon-ring::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: var(--st-bg-app, #0d1117);
+}
+
+@keyframes ami-ring-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* The actual icon sits above the ring pseudo */
 .amiflo-icon {
   width: 28px;
   height: 28px;
   object-fit: contain;
-  filter: drop-shadow(0 0 6px rgba(52, 168, 83, 0.5))
-          drop-shadow(0 0 12px rgba(251, 188, 5, 0.3));
+  position: relative;
+  z-index: 2;
   animation: amiflo-breathe 3s ease-in-out infinite;
 }
 
 @keyframes amiflo-breathe {
   0%, 100% {
-    filter: drop-shadow(0 0 5px rgba(52, 168, 83, 0.45))
-            drop-shadow(0 0 10px rgba(66, 133, 244, 0.3));
+    filter: drop-shadow(0 0 4px rgba(52,168,83,0.6))
+            drop-shadow(0 0 8px rgba(66,133,244,0.4));
     transform: scale(1);
   }
   50% {
-    filter: drop-shadow(0 0 9px rgba(251, 188, 5, 0.55))
-            drop-shadow(0 0 16px rgba(234, 67, 53, 0.35));
-    transform: scale(1.06);
+    filter: drop-shadow(0 0 8px rgba(251,188,5,0.7))
+            drop-shadow(0 0 14px rgba(234,67,53,0.45));
+    transform: scale(1.05);
   }
 }
 
-.amiflo-wordmark {
-  display: inline-flex;
+/* Two-line stacked wordmark */
+.ami-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  line-height: 1;
+  z-index: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shimmer sweep across the brand text */
+.ami-brand::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  left: -60%;
+  width: 50%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.22) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  animation: ami-shimmer 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes ami-shimmer {
+  0%   { left: -60%; opacity: 0; }
+  15%  { opacity: 1; }
+  60%  { opacity: 1; }
+  80%  { left: 110%; opacity: 0; }
+  100% { left: 110%; opacity: 0; }
+}
+
+.ami-brand-top {
+  display: flex;
   align-items: baseline;
   gap: 0;
-  font-size: 17px;
+}
+
+.ami-text-ami {
+  font-size: 18px;
   font-weight: 900;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  line-height: 1;
-}
-
-.amiflo-ami {
+  letter-spacing: 2px;
   color: #ffffff;
-  text-shadow: 0 0 12px rgba(255,255,255,0.25);
+  text-shadow:
+    0 0 10px rgba(255,255,255,0.3),
+    0 1px 0 rgba(0,0,0,0.5);
 }
 
-.amiflo-flo {
-  background: linear-gradient(90deg, #34A853 0%, #4285F4 40%, #FBBC05 75%, #EA4335 100%);
+.ami-text-ai {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  background: linear-gradient(90deg, #4285F4 0%, #34A853 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 8px rgba(251,188,5,0.4));
+  filter: drop-shadow(0 0 6px rgba(66,133,244,0.5));
 }
+
+.ami-text-studio {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 4.5px;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #FBBC05 0%, #EA4335 50%, #4285F4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-top: 1px;
+  opacity: 0.9;
+}
+
+/* ── Legacy classes kept for backwards compat ── */
+.amiflo-logo-mark { position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.amiflo-wordmark  { display: inline-flex; align-items: baseline; gap: 0; font-size: 17px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; line-height: 1; }
+.amiflo-ami       { color: #ffffff; text-shadow: 0 0 12px rgba(255,255,255,0.25); }
+.amiflo-flo       { background: linear-gradient(90deg, #34A853 0%, #4285F4 40%, #FBBC05 75%, #EA4335 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 
 @keyframes glow-pulse {
   0%, 100% {
