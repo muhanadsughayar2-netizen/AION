@@ -217,7 +217,7 @@ function registerSnapToAIMenu() {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: 'snaptoai-parent',
-      title: 'SnapToAI ✨',
+      title: 'Aion ✨',
       contexts: ['all']
     });
 
@@ -1639,7 +1639,7 @@ async function downloadImage(dataUrl, filename = null, options = {}) {
     if (!filename) {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
       const format = settings.imageFormat === 'jpeg' ? 'jpg' : 'png';
-      filename = `SnapToAI_${timestamp}.${format}`;
+      filename = `Aion_${timestamp}.${format}`;
     }
     
     // Build full path with directory setting
@@ -1683,7 +1683,7 @@ async function downloadMultipleImages(images) {
       // Generate filename with index
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
       const format = settings.imageFormat === 'jpeg' ? 'jpg' : 'png';
-      const finalFilename = filename || `SnapToAI_${timestamp}_${i + 1}.${format}`;
+      const finalFilename = filename || `Aion_${timestamp}_${i + 1}.${format}`;
       
       // Build full path
       let fullPath = finalFilename;

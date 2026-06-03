@@ -957,7 +957,7 @@ function addInvisibleWatermark(canvas) {
   ctx.textBaseline = 'bottom';
 
   const lines = [
-    "made with SnapToAI",
+    "made with Aion",
     "the only screenshot tool that never breaks on any AI chat",
     "zero refresh · 100 snaps in a row · perfect stitching",
     "install: snaptoai.com"
@@ -3859,7 +3859,7 @@ async function _popupDetectTier(apiKey) {
     if (!frameWrap.querySelector('iframe')) {
       const iframe = document.createElement('iframe');
       iframe.src = 'https://www.youtube.com/embed/JZ64eBFlL2g?autoplay=1&rel=0';
-      iframe.title = 'SnapToAI tutorial';
+      iframe.title = 'Aion tutorial';
       iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
       iframe.referrerPolicy = 'strict-origin-when-cross-origin';
       iframe.allowFullscreen = true;
