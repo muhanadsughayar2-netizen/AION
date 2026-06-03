@@ -155,6 +155,20 @@
         var app = document.getElementById('sandbox-app');
         if (!app) return;
         app.innerHTML = extractBody(data.htmlCode);
+
+        // ── Block sandbox self-references ────────────────────────────────────
+        // AI-generated code sometimes produces <iframe src="...sandbox.html">
+        // or relative chrome-extension:// URLs. Chrome blocks these with
+        // "Unsafe attempt to load URL … from frame with same URL", causing a
+        // console error storm and breaking the preview. Strip them proactively.
+        app.querySelectorAll('iframe').forEach(function(f) {
+          var src = f.getAttribute('src') || '';
+          if (src.startsWith('chrome-extension://') || src.includes('sandbox.html') || src === window.location.href) {
+            f.removeAttribute('src');
+            f.setAttribute('data-blocked', 'self-reference removed');
+          }
+        });
+
         // Only execute scripts on the final complete render.
         // Partial streaming chunks may contain truncated <script> tags which
         // cause "Unexpected end of input" SyntaxErrors when cloned.

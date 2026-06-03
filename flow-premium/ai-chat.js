@@ -6265,26 +6265,25 @@ async function initializeChat() {
     currentImages = imagesToUse;
     const previewContainer = document.querySelector('.image-preview');
     const placeholder = document.getElementById('imagePlaceholder');
-    
+
     // Hide placeholder when we have images
     if (placeholder) placeholder.style.display = 'none';
-    
+
     if (currentImages.length === 1) {
-      // Single image - show as before
+      // Single image — show as before
       document.getElementById('previewImage').src = currentImages[0];
     } else {
-      // Multiple images - show grid
+      // Multiple images — show ONLY the first image + a count badge.
+      // Decoding all N large base64 screenshots simultaneously causes a
+      // memory spike that hangs / crashes the extension tab.
       previewContainer.innerHTML = '<div class="multi-image-grid" id="multiImageGrid"></div>';
       const grid = document.getElementById('multiImageGrid');
-      currentImages.forEach((img, i) => {
-        const imgEl = document.createElement('img');
-        imgEl.src = img;
-        imgEl.alt = `Screenshot ${i + 1}`;
-        imgEl.className = 'grid-image';
-        imgEl.title = `Screenshot ${i + 1} of ${currentImages.length}`;
-        grid.appendChild(imgEl);
-      });
-      // Add info badge
+      const firstImg = document.createElement('img');
+      firstImg.src = currentImages[0];
+      firstImg.alt = 'Screenshot 1';
+      firstImg.className = 'grid-image';
+      firstImg.title = `Screenshot 1 of ${currentImages.length}`;
+      grid.appendChild(firstImg);
       const badge = document.createElement('div');
       badge.className = 'multi-image-badge';
       badge.textContent = `${currentImages.length} screenshots`;
@@ -6437,19 +6436,25 @@ async function sendToGemini(prompt, imageDataUrls) {
   
   for (const msg of conversationHistory) {
     const msgParts = [{ text: msg.text }];
-    if (msg.images) {
-      for (const imgUrl of msg.images) {
-        const base64Data = imgUrl.split(',')[1];
-        const mimeType = imgUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
-        msgParts.unshift({ inlineData: { mimeType, data: base64Data } });
-      }
-    }
+    // Do NOT re-send inlineData from history turns — it multiplies memory usage
+    // per request by (N_turns × N_images × image_size). Gemini already processed
+    // those images in prior turns and carries the context in its response tokens.
+    // Images are only sent once, in the current user turn below.
     contents.push({ role: msg.role, parts: msgParts });
   }
   
   const userParts = [];
   if (images.length > 0 && images[0]) {
-    for (const imageDataUrl of images) {
+    // Hard cap: send at most 4 images per request.
+    // Sending 10 large screenshots as inlineData in one call routinely exceeds
+    // the extension tab's memory budget (~512 MB) and causes a silent hang/drop.
+    // Gemini Vision performs well on 1-4 images; the user can always reselect.
+    const MAX_IMAGES_PER_REQUEST = 4;
+    const imagesToSend = images.slice(0, MAX_IMAGES_PER_REQUEST);
+    if (images.length > MAX_IMAGES_PER_REQUEST) {
+      console.warn(`[SnapToAI] Capped images from ${images.length} → ${MAX_IMAGES_PER_REQUEST} to prevent memory hang`);
+    }
+    for (const imageDataUrl of imagesToSend) {
       const base64Data = imageDataUrl.split(',')[1];
       const mimeType = imageDataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
       userParts.push({ inlineData: { mimeType, data: base64Data } });
