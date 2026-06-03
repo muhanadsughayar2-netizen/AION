@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Gemi AI Studio - 螢幕截圖到AI",
+    "message": "Aion: Gemini AI Studio Workflow Optimizer",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Gemi AI Studio: 就緒",
+    "message": "Aion: Ready",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "我們熱愛 Gemi AI Studio",
+    "message": "我們熱愛 Aion",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "我們努力使AI截圖變得簡單而強大。如果Gemi AI Studio為您節省了時間，請花一點時間留下評價。這對我們意義重大。",
+    "message": "我們努力使AI截圖變得簡單而強大。如果Aion為您節省了時間，請花一點時間留下評價。這對我們意義重大。",
     "description": "reviewMessage"
   },
   "askAi": {

@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Gemi AI Studio - Chụp Ảnh Màn Hình sang AI",
+    "message": "Aion: Gemini AI Studio Workflow Optimizer",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Gemi AI Studio: Sẵn sàng",
+    "message": "Aion: Ready",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "Chúng tôi yêu Gemi AI Studio",
+    "message": "Chúng tôi yêu Aion",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "Chúng tôi đã nỗ lực để làm cho ảnh chụp AI đơn giản và mạnh mẽ. Nếu Gemi AI Studio giúp bạn tiết kiệm thời gian, hãy để lại đánh giá.",
+    "message": "Chúng tôi đã nỗ lực để làm cho ảnh chụp AI đơn giản và mạnh mẽ. Nếu Aion giúp bạn tiết kiệm thời gian, hãy để lại đánh giá.",
     "description": "reviewMessage"
   },
   "askAi": {

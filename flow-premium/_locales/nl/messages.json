@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Gemi AI Studio - Dutch",
+    "message": "Aion: Gemini AI Studio Workflow Optimizer",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Gemi AI Studio: Ready",
+    "message": "Aion: Ready",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "We houden van Gemi AI Studio",
+    "message": "We houden van Aion",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "We hebben hard gewerkt om AI-screenshots eenvoudig en krachtig te maken. Als Gemi AI Studio u tijd heeft bespaard, laat dan een beoordeling achter.",
+    "message": "We hebben hard gewerkt om AI-screenshots eenvoudig en krachtig te maken. Als Aion u tijd heeft bespaard, laat dan een beoordeling achter.",
     "description": "reviewMessage"
   },
   "askAi": {

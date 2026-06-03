@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Gemi AI Studio - لقطات الشاشة للذكاء الاصطناعي",
+    "message": "Aion: Gemini AI Studio Workflow Optimizer",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Gemi AI Studio: جاهز",
+    "message": "Aion: Ready",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "نحن نحب Gemi AI Studio",
+    "message": "نحن نحب Aion",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "عملنا بجد لجعل لقطات الشاشة بالذكاء الاصطناعي بسيطة وقوية. إذا وفر لك Gemi AI Studio الوقت، يرجى ترك تقييم.",
+    "message": "عملنا بجد لجعل لقطات الشاشة بالذكاء الاصطناعي بسيطة وقوية. إذا وفر لك Aion الوقت، يرجى ترك تقييم.",
     "description": "reviewMessage"
   },
   "askAi": {

@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Gemi AI Studio - Capture d'écran vers IA",
+    "message": "Aion: Gemini AI Studio Workflow Optimizer",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Gemi AI Studio: Prêt",
+    "message": "Aion: Ready",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "Nous aimons Gemi AI Studio",
+    "message": "Nous aimons Aion",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "Nous avons travaillé dur pour rendre les captures d'écran IA simples et puissantes. Si Gemi AI Studio vous a fait gagner du temps, laissez un avis.",
+    "message": "Nous avons travaillé dur pour rendre les captures d'écran IA simples et puissantes. Si Aion vous a fait gagner du temps, laissez un avis.",
     "description": "reviewMessage"
   },
   "askAi": {

@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Gemi AI Studio - Ekran Görüntüsünden AI",
+    "message": "Aion: Gemini AI Studio Workflow Optimizer",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Gemi AI Studio: Hazır",
+    "message": "Aion: Ready",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "Gemi AI Studio'ı Seviyoruz",
+    "message": "Aion'ı Seviyoruz",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "Yapay zeka ekran görüntülerini basit ve güçlü hale getirmek için çok çalıştık. Gemi AI Studio size zaman kazandırdıysa, lütfen bir değerlendirme bırakın.",
+    "message": "Yapay zeka ekran görüntülerini basit ve güçlü hale getirmek için çok çalıştık. Aion size zaman kazandırdıysa, lütfen bir değerlendirme bırakın.",
     "description": "reviewMessage"
   },
   "askAi": {

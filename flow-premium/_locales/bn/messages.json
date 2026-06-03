@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Gemi AI Studio - স্ক্রিনশট থেকে AI",
+    "message": "Aion: Gemini AI Studio Workflow Optimizer",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Gemi AI Studio: প্রস্তুত",
+    "message": "Aion: Ready",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "আমরা Gemi AI Studio ভালোবাসি",
+    "message": "আমরা Aion ভালোবাসি",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "আমরা AI স্ক্রিনশটগুলিকে সহজ এবং শক্তিশালী করতে কঠোর পরিশ্রম করেছি। যদি Gemi AI Studio আপনার সময় বাঁচিয়ে থাকে, দয়া করে একটি রিভিউ দিন।",
+    "message": "আমরা AI স্ক্রিনশটগুলিকে সহজ এবং শক্তিশালী করতে কঠোর পরিশ্রম করেছি। যদি Aion আপনার সময় বাঁচিয়ে থাকে, দয়া করে একটি রিভিউ দিন।",
     "description": "reviewMessage"
   },
   "askAi": {
