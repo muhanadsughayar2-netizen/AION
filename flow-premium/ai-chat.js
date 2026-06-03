@@ -6895,10 +6895,25 @@ async function handleSend() {
     }
     
     const contents = [];
-    for (const msg of conversationHistory) {
+    // Find the index of the most recent user message that carried images.
+    // We re-send images ONLY for that turn so Gemini still has visual context
+    // for the current follow-up, but we never re-send images from older turns.
+    // Re-sending all history images per turn = N_turns × N_images × ~1MB each
+    // → exponential memory growth that causes the silent hang/crash.
+    let lastImgTurnIdx = -1;
+    for (let i = conversationHistory.length - 1; i >= 0; i--) {
+      if (conversationHistory[i].images && conversationHistory[i].images.length > 0) {
+        lastImgTurnIdx = i;
+        break;
+      }
+    }
+    for (let i = 0; i < conversationHistory.length; i++) {
+      const msg = conversationHistory[i];
       const msgParts = [{ text: msg.text }];
-      if (msg.images) {
-        for (const imgUrl of msg.images) {
+      if (msg.images && i === lastImgTurnIdx) {
+        // Re-send images from the most recent image-bearing turn only
+        const histImgs = msg.images.slice(0, 4); // cap at 4 even in history
+        for (const imgUrl of histImgs) {
           const base64Data = imgUrl.split(',')[1];
           const mimeType = imgUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
           msgParts.unshift({ inlineData: { mimeType, data: base64Data } });
@@ -6908,7 +6923,12 @@ async function handleSend() {
     }
     
     const userParts = [];
-    const MAX_IMAGES_PER_REQUEST = getConfig('MAX_IMAGES_PER_REQUEST', 30);
+    // Default capped at 4: sending >4 large screenshots in one inlineData request
+    // routinely exceeds the extension tab's memory budget and causes a silent hang.
+    // When totalImages > MAX_IMAGES_PER_REQUEST the existing batch path fires,
+    // which shows a visible progress bubble and adds a 6s rate-limit delay between
+    // batches — so the user always sees what's happening.
+    const MAX_IMAGES_PER_REQUEST = getConfig('MAX_IMAGES_PER_REQUEST', 4);
     const isFirstMessage = contents.length === 0;
     
     if (isFirstMessage) {
