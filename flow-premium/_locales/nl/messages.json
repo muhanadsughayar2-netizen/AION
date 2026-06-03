@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Amiflo - Dutch",
+    "message": "Gemi AI Studio - Dutch",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Ami AI Studio: Ready",
+    "message": "Gemi AI Studio: Ready",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "We houden van Amiflo",
+    "message": "We houden van Gemi AI Studio",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "We hebben hard gewerkt om AI-screenshots eenvoudig en krachtig te maken. Als Amiflo u tijd heeft bespaard, laat dan een beoordeling achter.",
+    "message": "We hebben hard gewerkt om AI-screenshots eenvoudig en krachtig te maken. Als Gemi AI Studio u tijd heeft bespaard, laat dan een beoordeling achter.",
     "description": "reviewMessage"
   },
   "askAi": {

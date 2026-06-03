@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Amiflo - Indonesian",
+    "message": "Gemi AI Studio - Indonesian",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Ami AI Studio: Ready",
+    "message": "Gemi AI Studio: Ready",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "Kami Cinta Amiflo",
+    "message": "Kami Cinta Gemi AI Studio",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "Kami bekerja keras membuat tangkapan layar AI sederhana dan kuat. Jika Amiflo menghemat waktu Anda, silakan tinggalkan ulasan.",
+    "message": "Kami bekerja keras membuat tangkapan layar AI sederhana dan kuat. Jika Gemi AI Studio menghemat waktu Anda, silakan tinggalkan ulasan.",
     "description": "reviewMessage"
   },
   "askAi": {

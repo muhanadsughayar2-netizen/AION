@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Amiflo - 스크린샷에서 AI로",
+    "message": "Gemi AI Studio - 스크린샷에서 AI로",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Amiflo: 준비됨",
+    "message": "Gemi AI Studio: 준비됨",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "Amiflo를 사랑합니다",
+    "message": "Gemi AI Studio를 사랑합니다",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "AI 스크린샷을 간단하고 강력하게 만들기 위해 노력했습니다. Amiflo가 시간을 절약해 주었다면 리뷰를 남겨주세요.",
+    "message": "AI 스크린샷을 간단하고 강력하게 만들기 위해 노력했습니다. Gemi AI Studio가 시간을 절약해 주었다면 리뷰를 남겨주세요.",
     "description": "reviewMessage"
   },
   "askAi": {

@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Amiflo - Скриншот в ИИ",
+    "message": "Gemi AI Studio - Скриншот в ИИ",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Amiflo: Готово",
+    "message": "Gemi AI Studio: Готово",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "Мы любим Amiflo",
+    "message": "Мы любим Gemi AI Studio",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "Мы усердно работали, чтобы сделать AI-скриншоты простыми и мощными. Если Amiflo сэкономил вам время, оставьте отзыв.",
+    "message": "Мы усердно работали, чтобы сделать AI-скриншоты простыми и мощными. Если Gemi AI Studio сэкономил вам время, оставьте отзыв.",
     "description": "reviewMessage"
   },
   "askAi": {

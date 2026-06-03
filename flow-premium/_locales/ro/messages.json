@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Amiflo - Romanian",
+    "message": "Gemi AI Studio - Romanian",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Ami AI Studio: Ready",
+    "message": "Gemi AI Studio: Ready",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -252,11 +252,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "We love Ami AI Studio",
+    "message": "We love Gemi AI Studio",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "We've worked hard to make AI-powered screenshots simple and powerful. If Ami AI Studio has saved you time, please take a moment to leave a review. It means the world to us.",
+    "message": "We've worked hard to make AI-powered screenshots simple and powerful. If Gemi AI Studio has saved you time, please take a moment to leave a review. It means the world to us.",
     "description": "reviewMessage"
   },
   "askAi": {

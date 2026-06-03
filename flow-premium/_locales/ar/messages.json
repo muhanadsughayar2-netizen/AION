@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Amiflo - لقطات الشاشة للذكاء الاصطناعي",
+    "message": "Gemi AI Studio - لقطات الشاشة للذكاء الاصطناعي",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Amiflo: جاهز",
+    "message": "Gemi AI Studio: جاهز",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "نحن نحب Amiflo",
+    "message": "نحن نحب Gemi AI Studio",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "عملنا بجد لجعل لقطات الشاشة بالذكاء الاصطناعي بسيطة وقوية. إذا وفر لك Amiflo الوقت، يرجى ترك تقييم.",
+    "message": "عملنا بجد لجعل لقطات الشاشة بالذكاء الاصطناعي بسيطة وقوية. إذا وفر لك Gemi AI Studio الوقت، يرجى ترك تقييم.",
     "description": "reviewMessage"
   },
   "askAi": {

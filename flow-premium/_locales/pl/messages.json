@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Amiflo - Zrzut ekranu do AI",
+    "message": "Gemi AI Studio - Zrzut ekranu do AI",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "Amiflo: Gotowy",
+    "message": "Gemi AI Studio: Gotowy",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "Kochamy Amiflo",
+    "message": "Kochamy Gemi AI Studio",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "Ciężko pracowaliśmy, aby zrzuty ekranu AI były proste i potężne. Jeśli Amiflo zaoszczędził Ci czas, zostaw opinię.",
+    "message": "Ciężko pracowaliśmy, aby zrzuty ekranu AI były proste i potężne. Jeśli Gemi AI Studio zaoszczędził Ci czas, zostaw opinię.",
     "description": "reviewMessage"
   },
   "askAi": {
