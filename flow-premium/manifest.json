@@ -97,7 +97,7 @@
         "default": "Ctrl+Shift+A",
         "mac": "Command+Shift+A"
       },
-      "description": "Ask SnapToAI about current page"
+      "description": "Ask Amiflo about current page"
     }
   },
   "sandbox": {

@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "SnapToAI - Ekran Görüntüsünden AI",
+    "message": "Amiflo - Ekran Görüntüsünden AI",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "SnapToAI: Hazır",
+    "message": "Amiflo: Hazır",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "Snap To AI'ı Seviyoruz",
+    "message": "Amiflo'ı Seviyoruz",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "Yapay zeka ekran görüntülerini basit ve güçlü hale getirmek için çok çalıştık. SnapToAI size zaman kazandırdıysa, lütfen bir değerlendirme bırakın.",
+    "message": "Yapay zeka ekran görüntülerini basit ve güçlü hale getirmek için çok çalıştık. Amiflo size zaman kazandırdıysa, lütfen bir değerlendirme bırakın.",
     "description": "reviewMessage"
   },
   "askAi": {

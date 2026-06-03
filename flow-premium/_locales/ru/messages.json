@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "SnapToAI - Скриншот в ИИ",
+    "message": "Amiflo - Скриншот в ИИ",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "SnapToAI: Готово",
+    "message": "Amiflo: Готово",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "Мы любим Snap To AI",
+    "message": "Мы любим Amiflo",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "Мы усердно работали, чтобы сделать AI-скриншоты простыми и мощными. Если SnapToAI сэкономил вам время, оставьте отзыв.",
+    "message": "Мы усердно работали, чтобы сделать AI-скриншоты простыми и мощными. Если Amiflo сэкономил вам время, оставьте отзыв.",
     "description": "reviewMessage"
   },
   "askAi": {

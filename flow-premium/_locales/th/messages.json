@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "SnapToAI - ภาพหน้าจอ ต่อ AI",
+    "message": "Amiflo - ภาพหน้าจอ ต่อ AI",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "SnapToAI: พร้อม",
+    "message": "Amiflo: พร้อม",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "เรารัก Snap To AI",
+    "message": "เรารัก Amiflo",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "เราทำงานหนักเพื่อทำให้ภาพหน้าจอ AI เรียบง่ายและทรงพลัง หาก SnapToAI ช่วยประหยัดเวลาของคุณ กรุณาเขียนรีวิว",
+    "message": "เราทำงานหนักเพื่อทำให้ภาพหน้าจอ AI เรียบง่ายและทรงพลัง หาก Amiflo ช่วยประหยัดเวลาของคุณ กรุณาเขียนรีวิว",
     "description": "reviewMessage"
   },
   "askAi": {

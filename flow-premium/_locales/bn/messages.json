@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "SnapToAI - স্ক্রিনশট থেকে AI",
+    "message": "Amiflo - স্ক্রিনশট থেকে AI",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "SnapToAI: প্রস্তুত",
+    "message": "Amiflo: প্রস্তুত",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "আমরা Snap To AI ভালোবাসি",
+    "message": "আমরা Amiflo ভালোবাসি",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "আমরা AI স্ক্রিনশটগুলিকে সহজ এবং শক্তিশালী করতে কঠোর পরিশ্রম করেছি। যদি SnapToAI আপনার সময় বাঁচিয়ে থাকে, দয়া করে একটি রিভিউ দিন।",
+    "message": "আমরা AI স্ক্রিনশটগুলিকে সহজ এবং শক্তিশালী করতে কঠোর পরিশ্রম করেছি। যদি Amiflo আপনার সময় বাঁচিয়ে থাকে, দয়া করে একটি রিভিউ দিন।",
     "description": "reviewMessage"
   },
   "askAi": {

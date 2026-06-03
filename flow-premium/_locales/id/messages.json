@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "SnapToAI - Indonesian",
+    "message": "Amiflo - Indonesian",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "SnapToAI: Ready",
+    "message": "Amiflo: Ready",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "Kami Cinta Snap To AI",
+    "message": "Kami Cinta Amiflo",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "Kami bekerja keras membuat tangkapan layar AI sederhana dan kuat. Jika SnapToAI menghemat waktu Anda, silakan tinggalkan ulasan.",
+    "message": "Kami bekerja keras membuat tangkapan layar AI sederhana dan kuat. Jika Amiflo menghemat waktu Anda, silakan tinggalkan ulasan.",
     "description": "reviewMessage"
   },
   "askAi": {

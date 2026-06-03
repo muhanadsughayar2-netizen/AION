@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "SnapToAI - Portuguese (BR)",
+    "message": "Amiflo - Portuguese (BR)",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "SnapToAI: Ready",
+    "message": "Amiflo: Ready",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "Amamos o Snap To AI",
+    "message": "Amamos o Amiflo",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "Trabalhamos duro para tornar as capturas com IA simples e poderosas. Se o SnapToAI economizou seu tempo, por favor deixe uma avaliação.",
+    "message": "Trabalhamos duro para tornar as capturas com IA simples e poderosas. Se o Amiflo economizou seu tempo, por favor deixe uma avaliação.",
     "description": "reviewMessage"
   },
   "askAi": {

@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "SnapToAI - 截图到AI",
+    "message": "Amiflo - 截图到AI",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "SnapToAI: 就绪",
+    "message": "Amiflo: 就绪",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "我们热爱 Snap To AI",
+    "message": "我们热爱 Amiflo",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "我们努力使AI截图变得简单而强大。如果SnapToAI为您节省了时间，请花一点时间留下评价。这对我们意义重大。",
+    "message": "我们努力使AI截图变得简单而强大。如果Amiflo为您节省了时间，请花一点时间留下评价。这对我们意义重大。",
     "description": "reviewMessage"
   },
   "askAi": {

@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "SnapToAI - Chụp Ảnh Màn Hình sang AI",
+    "message": "Amiflo - Chụp Ảnh Màn Hình sang AI",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "SnapToAI: Sẵn sàng",
+    "message": "Amiflo: Sẵn sàng",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "Chúng tôi yêu Snap To AI",
+    "message": "Chúng tôi yêu Amiflo",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "Chúng tôi đã nỗ lực để làm cho ảnh chụp AI đơn giản và mạnh mẽ. Nếu SnapToAI giúp bạn tiết kiệm thời gian, hãy để lại đánh giá.",
+    "message": "Chúng tôi đã nỗ lực để làm cho ảnh chụp AI đơn giản và mạnh mẽ. Nếu Amiflo giúp bạn tiết kiệm thời gian, hãy để lại đánh giá.",
     "description": "reviewMessage"
   },
   "askAi": {

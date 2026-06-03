@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "SnapToAI - Captura de pantalla a IA",
+    "message": "Amiflo - Captura de pantalla a IA",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "SnapToAI: Listo",
+    "message": "Amiflo: Listo",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -420,11 +420,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "Amamos Snap To AI",
+    "message": "Amamos Amiflo",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "Hemos trabajado duro para hacer las capturas con IA simples y potentes. Si SnapToAI te ha ahorrado tiempo, por favor déjanos una reseña.",
+    "message": "Hemos trabajado duro para hacer las capturas con IA simples y potentes. Si Amiflo te ha ahorrado tiempo, por favor déjanos una reseña.",
     "description": "reviewMessage"
   },
   "askAi": {

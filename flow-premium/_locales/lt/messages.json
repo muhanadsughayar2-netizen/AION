@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "SnapToAI - Lithuanian",
+    "message": "Amiflo - Lithuanian",
     "description": "extensionName"
   },
   "extensionDescription": {
@@ -8,7 +8,7 @@
     "description": "extensionDescription"
   },
   "flowReady": {
-    "message": "SnapToAI: Ready",
+    "message": "Amiflo: Ready",
     "description": "flowReady"
   },
   "oneClickOneFlow": {
@@ -252,11 +252,11 @@
     "description": "fullPageNeedsSpace"
   },
   "reviewHeader": {
-    "message": "We love Snap To AI",
+    "message": "We love Amiflo",
     "description": "reviewHeader"
   },
   "reviewMessage": {
-    "message": "We've worked hard to make AI-powered screenshots simple and powerful. If SnapToAI has saved you time, please take a moment to leave a review. It means the world to us.",
+    "message": "We've worked hard to make AI-powered screenshots simple and powerful. If Amiflo has saved you time, please take a moment to leave a review. It means the world to us.",
     "description": "reviewMessage"
   },
   "askAi": {
