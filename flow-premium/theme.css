@@ -32,12 +32,16 @@
   --st-border-default: rgba(255, 255, 255, 0.1);
   --st-border-strong: rgba(255, 255, 255, 0.2);
 
-  --st-accent: #00d9ff;
-  --st-accent-2: #00b8d4;
-  --st-accent-soft: rgba(0, 217, 255, 0.1);
-  --st-accent-soft-2: rgba(0, 217, 255, 0.15);
-  --st-accent-border: rgba(0, 217, 255, 0.3);
-  --st-accent-glow: rgba(0, 217, 255, 0.5);
+  --st-accent: #4285F4;
+  --st-accent-2: #2a6dd9;
+  --st-accent-soft: rgba(66, 133, 244, 0.1);
+  --st-accent-soft-2: rgba(66, 133, 244, 0.15);
+  --st-accent-border: rgba(66, 133, 244, 0.3);
+  --st-accent-glow: rgba(66, 133, 244, 0.5);
+  --g-blue:   #4285F4;
+  --g-red:    #EA4335;
+  --g-yellow: #FBBC05;
+  --g-green:  #34A853;
 
   --st-success: #00ff88;
   --st-warning: #ffaa00;
@@ -79,12 +83,12 @@
   --st-border-default: rgba(15, 23, 42, 0.12);
   --st-border-strong: rgba(15, 23, 42, 0.22);
 
-  --st-accent: #0891b2;        /* darker cyan for AA contrast on white */
-  --st-accent-2: #0e7490;
-  --st-accent-soft: rgba(8, 145, 178, 0.10);
-  --st-accent-soft-2: rgba(8, 145, 178, 0.16);
-  --st-accent-border: rgba(8, 145, 178, 0.40);
-  --st-accent-glow: rgba(8, 145, 178, 0.35);
+  --st-accent: #4285F4;
+  --st-accent-2: #2a6dd9;
+  --st-accent-soft: rgba(66, 133, 244, 0.10);
+  --st-accent-soft-2: rgba(66, 133, 244, 0.16);
+  --st-accent-border: rgba(66, 133, 244, 0.40);
+  --st-accent-glow: rgba(66, 133, 244, 0.35);
 
   --st-success: #16a34a;
   --st-warning: #d97706;

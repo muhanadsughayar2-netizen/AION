@@ -3581,7 +3581,7 @@ html[dir="rtl"] .logo-highlight {
 .hero-action-label {
   font-size: 9px;
   font-weight: 700;
-  color: var(--st-accent);
+  color: #4285F4;
   letter-spacing: 1.2px;
   text-transform: uppercase;
 }
@@ -3592,19 +3592,16 @@ html[dir="rtl"] .logo-highlight {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 217, 255, 0.06);
-  border: 2px solid rgba(0, 217, 255, 0.25);
+  background: rgba(66, 133, 244, 0.07);
+  border: 2px solid rgba(66, 133, 244, 0.3);
   border-radius: 50%;
-  color: var(--st-accent);
+  color: #4285F4;
   cursor: pointer;
   transition: all 0.25s ease;
 }
 
 .hero-action-btn:hover {
-  background: rgba(0, 217, 255, 0.15);
-  border-color: rgba(0, 217, 255, 0.5);
   transform: scale(1.1);
-  box-shadow: 0 0 20px rgba(0, 217, 255, 0.25);
 }
 
 .hero-action-btn:active {
@@ -3616,38 +3613,74 @@ html[dir="rtl"] .logo-highlight {
   height: 28px;
 }
 
+/* SNAP → Google Blue */
+.snap-btn {
+  background: rgba(66, 133, 244, 0.07);
+  border-color: rgba(66, 133, 244, 0.35);
+  color: #4285F4;
+}
+.snap-btn:hover {
+  background: rgba(66, 133, 244, 0.15);
+  border-color: #4285F4;
+  box-shadow: 0 0 18px rgba(66, 133, 244, 0.3);
+}
+.hero-action-col:nth-child(1) .hero-action-label { color: #4285F4; }
+
+/* SNIP → Google Red */
+.snip-btn {
+  background: rgba(234, 67, 53, 0.07);
+  border-color: rgba(234, 67, 53, 0.35);
+  color: #EA4335;
+}
+.snip-btn:hover {
+  background: rgba(234, 67, 53, 0.15);
+  border-color: #EA4335;
+  box-shadow: 0 0 18px rgba(234, 67, 53, 0.3);
+}
+.hero-action-col:nth-child(2) .hero-action-label { color: #EA4335; }
+
+/* FULL PAGE → Google Yellow */
+.fullpage-btn {
+  background: rgba(251, 188, 5, 0.07);
+  border-color: rgba(251, 188, 5, 0.35);
+  color: #FBBC05;
+}
+.fullpage-btn:hover {
+  background: rgba(251, 188, 5, 0.15);
+  border-color: #FBBC05;
+  box-shadow: 0 0 18px rgba(251, 188, 5, 0.3);
+}
+.hero-action-col:nth-child(3) .hero-action-label { color: #FBBC05; }
+
+/* ASK AI → Google Green */
 .ai-hero-col {
   margin-left: 4px;
 }
-
 .ai-label {
-  color: #ffd700 !important;
+  color: #34A853 !important;
 }
-
 .ai-btn {
   width: 76px !important;
   height: 76px !important;
-  background: rgba(255, 215, 0, 0.08) !important;
-  border-color: rgba(255, 215, 0, 0.35) !important;
-  color: #ffd700 !important;
-  box-shadow: 0 0 18px rgba(255, 215, 0, 0.15), 0 0 40px rgba(255, 215, 0, 0.06);
+  background: rgba(52, 168, 83, 0.08) !important;
+  border-color: rgba(52, 168, 83, 0.4) !important;
+  color: #34A853 !important;
+  box-shadow: 0 0 18px rgba(52, 168, 83, 0.15), 0 0 40px rgba(52, 168, 83, 0.06);
   animation: aiGlow 2.5s ease-in-out infinite;
 }
-
 .ai-btn:hover {
-  background: rgba(255, 215, 0, 0.18) !important;
-  border-color: rgba(255, 215, 0, 0.6) !important;
-  box-shadow: 0 0 28px rgba(255, 215, 0, 0.3), 0 0 50px rgba(255, 215, 0, 0.1);
+  background: rgba(52, 168, 83, 0.18) !important;
+  border-color: #34A853 !important;
+  box-shadow: 0 0 28px rgba(52, 168, 83, 0.3), 0 0 50px rgba(52, 168, 83, 0.1);
 }
-
 .ai-btn svg {
   width: 32px !important;
   height: 32px !important;
 }
 
 @keyframes aiGlow {
-  0%, 100% { box-shadow: 0 0 18px rgba(255, 215, 0, 0.15), 0 0 40px rgba(255, 215, 0, 0.06); }
-  50% { box-shadow: 0 0 24px rgba(255, 215, 0, 0.25), 0 0 50px rgba(255, 215, 0, 0.1); }
+  0%, 100% { box-shadow: 0 0 18px rgba(52, 168, 83, 0.15), 0 0 40px rgba(52, 168, 83, 0.06); }
+  50% { box-shadow: 0 0 24px rgba(52, 168, 83, 0.25), 0 0 50px rgba(52, 168, 83, 0.1); }
 }
 
 .ai-quick-actions {
