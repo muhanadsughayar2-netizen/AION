@@ -103,6 +103,61 @@ body {
   color: var(--st-accent);
 }
 
+/* ── Amiflo premium header logo ── */
+.amiflo-logo-mark {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.amiflo-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(52, 168, 83, 0.5))
+          drop-shadow(0 0 12px rgba(251, 188, 5, 0.3));
+  animation: amiflo-breathe 3s ease-in-out infinite;
+}
+
+@keyframes amiflo-breathe {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px rgba(52, 168, 83, 0.45))
+            drop-shadow(0 0 10px rgba(66, 133, 244, 0.3));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 9px rgba(251, 188, 5, 0.55))
+            drop-shadow(0 0 16px rgba(234, 67, 53, 0.35));
+    transform: scale(1.06);
+  }
+}
+
+.amiflo-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.amiflo-ami {
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(255,255,255,0.25);
+}
+
+.amiflo-flo {
+  background: linear-gradient(90deg, #34A853 0%, #4285F4 40%, #FBBC05 75%, #EA4335 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(251,188,5,0.4));
+}
+
 @keyframes glow-pulse {
   0%, 100% {
     text-shadow: 0 0 5px rgba(0, 217, 255, 0.3), 0 0 10px rgba(0, 255, 255, 0.2);
@@ -3035,8 +3090,16 @@ html[dir="rtl"] .logo-highlight {
   font-weight: 900;
   text-transform: uppercase;
   display: flex;
+  flex-direction: column;
   gap: 8px;
   align-items: center;
+}
+
+.auth-amiflo-icon {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  animation: amiflo-breathe 3s ease-in-out infinite;
 }
 
 .auth-tagline {
