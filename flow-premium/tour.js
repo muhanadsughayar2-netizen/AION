@@ -163,20 +163,13 @@
       return `
         <div class="tour-demo-settings">
           <div class="tour-demo-settings-row">
-            <span class="tour-demo-settings-label">🔑 Gemini API Key</span>
-            <span class="tour-demo-settings-pill tour-demo-settings-pill--ok">●●● set</span>
+            <span class="tour-demo-settings-label">🆓 Free key</span>
+            <span class="tour-demo-settings-desc">Vision &amp; chat — no card needed</span>
           </div>
           <div class="tour-demo-settings-row">
-            <span class="tour-demo-settings-label">👁 Vision <span class="tour-demo-settings-tier">free tier</span></span>
-            <span class="tour-demo-settings-pill">17 / 20 left today</span>
+            <span class="tour-demo-settings-label">⚡ Paid key</span>
+            <span class="tour-demo-settings-desc">Images · Music · Video + $300 free credit</span>
           </div>
-          <div class="tour-demo-settings-row">
-            <span class="tour-demo-settings-label">🎨🎵🎬 Image · Music · Video</span>
-            <span class="tour-demo-settings-pill tour-demo-settings-pill--lock">🔒 needs paid key</span>
-          </div>
-        </div>
-        <div class="tour-demo-upgrade">
-          💡 <b>Want Image, Music & Video?</b> Add a card to your Google Cloud account → get <b>$300 free credit</b> → the same key auto-activates all three modes.
         </div>`;
     }
     if (kind === 'modes') {

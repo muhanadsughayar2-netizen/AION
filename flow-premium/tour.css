@@ -127,11 +127,11 @@
 
 /* Settings preview card (shown inside the Settings tour step) */
 .tour-demo-settings {
-  background: rgba(0, 0, 0, 0.32);
-  border: 1px solid rgba(0, 217, 255, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 10px;
   padding: 10px 12px;
-  margin: -4px 0 14px 0;
+  margin: 8px 0 4px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -139,60 +139,19 @@
 .tour-demo-settings-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
   font-size: 11.5px;
 }
 .tour-demo-settings-label {
   color: rgba(255, 255, 255, 0.85);
-  white-space: nowrap;
-}
-.tour-demo-settings-pill {
-  background: rgba(0, 217, 255, 0.12);
-  color: #9cebff;
-  font-size: 10.5px;
   font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(0, 217, 255, 0.25);
   white-space: nowrap;
+  min-width: 68px;
 }
-.tour-demo-settings-pill--ok {
-  background: rgba(0, 255, 136, 0.14);
-  color: #8effc1;
-  border-color: rgba(0, 255, 136, 0.35);
-}
-.tour-demo-settings-pill--lock {
-  background: rgba(255, 200, 80, 0.12);
-  color: #ffd28a;
-  border-color: rgba(255, 200, 80, 0.32);
-}
-.tour-demo-settings-tier {
-  display: inline-block;
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: #8effc1;
-  background: rgba(0, 255, 136, 0.12);
-  border: 1px solid rgba(0, 255, 136, 0.3);
-  padding: 1px 5px;
-  border-radius: 4px;
-  margin-left: 4px;
-  vertical-align: middle;
-}
-.tour-demo-upgrade {
-  margin: 10px 0 14px 0;
-  padding: 9px 11px;
+.tour-demo-settings-desc {
+  color: rgba(255, 255, 255, 0.50);
   font-size: 11px;
   line-height: 1.4;
-  color: rgba(255, 255, 255, 0.9);
-  background: linear-gradient(135deg, rgba(255, 184, 108, 0.14), rgba(255, 94, 156, 0.14));
-  border: 1px solid rgba(255, 184, 108, 0.32);
-  border-radius: 10px;
-}
-.tour-demo-upgrade b {
-  color: #ffd28a;
 }
 .tour-demo-settings-toggle {
   width: 28px;
