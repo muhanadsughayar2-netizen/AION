@@ -942,8 +942,8 @@ body {
 
 .action-btn {
   flex: 1;
-  background: rgba(66, 133, 244, 0.08);
-  border: 1px solid rgba(66, 133, 244, 0.20);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: rgba(255,255,255,0.75);
   padding: 8px 10px;
   border-radius: 8px;
@@ -965,11 +965,11 @@ body {
 }
 
 .action-btn:hover {
-  background: rgba(66, 133, 244, 0.15);
-  border-color: rgba(66, 133, 244, 0.40);
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.22);
   color: rgba(255,255,255,0.95);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(66,133,244,.14);
+  box-shadow: 0 4px 10px rgba(0,0,0,.22);
 }
 
 .action-btn:active {
@@ -1020,7 +1020,7 @@ body {
   aspect-ratio: 16 / 9;
   border-radius: 4px;
   overflow: hidden;
-  border: 1px solid rgba(66, 133, 244, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   transition: all 0.3s ease;
   cursor: pointer;
   position: relative;
@@ -1028,14 +1028,14 @@ body {
 }
 
 .thumbnail:hover {
-  border-color: var(--st-accent);
+  border-color: rgba(255, 255, 255, 0.30);
   transform: scale(1.05);
-  box-shadow: 0 0 10px rgba(66, 133, 244, 0.4);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.08);
 }
 
 .thumbnail.selected {
-  border-color: var(--st-accent);
-  box-shadow: 0 0 12px rgba(66, 133, 244, 0.6);
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.10);
 }
 
 .thumbnail img {
@@ -1048,8 +1048,8 @@ body {
   position: absolute;
   top: 2px;
   right: 2px;
-  background: rgba(66, 133, 244, 0.9);
-  color: #000;
+  background: rgba(0, 0, 0, 0.65);
+  color: rgba(255, 255, 255, 0.80);
   font-size: 9px;
   font-weight: 700;
   padding: 2px 5px;
@@ -1106,8 +1106,8 @@ body {
   left: 4px;
   width: 18px;
   height: 18px;
-  background: rgba(0, 0, 0, 0.7);
-  border: 2px solid rgba(66, 133, 244, 0.5);
+  background: rgba(0, 0, 0, 0.55);
+  border: 1.5px solid rgba(255, 255, 255, 0.30);
   border-radius: 4px;
   cursor: pointer;
   display: flex;
@@ -1118,19 +1118,19 @@ body {
 }
 
 .thumbnail-checkbox:hover {
-  background: rgba(66, 133, 244, 0.2);
-  border-color: var(--st-accent);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.60);
 }
 
 .thumbnail-checkbox.checked {
-  background: var(--st-accent);
-  border-color: var(--st-accent);
+  background: #fff;
+  border-color: #fff;
 }
 
 .thumbnail-checkbox.checked::after {
   content: '✓';
-  color: #000;
-  font-size: 12px;
+  color: #1a1a2e;
+  font-size: 11px;
   font-weight: 900;
 }
 
@@ -1578,17 +1578,17 @@ body {
   gap: 6px;
 }
 
-/* PNG gets a blue-tinted accent */
+/* PNG — neutral, matches PDF */
 #downloadSelectedBtn {
-  border-color: rgba(66,133,244,0.35);
-  background: rgba(66,133,244,0.09);
-  text-shadow: 0 0 12px rgba(66,133,244,0.5);
-  box-shadow: inset 0 1px 0 rgba(66,133,244,.15), 0 4px 14px rgba(0,0,0,.28);
+  border-color: rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.07);
+  text-shadow: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 4px 14px rgba(0,0,0,.28);
 }
 #downloadSelectedBtn:hover {
-  background: rgba(66,133,244,0.18);
-  border-color: rgba(66,133,244,0.6);
-  box-shadow: inset 0 1px 0 rgba(66,133,244,.2), 0 6px 20px rgba(66,133,244,.22);
+  background: rgba(255,255,255,0.13);
+  border-color: rgba(255,255,255,0.30);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 6px 18px rgba(0,0,0,.25);
 }
 
 /* PDF gets a green-tinted accent */
@@ -4080,23 +4080,24 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .action-btn.ai-action {
-  background: linear-gradient(135deg, rgba(66,133,244,.28) 0%, rgba(52,168,83,.20) 100%);
-  border-color: rgba(66, 133, 244, 0.5);
+  background: #4285F4;
+  border-color: #4285F4;
   color: #fff;
   font-weight: 700;
   letter-spacing: 0.3px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 4px 16px rgba(66,133,244,.22);
+  box-shadow: 0 2px 8px rgba(66,133,244,.35);
 }
 
 .action-btn.ai-action:hover {
-  background: linear-gradient(135deg, rgba(66,133,244,.42) 0%, rgba(52,168,83,.30) 100%);
-  border-color: rgba(66,133,244,.75);
+  background: #5a95f5;
+  border-color: #5a95f5;
   transform: translateY(-1px);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 6px 20px rgba(66,133,244,.32);
+  box-shadow: 0 4px 14px rgba(66,133,244,.45);
 }
 
 .action-btn.ai-action:active {
   transform: translateY(0) scale(.98);
+  background: #3b78e7;
 }
 
 .trial-countdown-toast {
