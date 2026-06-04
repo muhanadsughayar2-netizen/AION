@@ -247,6 +247,16 @@ body {
   text-shadow: 0 0 24px rgba(255,255,255,0.18), 0 1px 0 rgba(255,255,255,.05);
 }
 
+/* "ON" part of the AI ON wordmark — Google 4-color gradient */
+.ami-on {
+  background: linear-gradient(90deg, #4285F4 0%, #34A853 40%, #FBBC05 70%, #EA4335 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 800;
+  letter-spacing: 5px;
+}
+
 .ami-text-ai {
   display: none;
 }
@@ -887,25 +897,28 @@ body {
 
 .select-all-btn {
   flex: 1;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
   padding: 8px 10px;
   border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', Roboto, sans-serif;
   cursor: pointer;
   transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
   white-space: normal;
   overflow-wrap: break-word;
   line-height: 1.25;
-  min-height: 34px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 4px 12px rgba(0,0,0,.22);
+  text-shadow: 0 0 10px rgba(255,255,255,0.3);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 4px 12px rgba(0,0,0,.22);
 }
 
 .select-all-btn:hover {
@@ -923,22 +936,25 @@ body {
   flex: 1;
   background: rgba(66, 133, 244, 0.10);
   border: 1px solid rgba(66, 133, 244, 0.32);
-  color: #7EB3FF;
+  color: #ffffff;
   padding: 8px 10px;
   border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', Roboto, sans-serif;
   cursor: pointer;
   transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
   white-space: normal;
   overflow-wrap: break-word;
   line-height: 1.25;
-  min-height: 34px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
+  text-shadow: 0 0 10px rgba(66,133,244,0.45);
   box-shadow: inset 0 1px 0 rgba(66,133,244,.12), 0 4px 12px rgba(0,0,0,.22);
 }
 
@@ -1344,34 +1360,38 @@ body {
 .clear-button {
   width: 100%;
   padding: 10px;
-  background: rgba(66, 133, 244, 0.1);
-  border: 1px solid rgba(66, 133, 244, 0.3);
-  color: var(--st-accent);
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
+  background: rgba(234, 67, 53, 0.08);
+  border: 1px solid rgba(234, 67, 53, 0.28);
+  color: #ffffff;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', Roboto, sans-serif;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
   backdrop-filter: blur(10px);
   margin-top: 8px;
-  /* Multi-language support */
   white-space: normal;
   overflow-wrap: break-word;
-  min-height: 32px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
+  text-shadow: 0 0 10px rgba(234,67,53,0.5);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 4px 12px rgba(0,0,0,.22);
 }
 
 .clear-button:hover {
-  background: rgba(66, 133, 244, 0.2);
-  border-color: rgba(66, 133, 244, 0.5);
+  background: rgba(234, 67, 53, 0.18);
+  border-color: rgba(234, 67, 53, 0.55);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 6px 18px rgba(234,67,53,.22);
 }
 
 .clear-button:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(.98);
 }
 
 .clear-button:disabled {
@@ -1531,26 +1551,55 @@ body {
 
 .bottom-save-btn {
   flex: 1;
-  padding: 9px 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.82);
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
   border-radius: 10px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
   cursor: pointer;
   font-family: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', Roboto, sans-serif;
   transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 4px 12px rgba(0,0,0,.22);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 4px 14px rgba(0,0,0,.28);
+  text-shadow: 0 0 12px rgba(255,255,255,0.28);
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* PNG gets a blue-tinted accent */
+#downloadSelectedBtn {
+  border-color: rgba(66,133,244,0.35);
+  background: rgba(66,133,244,0.09);
+  text-shadow: 0 0 12px rgba(66,133,244,0.5);
+  box-shadow: inset 0 1px 0 rgba(66,133,244,.15), 0 4px 14px rgba(0,0,0,.28);
+}
+#downloadSelectedBtn:hover {
+  background: rgba(66,133,244,0.18);
+  border-color: rgba(66,133,244,0.6);
+  box-shadow: inset 0 1px 0 rgba(66,133,244,.2), 0 6px 20px rgba(66,133,244,.22);
+}
+
+/* PDF gets a green-tinted accent */
+#exportPdfBtn {
+  border-color: rgba(52,168,83,0.35);
+  background: rgba(52,168,83,0.09);
+  text-shadow: 0 0 12px rgba(52,168,83,0.5);
+  box-shadow: inset 0 1px 0 rgba(52,168,83,.15), 0 4px 14px rgba(0,0,0,.28);
+}
+#exportPdfBtn:hover {
+  background: rgba(52,168,83,0.18);
+  border-color: rgba(52,168,83,0.6);
+  box-shadow: inset 0 1px 0 rgba(52,168,83,.2), 0 6px 20px rgba(52,168,83,.22);
 }
 
 .bottom-save-btn:hover {
-  background: rgba(255, 255, 255, 0.11);
-  border-color: rgba(255, 255, 255, 0.28);
-  color: #fff;
   transform: translateY(-1px);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 6px 18px rgba(0,0,0,.3);
 }
 
 .bottom-save-btn:active {
@@ -3606,12 +3655,13 @@ html[dir="rtl"] .logo-highlight {
 }
 
 .hero-action-label {
-  font-size: 9px;
-  font-weight: 700;
-  color: #4285F4;
-  letter-spacing: 1.4px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 1.6px;
   text-transform: uppercase;
   font-family: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', Roboto, sans-serif;
+  text-shadow: 0 0 12px rgba(255,255,255,0.35), 0 1px 0 rgba(255,255,255,.08);
 }
 
 .hero-action-btn {
@@ -3653,7 +3703,7 @@ html[dir="rtl"] .logo-highlight {
   border-color: #4285F4;
   box-shadow: 0 0 18px rgba(66, 133, 244, 0.3);
 }
-.hero-action-col:nth-child(1) .hero-action-label { color: #4285F4; }
+.hero-action-col:nth-child(1) .hero-action-label { color: #fff; text-shadow: 0 0 10px rgba(66,133,244,0.7), 0 0 22px rgba(66,133,244,0.3); }
 
 /* SNIP → Google Red */
 .snip-btn {
@@ -3666,7 +3716,7 @@ html[dir="rtl"] .logo-highlight {
   border-color: #EA4335;
   box-shadow: 0 0 18px rgba(234, 67, 53, 0.3);
 }
-.hero-action-col:nth-child(2) .hero-action-label { color: #EA4335; }
+.hero-action-col:nth-child(2) .hero-action-label { color: #fff; text-shadow: 0 0 10px rgba(234,67,53,0.7), 0 0 22px rgba(234,67,53,0.3); }
 
 /* FULL PAGE → Google Yellow */
 .fullpage-btn {
@@ -3679,14 +3729,15 @@ html[dir="rtl"] .logo-highlight {
   border-color: #FBBC05;
   box-shadow: 0 0 18px rgba(251, 188, 5, 0.3);
 }
-.hero-action-col:nth-child(3) .hero-action-label { color: #FBBC05; }
+.hero-action-col:nth-child(3) .hero-action-label { color: #fff; text-shadow: 0 0 10px rgba(251,188,5,0.7), 0 0 22px rgba(251,188,5,0.3); }
 
 /* ASK AI → Google Green */
 .ai-hero-col {
   margin-left: 4px;
 }
 .ai-label {
-  color: #34A853 !important;
+  color: #fff !important;
+  text-shadow: 0 0 10px rgba(52,168,83,0.7), 0 0 22px rgba(52,168,83,0.3) !important;
 }
 .ai-btn {
   width: 76px !important;
