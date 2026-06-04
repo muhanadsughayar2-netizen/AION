@@ -4147,6 +4147,9 @@ if (geminiClearBtn) geminiClearBtn.addEventListener('click', clearGeminiKey);
 const aiManageLink = document.getElementById('aiManageLink');
 if (aiManageLink) aiManageLink.addEventListener('click', handleAIButtonClick);
 
+const setupBannerBtn = document.getElementById('setupBannerBtn');
+if (setupBannerBtn) setupBannerBtn.addEventListener('click', () => showGeminiModal());
+
 // Close button for API Key modal
 const geminiModalClose = document.getElementById('geminiModalClose');
 if (geminiModalClose) geminiModalClose.addEventListener('click', hideGeminiModal);
@@ -4502,6 +4505,11 @@ async function updateAiButtonState() {
     if (aiStatusDot) {
       const ready = (policy === 'institution-only') ? orgProvidesKey : !!(result.geminiApiKey || orgProvidesKey);
       aiStatusDot.style.background = ready ? '#00ff88' : '#ffaa00';
+    }
+    const setupBanner = document.getElementById('setupBanner');
+    if (setupBanner) {
+      const hasKey = !!(result.geminiApiKey || orgProvidesKey);
+      setupBanner.style.display = hasKey ? 'none' : 'flex';
     }
   });
 }
