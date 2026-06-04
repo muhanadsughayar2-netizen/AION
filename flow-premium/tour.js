@@ -10,7 +10,7 @@
   const STEPS = [
     {
       target: null,
-      title: 'Welcome to SnapToAI 📸',
+      title: 'Welcome to Aion 📸',
       body: 'Quick tour: Capture → Select → Edit → Send. Takes about 30 seconds.',
       welcome: true
     },
@@ -52,7 +52,7 @@
     },
     {
       target: '#aiManageLink',
-      title: 'Settings — your control panel ⚙',
+      title: 'API & Account — your control panel ⚙',
       body: 'Paste your free Gemini key here to unlock AI. We auto-detect what your key can do — no manual model switching.',
       extra: 'settings'
     },
@@ -70,7 +70,7 @@
     {
       target: null,
       title: "You're all set! 🎉",
-      body: 'Pro tip: right-click any page for the SnapToAI wand menu — capture, analyze, and send faster.'
+      body: 'Pro tip: right-click any page for the Aion wand menu — capture, analyze, and send faster.'
     }
   ];
 
