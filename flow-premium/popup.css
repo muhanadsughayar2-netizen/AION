@@ -249,12 +249,12 @@ body {
 
 /* Tagline under the AION wordmark */
 .ami-tagline {
-  font-size: 8.5px;
-  font-weight: 400;
-  letter-spacing: 0.3px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.4px;
   font-family: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', Roboto, sans-serif;
-  color: rgba(255, 255, 255, 0.38);
-  margin-top: 3px;
+  color: rgba(255, 255, 255, 0.58);
+  margin-top: 4px;
   line-height: 1;
   white-space: nowrap;
 }
