@@ -148,6 +148,18 @@
       </div>
     </div>
 
+    <!-- Setup banner — shown when no API key is connected -->
+    <div id="setupBanner" class="setup-banner" style="display:none;">
+      <div class="setup-banner-left">
+        <span class="setup-banner-icon">🔑</span>
+        <div>
+          <div class="setup-banner-title">Connect your Gemini key</div>
+          <div class="setup-banner-sub">Unlock all Google AI Studio features</div>
+        </div>
+      </div>
+      <button class="setup-banner-btn" id="setupBannerBtn">Set up ↗</button>
+    </div>
+
     <div id="trialCountdownToast" class="trial-countdown-toast" style="display: none;">
       <span id="trialCountdownText"></span>
       <button id="trialCountdownDismiss" class="trial-toast-dismiss">&times;</button>
@@ -303,34 +315,14 @@
     <div class="gemini-modal-content">
       <div class="gemini-modal-header">
         <div class="gemini-header-left">
-          <span class="gemini-icon">✨</span>
-          <span class="gemini-title" data-i18n="activateAiAnalysis">Activate AI Analysis</span>
+          <span class="gemini-icon">🔑</span>
+          <span class="gemini-title">Connect Your Gemini Key</span>
         </div>
         <span id="geminiModalClose" class="gemini-modal-close" title="Close">✕</span>
       </div>
       <div id="geminiStatus" class="gemini-status-bar" style="display: none;">
         <span class="gemini-status-dot"></span>
-        <span>Connected</span>
-      </div>
-
-      <!-- Rap-tutorial video teaser -->
-      <div id="apiKeyVideoCard" style="position:relative;margin:10px 0 14px 0;border-radius:14px;overflow:hidden;background:linear-gradient(135deg, rgba(120,40,200,0.25), rgba(0,217,255,0.15));border:1px solid rgba(0,217,255,0.25);cursor:pointer;box-shadow:0 4px 20px rgba(0,217,255,0.12);">
-        <div id="apiKeyVideoPoster" style="display:flex;align-items:center;gap:12px;padding:12px 14px;">
-          <div style="position:relative;flex-shrink:0;width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 35% 35%, var(--st-accent), #7b2cff);display:flex;align-items:center;justify-content:center;box-shadow:0 0 22px rgba(0,217,255,0.55);">
-            <div style="position:absolute;inset:0;border-radius:50%;animation:apiKeyPulse 2s ease-out infinite;border:2px solid rgba(0,217,255,0.7);"></div>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff" style="margin-left:3px;"><path d="M8 5v14l11-7z"/></svg>
-          </div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-weight:700;color:#fff;font-size:13px;line-height:1.2;margin-bottom:3px;">
-              🎤 Rap tutorial — How to get your key
-            </div>
-            <div style="color:rgba(255,255,255,0.75);font-size:11px;line-height:1.35;">
-              30-sec bop that makes API setup stupid easy. Tap to play.
-            </div>
-          </div>
-          <div style="flex-shrink:0;font-size:18px;opacity:0.7;">▶</div>
-        </div>
-        <div id="apiKeyVideoFrameWrap" style="display:none;position:relative;width:100%;padding-top:56.25%;background:#000;border-radius:8px;overflow:hidden;"></div>
+        <span>Connected — All Google AI Studio features unlocked</span>
       </div>
 
       <div class="gemini-steps">
@@ -339,6 +331,7 @@
           <span class="step-text" data-i18n="openGoogleAiStudio">Open Google AI Studio</span>
         </div>
         <a href="https://aistudio.google.com/apikey" target="_blank" class="gemini-get-key-btn" data-i18n="goToAiStudio">Go to AI Studio ↗</a>
+        <div class="gemini-return-hint">📌 After copying your key, click the <strong>Aion icon</strong> in your Chrome toolbar to come back here</div>
         <div class="gemini-step">
           <span class="step-num">2</span>
           <span class="step-text" data-i18n="createApiKeyCopy">Click "Create API key" and copy it</span>
@@ -393,16 +386,6 @@
         </div>
       </div>
 
-      <div class="model-select-wrapper" style="margin-top: 10px;">
-        <label for="geminiModelSelect" style="display: block; font-size: 11px; color: #778899; margin-bottom: 5px;">AI Mode (also switchable in chat)</label>
-        <select id="geminiModelSelect" style="width: 100%; padding: 10px 14px; background: var(--st-bg-app-2); border: 1px solid rgba(0,217,255,0.2); border-radius: 8px; color: #fff; font-size: 13px; outline: none; cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url('data:image/svg+xml;utf8,<svg fill=\"%2300d9ff\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>'); background-repeat: no-repeat; background-position: right 10px center; background-size: 18px;">
-          <option value="vision">🔍 Vision — Analyze screenshots & text</option>
-          <option value="image">🎨 Image — Generate images</option>
-          <option value="music">🎵 Music — Create music clips</option>
-          <option value="video" id="videoModeOption" style="display:none;">🎬 Video — Generate video clips</option>
-        </select>
-        <div style="font-size: 10px; color: #556677; margin-top: 4px; line-height: 1.4;" id="modeDescription">Powered by Gemini 2.0 Flash</div>
-      </div>
       <div class="gemini-compliance">
         <label class="compliance-label">
           <input type="checkbox" id="geminiComplianceCheckbox">
