@@ -2447,6 +2447,112 @@ html[dir="rtl"] .logo-highlight {
   color: #555;
 }
 
+/* AI Tier Panel */
+.ai-tier-panel {
+  margin: 12px 0 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.ai-tier-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.3px;
+  margin-bottom: 10px;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+}
+
+.ai-tier-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 4px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.ai-tier-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ai-tier-option input[type="radio"] {
+  display: none;
+}
+
+.ai-tier-radio {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.30);
+  flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.ai-tier-option input[type="radio"]:checked + .ai-tier-radio {
+  border-color: #4285F4;
+  background: #4285F4;
+  box-shadow: 0 0 8px rgba(66, 133, 244, 0.5);
+}
+
+.ai-tier-radio-pro {
+  border-color: rgba(138, 43, 226, 0.5);
+}
+
+.ai-tier-option input[type="radio"]:checked + .ai-tier-radio-pro {
+  border-color: #a855f7;
+  background: #a855f7;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+}
+
+.ai-tier-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ai-tier-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+}
+
+.ai-tier-desc {
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.45);
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+}
+
+.ai-tier-credit {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.50);
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  line-height: 1.4;
+}
+
+.ai-tier-credit strong {
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 600;
+}
+
+.ai-tier-link {
+  color: #4285F4;
+  text-decoration: none;
+  font-weight: 600;
+  transition: opacity 0.15s;
+}
+
+.ai-tier-link:hover {
+  opacity: 0.75;
+}
+
 .gemini-compliance {
   margin: 8px 0;
 }

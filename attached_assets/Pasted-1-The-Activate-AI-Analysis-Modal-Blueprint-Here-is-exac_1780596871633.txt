@@ -1,0 +1,53 @@
+1. The "Activate AI Analysis" Modal Blueprint
+Here is exactly how to structure the area right under step 3. It keeps the UI uncluttered while clearly explaining the tiers and the $300 credit.
+
+Plaintext
+-------------------------------------------------
+(3) Paste it below
+
+[ ••••••••••••••••••••••••••••••••••••••• Show ]
+
+  ┌───────────────────────────────────────────┐
+  │ ⚡ Choose Your AI Power                   │
+  │                                           │
+  │ ⚪ Free Tier: Basic text & chat           │
+  │ 🟣 Pro Tier: Vision, Music, Video & Apps  │
+  │    🎁 $300 free credit for new Pro users  │
+  │                                           │
+  │                  👉 [ How to unlock Pro ] │
+  └───────────────────────────────────────────┘
+
+[ Activate ]                        [ Clear ]
+-------------------------------------------------
+Design Note: Use a subtle, dark translucent background for the "Choose Your AI Power" box (similar to the rap tutorial box at the top) so it feels like a natural part of the flow. Make the [ How to unlock Pro ] a clickable text link that opens your guide or billing link.
+
+2. The Main App Screen (Renaming "Settings")
+Looking at your first image (image_233385.png), right below the four main circular buttons (SNAP, SNIP, FULL PAGE, ASK AI), you currently have:
+● AI Ready    ⚙ Settings
+
+"Settings" is a bit vague. Since this menu is specifically where they will manage their API key, check their tier (Free vs. Pro), and handle billing upgrades, you want a name that clearly communicates access and power.
+
+Here are the clearest replacements to use instead of "Settings":
+
+Option A (Direct & Clear):
+● AI Ready    ⚙ API & Account
+
+Option B (Action-Oriented):
+● AI Ready    ⚙ Manage Access
+
+Option C (Focuses on the Engine):
+● AI Ready    ⚙ AI Engine
+
+Here is how Option A looks in the layout:
+
+Plaintext
+-------------------------------------------------
+      ( SNAP ) ( SNIP ) ( FULL PAGE ) ( ASK AI )
+
+             ● AI Ready    ⚙ API & Account
+
+[            ● Aion: Ready                     ]
+
+[ Select All ]     [ ✨ ASK AI ]      [  COPY  ]
+-------------------------------------------------
+By renaming it to ⚙ API & Account, users instantly know exactly where to click if they need to check their $300 credit status, upgrade to Pro, or update their key, without having to hunt through a generic "Settings" menu.
