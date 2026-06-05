@@ -1,0 +1,25 @@
+[SnapToAI] Loaded 22 voices
+ai-chat.js:895 [SnapToAI] Available languages: en, de, es, fr, hi, id, it, ja, ko, nl, pl, pt, ru, zh
+ai-chat.js:6250 [SnapToAI] Loading images from IndexedDB (unlimited storage)
+ai-chat.js:1283 [SnapToAI] Prepaid key detected — all modes enabled
+ai-chat.js:6263 [SnapToAI] Loaded 1 images for AI chat
+(index):64 cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
+(anonymous) @ (index):64Understand this warning
+sandbox.html:1 Unsafe attempt to load URL chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/sandbox.html from frame with URL chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/sandbox.html. Domains, protocols and ports must match.
+Understand this error
+ai-chat.js:7115 [SnapToAI Image] Attaching 1 screenshot(s) as image reference
+ai-chat.js:7125 [SnapToAI Image] Attempt 1/3 using gemini-3-flash-preview via generateContent
+ai-chat.js:7129  POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyC3cE7LY2aPiEPiV6Cont8qlcBvNaVjx7E 400 (Bad Request)
+handleSend @ ai-chat.js:7129
+await in handleSend
+(anonymous) @ ai-chat.js:8577Understand this error
+ai-chat.js:7144 [SnapToAI Image] Status: 400 {"error":{"code":400,"message":"Image generation is not available in your country.","status":"FAILED_PRECONDITION"}}
+ai-chat.js:7165 [SnapToAI Image] Error: Image generation is not available in your country.
+ai-chat.js:7171 [SnapToAI Image] gemini-3-flash-preview failed, trying next model...
+ai-chat.js:7125 [SnapToAI Image] Attempt 1/3 using gemini-2.5-flash-image via generateContent
+ai-chat.js:7144 [SnapToAI Image] Status: 200 {"candidates":[{"finishReason":"PROHIBITED_CONTENT","index":0}],"usageMetadata":{"promptTokenCount":266,"totalTokenCount":266,"promptTokensDetails":[{"modality":"TEXT","tokenCount":8},{"modality":"IMAGE","tokenCount":258}],"serviceTier":"standard"},"modelVersion":"gemini-2.5-flash-image","responseId":"xKYiarOwM9nYxN8P3obJmQU"}
+ai-chat.js:7160 [SnapToAI Image] 200 but no image data. Reason: PROHIBITED_CONTENT
+ai-chat.js:7125 [SnapToAI Image] Attempt 2/3 using gemini-2.5-flash-image via generateContent
+ai-chat.js:7144 [SnapToAI Image] Status: 200 {"candidates":[{"finishReason":"PROHIBITED_CONTENT","index":0}],"usageMetadata":{"promptTokenCount":266,"totalTokenCount":266,"promptTokensDetails":[{"modality":"TEXT","tokenCount":8},{"modality":"IMAGE","tokenCount":258}],"serviceTier":"standard"},"modelVersion":"gemini-2.5-flash-image","responseId":"zqYiapfiAfv8vdIP_MpH"}
+ai-chat.js:7160 [SnapToAI Image] 200 but no image data. Reason: PROHIBITED_CONTENT
+ai-chat.js:7125 [SnapToAI Image] Attempt 3/3 using gemini-2.5-flash-image via generateContent

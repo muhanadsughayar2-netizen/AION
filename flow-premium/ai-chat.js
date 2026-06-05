@@ -7087,6 +7087,7 @@ async function handleSend() {
     if (modeConfig.type === 'gemini-image') {
       // === IMAGE GENERATION (via generateContent with responseModalities) ===
       const imageModels = [
+        'gemini-2.5-flash-image',
         'gemini-2.0-flash-preview-image-generation',
         'gemini-2.0-flash-exp'
       ];
