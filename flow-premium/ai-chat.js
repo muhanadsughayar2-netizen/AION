@@ -5,7 +5,7 @@
 // Prevents multiple simultaneous API calls that cause rate limit errors
 let isRequestInProgress = false;
 let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = 3000; // 3 seconds between requests minimum
+const MIN_REQUEST_INTERVAL = 500; // 0.5s between requests — just enough to avoid bursting
 
 async function waitForRateLimit() {
   const now = Date.now();
@@ -7015,7 +7015,7 @@ async function handleSend() {
           
           // Short delay between batches to respect API limits
           if (batchNum < numBatches - 1) {
-            await new Promise(r => setTimeout(r, 2000));
+            await new Promise(r => setTimeout(r, 500));
           }
         }
         
