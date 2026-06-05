@@ -6273,21 +6273,21 @@ async function initializeChat() {
       // Single image — show as before
       document.getElementById('previewImage').src = currentImages[0];
     } else {
-      // Multiple images — show ONLY the first image + a count badge.
-      // Decoding all N large base64 screenshots simultaneously causes a
-      // memory spike that hangs / crashes the extension tab.
+      // Multiple images — show each one individually in the grid.
+      // Use loading="lazy" + decoding="async" so images are decoded one at a
+      // time as the user scrolls, avoiding the memory spike from simultaneous decoding.
       previewContainer.innerHTML = '<div class="multi-image-grid" id="multiImageGrid"></div>';
       const grid = document.getElementById('multiImageGrid');
-      const firstImg = document.createElement('img');
-      firstImg.src = currentImages[0];
-      firstImg.alt = 'Screenshot 1';
-      firstImg.className = 'grid-image';
-      firstImg.title = `Screenshot 1 of ${currentImages.length}`;
-      grid.appendChild(firstImg);
-      const badge = document.createElement('div');
-      badge.className = 'multi-image-badge';
-      badge.textContent = `${currentImages.length} screenshots`;
-      previewContainer.appendChild(badge);
+      currentImages.forEach((src, i) => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = `Screenshot ${i + 1}`;
+        img.className = 'grid-image';
+        img.title = `Screenshot ${i + 1} of ${currentImages.length}`;
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        grid.appendChild(img);
+      });
     }
   } else {
     // No images - show the placeholder (it's already in HTML)
