@@ -331,11 +331,10 @@ async function incrementCaptureCount(captureType) {
     const newCount = (reviewData.snaptoai_capture_count || 0) + 1;
     await chrome.storage.local.set({ snaptoai_capture_count: newCount });
 
-    if (!reviewData.snaptoai_reviewed && (reviewData.snaptoai_review_dismissed_count || 0) < 3) {
-      if (REVIEW_MILESTONES.includes(newCount)) {
-        showReviewModal();
-      }
-    }
+    // Review popup disabled — users can leave a review via the heart icon in the footer
+    // if (!reviewData.snaptoai_reviewed && (reviewData.snaptoai_review_dismissed_count || 0) < 3) {
+    //   if (REVIEW_MILESTONES.includes(newCount)) { showReviewModal(); }
+    // }
 
     // Always log the capture to the backend, even when the user isn't
     // signed in. This way the admin dashboard reflects ALL activity, not
@@ -1212,6 +1211,20 @@ function setupEventListeners() {
   const youtubeBtn = document.getElementById('youtubeBtn');
   if (youtubeBtn) {
     youtubeBtn.addEventListener('click', () => {
+      chrome.tabs.create({ url: 'https://youtube.com/@snaptoai-2026' });
+    });
+  }
+
+  const footerReviewBtn = document.getElementById('footerReviewBtn');
+  if (footerReviewBtn) {
+    footerReviewBtn.addEventListener('click', () => {
+      chrome.tabs.create({ url: CHROME_STORE_REVIEW_URL });
+    });
+  }
+
+  const footerHelpBtn = document.getElementById('footerHelpBtn');
+  if (footerHelpBtn) {
+    footerHelpBtn.addEventListener('click', () => {
       chrome.tabs.create({ url: 'https://youtube.com/@snaptoai-2026' });
     });
   }

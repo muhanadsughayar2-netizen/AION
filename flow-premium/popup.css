@@ -1487,6 +1487,31 @@ body {
   padding: 0 2px;
 }
 
+/* Footer icon bar — heart + help */
+.popup-footer-bar {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 6px 0 2px;
+}
+
+.footer-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #5f6368;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.footer-icon-btn:hover {
+  color: #EA4335;
+}
+
 .bottom-save-btn {
   flex: 1;
   padding: 10px 12px;
