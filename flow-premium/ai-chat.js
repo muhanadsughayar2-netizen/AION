@@ -162,7 +162,20 @@ function buildDailyLimitCard() {
     </div>`;
 }
 
-function buildRateLimitCard() {
+function buildRateLimitCard(hasKey = false) {
+  if (hasKey) {
+    // User already has their own API key — just tell them to wait, no setup card
+    return `
+      <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg,rgba(255,165,0,0.10),rgba(255,100,0,0.06));border:1px solid rgba(255,165,0,0.28);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <span style="font-size:24px;">⏱️</span>
+          <span style="font-size:15px;font-weight:800;color:#fff;">Google hit a speed bump — wait ~60 seconds</span>
+        </div>
+        <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.85);">
+          Your API key is fine. Google briefly limits how many requests you can send per minute. Just wait a moment and try again — everything will work normally.
+        </div>
+      </div>`;
+  }
   return `
     <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(0,217,255,0.10), rgba(138,43,226,0.06));border:1px solid rgba(0,217,255,0.22);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
@@ -6884,7 +6897,7 @@ async function handleSend() {
           } catch (e) {}
           errBubble.innerHTML = buildInstitutionKeyInvalidCard(instName, msg);
         } else if (msg === 'PROXY_BUSY' || msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('wait') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('busy')) {
-          errBubble.innerHTML = buildRateLimitCard();
+          errBubble.innerHTML = buildRateLimitCard(false); // proxy path — user has no personal key
         } else {
           errBubble.innerHTML = buildNoKeyCard();
         }
@@ -6991,7 +7004,7 @@ async function handleSend() {
               if (batchResponse.status === 429 || batchErrLower.includes('quota') || batchErrLower.includes('rate') || batchErrLower.includes('exceeded') || batchErrLower.includes('resource')) {
                 removeLoading();
                 const quotaBatchBubble = createResponseBubble();
-                quotaBatchBubble.innerHTML = buildRateLimitCard();
+                quotaBatchBubble.innerHTML = buildRateLimitCard(!!apiKey);
                 thread.scrollTop = thread.scrollHeight;
                 sendBtn.disabled = false;
                 releaseRequestLock();
@@ -7004,7 +7017,7 @@ async function handleSend() {
             if (batchCatchLower.includes('quota') || batchCatchLower.includes('rate') || batchCatchLower.includes('exceeded')) {
               removeLoading();
               const quotaBatchBubble2 = createResponseBubble();
-              quotaBatchBubble2.innerHTML = buildRateLimitCard();
+              quotaBatchBubble2.innerHTML = buildRateLimitCard(!!apiKey);
               thread.scrollTop = thread.scrollHeight;
               sendBtn.disabled = false;
               releaseRequestLock();
@@ -7661,7 +7674,7 @@ async function handleSend() {
       const isBilling = lowerErr.includes('billing') || lowerErr.includes('permission') || lowerErr.includes('not enabled') || lowerErr.includes('paid tier') || lowerErr.includes('precondition');
       if (isQuotaError) {
         const quotaBubble = createResponseBubble();
-        quotaBubble.innerHTML = buildRateLimitCard();
+        quotaBubble.innerHTML = buildRateLimitCard(!!apiKey);
         thread.scrollTop = thread.scrollHeight;
       } else if (isBilling) {
         const unlockBubble = createResponseBubble();
