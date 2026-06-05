@@ -1781,7 +1781,7 @@ async function stylizeImageForVideo(apiKey, imageData, style) {
     if (match) mimeType = match[1];
   }
 
-  const models = ['gemini-2.5-flash-image', 'gemini-3.1-flash-image-preview', 'gemini-3-pro-image-preview', 'gemini-2.0-flash-exp'];
+  const models = ['gemini-2.0-flash-preview-image-generation', 'gemini-2.0-flash-exp'];
   let lastError = '';
 
   for (const model of models) {
@@ -7087,9 +7087,8 @@ async function handleSend() {
     if (modeConfig.type === 'gemini-image') {
       // === IMAGE GENERATION (via generateContent with responseModalities) ===
       const imageModels = [
-        'gemini-3-flash-preview',
-        'gemini-2.5-flash-image',
-        'gemini-3-pro-image-preview'
+        'gemini-2.0-flash-preview-image-generation',
+        'gemini-2.0-flash-exp'
       ];
       
       let lastResponseData = null;
@@ -7327,7 +7326,7 @@ async function handleSend() {
         return p;
       }
 
-      const musicModels = [modeConfig.model, 'lyria-3-pro-preview', 'gemini-2.5-flash-preview-tts'];
+      const musicModels = ['lyria-3', modeConfig.model, 'lyria-3-pro-preview', 'gemini-2.5-flash-preview-tts'];
       let audioData = null;
       let audioError = '';
       let audioSucceeded = false;
