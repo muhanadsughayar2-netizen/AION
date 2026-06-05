@@ -129,75 +129,36 @@ body {
 /* Ambient glow blob — disabled */
 .ami-header-glow { display: none; }
 
-/* Icon wrapper with spinning ring */
+/* Icon wrapper */
 .ami-icon-wrap {
   position: relative;
   flex-shrink: 0;
-  width: 62px;
-  height: 62px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1;
 }
 
-.ami-icon-ring {
-  position: absolute;
-  inset: -2px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,0.15);
-  background: transparent;
-}
+.ami-icon-ring { display: none; }
+.ami-icon-ring::after { display: none; }
 
-.ami-icon-ring::after {
-  display: none;
-}
-
-/* The actual icon */
+/* The actual icon — smaller, balanced */
 .amiflo-icon {
-  width: 52px;
-  height: 52px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
-  position: relative;
-  z-index: 2;
 }
 
 /* Two-line stacked wordmark */
 .ami-brand {
   display: flex;
   flex-direction: column;
-  gap: 0px;
+  gap: 0;
   line-height: 1;
-  z-index: 1;
-  position: relative;
-  overflow: hidden;
 }
 
-/* Shimmer sweep across the brand text */
-.ami-brand::after {
-  content: '';
-  position: absolute;
-  top: 0; bottom: 0;
-  left: -60%;
-  width: 50%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255,255,255,0.22) 50%,
-    transparent 100%
-  );
-  transform: skewX(-20deg);
-  animation: ami-shimmer 3.5s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes ami-shimmer {
-  0%   { left: -60%; opacity: 0; }
-  15%  { opacity: 1; }
-  60%  { opacity: 1; }
-  80%  { left: 110%; opacity: 0; }
-  100% { left: 110%; opacity: 0; }
-}
+.ami-brand::after { display: none; }
 
 .ami-brand-top {
   display: flex;
@@ -205,27 +166,25 @@ body {
   gap: 0;
 }
 
+/* AION — bold italic, like the reference image */
 .ami-text-ami {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
-  letter-spacing: 5px;
-  font-family: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', Roboto, sans-serif;
+  font-style: italic;
+  letter-spacing: 3px;
+  font-family: 'Google Sans', 'Inter', Roboto, sans-serif;
   color: #ffffff;
-  text-shadow: 0 0 24px rgba(255,255,255,0.18), 0 1px 0 rgba(255,255,255,.05);
 }
 
-/* Tagline under the AION wordmark */
+/* "Powered by Google AI Studio" tagline */
 .ami-tagline {
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 1.2px;
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  font-family: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', Roboto, sans-serif;
-  background: linear-gradient(90deg, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.45) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-top: 5px;
+  font-family: 'Google Sans', 'Inter', Roboto, sans-serif;
+  color: #9aa0a6;
+  margin-top: 4px;
   line-height: 1;
   white-space: nowrap;
 }
