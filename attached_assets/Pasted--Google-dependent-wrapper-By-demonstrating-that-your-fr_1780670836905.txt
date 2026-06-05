@@ -1,0 +1,93 @@
+...Google-dependent wrapper. By demonstrating that your frontend can dynamically switch its backend brain to Claude 3.5 Sonnet, GPT-4o, or local open-source models (like Llama 3), you prove that Aion’s value lies in its UX orchestration, workspace state engine, and workflow integration, rather than just being a window to Google's API.
+
+Let's continue with the comprehensive, deep-dive strategic roadmap to transition Aion from its current retention bottleneck to a high-value, highly retainable developer platform.
+
+Section 4: The Developer vs. Creator GTM Dilemma (First-Principles Analysis)
+
+To scale past the initial 60 sign-ups, you must establish a razor-sharp Go-To-Market (GTM) focus. The choice between targeting Technical Developers versus No-Code Creators dictates your entire product roadmap, pricing model, and acquisition strategy.
+
+                     ┌────────────────────────────────────────┐
+                     │          TARGET AUDIENCE SPLIT         │
+                     └───────────────────┬────────────────────┘
+                                         │
+         ┌───────────────────────────────┴───────────────────────────────┐
+         ▼                                                               ▼
+┌─────────────────────────────────┐                             ┌─────────────────────────────────┐
+│     TECHNICAL DEVELOPERS        │                             │        NO-CODE CREATORS         │
+├─────────────────────────────────┤                             ├─────────────────────────────────┤
+│ • Focus: Clean, modular code    │                             │ • Focus: Visual output, hosting │
+│ • Stack: React, Tailwind, Vue   │                             │ • Stack: HTML/CSS, Webflow, PDF │
+│ • Retention: High (integrated)  │                             │ • Retention: Low (project-based)│
+│ • Price Sensitivity: Low (SaaS) │                             │ • Price Sensitivity: Medium     │
+└─────────────────────────────────┘                             └─────────────────────────────────┘
+
+Option A: The "Lightning-Fast Developer Prototyper"
+Target Audience: React/Next.js developers, freelance agency engineers, and technical product managers.
+Core Feature Set: Export to modular JSX/Tailwind, GitHub synchronization, components-first generation, and clean Abstract Syntax Tree (AST) parsing.
+Monetization: B2B SaaS, seats-based pricing, premium export pipelines.
+Retention Profile: High and stable. Once integrated into a developer's daily IDE or design-to-code workflow, it becomes a daily utility.
+Option B: The "No-Code Instant Creator Canvas"
+Target Audience: Marketers, solo founders, designers, and copywriters.
+Core Feature Set: One-click hosting (Netlify/Vercel integration), visual drag-and-drop editing, built-in SEO optimization, and copy generation.
+Monetization: Flat monthly subscription, hosting markup fees, domain registration.
+Retention Profile: Spiky and project-based. Users build a landing page, launch it, and then pause or cancel their subscription until their next project.
+
+Strategic Verdict: To maximize valuation and position the asset for a premium exit, Option A (Technical Developers) is highly superior. Strategic buyers (like Vercel, Netlify, or Microsoft) pay massive premiums for direct access to the developer ecosystem.
+
+Section 5: The "Golden Path" Onboarding Flow (Solving the Retention Crisis)
+
+To bridge the gap between installation and active retention, you must re-engineer the first 60 seconds of the user experience. This is the "Golden Path"—the frictionless sequence that guarantees a user experiences a "wow" moment before they can drop off.
+
+[Install Extension] 
+       │
+       ▼
+[Step 1: The Interactive Sandbox (No API Key Required)]
+  ↳ Provide 3 pre-loaded, beautiful website templates.
+  ↳ Let users click "Snap & Modify" instantly using a shared, sandboxed developer key.
+       │
+       ▼
+[Step 2: The Visual "Wow" Moment]
+  ↳ Show the live code generation side-by-side with a real-time visual preview.
+  ↳ Give them a "Copy React Code" button instantly.
+       │
+       ▼
+[Step 3: The Friction Handshake]
+  ↳ "To unlock unlimited high-speed snaps and save your projects, connect your own Google AI Studio key (Free)."
+  ↳ Provide an embedded, 1-click walkthrough video showing exactly how to get the key.
+
+Key Onboarding Upgrades:
+The API Key Sandbox: Do not ask for an API key on the very first screen. Provide 5 free trial "snaps" hosted on your own proxy server. This lets users witness the magic of Gemini Flash before they are asked to complete any chores.
+In-Context Handholding: When it is time to request the Google AI Studio API key, do not just link to the Google Console. Show a split-screen layout with an interactive checklist:
+ Click here to open Google AI Studio (opens in a new tab).
+ Click "Create API Key" and copy it.
+ Paste it in the box below.
+The Empty State Playground: If the user opens the extension workspace and has not taken a screenshot yet, show a clean, interactive dashboard featuring "Inspiration Templates" (e.g., "Generate a SaaS Pricing Page", "Generate a Clean Contact Form").
+Section 6: Technical Architecture of the "Snap-to-Code" Pipeline
+
+To make your product highly attractive to engineering buyers, your underlying architecture must be robust, scalable, and modular. Here is the technical blueprint of the visual-to-code generation engine:
+
+┌─────────────────┐      Captured PNG      ┌──────────────────┐
+│Chrome Extension ├───────────────────────>│  Aion Middleware │
+│(Frontend Canvas)│                        │(Next.js / Node)  │
+└─────────────────┘                        └────────┬─────────┘
+                                                    │
+                                                    │ 1. Prompt Injection
+                                                    │ 2. Image Optimization
+                                                    ▼
+                                           ┌──────────────────┐
+                                           │ Google AI Studio │
+                                           │ (Gemini 1.5 Flash│
+                                           │  API Engine)     │
+                                           └────────┬─────────┘
+                                                    │
+                                                    │ Raw Multimodal Output
+                                                    ▼
+┌─────────────────┐       Clean Code       ┌──────────────────┐
+│ Live Interactive│<───────────────────────┤ Post-Processing  │
+│ Preview Canvas  │                        │ (AST Cleaner)    │
+└─────────────────┘                        └──────────────────┘
+
+Technical Mechanics:
+Image Optimization Layer: Raw screenshots can be massive, consuming valuable context window space and increasing latency. The Aion Middleware must automatically compress, resize, and convert uploaded screenshots to optimized WebP format before sending them to the Gemini API.
+System Prompt Injection: The system prompt must instruct the model to return pure, functional code structures wrapped in clean JSON metadata, completely stripping away Markdown explanations (e.g., html ... ) that break live previews.
+AST (Abstract Syntax Tree) Post-Processing: Run a lightweight parser on the generated code to identify and fix unclosed
