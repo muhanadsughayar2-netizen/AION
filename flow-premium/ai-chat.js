@@ -8940,7 +8940,12 @@ document.getElementById('previewExpandBtn')?.addEventListener('click', () => {
 });
 
 document.getElementById('openAgentsBtn')?.addEventListener('click', openAgentsModal);
-document.getElementById('closeAgentsModal')?.addEventListener('click', closeAgentsModal);
+const _closeAgentsBtn = document.getElementById('closeAgentsModal');
+if (_closeAgentsBtn) {
+  _closeAgentsBtn.addEventListener('click', closeAgentsModal);
+  _closeAgentsBtn.addEventListener('mouseover', () => { _closeAgentsBtn.style.color = '#e8eaed'; });
+  _closeAgentsBtn.addEventListener('mouseout',  () => { _closeAgentsBtn.style.color = '#80868b'; });
+}
 document.getElementById('agentsModal')?.addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeAgentsModal();
 });
