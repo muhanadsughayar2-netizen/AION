@@ -8065,7 +8065,7 @@ function addBubbleActions(bubble, text) {
     const styled = `In a natural, warm, conversational pace: ${chunkText}`;
     const models = session.workingModel
       ? [session.workingModel]
-      : ['gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-preview-tts'];
+      : ['gemini-2.5-flash-preview-tts', 'gemini-2.5-pro-preview-tts'];
     let lastErr = '';
     for (const model of models) {
       try {
@@ -8092,7 +8092,7 @@ function addBubbleActions(bubble, text) {
         const mimeType = (part.mimeType || '').toLowerCase();
         const rawBytes = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
         let audioBlob;
-        if (mimeType.includes('pcm') || mimeType === '' || mimeType === 'audio/l16') {
+        if (mimeType.includes('pcm') || mimeType.startsWith('audio/l16') || mimeType.startsWith('audio/l-16') || mimeType === '') {
           const sr = 24000, ch = 1, bps = 16;
           const hdr = new ArrayBuffer(44); const dv = new DataView(hdr);
           const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
