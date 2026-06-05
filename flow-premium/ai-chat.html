@@ -416,9 +416,9 @@
     }
     
     .continue-btn {
-      background: rgba(66, 133, 244, 0.15) !important;
-      border-color: rgba(66, 133, 244, 0.4) !important;
-      color: var(--st-accent) !important;
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.08);
+      color: #667788;
     }
     
     .chat-bubble.loading {
@@ -679,21 +679,27 @@
     }
     
     .action-btn {
-      padding: 10px 18px;
-      background: rgba(66, 133, 244, 0.12);
-      border: 1px solid rgba(66, 133, 244, 0.35);
-      border-radius: 8px;
-      color: #4285F4;
-      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      color: #667788;
+      font-size: 12px;
+      font-weight: 500;
       cursor: pointer;
-      transition: all 0.2s;
+      white-space: nowrap;
+      transition: all 0.25s ease;
     }
     
     .action-btn:hover {
-      background: rgba(66, 133, 244, 0.22);
-      color: #fff;
-      box-shadow: 0 0 10px rgba(66, 133, 244, 0.3);
+      border-color: rgba(255,255,255,0.18);
+      color: #c8d0d8;
+      background: rgba(255,255,255,0.07);
     }
+    .action-btn:active { transform: scale(0.97); }
     
     .test-btn {
       background: rgba(66, 133, 244, 0.1);
@@ -874,8 +880,9 @@
       color: rgba(255, 255, 255, 0.85);
       font-weight: 400;
     }
-    .magic-add-btn { background: linear-gradient(45deg, #8b5cf6, #ec4899); border: none; border-radius: 12px; padding: 8px 14px; color: white; font-size: 11px; font-weight: 700; cursor: pointer; height: 33px; box-sizing: border-box; display: inline-flex; align-items: center; }
-    .magic-add-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(139,92,246,0.5); }
+    .magic-add-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; color: #667788; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all 0.25s ease; }
+    .magic-add-btn:hover { border-color: rgba(255,255,255,0.18); color: #c8d0d8; background: rgba(255,255,255,0.07); }
+    .magic-add-btn:active { transform: scale(0.97); }
     
     /* Magic Modal - Glassmorphism Style (matches payment modal) */
     .magic-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
@@ -1310,7 +1317,7 @@
       <div id="agentStatusBar" style="display:none; align-items:center; gap:6px; padding:5px 14px; background:rgba(255,255,255,0.04); border-top:1px solid rgba(255,255,255,0.07); font-size:12px; font-weight:500;"></div>
       <div class="magic-buttons" id="magicButtons" style="padding: 8px 12px; min-height: 40px;"></div>
       <div class="footer-actions">
-        <button class="magic-add-btn" id="openAgentsBtn" style="background:linear-gradient(135deg,#6c3fc5,#bc85ff);border-color:rgba(188,133,255,0.4);">🤖 Agents</button>
+        <button class="magic-add-btn" id="openAgentsBtn">Agents</button>
         <button class="magic-add-btn" id="addMagicBtn">+ Magic Agents</button>
         <button class="verdict-btn" id="verdictBtn" style="display:none !important;">⚖️ The Verdict</button>
         <button class="action-btn continue-btn" id="continueBtn">▶ Continue</button>
