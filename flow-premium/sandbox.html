@@ -147,41 +147,43 @@
       return html;
     }
 
+    // ── Strip unsafe iframe src values BEFORE DOM injection ─────────────────
+    // Chrome fires a security error the moment an iframe with a chrome-extension://
+    // src hits the DOM — post-injection cleanup is too late. We must sanitize
+    // the HTML string first so no bad iframe ever enters the DOM.
+    function sanitizeHtml(html) {
+      // Replace src on any <iframe> that points to an extension page or relative
+      // path (e.g. "sandbox.html", "ai-chat.html", "chrome-extension://...").
+      // The regex is intentionally loose — it captures the src= value and blanks
+      // it out; legitimate external iframes (https://) are left untouched.
+      return html.replace(
+        /(<iframe\b[^>]*?\bsrc\s*=\s*["'])([^"']*)(["'][^>]*>)/gi,
+        function(match, pre, src, post) {
+          try {
+            var resolved = new URL(src, location.href);
+            // Block chrome-extension://, relative extension pages, and empty/bad srcs
+            if (resolved.origin === location.origin) {
+              return pre + 'about:blank' + post;
+            }
+          } catch(e) {
+            // Unparseable (javascript:, data:...) — blank it
+            return pre + 'about:blank' + post;
+          }
+          return match; // safe external URL — leave as-is
+        }
+      );
+    }
+
     window.addEventListener('message', function(event) {
       try {
         var data = event.data;
         if (!data || !data.htmlCode) return;
-        injectHeadAssets(data.htmlCode);
+        // Sanitise BEFORE any DOM insertion so Chrome never sees the bad src
+        var safeHtml = sanitizeHtml(data.htmlCode);
+        injectHeadAssets(safeHtml);
         var app = document.getElementById('sandbox-app');
         if (!app) return;
-        app.innerHTML = extractBody(data.htmlCode);
-
-        // ── Block unsafe iframe src values ───────────────────────────────────
-        // AI-generated code sometimes produces iframes pointing to:
-        //   • chrome-extension:// pages (same-origin, blocked by Chrome)
-        //   • relative paths like "sandbox.html" or "ai-chat.html"
-        //   • srcdoc that recurses into extension pages
-        // Use URL normalization (new URL) so relative paths resolve correctly
-        // before we check — string prefix matching alone misses relative refs.
-        var extOrigin = location.origin; // "chrome-extension://<id>"
-        app.querySelectorAll('iframe[src]').forEach(function(f) {
-          var raw = f.getAttribute('src') || '';
-          if (!raw) return;
-          try {
-            var resolved = new URL(raw, location.href);
-            // Block any iframe that resolves into the extension origin
-            // (covers relative paths, full chrome-extension:// URLs, and
-            //  http/https URLs that somehow resolve to the extension)
-            if (resolved.origin === extOrigin) {
-              f.removeAttribute('src');
-              f.setAttribute('data-snap-blocked', 'extension-origin iframe removed');
-            }
-          } catch(urlErr) {
-            // Unparseable src (e.g. javascript:, data:application/...) — remove
-            f.removeAttribute('src');
-            f.setAttribute('data-snap-blocked', 'invalid-src removed');
-          }
-        });
+        app.innerHTML = extractBody(safeHtml);
 
         // Only execute scripts on the final complete render.
         // Partial streaming chunks may contain truncated <script> tags which
