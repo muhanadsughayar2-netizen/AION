@@ -1,0 +1,26 @@
+To make your text-to-speech (TTS) fast and natural in Replit, you need to stop sending the whole 2,000+ character block at once. The "three-minute" delay happens because the server is trying to finish the entire audio file before sending it to you.
+
+Copy and paste this Master Prompt into your Replit Agent/Chat to have it fix your code automatically:
+
+The Master Prompt for Replit AI
+"Refactor my Gemini TTS implementation to be high-performance.
+
+Use Model: gemini-3.1-flash-tts-preview for the best balance of speed and naturalness.
+Implement Chunking: Do not send the whole text at once. Program the app to split the text into sentences or small paragraphs (max 300 chars) and send them sequentially.
+Audio Queueing: Create a playback queue so that the first sentence starts playing immediately while the second sentence is still being generated.
+Fix Stop Button: Implement a 'Stop' function using AbortController to instantly kill any pending API requests and clear the audio queue when the button is clicked.
+Natural Tone: Add a system instruction to the model: 'Speak at a natural, slightly faster conversational pace. Do not pause excessively between sentences.'"
+Summary of Why This Works
+Chunking (The "Fast" Hack): Instead of waiting 3 minutes for a 2,000-character file, you wait 2 seconds for the first sentence. While the user is listening to that sentence, the AI is already preparing the next one in the background [1.2.5, 1.3.6].
+The Model: gemini-3.1-flash-tts-preview is specifically built for low-latency "agentic" workflows. It is significantly faster than the standard "Pro" models for voice tasks [1.1.4, 1.2.4].
+The Stop Button: By using an AbortController, you tell the browser to "hang up the phone" on the Google server. This stops the data transfer immediately so you aren't stuck waiting for the AI to finish "talking" behind the scenes [1.5.1].
+Key Findings for Integration (2026)
+Naturalness: To make the voices sound less robotic, you can now use Audio Tags in your text. You can ask Replit to add tags like [excited] or [pause] to your text prompts to make the voice "act" more naturally [1.2.4, 1.3.2].
+Streaming vs. Unary: Standard API calls (Unary) wait for the whole file. Streaming (via the Multimodal Live API) provides the audio in tiny bits, allowing for sub-500ms response times [1.1.7, 1.4.6].
+Replit Managed Keys: If you are using Replit’s "AI Integrations" (managed keys), ensure the Agent is specifically calling the Google (Gemini) integration rather than a generic OpenRouter proxy, as the native Google integration handles audio data more efficiently [1.1.1, 1.4.7].
+Sources
+[1.1.4] Replit Docs: New AI Models in Integrations (Gemini 3.1 Flash)
+[1.2.4] BotTalk: Gemini 3.1 Flash TTS Preview Features
+[1.2.5] Inworld AI: Best Speech-to-Speech APIs in 2026 (Architecture & Latency)
+[1.3.6] Google AI Developers Forum: Gemini Flash TTS Speed Best Practices
+[1.5.1] Medium: LLMs in Real-Time: Streaming vs Non-Streaming using Gemini

@@ -7945,8 +7945,7 @@ function addBubbleActions(bubble, text) {
   
   // ── Read Aloud — Voice Picker + Gemini TTS ────────────────────────────────
   const readBtn = actions.querySelector('.read-aloud-btn');
-  let ttsAudio = null;
-  let ttsObjectUrl = null;
+  let ttsSession = null;
   let voicePickerEl = null;
 
   // Inject picker animation CSS once
@@ -7972,8 +7971,13 @@ function addBubbleActions(bubble, text) {
   ];
 
   function stopTts() {
-    if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
-    if (ttsObjectUrl) { URL.revokeObjectURL(ttsObjectUrl); ttsObjectUrl = null; }
+    if (ttsSession) {
+      ttsSession.stopped = true;
+      try { ttsSession.controller.abort(); } catch (e) {}
+      if (ttsSession.audio) { try { ttsSession.audio.pause(); } catch (e) {} }
+      ttsSession.urls.forEach(u => { try { URL.revokeObjectURL(u); } catch (e) {} });
+      ttsSession = null;
+    }
     synth.cancel();
     readBtn.textContent = '🔊 Read';
     readBtn.disabled = false;
@@ -8040,6 +8044,104 @@ function addBubbleActions(bubble, text) {
     return [1,3,5].map(i => parseInt(hex.slice(i,i+2),16)).join(',');
   }
 
+  // Split text into small chunks (~280 chars) on sentence boundaries so the
+  // first chunk generates fast and starts playing while the rest are prepared.
+  function splitIntoChunks(str, maxLen = 280) {
+    const sentences = str.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [str];
+    const chunks = [];
+    let cur = '';
+    for (const s of sentences) {
+      let piece = s.trim();
+      if (!piece) continue;
+      // Hard-split any single sentence longer than maxLen
+      while (piece.length > maxLen) {
+        if (cur) { chunks.push(cur); cur = ''; }
+        chunks.push(piece.slice(0, maxLen));
+        piece = piece.slice(maxLen);
+      }
+      if (!cur) {
+        cur = piece;
+      } else if ((cur + ' ' + piece).length > maxLen) {
+        chunks.push(cur);
+        cur = piece;
+      } else {
+        cur = cur + ' ' + piece;
+      }
+    }
+    if (cur.trim()) chunks.push(cur.trim());
+    return chunks;
+  }
+
+  // Generate one chunk's audio and return an object-URL. Tries the newest TTS
+  // model first, then falls back; pins the working model on the session.
+  async function generateChunkAudio(chunkText, voiceName, apiKey, session) {
+    const styled = `In a natural, warm, conversational pace: ${chunkText}`;
+    const models = session.workingModel
+      ? [session.workingModel]
+      : ['gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-preview-tts'];
+    let lastErr = '';
+    for (const model of models) {
+      try {
+        const resp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            signal: session.controller.signal,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: styled }] }],
+              generationConfig: {
+                responseModalities: ['AUDIO'],
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } }
+              }
+            })
+          }
+        );
+        if (!resp.ok) { lastErr = `api_error_${resp.status}`; continue; }
+        const data = await resp.json();
+        const part = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+        if (!part?.data) { lastErr = 'no_audio_data'; continue; }
+
+        const mimeType = (part.mimeType || '').toLowerCase();
+        const rawBytes = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
+        let audioBlob;
+        if (mimeType.includes('pcm') || mimeType === '' || mimeType === 'audio/l16') {
+          const sr = 24000, ch = 1, bps = 16;
+          const hdr = new ArrayBuffer(44); const dv = new DataView(hdr);
+          const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+          ws(0,'RIFF'); dv.setUint32(4, 36 + rawBytes.byteLength, true); ws(8,'WAVE'); ws(12,'fmt ');
+          dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, ch, true);
+          dv.setUint32(24, sr, true); dv.setUint32(28, sr * ch * bps / 8, true);
+          dv.setUint16(32, ch * bps / 8, true); dv.setUint16(34, bps, true);
+          ws(36,'data'); dv.setUint32(40, rawBytes.byteLength, true);
+          audioBlob = new Blob([hdr, rawBytes], { type: 'audio/wav' });
+        } else {
+          audioBlob = new Blob([rawBytes], { type: mimeType });
+        }
+        session.workingModel = model;
+        return URL.createObjectURL(audioBlob);
+      } catch (e) {
+        if (e.name === 'AbortError') throw e;
+        lastErr = e.message || 'err';
+      }
+    }
+    throw new Error(lastErr || 'tts_failed');
+  }
+
+  function playUrl(url, session) {
+    return new Promise((resolve) => {
+      if (session.stopped) { resolve(); return; }
+      const audio = new Audio(url);
+      session.audio = audio;
+      const done = () => resolve();
+      audio.onended = done;
+      audio.onerror = done;
+      // Resolve promptly if the session is aborted mid-playback
+      session.controller.signal.addEventListener('abort', done, { once: true });
+      audio.play().catch(done);
+    });
+  }
+
   async function runTts(voiceName) {
     const cleanText = text
       .replace(/```[\s\S]*?```/g, ' code block ')
@@ -8050,96 +8152,80 @@ function addBubbleActions(bubble, text) {
     if (!cleanText) return;
 
     readBtn.textContent = '⏳ Generating…';
-    readBtn.disabled = true;
+    readBtn.disabled = false; // keep clickable so Stop works immediately
 
-    // Keep input short for fast generation — end on a sentence boundary
-    const CHAR_LIMIT = 2000;
-    let ttsInput = cleanText.slice(0, CHAR_LIMIT);
-    if (cleanText.length > CHAR_LIMIT) {
-      const lastDot = ttsInput.lastIndexOf('.');
-      if (lastDot > 800) ttsInput = ttsInput.slice(0, lastDot + 1);
+    // Claim the session synchronously (before any await) so a second click
+    // always maps to Stop, never a concurrent second read.
+    const session = { stopped: false, controller: new AbortController(), audio: null, urls: [], workingModel: null };
+    ttsSession = session;
+
+    const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+    if (session.stopped) return; // user hit Stop during key fetch
+    const apiKey = keyResult.geminiApiKey;
+
+    const chunks = splitIntoChunks(cleanText.slice(0, 6000));
+    if (!chunks.length) { if (ttsSession === session) stopTts(); return; }
+
+    // No key → instant browser-voice fallback for the whole text
+    if (!apiKey) {
+      readBtn.textContent = '⏹ Stop';
+      speakText(cleanText.slice(0, 2000));
+      const checkStopped = setInterval(() => {
+        if (!synth.speaking) { clearInterval(checkStopped); if (ttsSession === session) stopTts(); }
+      }, 500);
+      return;
     }
 
+    // Producer: generate chunks ahead of playback (bounded look-ahead).
+    // Each prefetched promise is rejection-safe (resolves to null on
+    // abort/failure) and revokes its URL if the session was stopped meanwhile.
+    const PREFETCH = 2;
+    const urlPromises = new Array(chunks.length).fill(null);
+    let nextToGen = 0;
+    const generateUpTo = (target) => {
+      while (nextToGen <= target && nextToGen < chunks.length) {
+        const idx = nextToGen++;
+        urlPromises[idx] = generateChunkAudio(chunks[idx], voiceName, apiKey, session)
+          .then(url => {
+            if (session.stopped) { try { URL.revokeObjectURL(url); } catch (e) {} return null; }
+            session.urls.push(url);
+            return url;
+          })
+          .catch(() => null); // swallow AbortError / failures; consumer handles null
+      }
+    };
+    generateUpTo(PREFETCH);
+
     try {
-      const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
-      const apiKey = keyResult.geminiApiKey;
-      if (!apiKey) throw new Error('no_key');
-
-      // 20-second hard timeout — never hang forever
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000);
-
-      let resp;
-      try {
-        resp = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            signal: controller.signal,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: ttsInput }] }],
-              generationConfig: {
-                responseModalities: ['AUDIO'],
-                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } }
-              }
-            })
+      for (let i = 0; i < chunks.length; i++) {
+        if (session.stopped) break;
+        const url = await urlPromises[i];
+        if (session.stopped) break;
+        if (!url) {
+          // First chunk failed (not a Stop) → fall back to instant browser voice
+          if (i === 0) {
+            console.warn('[SnapToAI TTS] First chunk failed, using browser speech');
+            readBtn.textContent = '⏹ Stop';
+            speakText(cleanText.slice(0, 2000));
+            const checkStopped = setInterval(() => {
+              if (!synth.speaking) { clearInterval(checkStopped); if (ttsSession === session) stopTts(); }
+            }, 500);
+            return;
           }
-        );
-      } finally {
-        clearTimeout(timeoutId);
+          continue; // skip a failed middle chunk, keep going
+        }
+        readBtn.textContent = '⏹ Stop';
+        readBtn.disabled = false;
+        await playUrl(url, session);
+        generateUpTo(i + 1 + PREFETCH); // keep the buffer filled
       }
-
-      if (!resp.ok) {
-        const errBody = await resp.text().catch(()=>'');
-        console.warn('[SnapToAI TTS] API error', resp.status, errBody.slice(0, 200));
-        throw new Error(`api_error_${resp.status}`);
-      }
-
-      const data = await resp.json();
-      const part = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-      if (!part?.data) throw new Error('no_audio_data');
-
-      const mimeType = (part.mimeType || '').toLowerCase();
-      const rawBytes = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
-      let audioBlob;
-      if (mimeType.includes('pcm') || mimeType === '' || mimeType === 'audio/l16') {
-        const sr = 24000, ch = 1, bps = 16;
-        const hdr = new ArrayBuffer(44); const dv = new DataView(hdr);
-        const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
-        ws(0,'RIFF'); dv.setUint32(4, 36 + rawBytes.byteLength, true); ws(8,'WAVE'); ws(12,'fmt ');
-        dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, ch, true);
-        dv.setUint32(24, sr, true); dv.setUint32(28, sr * ch * bps / 8, true);
-        dv.setUint16(32, ch * bps / 8, true); dv.setUint16(34, bps, true);
-        ws(36,'data'); dv.setUint32(40, rawBytes.byteLength, true);
-        audioBlob = new Blob([hdr, rawBytes], { type: 'audio/wav' });
-      } else {
-        audioBlob = new Blob([rawBytes], { type: mimeType });
-      }
-
-      ttsObjectUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(ttsObjectUrl);
-      ttsAudio = audio;
-      readBtn.textContent = '⏹ Stop';
-      readBtn.disabled = false;
-      audio.play().catch(() => stopTts());
-      audio.onended = () => stopTts();
-      audio.onerror = () => stopTts();
-
-    } catch (e) {
-      console.warn('[SnapToAI TTS] Failed, falling back to browser speech:', e.message || e);
-      // Instant browser speech fallback — no waiting, no API needed
-      readBtn.textContent = '⏹ Stop';
-      readBtn.disabled = false;
-      speakText(ttsInput);
-      const checkStopped = setInterval(() => {
-        if (!synth.speaking) { stopTts(); clearInterval(checkStopped); }
-      }, 500);
+    } finally {
+      if (ttsSession === session) stopTts();
     }
   }
 
   readBtn.addEventListener('click', () => {
-    if (ttsAudio) { stopTts(); return; }
+    if (ttsSession) { stopTts(); return; }
     const savedVoice = localStorage.getItem('snaptoai_tts_voice');
     if (savedVoice) {
       // Already has a preferred voice — start immediately
@@ -8157,7 +8243,7 @@ function addBubbleActions(bubble, text) {
   changeVoiceBtn.style.cssText = 'background:none;border:none;color:#9aa0a6;cursor:pointer;font-size:13px;padding:0 2px;line-height:1;vertical-align:middle;margin-left:1px;';
   changeVoiceBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (ttsAudio) stopTts();
+    if (ttsSession) stopTts();
     showVoicePicker((voiceName) => runTts(voiceName));
   });
   readBtn.after(changeVoiceBtn);
