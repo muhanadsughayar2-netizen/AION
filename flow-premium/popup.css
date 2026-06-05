@@ -179,20 +179,23 @@ body {
 
 /* "Powered by Google AI Studio" tagline */
 .ami-tagline {
-  font-size: 8px;
+  font-size: 9.5px;
   font-weight: 400;
   letter-spacing: 0.3px;
   font-family: 'Google Sans', 'Inter', Roboto, sans-serif;
-  color: #9aa0a6;
+  color: #bdc1c6;
   margin-top: 5px;
   line-height: 1;
   white-space: nowrap;
 }
 
-/* "Google AI Studio" highlighted in Google Blue */
+/* "Google AI Studio" — Google 4-color gradient */
 .ami-tagline-google {
-  color: #4285F4;
-  font-weight: 500;
+  font-weight: 700;
+  background: linear-gradient(90deg, #4285F4 0%, #EA4335 35%, #FBBC05 65%, #34A853 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .ami-text-ai {
