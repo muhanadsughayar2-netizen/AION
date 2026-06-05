@@ -1020,7 +1020,7 @@ const AI_MODES = {
     model: 'gemini-3-flash-preview',
     type: 'gemini',
     placeholder: 'Ask about your screenshot...',
-    welcome: "I'm your AI vision partner. Snap a screenshot and ask me anything!"
+    welcome: "Vision mode — snap a screenshot and ask me anything. Use Build · Research · Search · Read · Code to go further."
   },
   'image': {
     model: 'gemini-3-flash-preview',
