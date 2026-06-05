@@ -6929,7 +6929,7 @@ async function handleSend() {
     // When totalImages > MAX_IMAGES_PER_REQUEST the existing batch path fires,
     // which shows a visible progress bubble and adds a 6s rate-limit delay between
     // batches — so the user always sees what's happening.
-    const MAX_IMAGES_PER_REQUEST = getConfig('MAX_IMAGES_PER_REQUEST', 4);
+    const MAX_IMAGES_PER_REQUEST = getConfig('MAX_IMAGES_PER_REQUEST', 10);
     const isFirstMessage = contents.length === 0;
     
     if (isFirstMessage) {
