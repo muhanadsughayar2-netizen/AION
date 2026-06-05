@@ -633,13 +633,13 @@ const statusCaptured = (type) => {
   if (type === 'Full page') return setStatus(getStatusMsg('statusFullPageCaptured', 'Full page captured! ✓'), 'success', 2500);
   return setStatus(getStatusMsg('statusSnapCaptured', 'Snap captured! ✓'), 'success', 2500);
 };
-const statusSelected = (count) => setStatus(getStatusMsg('statusScreenshotsSelected', `${count} screenshots selected → will combine into ONE stacked image`, [String(count)]), 'active');
-const statusCopying = () => setStatus(getStatusMsg('statusCombiningCopying', 'Combining & copying...'), 'copying');
-const statusPasteReady = (count) => setStatus(getStatusMsg('statusCopiedPasteNow', `${count || ''} screenshots combined & copied! 👉 Paste into AI now!`, [String(count || '')]), 'paste-ready', 5000);
+const statusSelected = (count) => setStatus(getStatusMsg('statusScreenshotsSelected', `${count} selected`, [String(count)]), 'active');
+const statusCopying = () => setStatus(getStatusMsg('statusCombiningCopying', 'Copying...'), 'copying');
+const statusPasteReady = (count) => setStatus(getStatusMsg('statusCopiedPasteNow', `Copied — paste into AI`, [String(count || '')]), 'paste-ready', 5000);
 const statusDownloading = () => setStatus(getStatusMsg('statusDownloading', 'Downloading...'), 'active');
-const statusDownloaded = () => setStatus(getStatusMsg('statusPngExported', 'Clean stacked PNG exported! 🔥'), 'success', 3000);
+const statusDownloaded = () => setStatus(getStatusMsg('statusPngExported', 'PNG saved'), 'success', 3000);
 const statusExporting = () => setStatus(getStatusMsg('statusGeneratingPdf', 'Generating PDF...'), 'active');
-const statusExported = () => setStatus(getStatusMsg('statusPdfExported', 'Clean stacked PDF exported! 🔥'), 'success', 3000);
+const statusExported = () => setStatus(getStatusMsg('statusPdfExported', 'PDF saved'), 'success', 3000);
 const statusDeleted = () => setStatus(getStatusMsg('statusDeleted', 'Deleted'), 'success', 1500);
 const statusCleared = () => setStatus(getStatusMsg('statusAllCleared', 'All cleared'), 'success', 1500);
 const statusError = (msg) => setStatus(msg || getStatusMsg('statusSomethingWrong', 'Something went wrong'), 'error', 3000);

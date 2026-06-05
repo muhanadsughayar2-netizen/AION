@@ -410,27 +410,19 @@ body {
 }
 
 .status-dot.success {
-  background: #00ff88;
-  box-shadow: 0 0 10px rgba(0, 255, 136, 0.8);
-  animation: dot-success 0.3s ease-out;
+  background: #34A853;
 }
 
 .status-dot.error {
-  background: #ff4444;
-  box-shadow: 0 0 8px rgba(255, 68, 68, 0.8);
-  animation: none;
+  background: #EA4335;
 }
 
 .status-dot.copying {
-  background: #ffaa00;
-  box-shadow: 0 0 8px rgba(255, 170, 0, 0.8);
-  animation: dot-copying 0.3s ease-in-out infinite;
+  background: #FBBC05;
 }
 
 .status-dot.paste-ready {
-  background: #00ff88;
-  box-shadow: 0 0 12px rgba(0, 255, 136, 1);
-  animation: dot-paste-ready 0.5s ease-in-out infinite;
+  background: #34A853;
 }
 
 @keyframes dot-active {
