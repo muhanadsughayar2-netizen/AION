@@ -447,10 +447,13 @@
       color: var(--st-accent);
     }
     
-    .continue-btn {
-      background: rgba(255,255,255,0.04);
-      border-color: rgba(255,255,255,0.08);
-      color: #667788;
+    #continueBtn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0,200,117,0.45);
+      filter: brightness(1.1);
+    }
+    #continueBtn:active {
+      transform: scale(0.97);
     }
     
     .chat-bubble.loading {
@@ -1220,6 +1223,10 @@
               <svg class="tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
               <span class="tool-label">Code</span>
             </button>
+            <button id="continueBtn" title="Ask AI to continue its last response" style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#00c875,#00a8e8);border:none;color:#fff;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;letter-spacing:0.2px;line-height:1;transition:all 0.18s ease;box-shadow:0 2px 10px rgba(0,200,117,0.3);">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Continue
+            </button>
           </div>
           <select id="voiceSelector" title="TTS Voice" style="display:none; padding:5px 8px; border-radius:20px; background:rgba(0,255,136,0.07); color:#00ff88; border:1px solid rgba(0,255,136,0.25); font-size:11px; font-weight:500; cursor:pointer; flex-shrink:0; outline:none;">
             <option value="Puck">🎙 Puck — Upbeat</option>
@@ -1352,7 +1359,6 @@
         <button class="magic-add-btn" id="openAgentsBtn">Agents</button>
         <button class="magic-add-btn" id="addMagicBtn">+ Magic Agents</button>
         <button class="verdict-btn" id="verdictBtn" style="display:none !important;">⚖️ The Verdict</button>
-        <button class="action-btn continue-btn" id="continueBtn">▶ Continue</button>
         <button class="action-btn" id="clearBtn">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>Clear
         </button>
