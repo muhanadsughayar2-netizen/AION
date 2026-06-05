@@ -8052,37 +8052,48 @@ function addBubbleActions(bubble, text) {
     readBtn.textContent = '⏳ Generating…';
     readBtn.disabled = true;
 
+    // Keep input short for fast generation — end on a sentence boundary
+    const CHAR_LIMIT = 2000;
+    let ttsInput = cleanText.slice(0, CHAR_LIMIT);
+    if (cleanText.length > CHAR_LIMIT) {
+      const lastDot = ttsInput.lastIndexOf('.');
+      if (lastDot > 800) ttsInput = ttsInput.slice(0, lastDot + 1);
+    }
+
     try {
       const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
       const apiKey = keyResult.geminiApiKey;
       if (!apiKey) throw new Error('no_key');
 
-      // Up to 6000 chars — end on a sentence boundary so speech doesn't cut mid-word
-      let ttsInput = cleanText.slice(0, 6000);
-      if (cleanText.length > 6000) {
-        const lastDot = ttsInput.lastIndexOf('.');
-        if (lastDot > 3000) ttsInput = ttsInput.slice(0, lastDot + 1);
-      }
+      // 20-second hard timeout — never hang forever
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-      const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: ttsInput }] }],
-            generationConfig: {
-              responseModalities: ['AUDIO'],
-              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } }
-            }
-          })
-        }
-      );
+      let resp;
+      try {
+        resp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            signal: controller.signal,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: ttsInput }] }],
+              generationConfig: {
+                responseModalities: ['AUDIO'],
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } }
+              }
+            })
+          }
+        );
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!resp.ok) {
         const errBody = await resp.text().catch(()=>'');
-        console.warn('[SnapToAI TTS] API error', resp.status, errBody.slice(0, 300));
-        throw new Error(`API error ${resp.status}`);
+        console.warn('[SnapToAI TTS] API error', resp.status, errBody.slice(0, 200));
+        throw new Error(`api_error_${resp.status}`);
       }
 
       const data = await resp.json();
@@ -8116,9 +8127,14 @@ function addBubbleActions(bubble, text) {
       audio.onerror = () => stopTts();
 
     } catch (e) {
-      console.warn('[SnapToAI TTS] Failed:', e.message || e);
-      readBtn.textContent = '🔊 Read';
+      console.warn('[SnapToAI TTS] Failed, falling back to browser speech:', e.message || e);
+      // Instant browser speech fallback — no waiting, no API needed
+      readBtn.textContent = '⏹ Stop';
       readBtn.disabled = false;
+      speakText(ttsInput);
+      const checkStopped = setInterval(() => {
+        if (!synth.speaking) { stopTts(); clearInterval(checkStopped); }
+      }, 500);
     }
   }
 
