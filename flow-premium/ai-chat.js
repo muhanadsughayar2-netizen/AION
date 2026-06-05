@@ -1194,7 +1194,7 @@ function initModeButtons() {
       if (thread) {
         const notice = document.createElement('div');
         notice.className = 'chat-bubble ai mode-switch-notice';
-        notice.style.cssText = 'font-size: 12px; padding: 10px 16px; border-left: 3px solid; margin: 4px 0;';
+        notice.style.cssText = 'font-size: 14px; padding: 10px 16px; border-left: 3px solid; margin: 4px 0;';
         const borderColors = { 'vision': '#4285F4', 'image': '#8ab4f8', 'music': '#8ab4f8', 'video': '#8ab4f8' };
         notice.style.borderLeftColor = borderColors[mode] || '#4285F4';
         notice.textContent = cfg.welcome;
@@ -1464,60 +1464,60 @@ function showVideoStudio(thread) {
           <span style="font-size:20px;">🎬</span>
           <span style="font-size:14px;font-weight:700;color:#e8eef4;">Video Studio</span>
         </div>
-        <button class="studio-surprise-btn" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(138,180,248,0.25);background:rgba(138,180,248,0.06);color:#8ab4f8;font-size:11px;font-weight:600;cursor:pointer;">🎲 Surprise Me</button>
+        <button class="studio-surprise-btn" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(138,180,248,0.25);background:rgba(138,180,248,0.06);color:#8ab4f8;font-size:13px;font-weight:600;cursor:pointer;">🎲 Surprise Me</button>
       </div>
       <div class="veo-model-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
-        <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Quality:</span>
-        <span class="veo-models-loading" style="font-size:11px;color:#8899aa;">Checking available models...</span>
+        <span style="font-size:13px;color:#667788;width:100%;margin-bottom:2px;">Quality:</span>
+        <span class="veo-models-loading" style="font-size:13px;color:#8899aa;">Checking available models...</span>
       </div>
       <div class="veo-duration-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center;">
-        <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Length:</span>
-        <button class="veo-dur-btn selected" data-dur="8" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(138,180,248,0.5);background:rgba(138,180,248,0.15);color:#8ab4f8;font-size:11px;font-weight:600;cursor:default;">8s per clip</button>
-        <span style="font-size:10px;color:#667788;font-style:italic;">Veo's native length — best quality &amp; fewest visual cuts.</span>
+        <span style="font-size:13px;color:#667788;width:100%;margin-bottom:2px;">Length:</span>
+        <button class="veo-dur-btn selected" data-dur="8" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(138,180,248,0.5);background:rgba(138,180,248,0.15);color:#8ab4f8;font-size:13px;font-weight:600;cursor:default;">8s per clip</button>
+        <span style="font-size:13px;color:#667788;font-style:italic;">Veo's native length — best quality &amp; fewest visual cuts.</span>
       </div>
       <div class="veo-clips-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
-        <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Clips (auto-stitched):</span>
-        <button class="veo-clip-btn selected" data-clips="1" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(138,180,248,0.5);background:rgba(138,180,248,0.15);color:#8ab4f8;font-size:11px;font-weight:600;cursor:pointer;">1x · 8s</button>
-        <button class="veo-clip-btn" data-clips="2" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">2x · 16s</button>
-        <button class="veo-clip-btn" data-clips="3" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:11px;font-weight:600;cursor:pointer;">3x · 24s</button>
+        <span style="font-size:13px;color:#667788;width:100%;margin-bottom:2px;">Clips (auto-stitched):</span>
+        <button class="veo-clip-btn selected" data-clips="1" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(138,180,248,0.5);background:rgba(138,180,248,0.15);color:#8ab4f8;font-size:13px;font-weight:600;cursor:pointer;">1x · 8s</button>
+        <button class="veo-clip-btn" data-clips="2" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:13px;font-weight:600;cursor:pointer;">2x · 16s</button>
+        <button class="veo-clip-btn" data-clips="3" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:13px;font-weight:600;cursor:pointer;">3x · 24s</button>
       </div>
       <div class="veo-creativity-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center;" title="Controls how much creative license the AI director takes when planning your storyboard.">
-        <span style="font-size:11px;color:#667788;width:100%;margin-bottom:2px;">Creativity:</span>
+        <span style="font-size:13px;color:#667788;width:100%;margin-bottom:2px;">Creativity:</span>
         ${Object.keys(CREATIVITY_LEVELS).map(k => {
           const sel = k === selectedCreativity;
-          return `<button class="veo-creat-btn${sel ? ' selected' : ''}" data-creat="${k}" title="${CREATIVITY_LEVELS[k].desc}" style="padding:4px 10px;border-radius:8px;border:1px solid ${sel ? 'rgba(138,180,248,0.5)' : 'rgba(138,180,248,0.2)'};background:${sel ? 'rgba(138,180,248,0.15)' : 'rgba(138,180,248,0.04)'};color:${sel ? '#8ab4f8' : '#aabbcc'};font-size:11px;font-weight:600;cursor:pointer;">${CREATIVITY_LEVELS[k].label}</button>`;
+          return `<button class="veo-creat-btn${sel ? ' selected' : ''}" data-creat="${k}" title="${CREATIVITY_LEVELS[k].desc}" style="padding:4px 10px;border-radius:8px;border:1px solid ${sel ? 'rgba(138,180,248,0.5)' : 'rgba(138,180,248,0.2)'};background:${sel ? 'rgba(138,180,248,0.15)' : 'rgba(138,180,248,0.04)'};color:${sel ? '#8ab4f8' : '#aabbcc'};font-size:13px;font-weight:600;cursor:pointer;">${CREATIVITY_LEVELS[k].label}</button>`;
         }).join('')}
-        <span class="veo-creat-desc" style="font-size:10px;color:#667788;font-style:italic;">${CREATIVITY_LEVELS[selectedCreativity].desc}</span>
+        <span class="veo-creat-desc" style="font-size:13px;color:#667788;font-style:italic;">${CREATIVITY_LEVELS[selectedCreativity].desc}</span>
       </div>
       <textarea class="studio-desc" placeholder="Describe the video scene you want to create..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(138,180,248,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;margin-bottom:8px;"></textarea>
       ${hasScreenshots ? `
       <div style="margin-top:10px;">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#aabbcc;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#aabbcc;">
           <input type="checkbox" class="studio-use-screenshot" style="accent-color:#8ab4f8;" checked>
           <span>📸 Use loaded screenshot as starting frame</span>
         </label>
         <div class="studio-stylize-wrap" style="margin-top:6px;margin-left:24px;">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#aabbcc;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#aabbcc;">
             <input type="checkbox" class="studio-stylize-photo" style="accent-color:#8ab4f8;" checked>
             <span>✨ Stylize photo first (bypasses safety filters for people)</span>
           </label>
           <div class="stylize-style-selector" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
-            <button class="stylize-btn selected" data-style="pixar" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.5);background:rgba(138,180,248,0.15);color:#8ab4f8;font-size:10px;font-weight:600;cursor:pointer;">Pixar 3D</button>
-            <button class="stylize-btn" data-style="anime" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:10px;font-weight:600;cursor:pointer;">Anime</button>
-            <button class="stylize-btn" data-style="cartoon" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:10px;font-weight:600;cursor:pointer;">Cartoon</button>
-            <button class="stylize-btn" data-style="watercolor" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:10px;font-weight:600;cursor:pointer;">Watercolor</button>
-            <button class="stylize-btn" data-style="oil" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:10px;font-weight:600;cursor:pointer;">Oil Paint</button>
+            <button class="stylize-btn selected" data-style="pixar" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.5);background:rgba(138,180,248,0.15);color:#8ab4f8;font-size:13px;font-weight:600;cursor:pointer;">Pixar 3D</button>
+            <button class="stylize-btn" data-style="anime" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:13px;font-weight:600;cursor:pointer;">Anime</button>
+            <button class="stylize-btn" data-style="cartoon" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:13px;font-weight:600;cursor:pointer;">Cartoon</button>
+            <button class="stylize-btn" data-style="watercolor" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:13px;font-weight:600;cursor:pointer;">Watercolor</button>
+            <button class="stylize-btn" data-style="oil" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:13px;font-weight:600;cursor:pointer;">Oil Paint</button>
           </div>
         </div>
       </div>` : ''}
       <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
-        <span style="font-size:10px;color:#667788;">⏱ ~1-2 min per clip</span>
-        <span style="font-size:10px;color:#667788;">•</span>
-        <span class="studio-dur-label" style="font-size:10px;color:#667788;">8s total</span>
+        <span style="font-size:13px;color:#667788;">⏱ ~1-2 min per clip</span>
+        <span style="font-size:13px;color:#667788;">•</span>
+        <span class="studio-dur-label" style="font-size:13px;color:#667788;">8s total</span>
       </div>
       <div class="veo-price-card" style="margin-top:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(138,180,248,0.12);border-radius:10px;padding:10px 12px;">
-        <div style="font-size:10px;color:#667788;margin-bottom:6px;">💰 Pay-per-use (billed by Google to your own API key) — current cost per model:</div>
-        <div class="veo-price-rows" style="display:flex;flex-direction:column;gap:3px;font-size:11px;">
+        <div style="font-size:13px;color:#667788;margin-bottom:6px;">💰 Pay-per-use (billed by Google to your own API key) — current cost per model:</div>
+        <div class="veo-price-rows" style="display:flex;flex-direction:column;gap:3px;font-size:13px;">
           <span style="color:#667788;">Loading model prices…</span>
         </div>
       </div>
