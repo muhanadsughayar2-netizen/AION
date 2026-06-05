@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome to Snap To AI</title>
+  <title>Welcome to AION</title>
   <script src="theme.js"></script>
   <script src="branding.js"></script>
   <link rel="stylesheet" href="theme.css">
@@ -11,9 +11,9 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0a0e14;
-      color: #e6edf3;
+      font-family: 'Google Sans', 'Inter', Roboto, -apple-system, sans-serif;
+      background: #202124;
+      color: #e8eaed;
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -23,95 +23,74 @@
 
     .container {
       width: 100%;
-      max-width: 440px;
+      max-width: 400px;
       text-align: center;
     }
 
     .card {
-      background: rgba(22, 27, 34, 0.8);
-      border: 1px solid rgba(0, 217, 255, 0.12);
+      background: #2d2e30;
+      border: 1px solid rgba(255,255,255,0.08);
       border-radius: 20px;
-      padding: 36px 28px;
-      backdrop-filter: blur(20px);
+      padding: 36px 28px 32px;
     }
 
-    .camera-icon {
-      font-size: 48px;
-      margin-bottom: 12px;
+    .logo-mark {
+      font-size: 38px;
+      margin-bottom: 16px;
+      display: block;
     }
 
     h1 {
-      font-size: 30px;
+      font-size: 32px;
       font-weight: 800;
-      margin-bottom: 6px;
-      color: #fff;
+      letter-spacing: -0.5px;
+      color: #e8eaed;
+      margin-bottom: 10px;
     }
-
-    h1 .cyan { color: var(--st-accent); }
 
     .tagline {
-      font-size: 16px;
-      color: #c0c8d2;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-
-    .sub {
       font-size: 14px;
-      color: #8b949e;
+      color: #9aa0a6;
+      line-height: 1.6;
       margin-bottom: 28px;
-      line-height: 1.5;
     }
 
-    .actions {
+    .features {
       display: flex;
       justify-content: center;
-      gap: 18px;
-      margin-bottom: 24px;
+      gap: 10px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
     }
 
-    .action-col {
+    .feature-pill {
       display: flex;
-      flex-direction: column;
       align-items: center;
       gap: 6px;
+      padding: 7px 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #9aa0a6;
     }
 
-    .action-label {
-      font-size: 9px;
-      font-weight: 700;
-      color: var(--st-accent);
-      letter-spacing: 1px;
-    }
+    .feature-pill.vision { border-color: rgba(66,133,244,0.35); color: #4285F4; }
+    .feature-pill.image  { border-color: rgba(251,188,5,0.35);  color: #FBBC05; }
+    .feature-pill.music  { border-color: rgba(52,168,83,0.35);  color: #34A853; }
+    .feature-pill.video  { border-color: rgba(138,180,248,0.35); color: #8ab4f8; }
 
-    .action-circle {
-      width: 52px;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 217, 255, 0.06);
-      border: 1.5px solid rgba(0, 217, 255, 0.25);
-      border-radius: 50%;
-      color: var(--st-accent);
-    }
-
-    .action-circle svg {
-      width: 22px;
-      height: 22px;
-    }
-
-    .pin-guide {
-      background: rgba(0, 217, 255, 0.04);
-      border: 1px solid rgba(0, 217, 255, 0.15);
-      border-radius: 14px;
-      padding: 20px;
+    .divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      margin: 0 0 24px;
     }
 
     .pin-title {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
-      color: #e6edf3;
+      color: #e8eaed;
       margin-bottom: 16px;
     }
 
@@ -119,14 +98,14 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .pin-step {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
+      gap: 7px;
     }
 
     .pin-step-icon {
@@ -138,30 +117,29 @@
       border-radius: 12px;
       font-size: 20px;
       position: relative;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
     }
 
     .pin-step-icon.puzzle {
-      background: rgba(0, 217, 255, 0.12);
-      border: 1.5px solid rgba(0, 217, 255, 0.3);
+      border-color: rgba(66,133,244,0.35);
       animation: stepPulse1 5s ease-in-out infinite;
     }
 
     .pin-step-icon.ext {
-      background: rgba(0, 217, 255, 0.06);
-      border: 1.5px solid rgba(0, 217, 255, 0.2);
-      font-size: 11px;
-      color: var(--st-accent);
-      font-weight: 600;
-      padding: 0 6px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #4285F4;
+      border-color: rgba(66,133,244,0.25);
       animation: stepPulse2 5s ease-in-out infinite;
+      padding: 0 6px;
     }
 
     .pin-step-icon.check {
-      background: rgba(0, 255, 136, 0.12);
-      border: 1.5px solid rgba(0, 255, 136, 0.3);
-      color: #00ff88;
+      background: rgba(52,168,83,0.1);
+      border-color: rgba(52,168,83,0.35);
+      color: #34A853;
       font-size: 22px;
-      font-weight: 700;
       animation: stepPulse3 5s ease-in-out infinite;
     }
 
@@ -179,7 +157,7 @@
       width: 20px;
       height: 20px;
       border-radius: 50%;
-      border: 2px solid var(--st-accent);
+      border: 2px solid #4285F4;
       bottom: 2px;
       right: 4px;
       opacity: 0;
@@ -200,7 +178,7 @@
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      border: 2px solid #00ff88;
+      border: 2px solid #34A853;
       bottom: 2px;
       right: 14px;
       opacity: 0;
@@ -208,10 +186,9 @@
     }
 
     .pin-arrow {
-      color: #8b949e;
-      font-size: 16px;
-      margin-top: -12px;
-      opacity: 0;
+      color: rgba(255,255,255,0.2);
+      font-size: 14px;
+      margin-top: -14px;
     }
 
     .pin-arrow.a1 { animation: arrowFade1 5s ease-in-out infinite; }
@@ -219,196 +196,133 @@
 
     .pin-step-label {
       font-size: 10px;
-      color: #8b949e;
+      color: #80868b;
     }
 
     .pin-step-label.ready {
-      color: #00ff88;
+      color: #34A853;
       font-weight: 600;
     }
 
     @keyframes stepPulse1 {
-      0%, 5% { border-color: rgba(0,217,255,0.3); box-shadow: none; }
-      10% { border-color: var(--st-accent); box-shadow: 0 0 14px rgba(0,217,255,0.4); }
-      25%, 100% { border-color: rgba(0,217,255,0.3); box-shadow: none; }
+      0%, 5%   { box-shadow: none; }
+      10%      { box-shadow: 0 0 12px rgba(66,133,244,0.4); border-color: rgba(66,133,244,0.7); }
+      25%, 100%{ box-shadow: none; border-color: rgba(66,133,244,0.35); }
     }
 
     @keyframes stepPulse2 {
-      0%, 35% { border-color: rgba(0,217,255,0.2); box-shadow: none; }
-      42% { border-color: var(--st-accent); box-shadow: 0 0 14px rgba(0,217,255,0.4); }
-      55%, 100% { border-color: rgba(0,217,255,0.2); box-shadow: none; }
+      0%, 35%  { box-shadow: none; }
+      42%      { box-shadow: 0 0 12px rgba(66,133,244,0.3); border-color: rgba(66,133,244,0.6); }
+      55%, 100%{ box-shadow: none; border-color: rgba(66,133,244,0.25); }
     }
 
     @keyframes stepPulse3 {
-      0%, 65% { border-color: rgba(0,255,136,0.3); box-shadow: none; transform: scale(1); }
-      72% { border-color: #00ff88; box-shadow: 0 0 16px rgba(0,255,136,0.4); transform: scale(1.08); }
-      80%, 100% { border-color: rgba(0,255,136,0.3); box-shadow: none; transform: scale(1); }
+      0%, 65%  { box-shadow: none; transform: scale(1); }
+      72%      { box-shadow: 0 0 14px rgba(52,168,83,0.4); transform: scale(1.08); border-color: rgba(52,168,83,0.7); }
+      80%, 100%{ box-shadow: none; transform: scale(1); border-color: rgba(52,168,83,0.35); }
     }
 
     @keyframes pinCursorMove {
-      0%, 4% { opacity: 0; transform: translate(12px, 12px); }
-      10% { opacity: 1; transform: translate(0, 0); }
-      18% { opacity: 1; transform: translate(0, 0); }
-      22% { opacity: 0; transform: translate(-8px, -4px); }
-      100% { opacity: 0; }
+      0%, 4%  { opacity: 0; transform: translate(12px, 12px); }
+      10%     { opacity: 1; transform: translate(0, 0); }
+      18%     { opacity: 1; }
+      22%     { opacity: 0; transform: translate(-8px, -4px); }
+      100%    { opacity: 0; }
     }
 
     @keyframes pinClickRing {
       0%, 13% { opacity: 0; transform: scale(0.4); }
-      15% { opacity: 0.8; transform: scale(1); }
-      20% { opacity: 0; transform: scale(1.6); }
-      100% { opacity: 0; }
+      15%     { opacity: 0.8; transform: scale(1); }
+      20%     { opacity: 0; transform: scale(1.6); }
+      100%    { opacity: 0; }
     }
 
     @keyframes pinCursorMove2 {
       0%, 34% { opacity: 0; transform: translate(12px, 12px); }
-      40% { opacity: 1; transform: translate(0, 0); }
-      48% { opacity: 1; transform: translate(0, 0); }
-      52% { opacity: 0; transform: translate(-6px, -4px); }
-      100% { opacity: 0; }
+      40%     { opacity: 1; transform: translate(0, 0); }
+      48%     { opacity: 1; }
+      52%     { opacity: 0; transform: translate(-6px, -4px); }
+      100%    { opacity: 0; }
     }
 
     @keyframes pinClickRing2 {
       0%, 44% { opacity: 0; transform: scale(0.4); }
-      46% { opacity: 0.8; transform: scale(1); }
-      50% { opacity: 0; transform: scale(1.6); }
-      100% { opacity: 0; }
+      46%     { opacity: 0.8; transform: scale(1); }
+      50%     { opacity: 0; transform: scale(1.6); }
+      100%    { opacity: 0; }
     }
 
     @keyframes arrowFade1 {
-      0%, 18% { opacity: 0.2; }
-      22% { opacity: 1; color: var(--st-accent); }
-      30%, 100% { opacity: 0.2; color: #8b949e; }
+      0%, 18% { opacity: 0.15; }
+      22%     { opacity: 1; color: #4285F4; }
+      30%, 100%{ opacity: 0.15; color: rgba(255,255,255,0.2); }
     }
 
     @keyframes arrowFade2 {
-      0%, 50% { opacity: 0.2; }
-      55% { opacity: 1; color: #00ff88; }
-      65%, 100% { opacity: 0.2; color: #8b949e; }
+      0%, 50% { opacity: 0.15; }
+      55%     { opacity: 1; color: #34A853; }
+      65%, 100%{ opacity: 0.15; color: rgba(255,255,255,0.2); }
     }
 
     .privacy {
-      font-size: 13px;
-      color: #8b949e;
-      margin-top: 18px;
+      font-size: 12px;
+      color: #5f6368;
+      margin-top: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-    }
-
-    .demo-video-wrap {
-      margin: 18px auto 20px;
-      max-width: 340px;
-      position: relative;
-    }
-    .demo-video {
-      width: 100%;
-      border-radius: 14px;
-      border: 1px solid rgba(0, 217, 255, 0.2);
-      box-shadow: 0 4px 24px rgba(0, 217, 255, 0.08), 0 0 40px rgba(0, 217, 255, 0.04);
-    }
-    .demo-video-label {
-      text-align: center;
-      font-size: 10px;
-      color: rgba(255,255,255,0.4);
-      margin-top: 6px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    @media (max-width: 400px) {
-      .card { padding: 28px 18px; }
-      h1 { font-size: 26px; }
-      .actions { gap: 12px; }
-      .action-circle { width: 46px; height: 46px; }
-      .pin-steps { gap: 6px; }
-      .demo-video-wrap { max-width: 280px; }
+      gap: 5px;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="card">
-      <img id="welcomeBrandLogo" alt="" style="display:none; max-height:64px; max-width:240px; margin: 0 auto 14px; object-fit:contain;">
-      <div id="welcomeDefaultMark"><div class="camera-icon">📸</div>
-      <h1>Snap <span class="cyan">To AI</span></h1></div>
-      <div id="welcomeInstName" style="display:none; font-size:22px; font-weight:800; margin-bottom:8px; color:#fff;"></div>
-      <p class="tagline">Capture any screen → instantly chat with AI, generate images, music & videos</p>
-      <p class="sub">Right-click → Snap → Ask AI anything. Turn screenshots into images, songs, or videos in seconds.</p>
+      <span class="logo-mark">📸</span>
+      <h1>AION</h1>
+      <p class="tagline">Snap any screen. Instantly chat, create images,<br>compose music, and generate videos — with Google AI.</p>
 
-      <div class="demo-video-wrap">
-        <video class="demo-video" controls playsinline>
-          <source src="snaptoai-demo.webm" type="video/webm">
-        </video>
-        <div class="demo-video-label">See it in action</div>
+      <div class="features">
+        <span class="feature-pill vision">🔍 Vision</span>
+        <span class="feature-pill image">✨ Image</span>
+        <span class="feature-pill music">🎵 Music</span>
+        <span class="feature-pill video">🎬 Video</span>
       </div>
 
-      <div class="actions">
-        <div class="action-col">
-          <span class="action-label">VISION</span>
-          <div class="action-circle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-          </div>
-        </div>
-        <div class="action-col">
-          <span class="action-label">IMAGE</span>
-          <div class="action-circle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-          </div>
-        </div>
-        <div class="action-col">
-          <span class="action-label">MUSIC</span>
-          <div class="action-circle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          </div>
-        </div>
-        <div class="action-col">
-          <span class="action-label">VIDEO</span>
-          <div class="action-circle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          </div>
-        </div>
-      </div>
+      <hr class="divider">
 
-      <div class="pin-guide">
-        <div class="pin-title">Pin it to get started</div>
-        <div class="pin-steps">
-          <div class="pin-step">
-            <div class="pin-step-icon puzzle">
-              🧩
-              <div class="pin-cursor">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M5 3l14 9-6 1.5L10 20z"/></svg>
-              </div>
-              <div class="pin-click-ring"></div>
+      <div class="pin-title">Pin it to get started</div>
+      <div class="pin-steps">
+        <div class="pin-step">
+          <div class="pin-step-icon puzzle">
+            🧩
+            <div class="pin-cursor">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M5 3l14 9-6 1.5L10 20z"/></svg>
             </div>
-            <span class="pin-step-label">Click the puzzle icon</span>
+            <div class="pin-click-ring"></div>
           </div>
-          <span class="pin-arrow a1">→</span>
-          <div class="pin-step">
-            <div class="pin-step-icon ext">
-              📸 SnapToAI 📌
-              <div class="pin-cursor-2">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M5 3l14 9-6 1.5L10 20z"/></svg>
-              </div>
-              <div class="pin-click-ring-2"></div>
+          <span class="pin-step-label">Click the puzzle icon</span>
+        </div>
+        <span class="pin-arrow a1">→</span>
+        <div class="pin-step">
+          <div class="pin-step-icon ext">
+            📸 AION 📌
+            <div class="pin-cursor-2">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M5 3l14 9-6 1.5L10 20z"/></svg>
             </div>
-            <span class="pin-step-label">Click the pin</span>
+            <div class="pin-click-ring-2"></div>
           </div>
-          <span class="pin-arrow a2">→</span>
-          <div class="pin-step">
-            <div class="pin-step-icon check">✓</div>
-            <span class="pin-step-label ready">Ready to snap!</span>
-          </div>
+          <span class="pin-step-label">Click the pin</span>
+        </div>
+        <span class="pin-arrow a2">→</span>
+        <div class="pin-step">
+          <div class="pin-step-icon check">✓</div>
+          <span class="pin-step-label ready">Ready!</span>
         </div>
       </div>
     </div>
 
-    <p class="privacy">🔒 Your screenshots stay private — processed securely</p>
-
-    <p style="margin-top:14px; text-align:center; font-size:12px; color:#8b949e;">
-      If your organization added you, just sign in below — no code required.
-    </p>
+    <p class="privacy">🔒 Your screenshots stay private</p>
   </div>
   <script src="welcome.js"></script>
 </body>
