@@ -6929,23 +6929,15 @@ async function handleSend() {
     // When totalImages > MAX_IMAGES_PER_REQUEST the existing batch path fires,
     // which shows a visible progress bubble and adds a 6s rate-limit delay between
     // batches — so the user always sees what's happening.
-    const MAX_IMAGES_PER_REQUEST = getConfig('MAX_IMAGES_PER_REQUEST', 10);
+    const MAX_IMAGES_PER_REQUEST = getConfig('MAX_IMAGES_PER_REQUEST', 4);
     const isFirstMessage = contents.length === 0;
     
     if (isFirstMessage) {
       const totalImages = currentImages.length;
       
       if (totalImages > MAX_IMAGES_PER_REQUEST) {
-        // Large capture: process in batches
+        // Large capture: process in batches silently (loading spinner stays visible)
         console.log(`[SnapToAI] Large capture detected: ${totalImages} images, processing in batches of ${MAX_IMAGES_PER_REQUEST}`);
-        
-        // Show batch processing message
-        removeLoading();
-        const batchInfo = document.createElement('div');
-        batchInfo.className = 'chat-bubble ai batch-progress';
-        batchInfo.innerHTML = `📊 <strong>Analyzing ${totalImages} screenshots...</strong><br>Processing in groups for best results.`;
-        thread.appendChild(batchInfo);
-        thread.scrollTop = thread.scrollHeight;
         
         // Process batches sequentially
         let allBatchResults = [];
@@ -6955,9 +6947,6 @@ async function handleSend() {
           const start = batchNum * MAX_IMAGES_PER_REQUEST;
           const end = Math.min(start + MAX_IMAGES_PER_REQUEST, totalImages);
           const batchImages = currentImages.slice(start, end);
-          
-          // Update progress
-          batchInfo.innerHTML = `📊 <strong>Group ${batchNum + 1} of ${numBatches}</strong> — analyzing screenshots ${start + 1}–${end} of ${totalImages}...`;
           
           // Build batch request
           const batchParts = [];
@@ -7000,7 +6989,7 @@ async function handleSend() {
               const batchErrMsg = batchErrBody.error?.message || '';
               const batchErrLower = batchErrMsg.toLowerCase();
               if (batchResponse.status === 429 || batchErrLower.includes('quota') || batchErrLower.includes('rate') || batchErrLower.includes('exceeded') || batchErrLower.includes('resource')) {
-                batchInfo.remove();
+                removeLoading();
                 const quotaBatchBubble = createResponseBubble();
                 quotaBatchBubble.innerHTML = buildRateLimitCard();
                 thread.scrollTop = thread.scrollHeight;
@@ -7013,7 +7002,7 @@ async function handleSend() {
           } catch (batchError) {
             const batchCatchLower = batchError.message?.toLowerCase() || '';
             if (batchCatchLower.includes('quota') || batchCatchLower.includes('rate') || batchCatchLower.includes('exceeded')) {
-              batchInfo.remove();
+              removeLoading();
               const quotaBatchBubble2 = createResponseBubble();
               quotaBatchBubble2.innerHTML = buildRateLimitCard();
               thread.scrollTop = thread.scrollHeight;
@@ -7024,19 +7013,17 @@ async function handleSend() {
             allBatchResults.push(`## Batch ${batchNum + 1}\nError processing this batch.`);
           }
           
-          // Rate limit delay between batches (except last) - 6s to respect API limits
+          // Short delay between batches to respect API limits
           if (batchNum < numBatches - 1) {
-            batchInfo.innerHTML = `✅ <strong>Group ${batchNum + 1} done!</strong> Starting next group...`;
-            await new Promise(r => setTimeout(r, 6000));
+            await new Promise(r => setTimeout(r, 2000));
           }
         }
         
-        // Remove batch progress and show combined results
-        batchInfo.remove();
-        
+        // Show combined results
+        removeLoading();
         const responseBubble = document.createElement('div');
         responseBubble.className = 'chat-bubble ai';
-        const combinedResult = `# Full Page Analysis (${totalImages} screenshots)\n\n${allBatchResults.join('\n\n---\n\n')}`;
+        const combinedResult = `# Analysis (${totalImages} screenshots)\n\n${allBatchResults.join('\n\n---\n\n')}`;
         responseBubble.innerHTML = typeof marked !== 'undefined' ? (typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(marked.parse(combinedResult)) : marked.parse(combinedResult)) : combinedResult;
         thread.appendChild(responseBubble);
         addBubbleActions(responseBubble, combinedResult);
