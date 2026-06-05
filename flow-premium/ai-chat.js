@@ -7397,8 +7397,13 @@ async function handleSend() {
           
           audioError = body.error?.message || `Status ${resp.status}`;
           const isRateLimit = resp.status === 429 || audioError.toLowerCase().includes('rate') || audioError.toLowerCase().includes('quota');
+          const isInternal = resp.status === 500 || audioError.toLowerCase().includes('internal');
           if (isRateLimit) {
             console.log(`[SnapToAI Audio] Rate limited on ${audioModel}, trying next...`);
+          }
+          if (isInternal) {
+            console.log(`[SnapToAI Audio] Internal error on ${audioModel}, trying next...`);
+            continue;
           }
         } catch(e) {
           audioError = e.message;
@@ -7416,8 +7421,11 @@ async function handleSend() {
           releaseRequestLock();
           return;
         }
-        const friendlyAudioError = audioError?.toLowerCase().includes('failed to fetch')
+        const errLower = (audioError || '').toLowerCase();
+        const friendlyAudioError = errLower.includes('failed to fetch')
           ? 'Connection failed — please check your internet and try again.'
+          : errLower.includes('internal')
+          ? 'Google\'s music servers hit a temporary hiccup. Please try again in a few seconds — it usually clears up quickly.'
           : (audioError || 'Music generation failed. Please try again.');
         throw new Error(friendlyAudioError);
       }
