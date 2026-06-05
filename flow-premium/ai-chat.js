@@ -1017,13 +1017,13 @@ const getConfig = (key, defaultVal) => (window.SNAPTOAI_CONFIG && window.SNAPTOA
 
 const AI_MODES = {
   'vision': {
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-3.5-flash',
     type: 'gemini',
     placeholder: 'Ask about your screenshot...',
     welcome: "Vision mode — snap a screenshot and ask me anything. Use Build · Research · Search · Read · Code to go further."
   },
   'image': {
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-3.1-flash-image',
     type: 'gemini-image',
     placeholder: 'Describe the image you want to create...',
     welcome: '✨ Image mode — describe anything. Powered by Google Imagen, the world\'s most advanced image AI.'
@@ -2627,7 +2627,7 @@ Hard rules:
 - Never cut to a different location.
 - Keep each "shot" description under 50 words.`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
 
   // One attempt + one retry on parse failure. The retry uses a stricter
   // brief that explicitly demands valid JSON. A single failed parse used to
