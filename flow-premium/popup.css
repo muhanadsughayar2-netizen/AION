@@ -387,7 +387,7 @@ body {
 }
 
 .status-dot.paste-ready {
-  background: #34A853;
+  background: #4285F4;
 }
 
 @keyframes dot-active {
@@ -397,7 +397,7 @@ body {
 
 @keyframes dot-success {
   0% { transform: scale(1); }
-  50% { transform: scale(1.5); }
+  50% { transform: scale(1.3); }
   100% { transform: scale(1); }
 }
 
@@ -407,14 +407,8 @@ body {
 }
 
 @keyframes dot-paste-ready {
-  0%, 100% { 
-    transform: scale(1);
-    box-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
-  }
-  50% { 
-    transform: scale(1.3);
-    box-shadow: 0 0 16px rgba(0, 255, 136, 1);
-  }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
 }
 
 .status {
@@ -433,23 +427,17 @@ body {
 }
 
 .status.success {
-  color: #00ff88;
+  color: #e8eaed;
 }
 
 .status.error {
-  color: #ff4444;
+  color: #EA4335;
 }
 
 .status.paste-ready {
-  color: #00ff88;
-  font-size: 14px;
-  font-weight: 700;
-  animation: text-glow 1s ease-in-out infinite;
-}
-
-@keyframes text-glow {
-  0%, 100% { text-shadow: 0 0 4px rgba(0, 255, 136, 0.3); }
-  50% { text-shadow: 0 0 12px rgba(0, 255, 136, 0.8); }
+  color: #4285F4;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 /* RE-EDIT Full Page Button - same style as Clear button */

@@ -174,7 +174,7 @@
     }
     .image-panel-send-hint {
       font-size: 10px;
-      color: rgba(0,217,255,0.7);
+      color: rgba(66,133,244,0.7);
       text-align: center;
       margin-top: 6px;
       letter-spacing: 0.04em;
@@ -490,41 +490,40 @@
       opacity: 0;
       transition: opacity 0.4s ease;
     }
-    .mode-btn[data-mode="vision"]::before { background: radial-gradient(ellipse at center, rgba(0,217,255,0.15), transparent 70%); }
-    .mode-btn[data-mode="image"]::before { background: radial-gradient(ellipse at center, rgba(255,107,237,0.15), transparent 70%); }
-    .mode-btn[data-mode="music"]::before { background: radial-gradient(ellipse at center, rgba(0,255,136,0.15), transparent 70%); }
+    .mode-btn[data-mode="vision"]::before { display: none; }
+    .mode-btn[data-mode="image"]::before { display: none; }
+    .mode-btn[data-mode="music"]::before { display: none; }
     .mode-btn:hover {
-      transform: scale(1.04);
       border-color: rgba(255,255,255,0.18);
-      color: #aabbcc;
+      color: #c8d0d8;
     }
-    .mode-btn:hover::before { opacity: 0.6; }
-    .mode-btn:active { transform: scale(0.96); }
+    .mode-btn:hover::before { opacity: 0; }
+    .mode-btn:active { transform: scale(0.97); }
     .mode-btn.active {
-      transform: scale(1.06);
       font-weight: 600;
+      background: rgba(255,255,255,0.07);
     }
     .mode-btn.active::before { opacity: 1; }
     .mode-btn[data-mode="vision"].active {
-      border-color: rgba(0,217,255,0.5);
-      color: var(--st-accent);
-      box-shadow: 0 0 12px rgba(0,217,255,0.2), 0 0 4px rgba(0,217,255,0.1) inset;
+      border-color: rgba(66,133,244,0.55);
+      color: #4285F4;
+      box-shadow: none;
     }
     .mode-btn[data-mode="image"].active {
-      border-color: rgba(255,107,237,0.5);
-      color: #ff6bed;
-      box-shadow: 0 0 12px rgba(255,107,237,0.2), 0 0 4px rgba(255,107,237,0.1) inset;
+      border-color: rgba(251,188,5,0.55);
+      color: #FBBC05;
+      box-shadow: none;
     }
     .mode-btn[data-mode="music"].active {
-      border-color: rgba(0,255,136,0.5);
-      color: #00ff88;
-      box-shadow: 0 0 12px rgba(0,255,136,0.2), 0 0 4px rgba(0,255,136,0.1) inset;
+      border-color: rgba(52,168,83,0.55);
+      color: #34A853;
+      box-shadow: none;
     }
-    .mode-btn[data-mode="video"]::before { background: radial-gradient(ellipse at center, rgba(255,165,0,0.15), transparent 70%); }
+    .mode-btn[data-mode="video"]::before { display: none; }
     .mode-btn[data-mode="video"].active {
-      border-color: rgba(255,165,0,0.5);
-      color: #ffa500;
-      box-shadow: 0 0 12px rgba(255,165,0,0.2), 0 0 4px rgba(255,165,0,0.1) inset;
+      border-color: rgba(234,67,53,0.55);
+      color: #EA4335;
+      box-shadow: none;
     }
     .mode-btn .mode-emoji {
       display: inline-block;
@@ -643,20 +642,19 @@
     
     .send-btn {
       padding: 16px 28px;
-      background: linear-gradient(135deg, #4285F4 0%, #34A853 100%);
+      background: #4285F4;
       border: none;
       border-radius: 12px;
       color: #fff;
       font-size: 15px;
-      font-weight: 700;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
-      box-shadow: 0 2px 8px rgba(66, 133, 244, 0.35);
+      box-shadow: none;
     }
     
     .send-btn:hover {
-      background: linear-gradient(135deg, #5a95f5 0%, #3dbd62 100%);
-      box-shadow: 0 4px 15px rgba(66, 133, 244, 0.5);
+      background: #5a95f5;
       transform: translateY(-1px);
     }
     
@@ -1138,7 +1136,7 @@
         <button class="tip-dismiss" id="dismissTip" title="Dismiss">✕</button>
       </div>
 
-      <div id="modeBar" style="display: flex; gap: 6px; padding: 7px 10px; background: rgba(0,217,255,0.03); border-bottom: 1px solid rgba(0,217,255,0.08); overflow-x: auto; scrollbar-width: none;">
+      <div id="modeBar" style="display: flex; gap: 6px; padding: 7px 10px; background: rgba(66,133,244,0.04); border-bottom: 1px solid rgba(255,255,255,0.07); overflow-x: auto; scrollbar-width: none;">
         <button class="mode-btn active" data-mode="vision" title="Analyze screenshots & text"><span class="mode-emoji">🔍</span> Vision</button>
         <button class="mode-btn" data-mode="image" id="imageModeBtn" title="Generate images from text"><span class="mode-emoji">🎨</span> Image</button>
         <button class="mode-btn" data-mode="music" id="musicModeBtn" title="Create music clips"><span class="mode-emoji">🎵</span> Music</button>
@@ -1262,7 +1260,7 @@
           background: rgba(66,133,244,0.12);
           border-color: rgba(66,133,244,0.55);
           color: #4285F4;
-          box-shadow: 0 0 12px rgba(0,217,255,0.22);
+          box-shadow: 0 0 8px rgba(66,133,244,0.18);
         }
         #urlToggleBtn:hover, #urlToggleBtn.tool-btn-active {
           background: rgba(50,200,255,0.12);
@@ -1312,7 +1310,6 @@
         <button class="magic-add-btn" id="addMagicBtn">+ Magic Agents</button>
         <button class="verdict-btn" id="verdictBtn" style="display:none !important;">⚖️ The Verdict</button>
         <button class="action-btn continue-btn" id="continueBtn">▶ Continue</button>
-        <button class="action-btn" id="summarizeBtn">📋 Summarize</button>
         <button class="action-btn" id="clearBtn">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>Clear
         </button>

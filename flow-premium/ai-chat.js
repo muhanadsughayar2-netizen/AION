@@ -1053,17 +1053,17 @@ function getCurrentModeModel() {
 }
 
 const MODE_COLORS = {
-  'vision': 'rgba(0,217,255,0.06)',
-  'image': 'rgba(255,107,237,0.06)',
-  'music': 'rgba(0,255,136,0.06)',
-  'video': 'rgba(255,165,0,0.06)'
+  'vision': 'rgba(66,133,244,0.04)',
+  'image': 'rgba(251,188,5,0.04)',
+  'music': 'rgba(52,168,83,0.04)',
+  'video': 'rgba(234,67,53,0.04)'
 };
 
 const MODEL_NAMES = {
-  'vision': { name: 'Gemini 3', sub: 'Flash (Preview)', color: '#00d9ff' },
-  'image': { name: 'Nano', sub: 'Banana', color: '#ff6bed' },
-  'music': { name: 'Lyria', sub: '', color: '#00ff88' },
-  'video': { name: 'Veo', sub: '', color: '#ffa500' }
+  'vision': { name: 'Gemini 3', sub: 'Flash (Preview)', color: '#4285F4' },
+  'image': { name: 'Nano', sub: 'Banana', color: '#FBBC05' },
+  'music': { name: 'Lyria', sub: '', color: '#34A853' },
+  'video': { name: 'Veo', sub: '', color: '#EA4335' }
 };
 
 function updateModelHeader(mode) {
@@ -1165,6 +1165,10 @@ function initModeButtons() {
       btns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
+      // Show agent tool buttons only on Vision; hide on Image/Music/Video
+      const toolBtnGroup = document.querySelector('.tool-btn-group');
+      if (toolBtnGroup) toolBtnGroup.style.display = mode === 'vision' ? 'flex' : 'none';
+
       // Voice selector is for TTS read-aloud only — never show in Music/Song mode
       const voiceSel = document.getElementById('voiceSelector');
       if (voiceSel) voiceSel.style.display = 'none';
@@ -1223,6 +1227,9 @@ function initModeButtons() {
       if (inputEl) inputEl.placeholder = AI_MODES[mode].placeholder;
       if (modeBar) modeBar.style.background = MODE_COLORS[mode] || MODE_COLORS['vision'];
       updateModelHeader(mode);
+      // Show agent tools only for vision on initial load
+      const toolBtnGroupInit = document.querySelector('.tool-btn-group');
+      if (toolBtnGroupInit) toolBtnGroupInit.style.display = mode === 'vision' ? 'flex' : 'none';
     }
   }).catch(() => {});
 }
@@ -9545,17 +9552,7 @@ Output ONLY JSON:
 
 // ============ MAGIC BUTTONS SYSTEM ============
 let magicButtons = [];
-const DEFAULT_MAGIC_BUTTONS = [
-  {
-    name: 'Analyze',
-    emoji: '⚡',
-    prompt: 'What is this? Give me the key points.',
-    hint: 'Smart analysis — works on anything',
-    colorIndex: 0,
-    isDefault: true,
-    isFallback: true
-  }
-];
+const DEFAULT_MAGIC_BUTTONS = [];
 
 // Split images into batches of max size
 function chunkImages(images, maxSize = 30) {
