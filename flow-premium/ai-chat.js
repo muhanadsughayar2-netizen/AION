@@ -201,7 +201,7 @@ function buildVeoRateLimitCard(modelLabel) {
 }
 
 const MODE_META = {
-  'image': { icon: '🎨', name: 'Image Studio', feature: 'AI image generation', accent: '#ff6bed', glow: 'rgba(255,107,237,0.12), rgba(200,80,200,0.06)', border: 'rgba(255,107,237,0.25)' },
+  'image': { icon: '✨', name: 'Image Studio', feature: 'AI image generation', accent: '#ff6bed', glow: 'rgba(255,107,237,0.12), rgba(200,80,200,0.06)', border: 'rgba(255,107,237,0.25)' },
   'music': { icon: '🎵', name: 'Music Studio', feature: 'AI music generation', accent: '#00ff88', glow: 'rgba(0,255,136,0.12), rgba(0,200,100,0.06)', border: 'rgba(0,255,136,0.25)' },
   'video': { icon: '🎬', name: 'Video Studio', feature: 'AI video generation', accent: '#ffa500', glow: 'rgba(255,165,0,0.12), rgba(200,120,0,0.06)', border: 'rgba(255,165,0,0.25)' }
 };
@@ -1026,7 +1026,7 @@ const AI_MODES = {
     model: 'gemini-3-flash-preview',
     type: 'gemini-image',
     placeholder: 'Describe the image you want to create...',
-    welcome: '🎨 Image mode — describe what you want and I\'ll create it!'
+    welcome: '✨ Image mode — describe what you want and I\'ll create it!'
   },
   'music': {
     model: 'lyria-3-clip-preview',
@@ -1311,13 +1311,13 @@ function showImageStudio(thread) {
     <div style="background:linear-gradient(135deg, rgba(255,107,237,0.05), rgba(200,80,200,0.02));border:1px solid rgba(255,107,237,0.15);border-radius:14px;padding:16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:20px;">🎨</span>
+          <span style="font-size:20px;">✨</span>
           <span style="font-size:14px;font-weight:700;color:#e8eef4;">Image Studio</span>
         </div>
         <button class="studio-surprise-btn" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(255,107,237,0.25);background:rgba(255,107,237,0.06);color:#ff6bed;font-size:11px;font-weight:600;cursor:pointer;">🎲 Surprise Me</button>
       </div>
       <textarea class="studio-desc" placeholder="What do you want to create? Describe it here..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,107,237,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;"></textarea>
-      <button class="studio-create-btn" style="width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#ff6bed,#cc44bb);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;opacity:0.4;pointer-events:none;">🎨 Create Image</button>
+      <button class="studio-create-btn" style="width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#ff6bed,#cc44bb);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;opacity:0.4;pointer-events:none;">✨ Create Image</button>
     </div>
   `;
   
