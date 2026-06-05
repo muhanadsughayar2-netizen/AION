@@ -8052,10 +8052,12 @@ function addBubbleActions(bubble, text) {
       const apiKey = keyResult.geminiApiKey;
       if (!apiKey) throw new Error('no_key');
 
-      // 1200 chars max — shorter text = much faster generation (~3-5s)
-      let ttsInput = cleanText.slice(0, 1200);
-      const lastDot = ttsInput.lastIndexOf('.');
-      if (lastDot > 600) ttsInput = ttsInput.slice(0, lastDot + 1);
+      // Up to 6000 chars — end on a sentence boundary so speech doesn't cut mid-word
+      let ttsInput = cleanText.slice(0, 6000);
+      if (cleanText.length > 6000) {
+        const lastDot = ttsInput.lastIndexOf('.');
+        if (lastDot > 3000) ttsInput = ttsInput.slice(0, lastDot + 1);
+      }
 
       const resp = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
@@ -8117,8 +8119,27 @@ function addBubbleActions(bubble, text) {
 
   readBtn.addEventListener('click', () => {
     if (ttsAudio) { stopTts(); return; }
+    const savedVoice = localStorage.getItem('snaptoai_tts_voice');
+    if (savedVoice) {
+      // Already has a preferred voice — start immediately
+      runTts(savedVoice);
+    } else {
+      // First time — show picker so they can choose
+      showVoicePicker((voiceName) => runTts(voiceName));
+    }
+  });
+
+  // Small "change voice" chevron button next to Read
+  const changeVoiceBtn = document.createElement('button');
+  changeVoiceBtn.title = 'Change voice';
+  changeVoiceBtn.textContent = '▾';
+  changeVoiceBtn.style.cssText = 'background:none;border:none;color:#9aa0a6;cursor:pointer;font-size:13px;padding:0 2px;line-height:1;vertical-align:middle;margin-left:1px;';
+  changeVoiceBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (ttsAudio) stopTts();
     showVoicePicker((voiceName) => runTts(voiceName));
   });
+  readBtn.after(changeVoiceBtn);
 }
 
 // Continue - ask AI to continue its response
