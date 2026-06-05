@@ -3813,33 +3813,55 @@ async function _popupIsOwnerKey(apiKey) {
 
 async function _popupDetectTier(apiKey) {
   if (await _popupIsOwnerKey(apiKey)) return { tier: 'free', invalid: false };
-  // Veo first — "no instances" response is the canonical PREPAID positive signal.
-  // Imagen last — its "only available on paid plans" message is a model-availability
-  // message, NOT a billing-status message, and falsely flags prepaid keys as free.
+  // Run all probes in PARALLEL (not sequential) so the total wait is bounded by
+  // the slowest single probe (~5s) instead of the sum of all probes (~60s+).
+  // Short-circuit the moment any probe returns a definitive answer.
   const chain = [
     { model: 'veo-3.0-fast-generate-001',     endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
     { model: 'veo-3.1-fast-generate-preview', endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
     { model: 'veo-3.0-generate-001',          endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
-    // veo-2.0: Google checks billing BEFORE format here. INVALID_ARGUMENT = billing OK = prepaid.
-    // Free keys get FAILED_PRECONDITION from this model, never INVALID_ARGUMENT.
     { model: 'veo-2.0-generate-001',          endpoint: 'predictLongRunning',  trustFree: true,  treatInvalidAsPrepaid: true  },
     { model: 'imagen-4.0-generate-001',       endpoint: 'predict',             trustFree: false, treatInvalidAsPrepaid: false },
     { model: 'imagen-3.0-generate-001',       endpoint: 'predict',             trustFree: false, treatInvalidAsPrepaid: false }
   ];
-  let invalid = false;
-  for (let pass = 0; pass < 2; pass++) {
-    for (const p of chain) {
-      const r = await _popupProbeOneVeo(apiKey, p.model, 10000, p.endpoint, p.treatInvalidAsPrepaid);
-      if (r === 'prepaid') return { tier: 'prepaid', invalid: false };
-      if (r === 'free') {
-        if (p.trustFree) return { tier: 'free', invalid: false };
-        continue; // Veo billing-required is not a reliable free verdict (Tier 1 still hits it)
-      }
-      if (r === 'invalid') invalid = true;
-    }
-    await new Promise(res => setTimeout(res, 500));
-  }
-  return { tier: 'free', invalid };
+
+  return new Promise((resolve) => {
+    let settled = false;
+    let freeVotes = 0;
+    let invalidVotes = 0;
+    let retryVotes = 0;
+    let total = chain.length;
+    let done = 0;
+
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      resolve(result);
+    };
+
+    chain.forEach(p => {
+      _popupProbeOneVeo(apiKey, p.model, 5000, p.endpoint, p.treatInvalidAsPrepaid)
+        .then(r => {
+          if (settled) return;
+          done++;
+          if (r === 'prepaid') { finish({ tier: 'prepaid', invalid: false }); return; }
+          if (r === 'free' && p.trustFree) { finish({ tier: 'free', invalid: false }); return; }
+          if (r === 'invalid') invalidVotes++;
+          else if (r === 'free') freeVotes++;
+          else retryVotes++;
+          // All probes finished without a definitive prepaid signal
+          if (done === total) finish({ tier: 'free', invalid: invalidVotes > 0 });
+        })
+        .catch(() => {
+          if (settled) return;
+          done++;
+          if (done === total) finish({ tier: 'free', invalid: false });
+        });
+    });
+
+    // Hard cap: never hang longer than 6s no matter what
+    setTimeout(() => finish({ tier: 'free', invalid: false }), 6000);
+  });
 }
 
 // ---- API-key tutorial video: click poster to replace with playing video ----

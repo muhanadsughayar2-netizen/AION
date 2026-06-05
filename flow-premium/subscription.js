@@ -101,7 +101,8 @@ async function checkSubscriptionWithServer(email) {
     const response = await fetch(`${BACKEND_URL}/api/subscription/status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, deviceId })
+      body: JSON.stringify({ email, deviceId }),
+      signal: AbortSignal.timeout(6000)
     });
     if (!response.ok) return null;
     const data = await response.json();
