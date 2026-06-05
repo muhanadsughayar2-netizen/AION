@@ -1301,7 +1301,6 @@ body {
   margin-top: 8px;
 }
 
-/* Clear Button */
 /* ── Bottom action row ── */
 .bottom-action-row {
   display: flex;
@@ -1515,12 +1514,6 @@ body {
   margin-top: 6px;
 }
 
-.bottom-save-bar {
-  display: flex;
-  gap: 8px;
-  margin-top: 6px;
-  padding: 0 2px;
-}
 
 
 /* Fade Transitions */
