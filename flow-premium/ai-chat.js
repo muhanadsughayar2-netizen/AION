@@ -6943,7 +6943,7 @@ async function handleSend() {
         removeLoading();
         const batchInfo = document.createElement('div');
         batchInfo.className = 'chat-bubble ai batch-progress';
-        batchInfo.innerHTML = `📊 <strong>Processing ${totalImages} screenshots in batches...</strong><br>This may take a moment for rate limiting.`;
+        batchInfo.innerHTML = `📊 <strong>Analyzing ${totalImages} screenshots...</strong><br>Processing in groups for best results.`;
         thread.appendChild(batchInfo);
         thread.scrollTop = thread.scrollHeight;
         
@@ -6957,7 +6957,7 @@ async function handleSend() {
           const batchImages = currentImages.slice(start, end);
           
           // Update progress
-          batchInfo.innerHTML = `📊 <strong>Processing batch ${batchNum + 1}/${numBatches}</strong> (images ${start + 1}-${end} of ${totalImages})...<br>Please wait for rate limiting.`;
+          batchInfo.innerHTML = `📊 <strong>Group ${batchNum + 1} of ${numBatches}</strong> — analyzing screenshots ${start + 1}–${end} of ${totalImages}...`;
           
           // Build batch request
           const batchParts = [];
@@ -7026,7 +7026,7 @@ async function handleSend() {
           
           // Rate limit delay between batches (except last) - 6s to respect API limits
           if (batchNum < numBatches - 1) {
-            batchInfo.innerHTML = `📊 <strong>Batch ${batchNum + 1}/${numBatches} complete!</strong><br>Waiting for rate limit...`;
+            batchInfo.innerHTML = `✅ <strong>Group ${batchNum + 1} done!</strong> Starting next group...`;
             await new Promise(r => setTimeout(r, 6000));
           }
         }
