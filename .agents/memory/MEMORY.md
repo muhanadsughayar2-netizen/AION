@@ -1,0 +1,1 @@
+- [Gemini image generation models](gemini-image-models.md) — correct "Nano Banana" model IDs; gemini-2.0-flash image models are dead (shut down June 2026).

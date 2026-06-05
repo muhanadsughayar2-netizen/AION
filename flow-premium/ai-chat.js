@@ -1781,7 +1781,7 @@ async function stylizeImageForVideo(apiKey, imageData, style) {
     if (match) mimeType = match[1];
   }
 
-  const models = ['gemini-2.0-flash-preview-image-generation', 'gemini-2.0-flash-exp'];
+  const models = ['gemini-3.1-flash-image', 'gemini-2.5-flash-image', 'gemini-3-pro-image-preview'];
   let lastError = '';
 
   for (const model of models) {
@@ -7087,9 +7087,9 @@ async function handleSend() {
     if (modeConfig.type === 'gemini-image') {
       // === IMAGE GENERATION (via generateContent with responseModalities) ===
       const imageModels = [
+        'gemini-3.1-flash-image',
         'gemini-2.5-flash-image',
-        'gemini-2.0-flash-preview-image-generation',
-        'gemini-2.0-flash-exp'
+        'gemini-3-pro-image-preview'
       ];
       
       let lastResponseData = null;
