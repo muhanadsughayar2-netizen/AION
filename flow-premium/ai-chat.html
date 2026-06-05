@@ -1321,46 +1321,49 @@
   </div>
   
   <!-- Specialist Agents Modal -->
-  <div id="agentsModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center; padding:16px;">
-    <div style="background:#0e0e18; border:1px solid rgba(188,133,255,0.3); border-radius:20px; width:100%; max-width:520px; max-height:85vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 30px 80px rgba(0,0,0,0.7);">
-      <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 20px 14px; border-bottom:1px solid rgba(255,255,255,0.07);">
+  <div id="agentsModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#202124; border:1px solid rgba(255,255,255,0.1); border-radius:16px; width:100%; max-width:520px; max-height:88vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,0.6);">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px 13px; border-bottom:1px solid rgba(255,255,255,0.07);">
         <div>
-          <div style="font-size:15px; font-weight:700; color:#fff;">🤖 Specialist Agents</div>
-          <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:2px;">Pick an expert — overrides the AI's default behaviour</div>
+          <div style="font-size:15px; font-weight:600; color:#e8eaed; letter-spacing:0.1px;">Specialist Agents</div>
+          <div style="font-size:11px; color:#80868b; margin-top:2px;">Pick an expert — overrides the AI's default behaviour</div>
         </div>
-        <button id="closeAgentsModal" style="background:none; border:none; color:rgba(255,255,255,0.4); cursor:pointer; font-size:18px; line-height:1; padding:4px;">✕</button>
+        <button id="closeAgentsModal" style="background:none; border:none; color:#80868b; cursor:pointer; font-size:18px; line-height:1; padding:4px; border-radius:6px; transition:color 0.15s;" onmouseover="this.style.color='#e8eaed'" onmouseout="this.style.color='#80868b'">✕</button>
       </div>
-      <div id="agentsGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:16px; overflow-y:auto;"></div>
+      <div id="agentsGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:14px; overflow-y:auto;"></div>
     </div>
   </div>
   <style>
     .agent-card {
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 14px;
-      padding: 14px;
+      border-radius: 12px;
+      padding: 14px 14px 13px;
       cursor: pointer;
-      transition: all 0.18s ease;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s;
       position: relative;
+      border-left: 3px solid transparent;
     }
     .agent-card:hover {
-      background: rgba(255,255,255,0.08);
-      border-color: var(--agent-color, #bc85ff);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.14);
+      border-left-color: var(--agent-color, #4285F4);
+      transform: translateY(-1px);
     }
     .agent-card.agent-active {
-      background: rgba(188,133,255,0.1);
-      border-color: var(--agent-color, #bc85ff);
-      box-shadow: 0 0 16px rgba(188,133,255,0.2);
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.14);
+      border-left-color: var(--agent-color, #4285F4);
     }
-    .agent-icon { font-size: 22px; margin-bottom: 6px; }
-    .agent-name { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 3px; }
-    .agent-tag { font-size: 10px; color: rgba(255,255,255,0.4); line-height: 1.3; }
+    .agent-icon { font-size: 20px; margin-bottom: 8px; display:block; }
+    .agent-name { font-size: 13px; font-weight: 600; color: #e8eaed; margin-bottom: 3px; }
+    .agent-tag { font-size: 10.5px; color: #80868b; line-height: 1.4; }
     .agent-active-badge {
-      position: absolute; top: 8px; right: 10px;
-      font-size: 9px; font-weight: 700; color: var(--agent-color, #bc85ff);
-      background: rgba(188,133,255,0.15); border-radius: 20px; padding: 2px 7px;
+      position: absolute; top: 8px; right: 9px;
+      font-size: 9px; font-weight: 600; color: #4285F4;
+      background: rgba(66,133,244,0.12);
+      border: 1px solid rgba(66,133,244,0.25);
+      border-radius: 20px; padding: 2px 7px;
     }
   </style>
 
