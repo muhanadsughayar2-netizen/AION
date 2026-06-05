@@ -7331,14 +7331,13 @@ async function handleSend() {
       let audioData = null;
       let audioError = '';
       let audioSucceeded = false;
-      
-      for (const audioModel of musicModels) {
-        console.log(`[SnapToAI Audio] Trying model: ${audioModel}`);
-        
-        let bodyPayload;
+      const MAX_RETRIES_PER_MODEL = 3;
+      const RETRY_DELAY_MS = 1800;
+
+      modelLoop: for (const audioModel of musicModels) {
         const isLyria = audioModel.includes('lyria');
-        const isTTS = audioModel.includes('tts');
-        
+
+        let bodyPayload;
         if (isLyria) {
           const contentParts = [];
           if (currentImages.length > 0) {
@@ -7366,48 +7365,58 @@ async function handleSend() {
             }
           };
         }
-        
-        try {
-          const resp = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${audioModel}:generateContent?key=${apiKey}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(bodyPayload)
+
+        for (let attempt = 1; attempt <= MAX_RETRIES_PER_MODEL; attempt++) {
+          console.log(`[Audio] ${audioModel} attempt ${attempt}/${MAX_RETRIES_PER_MODEL}`);
+          try {
+            const resp = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${audioModel}:generateContent?key=${apiKey}`,
+              { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyPayload) }
+            );
+
+            const body = await resp.json().catch(() => ({}));
+
+            if (resp.ok && body.candidates?.[0]?.content?.parts) {
+              const audioParts = body.candidates[0].content.parts;
+              const hasRealAudio = audioParts.some(p => p.inlineData?.data && p.inlineData.data.length > 5000);
+              if (hasRealAudio) {
+                audioData = body;
+                audioSucceeded = true;
+                console.log(`[Audio] Success: ${audioModel} attempt ${attempt}`);
+                break modelLoop;
+              } else {
+                audioError = '__billing_unlock__';
+                continue modelLoop;
+              }
             }
-          );
-          
-          const body = await resp.json().catch(() => ({}));
-          console.log(`[SnapToAI Audio] ${audioModel} status: ${resp.status}`, JSON.stringify(body).substring(0, 500));
-          
-          if (resp.ok && body.candidates?.[0]?.content?.parts) {
-            const audioParts = body.candidates[0].content.parts;
-            const hasRealAudio = audioParts.some(p => p.inlineData?.data && p.inlineData.data.length > 5000);
-            if (hasRealAudio) {
-              audioData = body;
-              audioSucceeded = true;
-              console.log(`[SnapToAI Audio] Success with ${audioModel}!`);
-              break;
-            } else {
-              audioError = '__billing_unlock__';
-              console.log(`[SnapToAI Audio] ${audioModel} returned parts but no real audio data`);
+
+            audioError = body.error?.message || `Status ${resp.status}`;
+            const errLow = audioError.toLowerCase();
+            const isInternal  = resp.status === 500 || errLow.includes('internal');
+            const isRateLimit = resp.status === 429 || errLow.includes('rate') || errLow.includes('quota');
+            const isBilling   = errLow.includes('billing') || errLow.includes('permission') || errLow.includes('not enabled') || errLow.includes('paid tier');
+
+            if (isBilling) { audioError = '__billing_unlock__'; continue modelLoop; }
+
+            if (isInternal && attempt < MAX_RETRIES_PER_MODEL) {
+              console.log(`[Audio] Internal error on ${audioModel}, retrying in ${RETRY_DELAY_MS}ms...`);
+              await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
               continue;
             }
+            if (isRateLimit || isInternal) {
+              console.log(`[Audio] Moving to next model after ${attempt} attempt(s) on ${audioModel}`);
+              continue modelLoop;
+            }
+            // Non-retryable error — skip to next model
+            continue modelLoop;
+
+          } catch(e) {
+            audioError = e.message;
+            console.log(`[Audio] ${audioModel} attempt ${attempt} threw:`, e.message);
+            if (attempt < MAX_RETRIES_PER_MODEL) {
+              await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+            }
           }
-          
-          audioError = body.error?.message || `Status ${resp.status}`;
-          const isRateLimit = resp.status === 429 || audioError.toLowerCase().includes('rate') || audioError.toLowerCase().includes('quota');
-          const isInternal = resp.status === 500 || audioError.toLowerCase().includes('internal');
-          if (isRateLimit) {
-            console.log(`[SnapToAI Audio] Rate limited on ${audioModel}, trying next...`);
-          }
-          if (isInternal) {
-            console.log(`[SnapToAI Audio] Internal error on ${audioModel}, trying next...`);
-            continue;
-          }
-        } catch(e) {
-          audioError = e.message;
-          console.log(`[SnapToAI Audio] ${audioModel} error:`, e.message);
         }
       }
       
