@@ -197,20 +197,19 @@
       <div id="thumbnails" class="thumbnails"></div>
     </div>
 
-    <!-- Bottom Actions -->
-    <button id="clearButton" class="clear-button" data-i18n="deleteSelected">Delete Selected</button>
-    <div class="bottom-save-bar" id="bottomSaveBar" style="display: none;">
-      <button id="downloadSelectedBtn" class="bottom-save-btn">Save as PNG</button>
-      <button id="exportPdfBtn" class="bottom-save-btn">Save as PDF</button>
-    </div>
-
-    <!-- Footer icon bar -->
-    <div class="popup-footer-bar">
-      <button class="footer-icon-btn" id="footerReviewBtn" title="Leave a review">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+    <!-- Bottom action row — all in one line -->
+    <div class="bottom-action-row">
+      <button id="clearButton" class="bab delete-bab" data-i18n="deleteSelected">Delete Selected</button>
+      <div class="bottom-save-bar" id="bottomSaveBar" style="display: none;">
+        <button id="downloadSelectedBtn" class="bab">PNG</button>
+        <button id="exportPdfBtn" class="bab">PDF</button>
+      </div>
+      <span class="bottom-spacer"></span>
+      <button class="bab footer-icon-btn" id="footerReviewBtn" title="Leave a review">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
       </button>
-      <button class="footer-icon-btn" id="footerHelpBtn" title="Watch tutorials on YouTube">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <button class="bab footer-icon-btn" id="footerHelpBtn" title="Watch tutorials on YouTube">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </button>
     </div>
   </div>

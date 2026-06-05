@@ -1302,40 +1302,75 @@ body {
 }
 
 /* Clear Button */
-.clear-button {
-  width: 100%;
-  padding: 10px;
+/* ── Bottom action row ── */
+.bottom-action-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 0 2px;
+}
+
+.bottom-spacer { flex: 1; }
+
+/* Base button used by every item in the row */
+.bab {
+  padding: 7px 11px;
   background: #2d2e30;
-  border: 1px solid rgba(234, 67, 53, 0.30);
-  color: #EA4335;
-  border-radius: 10px;
-  font-size: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #9aa0a6;
+  border-radius: 8px;
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
-  font-family: 'Google Sans', 'Inter', Roboto, sans-serif;
   cursor: pointer;
-  transition: background .15s ease, border-color .15s ease;
-  margin-top: 8px;
-  min-height: 36px;
+  font-family: 'Google Sans', 'Inter', Roboto, sans-serif;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+.bab:hover { background: #35363a; color: #e8eaed; }
+.bab:active { transform: scale(.97); }
 
-.clear-button:hover {
-  background: rgba(234, 67, 53, 0.10);
-  border-color: rgba(234, 67, 53, 0.50);
+/* Delete Selected — Google Blue text */
+.delete-bab {
+  flex: 1;
+  color: #4285F4;
+  border-color: rgba(66,133,244,0.18);
 }
-
-.clear-button:active {
-  transform: translateY(0) scale(.98);
+.delete-bab:hover {
+  background: rgba(66,133,244,0.10);
+  color: #4285F4;
+  border-color: rgba(66,133,244,0.35);
 }
-
-.clear-button:disabled {
-  opacity: 0.3;
+.delete-bab:disabled {
+  color: #5f6368;
+  border-color: rgba(255,255,255,0.06);
+  background: #2d2e30;
   cursor: not-allowed;
   transform: none;
+}
+
+/* bottomSaveBar sits inline in the flex row */
+.bottom-save-bar {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+
+/* Heart / ? icon buttons */
+.footer-icon-btn {
+  background: none !important;
+  border: none !important;
+  color: #5f6368;
+  padding: 5px;
+  border-radius: 50%;
+}
+.footer-icon-btn:hover {
+  color: #EA4335;
+  background: none !important;
 }
 
 .empty-wow {
@@ -1487,65 +1522,6 @@ body {
   padding: 0 2px;
 }
 
-/* Footer icon bar — heart + help */
-.popup-footer-bar {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  padding: 6px 0 2px;
-}
-
-.footer-icon-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #5f6368;
-  padding: 4px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.15s ease;
-}
-
-.footer-icon-btn:hover {
-  color: #EA4335;
-}
-
-.bottom-save-btn {
-  flex: 1;
-  padding: 10px 12px;
-  background: #2d2e30;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  color: #e8eaed;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
-  cursor: pointer;
-  font-family: 'Google Sans', 'Inter', Roboto, sans-serif;
-  transition: background .15s ease, border-color .15s ease;
-  min-height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-#downloadSelectedBtn:hover,
-#exportPdfBtn:hover {
-  background: #35363a;
-  border-color: rgba(255,255,255,0.18);
-}
-
-.bottom-save-btn:hover {
-  background: #35363a;
-}
-
-.bottom-save-btn:active {
-  transform: translateY(0) scale(.98);
-}
 
 /* Fade Transitions */
 .fade-in {
