@@ -7161,18 +7161,23 @@ async function handleSend() {
           }
           
           lastError = responseBody.error?.message || `Status ${response.status}`;
-          console.log(`[SnapToAI Image] Error: ${lastError}`);
-          
-          break;
+          console.log(`[SnapToAI Image] Error on ${modelName}: ${lastError}`);
+          // Always try next model — don't stop on billing/permission/404 errors
+          break; // break attempts, outer loop continues to next model
         }
         
         if (succeeded) break;
-        console.log(`[SnapToAI Image] ${modelName} failed, trying next model...`);
+        console.log(`[SnapToAI Image] ${modelName} exhausted, trying next model...`);
       }
       
       if (!succeeded) {
-        const friendlyError = lastError?.toLowerCase().includes('failed to fetch') 
+        const errLow = (lastError || '').toLowerCase();
+        const friendlyError = errLow.includes('failed to fetch') || errLow.includes('network')
           ? 'Connection failed — please check your internet and try again.'
+          : errLow.includes('billing') || errLow.includes('permission') || errLow.includes('not enabled') || errLow.includes('paid') || errLow.includes('quota')
+          ? 'Image generation requires a paid Google AI API key with billing enabled. Enable billing at aistudio.google.com and try again.'
+          : errLow.includes('api key') || errLow.includes('invalid') || errLow.includes('401') || errLow.includes('403')
+          ? 'Invalid or missing API key. Please re-enter your Gemini API key in settings.'
           : (lastError || 'Image generation failed. Please try again.');
         throw new Error(friendlyError);
       }
