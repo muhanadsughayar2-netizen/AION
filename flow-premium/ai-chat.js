@@ -12,12 +12,19 @@ const MODELS = {
   imageChain:   ['gemini-3.1-flash-image', 'gemini-2.5-flash-image', 'gemini-3-pro-image-preview'],
   // Music / TTS
   musicDefault: 'lyria-3-clip-preview',
+  lyria3:       'lyria-3',
+  lyria3Pro:    'lyria-3-pro-preview',
   ttsPrimary:   'gemini-2.5-flash-preview-tts',
   ttsFallback:  'gemini-2.5-pro-preview-tts',
   // Video generation
+  veo31:        'veo-3.1-generate-preview',
+  veo31Fast:    'veo-3.1-fast-generate-preview',
+  veo31Lite:    'veo-3.1-lite-generate-preview',
   veoDefault:   'veo-3.0-generate-001',
   veoFallback:  'veo-3.1-fast-generate-preview',
   veoLite:      'veo-3.1-lite-generate-preview',
+  veo3Fast:     'veo-3.0-fast-generate-001',
+  veo2:         'veo-2.0-generate-001',
   // Billing probe chain (used by detectKeyTierVerbose)
   probeVeo3Fast:  'veo-3.0-fast-generate-001',
   probeVeo31Fast: 'veo-3.1-fast-generate-preview',
@@ -1426,23 +1433,23 @@ function showImageStudio(thread) {
 let activeVideoPollTimer = null;
 
 const VEO_MODELS = [
-  { id: 'veo-3.1-generate-preview', label: '3.1', desc: 'Best quality', tier: 'top' },
-  { id: 'veo-3.1-fast-generate-preview', label: '3.1 Fast', desc: 'Fast + great quality', tier: 'mid' },
-  { id: 'veo-3.1-lite-generate-preview', label: '3.1 Lite', desc: 'Quick drafts', tier: 'lite' },
-  { id: 'veo-3.0-generate-001', label: '3.0', desc: 'High quality', tier: 'mid' },
-  { id: 'veo-3.0-fast-generate-001', label: '3.0 Fast', desc: 'Fast + good', tier: 'lite' },
-  { id: 'veo-2.0-generate-001', label: '2.0', desc: 'Basic (needs billing)', tier: 'basic' }
+  { id: MODELS.veo31,      label: '3.1',      desc: 'Best quality',          tier: 'top'   },
+  { id: MODELS.veo31Fast,  label: '3.1 Fast', desc: 'Fast + great quality',  tier: 'mid'   },
+  { id: MODELS.veo31Lite,  label: '3.1 Lite', desc: 'Quick drafts',          tier: 'lite'  },
+  { id: MODELS.veoDefault, label: '3.0',      desc: 'High quality',          tier: 'mid'   },
+  { id: MODELS.veo3Fast,   label: '3.0 Fast', desc: 'Fast + good',           tier: 'lite'  },
+  { id: MODELS.veo2,       label: '2.0',      desc: 'Basic (needs billing)', tier: 'basic' }
 ];
 
 // Real Google Veo pricing (Gemini API / Vertex AI public rates, USD per second of video).
 // Source: https://ai.google.dev/gemini-api/docs/pricing  &  https://cloud.google.com/vertex-ai/generative-ai/pricing
 const VEO_PRICING = {
-  'veo-3.1-generate-preview':      0.40,  // Veo 3.1 (with audio)
-  'veo-3.1-fast-generate-preview': 0.15,  // Veo 3.1 Fast
-  'veo-3.1-lite-generate-preview': 0.10,  // Veo 3.1 Lite
-  'veo-3.0-generate-001':          0.75,  // Veo 3 (with audio)
-  'veo-3.0-fast-generate-001':     0.40,  // Veo 3 Fast (with audio)
-  'veo-2.0-generate-001':          0.50   // Veo 2 (no audio)
+  [MODELS.veo31]:      0.40,  // Veo 3.1 (with audio)
+  [MODELS.veo31Fast]:  0.15,  // Veo 3.1 Fast
+  [MODELS.veo31Lite]:  0.10,  // Veo 3.1 Lite
+  [MODELS.veoDefault]: 0.75,  // Veo 3 (with audio)
+  [MODELS.veo3Fast]:   0.40,  // Veo 3 Fast (with audio)
+  [MODELS.veo2]:       0.50   // Veo 2 (no audio)
 };
 
 // Veo negative prompt — sent via parameters.negativePrompt INSTEAD of being
@@ -1461,14 +1468,14 @@ const VEO_NEGATIVE_PROMPT = 'gibberish writing, distorted faces, extra limbs, bl
 
 // Lyria music pricing (Vertex AI, USD per second of audio).
 const LYRIA_PRICING = {
-  'lyria-3-clip-preview': 0.06,  // Lyria 3 (preview)
-  'lyria-3-pro-preview':  0.10,  // Lyria 3 Pro (preview, higher fidelity)
-  'gemini-2.5-flash-preview-tts': 0.015 // TTS fallback (not real music)
+  [MODELS.musicDefault]: 0.06,  // Lyria 3 (preview)
+  [MODELS.lyria3Pro]:    0.10,  // Lyria 3 Pro (preview, higher fidelity)
+  [MODELS.ttsPrimary]:   0.015  // TTS fallback (not real music)
 };
 const LYRIA_MODELS_DISPLAY = [
-  { id: 'lyria-3-clip-preview', label: 'Lyria 3', desc: 'Default music model' },
-  { id: 'lyria-3-pro-preview',  label: 'Lyria 3 Pro', desc: 'Higher-fidelity (fallback)' },
-  { id: 'gemini-2.5-flash-preview-tts', label: 'Gemini TTS', desc: 'Voice fallback (not music)' }
+  { id: MODELS.musicDefault, label: 'Lyria 3', desc: 'Default music model' },
+  { id: MODELS.lyria3Pro,    label: 'Lyria 3 Pro', desc: 'Higher-fidelity (fallback)' },
+  { id: MODELS.ttsPrimary,   label: 'Gemini TTS', desc: 'Voice fallback (not music)' }
 ];
 
 let selectedVeoModel = MODELS.veoLite;
@@ -7370,7 +7377,7 @@ async function handleSend() {
         return p;
       }
 
-      const musicModels = ['lyria-3', modeConfig.model, 'lyria-3-pro-preview', MODELS.ttsFallback];
+      const musicModels = [MODELS.lyria3, modeConfig.model, MODELS.lyria3Pro, MODELS.ttsFallback];
       let audioData = null;
       let audioError = '';
       let audioSucceeded = false;
