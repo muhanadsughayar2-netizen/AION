@@ -1,6 +1,19 @@
 // AI Chat Window Script
 // Handles AI chat in a standalone window
 
+// ============ MODEL REGISTRY ============
+// Single source of truth for all Gemini model IDs.
+// Update here — never scatter model strings across the file.
+const MODELS = {
+  chat:         'gemini-3.5-flash',
+  imagePrimary: 'gemini-3.1-flash-image',
+  imageChain:   ['gemini-3.1-flash-image', 'gemini-2.5-flash-image', 'gemini-3-pro-image-preview'],
+  musicDefault: 'lyria-3-clip-preview',
+  ttsPrimary:   'gemini-2.5-flash-preview-tts',
+  ttsFallback:  'gemini-2.5-pro-preview-tts'
+};
+// ============ END MODEL REGISTRY ============
+
 // ============ GLOBAL RATE LIMITER ============
 // Prevents multiple simultaneous API calls that cause rate limit errors
 let isRequestInProgress = false;
@@ -340,7 +353,7 @@ async function getProxyIdentifier() {
   try {
     const result = await chrome.storage.local.get('snaptoai_user');
     if (result.snaptoai_user?.email) return result.snaptoai_user.email;
-  } catch (e) {}
+  } catch (e) { console.warn('[SnapToAI] getProxyIdentifier user read failed:', e?.message || e); }
   try {
     let { snaptoai_device_id } = await chrome.storage.local.get('snaptoai_device_id');
     if (!snaptoai_device_id) {
@@ -348,7 +361,7 @@ async function getProxyIdentifier() {
       await chrome.storage.local.set({ snaptoai_device_id });
     }
     return snaptoai_device_id;
-  } catch (e) {}
+  } catch (e) { console.warn('[SnapToAI] getProxyIdentifier deviceId failed:', e?.message || e); }
   return '';
 }
 
@@ -367,7 +380,7 @@ async function sendViaProxy(prompt, imageBase64) {
         body.accessToken = snaptoai_user.accessToken;
       }
     }
-  } catch (e) {}
+  } catch (e) { console.warn('[SnapToAI] sendViaProxy accessToken read failed:', e?.message || e); }
   if (imageBase64) body.imageData = imageBase64;
 
   const resp = await fetch(PROXY_BACKEND_URL + '/api/ai/proxy', {
@@ -1044,19 +1057,19 @@ const getConfig = (key, defaultVal) => (window.SNAPTOAI_CONFIG && window.SNAPTOA
 
 const AI_MODES = {
   'vision': {
-    model: 'gemini-3.5-flash',
+    model: MODELS.chat,
     type: 'gemini',
     placeholder: 'Ask about your screenshot...',
     welcome: "Vision mode — snap a screenshot and ask me anything. Use Build · Research · Search · Read · Code to go further."
   },
   'image': {
-    model: 'gemini-3.1-flash-image',
+    model: MODELS.imagePrimary,
     type: 'gemini-image',
     placeholder: 'Describe the image you want to create...',
     welcome: '✨ Image mode — describe anything. Powered by Google Imagen, the world\'s most advanced image AI.'
   },
   'music': {
-    model: 'lyria-3-clip-preview',
+    model: MODELS.musicDefault,
     type: 'gemini-audio',
     placeholder: 'Describe the music you want (mood, genre, tempo)...',
     welcome: '🎵 Music mode — describe a mood, genre, or scene. Powered by Google Lyria 3, the most advanced music AI ever built.'
@@ -2654,7 +2667,7 @@ Hard rules:
 - Never cut to a different location.
 - Keep each "shot" description under 50 words.`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`;
 
   // One attempt + one retry on parse failure. The retry uses a stricter
   // brief that explicitly demands valid JSON. A single failed parse used to
@@ -7100,11 +7113,7 @@ async function handleSend() {
 
     if (modeConfig.type === 'gemini-image') {
       // === IMAGE GENERATION (via generateContent with responseModalities) ===
-      const imageModels = [
-        'gemini-3.1-flash-image',
-        'gemini-2.5-flash-image',
-        'gemini-3-pro-image-preview'
-      ];
+      const imageModels = MODELS.imageChain;
       
       let lastResponseData = null;
       let lastError = '';
@@ -7146,10 +7155,11 @@ async function handleSend() {
               body: JSON.stringify({
                 contents: [{ role: 'user', parts: imgModeParts }],
                 generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
-              })
+              }),
+              signal: AbortSignal.timeout(30000)
             });
           } catch(fetchErr) {
-            console.log(`[SnapToAI Image] Fetch error on ${modelName}:`, fetchErr.message);
+            console.warn(`[SnapToAI Image] Fetch error on ${modelName}:`, fetchErr.message);
             lastError = fetchErr.message;
             continue;
           }
@@ -7346,7 +7356,7 @@ async function handleSend() {
         return p;
       }
 
-      const musicModels = ['lyria-3', modeConfig.model, 'lyria-3-pro-preview', 'gemini-2.5-flash-preview-tts'];
+      const musicModels = ['lyria-3', modeConfig.model, 'lyria-3-pro-preview', MODELS.ttsFallback];
       let audioData = null;
       let audioError = '';
       let audioSucceeded = false;
@@ -7390,7 +7400,7 @@ async function handleSend() {
           try {
             const resp = await fetch(
               `https://generativelanguage.googleapis.com/v1beta/models/${audioModel}:generateContent?key=${apiKey}`,
-              { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyPayload) }
+              { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyPayload), signal: AbortSignal.timeout(30000) }
             );
 
             const body = await resp.json().catch(() => ({}));
@@ -8092,7 +8102,7 @@ function addBubbleActions(bubble, text) {
     const styled = `In a natural, warm, conversational pace: ${chunkText}`;
     const models = session.workingModel
       ? [session.workingModel]
-      : ['gemini-2.5-flash-preview-tts', 'gemini-2.5-pro-preview-tts'];
+      : [MODELS.ttsPrimary, MODELS.ttsFallback];
     let lastErr = '';
     for (const model of models) {
       try {
@@ -9059,6 +9069,8 @@ let _buildFinalReady = false;
 // Listen for sandbox boot handshake — sandbox.html posts this when it loads
 window.addEventListener('message', function(ev) {
   if (ev.origin !== location.origin) return;
+  const sandboxFrame = document.getElementById('livePreview');
+  if (sandboxFrame && ev.source !== sandboxFrame.contentWindow) return;
   if (ev.data && ev.data.sandboxReady) {
     _isSandboxReady = true;
     // Only flush when the final complete HTML is ready — not mid-stream partials

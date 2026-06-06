@@ -185,6 +185,7 @@
     window.addEventListener('message', function(event) {
       try {
         if (event.origin !== location.origin) return;
+        if (event.source !== window.parent) return;
         var data = event.data;
         if (!data || !data.htmlCode) return;
         // Sanitise BEFORE any DOM insertion so Chrome never sees the bad src

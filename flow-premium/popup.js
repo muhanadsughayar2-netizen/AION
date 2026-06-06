@@ -1,6 +1,11 @@
 // Flow Popup Script
 // Handles UI interactions, thumbnail display, and communication with background
 
+// ============ MODEL REGISTRY ============
+// Single source of truth for Gemini model IDs used in the popup.
+const MODELS = { chat: 'gemini-3.5-flash' };
+// ============ END MODEL REGISTRY ============
+
 const REVIEW_MILESTONES = [5, 15, 30];
 const CHROME_STORE_REVIEW_URL = 'https://chromewebstore.google.com/detail/snaptoai/oojjcoiimphlplollpgjckcjejlamhjh/reviews';
 
@@ -4851,7 +4856,7 @@ async function sendToGemini(prompt, isRetry = false) {
         requestBody.thoughtSignature = aiThoughtSignature;
       }
 
-      const popupModel = 'gemini-3.5-flash';
+      const popupModel = MODELS.chat;
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${popupModel}:generateContent?key=${apiKey}`,
         {
@@ -4985,7 +4990,7 @@ async function testGeminiAPI() {
   try {
     // Use queue to respect rate limits
     const data = await aiQueue.add(async () => {
-      const testModel = 'gemini-3.5-flash';
+      const testModel = MODELS.chat;
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${testModel}:generateContent?key=${result.geminiApiKey}`,
         {
