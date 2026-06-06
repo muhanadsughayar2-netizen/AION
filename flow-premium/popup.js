@@ -160,7 +160,7 @@ async function handleGoogleSignIn() {
         'cachedSubStatus',
         'snaptoai_branding'
       ]);
-    } catch (_) {}
+    } catch (e) { console.warn('[SnapToAI] Sign-in cache wipe failed:', e?.message || e); }
 
     await chrome.storage.local.set({ snaptoai_user: userData });
 
@@ -174,7 +174,7 @@ async function handleGoogleSignIn() {
     // Invite codes were retired in favor of email-only institution onboarding.
     // Purge any legacy pending-invite key from prior installs so it can never
     // be sent again or surface stale UI.
-    try { await chrome.storage.local.remove('snaptoai_pending_invite'); } catch (_) {}
+    try { await chrome.storage.local.remove('snaptoai_pending_invite'); } catch (e) { console.warn('[SnapToAI] Invite key cleanup failed:', e?.message || e); }
 
     try {
       const regBody = {
@@ -200,9 +200,9 @@ async function handleGoogleSignIn() {
       if (window.SnapToAISubscription && window.SnapToAISubscription.refresh) {
         await window.SnapToAISubscription.refresh();
       }
-    } catch (_) {}
+    } catch (e) { console.warn('[SnapToAI] Subscription refresh after sign-in failed:', e?.message || e); }
     await refreshSubscriptionUI();
-    try { await applyInstitutionBranding(); } catch (_) {}
+    try { await applyInstitutionBranding(); } catch (e) { console.warn('[SnapToAI] Institution branding apply failed:', e?.message || e); }
     updateAiButtonState();
 
     if (pendingAfterSignIn === 'geminiModal') {
@@ -3823,7 +3823,7 @@ async function _popupIsOwnerKey(apiKey) {
     const buf = await crypto.subtle.digest('SHA-256', enc);
     const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
     return fingerprints.includes(hex);
-  } catch (_) { return false; }
+  } catch (e) { console.warn('[SnapToAI] Owner-key fingerprint check failed:', e?.message || e); return false; }
 }
 
 async function _popupDetectTier(apiKey) {
