@@ -5,12 +5,26 @@
 // Single source of truth for all Gemini model IDs.
 // Update here — never scatter model strings across the file.
 const MODELS = {
+  // Chat / vision
   chat:         'gemini-3.5-flash',
+  // Image generation
   imagePrimary: 'gemini-3.1-flash-image',
   imageChain:   ['gemini-3.1-flash-image', 'gemini-2.5-flash-image', 'gemini-3-pro-image-preview'],
+  // Music / TTS
   musicDefault: 'lyria-3-clip-preview',
   ttsPrimary:   'gemini-2.5-flash-preview-tts',
-  ttsFallback:  'gemini-2.5-pro-preview-tts'
+  ttsFallback:  'gemini-2.5-pro-preview-tts',
+  // Video generation
+  veoDefault:   'veo-3.0-generate-001',
+  veoFallback:  'veo-3.1-fast-generate-preview',
+  veoLite:      'veo-3.1-lite-generate-preview',
+  // Billing probe chain (used by detectKeyTierVerbose)
+  probeVeo3Fast:  'veo-3.0-fast-generate-001',
+  probeVeo31Fast: 'veo-3.1-fast-generate-preview',
+  probeVeo3:      'veo-3.0-generate-001',
+  probeVeo2:      'veo-2.0-generate-001',
+  probeImagen4:   'imagen-4.0-generate-001',
+  probeImagen3:   'imagen-3.0-generate-001'
 };
 // ============ END MODEL REGISTRY ============
 
@@ -803,7 +817,7 @@ async function detectKeyTierVerbose(apiKey) {
       console.log('[SnapToAI] Owner-key fingerprint match — forcing free tier');
       return { tier: 'free', invalid: false };
     }
-  } catch (_) {}
+  } catch (e) { console.warn('[SnapToAI] Owner-key check failed:', e?.message || e); }
 
   // Imagen first — it requires only Tier 1 billing, so it's the canonical "has billing" probe.
   // Veo second — many keys with billing are still on Tier 1 and Veo requires Tier 2+, so a
@@ -812,14 +826,14 @@ async function detectKeyTierVerbose(apiKey) {
   const probeChain = [
     // Veo first — Imagen last ("only available on paid plans" is a model-availability
     // message, NOT a billing-status message, and falsely flags prepaid keys as free).
-    { model: 'veo-3.0-fast-generate-001',     endpoint: 'predictLongRunning',  trustFreeVerdict: false, treatInvalidAsPrepaid: false },
-    { model: 'veo-3.1-fast-generate-preview', endpoint: 'predictLongRunning',  trustFreeVerdict: false, treatInvalidAsPrepaid: false },
-    { model: 'veo-3.0-generate-001',          endpoint: 'predictLongRunning',  trustFreeVerdict: false, treatInvalidAsPrepaid: false },
+    { model: MODELS.probeVeo3Fast,  endpoint: 'predictLongRunning',  trustFreeVerdict: false, treatInvalidAsPrepaid: false },
+    { model: MODELS.probeVeo31Fast, endpoint: 'predictLongRunning',  trustFreeVerdict: false, treatInvalidAsPrepaid: false },
+    { model: MODELS.probeVeo3,      endpoint: 'predictLongRunning',  trustFreeVerdict: false, treatInvalidAsPrepaid: false },
     // veo-2.0: Google checks billing BEFORE format here. INVALID_ARGUMENT = billing OK = prepaid.
     // Free keys get FAILED_PRECONDITION from this model, never INVALID_ARGUMENT.
-    { model: 'veo-2.0-generate-001',          endpoint: 'predictLongRunning',  trustFreeVerdict: true,  treatInvalidAsPrepaid: true  },
-    { model: 'imagen-4.0-generate-001',       endpoint: 'predict',             trustFreeVerdict: false, treatInvalidAsPrepaid: false },
-    { model: 'imagen-3.0-generate-001',       endpoint: 'predict',             trustFreeVerdict: false, treatInvalidAsPrepaid: false }
+    { model: MODELS.probeVeo2,      endpoint: 'predictLongRunning',  trustFreeVerdict: true,  treatInvalidAsPrepaid: true  },
+    { model: MODELS.probeImagen4,   endpoint: 'predict',             trustFreeVerdict: false, treatInvalidAsPrepaid: false },
+    { model: MODELS.probeImagen3,   endpoint: 'predict',             trustFreeVerdict: false, treatInvalidAsPrepaid: false }
   ];
 
   // Run all probes in PARALLEL (not sequential) so the total wait is bounded by
@@ -1075,7 +1089,7 @@ const AI_MODES = {
     welcome: '🎵 Music mode — describe a mood, genre, or scene. Powered by Google Lyria 3, the most advanced music AI ever built.'
   },
   'video': {
-    model: 'veo-3.0-generate-001',
+    model: MODELS.veoDefault,
     type: 'gemini-video',
     placeholder: 'Describe the video you want to create...',
     welcome: '🎬 Video mode — describe a scene and I\'ll bring it to life!'
@@ -1457,11 +1471,11 @@ const LYRIA_MODELS_DISPLAY = [
   { id: 'gemini-2.5-flash-preview-tts', label: 'Gemini TTS', desc: 'Voice fallback (not music)' }
 ];
 
-let selectedVeoModel = 'veo-3.1-lite-generate-preview';
+let selectedVeoModel = MODELS.veoLite;
 let selectedVideoDuration = 8;
 let selectedClipCount = 1;
 let userAvailableVeoModels = [];
-let selectedMusicModel = 'lyria-3-clip-preview';
+let selectedMusicModel = MODELS.musicDefault;
 
 // Task #32: User-controllable director creativity. Persists across sessions
 // via chrome.storage.local under 'snaptoai_creativity'. Maps to the temperature
@@ -1821,7 +1835,7 @@ async function stylizeImageForVideo(apiKey, imageData, style) {
     if (match) mimeType = match[1];
   }
 
-  const models = ['gemini-3.1-flash-image', 'gemini-2.5-flash-image', 'gemini-3-pro-image-preview'];
+  const models = MODELS.imageChain;
   let lastError = '';
 
   for (const model of models) {
@@ -1878,7 +1892,7 @@ async function startVideoGeneration(prompt, thread) {
   const useScreenshot = document.querySelector('.studio-use-screenshot');
   const includeImage = useScreenshot && useScreenshot.checked && typeof currentImages !== 'undefined' && currentImages.length > 0;
 
-  const modelName = selectedVeoModel || 'veo-3.1-fast-generate-preview';
+  const modelName = selectedVeoModel || MODELS.veoFallback;
   const clipCount = selectedClipCount || 1;
   const totalDur = selectedVideoDuration * clipCount;
 

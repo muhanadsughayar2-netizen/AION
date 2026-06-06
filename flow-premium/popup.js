@@ -3,7 +3,16 @@
 
 // ============ MODEL REGISTRY ============
 // Single source of truth for Gemini model IDs used in the popup.
-const MODELS = { chat: 'gemini-3.5-flash' };
+const MODELS = {
+  chat: 'gemini-3.5-flash',
+  // Billing probe chain (used by _popupDetectTier)
+  probeVeo3Fast:  'veo-3.0-fast-generate-001',
+  probeVeo31Fast: 'veo-3.1-fast-generate-preview',
+  probeVeo3:      'veo-3.0-generate-001',
+  probeVeo2:      'veo-2.0-generate-001',
+  probeImagen4:   'imagen-4.0-generate-001',
+  probeImagen3:   'imagen-3.0-generate-001'
+};
 // ============ END MODEL REGISTRY ============
 
 const REVIEW_MILESTONES = [5, 15, 30];
@@ -3823,12 +3832,12 @@ async function _popupDetectTier(apiKey) {
   // the slowest single probe (~5s) instead of the sum of all probes (~60s+).
   // Short-circuit the moment any probe returns a definitive answer.
   const chain = [
-    { model: 'veo-3.0-fast-generate-001',     endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
-    { model: 'veo-3.1-fast-generate-preview', endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
-    { model: 'veo-3.0-generate-001',          endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
-    { model: 'veo-2.0-generate-001',          endpoint: 'predictLongRunning',  trustFree: true,  treatInvalidAsPrepaid: true  },
-    { model: 'imagen-4.0-generate-001',       endpoint: 'predict',             trustFree: false, treatInvalidAsPrepaid: false },
-    { model: 'imagen-3.0-generate-001',       endpoint: 'predict',             trustFree: false, treatInvalidAsPrepaid: false }
+    { model: MODELS.probeVeo3Fast,  endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
+    { model: MODELS.probeVeo31Fast, endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
+    { model: MODELS.probeVeo3,      endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
+    { model: MODELS.probeVeo2,      endpoint: 'predictLongRunning',  trustFree: true,  treatInvalidAsPrepaid: true  },
+    { model: MODELS.probeImagen4,   endpoint: 'predict',             trustFree: false, treatInvalidAsPrepaid: false },
+    { model: MODELS.probeImagen3,   endpoint: 'predict',             trustFree: false, treatInvalidAsPrepaid: false }
   ];
 
   return new Promise((resolve) => {
