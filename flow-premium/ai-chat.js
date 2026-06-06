@@ -741,6 +741,7 @@ async function getOwnerKeyFingerprints() {
     const data = await resp.json();
     _ownerKeyFingerprintsCache = Array.isArray(data?.fingerprints) ? data.fingerprints : [];
   } catch (e) {
+    console.warn('[SnapToAI] getOwnerKeyFingerprints network failed:', e?.message || e);
     _ownerKeyFingerprintsCache = [];
   }
   return _ownerKeyFingerprintsCache;
@@ -759,6 +760,7 @@ async function isOwnerKey(apiKey) {
     const hash = await sha256Hex(apiKey);
     return fingerprints.includes(hash);
   } catch (e) {
+    console.warn('[SnapToAI] isOwnerKey check failed:', e?.message || e);
     return false;
   }
 }
@@ -9195,12 +9197,12 @@ function renderLivePreview(responseText) {
   // overwrite the last good site (mirrors the guard in addBubbleActions).
   if (!buildStage && !codeTruncated) {
     _lastBuiltCode = code;
-    try { chrome.storage.local.set({ snaptoai_built_code: code }); } catch(e) {}
+    try { chrome.storage.local.set({ snaptoai_built_code: code }); } catch(e) { console.warn('[SnapToAI] renderLivePreview storage write failed:', e?.message || e); }
     _updateBuildInput();
   } else if (buildStage) {
     // Staged builds are always complete fragments — always save
     _lastBuiltCode = code;
-    try { chrome.storage.local.set({ snaptoai_built_code: code }); } catch(e) {}
+    try { chrome.storage.local.set({ snaptoai_built_code: code }); } catch(e) { console.warn('[SnapToAI] renderLivePreview staged storage write failed:', e?.message || e); }
     _updateBuildInput();
   }
 
