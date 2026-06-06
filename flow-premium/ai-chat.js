@@ -1010,6 +1010,10 @@ let conversationHistory = [];
 const CHAT_HISTORY_STORAGE_KEY = 'snaptoai_chat_history';
 const CHAT_HISTORY_MAX_ITEMS = 20;
 let chatHistorySaveTimer = null;
+const NAMED_CHATS_KEY = 'snaptoai_named_chats';
+const MAX_NAMED_CHATS = 50;
+let currentChatId = null;
+let namedChatSaveTimer = null;
 let filesQueue = []; // Multi-file upload queue (Gemini-style)
 
 // Search grounding, URL context & Code Execution toggles
@@ -8490,7 +8494,11 @@ function exportToPDF() {
 }
 
 // Clear chat
-function clearChat() {
+async function clearChat() {
+  // Archive the current conversation before wiping it
+  await saveNamedChat();
+  currentChatId = _generateChatId();
+
   const thread = document.getElementById('chatThread');
   thread.innerHTML = '<div class="welcome-message">I\'m your AI partner. Ask me anything about this image!</div>';
   conversationHistory = [];
@@ -8535,6 +8543,7 @@ function scheduleChatHistorySave() {
   chatHistorySaveTimer = setTimeout(() => {
     saveChatHistoryToLocal();
   }, 400);
+  scheduleNamedChatSave();
 }
 
 async function restoreLastChatHistory() {
@@ -8550,6 +8559,146 @@ async function restoreLastChatHistory() {
     conversationHistory = Array.isArray(last.conversationHistory) ? last.conversationHistory : conversationHistory;
   } catch (e) {}
 }
+
+// ── Named Chat History ─────────────────────────────────────────────────────
+function _generateChatId() {
+  return 'chat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+}
+
+function _extractChatTitle(history) {
+  const first = (history || []).find(m => m.role === 'user');
+  if (!first) return 'New conversation';
+  const text = (first.text || '').replace(/\n/g, ' ').trim();
+  return text.length > 65 ? text.slice(0, 62) + '…' : text || 'New conversation';
+}
+
+function _histEscapeHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function saveNamedChat() {
+  if (!conversationHistory.length) return;
+  if (!currentChatId) currentChatId = _generateChatId();
+  try {
+    const result = await chrome.storage.local.get([NAMED_CHATS_KEY]);
+    const chats = Array.isArray(result[NAMED_CHATS_KEY]) ? result[NAMED_CHATS_KEY] : [];
+    const idx = chats.findIndex(c => c.id === currentChatId);
+    const entry = {
+      id: currentChatId,
+      title: _extractChatTitle(conversationHistory),
+      date: Date.now(),
+      conversationHistory: conversationHistory.slice(-200),
+      chatHtml: document.getElementById('chatThread')?.innerHTML || ''
+    };
+    if (idx >= 0) chats[idx] = entry;
+    else chats.unshift(entry);
+    await chrome.storage.local.set({ [NAMED_CHATS_KEY]: chats.slice(0, MAX_NAMED_CHATS) });
+  } catch (e) {}
+}
+
+function scheduleNamedChatSave() {
+  if (namedChatSaveTimer) clearTimeout(namedChatSaveTimer);
+  namedChatSaveTimer = setTimeout(saveNamedChat, 600);
+}
+
+async function deleteNamedChat(id) {
+  try {
+    const result = await chrome.storage.local.get([NAMED_CHATS_KEY]);
+    const chats = (Array.isArray(result[NAMED_CHATS_KEY]) ? result[NAMED_CHATS_KEY] : []).filter(c => c.id !== id);
+    await chrome.storage.local.set({ [NAMED_CHATS_KEY]: chats });
+    if (currentChatId === id) {
+      currentChatId = _generateChatId();
+      conversationHistory = [];
+      const thread = document.getElementById('chatThread');
+      if (thread) thread.innerHTML = '<div class="welcome-message">I\'m your AI partner. Ask me anything about this image!</div>';
+    }
+    openHistoryPanel();
+  } catch (e) {}
+}
+
+async function openHistoryPanel() {
+  try {
+    const result = await chrome.storage.local.get([NAMED_CHATS_KEY]);
+    const chats = Array.isArray(result[NAMED_CHATS_KEY]) ? result[NAMED_CHATS_KEY] : [];
+    _renderHistoryList(chats);
+  } catch (e) { _renderHistoryList([]); }
+  document.getElementById('histPanel')?.classList.add('open');
+  document.getElementById('histOverlay')?.classList.add('open');
+  document.getElementById('histBtn')?.classList.add('active');
+}
+
+function closeHistoryPanel() {
+  document.getElementById('histPanel')?.classList.remove('open');
+  document.getElementById('histOverlay')?.classList.remove('open');
+  document.getElementById('histBtn')?.classList.remove('active');
+}
+
+function _renderHistoryList(chats) {
+  const list = document.getElementById('histList');
+  if (!list) return;
+  if (!chats.length) {
+    list.innerHTML = '<div class="hist-empty"><div class="hist-empty-icon">💬</div>No saved chats yet.<br>Start talking and your<br>conversations will appear here.</div>';
+    return;
+  }
+  const today = new Date();
+  list.innerHTML = chats.map(c => {
+    const d = new Date(c.date);
+    const sameYear = d.getFullYear() === today.getFullYear();
+    const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }) });
+    const isActive = c.id === currentChatId;
+    return `<div class="hist-item${isActive ? ' active' : ''}" data-id="${c.id}">
+      <div class="hist-item-body">
+        <div class="hist-item-title">${_histEscapeHtml(c.title)}</div>
+        <div class="hist-item-date">${dateStr}</div>
+      </div>
+      <button class="hist-del" data-id="${c.id}" title="Delete this chat">🗑</button>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.hist-item').forEach(el => {
+    el.addEventListener('click', e => {
+      if (e.target.closest('.hist-del')) return;
+      _restoreNamedChat(el.dataset.id);
+    });
+  });
+  list.querySelectorAll('.hist-del').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      deleteNamedChat(btn.dataset.id);
+    });
+  });
+}
+
+async function _restoreNamedChat(id) {
+  try {
+    const result = await chrome.storage.local.get([NAMED_CHATS_KEY]);
+    const chats = Array.isArray(result[NAMED_CHATS_KEY]) ? result[NAMED_CHATS_KEY] : [];
+    const chat = chats.find(c => c.id === id);
+    if (!chat) return;
+    currentChatId = chat.id;
+    conversationHistory = Array.isArray(chat.conversationHistory) ? chat.conversationHistory : [];
+    const thread = document.getElementById('chatThread');
+    if (thread) {
+      thread.innerHTML = chat.chatHtml || '';
+      setTimeout(() => thread.scrollTo({ top: thread.scrollHeight, behavior: 'smooth' }), 80);
+    }
+    closeHistoryPanel();
+  } catch (e) {}
+}
+
+// Wire up history panel buttons (called after DOM ready)
+function _initHistoryPanel() {
+  document.getElementById('histBtn')?.addEventListener('click', () => {
+    const panel = document.getElementById('histPanel');
+    if (panel?.classList.contains('open')) closeHistoryPanel();
+    else openHistoryPanel();
+  });
+  document.getElementById('histOverlay')?.addEventListener('click', closeHistoryPanel);
+  document.getElementById('histNewBtn')?.addEventListener('click', () => {
+    closeHistoryPanel();
+    clearChat();
+  });
+}
+// ── End Named Chat History ─────────────────────────────────────────────────
 
 // Copy chat with rich HTML formatting (preserves bold, links, etc in Google Docs)
 async function copyChat() {
@@ -8739,6 +8888,7 @@ document.getElementById('continueBtn')?.addEventListener('click', continueRespon
 document.getElementById('summarizeBtn')?.addEventListener('click', summarizeChat);
 document.getElementById('clearBtn')?.addEventListener('click', clearChat);
 document.getElementById('exportBtn')?.addEventListener('click', exportToPDF);
+_initHistoryPanel();
 
 // Search grounding toggle
 document.getElementById('searchToggleBtn')?.addEventListener('click', (e) => {
