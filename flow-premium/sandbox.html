@@ -112,6 +112,14 @@
             while ((am = attrRe.exec(attrStr)) !== null) {
               try { el.setAttribute(am[1], am[2]); } catch(e) {}
             }
+            // Fix common AI mistake: Google Fonts URLs must use :wght@ not :wght=
+            // Wrong:  fonts.googleapis.com/css2?family=Inter:wght=400;700
+            // Right:  fonts.googleapis.com/css2?family=Inter:wght@400;700
+            if (el.href && /fonts\.googleapis\.com/.test(el.href)) {
+              el.href = el.href
+                .replace(/:ital,wght=/g, ':ital,wght@')
+                .replace(/:wght=/g, ':wght@');
+            }
             container.appendChild(el);
           } catch(e) {}
         }

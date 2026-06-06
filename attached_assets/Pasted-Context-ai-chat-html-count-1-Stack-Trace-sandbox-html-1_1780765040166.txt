@@ -1,0 +1,481 @@
+Context
+ai-chat.html?count=1
+Stack Trace
+sandbox.html:1 (anonymous function)
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapToAI Sandbox</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    try {
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+              serif: ['"Playfair Display"', 'serif'],
+              mono: ['"JetBrains Mono"', 'monospace']
+            }
+          }
+        }
+      };
+    } catch(e) {}
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; min-height: 100vh; }
+    body { background: #07070a; color: #f8fafc; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  </style>
+</head>
+<body>
+  <div id="sandbox-head-styles"></div>
+  <div id="sandbox-app"></div>
+
+  <script>
+    // Re-execute only syntactically complete <script> tags.
+    // Uses new Function() to pre-validate inline scripts before DOM insertion —
+    // replaceChild triggers synchronous browser compilation which bypasses try/catch,
+    // so we validate first and skip any truncated/incomplete streaming chunks.
+    function runScripts(container) {
+      try {
+        container.querySelectorAll('script').forEach(function(old) {
+          try {
+            // Skip empty inline scripts (external src= scripts pass through fine)
+            if (!old.textContent.trim() && !old.hasAttribute('src')) return;
+
+            // Pre-validate syntax of inline scripts before insertion
+            if (old.textContent.trim()) {
+              try {
+                new Function(old.textContent);
+              } catch(syntaxErr) {
+                if (syntaxErr instanceof SyntaxError) {
+                  // Incomplete/truncated script block — skip silently
+                  return;
+                }
+              }
+            }
+
+            var fresh = document.createElement('script');
+            Array.from(old.attributes).forEach(function(a) {
+              try { fresh.setAttribute(a.name, a.value); } catch(e) {}
+            });
+            // Wrap inline scripts in IIFE so const/let never leak into the
+            // global sandbox scope — prevents "already declared" crashes when
+            // the preview re-evaluates on each streaming update.
+            // Inner try/catch absorbs runtime errors from AI-generated code
+            // (e.g. null.setAttribute, invalid selectors) so they never surface
+            // as "Uncaught" errors in the Chrome extension error panel.
+            if (old.textContent.trim()) {
+              fresh.textContent = ";(function(){\ntry{\n" + old.textContent + "\n}catch(_snapE){console.warn('[SnapToAI preview]',_snapE.message||_snapE);}\n})();";
+            } else {
+              fresh.textContent = old.textContent;
+            }
+            if (old.parentNode) {
+              old.parentNode.replaceChild(fresh, old);
+            }
+          } catch(e) {}
+        });
+      } catch(e) {}
+    }
+
+    // Inject <style> and <link> tags from the AI-generated <head>
+    function injectHeadAssets(html) {
+      try {
+        var headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+        if (!headMatch) return;
+        var headHtml = headMatch[1];
+        var container = document.getElementById('sandbox-head-styles');
+        if (!container) return;
+        container.innerHTML = '';
+
+        // <style> blocks — create programmatically, never via innerHTML
+        var styles = headHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+        styles.forEach(function(s) {
+          try {
+            var css = s.replace(/<\/?style[^>]*>/gi, '');
+            var el = document.createElement('style');
+            el.textContent = css;
+            container.appendChild(el);
+          } catch(e) {}
+        });
+
+        // <link> tags — create programmatically to avoid innerHTML issues
+        var linkRe = /<link([^>]*)>/gi;
+        var linkMatch;
+        while ((linkMatch = linkRe.exec(headHtml)) !== null) {
+          try {
+            var attrStr = linkMatch[1];
+            if (!/fonts\.googleapis\.com|fonts\.gstatic\.com|stylesheet/i.test(attrStr)) continue;
+            var el = document.createElement('link');
+            var attrRe = /(\w[\w-]*)=["']([^"']*)["']/g;
+            var am;
+            while ((am = attrRe.exec(attrStr)) !== null) {
+              try { el.setAttribute(am[1], am[2]); } catch(e) {}
+            }
+            container.appendChild(el);
+          } catch(e) {}
+        }
+
+        // Inline <script> tags from head — execute tailwind.config and other
+        // setup scripts so custom colors/fonts are registered BEFORE body is
+        // injected. Without this, Tailwind CDN never generates CSS for custom
+        // tokens like text-electric, bg-pitch, font-heading etc.
+        var headScriptRe = /<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/gi;
+        var hsMatch;
+        while ((hsMatch = headScriptRe.exec(headHtml)) !== null) {
+          try {
+            var code = hsMatch[1].trim();
+            if (!code) continue;
+            // Skip CDN loader stubs (very short or just comments)
+            if (code.length < 5) continue;
+            var el = document.createElement('script');
+            el.textContent = code;
+            container.appendChild(el);
+          } catch(e) {}
+        }
+      } catch(e) {}
+    }
+
+    // Extract <body> content from a full HTML document string
+    function extractBody(html) {
+      try {
+        var m = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        if (m) return m[1];
+        var headEnd = html.search(/<\/head>/i);
+        if (headEnd !== -1) return html.slice(headEnd + 7);
+      } catch(e) {}
+      return html;
+    }
+
+    // ── Strip unsafe iframe src values BEFORE DOM injection ─────────────────
+    // Chrome fires a security error the moment an iframe with a chrome-extension://
+    // src hits the DOM — post-injection cleanup is too late. We must sanitize
+    // the HTML string first so no bad iframe ever enters the DOM.
+    function sanitizeHtml(html) {
+      // Replace src on any <iframe> that points to an extension page or relative
+      // path (e.g. "sandbox.html", "ai-chat.html", "chrome-extension://...").
+      // The regex is intentionally loose — it captures the src= value and blanks
+      // it out; legitimate external iframes (https://) are left untouched.
+      return html.replace(
+        /(<iframe\b[^>]*?\bsrc\s*=\s*["'])([^"']*)(["'][^>]*>)/gi,
+        function(match, pre, src, post) {
+          try {
+            var resolved = new URL(src, location.href);
+            // Block chrome-extension://, relative extension pages, and empty/bad srcs
+            if (resolved.origin === location.origin) {
+              return pre + 'about:blank' + post;
+            }
+          } catch(e) {
+            // Unparseable (javascript:, data:...) — blank it
+            return pre + 'about:blank' + post;
+          }
+          return match; // safe external URL — leave as-is
+        }
+      );
+    }
+
+    window.addEventListener('message', function(event) {
+      try {
+        var data = event.data;
+        if (!data || !data.htmlCode) return;
+        // Sanitise BEFORE any DOM insertion so Chrome never sees the bad src
+        var safeHtml = sanitizeHtml(data.htmlCode);
+        injectHeadAssets(safeHtml);
+        var app = document.getElementById('sandbox-app');
+        if (!app) return;
+        app.innerHTML = extractBody(safeHtml);
+
+        // Only execute scripts on the final complete render.
+        // Partial streaming chunks may contain truncated <script> tags which
+        // cause "Unexpected end of input" SyntaxErrors when cloned.
+        if (data.isFinal) {
+          runScripts(app);
+          // Immediate call for icons already in DOM
+          try { lucide.createIcons(); } catch(e) {}
+          // Delayed call catches icons created by scripts that ran async
+          setTimeout(function() { try { lucide.createIcons(); } catch(e) {} }, 150);
+        }
+      } catch(e) {}
+    });
+
+    // ── Defensive DOM patches ────────────────────────────────────────────────
+    // AI-generated code frequently calls document.querySelector('#') with an
+    // empty or invalid selector, or chains .setAttribute() onto a null element.
+    // Patching at the sandbox level means every generated page gets these guards
+    // for free, regardless of what the AI produces.
+    (function() {
+      // querySelector / querySelectorAll — validate selector before calling
+      var _qs  = Document.prototype.querySelector;
+      var _qsa = Document.prototype.querySelectorAll;
+      var _eqs  = Element.prototype.querySelector;
+      var _eqsa = Element.prototype.querySelectorAll;
+      function safeSelector(sel) {
+        if (!sel || typeof sel !== 'string') return false;
+        try { document.createDocumentFragment().querySelector(sel); return true; }
+        catch(e) { return false; }
+      }
+      Document.prototype.querySelector = function(sel) {
+        return safeSelector(sel) ? _qs.call(this, sel) : null;
+      };
+      Document.prototype.querySelectorAll = function(sel) {
+        return safeSelector(sel) ? _qsa.call(this, sel) : [];
+      };
+      Element.prototype.querySelector = function(sel) {
+        return safeSelector(sel) ? _eqs.call(this, sel) : null;
+      };
+      Element.prototype.querySelectorAll = function(sel) {
+        return safeSelector(sel) ? _eqsa.call(this, sel) : [];
+      };
+    })();
+
+    // Notify parent popup that sandbox is ready
+    try { window.parent.postMessage({ sandboxReady: true }, '*'); } catch(e) {}
+  </script>
+</body>
+</html>
+ 
+Loading the image 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAN7CAIAAAAr2hBYAAAQAElEQVR4AeydB2BURRPHZy+9F3oNofcqoDQbKjbAir1hr6iIKFhQUERUxIYiih8WLChgQywoTZAOgrQAoXcSEpKQ5O59/929u1zPpVzqHHNzs7Ozs7u/9+4Ic48XU82aSSxMgAkwASbABJgAE2ACTIAJMAEmwASYQNUmwLtjAkyACTABJlAuBEzEDybABJgAE2ACTIAJMIEyJMBTMQEmwASYABNgAkyACTABJsAEqg8BLkBXn2PNO3UlwG0mwASYABNgAkyACTABJsAEmAATYAJMoOoT4B0yASZQrgS4AF2u+HlyJsAEmAATYAJMgAkwASZQfQjwTpkAE2ACTIAJMAEmwASqHwEuQFe/Y847ZgJMgAkwASbABJgAE2ACTIAJMAEmwASYABNgAkyg6hOoEDvkAnSFOAy8CCbABJgAE2ACTIAJMAEmwASYA...YKGc1CdFYTIYxNF1ZYokGzxD7R0SfZBYV4KAaGHXccEmjlDCipMVms6LIj2qDniugImOAgxRFpioaVtRBiVKkwwKYoQYJZrDos2+In6LlUBMQ1UIZ7ogXDBMoUlOCFaLHQuNiyxD6hjoftapiFDo6QVSyo4oVi2YAoxTpxH5TmN4M6TBs89zLSYtnGYA/0aalosGwAPCgvdHHQbKnQNixcRU6IjFJoDZckuFgRpCACqdBzqcqBEkQs157oqLZIjZCE1BhRAU+UYBZryVTOSoPcSVZ4fGyJ8nwjzKAhltlqXtSgVRiAWSz4imhV2JalhZIoJdCnnTalWw6KRSk6MEHNkoDmqtSIeOjY6pBCJCFIhWHsEdhaDupspWWWVFDoFLARJJdkG16BQ5bYE22nso1qqMJ0tlxV0AadpfiqEMg2yaxuWE5YkvkZGE12lAK4rKuuv/0Zf/H/AwAA//+OdY67AAAABklEQVQDAA0Tx2CTYY5LAAAAAElFTkSuQmCC' violates the following Content Security Policy directive: "img-src *". Note that '*' matches only URLs with network schemes ('http', 'https', 'ws', 'wss'), or URLs whose scheme matches `self`'s scheme. The scheme 'data:' must be added explicitly. The action has been blocked.
+Refused to apply style from 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=700;800&family=Inter:wght=400;500;600&display=swap' because its MIME type ('text/html') is not a supported stylesheet MIME type, and strict MIME checking is enabled.
+Loading the image 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAN7CAIAAAAr2hBYAAAQAElEQVR4AeydB2BURRPHZy+9F3oNofcqoDQbKjbAir1hr6iIKFhQUERUxIYiih8WLChgQywoTZAOgrQAoXcSEpKQ5O59/929u1zPpVzqHHNzs7Ozs7u/9+4Ic48XU82aSSxMgAkwASbABJgAE2ACTIAJMAEmwASYQNUmwLtjAkyACTABJlAuBEzEDybABJgAE2ACTIAJMIEyJMBTMQEmwASYABNgAkyACTABJsAEqg8BLkBXn2PNO3UlwG0mwASYABNgAkyACTABJsAEmAATYAJMoOoT4B0yASZQrgS4AF2u+HlyJsAEmAATYAJMgAkwASZQfQjwTpkAE2ACTIAJMAEmwASqHwEuQFe/Y847ZgJMgAkwASbABJgAE2ACTIAJMAEmwASYABNgAkyg6hOoEDvkAnSFOAy8CCbABJgAE2ACTIAJMAEmwASYA...YKGc1CdFYTIYxNF1ZYokGzxD7R0SfZBYV4KAaGHXccEmjlDCipMVms6LIj2qDniugImOAgxRFpioaVtRBiVKkwwKYoQYJZrDos2+In6LlUBMQ1UIZ7ogXDBMoUlOCFaLHQuNiyxD6hjoftapiFDo6QVSyo4oVi2YAoxTpxH5TmN4M6TBs89zLSYtnGYA/0aalosGwAPCgvdHHQbKnQNixcRU6IjFJoDZckuFgRpCACqdBzqcqBEkQs157oqLZIjZCE1BhRAU+UYBZryVTOSoPcSVZ4fGyJ8nwjzKAhltlqXtSgVRiAWSz4imhV2JalhZIoJdCnnTalWw6KRSk6MEHNkoDmqtSIeOjY6pBCJCFIhWHsEdhaDupspWWWVFDoFLARJJdkG16BQ5bYE22nso1qqMJ0tlxV0AadpfiqEMg2yaxuWE5YkvkZGE12lAK4rKuuv/0Zf/H/AwAA//+OdY67AAAABklEQVQDAA0Tx2CTYY5LAAAAAElFTkSuQmCC' violates the following Content Security Policy directive: "img-src *". Note that '*' matches only URLs with network schemes ('http', 'https', 'ws', 'wss'), or URLs whose scheme matches `self`'s scheme. The scheme 'data:' must be added explicitly. The action has been blocked.
+Refused to apply style from 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=700;800&family=Inter:wght=400;500;600&display=swap' because its MIME type ('text/html') is not a supported stylesheet MIME type, and strict MIME checking is enabled.
+Uncaught TypeError: window.verifyApiKey is not a function
