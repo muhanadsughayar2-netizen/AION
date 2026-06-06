@@ -95,7 +95,8 @@ async function backgroundGoogleSignIn() {
   const token = tokenMatch[1];
 
   const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(10000)
   });
   if (!resp.ok) throw new Error('Failed to get user info from Google');
   const userInfo = await resp.json();

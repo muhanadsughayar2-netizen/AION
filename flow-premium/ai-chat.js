@@ -373,7 +373,8 @@ async function sendViaProxy(prompt, imageBase64) {
   const resp = await fetch(PROXY_BACKEND_URL + '/api/ai/proxy', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30000)
   });
 
   const data = await resp.json();
@@ -808,32 +809,41 @@ async function detectKeyTierVerbose(apiKey) {
     { model: 'imagen-3.0-generate-001',       endpoint: 'predict',             trustFreeVerdict: false, treatInvalidAsPrepaid: false }
   ];
 
-  let sawInvalid = false;
-  let sawFreeFromImagen = false;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    for (const p of probeChain) {
-      const r = await _probeOneVeoModel(apiKey, p.model, 10000, p.endpoint, p.treatInvalidAsPrepaid);
-      if (r === 'prepaid') return { tier: 'prepaid', invalid: false };
-      if (r === 'free') {
-        // Only Imagen's "billing required" is a definitive free-tier signal.
-        // Veo's billing precondition can fire on Tier 1 paid keys (Veo needs Tier 2+),
-        // so we don't trust it as a free verdict by itself.
-        if (p.trustFreeVerdict) return { tier: 'free', invalid: false };
-        sawFreeFromImagen = false; // explicit no-op; Veo free-signal is ignored
-        continue;
-      }
-      if (r === 'invalid') sawInvalid = true;
-      // 'retry' -> try next model / next attempt
-    }
-    // Brief backoff before second pass
-    await new Promise(res => setTimeout(res, 500));
-  }
+  // Run all probes in PARALLEL (not sequential) so the total wait is bounded by
+  // the slowest single probe (~5s) instead of the sum of all probes (~60s+).
+  // Short-circuit the moment any probe returns a definitive answer.
+  return new Promise((resolve) => {
+    let settled = false;
+    let invalidVotes = 0;
+    let done = 0;
+    const total = probeChain.length;
 
-  // Couldn't get a definitive billing/validation signal from any Veo model.
-  // Safest verdict for business: treat as free (locks paid modes). If the key
-  // appears invalid, mark it so UI can warn — but still default to free.
-  console.log('[SnapToAI] All probes inconclusive; defaulting to free.');
-  return { tier: 'free', invalid: sawInvalid };
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      resolve(result);
+    };
+
+    probeChain.forEach(p => {
+      _probeOneVeoModel(apiKey, p.model, 5000, p.endpoint, p.treatInvalidAsPrepaid)
+        .then(r => {
+          if (settled) return;
+          done++;
+          if (r === 'prepaid') { finish({ tier: 'prepaid', invalid: false }); return; }
+          if (r === 'free' && p.trustFreeVerdict) { finish({ tier: 'free', invalid: false }); return; }
+          if (r === 'invalid') invalidVotes++;
+          if (done === total) finish({ tier: 'free', invalid: invalidVotes > 0 });
+        })
+        .catch(() => {
+          if (settled) return;
+          done++;
+          if (done === total) finish({ tier: 'free', invalid: false });
+        });
+    });
+
+    // Hard cap: never hang longer than 6s no matter what
+    setTimeout(() => finish({ tier: 'free', invalid: false }), 6000);
+  });
 }
 
 // Backwards-compatible wrapper used by checkKeyTier().
@@ -9048,6 +9058,7 @@ let _buildFinalReady = false;
 
 // Listen for sandbox boot handshake — sandbox.html posts this when it loads
 window.addEventListener('message', function(ev) {
+  if (ev.origin !== location.origin) return;
   if (ev.data && ev.data.sandboxReady) {
     _isSandboxReady = true;
     // Only flush when the final complete HTML is ready — not mid-stream partials
