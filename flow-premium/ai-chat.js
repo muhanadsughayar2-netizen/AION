@@ -8588,7 +8588,8 @@ async function saveNamedChat() {
       title: _extractChatTitle(conversationHistory),
       date: Date.now(),
       conversationHistory: conversationHistory.slice(-200),
-      chatHtml: document.getElementById('chatThread')?.innerHTML || ''
+      chatHtml: document.getElementById('chatThread')?.innerHTML || '',
+      builtCode: _lastBuiltCode || ''
     };
     if (idx >= 0) chats[idx] = entry;
     else chats.unshift(entry);
@@ -8680,6 +8681,16 @@ async function _restoreNamedChat(id) {
     if (thread) {
       thread.innerHTML = chat.chatHtml || '';
       setTimeout(() => thread.scrollTo({ top: thread.scrollHeight, behavior: 'smooth' }), 80);
+    }
+    // Restore the built website/app if this chat had one
+    if (chat.builtCode) {
+      _lastBuiltCode = chat.builtCode;
+      try { chrome.storage.local.set({ snaptoai_built_code: _lastBuiltCode }); } catch(e) {}
+      _showLivePreview(_lastBuiltCode);
+    } else {
+      _lastBuiltCode = '';
+      const w = document.getElementById('previewWrapper');
+      if (w) w.style.display = 'none';
     }
     closeHistoryPanel();
   } catch (e) {}
