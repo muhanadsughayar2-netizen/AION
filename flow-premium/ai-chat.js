@@ -6626,6 +6626,16 @@ async function handleSend() {
   // is assembled. Clearing them here would leave placeholders in the output.
   const _isContinuationSend = prompt.startsWith('CONTINUE_BUILD:');
 
+  // ── Continuation interrupt guard ───────────────────────────────────────────
+  // If the user sends a normal message while an auto-continuation is in flight
+  // (e.g. they typed before the next chunk arrived), cancel the pending merge
+  // so the next AI response isn't incorrectly merged with a stale partial.
+  if (!_isContinuationSend && _continuationPending) {
+    _continuationPending = false;
+    _continuationCount = 0;
+  }
+  // ── End continuation interrupt guard ──────────────────────────────────────
+
   // ── New-app vs update guard ────────────────────────────────────────────────
   // If Build Mode has an existing app AND the prompt looks like a fresh build
   // (not a patch/update), intercept and ask the user before overwriting.
