@@ -8553,13 +8553,28 @@ function exportToPDF() {
 // the guard for exactly one handleSend() call.
 let _skipNewAppCheck = false;
 
-// Returns true when the prompt signals a brand-new app, not a patch/update.
+// Returns true ONLY when the prompt very clearly signals a brand-new, unrelated
+// app — not an update, feature addition, or tweak to the current one.
+// Errs heavily on the side of NOT showing the confirmation card.
 function _isNewBuildIntent(prompt) {
   const p = prompt.toLowerCase().trim();
-  // Patch/update signals — these clearly refer to the existing site
-  if (/^(add |change |fix |update |remove |delete |edit |modify |tweak |adjust |make it|make the|make this|now |also |and |put |move |replace |switch |rename |colour|color |style |resize |convert |turn it|can you add|can you change|can you fix|can you update|can you remove|i want to add|i want to change)/.test(p)) return false;
-  // New app signals — build/create/make + a new subject
-  return /(build|create|make|design|generate|i want|i need|can you build|can you create|can you make|can you design).{0,50}(a |an |me a |new |different |another )/.test(p);
+
+  // 1. If the prompt references the existing app in any way → it's an update.
+  //    These words mean the user is talking ABOUT what's already built.
+  if (/\b(it|this|the (app|site|page|game|clock|quiz|current|existing)|here|same|above|already built|current one|what (i|we) have)\b/.test(p)) return false;
+
+  // 2. Strong update-prefix words → definitely a patch.
+  if (/^(add|change|fix|update|remove|delete|edit|modify|tweak|adjust|make it|make the|make this|now |also |put |move |replace |switch |rename|style |resize|convert|turn it|can you add|can you change|can you fix|can you update|can you remove|i want to add|i want to change|give it|give the|show|display|include|increase|decrease|improve|upgrade|enhance|extend|expand)/.test(p)) return false;
+
+  // 3. "make a [component/feature]" — things like "make a quiz section", "make a
+  //    dark background", "make a button" are updates, NOT new apps.
+  //    Only match if the noun after "make a/an" is clearly an app-level concept.
+  const appLevelNouns = /(app|website|web app|web site|game|tool|dashboard|landing page|application|calculator|timer|clock app|platform|store|shop|portfolio|blog)/;
+
+  // 4. Only fire for unambiguous fresh-build requests at sentence start,
+  //    naming an app-level deliverable.
+  return /^(build|create|design|generate|please build|please create|please design|please make a new|make me a new|i want a (completely )?new|i need a (completely )?new|can you build|can you create|can you design)\b/.test(p)
+      && appLevelNouns.test(p);
 }
 
 // Shows an inline card asking the user whether to start fresh or update the current app.
