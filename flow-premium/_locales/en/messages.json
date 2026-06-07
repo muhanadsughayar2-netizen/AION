@@ -1,10 +1,10 @@
 {
   "extensionName": {
-    "message": "Aion: Gemini AI Studio Workflow Optimizer",
+    "message": "Aion AI — Screen Capture, Chat, Build & Create",
     "description": "extensionName"
   },
   "extensionDescription": {
-    "message": "Turn any screen capture into 4K videos, studio music & photoreal art. The full Google AI Studio—powered by Gemini 3—in your browser.",
+    "message": "Snap any screen and instantly chat with AI, build full web apps, generate images, compose music, and create videos — all powered by Google Gemini.",
     "description": "extensionDescription"
   },
   "flowReady": {
