@@ -32,6 +32,21 @@
   <div id="sandbox-app"></div>
 
   <script>
+    // ── Global error suppressor ──────────────────────────────────────────────
+    // AI-generated code can call onclick handlers like startQuiz() that aren't
+    // defined yet, or reference undefined variables. These throw uncaught errors
+    // that bubble up into Chrome's extension error panel. Intercept them here so
+    // they stay as console warnings only and never pollute the error log.
+    window.onerror = function(msg, src, line, col, err) {
+      console.warn('[Aion preview]', msg, err ? (err.stack || '') : '');
+      return true; // returning true suppresses the error from Chrome's panel
+    };
+    window.addEventListener('unhandledrejection', function(ev) {
+      console.warn('[Aion preview rejection]', ev.reason);
+      ev.preventDefault();
+    });
+    // ────────────────────────────────────────────────────────────────────────
+
     // Re-execute only syntactically complete <script> tags.
     // Uses new Function() to pre-validate inline scripts before DOM insertion —
     // replaceChild triggers synchronous browser compilation which bypasses try/catch,

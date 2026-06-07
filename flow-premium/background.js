@@ -214,8 +214,15 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 // Reuses ALL existing functions - no other files touched
 // ============================================
 
+let _menuRegistrationPending = false;
 function registerSnapToAIMenu() {
+  // Guard against concurrent calls — rapid MV3 service-worker wake-ups can
+  // fire this before the first removeAll callback completes, producing
+  // "Cannot create item with duplicate id" errors in the extension panel.
+  if (_menuRegistrationPending) return;
+  _menuRegistrationPending = true;
   chrome.contextMenus.removeAll(() => {
+    _menuRegistrationPending = false;
     chrome.contextMenus.create({
       id: 'snaptoai-parent',
       title: 'Aion ✨',
