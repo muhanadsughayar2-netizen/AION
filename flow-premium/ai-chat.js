@@ -6625,6 +6625,17 @@ async function handleSend() {
   // data needed to swap __SNAP_IMG_N__ / __SNAP_VID_N__ once the full site
   // is assembled. Clearing them here would leave placeholders in the output.
   const _isContinuationSend = prompt.startsWith('CONTINUE_BUILD:');
+
+  // ── New-app vs update guard ────────────────────────────────────────────────
+  // If Build Mode has an existing app AND the prompt looks like a fresh build
+  // (not a patch/update), intercept and ask the user before overwriting.
+  if (buildModeEnabled && _lastBuiltCode && !_isContinuationSend && _isNewBuildIntent(prompt)) {
+    input.value = '';
+    _showNewAppConfirmation(prompt, input);
+    return;
+  }
+  // ── End new-app guard ──────────────────────────────────────────────────────
+
   if (!_isContinuationSend) {
     _pendingBuildImages = [];
     _pendingBuildVideos = [];
@@ -8537,6 +8548,58 @@ function exportToPDF() {
 }
 
 // Clear chat
+// Returns true when the prompt signals a brand-new app, not a patch/update.
+function _isNewBuildIntent(prompt) {
+  const p = prompt.toLowerCase().trim();
+  // Patch/update signals — these clearly refer to the existing site
+  if (/^(add |change |fix |update |remove |delete |edit |modify |tweak |adjust |make it|make the|make this|now |also |and |put |move |replace |switch |rename |colour|color |style |resize |convert |turn it|can you add|can you change|can you fix|can you update|can you remove|i want to add|i want to change)/.test(p)) return false;
+  // New app signals — build/create/make + a new subject
+  return /(build|create|make|design|generate|i want|i need|can you build|can you create|can you make|can you design).{0,50}(a |an |me a |new |different |another )/.test(p);
+}
+
+// Shows an inline card asking the user whether to start fresh or update the current app.
+function _showNewAppConfirmation(prompt, input) {
+  const thread = document.getElementById('chatThread');
+  const card = document.createElement('div');
+  card.className = 'new-app-confirm';
+  card.id = 'newAppConfirmCard';
+  card.innerHTML =
+    '<div class="new-app-confirm-title">🔄 Looks like a new app</div>' +
+    '<div class="new-app-confirm-sub">You already have a built app. Do you want to start completely fresh, or update/extend the current one?</div>' +
+    '<div class="new-app-confirm-btns">' +
+      '<button class="new-app-confirm-btn fresh" id="nacBtnFresh">🆕 Start fresh</button>' +
+      '<button class="new-app-confirm-btn update" id="nacBtnUpdate">✏️ Update current</button>' +
+    '</div>';
+  thread.appendChild(card);
+  thread.scrollTop = thread.scrollHeight;
+
+  document.getElementById('nacBtnFresh').addEventListener('click', () => {
+    card.remove();
+    // Wipe all build state so the next send is treated as a first build
+    _lastBuiltCode = '';
+    _lastBuiltCodeForPatch = '';
+    _committedMediaMap = {};
+    _buildBodyHtml = '';
+    _buildStyleCss = '';
+    _buildScriptJs = '';
+    conversationHistory = [];
+    try { chrome.storage.local.remove(['snaptoai_built_code', 'snaptoai_build_body', 'snaptoai_build_style', 'snaptoai_build_script']); } catch(e) { console.warn('[SnapToAI] Build cache clear failed:', e?.message || e); }
+    _updateBuildInput();
+    const w = document.getElementById('previewWrapper');
+    if (w) w.style.display = 'none';
+    const iframe = document.getElementById('livePreview');
+    if (iframe) iframe.style.display = 'none';
+    input.value = prompt;
+    handleSend();
+  });
+
+  document.getElementById('nacBtnUpdate').addEventListener('click', () => {
+    card.remove();
+    input.value = prompt;
+    handleSend();
+  });
+}
+
 async function clearChat() {
   // Archive the current conversation before wiping it
   await saveNamedChat();
