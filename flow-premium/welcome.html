@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome to AION</title>
+  <title>Welcome to Aion AI</title>
   <script src="theme.js"></script>
   <script src="branding.js"></script>
   <link rel="stylesheet" href="theme.css">
@@ -178,6 +178,49 @@
     .feature-pill.image  { border-color: rgba(251,188,5,0.35);  color: #FBBC05; }
     .feature-pill.music  { border-color: rgba(52,168,83,0.35);  color: #34A853; }
     .feature-pill.video  { border-color: rgba(138,180,248,0.35); color: #8ab4f8; }
+    .feature-pill.build  { border-color: rgba(45,212,191,0.4);  color: #2dd4bf; background: rgba(45,212,191,0.06); }
+
+    /* ── Feature list ── */
+    .features-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .feat-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 13px;
+    }
+
+    .feat-icon {
+      width: 38px;
+      height: 38px;
+      min-width: 38px;
+      border-radius: 10px;
+      border: 1px solid;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .feat-text { flex: 1; }
+
+    .feat-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #e8eaed;
+      margin-bottom: 2px;
+    }
+
+    .feat-desc {
+      font-size: 12px;
+      color: #80868b;
+      line-height: 1.5;
+    }
 
     .divider {
       border: none;
@@ -471,14 +514,49 @@
           </svg>
         </div>
       </div>
-      <h1>AION</h1>
-      <p class="tagline">Snap any screen. Instantly chat, create images,<br>compose music, and generate videos — with Google AI.</p>
+      <h1>Aion AI</h1>
+      <p class="tagline">Snap any screen. Chat with AI, build full apps,<br>create images, music &amp; videos — powered by Google AI.</p>
 
       <div class="features">
         <span class="feature-pill vision">🔍 Vision</span>
         <span class="feature-pill image">✨ Image</span>
         <span class="feature-pill music">🎵 Music</span>
         <span class="feature-pill video">🎬 Video</span>
+        <span class="feature-pill build">🏗️ Build</span>
+      </div>
+
+      <hr class="divider">
+
+      <!-- ── What's inside ── -->
+      <div class="features-list">
+        <div class="feat-row">
+          <div class="feat-icon" style="background:rgba(45,212,191,0.12);border-color:rgba(45,212,191,0.3);">🏗️</div>
+          <div class="feat-text">
+            <div class="feat-title">AI App Builder</div>
+            <div class="feat-desc">Type what you want — Aion AI builds a full working app live in seconds.</div>
+          </div>
+        </div>
+        <div class="feat-row">
+          <div class="feat-icon" style="background:rgba(66,133,244,0.10);border-color:rgba(66,133,244,0.3);">🔍</div>
+          <div class="feat-text">
+            <div class="feat-title">Vision Chat</div>
+            <div class="feat-desc">Snap your screen and ask AI anything about what you see.</div>
+          </div>
+        </div>
+        <div class="feat-row">
+          <div class="feat-icon" style="background:rgba(251,188,5,0.10);border-color:rgba(251,188,5,0.3);">✨</div>
+          <div class="feat-text">
+            <div class="feat-title">Image &amp; Music &amp; Video Studio</div>
+            <div class="feat-desc">Generate images, compose songs, and create AI videos from prompts.</div>
+          </div>
+        </div>
+        <div class="feat-row">
+          <div class="feat-icon" style="background:rgba(167,139,250,0.10);border-color:rgba(167,139,250,0.3);">📸</div>
+          <div class="feat-text">
+            <div class="feat-title">Snap, Snip &amp; Send</div>
+            <div class="feat-desc">Capture full pages, regions or viewports and upload to any AI chat instantly.</div>
+          </div>
+        </div>
       </div>
 
       <hr class="divider">
@@ -498,7 +576,7 @@
         <span class="pin-arrow a1">→</span>
         <div class="pin-step">
           <div class="pin-step-icon ext">
-            📸 AION 📌
+            📸 Aion AI 📌
             <div class="pin-cursor-2">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M5 3l14 9-6 1.5L10 20z"/></svg>
             </div>
