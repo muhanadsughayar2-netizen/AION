@@ -7841,13 +7841,23 @@ function addBubbleActions(bubble, text) {
   const _extracted = buildModeEnabled && !buildStage
     ? extractHtmlFromResponse(text, _continuationPending ? _lastBuiltCode : null)
     : { html: '', truncated: false };
-  if (_continuationPending && _extracted.html) _continuationPending = false;
   const thisCode = _extracted.html;
   // Detect truncation: AI ran out of tokens and the file is incomplete.
   // Only applies to classic (no-stage) build mode — staged builds use per-stage output.
   const isTruncated = !buildStage && _extracted.truncated;
-  // Only commit to _lastBuiltCode when the output is complete. Saving a
-  // truncated partial would strip sections (e.g. pricing) from future edits.
+  // Only clear _continuationPending when the merged result is actually complete.
+  // If the continuation itself was also truncated, keep the flag so the next
+  // auto-continuation can still use _lastBuiltCode as the merge base.
+  if (_continuationPending && thisCode && !isTruncated) _continuationPending = false;
+  // When a continuation chunk is itself truncated, save the partial into
+  // _lastBuiltCode so the NEXT continuation has the right merge base.
+  // Without this, _lastBuiltCode stays at the ORIGINAL partial and the middle
+  // chunk is lost — causing the build to spin and silently drop content.
+  if (thisCode && !buildStage && isTruncated) {
+    _lastBuiltCode = thisCode; // advance the merge base for the next chunk
+    _updateBuildInput();
+  }
+  // Only fully commit to _lastBuiltCode (+ storage + media swaps) when complete.
   if (thisCode && !buildStage && !isTruncated) {
     _lastBuiltCode = thisCode;
     // Save the pre-swap version (placeholders intact) for AI patch requests.
