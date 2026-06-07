@@ -1226,7 +1226,7 @@ function setupEventListeners() {
   const youtubeBtn = document.getElementById('youtubeBtn');
   if (youtubeBtn) {
     youtubeBtn.addEventListener('click', () => {
-      chrome.tabs.create({ url: 'https://youtube.com/@snaptoai-2026' });
+      chrome.tabs.create({ url: 'https://www.youtube.com/@AION-AI-u9h' });
     });
   }
 
@@ -1240,7 +1240,7 @@ function setupEventListeners() {
   const footerHelpBtn = document.getElementById('footerHelpBtn');
   if (footerHelpBtn) {
     footerHelpBtn.addEventListener('click', () => {
-      chrome.tabs.create({ url: 'https://youtube.com/@snaptoai-2026' });
+      chrome.tabs.create({ url: 'https://www.youtube.com/@AION-AI-u9h' });
     });
   }
   
