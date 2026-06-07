@@ -6629,11 +6629,12 @@ async function handleSend() {
   // ── New-app vs update guard ────────────────────────────────────────────────
   // If Build Mode has an existing app AND the prompt looks like a fresh build
   // (not a patch/update), intercept and ask the user before overwriting.
-  if (buildModeEnabled && _lastBuiltCode && !_isContinuationSend && _isNewBuildIntent(prompt)) {
+  if (buildModeEnabled && _lastBuiltCode && !_isContinuationSend && !_skipNewAppCheck && _isNewBuildIntent(prompt)) {
     input.value = '';
     _showNewAppConfirmation(prompt, input);
     return;
   }
+  _skipNewAppCheck = false; // reset after every pass-through
   // ── End new-app guard ──────────────────────────────────────────────────────
 
   if (!_isContinuationSend) {
@@ -8548,6 +8549,10 @@ function exportToPDF() {
 }
 
 // Clear chat
+// Set to true by _showNewAppConfirmation's "Update current" path to skip
+// the guard for exactly one handleSend() call.
+let _skipNewAppCheck = false;
+
 // Returns true when the prompt signals a brand-new app, not a patch/update.
 function _isNewBuildIntent(prompt) {
   const p = prompt.toLowerCase().trim();
@@ -8595,6 +8600,7 @@ function _showNewAppConfirmation(prompt, input) {
 
   document.getElementById('nacBtnUpdate').addEventListener('click', () => {
     card.remove();
+    _skipNewAppCheck = true; // bypass the guard for this one send
     input.value = prompt;
     handleSend();
   });
