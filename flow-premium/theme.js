@@ -21,17 +21,12 @@
     return 'auto';
   }
 
-  // Theme switching is hidden from users while we sort out the design.
-  // Every surface renders dark EXCEPT the AI-chat window, which is forced
-  // to the Gemini-style light theme for a more comfortable chat experience.
-  // The full theme machinery is left in place so we can re-enable the
-  // user-facing toggle later without re-implementing it.
-  function resolveTheme(/* theme */) {
-    try {
-      if ((location.pathname || '').indexOf('ai-chat') !== -1) return 'light';
-    } catch (e) {}
-    return 'dark';
-  }
+  // TEMPORARILY DISABLED: light/dark theme switching is hidden from
+  // users while we sort out the design. Force every surface to render
+  // in dark mode regardless of stored preference, OS preference, or
+  // cross-surface storage updates. The full theme machinery is left in
+  // place so we can re-enable later without re-implementing it.
+  function resolveTheme(/* theme */) { return 'dark'; }
 
   var current = 'dark';
   var listeners = [];

@@ -5537,8 +5537,8 @@ function updateAgentStatusBar() {
     bar.style.display = 'flex';
     bar.innerHTML = `
       <span style="color:${activeSpecialistAgent.color}">${activeSpecialistAgent.icon} ${activeSpecialistAgent.name}</span>
-      <span style="color:var(--st-text-tertiary);font-size:11px;"> — ${activeSpecialistAgent.tag}</span>
-      <button id="clearAgentBtn" style="margin-left:auto;background:none;border:none;color:var(--st-text-tertiary);cursor:pointer;font-size:13px;">✕</button>
+      <span style="color:rgba(255,255,255,0.4);font-size:11px;"> — ${activeSpecialistAgent.tag}</span>
+      <button id="clearAgentBtn" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:13px;">✕</button>
     `;
     document.getElementById('clearAgentBtn')?.addEventListener('click', () => {
       activeSpecialistAgent = null;
@@ -9278,8 +9278,8 @@ document.getElementById('openAgentsBtn')?.addEventListener('click', openAgentsMo
 const _closeAgentsBtn = document.getElementById('closeAgentsModal');
 if (_closeAgentsBtn) {
   _closeAgentsBtn.addEventListener('click', closeAgentsModal);
-  _closeAgentsBtn.addEventListener('mouseover', () => { _closeAgentsBtn.style.color = 'var(--st-text-primary)'; });
-  _closeAgentsBtn.addEventListener('mouseout',  () => { _closeAgentsBtn.style.color = 'var(--st-text-tertiary)'; });
+  _closeAgentsBtn.addEventListener('mouseover', () => { _closeAgentsBtn.style.color = '#e8eaed'; });
+  _closeAgentsBtn.addEventListener('mouseout',  () => { _closeAgentsBtn.style.color = '#80868b'; });
 }
 document.getElementById('agentsModal')?.addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeAgentsModal();
