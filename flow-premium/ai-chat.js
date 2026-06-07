@@ -501,12 +501,10 @@ async function showProxyKeyPrompt() {
       return;
     }
   } catch (e) {}
-  // Redirect to the Settings page instead of showing an inline modal —
-  // the key input lives in options.html which is the proper place for it.
-  try {
-    chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
-  } catch (e) {
-    console.warn('[Aion] Could not open settings:', e?.message || e);
+  // Open the inline Gemini key modal — stays inside the popup, no new tab.
+  if (typeof showGeminiModal === 'function') {
+    showGeminiModal();
+    return;
   }
   return;
   const modal = document.getElementById('geminiKeyModal');
