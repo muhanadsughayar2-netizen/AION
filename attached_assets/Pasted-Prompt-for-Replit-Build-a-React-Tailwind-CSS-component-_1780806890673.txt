@@ -1,0 +1,43 @@
+Prompt for Replit:
+
+Build a React + Tailwind CSS component called AionChat that renders a premium dark-mode AI chat interface. Use the exact specifications below.
+
+Container:
+
+Outer wrapper: 1000px wide, 640px tall, bg-[#0b0d11], border border-white/10, rounded-[32px], shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)], overflow-hidden, flex column.
+Font family: Inter.
+Header:
+
+Top bar: flex row, justify-between, items-center, px-8 py-5, border-b border-white/[0.06].
+Left side: a small green-emerald gradient dot (8px circle) + the text "Aion – AI Chat" in text-[#f5f6f8] font-semibold text-[15px].
+Right side: "Gemini 3 Flash" badge with teal text and a subtle teal border.
+Below header: a compact info card inside the message area saying "Enable billing → $300 in Google Cloud credits" with a subtle arrow icon, text-[#9aa0a6], small text.
+Message area:
+
+Scrollable flex-1 column, px-8 py-6, space-y-6.
+Assistant bubble: bg-[#1c1f25], border border-white/[0.06], rounded-2xl, px-6 py-5, max-w-[85%].
+Text: text-[#eef0f3], text-[15px], leading-[1.8], tracking-[0.005em].
+Bold text inside bubble: pure white.
+Teal accent (text-teal-400) ONLY for headings, list bullet markers, and inline highlights. Never use teal as a bubble background.
+User bubble: bg-[#262a31], border border-white/[0.05], rounded-2xl, px-6 py-5, max-w-[85%], self-aligned right.
+Text: text-[#f6f7f9], same 15px/1.8/0.005em.
+Include sample messages:
+Assistant: heading "Welcome to Aion" in teal, then a paragraph of soft off-white text explaining multi-modal AI capabilities, plus a short bullet list with teal bullets.
+User: "Can you analyze this screenshot for me?" in the user bubble style.
+Mode pills (between header and messages):
+
+Horizontal row of small pills: Vision, Image, Music, Video.
+Pill style: bg-white/[0.04], border border-white/[0.06], rounded-full, px-3 py-1, text-[13px], text-[#9aa0a6].
+Active pill (Vision): bg-teal-500/10, border-teal-500/30, text-teal-400.
+Composer (bottom):
+
+px-8 py-5, border-t border-white/[0.06].
+Input row: bg-[#15171c], rounded-full, border border-white/[0.06], flex row, items-center, px-5 py-3.
+Textarea/input placeholder: "Message Aion…" in text-[#9aa0a6].
+Submit button: circle, bg-teal-500, text-black, w-9 h-9, centered ArrowUp icon, with shadow-[0_0_20px_rgba(20,184,166,0.4)].
+Critical requirements:
+
+No blue tints anywhere in bubble backgrounds or text.
+No pure white text on dark backgrounds except bold emphasis inside assistant bubbles — use #eef0f3 for normal assistant text and #f6f7f9 for user text.
+Teal is only for accents, never for message bubble fills.
+The result must feel like a billion-dollar app: crisp, calm, high-contrast but easy on the eyes for long reading sessions.
