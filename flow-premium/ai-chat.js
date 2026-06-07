@@ -118,38 +118,26 @@ function isBillingError(status, message) {
   return (status === 400 || status === 403 || status === 404) && hasBillingKeyword;
 }
 
+// ── Shared mini-card helper ───────────────────────────────────────────────────
+// All user-facing status/error messages use this so they're always short & clean.
+function _miniCard(icon, text, btnLabel, btnClass, borderColor) {
+  const border = borderColor || 'rgba(45,212,191,0.25)';
+  const btn = btnLabel
+    ? `<button class="${btnClass || 'snaptoai-set-key-btn'}" style="margin-top:10px;display:block;width:100%;padding:10px;border-radius:10px;background:linear-gradient(135deg,#2dd4bf,#7c3aed);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;">${btnLabel}</button>`
+    : '';
+  return `<div style="display:flex;align-items:flex-start;gap:10px;padding:14px 16px;border-radius:13px;background:#1c1f25;border:1px solid ${border};">
+    <span style="font-size:20px;line-height:1.3;">${icon}</span>
+    <div style="flex:1;">
+      <div style="font-size:13px;color:#e8eaed;line-height:1.55;">${text}</div>
+      ${btn}
+    </div>
+  </div>`;
+}
+
 function buildNoKeyCard() {
-  return `
-    <div style="padding:18px;border-radius:14px;background:linear-gradient(135deg, rgba(0,217,255,0.10), rgba(138,43,226,0.05));border:1px solid rgba(0,217,255,0.22);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-      <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:6px;">Hey! Want this app to see pictures and understand them like magic? ✨</div>
-      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.85);margin-bottom:14px;">
-        Just connect your Gemini key. It takes 1 minute.<br>
-        With a key you get about <span style="color:#00ff88;font-weight:700;">20 tries every day</span> — perfect to play and test.
-      </div>
-      <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
-          <span style="font-size:14px;">1️⃣</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Go to <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:#00d9ff;text-decoration:none;font-weight:600;">Google AI Studio</a></span>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
-          <span style="font-size:14px;">2️⃣</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Click "Create API key"</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
-          <span style="font-size:14px;">3️⃣</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Copy the key</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
-          <span style="font-size:14px;">4️⃣</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Paste it in <b style="color:#2dd4bf;">Aion AI Settings</b> — done!</span>
-        </div>
-      </div>
-      <button class="unlock-billing-btn snaptoai-set-key-btn" style="display:block;width:100%;text-align:center;padding:11px;border-radius:10px;background:linear-gradient(135deg, #2dd4bf, #7c3aed);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;">⚙️ Open Settings to Add Key →</button>
-      <div style="margin-top:14px;padding:12px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.10), rgba(255,165,0,0.05));border:1px solid rgba(255,215,0,0.20);">
-        <div style="font-size:13px;font-weight:700;color:#ffd700;margin-bottom:4px;">Want way more power? 🚀</div>
-        <div style="font-size:12px;line-height:1.5;color:rgba(255,255,255,0.8);">Upgrade to prepaid and Google gives you <span style="color:#00ff88;font-weight:700;">$300 free credits</span>. Then you get tons of tries + <span style="color:#ffd700;font-weight:600;">Video & Music</span> unlock too!</div>
-      </div>
-    </div>`;
+  return _miniCard('🔑',
+    'Add your free Gemini key to unlock AI. Takes 1 minute.',
+    '⚙️ Add Key in Settings →', 'snaptoai-set-key-btn');
 }
 
 document.addEventListener('click', (e) => {
@@ -159,128 +147,44 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Task #27 — Surfaced when the institution policy is `institution-only` and
-// the institution's key is missing or rejected by Google. We must NEVER
-// silently fall back to the SnapToAI shared key or to BYOK in this mode.
 function buildInstitutionKeyInvalidCard(institutionName, message) {
   const safeName = String(institutionName || 'your organization').replace(/[<>&]/g, '');
-  const safeMsg = String(message || 'AI is temporarily unavailable.').replace(/[<>&]/g, '');
-  return `
-    <div style="padding:18px;border-radius:14px;background:linear-gradient(135deg, rgba(255,71,87,0.12), rgba(255,165,0,0.05));border:1px solid rgba(255,71,87,0.30);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:24px;">🔑</span>
-        <span style="font-size:15px;font-weight:800;color:#fff;">${safeName}'s AI key needs attention</span>
-      </div>
-      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:10px;">
-        ${safeMsg}
-      </div>
-      <div style="font-size:12px;line-height:1.55;color:rgba(255,255,255,0.7);padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
-        Your organization manages the AI key for everyone here, so a personal key won't help.
-        <strong style="color:#fff;">Please contact your ${safeName} admin</strong> to check the key in the institution dashboard.
-      </div>
-    </div>`;
+  const safeMsg  = String(message || 'AI is temporarily unavailable.').replace(/[<>&]/g, '');
+  return _miniCard('🔑',
+    `${safeName}'s AI key needs attention — ${safeMsg} Contact your admin to fix it.`,
+    null, null, 'rgba(255,71,87,0.35)');
 }
 
 function buildDailyLimitCard() {
-  return `
-    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(138,43,226,0.12), rgba(255,105,180,0.06));border:1px solid rgba(138,43,226,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:24px;">🌟</span>
-        <span style="font-size:15px;font-weight:800;color:#fff;">You've Used Today's 5 Free Prompts!</span>
-      </div>
-      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
-        Great work! Want unlimited access? Just get your own free Gemini key — it takes 1 minute and gives you about <span style="color:#00ff88;font-weight:700;">20 tries every day</span>.
-      </div>
-      ${buildNoKeyCard()}
-      <div style="text-align:center;margin-top:10px;font-size:10px;color:rgba(255,255,255,0.5);">Or come back tomorrow for 5 more free prompts</div>
-    </div>`;
+  return _miniCard('⏳',
+    "You've used today's free prompts. Add your own key for unlimited access.",
+    '⚙️ Add Key in Settings →', 'snaptoai-set-key-btn');
 }
 
 function buildRateLimitCard(hasKey = false) {
-  if (hasKey) {
-    // User already has their own API key — just tell them to wait, no setup card
-    return `
-      <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg,rgba(255,165,0,0.10),rgba(255,100,0,0.06));border:1px solid rgba(255,165,0,0.28);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-          <span style="font-size:24px;">⏱️</span>
-          <span style="font-size:15px;font-weight:800;color:#fff;">Google hit a speed bump — wait ~60 seconds</span>
-        </div>
-        <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.85);">
-          Your API key is fine. Google briefly limits how many requests you can send per minute. Just wait a moment and try again — everything will work normally.
-        </div>
-      </div>`;
-  }
-  return `
-    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(0,217,255,0.10), rgba(138,43,226,0.06));border:1px solid rgba(0,217,255,0.22);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:24px;">⏳</span>
-        <span style="font-size:15px;font-weight:800;color:#fff;">AI is Busy — Try Again Soon!</span>
-      </div>
-      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.9);margin-bottom:12px;">
-        Our free AI is getting lots of love right now. Try again in a minute, or get your own Gemini key for <span style="color:#00ff88;font-weight:700;">instant, unlimited access</span>.
-      </div>
-      ${buildNoKeyCard()}
-    </div>`;
+  return hasKey
+    ? _miniCard('⏱️', 'Google rate limit hit. Your key is fine — wait ~60 seconds and try again.', null, null, 'rgba(255,165,0,0.3)')
+    : _miniCard('⏳', 'AI is busy right now. Try again in a minute, or add your own key for instant access.', '⚙️ Add Key in Settings →', 'snaptoai-set-key-btn', 'rgba(45,212,191,0.25)');
 }
 
-// Veo-specific rate-limit card — used when the user's OWN prepaid Gemini key hits
-// Google's per-minute quota for a Veo model. This is NOT a billing problem; we must
-// not show the "Upgrade to prepaid" upsell here.
 function buildVeoRateLimitCard(modelLabel) {
-  const labelText = modelLabel ? ` on <b>${modelLabel}</b>` : '';
-  return `
-    <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg, rgba(255,165,0,0.10), rgba(255,100,0,0.06));border:1px solid rgba(255,165,0,0.28);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:24px;">⏱️</span>
-        <span style="font-size:15px;font-weight:800;color:#fff;">Google Veo rate limit hit${labelText}</span>
-      </div>
-      <div style="font-size:13px;line-height:1.55;color:rgba(255,255,255,0.92);margin-bottom:12px;">
-        You used up your <b>per-minute Veo quota</b> on your own Google API key. This is <b>not</b> a billing issue — your prepaid plan is fine.
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-size:12px;color:rgba(255,255,255,0.85);">
-        <div>✅ <b>Wait ~60 seconds</b> — Veo per-minute quotas reset every minute</div>
-        <div>🔀 <b>Switch to a different Veo model</b> (each has its own quota bucket — try 3.1 Fast or 3.1 Lite)</div>
-        <div>📉 <b>Reduce clip count</b> — fewer clips = fewer requests-per-minute</div>
-      </div>
-      <a href="https://ai.google.dev/gemini-api/docs/rate-limits" target="_blank" rel="noopener" style="display:block;text-align:center;padding:10px;border-radius:10px;background:linear-gradient(135deg,#ffa500,#ff8800);color:#111;font-size:12px;font-weight:700;text-decoration:none;">📊 Check your Veo rate limits →</a>
-      <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.55);">Quotas auto-increase as your account warms up over the first few days of paid usage.</div>
-    </div>`;
+  const label = modelLabel ? ` (${modelLabel})` : '';
+  return _miniCard('⏱️',
+    `Veo rate limit hit${label}. Wait ~60 seconds, then try again. Your key and billing are fine.`,
+    null, null, 'rgba(255,165,0,0.3)');
 }
 
 const MODE_META = {
-  'image': { icon: '✨', name: 'Image Studio', feature: 'AI image generation', accent: '#ff6bed', glow: 'rgba(255,107,237,0.12), rgba(200,80,200,0.06)', border: 'rgba(255,107,237,0.25)' },
-  'music': { icon: '🎵', name: 'Music Studio', feature: 'AI music generation', accent: '#00ff88', glow: 'rgba(0,255,136,0.12), rgba(0,200,100,0.06)', border: 'rgba(0,255,136,0.25)' },
-  'video': { icon: '🎬', name: 'Video Studio', feature: 'AI video generation', accent: '#ffa500', glow: 'rgba(255,165,0,0.12), rgba(200,120,0,0.06)', border: 'rgba(255,165,0,0.25)' }
+  'image': { icon: '✨', name: 'Image Studio' },
+  'music': { icon: '🎵', name: 'Music Studio' },
+  'video': { icon: '🎬', name: 'Video Studio' }
 };
 
 function buildUnlockCard(mode) {
   const meta = MODE_META[mode] || MODE_META['image'];
-  return `
-    <div style="padding:18px;border-radius:14px;background:linear-gradient(135deg, ${meta.glow});border:1px solid ${meta.border};box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:26px;">${meta.icon}</span>
-        <span style="font-size:16px;font-weight:800;color:#fff;">Unlock ${meta.name}</span>
-      </div>
-      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.92);margin-bottom:14px;">
-        To use <b>${meta.feature}</b>, please upgrade your Google account to a <span style="color:${meta.accent};font-weight:700;">prepaid (pay-as-you-go) plan</span>.
-        Google gives you <span style="color:#ffd700;font-weight:700;">$300 in free credits</span> as a gift — more than enough to explore and create.
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.08));border:1px solid rgba(255,215,0,0.25);">
-          <span style="font-size:20px;">🎁</span>
-          <div>
-            <div style="font-size:13px;font-weight:700;color:#ffd700;">$300 Free Credit from Google</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.7);">New accounts get $300 to use on any Google Cloud AI service</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
-          <span style="font-size:14px;">💳</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Google verifies with a ~$1 hold (refunded instantly) — then you get $300 free</span>
-        </div>
-      </div>
-      <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener" class="unlock-billing-btn" style="display:block;text-align:center;padding:11px;border-radius:10px;background:linear-gradient(135deg, ${meta.accent}, #ffd700);color:#111;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;">Upgrade to Prepaid & Claim $300 Free →</a>
-      <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.55);">Takes less than 2 minutes — no charges until you exceed the free credit</div>
-    </div>`;
+  return _miniCard(meta.icon,
+    `${meta.name} needs a Gemini key with Google billing enabled. Add your key in Settings to get started.`,
+    '⚙️ Add Key in Settings →', 'snaptoai-set-key-btn');
 }
 
 function buildMusicRetryCard() {
@@ -289,28 +193,9 @@ function buildMusicRetryCard() {
 
 function buildNeedKeyForPaidCard(mode) {
   const meta = MODE_META[mode] || MODE_META['image'];
-  return `
-    <div style="padding:18px;border-radius:14px;background:linear-gradient(135deg, ${meta.glow});border:1px solid ${meta.border};box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:26px;">${meta.icon}</span>
-        <span style="font-size:16px;font-weight:800;color:#fff;">${meta.name} requires your own key</span>
-      </div>
-      <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.92);margin-bottom:14px;">
-        The free shared access is for <b>chat & vision only</b>. To use <b>${meta.feature}</b>, you need your own Gemini API key on a <span style="color:${meta.accent};font-weight:700;">prepaid (pay-as-you-go) plan</span>.
-        Google gives you <span style="color:#ffd700;font-weight:700;">$300 in free credits</span> as a gift to get started.
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.08));border:1px solid rgba(255,215,0,0.25);">
-          <span style="font-size:20px;">🎁</span>
-          <div>
-            <div style="font-size:13px;font-weight:700;color:#ffd700;">$300 Free Credit from Google</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.7);">More than enough to create hundreds of images, songs or videos</div>
-          </div>
-        </div>
-      </div>
-      <button class="unlock-billing-btn snaptoai-set-key-btn" style="display:block;width:100%;text-align:center;padding:11px;border-radius:10px;background:linear-gradient(135deg, ${meta.accent}, #ffd700);color:#111;font-size:13px;font-weight:700;border:none;cursor:pointer;margin-bottom:8px;">Get My Free Key & Upgrade →</button>
-      <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener" style="display:block;text-align:center;padding:9px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:600;text-decoration:none;cursor:pointer;">I have a key — Enable Billing →</a>
-    </div>`;
+  return _miniCard(meta.icon,
+    `${meta.name} needs your own Gemini key. Add it in Settings — it's free to get started.`,
+    '⚙️ Add Key in Settings →', 'snaptoai-set-key-btn');
 }
 
 async function confirmPaidGeneration(mode, details) {
