@@ -141,10 +141,10 @@ function buildNoKeyCard() {
         </div>
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(0,217,255,0.06);border:1px solid rgba(0,217,255,0.12);">
           <span style="font-size:14px;">4️⃣</span>
-          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Paste it here — done!</span>
+          <span style="font-size:12px;color:rgba(255,255,255,0.85);">Paste it in <b style="color:#2dd4bf;">Aion AI Settings</b> — done!</span>
         </div>
       </div>
-      <button class="unlock-billing-btn snaptoai-set-key-btn" style="display:block;width:100%;text-align:center;padding:11px;border-radius:10px;background:linear-gradient(135deg, #00d9ff, #8a2be2);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;">Enter My Key →</button>
+      <button class="unlock-billing-btn snaptoai-set-key-btn" style="display:block;width:100%;text-align:center;padding:11px;border-radius:10px;background:linear-gradient(135deg, #2dd4bf, #7c3aed);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;">⚙️ Open Settings to Add Key →</button>
       <div style="margin-top:14px;padding:12px 14px;border-radius:10px;background:linear-gradient(135deg, rgba(255,215,0,0.10), rgba(255,165,0,0.05));border:1px solid rgba(255,215,0,0.20);">
         <div style="font-size:13px;font-weight:700;color:#ffd700;margin-bottom:4px;">Want way more power? 🚀</div>
         <div style="font-size:12px;line-height:1.5;color:rgba(255,255,255,0.8);">Upgrade to prepaid and Google gives you <span style="color:#00ff88;font-weight:700;">$300 free credits</span>. Then you get tons of tries + <span style="color:#ffd700;font-weight:600;">Video & Music</span> unlock too!</div>
@@ -616,6 +616,14 @@ async function showProxyKeyPrompt() {
       return;
     }
   } catch (e) {}
+  // Redirect to the Settings page instead of showing an inline modal —
+  // the key input lives in options.html which is the proper place for it.
+  try {
+    chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
+  } catch (e) {
+    console.warn('[Aion] Could not open settings:', e?.message || e);
+  }
+  return;
   const modal = document.getElementById('geminiKeyModal');
   if (!modal) return;
   modal.classList.add('open');
