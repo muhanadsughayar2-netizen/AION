@@ -6626,25 +6626,14 @@ async function handleSend() {
   // is assembled. Clearing them here would leave placeholders in the output.
   const _isContinuationSend = prompt.startsWith('CONTINUE_BUILD:');
 
-  // ── Continuation interrupt guard ───────────────────────────────────────────
-  // If the user sends a normal message while an auto-continuation is in flight
-  // (e.g. they typed before the next chunk arrived), cancel the pending merge
-  // so the next AI response isn't incorrectly merged with a stale partial.
-  if (!_isContinuationSend && _continuationPending) {
-    _continuationPending = false;
-    _continuationCount = 0;
-  }
-  // ── End continuation interrupt guard ──────────────────────────────────────
-
   // ── New-app vs update guard ────────────────────────────────────────────────
   // If Build Mode has an existing app AND the prompt looks like a fresh build
   // (not a patch/update), intercept and ask the user before overwriting.
-  if (buildModeEnabled && _lastBuiltCode && !_isContinuationSend && !_skipNewAppCheck && _isNewBuildIntent(prompt)) {
+  if (buildModeEnabled && _lastBuiltCode && !_isContinuationSend && _isNewBuildIntent(prompt)) {
     input.value = '';
     _showNewAppConfirmation(prompt, input);
     return;
   }
-  _skipNewAppCheck = false; // reset after every pass-through
   // ── End new-app guard ──────────────────────────────────────────────────────
 
   if (!_isContinuationSend) {
@@ -7851,23 +7840,13 @@ function addBubbleActions(bubble, text) {
   const _extracted = buildModeEnabled && !buildStage
     ? extractHtmlFromResponse(text, _continuationPending ? _lastBuiltCode : null)
     : { html: '', truncated: false };
+  if (_continuationPending && _extracted.html) _continuationPending = false;
   const thisCode = _extracted.html;
   // Detect truncation: AI ran out of tokens and the file is incomplete.
   // Only applies to classic (no-stage) build mode — staged builds use per-stage output.
   const isTruncated = !buildStage && _extracted.truncated;
-  // Only clear _continuationPending when the merged result is actually complete.
-  // If the continuation itself was also truncated, keep the flag so the next
-  // auto-continuation can still use _lastBuiltCode as the merge base.
-  if (_continuationPending && thisCode && !isTruncated) _continuationPending = false;
-  // When a continuation chunk is itself truncated, save the partial into
-  // _lastBuiltCode so the NEXT continuation has the right merge base.
-  // Without this, _lastBuiltCode stays at the ORIGINAL partial and the middle
-  // chunk is lost — causing the build to spin and silently drop content.
-  if (thisCode && !buildStage && isTruncated) {
-    _lastBuiltCode = thisCode; // advance the merge base for the next chunk
-    _updateBuildInput();
-  }
-  // Only fully commit to _lastBuiltCode (+ storage + media swaps) when complete.
+  // Only commit to _lastBuiltCode when the output is complete. Saving a
+  // truncated partial would strip sections (e.g. pricing) from future edits.
   if (thisCode && !buildStage && !isTruncated) {
     _lastBuiltCode = thisCode;
     // Save the pre-swap version (placeholders intact) for AI patch requests.
@@ -8569,32 +8548,13 @@ function exportToPDF() {
 }
 
 // Clear chat
-// Set to true by _showNewAppConfirmation's "Update current" path to skip
-// the guard for exactly one handleSend() call.
-let _skipNewAppCheck = false;
-
-// Returns true ONLY when the prompt very clearly signals a brand-new, unrelated
-// app — not an update, feature addition, or tweak to the current one.
-// Errs heavily on the side of NOT showing the confirmation card.
+// Returns true when the prompt signals a brand-new app, not a patch/update.
 function _isNewBuildIntent(prompt) {
   const p = prompt.toLowerCase().trim();
-
-  // 1. If the prompt references the existing app in any way → it's an update.
-  //    These words mean the user is talking ABOUT what's already built.
-  if (/\b(it|this|the (app|site|page|game|clock|quiz|current|existing)|here|same|above|already built|current one|what (i|we) have)\b/.test(p)) return false;
-
-  // 2. Strong update-prefix words → definitely a patch.
-  if (/^(add|change|fix|update|remove|delete|edit|modify|tweak|adjust|make it|make the|make this|now |also |put |move |replace |switch |rename|style |resize|convert|turn it|can you add|can you change|can you fix|can you update|can you remove|i want to add|i want to change|give it|give the|show|display|include|increase|decrease|improve|upgrade|enhance|extend|expand)/.test(p)) return false;
-
-  // 3. "make a [component/feature]" — things like "make a quiz section", "make a
-  //    dark background", "make a button" are updates, NOT new apps.
-  //    Only match if the noun after "make a/an" is clearly an app-level concept.
-  const appLevelNouns = /(app|website|web app|web site|game|tool|dashboard|landing page|application|calculator|timer|clock app|platform|store|shop|portfolio|blog)/;
-
-  // 4. Only fire for unambiguous fresh-build requests at sentence start,
-  //    naming an app-level deliverable.
-  return /^(build|create|design|generate|please build|please create|please design|please make a new|make me a new|i want a (completely )?new|i need a (completely )?new|can you build|can you create|can you design)\b/.test(p)
-      && appLevelNouns.test(p);
+  // Patch/update signals — these clearly refer to the existing site
+  if (/^(add |change |fix |update |remove |delete |edit |modify |tweak |adjust |make it|make the|make this|now |also |and |put |move |replace |switch |rename |colour|color |style |resize |convert |turn it|can you add|can you change|can you fix|can you update|can you remove|i want to add|i want to change)/.test(p)) return false;
+  // New app signals — build/create/make + a new subject
+  return /(build|create|make|design|generate|i want|i need|can you build|can you create|can you make|can you design).{0,50}(a |an |me a |new |different |another )/.test(p);
 }
 
 // Shows an inline card asking the user whether to start fresh or update the current app.
@@ -8635,7 +8595,6 @@ function _showNewAppConfirmation(prompt, input) {
 
   document.getElementById('nacBtnUpdate').addEventListener('click', () => {
     card.remove();
-    _skipNewAppCheck = true; // bypass the guard for this one send
     input.value = prompt;
     handleSend();
   });
