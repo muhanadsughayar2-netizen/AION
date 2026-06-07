@@ -522,6 +522,21 @@
 :root[data-theme="light"] .magic-close { color: var(--st-text-tertiary) !important; }
 :root[data-theme="light"] .pdf-modal-close:hover,
 :root[data-theme="light"] .gemini-modal-close:hover { color: var(--st-text-primary) !important; }
+/* Magic-modal form fields — hardcoded white text/inputs in source CSS. */
+:root[data-theme="light"] .magic-field label { color: var(--st-text-secondary) !important; }
+:root[data-theme="light"] .magic-field input,
+:root[data-theme="light"] .magic-field textarea {
+  background: var(--st-bg-soft) !important;
+  border-color: var(--st-border-default) !important;
+  color: var(--st-text-primary) !important;
+}
+/* Sidebar toggle control (sidebar feature currently hidden) — white-alpha
+   bg/border invisible on light. */
+:root[data-theme="light"] .sidebar-toggle {
+  background: var(--st-bg-soft) !important;
+  border-color: var(--st-border-default) !important;
+  color: var(--st-text-tertiary) !important;
+}
 
 /* Account popover */
 :root[data-theme="light"] .account-popover {
@@ -598,6 +613,22 @@
   background: #eef2f7 !important;
   color: var(--st-text-primary) !important;
 }
+:root[data-theme="light"] .chat-bubble.user {
+  background: #d3e3fd !important;
+  color: #0b3b6f !important;
+  border-color: rgba(66, 133, 244, 0.30) !important;
+}
+/* AI markdown internals — source CSS hardcodes pale dark-theme blues/greys
+   that wash out on a light bubble; remap to readable light-theme colors. */
+:root[data-theme="light"] .chat-bubble.ai h1,
+:root[data-theme="light"] .chat-bubble.ai h2,
+:root[data-theme="light"] .chat-bubble.ai h3 { color: var(--st-accent-2) !important; }
+:root[data-theme="light"] .chat-bubble.ai em { color: var(--st-text-secondary) !important; }
+:root[data-theme="light"] .chat-bubble.ai a { color: var(--st-accent-2) !important; }
+:root[data-theme="light"] .chat-bubble.ai li { color: var(--st-text-primary) !important; }
+:root[data-theme="light"] .chat-bubble.ai li::marker { color: var(--st-accent) !important; }
+:root[data-theme="light"] .chat-bubble.ai blockquote { color: var(--st-text-secondary) !important; }
+:root[data-theme="light"] .chat-bubble.ai hr { border-top-color: var(--st-border-default) !important; }
 :root[data-theme="light"] .chat-bubble.loading {
   background: var(--st-bg-app-2) !important;
   color: var(--st-accent-2) !important;
@@ -701,6 +732,98 @@
   background: var(--st-bg-soft) !important;
   border-color: var(--st-border-default) !important;
   color: var(--st-text-secondary) !important;
+}
+
+/* Tool toggle pills (Build / Research / Search / Read / Code) — the base
+   chip is white-on-dark in the source CSS; give it a light surface so the
+   label/icon are visible. The per-tool hover/active accent tints already
+   use translucent colors that read fine on a light background. */
+:root[data-theme="light"] .tool-toggle-btn {
+  background: var(--st-bg-soft) !important;
+  border-color: var(--st-border-default) !important;
+  color: var(--st-text-tertiary) !important;
+}
+
+/* Bottom-row pills (Agents / + Magic Agents) — faint white border in the
+   source CSS washes out on a light surface; give them a visible chip. */
+:root[data-theme="light"] .magic-add-btn {
+  background: var(--st-bg-soft) !important;
+  border-color: var(--st-border-default) !important;
+  color: var(--st-text-secondary) !important;
+}
+:root[data-theme="light"] .magic-add-btn:hover {
+  background: var(--st-accent-soft) !important;
+  border-color: var(--st-accent-border) !important;
+  color: var(--st-accent-2) !important;
+}
+
+/* Chat history panel — hardcoded dark (#13161e) in the source CSS. Re-skin
+   the whole sliding panel + its rows to match the light chat surface. */
+:root[data-theme="light"] .hist-btn { color: var(--st-text-tertiary) !important; }
+:root[data-theme="light"] .hist-btn:hover {
+  background: var(--st-bg-soft) !important;
+  color: var(--st-accent-2) !important;
+}
+:root[data-theme="light"] .hist-btn.active {
+  color: var(--st-accent-2) !important;
+  background: var(--st-accent-soft) !important;
+}
+:root[data-theme="light"] .hist-overlay { background: rgba(15, 23, 42, 0.35) !important; }
+:root[data-theme="light"] .hist-panel {
+  background: var(--st-bg-surface) !important;
+  border-right-color: var(--st-border-default) !important;
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.10) !important;
+}
+:root[data-theme="light"] .hist-panel-header { border-bottom-color: var(--st-border-default) !important; }
+:root[data-theme="light"] .hist-panel-title { color: var(--st-text-primary) !important; }
+:root[data-theme="light"] .hist-new-btn {
+  background: var(--st-accent-soft) !important;
+  border-color: var(--st-accent-border) !important;
+  color: var(--st-accent-2) !important;
+}
+:root[data-theme="light"] .hist-new-btn:hover { background: var(--st-accent-soft-2) !important; }
+:root[data-theme="light"] .hist-item:hover { background: var(--st-bg-soft) !important; }
+:root[data-theme="light"] .hist-item.active {
+  background: var(--st-accent-soft) !important;
+  border-left-color: var(--st-accent) !important;
+}
+:root[data-theme="light"] .hist-item-title { color: var(--st-text-secondary) !important; }
+:root[data-theme="light"] .hist-item.active .hist-item-title { color: var(--st-text-primary) !important; }
+:root[data-theme="light"] .hist-item-date { color: var(--st-text-muted) !important; }
+:root[data-theme="light"] .hist-del { color: var(--st-text-muted) !important; }
+:root[data-theme="light"] .hist-del:hover { color: var(--st-danger) !important; background: rgba(220, 38, 38, 0.10) !important; }
+:root[data-theme="light"] .hist-empty { color: var(--st-text-muted) !important; }
+
+/* Specialist Agents modal — hardcoded dark (#202124 + inline dark text) in
+   the source markup. Re-skin the container, header and cards for light.
+   Stylesheet !important beats the element's inline (non-important) styles. */
+:root[data-theme="light"] #agentsModal > div {
+  background: var(--st-bg-surface) !important;
+  border-color: var(--st-border-default) !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18) !important;
+}
+:root[data-theme="light"] #agentsModal > div > div:first-child {
+  border-bottom-color: var(--st-border-default) !important;
+}
+:root[data-theme="light"] #agentsModal [style*="#e8eaed"] { color: var(--st-text-primary) !important; }
+:root[data-theme="light"] #agentsModal [style*="#80868b"] { color: var(--st-text-tertiary) !important; }
+:root[data-theme="light"] .agent-card {
+  background: var(--st-bg-soft) !important;
+  border-color: var(--st-border-default) !important;
+}
+:root[data-theme="light"] .agent-card:hover,
+:root[data-theme="light"] .agent-card.agent-active {
+  background: var(--st-accent-soft) !important;
+  border-color: var(--st-accent-border) !important;
+}
+:root[data-theme="light"] .agent-name { color: var(--st-text-primary) !important; }
+:root[data-theme="light"] .agent-tag { color: var(--st-text-tertiary) !important; }
+
+/* AI disclaimer + agent status bar — near-white hardcoded text/borders. */
+:root[data-theme="light"] .ai-disclaimer { color: var(--st-text-tertiary) !important; }
+:root[data-theme="light"] #agentStatusBar {
+  background: var(--st-bg-soft) !important;
+  border-top-color: var(--st-border-default) !important;
 }
 
 /* ============================================================

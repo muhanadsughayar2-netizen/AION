@@ -1,2 +1,3 @@
 - [Gemini image generation models](gemini-image-models.md) — correct "Nano Banana" model IDs; gemini-2.0-flash image models are dead (shut down June 2026).
 - [Gemini TTS chunking](gemini-tts-chunking.md) — generateContent TTS cannot stream; chunk text + queue playback for ~2s start while keeping natural voices.
+- [Light/dark theme system](light-theme-system.md) — full light theme already exists in theme.css gated on data-theme="light"; theme.js resolveTheme() centrally forces chat=light, rest=dark.
