@@ -6461,7 +6461,7 @@ function addThinkingBubble() {
   const thread = document.getElementById('chatThread');
   const bubble = document.createElement('div');
   bubble.className = 'chat-bubble loading';
-  bubble.innerHTML = '<div class="star"></div><span>Gemini is thinking...</span>';
+  bubble.innerHTML = '<div class="think-ring"><div class="think-ring-dot"></div></div><span class="think-label">Gemini is thinking</span><span class="think-dots"><span></span><span></span><span></span></span>';
   thread.appendChild(bubble);
   thread.scrollTop = thread.scrollHeight;
 }
