@@ -3,246 +3,550 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SnapToAI Settings</title>
+  <title>Aion AI — Settings</title>
   <script src="theme.js"></script>
-  <link rel="stylesheet" href="theme.css">
-  <link rel="stylesheet" href="options.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Google Sans', Inter, -apple-system, sans-serif;
+      background: #16181d;
+      color: #e8eaed;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 16px 48px;
+    }
+
+    .page { width: 100%; max-width: 520px; }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .header-logo {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(45,212,191,0.2), rgba(124,58,237,0.2));
+      border: 1px solid rgba(45,212,191,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .header-text h1 {
+      font-size: 20px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 0%, #2dd4bf 60%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 0.5px;
+    }
+
+    .header-text p {
+      font-size: 12px;
+      color: #5f6368;
+      margin-top: 2px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #1e2027;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 14px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #9aa0a6;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    /* ── API Key section ── */
+    .key-hero {
+      background: linear-gradient(135deg, rgba(45,212,191,0.08), rgba(124,58,237,0.06));
+      border: 1px solid rgba(45,212,191,0.22);
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 14px;
+    }
+
+    .key-hero-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 5px;
+    }
+
+    .key-hero-sub {
+      font-size: 13px;
+      color: #9aa0a6;
+      line-height: 1.55;
+      margin-bottom: 20px;
+    }
+
+    .key-hero-sub a {
+      color: #2dd4bf;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .key-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .key-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      font-size: 13px;
+      color: #c8ccd0;
+    }
+
+    .key-step-num {
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      border-radius: 50%;
+      background: rgba(45,212,191,0.15);
+      border: 1px solid rgba(45,212,191,0.35);
+      color: #2dd4bf;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .key-step a {
+      color: #2dd4bf;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .key-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .key-input {
+      flex: 1;
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 11px;
+      color: #e8eaed;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: 'Google Sans', Inter, monospace;
+    }
+
+    .key-input:focus {
+      border-color: rgba(45,212,191,0.5);
+      background: rgba(45,212,191,0.04);
+    }
+
+    .key-input::placeholder { color: #5f6368; }
+
+    .key-save-btn {
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #2dd4bf, #7c3aed);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      border-radius: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+    }
+
+    .key-save-btn:hover { opacity: 0.88; }
+    .key-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .key-status {
+      margin-top: 10px;
+      font-size: 12px;
+      min-height: 18px;
+      color: #9aa0a6;
+    }
+
+    .key-status.ok   { color: #34a853; }
+    .key-status.err  { color: #ea4335; }
+    .key-status.info { color: #2dd4bf; }
+
+    /* ── Settings rows ── */
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .setting-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .setting-row:first-child { padding-top: 0; }
+
+    .setting-label {
+      font-size: 13px;
+      color: #c8ccd0;
+      flex: 1;
+    }
+
+    .setting-label small {
+      display: block;
+      font-size: 11px;
+      color: #5f6368;
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+
+    select, input[type="text"] {
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: #e8eaed;
+      font-size: 12px;
+      outline: none;
+      min-width: 140px;
+    }
+
+    select:focus, input[type="text"]:focus {
+      border-color: rgba(45,212,191,0.4);
+    }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 38px;
+      height: 22px;
+      min-width: 38px;
+    }
+
+    .toggle input { display: none; }
+
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 11px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #9aa0a6;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .toggle input:checked + .toggle-track {
+      background: rgba(45,212,191,0.25);
+      border-color: rgba(45,212,191,0.4);
+    }
+
+    .toggle input:checked + .toggle-track::after {
+      transform: translateX(16px);
+      background: #2dd4bf;
+    }
+
+    /* ── Save button ── */
+    .save-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .save-btn {
+      padding: 11px 24px;
+      background: linear-gradient(135deg, #2dd4bf, #7c3aed);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      border-radius: 11px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .save-btn:hover { opacity: 0.88; }
+
+    .save-msg {
+      font-size: 12px;
+      color: #34a853;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .save-msg.show { opacity: 1; }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: #3c4043;
+      margin-top: 20px;
+    }
+
+    .footer a { color: #5f6368; text-decoration: none; }
+    .footer a:hover { color: #9aa0a6; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>📸 Snap To AI</h1>
-      <p class="version">Version 2.6.0 - Settings</p>
-    </header>
+  <div class="page">
 
-    <main>
-      <!-- Appearance / Theme — TEMPORARILY HIDDEN (theme system disabled in UI) -->
-      <section class="settings-group" style="display:none !important;" aria-hidden="true">
-        <h2>🎨 Appearance</h2>
-        <div class="setting-item">
-          <label>Theme:</label>
-          <div class="appearance-grid" id="appearanceGrid" role="radiogroup" aria-label="Theme">
-            <label class="appearance-card" data-theme="light">
-              <input type="radio" name="theme" value="light">
-              <span class="appearance-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-              </span>
-              <span class="appearance-label">Light</span>
-              <span class="appearance-hint">Bright background</span>
-            </label>
-            <label class="appearance-card" data-theme="dark">
-              <input type="radio" name="theme" value="dark">
-              <span class="appearance-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-              </span>
-              <span class="appearance-label">Dark</span>
-              <span class="appearance-hint">Default dark</span>
-            </label>
-            <label class="appearance-card" data-theme="auto">
-              <input type="radio" name="theme" value="auto">
-              <span class="appearance-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18a9 9 0 0 0 0-18z" fill="currentColor"/></svg>
-              </span>
-              <span class="appearance-label">Auto</span>
-              <span class="appearance-hint">Matches system</span>
-            </label>
-          </div>
-          <p class="help-text">Theme applies across the popup, sidebar, settings, editor, and AI chat. Auto follows your OS preference.</p>
+    <!-- Header -->
+    <div class="header">
+      <div class="header-logo">📸</div>
+      <div class="header-text">
+        <h1>Aion AI</h1>
+        <p>Settings</p>
+      </div>
+    </div>
+
+    <!-- ── API Key — hero section ── -->
+    <div class="key-hero">
+      <div class="key-hero-title">🔑 Connect your Gemini key</div>
+      <div class="key-hero-sub">
+        A free key gives you ~20 AI requests per day.<br>
+        Get yours in 1 minute at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com</a>
+      </div>
+
+      <div class="key-steps">
+        <div class="key-step">
+          <span class="key-step-num">1</span>
+          Go to <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio →</a>
         </div>
-      </section>
-
-      <!-- Capture Settings -->
-      <section class="settings-group">
-        <h2>📷 Capture</h2>
-        
-        <div class="setting-item">
-          <label for="imageFormat">Image format:</label>
-          <select id="imageFormat">
-            <option value="png">PNG</option>
-            <option value="jpeg">JPG</option>
-          </select>
-          <p class="help-text">PNG is lossless and matches exactly what's on screen, but has larger file sizes. JPG uses compression for smaller files.</p>
+        <div class="key-step">
+          <span class="key-step-num">2</span>
+          Click "Create API key" and copy it
         </div>
-
-        <div class="setting-item" id="jpegQualityContainer" style="display: none;">
-          <label for="jpegQuality">JPG Quality:</label>
-          <div class="slider-container">
-            <input type="range" id="jpegQuality" min="50" max="100" value="90">
-            <span id="jpegQualityValue">90%</span>
-          </div>
-          <p class="help-text">Higher quality = larger file size. 90% is a good default.</p>
+        <div class="key-step">
+          <span class="key-step-num">3</span>
+          Paste it below and click Save
         </div>
-      </section>
+      </div>
 
-      <!-- PDF Settings -->
-      <section class="settings-group">
-        <h2>📄 PDF Export</h2>
-        
-        <div class="setting-item">
-          <label for="pdfPaperSize">Paper size:</label>
-          <select id="pdfPaperSize">
-            <option value="letter-portrait">US Letter Portrait</option>
-            <option value="letter-landscape">US Letter Landscape</option>
-            <option value="a4-portrait">A4 Portrait</option>
-            <option value="a4-landscape">A4 Landscape</option>
-            <option value="legal-portrait">Legal Portrait</option>
-            <option value="fit">Fit to Content</option>
-          </select>
-          <p class="help-text">Specify the paper size for PDF exports.</p>
+      <div class="key-input-row">
+        <input type="password" id="geminiKeyInput" class="key-input" placeholder="Paste your Gemini API key here…" autocomplete="off" spellcheck="false">
+        <button class="key-save-btn" id="keySaveBtn">Save Key</button>
+      </div>
+      <div class="key-status" id="keyStatus"></div>
+    </div>
+
+    <!-- ── Capture settings ── -->
+    <div class="card">
+      <div class="card-title">📷 Capture</div>
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Image format
+          <small>PNG is lossless. JPG is smaller.</small>
         </div>
+        <select id="imageFormat">
+          <option value="png">PNG</option>
+          <option value="jpeg">JPG</option>
+        </select>
+      </div>
 
-        <div class="setting-item">
-          <label class="toggle-label">
-            <input type="checkbox" id="smartPageSplit">
-            <span class="toggle-text">Smart page splitting</span>
-          </label>
-          <p class="help-text">Performs extra checks when splitting PDF pages to prevent cutting lines of text in half.</p>
+      <div class="setting-row" id="jpegQualityRow" style="display:none;">
+        <div class="setting-label">
+          JPG quality
+          <small>Higher = larger file</small>
         </div>
+        <select id="jpegQuality">
+          <option value="70">70%</option>
+          <option value="80">80%</option>
+          <option value="90" selected>90% (default)</option>
+          <option value="100">100%</option>
+        </select>
+      </div>
+    </div>
 
-        <div class="setting-item">
-          <label class="toggle-label">
-            <input type="checkbox" id="addUrlDateTime">
-            <span class="toggle-text">Add URL and date/time</span>
-          </label>
-          <p class="help-text">Add screenshot URL and capture date/time to PDF exports.</p>
+    <!-- ── PDF Export ── -->
+    <div class="card">
+      <div class="card-title">📄 PDF Export</div>
+
+      <div class="setting-row">
+        <div class="setting-label">Paper size</div>
+        <select id="pdfPaperSize">
+          <option value="letter-portrait">US Letter Portrait</option>
+          <option value="letter-landscape">US Letter Landscape</option>
+          <option value="a4-portrait">A4 Portrait</option>
+          <option value="a4-landscape">A4 Landscape</option>
+          <option value="legal-portrait">Legal Portrait</option>
+          <option value="fit">Fit to Content</option>
+        </select>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Smart page splitting
+          <small>Avoids cutting text in half</small>
         </div>
-      </section>
+        <label class="toggle">
+          <input type="checkbox" id="smartPageSplit">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
 
-      <!-- Download Settings -->
-      <section class="settings-group">
-        <h2>💾 Download</h2>
-        
-        <div class="setting-item">
-          <label for="downloadDirectory">Directory:</label>
-          <input type="text" id="downloadDirectory" placeholder="screencaptures">
-          <p class="help-text">Save screenshots to this subfolder in Downloads. Leave blank for default downloads folder.</p>
+      <div class="setting-row">
+        <div class="setting-label">
+          Add URL and date
+          <small>Stamped on each PDF page</small>
         </div>
+        <label class="toggle">
+          <input type="checkbox" id="addUrlDateTime">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
 
-        <div class="setting-item">
-          <label class="toggle-label">
-            <input type="checkbox" id="showSaveAs">
-            <span class="toggle-text">Show "Save As" dialog</span>
-          </label>
-          <p class="help-text">Automatically show a "Save As" dialog when downloading screenshots.</p>
+    <!-- ── Download ── -->
+    <div class="card">
+      <div class="card-title">💾 Download</div>
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Save folder
+          <small>Subfolder inside Downloads</small>
         </div>
+        <input type="text" id="downloadDirectory" placeholder="screencaptures" style="min-width:140px;">
+      </div>
 
-        <div class="setting-item">
-          <label class="toggle-label">
-            <input type="checkbox" id="autoDownload">
-            <span class="toggle-text">Auto-download files</span>
-          </label>
-          <p class="help-text">Automatically download screenshots instead of opening a separate tab. The preview will be skipped.</p>
+      <div class="setting-row">
+        <div class="setting-label">
+          Show "Save As" dialog
         </div>
-      </section>
+        <label class="toggle">
+          <input type="checkbox" id="showSaveAs">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
 
-      <!-- Clipboard Settings -->
-      <section class="settings-group">
-        <h2>📋 Clipboard</h2>
-        
-        <div class="setting-item">
-          <label class="toggle-label">
-            <input type="checkbox" id="fitGoogleDocsLimit" checked>
-            <span class="toggle-text">Fit copies to Google Docs limits</span>
-          </label>
-          <p class="help-text">Auto-resize when copying to clipboard if it exceeds Google Docs limit (25,000,000 pixels). Helps with pasting large images.</p>
+      <div class="setting-row">
+        <div class="setting-label">
+          Auto-download
+          <small>Skip preview, save immediately</small>
         </div>
-      </section>
+        <label class="toggle">
+          <input type="checkbox" id="autoDownload">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
 
-      <!-- Subscription -->
-      <section class="settings-group">
-        <h2><span id="_crown" style="cursor:pointer;user-select:none;">👑</span> Subscription</h2>
-        
-        <div id="subscriptionStatus" class="subscription-status">
-          <div class="status-badge" id="statusBadge">Checking...</div>
-        </div>
-        
-        <div id="trialInfo" class="upgrade-section">
-          <p class="upgrade-text" id="trialMessage">Checking subscription status...</p>
-        </div>
-        
-        <div id="subscribeSection" class="setting-item" style="display: none;">
-          <p class="help-text">Subscribe at <a href="https://whop.com/snaptoai/" target="_blank">whop.com/snaptoai</a> to unlock AI features.</p>
-          <button id="refreshSubBtn" class="activate-btn">🔄 Refresh Subscription Status</button>
-        </div>
-        
-        <div id="proInfo" class="license-info" style="display: none;">
-          <p><strong>Status:</strong> <span id="proStatus">Active</span></p>
-          <p><strong>Plan:</strong> <span id="proPlan">-</span></p>
-        </div>
+    <!-- ── Save settings ── -->
+    <div class="save-row">
+      <button class="save-btn" id="saveBtn">Save Settings</button>
+      <span class="save-msg" id="saveMsg">✓ Saved!</span>
+    </div>
 
-        <div id="subscriptionActions" class="subscription-actions" style="display: none;">
-          <a id="manageSubLink" href="https://whop.com/hub/" target="_blank" class="sub-action-link">
-            <span class="sub-action-icon">⚙️</span>
-            <span class="sub-action-text">
-              <strong>Manage Subscription</strong>
-              <small>Cancel, change plan, or update payment method</small>
-            </span>
-            <span class="sub-action-arrow">→</span>
-          </a>
-        </div>
+    <div class="footer" style="margin-top:28px;">
+      <a href="https://www.youtube.com/@AION-AI-u9h" target="_blank" rel="noopener">YouTube</a> ·
+      <a href="https://snaptoai.com" target="_blank" rel="noopener">snaptoai.com</a>
+    </div>
 
-      </section>
-
-      <!-- Border & Frame Defaults -->
-      <section class="settings-group">
-        <h2>🖼️ Default Styling</h2>
-        
-        <div class="setting-item">
-          <label class="toggle-label">
-            <input type="checkbox" id="defaultBorderEnabled" checked>
-            <span class="toggle-text">Enable border by default</span>
-          </label>
-          <p class="help-text">Screenshots will have a border applied by default when opening the editor.</p>
-        </div>
-
-        <div class="setting-item">
-          <label for="defaultBorderColor">Default border color:</label>
-          <input type="color" id="defaultBorderColor" value="#00d9ff">
-        </div>
-
-        <div class="setting-item">
-          <label for="defaultBorderWidth">Default border width:</label>
-          <select id="defaultBorderWidth">
-            <option value="4">4px (Thin)</option>
-            <option value="8" selected>8px (Medium)</option>
-            <option value="12">12px (Thick)</option>
-            <option value="16">16px (Extra Thick)</option>
-          </select>
-        </div>
-
-        <div class="setting-item">
-          <label for="defaultFrameStyle">Default browser frame:</label>
-          <select id="defaultFrameStyle">
-            <option value="none" selected>None</option>
-            <option value="mac">Mac OS X</option>
-            <option value="windows">Windows</option>
-            <option value="minimal">Minimal URL Bar</option>
-          </select>
-        </div>
-      </section>
-
-      <!-- Actions -->
-      <section class="actions">
-        <button id="saveBtn" class="primary-btn">💾 Save Settings</button>
-        <button id="resetBtn" class="secondary-btn">🔄 Reset to Defaults</button>
-      </section>
-
-      <div id="saveStatus" class="save-status"></div>
-    </main>
-
-    <footer>
-      <p>SnapToAI - Batch Screenshot Upload for AI Platforms</p>
-      <p><a href="https://snaptoai.com" target="_blank">snaptoai.com</a></p>
-    </footer>
   </div>
 
+  <!-- Hidden dev box — kept for owner access -->
   <div id="_devbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
-    <div style="background:var(--st-bg-app-2);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:24px 28px;display:flex;flex-direction:column;gap:12px;min-width:260px;">
+    <div style="background:#1e2027;border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:24px 28px;display:flex;flex-direction:column;gap:12px;min-width:260px;">
       <input id="_xi" type="password" autocomplete="off" placeholder="••••••••••" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:#fff;font-size:14px;outline:none;width:100%;box-sizing:border-box;">
       <button id="_xibtn" style="padding:10px;border-radius:8px;border:none;background:rgba(0,255,136,0.2);color:#00ff88;font-size:13px;cursor:pointer;font-weight:600;">Confirm</button>
     </div>
   </div>
+
   <script src="subscription.js"></script>
   <script src="options.js"></script>
+  <script>
+    // ── Gemini key save ──────────────────────────────────────────────────────
+    const keyInput  = document.getElementById('geminiKeyInput');
+    const keySaveBtn = document.getElementById('keySaveBtn');
+    const keyStatus = document.getElementById('keyStatus');
+
+    // Load existing key (show masked)
+    chrome.storage.sync.get(['geminiApiKey'], (r) => {
+      if (r.geminiApiKey) {
+        keyInput.value = r.geminiApiKey;
+        keyStatus.textContent = '✓ Key saved — AI features are active';
+        keyStatus.className = 'key-status ok';
+      }
+    });
+
+    keySaveBtn.addEventListener('click', async () => {
+      const key = keyInput.value.trim();
+      if (!key) {
+        keyStatus.textContent = 'Please paste your API key first.';
+        keyStatus.className = 'key-status err';
+        return;
+      }
+      keySaveBtn.disabled = true;
+      keySaveBtn.textContent = 'Saving…';
+      keyStatus.textContent = 'Checking key…';
+      keyStatus.className = 'key-status info';
+      try {
+        await chrome.storage.sync.set({ geminiApiKey: key });
+        keyStatus.textContent = '✓ Key saved! AI features are now active.';
+        keyStatus.className = 'key-status ok';
+        keySaveBtn.textContent = '✓ Saved';
+        setTimeout(() => {
+          keySaveBtn.disabled = false;
+          keySaveBtn.textContent = 'Save Key';
+        }, 2500);
+      } catch (e) {
+        keyStatus.textContent = 'Could not save — please try again.';
+        keyStatus.className = 'key-status err';
+        keySaveBtn.disabled = false;
+        keySaveBtn.textContent = 'Save Key';
+      }
+    });
+
+    // JPG quality row visibility
+    document.getElementById('imageFormat').addEventListener('change', function() {
+      document.getElementById('jpegQualityRow').style.display = this.value === 'jpeg' ? 'flex' : 'none';
+    });
+
+    // Save settings button feedback
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      const msg = document.getElementById('saveMsg');
+      msg.classList.add('show');
+      setTimeout(() => msg.classList.remove('show'), 2500);
+    });
+  </script>
 </body>
 </html>
