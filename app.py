@@ -674,7 +674,7 @@ def _send_welcome_email(email, inst_name, brand_color=None, logo_url=None):
                 base = 'https://' + base
             full_logo = (base.rstrip('/') + full_logo) if base else full_logo
         logo_html = f'<img src="{html_escape_module.escape(full_logo)}" alt="" style="max-height:60px;max-width:200px;display:block;margin:0 auto 18px;background:#fff;border-radius:6px;padding:6px;">'
-    subject = f'You have been added to {name_for_subject} on SnapToAI'
+    subject = f'You have been added to {name_for_subject} on Aion AI'
     html_body = f'''<!DOCTYPE html>
 <html><body style="margin:0;padding:24px;background:#f6f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#222;">
 <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:28px;border-top:4px solid {safe_color};box-shadow:0 1px 3px rgba(0,0,0,0.06);">
@@ -682,7 +682,7 @@ def _send_welcome_email(email, inst_name, brand_color=None, logo_url=None):
 <h1 style="color:{safe_color};margin:0 0 12px;font-size:22px;">Welcome to {safe_name} on SnapToAI</h1>
 <p style="font-size:15px;line-height:1.5;margin:0 0 16px;">Your administrator has added you to <strong>{safe_name}</strong>. Your branded SnapToAI license is ready — you just need to install the Chrome extension and sign in.</p>
 <ol style="font-size:15px;line-height:1.7;padding-left:20px;margin:0 0 20px;">
-  <li>Install the SnapToAI Chrome extension: <a href="{install_url}" style="color:{safe_color};">{install_url}</a></li>
+  <li>Install the Aion AI Chrome extension: <a href="{install_url}" style="color:{safe_color};">{install_url}</a></li>
   <li>Sign in with Google using <strong>this exact email address</strong>:<br><code style="background:#f0f0f5;padding:3px 8px;border-radius:4px;display:inline-block;margin-top:4px;">{safe_email}</code></li>
   <li>Your license unlocks automatically — no code or invite link needed.</li>
 </ol>
@@ -690,9 +690,9 @@ def _send_welcome_email(email, inst_name, brand_color=None, logo_url=None):
 <p style="font-size:13px;color:#777;border-top:1px solid #eee;padding-top:14px;margin:0;">Important: sign in with <strong>{safe_email}</strong>. Using a different email means SnapToAI will not be able to apply your {safe_name} license.</p>
 </div></body></html>'''
     text_body = (
-        f'Welcome to {name_for_subject} on SnapToAI\n\n'
+        f'Welcome to {name_for_subject} on Aion AI\n\n'
         f'Your administrator has added you to {name_for_subject}. Your branded SnapToAI license is ready.\n\n'
-        f'1. Install the SnapToAI Chrome extension:\n   {install_url}\n'
+        f'1. Install the Aion AI Chrome extension:\n   {install_url}\n'
         f'2. Sign in with Google using THIS exact email: {email}\n'
         f'3. Your license unlocks automatically — no code needed.\n\n'
         f'Important: if you sign in with a different email, the {name_for_subject} license will not apply.\n'
@@ -2019,7 +2019,7 @@ def admin_panel():
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SnapToAI Admin Dashboard</title>
+    <title>Aion AI Admin Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         * {{ box-sizing: border-box; }}
@@ -2053,7 +2053,7 @@ def admin_panel():
     </style>
 </head>
 <body>
-    <h1>📊 SnapToAI Admin Dashboard</h1>
+    <h1>📊 Aion AI Admin Dashboard</h1>
     <p class="subtitle">Real-time user analytics and trial management</p>
     
     <div class="stats">
@@ -4205,7 +4205,7 @@ def api_inst_admin_magic_link_request(slug):
             f"email={urllib.parse.quote(email)}&exp={exp_ts}&token={token}")
     body = (
         f"Hi,\n\n"
-        f"You requested a sign-in link for the {inst_name} admin dashboard on SnapToAI.\n\n"
+        f"You requested a sign-in link for the {inst_name} admin dashboard on Aion AI.\n\n"
         f"Click this link to sign in (valid for 15 minutes, one-time use):\n\n"
         f"{link}\n\n"
         f"If you didn't request this, you can ignore this email — your account is safe.\n"
@@ -4452,7 +4452,7 @@ window.addEventListener('load', () => {{
         set_cookie = True
 
     page = f'''<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>{name} — SnapToAI Admin</title>
+<html><head><meta charset="UTF-8"><title>{name} — Aion AI Admin</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   * {{ box-sizing: border-box; }}
@@ -4792,7 +4792,7 @@ async function load() {{
     if (cap > 0 && used / cap >= 0.8) {{
       warn.style.display = 'block';
       warn.textContent = (used >= cap)
-        ? '⚠ All ' + cap + ' seats are in use. New members can\\'t auto-join — remove inactive members or contact SnapToAI to raise the cap.'
+        ? '⚠ All ' + cap + ' seats are in use. New members can\\'t auto-join — remove inactive members or contact Aion AI to raise the cap.'
         : '⚠ ' + used + ' of ' + cap + ' seats used (' + Math.round(used/cap*100) + '%). Plan ahead before you hit the cap.';
     }} else if (warn) {{ warn.style.display = 'none'; }}
   }}
@@ -4861,8 +4861,8 @@ function renderMembers() {{
 }}
 
 async function copyWelcome(email) {{
-  const msg = 'Hi! You have been added to ' + INST_NAME + ' on SnapToAI.\\n\\n' +
-    '1. Install the SnapToAI Chrome extension: ' + STORE_URL + '\\n' +
+  const msg = 'Hi! You have been added to ' + INST_NAME + ' on Aion AI.\\n\\n' +
+    '1. Install the Aion AI Chrome extension: ' + STORE_URL + '\\n' +
     '2. Sign in with Google using this email: ' + email + '\\n' +
     '3. Your branded license unlocks automatically — no code needed.\\n\\n' +
     'Questions? Reply to this email.';
@@ -6067,7 +6067,7 @@ def api_inst_set_branding(slug):
         conn = get_db(); cur = conn.cursor()
         if _is_branding_locked(cur, slug):
             cur.close(); conn.close()
-            return _cors(jsonify({'success': False, 'error': 'Branding is locked by your account manager. Contact SnapToAI support.'})), 403
+            return _cors(jsonify({'success': False, 'error': 'Branding is locked by your account manager. Contact Aion AI support.'})), 403
         vals.append(slug)
         cur.execute(f"UPDATE institutions SET {', '.join(sets)}, updated_at=NOW() WHERE slug=%s RETURNING id", tuple(vals))
         _r = cur.fetchone()
@@ -6272,7 +6272,7 @@ def api_inst_upload_logo(slug):
     locked = _is_branding_locked(_lcur, slug)
     _lcur.close(); _lc.close()
     if locked:
-        return _cors(jsonify({'success': False, 'error': 'Branding is locked by your account manager. Contact SnapToAI support.'})), 403
+        return _cors(jsonify({'success': False, 'error': 'Branding is locked by your account manager. Contact Aion AI support.'})), 403
     column, suffix, resp_key = _logo_variant_meta(request)
     try:
         os.makedirs(INSTITUTION_LOGO_DIR, exist_ok=True)
@@ -6627,7 +6627,7 @@ def institution_join_page(code):
     # same — invites are now email-based, ask your admin to add your email.
     safe_color = '#00d9ff'
     page = f'''<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Join your institution on SnapToAI</title>
+<html><head><meta charset="UTF-8"><title>Join your institution on Aion AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0f0f1a 0%, #1a0f2e 100%); color: #fff; min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center; padding: 24px; }}
@@ -6643,12 +6643,12 @@ def institution_join_page(code):
 <div class="card">
   <div style="font-size: 44px; margin-bottom: 8px;">📸</div>
   <h1>Invite links have been retired</h1>
-  <p>SnapToAI institutions now use email-only onboarding — no codes, no extra hops.</p>
+  <p>Aion AI institutions now use email-only onboarding — no codes, no extra hops.</p>
   <div class="step">
     <strong>How to join:</strong>
     <ol style="margin: 10px 0 0 0; padding-left: 22px; line-height: 1.7;">
       <li>Ask your admin to add your email to the institution.</li>
-      <li>Install the SnapToAI Chrome extension.</li>
+      <li>Install the Aion AI Chrome extension.</li>
       <li>Sign in with Google using that same email — your branded license unlocks automatically.</li>
     </ol>
   </div>
