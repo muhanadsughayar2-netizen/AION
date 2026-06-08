@@ -1,10 +1,10 @@
 {
   "extensionName": {
-    "message": "Aion AI: Screenshot to ChatGPT, Gemini AI Chat & Images",
+    "message": "Aion AI: Google AI Studio Client & Gemini Vision",
     "description": "extensionName"
   },
   "extensionDescription": {
-    "message": "Snap any screen to ChatGPT, Claude & Gemini. AI chat, image, music, video & app builder. No subscription.",
+    "message": "The ultimate visual workspace for Google AI Studio. Run Gemini, Veo, and Lyria directly with your free API key. No subscriptions.",
     "description": "extensionDescription"
   },
   "flowReady": {
