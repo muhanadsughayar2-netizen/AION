@@ -1,10 +1,10 @@
 {
   "extensionName": {
-    "message": "Aion AI — Screen Capture, Chat, Build & Create",
+    "message": "Aion AI: Screenshot to ChatGPT, Gemini AI Chat & Images",
     "description": "extensionName"
   },
   "extensionDescription": {
-    "message": "Snap any screen, chat with AI, build full web apps, generate images, music & videos — all powered by Google Gemini.",
+    "message": "Snap any screen to ChatGPT, Claude & Gemini. AI chat, image, music, video & app builder. 100% free to use.",
     "description": "extensionDescription"
   },
   "flowReady": {
