@@ -1348,63 +1348,73 @@ function showVideoStudio(thread) {
 
   studio.innerHTML = `
     <div style="background:linear-gradient(135deg, rgba(138,180,248,0.05), rgba(66,133,244,0.02));border:1px solid rgba(138,180,248,0.15);border-radius:14px;padding:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="font-size:20px;">🎬</span>
           <span style="font-size:14px;font-weight:700;color:#e8eef4;">Video Studio</span>
         </div>
-        <button class="studio-surprise-btn" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(138,180,248,0.25);background:rgba(138,180,248,0.06);color:#8ab4f8;font-size:13px;font-weight:600;cursor:pointer;">🎲 Surprise Me</button>
+        <button class="studio-surprise-btn" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(138,180,248,0.25);background:rgba(138,180,248,0.06);color:#8ab4f8;font-size:12px;font-weight:600;cursor:pointer;">🎲 Surprise Me</button>
       </div>
+
+      <!-- Fixed spec badge -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <span style="padding:3px 10px;border-radius:20px;background:rgba(138,180,248,0.12);border:1px solid rgba(138,180,248,0.25);color:#8ab4f8;font-size:11px;font-weight:700;letter-spacing:0.5px;">8 SECONDS</span>
+        <span style="padding:3px 10px;border-radius:20px;background:rgba(138,180,248,0.06);border:1px solid rgba(138,180,248,0.15);color:#667788;font-size:11px;font-weight:600;">1 CLIP · NO STITCHING</span>
+        <span style="padding:3px 10px;border-radius:20px;background:rgba(138,180,248,0.06);border:1px solid rgba(138,180,248,0.15);color:#667788;font-size:11px;font-weight:600;">⏱ ~1-2 MIN</span>
+      </div>
+
+      <!-- Model selector -->
       <div class="veo-model-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
-        <span style="font-size:13px;color:#667788;width:100%;margin-bottom:2px;">Quality:</span>
+        <span style="font-size:12px;color:#667788;width:100%;margin-bottom:2px;">Quality:</span>
         <span class="veo-models-loading" style="font-size:13px;color:#8899aa;">Checking available models...</span>
       </div>
-      <div class="veo-duration-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center;">
-        <span style="font-size:13px;color:#667788;width:100%;margin-bottom:2px;">Length:</span>
-        <button class="veo-dur-btn selected" data-dur="8" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(138,180,248,0.5);background:rgba(138,180,248,0.15);color:#8ab4f8;font-size:13px;font-weight:600;cursor:default;">8 seconds</button>
-        <span style="font-size:13px;color:#667788;font-style:italic;">Veo's native length — best quality.</span>
-      </div>
-      <div class="veo-creativity-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center;" title="Controls how much creative license the AI director takes when planning your storyboard.">
-        <span style="font-size:13px;color:#667788;width:100%;margin-bottom:2px;">Creativity:</span>
+
+      <!-- Creativity -->
+      <div class="veo-creativity-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;align-items:center;">
+        <span style="font-size:12px;color:#667788;width:100%;margin-bottom:2px;">Style:</span>
         ${Object.keys(CREATIVITY_LEVELS).map(k => {
           const sel = k === selectedCreativity;
-          return `<button class="veo-creat-btn${sel ? ' selected' : ''}" data-creat="${k}" title="${CREATIVITY_LEVELS[k].desc}" style="padding:4px 10px;border-radius:8px;border:1px solid ${sel ? 'rgba(138,180,248,0.5)' : 'rgba(138,180,248,0.2)'};background:${sel ? 'rgba(138,180,248,0.15)' : 'rgba(138,180,248,0.04)'};color:${sel ? '#8ab4f8' : '#aabbcc'};font-size:13px;font-weight:600;cursor:pointer;">${CREATIVITY_LEVELS[k].label}</button>`;
+          return `<button class="veo-creat-btn${sel ? ' selected' : ''}" data-creat="${k}" title="${CREATIVITY_LEVELS[k].desc}" style="padding:4px 10px;border-radius:8px;border:1px solid ${sel ? 'rgba(138,180,248,0.5)' : 'rgba(138,180,248,0.2)'};background:${sel ? 'rgba(138,180,248,0.15)' : 'rgba(138,180,248,0.04)'};color:${sel ? '#8ab4f8' : '#aabbcc'};font-size:12px;font-weight:600;cursor:pointer;">${CREATIVITY_LEVELS[k].label}</button>`;
         }).join('')}
-        <span class="veo-creat-desc" style="font-size:13px;color:#667788;font-style:italic;">${CREATIVITY_LEVELS[selectedCreativity].desc}</span>
       </div>
-      <textarea class="studio-desc" placeholder="Describe the video scene you want to create..." style="width:100%;box-sizing:border-box;height:48px;background:rgba(255,255,255,0.03);border:1px solid rgba(138,180,248,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;margin-bottom:8px;"></textarea>
+
+      <!-- Prompt -->
+      <textarea class="studio-desc" placeholder="Describe your scene… e.g. 'A golden sunset over a misty mountain forest, cinematic wide shot'" style="width:100%;box-sizing:border-box;height:56px;background:rgba(255,255,255,0.03);border:1px solid rgba(138,180,248,0.15);border-radius:10px;padding:12px 14px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;margin-bottom:10px;"></textarea>
+
       ${hasScreenshots ? `
-      <div style="margin-top:10px;">
+      <!-- Screenshot options -->
+      <div style="margin-bottom:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border:1px solid rgba(138,180,248,0.1);border-radius:10px;">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#aabbcc;">
           <input type="checkbox" class="studio-use-screenshot" style="accent-color:#8ab4f8;" checked>
-          <span>📸 Use loaded screenshot as starting frame</span>
+          <span>📸 Use screenshot as starting frame</span>
         </label>
-        <div class="studio-stylize-wrap" style="margin-top:6px;margin-left:24px;">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#aabbcc;">
+        <div class="studio-stylize-wrap" style="margin-top:8px;margin-left:24px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#8899aa;">
             <input type="checkbox" class="studio-stylize-photo" style="accent-color:#8ab4f8;" checked>
-            <span>✨ Stylize photo first (bypasses safety filters for people)</span>
+            <span>✨ Stylize photo first (helps with safety filters)</span>
           </label>
           <div class="stylize-style-selector" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
-            <button class="stylize-btn selected" data-style="pixar" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.5);background:rgba(138,180,248,0.15);color:#8ab4f8;font-size:13px;font-weight:600;cursor:pointer;">Pixar 3D</button>
-            <button class="stylize-btn" data-style="anime" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:13px;font-weight:600;cursor:pointer;">Anime</button>
-            <button class="stylize-btn" data-style="cartoon" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:13px;font-weight:600;cursor:pointer;">Cartoon</button>
-            <button class="stylize-btn" data-style="watercolor" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:13px;font-weight:600;cursor:pointer;">Watercolor</button>
-            <button class="stylize-btn" data-style="oil" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:13px;font-weight:600;cursor:pointer;">Oil Paint</button>
+            <button class="stylize-btn selected" data-style="pixar" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.5);background:rgba(138,180,248,0.15);color:#8ab4f8;font-size:12px;font-weight:600;cursor:pointer;">Pixar 3D</button>
+            <button class="stylize-btn" data-style="anime" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Anime</button>
+            <button class="stylize-btn" data-style="cartoon" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Cartoon</button>
+            <button class="stylize-btn" data-style="watercolor" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Watercolor</button>
+            <button class="stylize-btn" data-style="oil" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Oil Paint</button>
           </div>
         </div>
       </div>` : ''}
-      <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
-        <span style="font-size:13px;color:#667788;">⏱ ~1-2 min per clip</span>
-        <span style="font-size:13px;color:#667788;">•</span>
-        <span class="studio-dur-label" style="font-size:13px;color:#667788;">8s total</span>
-      </div>
-      <div class="veo-price-card" style="margin-top:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(138,180,248,0.12);border-radius:10px;padding:10px 12px;">
-        <div style="font-size:13px;color:#667788;margin-bottom:6px;">💰 Pay-per-use (billed by Google to your own API key) — current cost per model:</div>
-        <div class="veo-price-rows" style="display:flex;flex-direction:column;gap:3px;font-size:13px;">
-          <span style="color:#667788;">Loading model prices…</span>
+
+      <!-- Cost row (inline, not a big card) -->
+      <div class="veo-price-card" style="margin-bottom:10px;">
+        <div style="font-size:11px;color:#556677;margin-bottom:4px;">💰 Cost for this 8s clip (charged by Google to your key):</div>
+        <div class="veo-price-rows" style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px;">
+          <span style="color:#667788;">Loading…</span>
         </div>
       </div>
-      <button class="studio-create-btn" style="width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#4285F4,#2563c4);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;opacity:0.4;pointer-events:none;">🎬 Generate Video</button>
+
+      <!-- Generate button -->
+      <button class="studio-create-btn" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#4285F4,#2563c4);color:#fff;font-size:13px;font-weight:700;cursor:pointer;opacity:0.4;pointer-events:none;">🎬 Generate 8s Video</button>
     </div>
   `;
 
