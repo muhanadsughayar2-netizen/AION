@@ -422,72 +422,7 @@ async function getInstitutionKeyInfo() {
     return { isInstitution: false };
   }
 }
-// ============ TRIAL ENDED MODAL ============
-function showTrialEndedModal(reason) {
-  const modal = document.getElementById('trialEndedModal');
-  if (!modal) return;
-
-  const messages = {
-    expired: 'Your 30-day trial was amazing — you clearly love Aion! Keep the momentum going with a Pro plan.',
-    subscription_expired: 'Your subscription has lapsed. Renew to keep all your AI superpowers active.'
-  };
-  const emojis = { expired: '🎯', subscription_expired: '⚡' };
-
-  const msgEl = document.getElementById('trialEndedMessage');
-  const emojiEl = document.getElementById('trialEndedEmoji');
-  if (msgEl) msgEl.textContent = messages[reason] || messages.expired;
-  if (emojiEl) {
-    emojiEl.textContent = emojis[reason] || '🎯';
-    // Re-trigger animation
-    emojiEl.style.animation = 'none';
-    emojiEl.offsetHeight;
-    emojiEl.style.animation = '';
-  }
-
-  modal.style.display = 'flex';
-
-  // Wire buttons
-  const monthlyBtn = document.getElementById('trialMonthlyBtn');
-  const yearlyBtn = document.getElementById('trialYearlyBtn');
-  const checkBtn = document.getElementById('trialCheckStatusBtn');
-  const continueBtn = document.getElementById('trialContinueCaptureBtn');
-  const statusMsg = document.getElementById('trialStatusMsg');
-
-  if (monthlyBtn) monthlyBtn.onclick = () => {
-    if (window.SnapToAISubscription) window.SnapToAISubscription.openCheckout('monthly');
-    if (checkBtn) checkBtn.textContent = '⏳ Waiting for payment...';
-  };
-  if (yearlyBtn) yearlyBtn.onclick = () => {
-    if (window.SnapToAISubscription) window.SnapToAISubscription.openCheckout('yearly');
-    if (checkBtn) checkBtn.textContent = '⏳ Waiting for payment...';
-  };
-  if (checkBtn) checkBtn.onclick = async () => {
-    checkBtn.textContent = '⏳ Checking...';
-    if (statusMsg) statusMsg.style.display = 'none';
-    try {
-      if (window.SnapToAISubscription) {
-        const sub = await window.SnapToAISubscription.refresh();
-        if (sub.success && sub.canUseAI) {
-          modal.style.display = 'none';
-          showPromptToast('🎉 Subscription active! AI is ready.', 3000);
-        } else {
-          if (statusMsg) { statusMsg.textContent = 'No active subscription found. Complete payment first.'; statusMsg.style.display = 'block'; }
-          checkBtn.textContent = '🔄 Check subscription status';
-        }
-      }
-    } catch (e) {
-      if (statusMsg) { statusMsg.textContent = 'Could not reach server. Try again.'; statusMsg.style.display = 'block'; }
-      checkBtn.textContent = '🔄 Check subscription status';
-    }
-  };
-  if (continueBtn) continueBtn.onclick = () => { modal.style.display = 'none'; };
-}
-
-window.onSubscriptionActivated = (result) => {
-  const modal = document.getElementById('trialEndedModal');
-  if (modal) modal.style.display = 'none';
-  showPromptToast('🎉 Subscription active! AI is ready.', 3000);
-};
+function showTrialEndedModal() { /* no-op — no subscription */ }
 
 async function showProxyKeyPrompt() {
   // Task #27 — When the institution mandates its own key, BYOK is forbidden.
@@ -6368,17 +6303,6 @@ function removeLoading() {
 async function sendToGemini(prompt, imageDataUrls) {
   const images = Array.isArray(imageDataUrls) ? imageDataUrls : [imageDataUrls];
   
-  if (window.SnapToAISubscription) {
-    const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
-    if (!snaptoai_dev_override) {
-      const sub = await window.SnapToAISubscription.check();
-      if (sub.status === 'trial_expired' || sub.status === 'subscription_expired') {
-        showTrialEndedModal(sub.status);
-        throw new Error('__trial_ended__');
-      }
-    }
-  }
-  
   const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
   const apiKey = keyResult.geminiApiKey;
   
@@ -7615,9 +7539,7 @@ async function handleSend() {
     
   } catch (error) {
     removeLoading();
-    if (error.message === '__trial_ended__') {
-      // Modal already shown — don't add an error bubble
-    } else {
+    {
       const lowerErr = error.message.toLowerCase();
       const isQuotaError = lowerErr.match(/quota|rate|limit|429|exceeded|resource.exhausted/);
       const isBilling = lowerErr.includes('billing') || lowerErr.includes('permission') || lowerErr.includes('not enabled') || lowerErr.includes('paid tier') || lowerErr.includes('precondition');

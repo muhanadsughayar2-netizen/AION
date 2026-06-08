@@ -102,7 +102,6 @@
         </div>
         <div id="accountPopover" class="account-popover" style="display: none;">
           <div class="account-popover-email" id="accountEmail"></div>
-          <a id="manageSubPopoverLink" href="https://whop.com/manage/" target="_blank" class="account-popover-manage" style="display: none;" data-i18n="manageSubscription">Manage Subscription</a>
           <button class="account-popover-tour" id="takeTourBtn">🎯 Take the tour</button>
           <button class="account-popover-signout" id="signOutBtn" data-i18n="signOut">Sign Out</button>
         </div>
@@ -111,7 +110,6 @@
 
     <div class="header-sub">
       <span id="snapCount" style="display:none;">0</span>
-      <button id="upgradeBtn" class="upgrade-btn" style="visibility: hidden;">Pro</button>
     </div>
 
     <div class="hero-panel">
@@ -158,11 +156,6 @@
         </div>
       </div>
       <button class="setup-banner-btn" id="setupBannerBtn">Set up ↗</button>
-    </div>
-
-    <div id="trialCountdownToast" class="trial-countdown-toast" style="display: none;">
-      <span id="trialCountdownText"></span>
-      <button id="trialCountdownDismiss" class="trial-toast-dismiss">&times;</button>
     </div>
 
     <!-- Status Line with Activity Indicator (STICKY) -->
@@ -411,36 +404,6 @@
     </div>
   </div>
 
-  <!-- Subscription Expired Modal -->
-  <div id="subscriptionModal" class="subscription-modal" style="display: none;">
-    <div class="subscription-modal-content">
-      <div class="subscription-modal-header">
-        <span class="subscription-icon">👑</span>
-        <span class="subscription-title" data-i18n="goProForAi">Go Pro for AI Analysis</span>
-      </div>
-      <div class="subscription-message">
-        <p id="subscriptionMessage" data-i18n="trialEndedMessage">Your trial has ended. Subscribe to keep using AI analysis features.</p>
-      </div>
-      <div class="subscription-pitch">🚀 <span data-i18n="lessThanCoffee">Less than a coffee per month for professional AI tools</span></div>
-      <div class="subscription-pricing">
-        <button id="subMonthlyBtn" class="subscription-btn monthly">
-          <span class="plan-name" data-i18n="monthly">Monthly</span>
-          <span class="plan-price">$4.99/month</span>
-        </button>
-        <button id="subYearlyBtn" class="subscription-btn yearly">
-          <span class="plan-name" data-i18n="yearly">Yearly</span>
-          <span class="plan-price">$39/year</span>
-          <span class="plan-save">~$3.25/mo</span>
-        </button>
-      </div>
-      <div class="subscription-divider">
-        <span data-i18n="subscriptionActivatesAuto">Subscription activates automatically</span>
-      </div>
-      <button id="refreshSubscriptionBtn" class="refresh-subscription-btn">🔄 <span data-i18n="checkSubscriptionStatus">Check subscription status</span></button>
-      <p id="subscriptionError" class="license-error" style="display: none;"></p>
-      <button id="subscriptionCloseBtn" class="subscription-close-btn" data-i18n="continueWithCaptureOnly">Continue with Capture Only</button>
-    </div>
-  </div>
 
   <div id="reviewModal" class="review-modal" style="display: none;">
     <div class="review-modal-content">

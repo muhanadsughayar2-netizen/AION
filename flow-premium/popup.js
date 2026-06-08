@@ -4073,29 +4073,9 @@ if (modeSelect && modeDesc) {
   }
 })();
 
-// ===== SUBSCRIPTION MANAGEMENT =====
-const subscriptionModal = document.getElementById('subscriptionModal');
-const subMonthlyBtn = document.getElementById('subMonthlyBtn');
-const subYearlyBtn = document.getElementById('subYearlyBtn');
-const refreshSubscriptionBtn = document.getElementById('refreshSubscriptionBtn');
-const subscriptionError = document.getElementById('subscriptionError');
-const subscriptionCloseBtn = document.getElementById('subscriptionCloseBtn');
-const subscriptionMessage = document.getElementById('subscriptionMessage');
 
-function showSubscriptionModal(message) {
-  if (!subscriptionModal) return;
-  if (message && subscriptionMessage) {
-    subscriptionMessage.textContent = message;
-  }
-  if (subscriptionError) subscriptionError.style.display = 'none';
-  subscriptionModal.style.display = 'flex';
-}
-
-function hideSubscriptionModal() {
-  if (!subscriptionModal) return;
-  subscriptionModal.style.display = 'none';
-  if (subscriptionError) subscriptionError.style.display = 'none';
-}
+function showSubscriptionModal(message) { /* no-op — no subscription required */ }
+function hideSubscriptionModal() { /* no-op */ }
 
 let pendingAfterSignIn = null;
 
@@ -4114,80 +4094,10 @@ async function handleAIButtonClick() {
       return;
     }
   } catch (e) {}
-  if (window.SnapToAISubscription) {
-    const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
-    const status = await window.SnapToAISubscription.check();
-    console.log('[SnapToAI] AI button clicked, status:', status, 'override:', !!snaptoai_dev_override);
-    
-    if (status.needsSignIn) {
-      pendingAfterSignIn = 'geminiModal';
-      const authOverlay = document.getElementById('authOverlay');
-      if (authOverlay) authOverlay.style.display = 'flex';
-      return;
-    }
-    
-    if (status.needsApiKey || status.status === 'no_api_key') {
-      showGeminiModal();
-      return;
-    }
-    
-    if (!status.canUseAI && !snaptoai_dev_override) {
-      const message = status.status === 'subscription_expired'
-        ? 'Your subscription has expired. Renew to keep using AI tools.'
-        : 'Your trial has ended. Subscribe to keep using AI analysis features.';
-      showSubscriptionModal(message);
-      return;
-    }
-  }
   showGeminiModal();
 }
 
-async function handleRefreshSubscription() {
-  if (!window.SnapToAISubscription) return;
-  if (refreshSubscriptionBtn) refreshSubscriptionBtn.textContent = '⏳ Checking...';
-  if (subscriptionError) subscriptionError.style.display = 'none';
-
-  const result = await window.SnapToAISubscription.refresh();
-
-  if (result.success && result.status === 'subscribed') {
-    hideSubscriptionModal();
-    showGeminiModal();
-  } else {
-    if (subscriptionError) {
-      subscriptionError.textContent = result.error || 'No active subscription found.';
-      subscriptionError.style.display = 'block';
-    }
-  }
-
-  if (refreshSubscriptionBtn) refreshSubscriptionBtn.textContent = '🔄 Check subscription status';
-}
-
-if (subMonthlyBtn) subMonthlyBtn.addEventListener('click', () => {
-  if (window.SnapToAISubscription) {
-    window.SnapToAISubscription.openCheckout('monthly');
-    if (refreshSubscriptionBtn) refreshSubscriptionBtn.textContent = '⏳ Waiting for payment...';
-  }
-});
-
-if (subYearlyBtn) subYearlyBtn.addEventListener('click', () => {
-  if (window.SnapToAISubscription) {
-    window.SnapToAISubscription.openCheckout('yearly');
-    if (refreshSubscriptionBtn) refreshSubscriptionBtn.textContent = '⏳ Waiting for payment...';
-  }
-});
-
-window.onSubscriptionActivated = (result) => {
-  hideSubscriptionModal();
-  refreshSubscriptionUI();
-  showGeminiModal();
-};
-
-if (refreshSubscriptionBtn) refreshSubscriptionBtn.addEventListener('click', handleRefreshSubscription);
-if (subscriptionCloseBtn) subscriptionCloseBtn.addEventListener('click', hideSubscriptionModal);
-
-if (subscriptionModal) subscriptionModal.addEventListener('click', (e) => {
-  if (e.target === subscriptionModal) hideSubscriptionModal();
-});
+window.onSubscriptionActivated = () => { showGeminiModal(); };
 
 // Event listeners
 if (aiButton) aiButton.addEventListener('click', handleAIButtonClick);
@@ -4209,23 +4119,6 @@ const directAiButton = document.getElementById('directAiButton');
 if (directAiButton) {
   directAiButton.addEventListener('click', async () => {
     console.log('[SnapToAI] Opening AI Chat');
-    
-    if (window.SnapToAISubscription) {
-      const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
-      const status = await window.SnapToAISubscription.check();
-      if (status.needsSignIn) {
-        const authOverlay = document.getElementById('authOverlay');
-        if (authOverlay) authOverlay.style.display = 'flex';
-        return;
-      }
-      if (!status.canUseAI && !snaptoai_dev_override) {
-        const message = status.status === 'subscription_expired'
-          ? 'Your subscription has expired. Renew to keep using AI tools.'
-          : 'Your trial has ended. Subscribe to keep using AI analysis features.';
-        showSubscriptionModal(message);
-        return;
-      }
-    }
     
     const selectedImages = Array.from(selectedSnapIds)
       .sort((a, b) => a - b)
@@ -4249,88 +4142,11 @@ if (geminiModal) geminiModal.addEventListener('click', (e) => {
   if (e.target === geminiModal) hideGeminiModal();
 });
 
-function applySubscriptionBadge(upgradeBtn, status, snaptoai_dev_override) {
-  if (!upgradeBtn) return;
-  const manageLink = document.getElementById('manageSubPopoverLink');
-  if (snaptoai_dev_override) {
-    upgradeBtn.style.visibility = 'visible';
-    upgradeBtn.textContent = '🔑 DEV';
-    upgradeBtn.classList.add('subscribed');
-    upgradeBtn.style.background = 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)';
-    if (manageLink) manageLink.style.display = 'none';
-  } else if (status.status === 'no_api_key' || status.status === 'no_sign_in') {
-    upgradeBtn.style.visibility = 'hidden';
-    if (manageLink) manageLink.style.display = 'none';
-  } else if (status.status === 'subscribed') {
-    upgradeBtn.style.visibility = 'visible';
-    upgradeBtn.textContent = '✓ Pro Active';
-    upgradeBtn.className = 'upgrade-btn upgrade-btn-pro';
-    if (manageLink) manageLink.style.display = 'block';
-  } else if (status.status === 'trial' && status.daysRemaining > 0) {
-    upgradeBtn.style.visibility = 'visible';
-    if (status.daysRemaining <= 7) {
-      upgradeBtn.textContent = `Trial ending in ${status.daysRemaining} day${status.daysRemaining === 1 ? '' : 's'}`;
-      upgradeBtn.className = 'upgrade-btn upgrade-btn-urgent';
-    } else {
-      upgradeBtn.textContent = `Trial · ${status.daysRemaining} days left`;
-      upgradeBtn.className = 'upgrade-btn upgrade-btn-trial';
-    }
-    if (manageLink) manageLink.style.display = 'none';
-  } else if (status.status === 'institution_expired') {
-    upgradeBtn.style.visibility = 'visible';
-    const instName = status.institutionName ? status.institutionName : 'Institution';
-    upgradeBtn.textContent = `${instName} license ended`;
-    upgradeBtn.className = 'upgrade-btn upgrade-btn-expired';
-    upgradeBtn.title = 'Your institution license has ended. Contact your admin to restore access, or upgrade to a personal plan.';
-    if (manageLink) manageLink.style.display = 'none';
-  } else if (status.status === 'trial_expired' || status.status === 'subscription_expired' || status.status === 'expired' || (status.status === 'trial' && status.daysRemaining <= 0)) {
-    upgradeBtn.style.visibility = 'visible';
-    upgradeBtn.textContent = 'Trial ended · Upgrade for AI';
-    upgradeBtn.className = 'upgrade-btn upgrade-btn-expired';
-    if (manageLink) manageLink.style.display = status.status === 'subscription_expired' ? 'block' : 'none';
-  } else {
-    upgradeBtn.style.visibility = 'hidden';
-    if (manageLink) manageLink.style.display = 'none';
-  }
-}
+function applySubscriptionBadge() { /* no-op — no subscription */ }
 
 async function refreshSubscriptionUI() {
-  const upgradeBtn = document.getElementById('upgradeBtn');
-  if (!window.SnapToAISubscription) {
-    if (upgradeBtn) upgradeBtn.style.visibility = 'hidden';
-    return;
-  }
-  try {
-    const { snaptoai_dev_override, cachedSubStatus, snaptoai_user, lastVerified } = await chrome.storage.local.get(['snaptoai_dev_override', 'cachedSubStatus', 'snaptoai_user', 'lastVerified']);
-
-    if (cachedSubStatus && upgradeBtn) {
-      applySubscriptionBadge(upgradeBtn, cachedSubStatus, snaptoai_dev_override);
-    }
-
-    // Auto-refresh on popup open: if the user is signed in and our cached
-    // entitlement is older than 5 minutes (or we have no branding yet for an
-    // account that might be an institution member), force a fresh server
-    // check so admin-side changes (added member, key policy switch, branding
-    // update) take effect within seconds instead of waiting up to an hour.
-    if (snaptoai_user && snaptoai_user.email && window.SnapToAISubscription.refresh) {
-      const ageMs = Date.now() - (lastVerified || 0);
-      const stale = !lastVerified || ageMs > 5 * 60 * 1000;
-      if (stale) {
-        try { await window.SnapToAISubscription.refresh(); } catch (_) {}
-      }
-    }
-
-    const status = await window.SnapToAISubscription.check();
-    console.log('[SnapToAI] Subscription status:', status.status, status.canUseAI ? '(active)' : '(blocked)', 'override:', !!snaptoai_dev_override);
-
-    await chrome.storage.local.set({ cachedSubStatus: { status: status.status, daysRemaining: status.daysRemaining, canUseAI: status.canUseAI, planType: status.planType || null } });
-
-    applySubscriptionBadge(upgradeBtn, status, snaptoai_dev_override);
-    applyInstitutionBranding();
-  } catch (e) {
-    console.log('[SnapToAI] Subscription UI refresh error:', e);
-    if (upgradeBtn) upgradeBtn.style.visibility = 'hidden';
-  }
+  // No subscription — just apply institution branding if applicable
+  try { applyInstitutionBranding(); } catch (e) {}
 }
 
 // ============== INSTITUTION WHITE-LABEL BRANDING (v2.7.0) ==============
@@ -4455,56 +4271,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   await checkAuthState();
   setupAuthListeners();
 
-  const upgradeBtn = document.getElementById('upgradeBtn');
-  
-  if (upgradeBtn) {
-    upgradeBtn.addEventListener('click', () => {
-      showSubscriptionModal('We provide the interface; you provide your Google API key.');
-    });
-  }
-  
   refreshSubscriptionUI();
   
   loadGeminiKey();
   updateAiButtonState();
-  showTrialCountdownToast();
 });
 
-async function showTrialCountdownToast() {
-  const toast = document.getElementById('trialCountdownToast');
-  const toastText = document.getElementById('trialCountdownText');
-  const dismissBtn = document.getElementById('trialCountdownDismiss');
-  if (!toast || !toastText || !window.SnapToAISubscription) return;
-  
-  try {
-    const status = await window.SnapToAISubscription.check();
-    if (status.status !== 'trial' || !status.daysRemaining) return;
-    
-    const days = status.daysRemaining;
-    if (days !== 7 && days !== 3) return;
-    
-    const { trialToastDismissed } = await chrome.storage.local.get('trialToastDismissed');
-    const dismissedDay = trialToastDismissed || 0;
-    if (dismissedDay === days) return;
-    
-    if (days === 3) {
-      toastText.textContent = `⚠️ Trial ends in 3 days — upgrade to keep AI access`;
-      toast.classList.add('urgent');
-    } else {
-      toastText.textContent = `Trial: 7 days left — upgrade anytime for uninterrupted AI`;
-    }
-    toast.style.display = 'flex';
-    
-    if (dismissBtn) {
-      dismissBtn.addEventListener('click', async () => {
-        toast.style.display = 'none';
-        await chrome.storage.local.set({ trialToastDismissed: days });
-      });
-    }
-  } catch (e) {
-    console.log('[SnapToAI] Trial toast error:', e);
-  }
-}
+function showTrialCountdownToast() { /* no-op — no trial */ }
 
 async function updateAiButtonState() {
   // Task #27 — institution-only members can never set their own key, so the
