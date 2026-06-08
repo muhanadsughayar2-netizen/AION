@@ -1,0 +1,129 @@
+Store listing
+Current editing language
+Language
+English – en (default)
+Product details
+English – en
+
+Title from package
+
+Snap To AI: Google Gemini AI Video, Music & Image Generator
+
+Summary from package
+
+Turn any screen capture into 4K videos, studio music & photoreal art. The full Google AI Studio—powered by Gemini 3—in your browser.
+
+Description
+🎬 VEO 3.1 PRODUCTION (AI Video) 🎵 LYRIA 3 AUDIO (AI Music) 👁️ GEMINI 3 VISION (AI Intelligence) 🍌 NANO BANANA (AI Image)
+
+$300  Google Credit: Get started immediately with a massive head-start in the Google AI ecosystem.
+
+🎬 VEO 3.1 PRODUCTION (AI Video): Turn simple screen snaps into 64-second cinematic narratives. Our 8x stitching engine creates high-fidelity 4K video with editable per-clip prompts. Go from a static screenshot to a moving masterpiece in seconds.
+🎵 LYRIA 3 AUDIO (AI Music): Generate original, studio-grade music and soundscapes tied perfectly to your visual context. Use the Guided Song Studio to score your videos with professional-quality audio.
+👁️ GEMINI 3 VISION (AI Intelligence): Experience pro-grade multi-source reasoning. Analyze up to 10 captures simultaneously with a code-aware context engine that understands everything from UI design to complex programming blocks.
+🍌 NANO BANANA (AI Image): Next-gen photoreal image generation. Transform your daily screen captures into infinite creative variations with industry-leading lighting and texture accuracy.
+
+Privacy First, Always: Your data is yours. SnapToAI is built with a "Privacy-First" architecture to ensure your captures remain secure.
+
+1,233/16,0001233 of 16000 characters entered
+Focus on explaining what the item does and why users should install it
+Category
+Developer Tools
+For all languages
+Graphic assets
+Store icon
+
+128x128 pixels
+
+Please ensure icon follows image guidelines
+
+Store icon
+Localized assets
+Localized promo video
+https://www.youtube.com/watch?v=96Ikx-v6uzM
+Enter a YouTube video URL. Example: https://www.youtube.com/watch?v=1234567890A
+
+Localized screenshots
+
+Up to a maximum of 5
+
+1280x800 or 640x400
+
+JPEG or 24-bit PNG (no alpha)
+
+At least one is required 
+
+Screenshot 2
+Screenshot 3
+Screenshot 4
+Screenshot 5
+Screenshot 6
+Drop image here
+
+Global assets
+Global promo video
+https://www.youtube.com/watch?v=u3Jk31rTYAk
+Enter a YouTube video URL. Example: https://www.youtube.com/watch?v=1234567890A
+
+Global screenshots
+
+Up to a maximum of 5
+
+1280x800 or 640x400
+
+JPEG or 24-bit PNG (no alpha)
+
+At least one is required 
+
+Screenshot 2
+Screenshot 3
+Screenshot 4
+Screenshot 5
+Screenshot 6
+Drop image here
+
+Small promo tile
+
+440x280 Canvas
+
+JPEG or 24-bit PNG (no alpha)
+
+Small promo tile
+Marquee promo tile
+
+1400x560 Canvas
+
+JPEG or 24-bit PNG (no alpha)
+
+Marquee promo tile
+Additional fields
+Official URL
+None
+Or Add a new site
+If your item is associated with a website that you own, select that website from the list. You can register as the owner for a site using Google Search Console.
+Homepage URL
+Homepage URL
+Link to website for your item
+
+0/2,0480 of 2048 characters entered
+Support URL
+Support URL
+0/2,0480 of 2048 characters entered
+Providing the URLs for description and support pages can improve your users’ experience and help make this item’s ratings and comments more meaningful.
+Mature content
+
+Examples of mature content include sexual and suggestive content, strong language, violence, or a focus on the consumption or sale of alcohol, tobacco, or drugs. Learn more
+Additional metrics
+Google Analytics 4 (GA4)
+Once opted in, all developers who have access to this item will be able to view additional metrics in Google Analytics. Learn more
+Item support
+Visibility. 
+Change visibility here
+Turn your item support on or off on your store listing. Learn more
+Useful Resources
+Developer Guide
+Useful Tools
+Google Analytics
+Need Help?
+Contact Us
+Give Feedback
