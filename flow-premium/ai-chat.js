@@ -1308,7 +1308,7 @@ const LYRIA_MODELS_DISPLAY = [
 
 let selectedVeoModel = MODELS.veoLite;
 let selectedVideoDuration = 8;
-let selectedClipCount = 1;
+let selectedClipCount = 1; // locked — single 8s clip only, no stitching
 let userAvailableVeoModels = [];
 let selectedMusicModel = MODELS.musicDefault;
 
@@ -1361,14 +1361,8 @@ function showVideoStudio(thread) {
       </div>
       <div class="veo-duration-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center;">
         <span style="font-size:13px;color:#667788;width:100%;margin-bottom:2px;">Length:</span>
-        <button class="veo-dur-btn selected" data-dur="8" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(138,180,248,0.5);background:rgba(138,180,248,0.15);color:#8ab4f8;font-size:13px;font-weight:600;cursor:default;">8s per clip</button>
-        <span style="font-size:13px;color:#667788;font-style:italic;">Veo's native length — best quality &amp; fewest visual cuts.</span>
-      </div>
-      <div class="veo-clips-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
-        <span style="font-size:13px;color:#667788;width:100%;margin-bottom:2px;">Clips (auto-stitched):</span>
-        <button class="veo-clip-btn selected" data-clips="1" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(138,180,248,0.5);background:rgba(138,180,248,0.15);color:#8ab4f8;font-size:13px;font-weight:600;cursor:pointer;">1x · 8s</button>
-        <button class="veo-clip-btn" data-clips="2" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:13px;font-weight:600;cursor:pointer;">2x · 16s</button>
-        <button class="veo-clip-btn" data-clips="3" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:13px;font-weight:600;cursor:pointer;">3x · 24s</button>
+        <button class="veo-dur-btn selected" data-dur="8" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(138,180,248,0.5);background:rgba(138,180,248,0.15);color:#8ab4f8;font-size:13px;font-weight:600;cursor:default;">8 seconds</button>
+        <span style="font-size:13px;color:#667788;font-style:italic;">Veo's native length — best quality.</span>
       </div>
       <div class="veo-creativity-selector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center;" title="Controls how much creative license the AI director takes when planning your storyboard.">
         <span style="font-size:13px;color:#667788;width:100%;margin-bottom:2px;">Creativity:</span>
@@ -1453,22 +1447,6 @@ function showVideoStudio(thread) {
     });
   });
 
-  studio.querySelectorAll('.veo-clip-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      studio.querySelectorAll('.veo-clip-btn').forEach(b => {
-        b.style.border = '1px solid rgba(138,180,248,0.2)';
-        b.style.background = 'rgba(138,180,248,0.04)';
-        b.style.color = '#aabbcc';
-        b.classList.remove('selected');
-      });
-      btn.style.border = '1px solid rgba(138,180,248,0.5)';
-      btn.style.background = 'rgba(138,180,248,0.15)';
-      btn.style.color = '#8ab4f8';
-      btn.classList.add('selected');
-      selectedClipCount = parseInt(btn.dataset.clips);
-      updateDurLabel();
-    });
-  });
 
   // Task #32: Creativity selector — persists to chrome.storage.local so the
   // user's preferred director temperature carries across sessions.
@@ -1813,12 +1791,11 @@ async function startVideoGeneration(prompt, thread) {
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="font-size:18px;">🎬</span>
-          <span style="font-size:13px;font-weight:600;color:#ffa500;">Rendering ${clipCount} clips → ${totalDur}s video</span>
+          <span style="font-size:13px;font-weight:600;color:#ffa500;">Generating 8s video…</span>
         </div>
         <button class="veo-stop-btn" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(255,107,107,0.5);background:rgba(255,107,107,0.1);color:#ff6b6b;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">⏹ Stop &amp; keep what I have</button>
       </div>
-      <div style="font-size:12px;color:#8899aa;margin-bottom:6px;">Using ${modelName.replace(/-generate.*/, '')}</div>
-      <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">Generating ${clipCount} x ${selectedVideoDuration}s clips, then auto-stitching. This may take a few minutes.</div>
+      <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">Using ${modelName.replace(/-generate.*/, '')} · this takes 1-2 minutes.</div>
       ${clipsHtml}
       <div class="video-progress-bar" style="width:100%;height:4px;background:rgba(255,165,0,0.1);border-radius:2px;overflow:hidden;margin-top:8px;">
         <div class="video-progress-fill" style="width:2%;height:100%;background:linear-gradient(90deg,#ffa500,#ffcc00);border-radius:2px;transition:width 0.5s ease;"></div>
@@ -3373,24 +3350,11 @@ async function renderVeoBatchOutcome(ctx) {
     return;
   }
 
-  // --- Case B: at least 1 successful clip → render video, append retry panel ---
+  // --- Case B: at least 1 successful clip → show it directly, no stitching ---
   try {
-    if (successUrls.length === 1) {
-      showVideoResult(progressBubble, successUrls[0], thread);
-    } else {
-      const fill = progressBubble.querySelector('.video-progress-fill');
-      const text = progressBubble.querySelector('.video-progress-text');
-      if (fill) fill.style.width = '85%';
-      const _approxSecs = Math.round(successUrls.length * (typeof selectedVideoDuration === 'number' ? selectedVideoDuration : 8));
-      if (text) text.textContent = `Combining ${successUrls.length} clips... (~${_approxSecs}s)`;
-      const stitchedUrl = await stitchVideos(successUrls, ctx);
-      ctx.lastStitchedUrl = stitchedUrl;
-      if (fill) fill.style.width = '100%';
-      showStitchedVideoResult(progressBubble, stitchedUrl, successUrls, thread);
-    }
+    showVideoResult(progressBubble, successUrls[0], thread);
   } catch (err) {
-    console.log('[SnapToAI Video] Stitch error:', err.message);
-    showMultiClipFallback(progressBubble, successUrls, thread);
+    console.log('[Aion Video] Result error:', err.message);
   }
 
   // Always append the retry/re-render panel so users can fix bad clips
