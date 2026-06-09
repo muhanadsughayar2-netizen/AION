@@ -1655,8 +1655,68 @@ function renderVeoPriceTable(studio) {
 }
 
 // ============================================================
-// PODCAST STUDIO
+// PODCAST STUDIO — AION RADIO
 // ============================================================
+
+function audioBufferToWavBlob(buffer) {
+  const numCh = buffer.numberOfChannels;
+  const sr = buffer.sampleRate;
+  const len = buffer.length * numCh * 2;
+  const ab = new ArrayBuffer(44 + len);
+  const v = new DataView(ab);
+  const ws = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  ws(0,'RIFF'); v.setUint32(4,36+len,true); ws(8,'WAVE'); ws(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,numCh,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*numCh*2,true);
+  v.setUint16(32,numCh*2,true); v.setUint16(34,16,true); ws(36,'data'); v.setUint32(40,len,true);
+  let off = 44;
+  for (let i = 0; i < buffer.length; i++) {
+    for (let c = 0; c < numCh; c++) {
+      const s = Math.max(-1, Math.min(1, buffer.getChannelData(c)[i]));
+      v.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true); off += 2;
+    }
+  }
+  return new Blob([ab], { type: 'audio/wav' });
+}
+
+async function mixRadioAudio(voiceData, musicData) {
+  try {
+    const tmpCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const toBytes = b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer;
+    const [voiceBuf, musicBuf] = await Promise.all([
+      tmpCtx.decodeAudioData(toBytes(voiceData.data)),
+      tmpCtx.decodeAudioData(toBytes(musicData.data))
+    ]);
+    await tmpCtx.close().catch(() => {});
+    const SR = 44100, CH = Math.min(voiceBuf.numberOfChannels, 2);
+    const totalDur = voiceBuf.duration + 2.5;
+    const offCtx = new OfflineAudioContext(CH, Math.ceil(totalDur * SR), SR);
+    const voiceSrc = offCtx.createBufferSource();
+    voiceSrc.buffer = voiceBuf;
+    const voiceGain = offCtx.createGain();
+    voiceGain.gain.setValueAtTime(0, 0);
+    voiceGain.gain.linearRampToValueAtTime(1, 0.5);
+    voiceGain.gain.setValueAtTime(1, voiceBuf.duration - 0.3);
+    voiceGain.gain.linearRampToValueAtTime(0, voiceBuf.duration + 0.3);
+    voiceSrc.connect(voiceGain); voiceGain.connect(offCtx.destination); voiceSrc.start(0);
+    const musicSrc = offCtx.createBufferSource();
+    musicSrc.buffer = musicBuf; musicSrc.loop = true;
+    const musicGain = offCtx.createGain();
+    musicGain.gain.setValueAtTime(0, 0);
+    musicGain.gain.linearRampToValueAtTime(0.22, 1.5);
+    musicGain.gain.linearRampToValueAtTime(0.09, 3.5);
+    musicGain.gain.setValueAtTime(0.09, voiceBuf.duration - 1.2);
+    musicGain.gain.linearRampToValueAtTime(0.22, voiceBuf.duration + 0.5);
+    musicGain.gain.linearRampToValueAtTime(0, totalDur);
+    musicSrc.connect(musicGain); musicGain.connect(offCtx.destination); musicSrc.start(0);
+    const rendered = await offCtx.startRendering();
+    return audioBufferToWavBlob(rendered);
+  } catch (e) {
+    console.warn('[Podcast] mixing failed, returning voice-only', e);
+    return null;
+  }
+}
+
 function showPodcastStudio(thread) {
   const existing = thread.querySelector('.podcast-studio');
   if (existing) existing.remove();
@@ -1668,61 +1728,91 @@ function showPodcastStudio(thread) {
   const hasScreenshots = typeof currentImages !== 'undefined' && currentImages.length > 0;
 
   studio.innerHTML = `
-    <div style="background:linear-gradient(135deg,rgba(251,146,60,0.06),rgba(234,88,12,0.02));border:1px solid rgba(251,146,60,0.18);border-radius:14px;padding:16px;">
+    <div style="background:linear-gradient(145deg,rgba(20,12,5,0.95),rgba(30,15,5,0.9));border:1px solid rgba(251,146,60,0.25);border-radius:16px;overflow:hidden;">
 
-      <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <!-- Station Header -->
+      <div style="background:linear-gradient(90deg,rgba(234,88,12,0.18),rgba(251,146,60,0.08));border-bottom:1px solid rgba(251,146,60,0.15);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:22px;line-height:1;">📻</span>
+          <div>
+            <div style="font-size:15px;font-weight:800;color:#fb923c;letter-spacing:1px;">AION RADIO</div>
+            <div style="font-size:10px;color:#667788;letter-spacing:0.5px;">AI TALK SHOW STUDIO</div>
+          </div>
+        </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:20px;">🎙️</span>
-          <span style="font-size:14px;font-weight:700;color:#e8eef4;">Podcast Studio</span>
-        </div>
-        <button class="podcast-surprise-btn" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(251,146,60,0.25);background:rgba(251,146,60,0.06);color:#fb923c;font-size:12px;font-weight:600;cursor:pointer;">🎲 Surprise Me</button>
-      </div>
-
-      <!-- Explainer -->
-      <div style="background:rgba(251,146,60,0.06);border:1px solid rgba(251,146,60,0.15);border-radius:10px;padding:10px 12px;margin-bottom:12px;">
-        <div style="font-size:12px;color:#fb923c;font-weight:700;letter-spacing:0.5px;margin-bottom:5px;">WHAT THIS DOES</div>
-        <div style="font-size:12px;color:#aabbcc;line-height:1.6;">
-          Type any topic and Aion AI writes a 2-host podcast script, then reads it aloud.
-          ${hasScreenshots ? 'Your screenshot will be used as the source material.' : 'Load a screenshot to use it as the topic source.'}<br>
-          <span style="color:#667788;">Hosts: <b style="color:#fb923c;">Alex</b> (curious) & <b style="color:#fb923c;">Maya</b> (expert) · powered by Gemini</span>
+          <span style="display:flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.25);font-size:11px;font-weight:700;color:#ff6060;letter-spacing:0.5px;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#ff4040;box-shadow:0 0 6px #ff4040;animation:onair-pulse 1.2s ease-in-out infinite;display:inline-block;"></span>
+            ON AIR
+          </span>
+          <button class="podcast-surprise-btn" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(251,146,60,0.25);background:rgba(251,146,60,0.06);color:#fb923c;font-size:11px;font-weight:600;cursor:pointer;">🎲 Random</button>
         </div>
       </div>
 
-      <!-- Topic input -->
-      <div style="font-size:12px;color:#667788;margin-bottom:4px;">Topic or question:</div>
-      <textarea class="podcast-topic" placeholder="e.g. How does the internet actually work? · Why is the sky blue? · What is machine learning?" style="width:100%;box-sizing:border-box;height:56px;background:rgba(255,255,255,0.03);border:1px solid rgba(251,146,60,0.15);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;margin-bottom:10px;"></textarea>
+      <div style="padding:14px 16px;">
 
-      ${hasScreenshots ? `
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#aabbcc;margin-bottom:10px;">
-        <input type="checkbox" class="podcast-use-screenshot" style="accent-color:#fb923c;" checked>
-        <span>📸 Use loaded screenshot as the topic source</span>
-      </label>` : ''}
+        <!-- Topic -->
+        <div style="font-size:11px;color:#556677;font-weight:600;letter-spacing:0.5px;margin-bottom:5px;">TODAY'S TOPIC</div>
+        <textarea class="podcast-topic" placeholder="e.g. Why is the sky blue? · How does AI think? · The psychology of habits · Climate change solutions…" style="width:100%;box-sizing:border-box;height:52px;background:rgba(255,255,255,0.03);border:1px solid rgba(251,146,60,0.15);border-radius:10px;padding:9px 12px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;margin-bottom:10px;"></textarea>
 
-      <!-- Length selector -->
-      <div style="font-size:12px;color:#667788;margin-bottom:6px;">Length:</div>
-      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
-        <button class="podcast-len-btn" data-len="short"  data-words="300"  data-tokens="500"  data-label="~1 min"  style="padding:5px 14px;border-radius:8px;border:1px solid rgba(251,146,60,0.2);background:rgba(251,146,60,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Short  <span style="opacity:0.6;font-size:11px;">~1 min</span></button>
-        <button class="podcast-len-btn selected" data-len="medium" data-words="650"  data-tokens="1100" data-label="~3 min"  style="padding:5px 14px;border-radius:8px;border:1px solid rgba(251,146,60,0.5);background:rgba(251,146,60,0.15);color:#fb923c;font-size:12px;font-weight:600;cursor:pointer;">Medium <span style="opacity:0.8;font-size:11px;">~3 min</span></button>
-        <button class="podcast-len-btn" data-len="long"   data-words="1300" data-tokens="2200" data-label="~5 min"  style="padding:5px 14px;border-radius:8px;border:1px solid rgba(251,146,60,0.2);background:rgba(251,146,60,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Long   <span style="opacity:0.6;font-size:11px;">~5 min</span></button>
-        <button class="podcast-len-btn" data-len="deep"   data-words="2200" data-tokens="3800" data-label="~10 min" style="padding:5px 14px;border-radius:8px;border:1px solid rgba(251,146,60,0.2);background:rgba(251,146,60,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Deep   <span style="opacity:0.6;font-size:11px;">~10 min</span></button>
+        ${hasScreenshots ? `
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#aabbcc;margin-bottom:10px;">
+          <input type="checkbox" class="podcast-use-screenshot" style="accent-color:#fb923c;" checked>
+          <span>📸 Use loaded screenshot as topic source</span>
+        </label>` : ''}
+
+        <!-- Format -->
+        <div style="font-size:11px;color:#556677;font-weight:600;letter-spacing:0.5px;margin-bottom:6px;">SHOW FORMAT</div>
+        <div style="display:flex;gap:6px;margin-bottom:12px;">
+          <button class="podcast-fmt-btn selected" data-fmt="talkshow" style="flex:1;padding:8px 10px;border-radius:10px;border:1px solid rgba(251,146,60,0.5);background:rgba(251,146,60,0.12);color:#fb923c;font-size:12px;font-weight:700;cursor:pointer;text-align:center;">
+            📞 Talk Show<br><span style="font-size:10px;font-weight:400;opacity:0.8;">Host · Expert · Callers</span>
+          </button>
+          <button class="podcast-fmt-btn" data-fmt="deepdive" style="flex:1;padding:8px 10px;border-radius:10px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:12px;font-weight:700;cursor:pointer;text-align:center;">
+            🎧 Deep Dive<br><span style="font-size:10px;font-weight:400;opacity:0.8;">2 Hosts Only</span>
+          </button>
+        </div>
+
+        <!-- Music style -->
+        <div style="font-size:11px;color:#556677;font-weight:600;letter-spacing:0.5px;margin-bottom:6px;">BACKGROUND MUSIC</div>
+        <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="podcast-music-btn selected" data-music="ambient" data-prompt="smooth calm ambient radio background music, gentle, unobtrusive, perfect for a talk show, no vocals" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.45);background:rgba(251,146,60,0.12);color:#fb923c;font-size:11px;font-weight:600;cursor:pointer;">🌊 Ambient</button>
+          <button class="podcast-music-btn" data-music="jazz" data-prompt="smooth jazz background music, gentle upbeat, late night radio show, soft piano and bass, no vocals" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🎷 Jazz</button>
+          <button class="podcast-music-btn" data-music="lofi" data-prompt="lo-fi hip hop beats, warm and relaxed, radio show background, subtle vinyl texture, no vocals" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">📻 Lo-fi</button>
+          <button class="podcast-music-btn" data-music="electronic" data-prompt="modern electronic ambient, subtle pulsing beats, futuristic radio feel, no vocals" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">⚡ Electronic</button>
+          <button class="podcast-music-btn" data-music="none" data-prompt="" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🔇 No Music</button>
+        </div>
+
+        <!-- Length -->
+        <div style="font-size:11px;color:#556677;font-weight:600;letter-spacing:0.5px;margin-bottom:6px;">LENGTH</div>
+        <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="podcast-len-btn" data-len="short"  data-words="300"  data-tokens="500"  data-label="~1 min"  style="padding:5px 12px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">Short <span style="opacity:0.6;">~1 min</span></button>
+          <button class="podcast-len-btn selected" data-len="medium" data-words="650"  data-tokens="1100" data-label="~3 min"  style="padding:5px 12px;border-radius:8px;border:1px solid rgba(251,146,60,0.5);background:rgba(251,146,60,0.12);color:#fb923c;font-size:11px;font-weight:600;cursor:pointer;">Medium <span style="opacity:0.8;">~3 min</span></button>
+          <button class="podcast-len-btn" data-len="long"   data-words="1300" data-tokens="2200" data-label="~5 min"  style="padding:5px 12px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">Long <span style="opacity:0.6;">~5 min</span></button>
+          <button class="podcast-len-btn" data-len="deep"   data-words="2200" data-tokens="3800" data-label="~10 min" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">Deep <span style="opacity:0.6;">~10 min</span></button>
+        </div>
+
+        <!-- Stats row -->
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+          <span class="podcast-cast-badge" style="padding:2px 9px;border-radius:20px;background:rgba(251,146,60,0.07);border:1px solid rgba(251,146,60,0.15);color:#778899;font-size:10px;font-weight:600;">👥 ALEX · MAYA · 2 CALLERS</span>
+          <span class="podcast-gen-time" style="padding:2px 9px;border-radius:20px;background:rgba(251,146,60,0.07);border:1px solid rgba(251,146,60,0.15);color:#778899;font-size:10px;font-weight:600;">⏱ ~30 SEC TO GENERATE</span>
+        </div>
+
+        <!-- Go button -->
+        <button class="podcast-create-btn" style="width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#ea580c,#c2410c);color:#fff;font-size:13px;font-weight:800;cursor:pointer;opacity:0.35;pointer-events:none;letter-spacing:0.3px;">📻 GO ON AIR</button>
       </div>
-
-      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-        <span style="padding:2px 9px;border-radius:20px;background:rgba(251,146,60,0.05);border:1px solid rgba(251,146,60,0.12);color:#667788;font-size:11px;font-weight:600;">2 HOSTS</span>
-        <span class="podcast-gen-time" style="padding:2px 9px;border-radius:20px;background:rgba(251,146,60,0.05);border:1px solid rgba(251,146,60,0.12);color:#667788;font-size:11px;font-weight:600;">⏱ ~20 SEC TO GENERATE</span>
-      </div>
-
-      <!-- Generate button -->
-      <button class="podcast-create-btn" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#ea580c,#c2410c);color:#fff;font-size:13px;font-weight:700;cursor:pointer;opacity:0.4;pointer-events:none;">🎙️ Generate Podcast</button>
     </div>
+    <style>
+      @keyframes onair-pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+      @keyframes eq-bar { 0%,100%{transform:scaleY(0.3);} 50%{transform:scaleY(1);} }
+    </style>
   `;
 
   thread.appendChild(studio);
 
-  const topicEl = studio.querySelector('.podcast-topic');
+  const topicEl   = studio.querySelector('.podcast-topic');
   const createBtn = studio.querySelector('.podcast-create-btn');
   const surpriseBtn = studio.querySelector('.podcast-surprise-btn');
+  const castBadge = studio.querySelector('.podcast-cast-badge');
+  const genTimeEl = studio.querySelector('.podcast-gen-time');
 
   const SURPRISE_TOPICS = [
     'Why do we dream and what do dreams actually mean?',
@@ -1732,263 +1822,367 @@ function showPodcastStudio(thread) {
     'Why is music so emotional and powerful?',
     'The science of why we find certain things beautiful',
     'How did the internet go from military project to global network?',
-    'Why do some memories stick and others fade?'
+    'Why do some memories stick and others fade?',
+    'Is time travel actually possible according to physics?',
+    'What would happen if everyone on Earth stopped eating meat?'
   ];
+  const GEN_TIMES = { short: '~20 sec', medium: '~30 sec', long: '~50 sec', deep: '~90 sec' };
+
+  let selectedFmt   = 'talkshow';
+  let selectedMusic = { music: 'ambient', prompt: 'smooth calm ambient radio background music, gentle, unobtrusive, perfect for a talk show, no vocals' };
+  let selectedLen   = { len: 'medium', words: 650, tokens: 1100, label: '~3 min' };
 
   function updateBtn() {
-    const hasText = topicEl.value.trim().length > 0 || hasScreenshots;
-    createBtn.style.opacity = hasText ? '1' : '0.4';
-    createBtn.style.pointerEvents = hasText ? 'auto' : 'none';
+    const ok = topicEl.value.trim().length > 0 || hasScreenshots;
+    createBtn.style.opacity = ok ? '1' : '0.35';
+    createBtn.style.pointerEvents = ok ? 'auto' : 'none';
+  }
+
+  function selectBtn(group, clicked) {
+    studio.querySelectorAll(group).forEach(b => {
+      b.style.border = '1px solid rgba(251,146,60,0.15)';
+      b.style.background = 'rgba(251,146,60,0.03)';
+      b.style.color = '#8899aa';
+      b.classList.remove('selected');
+    });
+    clicked.style.border = '1px solid rgba(251,146,60,0.5)';
+    clicked.style.background = 'rgba(251,146,60,0.12)';
+    clicked.style.color = '#fb923c';
+    clicked.classList.add('selected');
   }
 
   topicEl.addEventListener('input', () => {
-    topicEl.style.height = '56px';
-    topicEl.style.height = Math.max(56, topicEl.scrollHeight) + 'px';
+    topicEl.style.height = '52px';
+    topicEl.style.height = Math.max(52, topicEl.scrollHeight) + 'px';
     updateBtn();
   });
   topicEl.addEventListener('focus', () => { topicEl.style.borderColor = 'rgba(251,146,60,0.4)'; });
   topicEl.addEventListener('blur',  () => { topicEl.style.borderColor = 'rgba(251,146,60,0.15)'; });
-  if (hasScreenshots) updateBtn(); // screenshot already loaded = button active
+  if (hasScreenshots) updateBtn();
 
   surpriseBtn.addEventListener('click', () => {
     topicEl.value = SURPRISE_TOPICS[Math.floor(Math.random() * SURPRISE_TOPICS.length)];
     topicEl.dispatchEvent(new Event('input'));
   });
 
-  // Length selector wiring
-  let selectedLen = { len: 'medium', words: 650, tokens: 1100, label: '~3 min', genTime: '~20 sec' };
-  const GEN_TIMES = { short: '~15 sec', medium: '~20 sec', long: '~40 sec', deep: '~60 sec' };
-  const genTimeEl = studio.querySelector('.podcast-gen-time');
+  studio.querySelectorAll('.podcast-fmt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectBtn('.podcast-fmt-btn', btn);
+      selectedFmt = btn.dataset.fmt;
+      if (castBadge) castBadge.textContent = selectedFmt === 'talkshow' ? '👥 ALEX · MAYA · 2 CALLERS' : '👥 ALEX · MAYA';
+    });
+  });
+
+  studio.querySelectorAll('.podcast-music-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectBtn('.podcast-music-btn', btn);
+      selectedMusic = { music: btn.dataset.music, prompt: btn.dataset.prompt };
+    });
+  });
 
   studio.querySelectorAll('.podcast-len-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      studio.querySelectorAll('.podcast-len-btn').forEach(b => {
-        b.style.border = '1px solid rgba(251,146,60,0.2)';
-        b.style.background = 'rgba(251,146,60,0.04)';
-        b.style.color = '#aabbcc';
-        b.classList.remove('selected');
-      });
-      btn.style.border = '1px solid rgba(251,146,60,0.5)';
-      btn.style.background = 'rgba(251,146,60,0.15)';
-      btn.style.color = '#fb923c';
-      btn.classList.add('selected');
-      selectedLen = {
-        len:    btn.dataset.len,
-        words:  parseInt(btn.dataset.words),
-        tokens: parseInt(btn.dataset.tokens),
-        label:  btn.dataset.label
-      };
+      selectBtn('.podcast-len-btn', btn);
+      selectedLen = { len: btn.dataset.len, words: parseInt(btn.dataset.words), tokens: parseInt(btn.dataset.tokens), label: btn.dataset.label };
       if (genTimeEl) genTimeEl.textContent = `⏱ ${GEN_TIMES[btn.dataset.len]} TO GENERATE`;
     });
   });
 
   createBtn.addEventListener('click', async () => {
-    const topic = topicEl.value.trim();
+    const topic  = topicEl.value.trim();
     const useShot = hasScreenshots && (studio.querySelector('.podcast-use-screenshot')?.checked !== false);
-    await runPodcastGeneration(topic, useShot, thread, studio, selectedLen);
+    await runPodcastGeneration(topic, useShot, thread, studio, selectedLen, selectedFmt, selectedMusic);
   });
 }
 
-async function runPodcastGeneration(topic, useScreenshot, thread, studioEl, lenOpts) {
+async function runPodcastGeneration(topic, useScreenshot, thread, studioEl, lenOpts, fmt, musicOpts) {
   const { words = 650, tokens = 1100, label = '~3 min' } = lenOpts || {};
-  const { geminiApiKey: apiKey } = await chrome.storage.sync.get(['geminiApiKey']);
-  if (!apiKey) {
-    showPromptToast('⚙️ Add your Gemini key in Settings first', 3500);
-    return;
-  }
+  const isTalkShow = (fmt !== 'deepdive');
+  const withMusic  = musicOpts?.music !== 'none' && musicOpts?.prompt;
 
-  // Replace studio card with a progress card
+  const { geminiApiKey: apiKey } = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!apiKey) { showPromptToast('⚙️ Add your Gemini key in Settings first', 3500); return; }
+
+  const CALLER_POOL = [
+    ['Sam from Austin', 'enthusiastic, asks follow-up questions'],
+    ['Priya from London', 'thoughtful, challenges assumptions'],
+    ['James from New York', 'skeptical but curious'],
+    ['Sofia from Madrid', 'brings a personal story'],
+    ['Chen from Tokyo', 'technical, loves details'],
+    ['Marco from Rome', 'philosophical, big-picture thinker']
+  ];
+  const shuffled = CALLER_POOL.sort(() => Math.random() - 0.5);
+  const callers = shuffled.slice(0, 2);
+
+  // ── Progress card ──────────────────────────────────────────
   const progressCard = document.createElement('div');
   progressCard.className = 'chat-bubble ai podcast-progress';
   progressCard.style.cssText = 'padding:0;margin:8px 0;background:transparent;border:none;max-width:100%;width:100%;';
   progressCard.innerHTML = `
-    <div style="background:linear-gradient(135deg,rgba(251,146,60,0.06),rgba(234,88,12,0.02));border:1px solid rgba(251,146,60,0.18);border-radius:14px;padding:16px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <span style="font-size:20px;">🎙️</span>
-        <span style="font-size:13px;font-weight:700;color:#fb923c;">Writing your podcast script…</span>
+    <div style="background:linear-gradient(145deg,rgba(20,12,5,0.95),rgba(30,15,5,0.9));border:1px solid rgba(251,146,60,0.22);border-radius:16px;overflow:hidden;">
+      <div style="background:linear-gradient(90deg,rgba(234,88,12,0.15),rgba(251,146,60,0.06));border-bottom:1px solid rgba(251,146,60,0.12);padding:10px 14px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:18px;">📻</span>
+        <span style="font-size:13px;font-weight:800;color:#fb923c;letter-spacing:1px;">AION RADIO</span>
+        <span style="margin-left:auto;display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#ff6060;">
+          <span style="width:5px;height:5px;border-radius:50%;background:#ff4040;box-shadow:0 0 5px #ff4040;animation:onair-pulse 1.2s ease-in-out infinite;display:inline-block;"></span>
+          RECORDING
+        </span>
       </div>
-      <div class="podcast-status" style="font-size:12px;color:#8899aa;margin-bottom:10px;">Alex and Maya are preparing their notes…</div>
-      <div style="width:100%;height:3px;background:rgba(251,146,60,0.1);border-radius:2px;overflow:hidden;">
-        <div class="podcast-bar" style="width:10%;height:100%;background:linear-gradient(90deg,#ea580c,#fb923c);border-radius:2px;transition:width 0.6s ease;"></div>
+      <div style="padding:14px 16px;">
+        <div class="podcast-step-list" style="margin-bottom:12px;">
+          <div class="podcast-step" data-step="1" style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:#aabbcc;">
+            <span class="step-icon" style="font-size:14px;width:20px;text-align:center;">✍️</span>
+            <span class="step-label">Writing the script…</span>
+            <span class="step-status" style="margin-left:auto;font-size:11px;color:#556677;"></span>
+          </div>
+          <div class="podcast-step" data-step="2" style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:#556677;">
+            <span class="step-icon" style="font-size:14px;width:20px;text-align:center;">🎤</span>
+            <span class="step-label">Recording the voices</span>
+            <span class="step-status" style="margin-left:auto;font-size:11px;color:#556677;"></span>
+          </div>
+          ${withMusic ? `
+          <div class="podcast-step" data-step="3" style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:#556677;">
+            <span class="step-icon" style="font-size:14px;width:20px;text-align:center;">🎵</span>
+            <span class="step-label">Composing background music</span>
+            <span class="step-status" style="margin-left:auto;font-size:11px;color:#556677;"></span>
+          </div>
+          <div class="podcast-step" data-step="4" style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:#556677;">
+            <span class="step-icon" style="font-size:14px;width:20px;text-align:center;">🎚️</span>
+            <span class="step-label">Mixing the final track</span>
+            <span class="step-status" style="margin-left:auto;font-size:11px;color:#556677;"></span>
+          </div>` : ''}
+        </div>
+        <div style="width:100%;height:3px;background:rgba(251,146,60,0.08);border-radius:2px;overflow:hidden;">
+          <div class="podcast-bar" style="width:5%;height:100%;background:linear-gradient(90deg,#c2410c,#fb923c);border-radius:2px;transition:width 0.7s ease;"></div>
+        </div>
       </div>
     </div>
+    <style>@keyframes onair-pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}</style>
   `;
   studioEl.replaceWith(progressCard);
   thread.scrollTop = thread.scrollHeight;
 
-  const statusEl = progressCard.querySelector('.podcast-status');
-  const barEl    = progressCard.querySelector('.podcast-bar');
-
-  function setStatus(msg, pct) {
-    if (statusEl) statusEl.textContent = msg;
-    if (barEl)    barEl.style.width = pct + '%';
+  const barEl = progressCard.querySelector('.podcast-bar');
+  function setStep(n, statusText, pct) {
+    progressCard.querySelectorAll('.podcast-step').forEach(el => {
+      const sn = parseInt(el.dataset.step);
+      if (sn < n)  { el.style.color = '#4a9'; el.querySelector('.step-status').textContent = '✓'; }
+      else if (sn === n) { el.style.color = '#fb923c'; el.querySelector('.step-status').textContent = statusText || ''; }
+      else { el.style.color = '#3a4a55'; }
+    });
+    if (barEl) barEl.style.width = pct + '%';
   }
 
   try {
-    // ── Step 1: Generate script with Gemini ──────────────────
-    setStatus('Alex and Maya are reading the material…', 20);
+    // ── Step 1: Script ────────────────────────────────────────
+    setStep(1, 'working…', 8);
 
-    const scriptSystemPrompt = `You are a podcast scriptwriter. Write a natural, engaging podcast script (target: ${words} words, roughly ${label}) featuring two hosts:
-- Alex: curious, asks questions, builds on answers with follow-ups, occasional humor
-- Maya: knowledgeable, explains clearly, uses vivid analogies, enthusiastic
+    const callerBlock = isTalkShow ? `
+- ${callers[0][0]}: ${callers[0][1]} — calls in with a question or viewpoint
+- ${callers[1][0]}: ${callers[1][1]} — calls in with a different angle
 
-Rules:
-- ONLY output the spoken dialogue lines — no stage directions, no [music], no [intro], no timestamps
-- Format every single line as exactly:   Alex: [line]   or   Maya: [line]
-- Start with Alex's opening. End with Maya's wrap-up.
-- Keep it conversational and friendly — like two smart friends having a real discussion
-- For longer lengths: go deeper — add examples, stories, surprising facts, tangents that come back around
-- Target word count: ${words} words. Do not cut short.
-- No meta-commentary, no "here is your script"`;
+Format for callers:   Caller ${callers[0][0].split(' ')[0]}: [line]   and   Caller ${callers[1][0].split(' ')[0]}: [line]
+
+Show structure:
+1. Alex opens the show with energy and introduces the topic
+2. Alex and Maya discuss for a few exchanges, Maya provides context
+3. "Let's go to our first caller…" — ${callers[0][0]} calls in
+4. Alex + Maya respond, continue the discussion
+5. "We have another caller…" — ${callers[1][0]} calls in with a fresh angle
+6. Final wrap-up and sign-off from both hosts` : `
+Show structure: Alex opens, Alex and Maya have a rich back-and-forth deep dive, Maya wraps up.`;
+
+    const scriptSysPrompt = `You are a radio talk show scriptwriter. Write a polished, engaging radio show script (target: ${words} words, roughly ${label}) featuring:
+- Alex: the host — energetic, witty, keeps the conversation moving, great at transitions
+- Maya: in-studio expert co-host — knowledgeable, warm, uses vivid real-world examples
+${callerBlock}
+
+Absolute rules:
+- ONLY output spoken dialogue lines — zero stage directions, zero [music], zero [sound effects], no timestamps
+- Format lines as EXACTLY:   Alex: [line]   Maya: [line]   Caller Sam: [line]   etc.
+- Keep it natural and conversational — real radio energy, not a lecture
+- For longer episodes: build momentum, add surprising facts, personal stories, debate moments
+- Target: ${words} words. Do NOT cut short.
+- No meta-commentary, no preamble like "here is your script"`;
 
     const scriptParts = [];
     if (useScreenshot && typeof currentImages !== 'undefined' && currentImages.length > 0) {
       for (const img of currentImages) {
         const [meta, b64] = img.split(',');
-        const mime = meta.match(/:(.*?);/)?.[1] || 'image/png';
-        scriptParts.push({ inlineData: { mimeType: mime, data: b64 } });
+        scriptParts.push({ inlineData: { mimeType: meta.match(/:(.*?);/)?.[1] || 'image/png', data: b64 } });
       }
     }
-    scriptParts.push({ text: topic ? `Create a podcast episode about: "${topic}"` : 'Create a podcast episode about the content in this image.' });
+    scriptParts.push({ text: topic ? `Create a radio show episode about: "${topic}"` : 'Create a radio show episode about the content in this image.' });
 
     const scriptResp = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: scriptSystemPrompt }] },
-          contents: [{ role: 'user', parts: scriptParts }],
-          generationConfig: { temperature: 0.9, maxOutputTokens: tokens }
-        }),
-        signal: AbortSignal.timeout(25000)
-      }
+      { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ systemInstruction:{parts:[{text:scriptSysPrompt}]}, contents:[{role:'user',parts:scriptParts}], generationConfig:{temperature:0.92,maxOutputTokens:tokens} }),
+        signal: AbortSignal.timeout(30000) }
     );
     const scriptBody = await scriptResp.json().catch(() => ({}));
     if (!scriptResp.ok) throw new Error(scriptBody.error?.message || 'Script generation failed');
     const script = scriptBody.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    if (!script.trim()) throw new Error('Empty script returned — please try again');
+    if (!script.trim()) throw new Error('Empty script returned — please try a more specific topic');
+    setStep(1, '✓', 28);
 
-    // ── Step 2: Read script via TTS ──────────────────────────
-    setStatus('Recording in the studio…', 55);
+    // ── Step 2: TTS ───────────────────────────────────────────
+    setStep(2, 'recording…', 30);
+    const ttsTimeout = words <= 300 ? 35000 : words <= 700 ? 55000 : words <= 1300 ? 80000 : 115000;
+    let voiceData = null;
 
-    const ttsModels = [MODELS.ttsPrimary, MODELS.ttsFallback];
-    let audioData = null;
-
-    for (const ttsModel of ttsModels) {
+    for (const ttsModel of [MODELS.ttsPrimary, MODELS.ttsFallback]) {
       try {
-        const ttsTimeout = words <= 300 ? 35000 : words <= 700 ? 50000 : words <= 1300 ? 75000 : 110000;
-        const ttsResp = await fetch(
+        const r = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${ttsModel}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+          { method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({
-              systemInstruction: { parts: [{ text: 'You are a natural, expressive radio host. Speak the following podcast script clearly and with good pacing. Bring energy and personality — this is a real radio show.' }] },
-              contents: [{ role: 'user', parts: [{ text: script }] }],
-              generationConfig: {
-                responseModalities: ['AUDIO'],
-                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Puck' } } }
-              }
+              systemInstruction:{parts:[{text:'You are an energetic, natural radio host. Deliver this script with real radio energy — warm tone for Alex, authoritative but friendly for Maya, and distinct character voices for callers. Pacing should feel like a real broadcast.'}]},
+              contents:[{role:'user',parts:[{text:script}]}],
+              generationConfig:{ responseModalities:['AUDIO'], speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:'Puck'}}} }
             }),
-            signal: AbortSignal.timeout(ttsTimeout)
-          }
+            signal: AbortSignal.timeout(ttsTimeout) }
         );
-        const ttsBody = await ttsResp.json().catch(() => ({}));
-        const parts = ttsBody.candidates?.[0]?.content?.parts || [];
-        const audioPart = parts.find(p => p.inlineData?.data && p.inlineData.data.length > 5000);
-        if (audioPart) { audioData = audioPart.inlineData; break; }
+        const tb = await r.json().catch(() => ({}));
+        const ap = (tb.candidates?.[0]?.content?.parts || []).find(p => p.inlineData?.data?.length > 5000);
+        if (ap) { voiceData = ap.inlineData; break; }
       } catch (_) {}
     }
+    if (!voiceData) throw new Error('Voice recording failed — your key may need billing enabled');
+    setStep(2, '✓', withMusic ? 55 : 88);
 
-    if (!audioData) throw new Error('Audio generation failed — your key may need billing enabled');
+    // ── Step 3: Music (parallel-ish after TTS) ───────────────
+    let musicData = null;
+    if (withMusic) {
+      setStep(3, 'composing…', 57);
+      try {
+        const mr = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.lyria3}:generateContent?key=${apiKey}`,
+          { method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ contents:[{role:'user',parts:[{text: musicOpts.prompt}]}], generationConfig:{responseModalities:['AUDIO']} }),
+            signal: AbortSignal.timeout(35000) }
+        );
+        const mb = await mr.json().catch(() => ({}));
+        const mp = (mb.candidates?.[0]?.content?.parts || []).find(p => p.inlineData?.data?.length > 5000);
+        if (mp) musicData = mp.inlineData;
+      } catch (me) { console.warn('[Radio] music gen failed, skipping', me); }
+      setStep(3, musicData ? '✓' : 'skipped', 78);
 
-    setStatus('Almost ready…', 90);
+      // ── Step 4: Mix ───────────────────────────────────────────
+      setStep(4, 'mixing…', 80);
+    }
 
-    // ── Step 3: Show result ───────────────────────────────────
-    const audioSrc = `data:${audioData.mimeType};base64,${audioData.data}`;
-    const audioId  = 'podcast-' + Date.now();
-    const shortTopic = (topic || 'Your screenshot').slice(0, 50) + (topic && topic.length > 50 ? '…' : '');
+    let finalBlob = null;
+    let finalSrc  = `data:${voiceData.mimeType};base64,${voiceData.data}`;
+
+    if (withMusic && musicData) {
+      const mixed = await mixRadioAudio(voiceData, musicData);
+      if (mixed) {
+        finalBlob = mixed;
+        finalSrc  = URL.createObjectURL(mixed);
+      }
+      setStep(4, finalBlob ? '✓' : 'skipped', 95);
+    }
+
+    // ── Result card ───────────────────────────────────────────
+    const shortTopic = (topic || 'Your screenshot').slice(0, 48) + (topic?.length > 48 ? '…' : '');
+    const audioId    = 'radio-' + Date.now();
+    const castLine   = isTalkShow
+      ? `Alex · Maya · ${callers.map(c => c[0].split(' ')[0]).join(' · ')}`
+      : 'Alex · Maya';
 
     const resultCard = document.createElement('div');
     resultCard.className = 'chat-bubble ai podcast-result';
     resultCard.style.cssText = 'padding:0;margin:8px 0;background:transparent;border:none;max-width:100%;width:100%;';
     resultCard.innerHTML = `
-      <div style="background:linear-gradient(135deg,rgba(251,146,60,0.06),rgba(234,88,12,0.02));border:1px solid rgba(251,146,60,0.25);border-radius:14px;padding:16px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-          <span style="font-size:20px;">🎙️</span>
-          <div>
-            <div style="font-size:13px;font-weight:700;color:#e8eef4;">Your Podcast is Ready</div>
-            <div style="font-size:11px;color:#8899aa;margin-top:1px;">${shortTopic}</div>
+      <div style="background:linear-gradient(145deg,rgba(20,12,5,0.97),rgba(30,15,5,0.92));border:1px solid rgba(251,146,60,0.28);border-radius:16px;overflow:hidden;">
+
+        <!-- Now Playing header -->
+        <div style="background:linear-gradient(90deg,rgba(234,88,12,0.2),rgba(251,146,60,0.08));border-bottom:1px solid rgba(251,146,60,0.15);padding:11px 14px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:18px;">📻</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:10px;color:#fb923c;font-weight:700;letter-spacing:1px;margin-bottom:1px;">AION RADIO · NOW PLAYING</div>
+            <div style="font-size:12px;color:#e8eef4;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${shortTopic}</div>
+          </div>
+          <!-- Equaliser bars -->
+          <div style="display:flex;align-items:flex-end;gap:2px;height:16px;">
+            ${[0.6,1,0.4,0.8,0.5,0.9,0.3].map((d,i)=>`<div style="width:3px;height:${Math.round(d*16)}px;background:#fb923c;border-radius:1px;opacity:0.7;animation:eq-bar ${0.5+i*0.07}s ease-in-out infinite alternate;"></div>`).join('')}
           </div>
         </div>
-        <audio id="${audioId}" controls style="width:100%;border-radius:8px;outline:none;accent-color:#fb923c;" src="${audioSrc}"></audio>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-          <button class="podcast-save-btn" style="flex:1;min-width:100px;padding:7px 14px;border-radius:8px;border:1px solid rgba(251,146,60,0.35);background:rgba(251,146,60,0.1);color:#fb923c;font-size:12px;font-weight:600;cursor:pointer;">💾 Download</button>
-          <button class="podcast-share-btn" style="flex:1;min-width:100px;padding:7px 14px;border-radius:8px;border:1px solid rgba(45,212,191,0.35);background:rgba(45,212,191,0.08);color:#2dd4bf;font-size:12px;font-weight:600;cursor:pointer;">📤 Share</button>
-          <button class="podcast-new-btn" style="flex:1;min-width:100px;padding:7px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">🔄 New Topic</button>
+
+        <div style="padding:14px 16px;">
+
+          <!-- Cast -->
+          <div style="font-size:10px;color:#556677;letter-spacing:0.5px;margin-bottom:8px;font-weight:600;">CAST: ${castLine}${withMusic && musicData ? ' · 🎵 ' + (musicOpts?.music || 'ambient') + ' music' : ''}</div>
+
+          <!-- Audio player -->
+          <audio id="${audioId}" controls style="width:100%;border-radius:8px;outline:none;accent-color:#fb923c;margin-bottom:10px;" src="${finalSrc}"></audio>
+
+          <!-- Buttons -->
+          <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+            <button class="podcast-save-btn" style="flex:1;min-width:90px;padding:7px 10px;border-radius:8px;border:1px solid rgba(251,146,60,0.35);background:rgba(251,146,60,0.1);color:#fb923c;font-size:11px;font-weight:700;cursor:pointer;">💾 Download</button>
+            <button class="podcast-share-btn" style="flex:1;min-width:90px;padding:7px 10px;border-radius:8px;border:1px solid rgba(45,212,191,0.3);background:rgba(45,212,191,0.07);color:#2dd4bf;font-size:11px;font-weight:700;cursor:pointer;">📤 Share</button>
+            <button class="podcast-new-btn" style="flex:1;min-width:90px;padding:7px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:#8899aa;font-size:11px;font-weight:700;cursor:pointer;">🔄 New Episode</button>
+          </div>
+
+          <!-- Show notes (script) -->
+          <details>
+            <summary style="font-size:11px;color:#445566;cursor:pointer;list-style:none;display:flex;align-items:center;gap:5px;padding:4px 0;">
+              <span class="script-arrow">▶</span> Show notes &amp; script
+            </summary>
+            <div style="margin-top:8px;background:rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;font-size:11px;color:#8899aa;line-height:1.75;white-space:pre-wrap;max-height:200px;overflow-y:auto;">${script.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+          </details>
         </div>
-        <!-- Script preview (collapsed) -->
-        <details style="margin-top:10px;">
-          <summary style="font-size:11px;color:#556677;cursor:pointer;list-style:none;display:flex;align-items:center;gap:4px;">
-            <span class="script-arrow" style="font-size:9px;">▶</span> View script
-          </summary>
-          <div style="margin-top:8px;background:rgba(0,0,0,0.2);border-radius:8px;padding:10px 12px;font-size:11px;color:#8899aa;line-height:1.7;white-space:pre-wrap;max-height:180px;overflow-y:auto;">${script.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
-        </details>
       </div>
+      <style>@keyframes eq-bar{0%{transform:scaleY(0.3);}100%{transform:scaleY(1);}}</style>
     `;
 
     progressCard.replaceWith(resultCard);
     thread.scrollTop = thread.scrollHeight;
 
-    // Wire buttons
-    const audioEl = resultCard.querySelector(`#${audioId}`);
     resultCard.querySelector('.podcast-save-btn').addEventListener('click', () => {
       const a = document.createElement('a');
-      a.href = audioSrc;
-      a.download = `aion-podcast-${Date.now()}.wav`;
+      if (finalBlob) { a.href = URL.createObjectURL(finalBlob); }
+      else { a.href = `data:${voiceData.mimeType};base64,${voiceData.data}`; }
+      a.download = `aion-radio-${Date.now()}.wav`;
       a.click();
     });
 
     resultCard.querySelector('.podcast-share-btn').addEventListener('click', async () => {
+      const shareText = `🎙️ Just made an AI talk show episode about "${shortTopic}" with Aion AI. Try it: https://snaptoai.com`;
       try {
-        if (navigator.share) {
-          await navigator.share({ title: `Podcast: ${shortTopic}`, text: `🎙️ I just made an AI podcast about "${shortTopic}" with Aion AI. Try it: https://snaptoai.com` });
+        if (finalBlob && navigator.share && navigator.canShare?.({ files:[new File([finalBlob],'episode.wav',{type:'audio/wav'})] })) {
+          await navigator.share({ title: `Aion Radio: ${shortTopic}`, text: shareText, files:[new File([finalBlob],'episode.wav',{type:'audio/wav'})] });
+        } else if (navigator.share) {
+          await navigator.share({ title: `Aion Radio: ${shortTopic}`, text: shareText });
         } else {
-          await navigator.clipboard.writeText(`🎙️ I just made an AI podcast about "${shortTopic}" with Aion AI. Try it: https://snaptoai.com`);
-          showPromptToast('📋 Share message copied to clipboard!', 2500);
+          await navigator.clipboard.writeText(shareText);
+          showPromptToast('📋 Share message copied!', 2500);
         }
-      } catch (_) {
-        showPromptToast('📋 Download your podcast and share the file!', 2500);
-      }
+      } catch (_) { showPromptToast('💾 Download and share the audio file!', 2500); }
     });
 
     resultCard.querySelector('.podcast-new-btn').addEventListener('click', () => {
-      resultCard.remove();
-      showPodcastStudio(thread);
-      thread.scrollTop = thread.scrollHeight;
+      resultCard.remove(); showPodcastStudio(thread); thread.scrollTop = thread.scrollHeight;
     });
-
-    // Toggle script arrow
-    resultCard.querySelector('details').addEventListener('toggle', (e) => {
+    resultCard.querySelector('details').addEventListener('toggle', e => {
       resultCard.querySelector('.script-arrow').textContent = e.target.open ? '▼' : '▶';
     });
 
   } catch (err) {
-    const errMsg = err.message.toLowerCase().includes('billing') || err.message.toLowerCase().includes('permission')
-      ? 'Podcast needs a Gemini key with billing enabled — add yours in Settings.'
-      : err.message.includes('Empty script')
-      ? 'Try a more specific topic and try again.'
+    const errMsg = /billing|permission|quota/i.test(err.message)
+      ? 'Voice & music generation needs a Gemini key with billing enabled — add yours in Settings.'
+      : /empty script/i.test(err.message)
+      ? 'Try a more specific topic and hit Go On Air again.'
       : err.message;
     progressCard.innerHTML = `
-      <div style="padding:14px 16px;border-radius:14px;background:rgba(255,100,80,0.06);border:1px solid rgba(255,100,80,0.2);">
-        <div style="font-size:13px;font-weight:600;color:#ff8080;margin-bottom:8px;">🎙️ Podcast generation failed</div>
+      <div style="padding:14px 16px;border-radius:14px;background:rgba(255,80,60,0.05);border:1px solid rgba(255,80,60,0.18);">
+        <div style="font-size:13px;font-weight:700;color:#ff8080;margin-bottom:6px;">📻 Broadcast failed</div>
         <div style="font-size:12px;color:#8899aa;margin-bottom:12px;">${errMsg}</div>
-        <button class="podcast-retry-btn" style="padding:7px 16px;border-radius:8px;border:1px solid rgba(251,146,60,0.35);background:rgba(251,146,60,0.1);color:#fb923c;font-size:12px;font-weight:600;cursor:pointer;">🔄 Try Again</button>
+        <button class="podcast-retry-btn" style="padding:7px 16px;border-radius:8px;border:1px solid rgba(251,146,60,0.35);background:rgba(251,146,60,0.1);color:#fb923c;font-size:12px;font-weight:700;cursor:pointer;">🔄 Try Again</button>
       </div>`;
     progressCard.querySelector('.podcast-retry-btn').addEventListener('click', () => {
-      progressCard.remove();
-      showPodcastStudio(thread);
+      progressCard.remove(); showPodcastStudio(thread);
     });
   }
 }
