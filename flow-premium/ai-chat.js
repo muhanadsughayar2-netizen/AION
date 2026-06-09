@@ -1727,142 +1727,52 @@ function showPodcastStudio(thread) {
 
   const hasScreenshots = typeof currentImages !== 'undefined' && currentImages.length > 0;
 
-  studio.innerHTML = `
-    <div style="background:linear-gradient(145deg,rgba(20,12,5,0.95),rgba(30,15,5,0.9));border:1px solid rgba(251,146,60,0.25);border-radius:16px;overflow:hidden;">
+  const LANGS = [
+    ['🇬🇧','English'],['🇪🇸','Español'],['🇫🇷','Français'],['🇸🇦','Arabic'],
+    ['🇮🇳','Hindi'],['🇨🇳','中文'],['🇧🇷','Português'],['🇩🇪','Deutsch'],
+    ['🇯🇵','日本語'],['🇰🇷','한국어'],['🇹🇷','Türkçe'],['🇮🇹','Italiano'],
+    ['🇷🇺','Русский'],['🇮🇩','Indonesia']
+  ];
 
-      <!-- Station Header -->
-      <div style="background:linear-gradient(90deg,rgba(234,88,12,0.18),rgba(251,146,60,0.08));border-bottom:1px solid rgba(251,146,60,0.15);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:22px;line-height:1;">📻</span>
-          <div>
-            <div style="font-size:15px;font-weight:800;color:#fb923c;letter-spacing:1px;">AION RADIO</div>
-            <div style="font-size:10px;color:#667788;letter-spacing:0.5px;">AI TALK SHOW STUDIO</div>
-          </div>
-        </div>
+  studio.innerHTML = `
+    <div style="background:rgba(251,146,60,0.04);border:1px solid rgba(251,146,60,0.18);border-radius:14px;padding:14px 16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="display:flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.25);font-size:11px;font-weight:700;color:#ff6060;letter-spacing:0.5px;">
-            <span style="width:6px;height:6px;border-radius:50%;background:#ff4040;box-shadow:0 0 6px #ff4040;animation:onair-pulse 1.2s ease-in-out infinite;display:inline-block;"></span>
+          <span style="font-size:18px;">📻</span>
+          <span style="font-size:14px;font-weight:700;color:#fb923c;">Podcast Studio</span>
+          <span style="display:flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;background:rgba(255,60,60,0.1);border:1px solid rgba(255,60,60,0.2);font-size:10px;font-weight:700;color:#ff6060;">
+            <span style="width:5px;height:5px;border-radius:50%;background:#ff4040;animation:onair-pulse 1.2s ease-in-out infinite;display:inline-block;"></span>
             ON AIR
           </span>
-          <button class="podcast-surprise-btn" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(251,146,60,0.25);background:rgba(251,146,60,0.06);color:#fb923c;font-size:11px;font-weight:600;cursor:pointer;">🎲 Random</button>
         </div>
+        <button class="podcast-surprise-btn" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(251,146,60,0.2);background:transparent;color:#fb923c;font-size:11px;font-weight:600;cursor:pointer;">🎲 Random</button>
       </div>
 
-      <div style="padding:14px 16px;">
+      <div style="font-size:12px;color:#8899aa;margin-bottom:12px;">Type a topic — or load a screenshot — and get a real AI talk show with hosts, callers, and background music. Powered by Gemini TTS.</div>
 
-        <!-- Topic -->
-        <div style="font-size:11px;color:#556677;font-weight:600;letter-spacing:0.5px;margin-bottom:5px;">TODAY'S TOPIC</div>
-        <textarea class="podcast-topic" placeholder="e.g. Why is the sky blue? · How does AI think? · The psychology of habits · Climate change solutions…" style="width:100%;box-sizing:border-box;height:52px;background:rgba(255,255,255,0.03);border:1px solid rgba(251,146,60,0.15);border-radius:10px;padding:9px 12px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;margin-bottom:10px;"></textarea>
+      <textarea class="podcast-topic" placeholder="e.g. Why is the sky blue? · How does AI work? · Study: photosynthesis · Summarize this document…" style="width:100%;box-sizing:border-box;height:52px;background:rgba(255,255,255,0.03);border:1px solid rgba(251,146,60,0.15);border-radius:10px;padding:9px 12px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;margin-bottom:10px;"></textarea>
 
-        ${hasScreenshots ? `
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#aabbcc;margin-bottom:10px;">
-          <input type="checkbox" class="podcast-use-screenshot" style="accent-color:#fb923c;" checked>
-          <span>📸 Use loaded screenshot as topic source</span>
-        </label>` : ''}
+      ${hasScreenshots ? `
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#aabbcc;margin-bottom:10px;">
+        <input type="checkbox" class="podcast-use-screenshot" style="accent-color:#fb923c;" checked>
+        <span>📸 Use screenshot as source</span>
+      </label>` : ''}
 
-        <!-- Purpose -->
-        <div style="font-size:11px;color:#556677;font-weight:600;letter-spacing:0.5px;margin-bottom:6px;">PURPOSE</div>
-        <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;">
-          <button class="podcast-purpose-btn selected" data-purpose="general"   data-desc="a lively general-interest radio discussion" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.45);background:rgba(251,146,60,0.12);color:#fb923c;font-size:11px;font-weight:600;cursor:pointer;">🎙️ General</button>
-          <button class="podcast-purpose-btn" data-purpose="study"    data-desc="a structured study lesson that teaches the topic clearly with examples, mnemonics, and recap" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">📚 Study</button>
-          <button class="podcast-purpose-btn" data-purpose="summary"  data-desc="a crisp, high-value summary that extracts the most important points and insights" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">📋 Summary</button>
-          <button class="podcast-purpose-btn" data-purpose="plan"     data-desc="a step-by-step plan breakdown — goals, actions, timeline, and potential challenges" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🗺️ Plan</button>
-          <button class="podcast-purpose-btn" data-purpose="tutorial" data-desc="a practical how-to tutorial — step by step, with tips, common mistakes, and encouragement" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">💡 Tutorial</button>
-          <button class="podcast-purpose-btn" data-purpose="news"     data-desc="a news-style briefing — what happened, why it matters, different perspectives" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🗞️ News</button>
-        </div>
-
-        <!-- Language -->
-        <div style="font-size:11px;color:#556677;font-weight:600;letter-spacing:0.5px;margin-bottom:6px;">LANGUAGE</div>
-        <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;">
-          <button class="podcast-lang-btn selected" data-lang="English" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.45);background:rgba(251,146,60,0.12);color:#fb923c;font-size:11px;font-weight:600;cursor:pointer;">🇬🇧 English</button>
-          <button class="podcast-lang-btn" data-lang="Spanish"    style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇪🇸 Español</button>
-          <button class="podcast-lang-btn" data-lang="French"     style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇫🇷 Français</button>
-          <button class="podcast-lang-btn" data-lang="Arabic"     style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇸🇦 Arabic</button>
-          <button class="podcast-lang-btn" data-lang="Hindi"      style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇮🇳 Hindi</button>
-          <button class="podcast-lang-btn" data-lang="Chinese (Mandarin)" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇨🇳 中文</button>
-          <button class="podcast-lang-btn" data-lang="Portuguese" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇧🇷 Português</button>
-          <button class="podcast-lang-btn" data-lang="German"     style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇩🇪 Deutsch</button>
-          <button class="podcast-lang-btn" data-lang="Japanese"   style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇯🇵 日本語</button>
-          <button class="podcast-lang-btn" data-lang="Korean"     style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇰🇷 한국어</button>
-          <button class="podcast-lang-btn" data-lang="Turkish"    style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇹🇷 Türkçe</button>
-          <button class="podcast-lang-btn" data-lang="Italian"    style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇮🇹 Italiano</button>
-          <button class="podcast-lang-btn" data-lang="Russian"    style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇷🇺 Русский</button>
-          <button class="podcast-lang-btn" data-lang="Indonesian" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇮🇩 Indonesia</button>
-        </div>
-
-        <!-- Format -->
-        <div style="font-size:11px;color:#556677;font-weight:600;letter-spacing:0.5px;margin-bottom:6px;">SHOW FORMAT</div>
-        <div style="display:flex;gap:6px;margin-bottom:12px;">
-          <button class="podcast-fmt-btn selected" data-fmt="talkshow" style="flex:1;padding:8px 10px;border-radius:10px;border:1px solid rgba(251,146,60,0.5);background:rgba(251,146,60,0.12);color:#fb923c;font-size:12px;font-weight:700;cursor:pointer;text-align:center;">
-            📞 Talk Show<br><span style="font-size:10px;font-weight:400;opacity:0.8;">Host · Expert · Callers</span>
-          </button>
-          <button class="podcast-fmt-btn" data-fmt="deepdive" style="flex:1;padding:8px 10px;border-radius:10px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:12px;font-weight:700;cursor:pointer;text-align:center;">
-            🎧 Deep Dive<br><span style="font-size:10px;font-weight:400;opacity:0.8;">2 Hosts Only</span>
-          </button>
-        </div>
-
-        <!-- Music style -->
-        <div style="font-size:11px;color:#556677;font-weight:600;letter-spacing:0.5px;margin-bottom:6px;">BACKGROUND MUSIC</div>
-        <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;">
-          <button class="podcast-music-btn selected" data-music="ambient" data-prompt="smooth calm ambient radio background music, gentle, unobtrusive, perfect for a talk show, no vocals" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.45);background:rgba(251,146,60,0.12);color:#fb923c;font-size:11px;font-weight:600;cursor:pointer;">🌊 Ambient</button>
-          <button class="podcast-music-btn" data-music="jazz" data-prompt="smooth jazz background music, gentle upbeat, late night radio show, soft piano and bass, no vocals" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🎷 Jazz</button>
-          <button class="podcast-music-btn" data-music="lofi" data-prompt="lo-fi hip hop beats, warm and relaxed, radio show background, subtle vinyl texture, no vocals" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">📻 Lo-fi</button>
-          <button class="podcast-music-btn" data-music="electronic" data-prompt="modern electronic ambient, subtle pulsing beats, futuristic radio feel, no vocals" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">⚡ Electronic</button>
-          <button class="podcast-music-btn" data-music="none" data-prompt="" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🔇 No Music</button>
-        </div>
-
-        <!-- Length -->
-        <div style="font-size:11px;color:#556677;font-weight:600;letter-spacing:0.5px;margin-bottom:6px;">LENGTH</div>
-        <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;">
-          <button class="podcast-len-btn" data-len="short"  data-words="300"  data-tokens="500"  data-label="~1 min"  style="padding:5px 12px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">Short <span style="opacity:0.6;">~1 min</span></button>
-          <button class="podcast-len-btn selected" data-len="medium" data-words="650"  data-tokens="1100" data-label="~3 min"  style="padding:5px 12px;border-radius:8px;border:1px solid rgba(251,146,60,0.5);background:rgba(251,146,60,0.12);color:#fb923c;font-size:11px;font-weight:600;cursor:pointer;">Medium <span style="opacity:0.8;">~3 min</span></button>
-          <button class="podcast-len-btn" data-len="long"   data-words="1300" data-tokens="2200" data-label="~5 min"  style="padding:5px 12px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">Long <span style="opacity:0.6;">~5 min</span></button>
-          <button class="podcast-len-btn" data-len="deep"   data-words="2200" data-tokens="3800" data-label="~10 min" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">Deep <span style="opacity:0.6;">~10 min</span></button>
-        </div>
-
-        <!-- Stats row -->
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
-          <span class="podcast-cast-badge" style="padding:2px 9px;border-radius:20px;background:rgba(251,146,60,0.07);border:1px solid rgba(251,146,60,0.15);color:#778899;font-size:10px;font-weight:600;">👥 ALEX · MAYA · 2 CALLERS</span>
-          <span class="podcast-gen-time" style="padding:2px 9px;border-radius:20px;background:rgba(251,146,60,0.07);border:1px solid rgba(251,146,60,0.15);color:#778899;font-size:10px;font-weight:600;">⏱ ~30 SEC TO GENERATE</span>
-        </div>
-
-        <!-- Go button -->
-        <button class="podcast-create-btn" style="width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#ea580c,#c2410c);color:#fff;font-size:13px;font-weight:800;cursor:pointer;opacity:0.35;pointer-events:none;letter-spacing:0.3px;">📻 GO ON AIR</button>
+      <div style="font-size:10px;color:#556677;font-weight:600;letter-spacing:0.5px;margin-bottom:6px;">LANGUAGE</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;">
+        ${LANGS.map(([flag, label], i) => `<button class="podcast-lang-btn${i===0?' selected':''}" data-lang="${label === 'Español' ? 'Spanish' : label === 'Français' ? 'French' : label === '中文' ? 'Chinese (Mandarin)' : label === 'Português' ? 'Portuguese' : label === 'Deutsch' ? 'German' : label === '日本語' ? 'Japanese' : label === '한국어' ? 'Korean' : label === 'Türkçe' ? 'Turkish' : label === 'Italiano' ? 'Italian' : label === 'Русский' ? 'Russian' : label === 'Indonesia' ? 'Indonesian' : label}" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(251,146,60,${i===0?'0.45':'0.12'});background:rgba(251,146,60,${i===0?'0.12':'0.03'});color:${i===0?'#fb923c':'#8899aa'};font-size:11px;font-weight:600;cursor:pointer;">${flag} ${label}</button>`).join('')}
       </div>
+
+      <button class="podcast-create-btn" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#ea580c,#c2410c);color:#fff;font-size:13px;font-weight:800;cursor:pointer;opacity:0.35;pointer-events:none;">📻 Go On Air</button>
     </div>
-    <style>
-      @keyframes onair-pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
-      @keyframes eq-bar { 0%,100%{transform:scaleY(0.3);} 50%{transform:scaleY(1);} }
-    </style>
+    <style>@keyframes onair-pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}</style>
   `;
 
   thread.appendChild(studio);
 
   const topicEl   = studio.querySelector('.podcast-topic');
   const createBtn = studio.querySelector('.podcast-create-btn');
-  const surpriseBtn = studio.querySelector('.podcast-surprise-btn');
-  const castBadge = studio.querySelector('.podcast-cast-badge');
-  const genTimeEl = studio.querySelector('.podcast-gen-time');
-
-  const SURPRISE_TOPICS = [
-    'Why do we dream and what do dreams actually mean?',
-    'How does GPS know exactly where you are?',
-    'The psychology behind why we procrastinate',
-    'How does AI actually learn from data?',
-    'Why is music so emotional and powerful?',
-    'The science of why we find certain things beautiful',
-    'How did the internet go from military project to global network?',
-    'Why do some memories stick and others fade?',
-    'Is time travel actually possible according to physics?',
-    'What would happen if everyone on Earth stopped eating meat?'
-  ];
-  const GEN_TIMES = { short: '~20 sec', medium: '~30 sec', long: '~50 sec', deep: '~90 sec' };
-
-  let selectedFmt     = 'talkshow';
-  let selectedMusic   = { music: 'ambient', prompt: 'smooth calm ambient radio background music, gentle, unobtrusive, perfect for a talk show, no vocals' };
-  let selectedLen     = { len: 'medium', words: 650, tokens: 1100, label: '~3 min' };
-  let selectedPurpose = { purpose: 'general', desc: 'a lively general-interest radio discussion' };
-  let selectedLang    = 'English';
+  let selectedLang = 'English';
 
   function updateBtn() {
     const ok = topicEl.value.trim().length > 0 || hasScreenshots;
@@ -1870,18 +1780,12 @@ function showPodcastStudio(thread) {
     createBtn.style.pointerEvents = ok ? 'auto' : 'none';
   }
 
-  function selectBtn(group, clicked) {
-    studio.querySelectorAll(group).forEach(b => {
-      b.style.border = '1px solid rgba(251,146,60,0.15)';
-      b.style.background = 'rgba(251,146,60,0.03)';
-      b.style.color = '#8899aa';
-      b.classList.remove('selected');
-    });
-    clicked.style.border = '1px solid rgba(251,146,60,0.5)';
-    clicked.style.background = 'rgba(251,146,60,0.12)';
-    clicked.style.color = '#fb923c';
-    clicked.classList.add('selected');
-  }
+  const SURPRISE_TOPICS = [
+    'Why do we dream?', 'How does GPS work?', 'The psychology of procrastination',
+    'How AI learns from data', 'Why music makes us emotional',
+    'How the internet was invented', 'Is time travel possible?',
+    'What happens in your brain when you fall in love?'
+  ];
 
   topicEl.addEventListener('input', () => {
     topicEl.style.height = '52px';
@@ -1892,44 +1796,21 @@ function showPodcastStudio(thread) {
   topicEl.addEventListener('blur',  () => { topicEl.style.borderColor = 'rgba(251,146,60,0.15)'; });
   if (hasScreenshots) updateBtn();
 
-  surpriseBtn.addEventListener('click', () => {
+  studio.querySelector('.podcast-surprise-btn').addEventListener('click', () => {
     topicEl.value = SURPRISE_TOPICS[Math.floor(Math.random() * SURPRISE_TOPICS.length)];
     topicEl.dispatchEvent(new Event('input'));
   });
 
-  studio.querySelectorAll('.podcast-fmt-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      selectBtn('.podcast-fmt-btn', btn);
-      selectedFmt = btn.dataset.fmt;
-      if (castBadge) castBadge.textContent = selectedFmt === 'talkshow' ? '👥 ALEX · MAYA · 2 CALLERS' : '👥 ALEX · MAYA';
-    });
-  });
-
-  studio.querySelectorAll('.podcast-music-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      selectBtn('.podcast-music-btn', btn);
-      selectedMusic = { music: btn.dataset.music, prompt: btn.dataset.prompt };
-    });
-  });
-
-  studio.querySelectorAll('.podcast-len-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      selectBtn('.podcast-len-btn', btn);
-      selectedLen = { len: btn.dataset.len, words: parseInt(btn.dataset.words), tokens: parseInt(btn.dataset.tokens), label: btn.dataset.label };
-      if (genTimeEl) genTimeEl.textContent = `⏱ ${GEN_TIMES[btn.dataset.len]} TO GENERATE`;
-    });
-  });
-
-  studio.querySelectorAll('.podcast-purpose-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      selectBtn('.podcast-purpose-btn', btn);
-      selectedPurpose = { purpose: btn.dataset.purpose, desc: btn.dataset.desc };
-    });
-  });
-
   studio.querySelectorAll('.podcast-lang-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      selectBtn('.podcast-lang-btn', btn);
+      studio.querySelectorAll('.podcast-lang-btn').forEach(b => {
+        b.style.border = '1px solid rgba(251,146,60,0.12)';
+        b.style.background = 'rgba(251,146,60,0.03)';
+        b.style.color = '#8899aa';
+      });
+      btn.style.border = '1px solid rgba(251,146,60,0.45)';
+      btn.style.background = 'rgba(251,146,60,0.12)';
+      btn.style.color = '#fb923c';
       selectedLang = btn.dataset.lang;
     });
   });
@@ -1937,7 +1818,9 @@ function showPodcastStudio(thread) {
   createBtn.addEventListener('click', async () => {
     const topic  = topicEl.value.trim();
     const useShot = hasScreenshots && (studio.querySelector('.podcast-use-screenshot')?.checked !== false);
-    await runPodcastGeneration(topic, useShot, thread, studio, selectedLen, selectedFmt, selectedMusic, selectedPurpose, selectedLang);
+    const lenOpts = { len:'medium', words:650, tokens:1100, label:'~3 min' };
+    const musicOpts = { music:'ambient', prompt:'smooth calm ambient radio background music, gentle, unobtrusive, no vocals' };
+    await runPodcastGeneration(topic, useShot, thread, studio, lenOpts, 'talkshow', musicOpts, { purpose:'general', desc:'a lively general-interest radio discussion' }, selectedLang);
   });
 }
 
@@ -2222,16 +2105,18 @@ Absolute rules:
     });
 
   } catch (err) {
-    const errMsg = /billing|permission|quota/i.test(err.message)
-      ? 'Voice & music generation needs a Gemini key with billing enabled — add yours in Settings.'
+    const isBilling = /billing|permission|quota|PERMISSION_DENIED|USER_LOCATION/i.test(err.message);
+    const errMsg = isBilling
+      ? `Gemini's voice (TTS) feature requires billing to be enabled on your Google Cloud account — but Google gives you <strong>$300 free credit</strong> when you do. Your key works for Vision and chat already; voice just needs that one-time step.`
       : /empty script/i.test(err.message)
-      ? 'Try a more specific topic and hit Go On Air again.'
+      ? 'Got an empty script back — try a more specific topic and go again.'
       : err.message;
     progressCard.innerHTML = `
       <div style="padding:14px 16px;border-radius:14px;background:rgba(255,80,60,0.05);border:1px solid rgba(255,80,60,0.18);">
-        <div style="font-size:13px;font-weight:700;color:#ff8080;margin-bottom:6px;">📻 Broadcast failed</div>
-        <div style="font-size:12px;color:#8899aa;margin-bottom:12px;">${errMsg}</div>
-        <button class="podcast-retry-btn" style="padding:7px 16px;border-radius:8px;border:1px solid rgba(251,146,60,0.35);background:rgba(251,146,60,0.1);color:#fb923c;font-size:12px;font-weight:700;cursor:pointer;">🔄 Try Again</button>
+        <div style="font-size:13px;font-weight:700;color:#ff8080;margin-bottom:6px;">📻 Voice needs billing enabled</div>
+        <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">${errMsg}</div>
+        ${isBilling ? `<a href="https://console.cloud.google.com/billing" target="_blank" style="display:inline-block;padding:7px 14px;border-radius:8px;background:rgba(251,146,60,0.15);border:1px solid rgba(251,146,60,0.35);color:#fb923c;font-size:12px;font-weight:700;text-decoration:none;margin-bottom:10px;">Enable Billing on Google Cloud ↗</a><br>` : ''}
+        <button class="podcast-retry-btn" style="margin-top:4px;padding:7px 16px;border-radius:8px;border:1px solid rgba(100,100,120,0.3);background:rgba(100,100,120,0.08);color:#8899aa;font-size:12px;font-weight:700;cursor:pointer;">🔄 Try Again</button>
       </div>`;
     progressCard.querySelector('.podcast-retry-btn').addEventListener('click', () => {
       progressCard.remove(); showPodcastStudio(thread);
