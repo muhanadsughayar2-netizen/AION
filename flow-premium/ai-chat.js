@@ -1685,7 +1685,7 @@ function showPodcastStudio(thread) {
         <div style="font-size:12px;color:#aabbcc;line-height:1.6;">
           Type any topic and Aion AI writes a 2-host podcast script, then reads it aloud.
           ${hasScreenshots ? 'Your screenshot will be used as the source material.' : 'Load a screenshot to use it as the topic source.'}<br>
-          <span style="color:#667788;">Hosts: <b style="color:#fb923c;">Alex</b> (curious) & <b style="color:#fb923c;">Maya</b> (expert) · ~90 seconds · powered by Gemini</span>
+          <span style="color:#667788;">Hosts: <b style="color:#fb923c;">Alex</b> (curious) & <b style="color:#fb923c;">Maya</b> (expert) · powered by Gemini</span>
         </div>
       </div>
 
@@ -1699,11 +1699,18 @@ function showPodcastStudio(thread) {
         <span>📸 Use loaded screenshot as the topic source</span>
       </label>` : ''}
 
-      <!-- Info row -->
-      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-        <span style="padding:2px 9px;border-radius:20px;background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.2);color:#fb923c;font-size:11px;font-weight:600;">~90 SECONDS</span>
+      <!-- Length selector -->
+      <div style="font-size:12px;color:#667788;margin-bottom:6px;">Length:</div>
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+        <button class="podcast-len-btn" data-len="short"  data-words="300"  data-tokens="500"  data-label="~1 min"  style="padding:5px 14px;border-radius:8px;border:1px solid rgba(251,146,60,0.2);background:rgba(251,146,60,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Short  <span style="opacity:0.6;font-size:11px;">~1 min</span></button>
+        <button class="podcast-len-btn selected" data-len="medium" data-words="650"  data-tokens="1100" data-label="~3 min"  style="padding:5px 14px;border-radius:8px;border:1px solid rgba(251,146,60,0.5);background:rgba(251,146,60,0.15);color:#fb923c;font-size:12px;font-weight:600;cursor:pointer;">Medium <span style="opacity:0.8;font-size:11px;">~3 min</span></button>
+        <button class="podcast-len-btn" data-len="long"   data-words="1300" data-tokens="2200" data-label="~5 min"  style="padding:5px 14px;border-radius:8px;border:1px solid rgba(251,146,60,0.2);background:rgba(251,146,60,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Long   <span style="opacity:0.6;font-size:11px;">~5 min</span></button>
+        <button class="podcast-len-btn" data-len="deep"   data-words="2200" data-tokens="3800" data-label="~10 min" style="padding:5px 14px;border-radius:8px;border:1px solid rgba(251,146,60,0.2);background:rgba(251,146,60,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Deep   <span style="opacity:0.6;font-size:11px;">~10 min</span></button>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
         <span style="padding:2px 9px;border-radius:20px;background:rgba(251,146,60,0.05);border:1px solid rgba(251,146,60,0.12);color:#667788;font-size:11px;font-weight:600;">2 HOSTS</span>
-        <span style="padding:2px 9px;border-radius:20px;background:rgba(251,146,60,0.05);border:1px solid rgba(251,146,60,0.12);color:#667788;font-size:11px;font-weight:600;">⏱ ~15 SEC TO GENERATE</span>
+        <span class="podcast-gen-time" style="padding:2px 9px;border-radius:20px;background:rgba(251,146,60,0.05);border:1px solid rgba(251,146,60,0.12);color:#667788;font-size:11px;font-weight:600;">⏱ ~20 SEC TO GENERATE</span>
       </div>
 
       <!-- Generate button -->
@@ -1748,14 +1755,42 @@ function showPodcastStudio(thread) {
     topicEl.dispatchEvent(new Event('input'));
   });
 
+  // Length selector wiring
+  let selectedLen = { len: 'medium', words: 650, tokens: 1100, label: '~3 min', genTime: '~20 sec' };
+  const GEN_TIMES = { short: '~15 sec', medium: '~20 sec', long: '~40 sec', deep: '~60 sec' };
+  const genTimeEl = studio.querySelector('.podcast-gen-time');
+
+  studio.querySelectorAll('.podcast-len-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      studio.querySelectorAll('.podcast-len-btn').forEach(b => {
+        b.style.border = '1px solid rgba(251,146,60,0.2)';
+        b.style.background = 'rgba(251,146,60,0.04)';
+        b.style.color = '#aabbcc';
+        b.classList.remove('selected');
+      });
+      btn.style.border = '1px solid rgba(251,146,60,0.5)';
+      btn.style.background = 'rgba(251,146,60,0.15)';
+      btn.style.color = '#fb923c';
+      btn.classList.add('selected');
+      selectedLen = {
+        len:    btn.dataset.len,
+        words:  parseInt(btn.dataset.words),
+        tokens: parseInt(btn.dataset.tokens),
+        label:  btn.dataset.label
+      };
+      if (genTimeEl) genTimeEl.textContent = `⏱ ${GEN_TIMES[btn.dataset.len]} TO GENERATE`;
+    });
+  });
+
   createBtn.addEventListener('click', async () => {
     const topic = topicEl.value.trim();
     const useShot = hasScreenshots && (studio.querySelector('.podcast-use-screenshot')?.checked !== false);
-    await runPodcastGeneration(topic, useShot, thread, studio);
+    await runPodcastGeneration(topic, useShot, thread, studio, selectedLen);
   });
 }
 
-async function runPodcastGeneration(topic, useScreenshot, thread, studioEl) {
+async function runPodcastGeneration(topic, useScreenshot, thread, studioEl, lenOpts) {
+  const { words = 650, tokens = 1100, label = '~3 min' } = lenOpts || {};
   const { geminiApiKey: apiKey } = await chrome.storage.sync.get(['geminiApiKey']);
   if (!apiKey) {
     showPromptToast('⚙️ Add your Gemini key in Settings first', 3500);
@@ -1793,16 +1828,17 @@ async function runPodcastGeneration(topic, useScreenshot, thread, studioEl) {
     // ── Step 1: Generate script with Gemini ──────────────────
     setStatus('Alex and Maya are reading the material…', 20);
 
-    const scriptSystemPrompt = `You are a podcast scriptwriter. Write a natural, engaging ~90-second podcast script featuring two hosts:
-- Alex: curious, asks questions, occasional humor
-- Maya: knowledgeable, explains clearly, enthusiastic
+    const scriptSystemPrompt = `You are a podcast scriptwriter. Write a natural, engaging podcast script (target: ${words} words, roughly ${label}) featuring two hosts:
+- Alex: curious, asks questions, builds on answers with follow-ups, occasional humor
+- Maya: knowledgeable, explains clearly, uses vivid analogies, enthusiastic
 
 Rules:
-- ONLY output the spoken dialogue lines — no stage directions, no [music], no [intro]
-- Format every line as exactly:   Alex: [line]   or   Maya: [line]
-- Start with Alex's opening. End with a brief wrap-up from Maya.
-- Keep it conversational and friendly — like two smart friends chatting
-- Maximum 350 words total
+- ONLY output the spoken dialogue lines — no stage directions, no [music], no [intro], no timestamps
+- Format every single line as exactly:   Alex: [line]   or   Maya: [line]
+- Start with Alex's opening. End with Maya's wrap-up.
+- Keep it conversational and friendly — like two smart friends having a real discussion
+- For longer lengths: go deeper — add examples, stories, surprising facts, tangents that come back around
+- Target word count: ${words} words. Do not cut short.
 - No meta-commentary, no "here is your script"`;
 
     const scriptParts = [];
@@ -1823,7 +1859,7 @@ Rules:
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: scriptSystemPrompt }] },
           contents: [{ role: 'user', parts: scriptParts }],
-          generationConfig: { temperature: 0.9, maxOutputTokens: 600 }
+          generationConfig: { temperature: 0.9, maxOutputTokens: tokens }
         }),
         signal: AbortSignal.timeout(25000)
       }
@@ -1841,6 +1877,7 @@ Rules:
 
     for (const ttsModel of ttsModels) {
       try {
+        const ttsTimeout = words <= 300 ? 35000 : words <= 700 ? 50000 : words <= 1300 ? 75000 : 110000;
         const ttsResp = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${ttsModel}:generateContent?key=${apiKey}`,
           {
@@ -1854,7 +1891,7 @@ Rules:
                 speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Puck' } } }
               }
             }),
-            signal: AbortSignal.timeout(30000)
+            signal: AbortSignal.timeout(ttsTimeout)
           }
         );
         const ttsBody = await ttsResp.json().catch(() => ({}));
