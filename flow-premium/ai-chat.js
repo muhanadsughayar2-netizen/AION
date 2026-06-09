@@ -7503,11 +7503,14 @@ async function handleSend() {
           '🎨 Applying CSS & animations…',
           '⚡ Wiring JavaScript…',
           '🧪 Running app — checking for errors…',
-          '🔧 Self-healing any issues…',
+          '🔧 Self-healing any issues found…',
           '📦 Packaging final output…'
         ];
+        // Each step shown for ~22s → 8 steps fills ~3 min before capping at the last
+        const _AG_STEP_MS = 22000;
         const braille = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
-        let _agStep = 0, _spinFrame = 0;
+        let _spinFrame = 0;
+        const _agStart = Date.now();
 
         const responseBubble = createResponseBubble();
         responseBubble.innerHTML =
@@ -7515,6 +7518,7 @@ async function handleSend() {
             `<div style="display:flex;align-items:center;gap:10px;">` +
               `<span id="ag-spin" style="font-size:16px;color:#2dd4bf;font-family:monospace;">${braille[0]}</span>` +
               `<span style="color:#2dd4bf;font-weight:700;font-size:12px;letter-spacing:.08em;">ANTIGRAVITY AGENT</span>` +
+              `<span id="ag-time" style="color:#475569;font-size:11px;margin-left:auto;font-family:monospace;">0:00</span>` +
             `</div>` +
             `<div id="ag-substep" style="color:#94a3b8;font-size:12px;">${agSteps[0]}</div>` +
             `<div style="color:#475569;font-size:11px;">Building in a live Google Linux sandbox — typically 1–3 minutes</div>` +
@@ -7522,13 +7526,25 @@ async function handleSend() {
         thread.scrollTop = thread.scrollHeight;
 
         const _agTimer = setInterval(() => {
+          // Animate braille spinner every 120ms
           _spinFrame = (_spinFrame + 1) % braille.length;
           const spinEl = responseBubble.querySelector('#ag-spin');
           if (spinEl) spinEl.textContent = braille[_spinFrame];
-          if (_spinFrame === 0) {
-            _agStep = (_agStep + 1) % agSteps.length;
-            const stepEl = responseBubble.querySelector('#ag-substep');
-            if (stepEl) stepEl.textContent = agSteps[_agStep];
+
+          const _elapsed = Date.now() - _agStart;
+
+          // Update elapsed clock every ~1s (every 8 frames × 120ms)
+          if (_spinFrame % 8 === 0) {
+            const s = Math.floor(_elapsed / 1000);
+            const timeEl = responseBubble.querySelector('#ag-time');
+            if (timeEl) timeEl.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+          }
+
+          // Advance step linearly based on real elapsed time — never loops back
+          const targetStep = Math.min(Math.floor(_elapsed / _AG_STEP_MS), agSteps.length - 1);
+          const stepEl = responseBubble.querySelector('#ag-substep');
+          if (stepEl && stepEl.textContent !== agSteps[targetStep]) {
+            stepEl.textContent = agSteps[targetStep];
           }
         }, 120);
 
