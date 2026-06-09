@@ -2165,7 +2165,7 @@ Absolute rules:
         <div style="padding:14px 16px;">
 
           <!-- Cast -->
-          <div style="font-size:10px;color:#556677;letter-spacing:0.5px;margin-bottom:8px;font-weight:600;">CAST: ${castLine}${withMusic && musicData ? ' · 🎵 ' + (musicOpts?.music || 'ambient') + ' music' : ''}</div>
+          <div style="font-size:10px;color:#556677;letter-spacing:0.5px;margin-bottom:8px;font-weight:600;">CAST: ${castLine} · ${language}${purposeOpts?.purpose && purposeOpts.purpose !== 'general' ? ' · ' + purposeOpts.purpose : ''}${withMusic && musicData ? ' · 🎵 ' + (musicOpts?.music || 'ambient') : ''}</div>
 
           <!-- Audio player -->
           <audio id="${audioId}" controls style="width:100%;border-radius:8px;outline:none;accent-color:#fb923c;margin-bottom:10px;" src="${finalSrc}"></audio>
