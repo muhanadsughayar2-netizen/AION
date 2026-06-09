@@ -6454,17 +6454,84 @@ async function callAntigravityBuild(userPrompt, apiKey) {
   const newId = data.id || data.interaction_id || (data.name || '').split('/').pop() || null;
   if (newId) chrome.storage.local.set({ antigravity_interaction_id: newId }).catch(() => {});
 
-  const outputText =
-    data.output_text ||
-    data.text ||
-    data.response ||
-    data.candidates?.[0]?.content?.parts?.[0]?.text ||
-    '';
+  // Deep-scan the response object for any string longer than 200 chars
+  // (likely the generated HTML/code). Antigravity uses different field
+  // names depending on the API revision — we cover them all.
+  function _agExtractText(obj, depth = 0) {
+    if (depth > 8 || obj === null || obj === undefined) return '';
+    if (typeof obj === 'string') return obj.length > 200 ? obj : '';
+    if (Array.isArray(obj)) {
+      for (const item of obj) {
+        const r = _agExtractText(item, depth + 1);
+        if (r) return r;
+      }
+      return '';
+    }
+    if (typeof obj === 'object') {
+      // Prioritised field names first
+      const priority = [
+        'output_text','text','response','content','html','code','result',
+        'output','message','body','data','value','answer','generated_text',
+        'completion','artifact','source'
+      ];
+      for (const key of priority) {
+        if (obj[key]) {
+          const r = _agExtractText(obj[key], depth + 1);
+          if (r) return r;
+        }
+      }
+      // Fall back to all remaining keys
+      for (const key of Object.keys(obj)) {
+        if (priority.includes(key)) continue;
+        const r = _agExtractText(obj[key], depth + 1);
+        if (r) return r;
+      }
+    }
+    return '';
+  }
 
+  // Also extract any hosted preview/deployment URL from the response
+  function _agExtractUrl(obj, depth = 0) {
+    if (depth > 8 || obj === null || obj === undefined) return null;
+    if (typeof obj === 'string') {
+      const m = obj.match(/https?:\/\/[^\s"'<>]+\.(?:web\.app|run\.app|appspot\.com|pages\.dev|netlify\.app|vercel\.app)[^\s"'<>]*/);
+      return m ? m[0] : null;
+    }
+    if (Array.isArray(obj)) {
+      for (const item of obj) { const r = _agExtractUrl(item, depth + 1); if (r) return r; }
+      return null;
+    }
+    if (typeof obj === 'object') {
+      const urlKeys = ['preview_url','previewUrl','deployment_url','deploymentUrl','url','live_url','liveUrl','hosted_url'];
+      for (const key of urlKeys) {
+        if (obj[key]) { const r = _agExtractUrl(obj[key], depth + 1); if (r) return r; }
+      }
+      for (const key of Object.keys(obj)) {
+        if (urlKeys.includes(key)) continue;
+        const r = _agExtractUrl(obj[key], depth + 1);
+        if (r) return r;
+      }
+    }
+    return null;
+  }
+
+  // candidates-style (Gemini standard) check first
+  let outputText =
+    data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') ||
+    _agExtractText(data);
+
+  // Also look for PREVIEW_URL marker in the text itself
   const urlMatch = outputText.match(/PREVIEW_URL:\s*(https?:\/\/[^\s\n]+)/i);
-  const previewUrl = urlMatch ? urlMatch[1].trim() : null;
+  const previewUrl = urlMatch ? urlMatch[1].trim() : _agExtractUrl(data);
 
-  return { outputText, interactionId: newId, previewUrl };
+  // If we still got nothing useful, expose the raw response shape as a
+  // debug string so the next attempt can show what field to look at.
+  if (!outputText) {
+    const _rawKeys = JSON.stringify(data, null, 2).slice(0, 1200);
+    outputText = `\`\`\`\n[Antigravity returned data but no text was found in the expected fields.]\n\nRaw response (first 1200 chars):\n${_rawKeys}\n\`\`\``;
+  }
+
+  return { outputText, interactionId: newId, previewUrl, _rawData: data };
 }
 
 // Handle send with streaming
@@ -7568,24 +7635,49 @@ async function handleSend() {
           clearInterval(_agTimer);
           fullText = agResult.outputText;
 
-          const parsedOut = typeof marked !== 'undefined' ? marked.parse(fullText) : fullText;
-          responseBubble.innerHTML = typeof DOMPurify !== 'undefined'
-            ? DOMPurify.sanitize(parsedOut)
-            : parsedOut;
-          responseBubble.querySelectorAll('a').forEach(l => {
-            l.setAttribute('target', '_blank');
-            l.setAttribute('rel', 'noopener noreferrer');
-          });
+          // Determine if the "text" is really just a debug dump (no actual code)
+          const _isDebugDump = fullText.startsWith('```\n[Antigravity returned data');
 
-          if (agResult.previewUrl) {
-            const previewDiv = document.createElement('div');
-            previewDiv.style.cssText = 'margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;';
-            previewDiv.innerHTML =
+          if (_isDebugDump && agResult.previewUrl) {
+            // API gave us a hosted URL but no raw HTML — show an iframe so the
+            // user can still interact with the live app, plus an open link.
+            responseBubble.innerHTML = '';
+            const _iframeWrap = document.createElement('div');
+            _iframeWrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
+            _iframeWrap.innerHTML =
+              `<div style="color:#94a3b8;font-size:12px;">` +
+                `✅ Build complete — running live in Google's sandbox:` +
+              `</div>` +
+              `<iframe src="${agResult.previewUrl}" style="width:100%;height:480px;border:none;` +
+              `border-radius:10px;background:#fff;" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>` +
               `<a href="${agResult.previewUrl}" target="_blank" rel="noopener" ` +
               `style="display:inline-flex;align-items:center;gap:6px;background:rgba(45,212,191,0.15);` +
               `border:1px solid rgba(45,212,191,0.4);color:#2dd4bf;padding:6px 16px;border-radius:8px;` +
-              `font-size:12px;font-weight:700;text-decoration:none;">🌐 Open Live Preview ↗</a>`;
-            responseBubble.appendChild(previewDiv);
+              `font-size:12px;font-weight:700;text-decoration:none;align-self:flex-start;">` +
+              `🌐 Open in new tab ↗</a>`;
+            responseBubble.appendChild(_iframeWrap);
+            // Don't pass debug text to renderLivePreview
+            fullText = '';
+          } else {
+            const parsedOut = typeof marked !== 'undefined' ? marked.parse(fullText) : fullText;
+            responseBubble.innerHTML = typeof DOMPurify !== 'undefined'
+              ? DOMPurify.sanitize(parsedOut)
+              : parsedOut;
+            responseBubble.querySelectorAll('a').forEach(l => {
+              l.setAttribute('target', '_blank');
+              l.setAttribute('rel', 'noopener noreferrer');
+            });
+
+            if (agResult.previewUrl) {
+              const previewDiv = document.createElement('div');
+              previewDiv.style.cssText = 'margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;';
+              previewDiv.innerHTML =
+                `<a href="${agResult.previewUrl}" target="_blank" rel="noopener" ` +
+                `style="display:inline-flex;align-items:center;gap:6px;background:rgba(45,212,191,0.15);` +
+                `border:1px solid rgba(45,212,191,0.4);color:#2dd4bf;padding:6px 16px;border-radius:8px;` +
+                `font-size:12px;font-weight:700;text-decoration:none;">🌐 Open Live Preview ↗</a>`;
+              responseBubble.appendChild(previewDiv);
+            }
           }
 
         } catch (agErr) {
