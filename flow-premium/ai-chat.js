@@ -6394,6 +6394,68 @@ async function sendToGemini(prompt, imageDataUrls) {
   return text;
 }
 
+// ── Antigravity Agent Build ─────────────────────────────────────────────────
+// Calls POST /v1beta/interactions with agent:"antigravity-preview-05-2026".
+// Google provisions a real Linux sandbox, writes code, runs it, self-corrects,
+// and returns the finished HTML + an optional live preview URL.
+async function callAntigravityBuild(userPrompt, apiKey) {
+  const stored = await chrome.storage.local.get(['antigravity_interaction_id']).catch(() => ({}));
+  const previousId = stored.antigravity_interaction_id || null;
+
+  const buildInstruction =
+    `You are an expert full-stack web developer running inside a Linux sandbox.\n\n` +
+    `TASK: ${userPrompt}\n\n` +
+    `MANDATORY DELIVERY FORMAT — follow exactly:\n` +
+    `1. Build a complete, modern, visually stunning single-page web application.\n` +
+    `2. Use premium CSS: glassmorphism, gradients, smooth animations. Never plain.\n` +
+    `3. Every button and interactive element must be fully wired with JavaScript.\n` +
+    `4. Run the app inside the sandbox and confirm zero console errors.\n` +
+    `5. At the END of your response output the COMPLETE final HTML (no truncation)\n` +
+    `   inside ONE markdown code block:\n` +
+    `\`\`\`html\n<!DOCTYPE html>...complete self-contained file...\n\`\`\`\n` +
+    `6. If you have a live hosted preview URL, put it on its own line prefixed EXACTLY:\n` +
+    `   PREVIEW_URL: https://...`;
+
+  const body = {
+    agent: 'antigravity-preview-05-2026',
+    input: buildInstruction,
+    environment: 'remote'
+  };
+  if (previousId) body.interaction_id = previousId;
+
+  const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey,
+      'Api-Revision': '2026-05-20'
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(300000)
+  });
+
+  if (!resp.ok) {
+    const errData = await resp.json().catch(() => ({}));
+    throw new Error(errData.error?.message || `Antigravity error: ${resp.status}`);
+  }
+
+  const data = await resp.json();
+  const newId = data.id || data.interaction_id || (data.name || '').split('/').pop() || null;
+  if (newId) chrome.storage.local.set({ antigravity_interaction_id: newId }).catch(() => {});
+
+  const outputText =
+    data.output_text ||
+    data.text ||
+    data.response ||
+    data.candidates?.[0]?.content?.parts?.[0]?.text ||
+    '';
+
+  const urlMatch = outputText.match(/PREVIEW_URL:\s*(https?:\/\/[^\s\n]+)/i);
+  const previewUrl = urlMatch ? urlMatch[1].trim() : null;
+
+  return { outputText, interactionId: newId, previewUrl };
+}
+
 // Handle send with streaming
 async function handleSend() {
   const input = document.getElementById('chatInput');
@@ -7429,76 +7491,164 @@ async function handleSend() {
       };
       if (_tools2.length > 0) _body2.tools = _tools2;
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:streamGenerateContent?alt=sse&key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(_body2)
+      // ── ANTIGRAVITY: Route classic Build Mode through the Interactions API ──
+      // Triggered when Build Mode is active and no staged step (L1/L2/L3/UPDATE)
+      // is selected. Both fresh builds and patch edits use Antigravity so the
+      // agent can run the code in a real Linux sandbox and self-heal errors.
+      if (buildModeEnabled && !buildStage) {
+        const agSteps = [
+          '🚀 Starting Google Linux sandbox…',
+          '🗂️ Planning architecture…',
+          '⌨️ Writing HTML structure…',
+          '🎨 Applying CSS & animations…',
+          '⚡ Wiring JavaScript…',
+          '🧪 Running app — checking for errors…',
+          '🔧 Self-healing any issues…',
+          '📦 Packaging final output…'
+        ];
+        const braille = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
+        let _agStep = 0, _spinFrame = 0;
+
+        const responseBubble = createResponseBubble();
+        responseBubble.innerHTML =
+          `<div style="display:flex;flex-direction:column;gap:10px;">` +
+            `<div style="display:flex;align-items:center;gap:10px;">` +
+              `<span id="ag-spin" style="font-size:16px;color:#2dd4bf;font-family:monospace;">${braille[0]}</span>` +
+              `<span style="color:#2dd4bf;font-weight:700;font-size:12px;letter-spacing:.08em;">ANTIGRAVITY AGENT</span>` +
+            `</div>` +
+            `<div id="ag-substep" style="color:#94a3b8;font-size:12px;">${agSteps[0]}</div>` +
+            `<div style="color:#475569;font-size:11px;">Building in a live Google Linux sandbox — typically 1–3 minutes</div>` +
+          `</div>`;
+        thread.scrollTop = thread.scrollHeight;
+
+        const _agTimer = setInterval(() => {
+          _spinFrame = (_spinFrame + 1) % braille.length;
+          const spinEl = responseBubble.querySelector('#ag-spin');
+          if (spinEl) spinEl.textContent = braille[_spinFrame];
+          if (_spinFrame === 0) {
+            _agStep = (_agStep + 1) % agSteps.length;
+            const stepEl = responseBubble.querySelector('#ag-substep');
+            if (stepEl) stepEl.textContent = agSteps[_agStep];
+          }
+        }, 120);
+
+        try {
+          const agPrompt = _lastBuiltCode
+            ? `[UPDATE REQUEST]\nCurrent site HTML:\n\`\`\`html\n${_lastBuiltCodeForPatch || _lastBuiltCode}\n\`\`\`\n\nUser change request: ${prompt}`
+            : prompt;
+
+          const agResult = await callAntigravityBuild(agPrompt, apiKey);
+          clearInterval(_agTimer);
+          fullText = agResult.outputText;
+
+          const parsedOut = typeof marked !== 'undefined' ? marked.parse(fullText) : fullText;
+          responseBubble.innerHTML = typeof DOMPurify !== 'undefined'
+            ? DOMPurify.sanitize(parsedOut)
+            : parsedOut;
+          responseBubble.querySelectorAll('a').forEach(l => {
+            l.setAttribute('target', '_blank');
+            l.setAttribute('rel', 'noopener noreferrer');
+          });
+
+          if (agResult.previewUrl) {
+            const previewDiv = document.createElement('div');
+            previewDiv.style.cssText = 'margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;';
+            previewDiv.innerHTML =
+              `<a href="${agResult.previewUrl}" target="_blank" rel="noopener" ` +
+              `style="display:inline-flex;align-items:center;gap:6px;background:rgba(45,212,191,0.15);` +
+              `border:1px solid rgba(45,212,191,0.4);color:#2dd4bf;padding:6px 16px;border-radius:8px;` +
+              `font-size:12px;font-weight:700;text-decoration:none;">🌐 Open Live Preview ↗</a>`;
+            responseBubble.appendChild(previewDiv);
+          }
+
+        } catch (agErr) {
+          clearInterval(_agTimer);
+          fullText = '';
+          responseBubble.innerHTML =
+            `<div style="color:#ff6b6b;font-size:12px;">` +
+              `Antigravity build failed: ${agErr.message}` +
+            `</div>` +
+            `<div style="color:#64748b;font-size:11px;margin-top:6px;">` +
+              `Check that your API key has Antigravity quota (visible in AI Studio → Rate Limits under "Agents").` +
+            `</div>`;
         }
-      );
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || `API Error: ${response.status}`);
-      }
-      
-      const responseBubble = createResponseBubble();
-      
-      if (!response.body) {
-        throw new Error('No response stream available');
-      }
-      
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let sseBuffer = '';
-      
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+
+        renderLivePreview(fullText);
+        addBubbleActions(responseBubble, fullText);
+
+      } else {
+        // ── STANDARD STREAMING PATH (non-build, or staged L1/L2/L3/UPDATE) ──
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:streamGenerateContent?alt=sse&key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(_body2)
+          }
+        );
         
-        sseBuffer += decoder.decode(value, { stream: true });
-        const lines = sseBuffer.split('\n');
-        sseBuffer = lines.pop() || '';
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+        }
         
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const jsonStr = line.slice(6).trim();
-              if (!jsonStr || jsonStr === '[DONE]') continue;
-              const data = JSON.parse(jsonStr);
-              const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (text) {
-                fullText += text;
-                try {
-                  if (typeof marked !== 'undefined') {
-                    const parsedHtml = marked.parse(fullText);
-                    responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
-                    responseBubble.querySelectorAll('a').forEach(link => {
-                      link.setAttribute('target', '_blank');
-                      link.setAttribute('rel', 'noopener noreferrer');
-                    });
-                  } else {
+        const responseBubble = createResponseBubble();
+        
+        if (!response.body) {
+          throw new Error('No response stream available');
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let sseBuffer = '';
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          sseBuffer += decoder.decode(value, { stream: true });
+          const lines = sseBuffer.split('\n');
+          sseBuffer = lines.pop() || '';
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const jsonStr = line.slice(6).trim();
+                if (!jsonStr || jsonStr === '[DONE]') continue;
+                const data = JSON.parse(jsonStr);
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) {
+                  fullText += text;
+                  try {
+                    if (typeof marked !== 'undefined') {
+                      const parsedHtml = marked.parse(fullText);
+                      responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
+                      responseBubble.querySelectorAll('a').forEach(link => {
+                        link.setAttribute('target', '_blank');
+                        link.setAttribute('rel', 'noopener noreferrer');
+                      });
+                    } else {
+                      responseBubble.textContent = fullText;
+                    }
+                  } catch (renderErr) {
                     responseBubble.textContent = fullText;
                   }
-                } catch (renderErr) {
-                  responseBubble.textContent = fullText;
+                  thread.scrollTop = thread.scrollHeight;
                 }
-                thread.scrollTop = thread.scrollHeight;
+              } catch (parseErr) {
+                // Skip malformed SSE chunks
               }
-            } catch (parseErr) {
-              // Skip malformed SSE chunks
             }
           }
         }
+        
+        if (!fullText) {
+          responseBubble.innerHTML = '<div style="color:#ff6b6b;">No response received. Please try again.</div>';
+        }
+        
+        renderLivePreview(fullText);
+        addBubbleActions(responseBubble, fullText);
       }
-      
-      if (!fullText) {
-        responseBubble.innerHTML = '<div style="color:#ff6b6b;">No response received. Please try again.</div>';
-      }
-      
-      renderLivePreview(fullText);
-      addBubbleActions(responseBubble, fullText);
     }
     
     const userHistoryEntry = { role: 'user', text: prompt };
