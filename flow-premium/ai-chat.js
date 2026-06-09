@@ -1961,10 +1961,19 @@ Absolute rules:
     if (!script.trim()) throw new Error('Empty script returned — please try a more specific topic');
     setStep(1, '✓', 28);
 
-    // ── Step 2: TTS ───────────────────────────────────────────
+    // ── Step 2: TTS (multi-speaker) ───────────────────────────
     setStep(2, 'recording…', 30);
-    const ttsTimeout = words <= 300 ? 35000 : words <= 700 ? 55000 : words <= 1300 ? 80000 : 115000;
+    const ttsTimeout = words <= 300 ? 40000 : words <= 700 ? 65000 : words <= 1300 ? 95000 : 130000;
     let voiceData = null;
+
+    // Multi-speaker voice map: Alex=Puck, Maya=Kore, callers=Aoede+Zephyr
+    const callerFirstNames = callers.map(c => c[0].split(' ')[0]);
+    const multiSpeakerCfg = [
+      { speaker: 'Alex',              voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Puck'   } } },
+      { speaker: 'Maya',              voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore'   } } },
+      { speaker: `Caller ${callerFirstNames[0]}`, voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede'  } } },
+      { speaker: `Caller ${callerFirstNames[1]}`, voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } },
+    ];
 
     for (const ttsModel of [MODELS.ttsPrimary, MODELS.ttsFallback]) {
       try {
@@ -1972,16 +1981,19 @@ Absolute rules:
           `https://generativelanguage.googleapis.com/v1beta/models/${ttsModel}:generateContent?key=${apiKey}`,
           { method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({
-              systemInstruction:{parts:[{text:`You are an energetic, natural radio host delivering a ${language} broadcast. Speak entirely in ${language}. Real radio energy — warm tone for Alex, authoritative but friendly for Maya, distinct character voices for callers. Pacing should feel like a live broadcast.`}]},
               contents:[{role:'user',parts:[{text:script}]}],
-              generationConfig:{ responseModalities:['AUDIO'], speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:'Puck'}}} }
+              generationConfig:{
+                responseModalities:['AUDIO'],
+                speechConfig:{ multiSpeakerVoiceConfig:{ speakerVoiceConfigs: multiSpeakerCfg } }
+              }
             }),
             signal: AbortSignal.timeout(ttsTimeout) }
         );
         const tb = await r.json().catch(() => ({}));
+        if (!r.ok) { console.warn('[Radio] TTS error:', tb.error?.message); continue; }
         const ap = (tb.candidates?.[0]?.content?.parts || []).find(p => p.inlineData?.data?.length > 5000);
         if (ap) { voiceData = ap.inlineData; break; }
-      } catch (_) {}
+      } catch (e) { console.warn('[Radio] TTS attempt failed:', e.message); }
     }
     if (!voiceData) throw new Error('Voice recording failed — your key may need billing enabled');
     setStep(2, '✓', withMusic ? 55 : 88);
