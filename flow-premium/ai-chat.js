@@ -1760,6 +1760,36 @@ function showPodcastStudio(thread) {
           <span>📸 Use loaded screenshot as topic source</span>
         </label>` : ''}
 
+        <!-- Purpose -->
+        <div style="font-size:11px;color:#556677;font-weight:600;letter-spacing:0.5px;margin-bottom:6px;">PURPOSE</div>
+        <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="podcast-purpose-btn selected" data-purpose="general"   data-desc="a lively general-interest radio discussion" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.45);background:rgba(251,146,60,0.12);color:#fb923c;font-size:11px;font-weight:600;cursor:pointer;">🎙️ General</button>
+          <button class="podcast-purpose-btn" data-purpose="study"    data-desc="a structured study lesson that teaches the topic clearly with examples, mnemonics, and recap" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">📚 Study</button>
+          <button class="podcast-purpose-btn" data-purpose="summary"  data-desc="a crisp, high-value summary that extracts the most important points and insights" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">📋 Summary</button>
+          <button class="podcast-purpose-btn" data-purpose="plan"     data-desc="a step-by-step plan breakdown — goals, actions, timeline, and potential challenges" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🗺️ Plan</button>
+          <button class="podcast-purpose-btn" data-purpose="tutorial" data-desc="a practical how-to tutorial — step by step, with tips, common mistakes, and encouragement" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">💡 Tutorial</button>
+          <button class="podcast-purpose-btn" data-purpose="news"     data-desc="a news-style briefing — what happened, why it matters, different perspectives" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🗞️ News</button>
+        </div>
+
+        <!-- Language -->
+        <div style="font-size:11px;color:#556677;font-weight:600;letter-spacing:0.5px;margin-bottom:6px;">LANGUAGE</div>
+        <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="podcast-lang-btn selected" data-lang="English" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.45);background:rgba(251,146,60,0.12);color:#fb923c;font-size:11px;font-weight:600;cursor:pointer;">🇬🇧 English</button>
+          <button class="podcast-lang-btn" data-lang="Spanish"    style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇪🇸 Español</button>
+          <button class="podcast-lang-btn" data-lang="French"     style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇫🇷 Français</button>
+          <button class="podcast-lang-btn" data-lang="Arabic"     style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇸🇦 Arabic</button>
+          <button class="podcast-lang-btn" data-lang="Hindi"      style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇮🇳 Hindi</button>
+          <button class="podcast-lang-btn" data-lang="Chinese (Mandarin)" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇨🇳 中文</button>
+          <button class="podcast-lang-btn" data-lang="Portuguese" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇧🇷 Português</button>
+          <button class="podcast-lang-btn" data-lang="German"     style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇩🇪 Deutsch</button>
+          <button class="podcast-lang-btn" data-lang="Japanese"   style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇯🇵 日本語</button>
+          <button class="podcast-lang-btn" data-lang="Korean"     style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇰🇷 한국어</button>
+          <button class="podcast-lang-btn" data-lang="Turkish"    style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇹🇷 Türkçe</button>
+          <button class="podcast-lang-btn" data-lang="Italian"    style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇮🇹 Italiano</button>
+          <button class="podcast-lang-btn" data-lang="Russian"    style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇷🇺 Русский</button>
+          <button class="podcast-lang-btn" data-lang="Indonesian" style="padding:5px 11px;border-radius:8px;border:1px solid rgba(251,146,60,0.15);background:rgba(251,146,60,0.03);color:#8899aa;font-size:11px;font-weight:600;cursor:pointer;">🇮🇩 Indonesia</button>
+        </div>
+
         <!-- Format -->
         <div style="font-size:11px;color:#556677;font-weight:600;letter-spacing:0.5px;margin-bottom:6px;">SHOW FORMAT</div>
         <div style="display:flex;gap:6px;margin-bottom:12px;">
@@ -1828,9 +1858,11 @@ function showPodcastStudio(thread) {
   ];
   const GEN_TIMES = { short: '~20 sec', medium: '~30 sec', long: '~50 sec', deep: '~90 sec' };
 
-  let selectedFmt   = 'talkshow';
-  let selectedMusic = { music: 'ambient', prompt: 'smooth calm ambient radio background music, gentle, unobtrusive, perfect for a talk show, no vocals' };
-  let selectedLen   = { len: 'medium', words: 650, tokens: 1100, label: '~3 min' };
+  let selectedFmt     = 'talkshow';
+  let selectedMusic   = { music: 'ambient', prompt: 'smooth calm ambient radio background music, gentle, unobtrusive, perfect for a talk show, no vocals' };
+  let selectedLen     = { len: 'medium', words: 650, tokens: 1100, label: '~3 min' };
+  let selectedPurpose = { purpose: 'general', desc: 'a lively general-interest radio discussion' };
+  let selectedLang    = 'English';
 
   function updateBtn() {
     const ok = topicEl.value.trim().length > 0 || hasScreenshots;
@@ -1888,16 +1920,32 @@ function showPodcastStudio(thread) {
     });
   });
 
+  studio.querySelectorAll('.podcast-purpose-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectBtn('.podcast-purpose-btn', btn);
+      selectedPurpose = { purpose: btn.dataset.purpose, desc: btn.dataset.desc };
+    });
+  });
+
+  studio.querySelectorAll('.podcast-lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectBtn('.podcast-lang-btn', btn);
+      selectedLang = btn.dataset.lang;
+    });
+  });
+
   createBtn.addEventListener('click', async () => {
     const topic  = topicEl.value.trim();
     const useShot = hasScreenshots && (studio.querySelector('.podcast-use-screenshot')?.checked !== false);
-    await runPodcastGeneration(topic, useShot, thread, studio, selectedLen, selectedFmt, selectedMusic);
+    await runPodcastGeneration(topic, useShot, thread, studio, selectedLen, selectedFmt, selectedMusic, selectedPurpose, selectedLang);
   });
 }
 
-async function runPodcastGeneration(topic, useScreenshot, thread, studioEl, lenOpts, fmt, musicOpts) {
+async function runPodcastGeneration(topic, useScreenshot, thread, studioEl, lenOpts, fmt, musicOpts, purposeOpts, lang) {
   const { words = 650, tokens = 1100, label = '~3 min' } = lenOpts || {};
-  const isTalkShow = (fmt !== 'deepdive');
+  const isTalkShow  = (fmt !== 'deepdive');
+  const purposeDesc = purposeOpts?.desc || 'a lively general-interest radio discussion';
+  const language    = lang || 'English';
   const withMusic  = musicOpts?.music !== 'none' && musicOpts?.prompt;
 
   const { geminiApiKey: apiKey } = await chrome.storage.sync.get(['geminiApiKey']);
@@ -1992,12 +2040,14 @@ Show structure:
 6. Final wrap-up and sign-off from both hosts` : `
 Show structure: Alex opens, Alex and Maya have a rich back-and-forth deep dive, Maya wraps up.`;
 
-    const scriptSysPrompt = `You are a radio talk show scriptwriter. Write a polished, engaging radio show script (target: ${words} words, roughly ${label}) featuring:
+    const scriptSysPrompt = `You are a radio talk show scriptwriter. Write ${purposeDesc} as a polished radio show script (target: ${words} words, roughly ${label}) in ${language}.
+The show features:
 - Alex: the host — energetic, witty, keeps the conversation moving, great at transitions
 - Maya: in-studio expert co-host — knowledgeable, warm, uses vivid real-world examples
 ${callerBlock}
 
 Absolute rules:
+- Write ENTIRELY in ${language} — every single word, name, and phrase
 - ONLY output spoken dialogue lines — zero stage directions, zero [music], zero [sound effects], no timestamps
 - Format lines as EXACTLY:   Alex: [line]   Maya: [line]   Caller Sam: [line]   etc.
 - Keep it natural and conversational — real radio energy, not a lecture
@@ -2012,7 +2062,9 @@ Absolute rules:
         scriptParts.push({ inlineData: { mimeType: meta.match(/:(.*?);/)?.[1] || 'image/png', data: b64 } });
       }
     }
-    scriptParts.push({ text: topic ? `Create a radio show episode about: "${topic}"` : 'Create a radio show episode about the content in this image.' });
+    scriptParts.push({ text: topic
+      ? `Create a radio show episode in ${language} about: "${topic}"`
+      : `Create a radio show episode in ${language} about the content in this image.` });
 
     const scriptResp = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
@@ -2037,7 +2089,7 @@ Absolute rules:
           `https://generativelanguage.googleapis.com/v1beta/models/${ttsModel}:generateContent?key=${apiKey}`,
           { method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({
-              systemInstruction:{parts:[{text:'You are an energetic, natural radio host. Deliver this script with real radio energy — warm tone for Alex, authoritative but friendly for Maya, and distinct character voices for callers. Pacing should feel like a real broadcast.'}]},
+              systemInstruction:{parts:[{text:`You are an energetic, natural radio host delivering a ${language} broadcast. Speak entirely in ${language}. Real radio energy — warm tone for Alex, authoritative but friendly for Maya, distinct character voices for callers. Pacing should feel like a live broadcast.`}]},
               contents:[{role:'user',parts:[{text:script}]}],
               generationConfig:{ responseModalities:['AUDIO'], speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:'Puck'}}} }
             }),
