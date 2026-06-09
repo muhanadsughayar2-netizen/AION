@@ -175,10 +175,9 @@ function buildVeoRateLimitCard(modelLabel) {
 }
 
 const MODE_META = {
-  'image':   { icon: '✨', name: 'Image Studio' },
-  'music':   { icon: '🎵', name: 'Music Studio' },
-  'video':   { icon: '🎬', name: 'Video Studio' },
-
+  'image': { icon: '✨', name: 'Image Studio' },
+  'music': { icon: '🎵', name: 'Music Studio' },
+  'video': { icon: '🎬', name: 'Video Studio' }
 };
 
 function buildUnlockCard(mode) {
@@ -929,8 +928,7 @@ const AI_MODES = {
     type: 'gemini-video',
     placeholder: 'Describe the video you want to create...',
     welcome: '🎬 Video mode — describe a scene and I\'ll bring it to life!'
-  },
-
+  }
 };
 
 let currentAiMode = 'vision';
@@ -944,17 +942,17 @@ function getCurrentModeModel() {
 }
 
 const MODE_COLORS = {
-  'vision':  'rgba(66,133,244,0.04)',
-  'image':   'rgba(251,188,5,0.04)',
-  'music':   'rgba(52,168,83,0.04)',
-  'video':   'rgba(234,67,53,0.04)',
+  'vision': 'rgba(66,133,244,0.04)',
+  'image': 'rgba(251,188,5,0.04)',
+  'music': 'rgba(52,168,83,0.04)',
+  'video': 'rgba(234,67,53,0.04)'
 };
 
 const MODEL_NAMES = {
-  'vision':  { name: 'Gemini 3', sub: 'Flash (Preview)', color: '#4285F4' },
-  'image':   { name: 'Nano', sub: 'Banana', color: '#FBBC05' },
-  'music':   { name: 'Lyria', sub: '', color: '#34A853' },
-  'video':   { name: 'Veo', sub: '', color: '#EA4335' },
+  'vision': { name: 'Gemini 3', sub: 'Flash (Preview)', color: '#4285F4' },
+  'image': { name: 'Nano', sub: 'Banana', color: '#FBBC05' },
+  'music': { name: 'Lyria', sub: '', color: '#34A853' },
+  'video': { name: 'Veo', sub: '', color: '#EA4335' }
 };
 
 function updateModelHeader(mode) {
@@ -1643,7 +1641,6 @@ function renderVeoPriceTable(studio) {
   }).filter(Boolean).join('');
   rowsEl.innerHTML = html + `<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,165,0,0.15);font-size:10px;color:#667788;">Total = price/sec × ${totalSec}s (${selectedClipCount}×${selectedVideoDuration}s). Charged by Google to your own API key.</div>`;
 }
-
 
 async function stylizeImageForVideo(apiKey, imageData, style) {
   const stylePrompts = {
