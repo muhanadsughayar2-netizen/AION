@@ -10,10 +10,7 @@ import json
 import time
 import base64
 import uuid
-try:
-    import google.generativeai as genai
-except Exception:
-    genai = None
+genai = None  # lazy-loaded on first use
 
 # Disable automatic static folder - we'll handle all routing manually
 app = Flask(__name__, static_folder=None)
@@ -356,11 +353,18 @@ def lazy_init_db():
 
 app.url_map.strict_slashes = False
 
-if genai and os.environ.get('GEMINI_API_KEY'):
-    try:
-        genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
-    except Exception as e:
-        print(f'⚠️ Gemini SDK init failed: {e}')
+def _get_genai():
+    global genai
+    if genai is None:
+        try:
+            import google.generativeai as _genai
+            genai = _genai
+            api_key = os.environ.get('GEMINI_API_KEY')
+            if api_key:
+                genai.configure(api_key=api_key)
+        except Exception as e:
+            print(f'⚠️ Gemini SDK init failed: {e}')
+    return genai
 
 @app.route('/api/check-video-support', methods=['POST', 'OPTIONS'])
 def check_video_support():
