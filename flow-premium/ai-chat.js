@@ -175,9 +175,10 @@ function buildVeoRateLimitCard(modelLabel) {
 }
 
 const MODE_META = {
-  'image': { icon: '✨', name: 'Image Studio' },
-  'music': { icon: '🎵', name: 'Music Studio' },
-  'video': { icon: '🎬', name: 'Video Studio' }
+  'image':   { icon: '✨', name: 'Image Studio' },
+  'music':   { icon: '🎵', name: 'Music Studio' },
+  'video':   { icon: '🎬', name: 'Video Studio' },
+  'podcast': { icon: '🎙️', name: 'Podcast Studio' }
 };
 
 function buildUnlockCard(mode) {
@@ -928,6 +929,12 @@ const AI_MODES = {
     type: 'gemini-video',
     placeholder: 'Describe the video you want to create...',
     welcome: '🎬 Video mode — describe a scene and I\'ll bring it to life!'
+  },
+  'podcast': {
+    model: MODELS.chat,
+    type: 'gemini-podcast',
+    placeholder: 'Enter a topic to turn into a podcast...',
+    welcome: '🎙️ Podcast mode — type a topic (or load a screenshot) and get a 2-host AI podcast in seconds.'
   }
 };
 
@@ -942,17 +949,19 @@ function getCurrentModeModel() {
 }
 
 const MODE_COLORS = {
-  'vision': 'rgba(66,133,244,0.04)',
-  'image': 'rgba(251,188,5,0.04)',
-  'music': 'rgba(52,168,83,0.04)',
-  'video': 'rgba(234,67,53,0.04)'
+  'vision':  'rgba(66,133,244,0.04)',
+  'image':   'rgba(251,188,5,0.04)',
+  'music':   'rgba(52,168,83,0.04)',
+  'video':   'rgba(234,67,53,0.04)',
+  'podcast': 'rgba(251,146,60,0.04)'
 };
 
 const MODEL_NAMES = {
-  'vision': { name: 'Gemini 3', sub: 'Flash (Preview)', color: '#4285F4' },
-  'image': { name: 'Nano', sub: 'Banana', color: '#FBBC05' },
-  'music': { name: 'Lyria', sub: '', color: '#34A853' },
-  'video': { name: 'Veo', sub: '', color: '#EA4335' }
+  'vision':  { name: 'Gemini 3', sub: 'Flash (Preview)', color: '#4285F4' },
+  'image':   { name: 'Nano', sub: 'Banana', color: '#FBBC05' },
+  'music':   { name: 'Lyria', sub: '', color: '#34A853' },
+  'video':   { name: 'Veo', sub: '', color: '#EA4335' },
+  'podcast': { name: 'Podcast', sub: 'AI', color: '#fb923c' }
 };
 
 function updateModelHeader(mode) {
@@ -1084,13 +1093,16 @@ function initModeButtons() {
         const notice = document.createElement('div');
         notice.className = 'chat-bubble ai mode-switch-notice';
         notice.style.cssText = 'font-size: 14px; padding: 10px 16px; border-left: 3px solid; margin: 4px 0;';
-        const borderColors = { 'vision': '#4285F4', 'image': '#8ab4f8', 'music': '#8ab4f8', 'video': '#8ab4f8' };
+        const borderColors = { 'vision': '#4285F4', 'image': '#8ab4f8', 'music': '#8ab4f8', 'video': '#8ab4f8', 'podcast': '#fb923c' };
         notice.style.borderLeftColor = borderColors[mode] || '#4285F4';
         notice.textContent = cfg.welcome;
         thread.appendChild(notice);
         
         if (mode === 'video') {
           showVideoStudio(thread);
+        }
+        if (mode === 'podcast') {
+          showPodcastStudio(thread);
         }
         
         thread.scrollTop = thread.scrollHeight;
@@ -1640,6 +1652,308 @@ function renderVeoPriceTable(studio) {
     </div>`;
   }).filter(Boolean).join('');
   rowsEl.innerHTML = html + `<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,165,0,0.15);font-size:10px;color:#667788;">Total = price/sec × ${totalSec}s (${selectedClipCount}×${selectedVideoDuration}s). Charged by Google to your own API key.</div>`;
+}
+
+// ============================================================
+// PODCAST STUDIO
+// ============================================================
+function showPodcastStudio(thread) {
+  const existing = thread.querySelector('.podcast-studio');
+  if (existing) existing.remove();
+
+  const studio = document.createElement('div');
+  studio.className = 'chat-bubble ai podcast-studio';
+  studio.style.cssText = 'padding:0;margin:8px 0;background:transparent;border:none;max-width:100%;width:100%;';
+
+  const hasScreenshots = typeof currentImages !== 'undefined' && currentImages.length > 0;
+
+  studio.innerHTML = `
+    <div style="background:linear-gradient(135deg,rgba(251,146,60,0.06),rgba(234,88,12,0.02));border:1px solid rgba(251,146,60,0.18);border-radius:14px;padding:16px;">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:20px;">🎙️</span>
+          <span style="font-size:14px;font-weight:700;color:#e8eef4;">Podcast Studio</span>
+        </div>
+        <button class="podcast-surprise-btn" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(251,146,60,0.25);background:rgba(251,146,60,0.06);color:#fb923c;font-size:12px;font-weight:600;cursor:pointer;">🎲 Surprise Me</button>
+      </div>
+
+      <!-- Explainer -->
+      <div style="background:rgba(251,146,60,0.06);border:1px solid rgba(251,146,60,0.15);border-radius:10px;padding:10px 12px;margin-bottom:12px;">
+        <div style="font-size:12px;color:#fb923c;font-weight:700;letter-spacing:0.5px;margin-bottom:5px;">WHAT THIS DOES</div>
+        <div style="font-size:12px;color:#aabbcc;line-height:1.6;">
+          Type any topic and Aion AI writes a 2-host podcast script, then reads it aloud.
+          ${hasScreenshots ? 'Your screenshot will be used as the source material.' : 'Load a screenshot to use it as the topic source.'}<br>
+          <span style="color:#667788;">Hosts: <b style="color:#fb923c;">Alex</b> (curious) & <b style="color:#fb923c;">Maya</b> (expert) · ~90 seconds · powered by Gemini</span>
+        </div>
+      </div>
+
+      <!-- Topic input -->
+      <div style="font-size:12px;color:#667788;margin-bottom:4px;">Topic or question:</div>
+      <textarea class="podcast-topic" placeholder="e.g. How does the internet actually work? · Why is the sky blue? · What is machine learning?" style="width:100%;box-sizing:border-box;height:56px;background:rgba(255,255,255,0.03);border:1px solid rgba(251,146,60,0.15);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color 0.2s;margin-bottom:10px;"></textarea>
+
+      ${hasScreenshots ? `
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#aabbcc;margin-bottom:10px;">
+        <input type="checkbox" class="podcast-use-screenshot" style="accent-color:#fb923c;" checked>
+        <span>📸 Use loaded screenshot as the topic source</span>
+      </label>` : ''}
+
+      <!-- Info row -->
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <span style="padding:2px 9px;border-radius:20px;background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.2);color:#fb923c;font-size:11px;font-weight:600;">~90 SECONDS</span>
+        <span style="padding:2px 9px;border-radius:20px;background:rgba(251,146,60,0.05);border:1px solid rgba(251,146,60,0.12);color:#667788;font-size:11px;font-weight:600;">2 HOSTS</span>
+        <span style="padding:2px 9px;border-radius:20px;background:rgba(251,146,60,0.05);border:1px solid rgba(251,146,60,0.12);color:#667788;font-size:11px;font-weight:600;">⏱ ~15 SEC TO GENERATE</span>
+      </div>
+
+      <!-- Generate button -->
+      <button class="podcast-create-btn" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#ea580c,#c2410c);color:#fff;font-size:13px;font-weight:700;cursor:pointer;opacity:0.4;pointer-events:none;">🎙️ Generate Podcast</button>
+    </div>
+  `;
+
+  thread.appendChild(studio);
+
+  const topicEl = studio.querySelector('.podcast-topic');
+  const createBtn = studio.querySelector('.podcast-create-btn');
+  const surpriseBtn = studio.querySelector('.podcast-surprise-btn');
+
+  const SURPRISE_TOPICS = [
+    'Why do we dream and what do dreams actually mean?',
+    'How does GPS know exactly where you are?',
+    'The psychology behind why we procrastinate',
+    'How does AI actually learn from data?',
+    'Why is music so emotional and powerful?',
+    'The science of why we find certain things beautiful',
+    'How did the internet go from military project to global network?',
+    'Why do some memories stick and others fade?'
+  ];
+
+  function updateBtn() {
+    const hasText = topicEl.value.trim().length > 0 || hasScreenshots;
+    createBtn.style.opacity = hasText ? '1' : '0.4';
+    createBtn.style.pointerEvents = hasText ? 'auto' : 'none';
+  }
+
+  topicEl.addEventListener('input', () => {
+    topicEl.style.height = '56px';
+    topicEl.style.height = Math.max(56, topicEl.scrollHeight) + 'px';
+    updateBtn();
+  });
+  topicEl.addEventListener('focus', () => { topicEl.style.borderColor = 'rgba(251,146,60,0.4)'; });
+  topicEl.addEventListener('blur',  () => { topicEl.style.borderColor = 'rgba(251,146,60,0.15)'; });
+  if (hasScreenshots) updateBtn(); // screenshot already loaded = button active
+
+  surpriseBtn.addEventListener('click', () => {
+    topicEl.value = SURPRISE_TOPICS[Math.floor(Math.random() * SURPRISE_TOPICS.length)];
+    topicEl.dispatchEvent(new Event('input'));
+  });
+
+  createBtn.addEventListener('click', async () => {
+    const topic = topicEl.value.trim();
+    const useShot = hasScreenshots && (studio.querySelector('.podcast-use-screenshot')?.checked !== false);
+    await runPodcastGeneration(topic, useShot, thread, studio);
+  });
+}
+
+async function runPodcastGeneration(topic, useScreenshot, thread, studioEl) {
+  const { geminiApiKey: apiKey } = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!apiKey) {
+    showPromptToast('⚙️ Add your Gemini key in Settings first', 3500);
+    return;
+  }
+
+  // Replace studio card with a progress card
+  const progressCard = document.createElement('div');
+  progressCard.className = 'chat-bubble ai podcast-progress';
+  progressCard.style.cssText = 'padding:0;margin:8px 0;background:transparent;border:none;max-width:100%;width:100%;';
+  progressCard.innerHTML = `
+    <div style="background:linear-gradient(135deg,rgba(251,146,60,0.06),rgba(234,88,12,0.02));border:1px solid rgba(251,146,60,0.18);border-radius:14px;padding:16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="font-size:20px;">🎙️</span>
+        <span style="font-size:13px;font-weight:700;color:#fb923c;">Writing your podcast script…</span>
+      </div>
+      <div class="podcast-status" style="font-size:12px;color:#8899aa;margin-bottom:10px;">Alex and Maya are preparing their notes…</div>
+      <div style="width:100%;height:3px;background:rgba(251,146,60,0.1);border-radius:2px;overflow:hidden;">
+        <div class="podcast-bar" style="width:10%;height:100%;background:linear-gradient(90deg,#ea580c,#fb923c);border-radius:2px;transition:width 0.6s ease;"></div>
+      </div>
+    </div>
+  `;
+  studioEl.replaceWith(progressCard);
+  thread.scrollTop = thread.scrollHeight;
+
+  const statusEl = progressCard.querySelector('.podcast-status');
+  const barEl    = progressCard.querySelector('.podcast-bar');
+
+  function setStatus(msg, pct) {
+    if (statusEl) statusEl.textContent = msg;
+    if (barEl)    barEl.style.width = pct + '%';
+  }
+
+  try {
+    // ── Step 1: Generate script with Gemini ──────────────────
+    setStatus('Alex and Maya are reading the material…', 20);
+
+    const scriptSystemPrompt = `You are a podcast scriptwriter. Write a natural, engaging ~90-second podcast script featuring two hosts:
+- Alex: curious, asks questions, occasional humor
+- Maya: knowledgeable, explains clearly, enthusiastic
+
+Rules:
+- ONLY output the spoken dialogue lines — no stage directions, no [music], no [intro]
+- Format every line as exactly:   Alex: [line]   or   Maya: [line]
+- Start with Alex's opening. End with a brief wrap-up from Maya.
+- Keep it conversational and friendly — like two smart friends chatting
+- Maximum 350 words total
+- No meta-commentary, no "here is your script"`;
+
+    const scriptParts = [];
+    if (useScreenshot && typeof currentImages !== 'undefined' && currentImages.length > 0) {
+      for (const img of currentImages) {
+        const [meta, b64] = img.split(',');
+        const mime = meta.match(/:(.*?);/)?.[1] || 'image/png';
+        scriptParts.push({ inlineData: { mimeType: mime, data: b64 } });
+      }
+    }
+    scriptParts.push({ text: topic ? `Create a podcast episode about: "${topic}"` : 'Create a podcast episode about the content in this image.' });
+
+    const scriptResp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: scriptSystemPrompt }] },
+          contents: [{ role: 'user', parts: scriptParts }],
+          generationConfig: { temperature: 0.9, maxOutputTokens: 600 }
+        }),
+        signal: AbortSignal.timeout(25000)
+      }
+    );
+    const scriptBody = await scriptResp.json().catch(() => ({}));
+    if (!scriptResp.ok) throw new Error(scriptBody.error?.message || 'Script generation failed');
+    const script = scriptBody.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!script.trim()) throw new Error('Empty script returned — please try again');
+
+    // ── Step 2: Read script via TTS ──────────────────────────
+    setStatus('Recording in the studio…', 55);
+
+    const ttsModels = [MODELS.ttsPrimary, MODELS.ttsFallback];
+    let audioData = null;
+
+    for (const ttsModel of ttsModels) {
+      try {
+        const ttsResp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${ttsModel}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: 'You are a natural, expressive radio host. Speak the following podcast script clearly and with good pacing. Bring energy and personality — this is a real radio show.' }] },
+              contents: [{ role: 'user', parts: [{ text: script }] }],
+              generationConfig: {
+                responseModalities: ['AUDIO'],
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Puck' } } }
+              }
+            }),
+            signal: AbortSignal.timeout(30000)
+          }
+        );
+        const ttsBody = await ttsResp.json().catch(() => ({}));
+        const parts = ttsBody.candidates?.[0]?.content?.parts || [];
+        const audioPart = parts.find(p => p.inlineData?.data && p.inlineData.data.length > 5000);
+        if (audioPart) { audioData = audioPart.inlineData; break; }
+      } catch (_) {}
+    }
+
+    if (!audioData) throw new Error('Audio generation failed — your key may need billing enabled');
+
+    setStatus('Almost ready…', 90);
+
+    // ── Step 3: Show result ───────────────────────────────────
+    const audioSrc = `data:${audioData.mimeType};base64,${audioData.data}`;
+    const audioId  = 'podcast-' + Date.now();
+    const shortTopic = (topic || 'Your screenshot').slice(0, 50) + (topic && topic.length > 50 ? '…' : '');
+
+    const resultCard = document.createElement('div');
+    resultCard.className = 'chat-bubble ai podcast-result';
+    resultCard.style.cssText = 'padding:0;margin:8px 0;background:transparent;border:none;max-width:100%;width:100%;';
+    resultCard.innerHTML = `
+      <div style="background:linear-gradient(135deg,rgba(251,146,60,0.06),rgba(234,88,12,0.02));border:1px solid rgba(251,146,60,0.25);border-radius:14px;padding:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <span style="font-size:20px;">🎙️</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#e8eef4;">Your Podcast is Ready</div>
+            <div style="font-size:11px;color:#8899aa;margin-top:1px;">${shortTopic}</div>
+          </div>
+        </div>
+        <audio id="${audioId}" controls style="width:100%;border-radius:8px;outline:none;accent-color:#fb923c;" src="${audioSrc}"></audio>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <button class="podcast-save-btn" style="flex:1;min-width:100px;padding:7px 14px;border-radius:8px;border:1px solid rgba(251,146,60,0.35);background:rgba(251,146,60,0.1);color:#fb923c;font-size:12px;font-weight:600;cursor:pointer;">💾 Download</button>
+          <button class="podcast-share-btn" style="flex:1;min-width:100px;padding:7px 14px;border-radius:8px;border:1px solid rgba(45,212,191,0.35);background:rgba(45,212,191,0.08);color:#2dd4bf;font-size:12px;font-weight:600;cursor:pointer;">📤 Share</button>
+          <button class="podcast-new-btn" style="flex:1;min-width:100px;padding:7px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">🔄 New Topic</button>
+        </div>
+        <!-- Script preview (collapsed) -->
+        <details style="margin-top:10px;">
+          <summary style="font-size:11px;color:#556677;cursor:pointer;list-style:none;display:flex;align-items:center;gap:4px;">
+            <span class="script-arrow" style="font-size:9px;">▶</span> View script
+          </summary>
+          <div style="margin-top:8px;background:rgba(0,0,0,0.2);border-radius:8px;padding:10px 12px;font-size:11px;color:#8899aa;line-height:1.7;white-space:pre-wrap;max-height:180px;overflow-y:auto;">${script.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+        </details>
+      </div>
+    `;
+
+    progressCard.replaceWith(resultCard);
+    thread.scrollTop = thread.scrollHeight;
+
+    // Wire buttons
+    const audioEl = resultCard.querySelector(`#${audioId}`);
+    resultCard.querySelector('.podcast-save-btn').addEventListener('click', () => {
+      const a = document.createElement('a');
+      a.href = audioSrc;
+      a.download = `aion-podcast-${Date.now()}.wav`;
+      a.click();
+    });
+
+    resultCard.querySelector('.podcast-share-btn').addEventListener('click', async () => {
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: `Podcast: ${shortTopic}`, text: `🎙️ I just made an AI podcast about "${shortTopic}" with Aion AI. Try it: https://snaptoai.com` });
+        } else {
+          await navigator.clipboard.writeText(`🎙️ I just made an AI podcast about "${shortTopic}" with Aion AI. Try it: https://snaptoai.com`);
+          showPromptToast('📋 Share message copied to clipboard!', 2500);
+        }
+      } catch (_) {
+        showPromptToast('📋 Download your podcast and share the file!', 2500);
+      }
+    });
+
+    resultCard.querySelector('.podcast-new-btn').addEventListener('click', () => {
+      resultCard.remove();
+      showPodcastStudio(thread);
+      thread.scrollTop = thread.scrollHeight;
+    });
+
+    // Toggle script arrow
+    resultCard.querySelector('details').addEventListener('toggle', (e) => {
+      resultCard.querySelector('.script-arrow').textContent = e.target.open ? '▼' : '▶';
+    });
+
+  } catch (err) {
+    const errMsg = err.message.toLowerCase().includes('billing') || err.message.toLowerCase().includes('permission')
+      ? 'Podcast needs a Gemini key with billing enabled — add yours in Settings.'
+      : err.message.includes('Empty script')
+      ? 'Try a more specific topic and try again.'
+      : err.message;
+    progressCard.innerHTML = `
+      <div style="padding:14px 16px;border-radius:14px;background:rgba(255,100,80,0.06);border:1px solid rgba(255,100,80,0.2);">
+        <div style="font-size:13px;font-weight:600;color:#ff8080;margin-bottom:8px;">🎙️ Podcast generation failed</div>
+        <div style="font-size:12px;color:#8899aa;margin-bottom:12px;">${errMsg}</div>
+        <button class="podcast-retry-btn" style="padding:7px 16px;border-radius:8px;border:1px solid rgba(251,146,60,0.35);background:rgba(251,146,60,0.1);color:#fb923c;font-size:12px;font-weight:600;cursor:pointer;">🔄 Try Again</button>
+      </div>`;
+    progressCard.querySelector('.podcast-retry-btn').addEventListener('click', () => {
+      progressCard.remove();
+      showPodcastStudio(thread);
+    });
+  }
 }
 
 async function stylizeImageForVideo(apiKey, imageData, style) {

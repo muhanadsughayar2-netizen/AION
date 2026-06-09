@@ -826,6 +826,12 @@
       color: #8ab4f8;
       box-shadow: none;
     }
+    .mode-btn[data-mode="podcast"]::before { display: none; }
+    .mode-btn[data-mode="podcast"].active {
+      border-color: rgba(251,146,60,0.55);
+      color: #fb923c;
+      box-shadow: none;
+    }
     .mode-btn .mode-emoji {
       display: inline-block;
       transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1465,6 +1471,7 @@
         <button class="mode-btn" data-mode="image" id="imageModeBtn" title="Generate images from text"><span class="mode-emoji">✨</span> Image</button>
         <button class="mode-btn" data-mode="music" id="musicModeBtn" title="Create music clips"><span class="mode-emoji">🎵</span> Music</button>
         <button class="mode-btn" data-mode="video" id="videoModeBtn" title="Generate videos from prompts or screenshots"><span class="mode-emoji">🎬</span> Video</button>
+        <button class="mode-btn" data-mode="podcast" id="podcastModeBtn" title="Turn any topic or screenshot into a 2-host AI podcast"><span class="mode-emoji">🎙️</span> Podcast</button>
       </div>
       <div class="input-area">
         <input type="file" id="fileInput" accept="image/*,video/webm,video/mp4,video/*,audio/*,.mp3,.wav,.ogg,.pdf,.txt,.md,.json,.csv" multiple hidden>
