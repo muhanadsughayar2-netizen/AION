@@ -6423,16 +6423,27 @@ async function callAntigravityBuild(userPrompt, apiKey) {
   };
   if (previousId) body.interaction_id = previousId;
 
-  const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey,
-      'Api-Revision': '2026-05-20'
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(300000)
-  });
+  // 10-minute timeout — Antigravity can take 3-8 min for complex builds.
+  // Use manual AbortController rather than AbortSignal.timeout() for
+  // better cross-environment compatibility inside MV3 extension pages.
+  const _agAbort = new AbortController();
+  const _agTimeoutId = setTimeout(() => _agAbort.abort('timeout'), 600000);
+
+  let resp;
+  try {
+    resp = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+        'Api-Revision': '2026-05-20'
+      },
+      body: JSON.stringify(body),
+      signal: _agAbort.signal
+    });
+  } finally {
+    clearTimeout(_agTimeoutId);
+  }
 
   if (!resp.ok) {
     const errData = await resp.json().catch(() => ({}));
@@ -7580,13 +7591,35 @@ async function handleSend() {
         } catch (agErr) {
           clearInterval(_agTimer);
           fullText = '';
+          const _isTimeout = agErr.message?.toLowerCase().includes('timeout')
+            || agErr.message?.toLowerCase().includes('timed out')
+            || agErr.message?.toLowerCase().includes('aborted')
+            || agErr.name === 'AbortError';
+          const _isQuota = agErr.message?.toLowerCase().includes('quota')
+            || agErr.message?.toLowerCase().includes('rate')
+            || agErr.message?.toLowerCase().includes('429');
+          const _isKey = agErr.message?.toLowerCase().includes('api key')
+            || agErr.message?.toLowerCase().includes('permission')
+            || agErr.message?.toLowerCase().includes('403');
+
+          let _agErrTitle, _agErrHint;
+          if (_isTimeout) {
+            _agErrTitle = '⏱ Build timed out — Google\'s sandbox took over 10 minutes.';
+            _agErrHint  = 'This usually means the app was too complex for one shot. Try a simpler prompt, or break it into smaller pieces and use follow-up messages to add features.';
+          } else if (_isQuota) {
+            _agErrTitle = '🚦 Rate limit hit — too many builds in a short time.';
+            _agErrHint  = 'Antigravity has a 200 requests/min limit. Wait a moment and try again.';
+          } else if (_isKey) {
+            _agErrTitle = '🔑 API key doesn\'t have Antigravity access.';
+            _agErrHint  = 'Open AI Studio → API Keys, check the Rate Limits page, and look for "Antigravity" under Agents. If it\'s missing, your key may need a billing account enabled.';
+          } else {
+            _agErrTitle = `Build failed: ${agErr.message}`;
+            _agErrHint  = 'Try sending the prompt again. If it keeps failing, simplify the request.';
+          }
+
           responseBubble.innerHTML =
-            `<div style="color:#ff6b6b;font-size:12px;">` +
-              `Antigravity build failed: ${agErr.message}` +
-            `</div>` +
-            `<div style="color:#64748b;font-size:11px;margin-top:6px;">` +
-              `Check that your API key has Antigravity quota (visible in AI Studio → Rate Limits under "Agents").` +
-            `</div>`;
+            `<div style="color:#ff6b6b;font-size:13px;font-weight:600;">${_agErrTitle}</div>` +
+            `<div style="color:#94a3b8;font-size:12px;margin-top:8px;line-height:1.6;">${_agErrHint}</div>`;
         }
 
         renderLivePreview(fullText);
