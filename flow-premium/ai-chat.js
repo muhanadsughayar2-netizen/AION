@@ -6451,6 +6451,9 @@ async function callAntigravityBuild(userPrompt, apiKey) {
   }
 
   const data = await resp.json();
+  // Log the full response so we can see what Antigravity actually returns
+  // (truncated to 6000 chars to avoid flooding the console)
+  console.log('[SnapToAI] Antigravity raw response:', JSON.stringify(data, null, 2).slice(0, 6000));
   const newId = data.id || data.interaction_id || (data.name || '').split('/').pop() || null;
   if (newId) chrome.storage.local.set({ antigravity_interaction_id: newId }).catch(() => {});
 
@@ -7714,7 +7717,21 @@ async function handleSend() {
             `<div style="color:#94a3b8;font-size:12px;margin-top:8px;line-height:1.6;">${_agErrHint}</div>`;
         }
 
-        renderLivePreview(fullText);
+        // For Antigravity we already have the COMPLETE final HTML — use
+        // _showLivePreview directly (isFinal:true so scripts execute) rather
+        // than the streaming renderLivePreview path (isFinal:false = no scripts).
+        if (fullText) {
+          const { html: _agCode } = extractHtmlFromResponse(fullText);
+          if (_agCode) {
+            _lastBuiltCode = _agCode;
+            _buildFinalReady = true;
+            try { chrome.storage.local.set({ snaptoai_built_code: _agCode }); } catch(e) {}
+            _updateBuildInput();
+            _reloadSandbox(); // fresh scope for the new build
+            // Small delay so sandbox reload completes before we post the HTML
+            setTimeout(() => _showLivePreview(_agCode), 600);
+          }
+        }
         addBubbleActions(responseBubble, fullText);
 
       } else {
