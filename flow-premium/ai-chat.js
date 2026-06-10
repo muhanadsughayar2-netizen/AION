@@ -6418,21 +6418,26 @@ async function handleSend() {
   // ── New-app vs update guard ────────────────────────────────────────────────
   // If Build Mode has an existing app AND the prompt looks like a fresh build
   // (not a patch/update), intercept and ask the user before overwriting.
-  if (buildModeEnabled && _lastBuiltCode && !_isContinuationSend && _isNewBuildIntent(prompt)) {
+  // _skipNewAppGuard is set by the "Update current" button so a second call to
+  // handleSend() with the same prompt bypasses this check exactly once.
+  if (buildModeEnabled && _lastBuiltCode && !_isContinuationSend && !_skipNewAppGuard && _isNewBuildIntent(prompt)) {
     input.value = '';
     _showNewAppConfirmation(prompt, input);
     return;
   }
+  _skipNewAppGuard = false; // consume the one-time bypass
   // ── End new-app guard ──────────────────────────────────────────────────────
 
   // ── Build Mode conversation router ─────────────────────────────────────────
-  // When a site already exists, check whether the user is chatting/asking a
-  // question or actually giving a build instruction. Questions and vague
-  // messages get a conversational reply — nothing is built. Clear action verbs
-  // ("add a button", "change the colour", "yes build it") go straight to build.
-  // Files stay in filesQueue across chat turns so the image is available when
+  // Fires whether or not a site has been built yet.
+  // • No site yet  → chat gathers requirements; user says "build it" to start.
+  // • Site exists  → chat discusses the change; user says "build it" to patch.
+  // Questions and vague messages get a conversational reply — nothing is built.
+  // Clear action verbs ("add a button", "change the colour", "yes build it")
+  // go straight to build/patch.
+  // Files stay in filesQueue across chat turns so images are available when
   // the user gives the placement instruction on the next message.
-  if (buildModeEnabled && _lastBuiltCode && !_isContinuationSend) {
+  if (buildModeEnabled && !_isContinuationSend) {
     const _hasAttachedFiles = filesQueue.length > 0;
     if (!_isBuildInstruction(prompt, _hasAttachedFiles)) {
       input.value = '';
@@ -6497,7 +6502,10 @@ async function handleSend() {
     }
   }
 
-  if (buildModeEnabled && _lastBuiltCode) {
+  // Image embedding — runs on FIRST builds AND patch edits (same as video above).
+  // Previously gated behind _lastBuiltCode, which silently dropped user images
+  // on fresh builds ("Start fresh" clears _lastBuiltCode before calling handleSend).
+  if (buildModeEnabled) {
     const imageParts = filesQueue.filter(f => f.mimeType && f.mimeType.startsWith('image/'));
 
     if (imageParts.length > 0) {
@@ -8427,7 +8435,8 @@ async function _buildModeChat(prompt, hasFiles, thread) {
     siteContext = '\n\nTHE USER\'S CURRENT WEBSITE (reference it specifically — real sections, colors, copy):\n\n' + currentCode.slice(0, 9000);
   }
 
-  const systemText = `You are a friendly, expert web designer having a real back-and-forth conversation with a user about THEIR website (shown below). You are in planning/discussion mode — talk it through, do NOT build yet.
+  const systemText = currentCode
+    ? `You are a friendly, expert web designer having a real back-and-forth conversation with a user about THEIR website (shown below). You are in planning/discussion mode — talk it through, do NOT build yet.
 
 HOW TO TALK:
 - Sound like a real designer chatting: natural, specific, warm. 2-4 sentences.
@@ -8436,7 +8445,17 @@ HOW TO TALK:
 - If their idea is vague, ask ONE sharp question and offer a concrete suggestion.
 - Build on what was already said earlier in this conversation — don't repeat yourself.
 - When you understand the plan, summarize it in one line and tell them to say "do it" or "build it" to apply.
-- NEVER output HTML, CSS, or code here — you are only talking.${siteContext}`;
+- NEVER output HTML, CSS, or code here — you are only talking.${siteContext}`
+    : `You are a friendly, expert web designer helping a user plan a brand-new website from scratch. You are in planning/discussion mode — explore their vision, do NOT build yet.
+
+HOW TO TALK:
+- Sound like a real designer chatting: natural, enthusiastic, specific. 2-4 sentences.
+- Ask about their goal, audience, style, and content — one clear question at a time.
+- Offer concrete suggestions: colors, layout ideas, sections to include.
+- If they uploaded an image, ask how they want it used: hero background, logo, product photo?
+- Build on what was already said — don't repeat yourself.
+- When you have a clear picture of what they want, summarize the plan in 2-3 bullet points and tell them to say "build it" or "do it" to start building.
+- NEVER output HTML, CSS, or code here — you are only talking.`;
 
   // Rebuild the multi-turn contents from conversation history so the chat truly remembers.
   const contents = [];
@@ -8529,8 +8548,14 @@ function _showNewAppConfirmation(prompt, input) {
 
   document.getElementById('nacBtnUpdate').addEventListener('click', () => {
     card.remove();
+    // Set the one-time bypass flag so handleSend() skips the new-app guard on
+    // this call (the guard would otherwise see the same prompt and loop the dialog).
+    // handleSend() is async but its guard check is synchronous, so resetting the
+    // flag right after the call is safe — the check already ran by that point.
+    _skipNewAppGuard = true;
     input.value = prompt;
     handleSend();
+    _skipNewAppGuard = false;
   });
 }
 
@@ -8962,6 +8987,9 @@ let _lastBuiltCodeForPatch = '';
 // On every patch response the AI preserves the placeholder strings from _lastBuiltCodeForPatch,
 // so we must re-apply ALL committed swaps — not just the ones pending in this request.
 let _committedMediaMap = {};
+// One-time flag: set by "Update current" button so handleSend() skips the new-app
+// guard exactly once (avoids the infinite dialog loop when the same prompt re-enters).
+let _skipNewAppGuard = false;
 // Base64 data URLs waiting to replace __SNAP_IMG_N__ placeholders after AI responds
 let _pendingBuildImages = [];
 // Short video files (webm/mp4) attached during a build patch — same placeholder approach
