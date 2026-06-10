@@ -8720,7 +8720,13 @@ async function _showBuildConfirmation(prompt) {
     responseBubble.innerHTML = `
       <div style="font-size:13px;color:#e8eef4;line-height:1.7;">
         <div style="font-weight:600;margin-bottom:6px;color:#c7d2fe;">Here's what I'll do:</div>
-        <div id="snapBulletList" style="margin:0 0 10px 0;">${bulletsHtml}</div>
+        <div id="snapBulletList" style="margin:0 0 4px 0;">${bulletsHtml}</div>
+        <button id="snapAddStepBtn" style="
+          display:inline-flex;align-items:center;gap:4px;
+          background:none;border:none;padding:2px 6px;margin:0 0 8px 0;
+          color:#6366f1;font-size:12px;cursor:pointer;
+          opacity:0.75;transition:opacity 0.15s;
+        ">+ Add step</button>
         <div style="font-size:11px;color:#6366f1;margin-bottom:10px;opacity:0.8;">Tap any line to edit it</div>
         <button id="buildConfirmBtn" style="
           display:inline-flex;align-items:center;gap:5px;
@@ -8788,6 +8794,59 @@ async function _showBuildConfirmation(prompt) {
         inp.select();
       });
     });
+
+    // "+ Add step" button — appends a blank editable bullet at the bottom.
+    const addStepBtn = responseBubble.querySelector('#snapAddStepBtn');
+    if (addStepBtn) {
+      addStepBtn.addEventListener('mouseenter', () => { addStepBtn.style.opacity = '1'; });
+      addStepBtn.addEventListener('mouseleave', () => { addStepBtn.style.opacity = '0.75'; });
+      addStepBtn.addEventListener('click', () => {
+        const bulletList = responseBubble.querySelector('#snapBulletList');
+        if (!bulletList) return;
+
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.placeholder = 'Describe the step…';
+        inp.style.cssText = `
+          width:100%;box-sizing:border-box;
+          background:rgba(99,102,241,0.10);
+          border:1px solid rgba(99,102,241,0.50);
+          border-radius:5px;padding:3px 7px;
+          color:#e8eef4;font-size:13px;font-family:inherit;
+          outline:none;
+        `;
+
+        let committed = false;
+        function commitNew() {
+          if (committed) return;
+          committed = true;
+          const val = inp.value.trim();
+          if (val) editedBullets.push(val);
+          renderCard();
+          attachConfirmBtn();
+        }
+
+        inp.addEventListener('keydown', e => {
+          if (e.key === 'Enter') { e.preventDefault(); commitNew(); }
+          if (e.key === 'Escape') { renderCard(); attachConfirmBtn(); }
+        });
+        inp.addEventListener('blur', commitNew);
+
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'display:flex;align-items:center;gap:6px;margin:4px 0;padding:4px 6px;';
+        const bullet = document.createElement('span');
+        bullet.textContent = '•';
+        bullet.style.cssText = 'color:#6366f1;flex-shrink:0;';
+        wrapper.appendChild(bullet);
+        wrapper.appendChild(inp);
+        bulletList.appendChild(wrapper);
+
+        // Hide the add-step button while the input is open.
+        addStepBtn.style.display = 'none';
+
+        inp.focus();
+      });
+    }
   }
 
   function attachConfirmBtn() {
