@@ -8572,7 +8572,12 @@ HOW TO TALK:
   }
   if (!reply) reply = "Tell me what you'd like to change and where it should go — then say \"build it\" and I'll apply it.";
 
-  responseBubble.innerHTML = `<div style="font-size:13px;color:#e8eef4;line-height:1.7;">${reply.replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>')}</div>`;
+  // Use marked.parse so ### headings, **bold**, lists etc. render properly.
+  // Falls back to plain-text newline conversion if marked isn't loaded.
+  const _chatReplyHtml = (typeof marked !== 'undefined')
+    ? ((typeof DOMPurify !== 'undefined') ? DOMPurify.sanitize(marked.parse(reply)) : marked.parse(reply))
+    : reply.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+  responseBubble.innerHTML = _chatReplyHtml;
   addBubbleActions(responseBubble, reply);
 
   // ── "Build it" quick-action button ────────────────────────────────────────
