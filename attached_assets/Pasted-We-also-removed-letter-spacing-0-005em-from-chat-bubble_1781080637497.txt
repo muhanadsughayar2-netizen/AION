@@ -1,0 +1,47 @@
+We also removed letter-spacing: 0.005em from .chat-bubble.ai at the same time, because letter-spacing affects the gaps between individual letters, not words — that was the wrong property for what you were feeling.
+
+The logic: word-spacing is the right tool for making spaces feel like spaces. letter-spacing makes all text slightly wider overall. Only word-spacing targets the actual gaps where you press the spacebar.
+
+
+Checkpoint made
+3 minutes ago
+yES AND THE WAY WE ANSWERD ALSO YOU FIED EITHER IT IS DEEP OR NORMAL CORRECT PELASE TELL ME WHAT LOGIC DID YOU DO
+
+2 minutes ago
+yES AND THE WAY WE ANSWERD ALSO YOU FIED EITHER IT IS DEEP OR NORMAL CORRECT PELASE TELL ME WHAT LOGIC DID YOU DO
+
+1 minute ago
+
+Strategizing prompt refinement approach (6 seconds)
+Let me pull the exact prompts so I can explain precisely what was done:
+
+
+2 actions
+Here's exactly what was done and the logic behind it:
+
+The old way had a long verbose "First Principles" framework — it told the AI to always think step by step, explain its reasoning, lay out a structured response every time. The result was padded, repetitive answers even for simple questions.
+
+The new logic is one rule: match length to complexity.
+
+Brief for simple → thorough for complex
+
+The AI now decides the answer length itself based on how hard the question is — not based on a rigid format.
+
+Three prompts, each used for a different situation:
+
+Prompt	When it fires	Key difference
+SYSTEM_PROMPT	Normal chat, no image	Pure text question — answer directly
+SMART_SYSTEM_PROMPT	You have a screenshot attached	Same rules + "use the screenshot, analyse the page context"
+MULTI_IMAGE_PROMPT	Multiple screenshots	"Analyse ALL images together, highlight differences between them"
+The core logic in all three is identical — just four rules:
+
+Answer directly — nothing more, nothing less
+Match length to difficulty (one sentence for easy, paragraphs for hard)
+No padding, no filler phrases, no repeating yourself
+Markdown only when it genuinely helps (code blocks, short lists) — not for decoration
+So "deep or normal" isn't a mode you switch — the AI reads the question and decides automatically. Simple question → short answer. Hard question → deep answer. The old system forced everything through the same long template regardless.
+
+
+Worked for 32 seconds
+
+Scroll to latest
