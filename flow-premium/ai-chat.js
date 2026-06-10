@@ -8693,30 +8693,106 @@ async function _showBuildConfirmation(prompt) {
     }
   }
 
-  // Fall back to a generic message if the summary call failed.
-  const bulletHtml = bullets.length
-    ? bullets.map(b => `<li style="margin:3px 0;">${b}</li>`).join('')
-    : '<li style="margin:3px 0;">Apply the changes discussed in this conversation</li>';
+  // Fall back to a generic bullet if the summary call failed.
+  if (!bullets.length) {
+    bullets = ['Apply the changes discussed in this conversation'];
+  }
 
-  responseBubble.innerHTML = `
-    <div style="font-size:13px;color:#e8eef4;line-height:1.7;">
-      <div style="font-weight:600;margin-bottom:6px;color:#c7d2fe;">Here's what I'll do:</div>
-      <ul style="margin:0 0 10px 14px;padding:0;color:#b8c8dc;">${bulletHtml}</ul>
-      <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">Tap <strong style="color:#a5b4fc;">Confirm</strong> to build, or type a correction above.</div>
-      <button id="buildConfirmBtn" style="
-        display:inline-flex;align-items:center;gap:5px;
-        padding:5px 14px;
-        background:linear-gradient(135deg,rgba(99,102,241,0.28),rgba(99,102,241,0.16));
-        border:1px solid rgba(99,102,241,0.48);
-        border-radius:8px;
-        color:#a5b4fc;font-size:12px;font-weight:600;
-        cursor:pointer;letter-spacing:0.02em;
-        transition:background 0.18s,border-color 0.18s,color 0.18s;
-      ">✓ Confirm — build it</button>
-    </div>`;
+  // Live-editable copy so Confirm can read the current values.
+  const editedBullets = bullets.slice();
 
-  const confirmBtn = responseBubble.querySelector('#buildConfirmBtn');
-  if (confirmBtn) {
+  function renderCard() {
+    const bulletsHtml = editedBullets.map((b, i) => `
+      <div data-bullet-idx="${i}" style="
+        display:flex;align-items:flex-start;gap:6px;
+        margin:4px 0;padding:4px 6px;border-radius:6px;
+        cursor:pointer;transition:background 0.15s;
+        color:#b8c8dc;font-size:13px;line-height:1.55;
+      " class="snap-bullet-row">
+        <span style="color:#6366f1;flex-shrink:0;margin-top:1px;">•</span>
+        <span class="snap-bullet-text" style="flex:1;">${b.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
+        <span class="snap-bullet-edit-icon" title="Edit" style="
+          flex-shrink:0;opacity:0;font-size:11px;color:#6366f1;
+          transition:opacity 0.15s;margin-top:2px;user-select:none;
+        ">✏️</span>
+      </div>`).join('');
+
+    responseBubble.innerHTML = `
+      <div style="font-size:13px;color:#e8eef4;line-height:1.7;">
+        <div style="font-weight:600;margin-bottom:6px;color:#c7d2fe;">Here's what I'll do:</div>
+        <div id="snapBulletList" style="margin:0 0 10px 0;">${bulletsHtml}</div>
+        <div style="font-size:11px;color:#6366f1;margin-bottom:10px;opacity:0.8;">Tap any line to edit it</div>
+        <button id="buildConfirmBtn" style="
+          display:inline-flex;align-items:center;gap:5px;
+          padding:5px 14px;
+          background:linear-gradient(135deg,rgba(99,102,241,0.28),rgba(99,102,241,0.16));
+          border:1px solid rgba(99,102,241,0.48);
+          border-radius:8px;
+          color:#a5b4fc;font-size:12px;font-weight:600;
+          cursor:pointer;letter-spacing:0.02em;
+          transition:background 0.18s,border-color 0.18s,color 0.18s;
+        ">✓ Confirm — build it</button>
+      </div>`;
+
+    // Hover glow for bullet rows + show/hide pencil icon.
+    responseBubble.querySelectorAll('.snap-bullet-row').forEach(row => {
+      const icon = row.querySelector('.snap-bullet-edit-icon');
+      row.addEventListener('mouseenter', () => {
+        row.style.background = 'rgba(99,102,241,0.10)';
+        if (icon) icon.style.opacity = '1';
+      });
+      row.addEventListener('mouseleave', () => {
+        row.style.background = '';
+        if (icon) icon.style.opacity = '0';
+      });
+
+      // Click → replace the row with an inline input.
+      row.addEventListener('click', () => {
+        const idx = parseInt(row.dataset.bulletIdx, 10);
+        const currentText = editedBullets[idx];
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.value = currentText;
+        inp.style.cssText = `
+          width:100%;box-sizing:border-box;
+          background:rgba(99,102,241,0.10);
+          border:1px solid rgba(99,102,241,0.50);
+          border-radius:5px;padding:3px 7px;
+          color:#e8eef4;font-size:13px;font-family:inherit;
+          outline:none;
+        `;
+
+        function commitEdit() {
+          const val = inp.value.trim();
+          if (val) editedBullets[idx] = val;
+          renderCard();
+          attachConfirmBtn();
+        }
+
+        inp.addEventListener('keydown', e => {
+          if (e.key === 'Enter') { e.preventDefault(); commitEdit(); }
+          if (e.key === 'Escape') { renderCard(); attachConfirmBtn(); }
+        });
+        inp.addEventListener('blur', commitEdit);
+
+        // Replace the row with the input.
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'display:flex;align-items:center;gap:6px;margin:4px 0;padding:4px 6px;';
+        const bullet = document.createElement('span');
+        bullet.textContent = '•';
+        bullet.style.cssText = 'color:#6366f1;flex-shrink:0;';
+        wrapper.appendChild(bullet);
+        wrapper.appendChild(inp);
+        row.replaceWith(wrapper);
+        inp.focus();
+        inp.select();
+      });
+    });
+  }
+
+  function attachConfirmBtn() {
+    const confirmBtn = responseBubble.querySelector('#buildConfirmBtn');
+    if (!confirmBtn) return;
     confirmBtn.addEventListener('mouseenter', () => {
       confirmBtn.style.background = 'linear-gradient(135deg,rgba(99,102,241,0.44),rgba(99,102,241,0.30))';
       confirmBtn.style.borderColor = 'rgba(99,102,241,0.70)';
@@ -8728,13 +8804,18 @@ async function _showBuildConfirmation(prompt) {
       confirmBtn.style.color = '#a5b4fc';
     });
     confirmBtn.addEventListener('click', () => {
-      // Remove the card and proceed with the build.
+      // Build the final prompt: original + any edited bullet corrections.
+      const bulletSummary = editedBullets.map(b => `• ${b}`).join('\n');
+      const finalPrompt = `${prompt}\n\n[Plan to execute:\n${bulletSummary}]`;
       responseBubble.remove();
       _skipBuildConfirmation = true;
-      if (input) { input.value = prompt; }
+      if (input) { input.value = finalPrompt; }
       handleSend();
     });
   }
+
+  renderCard();
+  attachConfirmBtn();
 
   thread.scrollTop = thread.scrollHeight;
 }
