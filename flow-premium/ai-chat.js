@@ -8368,28 +8368,38 @@ function _isNewBuildIntent(prompt) {
 // Returns true  → proceed to build/patch immediately
 // Returns false → route to conversational reply, don't build yet
 function _isBuildInstruction(prompt, hasFiles) {
-  const p = prompt.toLowerCase().trim();
+  const raw = prompt.toLowerCase().trim();
 
-  // Short explicit confirmations → build
-  if (/^(yes|yeah|yep|yup|ok|okay|sure|go|do it|build it|make it|go ahead|confirm|correct|right|exactly|perfect|sounds good|do that|apply|apply it|yes please|please do|let'?s go|do it now|build now|build that|build this)[\s!.,]*$/.test(p)) return true;
+  // Short explicit confirmations → build.
+  const confirmRe = /^(yes|yeah|yep|yup|ok|okay|sure|go|do it|build it|make it|go ahead|confirm|correct|right|exactly|perfect|sounds good|do that|apply|apply it|yes please|please do|let'?s go|do it now|build now|build that|build this|go for it|proceed|approved|ship it|that works|looks good)[\s!.,]*$/;
+  if (confirmRe.test(raw)) return true;
 
-  // Questions → chat
-  if (/^(what|how|why|which|where|who|should i|any ideas|any suggestion|what do you think|what would|help me|give me ideas|what'?s best|thoughts|what if|is it|is there|can you suggest|could you suggest)/.test(p)) return false;
+  // Strip polite / lead-in prefixes REPEATEDLY so stacked prefixes
+  // ("can you please now add…") all peel off to reveal the real verb.
+  let p = raw;
+  const prefixRe = /^(please|pls|plz|hey|ok|okay|yes|yeah|yep|yup|sure|alright|yo|so|now|also|and then|and|then|can you|could you|would you|will you|i want you to|i want to|i'?d like you to|i'?d like to|i would like to|i'?d love to|lets|let'?s|go ahead and|i need you to|i need to|i'?m gonna|gonna|just)[\s,]+/i;
+  let _prev;
+  do { _prev = p; p = p.replace(prefixRe, '').trim(); } while (p !== _prev);
 
-  // Very short with no files → not enough info to build
-  if (p.length < 6 && !hasFiles) return false;
+  // Re-check confirmations after stripping ("sure, do that" → "do that" → build).
+  if (confirmRe.test(p)) return true;
 
-  // Clear action verbs targeting the existing site → build
-  if (/^(add|change|fix|update|remove|delete|edit|modify|tweak|adjust|put|move|replace|swap|switch|rename|make it|make the|make this|now add|also add|and add|can you add|can you change|can you fix|can you update|can you remove|can you put|can you move|can you replace|can you swap|i want (to |you to )|i'?d like( you to)?|please (add|change|fix|update|remove|put|move|replace)|use|apply|include|embed|show|hide|colour|color|style|resize|turn|convert|give it|rebuild|redesign|rewrite|redo|make (it |the |this )|set( the)?|get rid)/.test(p)) return true;
+  // Questions / musings → chat. Checked BEFORE the build-verb list so phrasings
+  // like "give me ideas" / "what should I…" can never trip a build by accident
+  // (a wrong chat-route is recoverable; a wrong build-route rebuilds the site).
+  if (/^(what|how|why|which|where|who|should|is |are |do you|does|can it|what'?s|whats|hmm|not sure|maybe|thinking|thoughts|i think|i'?m thinking|any ideas?|any suggestion|some ideas?|ideas? for|give me ideas|give me some|show me (options|ideas|some)|help|tell me|explain|suggest|recommend|opinion|which one|or should)/.test(p)) return false;
 
-  // File attached with clear placement keyword → build
-  if (hasFiles && /(hero|header|background|section|above|below|top|bottom|replace|swap|put it|place it|use it|as the|in the|at the|into|image section|photo|banner|thumbnail|cover)/.test(p)) return true;
+  // Build / edit verbs at the (cleaned) start → build.
+  // "give"/"use"/"show" are intentionally EXCLUDED — too ambiguous
+  // ("give me ideas", "show me options") and would cause unwanted rebuilds.
+  if (/^(build|create|design|generate|add|change|fix|update|remove|delete|edit|modify|tweak|adjust|put|move|replace|swap|switch|rename|rebuild|redesign|rewrite|redo|make|set|include|embed|insert|apply|turn|convert|get rid|colour|color|style|resize|enable|disable)\b/.test(p)) return true;
+
+  // File attached with a placement hint → build
+  if (hasFiles && /(hero|header|background|section|above|below|top|bottom|replace|swap|put|place|use|as the|in the|at the|into|banner|thumbnail|cover|gallery|photo)/.test(p)) return true;
 
   // File attached but message too short/vague → ask first
   if (hasFiles && p.length < 25) return false;
-
-  // File with enough context → build
-  if (hasFiles && p.length >= 25) return true;
+  if (hasFiles) return true;
 
   // Default → chat (safer — don't auto-build on ambiguous input)
   return false;
@@ -8397,8 +8407,10 @@ function _isBuildInstruction(prompt, hasFiles) {
 
 // ── Build Mode: conversational advisor ───────────────────────────────────────
 // Called when the router decides the user is asking a question rather than
-// giving a build instruction. Responds naturally, may see the attached image,
-// and nudges the user toward a concrete instruction.
+// giving a build instruction. This is a REAL multi-turn conversation: it sees
+// the full chat history AND the current website HTML, so it can discuss the
+// user's actual site specifically. The exchange is saved back to
+// conversationHistory so the next build sees everything that was agreed on.
 async function _buildModeChat(prompt, hasFiles, thread) {
   const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
   const apiKey = keyResult.geminiApiKey;
@@ -8407,42 +8419,74 @@ async function _buildModeChat(prompt, hasFiles, thread) {
   const responseBubble = addBubble('', 'ai');
   responseBubble.innerHTML = '<span style="color:#8899aa;font-size:13px;">thinking…</span>';
 
-  const systemText = `You are a friendly, expert web designer helping a user refine their website through conversation. They have an existing site in preview and are chatting with you to decide what to change next.
+  // Give the advisor the real site so it can refer to actual sections/colors/text.
+  // Use the un-swapped patch copy (no giant base64 blobs) and cap the length.
+  let siteContext = '';
+  const currentCode = _lastBuiltCodeForPatch || _lastBuiltCode || '';
+  if (currentCode) {
+    siteContext = '\n\nTHE USER\'S CURRENT WEBSITE (reference it specifically — real sections, colors, copy):\n\n' + currentCode.slice(0, 9000);
+  }
 
-Rules:
-- Be warm, concise, and conversational — 2 to 4 sentences max
-- If they uploaded an image but didn't say where it goes, ask exactly: "Where would you like this image — replace the hero, add a new section, or somewhere else?"
-- If their request is vague, ask ONE focused clarifying question
-- Offer one concrete suggestion if helpful ("You might also want to…")
-- NEVER write HTML, CSS, or code
-- When you understand what they want, end with: say 'build it' when ready or confirm with yes.`;
+  const systemText = `You are a friendly, expert web designer having a real back-and-forth conversation with a user about THEIR website (shown below). You are in planning/discussion mode — talk it through, do NOT build yet.
 
-  const parts = [];
+HOW TO TALK:
+- Sound like a real designer chatting: natural, specific, warm. 2-4 sentences.
+- Refer to the user's ACTUAL site — name the real sections, colors, and copy you see in the HTML below.
+- If they uploaded an image but didn't say where it goes, ask exactly where: replace the hero, a new section, or the background?
+- If their idea is vague, ask ONE sharp question and offer a concrete suggestion.
+- Build on what was already said earlier in this conversation — don't repeat yourself.
+- When you understand the plan, summarize it in one line and tell them to say "do it" or "build it" to apply.
+- NEVER output HTML, CSS, or code here — you are only talking.${siteContext}`;
+
+  // Rebuild the multi-turn contents from conversation history so the chat truly remembers.
+  const contents = [];
+  for (const msg of conversationHistory) {
+    if (!msg || !msg.text) continue;
+    contents.push({ role: msg.role === 'model' ? 'model' : 'user', parts: [{ text: msg.text }] });
+  }
+  const userParts = [];
   if (hasFiles && filesQueue.length > 0) {
     const imgFile = filesQueue.find(f => f.mimeType && f.mimeType.startsWith('image/'));
-    if (imgFile) parts.push({ inlineData: { mimeType: imgFile.mimeType, data: imgFile.data } });
+    if (imgFile) userParts.push({ inlineData: { mimeType: imgFile.mimeType, data: imgFile.data } });
   }
-  parts.push({ text: prompt || 'I uploaded an image, what do you think?' });
+  userParts.push({ text: prompt || 'I uploaded an image — what do you think, and where should it go?' });
+  contents.push({ role: 'user', parts: userParts });
 
+  let reply = '';
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemText }] },
-          contents: [{ role: 'user', parts }],
-          generationConfig: { maxOutputTokens: 220, temperature: 0.75 }
+          systemInstruction: { parts: [{ text: systemText }] },
+          contents,
+          generationConfig: { maxOutputTokens: 500, temperature: 0.8 }
         })
       }
     );
     const data = await res.json();
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'What would you like to change? Tell me and I\'ll build it.';
-    responseBubble.innerHTML = `<div style="font-size:13px;color:#e8eef4;line-height:1.7;">${reply.replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>')}</div>`;
+    reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!reply) {
+      if (data.error) {
+        reply = `⚠️ ${data.error.message || 'The AI could not respond — check your Gemini API key and quota in Settings.'}`;
+      } else if (data.candidates?.[0]?.finishReason && data.candidates[0].finishReason !== 'STOP') {
+        reply = `⚠️ The AI stopped early (${data.candidates[0].finishReason}). Try rephrasing your message.`;
+      }
+    }
   } catch (_e) {
-    responseBubble.innerHTML = `<div style="font-size:13px;color:#e8eef4;">What would you like to change or add? I'll build it as soon as you confirm.</div>`;
+    reply = '';
   }
+  if (!reply) reply = "Tell me what you'd like to change and where it should go — then say \"build it\" and I'll apply it.";
+
+  responseBubble.innerHTML = `<div style="font-size:13px;color:#e8eef4;line-height:1.7;">${reply.replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>')}</div>`;
+  addBubbleActions(responseBubble, reply);
+
+  // Persist BOTH sides so the conversation is genuinely multi-turn and the
+  // eventual build inherits the full agreed-upon context.
+  conversationHistory.push({ role: 'user', text: prompt || '[uploaded an image]' });
+  conversationHistory.push({ role: 'model', text: reply });
 
   if (thread) thread.scrollTop = thread.scrollHeight;
 }

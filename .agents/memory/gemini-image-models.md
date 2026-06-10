@@ -18,4 +18,6 @@ All use the `generateContent` endpoint with `generationConfig.responseModalities
 
 **DEAD — do not use:** `gemini-2.0-flash` and all its image variants (`gemini-2.0-flash-preview-image-generation`, `gemini-2.0-flash-exp`) were **shut down June 1, 2026**. `gemini-2.5-flash-image-preview` shut down Jan 15, 2026 (use the non-preview `gemini-2.5-flash-image`).
 
+**`gemini-2.0-flash` is dead for TEXT/chat too, not just images.** A hardcoded `gemini-2.0-flash` text `generateContent` call returns no candidates (often a quiet 200 with an `error`/empty body), so any `data.candidates?.[0]?...?.text || 'fallback'` pattern silently shows the same canned fallback every turn. Symptom looked like "the chat only ever says one message." **Always route new text/chat calls through the `MODELS` constants (`MODELS.chat` = `gemini-3.5-flash`), never a hardcoded model ID** — and surface `data.error.message` instead of swallowing it into a fallback string so the next failure is diagnosable.
+
 **Geo note:** Some preview image models return 400 "Image generation is not available in your country" — the fallback chain handles this by trying the next model. `gemini-2.5-flash-image` was confirmed reachable (200 OK) from the user's region. All native image generation requires a PAID/billing-enabled key.
