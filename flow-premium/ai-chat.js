@@ -8378,38 +8378,30 @@ function _isNewBuildIntent(prompt) {
 function _isBuildInstruction(prompt, hasFiles) {
   const raw = prompt.toLowerCase().trim();
 
-  // Short explicit confirmations → build.
+  // ── Confirmation-only gate ────────────────────────────────────────────────
+  // ONLY explicit short confirmations trigger a build or patch.
+  // Everything else — including descriptive instructions like "change the icon",
+  // "add a pricing section", or "build me a landing page" — routes to chat first
+  // so the AI can discuss, clarify, and confirm the plan before touching the site.
+  //
+  // This applies on FIRST builds (no site yet) AND post-build updates:
+  //  • First build: user describes idea → AI discusses → user says "build it" → builds
+  //  • Post-build:  user says "change the banner" → AI confirms → user says "do it" → patches
   const confirmRe = /^(yes|yeah|yep|yup|ok|okay|sure|go|do it|build it|make it|go ahead|confirm|correct|right|exactly|perfect|sounds good|do that|apply|apply it|yes please|please do|let'?s go|do it now|build now|build that|build this|go for it|proceed|approved|ship it|that works|looks good)[\s!.,]*$/;
   if (confirmRe.test(raw)) return true;
 
-  // Strip polite / lead-in prefixes REPEATEDLY so stacked prefixes
-  // ("can you please now add…") all peel off to reveal the real verb.
+  // Strip polite / lead-in prefixes so "sure, do that", "yes ok build it",
+  // "please go ahead" all peel down to their confirmation core.
   let p = raw;
   const prefixRe = /^(please|pls|plz|hey|ok|okay|yes|yeah|yep|yup|sure|alright|yo|so|now|also|and then|and|then|can you|could you|would you|will you|i want you to|i want to|i'?d like you to|i'?d like to|i would like to|i'?d love to|lets|let'?s|go ahead and|i need you to|i need to|i'?m gonna|gonna|just)[\s,]+/i;
   let _prev;
   do { _prev = p; p = p.replace(prefixRe, '').trim(); } while (p !== _prev);
 
-  // Re-check confirmations after stripping ("sure, do that" → "do that" → build).
+  // Re-check after stripping ("sure, do that" → "do that" → build).
   if (confirmRe.test(p)) return true;
 
-  // Questions / musings → chat. Checked BEFORE the build-verb list so phrasings
-  // like "give me ideas" / "what should I…" can never trip a build by accident
-  // (a wrong chat-route is recoverable; a wrong build-route rebuilds the site).
-  if (/^(what|how|why|which|where|who|should|is |are |do you|does|can it|what'?s|whats|hmm|not sure|maybe|thinking|thoughts|i think|i'?m thinking|any ideas?|any suggestion|some ideas?|ideas? for|give me ideas|give me some|show me (options|ideas|some)|help|tell me|explain|suggest|recommend|opinion|which one|or should)/.test(p)) return false;
-
-  // Build / edit verbs at the (cleaned) start → build.
-  // "give"/"use"/"show" are intentionally EXCLUDED — too ambiguous
-  // ("give me ideas", "show me options") and would cause unwanted rebuilds.
-  if (/^(build|create|design|generate|add|change|fix|update|remove|delete|edit|modify|tweak|adjust|put|move|replace|swap|switch|rename|rebuild|redesign|rewrite|redo|make|set|include|embed|insert|apply|turn|convert|get rid|colour|color|style|resize|enable|disable)\b/.test(p)) return true;
-
-  // File attached with a placement hint → build
-  if (hasFiles && /(hero|header|background|section|above|below|top|bottom|replace|swap|put|place|use|as the|in the|at the|into|banner|thumbnail|cover|gallery|photo)/.test(p)) return true;
-
-  // File attached but message too short/vague → ask first
-  if (hasFiles && p.length < 25) return false;
-  if (hasFiles) return true;
-
-  // Default → chat (safer — don't auto-build on ambiguous input)
+  // Anything else — questions, action verbs, descriptions, image uploads —
+  // goes to chat. The AI will discuss and prompt the user for explicit confirmation.
   return false;
 }
 
