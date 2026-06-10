@@ -6452,6 +6452,21 @@ async function handleSend() {
   }
   // ── End conversation router ─────────────────────────────────────────────────
 
+  // ── Build plan confirmation ─────────────────────────────────────────────────
+  // When there has been a real back-and-forth discussion (≥ 2 turns stored in
+  // conversationHistory), show the user a quick 2-3 bullet summary of what the
+  // AI is about to build before actually building — giving them a chance to
+  // correct any misunderstanding. First-time quick builds ("build me X" →
+  // "build it") have < 4 history entries (< 2 full turns) and skip this card.
+  if (buildModeEnabled && !_isContinuationSend && !_skipBuildConfirmation && conversationHistory.length >= 4) {
+    input.value = '';
+    resetInputSize(input);
+    _showBuildConfirmation(prompt);
+    return;
+  }
+  _skipBuildConfirmation = false; // consume the one-time bypass
+  // ── End build plan confirmation ────────────────────────────────────────────
+
   if (!_isContinuationSend) {
     _pendingBuildImages = [];
     _pendingBuildVideos = [];
@@ -8593,6 +8608,113 @@ function _showNewAppConfirmation(prompt, input) {
   });
 }
 
+// ── Build plan confirmation card ───────────────────────────────────────────
+// Shown before a build starts when conversationHistory has ≥ 2 full turns.
+// Makes one fast Gemini call to summarise the agreed plan as 2-3 bullet points,
+// then renders a card with a Confirm button. Tapping Confirm sets the one-time
+// bypass flag and re-submits the original prompt into handleSend().
+async function _showBuildConfirmation(prompt) {
+  const thread = document.getElementById('chatThread');
+  const input  = document.getElementById('chatInput');
+
+  // Show the user bubble so they see what they typed.
+  addBubble(prompt, 'user');
+
+  // Placeholder AI bubble while we fetch the summary.
+  const responseBubble = addBubble('', 'ai');
+  responseBubble.innerHTML = '<span style="color:#8899aa;font-size:13px;">Summarising plan…</span>';
+  thread.scrollTop = thread.scrollHeight;
+
+  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+  const apiKey = keyResult.geminiApiKey;
+
+  let bullets = [];
+  if (apiKey) {
+    try {
+      // Rebuild history for the summary call.
+      const contents = [];
+      for (const msg of conversationHistory) {
+        if (!msg || !msg.text) continue;
+        contents.push({ role: msg.role === 'model' ? 'model' : 'user', parts: [{ text: msg.text }] });
+      }
+      // The user's build trigger message.
+      contents.push({ role: 'user', parts: [{ text: prompt }] });
+
+      const summarySystem = `You are a concise project planner. Based on the conversation above, output EXACTLY 2-3 bullet points (one line each, starting with "•") that summarise what you are about to build or change. No intro sentence, no explanation — only the bullet lines.`;
+
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: summarySystem }] },
+            contents,
+            generationConfig: { maxOutputTokens: 150, temperature: 0.3 }
+          })
+        }
+      );
+      const data = await res.json();
+      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      // Parse lines that start with • (or - or *) as bullet points.
+      bullets = raw.split('\n')
+        .map(l => l.trim())
+        .filter(l => l.match(/^[•\-\*]/))
+        .map(l => l.replace(/^[•\-\*]\s*/, '').trim())
+        .filter(Boolean)
+        .slice(0, 3);
+    } catch (_e) {
+      bullets = [];
+    }
+  }
+
+  // Fall back to a generic message if the summary call failed.
+  const bulletHtml = bullets.length
+    ? bullets.map(b => `<li style="margin:3px 0;">${b}</li>`).join('')
+    : '<li style="margin:3px 0;">Apply the changes discussed in this conversation</li>';
+
+  responseBubble.innerHTML = `
+    <div style="font-size:13px;color:#e8eef4;line-height:1.7;">
+      <div style="font-weight:600;margin-bottom:6px;color:#c7d2fe;">Here's what I'll do:</div>
+      <ul style="margin:0 0 10px 14px;padding:0;color:#b8c8dc;">${bulletHtml}</ul>
+      <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">Tap <strong style="color:#a5b4fc;">Confirm</strong> to build, or type a correction above.</div>
+      <button id="buildConfirmBtn" style="
+        display:inline-flex;align-items:center;gap:5px;
+        padding:5px 14px;
+        background:linear-gradient(135deg,rgba(99,102,241,0.28),rgba(99,102,241,0.16));
+        border:1px solid rgba(99,102,241,0.48);
+        border-radius:8px;
+        color:#a5b4fc;font-size:12px;font-weight:600;
+        cursor:pointer;letter-spacing:0.02em;
+        transition:background 0.18s,border-color 0.18s,color 0.18s;
+      ">✓ Confirm — build it</button>
+    </div>`;
+
+  const confirmBtn = responseBubble.querySelector('#buildConfirmBtn');
+  if (confirmBtn) {
+    confirmBtn.addEventListener('mouseenter', () => {
+      confirmBtn.style.background = 'linear-gradient(135deg,rgba(99,102,241,0.44),rgba(99,102,241,0.30))';
+      confirmBtn.style.borderColor = 'rgba(99,102,241,0.70)';
+      confirmBtn.style.color = '#c7d2fe';
+    });
+    confirmBtn.addEventListener('mouseleave', () => {
+      confirmBtn.style.background = 'linear-gradient(135deg,rgba(99,102,241,0.28),rgba(99,102,241,0.16))';
+      confirmBtn.style.borderColor = 'rgba(99,102,241,0.48)';
+      confirmBtn.style.color = '#a5b4fc';
+    });
+    confirmBtn.addEventListener('click', () => {
+      // Remove the card and proceed with the build.
+      responseBubble.remove();
+      _skipBuildConfirmation = true;
+      if (input) { input.value = prompt; }
+      handleSend();
+    });
+  }
+
+  thread.scrollTop = thread.scrollHeight;
+}
+// ── End build plan confirmation card ──────────────────────────────────────
+
 async function clearChat() {
   // Archive the current conversation before wiping it
   await saveNamedChat();
@@ -9024,6 +9146,9 @@ let _committedMediaMap = {};
 // One-time flag: set by "Update current" button so handleSend() skips the new-app
 // guard exactly once (avoids the infinite dialog loop when the same prompt re-enters).
 let _skipNewAppGuard = false;
+// One-time flag: set by the "Confirm" button in _showBuildConfirmation so the
+// next handleSend() call skips the plan-preview card and goes straight to build.
+let _skipBuildConfirmation = false;
 // Base64 data URLs waiting to replace __SNAP_IMG_N__ placeholders after AI responds
 let _pendingBuildImages = [];
 // Short video files (webm/mp4) attached during a build patch — same placeholder approach
