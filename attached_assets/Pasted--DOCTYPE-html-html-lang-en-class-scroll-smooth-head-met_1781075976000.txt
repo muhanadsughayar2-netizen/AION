@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AION AI STUDIO | Integrated Intelligence</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Plus Jakarta Sans', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            bg: '#050508',
+            surface: 'rgba(255,255,255,0.03)',
+            accent: '#a855f7',
+            'accent-glow': 'rgba(168, 85, 247, 0.4)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #050508;
+      --accent: #a855f7;
+    }
+    body { background-color: var(--bg); color: #f0f0ff; }
+    
+    .grid-bg {
+      background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+      background-size: 32px 32px;
+    }
+
+    .glow-btn {
+      position: relative;
+      transition: all 0.3s ease;
+      background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+      box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+    }
+    .glow-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 35px rgba(168, 85, 247, 0.6);
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .glass-card:hover {
+      border-color: rgba(168, 85, 247, 0.4);
+      background: rgba(255, 255, 255, 0.06);
+      transform: translateY(-8px);
+    }
+
+    .reveal.visible { animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes revealUp { 
+      from { opacity: 0; transform: translateY(30px); } 
+      to { opacity: 1; transform: none; } 
+    }
+
+    .gradient-text {
+      background: linear-gradient(to right, #fff, #a855f7, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .image-overlay {
+      background: linear-gradient(0deg, rgba(5,5,8,0.9) 0%, rgba(5,5,8,0) 100%);
+    }
+
+    .studio-frame {
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 40px 100px -20px rgba(0,0,0,0.8);
+    }
+  </style>
+</head>
+<body class="font-sans antialiased">
+
+  <!-- Nav -->
+  <nav class="fixed top-0 w-full z-50 border-b border-white/10 bg-bg/80 backdrop-blur-md">
+    <div class="max-w-[1100px] mx-auto px-6 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center">
+          <i data-lucide="zap" class="w-5 h-5 text-white fill-white"></i>
+        </div>
+        <span class="font-heading font-extrabold tracking-tight text-xl">AION <span class="font-normal opacity-50">STUDIO</span></span>
+      </div>
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-white/60">
+        <a href="#features" class="hover:text-white transition-colors">FEATURES</a>
+        <a href="#studio" class="hover:text-white transition-colors">STUDIO</a>
+        <a href="#privacy" class="hover:text-white transition-colors">PRIVACY</a>
+        <a href="#" class="glow-btn px-6 py-2.5 rounded-full text-white font-bold tracking-tight">ADD TO CHROME</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="relative pt-40 pb-24 overflow-hidden grid-bg">
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-purple-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+    
+    <div class="max-w-[1100px] mx-auto px-6 relative text-center">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-bold tracking-[0.2em] text-purple-400 mb-8 uppercase reveal">
+        <span class="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
+        Integrated Intelligence
+      </div>
+      
+      <h1 class="font-heading text-[clamp(2.5rem,8vw,5.5rem)] leading-[1.1] mb-8 tracking-tighter reveal">
+        SNAP THE PIXEL,<br>
+        <span class="gradient-text">BUILD THE FUTURE.</span>
+      </h1>
+      
+      <p class="max-w-2xl mx-auto text-lg text-white/60 mb-12 leading-relaxed reveal">
+        The pinnacle of generative AI, stitched directly into your browser workflow. One snap, infinite modes. Research, code, and create in seconds.
+      </p>
+      
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 reveal">
+        <button class="glow-btn w-full sm:w-auto px-8 py-4 rounded-xl text-lg font-bold flex items-center justify-center gap-2">
+          <i data-lucide="chrome" class="w-5 h-5"></i>
+          Install Free — No Card
+        </button>
+        <a href="#payload" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-lg font-bold transition-all text-center">
+          See What's Inside →
+        </a>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mt-24 pt-12 border-t border-white/5 reveal">
+        <div>
+          <div class="text-3xl font-heading mb-1">$300</div>
+          <div class="text-xs font-bold text-white/40 uppercase tracking-widest">Google Credit</div>
+        </div>
+        <div>
+          <div class="text-3xl font-heading mb-1">55+</div>
+          <div class="text-xs font-bold text-white/40 uppercase tracking-widest">Languages</div>
+        </div>
+        <div>
+          <div class="text-3xl font-heading mb-1">64s</div>
+          <div class="text-xs font-bold text-white/40 uppercase tracking-widest">Veo Video</div>
+        </div>
+        <div>
+          <div class="text-3xl font-heading mb-1">&lt;1s</div>
+          <div class="text-xs font-bold text-white/40 uppercase tracking-widest">AI Response</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature Grid: The Payload -->
+  <section id="payload" class="py-32 bg-bg relative">
+    <div class="max-w-[1100px] mx-auto px-6">
+      <div class="mb-20">
+        <h2 class="font-heading text-4xl md:text-5xl tracking-tight mb-4 reveal">THE FULL GOOGLE AI<br><span class="opacity-40">STUDIO PAYLOAD.</span></h2>
+        <p class="text-white/40 max-w-xl reveal">Professional tools powered by Gemini 2.5, right where you work.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        <!-- Veo 3.1 -->
+        <div class="glass-card rounded-3xl overflow-hidden flex flex-col group reveal">
+          <div class="h-48 relative overflow-hidden">
+            <img src="https://images.pexels.com/photos/158028/pexels-photo-158028.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 alt="Cinematic production" 
+                 onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'"
+                 class="group-hover:scale-110 transition-transform duration-700">
+            <div class="absolute inset-0 image-overlay"></div>
+            <div class="absolute top-4 right-4 px-2 py-1 rounded bg-purple-600 text-[10px] font-bold uppercase tracking-widest">Production</div>
+          </div>
+          <div class="p-6">
+            <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-4 text-purple-400">
+              <i data-lucide="clapperboard" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-heading text-lg mb-2">VEO 3.1 PRODUCTION</h3>
+            <p class="text-sm text-white/50 leading-relaxed">8x stitching engine. Turn snaps into 64-second cinematic narratives with editable per-clip prompts.</p>
+          </div>
+        </div>
+
+        <!-- Lyria 3 -->
+        <div class="glass-card rounded-3xl overflow-hidden flex flex-col group reveal">
+          <div class="h-48 relative overflow-hidden">
+            <img src="https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 alt="Audio waves" 
+                 onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'"
+                 class="group-hover:scale-110 transition-transform duration-700">
+            <div class="absolute inset-0 image-overlay"></div>
+            <div class="absolute top-4 right-4 px-2 py-1 rounded bg-pink-600 text-[10px] font-bold uppercase tracking-widest">Scoring</div>
+          </div>
+          <div class="p-6">
+            <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-4 text-pink-400">
+              <i data-lucide="music" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-heading text-lg mb-2">LYRIA 3 AUDIO</h3>
+            <p class="text-sm text-white/50 leading-relaxed">Original music and studio-grade soundscapes tied to your visual context — guided Song Studio included.</p>
+          </div>
+        </div>
+
+        <!-- Gemini 2.5 -->
+        <div class="glass-card rounded-3xl overflow-hidden flex flex-col group reveal">
+          <div class="h-48 relative overflow-hidden">
+            <img src="https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 alt="Vision AI" 
+                 onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'"
+                 class="group-hover:scale-110 transition-transform duration-700">
+            <div class="absolute inset-0 image-overlay"></div>
+            <div class="absolute top-4 right-4 px-2 py-1 rounded bg-emerald-600 text-[10px] font-bold uppercase tracking-widest">Intelligence</div>
+          </div>
+          <div class="p-6">
+            <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-4 text-emerald-400">
+              <i data-lucide="eye" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-heading text-lg mb-2">GEMINI 2.5 VISION</h3>
+            <p class="text-sm text-white/50 leading-relaxed">Pro-grade multi-source reasoning. Analyze up to 10 captures simultaneously with code-aware context.</p>
+          </div>
+        </div>
+
+        <!-- Image Studio -->
+        <div class="glass-card rounded-3xl overflow-hidden flex flex-col group reveal">
+          <div class="h-48 relative overflow-hidden">
+            <img src="https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 alt="Image Generation" 
+                 onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'"
+                 class="group-hover:scale-110 transition-transform duration-700">
+            <div class="absolute inset-0 image-overlay"></div>
+            <div class="absolute top-4 right-4 px-2 py-1 rounded bg-amber-600 text-[10px] font-bold uppercase tracking-widest">Creation</div>
+          </div>
+          <div class="p-6">
+            <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-4 text-amber-400">
+              <i data-lucide="palette" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-heading text-lg mb-2">IMAGE STUDIO</h3>
+            <p class="text-sm text-white/50 leading-relaxed">Next-gen photorealistic image generation from any screenshot or description, instantly.</p>
+          </div>
+        </div>
+
+        <!-- Omni Research -->
+        <div class="glass-card rounded-3xl overflow-hidden flex flex-col group reveal">
+          <div class="h-48 relative overflow-hidden">
+            <img src="https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 alt="Research" 
+                 onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'"
+                 class="group-hover:scale-110 transition-transform duration-700">
+            <div class="absolute inset-0 image-overlay"></div>
+            <div class="absolute top-4 right-4 px-2 py-1 rounded bg-blue-600 text-[10px] font-bold uppercase tracking-widest">Insight</div>
+          </div>
+          <div class="p-6">
+            <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-4 text-blue-400">
+              <i data-lucide="search" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-heading text-lg mb-2">OMNI RESEARCH</h3>
+            <p class="text-sm text-white/50 leading-relaxed">Transform snapshots into deep-dive knowledge. Synthesis of complex data, charts, and docs.</p>
+          </div>
+        </div>
+
+        <!-- Visual Search -->
+        <div class="glass-card rounded-3xl overflow-hidden flex flex-col group reveal">
+          <div class="h-48 relative overflow-hidden">
+            <img src="https://images.pexels.com/photos/255379/pexels-photo-255379.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 alt="Discovery" 
+                 onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'"
+                 class="group-hover:scale-110 transition-transform duration-700">
+            <div class="absolute inset-0 image-overlay"></div>
+            <div class="absolute top-4 right-4 px-2 py-1 rounded bg-cyan-600 text-[10px] font-bold uppercase tracking-widest">Discovery</div>
+          </div>
+          <div class="p-6">
+            <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-4 text-cyan-400">
+              <i data-lucide="globe" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-heading text-lg mb-2">VISUAL SEARCH</h3>
+            <p class="text-sm text-white/50 leading-relaxed">Source products, docs, and references across the live web using pixel-perfect recognition.</p>
+          </div>
+        </div>
+
+        <!-- Rad Code -->
+        <div class="glass-card rounded-3xl overflow-hidden flex flex-col group reveal">
+          <div class="h-48 relative overflow-hidden">
+            <img src="https://images.pexels.com/photos/92904/pexels-photo-92904.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 alt="Coding" 
+                 onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'"
+                 class="group-hover:scale-110 transition-transform duration-700">
+            <div class="absolute inset-0 image-overlay"></div>
+            <div class="absolute top-4 right-4 px-2 py-1 rounded bg-orange-600 text-[10px] font-bold uppercase tracking-widest">Development</div>
+          </div>
+          <div class="p-6">
+            <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-4 text-orange-400">
+              <i data-lucide="code" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-heading text-lg mb-2">RAD CODE</h3>
+            <p class="text-sm text-white/50 leading-relaxed">Convert UI screenshots into clean, functional React, Tailwind, or Python code instantly.</p>
+          </div>
+        </div>
+
+        <!-- Studio Build -->
+        <div class="glass-card rounded-3xl overflow-hidden flex flex-col group reveal">
+          <div class="h-48 relative overflow-hidden">
+            <img src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 alt="Architecture" 
+                 onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'"
+                 class="group-hover:scale-110 transition-transform duration-700">
+            <div class="absolute inset-0 image-overlay"></div>
+            <div class="absolute top-4 right-4 px-2 py-1 rounded bg-indigo-600 text-[10px] font-bold uppercase tracking-widest">Architecture</div>
+          </div>
+          <div class="p-6">
+            <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-4 text-indigo-400">
+              <i data-lucide="layers" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-heading text-lg mb-2">STUDIO BUILD</h3>
+            <p class="text-sm text-white/50 leading-relaxed">Orchestrate captures into full prototypes. A unified workspace for code, assets, and research.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Studio Showcase -->
+  <section id="studio" class="py-32 bg-white/5">
+    <div class="max-w-[1100px] mx-auto px-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div class="reveal">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-[10px] font-bold tracking-[0.2em] uppercase mb-6">
+            Integrated Intelligence
+          </div>
+          <h2 class="font-heading text-5xl tracking-tight mb-8">UNLEASH THE<br><span class="gradient-text">STUDIO.</span></h2>
+          <p class="text-lg text-white/50 mb-10 leading-relaxed">
+            Capture any screen, then chat with AI, generate photoreal images, original music, and cinematic videos — all powered by Google Gemini, right in your browser.
+          </p>
+          
+          <ul class="space-y-6">
+            <li class="flex gap-4 items-start">
+              <div class="w-6 h-6 rounded bg-purple-500/20 flex items-center justify-center text-purple-400 shrink-0 mt-1">
+                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+              </div>
+              <div>
+                <span class="font-bold text-white block">SNAP</span>
+                <span class="text-sm text-white/40">Capture the inspiration instantly from any tab.</span>
+              </div>
+            </li>
+            <li class="flex gap-4 items-start">
+              <div class="w-6 h-6 rounded bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 mt-1">
+                <i data-lucide="database" class="w-3.5 h-3.5"></i>
+              </div>
+              <div>
+                <span class="font-bold text-white block">RESEARCH</span>
+                <span class="text-sm text-white/40">Understand data, charts, and complex documentation.</span>
+              </div>
+            </li>
+            <li class="flex gap-4 items-start">
+              <div class="w-6 h-6 rounded bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 mt-1">
+                <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+              </div>
+              <div>
+                <span class="font-bold text-white block">CODE</span>
+                <span class="text-sm text-white/40">Generate foundations in React, Tailwind, or Python.</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="relative reveal">
+          <div class="studio-frame rounded-2xl bg-bg overflow-hidden aspect-[4/3] flex flex-col">
+            <div class="h-10 border-b border-white/10 flex items-center px-4 justify-between bg-white/5">
+              <div class="flex gap-1.5">
+                <div class="w-2.5 h-2.5 rounded-full bg-red-500/50"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-amber-500/50"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-emerald-500/50"></div>
+              </div>
+              <div class="text-[10px] font-bold text-white/30 uppercase tracking-widest">AION STUDIO v2.4</div>
+              <div class="w-4 h-4"></div>
+            </div>
+            <div class="flex-1 p-6 flex flex-col gap-4">
+              <div class="flex items-center justify-between">
+                <div class="text-xs font-bold text-white/40">CAPTURES (4)</div>
+                <div class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase">Ready</div>
+              </div>
+              <div class="grid grid-cols-2 gap-3 flex-1">
+                <div class="rounded-lg bg-white/5 border border-dashed border-white/10 flex items-center justify-center overflow-hidden">
+                  <img src="https://images.pexels.com/photos/1640775/pexels-photo-1640775.jpeg?auto=compress&cs=tinysrgb&w=400" class="w-full h-full object-cover opacity-60" alt="Capture 1">
+                </div>
+                <div class="rounded-lg bg-white/5 border border-dashed border-white/10 flex items-center justify-center overflow-hidden">
+                  <img src="https://images.pexels.com/photos/1092730/pexels-photo-1092730.jpeg?auto=compress&cs=tinysrgb&w=400" class="w-full h-full object-cover opacity-60" alt="Capture 2">
+                </div>
+                <div class="rounded-lg bg-white/5 border border-dashed border-white/10 flex items-center justify-center overflow-hidden">
+                  <img src="https://images.pexels.com/photos/1640773/pexels-photo-1640773.jpeg?auto=compress&cs=tinysrgb&w=400" class="w-full h-full object-cover opacity-60" alt="Capture 3">
+                </div>
+                <div class="rounded-lg bg-white/5 border border-dashed border-white/10 flex items-center justify-center overflow-hidden">
+                  <img src="https://images.pexels.com/photos/1640774/pexels-photo-1640774.jpeg?auto=compress&cs=tinysrgb&w=400" class="w-full h-full object-cover opacity-60" alt="Capture 4">
+                </div>
+              </div>
+              <button class="w-full py-3 rounded-lg bg-purple-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-purple-500 transition-colors">
+                + Process in Studio
+              </button>
+            </div>
+          </div>
+          <!-- Decorative elements -->
+          <div class="absolute -bottom-6 -right-6 w-32 h-32 bg-pink-500/20 blur-3xl rounded-full"></div>
+          <div class="absolute -top-6 -left-6 w-32 h-32 bg-purple-500/20 blur-3xl rounded-full"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Privacy Section -->
+  <section id="privacy" class="py-32">
+    <div class="max-w-[1100px] mx-auto px-6">
+      <div class="bg-gradient-to-br from-white/[0.05] to-transparent border border-white/10 rounded-[40px] p-12 md:p-20 relative overflow-hidden reveal">
+        <div class="absolute top-0 right-0 p-12 opacity-5">
+          <i data-lucide="shield-check" class="w-64 h-64"></i>
+        </div>
+        
+        <div class="max-w-2xl relative z-10">
+          <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-8">
+            <i data-lucide="shield" class="w-8 h-8"></i>
+          </div>
+          <h2 class="font-heading text-4xl mb-6">PRIVACY FIRST, ALWAYS.</h2>
+          <p class="text-xl text-white/60 leading-relaxed mb-8">
+            Your screenshots never leave your browser unless YOU send them to AI. Captures are stored only in your local Chrome session storage — no tracking pixels, no third-party analytics on your captures, no resale of your data.
+          </p>
+          <button onclick="openLegal('Privacy Policy', privacyContent)" class="text-emerald-400 font-bold hover:underline">Read the full privacy policy →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-20 border-t border-white/5">
+    <div class="max-w-[1100px] mx-auto px-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+        <div class="col-span-1 md:col-span-2">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center">
+              <i data-lucide="zap" class="w-5 h-5 text-white fill-white"></i>
+            </div>
+            <span class="font-heading font-extrabold tracking-tight text-xl">AION <span class="font-normal opacity-50">STUDIO</span></span>
+          </div>
+          <p class="text-white/40 max-w-sm mb-6">Empowering creators and developers with Google's most powerful AI models directly in the workflow.</p>
+          <div class="flex gap-4">
+            <a href="#" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"><i data-lucide="twitter" class="w-4 h-4"></i></a>
+            <a href="#" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"><i data-lucide="github" class="w-4 h-4"></i></a>
+          </div>
+        </div>
+        <div>
+          <h4 class="font-bold text-sm mb-6 uppercase tracking-widest">Product</h4>
+          <ul class="space-y-4 text-sm text-white/40">
+            <li><a href="#" class="hover:text-white">Chrome Store ↗</a></li>
+            <li><button onclick="openLegal('Release Notes', 'V2.4 stable release includes Gemini 2.5 integration, improved OCR for complex charts, and new cinematic video stitching.')" class="hover:text-white">Changelog</button></li>
+            <li><button onclick="openLegal('Documentation', 'Comprehensive guides on how to use AION Studio features.')" class="hover:text-white">Documentation</button></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-bold text-sm mb-6 uppercase tracking-widest">Legal</h4>
+          <ul class="space-y-4 text-sm text-white/40">
+            <li><button onclick="openLegal('Privacy Policy', privacyContent)" class="hover:text-white">Privacy Policy</button></li>
+            <li><button onclick="openLegal('Terms of Service', tosContent)" class="hover:text-white">Terms of Service</button></li>
+            <li><button onclick="openLegal('Contact', 'Reach us at support@aionai.studio for enterprise inquiries or technical support.')" class="hover:text-white">Contact</button></li>
+          </ul>
+        </div>
+      </div>
+      <div class="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-bold text-white/30 uppercase tracking-[0.2em]">
+        <div>© 2026 AION AI STUDIO · POWERED BY GOOGLE GEMINI</div>
+        <div class="flex gap-8">
+          <span>Snap 1 ✓</span>
+          <span>Ready for Build</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Legal Modal -->
+  <div id="legalModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9000;display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(10px);">
+    <div style="background:#0a0a0f;max-width:640px;width:100%;max-height:80vh;overflow-y:auto;padding:48px;position:relative;border-radius:24px;border:1px solid rgba(255,255,255,0.1);">
+      <button onclick="closeLegal()" style="position:absolute;top:24px;right:24px;background:none;border:none;color:#fff;font-size:1.8rem;cursor:pointer;opacity:0.5;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">&times;</button>
+      <h2 id="legalTitle" class="font-heading text-3xl mb-8 text-white"></h2>
+      <div id="legalBody" class="text-white/60 leading-relaxed space-y-4"></div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      lucide.createIcons();
+
+      // Intersection Observer for Scroll Animations
+      const _io = new IntersectionObserver(entries => entries.forEach(e => {
+        if (e.isIntersecting) { 
+          e.target.classList.add('visible'); 
+          _io.unobserve(e.target); 
+        }
+      }), { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+      
+      document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+      
+      // Safety net
+      setTimeout(() => {
+        document.querySelectorAll('.reveal').forEach(el => {
+          el.style.opacity = '1';
+          el.style.transform = 'none';
+        });
+      }, 1500);
+
+      // Smooth Scroll with Offset
+      document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', function(e) {
+          const targetId = this.getAttribute('href');
+          if (targetId === '#') return;
+          e.preventDefault();
+          const el = document.querySelector(targetId);
+          if (el) {
+            window.scrollTo({
+              top: el.getBoundingClientRect().top + window.pageYOffset - 90,
+              behavior: 'smooth'
+            });
+          }
+        });
+      });
+
+      // Legal Modal Logic
+      window.openLegal = function(title, content) {
+        document.getElementById('legalTitle').textContent = title;
+        document.getElementById('legalBody').innerHTML = content;
+        document.getElementById('legalModal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+      };
+
+      window.closeLegal = function() {
+        document.getElementById('legalModal').style.display = 'none';
+        document.body.style.overflow = 'auto';
+      };
+
+      // Content for modals
+      window.privacyContent = `
+        <p>AION AI STUDIO is built on a "local-first" philosophy. We believe your visual data is your most private asset.</p>
+        <p><strong>1. Data Processing:</strong> When you capture a screenshot using AION, the image data is stored exclusively in your browser's session storage. It is never automatically uploaded to our servers.</p>
+        <p><strong>2. AI Interaction:</strong> Only when you explicitly click "Process" or "Chat" is the specific capture sent to Google Gemini APIs. This transmission is encrypted via TLS 1.3.</p>
+        <p><strong>3. No Resale:</strong> We do not sell your data, use your captures for model training, or allow third-party trackers to access your workspace. Your workflow is yours alone.</p>
+      `;
+
+      window.tosContent = `
+        <p>By using AION AI STUDIO, you agree to the following terms:</p>
+        <p><strong>Usage:</strong> You are granted a non-exclusive license to use the AION extension for personal or professional productivity. You may not reverse engineer or redistribute the core engine.</p>
+        <p><strong>API Limits:</strong> Usage is subject to Google Gemini's fair use policies and rate limits. Excessive automated requests may result in temporary suspension.</p>
+        <p><strong>Content:</strong> You retain all rights to the content you generate. AION AI STUDIO claims no ownership over code, images, or audio produced through the tool.</p>
+      `;
+
+      // Close modal on outside click
+      window.addEventListener('click', (e) => {
+        const modal = document.getElementById('legalModal');
+        if (e.target === modal) closeLegal();
+      });
+
+    })();
+  </script>
+</body>
+</html>
+📋 Copy
+🔊 Read
+▾
+✨ Magic Card
+IW ANT TO CHANGE THE IAMGE TO SOMETING THAT REPRESENT THE PWOER OF GMINI NOT IAMGES OF FOOD PLEASE USE OUR IMAGE GENRATION TO CREATE NEW IAMGES AND PALCE THE THAT ARE RALTED TO THE TOPIC
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AION AI STUDIO | Integrated Intelligence for Chrome</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Plus Jakarta Sans', 'sans-serif'],
+            sans: ['Inter', 'sans-serif']
+          },
+          colors: {
+            bg: '#07070f',
+            surface: 'rgba(255,255,255,0.04)',
+            accent: '#9333ea',
+            accentLight: '#c084fc'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #07070f;
+      --accent: #9333ea;
+    }
+    body {
+      background-color: var(--bg);
+      color: #f0f0ff;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(147, 51, 234, 0.15) 0%, transparent 50%),
+        radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 100% 100%, 32px 32px;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #fff 0%, #a855f7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .glow-button {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .glow-button::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transform: translateX(-100%);
+      transition: 0.5s;
+    }
+    .glow-button:hover::after {
+      transform: translateX(100%);
+    }
+    .reveal.visible { animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes revealUp { 
+      from { opacity: 0; transform: translateY(30px); } 
+      to { opacity: 1; transform: none; } 
+    }
+    .feature-card:hover {
+      border-color: rgba(168, 85, 247, 0.4);
+      transform: translateY(-4px);
+      background: rgba(255, 255, 255, 0.06);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn 0.4s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5">
+    <div class="max-w-[1100px] mx-auto px-6 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+          <i data-lucide="layers" class="w-5 h-5 text-white"></i>
+        </div>
+        <span class="font-heading font-extrabold text-xl tracking-tight">AION AI STUDIO</span>
+      </div>
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-white/60">
+        <a href="#features" class="hover:text-white transition-colors">FEATURES</a>
+        <a href="#studio" class="hover:text-white transition-colors">STUDIO</a>
+        <button onclick="openLegal('Privacy Policy', privacyContent)" class="hover:text-white transition-colors">PRIVACY</button>
+      </div>
+      <a href="https://chrome.google.com/webstore" target="_blank" class="glow-button px-6 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-full text-sm font-bold shadow-lg shadow-violet-500/20">
+        ADD TO CHROME
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="pt-40 pb-20 px-6 max-w-[1100px] mx-auto">
+    <div class="reveal">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-[10px] font-bold tracking-widest mb-8">
+        <span class="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse"></span>
+        GOOGLE AI STUDIO PAYLOAD ACTIVE
+      </div>
+      <h1 class="font-heading text-[clamp(2.5rem,8vw,5.5rem)] leading-[1.1] font-extrabold tracking-tighter mb-8">
+        SNAP THE PIXEL, <br>
+        <span class="gradient-text">BUILD THE FUTURE.</span>
+      </h1>
+      <p class="text-xl text-white/50 max-w-2xl leading-relaxed mb-12">
+        The pinnacle of generative AI, stitched directly into your browser workflow. One snap, infinite modes. Research, code, and create in seconds with Gemini 1.5 Pro.
+      </p>
+      <div class="flex flex-wrap gap-4">
+        <a href="#studio" class="px-8 py-4 bg-white text-bg rounded-xl font-bold flex items-center gap-2 hover:bg-violet-50 transition-all">
+          🚀 Install Free — No Card
+        </a>
+        <a href="#features" class="px-8 py-4 glass rounded-xl font-bold flex items-center gap-2 hover:bg-white/10 transition-all">
+          See What's Inside <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Stats Strip -->
+    <div class="mt-24 grid grid-cols-2 md:grid-cols-4 gap-8 border-y border-white/5 py-12 reveal">
+      <div>
+        <div class="text-3xl font-heading font-extrabold mb-1">$300</div>
+        <div class="text-xs uppercase tracking-widest text-white/40 font-bold">Free Google Credit</div>
+      </div>
+      <div>
+        <div class="text-3xl font-heading font-extrabold mb-1">55+</div>
+        <div class="text-xs uppercase tracking-widest text-white/40 font-bold">Languages</div>
+      </div>
+      <div>
+        <div class="text-3xl font-heading font-extrabold mb-1">64s</div>
+        <div class="text-xs uppercase tracking-widest text-white/40 font-bold">Veo Video</div>
+      </div>
+      <div>
+        <div class="text-3xl font-heading font-extrabold mb-1">&lt;1s</div>
+        <div class="text-xs uppercase tracking-widest text-white/40 font-bold">AI Response</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Features Grid -->
+  <section id="features" class="py-32 px-6 max-w-[1100px] mx-auto">
+    <div class="mb-20 reveal">
+      <div class="text-violet-500 font-bold tracking-[0.2em] text-[10px] mb-4 uppercase">Integrated Intelligence</div>
+      <h2 class="text-4xl md:text-5xl font-heading font-extrabold tracking-tight">THE FULL GOOGLE AI <br> STUDIO PAYLOAD.</h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 reveal">
+      <!-- Card 1 -->
+      <div class="feature-card glass p-6 rounded-2xl transition-all duration-300 group">
+        <div class="flex justify-between items-start mb-8">
+          <div class="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+            <i data-lucide="clapperboard" class="w-5 h-5 text-violet-400"></i>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-violet-500/20 text-[9px] font-bold text-violet-300 uppercase tracking-tighter">Production</span>
+        </div>
+        <h3 class="font-heading font-bold text-lg mb-3">VEO 3.1 PRODUCTION</h3>
+        <p class="text-sm text-white/40 leading-relaxed">8x stitching engine. Turn snaps into 64-second cinematic narratives with editable per-clip prompts.</p>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="feature-card glass p-6 rounded-2xl transition-all duration-300 group">
+        <div class="flex justify-between items-start mb-8">
+          <div class="w-10 h-10 rounded-lg bg-pink-500/10 flex items-center justify-center">
+            <i data-lucide="music" class="w-5 h-5 text-pink-400"></i>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-pink-500/20 text-[9px] font-bold text-pink-300 uppercase tracking-tighter">Scoring</span>
+        </div>
+        <h3 class="font-heading font-bold text-lg mb-3">LYRIA 3 AUDIO</h3>
+        <p class="text-sm text-white/40 leading-relaxed">Original music and studio-grade soundscapes tied to your visual context — guided Song Studio included.</p>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="feature-card glass p-6 rounded-2xl transition-all duration-300 group">
+        <div class="flex justify-between items-start mb-8">
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+            <i data-lucide="eye" class="w-5 h-5 text-emerald-400"></i>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-[9px] font-bold text-emerald-300 uppercase tracking-tighter">Intelligence</span>
+        </div>
+        <h3 class="font-heading font-bold text-lg mb-3">GEMINI 2.5 VISION</h3>
+        <p class="text-sm text-white/40 leading-relaxed">Pro-grade multi-source reasoning. Analyze up to 10 captures simultaneously with code-aware context.</p>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="feature-card glass p-6 rounded-2xl transition-all duration-300 group">
+        <div class="flex justify-between items-start mb-8">
+          <div class="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+            <i data-lucide="palette" class="w-5 h-5 text-amber-400"></i>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-amber-500/20 text-[9px] font-bold text-amber-300 uppercase tracking-tighter">Creation</span>
+        </div>
+        <h3 class="font-heading font-bold text-lg mb-3">IMAGE STUDIO</h3>
+        <p class="text-sm text-white/40 leading-relaxed">Next-gen photorealistic image generation from any screenshot or description, instantly.</p>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="feature-card glass p-6 rounded-2xl transition-all duration-300 group">
+        <div class="flex justify-between items-start mb-8">
+          <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+            <i data-lucide="search" class="w-5 h-5 text-blue-400"></i>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-blue-500/20 text-[9px] font-bold text-blue-300 uppercase tracking-tighter">Insight</span>
+        </div>
+        <h3 class="font-heading font-bold text-lg mb-3">OMNI RESEARCH</h3>
+        <p class="text-sm text-white/40 leading-relaxed">Transform snapshots into deep-dive knowledge. Synthesis of complex data, charts, and documents.</p>
+      </div>
+
+      <!-- Card 6 -->
+      <div class="feature-card glass p-6 rounded-2xl transition-all duration-300 group">
+        <div class="flex justify-between items-start mb-8">
+          <div class="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+            <i data-lucide="globe" class="w-5 h-5 text-cyan-400"></i>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-[9px] font-bold text-cyan-300 uppercase tracking-tighter">Discovery</span>
+        </div>
+        <h3 class="font-heading font-bold text-lg mb-3">VISUAL SEARCH</h3>
+        <p class="text-sm text-white/40 leading-relaxed">Source products, docs, and references across the live web using pixel-perfect recognition.</p>
+      </div>
+
+      <!-- Card 7 -->
+      <div class="feature-card glass p-6 rounded-2xl transition-all duration-300 group">
+        <div class="flex justify-between items-start mb-8">
+          <div class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
+            <i data-lucide="code" class="w-5 h-5 text-orange-400"></i>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-orange-500/20 text-[9px] font-bold text-orange-300 uppercase tracking-tighter">Development</span>
+        </div>
+        <h3 class="font-heading font-bold text-lg mb-3">RAD CODE</h3>
+        <p class="text-sm text-white/40 leading-relaxed">Convert UI screenshots into clean, functional React, Tailwind, or Python code instantly.</p>
+      </div>
+
+      <!-- Card 8 -->
+      <div class="feature-card glass p-6 rounded-2xl transition-all duration-300 group">
+        <div class="flex justify-between items-start mb-8">
+          <div class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+            <i data-lucide="box" class="w-5 h-5 text-indigo-400"></i>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-[9px] font-bold text-indigo-300 uppercase tracking-tighter">Architecture</span>
+        </div>
+        <h3 class="font-heading font-bold text-lg mb-3">STUDIO BUILD</h3>
+        <p class="text-sm text-white/40 leading-relaxed">Orchestrate captures into full prototypes. A unified workspace for code, assets, and research.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Product Showcase / Visualizer -->
+  <section id="studio" class="py-32 px-6 bg-white/[0.02] border-y border-white/5 overflow-hidden">
+    <div class="max-w-[1100px] mx-auto grid lg:grid-cols-2 gap-20 items-center">
+      <div class="reveal">
+        <div class="text-violet-500 font-bold tracking-[0.2em] text-[10px] mb-4 uppercase">Studio Mode</div>
+        <h2 class="text-5xl font-heading font-extrabold tracking-tight mb-8">UNLEASH THE <br> STUDIO.</h2>
+        <p class="text-lg text-white/50 leading-relaxed mb-10">
+          Capture any screen, then chat with AI, generate photoreal images, original music, and cinematic videos — all powered by Google Gemini, right in your browser.
+        </p>
+        
+        <ul class="space-y-6">
+          <li class="flex gap-4 items-start">
+            <div class="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+              <i data-lucide="check" class="w-3.5 h-3.5 text-violet-400"></i>
+            </div>
+            <div>
+              <span class="font-bold text-white uppercase text-xs tracking-wider">Snap:</span>
+              <span class="text-white/50 block text-sm mt-1">Capture the inspiration with pixel-perfect precision.</span>
+            </div>
+          </li>
+          <li class="flex gap-4 items-start">
+            <div class="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+              <i data-lucide="check" class="w-3.5 h-3.5 text-violet-400"></i>
+            </div>
+            <div>
+              <span class="font-bold text-white uppercase text-xs tracking-wider">Research:</span>
+              <span class="text-white/50 block text-sm mt-1">Understand complex data, charts, and docs instantly.</span>
+            </div>
+          </li>
+          <li class="flex gap-4 items-start">
+            <div class="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+              <i data-lucide="check" class="w-3.5 h-3.5 text-violet-400"></i>
+            </div>
+            <div>
+              <span class="font-bold text-white uppercase text-xs tracking-wider">Code:</span>
+              <span class="text-white/50 block text-sm mt-1">Generate foundations in React, Tailwind, or Python.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="relative reveal">
+        <div class="absolute -inset-20 bg-violet-600/20 blur-[100px] rounded-full"></div>
+        <!-- Mockup Extension UI -->
+        <div class="relative glass rounded-3xl overflow-hidden shadow-2xl border-white/10 aspect-[4/3] flex flex-col">
+          <div class="h-12 bg-white/5 border-b border-white/10 flex items-center px-4 justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+                <i data-lucide="layers" class="w-3 h-3 text-white"></i>
+              </div>
+              <span class="text-[10px] font-bold tracking-widest text-white/60">AION AI STUDIO</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[8px] bg-white/10 px-2 py-0.5 rounded-full font-bold">PRO ●</span>
+              <i data-lucide="settings" class="w-3.5 h-3.5 text-white/40"></i>
+            </div>
+          </div>
+          <div class="flex-1 p-6 grid grid-cols-2 gap-4">
+            <div class="space-y-4">
+              <div class="h-10 glass rounded-lg flex items-center px-3 gap-2 text-[10px] font-bold text-white/40 border-violet-500/30">
+                <i data-lucide="camera" class="w-3 h-3"></i> SNAP
+              </div>
+              <div class="h-10 glass rounded-lg flex items-center px-3 gap-2 text-[10px] font-bold text-white/40">
+                <i data-lucide="maximize" class="w-3 h-3"></i> FULL
+              </div>
+              <div class="h-10 glass rounded-lg flex items-center px-3 gap-2 text-[10px] font-bold text-white/40">
+                <i data-lucide="layout" class="w-3 h-3"></i> STUDIO
+              </div>
+              <div class="pt-10">
+                <div class="text-[9px] font-bold text-violet-400 mb-2">AI READY · V2.4</div>
+                <div class="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                  <div class="h-full w-[80%] bg-violet-500"></div>
+                </div>
+              </div>
+            </div>
+            <div class="glass rounded-xl p-4 flex flex-col items-center justify-center gap-4 relative overflow-hidden group">
+              <img src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                   class="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:scale-110 transition-transform duration-700" 
+                   onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'">
+              <div class="relative z-10 text-center">
+                <div class="w-12 h-12 rounded-full bg-violet-500 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-violet-500/40">
+                  <i data-lucide="play" class="w-5 h-5 text-white fill-white"></i>
+                </div>
+                <div class="text-[10px] font-bold tracking-widest">READY</div>
+              </div>
+            </div>
+          </div>
+          <div class="p-6 bg-white/5 border-t border-white/10">
+            <div class="flex gap-2 mb-4">
+              <div class="px-3 py-1 bg-violet-500/20 text-violet-400 text-[8px] font-bold rounded">1</div>
+              <div class="px-3 py-1 glass text-[8px] font-bold rounded text-white/40">2</div>
+              <div class="px-3 py-1 glass text-[8px] font-bold rounded text-white/40">3</div>
+            </div>
+            <button class="w-full py-3 bg-white text-bg rounded-lg font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
+              ＋ PROCESS IN STUDIO
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Privacy Section -->
+  <section class="py-32 px-6 max-w-[1100px] mx-auto text-center reveal">
+    <div class="max-w-3xl mx-auto">
+      <div class="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center mx-auto mb-8 border border-violet-500/20">
+        <i data-lucide="shield-check" class="w-8 h-8 text-violet-400"></i>
+      </div>
+      <h2 class="text-4xl font-heading font-extrabold tracking-tight mb-6 uppercase">Privacy First, Always.</h2>
+      <p class="text-lg text-white/50 leading-relaxed mb-10">
+        Your screenshots never leave your browser unless YOU send them to AI. Captures are stored only in your local Chrome session storage — no tracking pixels, no third-party analytics on your captures, no resale of your data.
+      </p>
+      <button onclick="openLegal('Privacy Policy', privacyContent)" class="inline-flex items-center gap-2 text-violet-400 font-bold hover:text-white transition-colors">
+        Read the full privacy policy <i data-lucide="external-link" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-20 px-6 border-t border-white/5">
+    <div class="max-w-[1100px] mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+          <i data-lucide="layers" class="w-5 h-5 text-white/40"></i>
+        </div>
+        <span class="font-heading font-extrabold text-xl tracking-tight text-white/40">AION AI STUDIO</span>
+      </div>
+      
+      <div class="flex flex-wrap justify-center gap-8 text-xs font-bold tracking-widest text-white/30 uppercase">
+        <a href="https://chrome.google.com/webstore" target="_blank" class="hover:text-white transition-colors">Chrome Store ↗</a>
+        <button onclick="openLegal('Privacy Policy', privacyContent)" class="hover:text-white transition-colors">Privacy Policy</button>
+        <button onclick="openLegal('Contact', contactContent)" class="hover:text-white transition-colors">Contact</button>
+        <button onclick="openLegal('Admin', adminContent)" class="hover:text-white transition-colors">Admin</button>
+      </div>
+
+      <div class="text-[10px] font-bold text-white/20 tracking-widest uppercase">
+        © 2026 AION AI STUDIO · POWERED BY GOOGLE GEMINI
+      </div>
+    </div>
+  </footer>
+
+  <!-- Reusable Legal Modal -->
+  <div id="legalModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;display:none;align-items:center;justify-content:center;padding:24px;">
+    <div class="glass w-full max-w-[640px] max-height-[80vh] overflow-y-auto p-12 relative rounded-3xl">
+      <button onclick="closeLegal()" class="absolute top-6 right-6 text-white/40 hover:text-white transition-colors">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+      <h2 id="legalTitle" class="text-3xl font-heading font-extrabold mb-8 text-white"></h2>
+      <div id="legalBody" class="text-white/60 leading-relaxed space-y-4 text-sm"></div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // Initialize Lucide
+      lucide.createIcons();
+
+      // Intersection Observer for reveal animations
+      const _io = new IntersectionObserver(entries => entries.forEach(e => {
+        if (e.isIntersecting) { 
+          e.target.classList.add('visible'); 
+          _io.unobserve(e.target); 
+        }
+      }), { threshold: 0.1 });
+      document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+
+      // Safety net for animations
+      setTimeout(() => {
+        document.querySelectorAll('.reveal').forEach(el => {
+          el.style.opacity = '1';
+          el.style.transform = 'none';
+        });
+      }, 1000);
+
+      // Modal Logic
+      window.openLegal = function(title, html) {
+        document.getElementById('legalTitle').textContent = title;
+        document.getElementById('legalBody').innerHTML = html;
+        document.getElementById('legalModal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+      };
+
+      window.closeLegal = function() {
+        document.getElementById('legalModal').style.display = 'none';
+        document.body.style.overflow = 'auto';
+      };
+
+      // Content for modals
+      window.privacyContent = `
+        <p>AION AI STUDIO is built with a "Privacy First" architecture. We believe your data belongs to you, especially your visual workspace.</p>
+        <p><strong>1. Local Storage:</strong> All screenshots and captures are stored within your browser's local storage or temporary session memory. They are not uploaded to our servers for storage.</p>
+        <p><strong>2. AI Processing:</strong> Data is only transmitted to Google Gemini API when you explicitly trigger an AI action (e.g., "Analyze", "Code", "Generate"). This transmission is secured via HTTPS encryption.</p>
+        <p><strong>3. No Sale of Data:</strong> We do not sell your captures, prompts, or interaction history to third parties. We do not use your data for training proprietary models outside of the Google ecosystem.</p>
+        <p><strong>4. Analytics:</strong> We use minimal, anonymous telemetry to monitor extension performance. No identifying information is collected.</p>
+      `;
+
+      window.contactContent = `
+        <p>Have questions or need enterprise support for your team? Reach out to our core development group.</p>
+        <p><strong>Support:</strong> support@aion-ai.studio</p>
+        <p><strong>Partnerships:</strong> labs@aion-ai.studio</p>
+        <p><strong>Twitter/X:</strong> @AionAIStudio</p>
+        <p>We typically respond within 24 hours during standard business days.</p>
+      `;
+
+      window.adminContent = `
+        <p>Access to the AION Admin Console is restricted to verified developers and organization administrators.</p>
+        <p>If you are looking for the API key management dashboard, please visit your Google Cloud Console or the dedicated AION Developer Portal.</p>
+        <p>Unauthorized access attempts are logged and reported.</p>
+      `;
+
+      // Smooth scroll offset
+      document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', function(e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute('href'));
+          if (target) {
+            window.scrollTo({
+              top: target.getBoundingClientRect().top + window.pageYOffset - 90,
+              behavior: 'smooth'
+            });
+          }
+        });
+      });
+
+    })();
+  </script>
+</body>
+</html>
+📋 Copy
+🔊 Read
+▾
+✨ Magic Card
+
+🔍
+Vision
+
+✨
+Image
+
+🎵
+Music
+
+🎬
+Video
+Describe a fix or what to add — e.g. "change hero to dark blue" or attach an image 📎
+Send
+
+Build
+
+Research
+
+Search
+
+Read
+
+Code
