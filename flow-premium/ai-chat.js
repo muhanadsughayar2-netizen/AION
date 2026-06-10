@@ -6403,13 +6403,14 @@ async function callAntigravityBuild(userPrompt, apiKey) {
   const previousId = stored.antigravity_interaction_id || null;
 
   const buildInstruction =
-    `You are an expert full-stack web developer running inside a Linux sandbox.\n\n` +
+    `You are an expert full-stack web developer.\n\n` +
     `TASK: ${userPrompt}\n\n` +
-    `MANDATORY DELIVERY FORMAT — follow exactly:\n` +
+    `RULES — read carefully:\n` +
     `1. Build a complete, modern, visually stunning single-page web application.\n` +
     `2. Use premium CSS: glassmorphism, gradients, smooth animations. Never plain.\n` +
     `3. Every button and interactive element must be fully wired with JavaScript.\n` +
-    `4. Run the app inside the sandbox and confirm zero console errors.\n` +
+    `4. Write the code in ONE PASS. Do NOT run it, do NOT test it, do NOT iterate.\n` +
+    `   Deliver immediately — no self-checking loops.\n` +
     `5. At the END of your response output the COMPLETE final HTML (no truncation)\n` +
     `   inside ONE markdown code block:\n` +
     `\`\`\`html\n<!DOCTYPE html>...complete self-contained file...\n\`\`\`\n` +
