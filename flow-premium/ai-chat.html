@@ -485,8 +485,7 @@
       border-bottom-right-radius: 5px;
       border: 1px solid rgba(255,255,255,0.05);
       font-weight: 400;
-      white-space: pre-wrap;
-      word-spacing: 0.14em;
+      letter-spacing: 0.005em;
     }
 
     .chat-bubble.ai {
@@ -496,7 +495,7 @@
       border-bottom-left-radius: 5px;
       border: 1px solid rgba(255,255,255,0.06);
       line-height: 1.8;
-      word-spacing: 0.14em;
+      letter-spacing: 0.005em;
     }
 
     /* AI response typography — teal ONLY for accents, never bubble fills */
@@ -923,7 +922,6 @@
       color: #fff;
       font-size: 15px;
       font-family: inherit;
-      word-spacing: 0.14em;
       outline: none;
       transition: border-color 0.2s;
       resize: none;
@@ -1619,8 +1617,7 @@
           <!-- Right: action buttons -->
           <div style="display:flex;gap:5px;align-items:center;">
             <button id="previewExpandBtn" title="Expand / collapse preview" style="font-size:11px;padding:3px 7px;border-radius:7px;background:rgba(255,160,50,0.07);border:1px solid rgba(255,160,50,0.2);color:#ffa032;cursor:pointer;font-weight:700;line-height:1;">⤢</button>
-            <button id="previewSaveBtn" title="Download HTML file" style="font-size:10px;padding:3px 9px;border-radius:7px;background:rgba(50,210,120,0.1);border:1px solid rgba(50,210,120,0.4);color:#32d278;cursor:pointer;font-weight:700;font-family:monospace;white-space:nowrap;">💾 Save</button>
-            <button id="previewOpenTabBtn" title="Open full preview in a new tab" style="font-size:10px;padding:3px 9px;border-radius:7px;background:rgba(0,217,255,0.07);border:1px solid rgba(0,217,255,0.28);color:#4285F4;cursor:pointer;font-weight:700;font-family:monospace;">📂 Open Full</button>
+            <button id="previewOpenTabBtn" style="font-size:10px;padding:3px 9px;border-radius:7px;background:rgba(0,217,255,0.07);border:1px solid rgba(0,217,255,0.28);color:#4285F4;cursor:pointer;font-weight:700;font-family:monospace;">↗ Open</button>
             <button id="previewCopyBtn" style="font-size:10px;padding:3px 8px;border-radius:7px;background:rgba(255,160,50,0.09);border:1px solid rgba(255,160,50,0.22);color:#ffa032;cursor:pointer;font-weight:700;font-family:monospace;">Copy</button>
             <button id="publishNetlifyBtn" title="Publish site live — free Netlify hosting" style="font-size:10px;padding:3px 9px;border-radius:7px;background:rgba(0,199,148,0.12);border:1px solid rgba(0,199,148,0.4);color:#00c794;cursor:pointer;font-weight:700;font-family:monospace;white-space:nowrap;">🌐 Publish</button>
             <button id="closePreviewBtn" style="background:none;border:none;color:rgba(255,255,255,0.35);cursor:pointer;font-size:13px;line-height:1;padding:0 2px;">✕</button>

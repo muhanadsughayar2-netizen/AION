@@ -175,94 +175,27 @@
     // src hits the DOM — post-injection cleanup is too late. We must sanitize
     // the HTML string first so no bad iframe ever enters the DOM.
     function sanitizeHtml(html) {
+      // Replace src on any <iframe> that points to an extension page or relative
+      // path (e.g. "sandbox.html", "ai-chat.html", "chrome-extension://...").
+      // The regex is intentionally loose — it captures the src= value and blanks
+      // it out; legitimate external iframes (https://) are left untouched.
       return html.replace(
         /(<iframe\b[^>]*?\bsrc\s*=\s*["'])([^"']*)(["'][^>]*>)/gi,
         function(match, pre, src, post) {
           try {
             var resolved = new URL(src, location.href);
+            // Block chrome-extension://, relative extension pages, and empty/bad srcs
             if (resolved.origin === location.origin) {
               return pre + 'about:blank' + post;
             }
           } catch(e) {
+            // Unparseable (javascript:, data:...) — blank it
             return pre + 'about:blank' + post;
           }
-          return match;
+          return match; // safe external URL — leave as-is
         }
       );
     }
-
-    // ── DOM-level protection against dynamic iframe self-navigation ──────────
-    // The string-level sanitizeHtml above catches iframe src in the HTML text,
-    // but AI-generated JS can also do:
-    //   const f = document.createElement('iframe'); f.src = 'sandbox.html';
-    // or:  window.location.href = '...'
-    // We intercept these at runtime so chrome never sees the bad navigation.
-    (function() {
-      // 1. Patch HTMLIFrameElement.src setter via MutationObserver on appendChild/
-      //    insertBefore — covers createElement + src assignment patterns.
-      var _origAppend      = Node.prototype.appendChild;
-      var _origInsertBefore = Node.prototype.insertBefore;
-      function _safeIframeSrc(el) {
-        if (!el || el.tagName !== 'IFRAME') return;
-        try {
-          var src = el.getAttribute('src') || '';
-          var resolved = new URL(src, location.href);
-          if (resolved.origin === location.origin) el.setAttribute('src', 'about:blank');
-        } catch(e) { el.setAttribute('src', 'about:blank'); }
-      }
-      Node.prototype.appendChild = function(child) {
-        _safeIframeSrc(child);
-        return _origAppend.call(this, child);
-      };
-      Node.prototype.insertBefore = function(child, ref) {
-        _safeIframeSrc(child);
-        return _origInsertBefore.call(this, child, ref);
-      };
-
-      // 2. Block window.location / document.location navigation to same origin
-      //    (AI-generated routers sometimes do window.location = 'index.html')
-      try {
-        var _locDesc = Object.getOwnPropertyDescriptor(window, 'location');
-        if (_locDesc && _locDesc.set) {
-          Object.defineProperty(window, 'location', {
-            set: function(v) {
-              try {
-                var resolved = new URL(String(v), location.href);
-                if (resolved.origin === location.origin) return; // block
-              } catch(e) {}
-              _locDesc.set.call(window, v);
-            },
-            get: function() { return _locDesc.get.call(window); },
-            configurable: true
-          });
-        }
-      } catch(e) {}
-
-      // 3. Intercept HTMLIFrameElement.src property setter directly
-      try {
-        var _iframeProto = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'src');
-        if (_iframeProto && _iframeProto.set) {
-          Object.defineProperty(HTMLIFrameElement.prototype, 'src', {
-            set: function(v) {
-              try {
-                var resolved = new URL(String(v), location.href);
-                if (resolved.origin === location.origin) {
-                  _iframeProto.set.call(this, 'about:blank');
-                  return;
-                }
-              } catch(e) {
-                _iframeProto.set.call(this, 'about:blank');
-                return;
-              }
-              _iframeProto.set.call(this, v);
-            },
-            get: function() { return _iframeProto.get.call(this); },
-            configurable: true
-          });
-        }
-      } catch(e) {}
-    })();
-    // ────────────────────────────────────────────────────────────────────────
 
     window.addEventListener('message', function(event) {
       try {
