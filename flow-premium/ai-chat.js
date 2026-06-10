@@ -6405,6 +6405,9 @@ async function handleSend() {
   if (!prompt && filesQueue.length === 0) return;
   if (!prompt) prompt = 'Analyze this image.';
 
+  // Dismiss any pending "Build it" button from the previous AI turn.
+  document.querySelectorAll('.build-it-btn').forEach(b => b.remove());
+
   // ── Build Mode: image & video embedding ──────────────────────────────────
   // When media files are attached while patching an existing site, store the
   // base64 data URLs locally and give the AI placeholder strings as src/src
@@ -8493,6 +8496,45 @@ HOW TO TALK:
 
   responseBubble.innerHTML = `<div style="font-size:13px;color:#e8eef4;line-height:1.7;">${reply.replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>')}</div>`;
   addBubbleActions(responseBubble, reply);
+
+  // ── "Build it" quick-action button ────────────────────────────────────────
+  // Remove any stale button from a previous AI turn before adding the new one.
+  document.querySelectorAll('.build-it-btn').forEach(b => b.remove());
+  const buildItBtn = document.createElement('button');
+  buildItBtn.className = 'build-it-btn';
+  buildItBtn.textContent = '▶ Build it';
+  buildItBtn.style.cssText = [
+    'display:inline-flex',
+    'align-items:center',
+    'gap:5px',
+    'margin-top:10px',
+    'padding:5px 14px',
+    'background:linear-gradient(135deg,rgba(99,102,241,0.22),rgba(99,102,241,0.12))',
+    'border:1px solid rgba(99,102,241,0.38)',
+    'border-radius:8px',
+    'color:#a5b4fc',
+    'font-size:12px',
+    'font-weight:500',
+    'cursor:pointer',
+    'transition:background 0.18s,border-color 0.18s,color 0.18s',
+    'letter-spacing:0.02em'
+  ].join(';');
+  buildItBtn.addEventListener('mouseenter', () => {
+    buildItBtn.style.background = 'linear-gradient(135deg,rgba(99,102,241,0.38),rgba(99,102,241,0.26))';
+    buildItBtn.style.borderColor = 'rgba(99,102,241,0.65)';
+    buildItBtn.style.color = '#c7d2fe';
+  });
+  buildItBtn.addEventListener('mouseleave', () => {
+    buildItBtn.style.background = 'linear-gradient(135deg,rgba(99,102,241,0.22),rgba(99,102,241,0.12))';
+    buildItBtn.style.borderColor = 'rgba(99,102,241,0.38)';
+    buildItBtn.style.color = '#a5b4fc';
+  });
+  buildItBtn.addEventListener('click', () => {
+    document.querySelectorAll('.build-it-btn').forEach(b => b.remove());
+    const input = document.getElementById('chatInput');
+    if (input) { input.value = 'build it'; handleSend(); }
+  });
+  responseBubble.appendChild(buildItBtn);
 
   // Persist BOTH sides so the conversation is genuinely multi-turn and the
   // eventual build inherits the full agreed-upon context.
