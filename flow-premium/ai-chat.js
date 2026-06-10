@@ -6458,7 +6458,32 @@ async function handleSend() {
   // AI is about to build before actually building — giving them a chance to
   // correct any misunderstanding. First-time quick builds ("build me X" →
   // "build it") have < 4 history entries (< 2 full turns) and skip this card.
-  if (buildModeEnabled && !_isContinuationSend && !_skipBuildConfirmation && conversationHistory.length >= 4) {
+  // Single-change patch edits (advisor summary has ≤ 1 bullet point) also skip
+  // the card — adding a confirmation step would be friction for a tiny tweak.
+  const _isPatchOnlyEdit = (() => {
+    // Find the last model message in conversationHistory.
+    let lastAiText = '';
+    for (let i = conversationHistory.length - 1; i >= 0; i--) {
+      if (conversationHistory[i] && conversationHistory[i].role === 'model' && conversationHistory[i].text) {
+        lastAiText = conversationHistory[i].text;
+        break;
+      }
+    }
+    if (!lastAiText) return false;
+    // Must be a plan-summary message: the build-it cue must appear in the final
+    // ~300 characters (end-anchored), not just anywhere in the conversation turn.
+    const tail = lastAiText.slice(-300);
+    const hasBuildCue = /build\s+it|do\s+it|say\s+"(build|do)\s+it"/i.test(tail);
+    if (!hasBuildCue) return false;
+    // Count bullet lines (•, -, *) in the whole message.
+    // The patch-mode advisor is now prompted to write one bullet per change, so
+    // exactly 1 bullet = single-change plan → skip the card.
+    // 0 bullets means the advisor didn't emit a structured summary yet → show card.
+    // 2+ bullets means multiple changes → show card.
+    const bulletCount = (lastAiText.match(/^[\s]*[•\-\*]\s/mg) || []).length;
+    return bulletCount === 1;
+  })();
+  if (buildModeEnabled && !_isContinuationSend && !_skipBuildConfirmation && conversationHistory.length >= 4 && !_isPatchOnlyEdit) {
     input.value = '';
     resetInputSize(input);
     _showBuildConfirmation(prompt);
@@ -8454,7 +8479,7 @@ HOW TO TALK:
 - If they uploaded an image but didn't say where it goes, ask exactly where: replace the hero, a new section, or the background?
 - If their idea is vague, ask ONE sharp question and offer a concrete suggestion.
 - Build on what was already said earlier in this conversation — don't repeat yourself.
-- When you understand the plan, summarize it in one line and tell them to say "do it" or "build it" to apply.
+- When you understand the plan, summarize the changes as bullet points (• one bullet per change, max 3) and tell them to say "do it" or "build it" to apply.
 - NEVER output HTML, CSS, or code here — you are only talking.${siteContext}`
     : `You are a friendly, expert web designer helping a user plan a brand-new website from scratch. You are in planning/discussion mode — explore their vision, do NOT build yet.
 
