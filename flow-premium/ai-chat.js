@@ -6425,6 +6425,25 @@ async function handleSend() {
   }
   // ── End new-app guard ──────────────────────────────────────────────────────
 
+  // ── Build Mode conversation router ─────────────────────────────────────────
+  // When a site already exists, check whether the user is chatting/asking a
+  // question or actually giving a build instruction. Questions and vague
+  // messages get a conversational reply — nothing is built. Clear action verbs
+  // ("add a button", "change the colour", "yes build it") go straight to build.
+  // Files stay in filesQueue across chat turns so the image is available when
+  // the user gives the placement instruction on the next message.
+  if (buildModeEnabled && _lastBuiltCode && !_isContinuationSend) {
+    const _hasAttachedFiles = filesQueue.length > 0;
+    if (!_isBuildInstruction(prompt, _hasAttachedFiles)) {
+      input.value = '';
+      resetInputSize(input);
+      addBubble(prompt, 'user');
+      await _buildModeChat(prompt, _hasAttachedFiles, thread);
+      return;
+    }
+  }
+  // ── End conversation router ─────────────────────────────────────────────────
+
   if (!_isContinuationSend) {
     _pendingBuildImages = [];
     _pendingBuildVideos = [];
@@ -7583,7 +7602,8 @@ function addBubbleActions(bubble, text) {
     // Must clear the arrays after consuming so the classic-path swap doesn't
     // double-apply on a later patch.
     if (_pendingBuildImages.length > 0) {
-      _pendingBuildImages.forEach((u, i) => { _buildBodyHtml = _buildBodyHtml.split(`__SNAP_IMG_${i}__`).join(u); });
+      const _fixImgOffset = Object.keys(_committedMediaMap).filter(k => k.startsWith('__SNAP_IMG_')).length;
+      _pendingBuildImages.forEach((u, i) => { _buildBodyHtml = _buildBodyHtml.split(`__SNAP_IMG_${_fixImgOffset + i}__`).join(u); });
       _pendingBuildImages = [];
     }
     if (_pendingBuildVideos.length > 0) {
@@ -8342,6 +8362,89 @@ function _isNewBuildIntent(prompt) {
   if (/^(add |change |fix |update |remove |delete |edit |modify |tweak |adjust |make it|make the|make this|now |also |and |put |move |replace |switch |rename |colour|color |style |resize |convert |turn it|can you add|can you change|can you fix|can you update|can you remove|i want to add|i want to change)/.test(p)) return false;
   // New app signals — build/create/make + a new subject
   return /(build|create|make|design|generate|i want|i need|can you build|can you create|can you make|can you design).{0,50}(a |an |me a |new |different |another )/.test(p);
+}
+
+// ── Build Mode: intent classifier ─────────────────────────────────────────────
+// Returns true  → proceed to build/patch immediately
+// Returns false → route to conversational reply, don't build yet
+function _isBuildInstruction(prompt, hasFiles) {
+  const p = prompt.toLowerCase().trim();
+
+  // Short explicit confirmations → build
+  if (/^(yes|yeah|yep|yup|ok|okay|sure|go|do it|build it|make it|go ahead|confirm|correct|right|exactly|perfect|sounds good|do that|apply|apply it|yes please|please do|let'?s go|do it now|build now|build that|build this)[\s!.,]*$/.test(p)) return true;
+
+  // Questions → chat
+  if (/^(what|how|why|which|where|who|should i|any ideas|any suggestion|what do you think|what would|help me|give me ideas|what'?s best|thoughts|what if|is it|is there|can you suggest|could you suggest)/.test(p)) return false;
+
+  // Very short with no files → not enough info to build
+  if (p.length < 6 && !hasFiles) return false;
+
+  // Clear action verbs targeting the existing site → build
+  if (/^(add|change|fix|update|remove|delete|edit|modify|tweak|adjust|put|move|replace|swap|switch|rename|make it|make the|make this|now add|also add|and add|can you add|can you change|can you fix|can you update|can you remove|can you put|can you move|can you replace|can you swap|i want (to |you to )|i'?d like( you to)?|please (add|change|fix|update|remove|put|move|replace)|use|apply|include|embed|show|hide|colour|color|style|resize|turn|convert|give it|rebuild|redesign|rewrite|redo|make (it |the |this )|set( the)?|get rid)/.test(p)) return true;
+
+  // File attached with clear placement keyword → build
+  if (hasFiles && /(hero|header|background|section|above|below|top|bottom|replace|swap|put it|place it|use it|as the|in the|at the|into|image section|photo|banner|thumbnail|cover)/.test(p)) return true;
+
+  // File attached but message too short/vague → ask first
+  if (hasFiles && p.length < 25) return false;
+
+  // File with enough context → build
+  if (hasFiles && p.length >= 25) return true;
+
+  // Default → chat (safer — don't auto-build on ambiguous input)
+  return false;
+}
+
+// ── Build Mode: conversational advisor ───────────────────────────────────────
+// Called when the router decides the user is asking a question rather than
+// giving a build instruction. Responds naturally, may see the attached image,
+// and nudges the user toward a concrete instruction.
+async function _buildModeChat(prompt, hasFiles, thread) {
+  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+  const apiKey = keyResult.geminiApiKey;
+  if (!apiKey) { showGeminiModal(); return; }
+
+  const responseBubble = addBubble('', 'ai');
+  responseBubble.innerHTML = '<span style="color:#8899aa;font-size:13px;">thinking…</span>';
+
+  const systemText = `You are a friendly, expert web designer helping a user refine their website through conversation. They have an existing site in preview and are chatting with you to decide what to change next.
+
+Rules:
+- Be warm, concise, and conversational — 2 to 4 sentences max
+- If they uploaded an image but didn't say where it goes, ask exactly: "Where would you like this image — replace the hero, add a new section, or somewhere else?"
+- If their request is vague, ask ONE focused clarifying question
+- Offer one concrete suggestion if helpful ("You might also want to…")
+- NEVER write HTML, CSS, or code
+- When you understand what they want, end with: say 'build it' when ready or confirm with yes.`;
+
+  const parts = [];
+  if (hasFiles && filesQueue.length > 0) {
+    const imgFile = filesQueue.find(f => f.mimeType && f.mimeType.startsWith('image/'));
+    if (imgFile) parts.push({ inlineData: { mimeType: imgFile.mimeType, data: imgFile.data } });
+  }
+  parts.push({ text: prompt || 'I uploaded an image, what do you think?' });
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemText }] },
+          contents: [{ role: 'user', parts }],
+          generationConfig: { maxOutputTokens: 220, temperature: 0.75 }
+        })
+      }
+    );
+    const data = await res.json();
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'What would you like to change? Tell me and I\'ll build it.';
+    responseBubble.innerHTML = `<div style="font-size:13px;color:#e8eef4;line-height:1.7;">${reply.replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>')}</div>`;
+  } catch (_e) {
+    responseBubble.innerHTML = `<div style="font-size:13px;color:#e8eef4;">What would you like to change or add? I'll build it as soon as you confirm.</div>`;
+  }
+
+  if (thread) thread.scrollTop = thread.scrollHeight;
 }
 
 // Shows an inline card asking the user whether to start fresh or update the current app.
