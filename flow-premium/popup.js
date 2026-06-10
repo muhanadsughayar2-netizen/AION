@@ -4,7 +4,7 @@
 // ============ MODEL REGISTRY ============
 // Single source of truth for Gemini model IDs used in the popup.
 const MODELS = {
-  chat: 'gemini-3.5-flash',
+  chat: 'gemini-3-flash-preview',
   // Billing probe chain (used by _popupDetectTier)
   probeVeo3Fast:  'veo-3.0-fast-generate-001',
   probeVeo31Fast: 'veo-3.1-fast-generate-preview',

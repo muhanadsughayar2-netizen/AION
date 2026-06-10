@@ -6,7 +6,7 @@
 // Update here — never scatter model strings across the file.
 const MODELS = {
   // Chat / vision
-  chat:         'gemini-3.5-flash',
+  chat:         'gemini-3-flash-preview',
   // Image generation
   imagePrimary: 'gemini-3.1-flash-image',
   imageChain:   ['gemini-3.1-flash-image', 'gemini-2.5-flash-image', 'gemini-3-pro-image-preview'],

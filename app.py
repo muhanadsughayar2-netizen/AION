@@ -3518,7 +3518,7 @@ def ai_proxy():
         }
 
         gemini_resp = http_requests.post(
-            f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={active_key}',
+            f'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={active_key}',
             json=gemini_body,
             timeout=30
         )
