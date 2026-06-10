@@ -9491,11 +9491,24 @@ function _setStage(stage, btnId) {
 
 
 
+document.getElementById('previewSaveBtn')?.addEventListener('click', () => {
+  if (!_lastBuiltCode) return;
+  const blob = new Blob([_lastBuiltCode], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'my-site.html';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  const btn = document.getElementById('previewSaveBtn');
+  if (btn) { btn.textContent = '✓ Saved!'; setTimeout(() => { btn.textContent = '💾 Save'; }, 2000); }
+});
+
 document.getElementById('previewCopyBtn')?.addEventListener('click', () => {
   if (_lastBuiltCode) {
     navigator.clipboard.writeText(_lastBuiltCode).then(() => {
       const btn = document.getElementById('previewCopyBtn');
-      if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy Code'; }, 1800); }
+      if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy'; }, 1800); }
     });
   }
 });
