@@ -5,8 +5,9 @@
 // Single source of truth for all Gemini model IDs.
 // Update here — never scatter model strings across the file.
 const MODELS = {
-  // Chat / vision
+  // Chat / vision — primary is Gemini 3.0 Flash Preview; fallback fires on 429/503
   chat:         'gemini-3-flash-preview',
+  chatFallback: 'gemini-2.5-flash',
   // Image generation
   imagePrimary: 'gemini-3.1-flash-image',
   imageChain:   ['gemini-3.1-flash-image', 'gemini-2.5-flash-image', 'gemini-3-pro-image-preview'],
@@ -7537,15 +7538,28 @@ async function handleSend() {
       };
       if (_tools2.length > 0) _body2.tools = _tools2;
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modeConfig.model}:streamGenerateContent?alt=sse&key=${apiKey}`,
+      // Try primary model; if overloaded (429) or unavailable (503) fall back once.
+      let _activeModel = modeConfig.model;
+      let response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${_activeModel}:streamGenerateContent?alt=sse&key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(_body2)
         }
       );
-      
+      if (!response.ok && (response.status === 429 || response.status === 503) && MODELS.chatFallback && _activeModel !== MODELS.chatFallback) {
+        _activeModel = MODELS.chatFallback;
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${_activeModel}:streamGenerateContent?alt=sse&key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(_body2)
+          }
+        );
+      }
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error?.message || `API Error: ${response.status}`);
@@ -8546,19 +8560,23 @@ HOW TO TALK:
 
   let reply = '';
   try {
-    const res = await fetch(
+    const _bmBody = {
+      systemInstruction: { parts: [{ text: systemText }] },
+      contents,
+      generationConfig: { maxOutputTokens: 500, temperature: 0.8 }
+    };
+    // Try primary model; fall back to chatFallback on 429/503.
+    let _bmRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemText }] },
-          contents,
-          generationConfig: { maxOutputTokens: 500, temperature: 0.8 }
-        })
-      }
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_bmBody) }
     );
-    const data = await res.json();
+    if (!_bmRes.ok && (_bmRes.status === 429 || _bmRes.status === 503) && MODELS.chatFallback) {
+      _bmRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chatFallback}:generateContent?key=${apiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_bmBody) }
+      );
+    }
+    const data = await _bmRes.json();
     reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     if (!reply) {
       if (data.error) {
@@ -8710,18 +8728,21 @@ async function _showBuildConfirmation(prompt) {
 
       const summarySystem = `You are a concise project planner. Based on the conversation above, output EXACTLY 2-3 bullet points (one line each, starting with "•") that summarise what you are about to build or change. No intro sentence, no explanation — only the bullet lines.`;
 
-      const res = await fetch(
+      const _sumBody = {
+        systemInstruction: { parts: [{ text: summarySystem }] },
+        contents,
+        generationConfig: { maxOutputTokens: 150, temperature: 0.3 }
+      };
+      let res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: summarySystem }] },
-            contents,
-            generationConfig: { maxOutputTokens: 150, temperature: 0.3 }
-          })
-        }
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_sumBody) }
       );
+      if (!res.ok && (res.status === 429 || res.status === 503) && MODELS.chatFallback) {
+        res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chatFallback}:generateContent?key=${apiKey}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_sumBody) }
+        );
+      }
       const data = await res.json();
       const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       // Parse lines that start with • (or - or *) as bullet points.
