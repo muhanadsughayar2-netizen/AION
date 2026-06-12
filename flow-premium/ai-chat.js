@@ -5343,6 +5343,7 @@ function showTalkShowCard(thread) {
           <button class="ts-stop-btn" style="display:none;padding:11px 15px;border-radius:10px;border:1px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.1);color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;">⏹</button>
           <button class="ts-reset-btn" style="padding:11px 13px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#9aabb8;font-size:12px;cursor:pointer;">↺</button>
         </div>
+        <button class="ts-download-btn" style="display:none;width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1px solid rgba(45,212,191,0.35);background:rgba(45,212,191,0.08);color:#2dd4bf;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;">⬇️ Download Episode</button>
       </div>
     </div>
   `;
@@ -5365,10 +5366,11 @@ function showTalkShowCard(thread) {
   const linesEl   = card.querySelector('.ts-lines');
   const statusEl  = card.querySelector('.ts-status');
   const liveBadge = card.querySelector('.ts-live-badge');
-  const broadBtn  = card.querySelector('.ts-broadcast-btn');
-  const stopBtn   = card.querySelector('.ts-stop-btn');
-  const resetBtn  = card.querySelector('.ts-reset-btn');
-  const volSlider = card.querySelector('.ts-vol');
+  const broadBtn   = card.querySelector('.ts-broadcast-btn');
+  const stopBtn    = card.querySelector('.ts-stop-btn');
+  const resetBtn   = card.querySelector('.ts-reset-btn');
+  const downloadBtn= card.querySelector('.ts-download-btn');
+  const volSlider  = card.querySelector('.ts-vol');
   const volPct    = card.querySelector('.ts-vol-pct');
 
   // ── Volume slider ────────────────────────────────────────────
@@ -5437,6 +5439,7 @@ function showTalkShowCard(thread) {
     broadBtn.style.opacity = '0.45';
     broadBtn.style.pointerEvents = 'none';
     broadBtn.textContent = '▶ Start Broadcast';
+    downloadBtn.style.display = 'none';
     prepBtn.textContent = '🎬 Prepare Show';
     prepBtn.disabled = false;
   });
@@ -5566,6 +5569,112 @@ No stage directions. No asterisks or markdown. Natural spoken language only. Sta
     if (!stopReq) {
       tsStop();
       statusEl.textContent = '🎙️ Broadcast complete!';
+      downloadBtn.style.display = '';
+    }
+  });
+
+  // ── Download Episode ─────────────────────────────────────────
+  // Converts AudioBuffer to a 16-bit stereo WAV ArrayBuffer
+  function tsAudioBufToWav(buf) {
+    const numCh = buf.numberOfChannels;
+    const sr = buf.sampleRate;
+    const frames = buf.length;
+    const bps = 2;
+    const dataLen = frames * numCh * bps;
+    const ab = new ArrayBuffer(44 + dataLen);
+    const dv = new DataView(ab);
+    const ws = (o, v) => { for (let i = 0; i < v.length; i++) dv.setUint8(o + i, v.charCodeAt(i)); };
+    ws(0,'RIFF'); dv.setUint32(4, 36 + dataLen, true);
+    ws(8,'WAVE'); ws(12,'fmt ');
+    dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,numCh,true);
+    dv.setUint32(24,sr,true); dv.setUint32(28,sr*numCh*bps,true);
+    dv.setUint16(32,numCh*bps,true); dv.setUint16(34,16,true);
+    ws(36,'data'); dv.setUint32(40,dataLen,true);
+    let off = 44;
+    for (let i = 0; i < frames; i++) {
+      for (let ch = 0; ch < numCh; ch++) {
+        const s = Math.max(-1, Math.min(1, buf.getChannelData(ch)[i]));
+        dv.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        off += 2;
+      }
+    }
+    return ab;
+  }
+
+  downloadBtn.addEventListener('click', async () => {
+    downloadBtn.textContent = '⏳ Mixing…';
+    downloadBtn.style.pointerEvents = 'none';
+    try {
+      // Decode all blobs with a temporary AudioContext
+      const tmpCtx = new AudioContext();
+      const voiceBuffers = [];
+      const GAP = 0.4;
+      for (const line of script) {
+        if (line.url) {
+          const ab = await fetch(line.url).then(r => r.arrayBuffer());
+          voiceBuffers.push(await tmpCtx.decodeAudioData(ab));
+        } else {
+          voiceBuffers.push(null);
+        }
+      }
+      let musicBuffer = null;
+      if (bgUrl) {
+        const ab = await fetch(bgUrl).then(r => r.arrayBuffer());
+        musicBuffer = await tmpCtx.decodeAudioData(ab);
+      }
+      await tmpCtx.close();
+
+      // Calculate total duration
+      let totalDur = 0;
+      for (const b of voiceBuffers) totalDur += b ? b.duration : GAP;
+      totalDur = Math.max(totalDur, 1);
+
+      // Render with OfflineAudioContext (stereo, 44.1 kHz)
+      const SR = 44100;
+      const offCtx = new OfflineAudioContext(2, Math.ceil(SR * totalDur), SR);
+
+      // Schedule voice lines sequentially
+      let t = 0;
+      for (const vb of voiceBuffers) {
+        if (vb) {
+          const src = offCtx.createBufferSource();
+          src.buffer = vb;
+          src.connect(offCtx.destination);
+          src.start(t);
+          t += vb.duration;
+        } else { t += GAP; }
+      }
+
+      // Loop background music at slider volume for full duration
+      if (musicBuffer) {
+        const gain = offCtx.createGain();
+        gain.gain.value = parseInt(volSlider.value) / 100;
+        gain.connect(offCtx.destination);
+        let mt = 0;
+        while (mt < totalDur) {
+          const src = offCtx.createBufferSource();
+          src.buffer = musicBuffer;
+          src.connect(gain);
+          src.start(mt);
+          mt += musicBuffer.duration;
+        }
+      }
+
+      const rendered = await offCtx.startRendering();
+      const wav = tsAudioBufToWav(rendered);
+      const blob = new Blob([wav], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'talk-show-episode.wav'; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 8000);
+      downloadBtn.textContent = '✓ Downloaded!';
+    } catch (e) {
+      downloadBtn.textContent = '❌ Mix failed — try again';
+    } finally {
+      setTimeout(() => {
+        downloadBtn.textContent = '⬇️ Download Episode';
+        downloadBtn.style.pointerEvents = 'auto';
+      }, 3000);
     }
   });
 }
