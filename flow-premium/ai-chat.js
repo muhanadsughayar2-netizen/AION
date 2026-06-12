@@ -5535,6 +5535,7 @@ No stage directions. No asterisks or markdown. Natural spoken language only. Sta
     broadBtn.style.display = 'none';
     stopBtn.style.display = '';
     liveBadge.style.display = 'flex';
+    downloadBtn.style.display = 'none';
     statusEl.textContent = 'On air…';
 
     // Start background music looping at slider volume
