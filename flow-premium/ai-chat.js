@@ -928,6 +928,12 @@ const AI_MODES = {
     type: 'gemini-video',
     placeholder: 'Describe the video you want to create...',
     welcome: '🎬 Video mode — describe a scene and I\'ll bring it to life!'
+  },
+  'broadcast': {
+    model: MODELS.chat,
+    type: 'gemini',
+    placeholder: 'Broadcast Studio is ready — use the card below…',
+    welcome: '🎙️ Broadcast Studio — turn any content into a multi-voice AI broadcast. Talk show, tutorial, app demo, presentation, or narrator.'
   }
 };
 
@@ -1084,7 +1090,7 @@ function initModeButtons() {
         const notice = document.createElement('div');
         notice.className = 'chat-bubble ai mode-switch-notice';
         notice.style.cssText = 'font-size: 14px; padding: 10px 16px; border-left: 3px solid; margin: 4px 0;';
-        const borderColors = { 'vision': '#4285F4', 'image': '#8ab4f8', 'music': '#8ab4f8', 'video': '#8ab4f8' };
+        const borderColors = { 'vision': '#4285F4', 'image': '#8ab4f8', 'music': '#8ab4f8', 'video': '#8ab4f8', 'broadcast': '#2dd4bf' };
         notice.style.borderLeftColor = borderColors[mode] || '#4285F4';
         notice.textContent = cfg.welcome;
         thread.appendChild(notice);
@@ -1095,7 +1101,10 @@ function initModeButtons() {
 
         if (mode === 'music') {
           showSongStudio(thread);
-          showTalkShowCard(thread);
+        }
+
+        if (mode === 'broadcast') {
+          showBroadcastCard(thread);
         }
         
         thread.scrollTop = thread.scrollHeight;
@@ -5176,28 +5185,54 @@ function showSongStudio(thread) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TALK SHOW CARD  — 3-voice live broadcast with Lyria background music
-// Triggered alongside Song Studio when the user enters Music mode.
+// BROADCAST STUDIO  — 3-voice AI broadcast (Zephyr/Kore/Fenrir)
+// Formats: Talk Show / Tutorial / App Demo / Presentation / Narrator
+// Triggered when the user enters Broadcast mode.
 // ─────────────────────────────────────────────────────────────────────────────
-function showTalkShowCard(thread) {
-  const existing = thread.querySelector('.talk-show-card');
+function showBroadcastCard(thread) {
+  const existing = thread.querySelector('.broadcast-card');
   if (existing) existing.remove();
 
-  // Inject keyframes once
-  if (!document.getElementById('ts-styles')) {
+  if (!document.getElementById('bc-styles')) {
     const s = document.createElement('style');
-    s.id = 'ts-styles';
-    s.textContent = '@keyframes tsPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.35;transform:scale(0.72)}}';
+    s.id = 'bc-styles';
+    s.textContent = `@keyframes bcPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.35;transform:scale(0.72)}}
+.bc-pill{padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#8899aa;font-size:11px;cursor:pointer;transition:all 0.18s;white-space:nowrap;line-height:1.6;}
+.bc-fmt.active{background:rgba(45,212,191,0.14);border-color:rgba(45,212,191,0.38);color:#2dd4bf;font-weight:700;}
+.bc-dur.active{background:rgba(167,139,250,0.14);border-color:rgba(167,139,250,0.38);color:#a78bfa;font-weight:700;}
+.bc-trk.active{background:rgba(251,191,36,0.12);border-color:rgba(251,191,36,0.33);color:#fbbf24;font-weight:700;}
+.bc-pill:hover{opacity:0.82;}`;
     document.head.appendChild(s);
   }
 
-  // ── Speaker definitions ──────────────────────────────────────
   const SPEAKERS = {
     ZEPHYR: { voice: 'Zephyr', role: 'Host',     color: '#2dd4bf', icon: '🎙️' },
     KORE:   { voice: 'Kore',   role: 'Expert',   color: '#a78bfa', icon: '🎓' },
-    PUCK:   { voice: 'Puck',   role: 'Creative', color: '#f472b6', icon: '⚡' },
-    AOEDE:  { voice: 'Aoede',  role: 'Creative', color: '#34d399', icon: '✨' },
+    FENRIR: { voice: 'Fenrir', role: 'Creative', color: '#f97316', icon: '⚡' },
   };
+
+  const FORMATS = [
+    { key: 'talkshow',     label: '🎙️ Talk Show' },
+    { key: 'tutorial',     label: '📚 Tutorial' },
+    { key: 'appdemo',      label: '🚀 App Demo' },
+    { key: 'presentation', label: '📊 Presentation' },
+    { key: 'narrator',     label: '🎬 Narrator' },
+  ];
+
+  const DURATIONS = [
+    { key: '1',  label: '1 min',  exchanges: 8  },
+    { key: '3',  label: '3 min',  exchanges: 18 },
+    { key: '5',  label: '5 min',  exchanges: 28 },
+    { key: '10', label: '10 min', exchanges: 45 },
+  ];
+
+  const TRACKS = [
+    { key: 'none',      label: '🚫 None',      prompt: null },
+    { key: 'lofi',      label: '☁️ Lo-fi',     prompt: 'Soft instrumental lo-fi background music for a podcast. Calm, warm, professional atmosphere. No vocals. Mellow backdrop beneath conversation.' },
+    { key: 'cinematic', label: '🎬 Cinematic', prompt: 'Epic cinematic orchestral background music. Dramatic, inspiring, documentary-style. No vocals. Suitable beneath narration.' },
+    { key: 'news',      label: '📰 News',      prompt: 'Professional TV news broadcast background music. Authoritative, modern, clean. Short staccato hits. No vocals.' },
+    { key: 'upbeat',    label: '🎸 Upbeat',    prompt: 'Upbeat positive motivational background music. Energetic, modern, corporate pop style. No vocals.' },
+  ];
 
   // ── Helper: raw PCM / L16 → WAV blob ─────────────────────────
   function pcmToWav(b64, mimeType) {
@@ -5218,9 +5253,9 @@ function showTalkShowCard(thread) {
     return new Blob([raw], { type: mimeType || 'audio/wav' });
   }
 
-  // ── Helper: generate one TTS line ────────────────────────────
-  async function tsGenLine(text, voiceName, apiKey) {
-    const styled = `Speak naturally and conversationally as if live on a talk show: ${text}`;
+  // ── TTS: generate one line with format-appropriate style ─────
+  async function bcGenLine(text, voiceName, ttsStyle, apiKey) {
+    const styled = `${ttsStyle}${text}`;
     for (const model of [MODELS.ttsPrimary, MODELS.ttsFallback]) {
       try {
         const r = await fetch(
@@ -5247,9 +5282,9 @@ function showTalkShowCard(thread) {
     return null;
   }
 
-  // ── Helper: generate background music via Lyria ───────────────
-  async function tsGenMusic(apiKey) {
-    const prompt = 'Soft instrumental lo-fi background music for a podcast talk show. Calm, warm, professional atmosphere. No vocals. Mellow and unobtrusive, suitable as backdrop beneath conversation.';
+  // ── Music: generate background track by Lyria prompt ─────────
+  async function bcGenMusic(trackPrompt, apiKey) {
+    if (!trackPrompt) return null;
     for (const model of [MODELS.lyria3, MODELS.musicDefault]) {
       try {
         const r = await fetch(
@@ -5257,7 +5292,7 @@ function showTalkShowCard(thread) {
           {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+              contents: [{ role: 'user', parts: [{ text: trackPrompt }] }],
               generationConfig: { responseModalities: ['AUDIO'] }
             }),
             signal: AbortSignal.timeout(55000)
@@ -5266,17 +5301,15 @@ function showTalkShowCard(thread) {
         if (!r.ok) continue;
         const body = await r.json();
         for (const ap of (body.candidates?.[0]?.content?.parts || [])) {
-          if (ap.inlineData?.data) {
-            return URL.createObjectURL(pcmToWav(ap.inlineData.data, ap.inlineData.mimeType));
-          }
+          if (ap.inlineData?.data) return URL.createObjectURL(pcmToWav(ap.inlineData.data, ap.inlineData.mimeType));
         }
       } catch (e) { continue; }
     }
     return null;
   }
 
-  // ── Helper: parse Gemini script response ─────────────────────
-  function tsParseScript(raw) {
+  // ── Parse Gemini script ───────────────────────────────────────
+  function bcParseScript(raw) {
     const result = [];
     for (const line of raw.split('\n')) {
       const t = line.trim(); if (!t) continue;
@@ -5288,113 +5321,302 @@ function showTalkShowCard(thread) {
     return result;
   }
 
-  // ── Helper: hex → "r,g,b" ────────────────────────────────────
-  function tsHexRgb(h) { return [1,3,5].map(i => parseInt(h.slice(i,i+2),16)).join(','); }
+  // ── Hex → "r,g,b" ────────────────────────────────────────────
+  function bcHexRgb(h) { return [1,3,5].map(i => parseInt(h.slice(i,i+2),16)).join(','); }
 
-  // ── Build DOM ─────────────────────────────────────────────────
+  // ── System prompt varies by format and target length ─────────
+  function bcSysPrompt(format, exchanges) {
+    const base = `FORMAT (strict — output ONLY script lines, nothing else):
+ZEPHYR: [one or two spoken sentences]
+KORE: [one or two spoken sentences]
+FENRIR: [one or two spoken sentences]
+...${exchanges} exchanges total
+No stage directions. No asterisks. No markdown. Natural spoken language only.`;
+    const map = {
+      talkshow:     `You are a professional podcast scriptwriter. Write a lively 3-person talk show script from the source material.\n\n${base}\n\nZEPHYR = warm engaging host, KORE = knowledgeable expert, FENRIR = bold creative voice. Start with ZEPHYR introducing the topic.`,
+      tutorial:     `You are a scriptwriter creating an educational tutorial broadcast.\n\n${base}\n\nZEPHYR = friendly instructor walking through content step by step, KORE = student asking smart clarifying questions, FENRIR = adds real-world tips and examples. Start with ZEPHYR introducing what will be learned.`,
+      appdemo:      `You are a scriptwriter creating an app or product demo broadcast.\n\n${base}\n\nZEPHYR = main presenter showcasing features enthusiastically, KORE = excited first-time user reacting, FENRIR = technical expert adding context. Start with ZEPHYR with a strong opening hook.`,
+      presentation: `You are a scriptwriter creating a professional business presentation broadcast.\n\n${base}\n\nZEPHYR = main presenter delivering key points, KORE = co-presenter adding supporting evidence, FENRIR = reinforces and summarizes takeaways. Professional, polished language. Start with ZEPHYR with an executive summary.`,
+      narrator:     `You are a scriptwriter creating a documentary-style narrative broadcast.\n\n${base}\n\nZEPHYR = primary narrator (~50% of lines), KORE = provides perspective and counterpoint (~30%), FENRIR = delivers impactful conclusions (~20%). Measured, compelling language. Start with ZEPHYR.`,
+    };
+    return map[format] || map.talkshow;
+  }
+
+  // ── TTS speaking style prefix by format ──────────────────────
+  function bcTtsStyle(format) {
+    const map = {
+      talkshow:     'Speak naturally and conversationally as if live on a talk show: ',
+      tutorial:     'Speak clearly and educationally as a friendly instructor: ',
+      appdemo:      'Speak enthusiastically as if presenting an exciting product demo: ',
+      presentation: 'Speak professionally and authoritatively as in a business presentation: ',
+      narrator:     'Speak like a compelling documentary narrator, measured and thoughtful: ',
+    };
+    return map[format] || map.talkshow;
+  }
+
+  // ── Build card DOM ────────────────────────────────────────────
   const card = document.createElement('div');
-  card.className = 'chat-bubble ai talk-show-card';
+  card.className = 'chat-bubble ai broadcast-card';
   card.style.cssText = 'padding:0;margin:8px 0;background:transparent;border:none;max-width:100%;width:100%;';
 
   card.innerHTML = `
-    <div style="background:linear-gradient(135deg,rgba(45,212,191,0.07),rgba(124,58,237,0.04));border:1px solid rgba(45,212,191,0.15);border-radius:16px;padding:20px;backdrop-filter:blur(10px);">
+<div style="background:linear-gradient(135deg,rgba(45,212,191,0.07),rgba(124,58,237,0.04));border:1px solid rgba(45,212,191,0.15);border-radius:16px;padding:18px;backdrop-filter:blur(10px);">
 
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:24px;">🎙️</span>
-          <div>
-            <div style="font-size:16px;font-weight:700;color:#e8eef4;">Talk Show</div>
-            <div style="font-size:11px;color:#667788;">AI 3-voice broadcast with live music</div>
-          </div>
-        </div>
-        <div class="ts-live-badge" style="display:none;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);">
-          <span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;animation:tsPulse 1.1s ease-in-out infinite;flex-shrink:0;"></span>
-          <span style="font-size:11px;font-weight:700;color:#ef4444;letter-spacing:0.07em;">LIVE</span>
-        </div>
-      </div>
-
-      <div style="display:flex;gap:6px;margin:10px 0 4px 0;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:11px;background:rgba(45,212,191,0.09);border:1px solid rgba(45,212,191,0.22);font-size:11px;color:#2dd4bf;">🎙️ <b>Zephyr</b>&nbsp;<span style="opacity:0.5;">Host</span></div>
-        <div style="display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:11px;background:rgba(167,139,250,0.09);border:1px solid rgba(167,139,250,0.22);font-size:11px;color:#a78bfa;">🎓 <b>Kore</b>&nbsp;<span style="opacity:0.5;">Expert</span></div>
-        <div style="display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:11px;background:rgba(244,114,182,0.09);border:1px solid rgba(244,114,182,0.22);font-size:11px;color:#f472b6;">⚡ <b>Puck</b>&nbsp;<span style="opacity:0.5;">Creative</span></div>
-      </div>
-
-      <div class="ts-input-sec">
-        <div style="font-size:11px;color:#8899aa;margin:12px 0 5px 0;">Paste your source material — article, notes, or just a topic:</div>
-        <textarea class="ts-source" placeholder="e.g. paste a news article, research paper, or just type 'the future of renewable energy'" style="width:100%;box-sizing:border-box;min-height:80px;background:rgba(255,255,255,0.04);border:1px solid rgba(45,212,191,0.2);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;line-height:1.4;"></textarea>
-        <button class="ts-prepare-btn" style="width:100%;margin-top:10px;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#2dd4bf,#7c3aed);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;">🎬 Prepare Show</button>
-      </div>
-
-      <div class="ts-script-sec" style="display:none;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 7px 0;">
-          <span style="font-size:12px;font-weight:600;color:#8899aa;">📜 Script</span>
-          <span class="ts-status" style="font-size:11px;color:#667788;"></span>
-        </div>
-        <div class="ts-lines" style="background:rgba(0,0,0,0.22);border-radius:10px;padding:10px;max-height:165px;overflow-y:auto;"></div>
-
-        <div style="display:flex;align-items:center;gap:10px;margin:12px 0 8px 0;">
-          <span style="font-size:11px;color:#8899aa;white-space:nowrap;">🎵 Music vol</span>
-          <input type="range" class="ts-vol" min="0" max="100" value="12" style="flex:1;accent-color:#2dd4bf;cursor:pointer;">
-          <span class="ts-vol-pct" style="font-size:11px;color:#8899aa;width:28px;text-align:right;">12%</span>
-        </div>
-
-        <div style="display:flex;gap:8px;margin-top:6px;">
-          <button class="ts-broadcast-btn" style="flex:1;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#2dd4bf,#7c3aed);color:#fff;font-size:13px;font-weight:700;cursor:pointer;opacity:0.45;pointer-events:none;transition:all 0.2s;">▶ Start Broadcast</button>
-          <button class="ts-stop-btn" style="display:none;padding:11px 15px;border-radius:10px;border:1px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.1);color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;">⏹</button>
-          <button class="ts-reset-btn" style="padding:11px 13px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#9aabb8;font-size:12px;cursor:pointer;">↺</button>
-        </div>
-        <button class="ts-download-btn" style="display:none;width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1px solid rgba(45,212,191,0.35);background:rgba(45,212,191,0.08);color:#2dd4bf;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;">⬇️ Download Episode</button>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <span style="font-size:22px;">🎙️</span>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:#e8eef4;">Broadcast Studio</div>
+        <div style="font-size:11px;color:#667788;">Turn any content into a multi-voice AI broadcast</div>
       </div>
     </div>
-  `;
+    <div class="bc-live-badge" style="display:none;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;background:rgba(239,68,68,0.13);border:1px solid rgba(239,68,68,0.38);">
+      <span style="width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block;animation:bcPulse 1.1s ease-in-out infinite;"></span>
+      <span style="font-size:10px;font-weight:700;color:#ef4444;letter-spacing:0.07em;">LIVE</span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:5px;margin-bottom:14px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;background:rgba(45,212,191,0.08);border:1px solid rgba(45,212,191,0.2);font-size:10px;color:#2dd4bf;">🎙️ <b>Zephyr</b>&nbsp;<span style="opacity:0.5;">Host</span></div>
+    <div style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);font-size:10px;color:#a78bfa;">🎓 <b>Kore</b>&nbsp;<span style="opacity:0.5;">Expert</span></div>
+    <div style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);font-size:10px;color:#f97316;">⚡ <b>Fenrir</b>&nbsp;<span style="opacity:0.5;">Creative</span></div>
+  </div>
+
+  <div class="bc-input-sec">
+    <div style="margin-bottom:10px;">
+      <div style="font-size:9.5px;color:#667788;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em;">Format</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">
+        <button class="bc-pill bc-fmt active" data-fmt="talkshow">🎙️ Talk Show</button>
+        <button class="bc-pill bc-fmt" data-fmt="tutorial">📚 Tutorial</button>
+        <button class="bc-pill bc-fmt" data-fmt="appdemo">🚀 App Demo</button>
+        <button class="bc-pill bc-fmt" data-fmt="presentation">📊 Presentation</button>
+        <button class="bc-pill bc-fmt" data-fmt="narrator">🎬 Narrator</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom:10px;">
+      <div style="font-size:9.5px;color:#667788;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em;">Length</div>
+      <div style="display:flex;gap:5px;">
+        <button class="bc-pill bc-dur" data-dur="1">1 min</button>
+        <button class="bc-pill bc-dur active" data-dur="3">3 min</button>
+        <button class="bc-pill bc-dur" data-dur="5">5 min</button>
+        <button class="bc-pill bc-dur" data-dur="10">10 min</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom:10px;">
+      <div style="font-size:9.5px;color:#667788;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em;">Source Material</div>
+      <textarea class="bc-source" placeholder="Paste text, article, topic, business plan, script outline… or attach files below" style="width:100%;box-sizing:border-box;min-height:72px;background:rgba(255,255,255,0.04);border:1px solid rgba(45,212,191,0.18);border-radius:10px;padding:9px 11px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;line-height:1.4;"></textarea>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button class="bc-attach-img" style="padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#9aabb8;font-size:11px;cursor:pointer;">📷 Images</button>
+        <button class="bc-attach-vid" style="padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#9aabb8;font-size:11px;cursor:pointer;">🎬 Video</button>
+        <button class="bc-attach-file" style="padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#9aabb8;font-size:11px;cursor:pointer;">📄 File</button>
+      </div>
+      <div class="bc-attach-list" style="display:none;gap:5px;flex-wrap:wrap;margin-top:6px;"></div>
+      <input type="file" class="bc-img-input" accept="image/*" multiple style="display:none;">
+      <input type="file" class="bc-vid-input" accept="video/*" style="display:none;">
+      <input type="file" class="bc-file-input" accept=".txt,.md,.csv,.json,.pdf,.pptx,.docx" style="display:none;">
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <div style="font-size:9.5px;color:#667788;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em;">Background Music</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">
+        <button class="bc-pill bc-trk" data-trk="none">🚫 None</button>
+        <button class="bc-pill bc-trk active" data-trk="lofi">☁️ Lo-fi</button>
+        <button class="bc-pill bc-trk" data-trk="cinematic">🎬 Cinematic</button>
+        <button class="bc-pill bc-trk" data-trk="news">📰 News</button>
+        <button class="bc-pill bc-trk" data-trk="upbeat">🎸 Upbeat</button>
+      </div>
+    </div>
+
+    <button class="bc-prepare-btn" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#2dd4bf,#7c3aed);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;">🎙️ Generate Broadcast</button>
+  </div>
+
+  <div class="bc-script-sec" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 7px 0;">
+      <span style="font-size:12px;font-weight:600;color:#8899aa;">📜 Script</span>
+      <span class="bc-status" style="font-size:11px;color:#667788;"></span>
+    </div>
+    <div class="bc-lines" style="background:rgba(0,0,0,0.22);border-radius:10px;padding:10px;max-height:165px;overflow-y:auto;"></div>
+    <div class="bc-vol-row" style="display:flex;align-items:center;gap:10px;margin:12px 0 8px 0;">
+      <span style="font-size:11px;color:#8899aa;white-space:nowrap;">🎵 Vol</span>
+      <input type="range" class="bc-vol" min="0" max="100" value="12" style="flex:1;accent-color:#2dd4bf;cursor:pointer;">
+      <span class="bc-vol-pct" style="font-size:11px;color:#8899aa;width:28px;text-align:right;">12%</span>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button class="bc-broadcast-btn" style="flex:1;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#2dd4bf,#7c3aed);color:#fff;font-size:13px;font-weight:700;cursor:pointer;opacity:0.45;pointer-events:none;transition:all 0.2s;">▶ Start Broadcast</button>
+      <button class="bc-stop-btn" style="display:none;padding:11px 15px;border-radius:10px;border:1px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.1);color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;">⏹</button>
+      <button class="bc-reset-btn" style="padding:11px 13px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#9aabb8;font-size:12px;cursor:pointer;">↺</button>
+    </div>
+    <button class="bc-dl-btn" style="display:none;width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1px solid rgba(45,212,191,0.35);background:rgba(45,212,191,0.08);color:#2dd4bf;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;">⬇️ Download Episode</button>
+  </div>
+</div>`;
 
   thread.appendChild(card);
 
-  // ── State ────────────────────────────────────────────────────
-  let script   = [];
-  let bgUrl    = null;
-  let bgAudio  = null;
+  // ── State ─────────────────────────────────────────────────────
+  let selFormat = 'talkshow';
+  let selDur    = '3';
+  let selTrack  = 'lofi';
+  let attachments = [];
+  let script    = [];
+  let bgUrl     = null;
+  let bgAudio   = null;
   let isPlaying = false;
-  let stopReq  = false;
-  let blobUrls = [];
+  let stopReq   = false;
+  let blobUrls  = [];
 
-  // ── DOM refs ─────────────────────────────────────────────────
-  const prepBtn   = card.querySelector('.ts-prepare-btn');
-  const srcEl     = card.querySelector('.ts-source');
-  const inputSec  = card.querySelector('.ts-input-sec');
-  const scriptSec = card.querySelector('.ts-script-sec');
-  const linesEl   = card.querySelector('.ts-lines');
-  const statusEl  = card.querySelector('.ts-status');
-  const liveBadge = card.querySelector('.ts-live-badge');
-  const broadBtn   = card.querySelector('.ts-broadcast-btn');
-  const stopBtn    = card.querySelector('.ts-stop-btn');
-  const resetBtn   = card.querySelector('.ts-reset-btn');
-  const downloadBtn= card.querySelector('.ts-download-btn');
-  const volSlider  = card.querySelector('.ts-vol');
-  const volPct    = card.querySelector('.ts-vol-pct');
+  // ── DOM refs ──────────────────────────────────────────────────
+  const inputSec   = card.querySelector('.bc-input-sec');
+  const scriptSec  = card.querySelector('.bc-script-sec');
+  const srcEl      = card.querySelector('.bc-source');
+  const prepBtn    = card.querySelector('.bc-prepare-btn');
+  const linesEl    = card.querySelector('.bc-lines');
+  const statusEl   = card.querySelector('.bc-status');
+  const liveBadge  = card.querySelector('.bc-live-badge');
+  const broadBtn   = card.querySelector('.bc-broadcast-btn');
+  const stopBtn    = card.querySelector('.bc-stop-btn');
+  const resetBtn   = card.querySelector('.bc-reset-btn');
+  const dlBtn      = card.querySelector('.bc-dl-btn');
+  const volSlider  = card.querySelector('.bc-vol');
+  const volPct     = card.querySelector('.bc-vol-pct');
+  const volRow     = card.querySelector('.bc-vol-row');
+  const attachList = card.querySelector('.bc-attach-list');
+  const imgInput   = card.querySelector('.bc-img-input');
+  const vidInput   = card.querySelector('.bc-vid-input');
+  const fileInput  = card.querySelector('.bc-file-input');
 
-  // ── Volume slider ────────────────────────────────────────────
+  // ── Format tabs ───────────────────────────────────────────────
+  card.querySelectorAll('.bc-fmt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      card.querySelectorAll('.bc-fmt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selFormat = btn.dataset.fmt;
+    });
+  });
+
+  // ── Duration tabs ─────────────────────────────────────────────
+  card.querySelectorAll('.bc-dur').forEach(btn => {
+    btn.addEventListener('click', () => {
+      card.querySelectorAll('.bc-dur').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selDur = btn.dataset.dur;
+    });
+  });
+
+  // ── Music track tabs ──────────────────────────────────────────
+  card.querySelectorAll('.bc-trk').forEach(btn => {
+    btn.addEventListener('click', () => {
+      card.querySelectorAll('.bc-trk').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selTrack = btn.dataset.trk;
+      volRow.style.display = selTrack === 'none' ? 'none' : 'flex';
+    });
+  });
+
+  // ── Volume slider ─────────────────────────────────────────────
   volSlider.addEventListener('input', () => {
     volPct.textContent = `${volSlider.value}%`;
     if (bgAudio) bgAudio.volume = parseInt(volSlider.value) / 100;
   });
 
-  // ── Render script lines ──────────────────────────────────────
-  function tsRenderScript() {
+  // ── Attachment rendering ──────────────────────────────────────
+  function bcRenderAttachments() {
+    attachList.innerHTML = '';
+    attachments.forEach((a, i) => {
+      const chip = document.createElement('div');
+      chip.style.cssText = 'display:flex;align-items:center;gap:4px;padding:3px 7px 3px 3px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.11);border-radius:16px;font-size:10.5px;color:#9aabb8;';
+      if (a.data && (a.type === 'image' || a.type === 'video-frame')) {
+        const img = document.createElement('img');
+        img.src = `data:${a.mimeType};base64,${a.data}`;
+        img.style.cssText = 'width:18px;height:18px;border-radius:4px;object-fit:cover;flex-shrink:0;';
+        chip.appendChild(img);
+      } else {
+        const ic = document.createElement('span'); ic.textContent = '📄';
+        chip.appendChild(ic);
+      }
+      const nm = document.createElement('span');
+      nm.textContent = a.name.length > 14 ? a.name.slice(0, 11) + '…' : a.name;
+      chip.appendChild(nm);
+      const rm = document.createElement('button');
+      rm.textContent = '×';
+      rm.style.cssText = 'background:none;border:none;color:#667788;cursor:pointer;padding:0 0 0 2px;font-size:12px;line-height:1;flex-shrink:0;';
+      rm.onclick = () => { attachments.splice(i, 1); bcRenderAttachments(); };
+      chip.appendChild(rm);
+      attachList.appendChild(chip);
+    });
+    attachList.style.display = attachments.length ? 'flex' : 'none';
+  }
+
+  // ── Attachment buttons ────────────────────────────────────────
+  card.querySelector('.bc-attach-img').addEventListener('click', () => imgInput.click());
+  card.querySelector('.bc-attach-vid').addEventListener('click', () => vidInput.click());
+  card.querySelector('.bc-attach-file').addEventListener('click', () => fileInput.click());
+
+  imgInput.addEventListener('change', () => {
+    Array.from(imgInput.files).slice(0, 3).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        attachments.push({ type: 'image', name: file.name, mimeType: file.type, data: ev.target.result.split(',')[1] });
+        bcRenderAttachments();
+      };
+      reader.readAsDataURL(file);
+    });
+    imgInput.value = '';
+  });
+
+  vidInput.addEventListener('change', () => {
+    const file = vidInput.files[0]; if (!file) return;
+    const url = URL.createObjectURL(file);
+    const vid = document.createElement('video');
+    vid.src = url; vid.muted = true;
+    vid.onloadeddata = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.min(vid.videoWidth || 640, 640);
+      canvas.height = Math.min(vid.videoHeight || 360, 360);
+      canvas.getContext('2d').drawImage(vid, 0, 0, canvas.width, canvas.height);
+      attachments.push({ type: 'video-frame', name: file.name, mimeType: 'image/jpeg', data: canvas.toDataURL('image/jpeg', 0.8).split(',')[1] });
+      URL.revokeObjectURL(url);
+      bcRenderAttachments();
+    };
+    vid.load();
+    vidInput.value = '';
+  });
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0]; if (!file) return;
+    const isText = /\.(txt|md|csv|json|html)$/i.test(file.name) || file.type.startsWith('text/');
+    if (isText) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        srcEl.value += (srcEl.value ? '\n\n' : '') + ev.target.result;
+        srcEl.style.borderColor = 'rgba(45,212,191,0.4)';
+      };
+      reader.readAsText(file);
+    } else {
+      srcEl.value += (srcEl.value ? '\n\n' : '') + `[From: ${file.name} — paste the text content here]`;
+      attachments.push({ type: 'file', name: file.name, mimeType: file.type, data: null });
+      bcRenderAttachments();
+    }
+    fileInput.value = '';
+  });
+
+  // ── Render script ─────────────────────────────────────────────
+  function bcRenderScript() {
     linesEl.innerHTML = script.map((l, i) => {
       const sp = SPEAKERS[l.speaker] || SPEAKERS.ZEPHYR;
-      return `<div class="ts-line" data-i="${i}" style="padding:5px 8px;border-radius:8px;margin-bottom:4px;border-left:3px solid ${sp.color};background:rgba(0,0,0,0.12);transition:background 0.2s,transform 0.15s;">
+      return `<div class="bc-line" data-i="${i}" style="padding:5px 8px;border-radius:8px;margin-bottom:4px;border-left:3px solid ${sp.color};background:rgba(0,0,0,0.12);transition:background 0.2s,transform 0.15s;">
         <div style="font-size:9.5px;font-weight:700;letter-spacing:0.06em;color:${sp.color};margin-bottom:2px;">${sp.icon} ${l.speaker}&nbsp;<span style="opacity:0.5;font-weight:400;">· ${sp.role}</span></div>
         <div style="color:#c8d4e0;font-size:12px;line-height:1.5;">${l.text}</div>
       </div>`;
     }).join('');
   }
 
-  function tsHighlight(idx) {
-    linesEl.querySelectorAll('.ts-line').forEach((el, i) => {
+  function bcHighlight(idx) {
+    linesEl.querySelectorAll('.bc-line').forEach((el, i) => {
       if (i === idx) {
         const sp = SPEAKERS[script[i]?.speaker] || SPEAKERS.ZEPHYR;
-        el.style.background = `rgba(${tsHexRgb(sp.color)},0.17)`;
+        el.style.background = `rgba(${bcHexRgb(sp.color)},0.17)`;
         el.style.transform = 'scale(1.015)';
         el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       } else {
@@ -5404,73 +5626,70 @@ function showTalkShowCard(thread) {
     });
   }
 
-  function tsClearHighlights() {
-    linesEl.querySelectorAll('.ts-line').forEach(el => {
-      el.style.background = 'rgba(0,0,0,0.12)';
-      el.style.transform = '';
+  function bcClearHighlights() {
+    linesEl.querySelectorAll('.bc-line').forEach(el => {
+      el.style.background = 'rgba(0,0,0,0.12)'; el.style.transform = '';
     });
   }
 
-  function tsCleanupUrls() {
+  function bcCleanupUrls() {
     blobUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch (e) {} });
-    blobUrls = [];
-    bgUrl = null;
+    blobUrls = []; bgUrl = null;
   }
 
-  // ── Stop broadcast ───────────────────────────────────────────
-  function tsStop() {
+  // ── Stop ──────────────────────────────────────────────────────
+  function bcStop() {
     stopReq = true; isPlaying = false;
     if (bgAudio) { try { bgAudio.pause(); } catch (e) {} bgAudio = null; }
-    tsClearHighlights();
+    bcClearHighlights();
     liveBadge.style.display = 'none';
-    broadBtn.style.display = '';
-    stopBtn.style.display = 'none';
+    broadBtn.style.display = ''; stopBtn.style.display = 'none';
   }
 
-  stopBtn.addEventListener('click', () => { tsStop(); statusEl.textContent = 'Stopped'; });
+  stopBtn.addEventListener('click', () => { bcStop(); statusEl.textContent = 'Stopped'; });
 
-  // ── Reset ────────────────────────────────────────────────────
+  // ── Reset ─────────────────────────────────────────────────────
   resetBtn.addEventListener('click', () => {
-    tsStop(); tsCleanupUrls();
-    script = [];
-    inputSec.style.display = 'block';
-    scriptSec.style.display = 'none';
+    bcStop(); bcCleanupUrls();
+    script = []; attachments = [];
+    inputSec.style.display = 'block'; scriptSec.style.display = 'none';
     srcEl.value = ''; statusEl.textContent = '';
-    broadBtn.style.opacity = '0.45';
-    broadBtn.style.pointerEvents = 'none';
+    broadBtn.style.opacity = '0.45'; broadBtn.style.pointerEvents = 'none';
     broadBtn.textContent = '▶ Start Broadcast';
-    downloadBtn.style.display = 'none';
-    prepBtn.textContent = '🎬 Prepare Show';
-    prepBtn.disabled = false;
+    dlBtn.style.display = 'none';
+    prepBtn.textContent = '🎙️ Generate Broadcast'; prepBtn.disabled = false;
+    bcRenderAttachments();
   });
 
-  // ── Prepare Show ─────────────────────────────────────────────
+  // ── Generate Broadcast ────────────────────────────────────────
   prepBtn.addEventListener('click', async () => {
     const src = srcEl.value.trim();
-    if (!src) { srcEl.style.borderColor = 'rgba(239,68,68,0.7)'; return; }
-    srcEl.style.borderColor = 'rgba(45,212,191,0.2)';
-    prepBtn.textContent = '⏳ Writing script…'; prepBtn.disabled = true;
+    const hasVisuals = attachments.some(a => a.data);
+    if (!src && !hasVisuals) {
+      srcEl.style.borderColor = 'rgba(239,68,68,0.7)';
+      srcEl.placeholder = 'Add text or attach an image/video first';
+      return;
+    }
+    srcEl.style.borderColor = 'rgba(45,212,191,0.18)';
 
     const keyRes = await chrome.storage.sync.get(['geminiApiKey']);
     const apiKey = keyRes.geminiApiKey;
-    if (!apiKey) {
-      prepBtn.textContent = '🔑 Add API key in Settings first';
-      prepBtn.disabled = false; return;
-    }
+    if (!apiKey) { prepBtn.textContent = '🔑 Add API key in Settings first'; prepBtn.disabled = false; return; }
 
-    // Step 1 — Generate script
+    prepBtn.textContent = '⏳ Writing script…'; prepBtn.disabled = true;
+
+    const durCfg = DURATIONS.find(d => d.key === selDur) || DURATIONS[1];
+    const trkCfg = TRACKS.find(t => t.key === selTrack) || TRACKS[1];
+
+    // Step 1 — Script generation (multimodal if attachments present)
     let rawScript = '';
     try {
-      const sysP = `You are a professional podcast scriptwriter. Convert source material into a lively 3-person talk show script.
-
-FORMAT (strict — output only script lines, nothing else):
-ZEPHYR: [one or two spoken sentences]
-KORE: [one or two spoken sentences]
-PUCK: [one or two spoken sentences]
-...8–12 exchanges total
-
-Speakers: ZEPHYR = warm engaging host, KORE = knowledgeable expert, PUCK = creative energetic voice.
-No stage directions. No asterisks or markdown. Natural spoken language only. Start with ZEPHYR introducing the topic.`;
+      const sysP = bcSysPrompt(selFormat, durCfg.exchanges);
+      const contentParts = [];
+      for (const a of attachments) {
+        if (a.data) contentParts.push({ inlineData: { mimeType: a.mimeType, data: a.data } });
+      }
+      contentParts.push({ text: `SOURCE MATERIAL:\n${src.slice(0, 4500)}` });
 
       const resp = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
@@ -5478,9 +5697,9 @@ No stage directions. No asterisks or markdown. Natural spoken language only. Sta
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: sysP }] },
-            contents: [{ role: 'user', parts: [{ text: `SOURCE MATERIAL:\n${src.slice(0, 4500)}` }] }]
+            contents: [{ role: 'user', parts: contentParts }]
           }),
-          signal: AbortSignal.timeout(35000)
+          signal: AbortSignal.timeout(40000)
         }
       );
       const d = await resp.json();
@@ -5489,56 +5708,44 @@ No stage directions. No asterisks or markdown. Natural spoken language only. Sta
       prepBtn.textContent = '❌ Script failed — try again'; prepBtn.disabled = false; return;
     }
 
-    script = tsParseScript(rawScript);
-    if (!script.length) {
-      prepBtn.textContent = '❌ No script parsed — try again'; prepBtn.disabled = false; return;
-    }
+    script = bcParseScript(rawScript);
+    if (!script.length) { prepBtn.textContent = '❌ No script parsed — try again'; prepBtn.disabled = false; return; }
 
-    // Show script panel
-    tsRenderScript();
-    inputSec.style.display = 'none';
-    scriptSec.style.display = 'block';
-    statusEl.textContent = 'Generating voices & music…';
+    bcRenderScript();
+    inputSec.style.display = 'none'; scriptSec.style.display = 'block';
+    statusEl.textContent = trkCfg.prompt ? 'Generating voices & music…' : 'Generating voices…';
     broadBtn.textContent = '⏳ Preparing…';
-    broadBtn.style.opacity = '0.45';
-    broadBtn.style.pointerEvents = 'none';
+    broadBtn.style.opacity = '0.45'; broadBtn.style.pointerEvents = 'none';
 
-    // Step 2 — Generate all audio in parallel (music + all TTS lines)
-    tsCleanupUrls();
+    // Step 2 — Audio in parallel
+    bcCleanupUrls();
+    const ttsStyle = bcTtsStyle(selFormat);
     const jobs = [
-      tsGenMusic(apiKey),
-      ...script.map(l => tsGenLine(l.text, SPEAKERS[l.speaker]?.voice || 'Puck', apiKey))
+      bcGenMusic(trkCfg.prompt, apiKey),
+      ...script.map(l => bcGenLine(l.text, SPEAKERS[l.speaker]?.voice || 'Zephyr', ttsStyle, apiKey))
     ];
     const results = await Promise.all(jobs);
     bgUrl = results[0];
     if (bgUrl) blobUrls.push(bgUrl);
-    script.forEach((l, i) => {
-      l.url = results[i + 1];
-      if (l.url) blobUrls.push(l.url);
-    });
+    script.forEach((l, i) => { l.url = results[i + 1]; if (l.url) blobUrls.push(l.url); });
 
     const voiceOk = script.filter(l => l.url).length;
     statusEl.textContent = bgUrl
       ? `Ready — ${voiceOk}/${script.length} voices + music ✓`
-      : `Ready — ${voiceOk}/${script.length} voices (music unavailable)`;
+      : `Ready — ${voiceOk}/${script.length} voices`;
     broadBtn.textContent = '▶ Start Broadcast';
-    broadBtn.style.opacity = '1';
-    broadBtn.style.pointerEvents = 'auto';
-    prepBtn.textContent = '🎬 Prepare Show';
-    prepBtn.disabled = false;
+    broadBtn.style.opacity = '1'; broadBtn.style.pointerEvents = 'auto';
+    prepBtn.textContent = '🎙️ Generate Broadcast'; prepBtn.disabled = false;
   });
 
-  // ── Start Broadcast ──────────────────────────────────────────
+  // ── Start Broadcast ───────────────────────────────────────────
   broadBtn.addEventListener('click', async () => {
     if (isPlaying || !script.length) return;
     isPlaying = true; stopReq = false;
-    broadBtn.style.display = 'none';
-    stopBtn.style.display = '';
-    liveBadge.style.display = 'flex';
-    downloadBtn.style.display = 'none';
+    broadBtn.style.display = 'none'; stopBtn.style.display = '';
+    liveBadge.style.display = 'flex'; dlBtn.style.display = 'none';
     statusEl.textContent = 'On air…';
 
-    // Start background music looping at slider volume
     if (bgUrl) {
       bgAudio = new Audio(bgUrl);
       bgAudio.loop = true;
@@ -5546,44 +5753,37 @@ No stage directions. No asterisks or markdown. Natural spoken language only. Sta
       bgAudio.play().catch(() => {});
     }
 
-    // Play each voice line in sequence
     for (let i = 0; i < script.length; i++) {
       if (stopReq) break;
-      tsHighlight(i);
+      bcHighlight(i);
       const url = script[i].url;
       if (url) {
-        await new Promise((res) => {
+        await new Promise(res => {
           if (stopReq) { res(); return; }
           const a = new Audio(url);
           let done = false;
           const finish = () => { if (done) return; done = true; clearInterval(wdog); res(); };
           const wdog = setInterval(() => { if (stopReq) { a.pause(); finish(); } }, 80);
-          a.onended = finish;
-          a.onerror = finish;
+          a.onended = finish; a.onerror = finish;
           a.play().catch(finish);
         });
       } else {
-        await new Promise(r => setTimeout(r, 400)); // brief pause for skipped lines
+        await new Promise(r => setTimeout(r, 400));
       }
     }
 
     if (!stopReq) {
-      tsStop();
+      bcStop();
       statusEl.textContent = '🎙️ Broadcast complete!';
-      downloadBtn.style.display = '';
+      dlBtn.style.display = '';
     }
   });
 
-  // ── Download Episode ─────────────────────────────────────────
-  // Converts AudioBuffer to a 16-bit stereo WAV ArrayBuffer
-  function tsAudioBufToWav(buf) {
-    const numCh = buf.numberOfChannels;
-    const sr = buf.sampleRate;
-    const frames = buf.length;
-    const bps = 2;
+  // ── Download Episode ──────────────────────────────────────────
+  function bcAudioBufToWav(buf) {
+    const numCh = buf.numberOfChannels, sr = buf.sampleRate, frames = buf.length, bps = 2;
     const dataLen = frames * numCh * bps;
-    const ab = new ArrayBuffer(44 + dataLen);
-    const dv = new DataView(ab);
+    const ab = new ArrayBuffer(44 + dataLen); const dv = new DataView(ab);
     const ws = (o, v) => { for (let i = 0; i < v.length; i++) dv.setUint8(o + i, v.charCodeAt(i)); };
     ws(0,'RIFF'); dv.setUint32(4, 36 + dataLen, true);
     ws(8,'WAVE'); ws(12,'fmt ');
@@ -5595,18 +5795,15 @@ No stage directions. No asterisks or markdown. Natural spoken language only. Sta
     for (let i = 0; i < frames; i++) {
       for (let ch = 0; ch < numCh; ch++) {
         const s = Math.max(-1, Math.min(1, buf.getChannelData(ch)[i]));
-        dv.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-        off += 2;
+        dv.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true); off += 2;
       }
     }
     return ab;
   }
 
-  downloadBtn.addEventListener('click', async () => {
-    downloadBtn.textContent = '⏳ Mixing…';
-    downloadBtn.style.pointerEvents = 'none';
+  dlBtn.addEventListener('click', async () => {
+    dlBtn.textContent = '⏳ Mixing…'; dlBtn.style.pointerEvents = 'none';
     try {
-      // Decode all blobs with a temporary AudioContext
       const tmpCtx = new AudioContext();
       const voiceBuffers = [];
       const GAP = 0.4;
@@ -5614,9 +5811,7 @@ No stage directions. No asterisks or markdown. Natural spoken language only. Sta
         if (line.url) {
           const ab = await fetch(line.url).then(r => r.arrayBuffer());
           voiceBuffers.push(await tmpCtx.decodeAudioData(ab));
-        } else {
-          voiceBuffers.push(null);
-        }
+        } else { voiceBuffers.push(null); }
       }
       let musicBuffer = null;
       if (bgUrl) {
@@ -5625,28 +5820,20 @@ No stage directions. No asterisks or markdown. Natural spoken language only. Sta
       }
       await tmpCtx.close();
 
-      // Calculate total duration
       let totalDur = 0;
       for (const b of voiceBuffers) totalDur += b ? b.duration : GAP;
       totalDur = Math.max(totalDur, 1);
 
-      // Render with OfflineAudioContext (stereo, 44.1 kHz)
       const SR = 44100;
       const offCtx = new OfflineAudioContext(2, Math.ceil(SR * totalDur), SR);
-
-      // Schedule voice lines sequentially
       let t = 0;
       for (const vb of voiceBuffers) {
         if (vb) {
           const src = offCtx.createBufferSource();
-          src.buffer = vb;
-          src.connect(offCtx.destination);
-          src.start(t);
-          t += vb.duration;
+          src.buffer = vb; src.connect(offCtx.destination);
+          src.start(t); t += vb.duration;
         } else { t += GAP; }
       }
-
-      // Loop background music at slider volume for full duration
       if (musicBuffer) {
         const gain = offCtx.createGain();
         gain.gain.value = parseInt(volSlider.value) / 100;
@@ -5654,28 +5841,24 @@ No stage directions. No asterisks or markdown. Natural spoken language only. Sta
         let mt = 0;
         while (mt < totalDur) {
           const src = offCtx.createBufferSource();
-          src.buffer = musicBuffer;
-          src.connect(gain);
-          src.start(mt);
-          mt += musicBuffer.duration;
+          src.buffer = musicBuffer; src.connect(gain);
+          src.start(mt); mt += musicBuffer.duration;
         }
       }
 
       const rendered = await offCtx.startRendering();
-      const wav = tsAudioBufToWav(rendered);
+      const wav = bcAudioBufToWav(rendered);
       const blob = new Blob([wav], { type: 'audio/wav' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; a.download = 'talk-show-episode.wav'; a.click();
+      const fmtLabel = FORMATS.find(f => f.key === selFormat)?.label.replace(/[^\w]/g, '') || 'broadcast';
+      a.href = url; a.download = `broadcast-${fmtLabel}.wav`; a.click();
       setTimeout(() => URL.revokeObjectURL(url), 8000);
-      downloadBtn.textContent = '✓ Downloaded!';
+      dlBtn.textContent = '✓ Downloaded!';
     } catch (e) {
-      downloadBtn.textContent = '❌ Mix failed — try again';
+      dlBtn.textContent = '❌ Mix failed — try again';
     } finally {
-      setTimeout(() => {
-        downloadBtn.textContent = '⬇️ Download Episode';
-        downloadBtn.style.pointerEvents = 'auto';
-      }, 3000);
+      setTimeout(() => { dlBtn.textContent = '⬇️ Download Episode'; dlBtn.style.pointerEvents = 'auto'; }, 3000);
     }
   });
 }
