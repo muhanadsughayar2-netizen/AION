@@ -1092,6 +1092,11 @@ function initModeButtons() {
         if (mode === 'video') {
           showVideoStudio(thread);
         }
+
+        if (mode === 'music') {
+          showSongStudio(thread);
+          showTalkShowCard(thread);
+        }
         
         thread.scrollTop = thread.scrollHeight;
       }
@@ -5167,6 +5172,401 @@ function showSongStudio(thread) {
     updatePreview();
     
     studio.querySelector('.studio-surprise-btn').textContent = '🎲 Again!';
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TALK SHOW CARD  — 3-voice live broadcast with Lyria background music
+// Triggered alongside Song Studio when the user enters Music mode.
+// ─────────────────────────────────────────────────────────────────────────────
+function showTalkShowCard(thread) {
+  const existing = thread.querySelector('.talk-show-card');
+  if (existing) existing.remove();
+
+  // Inject keyframes once
+  if (!document.getElementById('ts-styles')) {
+    const s = document.createElement('style');
+    s.id = 'ts-styles';
+    s.textContent = '@keyframes tsPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.35;transform:scale(0.72)}}';
+    document.head.appendChild(s);
+  }
+
+  // ── Speaker definitions ──────────────────────────────────────
+  const SPEAKERS = {
+    ZEPHYR: { voice: 'Zephyr', role: 'Host',     color: '#2dd4bf', icon: '🎙️' },
+    KORE:   { voice: 'Kore',   role: 'Expert',   color: '#a78bfa', icon: '🎓' },
+    PUCK:   { voice: 'Puck',   role: 'Creative', color: '#f472b6', icon: '⚡' },
+    AOEDE:  { voice: 'Aoede',  role: 'Creative', color: '#34d399', icon: '✨' },
+  };
+
+  // ── Helper: raw PCM / L16 → WAV blob ─────────────────────────
+  function pcmToWav(b64, mimeType) {
+    const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const mime = (mimeType || '').toLowerCase();
+    if (!mime || mime.includes('pcm') || mime.startsWith('audio/l16') || mime.startsWith('audio/l-16')) {
+      const sr = 24000, ch = 1, bps = 16;
+      const buf = new ArrayBuffer(44); const dv = new DataView(buf);
+      const ws = (o, v) => { for (let i = 0; i < v.length; i++) dv.setUint8(o + i, v.charCodeAt(i)); };
+      ws(0,'RIFF'); dv.setUint32(4, 36 + raw.byteLength, true);
+      ws(8,'WAVE'); ws(12,'fmt ');
+      dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,ch,true);
+      dv.setUint32(24,sr,true); dv.setUint32(28,sr*ch*bps/8,true);
+      dv.setUint16(32,ch*bps/8,true); dv.setUint16(34,bps,true);
+      ws(36,'data'); dv.setUint32(40,raw.byteLength,true);
+      return new Blob([buf, raw], { type: 'audio/wav' });
+    }
+    return new Blob([raw], { type: mimeType || 'audio/wav' });
+  }
+
+  // ── Helper: generate one TTS line ────────────────────────────
+  async function tsGenLine(text, voiceName, apiKey) {
+    const styled = `Speak naturally and conversationally as if live on a talk show: ${text}`;
+    for (const model of [MODELS.ttsPrimary, MODELS.ttsFallback]) {
+      try {
+        const r = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: styled }] }],
+              generationConfig: {
+                responseModalities: ['AUDIO'],
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } }
+              }
+            }),
+            signal: AbortSignal.timeout(28000)
+          }
+        );
+        if (!r.ok) continue;
+        const d = await r.json();
+        const p = d?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+        if (!p?.data) continue;
+        return URL.createObjectURL(pcmToWav(p.data, p.mimeType));
+      } catch (e) { continue; }
+    }
+    return null;
+  }
+
+  // ── Helper: generate background music via Lyria ───────────────
+  async function tsGenMusic(apiKey) {
+    const prompt = 'Soft instrumental lo-fi background music for a podcast talk show. Calm, warm, professional atmosphere. No vocals. Mellow and unobtrusive, suitable as backdrop beneath conversation.';
+    for (const model of [MODELS.lyria3, MODELS.musicDefault]) {
+      try {
+        const r = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+              generationConfig: { responseModalities: ['AUDIO'] }
+            }),
+            signal: AbortSignal.timeout(55000)
+          }
+        );
+        if (!r.ok) continue;
+        const body = await r.json();
+        for (const ap of (body.candidates?.[0]?.content?.parts || [])) {
+          if (ap.inlineData?.data) {
+            return URL.createObjectURL(pcmToWav(ap.inlineData.data, ap.inlineData.mimeType));
+          }
+        }
+      } catch (e) { continue; }
+    }
+    return null;
+  }
+
+  // ── Helper: parse Gemini script response ─────────────────────
+  function tsParseScript(raw) {
+    const result = [];
+    for (const line of raw.split('\n')) {
+      const t = line.trim(); if (!t) continue;
+      for (const sp of Object.keys(SPEAKERS)) {
+        const m = t.match(new RegExp(`^${sp}[:\\-]\\s*(.+)`, 'i'));
+        if (m) { result.push({ speaker: sp.toUpperCase(), text: m[1].trim(), url: null }); break; }
+      }
+    }
+    return result;
+  }
+
+  // ── Helper: hex → "r,g,b" ────────────────────────────────────
+  function tsHexRgb(h) { return [1,3,5].map(i => parseInt(h.slice(i,i+2),16)).join(','); }
+
+  // ── Build DOM ─────────────────────────────────────────────────
+  const card = document.createElement('div');
+  card.className = 'chat-bubble ai talk-show-card';
+  card.style.cssText = 'padding:0;margin:8px 0;background:transparent;border:none;max-width:100%;width:100%;';
+
+  card.innerHTML = `
+    <div style="background:linear-gradient(135deg,rgba(45,212,191,0.07),rgba(124,58,237,0.04));border:1px solid rgba(45,212,191,0.15);border-radius:16px;padding:20px;backdrop-filter:blur(10px);">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:24px;">🎙️</span>
+          <div>
+            <div style="font-size:16px;font-weight:700;color:#e8eef4;">Talk Show</div>
+            <div style="font-size:11px;color:#667788;">AI 3-voice broadcast with live music</div>
+          </div>
+        </div>
+        <div class="ts-live-badge" style="display:none;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);">
+          <span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;animation:tsPulse 1.1s ease-in-out infinite;flex-shrink:0;"></span>
+          <span style="font-size:11px;font-weight:700;color:#ef4444;letter-spacing:0.07em;">LIVE</span>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:6px;margin:10px 0 4px 0;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:11px;background:rgba(45,212,191,0.09);border:1px solid rgba(45,212,191,0.22);font-size:11px;color:#2dd4bf;">🎙️ <b>Zephyr</b>&nbsp;<span style="opacity:0.5;">Host</span></div>
+        <div style="display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:11px;background:rgba(167,139,250,0.09);border:1px solid rgba(167,139,250,0.22);font-size:11px;color:#a78bfa;">🎓 <b>Kore</b>&nbsp;<span style="opacity:0.5;">Expert</span></div>
+        <div style="display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:11px;background:rgba(244,114,182,0.09);border:1px solid rgba(244,114,182,0.22);font-size:11px;color:#f472b6;">⚡ <b>Puck</b>&nbsp;<span style="opacity:0.5;">Creative</span></div>
+      </div>
+
+      <div class="ts-input-sec">
+        <div style="font-size:11px;color:#8899aa;margin:12px 0 5px 0;">Paste your source material — article, notes, or just a topic:</div>
+        <textarea class="ts-source" placeholder="e.g. paste a news article, research paper, or just type 'the future of renewable energy'" style="width:100%;box-sizing:border-box;min-height:80px;background:rgba(255,255,255,0.04);border:1px solid rgba(45,212,191,0.2);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;line-height:1.4;"></textarea>
+        <button class="ts-prepare-btn" style="width:100%;margin-top:10px;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#2dd4bf,#7c3aed);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;">🎬 Prepare Show</button>
+      </div>
+
+      <div class="ts-script-sec" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 7px 0;">
+          <span style="font-size:12px;font-weight:600;color:#8899aa;">📜 Script</span>
+          <span class="ts-status" style="font-size:11px;color:#667788;"></span>
+        </div>
+        <div class="ts-lines" style="background:rgba(0,0,0,0.22);border-radius:10px;padding:10px;max-height:165px;overflow-y:auto;"></div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin:12px 0 8px 0;">
+          <span style="font-size:11px;color:#8899aa;white-space:nowrap;">🎵 Music vol</span>
+          <input type="range" class="ts-vol" min="0" max="100" value="12" style="flex:1;accent-color:#2dd4bf;cursor:pointer;">
+          <span class="ts-vol-pct" style="font-size:11px;color:#8899aa;width:28px;text-align:right;">12%</span>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button class="ts-broadcast-btn" style="flex:1;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#2dd4bf,#7c3aed);color:#fff;font-size:13px;font-weight:700;cursor:pointer;opacity:0.45;pointer-events:none;transition:all 0.2s;">▶ Start Broadcast</button>
+          <button class="ts-stop-btn" style="display:none;padding:11px 15px;border-radius:10px;border:1px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.1);color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;">⏹</button>
+          <button class="ts-reset-btn" style="padding:11px 13px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#9aabb8;font-size:12px;cursor:pointer;">↺</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  thread.appendChild(card);
+
+  // ── State ────────────────────────────────────────────────────
+  let script   = [];
+  let bgUrl    = null;
+  let bgAudio  = null;
+  let isPlaying = false;
+  let stopReq  = false;
+  let blobUrls = [];
+
+  // ── DOM refs ─────────────────────────────────────────────────
+  const prepBtn   = card.querySelector('.ts-prepare-btn');
+  const srcEl     = card.querySelector('.ts-source');
+  const inputSec  = card.querySelector('.ts-input-sec');
+  const scriptSec = card.querySelector('.ts-script-sec');
+  const linesEl   = card.querySelector('.ts-lines');
+  const statusEl  = card.querySelector('.ts-status');
+  const liveBadge = card.querySelector('.ts-live-badge');
+  const broadBtn  = card.querySelector('.ts-broadcast-btn');
+  const stopBtn   = card.querySelector('.ts-stop-btn');
+  const resetBtn  = card.querySelector('.ts-reset-btn');
+  const volSlider = card.querySelector('.ts-vol');
+  const volPct    = card.querySelector('.ts-vol-pct');
+
+  // ── Volume slider ────────────────────────────────────────────
+  volSlider.addEventListener('input', () => {
+    volPct.textContent = `${volSlider.value}%`;
+    if (bgAudio) bgAudio.volume = parseInt(volSlider.value) / 100;
+  });
+
+  // ── Render script lines ──────────────────────────────────────
+  function tsRenderScript() {
+    linesEl.innerHTML = script.map((l, i) => {
+      const sp = SPEAKERS[l.speaker] || SPEAKERS.ZEPHYR;
+      return `<div class="ts-line" data-i="${i}" style="padding:5px 8px;border-radius:8px;margin-bottom:4px;border-left:3px solid ${sp.color};background:rgba(0,0,0,0.12);transition:background 0.2s,transform 0.15s;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:0.06em;color:${sp.color};margin-bottom:2px;">${sp.icon} ${l.speaker}&nbsp;<span style="opacity:0.5;font-weight:400;">· ${sp.role}</span></div>
+        <div style="color:#c8d4e0;font-size:12px;line-height:1.5;">${l.text}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function tsHighlight(idx) {
+    linesEl.querySelectorAll('.ts-line').forEach((el, i) => {
+      if (i === idx) {
+        const sp = SPEAKERS[script[i]?.speaker] || SPEAKERS.ZEPHYR;
+        el.style.background = `rgba(${tsHexRgb(sp.color)},0.17)`;
+        el.style.transform = 'scale(1.015)';
+        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      } else {
+        el.style.background = 'rgba(0,0,0,0.12)';
+        el.style.transform = '';
+      }
+    });
+  }
+
+  function tsClearHighlights() {
+    linesEl.querySelectorAll('.ts-line').forEach(el => {
+      el.style.background = 'rgba(0,0,0,0.12)';
+      el.style.transform = '';
+    });
+  }
+
+  function tsCleanupUrls() {
+    blobUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch (e) {} });
+    blobUrls = [];
+    bgUrl = null;
+  }
+
+  // ── Stop broadcast ───────────────────────────────────────────
+  function tsStop() {
+    stopReq = true; isPlaying = false;
+    if (bgAudio) { try { bgAudio.pause(); } catch (e) {} bgAudio = null; }
+    tsClearHighlights();
+    liveBadge.style.display = 'none';
+    broadBtn.style.display = '';
+    stopBtn.style.display = 'none';
+  }
+
+  stopBtn.addEventListener('click', () => { tsStop(); statusEl.textContent = 'Stopped'; });
+
+  // ── Reset ────────────────────────────────────────────────────
+  resetBtn.addEventListener('click', () => {
+    tsStop(); tsCleanupUrls();
+    script = [];
+    inputSec.style.display = 'block';
+    scriptSec.style.display = 'none';
+    srcEl.value = ''; statusEl.textContent = '';
+    broadBtn.style.opacity = '0.45';
+    broadBtn.style.pointerEvents = 'none';
+    broadBtn.textContent = '▶ Start Broadcast';
+    prepBtn.textContent = '🎬 Prepare Show';
+    prepBtn.disabled = false;
+  });
+
+  // ── Prepare Show ─────────────────────────────────────────────
+  prepBtn.addEventListener('click', async () => {
+    const src = srcEl.value.trim();
+    if (!src) { srcEl.style.borderColor = 'rgba(239,68,68,0.7)'; return; }
+    srcEl.style.borderColor = 'rgba(45,212,191,0.2)';
+    prepBtn.textContent = '⏳ Writing script…'; prepBtn.disabled = true;
+
+    const keyRes = await chrome.storage.sync.get(['geminiApiKey']);
+    const apiKey = keyRes.geminiApiKey;
+    if (!apiKey) {
+      prepBtn.textContent = '🔑 Add API key in Settings first';
+      prepBtn.disabled = false; return;
+    }
+
+    // Step 1 — Generate script
+    let rawScript = '';
+    try {
+      const sysP = `You are a professional podcast scriptwriter. Convert source material into a lively 3-person talk show script.
+
+FORMAT (strict — output only script lines, nothing else):
+ZEPHYR: [one or two spoken sentences]
+KORE: [one or two spoken sentences]
+PUCK: [one or two spoken sentences]
+...8–12 exchanges total
+
+Speakers: ZEPHYR = warm engaging host, KORE = knowledgeable expert, PUCK = creative energetic voice.
+No stage directions. No asterisks or markdown. Natural spoken language only. Start with ZEPHYR introducing the topic.`;
+
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: sysP }] },
+            contents: [{ role: 'user', parts: [{ text: `SOURCE MATERIAL:\n${src.slice(0, 4500)}` }] }]
+          }),
+          signal: AbortSignal.timeout(35000)
+        }
+      );
+      const d = await resp.json();
+      rawScript = d?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    } catch (e) {
+      prepBtn.textContent = '❌ Script failed — try again'; prepBtn.disabled = false; return;
+    }
+
+    script = tsParseScript(rawScript);
+    if (!script.length) {
+      prepBtn.textContent = '❌ No script parsed — try again'; prepBtn.disabled = false; return;
+    }
+
+    // Show script panel
+    tsRenderScript();
+    inputSec.style.display = 'none';
+    scriptSec.style.display = 'block';
+    statusEl.textContent = 'Generating voices & music…';
+    broadBtn.textContent = '⏳ Preparing…';
+    broadBtn.style.opacity = '0.45';
+    broadBtn.style.pointerEvents = 'none';
+
+    // Step 2 — Generate all audio in parallel (music + all TTS lines)
+    tsCleanupUrls();
+    const jobs = [
+      tsGenMusic(apiKey),
+      ...script.map(l => tsGenLine(l.text, SPEAKERS[l.speaker]?.voice || 'Puck', apiKey))
+    ];
+    const results = await Promise.all(jobs);
+    bgUrl = results[0];
+    if (bgUrl) blobUrls.push(bgUrl);
+    script.forEach((l, i) => {
+      l.url = results[i + 1];
+      if (l.url) blobUrls.push(l.url);
+    });
+
+    const voiceOk = script.filter(l => l.url).length;
+    statusEl.textContent = bgUrl
+      ? `Ready — ${voiceOk}/${script.length} voices + music ✓`
+      : `Ready — ${voiceOk}/${script.length} voices (music unavailable)`;
+    broadBtn.textContent = '▶ Start Broadcast';
+    broadBtn.style.opacity = '1';
+    broadBtn.style.pointerEvents = 'auto';
+    prepBtn.textContent = '🎬 Prepare Show';
+    prepBtn.disabled = false;
+  });
+
+  // ── Start Broadcast ──────────────────────────────────────────
+  broadBtn.addEventListener('click', async () => {
+    if (isPlaying || !script.length) return;
+    isPlaying = true; stopReq = false;
+    broadBtn.style.display = 'none';
+    stopBtn.style.display = '';
+    liveBadge.style.display = 'flex';
+    statusEl.textContent = 'On air…';
+
+    // Start background music looping at slider volume
+    if (bgUrl) {
+      bgAudio = new Audio(bgUrl);
+      bgAudio.loop = true;
+      bgAudio.volume = parseInt(volSlider.value) / 100;
+      bgAudio.play().catch(() => {});
+    }
+
+    // Play each voice line in sequence
+    for (let i = 0; i < script.length; i++) {
+      if (stopReq) break;
+      tsHighlight(i);
+      const url = script[i].url;
+      if (url) {
+        await new Promise((res) => {
+          if (stopReq) { res(); return; }
+          const a = new Audio(url);
+          let done = false;
+          const finish = () => { if (done) return; done = true; clearInterval(wdog); res(); };
+          const wdog = setInterval(() => { if (stopReq) { a.pause(); finish(); } }, 80);
+          a.onended = finish;
+          a.onerror = finish;
+          a.play().catch(finish);
+        });
+      } else {
+        await new Promise(r => setTimeout(r, 400)); // brief pause for skipped lines
+      }
+    }
+
+    if (!stopReq) {
+      tsStop();
+      statusEl.textContent = '🎙️ Broadcast complete!';
+    }
   });
 }
 
