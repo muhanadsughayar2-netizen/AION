@@ -84,3 +84,9 @@ id = "FT80bGJ3fE3DICvdb39MF"
 uri = "file://snaptoai-designs.zip"
 type = "unspecified"
 title = "SnapToAI — All Design Files"
+
+[[outputs]]
+id = "O6c5YstXKM6mq10c4rx3Z"
+uri = "file://snaptoai-2.7.8.zip"
+type = "unspecified"
+title = "SnapToAI v2.7.8 — Chrome Extension Package"
