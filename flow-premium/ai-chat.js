@@ -5405,14 +5405,15 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
     </div>
 
     <div style="margin-bottom:10px;">
-      <div style="font-size:9.5px;color:#667788;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em;">Source Material</div>
-      <textarea class="bc-source" placeholder="Paste text, article, topic, business plan, script outline… or attach files below" style="width:100%;box-sizing:border-box;min-height:72px;background:rgba(255,255,255,0.04);border:1px solid rgba(45,212,191,0.18);border-radius:10px;padding:9px 11px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;line-height:1.4;"></textarea>
-      <div style="display:flex;gap:6px;margin-top:6px;">
-        <button class="bc-attach-img" style="padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#9aabb8;font-size:11px;cursor:pointer;">📷 Images</button>
-        <button class="bc-attach-vid" style="padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#9aabb8;font-size:11px;cursor:pointer;">🎬 Video</button>
-        <button class="bc-attach-file" style="padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#9aabb8;font-size:11px;cursor:pointer;">📄 File</button>
+      <div style="font-size:9.5px;color:#667788;margin-bottom:7px;text-transform:uppercase;letter-spacing:0.06em;">Attach Source Media</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button class="bc-attach-img" style="flex:1;padding:10px 5px;border-radius:10px;border:1px solid rgba(45,212,191,0.3);background:rgba(45,212,191,0.07);color:#2dd4bf;font-size:20px;cursor:pointer;line-height:1;text-align:center;"><div>📷</div><div style="font-size:10px;color:#9aabb8;margin-top:3px;font-weight:600;">Images</div></button>
+        <button class="bc-attach-vid" style="flex:1;padding:10px 5px;border-radius:10px;border:1px solid rgba(167,139,250,0.3);background:rgba(167,139,250,0.07);color:#a78bfa;font-size:20px;cursor:pointer;line-height:1;text-align:center;"><div>🎬</div><div style="font-size:10px;color:#9aabb8;margin-top:3px;font-weight:600;">Video</div></button>
+        <button class="bc-attach-file" style="flex:1;padding:10px 5px;border-radius:10px;border:1px solid rgba(251,191,36,0.3);background:rgba(251,191,36,0.07);color:#fbbf24;font-size:20px;cursor:pointer;line-height:1;text-align:center;"><div>📄</div><div style="font-size:10px;color:#9aabb8;margin-top:3px;font-weight:600;">File</div></button>
       </div>
-      <div class="bc-attach-list" style="display:none;gap:5px;flex-wrap:wrap;margin-top:6px;"></div>
+      <div class="bc-attach-list" style="display:none;margin-bottom:8px;"></div>
+      <div style="font-size:9.5px;color:#667788;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;">Or type / paste text</div>
+      <textarea class="bc-source" placeholder="Topic, article, notes, script outline… (optional if media attached)" style="width:100%;box-sizing:border-box;min-height:60px;background:rgba(255,255,255,0.04);border:1px solid rgba(45,212,191,0.18);border-radius:10px;padding:9px 11px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;line-height:1.4;"></textarea>
       <input type="file" class="bc-img-input" accept="image/*" multiple style="display:none;">
       <input type="file" class="bc-vid-input" accept="video/*" style="display:none;">
       <input type="file" class="bc-file-input" accept=".txt,.md,.csv,.json,.pdf,.pptx,.docx" style="display:none;">
@@ -5523,29 +5524,94 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
   // ── Attachment rendering ──────────────────────────────────────
   function bcRenderAttachments() {
     attachList.innerHTML = '';
-    attachments.forEach((a, i) => {
-      const chip = document.createElement('div');
-      chip.style.cssText = 'display:flex;align-items:center;gap:4px;padding:3px 7px 3px 3px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.11);border-radius:16px;font-size:10.5px;color:#9aabb8;';
-      if (a.data && (a.type === 'image' || a.type === 'video-frame')) {
+    if (!attachments.length) { attachList.style.display = 'none'; return; }
+    attachList.style.display = 'block';
+
+    // Group video frames by source file
+    const videoFiles = [...new Set(attachments.filter(a => a.videoFile).map(a => a.videoFile))];
+    const images     = attachments.filter(a => a.type === 'image');
+    const files      = attachments.filter(a => a.type === 'file');
+
+    // ── Video panel ──
+    videoFiles.forEach(vf => {
+      const frames = attachments.filter(a => a.videoFile === vf);
+      const panel  = document.createElement('div');
+      panel.style.cssText = 'background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.25);border-radius:10px;padding:10px;margin-bottom:6px;';
+
+      const header = document.createElement('div');
+      header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;';
+      const title  = document.createElement('span');
+      title.style.cssText = 'font-size:11px;font-weight:700;color:#a78bfa;';
+      const shortName = vf.length > 28 ? vf.slice(0, 25) + '…' : vf;
+      title.textContent = `🎬 ${shortName}`;
+      const rmBtn = document.createElement('button');
+      rmBtn.textContent = '✕ Remove';
+      rmBtn.style.cssText = 'background:none;border:1px solid rgba(239,68,68,0.35);border-radius:6px;color:#ef4444;font-size:10px;cursor:pointer;padding:2px 7px;';
+      rmBtn.onclick = () => { attachments = attachments.filter(a => a.videoFile !== vf); bcRenderAttachments(); };
+      header.appendChild(title); header.appendChild(rmBtn);
+      panel.appendChild(header);
+
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+      frames.forEach(f => {
+        const img = document.createElement('img');
+        img.src = `data:image/jpeg;base64,${f.data}`;
+        img.title = f.name;
+        img.style.cssText = 'width:72px;height:48px;border-radius:6px;object-fit:cover;border:1px solid rgba(167,139,250,0.3);';
+        row.appendChild(img);
+      });
+      panel.appendChild(row);
+
+      const note = document.createElement('div');
+      note.style.cssText = 'margin-top:7px;font-size:10px;color:#667788;';
+      note.textContent = `✓ Gemini will analyze ${frames.length} frame${frames.length > 1 ? 's' : ''} from this video to write your script`;
+      panel.appendChild(note);
+      attachList.appendChild(panel);
+    });
+
+    // ── Images panel ──
+    if (images.length) {
+      const panel = document.createElement('div');
+      panel.style.cssText = 'background:rgba(45,212,191,0.06);border:1px solid rgba(45,212,191,0.22);border-radius:10px;padding:10px;margin-bottom:6px;';
+      const header = document.createElement('div');
+      header.style.cssText = 'font-size:11px;font-weight:700;color:#2dd4bf;margin-bottom:7px;';
+      header.textContent = `📷 ${images.length} image${images.length > 1 ? 's' : ''} attached`;
+      panel.appendChild(header);
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+      images.forEach((a, i) => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:relative;display:inline-block;';
         const img = document.createElement('img');
         img.src = `data:${a.mimeType};base64,${a.data}`;
-        img.style.cssText = 'width:18px;height:18px;border-radius:4px;object-fit:cover;flex-shrink:0;';
-        chip.appendChild(img);
-      } else {
-        const ic = document.createElement('span'); ic.textContent = '📄';
-        chip.appendChild(ic);
-      }
-      const nm = document.createElement('span');
-      nm.textContent = a.name.length > 14 ? a.name.slice(0, 11) + '…' : a.name;
-      chip.appendChild(nm);
+        img.style.cssText = 'width:60px;height:48px;border-radius:6px;object-fit:cover;border:1px solid rgba(45,212,191,0.28);display:block;';
+        const rm = document.createElement('button');
+        rm.textContent = '×';
+        rm.style.cssText = 'position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#ef4444;color:#fff;border:none;cursor:pointer;font-size:9px;line-height:14px;padding:0;text-align:center;';
+        rm.onclick = () => { const idx = attachments.indexOf(a); if (idx > -1) attachments.splice(idx, 1); bcRenderAttachments(); };
+        wrap.appendChild(img); wrap.appendChild(rm);
+        row.appendChild(wrap);
+      });
+      panel.appendChild(row);
+      const note = document.createElement('div');
+      note.style.cssText = 'margin-top:6px;font-size:10px;color:#667788;';
+      note.textContent = '✓ Gemini will analyze these images to write your script';
+      panel.appendChild(note);
+      attachList.appendChild(panel);
+    }
+
+    // ── Files panel ──
+    files.forEach((a, i) => {
+      const chip = document.createElement('div');
+      chip.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.25);border-radius:8px;margin-bottom:4px;';
+      chip.innerHTML = `<span style="font-size:16px;">📄</span><span style="font-size:11px;color:#fbbf24;flex:1;">${a.name}</span>`;
       const rm = document.createElement('button');
       rm.textContent = '×';
-      rm.style.cssText = 'background:none;border:none;color:#667788;cursor:pointer;padding:0 0 0 2px;font-size:12px;line-height:1;flex-shrink:0;';
-      rm.onclick = () => { attachments.splice(i, 1); bcRenderAttachments(); };
+      rm.style.cssText = 'background:none;border:none;color:#667788;cursor:pointer;font-size:13px;padding:0;';
+      rm.onclick = () => { const idx = attachments.indexOf(a); if (idx > -1) attachments.splice(idx, 1); bcRenderAttachments(); };
       chip.appendChild(rm);
       attachList.appendChild(chip);
     });
-    attachList.style.display = attachments.length ? 'flex' : 'none';
   }
 
   // ── Attachment buttons ────────────────────────────────────────
@@ -5569,16 +5635,44 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
     const file = vidInput.files[0]; if (!file) return;
     const url = URL.createObjectURL(file);
     const vid = document.createElement('video');
-    vid.src = url; vid.muted = true;
-    vid.onloadeddata = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.min(vid.videoWidth || 640, 640);
-      canvas.height = Math.min(vid.videoHeight || 360, 360);
-      canvas.getContext('2d').drawImage(vid, 0, 0, canvas.width, canvas.height);
-      attachments.push({ type: 'video-frame', name: file.name, mimeType: 'image/jpeg', data: canvas.toDataURL('image/jpeg', 0.8).split(',')[1] });
-      URL.revokeObjectURL(url);
-      bcRenderAttachments();
+    vid.src = url; vid.muted = true; vid.preload = 'auto';
+
+    vid.onloadedmetadata = () => {
+      const dur = isFinite(vid.duration) && vid.duration > 0 ? vid.duration : 10;
+      // Extract up to 4 evenly-spaced frames
+      const times = dur <= 4
+        ? [0, dur * 0.5]
+        : [0.1, dur * 0.25, dur * 0.6, Math.max(dur - 0.5, dur * 0.85)];
+      const frames = [];
+      let idx = 0;
+
+      const captureFrame = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.min(vid.videoWidth  || 640, 640);
+        canvas.height = Math.min(vid.videoHeight || 360, 360);
+        canvas.getContext('2d').drawImage(vid, 0, 0, canvas.width, canvas.height);
+        frames.push(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
+        idx++;
+        if (idx < times.length) {
+          vid.currentTime = times[idx];
+        } else {
+          URL.revokeObjectURL(url);
+          // Remove any previous frames from the same video
+          attachments = attachments.filter(a => !(a.type === 'video-frame' && a.videoFile === file.name));
+          frames.forEach((b64, fi) => {
+            attachments.push({ type: 'video-frame', name: `${file.name} frame ${fi + 1}/${frames.length}`, videoFile: file.name, mimeType: 'image/jpeg', data: b64 });
+          });
+          // Pre-fill textarea with video name if empty
+          if (!srcEl.value.trim()) srcEl.value = `Video: "${file.name}"`;
+          bcRenderAttachments();
+        }
+      };
+
+      vid.onseeked = captureFrame;
+      vid.currentTime = times[0];
     };
+
+    vid.onerror = () => URL.revokeObjectURL(url);
     vid.load();
     vidInput.value = '';
   });
@@ -5684,12 +5778,34 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
     // Step 1 — Script generation (multimodal if attachments present)
     let rawScript = '';
     try {
-      const sysP = bcSysPrompt(selFormat, durCfg.exchanges);
+      const videoFileNames = [...new Set(attachments.filter(a => a.videoFile).map(a => a.videoFile))];
+      const hasImages      = attachments.some(a => a.type === 'image');
+      const fmtLabel       = FORMATS.find(f => f.key === selFormat)?.label || selFormat;
+
+      // Augment system prompt with media context so Gemini understands what it's seeing
+      let mediaCtx = '';
+      if (videoFileNames.length) {
+        mediaCtx = `\n\nIMPORTANT: The user has attached frames captured from a video file named "${videoFileNames[0]}". You are seeing multiple frames that show what happens throughout the video. Analyze the video content from these frames and write the ${fmtLabel} script ABOUT this video — describe what's shown, explain the concepts, walk through what's happening step by step as appropriate for the format.`;
+      } else if (hasImages) {
+        mediaCtx = `\n\nIMPORTANT: The user has attached images. Analyze the image content and write the script ABOUT what is shown in these images.`;
+      }
+      const sysP = bcSysPrompt(selFormat, durCfg.exchanges) + mediaCtx;
+
       const contentParts = [];
       for (const a of attachments) {
         if (a.data) contentParts.push({ inlineData: { mimeType: a.mimeType, data: a.data } });
       }
-      contentParts.push({ text: `SOURCE MATERIAL:\n${src.slice(0, 4500)}` });
+
+      // Build user text — for video, make intent explicit
+      let userText;
+      if (videoFileNames.length) {
+        userText = `Video file: "${videoFileNames[0]}"\n\nCreate a ${fmtLabel} broadcast about the content shown in these video frames.${src && src !== `Video: "${videoFileNames[0]}"` ? `\n\nExtra context: ${src.slice(0, 2000)}` : ''}`;
+      } else if (src) {
+        userText = `SOURCE MATERIAL:\n${src.slice(0, 4500)}`;
+      } else {
+        userText = `Create a ${fmtLabel} broadcast about the content shown in the attached images.`;
+      }
+      contentParts.push({ text: userText });
 
       const resp = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,

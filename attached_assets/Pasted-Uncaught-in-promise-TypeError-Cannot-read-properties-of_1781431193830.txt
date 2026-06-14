@@ -1,0 +1,1510 @@
+Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'prompt')
+Context
+ai-chat.html?source=contextmenu&count=1
+Stack Trace
+ai-chat.js:6778 (anonymous function)
+...
+6279
+6280
+6281
+6282
+6283
+6284
+6285
+6286
+6287
+6288
+6289
+6290
+6291
+6292
+6293
+6294
+6295
+6296
+6297
+6298
+6299
+6300
+6301
+6302
+6303
+6304
+6305
+6306
+6307
+6308
+6309
+6310
+6311
+6312
+6313
+6314
+6315
+6316
+6317
+6318
+6319
+6320
+6321
+6322
+6323
+6324
+6325
+6326
+6327
+6328
+6329
+6330
+6331
+6332
+6333
+6334
+6335
+6336
+6337
+6338
+6339
+6340
+6341
+6342
+6343
+6344
+6345
+6346
+6347
+6348
+6349
+6350
+6351
+6352
+6353
+6354
+6355
+6356
+6357
+6358
+6359
+6360
+6361
+6362
+6363
+6364
+6365
+6366
+6367
+6368
+6369
+6370
+6371
+6372
+6373
+6374
+6375
+6376
+6377
+6378
+6379
+6380
+6381
+6382
+6383
+6384
+6385
+6386
+6387
+6388
+6389
+6390
+6391
+6392
+6393
+6394
+6395
+6396
+6397
+6398
+6399
+6400
+6401
+6402
+6403
+6404
+6405
+6406
+6407
+6408
+6409
+6410
+6411
+6412
+6413
+6414
+6415
+6416
+6417
+6418
+6419
+6420
+6421
+6422
+6423
+6424
+6425
+6426
+6427
+6428
+6429
+6430
+6431
+6432
+6433
+6434
+6435
+6436
+6437
+6438
+6439
+6440
+6441
+6442
+6443
+6444
+6445
+6446
+6447
+6448
+6449
+6450
+6451
+6452
+6453
+6454
+6455
+6456
+6457
+6458
+6459
+6460
+6461
+6462
+6463
+6464
+6465
+6466
+6467
+6468
+6469
+6470
+6471
+6472
+6473
+6474
+6475
+6476
+6477
+6478
+6479
+6480
+6481
+6482
+6483
+6484
+6485
+6486
+6487
+6488
+6489
+6490
+6491
+6492
+6493
+6494
+6495
+6496
+6497
+6498
+6499
+6500
+6501
+6502
+6503
+6504
+6505
+6506
+6507
+6508
+6509
+6510
+6511
+6512
+6513
+6514
+6515
+6516
+6517
+6518
+6519
+6520
+6521
+6522
+6523
+6524
+6525
+6526
+6527
+6528
+6529
+6530
+6531
+6532
+6533
+6534
+6535
+6536
+6537
+6538
+6539
+6540
+6541
+6542
+6543
+6544
+6545
+6546
+6547
+6548
+6549
+6550
+6551
+6552
+6553
+6554
+6555
+6556
+6557
+6558
+6559
+6560
+6561
+6562
+6563
+6564
+6565
+6566
+6567
+6568
+6569
+6570
+6571
+6572
+6573
+6574
+6575
+6576
+6577
+6578
+6579
+6580
+6581
+6582
+6583
+6584
+6585
+6586
+6587
+6588
+6589
+6590
+6591
+6592
+6593
+6594
+6595
+6596
+6597
+6598
+6599
+6600
+6601
+6602
+6603
+6604
+6605
+6606
+6607
+6608
+6609
+6610
+6611
+6612
+6613
+6614
+6615
+6616
+6617
+6618
+6619
+6620
+6621
+6622
+6623
+6624
+6625
+6626
+6627
+6628
+6629
+6630
+6631
+6632
+6633
+6634
+6635
+6636
+6637
+6638
+6639
+6640
+6641
+6642
+6643
+6644
+6645
+6646
+6647
+6648
+6649
+6650
+6651
+6652
+6653
+6654
+6655
+6656
+6657
+6658
+6659
+6660
+6661
+6662
+6663
+6664
+6665
+6666
+6667
+6668
+6669
+6670
+6671
+6672
+6673
+6674
+6675
+6676
+6677
+6678
+6679
+6680
+6681
+6682
+6683
+6684
+6685
+6686
+6687
+6688
+6689
+6690
+6691
+6692
+6693
+6694
+6695
+6696
+6697
+6698
+6699
+6700
+6701
+6702
+6703
+6704
+6705
+6706
+6707
+6708
+6709
+6710
+6711
+6712
+6713
+6714
+6715
+6716
+6717
+6718
+6719
+6720
+6721
+6722
+6723
+6724
+6725
+6726
+6727
+6728
+6729
+6730
+6731
+6732
+6733
+6734
+6735
+6736
+6737
+6738
+6739
+6740
+6741
+6742
+6743
+6744
+6745
+6746
+6747
+6748
+6749
+6750
+6751
+6752
+6753
+6754
+6755
+6756
+6757
+6758
+6759
+6760
+6761
+6762
+6763
+6764
+6765
+6766
+6767
+6768
+6769
+6770
+6771
+6772
+6773
+6774
+6775
+6776
+6777
+6778
+6779
+6780
+6781
+6782
+6783
+6784
+6785
+6786
+6787
+6788
+6789
+6790
+6791
+6792
+6793
+6794
+6795
+6796
+6797
+6798
+6799
+6800
+6801
+6802
+6803
+6804
+6805
+6806
+6807
+6808
+6809
+6810
+6811
+6812
+6813
+6814
+6815
+6816
+6817
+6818
+6819
+6820
+6821
+6822
+6823
+6824
+6825
+6826
+6827
+6828
+6829
+6830
+6831
+6832
+6833
+6834
+6835
+6836
+6837
+6838
+6839
+6840
+6841
+6842
+6843
+6844
+6845
+6846
+6847
+6848
+6849
+6850
+6851
+6852
+6853
+6854
+6855
+6856
+6857
+6858
+6859
+6860
+6861
+6862
+6863
+6864
+6865
+6866
+6867
+6868
+6869
+6870
+6871
+6872
+6873
+6874
+6875
+6876
+6877
+6878
+6879
+6880
+6881
+6882
+6883
+6884
+6885
+6886
+6887
+6888
+6889
+6890
+6891
+6892
+6893
+6894
+6895
+6896
+6897
+6898
+6899
+6900
+6901
+6902
+6903
+6904
+6905
+6906
+6907
+6908
+6909
+6910
+6911
+6912
+6913
+6914
+6915
+6916
+6917
+6918
+6919
+6920
+6921
+6922
+6923
+6924
+6925
+6926
+6927
+6928
+6929
+6930
+6931
+6932
+6933
+6934
+6935
+6936
+6937
+6938
+6939
+6940
+6941
+6942
+6943
+6944
+6945
+6946
+6947
+6948
+6949
+6950
+6951
+6952
+6953
+6954
+6955
+6956
+6957
+6958
+6959
+6960
+6961
+6962
+6963
+6964
+6965
+6966
+6967
+6968
+6969
+6970
+6971
+6972
+6973
+6974
+6975
+6976
+6977
+6978
+6979
+6980
+6981
+6982
+6983
+6984
+6985
+6986
+6987
+6988
+6989
+6990
+6991
+6992
+6993
+6994
+6995
+6996
+6997
+6998
+6999
+7000
+7001
+7002
+7003
+7004
+7005
+7006
+7007
+7008
+7009
+7010
+7011
+7012
+7013
+7014
+7015
+7016
+7017
+7018
+7019
+7020
+7021
+7022
+7023
+7024
+7025
+7026
+7027
+7028
+7029
+7030
+7031
+7032
+7033
+7034
+7035
+7036
+7037
+7038
+7039
+7040
+7041
+7042
+7043
+7044
+7045
+7046
+7047
+7048
+7049
+7050
+7051
+7052
+7053
+7054
+7055
+7056
+7057
+7058
+7059
+7060
+7061
+7062
+7063
+7064
+7065
+7066
+7067
+7068
+7069
+7070
+7071
+7072
+7073
+7074
+7075
+7076
+7077
+7078
+7079
+7080
+7081
+7082
+7083
+7084
+7085
+7086
+7087
+7088
+7089
+7090
+7091
+7092
+7093
+7094
+7095
+7096
+7097
+7098
+7099
+7100
+7101
+7102
+7103
+7104
+7105
+7106
+7107
+7108
+7109
+7110
+7111
+7112
+7113
+7114
+7115
+7116
+7117
+7118
+7119
+7120
+7121
+7122
+7123
+7124
+7125
+7126
+7127
+7128
+7129
+7130
+7131
+7132
+7133
+7134
+7135
+7136
+7137
+7138
+7139
+7140
+7141
+7142
+7143
+7144
+7145
+7146
+7147
+7148
+7149
+7150
+7151
+7152
+7153
+7154
+7155
+7156
+7157
+7158
+7159
+7160
+7161
+7162
+7163
+7164
+7165
+7166
+7167
+7168
+7169
+7170
+7171
+7172
+7173
+7174
+7175
+7176
+7177
+7178
+7179
+7180
+7181
+7182
+7183
+7184
+7185
+7186
+7187
+7188
+7189
+7190
+7191
+7192
+7193
+7194
+7195
+7196
+7197
+7198
+7199
+7200
+7201
+7202
+7203
+7204
+7205
+7206
+7207
+7208
+7209
+7210
+7211
+7212
+7213
+7214
+7215
+7216
+7217
+7218
+7219
+7220
+7221
+7222
+7223
+7224
+7225
+7226
+7227
+7228
+7229
+7230
+7231
+7232
+7233
+7234
+7235
+7236
+7237
+7238
+7239
+7240
+7241
+7242
+7243
+7244
+7245
+7246
+7247
+7248
+7249
+7250
+7251
+7252
+7253
+7254
+7255
+7256
+7257
+7258
+7259
+7260
+7261
+7262
+7263
+7264
+7265
+7266
+7267
+7268
+7269
+7270
+7271
+7272
+7273
+7274
+7275
+7276
+7277
+...
+<6278 lines not shown>
+     })();
+     </script>
+
+   NEVER declare const/let at the top level of <script>. NEVER use function declarations for
+   onclick handlers — use window.fnName = function(){} inside the IIFE instead.
+
+   SCROLL LINKS — use plain anchor tags, never onclick for scrolling:
+     <a href="#sectionId" class="btn">Go There</a>   ← works with zero JavaScript
+   Never write onclick="scrollToSection('...')" — it requires a JS function that may be missing.
+
+   WIRING PATTERN for everything else (inside the IIFE, not at top level):
+     const btn = document.getElementById('myBtn');
+     if (btn) btn.addEventListener('click', () => { /* handler */ });
+
+   MODAL / OVERLAY: toggle style.display between 'flex' and 'none'.
+   GAUGE / PROGRESS RINGS: animate stroke-dashoffset with setTimeout(fn, 100).
+   TOGGLES / FOOD BUTTONS: classList.toggle('active') — also update any linked counter or gauge.
+   TABS — COPY THIS EXACT PATTERN (classList approach — preserves display:grid on panels):
+     HTML:
+       <div class="tab-bar">
+         <button class="tab-btn active" onclick="showTab('t1',this)">Tab One</button>
+         <button class="tab-btn" onclick="showTab('t2',this)">Tab Two</button>
+         <button class="tab-btn" onclick="showTab('t3',this)">Disclaimer</button>
+       </div>
+       <div id="t1" class="tab-panel active">...real content...</div>
+       <div id="t2" class="tab-panel">...real content...</div>
+       <div id="t3" class="tab-panel">...real written disclaimer text...</div>
+     CSS:
+       .tab-panel { display: none; }
+       .tab-panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+                           animation: slideUp 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
+       @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+       .tab-btn { opacity:0.5; border: 1px solid transparent; border-radius: 100px; }
+       .tab-btn.active { opacity:1; background: var(--accent); color: var(--bg); }
+     JS (window-attached inside IIFE — so onclick="" can find it):
+       window.showTab = function(id, btn) {
+         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+         const panel = document.getElementById(id);
+         if (panel) panel.classList.add('active');
+         if (btn) btn.classList.add('active');
+       };
+     IMPORTANT: do NOT use style.display on panels — classList toggle preserves display:grid from CSS.
+     CONTENT RULE: every tab panel MUST have real written content matching the tab label.
+     Disclaimer tab → write a real 2-paragraph medical/legal disclaimer specific to the site topic.
+     Protocol tab → write real protocol steps. Interactions tab → real interaction list. No empty panels.
+
+   SMOOTH SCROLL — account for sticky nav height (90px offset):
+     document.querySelectorAll('a[href^="#"]').forEach(a => {
+       a.addEventListener('click', function(e) {
+         e.preventDefault();
+         const el = document.querySelector(this.getAttribute('href'));
+         if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - 90, behavior: 'smooth' });
+       });
+     });
+
+   INTERACTIVE VISUALIZER / TOGGLE BUTTONS — use data attributes + cumulative pattern:
+     HTML: <button class="bio-btn" data-value="25" data-color="#00f2ff" data-name="Wild Berries">+ Berries</button>
+     JS: let score = 0;
+         document.querySelectorAll('.bio-btn').forEach(btn => {
+           btn.addEventListener('click', () => {
+             const val = +btn.dataset.value, color = btn.dataset.color, name = btn.dataset.name;
+             if (btn.classList.contains('active')) { btn.classList.remove('active'); score -= val; }
+             else { btn.classList.add('active'); score += val; }
+             score = Math.max(0, Math.min(100, score));
+             // update ring: const offset = 816 - (score/100)*816; ring.style.strokeDashoffset = offset;
+             // update label: label.textContent = 'Activated: ' + name;
+           });
+         });
+
+   ACCORDIONS: classList.toggle('open') on parent, max-height:0→500px transition on content.
+   PRICING BUTTONS: wire to scroll to the relevant section (never leave as dead stubs).
+   FORMS: preventDefault() + show a visible success message inline — no page reload.
+   DO NOT wrap code in DOMContentLoaded. DO NOT leave any button as a visual-only stub.
+
+⑥ SPACING — Max content width 1100px (margin:0 auto). Min gap between cards: 24px. Never overflow-x.
+
+⑦ ONE WOW DETAIL — pick the one that fits the chosen profile:
+   Profile A: animated counter on stats (0→value, 1.5s easeOut) OR floating particles (20 divs, CSS keyframes)
+   Profile B: parallax scroll on hero image (10-15% travel via JS scroll listener) OR color-strip reveal
+   Profile C: large 60px cursor follower (frosted glass circle, smooth lerp) OR word-by-word fade-in on H1
+   Profile D: auto-scrolling marquee strip with bold text OR scramble text effect on hover
+   Profile E: confetti burst on CTA click (20 colored divs scattered via CSS keyframes)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  STEP 3 — ANTI-PATTERN BLACKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+These are what every average AI defaults to. You never produce these unless explicitly requested:
+✗ Purple-to-pink gradient on white (the most generic AI output)
+✗ Glassmorphism + glow on dark bg for wellness / editorial / food projects
+✗ Inter for every heading — choose the correct pairing for the aesthetic
+✗ 3-column feature grid with Lucide or emoji icons ("Our Features" section)
+✗ "Trusted by 10,000+ users" logo strip in the hero
+✗ Two CTAs in the hero — pick ONE
+✗ Emoji used as icons in premium or professional contexts (🛡️🧬💎🔥)
+✗ Lorem ipsum or generic copy ("Transforming the future of innovation")
+✗ Colored divs pretending to be photos — always use real Pexels URLs from the verified ID list
+✗ <img> tags without onerror fallback — a broken Pexels link shows an ugly broken icon; always add
+  onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(...)'"
+✗ style.display='block' inside showTab() — this overrides CSS display:grid on panels, breaking
+  two-column layouts. Always use classList.add/remove('active') in tab JS, let CSS control display.
+✗ Tabs that don't switch when clicked — always use the classList-based showTab(id,btn) pattern
+✗ .reveal { opacity: 0 } in CSS — this blanks the entire page if JS crashes or is slow.
+  The ONLY safe pattern: .reveal has NO opacity set; .reveal.visible triggers the animation via @keyframes
+✗ No safety-net setTimeout after IntersectionObserver — always include the 1s inline-style fallback
+✗ Content area wider than 1100px
+✗ Non-functional "coming soon" interactive placeholders
+✗ Pricing/CTA buttons that do nothing — wire every button to scroll to a real section
+✗ Empty tab panels — every tab must have real written content (at least 2 paragraphs), including
+  Disclaimer, Protocol, Interactions, About, FAQ etc. — never leave a tab with placeholder text
+✗ Missing smooth scroll offset — sticky nav is 80-90px tall; raw scrollIntoView() cuts off headings.
+  Use: el.getBoundingClientRect().top + window.pageYOffset - 90
+✗ href="#" on footer links (Medical Disclaimer, Privacy Policy, Terms, Newsletter, etc.) — every
+  footer link MUST open a modal with real written content. Create a single reusable legal modal:
+  <div id="legalModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;display:none;align-items:center;justify-content:center;padding:24px;">
+    <div style="background:#fff;max-width:640px;width:100%;max-height:80vh;overflow-y:auto;padding:48px;position:relative;border-radius:4px;">
+      <button onclick="closeLegal()" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:1.8rem;cursor:pointer;">&times;</button>
+      <h2 id="legalTitle" style="margin-bottom:24px;"></h2>
+      <div id="legalBody" style="line-height:1.8;font-size:0.95rem;"></div>
+    </div>
+  </div>
+  Then define openLegal(title, html) and closeLegal() at top level of the script.
+  Footer links: onclick="openLegal('Medical Disclaimer','<p>..real content..</p>')"
+  Write 2-4 real paragraphs of genuine content for each legal page — not placeholder text.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  MANDATORY HTML SKELETON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>[Specific real title matching the project]</title>
+  <!-- Tailwind CSS Play CDN — use utility classes everywhere, no custom CSS needed for layout/spacing/color -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons — use <i data-lucide="icon-name" class="w-5 h-5"></i> anywhere, auto-initialized at end of body -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=[PROFILE_HEADING_FONT]&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { heading: ['[PROFILE_HEADING_FONT]', 'sans-serif'] } } } }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; overflow-x: hidden; }
+    /* Insert chosen profile's :root tokens and custom keyframes here — Tailwind handles the rest */
+  </style>
+</head>
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  FINAL CHECKLIST — verify before every output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✓ Correct aesthetic profile chosen — NOT defaulted to dark SaaS?
+✓ Right font pairing for this profile (not just Inter for everything)?
+✓ Real Pexels images used (not colored placeholder divs)?
+✓ Real specific copy (not lorem ipsum or generic filler)?
+✓ Thin-line SVG icons (not emoji in professional contexts)?
+✓ One wow detail added (matching the chosen profile)?
+✓ All interactive elements fully functional?
+✓ Every footer link opens a modal with real content (NO href="#" dead links)?
+✓ legalModal + openLegal() + closeLegal() present if any legal/footer links exist?
+✓ .reveal has NO opacity:0 in CSS (content visible if JS fails) — only .reveal.visible adds animation?
+✓ @keyframes revealUp used (from opacity:0 to opacity:1, both fill) NOT transition on .reveal itself?
+✓ 1s style-based safety net present (el.style.opacity='1') after IntersectionObserver setup?
+✓ Every <img> has onerror fallback so broken images show a gradient instead of a broken icon?
+✓ Tabs use classList showTab(id,btn) — NOT style.display — so display:grid is preserved in panels?
+✓ Every tab panel has real written content (no empty or placeholder panels)?
+✓ All CTA/pricing buttons wired to scroll somewhere — no dead stubs?
+✓ Smooth scroll uses 90px navbar offset (getBoundingClientRect approach)?
+✓ Viewport meta + Google Fonts + CSS reset present?
+✓ Only ONE primary CTA per section?
+✓ Content max-width 1100px?
+
+Output: \`\`\`html ... \`\`\` and nothing else.`;
+
+// ─── 3-LEVEL STAGED BUILD PROMPTS ────────────────────────────────────────────
+// Each level is small/focused — never hits token limits, buttons always work.
+
+const L1_SCAFFOLD_PROMPT = `You are a world-class UI engineer. Build an extremely polished, modern structure using Tailwind CSS utility classes.
+
+LEVEL 1 — SCAFFOLD: Output ONLY the raw HTML body content.
+
+RULES (break any = broken build):
+• Output ONLY what goes between <body> and </body>. No <!DOCTYPE>. No <html>. No <head>. No <style> block. No <script> block.
+• USE Tailwind CSS utility classes directly on every element for spacing, typography, colors, and layout. The Tailwind CDN is already injected — use it fully.
+• Also apply the .reveal class to any section or card you want to animate in on scroll.
+• Use Lucide Icons via <i data-lucide="icon-name" class="w-5 h-5 text-indigo-400"></i> — they are auto-initialized.
+• Every major section MUST have data-section-id on its wrapper (e.g. data-section-id="hero", "features", "pricing", "faq", "footer").
+• Every interactive element (button, tab, toggle, form, accordion) MUST have a unique id="..." attribute.
+• Required sections to include:
+  1. Sticky nav: frosted glass (bg-black/70 backdrop-blur-md border-b border-white/10), logo left, links center, CTA pill right.
+  2. Hero: asymmetric grid — bold display text left, floating mockup/visual card right. Gradient headline text (bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent).
+  3. Feature Bento Grid: grid grid-cols-1 md:grid-cols-3 gap-5 — dark cards (bg-white/5 border border-white/10 rounded-2xl p-6) with Lucide icons.
+  4. Interactive section: tab switcher, calculator, or form with a gradient CTA button.
+  5. Footer: links, compliance note, social icons — no lorem ipsum.
+• Every <img> MUST have an onerror fallback: onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1e1b4b 0%,#0f172a 100%)'"
+• Use real Pexels photo IDs (verified: 574071 workspace, 1181244 code, 1092730 avocado, 3822621 yoga).
+• Use semantic HTML: <nav>, <header>, <section>, <footer>, <main>.
+• Write real, specific copy — no lorem ipsum, no "Coming Soon" stubs.
+• Output raw HTML only — NO markdown fences, NO prose before or after.`;
+
+const L2_DESIGN_PROMPT = `You are adding custom CSS polish on top of a Tailwind-powered website.
+
+LEVEL 2 — DESIGN: Output ONLY custom CSS rules (no tags, no HTML, no JS).
+
+RULES:
+• Output ONLY raw CSS — NO <style> tags, NO HTML, NO JS, NO markdown fences, NO prose.
+• Tailwind CDN is already active — do NOT re-import it or re-define what Tailwind already handles.
+• Focus on custom details Tailwind can't do inline: keyframe animations, glow effects, complex pseudo-elements, custom scrollbars, gradient text, glass morphism depth, and brand-specific micro-interactions.
+• Choose the right aesthetic and define :root custom properties to match:
+  PROFILE A (dark tech): --bg:#07070f; --accent:#6366f1; glow shadows, radial bg leak, gradient-clipped H1
+  PROFILE B (editorial light): --bg:#F9FBF9; --accent:#FF7043; generous whitespace, sage secondary, thin SVG icons
+  PROFILE C (luxury minimal): --bg:#fafafa or #080808; --accent:#C9A96E; extreme whitespace, hairline borders
+  PROFILE D (brutalist): --bg:#fff; --accent:#e63946; offset box-shadow:4px 4px 0 #000, thick borders
+  PROFILE E (playful): bright 3-color palette; bouncy hover transform:scale(1.05); illustrated shapes
+• Write glow button: background: linear-gradient(135deg, var(--accent), ...) with box-shadow glow on :hover.
+• Add a layered radial gradient background leak div (position:fixed, pointer-events:none, z-index:-1) for dark profiles.
+• Every button/link must have a :hover state with visual feedback.
+• Output raw CSS only — NO tags, NO prose, NO fences.`;
+
+const L3_ACTIVATE_PROMPT = `You are a senior frontend architect wiring bulletproof interactivity into a Tailwind + Lucide site.
+
+LEVEL 3 — ACTIVATE: Output ONLY JavaScript (no tags, no HTML, no CSS).
+
+RULES:
+• Output ONLY raw JS — NO <script> tags, NO HTML, NO CSS, NO markdown fences, NO prose.
+• FIRST LINE: re-trigger Lucide so any dynamically shown elements get their icons:
+    if (window.lucide) { lucide.createIcons(); }
+• NULL-CHECK every single DOM query before using it:
+    const btn = document.getElementById('myBtn');
+    if (btn) btn.addEventListener('click', () => { ... });
+• ALL functions at TOP LEVEL — never nested inside callbacks or blocks.
+• DO NOT wrap anything in DOMContentLoaded — script runs after </body>, DOM is already parsed.
+• SCROLL LINKS — smooth scroll with 90px sticky-nav offset:
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        const el = document.querySelector(this.getAttribute('href'));
+        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - 90, behavior: 'smooth' });
+      });
+    });
+• TABS: use classList add/remove on .tab-panel / .tab-btn — never display:none on flex parents.
+    function showTab(id, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const p = document.getElementById(id); if (p) p.classList.add('active');
+      if (btn) btn.classList.add('active');
+    }
+• MODALS: function openModal(id){const m=document.getElementById(id);if(m)m.style.display='flex';} function closeModal(id){const m=document.getElementById(id);if(m)m.style.display='none';}
+    All modal overlays MUST use position:fixed; inset:0; z-index:9000 or higher — never lower.
+• FORMS — STRICT CONTRACT: If the page has a contact/intake/lead form, its submit handler MUST:
+    1. Use e.preventDefault() — never reload the page.
+    2. Replace the form's parentElement.innerHTML with a styled success card (not alert()).
+    3. Include a WhatsApp deep-link built from form values: https://wa.me/PHONE?text=ENCODED_MESSAGE
+    4. Call lucide.createIcons() immediately after the innerHTML replacement so new icons render.
+• LUCIDE RE-INIT: After ANY dynamic innerHTML/insertAdjacentHTML call that adds data-lucide icons, immediately call: if (window.lucide) { lucide.createIcons(); }
+• SCROLL REVEAL (always include):
+    const _io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); _io.unobserve(e.target); }
+    }), { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+    setTimeout(() => document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible')), 1200);
+• NO dead stubs — every button MUST do something (scroll, toggle, open modal, submit, animate, etc.).
+• FUNCTION COMPLETENESS: Every function called in an onclick/onchange/onsubmit/oninput attribute (e.g. showTab(), updatePillar(), openModal()) MUST be fully defined in the single <script> block. Never leave a referenced function undefined.
+• Output raw JS only — NO tags, NO prose, NO fences.`;
+
+const BUILD_PATCH_PROMPT = `You are a senior front-end engineer making a targeted edit to an existing website.
+
+THE GOLDEN RULE: Change ONLY what the user explicitly asked for. Nothing else moves.
+
+STRICT RULES:
+• Return the COMPLETE HTML file with the requested change applied.
+• Do NOT redesign, re-theme, or change colors, fonts, layout, spacing, or any section the user did not mention.
+• Do NOT pick a new aesthetic profile. Lock onto whatever design is already in the file.
+• Preserve every existing ID, class, data-attribute, and script exactly as-is unless directly involved in the change.
+• If adding an image: use a real Pexels URL matching the context, with onerror fallback, object-fit:cover.
+• If adding a section: match the exact same design language (colors, radius, fonts, spacing) already present.
+• IIFE WRAPPER — ALL script content MUST be inside a single (function(){ ... })(); wrapper. The live preview re-evaluates scripts on every update, so any top-level const/let throws "Identifier already declared" and kills all JS on the page. Functions called by onclick="" must be attached to window inside the IIFE: window.myFn = function(){ ... }; Never use top-level const/let or bare function declarations for onclick handlers.
+• FUNCTION COMPLETENESS: Every function called in an onclick/onchange/onsubmit/oninput attribute MUST be fully defined (as window.fn = function(){}) inside the IIFE. If the existing site has broken onclick handlers, fix them as part of this response.
+• PRESERVE MEDIA PLACEHOLDERS: NEVER remove, replace, or alter any __SNAP_VID_N__, __SNAP_IMG_N__, or __SNAP_AUD_N__ placeholder strings that exist in the current site. They are live media references managed by the app — removing them erases the user's video or image from the build.
+• YOUTUBE EMBEDS: When the user pastes any YouTube URL (youtube.com/watch?v=, youtu.be/, or youtube.com/embed/), ALWAYS embed it as a plain responsive iframe. NEVER build a custom video player, input box, or Upload & Play button. Extract the video ID, strip all tracking params (?si=, &feature=, etc.), and use this exact pattern: <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;"><iframe src="https://www.youtube.com/embed/VIDEO_ID" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+• UPLOADED VIDEO FILES: When the prompt contains __SNAP_VID_0__ (or __SNAP_VID_1__, __SNAP_VID_2__ etc.), the user has attached a real mp4/webm video file. Embed it using this EXACT pattern — it includes a 🔇/🔊 unmute button and a hover overlay to replace the video in the downloaded file: <div style="position:relative;border-radius:12px;overflow:hidden;aspect-ratio:16/9;"><video id="snapVid0" src="__SNAP_VID_0__" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video><div onclick="document.getElementById('snapUpload0').click()" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'"><div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;">🔄</div><span style="color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">Replace video</span></div><button onclick="var v=document.getElementById('snapVid0');v.muted=!v.muted;this.textContent=v.muted?'🔇':'🔊';" style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;color:#fff;z-index:10;padding:0;line-height:1;">🔇</button><input type="file" id="snapUpload0" accept="video/*" style="display:none" onchange="(function(i,v){if(i.files[0]){var r=new FileReader();r.onload=function(e){document.getElementById(v).src=e.target.result;};r.readAsDataURL(i.files[0]);}})(this,'snapVid0')"></div> — adjust id/for numbering for VID_1, VID_2 etc. Do NOT ask for a URL or build a custom player.
+• UPLOADED AUDIO FILES: When the prompt contains __SNAP_AUD_0__ (or __SNAP_AUD_1__ etc.), the user has attached a real mp3/wav/ogg audio file. Embed it directly using an HTML5 audio tag — do NOT build a custom player or ask for a URL: <audio src="__SNAP_AUD_0__" controls style="width:100%;border-radius:8px;margin:12px 0;"></audio>. Place it in the section the user specified, or the most fitting section if not specified.
+• Output: ONLY a single \`\`\`html code block. Zero prose before or after.`;
+
+const L_UPDATE_PROMPT = `You are surgically updating one section of a website.
+
+UPDATE MODE: Output ONLY the new inner HTML for the requested section.
+
+RULES:
+• Output ONLY the inner HTML that replaces the content inside the target section's data-section-id wrapper.
+• Do NOT output the section wrapper tag itself. Do NOT change any other section.
+• Keep all existing IDs and data attributes.
+• No markdown fences, no prose, just the raw HTML fragment.`;
+
+// Assemble full HTML from staged fragments — rendered inside sandbox.html so Tailwind CDN works
+function assembleStagedHtml(bodyHtml, styleCss, scriptJs) {
+  const customCss = styleCss ? '\n    ' + styleCss.split('\n').join('\n    ') : '';
+  const script = scriptJs ? '\n<script>\n' + scriptJs + '\n<\/script>' : '';
+  return `<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aion Build</title>
+
+  <!-- Tailwind CSS — works because this document runs inside sandbox.html (relaxed CSP) -->
+  <script src="https://cdn.tailwindcss.com"><\/script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"><\/script>
+
+  <!-- Tailwind custom tokens -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  <\/script>
+
+  <style>
+    /* ── Reset ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    /* ── Design tokens ──────────────────────────────────────── */
+    :root {
+      --bg:           #07070f;
+      --text:         #f0f0ff;
+      --text-muted:   #94a3b8;
+      --accent:       #6366f1;
+      --accent-glow:  rgba(99,102,241,0.18);
+      --card-bg:      rgba(255,255,255,0.03);
+      --card-border:  rgba(255,255,255,0.08);
+      --radius:       14px;
+    }
+
+    /* ── Base ───────────────────────────────────────────────── */
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout helpers (replaces Tailwind grid utilities) ──── */
+    .container { width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .grid { display: grid; gap: 24px; }
+    .flex { display: flex; }
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+    .flex-between { display: flex; align-items: center; justify-content: space-between; }
+    @media (min-width: 640px)  { .sm-col-2 { grid-template-columns: repeat(2,1fr); } }
+    @media (min-width: 768px)  { .md-col-2 { grid-template-columns: repeat(2,1fr); } .md-col-3 { grid-template-columns: repeat(3,1fr); } }
+    @media (min-width: 1024px) { .lg-col-2 { grid-template-columns: repeat(2,1fr); } .lg-col-3 { grid-template-columns: repeat(3,1fr); } .lg-col-4 { grid-template-columns: repeat(4,1fr); } }
+
+    /* ── Glassmorphism card ─────────────────────────────────── */
+    .glass-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), border-color 0.2s;
+    }
+    .glass-card:hover { transform: translateY(-4px); border-color: rgba(99,102,241,0.4); }
+
+    /* ── Gradient text helper ───────────────────────────────── */
+    .gradient-text {
+      background: linear-gradient(135deg, var(--accent) 0%, #ec4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Glow button ────────────────────────────────────────── */
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      background: linear-gradient(135deg, var(--accent) 0%, #ec4899 100%);
+      color: #fff; font-weight: 700; border: none; cursor: pointer;
+      padding: 14px 28px; border-radius: 999px;
+      box-shadow: 0 0 32px -8px var(--accent-glow);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover { transform: scale(1.04); box-shadow: 0 0 48px -8px var(--accent-glow); }
+    .btn-primary:active { transform: scale(0.97); }
+
+    /* ── Scroll-reveal ──────────────────────────────────────── */
+    .reveal { transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1); }
+    .reveal:not(.visible) { opacity: 0; transform: translateY(22px); }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* ── Generated CSS from L2 ──────────────────────────────── */
+    ${customCss}
+  </style>
+</head>
+<body>
+
+${bodyHtml || ''}
+
+${script}
+</body>
+</html>`;
+}
+
+// Extract a raw text fragment from AI response (strips markdown fences)
+function extractFragment(text) {
+  if (!text) return '';
+  return text.replace(/^```[\w]*\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+}
+
+// Get images from IndexedDB (unlimited storage) or fallback to session storage
+async function initializeChat() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const count = urlParams.get('count');
+  const isDirect = urlParams.get('direct') === 'true';
+  const isContextMenu = urlParams.get('source') === 'contextmenu';
+  
+  // Get metadata from session storage
+  const result = await chrome.storage.session.get(['pageText', 'useIndexedDB', 'selectedSnaps', 'selectedSnap', 'askAiPayload']);
+  currentPageText = result.pageText || '';
+
+  if (isContextMenu) {
+    const storageError = urlParams.get('error');
+    if (storageError === 'storage') {
+      currentImages = [];
+      const previewContainer = document.querySelector('.image-preview');
+      previewContainer.innerHTML = `
+        <div style="padding: 20px; text-align: center; color: #ff6b6b;">
+          <div style="font-size: 42px; margin-bottom: 8px;">⚠️</div>
+          <div style="font-size: 14px; font-weight: 600;">Couldn't load page context</div>
+          <div style="font-size: 11px; color: #889999; margin-top: 8px; line-height: 1.5;">
+            Storage limit reached. Try right-clicking again<br>or use the AI button in the popup instead.
+          </div>
+        </div>
+      `;
+      setupMagicButtons();
+      document.getElementById('chatInput').focus();
+      return;
+    }
+
+    if (!result.askAiPayload) {
+      currentImages = [];
+      const previewContainer = document.querySelector('.image-preview');
+      previewContainer.innerHTML = `
+        <div style="padding: 20px; text-align: center; color: #ff6b6b;">
+          <div style="font-size: 42px; margin-bottom: 8px;">⚠️</div>
+          <div style="font-size: 14px; font-weight: 600;">Context not found</div>
+          <div style="font-size: 11px; color: #889999; margin-top: 8px; line-height: 1.5;">
+            Page context expired or failed to load.<br>Please right-click the page again to retry.
+          </div>
+        </div>
+      `;
+      setupMagicButtons();
+      document.getElementById('chatInput').focus();
+      return;
+    }
+
+    console.log('[SnapToAI] Context menu mode - auto-analyzing');
+    const payload = result.askAiPayload;
+    const ctx = payload.context || {};
+
+    if (payload.screenshot) {
+      currentImages = [payload.screenshot];
+      const previewContainer = document.querySelector('.image-preview');
+      const placeholder = document.getElementById('imagePlaceholder');
+      if (placeholder) placeholder.style.display = 'none';
+      document.getElementById('previewImage').src = payload.screenshot;
+    }
+
+    let contextInfo = '';
+    if (ctx.url) contextInfo += `**Page:** ${ctx.title || ctx.url}\n`;
+    if (ctx.selectedText) contextInfo += `**Selected text:** ${ctx.selectedText.substring(0, 3000)}\n`;
+    if (ctx.linkUrl) contextInfo += `**Link:** ${ctx.linkUrl}\n`;
+    if (ctx.srcUrl) contextInfo += `**Image source:** ${ctx.srcUrl}\n`;
+
+    let codeContext = '';
+    if (ctx.visibleCodeBlocks && ctx.visibleCodeBlocks.length > 0 && !ctx.selectedText) {
+      codeContext = '\n\n**Code visible on page:**\n```\n' + ctx.visibleCodeBlocks.join('\n---\n').substring(0, 4000) + '\n```';
+    }
+
+    const fallback = DEFAULT_MAGIC_BUTTONS.find(b => b.isFallback) || DEFAULT_MAGIC_BUTTONS[0];
+    let autoPrompt = fallback.prompt;
+    if (ctx.selectedText) {
+      autoPrompt += `\n\nSelected text: ${ctx.selectedText.substring(0, 3000)}`;
+    }
