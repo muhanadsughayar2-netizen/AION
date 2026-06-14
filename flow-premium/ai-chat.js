@@ -5214,6 +5214,7 @@ function showBroadcastCard(thread) {
   const FORMATS = [
     { key: 'talkshow',     label: '🎙️ Talk Show' },
     { key: 'tutorial',     label: '📚 Tutorial' },
+    { key: 'trailer',      label: '🎬 Trailer' },
     { key: 'appdemo',      label: '🚀 App Demo' },
     { key: 'presentation', label: '📊 Presentation' },
     { key: 'narrator',     label: '🎬 Narrator' },
@@ -5338,6 +5339,7 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
       appdemo:      `You are a scriptwriter creating an app or product demo broadcast.\n\n${base}\n\nZEPHYR = main presenter showcasing features enthusiastically, KORE = excited first-time user reacting, FENRIR = technical expert adding context. Start with ZEPHYR with a strong opening hook.`,
       presentation: `You are a scriptwriter creating a professional business presentation broadcast.\n\n${base}\n\nZEPHYR = main presenter delivering key points, KORE = co-presenter adding supporting evidence, FENRIR = reinforces and summarizes takeaways. Professional, polished language. Start with ZEPHYR with an executive summary.`,
       narrator:     `You are a scriptwriter creating a documentary-style narrative broadcast.\n\n${base}\n\nZEPHYR = primary narrator (~50% of lines), KORE = provides perspective and counterpoint (~30%), FENRIR = delivers impactful conclusions (~20%). Measured, compelling language. Start with ZEPHYR.`,
+      trailer:      `You are writing a HOLLYWOOD BLOCKBUSTER MOVIE TRAILER voiceover script. ONE narrator only — FENRIR — no other speakers.\n\n${base}\n\nCRITICAL RULES:\n- EVERY line MUST start with "FENRIR:" — no ZEPHYR, no KORE, no exceptions.\n- Write exactly ${exchanges} lines, each 5-20 words — SHORT and PUNCHY.\n- Tone: EPIC, cinematic, world-changing, urgent, electrifying. Think Christopher Nolan meets Apple Keynote.\n- NO questions from anyone. This is a powerful dramatic MONOLOGUE.\n- Use "..." for dramatic pauses within a line. Build intensity with each line.\n\nNARRATIVE ARC (hit every beat):\n1. Lines 1-2: Explosive world-setting hook — paint the world BEFORE ("In a world where chaos rules the screen...")\n2. Lines 3-4: The problem — what was missing, what was broken, what was impossible\n3. Lines 5-${Math.max(6,Math.floor(exchanges*0.55))}: Rising intensity — introduce the hero. Name it. Reveal its power. Drop feature after feature like punches.\n4. Lines ${Math.max(7,Math.floor(exchanges*0.55)+1)}-${exchanges-2}: CLIMAX — peak excitement, game-changing moment, the world transformed\n5. Lines ${exchanges-1}-${exchanges}: ICONIC TAGLINE and rallying call to action — make it unforgettable.\n\nEnd on something that sends chills. Make every word earn its place.`,
     };
     return map[format] || map.talkshow;
   }
@@ -5350,6 +5352,7 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
       appdemo:      'Speak enthusiastically as if presenting an exciting product demo: ',
       presentation: 'Speak professionally and authoritatively as in a business presentation: ',
       narrator:     'Speak like a compelling documentary narrator, measured and thoughtful: ',
+      trailer:      'You are a legendary Hollywood movie trailer voice. Deliver every word with earth-shaking gravitas, dramatic power, and cinematic intensity — as if the fate of the world depends on it: ',
     };
     return map[format] || map.talkshow;
   }
@@ -5391,6 +5394,7 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
         <button class="bc-pill bc-fmt" data-fmt="appdemo">🚀 App Demo</button>
         <button class="bc-pill bc-fmt" data-fmt="presentation">📊 Presentation</button>
         <button class="bc-pill bc-fmt" data-fmt="narrator">🎬 Narrator</button>
+        <button class="bc-pill bc-fmt bc-fmt-trailer" data-fmt="trailer" style="border-color:rgba(234,179,8,0.35);color:#eab308;background:rgba(234,179,8,0.06);">🎥 Trailer</button>
       </div>
     </div>
 
@@ -5490,9 +5494,31 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
   // ── Format tabs ───────────────────────────────────────────────
   card.querySelectorAll('.bc-fmt').forEach(btn => {
     btn.addEventListener('click', () => {
-      card.querySelectorAll('.bc-fmt').forEach(b => b.classList.remove('active'));
+      card.querySelectorAll('.bc-fmt').forEach(b => {
+        b.classList.remove('active');
+        // Reset trailer button back to gold idle style
+        if (b.dataset.fmt === 'trailer') {
+          b.style.borderColor = 'rgba(234,179,8,0.35)';
+          b.style.color = '#eab308';
+          b.style.background = 'rgba(234,179,8,0.06)';
+        }
+      });
       btn.classList.add('active');
       selFormat = btn.dataset.fmt;
+      // Trailer: override active style to gold + auto-select Cinematic music
+      if (selFormat === 'trailer') {
+        btn.style.borderColor = 'rgba(234,179,8,0.55)';
+        btn.style.color = '#fde047';
+        btn.style.background = 'rgba(234,179,8,0.16)';
+        btn.style.fontWeight = '700';
+        const cinBtn = card.querySelector('.bc-trk[data-trk="cinematic"]');
+        if (cinBtn) cinBtn.click();
+      } else {
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        btn.style.background = '';
+        btn.style.fontWeight = '';
+      }
     });
   });
 
