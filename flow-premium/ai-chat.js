@@ -6891,7 +6891,7 @@ async function initializeChat() {
     }
 
     const fallback = DEFAULT_MAGIC_BUTTONS.find(b => b.isFallback) || DEFAULT_MAGIC_BUTTONS[0];
-    let autoPrompt = fallback.prompt;
+    let autoPrompt = fallback?.prompt || 'Analyze this page and tell me what you see.';
     if (ctx.selectedText) {
       autoPrompt += `\n\nSelected text: ${ctx.selectedText.substring(0, 3000)}`;
     }
