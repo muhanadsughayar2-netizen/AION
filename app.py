@@ -35,11 +35,18 @@ def get_db():
 
 # Initialize database table for trial tracking
 def _safe_exec(cur, sql, label=''):
-    """Run a single SQL statement; log and ignore errors so one bad migration never blocks init."""
+    """Run one SQL statement in its own savepoint so a failure never aborts the transaction."""
+    sp = 'sp_' + re.sub(r'[^a-z0-9]', '_', label.lower())[:30]
     try:
+        cur.execute(f'SAVEPOINT {sp}')
         cur.execute(sql)
+        cur.execute(f'RELEASE SAVEPOINT {sp}')
     except Exception as e:
         print(f'⚠️  Migration skipped [{label}]: {type(e).__name__}: {e}')
+        try:
+            cur.execute(f'ROLLBACK TO SAVEPOINT {sp}')
+        except Exception:
+            pass
 
 def init_db():
     try:
