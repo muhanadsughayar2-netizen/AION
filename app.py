@@ -20,8 +20,8 @@ app = Flask(__name__, static_folder=None)
 
 # Database connection - Use Supabase (external) if available, otherwise Replit DB
 def get_db():
-    # Prefer Supabase for production reliability
-    db_url = os.environ.get('SUPABASE_DATABASE_URL') or os.environ.get('DATABASE_URL')
+    # Prefer Replit's built-in DB (always available in deployment), fall back to Supabase
+    db_url = os.environ.get('DATABASE_URL') or os.environ.get('SUPABASE_DATABASE_URL')
     if not db_url:
         raise Exception("No database URL set")
     try:
@@ -32,10 +32,10 @@ def get_db():
 # Initialize database table for trial tracking
 def init_db():
     try:
-        replit_url = os.environ.get('SUPABASE_DATABASE_URL') or os.environ.get('DATABASE_URL')
+        replit_url = os.environ.get('DATABASE_URL') or os.environ.get('SUPABASE_DATABASE_URL')
         db_url = replit_url
         print(f'🔍 DB URL exists: {bool(replit_url)}')
-        print(f'🔍 Using: {"Supabase" if os.environ.get("SUPABASE_DATABASE_URL") else "Replit DB" if replit_url else "None"}')
+        print(f'🔍 Using: {"Replit DB" if os.environ.get("DATABASE_URL") else "Supabase" if replit_url else "None"}')
         if not db_url:
             print('❌ No database URL set in environment')
             return False
