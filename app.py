@@ -1844,7 +1844,22 @@ def admin_panel():
     password = ADMIN_PASSWORD  # For filter links
     
     if not ensure_db():
-        return Response("Database not available", status=503)
+        # Show actual error for debugging
+        try:
+            db_url = os.environ.get('SUPABASE_DATABASE_URL') or os.environ.get('DATABASE_URL')
+            if not db_url:
+                err_detail = "No database URL found in environment (checked SUPABASE_DATABASE_URL and DATABASE_URL)"
+            else:
+                url_hint = db_url[:30] + '...' if len(db_url) > 30 else db_url
+                try:
+                    import psycopg2 as _pg
+                    _pg.connect(db_url, sslmode='require', connect_timeout=5)
+                    err_detail = f"Connection succeeded but init_db failed. URL hint: {url_hint}"
+                except Exception as ce:
+                    err_detail = f"Connection failed: {type(ce).__name__}: {ce} | URL hint: {url_hint}"
+        except Exception as de:
+            err_detail = f"Debug check error: {de}"
+        return Response(f"Database not available\n\nDetail: {err_detail}", status=503, content_type='text/plain')
     
     # Get filter parameters
     filter_status = request.args.get('status', 'all')
