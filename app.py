@@ -20,14 +20,18 @@ app = Flask(__name__, static_folder=None)
 
 # Database connection - Use Supabase (external) if available, otherwise Replit DB
 def get_db():
-    # Prefer Replit's built-in DB (always available in deployment), fall back to Supabase
-    db_url = os.environ.get('DATABASE_URL') or os.environ.get('SUPABASE_DATABASE_URL')
-    if not db_url:
-        raise Exception("No database URL set")
-    try:
-        return psycopg2.connect(db_url, sslmode='require')
-    except Exception:
-        return psycopg2.connect(db_url, sslmode='disable')
+    # Try Replit DB first, then Supabase
+    for env_key in ('DATABASE_URL', 'SUPABASE_DATABASE_URL'):
+        db_url = os.environ.get(env_key)
+        if not db_url:
+            continue
+        for ssl in ('require', 'disable'):
+            try:
+                conn = psycopg2.connect(db_url, sslmode=ssl, connect_timeout=8)
+                return conn
+            except Exception:
+                continue
+    raise Exception("No working database connection found")
 
 # Initialize database table for trial tracking
 def init_db():
