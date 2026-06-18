@@ -34,6 +34,13 @@ def get_db():
     raise Exception("No working database connection found")
 
 # Initialize database table for trial tracking
+def _safe_exec(cur, sql, label=''):
+    """Run a single SQL statement; log and ignore errors so one bad migration never blocks init."""
+    try:
+        cur.execute(sql)
+    except Exception as e:
+        print(f'⚠️  Migration skipped [{label}]: {type(e).__name__}: {e}')
+
 def init_db():
     try:
         replit_url = os.environ.get('DATABASE_URL') or os.environ.get('SUPABASE_DATABASE_URL')
@@ -45,7 +52,9 @@ def init_db():
             return False
         conn = get_db()
         cur = conn.cursor()
-        cur.execute('''
+
+        # Core tables — each wrapped so one failure never blocks the rest
+        _safe_exec(cur, '''
             CREATE TABLE IF NOT EXISTS user_trials (
                 user_hash VARCHAR(64) PRIMARY KEY,
                 trial_start_date BIGINT NOT NULL,
@@ -56,9 +65,8 @@ def init_db():
                 last_active BIGINT,
                 usage_count INTEGER DEFAULT 0
             )
-        ''')
-        # IP-based trial tracking table - prevents trial abuse by tracking per IP
-        cur.execute('''
+        ''', 'create user_trials')
+        _safe_exec(cur, '''
             CREATE TABLE IF NOT EXISTS ip_trials (
                 ip_address VARCHAR(45) PRIMARY KEY,
                 trial_start_date BIGINT NOT NULL,
@@ -66,10 +74,8 @@ def init_db():
                 last_active BIGINT,
                 api_key_count INTEGER DEFAULT 1
             )
-        ''')
-        # Device-based trial tracking table - most reliable, persists across IP changes
-        print('📦 Creating device_trials table if not exists...')
-        cur.execute('''
+        ''', 'create ip_trials')
+        _safe_exec(cur, '''
             CREATE TABLE IF NOT EXISTS device_trials (
                 device_id VARCHAR(60) PRIMARY KEY,
                 trial_start_date BIGINT NOT NULL,
@@ -77,9 +83,8 @@ def init_db():
                 last_active BIGINT,
                 api_key_count INTEGER DEFAULT 1
             )
-        ''')
-        print('✅ device_trials table ready')
-        cur.execute('''
+        ''', 'create device_trials')
+        _safe_exec(cur, '''
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 email TEXT UNIQUE NOT NULL,
@@ -90,8 +95,8 @@ def init_db():
                 last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 capture_count INTEGER DEFAULT 0
             )
-        ''')
-        cur.execute('''
+        ''', 'create users')
+        _safe_exec(cur, '''
             CREATE TABLE IF NOT EXISTS user_activity (
                 id SERIAL PRIMARY KEY,
                 email TEXT,
@@ -99,20 +104,17 @@ def init_db():
                 details TEXT,
                 created_at TIMESTAMP DEFAULT NOW()
             )
-        ''')
-        cur.execute('ALTER TABLE user_activity ADD COLUMN IF NOT EXISTS device_id TEXT')
-        # Lightweight aggregate so we can show a single "total captures across
-        # ALL users (signed-in + anonymous)" headline number on the dashboard
-        # without scanning user_activity every time.
-        cur.execute('''
+        ''', 'create user_activity')
+        _safe_exec(cur, 'ALTER TABLE user_activity ADD COLUMN IF NOT EXISTS device_id TEXT', 'user_activity.device_id')
+        _safe_exec(cur, '''
             CREATE TABLE IF NOT EXISTS anon_capture_stats (
                 device_id TEXT PRIMARY KEY,
                 capture_count INTEGER DEFAULT 0,
                 first_seen TIMESTAMP DEFAULT NOW(),
                 last_seen TIMESTAMP DEFAULT NOW()
             )
-        ''')
-        cur.execute('''
+        ''', 'create anon_capture_stats')
+        _safe_exec(cur, '''
             CREATE TABLE IF NOT EXISTS subscriptions (
                 id SERIAL PRIMARY KEY,
                 email TEXT UNIQUE NOT NULL,
@@ -128,8 +130,8 @@ def init_db():
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
             )
-        ''')
-        cur.execute('''
+        ''', 'create subscriptions')
+        _safe_exec(cur, '''
             CREATE TABLE IF NOT EXISTS free_prompts (
                 id SERIAL PRIMARY KEY,
                 identifier TEXT UNIQUE NOT NULL,
@@ -137,8 +139,8 @@ def init_db():
                 last_used TIMESTAMP DEFAULT NOW(),
                 created_at TIMESTAMP DEFAULT NOW()
             )
-        ''')
-        cur.execute('''
+        ''', 'create free_prompts')
+        _safe_exec(cur, '''
             CREATE TABLE IF NOT EXISTS video_jobs (
                 id SERIAL PRIMARY KEY,
                 operation_id TEXT UNIQUE NOT NULL,
@@ -151,114 +153,90 @@ def init_db():
                 created_at TIMESTAMP DEFAULT NOW(),
                 completed_at TIMESTAMP
             )
-        ''')
-        print('✅ users, user_activity, subscriptions, free_prompts, video_jobs tables ready')
-        # Add columns if missing (for existing tables)
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE')
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS browser_language VARCHAR(10)')
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS extension_version VARCHAR(20)')
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS last_active BIGINT')
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0')
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS license_key VARCHAR(64)')
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS plan_type VARCHAR(20)')
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS subscription_expires BIGINT')
-        # IP tracking and user data
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45)')
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS country VARCHAR(50)')
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS city VARCHAR(100)')
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS timezone VARCHAR(50)')
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS user_agent TEXT')
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS screen_resolution VARCHAR(20)')
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS platform VARCHAR(30)')
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS device_type VARCHAR(20)')
-        cur.execute('ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS device_id VARCHAR(60)')
+        ''', 'create video_jobs')
 
-        # === INSTITUTIONS (white-label multi-tenant) ===
-        cur.execute('''
+        # Column migrations — all safe individually
+        for col_sql in [
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS browser_language VARCHAR(10)',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS extension_version VARCHAR(20)',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS last_active BIGINT',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS license_key VARCHAR(64)',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS plan_type VARCHAR(20)',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS subscription_expires BIGINT',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45)',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS country VARCHAR(50)',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS city VARCHAR(100)',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS timezone VARCHAR(50)',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS user_agent TEXT',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS screen_resolution VARCHAR(20)',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS platform VARCHAR(30)',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS device_type VARCHAR(20)',
+            'ALTER TABLE user_trials ADD COLUMN IF NOT EXISTS device_id VARCHAR(60)',
+        ]:
+            _safe_exec(cur, col_sql, col_sql[12:50])
+
+        # Institutions
+        _safe_exec(cur, '''
             CREATE TABLE IF NOT EXISTS institutions (
                 id SERIAL PRIMARY KEY,
                 slug VARCHAR(60) UNIQUE NOT NULL,
                 name TEXT NOT NULL,
                 logo_url TEXT,
-                brand_color VARCHAR(20) DEFAULT '#00d9ff',
+                brand_color VARCHAR(20) DEFAULT \'#00d9ff\',
                 primary_admin_email TEXT,
                 seat_limit INTEGER DEFAULT 50,
                 expires_at TIMESTAMP,
-                status VARCHAR(20) DEFAULT 'active',
+                status VARCHAR(20) DEFAULT \'active\',
                 allowed_domains TEXT,
                 notes TEXT,
                 branding_locked BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
             )
-        ''')
-        # Backfill for installs predating branding_locked.
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS branding_locked BOOLEAN DEFAULT FALSE")
-        # Optional light-mode logo variant (Task #20). Falls back to logo_url
-        # when NULL so existing single-logo institutions keep working untouched.
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_url_light TEXT")
-        # Task #40 — full 8-slot brand palette. brand_color (slot 5 = primary
-        # action) already exists. The 7 columns below are nullable so any
-        # institution that hasn't customized them keeps falling back to the
-        # default dark theme — zero visual regression for existing tenants.
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_page_bg VARCHAR(20)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_card_bg VARCHAR(20)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_text_primary VARCHAR(20)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_text_muted VARCHAR(20)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_header_color VARCHAR(20)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_highlight_color VARCHAR(20)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_border_color VARCHAR(20)")
-        # Task #41 — 9th palette slot. Controls ::selection (text-highlight
-        # "canyon blue") + checkbox/radio accent-color. Added so each
-        # institution can fully control the highlight color when users
-        # drag-select text in the popup, side panel, or AI chat.
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_selection_color VARCHAR(20)")
-        # Task #41 — logo persistence across deploys. Replit's deployment
-        # filesystem is ephemeral (files written under static/ are wiped on
-        # every redeploy), which made institution logos vanish when admin
-        # republished the extension landing page. Storing the binary in
-        # Postgres survives all deploys; the file on disk is now just a
-        # cache that's lazily rebuilt from the DB on first request.
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_blob BYTEA")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_blob_light BYTEA")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_mime VARCHAR(40)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_mime_light VARCHAR(40)")
-        # Task #27 — institution-shared Gemini/Vertex key.
-        # gemini_key_encrypted holds a Fernet ciphertext (never plaintext); gemini_key_hint
-        # stores the last 4 visible chars for the masked admin preview. key_policy controls
-        # who wins when both an institution key and a member BYOK key exist:
-        #   'institution-only'        — members can't override; BYOK input is hidden
-        #   'prefer-institution-key'  — institution key wins, BYOK is a fallback
-        #   'prefer-user-key'         — member BYOK wins, institution key is the fallback
-        # billing_behavior controls the SnapToAI free-prompt meter when the institution
-        # key is the one actually used:
-        #   'count-against-snaptoai-quota' — default; still decrements free_prompts
-        #   'bypass-snaptoai-quota'        — institution pays Google directly, no metering
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS gemini_key_encrypted TEXT")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS gemini_key_hint VARCHAR(20)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_policy VARCHAR(30) DEFAULT 'prefer-user-key'")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS billing_behavior VARCHAR(30) DEFAULT 'count-against-snaptoai-quota'")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_set_at TIMESTAMP")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_last_rotated_at TIMESTAMP")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_last_used_at TIMESTAMP")
-        cur.execute('''
+        ''', 'create institutions')
+        for col_sql in [
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS branding_locked BOOLEAN DEFAULT FALSE",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_url_light TEXT",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_page_bg VARCHAR(20)",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_card_bg VARCHAR(20)",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_text_primary VARCHAR(20)",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_text_muted VARCHAR(20)",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_header_color VARCHAR(20)",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_highlight_color VARCHAR(20)",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_border_color VARCHAR(20)",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_selection_color VARCHAR(20)",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_blob BYTEA",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_blob_light BYTEA",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_mime VARCHAR(40)",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_mime_light VARCHAR(40)",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS gemini_key_encrypted TEXT",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS gemini_key_hint VARCHAR(20)",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_policy VARCHAR(30) DEFAULT 'prefer-user-key'",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS billing_behavior VARCHAR(30) DEFAULT 'count-against-snaptoai-quota'",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_set_at TIMESTAMP",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_last_rotated_at TIMESTAMP",
+            "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_last_used_at TIMESTAMP",
+        ]:
+            _safe_exec(cur, col_sql, col_sql[12:50])
+
+        _safe_exec(cur, '''
             CREATE TABLE IF NOT EXISTS institution_members (
                 id SERIAL PRIMARY KEY,
                 institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
                 email TEXT NOT NULL,
-                role VARCHAR(20) DEFAULT 'member',
-                status VARCHAR(20) DEFAULT 'active',
+                role VARCHAR(20) DEFAULT \'member\',
+                status VARCHAR(20) DEFAULT \'active\',
                 invited_by TEXT,
                 joined_at TIMESTAMP DEFAULT NOW(),
                 last_seen TIMESTAMP,
                 UNIQUE (institution_id, email)
             )
-        ''')
-        cur.execute('CREATE INDEX IF NOT EXISTS idx_inst_members_email ON institution_members(LOWER(email))')
-        # Per-member access expiry — admin can grant 1-month / 3-month / etc.
-        # access. NULL = no expiry (lifetime, until removed/suspended).
-        cur.execute("ALTER TABLE institution_members ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP")
-        cur.execute('''
+        ''', 'create institution_members')
+        _safe_exec(cur, 'CREATE INDEX IF NOT EXISTS idx_inst_members_email ON institution_members(LOWER(email))', 'idx_inst_members_email')
+        _safe_exec(cur, "ALTER TABLE institution_members ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP", 'inst_members.expires_at')
+        _safe_exec(cur, '''
             CREATE TABLE IF NOT EXISTS institution_invites (
                 id SERIAL PRIMARY KEY,
                 institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
@@ -270,13 +248,9 @@ def init_db():
                 created_by TEXT,
                 created_at TIMESTAMP DEFAULT NOW()
             )
-        ''')
-        cur.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS institution_id INTEGER')
-        # Task #37 — admin accountability audit log. Records who did what
-        # inside an institution (invites, suspends, key rotations, branding
-        # edits, policy changes, etc.) so admins can answer "who suspended
-        # Alice last week?" without digging through server logs.
-        cur.execute('''
+        ''', 'create institution_invites')
+        _safe_exec(cur, 'ALTER TABLE users ADD COLUMN IF NOT EXISTS institution_id INTEGER', 'users.institution_id')
+        _safe_exec(cur, '''
             CREATE TABLE IF NOT EXISTS institution_audit_log (
                 id SERIAL PRIMARY KEY,
                 institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
@@ -286,49 +260,45 @@ def init_db():
                 meta JSONB,
                 created_at TIMESTAMP DEFAULT NOW()
             )
-        ''')
-        cur.execute('CREATE INDEX IF NOT EXISTS idx_inst_audit_inst_time ON institution_audit_log(institution_id, created_at DESC)')
-        print('✅ institutions, institution_members, institution_invites, institution_audit_log tables ready')
+        ''', 'create institution_audit_log')
+        _safe_exec(cur, 'CREATE INDEX IF NOT EXISTS idx_inst_audit_inst_time ON institution_audit_log(institution_id, created_at DESC)', 'idx_inst_audit')
 
         conn.commit()
-        
+        print('✅ All tables and migrations done')
+
         # === MIGRATION: Seed ip_trials from existing user_trials ===
-        # Get earliest trial_start_date for each IP from user_trials
-        # Use DO UPDATE to always use the EARLIEST date (anti-cheat fix)
-        cur.execute('''
-            INSERT INTO ip_trials (ip_address, trial_start_date, last_active, api_key_count)
-            SELECT 
-                ip_address,
-                MIN(trial_start_date) as trial_start_date,
-                MAX(last_active) as last_active,
-                COUNT(*) as api_key_count
-            FROM user_trials 
-            WHERE ip_address IS NOT NULL 
-              AND ip_address != '' 
-              AND ip_address != '127.0.0.1'
-            GROUP BY ip_address
-            ON CONFLICT (ip_address) DO UPDATE SET
-                trial_start_date = LEAST(ip_trials.trial_start_date, EXCLUDED.trial_start_date),
-                api_key_count = GREATEST(ip_trials.api_key_count, EXCLUDED.api_key_count)
-        ''')
-        migrated_count = cur.rowcount
-        if migrated_count > 0:
-            print(f'📦 Migrated {migrated_count} IP addresses to ip_trials table')
-        conn.commit()
-        
-        # === AUTO-FIX: Sync all user_trials to use their IP's earliest trial date ===
-        cur.execute('''
-            UPDATE user_trials ut
-            SET trial_start_date = ip.trial_start_date
-            FROM ip_trials ip
-            WHERE ut.ip_address = ip.ip_address
-              AND ut.trial_start_date > ip.trial_start_date
-        ''')
-        fixed_count = cur.rowcount
-        if fixed_count > 0:
-            print(f'🔧 Auto-fixed {fixed_count} users to use their IP earliest trial date')
-        conn.commit()
-        
+        try:
+            cur.execute('''
+                INSERT INTO ip_trials (ip_address, trial_start_date, last_active, api_key_count)
+                SELECT ip_address, MIN(trial_start_date), MAX(last_active), COUNT(*)
+                FROM user_trials
+                WHERE ip_address IS NOT NULL AND ip_address != '' AND ip_address != '127.0.0.1'
+                GROUP BY ip_address
+                ON CONFLICT (ip_address) DO UPDATE SET
+                    trial_start_date = LEAST(ip_trials.trial_start_date, EXCLUDED.trial_start_date),
+                    api_key_count = GREATEST(ip_trials.api_key_count, EXCLUDED.api_key_count)
+            ''')
+            if cur.rowcount > 0:
+                print(f'📦 Migrated {cur.rowcount} IPs to ip_trials')
+            conn.commit()
+        except Exception as e:
+            print(f'⚠️  ip_trials migration skipped: {e}')
+            conn.rollback()
+
+        # === AUTO-FIX: Sync trial dates ===
+        try:
+            cur.execute('''
+                UPDATE user_trials ut SET trial_start_date = ip.trial_start_date
+                FROM ip_trials ip
+                WHERE ut.ip_address = ip.ip_address AND ut.trial_start_date > ip.trial_start_date
+            ''')
+            if cur.rowcount > 0:
+                print(f'🔧 Auto-fixed {cur.rowcount} trial dates')
+            conn.commit()
+        except Exception as e:
+            print(f'⚠️  trial date sync skipped: {e}')
+            conn.rollback()
+
         cur.close()
         conn.close()
         print('✅ Database initialized successfully')
