@@ -928,6 +928,12 @@ const AI_MODES = {
     type: 'gemini-video',
     placeholder: 'Describe the video you want to create...',
     welcome: '🎬 Video mode — describe a scene and I\'ll bring it to life!'
+  },
+  'broadcast': {
+    model: MODELS.chat,
+    type: 'gemini',
+    placeholder: 'Broadcast Studio is ready — use the card below…',
+    welcome: '🎙️ Broadcast Studio — turn any content into a multi-voice AI broadcast. Talk show, tutorial, app demo, presentation, or narrator.'
   }
 };
 
@@ -1084,13 +1090,21 @@ function initModeButtons() {
         const notice = document.createElement('div');
         notice.className = 'chat-bubble ai mode-switch-notice';
         notice.style.cssText = 'font-size: 14px; padding: 10px 16px; border-left: 3px solid; margin: 4px 0;';
-        const borderColors = { 'vision': '#4285F4', 'image': '#8ab4f8', 'music': '#8ab4f8', 'video': '#8ab4f8' };
+        const borderColors = { 'vision': '#4285F4', 'image': '#8ab4f8', 'music': '#8ab4f8', 'video': '#8ab4f8', 'broadcast': '#2dd4bf' };
         notice.style.borderLeftColor = borderColors[mode] || '#4285F4';
         notice.textContent = cfg.welcome;
         thread.appendChild(notice);
         
         if (mode === 'video') {
           showVideoStudio(thread);
+        }
+
+        if (mode === 'music') {
+          showSongStudio(thread);
+        }
+
+        if (mode === 'broadcast') {
+          showBroadcastCard(thread);
         }
         
         thread.scrollTop = thread.scrollHeight;
@@ -5169,6 +5183,828 @@ function showSongStudio(thread) {
     studio.querySelector('.studio-surprise-btn').textContent = '🎲 Again!';
   });
 }
+
+// BROADCAST STUDIO  — 3-voice AI broadcast (Zephyr/Kore/Fenrir)
+// Formats: Talk Show / Tutorial / App Demo / Presentation / Narrator
+// Triggered when the user enters Broadcast mode.
+// ─────────────────────────────────────────────────────────────────────────────
+function showBroadcastCard(thread) {
+  const existing = thread.querySelector('.broadcast-card');
+  if (existing) existing.remove();
+
+  if (!document.getElementById('bc-styles')) {
+    const s = document.createElement('style');
+    s.id = 'bc-styles';
+    s.textContent = `@keyframes bcPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.35;transform:scale(0.72)}}
+.bc-pill{padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#8899aa;font-size:11px;cursor:pointer;transition:all 0.18s;white-space:nowrap;line-height:1.6;}
+.bc-fmt.active{background:rgba(45,212,191,0.14);border-color:rgba(45,212,191,0.38);color:#2dd4bf;font-weight:700;}
+.bc-dur.active{background:rgba(167,139,250,0.14);border-color:rgba(167,139,250,0.38);color:#a78bfa;font-weight:700;}
+.bc-trk.active{background:rgba(251,191,36,0.12);border-color:rgba(251,191,36,0.33);color:#fbbf24;font-weight:700;}
+.bc-pill:hover{opacity:0.82;}`;
+    document.head.appendChild(s);
+  }
+
+  const SPEAKERS = {
+    ZEPHYR: { voice: 'Zephyr', role: 'Host',     color: '#2dd4bf', icon: '🎙️' },
+    KORE:   { voice: 'Kore',   role: 'Expert',   color: '#a78bfa', icon: '🎓' },
+    FENRIR: { voice: 'Fenrir', role: 'Creative', color: '#f97316', icon: '⚡' },
+  };
+
+  const FORMATS = [
+    { key: 'talkshow',     label: '🎙️ Talk Show' },
+    { key: 'tutorial',     label: '📚 Tutorial' },
+    { key: 'trailer',      label: '🎬 Trailer' },
+    { key: 'appdemo',      label: '🚀 App Demo' },
+    { key: 'presentation', label: '📊 Presentation' },
+    { key: 'narrator',     label: '🎬 Narrator' },
+  ];
+
+  const DURATIONS = [
+    { key: '1',  label: '1 min',  exchanges: 8  },
+    { key: '3',  label: '3 min',  exchanges: 18 },
+    { key: '5',  label: '5 min',  exchanges: 28 },
+    { key: '10', label: '10 min', exchanges: 45 },
+  ];
+
+  const TRACKS = [
+    { key: 'none',      label: '🚫 None',      prompt: null },
+    { key: 'lofi',      label: '☁️ Lo-fi',     prompt: 'Soft instrumental lo-fi background music for a podcast. Calm, warm, professional atmosphere. No vocals. Mellow backdrop beneath conversation.' },
+    { key: 'cinematic', label: '🎬 Cinematic', prompt: 'Epic cinematic orchestral background music. Dramatic, inspiring, documentary-style. No vocals. Suitable beneath narration.' },
+    { key: 'news',      label: '📰 News',      prompt: 'Professional TV news broadcast background music. Authoritative, modern, clean. Short staccato hits. No vocals.' },
+    { key: 'upbeat',    label: '🎸 Upbeat',    prompt: 'Upbeat positive motivational background music. Energetic, modern, corporate pop style. No vocals.' },
+  ];
+
+  // ── Helper: raw PCM / L16 → WAV blob ─────────────────────────
+  function pcmToWav(b64, mimeType) {
+    const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const mime = (mimeType || '').toLowerCase();
+    if (!mime || mime.includes('pcm') || mime.startsWith('audio/l16') || mime.startsWith('audio/l-16')) {
+      const sr = 24000, ch = 1, bps = 16;
+      const buf = new ArrayBuffer(44); const dv = new DataView(buf);
+      const ws = (o, v) => { for (let i = 0; i < v.length; i++) dv.setUint8(o + i, v.charCodeAt(i)); };
+      ws(0,'RIFF'); dv.setUint32(4, 36 + raw.byteLength, true);
+      ws(8,'WAVE'); ws(12,'fmt ');
+      dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,ch,true);
+      dv.setUint32(24,sr,true); dv.setUint32(28,sr*ch*bps/8,true);
+      dv.setUint16(32,ch*bps/8,true); dv.setUint16(34,bps,true);
+      ws(36,'data'); dv.setUint32(40,raw.byteLength,true);
+      return new Blob([buf, raw], { type: 'audio/wav' });
+    }
+    return new Blob([raw], { type: mimeType || 'audio/wav' });
+  }
+
+  // ── TTS: generate one line with format-appropriate style ─────
+  async function bcGenLine(text, voiceName, ttsStyle, apiKey) {
+    const styled = `${ttsStyle}${text}`;
+    for (const model of [MODELS.ttsPrimary, MODELS.ttsFallback]) {
+      try {
+        const r = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: styled }] }],
+              generationConfig: {
+                responseModalities: ['AUDIO'],
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } }
+              }
+            }),
+            signal: AbortSignal.timeout(28000)
+          }
+        );
+        if (!r.ok) continue;
+        const d = await r.json();
+        const p = d?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+        if (!p?.data) continue;
+        return URL.createObjectURL(pcmToWav(p.data, p.mimeType));
+      } catch (e) { continue; }
+    }
+    return null;
+  }
+
+  // ── Music: generate background track by Lyria prompt ─────────
+  async function bcGenMusic(trackPrompt, apiKey) {
+    if (!trackPrompt) return null;
+    for (const model of [MODELS.lyria3, MODELS.musicDefault]) {
+      try {
+        const r = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: trackPrompt }] }],
+              generationConfig: { responseModalities: ['AUDIO'] }
+            }),
+            signal: AbortSignal.timeout(55000)
+          }
+        );
+        if (!r.ok) continue;
+        const body = await r.json();
+        for (const ap of (body.candidates?.[0]?.content?.parts || [])) {
+          if (ap.inlineData?.data) return URL.createObjectURL(pcmToWav(ap.inlineData.data, ap.inlineData.mimeType));
+        }
+      } catch (e) { continue; }
+    }
+    return null;
+  }
+
+  // ── Parse Gemini script ───────────────────────────────────────
+  function bcParseScript(raw) {
+    const result = [];
+    for (const line of raw.split('\n')) {
+      const t = line.trim(); if (!t) continue;
+      for (const sp of Object.keys(SPEAKERS)) {
+        const m = t.match(new RegExp(`^${sp}[:\\-]\\s*(.+)`, 'i'));
+        if (m) { result.push({ speaker: sp.toUpperCase(), text: m[1].trim(), url: null }); break; }
+      }
+    }
+    return result;
+  }
+
+  // ── Hex → "r,g,b" ────────────────────────────────────────────
+  function bcHexRgb(h) { return [1,3,5].map(i => parseInt(h.slice(i,i+2),16)).join(','); }
+
+  // ── System prompt varies by format and target length ─────────
+  function bcSysPrompt(format, exchanges) {
+    const base = `FORMAT (strict — output ONLY script lines, nothing else):
+ZEPHYR: [one or two spoken sentences]
+KORE: [one or two spoken sentences]
+FENRIR: [one or two spoken sentences]
+...${exchanges} exchanges total
+No stage directions. No asterisks. No markdown. Natural spoken language only.`;
+    const map = {
+      talkshow:     `You are a professional podcast scriptwriter. Write a lively 3-person talk show script from the source material.\n\n${base}\n\nZEPHYR = warm engaging host, KORE = knowledgeable expert, FENRIR = bold creative voice. Start with ZEPHYR introducing the topic.`,
+      tutorial:     `You are a scriptwriter creating an educational tutorial broadcast.\n\n${base}\n\nZEPHYR = friendly instructor walking through content step by step, KORE = student asking smart clarifying questions, FENRIR = adds real-world tips and examples. Start with ZEPHYR introducing what will be learned.`,
+      appdemo:      `You are a scriptwriter creating an app or product demo broadcast.\n\n${base}\n\nZEPHYR = main presenter showcasing features enthusiastically, KORE = excited first-time user reacting, FENRIR = technical expert adding context. Start with ZEPHYR with a strong opening hook.`,
+      presentation: `You are a scriptwriter creating a professional business presentation broadcast.\n\n${base}\n\nZEPHYR = main presenter delivering key points, KORE = co-presenter adding supporting evidence, FENRIR = reinforces and summarizes takeaways. Professional, polished language. Start with ZEPHYR with an executive summary.`,
+      narrator:     `You are a scriptwriter creating a documentary-style narrative broadcast.\n\n${base}\n\nZEPHYR = primary narrator (~50% of lines), KORE = provides perspective and counterpoint (~30%), FENRIR = delivers impactful conclusions (~20%). Measured, compelling language. Start with ZEPHYR.`,
+      trailer:      `You are writing a HOLLYWOOD BLOCKBUSTER MOVIE TRAILER voiceover script. ONE narrator only — FENRIR — no other speakers.\n\n${base}\n\nCRITICAL RULES:\n- EVERY line MUST start with "FENRIR:" — no ZEPHYR, no KORE, no exceptions.\n- Write exactly ${exchanges} lines, each 5-20 words — SHORT and PUNCHY.\n- Tone: EPIC, cinematic, world-changing, urgent, electrifying. Think Christopher Nolan meets Apple Keynote.\n- NO questions from anyone. This is a powerful dramatic MONOLOGUE.\n- Use "..." for dramatic pauses within a line. Build intensity with each line.\n\nNARRATIVE ARC (hit every beat):\n1. Lines 1-2: Explosive world-setting hook — paint the world BEFORE ("In a world where chaos rules the screen...")\n2. Lines 3-4: The problem — what was missing, what was broken, what was impossible\n3. Lines 5-${Math.max(6,Math.floor(exchanges*0.55))}: Rising intensity — introduce the hero. Name it. Reveal its power. Drop feature after feature like punches.\n4. Lines ${Math.max(7,Math.floor(exchanges*0.55)+1)}-${exchanges-2}: CLIMAX — peak excitement, game-changing moment, the world transformed\n5. Lines ${exchanges-1}-${exchanges}: ICONIC TAGLINE and rallying call to action — make it unforgettable.\n\nEnd on something that sends chills. Make every word earn its place.`,
+    };
+    return map[format] || map.talkshow;
+  }
+
+  // ── TTS speaking style prefix by format ──────────────────────
+  function bcTtsStyle(format) {
+    const map = {
+      talkshow:     'Speak naturally and conversationally as if live on a talk show: ',
+      tutorial:     'Speak clearly and educationally as a friendly instructor: ',
+      appdemo:      'Speak enthusiastically as if presenting an exciting product demo: ',
+      presentation: 'Speak professionally and authoritatively as in a business presentation: ',
+      narrator:     'Speak like a compelling documentary narrator, measured and thoughtful: ',
+      trailer:      'You are a legendary Hollywood movie trailer voice. Deliver every word with earth-shaking gravitas, dramatic power, and cinematic intensity — as if the fate of the world depends on it: ',
+    };
+    return map[format] || map.talkshow;
+  }
+
+  // ── Build card DOM ────────────────────────────────────────────
+  const card = document.createElement('div');
+  card.className = 'chat-bubble ai broadcast-card';
+  card.style.cssText = 'padding:0;margin:8px 0;background:transparent;border:none;max-width:100%;width:100%;';
+
+  card.innerHTML = `
+<div style="background:linear-gradient(135deg,rgba(45,212,191,0.07),rgba(124,58,237,0.04));border:1px solid rgba(45,212,191,0.15);border-radius:16px;padding:18px;backdrop-filter:blur(10px);">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <span style="font-size:22px;">🎙️</span>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:#e8eef4;">Broadcast Studio</div>
+        <div style="font-size:11px;color:#667788;">Turn any content into a multi-voice AI broadcast</div>
+      </div>
+    </div>
+    <div class="bc-live-badge" style="display:none;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;background:rgba(239,68,68,0.13);border:1px solid rgba(239,68,68,0.38);">
+      <span style="width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block;animation:bcPulse 1.1s ease-in-out infinite;"></span>
+      <span style="font-size:10px;font-weight:700;color:#ef4444;letter-spacing:0.07em;">LIVE</span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:5px;margin-bottom:14px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;background:rgba(45,212,191,0.08);border:1px solid rgba(45,212,191,0.2);font-size:10px;color:#2dd4bf;">🎙️ <b>Zephyr</b>&nbsp;<span style="opacity:0.5;">Host</span></div>
+    <div style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);font-size:10px;color:#a78bfa;">🎓 <b>Kore</b>&nbsp;<span style="opacity:0.5;">Expert</span></div>
+    <div style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);font-size:10px;color:#f97316;">⚡ <b>Fenrir</b>&nbsp;<span style="opacity:0.5;">Creative</span></div>
+  </div>
+
+  <div class="bc-input-sec">
+    <div style="margin-bottom:10px;">
+      <div style="font-size:9.5px;color:#667788;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em;">Format</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">
+        <button class="bc-pill bc-fmt active" data-fmt="talkshow">🎙️ Talk Show</button>
+        <button class="bc-pill bc-fmt" data-fmt="tutorial">📚 Tutorial</button>
+        <button class="bc-pill bc-fmt" data-fmt="appdemo">🚀 App Demo</button>
+        <button class="bc-pill bc-fmt" data-fmt="presentation">📊 Presentation</button>
+        <button class="bc-pill bc-fmt" data-fmt="narrator">🎬 Narrator</button>
+        <button class="bc-pill bc-fmt bc-fmt-trailer" data-fmt="trailer" style="border-color:rgba(234,179,8,0.35);color:#eab308;background:rgba(234,179,8,0.06);">🎥 Trailer</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom:10px;">
+      <div style="font-size:9.5px;color:#667788;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em;">Length</div>
+      <div style="display:flex;gap:5px;">
+        <button class="bc-pill bc-dur" data-dur="1">1 min</button>
+        <button class="bc-pill bc-dur active" data-dur="3">3 min</button>
+        <button class="bc-pill bc-dur" data-dur="5">5 min</button>
+        <button class="bc-pill bc-dur" data-dur="10">10 min</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom:10px;">
+      <div style="font-size:9.5px;color:#667788;margin-bottom:7px;text-transform:uppercase;letter-spacing:0.06em;">Attach Source Media</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button class="bc-attach-img" style="flex:1;padding:10px 5px;border-radius:10px;border:1px solid rgba(45,212,191,0.3);background:rgba(45,212,191,0.07);color:#2dd4bf;font-size:20px;cursor:pointer;line-height:1;text-align:center;"><div>📷</div><div style="font-size:10px;color:#9aabb8;margin-top:3px;font-weight:600;">Images</div></button>
+        <button class="bc-attach-vid" style="flex:1;padding:10px 5px;border-radius:10px;border:1px solid rgba(167,139,250,0.3);background:rgba(167,139,250,0.07);color:#a78bfa;font-size:20px;cursor:pointer;line-height:1;text-align:center;"><div>🎬</div><div style="font-size:10px;color:#9aabb8;margin-top:3px;font-weight:600;">Video</div></button>
+        <button class="bc-attach-file" style="flex:1;padding:10px 5px;border-radius:10px;border:1px solid rgba(251,191,36,0.3);background:rgba(251,191,36,0.07);color:#fbbf24;font-size:20px;cursor:pointer;line-height:1;text-align:center;"><div>📄</div><div style="font-size:10px;color:#9aabb8;margin-top:3px;font-weight:600;">File</div></button>
+      </div>
+      <div class="bc-attach-list" style="display:none;margin-bottom:8px;"></div>
+      <div style="font-size:9.5px;color:#667788;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;">Or type / paste text</div>
+      <textarea class="bc-source" placeholder="Topic, article, notes, script outline… (optional if media attached)" style="width:100%;box-sizing:border-box;min-height:60px;background:rgba(255,255,255,0.04);border:1px solid rgba(45,212,191,0.18);border-radius:10px;padding:9px 11px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;line-height:1.4;"></textarea>
+      <input type="file" class="bc-img-input" accept="image/*" multiple style="display:none;">
+      <input type="file" class="bc-vid-input" accept="video/*" style="display:none;">
+      <input type="file" class="bc-file-input" accept=".txt,.md,.csv,.json,.pdf,.pptx,.docx" style="display:none;">
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <div style="font-size:9.5px;color:#667788;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em;">Background Music</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">
+        <button class="bc-pill bc-trk" data-trk="none">🚫 None</button>
+        <button class="bc-pill bc-trk active" data-trk="lofi">☁️ Lo-fi</button>
+        <button class="bc-pill bc-trk" data-trk="cinematic">🎬 Cinematic</button>
+        <button class="bc-pill bc-trk" data-trk="news">📰 News</button>
+        <button class="bc-pill bc-trk" data-trk="upbeat">🎸 Upbeat</button>
+      </div>
+    </div>
+
+    <button class="bc-prepare-btn" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#2dd4bf,#7c3aed);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;">🎙️ Generate Broadcast</button>
+  </div>
+
+  <div class="bc-script-sec" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 7px 0;">
+      <span style="font-size:12px;font-weight:600;color:#8899aa;">📜 Script</span>
+      <span class="bc-status" style="font-size:11px;color:#667788;"></span>
+    </div>
+    <div class="bc-lines" style="background:rgba(0,0,0,0.22);border-radius:10px;padding:10px;max-height:165px;overflow-y:auto;"></div>
+    <div class="bc-vol-row" style="display:flex;align-items:center;gap:10px;margin:12px 0 8px 0;">
+      <span style="font-size:11px;color:#8899aa;white-space:nowrap;">🎵 Vol</span>
+      <input type="range" class="bc-vol" min="0" max="100" value="12" style="flex:1;accent-color:#2dd4bf;cursor:pointer;">
+      <span class="bc-vol-pct" style="font-size:11px;color:#8899aa;width:28px;text-align:right;">12%</span>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button class="bc-broadcast-btn" style="flex:1;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#2dd4bf,#7c3aed);color:#fff;font-size:13px;font-weight:700;cursor:pointer;opacity:0.45;pointer-events:none;transition:all 0.2s;">▶ Start Broadcast</button>
+      <button class="bc-stop-btn" style="display:none;padding:11px 15px;border-radius:10px;border:1px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.1);color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;">⏹</button>
+      <button class="bc-reset-btn" style="padding:11px 13px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#9aabb8;font-size:12px;cursor:pointer;">↺</button>
+    </div>
+    <button class="bc-dl-btn" style="display:none;width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1px solid rgba(45,212,191,0.35);background:rgba(45,212,191,0.08);color:#2dd4bf;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;">⬇️ Download Episode</button>
+  </div>
+</div>`;
+
+  thread.appendChild(card);
+
+  // ── State ─────────────────────────────────────────────────────
+  let selFormat = 'talkshow';
+  let selDur    = '3';
+  let selTrack  = 'lofi';
+  let attachments = [];
+  let script    = [];
+  let bgUrl     = null;
+  let bgAudio   = null;
+  let isPlaying = false;
+  let stopReq   = false;
+  let blobUrls  = [];
+
+  // ── DOM refs ──────────────────────────────────────────────────
+  const inputSec   = card.querySelector('.bc-input-sec');
+  const scriptSec  = card.querySelector('.bc-script-sec');
+  const srcEl      = card.querySelector('.bc-source');
+  const prepBtn    = card.querySelector('.bc-prepare-btn');
+  const linesEl    = card.querySelector('.bc-lines');
+  const statusEl   = card.querySelector('.bc-status');
+  const liveBadge  = card.querySelector('.bc-live-badge');
+  const broadBtn   = card.querySelector('.bc-broadcast-btn');
+  const stopBtn    = card.querySelector('.bc-stop-btn');
+  const resetBtn   = card.querySelector('.bc-reset-btn');
+  const dlBtn      = card.querySelector('.bc-dl-btn');
+  const volSlider  = card.querySelector('.bc-vol');
+  const volPct     = card.querySelector('.bc-vol-pct');
+  const volRow     = card.querySelector('.bc-vol-row');
+  const attachList = card.querySelector('.bc-attach-list');
+  const imgInput   = card.querySelector('.bc-img-input');
+  const vidInput   = card.querySelector('.bc-vid-input');
+  const fileInput  = card.querySelector('.bc-file-input');
+
+  // ── Format tabs ───────────────────────────────────────────────
+  card.querySelectorAll('.bc-fmt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      card.querySelectorAll('.bc-fmt').forEach(b => {
+        b.classList.remove('active');
+        // Reset trailer button back to gold idle style
+        if (b.dataset.fmt === 'trailer') {
+          b.style.borderColor = 'rgba(234,179,8,0.35)';
+          b.style.color = '#eab308';
+          b.style.background = 'rgba(234,179,8,0.06)';
+        }
+      });
+      btn.classList.add('active');
+      selFormat = btn.dataset.fmt;
+      // Trailer: override active style to gold + auto-select Cinematic music
+      if (selFormat === 'trailer') {
+        btn.style.borderColor = 'rgba(234,179,8,0.55)';
+        btn.style.color = '#fde047';
+        btn.style.background = 'rgba(234,179,8,0.16)';
+        btn.style.fontWeight = '700';
+        const cinBtn = card.querySelector('.bc-trk[data-trk="cinematic"]');
+        if (cinBtn) cinBtn.click();
+      } else {
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        btn.style.background = '';
+        btn.style.fontWeight = '';
+      }
+    });
+  });
+
+  // ── Duration tabs ─────────────────────────────────────────────
+  card.querySelectorAll('.bc-dur').forEach(btn => {
+    btn.addEventListener('click', () => {
+      card.querySelectorAll('.bc-dur').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selDur = btn.dataset.dur;
+    });
+  });
+
+  // ── Music track tabs ──────────────────────────────────────────
+  card.querySelectorAll('.bc-trk').forEach(btn => {
+    btn.addEventListener('click', () => {
+      card.querySelectorAll('.bc-trk').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selTrack = btn.dataset.trk;
+      volRow.style.display = selTrack === 'none' ? 'none' : 'flex';
+    });
+  });
+
+  // ── Volume slider ─────────────────────────────────────────────
+  volSlider.addEventListener('input', () => {
+    volPct.textContent = `${volSlider.value}%`;
+    if (bgAudio) bgAudio.volume = parseInt(volSlider.value) / 100;
+  });
+
+  // ── Attachment rendering ──────────────────────────────────────
+  function bcRenderAttachments() {
+    attachList.innerHTML = '';
+    if (!attachments.length) { attachList.style.display = 'none'; return; }
+    attachList.style.display = 'block';
+
+    // Group video frames by source file
+    const videoFiles = [...new Set(attachments.filter(a => a.videoFile).map(a => a.videoFile))];
+    const images     = attachments.filter(a => a.type === 'image');
+    const files      = attachments.filter(a => a.type === 'file');
+
+    // ── Video panel ──
+    videoFiles.forEach(vf => {
+      const frames = attachments.filter(a => a.videoFile === vf);
+      const panel  = document.createElement('div');
+      panel.style.cssText = 'background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.25);border-radius:10px;padding:10px;margin-bottom:6px;';
+
+      const header = document.createElement('div');
+      header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;';
+      const title  = document.createElement('span');
+      title.style.cssText = 'font-size:11px;font-weight:700;color:#a78bfa;';
+      const shortName = vf.length > 28 ? vf.slice(0, 25) + '…' : vf;
+      title.textContent = `🎬 ${shortName}`;
+      const rmBtn = document.createElement('button');
+      rmBtn.textContent = '✕ Remove';
+      rmBtn.style.cssText = 'background:none;border:1px solid rgba(239,68,68,0.35);border-radius:6px;color:#ef4444;font-size:10px;cursor:pointer;padding:2px 7px;';
+      rmBtn.onclick = () => { attachments = attachments.filter(a => a.videoFile !== vf); bcRenderAttachments(); };
+      header.appendChild(title); header.appendChild(rmBtn);
+      panel.appendChild(header);
+
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+      frames.forEach(f => {
+        const img = document.createElement('img');
+        img.src = `data:image/jpeg;base64,${f.data}`;
+        img.title = f.name;
+        img.style.cssText = 'width:72px;height:48px;border-radius:6px;object-fit:cover;border:1px solid rgba(167,139,250,0.3);';
+        row.appendChild(img);
+      });
+      panel.appendChild(row);
+
+      const note = document.createElement('div');
+      note.style.cssText = 'margin-top:7px;font-size:10px;color:#667788;';
+      note.textContent = `✓ Gemini will analyze ${frames.length} frame${frames.length > 1 ? 's' : ''} from this video to write your script`;
+      panel.appendChild(note);
+      attachList.appendChild(panel);
+    });
+
+    // ── Images panel ──
+    if (images.length) {
+      const panel = document.createElement('div');
+      panel.style.cssText = 'background:rgba(45,212,191,0.06);border:1px solid rgba(45,212,191,0.22);border-radius:10px;padding:10px;margin-bottom:6px;';
+      const header = document.createElement('div');
+      header.style.cssText = 'font-size:11px;font-weight:700;color:#2dd4bf;margin-bottom:7px;';
+      header.textContent = `📷 ${images.length} image${images.length > 1 ? 's' : ''} attached`;
+      panel.appendChild(header);
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+      images.forEach((a, i) => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:relative;display:inline-block;';
+        const img = document.createElement('img');
+        img.src = `data:${a.mimeType};base64,${a.data}`;
+        img.style.cssText = 'width:60px;height:48px;border-radius:6px;object-fit:cover;border:1px solid rgba(45,212,191,0.28);display:block;';
+        const rm = document.createElement('button');
+        rm.textContent = '×';
+        rm.style.cssText = 'position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#ef4444;color:#fff;border:none;cursor:pointer;font-size:9px;line-height:14px;padding:0;text-align:center;';
+        rm.onclick = () => { const idx = attachments.indexOf(a); if (idx > -1) attachments.splice(idx, 1); bcRenderAttachments(); };
+        wrap.appendChild(img); wrap.appendChild(rm);
+        row.appendChild(wrap);
+      });
+      panel.appendChild(row);
+      const note = document.createElement('div');
+      note.style.cssText = 'margin-top:6px;font-size:10px;color:#667788;';
+      note.textContent = '✓ Gemini will analyze these images to write your script';
+      panel.appendChild(note);
+      attachList.appendChild(panel);
+    }
+
+    // ── Files panel ──
+    files.forEach((a, i) => {
+      const chip = document.createElement('div');
+      chip.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.25);border-radius:8px;margin-bottom:4px;';
+      chip.innerHTML = `<span style="font-size:16px;">📄</span><span style="font-size:11px;color:#fbbf24;flex:1;">${a.name}</span>`;
+      const rm = document.createElement('button');
+      rm.textContent = '×';
+      rm.style.cssText = 'background:none;border:none;color:#667788;cursor:pointer;font-size:13px;padding:0;';
+      rm.onclick = () => { const idx = attachments.indexOf(a); if (idx > -1) attachments.splice(idx, 1); bcRenderAttachments(); };
+      chip.appendChild(rm);
+      attachList.appendChild(chip);
+    });
+  }
+
+  // ── Attachment buttons ────────────────────────────────────────
+  card.querySelector('.bc-attach-img').addEventListener('click', () => imgInput.click());
+  card.querySelector('.bc-attach-vid').addEventListener('click', () => vidInput.click());
+  card.querySelector('.bc-attach-file').addEventListener('click', () => fileInput.click());
+
+  imgInput.addEventListener('change', () => {
+    Array.from(imgInput.files).slice(0, 3).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        attachments.push({ type: 'image', name: file.name, mimeType: file.type, data: ev.target.result.split(',')[1] });
+        bcRenderAttachments();
+      };
+      reader.readAsDataURL(file);
+    });
+    imgInput.value = '';
+  });
+
+  vidInput.addEventListener('change', () => {
+    const file = vidInput.files[0]; if (!file) return;
+    const url = URL.createObjectURL(file);
+    const vid = document.createElement('video');
+    vid.src = url; vid.muted = true; vid.preload = 'auto';
+
+    vid.onloadedmetadata = () => {
+      const dur = isFinite(vid.duration) && vid.duration > 0 ? vid.duration : 10;
+      // Extract up to 4 evenly-spaced frames
+      const times = dur <= 4
+        ? [0, dur * 0.5]
+        : [0.1, dur * 0.25, dur * 0.6, Math.max(dur - 0.5, dur * 0.85)];
+      const frames = [];
+      let idx = 0;
+
+      const captureFrame = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.min(vid.videoWidth  || 640, 640);
+        canvas.height = Math.min(vid.videoHeight || 360, 360);
+        canvas.getContext('2d').drawImage(vid, 0, 0, canvas.width, canvas.height);
+        frames.push(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
+        idx++;
+        if (idx < times.length) {
+          vid.currentTime = times[idx];
+        } else {
+          URL.revokeObjectURL(url);
+          // Remove any previous frames from the same video
+          attachments = attachments.filter(a => !(a.type === 'video-frame' && a.videoFile === file.name));
+          frames.forEach((b64, fi) => {
+            attachments.push({ type: 'video-frame', name: `${file.name} frame ${fi + 1}/${frames.length}`, videoFile: file.name, mimeType: 'image/jpeg', data: b64 });
+          });
+          // Pre-fill textarea with video name if empty
+          if (!srcEl.value.trim()) srcEl.value = `Video: "${file.name}"`;
+          bcRenderAttachments();
+        }
+      };
+
+      vid.onseeked = captureFrame;
+      vid.currentTime = times[0];
+    };
+
+    vid.onerror = () => URL.revokeObjectURL(url);
+    vid.load();
+    vidInput.value = '';
+  });
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0]; if (!file) return;
+    const isText = /\.(txt|md|csv|json|html)$/i.test(file.name) || file.type.startsWith('text/');
+    if (isText) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        srcEl.value += (srcEl.value ? '\n\n' : '') + ev.target.result;
+        srcEl.style.borderColor = 'rgba(45,212,191,0.4)';
+      };
+      reader.readAsText(file);
+    } else {
+      srcEl.value += (srcEl.value ? '\n\n' : '') + `[From: ${file.name} — paste the text content here]`;
+      attachments.push({ type: 'file', name: file.name, mimeType: file.type, data: null });
+      bcRenderAttachments();
+    }
+    fileInput.value = '';
+  });
+
+  // ── Render script ─────────────────────────────────────────────
+  function bcRenderScript() {
+    linesEl.innerHTML = script.map((l, i) => {
+      const sp = SPEAKERS[l.speaker] || SPEAKERS.ZEPHYR;
+      return `<div class="bc-line" data-i="${i}" style="padding:5px 8px;border-radius:8px;margin-bottom:4px;border-left:3px solid ${sp.color};background:rgba(0,0,0,0.12);transition:background 0.2s,transform 0.15s;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:0.06em;color:${sp.color};margin-bottom:2px;">${sp.icon} ${l.speaker}&nbsp;<span style="opacity:0.5;font-weight:400;">· ${sp.role}</span></div>
+        <div style="color:#c8d4e0;font-size:12px;line-height:1.5;">${l.text}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function bcHighlight(idx) {
+    linesEl.querySelectorAll('.bc-line').forEach((el, i) => {
+      if (i === idx) {
+        const sp = SPEAKERS[script[i]?.speaker] || SPEAKERS.ZEPHYR;
+        el.style.background = `rgba(${bcHexRgb(sp.color)},0.17)`;
+        el.style.transform = 'scale(1.015)';
+        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      } else {
+        el.style.background = 'rgba(0,0,0,0.12)';
+        el.style.transform = '';
+      }
+    });
+  }
+
+  function bcClearHighlights() {
+    linesEl.querySelectorAll('.bc-line').forEach(el => {
+      el.style.background = 'rgba(0,0,0,0.12)'; el.style.transform = '';
+    });
+  }
+
+  function bcCleanupUrls() {
+    blobUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch (e) {} });
+    blobUrls = []; bgUrl = null;
+  }
+
+  // ── Stop ──────────────────────────────────────────────────────
+  function bcStop() {
+    stopReq = true; isPlaying = false;
+    if (bgAudio) { try { bgAudio.pause(); } catch (e) {} bgAudio = null; }
+    bcClearHighlights();
+    liveBadge.style.display = 'none';
+    broadBtn.style.display = ''; stopBtn.style.display = 'none';
+  }
+
+  stopBtn.addEventListener('click', () => { bcStop(); statusEl.textContent = 'Stopped'; });
+
+  // ── Reset ─────────────────────────────────────────────────────
+  resetBtn.addEventListener('click', () => {
+    bcStop(); bcCleanupUrls();
+    script = []; attachments = [];
+    inputSec.style.display = 'block'; scriptSec.style.display = 'none';
+    srcEl.value = ''; statusEl.textContent = '';
+    broadBtn.style.opacity = '0.45'; broadBtn.style.pointerEvents = 'none';
+    broadBtn.textContent = '▶ Start Broadcast';
+    dlBtn.style.display = 'none';
+    prepBtn.textContent = '🎙️ Generate Broadcast'; prepBtn.disabled = false;
+    bcRenderAttachments();
+  });
+
+  // ── Generate Broadcast ────────────────────────────────────────
+  prepBtn.addEventListener('click', async () => {
+    const src = srcEl.value.trim();
+    const hasVisuals = attachments.some(a => a.data);
+    if (!src && !hasVisuals) {
+      srcEl.style.borderColor = 'rgba(239,68,68,0.7)';
+      srcEl.placeholder = 'Add text or attach an image/video first';
+      return;
+    }
+    srcEl.style.borderColor = 'rgba(45,212,191,0.18)';
+
+    const keyRes = await chrome.storage.sync.get(['geminiApiKey']);
+    const apiKey = keyRes.geminiApiKey;
+    if (!apiKey) { prepBtn.textContent = '🔑 Add API key in Settings first'; prepBtn.disabled = false; return; }
+
+    prepBtn.textContent = '⏳ Writing script…'; prepBtn.disabled = true;
+
+    const durCfg = DURATIONS.find(d => d.key === selDur) || DURATIONS[1];
+    const trkCfg = TRACKS.find(t => t.key === selTrack) || TRACKS[1];
+
+    // Step 1 — Script generation (multimodal if attachments present)
+    let rawScript = '';
+    try {
+      const videoFileNames = [...new Set(attachments.filter(a => a.videoFile).map(a => a.videoFile))];
+      const hasImages      = attachments.some(a => a.type === 'image');
+      const fmtLabel       = FORMATS.find(f => f.key === selFormat)?.label || selFormat;
+
+      // Augment system prompt with media context so Gemini understands what it's seeing
+      let mediaCtx = '';
+      if (videoFileNames.length) {
+        mediaCtx = `\n\nIMPORTANT: The user has attached frames captured from a video file named "${videoFileNames[0]}". You are seeing multiple frames that show what happens throughout the video. Analyze the video content from these frames and write the ${fmtLabel} script ABOUT this video — describe what's shown, explain the concepts, walk through what's happening step by step as appropriate for the format.`;
+      } else if (hasImages) {
+        mediaCtx = `\n\nIMPORTANT: The user has attached images. Analyze the image content and write the script ABOUT what is shown in these images.`;
+      }
+      const sysP = bcSysPrompt(selFormat, durCfg.exchanges) + mediaCtx;
+
+      const contentParts = [];
+      for (const a of attachments) {
+        if (a.data) contentParts.push({ inlineData: { mimeType: a.mimeType, data: a.data } });
+      }
+
+      // Build user text — for video, make intent explicit
+      let userText;
+      if (videoFileNames.length) {
+        userText = `Video file: "${videoFileNames[0]}"\n\nCreate a ${fmtLabel} broadcast about the content shown in these video frames.${src && src !== `Video: "${videoFileNames[0]}"` ? `\n\nExtra context: ${src.slice(0, 2000)}` : ''}`;
+      } else if (src) {
+        userText = `SOURCE MATERIAL:\n${src.slice(0, 4500)}`;
+      } else {
+        userText = `Create a ${fmtLabel} broadcast about the content shown in the attached images.`;
+      }
+      contentParts.push({ text: userText });
+
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: sysP }] },
+            contents: [{ role: 'user', parts: contentParts }]
+          }),
+          signal: AbortSignal.timeout(40000)
+        }
+      );
+      const d = await resp.json();
+      rawScript = d?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    } catch (e) {
+      prepBtn.textContent = '❌ Script failed — try again'; prepBtn.disabled = false; return;
+    }
+
+    script = bcParseScript(rawScript);
+    if (!script.length) { prepBtn.textContent = '❌ No script parsed — try again'; prepBtn.disabled = false; return; }
+
+    bcRenderScript();
+    inputSec.style.display = 'none'; scriptSec.style.display = 'block';
+    statusEl.textContent = trkCfg.prompt ? 'Generating voices & music…' : 'Generating voices…';
+    broadBtn.textContent = '⏳ Preparing…';
+    broadBtn.style.opacity = '0.45'; broadBtn.style.pointerEvents = 'none';
+
+    // Step 2 — Audio in parallel
+    bcCleanupUrls();
+    const ttsStyle = bcTtsStyle(selFormat);
+    const jobs = [
+      bcGenMusic(trkCfg.prompt, apiKey),
+      ...script.map(l => bcGenLine(l.text, SPEAKERS[l.speaker]?.voice || 'Zephyr', ttsStyle, apiKey))
+    ];
+    const results = await Promise.all(jobs);
+    bgUrl = results[0];
+    if (bgUrl) blobUrls.push(bgUrl);
+    script.forEach((l, i) => { l.url = results[i + 1]; if (l.url) blobUrls.push(l.url); });
+
+    const voiceOk = script.filter(l => l.url).length;
+    statusEl.textContent = bgUrl
+      ? `Ready — ${voiceOk}/${script.length} voices + music ✓`
+      : `Ready — ${voiceOk}/${script.length} voices`;
+    broadBtn.textContent = '▶ Start Broadcast';
+    broadBtn.style.opacity = '1'; broadBtn.style.pointerEvents = 'auto';
+    prepBtn.textContent = '🎙️ Generate Broadcast'; prepBtn.disabled = false;
+  });
+
+  // ── Start Broadcast ───────────────────────────────────────────
+  broadBtn.addEventListener('click', async () => {
+    if (isPlaying || !script.length) return;
+    isPlaying = true; stopReq = false;
+    broadBtn.style.display = 'none'; stopBtn.style.display = '';
+    liveBadge.style.display = 'flex'; dlBtn.style.display = 'none';
+    statusEl.textContent = 'On air…';
+
+    if (bgUrl) {
+      bgAudio = new Audio(bgUrl);
+      bgAudio.loop = true;
+      bgAudio.volume = parseInt(volSlider.value) / 100;
+      bgAudio.play().catch(() => {});
+    }
+
+    for (let i = 0; i < script.length; i++) {
+      if (stopReq) break;
+      bcHighlight(i);
+      const url = script[i].url;
+      if (url) {
+        await new Promise(res => {
+          if (stopReq) { res(); return; }
+          const a = new Audio(url);
+          let done = false;
+          const finish = () => { if (done) return; done = true; clearInterval(wdog); res(); };
+          const wdog = setInterval(() => { if (stopReq) { a.pause(); finish(); } }, 80);
+          a.onended = finish; a.onerror = finish;
+          a.play().catch(finish);
+        });
+      } else {
+        await new Promise(r => setTimeout(r, 400));
+      }
+    }
+
+    if (!stopReq) {
+      bcStop();
+      statusEl.textContent = '🎙️ Broadcast complete!';
+      dlBtn.style.display = '';
+    }
+  });
+
+  // ── Download Episode ──────────────────────────────────────────
+  function bcAudioBufToWav(buf) {
+    const numCh = buf.numberOfChannels, sr = buf.sampleRate, frames = buf.length, bps = 2;
+    const dataLen = frames * numCh * bps;
+    const ab = new ArrayBuffer(44 + dataLen); const dv = new DataView(ab);
+    const ws = (o, v) => { for (let i = 0; i < v.length; i++) dv.setUint8(o + i, v.charCodeAt(i)); };
+    ws(0,'RIFF'); dv.setUint32(4, 36 + dataLen, true);
+    ws(8,'WAVE'); ws(12,'fmt ');
+    dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,numCh,true);
+    dv.setUint32(24,sr,true); dv.setUint32(28,sr*numCh*bps,true);
+    dv.setUint16(32,numCh*bps,true); dv.setUint16(34,16,true);
+    ws(36,'data'); dv.setUint32(40,dataLen,true);
+    let off = 44;
+    for (let i = 0; i < frames; i++) {
+      for (let ch = 0; ch < numCh; ch++) {
+        const s = Math.max(-1, Math.min(1, buf.getChannelData(ch)[i]));
+        dv.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true); off += 2;
+      }
+    }
+    return ab;
+  }
+
+  dlBtn.addEventListener('click', async () => {
+    dlBtn.textContent = '⏳ Mixing…'; dlBtn.style.pointerEvents = 'none';
+    try {
+      const tmpCtx = new AudioContext();
+      const voiceBuffers = [];
+      const GAP = 0.4;
+      for (const line of script) {
+        if (line.url) {
+          const ab = await fetch(line.url).then(r => r.arrayBuffer());
+          voiceBuffers.push(await tmpCtx.decodeAudioData(ab));
+        } else { voiceBuffers.push(null); }
+      }
+      let musicBuffer = null;
+      if (bgUrl) {
+        const ab = await fetch(bgUrl).then(r => r.arrayBuffer());
+        musicBuffer = await tmpCtx.decodeAudioData(ab);
+      }
+      await tmpCtx.close();
+
+      let totalDur = 0;
+      for (const b of voiceBuffers) totalDur += b ? b.duration : GAP;
+      totalDur = Math.max(totalDur, 1);
+
+      const SR = 44100;
+      const offCtx = new OfflineAudioContext(2, Math.ceil(SR * totalDur), SR);
+      let t = 0;
+      for (const vb of voiceBuffers) {
+        if (vb) {
+          const src = offCtx.createBufferSource();
+          src.buffer = vb; src.connect(offCtx.destination);
+          src.start(t); t += vb.duration;
+        } else { t += GAP; }
+      }
+      if (musicBuffer) {
+        const gain = offCtx.createGain();
+        gain.gain.value = parseInt(volSlider.value) / 100;
+        gain.connect(offCtx.destination);
+        let mt = 0;
+        while (mt < totalDur) {
+          const src = offCtx.createBufferSource();
+          src.buffer = musicBuffer; src.connect(gain);
+          src.start(mt); mt += musicBuffer.duration;
+        }
+      }
+
+      const rendered = await offCtx.startRendering();
+      const wav = bcAudioBufToWav(rendered);
+      const blob = new Blob([wav], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const fmtLabel = FORMATS.find(f => f.key === selFormat)?.label.replace(/[^\w]/g, '') || 'broadcast';
+      a.href = url; a.download = `broadcast-${fmtLabel}.wav`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 8000);
+      dlBtn.textContent = '✓ Downloaded!';
+    } catch (e) {
+      dlBtn.textContent = '❌ Mix failed — try again';
+    } finally {
+      setTimeout(() => { dlBtn.textContent = '⬇️ Download Episode'; dlBtn.style.pointerEvents = 'auto'; }, 3000);
+    }
+  });
+}
+
+
 
 const SYSTEM_PROMPT = getConfig('SYSTEM_PROMPT', `You are a brilliant AI with three modes fused into one:
 
