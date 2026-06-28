@@ -5119,27 +5119,28 @@ function showSongStudio(thread) {
       </div>
 
 
-      ${currentImages.length > 0 ? `
-      <div style="background:linear-gradient(135deg, rgba(255,170,0,0.08), rgba(255,100,0,0.04));border:1px solid rgba(255,170,0,0.2);border-radius:12px;padding:14px;margin:10px 0;">
+      <div class="img2music-panel" style="background:linear-gradient(135deg, rgba(255,170,0,0.08), rgba(255,100,0,0.04));border:1px solid rgba(255,170,0,0.2);border-radius:12px;padding:14px;margin:10px 0;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
           <span style="font-size:18px;">📸→🎵</span>
           <div>
             <div style="font-size:13px;font-weight:600;color:#ffaa00;">Image to Music</div>
-            <div style="font-size:10px;color:#889900;">You have ${currentImages.length} screenshot${currentImages.length > 1 ? 's' : ''} loaded — turn ${currentImages.length > 1 ? 'them' : 'it'} into music!</div>
+            <div class="img2music-count" style="font-size:10px;color:#889900;">Take a screenshot first to turn your image into music!</div>
           </div>
         </div>
-        <textarea class="img2music-desc" placeholder="Describe the music you want...&#10;&#10;e.g. Acoustic guitar, soft and peaceful&#10;e.g. Epic orchestral with drums&#10;e.g. Lo-fi hip hop, rainy day vibes" style="width:100%;box-sizing:border-box;min-height:70px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,170,0,0.2);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;margin-bottom:10px;line-height:1.4;"></textarea>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-          <button class="img2music-happy" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.08);color:#00ff88;font-size:11px;cursor:pointer;">😊 Happy</button>
-          <button class="img2music-chill" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(0,217,255,0.3);background:rgba(0,217,255,0.08);color:#00d9ff;font-size:11px;cursor:pointer;">😌 Chill</button>
-          <button class="img2music-epic" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,107,237,0.3);background:rgba(255,107,237,0.08);color:#ff6bed;font-size:11px;cursor:pointer;">🏔️ Epic</button>
-          <button class="img2music-dark" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#aabbcc;font-size:11px;cursor:pointer;">🌑 Dark</button>
-          <button class="img2music-romantic" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,100,100,0.3);background:rgba(255,100,100,0.08);color:#ff6464;font-size:11px;cursor:pointer;">💕 Romantic</button>
-          <button class="img2music-mysterious" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(138,100,255,0.3);background:rgba(138,100,255,0.08);color:#8a64ff;font-size:11px;cursor:pointer;">🔮 Mysterious</button>
+        <div class="img2music-empty" style="display:${currentImages.length > 0 ? 'none' : 'block'};padding:10px 0;font-size:12px;color:#667788;text-align:center;">📸 No screenshots loaded yet — capture one and this panel will activate automatically.</div>
+        <div class="img2music-active" style="display:${currentImages.length > 0 ? 'block' : 'none'};">
+          <textarea class="img2music-desc" placeholder="Describe the music you want...&#10;&#10;e.g. Acoustic guitar, soft and peaceful&#10;e.g. Epic orchestral with drums&#10;e.g. Lo-fi hip hop, rainy day vibes" style="width:100%;box-sizing:border-box;min-height:70px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,170,0,0.2);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;margin-bottom:10px;line-height:1.4;"></textarea>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+            <button class="img2music-happy" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.08);color:#00ff88;font-size:11px;cursor:pointer;">😊 Happy</button>
+            <button class="img2music-chill" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(0,217,255,0.3);background:rgba(0,217,255,0.08);color:#00d9ff;font-size:11px;cursor:pointer;">😌 Chill</button>
+            <button class="img2music-epic" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,107,237,0.3);background:rgba(255,107,237,0.08);color:#ff6bed;font-size:11px;cursor:pointer;">🏔️ Epic</button>
+            <button class="img2music-dark" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#aabbcc;font-size:11px;cursor:pointer;">🌑 Dark</button>
+            <button class="img2music-romantic" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,100,100,0.3);background:rgba(255,100,100,0.08);color:#ff6464;font-size:11px;cursor:pointer;">💕 Romantic</button>
+            <button class="img2music-mysterious" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(138,100,255,0.3);background:rgba(138,100,255,0.08);color:#8a64ff;font-size:11px;cursor:pointer;">🔮 Mysterious</button>
+          </div>
+          <button class="img2music-go" style="width:100%;padding:10px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffaa00,#ff8800);color:#000;font-size:13px;font-weight:700;cursor:pointer;">🎵 Create Music From Image</button>
         </div>
-        <button class="img2music-go" style="width:100%;padding:10px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffaa00,#ff8800);color:#000;font-size:13px;font-weight:700;cursor:pointer;">🎵 Create Music From Image</button>
       </div>
-      ` : ''}
       
       <div style="${sectionTitleStyle}">Step 1: Pick a Genre</div>
       <div style="${sectionSubStyle}">Choose your style</div>
@@ -5174,7 +5175,27 @@ function showSongStudio(thread) {
   `;
   
   thread.appendChild(studio);
-  
+
+  // Reactive image panel — polls every 500ms and shows/hides the active
+  // section as screenshots enter or leave the queue. Clears itself when
+  // the studio is removed from the DOM so there's no memory leak.
+  let _lastImgCount = -1;
+  const _imgPanelTimer = setInterval(() => {
+    if (!document.contains(studio)) { clearInterval(_imgPanelTimer); return; }
+    const count = currentImages.length;
+    if (count === _lastImgCount) return; // no change
+    _lastImgCount = count;
+    const hasImages = count > 0;
+    const emptyEl  = studio.querySelector('.img2music-empty');
+    const activeEl = studio.querySelector('.img2music-active');
+    const countEl  = studio.querySelector('.img2music-count');
+    if (emptyEl)  emptyEl.style.display  = hasImages ? 'none'  : 'block';
+    if (activeEl) activeEl.style.display = hasImages ? 'block' : 'none';
+    if (countEl)  countEl.textContent    = hasImages
+      ? `You have ${count} screenshot${count > 1 ? 's' : ''} loaded — turn ${count > 1 ? 'them' : 'it'} into music!`
+      : 'Take a screenshot first to turn your image into music!';
+  }, 500);
+
   const img2musicChips = {
     'happy': 'Happy, upbeat, bright and energetic',
     'chill': 'Calm, relaxing, smooth and ambient',
@@ -5183,20 +5204,15 @@ function showSongStudio(thread) {
     'romantic': 'Romantic, warm, gentle and emotional',
     'mysterious': 'Mysterious, ethereal, haunting and enchanting'
   };
-  
-  const img2musicDesc = studio.querySelector('.img2music-desc');
-  
+
   Object.keys(img2musicChips).forEach(mood => {
     const btn = studio.querySelector(`.img2music-${mood}`);
-    if (btn && img2musicDesc) {
+    if (btn) {
       btn.addEventListener('click', () => {
+        const img2musicDesc = studio.querySelector('.img2music-desc');
+        if (!img2musicDesc) return;
         const current = img2musicDesc.value.trim();
-        if (current) {
-          img2musicDesc.value = current + ', ' + img2musicChips[mood].toLowerCase();
-        } else {
-          img2musicDesc.value = img2musicChips[mood];
-        }
-        btn.style.background = btn.style.background.includes('0.08') ? btn.style.borderColor.replace('0.3', '0.15') : btn.style.background;
+        img2musicDesc.value = current ? current + ', ' + img2musicChips[mood].toLowerCase() : img2musicChips[mood];
         btn.style.opacity = '0.5';
       });
     }
@@ -5294,21 +5310,18 @@ function showSongStudio(thread) {
   
   studio.querySelector('.studio-create-btn').addEventListener('click', () => {
     if (!selectedGenre) return;
-    
     const topic = studio.querySelector('.studio-topic').value.trim();
-    let prompt = `Create a ${selectedGenre.toLowerCase()} song`;
-    if (selectedMood) prompt += ` with a ${selectedMood.toLowerCase()} mood`;
-    if (selectedTempo) prompt += ` at a ${selectedTempo.toLowerCase()} tempo`;
-    if (topic) prompt += `. The song is about: ${topic}`;
-    prompt += `. Make it sound professional and polished with clear structure (intro, verse, chorus, verse, chorus, outro).`;
-    
+    // Send raw keywords so buildMusicPrompt applies its rich instrument/BPM mappings.
+    // A short keyword string (e.g. "jazz happy fast") stays under the 40-char guard
+    // and triggers full expansion — genre gets instruments, tempo gets BPM numbers.
+    const keywords = [selectedGenre, selectedMood, selectedTempo].filter(Boolean).join(' ').toLowerCase();
+    const prompt = topic ? `${keywords}. About: ${topic}` : keywords;
     const inputEl = document.getElementById('chatInput');
     if (inputEl) {
       inputEl.value = prompt;
       const sendBtn = document.getElementById('sendBtn');
       if (sendBtn) sendBtn.click();
     }
-    
     studio.style.opacity = '0.5';
     studio.style.pointerEvents = 'none';
   });
@@ -8232,10 +8245,6 @@ async function handleSend() {
           return 'Create an original, professional instrumental piece with a clear structure: intro, development, climax, and outro. Choose the best genre, instruments, and tempo automatically. Make it polished and complete.';
         }
         const input = raw.trim();
-        // Already a detailed prompt — just wrap it
-        if (input.length > 40) {
-          return `Create a song: ${input}. Give it a clear musical structure with an intro, development, and outro. Make it sound professional and polished.`;
-        }
         const lower = input.toLowerCase();
         const genreMap = [
           ['jazz',      'jazz featuring piano, upright bass, and brushed drums'],
