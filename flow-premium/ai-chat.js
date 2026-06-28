@@ -3251,7 +3251,12 @@ async function extractLastFrame(videoUrl) {
   try {
     const resp = await fetch(videoUrl);
     if (!resp.ok) throw new Error(`fetch ${resp.status}`);
-    const blob = await resp.blob();
+    const rawBlob = await resp.blob();
+    // Fix missing EBML Duration field before seeking — Veo WebM clips often
+    // have no Duration in their header, so video.duration = Infinity and every
+    // seek lands on a black frame.  We inject 8 000 ms (the default clip
+    // length) so the browser reports a finite duration immediately.
+    const blob = await fixWebmDuration(rawBlob, 8000).catch(() => rawBlob);
     blobUrl = URL.createObjectURL(blob);
 
     // Park the <video> off-screen but IN THE DOM. Chrome will skip frame
@@ -3289,7 +3294,10 @@ async function extractLastFrame(videoUrl) {
     // looks soft" → focus pop / character morph at the join. Sampling 3
     // candidates and picking the one with highest Laplacian variance gives
     // us a crisp identity reference for downstream chaining.
-    const duration = video.duration || 8;
+    // Belt-and-suspenders: if fixWebmDuration didn't inject a finite duration
+    // (e.g. the EBML walk failed), fall back to 8 s rather than Infinity.
+    // `Infinity || 8` evaluates to Infinity (truthy), so || alone is not safe.
+    const duration = (Number.isFinite(video.duration) && video.duration > 0) ? video.duration : 8;
     const candidateOffsets = [0.4, 0.2, 0.05]
       .map(off => Math.max(0, duration - off))
       .filter((t, i, arr) => arr.indexOf(t) === i); // de-dupe for very short clips
