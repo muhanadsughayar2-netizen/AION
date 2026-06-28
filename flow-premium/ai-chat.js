@@ -8234,7 +8234,7 @@ async function handleSend() {
           }
           bodyPayload = {
             contents: [{ role: 'user', parts: contentParts }],
-            generationConfig: { responseModalities: ['AUDIO'], durationSeconds: 45 }
+            generationConfig: { responseModalities: ['AUDIO'] }
           };
         } else {
           const selectedVoice = document.getElementById('voiceSelector')?.value || 'Puck';
