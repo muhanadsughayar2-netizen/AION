@@ -5213,6 +5213,7 @@ function showBroadcastCard(thread) {
   const FORMATS = [
     { key: 'talkshow',     label: '🎙️ Talk Show' },
     { key: 'tutorial',     label: '📚 Tutorial' },
+    { key: 'solotutorial', label: '📱 Solo Tutorial' },
     { key: 'trailer',      label: '🎬 Trailer' },
     { key: 'appdemo',      label: '🚀 App Demo' },
     { key: 'presentation', label: '📊 Presentation' },
@@ -5335,6 +5336,7 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
     const map = {
       talkshow:     `You are a professional podcast scriptwriter. Write a lively 3-person talk show script from the source material.\n\n${base}\n\nZEPHYR = warm engaging host, KORE = knowledgeable expert, FENRIR = bold creative voice. Start with ZEPHYR introducing the topic.`,
       tutorial:     `You are a scriptwriter creating an educational tutorial broadcast.\n\n${base}\n\nZEPHYR = friendly instructor walking through content step by step, KORE = student asking smart clarifying questions, FENRIR = adds real-world tips and examples. Start with ZEPHYR introducing what will be learned.`,
+      solotutorial: `You are writing a solo app tutorial script for a professional YouTube presenter — ONE speaker only: FENRIR.\n\n${base}\n\nCRITICAL RULES:\n- EVERY single line MUST start with "FENRIR:" — no ZEPHYR, no KORE, absolutely no other speakers.\n- Write exactly ${exchanges} lines.\n- Tone: confident, clear, enthusiastic — like a top tech YouTuber (MKBHD, Linus Tech Tips style).\n- Structure: Hook → What the app does → Walk through each feature step by step → Real-world benefit → Call to action.\n- Each line should be 10-25 words — conversational but punchy. Vary the pace: short punchy sentences mixed with slightly longer explanatory ones.\n- Use "..." for natural pauses. No filler words like "um" or "basically".\n- Make every feature sound genuinely exciting and useful.\n- End with a strong memorable sign-off that sticks.\n\nStart with FENRIR delivering a powerful hook that immediately grabs attention.`,
       appdemo:      `You are a scriptwriter creating an app or product demo broadcast.\n\n${base}\n\nZEPHYR = main presenter showcasing features enthusiastically, KORE = excited first-time user reacting, FENRIR = technical expert adding context. Start with ZEPHYR with a strong opening hook.`,
       presentation: `You are a scriptwriter creating a professional business presentation broadcast.\n\n${base}\n\nZEPHYR = main presenter delivering key points, KORE = co-presenter adding supporting evidence, FENRIR = reinforces and summarizes takeaways. Professional, polished language. Start with ZEPHYR with an executive summary.`,
       narrator:     `You are a scriptwriter creating a documentary-style narrative broadcast.\n\n${base}\n\nZEPHYR = primary narrator (~50% of lines), KORE = provides perspective and counterpoint (~30%), FENRIR = delivers impactful conclusions (~20%). Measured, compelling language. Start with ZEPHYR.`,
@@ -5348,6 +5350,7 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
     const map = {
       talkshow:     'Speak naturally and conversationally as if live on a talk show: ',
       tutorial:     'Speak clearly and educationally as a friendly instructor: ',
+      solotutorial: 'You are a confident, charismatic tech YouTuber presenting a professional app tutorial. Speak with energy, clarity, and authority — like you have a million subscribers watching: ',
       appdemo:      'Speak enthusiastically as if presenting an exciting product demo: ',
       presentation: 'Speak professionally and authoritatively as in a business presentation: ',
       narrator:     'Speak like a compelling documentary narrator, measured and thoughtful: ',
@@ -5390,6 +5393,7 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
       <div style="display:flex;gap:5px;flex-wrap:wrap;">
         <button class="bc-pill bc-fmt active" data-fmt="talkshow">🎙️ Talk Show</button>
         <button class="bc-pill bc-fmt" data-fmt="tutorial">📚 Tutorial</button>
+        <button class="bc-pill bc-fmt bc-fmt-solo" data-fmt="solotutorial" style="border-color:rgba(45,212,191,0.35);color:#2dd4bf;background:rgba(45,212,191,0.06);">📱 Solo Tutorial</button>
         <button class="bc-pill bc-fmt" data-fmt="appdemo">🚀 App Demo</button>
         <button class="bc-pill bc-fmt" data-fmt="presentation">📊 Presentation</button>
         <button class="bc-pill bc-fmt" data-fmt="narrator">🎬 Narrator</button>
@@ -5495,16 +5499,23 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
     btn.addEventListener('click', () => {
       card.querySelectorAll('.bc-fmt').forEach(b => {
         b.classList.remove('active');
-        // Reset trailer button back to gold idle style
+        // Reset special buttons back to idle styles
         if (b.dataset.fmt === 'trailer') {
           b.style.borderColor = 'rgba(234,179,8,0.35)';
           b.style.color = '#eab308';
           b.style.background = 'rgba(234,179,8,0.06)';
+          b.style.fontWeight = '';
+        }
+        if (b.dataset.fmt === 'solotutorial') {
+          b.style.borderColor = 'rgba(45,212,191,0.35)';
+          b.style.color = '#2dd4bf';
+          b.style.background = 'rgba(45,212,191,0.06)';
+          b.style.fontWeight = '';
         }
       });
       btn.classList.add('active');
       selFormat = btn.dataset.fmt;
-      // Trailer: override active style to gold + auto-select Cinematic music
+      // Trailer: gold active style + auto-select Cinematic music
       if (selFormat === 'trailer') {
         btn.style.borderColor = 'rgba(234,179,8,0.55)';
         btn.style.color = '#fde047';
@@ -5512,6 +5523,14 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
         btn.style.fontWeight = '700';
         const cinBtn = card.querySelector('.bc-trk[data-trk="cinematic"]');
         if (cinBtn) cinBtn.click();
+      // Solo Tutorial: teal active style + auto-select Upbeat music
+      } else if (selFormat === 'solotutorial') {
+        btn.style.borderColor = 'rgba(45,212,191,0.7)';
+        btn.style.color = '#5eead4';
+        btn.style.background = 'rgba(45,212,191,0.18)';
+        btn.style.fontWeight = '700';
+        const upbeatBtn = card.querySelector('.bc-trk[data-trk="upbeat"]');
+        if (upbeatBtn) upbeatBtn.click();
       } else {
         btn.style.borderColor = '';
         btn.style.color = '';
