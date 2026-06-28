@@ -1956,9 +1956,8 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
       parameters: {
         aspectRatio: aspectRatio || '16:9',
         sampleCount: 1,
-        durationSeconds: selectedVideoDuration,
-        // negativePrompt removed — current Veo models reject it
-        enhancePrompt: false
+        durationSeconds: selectedVideoDuration
+        // negativePrompt + enhancePrompt removed — veo-3.1-lite rejects both
       }
     };
 
@@ -2098,6 +2097,10 @@ async function generateOneVeoClip(clipIdx, ctx) {
   const MAX_FULL_CYCLE_RETRIES = 2;
   let cycleAttempt = 0;
   let finalStatus = 'unknown';
+  // If clip 0 gets no_uri with the screenshot attached (likely a Veo safety
+  // silent-block on real people / children), strip the image on the retry so
+  // Veo generates something from text alone rather than skipping the clip entirely.
+  let noUriFallbackImageStripped = false;
 
   while (cycleAttempt < MAX_FULL_CYCLE_RETRIES) {
     cycleAttempt++;
@@ -2182,15 +2185,16 @@ async function generateOneVeoClip(clipIdx, ctx) {
           parameters: {
             aspectRatio: ctx.aspectRatio || '16:9',
             sampleCount: 1,
-            durationSeconds: durationSeconds,
-            // negativePrompt removed — current Veo models reject it
-            enhancePrompt: false
+            durationSeconds: durationSeconds
+            // negativePrompt + enhancePrompt removed — veo-3.1-lite rejects both
           }
         };
 
         // Use the SNAPSHOTTED image from batch start — never re-read globals,
         // so retrying clip 0 always uses the same input the original batch used.
-        if (clipIdx === 0 && includeImage && sourceImageForClip0) {
+        // On retry after a no_uri (likely Veo safety silent-block on real people),
+        // strip the image so at least a text-only clip is generated.
+        if (clipIdx === 0 && includeImage && sourceImageForClip0 && !noUriFallbackImageStripped) {
           requestBody.instances[0].image = {
             bytesBase64Encoded: sourceImageForClip0.base64,
             mimeType: sourceImageForClip0.mimeType
@@ -2406,6 +2410,17 @@ async function generateOneVeoClip(clipIdx, ctx) {
 
     if (cycleAttempt < MAX_FULL_CYCLE_RETRIES) {
       const waitSec = result.status === 'rate_limit' ? 65 : 20;
+      // no_uri on clip 0 with image → Veo safety silent-block on real people.
+      // Strip the image on the retry so text-only generation can proceed.
+      if (result.status === 'no_uri' && clipIdx === 0 && includeImage && sourceImageForClip0) {
+        noUriFallbackImageStripped = true;
+        if (statusEl) { statusEl.textContent = `⚠ no_uri — retrying without image`; statusEl.style.color = '#ffd700'; }
+        const completed = await cancellableWait(10, ctx, (s) => {
+          if (text) text.textContent = `Clip ${clipNum}/${clipCount} — safety filter, retrying text-only in ${s}s...`;
+        });
+        if (!completed) { finalStatus = 'user_stopped_poststart_skipped'; break; }
+        continue;
+      }
       if (statusEl) { statusEl.textContent = `⚠ ${result.status} — retrying (${cycleAttempt}/${MAX_FULL_CYCLE_RETRIES})`; statusEl.style.color = '#ffd700'; }
       const completed = await cancellableWait(waitSec, ctx, (s) => {
         if (text) text.textContent = `Clip ${clipNum}/${clipCount} ${result.status} — retrying in ${s}s...`;
