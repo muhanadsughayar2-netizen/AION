@@ -1322,7 +1322,7 @@ const LYRIA_MODELS_DISPLAY = [
 
 let selectedVeoModel = MODELS.veoLite;
 let selectedVideoDuration = 8;
-let selectedClipCount = 1; // locked — single 8s clip only, no stitching
+let selectedClipCount = 5;
 let userAvailableVeoModels = [];
 let selectedMusicModel = MODELS.musicDefault;
 
@@ -1372,11 +1372,19 @@ function showVideoStudio(thread) {
         <button class="studio-surprise-btn" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(138,180,248,0.25);background:rgba(138,180,248,0.06);color:#8ab4f8;font-size:12px;font-weight:600;cursor:pointer;">🎲 Surprise Me</button>
       </div>
 
-      <!-- Fixed spec badge -->
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-        <span style="padding:3px 10px;border-radius:20px;background:rgba(138,180,248,0.12);border:1px solid rgba(138,180,248,0.25);color:#8ab4f8;font-size:11px;font-weight:700;letter-spacing:0.5px;">8 SECONDS</span>
-        <span style="padding:3px 10px;border-radius:20px;background:rgba(138,180,248,0.06);border:1px solid rgba(138,180,248,0.15);color:#667788;font-size:11px;font-weight:600;">1 CLIP · NO STITCHING</span>
-        <span style="padding:3px 10px;border-radius:20px;background:rgba(138,180,248,0.06);border:1px solid rgba(138,180,248,0.15);color:#667788;font-size:11px;font-weight:600;">⏱ ~1-2 MIN</span>
+      <!-- Clip count selector -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:12px;color:#667788;">Clips (8s each):</span>
+          <span class="studio-dur-label" style="font-size:12px;color:#8ab4f8;font-weight:600;">${selectedClipCount * selectedVideoDuration}s total (${selectedClipCount} × ${selectedVideoDuration}s)</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${[1,2,3,4,5,6,8].map(n => {
+            const sel = n === selectedClipCount;
+            return `<button class="veo-clip-btn${sel ? ' selected' : ''}" data-clips="${n}" style="padding:4px 12px;border-radius:8px;border:1px solid ${sel ? 'rgba(138,180,248,0.5)' : 'rgba(138,180,248,0.2)'};background:${sel ? 'rgba(138,180,248,0.15)' : 'rgba(138,180,248,0.04)'};color:${sel ? '#8ab4f8' : '#aabbcc'};font-size:12px;font-weight:600;cursor:pointer;">${n}</button>`;
+          }).join('')}
+        </div>
+        <div class="studio-music-clock-hint" style="margin-top:6px;font-size:11px;color:#667788;display:none;">🎵 Clip count auto-set from your Lyria track duration</div>
       </div>
 
       <!-- Model selector -->
@@ -1428,7 +1436,7 @@ function showVideoStudio(thread) {
       </div>
 
       <!-- Generate button -->
-      <button class="studio-create-btn" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#4285F4,#2563c4);color:#fff;font-size:13px;font-weight:700;cursor:pointer;opacity:0.4;pointer-events:none;">🎬 Generate 8s Video</button>
+      <button class="studio-create-btn" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#4285F4,#2563c4);color:#fff;font-size:13px;font-weight:700;cursor:pointer;opacity:0.4;pointer-events:none;">🎬 Generate 5-clip Video (40s)</button>
     </div>
   `;
 
@@ -1450,9 +1458,71 @@ function showVideoStudio(thread) {
   function updateDurLabel() {
     const durLabel = studio.querySelector('.studio-dur-label');
     const total = selectedVideoDuration * selectedClipCount;
-    if (durLabel) durLabel.textContent = selectedClipCount > 1 ? `${total}s total (${selectedClipCount} x ${selectedVideoDuration}s)` : `${total}s total`;
+    if (durLabel) durLabel.textContent = selectedClipCount > 1 ? `${total}s total (${selectedClipCount} × ${selectedVideoDuration}s)` : `${total}s total`;
+    const btn = studio.querySelector('.studio-create-btn');
+    if (btn) {
+      if (selectedClipCount > 1) {
+        btn.textContent = `🎬 Generate ${selectedClipCount}-clip Video (${total}s)`;
+      } else {
+        btn.textContent = `🎬 Generate ${total}s Video`;
+      }
+    }
     renderVeoPriceTable(studio);
   }
+
+  // Wire clip count buttons
+  studio.querySelectorAll('.veo-clip-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      studio.querySelectorAll('.veo-clip-btn').forEach(b => {
+        b.style.border = '1px solid rgba(138,180,248,0.2)';
+        b.style.background = 'rgba(138,180,248,0.04)';
+        b.style.color = '#aabbcc';
+        b.classList.remove('selected');
+      });
+      btn.style.border = '1px solid rgba(138,180,248,0.5)';
+      btn.style.background = 'rgba(138,180,248,0.15)';
+      btn.style.color = '#8ab4f8';
+      btn.classList.add('selected');
+      selectedClipCount = parseInt(btn.dataset.clips, 10) || 1;
+      updateDurLabel();
+    });
+  });
+
+  // Audio Master Clock — if a Lyria track was generated in Song Studio,
+  // auto-calculate clip count from its duration so the video fills the song.
+  (async () => {
+    try {
+      const lyriaBlob = window._snapToAI_lyriaBlob;
+      if (lyriaBlob && lyriaBlob instanceof Blob) {
+        const ac = new AudioContext();
+        const arrayBuf = await lyriaBlob.arrayBuffer();
+        const decoded = await ac.decodeAudioData(arrayBuf);
+        await ac.close().catch(() => {});
+        const musicDuration = decoded.duration;
+        if (musicDuration > 0) {
+          const autoCount = Math.max(1, Math.min(8, Math.ceil(musicDuration / selectedVideoDuration)));
+          selectedClipCount = autoCount;
+          // Highlight the matching button or set closest one
+          let matched = false;
+          studio.querySelectorAll('.veo-clip-btn').forEach(b => {
+            const n = parseInt(b.dataset.clips, 10);
+            const active = n === autoCount;
+            b.style.border = active ? '1px solid rgba(138,180,248,0.5)' : '1px solid rgba(138,180,248,0.2)';
+            b.style.background = active ? 'rgba(138,180,248,0.15)' : 'rgba(138,180,248,0.04)';
+            b.style.color = active ? '#8ab4f8' : '#aabbcc';
+            if (active) { b.classList.add('selected'); matched = true; } else { b.classList.remove('selected'); }
+          });
+          if (!matched) {
+            // no exact button — show closest and update label
+          }
+          const hint = studio.querySelector('.studio-music-clock-hint');
+          if (hint) hint.style.display = 'block';
+          updateDurLabel();
+          console.log(`[SnapToAI Video] Audio Master Clock: Lyria track ${musicDuration.toFixed(1)}s → ${autoCount} clips`);
+        }
+      }
+    } catch (_) {}
+  })();
 
   studio.querySelectorAll('.veo-dur-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1733,6 +1803,23 @@ async function startVideoGeneration(prompt, thread) {
   const clipCount = selectedClipCount || 1;
   const totalDur = selectedVideoDuration * clipCount;
 
+  // Audio Master Clock — grab the Lyria blob set by Song Studio (if any).
+  // We decode it here once so we can pass the duration to the storyboard
+  // director AND later pass the raw blob to the stitcher for the audio overlay.
+  let musicBlob = null;
+  let musicDuration = 0;
+  try {
+    const lb = window._snapToAI_lyriaBlob;
+    if (lb && lb instanceof Blob) {
+      const ac = new AudioContext();
+      const decoded = await ac.decodeAudioData(await lb.arrayBuffer());
+      await ac.close().catch(() => {});
+      musicBlob = lb;
+      musicDuration = decoded.duration;
+      console.log(`[SnapToAI Video] Lyria audio clock: ${musicDuration.toFixed(1)}s — will overlay on final stitch`);
+    }
+  } catch (_) {}
+
   // ── HeyGen-style plan approval for multi-clip videos ──────────────
   // Build the storyboard FIRST and let the user approve it before any
   // Veo credits are charged. Single clips skip this step (low risk, no
@@ -1751,7 +1838,7 @@ async function startVideoGeneration(prompt, thread) {
     thread.scrollTop = thread.scrollHeight;
 
     try {
-      prebuiltScenes = await buildClipScenes(prompt, clipCount, apiKey, selectedVideoDuration, creativityTemp(selectedCreativity), selectedCreativity);
+      prebuiltScenes = await buildClipScenes(prompt, clipCount, apiKey, selectedVideoDuration, creativityTemp(selectedCreativity), selectedCreativity, musicDuration || undefined);
     } catch (e) {
       console.warn('[veo plan] storyboard build failed:', e?.message || e);
     }
@@ -1856,7 +1943,7 @@ async function startVideoGeneration(prompt, thread) {
   if (clipCount === 1) {
     await generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage, selectedAspectRatio);
   } else {
-    await generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes, selectedAspectRatio);
+    await generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes, selectedAspectRatio, musicBlob, musicDuration);
   }
 }
 
@@ -2469,7 +2556,9 @@ function briefAdheres(userPrompt, parsed) {
 
 // Ask Gemini to produce a continuity-anchored storyboard.
 // Returns array of clip prompts on success, null on failure.
-async function generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur, temperature) {
+// musicDuration (optional seconds): when provided, beat timestamps are injected
+// into each clip's shot so the action is musically timed.
+async function generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur, temperature, musicDuration) {
   if (!apiKey || clipCount < 2) return null;
   const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
   // Task #32: Temperature is now caller-controlled via the Video Studio
@@ -2480,8 +2569,23 @@ async function generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur, te
   // a parse failure doesn't compound by also dialing creativity up.
   const retryTemp = Math.max(0.2, baseTemp - 0.05);
 
+  // Beat-aware timestamps: when a Lyria track is attached, inject timing context
+  // so each clip's action lands on a musically meaningful moment.
+  const hasMusicSync = (typeof musicDuration === 'number') && musicDuration > 0;
+  const beatTimestamps = hasMusicSync
+    ? Array.from({ length: clipCount }, (_, i) => {
+        const t0 = Math.round(i * segLen);
+        const t1 = Math.round((i + 1) * segLen);
+        return `Clip ${i + 1}: ${t0}s–${t1}s`;
+      }).join(', ')
+    : null;
+
+  const musicSyncBlock = hasMusicSync
+    ? `\nMUSIC SYNC: This video will be set to a ${musicDuration.toFixed(1)}-second Lyria music track. The clips map to these timestamps: ${beatTimestamps}. Time the action in each shot to the energy of its window — rising action should peak near the midpoint of the track, and the final clip should feel like a satisfying resolution.`
+    : '';
+
   const directorBrief =
-`You are a film director planning a ${clipCount * segLen}-second cinematic video that will be rendered by Google Veo as ${clipCount} sequential ${segLen}-second clips, then stitched together.
+`You are a film director planning a ${clipCount * segLen}-second cinematic video that will be rendered by Google Veo as ${clipCount} sequential ${segLen}-second clips, then stitched together.${musicSyncBlock}
 
 USER'S BRIEF (this is the contract — every subject, action, and concrete detail in here is non-negotiable):
 """
@@ -2497,7 +2601,7 @@ YOUR JOB is to direct this scene cinematically — adding lighting, camera langu
 You CAN, and should:
 - vary camera angle, lens, framing, and lighting between segments to give the cut real cinematic motion,
 - describe the subject with pronouns or short descriptors after the first mention if it reads more naturally,
-- pick beats that progress the action (setup → peak → resolve) rather than repeating the same moment.
+- pick beats that progress the action (setup → peak → resolve) rather than repeating the same moment.${hasMusicSync ? '\n- note the timestamp window for each clip (e.g. "0s–8s: establish the scene") in the shot description so Veo paces action to the music.' : ''}
 
 Return STRICT JSON ONLY (no markdown, no commentary) in this exact shape:
 {
@@ -2884,9 +2988,9 @@ function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, 
 // We now call generateAnchoredStoryboard() first (cinematic enrichment
 // with brief-anchoring guards), and only fall back to the literal
 // template if the director call fails.
-async function buildClipScenes(prompt, clipCount, apiKey, clipDur, temperature, creativityLevel) {
+async function buildClipScenes(prompt, clipCount, apiKey, clipDur, temperature, creativityLevel, musicDuration) {
   if (clipCount < 2) return [];
-  const directed = await generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur, temperature);
+  const directed = await generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur, temperature, musicDuration);
   if (directed && directed.length === clipCount) {
     console.log(`[veo storyboard] AI director succeeded — ${clipCount} cinematic clips (creativity=${creativityLevel || 'default'}, temp=${temperature ?? 0.35})`);
     // Task #32: stamp the human-readable creativity level on meta so the
@@ -2947,12 +3051,12 @@ function recompileScenesFromMeta(meta, clipCount, clipDur, vibe, userPrompt) {
   return out;
 }
 
-async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes, aspectRatio) {
+async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes, aspectRatio, musicBlob, musicDuration) {
   let clipScenes = prebuiltScenes;
   if (!clipScenes || clipScenes.length !== clipCount) {
     const progressText = progressBubble.querySelector('.video-progress-text');
     if (progressText) progressText.textContent = `Planning ${clipCount}-clip storyboard for visual continuity...`;
-    clipScenes = await buildClipScenes(prompt, clipCount, apiKey, selectedVideoDuration, creativityTemp(selectedCreativity), selectedCreativity);
+    clipScenes = await buildClipScenes(prompt, clipCount, apiKey, selectedVideoDuration, creativityTemp(selectedCreativity), selectedCreativity, musicDuration || undefined);
   }
   // Index-based results so retry can replace any specific slot
   const clipResults = Array.from({length: clipCount}, (_, i) => ({ n: i + 1, status: 'pending', url: null }));
@@ -2998,7 +3102,11 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
                 // Task #16: User-uploaded reference frames keyed by predecessor
                 // clip idx. userTransitionFrames[i] overrides transitionFrames[i]
                 // when generating clip i+1. Lets users rescue a broken auto-chain.
-                userTransitionFrames: {} };
+                userTransitionFrames: {},
+                // Lyria audio blob for final stitch overlay. When present,
+                // stitchVideos replaces per-clip Veo audio with this full track.
+                musicBlob: musicBlob || null,
+                musicDuration: musicDuration || 0 };
 
   // Wire the Stop button. Sets a flag that all wait loops + the batch loop
   // observe; the user keeps every clip already rendered, no further Veo
@@ -3374,19 +3482,54 @@ async function renderVeoBatchOutcome(ctx) {
     return;
   }
 
-  // --- Case B: at least 1 successful clip → show it directly, no stitching ---
-  try {
-    showVideoResult(progressBubble, successUrls[0], thread);
-  } catch (err) {
-    console.log('[Aion Video] Result error:', err.message);
+  // --- Case B: at least 1 successful clip ---
+  if (successUrls.length === 1 || clipCount === 1) {
+    // Single clip — show it directly.
+    try {
+      showVideoResult(progressBubble, successUrls[0], thread);
+    } catch (err) {
+      console.log('[SnapToAI Video] Result error:', err.message);
+    }
+  } else {
+    // Multiple clips — auto-stitch and overlay Lyria audio (if present).
+    const stitchStatusEl = document.createElement('div');
+    stitchStatusEl.style.cssText = 'font-size:12px;color:#ffa500;margin-bottom:8px;';
+    const musicNote = ctx.musicBlob ? ' + Lyria audio overlay' : '';
+    stitchStatusEl.textContent = `🔗 Stitching ${successUrls.length} clips${musicNote}...`;
+    progressBubble.innerHTML = '';
+    progressBubble.appendChild(stitchStatusEl);
+    thread.scrollTop = thread.scrollHeight;
+
+    let stitchedUrl = null;
+    try {
+      stitchedUrl = await stitchVideos(successUrls, ctx);
+    } catch (stitchErr) {
+      console.warn('[SnapToAI Video] Stitch failed:', stitchErr?.message || stitchErr);
+    }
+
+    if (stitchedUrl) {
+      ctx.lastStitchedUrl = stitchedUrl;
+      try {
+        showStitchedVideoResult(progressBubble, stitchedUrl, successUrls, thread);
+      } catch (err) {
+        console.log('[SnapToAI Video] Stitch result display error:', err.message);
+      }
+    } else {
+      // Stitch failed — fall back to showing the first clip.
+      stitchStatusEl.textContent = '⚠ Stitch failed — showing clip 1.';
+      try {
+        showVideoResult(progressBubble, successUrls[0], thread);
+      } catch (err) {
+        console.log('[SnapToAI Video] Fallback result error:', err.message);
+      }
+    }
   }
 
   // Always append the retry/re-render panel so users can fix bad clips
   // without paying to regenerate the entire video.
-  const failedClips = clipResults.filter(r => !r.url);
   const panel = document.createElement('div');
   panel.innerHTML = buildVeoSummaryCard(ctx, billingAbortAt, /*hasSuccess*/ true, successUrls.length);
-  progressBubble.appendChild(panel.firstElementChild);
+  if (panel.firstElementChild) progressBubble.appendChild(panel.firstElementChild);
   if (clipCount > 1) {
     const rerenderPanel = document.createElement('div');
     rerenderPanel.innerHTML = buildVeoRerenderPanel(ctx);
@@ -4339,9 +4482,36 @@ async function stitchVideos(videoUrls, stitchCtx) {
     try { await audioCtx.resume(); } catch (_) {}
     const audioDest = audioCtx.createMediaStreamDestination();
 
+    // --- Lyria audio overlay ---
+    // When a Lyria music blob is available (set by Song Studio), decode it and
+    // feed the full track into audioDest instead of the individual Veo clip
+    // audio. Veo clips are muted so only the Lyria track plays. The music is
+    // looped/trimmed to match the total video duration.
+    let lyriaSource = null;
+    const lyriaBlob = stitchCtx && stitchCtx.musicBlob;
+    if (lyriaBlob) {
+      try {
+        const arrayBuf = await lyriaBlob.arrayBuffer();
+        const decoded = await audioCtx.decodeAudioData(arrayBuf);
+        lyriaSource = audioCtx.createBufferSource();
+        lyriaSource.buffer = decoded;
+        lyriaSource.loop = true; // loops if clips run longer than the song
+        const musicGain = audioCtx.createGain();
+        musicGain.gain.value = 1;
+        lyriaSource.connect(musicGain);
+        musicGain.connect(audioDest);
+        // Mute all Veo clip video elements so only Lyria plays
+        for (const v of videos) { try { v.muted = true; } catch (_) {} }
+        console.log(`[SnapToAI Video] Lyria overlay: ${decoded.duration.toFixed(1)}s track decoded — muting Veo clip audio`);
+      } catch (e) {
+        console.warn('[SnapToAI Video] Lyria decode failed, falling back to clip audio:', e.message);
+        lyriaSource = null;
+      }
+    }
+
     // Connect clip 0's audio NOW so audioDest has a live track when the
-    // recorder is constructed.
-    {
+    // recorder is constructed. Skip if Lyria overlay is active (clips are muted).
+    if (!lyriaSource) {
       try {
         const src = audioCtx.createMediaElementSource(videos[0]);
         const g = audioCtx.createGain();
@@ -4355,6 +4525,9 @@ async function stitchVideos(videoUrls, stitchCtx) {
         sources.push(null);
         gains.push(null);
       }
+    } else {
+      // Push nulls so the per-clip connect/disconnect loops stay index-aligned.
+      for (let _i = 0; _i < videos.length; _i++) { sources.push(null); gains.push(null); }
     }
 
     const FPS = 30;
@@ -4362,7 +4535,7 @@ async function stitchVideos(videoUrls, stitchCtx) {
     const combined = new MediaStream();
     videoStream.getVideoTracks().forEach(t => combined.addTrack(t));
     audioDest.stream.getAudioTracks().forEach(t => combined.addTrack(t));
-    console.log(`[SnapToAI Video] combined stream: ${combined.getVideoTracks().length}v + ${combined.getAudioTracks().length}a tracks`);
+    console.log(`[SnapToAI Video] combined stream: ${combined.getVideoTracks().length}v + ${combined.getAudioTracks().length}a tracks (lyria=${!!lyriaSource})`);
 
     const codecCandidates = [
       'video/webm;codecs=vp9,opus',
@@ -4408,6 +4581,11 @@ async function stitchVideos(videoUrls, stitchCtx) {
     // timeslice=250ms so chunks flush regularly. A single giant final chunk
     // sometimes shows up as a corrupt/0-byte file in Chrome.
     recorder.start(250);
+    // Start the Lyria track at the same moment the recorder begins, so audio
+    // and video are aligned from frame 0.
+    if (lyriaSource) {
+      try { lyriaSource.start(0); } catch (_) {}
+    }
 
     // ---- 5. Sequential playback. All metadata is preloaded so the only
     // per-clip awaits are v.play() (resolves in <50ms) and the draw promise.
@@ -4424,7 +4602,8 @@ async function stitchVideos(videoUrls, stitchCtx) {
         const v = videos[i];
 
         // Connect this clip's audio (clip 0 was already connected above).
-        if (i > 0) {
+        // Skip entirely when Lyria overlay is active — all sources are pre-nulled.
+        if (i > 0 && !lyriaSource) {
           try {
             const src = audioCtx.createMediaElementSource(v);
             const g = audioCtx.createGain();
@@ -4545,6 +4724,7 @@ async function stitchVideos(videoUrls, stitchCtx) {
       for (const u of blobUrls) {
         try { URL.revokeObjectURL(u); } catch (_) {}
       }
+      try { lyriaSource && lyriaSource.stop(); } catch (_) {}
       try { recorder.stop(); } catch (_) {}
       await recordingDone;
       // Don't let audioCtx.close() hang the user (rare Chrome bug under load).
@@ -8249,6 +8429,28 @@ async function handleSend() {
         }
         if (part.inlineData && part.inlineData.mimeType?.startsWith('audio') && part.inlineData.data?.length > 5000) {
           hasAudio = true;
+          // Store the raw blob in a global so Video Studio can pick it up as
+          // the Audio Master Clock reference and Lyria audio overlay source.
+          try {
+            const rawBytes = Uint8Array.from(atob(part.inlineData.data), c => c.charCodeAt(0));
+            const mimeType = (part.inlineData.mimeType || '').toLowerCase();
+            let lyriaBlob;
+            if (!mimeType || mimeType.includes('pcm') || mimeType.startsWith('audio/l16') || mimeType.startsWith('audio/l-16')) {
+              const sr = 24000, ch = 1, bps = 16;
+              const hdr = new ArrayBuffer(44); const dv = new DataView(hdr);
+              const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+              ws(0,'RIFF'); dv.setUint32(4, 36 + rawBytes.byteLength, true); ws(8,'WAVE'); ws(12,'fmt ');
+              dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,ch,true);
+              dv.setUint32(24,sr,true); dv.setUint32(28,sr*ch*bps/8,true);
+              dv.setUint16(32,ch*bps/8,true); dv.setUint16(34,bps,true);
+              ws(36,'data'); dv.setUint32(40,rawBytes.byteLength,true);
+              lyriaBlob = new Blob([hdr, rawBytes], { type: 'audio/wav' });
+            } else {
+              lyriaBlob = new Blob([rawBytes], { type: part.inlineData.mimeType });
+            }
+            window._snapToAI_lyriaBlob = lyriaBlob;
+            console.log(`[SnapToAI] Lyria track stored (${(lyriaBlob.size / 1024).toFixed(0)} KB) — Video Studio will auto-sync clip count and overlay this track`);
+          } catch (_) {}
           const audioSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
           const audioId = 'audio-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
           htmlContent += `<div id="wrap-${audioId}" style="margin:10px 0;">
