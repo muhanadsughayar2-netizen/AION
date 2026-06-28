@@ -2142,6 +2142,11 @@ async function generateOneVeoClip(clipIdx, ctx) {
           } else if (rollingFrame && rollingFrame.base64) {
             attachedChainImage = rollingFrame;
             chainSourceLabel = 'rolling last frame';
+          } else if (includeImage && sourceImageForClip0 && sourceImageForClip0.base64) {
+            // Previous clip was skipped/failed — fall back to the original
+            // screenshot so characters stay consistent instead of drifting.
+            attachedChainImage = sourceImageForClip0;
+            chainSourceLabel = 'original screenshot (prev clip skipped)';
           }
         }
 
