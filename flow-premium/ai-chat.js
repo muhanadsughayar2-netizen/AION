@@ -8238,24 +8238,47 @@ async function handleSend() {
       const MAX_RETRIES_PER_MODEL = 3;
       const RETRY_DELAY_MS = 1800;
 
+      // Lyria is text-only — it does NOT accept image inputs (hangs/times out).
+      // If the user has a screenshot loaded, first ask Gemini Vision to describe
+      // the visual mood/scene in words, then weave that into the music prompt.
+      let imageSceneDescription = '';
+      if (currentImages.length > 0) {
+        try {
+          const [meta0, b640] = currentImages[0].split(',');
+          const mime0 = meta0.match(/:(.*?);/)?.[1] || 'image/png';
+          const visionResp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ role: 'user', parts: [
+                  { inlineData: { mimeType: mime0, data: b640 } },
+                  { text: 'Describe the mood, atmosphere, colors, emotions, and setting of this image in 2-3 sentences. Focus on what makes it feel a certain way — joyful, tense, peaceful, etc. This description will guide a music generation AI.' }
+                ]}]
+              }),
+              signal: AbortSignal.timeout(15000)
+            }
+          );
+          if (visionResp.ok) {
+            const vd = await visionResp.json().catch(() => ({}));
+            imageSceneDescription = vd.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          }
+        } catch (_) {}
+      }
+
       modelLoop: for (const audioModel of musicModels) {
         const isLyria = audioModel.includes('lyria');
 
         let bodyPayload;
         if (isLyria) {
-          const contentParts = [];
-          if (currentImages.length > 0) {
-            for (const img of currentImages) {
-              const [meta, b64] = img.split(',');
-              const mime = meta.match(/:(.*?);/)?.[1] || 'image/png';
-              contentParts.push({ inlineData: { mimeType: mime, data: b64 } });
-            }
-            contentParts.push({ text: prompt || 'Create music that captures the mood, atmosphere, and emotion of this image. Make it a complete, polished musical piece.' });
-          } else {
-            contentParts.push({ text: buildMusicPrompt(prompt) });
+          // Build a single text prompt — Lyria is text-only, no image support.
+          let musicPromptText = buildMusicPrompt(prompt);
+          if (imageSceneDescription) {
+            musicPromptText = `Visual inspiration: ${imageSceneDescription}\n\nMusic brief: ${musicPromptText}`;
           }
           bodyPayload = {
-            contents: [{ role: 'user', parts: contentParts }],
+            contents: [{ role: 'user', parts: [{ text: musicPromptText }] }],
             generationConfig: { responseModalities: ['AUDIO'] }
           };
         } else {
