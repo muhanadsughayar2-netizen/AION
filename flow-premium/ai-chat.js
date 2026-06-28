@@ -5664,10 +5664,12 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
 
     vid.onloadedmetadata = () => {
       const dur = isFinite(vid.duration) && vid.duration > 0 ? vid.duration : 10;
-      // Extract up to 4 evenly-spaced frames
-      const times = dur <= 4
-        ? [0, dur * 0.5]
-        : [0.1, dur * 0.25, dur * 0.6, Math.max(dur - 0.5, dur * 0.85)];
+      // Extract evenly-spaced frames: 1 per 5s for long videos, 1 per 3s for short, max 25
+      const interval = dur > 30 ? 5 : 3;
+      const count = Math.min(25, Math.max(2, Math.ceil(dur / interval)));
+      const times = Array.from({ length: count }, (_, i) =>
+        i === 0 ? 0.1 : i === count - 1 ? Math.max(dur - 0.5, 0.1) : (dur / (count - 1)) * i
+      );
       const frames = [];
       let idx = 0;
 
