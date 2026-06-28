@@ -5053,328 +5053,138 @@ function showVideoResult(bubble, videoUrl, thread) {
 function showSongStudio(thread) {
   const existing = thread.querySelector('.song-studio');
   if (existing) existing.remove();
-  
+
   const studio = document.createElement('div');
   studio.className = 'chat-bubble ai song-studio';
-  studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none; max-width: 100%; width: 100%;';
-  
-  const genres = [
-    { emoji: '🎸', name: 'Rock' },
-    { emoji: '🎷', name: 'Jazz' },
-    { emoji: '🌴', name: 'Reggae' },
-    { emoji: '🎹', name: 'Classical' },
-    { emoji: '🎤', name: 'Pop' },
-    { emoji: '🎵', name: 'R&B' },
-    { emoji: '🔥', name: 'Hip Hop' },
-    { emoji: '💃', name: 'Latin' },
-    { emoji: '🤠', name: 'Country' },
-    { emoji: '⚡', name: 'EDM' },
-    { emoji: '🎶', name: 'Lo-Fi' },
-    { emoji: '🌙', name: 'Blues' },
-    { emoji: '🎻', name: 'Folk' },
-    { emoji: '💀', name: 'Metal' },
-    { emoji: '🌸', name: 'K-Pop' },
-    { emoji: '🕌', name: 'Afrobeat' },
-    { emoji: '🎺', name: 'Funk' },
-    { emoji: '✨', name: 'Indie' },
-    { emoji: '🌊', name: 'Ambient' },
-    { emoji: '🎧', name: 'Trap' }
+  studio.style.cssText = 'padding:0;margin:8px 0;background:transparent;border:none;max-width:100%;width:100%;';
+
+  const vibes = [
+    { label: '🎸 Rock',      val: 'rock energetic fast' },
+    { label: '🎷 Jazz',      val: 'jazz chill medium' },
+    { label: '🎤 Pop',       val: 'pop happy fast' },
+    { label: '🔥 Hip Hop',   val: 'hip hop powerful medium' },
+    { label: '⚡ EDM',       val: 'edm energetic very fast' },
+    { label: '🎶 Lo-Fi',     val: 'lo-fi peaceful slow' },
+    { label: '🌊 Ambient',   val: 'ambient peaceful slow' },
+    { label: '🏔️ Epic',      val: 'orchestral epic medium' },
+    { label: '❤️ Romantic',  val: 'romantic slow piano' },
+    { label: '🌑 Dark',      val: 'dark mysterious slow' },
   ];
-  
-  const moods = [
-    { emoji: '😊', name: 'Happy' },
-    { emoji: '😢', name: 'Sad' },
-    { emoji: '⚡', name: 'Energetic' },
-    { emoji: '😌', name: 'Chill' },
-    { emoji: '❤️', name: 'Romantic' },
-    { emoji: '🏔️', name: 'Epic' },
-    { emoji: '🌑', name: 'Dark' },
-    { emoji: '🕺', name: 'Funky' },
-    { emoji: '🌅', name: 'Nostalgic' },
-    { emoji: '💪', name: 'Powerful' },
-    { emoji: '🌿', name: 'Peaceful' },
-    { emoji: '🎉', name: 'Party' }
-  ];
-  
-  const tempos = [
-    { emoji: '🐢', name: 'Slow' },
-    { emoji: '🚶', name: 'Medium' },
-    { emoji: '🏃', name: 'Fast' },
-    { emoji: '🚀', name: 'Very Fast' }
-  ];
-  
-  const chipStyle = `display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer;transition:all 0.2s;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#ccd6e0;margin:3px;user-select:none;`;
-  const chipActiveStyle = `background:rgba(0,255,136,0.15);border-color:rgba(0,255,136,0.4);color:#00ff88;`;
-  const sectionTitleStyle = `font-size:13px;font-weight:600;color:#00ff88;margin:12px 0 8px 0;`;
-  const sectionSubStyle = `font-size:11px;color:#667788;margin:-4px 0 6px 0;`;
-  
+
+  const hasImages = currentImages.length > 0;
+
   studio.innerHTML = `
-    <div style="background:linear-gradient(135deg, rgba(0,255,136,0.06), rgba(0,200,100,0.03));border:1px solid rgba(0,255,136,0.12);border-radius:16px;padding:20px;backdrop-filter:blur(10px);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-        <span style="font-size:24px;">🎵</span>
-        <div>
-          <div style="font-size:16px;font-weight:700;color:#e8eef4;">Song Studio</div>
-          <div style="font-size:11px;color:#667788;">Create your perfect song in 3 steps</div>
-        </div>
+    <div style="background:linear-gradient(135deg,rgba(0,255,136,0.06),rgba(0,200,100,0.03));border:1px solid rgba(0,255,136,0.12);border-radius:16px;padding:18px;backdrop-filter:blur(10px);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <span style="font-size:22px;">🎵</span>
+        <div style="font-size:15px;font-weight:700;color:#e8eef4;">Song Studio</div>
       </div>
 
-
-      <div class="img2music-panel" style="background:linear-gradient(135deg, rgba(255,170,0,0.08), rgba(255,100,0,0.04));border:1px solid rgba(255,170,0,0.2);border-radius:12px;padding:14px;margin:10px 0;">
+      <!-- Image-to-Music (reactive) -->
+      <div class="i2m-panel" style="background:linear-gradient(135deg,rgba(255,170,0,0.08),rgba(255,100,0,0.04));border:1px solid rgba(255,170,0,0.2);border-radius:12px;padding:12px;margin-bottom:14px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <span style="font-size:18px;">📸→🎵</span>
+          <span style="font-size:16px;">📸→🎵</span>
           <div>
-            <div style="font-size:13px;font-weight:600;color:#ffaa00;">Image to Music</div>
-            <div class="img2music-count" style="font-size:10px;color:#889900;">Take a screenshot first to turn your image into music!</div>
+            <div style="font-size:12px;font-weight:600;color:#ffaa00;">Image to Music</div>
+            <div class="i2m-sub" style="font-size:10px;color:#889900;">${hasImages ? `${currentImages.length} screenshot${currentImages.length>1?'s':''} ready` : 'Take a screenshot first'}</div>
           </div>
         </div>
-        <div class="img2music-empty" style="display:${currentImages.length > 0 ? 'none' : 'block'};padding:10px 0;font-size:12px;color:#667788;text-align:center;">📸 No screenshots loaded yet — capture one and this panel will activate automatically.</div>
-        <div class="img2music-active" style="display:${currentImages.length > 0 ? 'block' : 'none'};">
-          <textarea class="img2music-desc" placeholder="Describe the music you want...&#10;&#10;e.g. Acoustic guitar, soft and peaceful&#10;e.g. Epic orchestral with drums&#10;e.g. Lo-fi hip hop, rainy day vibes" style="width:100%;box-sizing:border-box;min-height:70px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,170,0,0.2);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;margin-bottom:10px;line-height:1.4;"></textarea>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-            <button class="img2music-happy" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.08);color:#00ff88;font-size:11px;cursor:pointer;">😊 Happy</button>
-            <button class="img2music-chill" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(0,217,255,0.3);background:rgba(0,217,255,0.08);color:#00d9ff;font-size:11px;cursor:pointer;">😌 Chill</button>
-            <button class="img2music-epic" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,107,237,0.3);background:rgba(255,107,237,0.08);color:#ff6bed;font-size:11px;cursor:pointer;">🏔️ Epic</button>
-            <button class="img2music-dark" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#aabbcc;font-size:11px;cursor:pointer;">🌑 Dark</button>
-            <button class="img2music-romantic" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,100,100,0.3);background:rgba(255,100,100,0.08);color:#ff6464;font-size:11px;cursor:pointer;">💕 Romantic</button>
-            <button class="img2music-mysterious" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(138,100,255,0.3);background:rgba(138,100,255,0.08);color:#8a64ff;font-size:11px;cursor:pointer;">🔮 Mysterious</button>
-          </div>
-          <button class="img2music-go" style="width:100%;padding:10px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffaa00,#ff8800);color:#000;font-size:13px;font-weight:700;cursor:pointer;">🎵 Create Music From Image</button>
+        <div class="i2m-body" style="display:${hasImages?'block':'none'};">
+          <button class="i2m-go" style="width:100%;padding:9px;border-radius:9px;border:none;background:linear-gradient(135deg,#ffaa00,#ff8800);color:#000;font-size:13px;font-weight:700;cursor:pointer;">🎵 Create Music From My Screenshot</button>
         </div>
+        <div class="i2m-empty" style="display:${hasImages?'none':'block'};font-size:11px;color:#667788;text-align:center;padding:4px 0;">Capture a screenshot and it will appear here automatically.</div>
       </div>
-      
-      <div style="${sectionTitleStyle}">Step 1: Pick a Genre</div>
-      <div style="${sectionSubStyle}">Choose your style</div>
-      <div class="studio-genres" style="display:flex;flex-wrap:wrap;gap:2px;">
-        ${genres.map(g => `<div class="studio-chip genre-chip" data-value="${g.name}" style="${chipStyle}"><span>${g.emoji}</span><span>${g.name}</span></div>`).join('')}
+
+      <!-- Main prompt -->
+      <textarea class="ss-prompt" placeholder="Describe your song... e.g. upbeat jazz with piano and bass, or chill lo-fi for studying" style="width:100%;box-sizing:border-box;min-height:70px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;line-height:1.5;margin-bottom:10px;"></textarea>
+
+      <!-- Quick vibes -->
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px;">
+        ${vibes.map(v=>`<button class="ss-vibe" data-val="${v.val}" style="padding:5px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#aabbcc;font-size:11px;cursor:pointer;transition:all 0.15s;">${v.label}</button>`).join('')}
       </div>
-      
-      <div style="${sectionTitleStyle}">Step 2: Set the Mood</div>
-      <div style="${sectionSubStyle}">How should it feel?</div>
-      <div class="studio-moods" style="display:flex;flex-wrap:wrap;gap:2px;">
-        ${moods.map(m => `<div class="studio-chip mood-chip" data-value="${m.name}" style="${chipStyle}"><span>${m.emoji}</span><span>${m.name}</span></div>`).join('')}
-      </div>
-      
-      <div style="${sectionTitleStyle}">Step 3: Choose Tempo</div>
-      <div class="studio-tempos" style="display:flex;flex-wrap:wrap;gap:2px;">
-        ${tempos.map(t => `<div class="studio-chip tempo-chip" data-value="${t.name}" style="${chipStyle}"><span>${t.emoji}</span><span>${t.name}</span></div>`).join('')}
-      </div>
-      
-      <div style="${sectionTitleStyle}">What's the Song About?</div>
-      <div style="${sectionSubStyle}">Describe your song idea (optional)</div>
-      <textarea class="studio-topic" placeholder="e.g. A summer road trip with friends, falling in love on a rainy day, celebrating a victory..." style="width:100%;box-sizing:border-box;min-height:60px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;"></textarea>
-      
-      <div style="display:flex;gap:10px;margin-top:14px;">
-        <button class="studio-create-btn" style="flex:1;padding:12px 20px;border-radius:12px;border:none;background:linear-gradient(135deg,#00ff88,#00cc6a);color:#000;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;opacity:0.4;pointer-events:none;">🎵 Create Song</button>
-        <button class="studio-surprise-btn" style="padding:12px 16px;border-radius:12px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.08);color:#00ff88;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;">🎲 Surprise Me</button>
-      </div>
-      
-      <div class="studio-preview" style="margin-top:10px;padding:8px 12px;background:rgba(0,0,0,0.2);border-radius:8px;font-size:11px;color:#556677;display:none;">
-        <span style="color:#00ff88;">Preview:</span> <span class="preview-text"></span>
+
+      <!-- Buttons -->
+      <div style="display:flex;gap:8px;">
+        <button class="ss-go" style="flex:1;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#00ff88,#00cc6a);color:#000;font-size:13px;font-weight:700;cursor:pointer;">🎵 Generate Song</button>
+        <button class="ss-surprise" style="padding:11px 14px;border-radius:10px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.07);color:#00ff88;font-size:12px;font-weight:600;cursor:pointer;">🎲</button>
       </div>
     </div>
   `;
-  
+
   thread.appendChild(studio);
 
-  // Reactive image panel — polls every 500ms and shows/hides the active
-  // section as screenshots enter or leave the queue. Clears itself when
-  // the studio is removed from the DOM so there's no memory leak.
-  let _lastImgCount = -1;
-  const _imgPanelTimer = setInterval(() => {
-    if (!document.contains(studio)) { clearInterval(_imgPanelTimer); return; }
-    const count = currentImages.length;
-    if (count === _lastImgCount) return; // no change
-    _lastImgCount = count;
-    const hasImages = count > 0;
-    const emptyEl  = studio.querySelector('.img2music-empty');
-    const activeEl = studio.querySelector('.img2music-active');
-    const countEl  = studio.querySelector('.img2music-count');
-    if (emptyEl)  emptyEl.style.display  = hasImages ? 'none'  : 'block';
-    if (activeEl) activeEl.style.display = hasImages ? 'block' : 'none';
-    if (countEl)  countEl.textContent    = hasImages
-      ? `You have ${count} screenshot${count > 1 ? 's' : ''} loaded — turn ${count > 1 ? 'them' : 'it'} into music!`
-      : 'Take a screenshot first to turn your image into music!';
+  // Reactive image panel — updates when screenshots are added/removed
+  let _lastCount = currentImages.length;
+  const _timer = setInterval(() => {
+    if (!document.contains(studio)) { clearInterval(_timer); return; }
+    const n = currentImages.length;
+    if (n === _lastCount) return;
+    _lastCount = n;
+    const has = n > 0;
+    studio.querySelector('.i2m-body').style.display  = has ? 'block' : 'none';
+    studio.querySelector('.i2m-empty').style.display = has ? 'none'  : 'block';
+    studio.querySelector('.i2m-sub').textContent     = has ? `${n} screenshot${n>1?'s':''} ready` : 'Take a screenshot first';
   }, 500);
 
-  const img2musicChips = {
-    'happy': 'Happy, upbeat, bright and energetic',
-    'chill': 'Calm, relaxing, smooth and ambient',
-    'epic': 'Epic, powerful, cinematic and orchestral',
-    'dark': 'Dark, mysterious, deep and atmospheric',
-    'romantic': 'Romantic, warm, gentle and emotional',
-    'mysterious': 'Mysterious, ethereal, haunting and enchanting'
-  };
-
-  Object.keys(img2musicChips).forEach(mood => {
-    const btn = studio.querySelector(`.img2music-${mood}`);
-    if (btn) {
-      btn.addEventListener('click', () => {
-        const img2musicDesc = studio.querySelector('.img2music-desc');
-        if (!img2musicDesc) return;
-        const current = img2musicDesc.value.trim();
-        img2musicDesc.value = current ? current + ', ' + img2musicChips[mood].toLowerCase() : img2musicChips[mood];
-        btn.style.opacity = '0.5';
-      });
-    }
+  // Vibe chip toggle
+  studio.querySelectorAll('.ss-vibe').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const isOn = btn.dataset.on === '1';
+      studio.querySelectorAll('.ss-vibe').forEach(b => { b.dataset.on=''; b.style.background='rgba(255,255,255,0.04)'; b.style.borderColor='rgba(255,255,255,0.1)'; b.style.color='#aabbcc'; });
+      if (!isOn) {
+        btn.dataset.on = '1';
+        btn.style.background = 'rgba(0,255,136,0.15)';
+        btn.style.borderColor = 'rgba(0,255,136,0.4)';
+        btn.style.color = '#00ff88';
+        const ta = studio.querySelector('.ss-prompt');
+        if (ta && !ta.value.trim()) ta.value = btn.dataset.val;
+      }
+    });
   });
-  
-  const img2musicGoBtn = studio.querySelector('.img2music-go');
-  if (img2musicGoBtn) {
-    img2musicGoBtn.addEventListener('click', () => {
-      const userNotes = img2musicDesc ? img2musicDesc.value.trim() : '';
-      let prompt = 'Create music inspired by this image.';
-      if (userNotes) {
-        prompt = `Create music inspired by this image. Style notes: ${userNotes}. Make it a complete, polished musical piece.`;
-      } else {
-        prompt = 'Create music that perfectly captures the mood, atmosphere, emotion, and colors of this image. Choose the best genre, tempo, and instruments automatically. Make it a complete, polished musical piece.';
-      }
-      const inputEl = document.getElementById('chatInput');
-      if (inputEl) {
-        inputEl.value = prompt;
-        const sendBtn = document.getElementById('sendBtn');
-        if (sendBtn) sendBtn.click();
-      }
-      studio.style.opacity = '0.5';
-      studio.style.pointerEvents = 'none';
-    });
-  }
-  
-  let selectedGenre = null;
-  let selectedMood = null;
-  let selectedTempo = null;
-  
-  function updatePreview() {
-    const preview = studio.querySelector('.studio-preview');
-    const previewText = studio.querySelector('.preview-text');
-    const createBtn = studio.querySelector('.studio-create-btn');
-    const topic = studio.querySelector('.studio-topic').value.trim();
-    
-    if (selectedGenre) {
-      const parts = [];
-      if (selectedMood) parts.push(`${selectedMood.toLowerCase()}`);
-      parts.push(`${selectedGenre.toLowerCase()} song`);
-      if (selectedTempo) parts.push(`at a ${selectedTempo.toLowerCase()} tempo`);
-      if (topic) parts.push(`about ${topic}`);
-      
-      previewText.textContent = parts.join(' ');
-      preview.style.display = 'block';
-      createBtn.style.opacity = '1';
-      createBtn.style.pointerEvents = 'auto';
-    } else {
-      preview.style.display = 'none';
-      createBtn.style.opacity = '0.4';
-      createBtn.style.pointerEvents = 'none';
-    }
-  }
-  
-  function handleChipClick(container, chipClass, callback) {
-    studio.querySelectorAll(`.${chipClass}`).forEach(chip => {
-      chip.addEventListener('click', () => {
-        const wasActive = chip.style.background.includes('rgba(0, 255, 136');
-        studio.querySelectorAll(`.${chipClass}`).forEach(c => {
-          c.style.background = 'rgba(255,255,255,0.04)';
-          c.style.borderColor = 'rgba(255,255,255,0.1)';
-          c.style.color = '#ccd6e0';
-          c.style.transform = '';
-        });
-        if (!wasActive) {
-          chip.style.background = 'rgba(0,255,136,0.15)';
-          chip.style.borderColor = 'rgba(0,255,136,0.4)';
-          chip.style.color = '#00ff88';
-          chip.style.transform = 'scale(1.05)';
-          callback(chip.dataset.value);
-        } else {
-          callback(null);
-        }
-        updatePreview();
-      });
-      
-      chip.addEventListener('mouseenter', () => {
-        if (!chip.style.background.includes('rgba(0, 255, 136')) {
-          chip.style.background = 'rgba(255,255,255,0.08)';
-        }
-      });
-      chip.addEventListener('mouseleave', () => {
-        if (!chip.style.background.includes('rgba(0, 255, 136')) {
-          chip.style.background = 'rgba(255,255,255,0.04)';
-        }
-      });
-    });
-  }
-  
-  handleChipClick(studio, 'genre-chip', v => { selectedGenre = v; });
-  handleChipClick(studio, 'mood-chip', v => { selectedMood = v; });
-  handleChipClick(studio, 'tempo-chip', v => { selectedTempo = v; });
-  
-  studio.querySelector('.studio-topic').addEventListener('input', updatePreview);
-  
-  studio.querySelector('.studio-create-btn').addEventListener('click', () => {
-    if (!selectedGenre) return;
-    const topic = studio.querySelector('.studio-topic').value.trim();
-    // Send raw keywords so buildMusicPrompt applies its rich instrument/BPM mappings.
-    // A short keyword string (e.g. "jazz happy fast") stays under the 40-char guard
-    // and triggers full expansion — genre gets instruments, tempo gets BPM numbers.
-    const keywords = [selectedGenre, selectedMood, selectedTempo].filter(Boolean).join(' ').toLowerCase();
-    const prompt = topic ? `${keywords}. About: ${topic}` : keywords;
+
+  // Image-to-music button
+  studio.querySelector('.i2m-go').addEventListener('click', () => {
+    const notes = studio.querySelector('.ss-prompt').value.trim();
     const inputEl = document.getElementById('chatInput');
     if (inputEl) {
-      inputEl.value = prompt;
-      const sendBtn = document.getElementById('sendBtn');
-      if (sendBtn) sendBtn.click();
+      inputEl.value = notes
+        ? `Create music inspired by this image. Style: ${notes}`
+        : 'Create music that perfectly captures the mood and atmosphere of this image';
+      document.getElementById('sendBtn')?.click();
     }
     studio.style.opacity = '0.5';
     studio.style.pointerEvents = 'none';
   });
-  
-  studio.querySelector('.studio-surprise-btn').addEventListener('click', () => {
-    const rGenre = genres[Math.floor(Math.random() * genres.length)];
-    const rMood = moods[Math.floor(Math.random() * moods.length)];
-    const rTempo = tempos[Math.floor(Math.random() * tempos.length)];
-    
-    const surpriseTopics = [
-      'dancing under the stars on a warm summer night',
-      'a journey through a neon-lit city at midnight',
-      'finding courage to chase your dreams',
-      'memories of childhood and growing up',
-      'the feeling of freedom on an open road',
-      'falling in love unexpectedly',
-      'overcoming challenges and rising stronger',
-      'a party that never ends',
-      'nature and the beauty of the ocean',
-      'missing someone far away'
-    ];
-    const rTopic = surpriseTopics[Math.floor(Math.random() * surpriseTopics.length)];
-    
-    selectedGenre = rGenre.name;
-    selectedMood = rMood.name;
-    selectedTempo = rTempo.name;
-    
-    studio.querySelectorAll('.genre-chip').forEach(c => {
-      const match = c.dataset.value === rGenre.name;
-      c.style.background = match ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.04)';
-      c.style.borderColor = match ? 'rgba(0,255,136,0.4)' : 'rgba(255,255,255,0.1)';
-      c.style.color = match ? '#00ff88' : '#ccd6e0';
-      c.style.transform = match ? 'scale(1.05)' : '';
-    });
-    studio.querySelectorAll('.mood-chip').forEach(c => {
-      const match = c.dataset.value === rMood.name;
-      c.style.background = match ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.04)';
-      c.style.borderColor = match ? 'rgba(0,255,136,0.4)' : 'rgba(255,255,255,0.1)';
-      c.style.color = match ? '#00ff88' : '#ccd6e0';
-      c.style.transform = match ? 'scale(1.05)' : '';
-    });
-    studio.querySelectorAll('.tempo-chip').forEach(c => {
-      const match = c.dataset.value === rTempo.name;
-      c.style.background = match ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.04)';
-      c.style.borderColor = match ? 'rgba(0,255,136,0.4)' : 'rgba(255,255,255,0.1)';
-      c.style.color = match ? '#00ff88' : '#ccd6e0';
-      c.style.transform = match ? 'scale(1.05)' : '';
-    });
-    
-    studio.querySelector('.studio-topic').value = rTopic;
-    updatePreview();
-    
-    studio.querySelector('.studio-surprise-btn').textContent = '🎲 Again!';
+
+  // Generate button
+  studio.querySelector('.ss-go').addEventListener('click', () => {
+    const prompt = studio.querySelector('.ss-prompt').value.trim();
+    if (!prompt) return;
+    const inputEl = document.getElementById('chatInput');
+    if (inputEl) {
+      inputEl.value = prompt;
+      document.getElementById('sendBtn')?.click();
+    }
+    studio.style.opacity = '0.5';
+    studio.style.pointerEvents = 'none';
+  });
+
+  // Surprise Me
+  const surprises = [
+    'upbeat jazz with piano, walking bass and brushed drums',
+    'epic cinematic orchestral, slow build with powerful strings',
+    'chill lo-fi hip hop, warm vinyl crackle and mellow keys',
+    'dark electronic trap with 808 bass and atmospheric pads',
+    'romantic acoustic guitar and soft piano, slow tempo',
+    'energetic pop punk with distorted guitars and driving drums',
+    'funky disco groove with punchy brass and tight bass',
+    'peaceful ambient with gentle synth pads and nature sounds',
+    'reggae with offbeat guitar and relaxed bass groove',
+    'powerful metal with heavy riffs and thundering double kick',
+  ];
+  studio.querySelector('.ss-surprise').addEventListener('click', () => {
+    const ta = studio.querySelector('.ss-prompt');
+    ta.value = surprises[Math.floor(Math.random() * surprises.length)];
   });
 }
 
