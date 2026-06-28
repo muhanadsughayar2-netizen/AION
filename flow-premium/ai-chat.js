@@ -8204,7 +8204,7 @@ async function handleSend() {
         return p;
       }
 
-      const musicModels = [MODELS.lyria3Pro, MODELS.lyria3, modeConfig.model, MODELS.ttsFallback];
+      const musicModels = [MODELS.lyria3Pro, MODELS.ttsFallback];
       let audioData = null;
       let audioError = '';
       let audioSucceeded = false;
