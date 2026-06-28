@@ -8204,7 +8204,7 @@ async function handleSend() {
         return p;
       }
 
-      const musicModels = [MODELS.lyria3, modeConfig.model, MODELS.lyria3Pro, MODELS.ttsFallback];
+      const musicModels = [MODELS.lyria3Pro, MODELS.lyria3, modeConfig.model, MODELS.ttsFallback];
       let audioData = null;
       let audioError = '';
       let audioSucceeded = false;
@@ -8229,7 +8229,7 @@ async function handleSend() {
           }
           bodyPayload = {
             contents: [{ role: 'user', parts: contentParts }],
-            generationConfig: { responseModalities: ['AUDIO'] }
+            generationConfig: { responseModalities: ['AUDIO'], durationSeconds: 45 }
           };
         } else {
           const selectedVoice = document.getElementById('voiceSelector')?.value || 'Puck';
