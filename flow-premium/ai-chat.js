@@ -5058,133 +5058,207 @@ function showSongStudio(thread) {
   studio.className = 'chat-bubble ai song-studio';
   studio.style.cssText = 'padding:0;margin:8px 0;background:transparent;border:none;max-width:100%;width:100%;';
 
-  const vibes = [
-    { label: '🎸 Rock',      val: 'rock energetic fast' },
-    { label: '🎷 Jazz',      val: 'jazz chill medium' },
-    { label: '🎤 Pop',       val: 'pop happy fast' },
-    { label: '🔥 Hip Hop',   val: 'hip hop powerful medium' },
-    { label: '⚡ EDM',       val: 'edm energetic very fast' },
-    { label: '🎶 Lo-Fi',     val: 'lo-fi peaceful slow' },
-    { label: '🌊 Ambient',   val: 'ambient peaceful slow' },
-    { label: '🏔️ Epic',      val: 'orchestral epic medium' },
-    { label: '❤️ Romantic',  val: 'romantic slow piano' },
-    { label: '🌑 Dark',      val: 'dark mysterious slow' },
-  ];
-
-  const hasImages = currentImages.length > 0;
-
   studio.innerHTML = `
     <div style="background:linear-gradient(135deg,rgba(0,255,136,0.06),rgba(0,200,100,0.03));border:1px solid rgba(0,255,136,0.12);border-radius:16px;padding:18px;backdrop-filter:blur(10px);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
         <span style="font-size:22px;">🎵</span>
-        <div style="font-size:15px;font-weight:700;color:#e8eef4;">Song Studio</div>
-      </div>
-
-      <!-- Image-to-Music (reactive) -->
-      <div class="i2m-panel" style="background:linear-gradient(135deg,rgba(255,170,0,0.08),rgba(255,100,0,0.04));border:1px solid rgba(255,170,0,0.2);border-radius:12px;padding:12px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <span style="font-size:16px;">📸→🎵</span>
-          <div>
-            <div style="font-size:12px;font-weight:600;color:#ffaa00;">Image to Music</div>
-            <div class="i2m-sub" style="font-size:10px;color:#889900;">${hasImages ? `${currentImages.length} screenshot${currentImages.length>1?'s':''} ready` : 'Take a screenshot first'}</div>
-          </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#e8eef4;">Song Studio</div>
+          <div style="font-size:11px;color:#667788;">Upload audio, image, or video — or just describe your song</div>
         </div>
-        <div class="i2m-body" style="display:${hasImages?'block':'none'};">
-          <button class="i2m-go" style="width:100%;padding:9px;border-radius:9px;border:none;background:linear-gradient(135deg,#ffaa00,#ff8800);color:#000;font-size:13px;font-weight:700;cursor:pointer;">🎵 Create Music From My Screenshot</button>
+      </div>
+
+      <!-- Drop zone -->
+      <div class="ss-dropzone" style="border:2px dashed rgba(0,255,136,0.25);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:12px;background:rgba(255,255,255,0.02);">
+        <input class="ss-file" type="file" accept="audio/*,image/*,video/*" style="display:none;">
+        <div class="ss-drop-idle">
+          <div style="font-size:28px;margin-bottom:6px;">🎵 📸 🎬</div>
+          <div style="font-size:13px;color:#aabbcc;font-weight:600;">Drop a file here or click to upload</div>
+          <div style="font-size:11px;color:#556677;margin-top:4px;">Audio • Image • Video — any format</div>
         </div>
-        <div class="i2m-empty" style="display:${hasImages?'none':'block'};font-size:11px;color:#667788;text-align:center;padding:4px 0;">Capture a screenshot and it will appear here automatically.</div>
+        <div class="ss-drop-preview" style="display:none;">
+          <div class="ss-file-info" style="font-size:12px;color:#00ff88;font-weight:600;"></div>
+          <div class="ss-file-sub" style="font-size:10px;color:#667788;margin-top:3px;"></div>
+          <button class="ss-clear" style="margin-top:8px;padding:3px 10px;border-radius:6px;border:1px solid rgba(255,80,80,0.3);background:rgba(255,80,80,0.07);color:#ff6666;font-size:10px;cursor:pointer;">✕ Remove</button>
+        </div>
       </div>
 
-      <!-- Main prompt -->
-      <textarea class="ss-prompt" placeholder="Describe your song... e.g. upbeat jazz with piano and bass, or chill lo-fi for studying" style="width:100%;box-sizing:border-box;min-height:70px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;line-height:1.5;margin-bottom:10px;"></textarea>
-
-      <!-- Quick vibes -->
-      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px;">
-        ${vibes.map(v=>`<button class="ss-vibe" data-val="${v.val}" style="padding:5px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#aabbcc;font-size:11px;cursor:pointer;transition:all 0.15s;">${v.label}</button>`).join('')}
+      <!-- Screenshot hint (reactive) -->
+      <div class="ss-img-hint" style="display:none;font-size:11px;color:#ffaa00;margin-bottom:10px;padding:7px 10px;background:rgba(255,170,0,0.07);border:1px solid rgba(255,170,0,0.2);border-radius:8px;">
+        📸 <span class="ss-img-hint-text"></span> — will be included as visual inspiration
       </div>
 
-      <!-- Buttons -->
-      <div style="display:flex;gap:8px;">
-        <button class="ss-go" style="flex:1;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#00ff88,#00cc6a);color:#000;font-size:13px;font-weight:700;cursor:pointer;">🎵 Generate Song</button>
-        <button class="ss-surprise" style="padding:11px 14px;border-radius:10px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.07);color:#00ff88;font-size:12px;font-weight:600;cursor:pointer;">🎲</button>
-      </div>
+      <!-- Free text -->
+      <textarea class="ss-prompt" placeholder="Describe your song (optional)&#10;e.g. same energy as the uploaded track but with more bass&#10;e.g. something dark and cinematic&#10;Leave blank to let the AI decide from your file" style="width:100%;box-sizing:border-box;min-height:70px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;line-height:1.5;margin-bottom:12px;"></textarea>
+
+      <button class="ss-go" style="width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#00ff88,#00cc6a);color:#000;font-size:14px;font-weight:700;cursor:pointer;">🎵 Generate Song</button>
+      <div class="ss-status" style="display:none;margin-top:10px;font-size:11px;color:#aabbcc;text-align:center;"></div>
     </div>
   `;
 
   thread.appendChild(studio);
 
-  // Reactive image panel — updates when screenshots are added/removed
-  let _lastCount = currentImages.length;
+  // ── State ──────────────────────────────────────────────
+  let uploadedFile = null;   // { type:'audio'|'image'|'video', base64, mimeType, name }
+
+  const dropzone  = studio.querySelector('.ss-dropzone');
+  const fileInput = studio.querySelector('.ss-file');
+  const dropIdle  = studio.querySelector('.ss-drop-idle');
+  const dropPrev  = studio.querySelector('.ss-drop-preview');
+  const fileInfo  = studio.querySelector('.ss-file-info');
+  const fileSub   = studio.querySelector('.ss-file-sub');
+  const clearBtn  = studio.querySelector('.ss-clear');
+  const imgHint   = studio.querySelector('.ss-img-hint');
+  const imgHintTx = studio.querySelector('.ss-img-hint-text');
+  const goBtn     = studio.querySelector('.ss-go');
+  const statusEl  = studio.querySelector('.ss-status');
+
+  // Reactive screenshot hint
+  let _lastImgCount = -1;
   const _timer = setInterval(() => {
     if (!document.contains(studio)) { clearInterval(_timer); return; }
     const n = currentImages.length;
-    if (n === _lastCount) return;
-    _lastCount = n;
-    const has = n > 0;
-    studio.querySelector('.i2m-body').style.display  = has ? 'block' : 'none';
-    studio.querySelector('.i2m-empty').style.display = has ? 'none'  : 'block';
-    studio.querySelector('.i2m-sub').textContent     = has ? `${n} screenshot${n>1?'s':''} ready` : 'Take a screenshot first';
+    if (n === _lastImgCount) return;
+    _lastImgCount = n;
+    imgHint.style.display = (n > 0 && !uploadedFile) ? 'block' : 'none';
+    imgHintTx.textContent = `${n} screenshot${n>1?'s':''} loaded`;
   }, 500);
 
-  // Vibe chip toggle
-  studio.querySelectorAll('.ss-vibe').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const isOn = btn.dataset.on === '1';
-      studio.querySelectorAll('.ss-vibe').forEach(b => { b.dataset.on=''; b.style.background='rgba(255,255,255,0.04)'; b.style.borderColor='rgba(255,255,255,0.1)'; b.style.color='#aabbcc'; });
-      if (!isOn) {
-        btn.dataset.on = '1';
-        btn.style.background = 'rgba(0,255,136,0.15)';
-        btn.style.borderColor = 'rgba(0,255,136,0.4)';
-        btn.style.color = '#00ff88';
-        const ta = studio.querySelector('.ss-prompt');
-        if (ta && !ta.value.trim()) ta.value = btn.dataset.val;
-      }
-    });
+  function setFilePreview(name, sub) {
+    dropIdle.style.display = 'none';
+    dropPrev.style.display = 'block';
+    fileInfo.textContent   = name;
+    fileSub.textContent    = sub;
+    imgHint.style.display  = 'none'; // hide screenshot hint when file uploaded
+  }
+
+  function clearFile() {
+    uploadedFile = null;
+    fileInput.value = '';
+    dropIdle.style.display = 'block';
+    dropPrev.style.display = 'none';
+    imgHint.style.display  = currentImages.length > 0 ? 'block' : 'none';
+  }
+
+  // Click to open file picker
+  dropzone.addEventListener('click', e => {
+    if (e.target === clearBtn || clearBtn.contains(e.target)) return;
+    fileInput.click();
   });
 
-  // Image-to-music button
-  studio.querySelector('.i2m-go').addEventListener('click', () => {
-    const notes = studio.querySelector('.ss-prompt').value.trim();
+  // Drag & drop
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.style.borderColor='rgba(0,255,136,0.6)'; dropzone.style.background='rgba(0,255,136,0.05)'; });
+  dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor='rgba(0,255,136,0.25)'; dropzone.style.background='rgba(255,255,255,0.02)'; });
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.style.borderColor='rgba(0,255,136,0.25)'; dropzone.style.background='rgba(255,255,255,0.02)';
+    const f = e.dataTransfer?.files?.[0];
+    if (f) handleFile(f);
+  });
+
+  clearBtn.addEventListener('click', e => { e.stopPropagation(); clearFile(); });
+
+  fileInput.addEventListener('change', () => {
+    const f = fileInput.files?.[0];
+    if (f) handleFile(f);
+  });
+
+  function handleFile(f) {
+    const kind = f.type.startsWith('audio/') ? 'audio'
+               : f.type.startsWith('image/') ? 'image'
+               : f.type.startsWith('video/') ? 'video' : null;
+    if (!kind) { statusEl.style.display='block'; statusEl.textContent='Unsupported file type.'; return; }
+    statusEl.style.display = 'none';
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const dataUrl = ev.target.result;
+      const b64 = dataUrl.split(',')[1];
+      uploadedFile = { type: kind, base64: b64, mimeType: f.type, name: f.name };
+      const sizeKB = Math.round(f.size / 1024);
+      const icons = { audio:'🎵', image:'📸', video:'🎬' };
+      const labels = { audio:'Audio — AI will match this style/beat', image:'Image — AI will set the mood from it', video:'Video — AI will score it' };
+      setFilePreview(`${icons[kind]} ${f.name}`, `${sizeKB} KB · ${labels[kind]}`);
+    };
+    reader.readAsDataURL(f);
+  }
+
+  // ── Generate ────────────────────────────────────────────
+  goBtn.addEventListener('click', async () => {
+    const userPrompt = studio.querySelector('.ss-prompt').value.trim();
+
+    // Need at least a file or a prompt
+    if (!uploadedFile && !userPrompt && currentImages.length === 0) {
+      statusEl.style.display = 'block';
+      statusEl.textContent = 'Upload a file or type a description first.';
+      return;
+    }
+
+    const apiKey = typeof getApiKey === 'function' ? getApiKey() : (window._snapToAI_apiKey || '');
+
+    // ── Audio reference: ask Gemini to analyse it, then send description to Lyria ──
+    if (uploadedFile?.type === 'audio' && apiKey) {
+      goBtn.disabled = true;
+      goBtn.textContent = '🎵 Analysing your track…';
+      statusEl.style.display = 'block';
+      statusEl.textContent = 'Gemini is listening to your song to extract its style…';
+      try {
+        const analysisResp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
+          { method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({
+              contents:[{ role:'user', parts:[
+                { inlineData:{ mimeType: uploadedFile.mimeType, data: uploadedFile.base64 } },
+                { text: 'Listen to this audio and describe its musical style in detail. Include: tempo (BPM estimate), key/scale, genre, main instruments, rhythm/beat pattern, energy level, mood, and production style. Write a 2-3 sentence description a music AI can use to recreate a song in this style.' + (userPrompt ? ` Also consider this user note: "${userPrompt}"` : '') }
+              ]}]
+            }),
+            signal: AbortSignal.timeout(30000)
+          }
+        );
+        const analysisData = await analysisResp.json();
+        const styleDesc = analysisData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (styleDesc) {
+          // Now send the style description as the music prompt
+          const inputEl = document.getElementById('chatInput');
+          if (inputEl) {
+            inputEl.value = styleDesc;
+            document.getElementById('sendBtn')?.click();
+          }
+          studio.style.opacity = '0.5';
+          studio.style.pointerEvents = 'none';
+          return;
+        }
+      } catch (_) {}
+      // Fallback: just use user prompt + filename hint
+      const fallback = userPrompt || `Create music in the same style as "${uploadedFile.name}"`;
+      const inputEl = document.getElementById('chatInput');
+      if (inputEl) { inputEl.value = fallback; document.getElementById('sendBtn')?.click(); }
+      studio.style.opacity = '0.5';
+      studio.style.pointerEvents = 'none';
+      return;
+    }
+
+    // ── Image / Video upload: stage it then send ──
+    if (uploadedFile?.type === 'image') {
+      // Push into currentImages so the music handler picks it up
+      const dataUrl = `data:${uploadedFile.mimeType};base64,${uploadedFile.base64}`;
+      if (!currentImages.includes(dataUrl)) currentImages.unshift(dataUrl);
+    }
+
+    // ── Build final prompt ──
+    let finalPrompt = userPrompt;
+    if (!finalPrompt) {
+      if (uploadedFile?.type === 'video')  finalPrompt = 'Create music that perfectly scores this video — match its mood, energy, and pacing';
+      else if (uploadedFile?.type === 'image') finalPrompt = 'Create music that captures the mood, atmosphere, and emotion of this image';
+      else finalPrompt = 'Create an original, professional instrumental piece';
+    }
+
     const inputEl = document.getElementById('chatInput');
     if (inputEl) {
-      inputEl.value = notes
-        ? `Create music inspired by this image. Style: ${notes}`
-        : 'Create music that perfectly captures the mood and atmosphere of this image';
+      inputEl.value = finalPrompt;
       document.getElementById('sendBtn')?.click();
     }
     studio.style.opacity = '0.5';
     studio.style.pointerEvents = 'none';
-  });
-
-  // Generate button
-  studio.querySelector('.ss-go').addEventListener('click', () => {
-    const prompt = studio.querySelector('.ss-prompt').value.trim();
-    if (!prompt) return;
-    const inputEl = document.getElementById('chatInput');
-    if (inputEl) {
-      inputEl.value = prompt;
-      document.getElementById('sendBtn')?.click();
-    }
-    studio.style.opacity = '0.5';
-    studio.style.pointerEvents = 'none';
-  });
-
-  // Surprise Me
-  const surprises = [
-    'upbeat jazz with piano, walking bass and brushed drums',
-    'epic cinematic orchestral, slow build with powerful strings',
-    'chill lo-fi hip hop, warm vinyl crackle and mellow keys',
-    'dark electronic trap with 808 bass and atmospheric pads',
-    'romantic acoustic guitar and soft piano, slow tempo',
-    'energetic pop punk with distorted guitars and driving drums',
-    'funky disco groove with punchy brass and tight bass',
-    'peaceful ambient with gentle synth pads and nature sounds',
-    'reggae with offbeat guitar and relaxed bass groove',
-    'powerful metal with heavy riffs and thundering double kick',
-  ];
-  studio.querySelector('.ss-surprise').addEventListener('click', () => {
-    const ta = studio.querySelector('.ss-prompt');
-    ta.value = surprises[Math.floor(Math.random() * surprises.length)];
   });
 }
 
