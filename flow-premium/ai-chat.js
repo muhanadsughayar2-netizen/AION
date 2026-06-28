@@ -5681,41 +5681,58 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
     const vid = document.createElement('video');
     vid.src = url; vid.muted = true; vid.preload = 'auto';
 
-    vid.onloadedmetadata = () => {
-      const dur = isFinite(vid.duration) && vid.duration > 0 ? vid.duration : 10;
-      // Extract evenly-spaced frames: 1 per 5s for long videos, 1 per 3s for short, max 25
+    const startFrameExtraction = (dur) => {
+      // 1 frame per 5s for long videos, 1 per 3s for short, max 25
       const interval = dur > 30 ? 5 : 3;
       const count = Math.min(25, Math.max(2, Math.ceil(dur / interval)));
       const times = Array.from({ length: count }, (_, i) =>
         i === 0 ? 0.1 : i === count - 1 ? Math.max(dur - 0.5, 0.1) : (dur / (count - 1)) * i
       );
       const frames = [];
-      let idx = 0;
 
-      const captureFrame = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width  = Math.min(vid.videoWidth  || 640, 640);
-        canvas.height = Math.min(vid.videoHeight || 360, 360);
-        canvas.getContext('2d').drawImage(vid, 0, 0, canvas.width, canvas.height);
-        frames.push(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
-        idx++;
-        if (idx < times.length) {
-          vid.currentTime = times[idx];
-        } else {
-          URL.revokeObjectURL(url);
-          // Remove any previous frames from the same video
-          attachments = attachments.filter(a => !(a.type === 'video-frame' && a.videoFile === file.name));
-          frames.forEach((b64, fi) => {
-            attachments.push({ type: 'video-frame', name: `${file.name} frame ${fi + 1}/${frames.length}`, videoFile: file.name, mimeType: 'image/jpeg', data: b64 });
-          });
-          // Pre-fill textarea with video name if empty
-          if (!srcEl.value.trim()) srcEl.value = `Video: "${file.name}"`;
-          bcRenderAttachments();
-        }
-      };
+      // Sequential Promise-based seeking — prevents onseeked firing multiple times
+      const seekAndCapture = (t) => new Promise(resolve => {
+        const onSeeked = () => {
+          vid.removeEventListener('seeked', onSeeked);
+          const canvas = document.createElement('canvas');
+          canvas.width  = Math.min(vid.videoWidth  || 640, 640);
+          canvas.height = Math.min(vid.videoHeight || 360, 360);
+          canvas.getContext('2d').drawImage(vid, 0, 0, canvas.width, canvas.height);
+          frames.push(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
+          resolve();
+        };
+        vid.addEventListener('seeked', onSeeked);
+        vid.currentTime = t;
+      });
 
-      vid.onseeked = captureFrame;
-      vid.currentTime = times[0];
+      (async () => {
+        for (const t of times) await seekAndCapture(t);
+        URL.revokeObjectURL(url);
+        attachments = attachments.filter(a => !(a.type === 'video-frame' && a.videoFile === file.name));
+        frames.forEach((b64, fi) => {
+          attachments.push({ type: 'video-frame', name: `${file.name} frame ${fi + 1}/${frames.length}`, videoFile: file.name, mimeType: 'image/jpeg', data: b64 });
+        });
+        if (!srcEl.value.trim()) srcEl.value = `Video: "${file.name}"`;
+        bcRenderAttachments();
+      })();
+    };
+
+    vid.onloadedmetadata = () => {
+      if (isFinite(vid.duration) && vid.duration > 0) {
+        // Duration known — extract immediately
+        startFrameExtraction(vid.duration);
+      } else {
+        // Chrome MediaRecorder webm files often lack duration metadata.
+        // Seek past the end — browser clamps to the real last frame,
+        // and vid.currentTime then reveals the actual duration.
+        const onSeeked = () => {
+          vid.removeEventListener('seeked', onSeeked);
+          const actualDur = vid.currentTime > 0 ? vid.currentTime : 60;
+          startFrameExtraction(actualDur);
+        };
+        vid.addEventListener('seeked', onSeeked);
+        vid.currentTime = 1e10;
+      }
     };
 
     vid.onerror = () => URL.revokeObjectURL(url);
