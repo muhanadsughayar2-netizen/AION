@@ -2616,6 +2616,7 @@ Return STRICT JSON ONLY (no markdown, no commentary) in this exact shape:
 
 Hard rules:
 - The clips must read like one continuous take.
+- Each subsequent scene must visually follow the previous one's ending composition to ensure a continuous shot — the opening frame of clip N should feel like the next heartbeat after clip N-1's closing frame.
 - The user's subject and action are clearly recognizable across the sequence (the style bible plus most shot descriptions should reference them).
 - Never introduce new characters mid-sequence unless the user brief explicitly asks for it.
 - Never cut to a different location.
