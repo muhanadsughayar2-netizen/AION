@@ -822,12 +822,6 @@
       color: #34A853;
       box-shadow: none;
     }
-    .mode-btn[data-mode="broadcast"]::before { display: none; }
-    .mode-btn[data-mode="broadcast"].active {
-      background: rgba(45,212,191,0.12);
-      border-color: rgba(45,212,191,0.45);
-      color: #2dd4bf;
-    }
     .mode-btn[data-mode="video"]::before { display: none; }
     .mode-btn[data-mode="video"].active {
       border-color: rgba(138,180,248,0.55);
@@ -1473,7 +1467,6 @@
         <button class="mode-btn" data-mode="image" id="imageModeBtn" title="Generate images from text"><span class="mode-emoji">✨</span> Image</button>
         <button class="mode-btn" data-mode="music" id="musicModeBtn" title="Create music clips"><span class="mode-emoji">🎵</span> Music</button>
         <button class="mode-btn" data-mode="video" id="videoModeBtn" title="Generate videos from prompts or screenshots"><span class="mode-emoji">🎬</span> Video</button>
-        <button class="mode-btn" data-mode="broadcast" id="broadcastModeBtn" title="Multi-voice AI broadcast from any content"><span class="mode-emoji">🎙️</span> Broadcast</button>
       </div>
       <div class="input-area">
         <input type="file" id="fileInput" accept="image/*,video/webm,video/mp4,video/*,audio/*,.mp3,.wav,.ogg,.pdf,.txt,.md,.json,.csv" multiple hidden>

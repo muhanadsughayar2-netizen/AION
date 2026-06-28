@@ -928,12 +928,6 @@ const AI_MODES = {
     type: 'gemini-video',
     placeholder: 'Describe the video you want to create...',
     welcome: '🎬 Video mode — describe a scene and I\'ll bring it to life!'
-  },
-  'broadcast': {
-    model: MODELS.chat,
-    type: 'gemini',
-    placeholder: 'Broadcast Studio is ready — use the card below…',
-    welcome: '🎙️ Broadcast Studio — turn any content into a multi-voice AI broadcast. Talk show, tutorial, app demo, presentation, or narrator.'
   }
 };
 
@@ -1090,21 +1084,13 @@ function initModeButtons() {
         const notice = document.createElement('div');
         notice.className = 'chat-bubble ai mode-switch-notice';
         notice.style.cssText = 'font-size: 14px; padding: 10px 16px; border-left: 3px solid; margin: 4px 0;';
-        const borderColors = { 'vision': '#4285F4', 'image': '#8ab4f8', 'music': '#8ab4f8', 'video': '#8ab4f8', 'broadcast': '#2dd4bf' };
+        const borderColors = { 'vision': '#4285F4', 'image': '#8ab4f8', 'music': '#8ab4f8', 'video': '#8ab4f8' };
         notice.style.borderLeftColor = borderColors[mode] || '#4285F4';
         notice.textContent = cfg.welcome;
         thread.appendChild(notice);
         
         if (mode === 'video') {
           showVideoStudio(thread);
-        }
-
-        if (mode === 'music') {
-          showSongStudio(thread);
-        }
-
-        if (mode === 'broadcast') {
-          showBroadcastCard(thread);
         }
         
         thread.scrollTop = thread.scrollHeight;
@@ -1322,7 +1308,7 @@ const LYRIA_MODELS_DISPLAY = [
 
 let selectedVeoModel = MODELS.veoLite;
 let selectedVideoDuration = 8;
-let selectedClipCount = 5;
+let selectedClipCount = 1; // locked — single 8s clip only, no stitching
 let userAvailableVeoModels = [];
 let selectedMusicModel = MODELS.musicDefault;
 
@@ -1372,19 +1358,11 @@ function showVideoStudio(thread) {
         <button class="studio-surprise-btn" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(138,180,248,0.25);background:rgba(138,180,248,0.06);color:#8ab4f8;font-size:12px;font-weight:600;cursor:pointer;">🎲 Surprise Me</button>
       </div>
 
-      <!-- Clip count selector -->
-      <div style="margin-bottom:12px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-          <span style="font-size:12px;color:#667788;">Clips (8s each):</span>
-          <span class="studio-dur-label" style="font-size:12px;color:#8ab4f8;font-weight:600;">${selectedClipCount * selectedVideoDuration}s total (${selectedClipCount} × ${selectedVideoDuration}s)</span>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          ${[1,2,3,4,5,6,8].map(n => {
-            const sel = n === selectedClipCount;
-            return `<button class="veo-clip-btn${sel ? ' selected' : ''}" data-clips="${n}" style="padding:4px 12px;border-radius:8px;border:1px solid ${sel ? 'rgba(138,180,248,0.5)' : 'rgba(138,180,248,0.2)'};background:${sel ? 'rgba(138,180,248,0.15)' : 'rgba(138,180,248,0.04)'};color:${sel ? '#8ab4f8' : '#aabbcc'};font-size:12px;font-weight:600;cursor:pointer;">${n}</button>`;
-          }).join('')}
-        </div>
-        <div class="studio-music-clock-hint" style="margin-top:6px;font-size:11px;color:#667788;display:none;">🎵 Clip count auto-set from your Lyria track duration</div>
+      <!-- Fixed spec badge -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <span style="padding:3px 10px;border-radius:20px;background:rgba(138,180,248,0.12);border:1px solid rgba(138,180,248,0.25);color:#8ab4f8;font-size:11px;font-weight:700;letter-spacing:0.5px;">8 SECONDS</span>
+        <span style="padding:3px 10px;border-radius:20px;background:rgba(138,180,248,0.06);border:1px solid rgba(138,180,248,0.15);color:#667788;font-size:11px;font-weight:600;">1 CLIP · NO STITCHING</span>
+        <span style="padding:3px 10px;border-radius:20px;background:rgba(138,180,248,0.06);border:1px solid rgba(138,180,248,0.15);color:#667788;font-size:11px;font-weight:600;">⏱ ~1-2 MIN</span>
       </div>
 
       <!-- Model selector -->
@@ -1414,10 +1392,10 @@ function showVideoStudio(thread) {
         </label>
         <div class="studio-stylize-wrap" style="margin-top:8px;margin-left:24px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#8899aa;">
-            <input type="checkbox" class="studio-stylize-photo" style="accent-color:#8ab4f8;">
-            <span>✨ Stylize photo (Pixar / Anime etc.) — turn on if Veo blocks your photo</span>
+            <input type="checkbox" class="studio-stylize-photo" style="accent-color:#8ab4f8;" checked>
+            <span>✨ Stylize photo first (helps with safety filters)</span>
           </label>
-          <div class="stylize-style-selector" style="display:none;flex-wrap:wrap;gap:4px;margin-top:6px;">
+          <div class="stylize-style-selector" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
             <button class="stylize-btn selected" data-style="pixar" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.5);background:rgba(138,180,248,0.15);color:#8ab4f8;font-size:12px;font-weight:600;cursor:pointer;">Pixar 3D</button>
             <button class="stylize-btn" data-style="anime" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Anime</button>
             <button class="stylize-btn" data-style="cartoon" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Cartoon</button>
@@ -1436,7 +1414,7 @@ function showVideoStudio(thread) {
       </div>
 
       <!-- Generate button -->
-      <button class="studio-create-btn" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#4285F4,#2563c4);color:#fff;font-size:13px;font-weight:700;cursor:pointer;opacity:0.4;pointer-events:none;">🎬 Generate 5-clip Video (40s)</button>
+      <button class="studio-create-btn" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#4285F4,#2563c4);color:#fff;font-size:13px;font-weight:700;cursor:pointer;opacity:0.4;pointer-events:none;">🎬 Generate 8s Video</button>
     </div>
   `;
 
@@ -1458,71 +1436,9 @@ function showVideoStudio(thread) {
   function updateDurLabel() {
     const durLabel = studio.querySelector('.studio-dur-label');
     const total = selectedVideoDuration * selectedClipCount;
-    if (durLabel) durLabel.textContent = selectedClipCount > 1 ? `${total}s total (${selectedClipCount} × ${selectedVideoDuration}s)` : `${total}s total`;
-    const btn = studio.querySelector('.studio-create-btn');
-    if (btn) {
-      if (selectedClipCount > 1) {
-        btn.textContent = `🎬 Generate ${selectedClipCount}-clip Video (${total}s)`;
-      } else {
-        btn.textContent = `🎬 Generate ${total}s Video`;
-      }
-    }
+    if (durLabel) durLabel.textContent = selectedClipCount > 1 ? `${total}s total (${selectedClipCount} x ${selectedVideoDuration}s)` : `${total}s total`;
     renderVeoPriceTable(studio);
   }
-
-  // Wire clip count buttons
-  studio.querySelectorAll('.veo-clip-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      studio.querySelectorAll('.veo-clip-btn').forEach(b => {
-        b.style.border = '1px solid rgba(138,180,248,0.2)';
-        b.style.background = 'rgba(138,180,248,0.04)';
-        b.style.color = '#aabbcc';
-        b.classList.remove('selected');
-      });
-      btn.style.border = '1px solid rgba(138,180,248,0.5)';
-      btn.style.background = 'rgba(138,180,248,0.15)';
-      btn.style.color = '#8ab4f8';
-      btn.classList.add('selected');
-      selectedClipCount = parseInt(btn.dataset.clips, 10) || 1;
-      updateDurLabel();
-    });
-  });
-
-  // Audio Master Clock — if a Lyria track was generated in Song Studio,
-  // auto-calculate clip count from its duration so the video fills the song.
-  (async () => {
-    try {
-      const lyriaBlob = window._snapToAI_lyriaBlob;
-      if (lyriaBlob && lyriaBlob instanceof Blob) {
-        const ac = new AudioContext();
-        const arrayBuf = await lyriaBlob.arrayBuffer();
-        const decoded = await ac.decodeAudioData(arrayBuf);
-        await ac.close().catch(() => {});
-        const musicDuration = decoded.duration;
-        if (musicDuration > 0) {
-          const autoCount = Math.max(1, Math.min(8, Math.ceil(musicDuration / selectedVideoDuration)));
-          selectedClipCount = autoCount;
-          // Highlight the matching button or set closest one
-          let matched = false;
-          studio.querySelectorAll('.veo-clip-btn').forEach(b => {
-            const n = parseInt(b.dataset.clips, 10);
-            const active = n === autoCount;
-            b.style.border = active ? '1px solid rgba(138,180,248,0.5)' : '1px solid rgba(138,180,248,0.2)';
-            b.style.background = active ? 'rgba(138,180,248,0.15)' : 'rgba(138,180,248,0.04)';
-            b.style.color = active ? '#8ab4f8' : '#aabbcc';
-            if (active) { b.classList.add('selected'); matched = true; } else { b.classList.remove('selected'); }
-          });
-          if (!matched) {
-            // no exact button — show closest and update label
-          }
-          const hint = studio.querySelector('.studio-music-clock-hint');
-          if (hint) hint.style.display = 'block';
-          updateDurLabel();
-          console.log(`[SnapToAI Video] Audio Master Clock: Lyria track ${musicDuration.toFixed(1)}s → ${autoCount} clips`);
-        }
-      }
-    } catch (_) {}
-  })();
 
   studio.querySelectorAll('.veo-dur-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1572,16 +1488,9 @@ function showVideoStudio(thread) {
 
   const useScreenshotCb = studio.querySelector('.studio-use-screenshot');
   const stylizeWrap = studio.querySelector('.studio-stylize-wrap');
-  const stylizeCbEl = studio.querySelector('.studio-stylize-photo');
-  const stylizeSelector = studio.querySelector('.stylize-style-selector');
   if (useScreenshotCb && stylizeWrap) {
     useScreenshotCb.addEventListener('change', () => {
       stylizeWrap.style.display = useScreenshotCb.checked ? 'block' : 'none';
-    });
-  }
-  if (stylizeCbEl && stylizeSelector) {
-    stylizeCbEl.addEventListener('change', () => {
-      stylizeSelector.style.display = stylizeCbEl.checked ? 'flex' : 'none';
     });
   }
 
@@ -1810,23 +1719,6 @@ async function startVideoGeneration(prompt, thread) {
   const clipCount = selectedClipCount || 1;
   const totalDur = selectedVideoDuration * clipCount;
 
-  // Audio Master Clock — grab the Lyria blob set by Song Studio (if any).
-  // We decode it here once so we can pass the duration to the storyboard
-  // director AND later pass the raw blob to the stitcher for the audio overlay.
-  let musicBlob = null;
-  let musicDuration = 0;
-  try {
-    const lb = window._snapToAI_lyriaBlob;
-    if (lb && lb instanceof Blob) {
-      const ac = new AudioContext();
-      const decoded = await ac.decodeAudioData(await lb.arrayBuffer());
-      await ac.close().catch(() => {});
-      musicBlob = lb;
-      musicDuration = decoded.duration;
-      console.log(`[SnapToAI Video] Lyria audio clock: ${musicDuration.toFixed(1)}s — will overlay on final stitch`);
-    }
-  } catch (_) {}
-
   // ── HeyGen-style plan approval for multi-clip videos ──────────────
   // Build the storyboard FIRST and let the user approve it before any
   // Veo credits are charged. Single clips skip this step (low risk, no
@@ -1845,7 +1737,7 @@ async function startVideoGeneration(prompt, thread) {
     thread.scrollTop = thread.scrollHeight;
 
     try {
-      prebuiltScenes = await buildClipScenes(prompt, clipCount, apiKey, selectedVideoDuration, creativityTemp(selectedCreativity), selectedCreativity, musicDuration || undefined);
+      prebuiltScenes = await buildClipScenes(prompt, clipCount, apiKey, selectedVideoDuration, creativityTemp(selectedCreativity), selectedCreativity);
     } catch (e) {
       console.warn('[veo plan] storyboard build failed:', e?.message || e);
     }
@@ -1950,7 +1842,7 @@ async function startVideoGeneration(prompt, thread) {
   if (clipCount === 1) {
     await generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage, selectedAspectRatio);
   } else {
-    await generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes, selectedAspectRatio, musicBlob, musicDuration);
+    await generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes, selectedAspectRatio);
   }
 }
 
@@ -1963,8 +1855,9 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
       parameters: {
         aspectRatio: aspectRatio || '16:9',
         sampleCount: 1,
-        durationSeconds: selectedVideoDuration
-        // negativePrompt + enhancePrompt removed — veo-3.1-lite rejects both
+        durationSeconds: selectedVideoDuration,
+        // negativePrompt removed — current Veo models reject it
+        enhancePrompt: false
       }
     };
 
@@ -2104,10 +1997,6 @@ async function generateOneVeoClip(clipIdx, ctx) {
   const MAX_FULL_CYCLE_RETRIES = 2;
   let cycleAttempt = 0;
   let finalStatus = 'unknown';
-  // If clip 0 gets no_uri with the screenshot attached (likely a Veo safety
-  // silent-block on real people / children), strip the image on the retry so
-  // Veo generates something from text alone rather than skipping the clip entirely.
-  let noUriFallbackImageStripped = false;
 
   while (cycleAttempt < MAX_FULL_CYCLE_RETRIES) {
     cycleAttempt++;
@@ -2152,11 +2041,6 @@ async function generateOneVeoClip(clipIdx, ctx) {
           } else if (rollingFrame && rollingFrame.base64) {
             attachedChainImage = rollingFrame;
             chainSourceLabel = 'rolling last frame';
-          } else if (includeImage && sourceImageForClip0 && sourceImageForClip0.base64) {
-            // Previous clip was skipped/failed — fall back to the original
-            // screenshot so characters stay consistent instead of drifting.
-            attachedChainImage = sourceImageForClip0;
-            chainSourceLabel = 'original screenshot (prev clip skipped)';
           }
         }
 
@@ -2192,16 +2076,15 @@ async function generateOneVeoClip(clipIdx, ctx) {
           parameters: {
             aspectRatio: ctx.aspectRatio || '16:9',
             sampleCount: 1,
-            durationSeconds: durationSeconds
-            // negativePrompt + enhancePrompt removed — veo-3.1-lite rejects both
+            durationSeconds: durationSeconds,
+            // negativePrompt removed — current Veo models reject it
+            enhancePrompt: false
           }
         };
 
         // Use the SNAPSHOTTED image from batch start — never re-read globals,
         // so retrying clip 0 always uses the same input the original batch used.
-        // On retry after a no_uri (likely Veo safety silent-block on real people),
-        // strip the image so at least a text-only clip is generated.
-        if (clipIdx === 0 && includeImage && sourceImageForClip0 && !noUriFallbackImageStripped) {
+        if (clipIdx === 0 && includeImage && sourceImageForClip0) {
           requestBody.instances[0].image = {
             bytesBase64Encoded: sourceImageForClip0.base64,
             mimeType: sourceImageForClip0.mimeType
@@ -2417,17 +2300,6 @@ async function generateOneVeoClip(clipIdx, ctx) {
 
     if (cycleAttempt < MAX_FULL_CYCLE_RETRIES) {
       const waitSec = result.status === 'rate_limit' ? 65 : 20;
-      // no_uri on clip 0 with image → Veo safety silent-block on real people.
-      // Strip the image on the retry so text-only generation can proceed.
-      if (result.status === 'no_uri' && clipIdx === 0 && includeImage && sourceImageForClip0) {
-        noUriFallbackImageStripped = true;
-        if (statusEl) { statusEl.textContent = `⚠ Photo blocked by Veo — retrying without image`; statusEl.style.color = '#ffd700'; }
-        const completed = await cancellableWait(10, ctx, (s) => {
-          if (text) text.textContent = `Clip ${clipNum}/${clipCount} — Veo blocked the photo (safety filter). Retrying text-only in ${s}s… Tip: enable "Stylize photo" to avoid this.`;
-        });
-        if (!completed) { finalStatus = 'user_stopped_poststart_skipped'; break; }
-        continue;
-      }
       if (statusEl) { statusEl.textContent = `⚠ ${result.status} — retrying (${cycleAttempt}/${MAX_FULL_CYCLE_RETRIES})`; statusEl.style.color = '#ffd700'; }
       const completed = await cancellableWait(waitSec, ctx, (s) => {
         if (text) text.textContent = `Clip ${clipNum}/${clipCount} ${result.status} — retrying in ${s}s...`;
@@ -2583,9 +2455,7 @@ function briefAdheres(userPrompt, parsed) {
 
 // Ask Gemini to produce a continuity-anchored storyboard.
 // Returns array of clip prompts on success, null on failure.
-// musicDuration (optional seconds): when provided, beat timestamps are injected
-// into each clip's shot so the action is musically timed.
-async function generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur, temperature, musicDuration) {
+async function generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur, temperature) {
   if (!apiKey || clipCount < 2) return null;
   const segLen = Number(clipDur) > 0 ? Number(clipDur) : 8;
   // Task #32: Temperature is now caller-controlled via the Video Studio
@@ -2596,23 +2466,8 @@ async function generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur, te
   // a parse failure doesn't compound by also dialing creativity up.
   const retryTemp = Math.max(0.2, baseTemp - 0.05);
 
-  // Beat-aware timestamps: when a Lyria track is attached, inject timing context
-  // so each clip's action lands on a musically meaningful moment.
-  const hasMusicSync = (typeof musicDuration === 'number') && musicDuration > 0;
-  const beatTimestamps = hasMusicSync
-    ? Array.from({ length: clipCount }, (_, i) => {
-        const t0 = Math.round(i * segLen);
-        const t1 = Math.round((i + 1) * segLen);
-        return `Clip ${i + 1}: ${t0}s–${t1}s`;
-      }).join(', ')
-    : null;
-
-  const musicSyncBlock = hasMusicSync
-    ? `\nMUSIC SYNC: This video will be set to a ${musicDuration.toFixed(1)}-second Lyria music track. The clips map to these timestamps: ${beatTimestamps}. Time the action in each shot to the energy of its window — rising action should peak near the midpoint of the track, and the final clip should feel like a satisfying resolution.`
-    : '';
-
   const directorBrief =
-`You are a film director planning a ${clipCount * segLen}-second cinematic video that will be rendered by Google Veo as ${clipCount} sequential ${segLen}-second clips, then stitched together.${musicSyncBlock}
+`You are a film director planning a ${clipCount * segLen}-second cinematic video that will be rendered by Google Veo as ${clipCount} sequential ${segLen}-second clips, then stitched together.
 
 USER'S BRIEF (this is the contract — every subject, action, and concrete detail in here is non-negotiable):
 """
@@ -2628,7 +2483,7 @@ YOUR JOB is to direct this scene cinematically — adding lighting, camera langu
 You CAN, and should:
 - vary camera angle, lens, framing, and lighting between segments to give the cut real cinematic motion,
 - describe the subject with pronouns or short descriptors after the first mention if it reads more naturally,
-- pick beats that progress the action (setup → peak → resolve) rather than repeating the same moment.${hasMusicSync ? '\n- note the timestamp window for each clip (e.g. "0s–8s: establish the scene") in the shot description so Veo paces action to the music.' : ''}
+- pick beats that progress the action (setup → peak → resolve) rather than repeating the same moment.
 
 Return STRICT JSON ONLY (no markdown, no commentary) in this exact shape:
 {
@@ -2643,7 +2498,6 @@ Return STRICT JSON ONLY (no markdown, no commentary) in this exact shape:
 
 Hard rules:
 - The clips must read like one continuous take.
-- Each subsequent scene must visually follow the previous one's ending composition to ensure a continuous shot — the opening frame of clip N should feel like the next heartbeat after clip N-1's closing frame.
 - The user's subject and action are clearly recognizable across the sequence (the style bible plus most shot descriptions should reference them).
 - Never introduce new characters mid-sequence unless the user brief explicitly asks for it.
 - Never cut to a different location.
@@ -3016,9 +2870,9 @@ function showPlanApprovalBubble({ thread, scenes, prompt, clipCount, modelName, 
 // We now call generateAnchoredStoryboard() first (cinematic enrichment
 // with brief-anchoring guards), and only fall back to the literal
 // template if the director call fails.
-async function buildClipScenes(prompt, clipCount, apiKey, clipDur, temperature, creativityLevel, musicDuration) {
+async function buildClipScenes(prompt, clipCount, apiKey, clipDur, temperature, creativityLevel) {
   if (clipCount < 2) return [];
-  const directed = await generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur, temperature, musicDuration);
+  const directed = await generateAnchoredStoryboard(prompt, clipCount, apiKey, clipDur, temperature);
   if (directed && directed.length === clipCount) {
     console.log(`[veo storyboard] AI director succeeded — ${clipCount} cinematic clips (creativity=${creativityLevel || 'default'}, temp=${temperature ?? 0.35})`);
     // Task #32: stamp the human-readable creativity level on meta so the
@@ -3079,12 +2933,12 @@ function recompileScenesFromMeta(meta, clipCount, clipDur, vibe, userPrompt) {
   return out;
 }
 
-async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes, aspectRatio, musicBlob, musicDuration) {
+async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes, aspectRatio) {
   let clipScenes = prebuiltScenes;
   if (!clipScenes || clipScenes.length !== clipCount) {
     const progressText = progressBubble.querySelector('.video-progress-text');
     if (progressText) progressText.textContent = `Planning ${clipCount}-clip storyboard for visual continuity...`;
-    clipScenes = await buildClipScenes(prompt, clipCount, apiKey, selectedVideoDuration, creativityTemp(selectedCreativity), selectedCreativity, musicDuration || undefined);
+    clipScenes = await buildClipScenes(prompt, clipCount, apiKey, selectedVideoDuration, creativityTemp(selectedCreativity), selectedCreativity);
   }
   // Index-based results so retry can replace any specific slot
   const clipResults = Array.from({length: clipCount}, (_, i) => ({ n: i + 1, status: 'pending', url: null }));
@@ -3130,11 +2984,7 @@ async function generateMultiClip(prompt, apiKey, modelName, includeImage, clipCo
                 // Task #16: User-uploaded reference frames keyed by predecessor
                 // clip idx. userTransitionFrames[i] overrides transitionFrames[i]
                 // when generating clip i+1. Lets users rescue a broken auto-chain.
-                userTransitionFrames: {},
-                // Lyria audio blob for final stitch overlay. When present,
-                // stitchVideos replaces per-clip Veo audio with this full track.
-                musicBlob: musicBlob || null,
-                musicDuration: musicDuration || 0 };
+                userTransitionFrames: {} };
 
   // Wire the Stop button. Sets a flag that all wait loops + the batch loop
   // observe; the user keeps every clip already rendered, no further Veo
@@ -3278,12 +3128,7 @@ async function extractLastFrame(videoUrl) {
   try {
     const resp = await fetch(videoUrl);
     if (!resp.ok) throw new Error(`fetch ${resp.status}`);
-    const rawBlob = await resp.blob();
-    // Fix missing EBML Duration field before seeking — Veo WebM clips often
-    // have no Duration in their header, so video.duration = Infinity and every
-    // seek lands on a black frame.  We inject 8 000 ms (the default clip
-    // length) so the browser reports a finite duration immediately.
-    const blob = await fixWebmDuration(rawBlob, 8000).catch(() => rawBlob);
+    const blob = await resp.blob();
     blobUrl = URL.createObjectURL(blob);
 
     // Park the <video> off-screen but IN THE DOM. Chrome will skip frame
@@ -3321,10 +3166,7 @@ async function extractLastFrame(videoUrl) {
     // looks soft" → focus pop / character morph at the join. Sampling 3
     // candidates and picking the one with highest Laplacian variance gives
     // us a crisp identity reference for downstream chaining.
-    // Belt-and-suspenders: if fixWebmDuration didn't inject a finite duration
-    // (e.g. the EBML walk failed), fall back to 8 s rather than Infinity.
-    // `Infinity || 8` evaluates to Infinity (truthy), so || alone is not safe.
-    const duration = (Number.isFinite(video.duration) && video.duration > 0) ? video.duration : 8;
+    const duration = video.duration || 8;
     const candidateOffsets = [0.4, 0.2, 0.05]
       .map(off => Math.max(0, duration - off))
       .filter((t, i, arr) => arr.indexOf(t) === i); // de-dupe for very short clips
@@ -3518,54 +3360,19 @@ async function renderVeoBatchOutcome(ctx) {
     return;
   }
 
-  // --- Case B: at least 1 successful clip ---
-  if (successUrls.length === 1 || clipCount === 1) {
-    // Single clip — show it directly.
-    try {
-      showVideoResult(progressBubble, successUrls[0], thread);
-    } catch (err) {
-      console.log('[SnapToAI Video] Result error:', err.message);
-    }
-  } else {
-    // Multiple clips — auto-stitch and overlay Lyria audio (if present).
-    const stitchStatusEl = document.createElement('div');
-    stitchStatusEl.style.cssText = 'font-size:12px;color:#ffa500;margin-bottom:8px;';
-    const musicNote = ctx.musicBlob ? ' + Lyria audio overlay' : '';
-    stitchStatusEl.textContent = `🔗 Stitching ${successUrls.length} clips${musicNote}...`;
-    progressBubble.innerHTML = '';
-    progressBubble.appendChild(stitchStatusEl);
-    thread.scrollTop = thread.scrollHeight;
-
-    let stitchedUrl = null;
-    try {
-      stitchedUrl = await stitchVideos(successUrls, ctx);
-    } catch (stitchErr) {
-      console.warn('[SnapToAI Video] Stitch failed:', stitchErr?.message || stitchErr);
-    }
-
-    if (stitchedUrl) {
-      ctx.lastStitchedUrl = stitchedUrl;
-      try {
-        showStitchedVideoResult(progressBubble, stitchedUrl, successUrls, thread);
-      } catch (err) {
-        console.log('[SnapToAI Video] Stitch result display error:', err.message);
-      }
-    } else {
-      // Stitch failed — fall back to showing the first clip.
-      stitchStatusEl.textContent = '⚠ Stitch failed — showing clip 1.';
-      try {
-        showVideoResult(progressBubble, successUrls[0], thread);
-      } catch (err) {
-        console.log('[SnapToAI Video] Fallback result error:', err.message);
-      }
-    }
+  // --- Case B: at least 1 successful clip → show it directly, no stitching ---
+  try {
+    showVideoResult(progressBubble, successUrls[0], thread);
+  } catch (err) {
+    console.log('[Aion Video] Result error:', err.message);
   }
 
   // Always append the retry/re-render panel so users can fix bad clips
   // without paying to regenerate the entire video.
+  const failedClips = clipResults.filter(r => !r.url);
   const panel = document.createElement('div');
   panel.innerHTML = buildVeoSummaryCard(ctx, billingAbortAt, /*hasSuccess*/ true, successUrls.length);
-  if (panel.firstElementChild) progressBubble.appendChild(panel.firstElementChild);
+  progressBubble.appendChild(panel.firstElementChild);
   if (clipCount > 1) {
     const rerenderPanel = document.createElement('div');
     rerenderPanel.innerHTML = buildVeoRerenderPanel(ctx);
@@ -4518,36 +4325,9 @@ async function stitchVideos(videoUrls, stitchCtx) {
     try { await audioCtx.resume(); } catch (_) {}
     const audioDest = audioCtx.createMediaStreamDestination();
 
-    // --- Lyria audio overlay ---
-    // When a Lyria music blob is available (set by Song Studio), decode it and
-    // feed the full track into audioDest instead of the individual Veo clip
-    // audio. Veo clips are muted so only the Lyria track plays. The music is
-    // looped/trimmed to match the total video duration.
-    let lyriaSource = null;
-    const lyriaBlob = stitchCtx && stitchCtx.musicBlob;
-    if (lyriaBlob) {
-      try {
-        const arrayBuf = await lyriaBlob.arrayBuffer();
-        const decoded = await audioCtx.decodeAudioData(arrayBuf);
-        lyriaSource = audioCtx.createBufferSource();
-        lyriaSource.buffer = decoded;
-        lyriaSource.loop = true; // loops if clips run longer than the song
-        const musicGain = audioCtx.createGain();
-        musicGain.gain.value = 1;
-        lyriaSource.connect(musicGain);
-        musicGain.connect(audioDest);
-        // Mute all Veo clip video elements so only Lyria plays
-        for (const v of videos) { try { v.muted = true; } catch (_) {} }
-        console.log(`[SnapToAI Video] Lyria overlay: ${decoded.duration.toFixed(1)}s track decoded — muting Veo clip audio`);
-      } catch (e) {
-        console.warn('[SnapToAI Video] Lyria decode failed, falling back to clip audio:', e.message);
-        lyriaSource = null;
-      }
-    }
-
     // Connect clip 0's audio NOW so audioDest has a live track when the
-    // recorder is constructed. Skip if Lyria overlay is active (clips are muted).
-    if (!lyriaSource) {
+    // recorder is constructed.
+    {
       try {
         const src = audioCtx.createMediaElementSource(videos[0]);
         const g = audioCtx.createGain();
@@ -4561,9 +4341,6 @@ async function stitchVideos(videoUrls, stitchCtx) {
         sources.push(null);
         gains.push(null);
       }
-    } else {
-      // Push nulls so the per-clip connect/disconnect loops stay index-aligned.
-      for (let _i = 0; _i < videos.length; _i++) { sources.push(null); gains.push(null); }
     }
 
     const FPS = 30;
@@ -4571,7 +4348,7 @@ async function stitchVideos(videoUrls, stitchCtx) {
     const combined = new MediaStream();
     videoStream.getVideoTracks().forEach(t => combined.addTrack(t));
     audioDest.stream.getAudioTracks().forEach(t => combined.addTrack(t));
-    console.log(`[SnapToAI Video] combined stream: ${combined.getVideoTracks().length}v + ${combined.getAudioTracks().length}a tracks (lyria=${!!lyriaSource})`);
+    console.log(`[SnapToAI Video] combined stream: ${combined.getVideoTracks().length}v + ${combined.getAudioTracks().length}a tracks`);
 
     const codecCandidates = [
       'video/webm;codecs=vp9,opus',
@@ -4617,11 +4394,6 @@ async function stitchVideos(videoUrls, stitchCtx) {
     // timeslice=250ms so chunks flush regularly. A single giant final chunk
     // sometimes shows up as a corrupt/0-byte file in Chrome.
     recorder.start(250);
-    // Start the Lyria track at the same moment the recorder begins, so audio
-    // and video are aligned from frame 0.
-    if (lyriaSource) {
-      try { lyriaSource.start(0); } catch (_) {}
-    }
 
     // ---- 5. Sequential playback. All metadata is preloaded so the only
     // per-clip awaits are v.play() (resolves in <50ms) and the draw promise.
@@ -4638,8 +4410,7 @@ async function stitchVideos(videoUrls, stitchCtx) {
         const v = videos[i];
 
         // Connect this clip's audio (clip 0 was already connected above).
-        // Skip entirely when Lyria overlay is active — all sources are pre-nulled.
-        if (i > 0 && !lyriaSource) {
+        if (i > 0) {
           try {
             const src = audioCtx.createMediaElementSource(v);
             const g = audioCtx.createGain();
@@ -4760,7 +4531,6 @@ async function stitchVideos(videoUrls, stitchCtx) {
       for (const u of blobUrls) {
         try { URL.revokeObjectURL(u); } catch (_) {}
       }
-      try { lyriaSource && lyriaSource.stop(); } catch (_) {}
       try { recorder.stop(); } catch (_) {}
       await recordingDone;
       // Don't let audioCtx.close() hang the user (rare Chrome bug under load).
@@ -5088,1033 +4858,315 @@ function showVideoResult(bubble, videoUrl, thread) {
 function showSongStudio(thread) {
   const existing = thread.querySelector('.song-studio');
   if (existing) existing.remove();
-
+  
   const studio = document.createElement('div');
   studio.className = 'chat-bubble ai song-studio';
-  studio.style.cssText = 'padding:0;margin:8px 0;background:transparent;border:none;max-width:100%;width:100%;';
-
+  studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none; max-width: 100%; width: 100%;';
+  
+  const genres = [
+    { emoji: '🎸', name: 'Rock' },
+    { emoji: '🎷', name: 'Jazz' },
+    { emoji: '🌴', name: 'Reggae' },
+    { emoji: '🎹', name: 'Classical' },
+    { emoji: '🎤', name: 'Pop' },
+    { emoji: '🎵', name: 'R&B' },
+    { emoji: '🔥', name: 'Hip Hop' },
+    { emoji: '💃', name: 'Latin' },
+    { emoji: '🤠', name: 'Country' },
+    { emoji: '⚡', name: 'EDM' },
+    { emoji: '🎶', name: 'Lo-Fi' },
+    { emoji: '🌙', name: 'Blues' },
+    { emoji: '🎻', name: 'Folk' },
+    { emoji: '💀', name: 'Metal' },
+    { emoji: '🌸', name: 'K-Pop' },
+    { emoji: '🕌', name: 'Afrobeat' },
+    { emoji: '🎺', name: 'Funk' },
+    { emoji: '✨', name: 'Indie' },
+    { emoji: '🌊', name: 'Ambient' },
+    { emoji: '🎧', name: 'Trap' }
+  ];
+  
+  const moods = [
+    { emoji: '😊', name: 'Happy' },
+    { emoji: '😢', name: 'Sad' },
+    { emoji: '⚡', name: 'Energetic' },
+    { emoji: '😌', name: 'Chill' },
+    { emoji: '❤️', name: 'Romantic' },
+    { emoji: '🏔️', name: 'Epic' },
+    { emoji: '🌑', name: 'Dark' },
+    { emoji: '🕺', name: 'Funky' },
+    { emoji: '🌅', name: 'Nostalgic' },
+    { emoji: '💪', name: 'Powerful' },
+    { emoji: '🌿', name: 'Peaceful' },
+    { emoji: '🎉', name: 'Party' }
+  ];
+  
+  const tempos = [
+    { emoji: '🐢', name: 'Slow' },
+    { emoji: '🚶', name: 'Medium' },
+    { emoji: '🏃', name: 'Fast' },
+    { emoji: '🚀', name: 'Very Fast' }
+  ];
+  
+  const chipStyle = `display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer;transition:all 0.2s;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#ccd6e0;margin:3px;user-select:none;`;
+  const chipActiveStyle = `background:rgba(0,255,136,0.15);border-color:rgba(0,255,136,0.4);color:#00ff88;`;
+  const sectionTitleStyle = `font-size:13px;font-weight:600;color:#00ff88;margin:12px 0 8px 0;`;
+  const sectionSubStyle = `font-size:11px;color:#667788;margin:-4px 0 6px 0;`;
+  
   studio.innerHTML = `
-    <div style="background:linear-gradient(135deg,rgba(0,255,136,0.06),rgba(0,200,100,0.03));border:1px solid rgba(0,255,136,0.12);border-radius:16px;padding:18px;backdrop-filter:blur(10px);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-        <span style="font-size:22px;">🎵</span>
+    <div style="background:linear-gradient(135deg, rgba(0,255,136,0.06), rgba(0,200,100,0.03));border:1px solid rgba(0,255,136,0.12);border-radius:16px;padding:20px;backdrop-filter:blur(10px);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+        <span style="font-size:24px;">🎵</span>
         <div>
-          <div style="font-size:15px;font-weight:700;color:#e8eef4;">Song Studio</div>
-          <div style="font-size:11px;color:#667788;">Upload audio, image, or video — or just describe your song</div>
+          <div style="font-size:16px;font-weight:700;color:#e8eef4;">Song Studio</div>
+          <div style="font-size:11px;color:#667788;">Create your perfect song in 3 steps</div>
         </div>
       </div>
 
-      <!-- Drop zone -->
-      <div class="ss-dropzone" style="border:2px dashed rgba(0,255,136,0.25);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:12px;background:rgba(255,255,255,0.02);">
-        <input class="ss-file" type="file" accept="audio/*,image/*,video/*" style="display:none;">
-        <div class="ss-drop-idle">
-          <div style="font-size:28px;margin-bottom:6px;">🎵 📸 🎬</div>
-          <div style="font-size:13px;color:#aabbcc;font-weight:600;">Drop a file here or click to upload</div>
-          <div style="font-size:11px;color:#556677;margin-top:4px;">Audio • Image • Video — any format</div>
+
+      ${currentImages.length > 0 ? `
+      <div style="background:linear-gradient(135deg, rgba(255,170,0,0.08), rgba(255,100,0,0.04));border:1px solid rgba(255,170,0,0.2);border-radius:12px;padding:14px;margin:10px 0;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="font-size:18px;">📸→🎵</span>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#ffaa00;">Image to Music</div>
+            <div style="font-size:10px;color:#889900;">You have ${currentImages.length} screenshot${currentImages.length > 1 ? 's' : ''} loaded — turn ${currentImages.length > 1 ? 'them' : 'it'} into music!</div>
+          </div>
         </div>
-        <div class="ss-drop-preview" style="display:none;">
-          <div class="ss-file-info" style="font-size:12px;color:#00ff88;font-weight:600;"></div>
-          <div class="ss-file-sub" style="font-size:10px;color:#667788;margin-top:3px;"></div>
-          <button class="ss-clear" style="margin-top:8px;padding:3px 10px;border-radius:6px;border:1px solid rgba(255,80,80,0.3);background:rgba(255,80,80,0.07);color:#ff6666;font-size:10px;cursor:pointer;">✕ Remove</button>
+        <textarea class="img2music-desc" placeholder="Describe the music you want...&#10;&#10;e.g. Acoustic guitar, soft and peaceful&#10;e.g. Epic orchestral with drums&#10;e.g. Lo-fi hip hop, rainy day vibes" style="width:100%;box-sizing:border-box;min-height:70px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,170,0,0.2);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;margin-bottom:10px;line-height:1.4;"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <button class="img2music-happy" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.08);color:#00ff88;font-size:11px;cursor:pointer;">😊 Happy</button>
+          <button class="img2music-chill" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(0,217,255,0.3);background:rgba(0,217,255,0.08);color:#00d9ff;font-size:11px;cursor:pointer;">😌 Chill</button>
+          <button class="img2music-epic" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,107,237,0.3);background:rgba(255,107,237,0.08);color:#ff6bed;font-size:11px;cursor:pointer;">🏔️ Epic</button>
+          <button class="img2music-dark" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#aabbcc;font-size:11px;cursor:pointer;">🌑 Dark</button>
+          <button class="img2music-romantic" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,100,100,0.3);background:rgba(255,100,100,0.08);color:#ff6464;font-size:11px;cursor:pointer;">💕 Romantic</button>
+          <button class="img2music-mysterious" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(138,100,255,0.3);background:rgba(138,100,255,0.08);color:#8a64ff;font-size:11px;cursor:pointer;">🔮 Mysterious</button>
         </div>
+        <button class="img2music-go" style="width:100%;padding:10px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffaa00,#ff8800);color:#000;font-size:13px;font-weight:700;cursor:pointer;">🎵 Create Music From Image</button>
       </div>
-
-      <!-- Screenshot hint (reactive) -->
-      <div class="ss-img-hint" style="display:none;font-size:11px;color:#ffaa00;margin-bottom:10px;padding:7px 10px;background:rgba(255,170,0,0.07);border:1px solid rgba(255,170,0,0.2);border-radius:8px;">
-        📸 <span class="ss-img-hint-text"></span> — will be included as visual inspiration
+      ` : ''}
+      
+      <div style="${sectionTitleStyle}">Step 1: Pick a Genre</div>
+      <div style="${sectionSubStyle}">Choose your style</div>
+      <div class="studio-genres" style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${genres.map(g => `<div class="studio-chip genre-chip" data-value="${g.name}" style="${chipStyle}"><span>${g.emoji}</span><span>${g.name}</span></div>`).join('')}
       </div>
-
-      <!-- Free text -->
-      <textarea class="ss-prompt" placeholder="Describe your song (optional)&#10;e.g. same energy as the uploaded track but with more bass&#10;e.g. something dark and cinematic&#10;Leave blank to let the AI decide from your file" style="width:100%;box-sizing:border-box;min-height:70px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;line-height:1.5;margin-bottom:12px;"></textarea>
-
-      <button class="ss-go" style="width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#00ff88,#00cc6a);color:#000;font-size:14px;font-weight:700;cursor:pointer;">🎵 Generate Song</button>
-      <div class="ss-status" style="display:none;margin-top:10px;font-size:11px;color:#aabbcc;text-align:center;"></div>
+      
+      <div style="${sectionTitleStyle}">Step 2: Set the Mood</div>
+      <div style="${sectionSubStyle}">How should it feel?</div>
+      <div class="studio-moods" style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${moods.map(m => `<div class="studio-chip mood-chip" data-value="${m.name}" style="${chipStyle}"><span>${m.emoji}</span><span>${m.name}</span></div>`).join('')}
+      </div>
+      
+      <div style="${sectionTitleStyle}">Step 3: Choose Tempo</div>
+      <div class="studio-tempos" style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${tempos.map(t => `<div class="studio-chip tempo-chip" data-value="${t.name}" style="${chipStyle}"><span>${t.emoji}</span><span>${t.name}</span></div>`).join('')}
+      </div>
+      
+      <div style="${sectionTitleStyle}">What's the Song About?</div>
+      <div style="${sectionSubStyle}">Describe your song idea (optional)</div>
+      <textarea class="studio-topic" placeholder="e.g. A summer road trip with friends, falling in love on a rainy day, celebrating a victory..." style="width:100%;box-sizing:border-box;min-height:60px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;"></textarea>
+      
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button class="studio-create-btn" style="flex:1;padding:12px 20px;border-radius:12px;border:none;background:linear-gradient(135deg,#00ff88,#00cc6a);color:#000;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;opacity:0.4;pointer-events:none;">🎵 Create Song</button>
+        <button class="studio-surprise-btn" style="padding:12px 16px;border-radius:12px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.08);color:#00ff88;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;">🎲 Surprise Me</button>
+      </div>
+      
+      <div class="studio-preview" style="margin-top:10px;padding:8px 12px;background:rgba(0,0,0,0.2);border-radius:8px;font-size:11px;color:#556677;display:none;">
+        <span style="color:#00ff88;">Preview:</span> <span class="preview-text"></span>
+      </div>
     </div>
   `;
-
+  
   thread.appendChild(studio);
-
-  // ── State ──────────────────────────────────────────────
-  let uploadedFile = null;   // { type:'audio'|'image'|'video', base64, mimeType, name }
-
-  const dropzone  = studio.querySelector('.ss-dropzone');
-  const fileInput = studio.querySelector('.ss-file');
-  const dropIdle  = studio.querySelector('.ss-drop-idle');
-  const dropPrev  = studio.querySelector('.ss-drop-preview');
-  const fileInfo  = studio.querySelector('.ss-file-info');
-  const fileSub   = studio.querySelector('.ss-file-sub');
-  const clearBtn  = studio.querySelector('.ss-clear');
-  const imgHint   = studio.querySelector('.ss-img-hint');
-  const imgHintTx = studio.querySelector('.ss-img-hint-text');
-  const goBtn     = studio.querySelector('.ss-go');
-  const statusEl  = studio.querySelector('.ss-status');
-
-  // Reactive screenshot hint
-  let _lastImgCount = -1;
-  const _timer = setInterval(() => {
-    if (!document.contains(studio)) { clearInterval(_timer); return; }
-    const n = currentImages.length;
-    if (n === _lastImgCount) return;
-    _lastImgCount = n;
-    imgHint.style.display = (n > 0 && !uploadedFile) ? 'block' : 'none';
-    imgHintTx.textContent = `${n} screenshot${n>1?'s':''} loaded`;
-  }, 500);
-
-  function setFilePreview(name, sub) {
-    dropIdle.style.display = 'none';
-    dropPrev.style.display = 'block';
-    fileInfo.textContent   = name;
-    fileSub.textContent    = sub;
-    imgHint.style.display  = 'none'; // hide screenshot hint when file uploaded
-  }
-
-  function clearFile() {
-    uploadedFile = null;
-    fileInput.value = '';
-    dropIdle.style.display = 'block';
-    dropPrev.style.display = 'none';
-    imgHint.style.display  = currentImages.length > 0 ? 'block' : 'none';
-  }
-
-  // Click to open file picker
-  dropzone.addEventListener('click', e => {
-    if (e.target === clearBtn || clearBtn.contains(e.target)) return;
-    fileInput.click();
-  });
-
-  // Drag & drop
-  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.style.borderColor='rgba(0,255,136,0.6)'; dropzone.style.background='rgba(0,255,136,0.05)'; });
-  dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor='rgba(0,255,136,0.25)'; dropzone.style.background='rgba(255,255,255,0.02)'; });
-  dropzone.addEventListener('drop', e => {
-    e.preventDefault();
-    dropzone.style.borderColor='rgba(0,255,136,0.25)'; dropzone.style.background='rgba(255,255,255,0.02)';
-    const f = e.dataTransfer?.files?.[0];
-    if (f) handleFile(f);
-  });
-
-  clearBtn.addEventListener('click', e => { e.stopPropagation(); clearFile(); });
-
-  fileInput.addEventListener('change', () => {
-    const f = fileInput.files?.[0];
-    if (f) handleFile(f);
-  });
-
-  function handleFile(f) {
-    const kind = f.type.startsWith('audio/') ? 'audio'
-               : f.type.startsWith('image/') ? 'image'
-               : f.type.startsWith('video/') ? 'video' : null;
-    if (!kind) { statusEl.style.display='block'; statusEl.textContent='Unsupported file type.'; return; }
-    statusEl.style.display = 'none';
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const dataUrl = ev.target.result;
-      const b64 = dataUrl.split(',')[1];
-      uploadedFile = { type: kind, base64: b64, mimeType: f.type, name: f.name };
-      const sizeKB = Math.round(f.size / 1024);
-      const icons = { audio:'🎵', image:'📸', video:'🎬' };
-      const labels = { audio:'Audio — AI will match this style/beat', image:'Image — AI will set the mood from it', video:'Video — AI will score it' };
-      setFilePreview(`${icons[kind]} ${f.name}`, `${sizeKB} KB · ${labels[kind]}`);
-    };
-    reader.readAsDataURL(f);
-  }
-
-  // ── Generate ────────────────────────────────────────────
-  goBtn.addEventListener('click', async () => {
-    const userPrompt = studio.querySelector('.ss-prompt').value.trim();
-
-    // Need at least a file or a prompt
-    if (!uploadedFile && !userPrompt && currentImages.length === 0) {
-      statusEl.style.display = 'block';
-      statusEl.textContent = 'Upload a file or type a description first.';
-      return;
-    }
-
-    const apiKey = typeof getApiKey === 'function' ? getApiKey() : (window._snapToAI_apiKey || '');
-
-    // ── Audio reference: ask Gemini to analyse it, then send description to Lyria ──
-    if (uploadedFile?.type === 'audio' && apiKey) {
-      goBtn.disabled = true;
-      goBtn.textContent = '🎵 Analysing your track…';
-      statusEl.style.display = 'block';
-      statusEl.textContent = 'Gemini is listening to your song to extract its style…';
-      try {
-        const analysisResp = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
-          { method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({
-              contents:[{ role:'user', parts:[
-                { inlineData:{ mimeType: uploadedFile.mimeType, data: uploadedFile.base64 } },
-                { text: 'Listen to this audio and describe its musical style in detail. Include: tempo (BPM estimate), key/scale, genre, main instruments, rhythm/beat pattern, energy level, mood, and production style. Write a 2-3 sentence description a music AI can use to recreate a song in this style.' + (userPrompt ? ` Also consider this user note: "${userPrompt}"` : '') }
-              ]}]
-            }),
-            signal: AbortSignal.timeout(30000)
-          }
-        );
-        const analysisData = await analysisResp.json();
-        const styleDesc = analysisData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        if (styleDesc) {
-          // Now send the style description as the music prompt
-          const inputEl = document.getElementById('chatInput');
-          if (inputEl) {
-            inputEl.value = styleDesc;
-            document.getElementById('sendBtn')?.click();
-          }
-          studio.style.opacity = '0.5';
-          studio.style.pointerEvents = 'none';
-          return;
+  
+  const img2musicChips = {
+    'happy': 'Happy, upbeat, bright and energetic',
+    'chill': 'Calm, relaxing, smooth and ambient',
+    'epic': 'Epic, powerful, cinematic and orchestral',
+    'dark': 'Dark, mysterious, deep and atmospheric',
+    'romantic': 'Romantic, warm, gentle and emotional',
+    'mysterious': 'Mysterious, ethereal, haunting and enchanting'
+  };
+  
+  const img2musicDesc = studio.querySelector('.img2music-desc');
+  
+  Object.keys(img2musicChips).forEach(mood => {
+    const btn = studio.querySelector(`.img2music-${mood}`);
+    if (btn && img2musicDesc) {
+      btn.addEventListener('click', () => {
+        const current = img2musicDesc.value.trim();
+        if (current) {
+          img2musicDesc.value = current + ', ' + img2musicChips[mood].toLowerCase();
+        } else {
+          img2musicDesc.value = img2musicChips[mood];
         }
-      } catch (_) {}
-      // Fallback: just use user prompt + filename hint
-      const fallback = userPrompt || `Create music in the same style as "${uploadedFile.name}"`;
+        btn.style.background = btn.style.background.includes('0.08') ? btn.style.borderColor.replace('0.3', '0.15') : btn.style.background;
+        btn.style.opacity = '0.5';
+      });
+    }
+  });
+  
+  const img2musicGoBtn = studio.querySelector('.img2music-go');
+  if (img2musicGoBtn) {
+    img2musicGoBtn.addEventListener('click', () => {
+      const userNotes = img2musicDesc ? img2musicDesc.value.trim() : '';
+      let prompt = 'Create music inspired by this image.';
+      if (userNotes) {
+        prompt = `Create music inspired by this image. Style notes: ${userNotes}. Make it a complete, polished musical piece.`;
+      } else {
+        prompt = 'Create music that perfectly captures the mood, atmosphere, emotion, and colors of this image. Choose the best genre, tempo, and instruments automatically. Make it a complete, polished musical piece.';
+      }
       const inputEl = document.getElementById('chatInput');
-      if (inputEl) { inputEl.value = fallback; document.getElementById('sendBtn')?.click(); }
+      if (inputEl) {
+        inputEl.value = prompt;
+        const sendBtn = document.getElementById('sendBtn');
+        if (sendBtn) sendBtn.click();
+      }
       studio.style.opacity = '0.5';
       studio.style.pointerEvents = 'none';
-      return;
+    });
+  }
+  
+  let selectedGenre = null;
+  let selectedMood = null;
+  let selectedTempo = null;
+  
+  function updatePreview() {
+    const preview = studio.querySelector('.studio-preview');
+    const previewText = studio.querySelector('.preview-text');
+    const createBtn = studio.querySelector('.studio-create-btn');
+    const topic = studio.querySelector('.studio-topic').value.trim();
+    
+    if (selectedGenre) {
+      const parts = [];
+      if (selectedMood) parts.push(`${selectedMood.toLowerCase()}`);
+      parts.push(`${selectedGenre.toLowerCase()} song`);
+      if (selectedTempo) parts.push(`at a ${selectedTempo.toLowerCase()} tempo`);
+      if (topic) parts.push(`about ${topic}`);
+      
+      previewText.textContent = parts.join(' ');
+      preview.style.display = 'block';
+      createBtn.style.opacity = '1';
+      createBtn.style.pointerEvents = 'auto';
+    } else {
+      preview.style.display = 'none';
+      createBtn.style.opacity = '0.4';
+      createBtn.style.pointerEvents = 'none';
     }
-
-    // ── Image / Video upload: stage it then send ──
-    if (uploadedFile?.type === 'image') {
-      // Push into currentImages so the music handler picks it up
-      const dataUrl = `data:${uploadedFile.mimeType};base64,${uploadedFile.base64}`;
-      if (!currentImages.includes(dataUrl)) currentImages.unshift(dataUrl);
-    }
-
-    // ── Build final prompt ──
-    let finalPrompt = userPrompt;
-    if (!finalPrompt) {
-      if (uploadedFile?.type === 'video')  finalPrompt = 'Create music that perfectly scores this video — match its mood, energy, and pacing';
-      else if (uploadedFile?.type === 'image') finalPrompt = 'Create music that captures the mood, atmosphere, and emotion of this image';
-      else finalPrompt = 'Create an original, professional instrumental piece';
-    }
-
+  }
+  
+  function handleChipClick(container, chipClass, callback) {
+    studio.querySelectorAll(`.${chipClass}`).forEach(chip => {
+      chip.addEventListener('click', () => {
+        const wasActive = chip.style.background.includes('rgba(0, 255, 136');
+        studio.querySelectorAll(`.${chipClass}`).forEach(c => {
+          c.style.background = 'rgba(255,255,255,0.04)';
+          c.style.borderColor = 'rgba(255,255,255,0.1)';
+          c.style.color = '#ccd6e0';
+          c.style.transform = '';
+        });
+        if (!wasActive) {
+          chip.style.background = 'rgba(0,255,136,0.15)';
+          chip.style.borderColor = 'rgba(0,255,136,0.4)';
+          chip.style.color = '#00ff88';
+          chip.style.transform = 'scale(1.05)';
+          callback(chip.dataset.value);
+        } else {
+          callback(null);
+        }
+        updatePreview();
+      });
+      
+      chip.addEventListener('mouseenter', () => {
+        if (!chip.style.background.includes('rgba(0, 255, 136')) {
+          chip.style.background = 'rgba(255,255,255,0.08)';
+        }
+      });
+      chip.addEventListener('mouseleave', () => {
+        if (!chip.style.background.includes('rgba(0, 255, 136')) {
+          chip.style.background = 'rgba(255,255,255,0.04)';
+        }
+      });
+    });
+  }
+  
+  handleChipClick(studio, 'genre-chip', v => { selectedGenre = v; });
+  handleChipClick(studio, 'mood-chip', v => { selectedMood = v; });
+  handleChipClick(studio, 'tempo-chip', v => { selectedTempo = v; });
+  
+  studio.querySelector('.studio-topic').addEventListener('input', updatePreview);
+  
+  studio.querySelector('.studio-create-btn').addEventListener('click', () => {
+    if (!selectedGenre) return;
+    
+    const topic = studio.querySelector('.studio-topic').value.trim();
+    let prompt = `Create a ${selectedGenre.toLowerCase()} song`;
+    if (selectedMood) prompt += ` with a ${selectedMood.toLowerCase()} mood`;
+    if (selectedTempo) prompt += ` at a ${selectedTempo.toLowerCase()} tempo`;
+    if (topic) prompt += `. The song is about: ${topic}`;
+    prompt += `. Make it sound professional and polished with clear structure (intro, verse, chorus, verse, chorus, outro).`;
+    
     const inputEl = document.getElementById('chatInput');
     if (inputEl) {
-      inputEl.value = finalPrompt;
-      document.getElementById('sendBtn')?.click();
+      inputEl.value = prompt;
+      const sendBtn = document.getElementById('sendBtn');
+      if (sendBtn) sendBtn.click();
     }
+    
     studio.style.opacity = '0.5';
     studio.style.pointerEvents = 'none';
   });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// BROADCAST STUDIO  — 3-voice AI broadcast (Zephyr/Kore/Fenrir)
-// Formats: Talk Show / Tutorial / App Demo / Presentation / Narrator
-// Triggered when the user enters Broadcast mode.
-// ─────────────────────────────────────────────────────────────────────────────
-function showBroadcastCard(thread) {
-  const existing = thread.querySelector('.broadcast-card');
-  if (existing) existing.remove();
-
-  if (!document.getElementById('bc-styles')) {
-    const s = document.createElement('style');
-    s.id = 'bc-styles';
-    s.textContent = `@keyframes bcPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.35;transform:scale(0.72)}}
-.bc-pill{padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#8899aa;font-size:11px;cursor:pointer;transition:all 0.18s;white-space:nowrap;line-height:1.6;}
-.bc-fmt.active{background:rgba(45,212,191,0.14);border-color:rgba(45,212,191,0.38);color:#2dd4bf;font-weight:700;}
-.bc-dur.active{background:rgba(167,139,250,0.14);border-color:rgba(167,139,250,0.38);color:#a78bfa;font-weight:700;}
-.bc-trk.active{background:rgba(251,191,36,0.12);border-color:rgba(251,191,36,0.33);color:#fbbf24;font-weight:700;}
-.bc-pill:hover{opacity:0.82;}`;
-    document.head.appendChild(s);
-  }
-
-  const SPEAKERS = {
-    ZEPHYR: { voice: 'Zephyr', role: 'Host',     color: '#2dd4bf', icon: '🎙️' },
-    KORE:   { voice: 'Kore',   role: 'Expert',   color: '#a78bfa', icon: '🎓' },
-    FENRIR: { voice: 'Fenrir', role: 'Creative', color: '#f97316', icon: '⚡' },
-  };
-
-  const FORMATS = [
-    { key: 'talkshow',     label: '🎙️ Talk Show' },
-    { key: 'tutorial',     label: '📚 Tutorial' },
-    { key: 'trailer',      label: '🎬 Trailer' },
-    { key: 'appdemo',      label: '🚀 App Demo' },
-    { key: 'presentation', label: '📊 Presentation' },
-    { key: 'narrator',     label: '🎬 Narrator' },
-  ];
-
-  const DURATIONS = [
-    { key: '1',  label: '1 min',  exchanges: 8  },
-    { key: '3',  label: '3 min',  exchanges: 18 },
-    { key: '5',  label: '5 min',  exchanges: 28 },
-    { key: '10', label: '10 min', exchanges: 45 },
-  ];
-
-  const TRACKS = [
-    { key: 'none',      label: '🚫 None',      prompt: null },
-    { key: 'lofi',      label: '☁️ Lo-fi',     prompt: 'Soft instrumental lo-fi background music for a podcast. Calm, warm, professional atmosphere. No vocals. Mellow backdrop beneath conversation.' },
-    { key: 'cinematic', label: '🎬 Cinematic', prompt: 'Epic cinematic orchestral background music. Dramatic, inspiring, documentary-style. No vocals. Suitable beneath narration.' },
-    { key: 'news',      label: '📰 News',      prompt: 'Professional TV news broadcast background music. Authoritative, modern, clean. Short staccato hits. No vocals.' },
-    { key: 'upbeat',    label: '🎸 Upbeat',    prompt: 'Upbeat positive motivational background music. Energetic, modern, corporate pop style. No vocals.' },
-  ];
-
-  // ── Helper: raw PCM / L16 → WAV blob ─────────────────────────
-  function pcmToWav(b64, mimeType) {
-    const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-    const mime = (mimeType || '').toLowerCase();
-    if (!mime || mime.includes('pcm') || mime.startsWith('audio/l16') || mime.startsWith('audio/l-16')) {
-      const sr = 24000, ch = 1, bps = 16;
-      const buf = new ArrayBuffer(44); const dv = new DataView(buf);
-      const ws = (o, v) => { for (let i = 0; i < v.length; i++) dv.setUint8(o + i, v.charCodeAt(i)); };
-      ws(0,'RIFF'); dv.setUint32(4, 36 + raw.byteLength, true);
-      ws(8,'WAVE'); ws(12,'fmt ');
-      dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,ch,true);
-      dv.setUint32(24,sr,true); dv.setUint32(28,sr*ch*bps/8,true);
-      dv.setUint16(32,ch*bps/8,true); dv.setUint16(34,bps,true);
-      ws(36,'data'); dv.setUint32(40,raw.byteLength,true);
-      return new Blob([buf, raw], { type: 'audio/wav' });
-    }
-    return new Blob([raw], { type: mimeType || 'audio/wav' });
-  }
-
-  // ── TTS: generate one line with format-appropriate style ─────
-  async function bcGenLine(text, voiceName, ttsStyle, apiKey) {
-    const styled = `${ttsStyle}${text}`;
-    for (const model of [MODELS.ttsPrimary, MODELS.ttsFallback]) {
-      try {
-        const r = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: styled }] }],
-              generationConfig: {
-                responseModalities: ['AUDIO'],
-                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } }
-              }
-            }),
-            signal: AbortSignal.timeout(28000)
-          }
-        );
-        if (!r.ok) continue;
-        const d = await r.json();
-        const p = d?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-        if (!p?.data) continue;
-        return URL.createObjectURL(pcmToWav(p.data, p.mimeType));
-      } catch (e) { continue; }
-    }
-    return null;
-  }
-
-  // ── Music: generate background track by Lyria prompt ─────────
-  async function bcGenMusic(trackPrompt, apiKey) {
-    if (!trackPrompt) return null;
-    for (const model of [MODELS.lyria3, MODELS.musicDefault]) {
-      try {
-        const r = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text: trackPrompt }] }],
-              generationConfig: { responseModalities: ['AUDIO'] }
-            }),
-            signal: AbortSignal.timeout(55000)
-          }
-        );
-        if (!r.ok) continue;
-        const body = await r.json();
-        for (const ap of (body.candidates?.[0]?.content?.parts || [])) {
-          if (ap.inlineData?.data) return URL.createObjectURL(pcmToWav(ap.inlineData.data, ap.inlineData.mimeType));
-        }
-      } catch (e) { continue; }
-    }
-    return null;
-  }
-
-  // ── Parse Gemini script ───────────────────────────────────────
-  function bcParseScript(raw) {
-    const result = [];
-    for (const line of raw.split('\n')) {
-      const t = line.trim(); if (!t) continue;
-      for (const sp of Object.keys(SPEAKERS)) {
-        const m = t.match(new RegExp(`^${sp}[:\\-]\\s*(.+)`, 'i'));
-        if (m) { result.push({ speaker: sp.toUpperCase(), text: m[1].trim(), url: null }); break; }
-      }
-    }
-    return result;
-  }
-
-  // ── Hex → "r,g,b" ────────────────────────────────────────────
-  function bcHexRgb(h) { return [1,3,5].map(i => parseInt(h.slice(i,i+2),16)).join(','); }
-
-  // ── System prompt varies by format and target length ─────────
-  function bcSysPrompt(format, exchanges) {
-    const base = `FORMAT (strict — output ONLY script lines, nothing else):
-ZEPHYR: [one or two spoken sentences]
-KORE: [one or two spoken sentences]
-FENRIR: [one or two spoken sentences]
-...${exchanges} exchanges total
-No stage directions. No asterisks. No markdown. Natural spoken language only.`;
-    const map = {
-      talkshow:     `You are a professional podcast scriptwriter. Write a lively 3-person talk show script from the source material.\n\n${base}\n\nZEPHYR = warm engaging host, KORE = knowledgeable expert, FENRIR = bold creative voice. Start with ZEPHYR introducing the topic.`,
-      tutorial:     `You are a scriptwriter creating an educational tutorial broadcast.\n\n${base}\n\nZEPHYR = friendly instructor walking through content step by step, KORE = student asking smart clarifying questions, FENRIR = adds real-world tips and examples. Start with ZEPHYR introducing what will be learned.`,
-      appdemo:      `You are a scriptwriter creating an app or product demo broadcast.\n\n${base}\n\nZEPHYR = main presenter showcasing features enthusiastically, KORE = excited first-time user reacting, FENRIR = technical expert adding context. Start with ZEPHYR with a strong opening hook.`,
-      presentation: `You are a scriptwriter creating a professional business presentation broadcast.\n\n${base}\n\nZEPHYR = main presenter delivering key points, KORE = co-presenter adding supporting evidence, FENRIR = reinforces and summarizes takeaways. Professional, polished language. Start with ZEPHYR with an executive summary.`,
-      narrator:     `You are a scriptwriter creating a documentary-style narrative broadcast.\n\n${base}\n\nZEPHYR = primary narrator (~50% of lines), KORE = provides perspective and counterpoint (~30%), FENRIR = delivers impactful conclusions (~20%). Measured, compelling language. Start with ZEPHYR.`,
-      trailer:      `You are writing a HOLLYWOOD BLOCKBUSTER MOVIE TRAILER voiceover script. ONE narrator only — FENRIR — no other speakers.\n\n${base}\n\nCRITICAL RULES:\n- EVERY line MUST start with "FENRIR:" — no ZEPHYR, no KORE, no exceptions.\n- Write exactly ${exchanges} lines, each 5-20 words — SHORT and PUNCHY.\n- Tone: EPIC, cinematic, world-changing, urgent, electrifying. Think Christopher Nolan meets Apple Keynote.\n- NO questions from anyone. This is a powerful dramatic MONOLOGUE.\n- Use "..." for dramatic pauses within a line. Build intensity with each line.\n\nNARRATIVE ARC (hit every beat):\n1. Lines 1-2: Explosive world-setting hook — paint the world BEFORE ("In a world where chaos rules the screen...")\n2. Lines 3-4: The problem — what was missing, what was broken, what was impossible\n3. Lines 5-${Math.max(6,Math.floor(exchanges*0.55))}: Rising intensity — introduce the hero. Name it. Reveal its power. Drop feature after feature like punches.\n4. Lines ${Math.max(7,Math.floor(exchanges*0.55)+1)}-${exchanges-2}: CLIMAX — peak excitement, game-changing moment, the world transformed\n5. Lines ${exchanges-1}-${exchanges}: ICONIC TAGLINE and rallying call to action — make it unforgettable.\n\nEnd on something that sends chills. Make every word earn its place.`,
-    };
-    return map[format] || map.talkshow;
-  }
-
-  // ── TTS speaking style prefix by format ──────────────────────
-  function bcTtsStyle(format) {
-    const map = {
-      talkshow:     'Speak naturally and conversationally as if live on a talk show: ',
-      tutorial:     'Speak clearly and educationally as a friendly instructor: ',
-      appdemo:      'Speak enthusiastically as if presenting an exciting product demo: ',
-      presentation: 'Speak professionally and authoritatively as in a business presentation: ',
-      narrator:     'Speak like a compelling documentary narrator, measured and thoughtful: ',
-      trailer:      'You are a legendary Hollywood movie trailer voice. Deliver every word with earth-shaking gravitas, dramatic power, and cinematic intensity — as if the fate of the world depends on it: ',
-    };
-    return map[format] || map.talkshow;
-  }
-
-  // ── Build card DOM ────────────────────────────────────────────
-  const card = document.createElement('div');
-  card.className = 'chat-bubble ai broadcast-card';
-  card.style.cssText = 'padding:0;margin:8px 0;background:transparent;border:none;max-width:100%;width:100%;';
-
-  card.innerHTML = `
-<div style="background:linear-gradient(135deg,rgba(45,212,191,0.07),rgba(124,58,237,0.04));border:1px solid rgba(45,212,191,0.15);border-radius:16px;padding:18px;backdrop-filter:blur(10px);">
-
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-    <div style="display:flex;align-items:center;gap:9px;">
-      <span style="font-size:22px;">🎙️</span>
-      <div>
-        <div style="font-size:15px;font-weight:700;color:#e8eef4;">Broadcast Studio</div>
-        <div style="font-size:11px;color:#667788;">Turn any content into a multi-voice AI broadcast</div>
-      </div>
-    </div>
-    <div class="bc-live-badge" style="display:none;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;background:rgba(239,68,68,0.13);border:1px solid rgba(239,68,68,0.38);">
-      <span style="width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block;animation:bcPulse 1.1s ease-in-out infinite;"></span>
-      <span style="font-size:10px;font-weight:700;color:#ef4444;letter-spacing:0.07em;">LIVE</span>
-    </div>
-  </div>
-
-  <div style="display:flex;gap:5px;margin-bottom:14px;flex-wrap:wrap;">
-    <div style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;background:rgba(45,212,191,0.08);border:1px solid rgba(45,212,191,0.2);font-size:10px;color:#2dd4bf;">🎙️ <b>Zephyr</b>&nbsp;<span style="opacity:0.5;">Host</span></div>
-    <div style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);font-size:10px;color:#a78bfa;">🎓 <b>Kore</b>&nbsp;<span style="opacity:0.5;">Expert</span></div>
-    <div style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);font-size:10px;color:#f97316;">⚡ <b>Fenrir</b>&nbsp;<span style="opacity:0.5;">Creative</span></div>
-  </div>
-
-  <div class="bc-input-sec">
-    <div style="margin-bottom:10px;">
-      <div style="font-size:9.5px;color:#667788;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em;">Format</div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;">
-        <button class="bc-pill bc-fmt active" data-fmt="talkshow">🎙️ Talk Show</button>
-        <button class="bc-pill bc-fmt" data-fmt="tutorial">📚 Tutorial</button>
-        <button class="bc-pill bc-fmt" data-fmt="appdemo">🚀 App Demo</button>
-        <button class="bc-pill bc-fmt" data-fmt="presentation">📊 Presentation</button>
-        <button class="bc-pill bc-fmt" data-fmt="narrator">🎬 Narrator</button>
-        <button class="bc-pill bc-fmt bc-fmt-trailer" data-fmt="trailer" style="border-color:rgba(234,179,8,0.35);color:#eab308;background:rgba(234,179,8,0.06);">🎥 Trailer</button>
-      </div>
-    </div>
-
-    <div style="margin-bottom:10px;">
-      <div style="font-size:9.5px;color:#667788;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em;">Length</div>
-      <div style="display:flex;gap:5px;">
-        <button class="bc-pill bc-dur" data-dur="1">1 min</button>
-        <button class="bc-pill bc-dur active" data-dur="3">3 min</button>
-        <button class="bc-pill bc-dur" data-dur="5">5 min</button>
-        <button class="bc-pill bc-dur" data-dur="10">10 min</button>
-      </div>
-    </div>
-
-    <div style="margin-bottom:10px;">
-      <div style="font-size:9.5px;color:#667788;margin-bottom:7px;text-transform:uppercase;letter-spacing:0.06em;">Attach Source Media</div>
-      <div style="display:flex;gap:6px;margin-bottom:8px;">
-        <button class="bc-attach-img" style="flex:1;padding:10px 5px;border-radius:10px;border:1px solid rgba(45,212,191,0.3);background:rgba(45,212,191,0.07);color:#2dd4bf;font-size:20px;cursor:pointer;line-height:1;text-align:center;"><div>📷</div><div style="font-size:10px;color:#9aabb8;margin-top:3px;font-weight:600;">Images</div></button>
-        <button class="bc-attach-vid" style="flex:1;padding:10px 5px;border-radius:10px;border:1px solid rgba(167,139,250,0.3);background:rgba(167,139,250,0.07);color:#a78bfa;font-size:20px;cursor:pointer;line-height:1;text-align:center;"><div>🎬</div><div style="font-size:10px;color:#9aabb8;margin-top:3px;font-weight:600;">Video</div></button>
-        <button class="bc-attach-file" style="flex:1;padding:10px 5px;border-radius:10px;border:1px solid rgba(251,191,36,0.3);background:rgba(251,191,36,0.07);color:#fbbf24;font-size:20px;cursor:pointer;line-height:1;text-align:center;"><div>📄</div><div style="font-size:10px;color:#9aabb8;margin-top:3px;font-weight:600;">File</div></button>
-      </div>
-      <div class="bc-attach-list" style="display:none;margin-bottom:8px;"></div>
-      <div style="font-size:9.5px;color:#667788;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;">Or type / paste text</div>
-      <textarea class="bc-source" placeholder="Topic, article, notes, script outline… (optional if media attached)" style="width:100%;box-sizing:border-box;min-height:60px;background:rgba(255,255,255,0.04);border:1px solid rgba(45,212,191,0.18);border-radius:10px;padding:9px 11px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;line-height:1.4;"></textarea>
-      <input type="file" class="bc-img-input" accept="image/*" multiple style="display:none;">
-      <input type="file" class="bc-vid-input" accept="video/*" style="display:none;">
-      <input type="file" class="bc-file-input" accept=".txt,.md,.csv,.json,.pdf,.pptx,.docx" style="display:none;">
-    </div>
-
-    <div style="margin-bottom:14px;">
-      <div style="font-size:9.5px;color:#667788;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em;">Background Music</div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;">
-        <button class="bc-pill bc-trk" data-trk="none">🚫 None</button>
-        <button class="bc-pill bc-trk active" data-trk="lofi">☁️ Lo-fi</button>
-        <button class="bc-pill bc-trk" data-trk="cinematic">🎬 Cinematic</button>
-        <button class="bc-pill bc-trk" data-trk="news">📰 News</button>
-        <button class="bc-pill bc-trk" data-trk="upbeat">🎸 Upbeat</button>
-      </div>
-    </div>
-
-    <button class="bc-prepare-btn" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#2dd4bf,#7c3aed);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;">🎙️ Generate Broadcast</button>
-  </div>
-
-  <div class="bc-script-sec" style="display:none;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 7px 0;">
-      <span style="font-size:12px;font-weight:600;color:#8899aa;">📜 Script</span>
-      <span class="bc-status" style="font-size:11px;color:#667788;"></span>
-    </div>
-    <div class="bc-lines" style="background:rgba(0,0,0,0.22);border-radius:10px;padding:10px;max-height:165px;overflow-y:auto;"></div>
-    <div class="bc-vol-row" style="display:flex;align-items:center;gap:10px;margin:12px 0 8px 0;">
-      <span style="font-size:11px;color:#8899aa;white-space:nowrap;">🎵 Vol</span>
-      <input type="range" class="bc-vol" min="0" max="100" value="12" style="flex:1;accent-color:#2dd4bf;cursor:pointer;">
-      <span class="bc-vol-pct" style="font-size:11px;color:#8899aa;width:28px;text-align:right;">12%</span>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:6px;">
-      <button class="bc-broadcast-btn" style="flex:1;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#2dd4bf,#7c3aed);color:#fff;font-size:13px;font-weight:700;cursor:pointer;opacity:0.45;pointer-events:none;transition:all 0.2s;">▶ Start Broadcast</button>
-      <button class="bc-stop-btn" style="display:none;padding:11px 15px;border-radius:10px;border:1px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.1);color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;">⏹</button>
-      <button class="bc-reset-btn" style="padding:11px 13px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#9aabb8;font-size:12px;cursor:pointer;">↺</button>
-    </div>
-    <button class="bc-dl-btn" style="display:none;width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1px solid rgba(45,212,191,0.35);background:rgba(45,212,191,0.08);color:#2dd4bf;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;">⬇️ Download Episode</button>
-  </div>
-</div>`;
-
-  thread.appendChild(card);
-
-  // ── State ─────────────────────────────────────────────────────
-  let selFormat = 'talkshow';
-  let selDur    = '3';
-  let selTrack  = 'lofi';
-  let attachments = [];
-  let script    = [];
-  let bgUrl     = null;
-  let bgAudio   = null;
-  let isPlaying = false;
-  let stopReq   = false;
-  let blobUrls  = [];
-
-  // ── DOM refs ──────────────────────────────────────────────────
-  const inputSec   = card.querySelector('.bc-input-sec');
-  const scriptSec  = card.querySelector('.bc-script-sec');
-  const srcEl      = card.querySelector('.bc-source');
-  const prepBtn    = card.querySelector('.bc-prepare-btn');
-  const linesEl    = card.querySelector('.bc-lines');
-  const statusEl   = card.querySelector('.bc-status');
-  const liveBadge  = card.querySelector('.bc-live-badge');
-  const broadBtn   = card.querySelector('.bc-broadcast-btn');
-  const stopBtn    = card.querySelector('.bc-stop-btn');
-  const resetBtn   = card.querySelector('.bc-reset-btn');
-  const dlBtn      = card.querySelector('.bc-dl-btn');
-  const volSlider  = card.querySelector('.bc-vol');
-  const volPct     = card.querySelector('.bc-vol-pct');
-  const volRow     = card.querySelector('.bc-vol-row');
-  const attachList = card.querySelector('.bc-attach-list');
-  const imgInput   = card.querySelector('.bc-img-input');
-  const vidInput   = card.querySelector('.bc-vid-input');
-  const fileInput  = card.querySelector('.bc-file-input');
-
-  // ── Format tabs ───────────────────────────────────────────────
-  card.querySelectorAll('.bc-fmt').forEach(btn => {
-    btn.addEventListener('click', () => {
-      card.querySelectorAll('.bc-fmt').forEach(b => {
-        b.classList.remove('active');
-        // Reset trailer button back to gold idle style
-        if (b.dataset.fmt === 'trailer') {
-          b.style.borderColor = 'rgba(234,179,8,0.35)';
-          b.style.color = '#eab308';
-          b.style.background = 'rgba(234,179,8,0.06)';
-        }
-      });
-      btn.classList.add('active');
-      selFormat = btn.dataset.fmt;
-      // Trailer: override active style to gold + auto-select Cinematic music
-      if (selFormat === 'trailer') {
-        btn.style.borderColor = 'rgba(234,179,8,0.55)';
-        btn.style.color = '#fde047';
-        btn.style.background = 'rgba(234,179,8,0.16)';
-        btn.style.fontWeight = '700';
-        const cinBtn = card.querySelector('.bc-trk[data-trk="cinematic"]');
-        if (cinBtn) cinBtn.click();
-      } else {
-        btn.style.borderColor = '';
-        btn.style.color = '';
-        btn.style.background = '';
-        btn.style.fontWeight = '';
-      }
-    });
-  });
-
-  // ── Duration tabs ─────────────────────────────────────────────
-  card.querySelectorAll('.bc-dur').forEach(btn => {
-    btn.addEventListener('click', () => {
-      card.querySelectorAll('.bc-dur').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selDur = btn.dataset.dur;
-    });
-  });
-
-  // ── Music track tabs ──────────────────────────────────────────
-  card.querySelectorAll('.bc-trk').forEach(btn => {
-    btn.addEventListener('click', () => {
-      card.querySelectorAll('.bc-trk').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selTrack = btn.dataset.trk;
-      volRow.style.display = selTrack === 'none' ? 'none' : 'flex';
-    });
-  });
-
-  // ── Volume slider ─────────────────────────────────────────────
-  volSlider.addEventListener('input', () => {
-    volPct.textContent = `${volSlider.value}%`;
-    if (bgAudio) bgAudio.volume = parseInt(volSlider.value) / 100;
-  });
-
-  // ── Attachment rendering ──────────────────────────────────────
-  function bcRenderAttachments() {
-    attachList.innerHTML = '';
-    if (!attachments.length) { attachList.style.display = 'none'; return; }
-    attachList.style.display = 'block';
-
-    // Group video frames by source file
-    const videoFiles = [...new Set(attachments.filter(a => a.videoFile).map(a => a.videoFile))];
-    const images     = attachments.filter(a => a.type === 'image');
-    const files      = attachments.filter(a => a.type === 'file');
-
-    // ── Video panel ──
-    videoFiles.forEach(vf => {
-      const frames = attachments.filter(a => a.videoFile === vf);
-      const panel  = document.createElement('div');
-      panel.style.cssText = 'background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.25);border-radius:10px;padding:10px;margin-bottom:6px;';
-
-      const header = document.createElement('div');
-      header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;';
-      const title  = document.createElement('span');
-      title.style.cssText = 'font-size:11px;font-weight:700;color:#a78bfa;';
-      const shortName = vf.length > 28 ? vf.slice(0, 25) + '…' : vf;
-      title.textContent = `🎬 ${shortName}`;
-      const rmBtn = document.createElement('button');
-      rmBtn.textContent = '✕ Remove';
-      rmBtn.style.cssText = 'background:none;border:1px solid rgba(239,68,68,0.35);border-radius:6px;color:#ef4444;font-size:10px;cursor:pointer;padding:2px 7px;';
-      rmBtn.onclick = () => { attachments = attachments.filter(a => a.videoFile !== vf); bcRenderAttachments(); };
-      header.appendChild(title); header.appendChild(rmBtn);
-      panel.appendChild(header);
-
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
-      frames.forEach(f => {
-        const img = document.createElement('img');
-        img.src = `data:image/jpeg;base64,${f.data}`;
-        img.title = f.name;
-        img.style.cssText = 'width:72px;height:48px;border-radius:6px;object-fit:cover;border:1px solid rgba(167,139,250,0.3);';
-        row.appendChild(img);
-      });
-      panel.appendChild(row);
-
-      const note = document.createElement('div');
-      note.style.cssText = 'margin-top:7px;font-size:10px;color:#667788;';
-      note.textContent = `✓ Gemini will analyze ${frames.length} frame${frames.length > 1 ? 's' : ''} from this video to write your script`;
-      panel.appendChild(note);
-      attachList.appendChild(panel);
-    });
-
-    // ── Images panel ──
-    if (images.length) {
-      const panel = document.createElement('div');
-      panel.style.cssText = 'background:rgba(45,212,191,0.06);border:1px solid rgba(45,212,191,0.22);border-radius:10px;padding:10px;margin-bottom:6px;';
-      const header = document.createElement('div');
-      header.style.cssText = 'font-size:11px;font-weight:700;color:#2dd4bf;margin-bottom:7px;';
-      header.textContent = `📷 ${images.length} image${images.length > 1 ? 's' : ''} attached`;
-      panel.appendChild(header);
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
-      images.forEach((a, i) => {
-        const wrap = document.createElement('div');
-        wrap.style.cssText = 'position:relative;display:inline-block;';
-        const img = document.createElement('img');
-        img.src = `data:${a.mimeType};base64,${a.data}`;
-        img.style.cssText = 'width:60px;height:48px;border-radius:6px;object-fit:cover;border:1px solid rgba(45,212,191,0.28);display:block;';
-        const rm = document.createElement('button');
-        rm.textContent = '×';
-        rm.style.cssText = 'position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#ef4444;color:#fff;border:none;cursor:pointer;font-size:9px;line-height:14px;padding:0;text-align:center;';
-        rm.onclick = () => { const idx = attachments.indexOf(a); if (idx > -1) attachments.splice(idx, 1); bcRenderAttachments(); };
-        wrap.appendChild(img); wrap.appendChild(rm);
-        row.appendChild(wrap);
-      });
-      panel.appendChild(row);
-      const note = document.createElement('div');
-      note.style.cssText = 'margin-top:6px;font-size:10px;color:#667788;';
-      note.textContent = '✓ Gemini will analyze these images to write your script';
-      panel.appendChild(note);
-      attachList.appendChild(panel);
-    }
-
-    // ── Files panel ──
-    files.forEach((a, i) => {
-      const chip = document.createElement('div');
-      chip.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.25);border-radius:8px;margin-bottom:4px;';
-      chip.innerHTML = `<span style="font-size:16px;">📄</span><span style="font-size:11px;color:#fbbf24;flex:1;">${a.name}</span>`;
-      const rm = document.createElement('button');
-      rm.textContent = '×';
-      rm.style.cssText = 'background:none;border:none;color:#667788;cursor:pointer;font-size:13px;padding:0;';
-      rm.onclick = () => { const idx = attachments.indexOf(a); if (idx > -1) attachments.splice(idx, 1); bcRenderAttachments(); };
-      chip.appendChild(rm);
-      attachList.appendChild(chip);
-    });
-  }
-
-  // ── Attachment buttons ────────────────────────────────────────
-  card.querySelector('.bc-attach-img').addEventListener('click', () => imgInput.click());
-  card.querySelector('.bc-attach-vid').addEventListener('click', () => vidInput.click());
-  card.querySelector('.bc-attach-file').addEventListener('click', () => fileInput.click());
-
-  imgInput.addEventListener('change', () => {
-    Array.from(imgInput.files).slice(0, 3).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = ev => {
-        attachments.push({ type: 'image', name: file.name, mimeType: file.type, data: ev.target.result.split(',')[1] });
-        bcRenderAttachments();
-      };
-      reader.readAsDataURL(file);
-    });
-    imgInput.value = '';
-  });
-
-  vidInput.addEventListener('change', () => {
-    const file = vidInput.files[0]; if (!file) return;
-    const url = URL.createObjectURL(file);
-    const vid = document.createElement('video');
-    vid.src = url; vid.muted = true; vid.preload = 'auto';
-
-    vid.onloadedmetadata = () => {
-      const dur = isFinite(vid.duration) && vid.duration > 0 ? vid.duration : 10;
-      // Extract up to 4 evenly-spaced frames
-      const times = dur <= 4
-        ? [0, dur * 0.5]
-        : [0.1, dur * 0.25, dur * 0.6, Math.max(dur - 0.5, dur * 0.85)];
-      const frames = [];
-      let idx = 0;
-
-      const captureFrame = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width  = Math.min(vid.videoWidth  || 640, 640);
-        canvas.height = Math.min(vid.videoHeight || 360, 360);
-        canvas.getContext('2d').drawImage(vid, 0, 0, canvas.width, canvas.height);
-        frames.push(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
-        idx++;
-        if (idx < times.length) {
-          vid.currentTime = times[idx];
-        } else {
-          URL.revokeObjectURL(url);
-          // Remove any previous frames from the same video
-          attachments = attachments.filter(a => !(a.type === 'video-frame' && a.videoFile === file.name));
-          frames.forEach((b64, fi) => {
-            attachments.push({ type: 'video-frame', name: `${file.name} frame ${fi + 1}/${frames.length}`, videoFile: file.name, mimeType: 'image/jpeg', data: b64 });
-          });
-          // Pre-fill textarea with video name if empty
-          if (!srcEl.value.trim()) srcEl.value = `Video: "${file.name}"`;
-          bcRenderAttachments();
-        }
-      };
-
-      vid.onseeked = captureFrame;
-      vid.currentTime = times[0];
-    };
-
-    vid.onerror = () => URL.revokeObjectURL(url);
-    vid.load();
-    vidInput.value = '';
-  });
-
-  fileInput.addEventListener('change', () => {
-    const file = fileInput.files[0]; if (!file) return;
-    const isText = /\.(txt|md|csv|json|html)$/i.test(file.name) || file.type.startsWith('text/');
-    if (isText) {
-      const reader = new FileReader();
-      reader.onload = ev => {
-        srcEl.value += (srcEl.value ? '\n\n' : '') + ev.target.result;
-        srcEl.style.borderColor = 'rgba(45,212,191,0.4)';
-      };
-      reader.readAsText(file);
-    } else {
-      srcEl.value += (srcEl.value ? '\n\n' : '') + `[From: ${file.name} — paste the text content here]`;
-      attachments.push({ type: 'file', name: file.name, mimeType: file.type, data: null });
-      bcRenderAttachments();
-    }
-    fileInput.value = '';
-  });
-
-  // ── Render script ─────────────────────────────────────────────
-  function bcRenderScript() {
-    linesEl.innerHTML = script.map((l, i) => {
-      const sp = SPEAKERS[l.speaker] || SPEAKERS.ZEPHYR;
-      return `<div class="bc-line" data-i="${i}" style="padding:5px 8px;border-radius:8px;margin-bottom:4px;border-left:3px solid ${sp.color};background:rgba(0,0,0,0.12);transition:background 0.2s,transform 0.15s;">
-        <div style="font-size:9.5px;font-weight:700;letter-spacing:0.06em;color:${sp.color};margin-bottom:2px;">${sp.icon} ${l.speaker}&nbsp;<span style="opacity:0.5;font-weight:400;">· ${sp.role}</span></div>
-        <div style="color:#c8d4e0;font-size:12px;line-height:1.5;">${l.text}</div>
-      </div>`;
-    }).join('');
-  }
-
-  function bcHighlight(idx) {
-    linesEl.querySelectorAll('.bc-line').forEach((el, i) => {
-      if (i === idx) {
-        const sp = SPEAKERS[script[i]?.speaker] || SPEAKERS.ZEPHYR;
-        el.style.background = `rgba(${bcHexRgb(sp.color)},0.17)`;
-        el.style.transform = 'scale(1.015)';
-        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      } else {
-        el.style.background = 'rgba(0,0,0,0.12)';
-        el.style.transform = '';
-      }
-    });
-  }
-
-  function bcClearHighlights() {
-    linesEl.querySelectorAll('.bc-line').forEach(el => {
-      el.style.background = 'rgba(0,0,0,0.12)'; el.style.transform = '';
-    });
-  }
-
-  function bcCleanupUrls() {
-    blobUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch (e) {} });
-    blobUrls = []; bgUrl = null;
-  }
-
-  // ── Stop ──────────────────────────────────────────────────────
-  function bcStop() {
-    stopReq = true; isPlaying = false;
-    if (bgAudio) { try { bgAudio.pause(); } catch (e) {} bgAudio = null; }
-    bcClearHighlights();
-    liveBadge.style.display = 'none';
-    broadBtn.style.display = ''; stopBtn.style.display = 'none';
-  }
-
-  stopBtn.addEventListener('click', () => { bcStop(); statusEl.textContent = 'Stopped'; });
-
-  // ── Reset ─────────────────────────────────────────────────────
-  resetBtn.addEventListener('click', () => {
-    bcStop(); bcCleanupUrls();
-    script = []; attachments = [];
-    inputSec.style.display = 'block'; scriptSec.style.display = 'none';
-    srcEl.value = ''; statusEl.textContent = '';
-    broadBtn.style.opacity = '0.45'; broadBtn.style.pointerEvents = 'none';
-    broadBtn.textContent = '▶ Start Broadcast';
-    dlBtn.style.display = 'none';
-    prepBtn.textContent = '🎙️ Generate Broadcast'; prepBtn.disabled = false;
-    bcRenderAttachments();
-  });
-
-  // ── Generate Broadcast ────────────────────────────────────────
-  prepBtn.addEventListener('click', async () => {
-    const src = srcEl.value.trim();
-    const hasVisuals = attachments.some(a => a.data);
-    if (!src && !hasVisuals) {
-      srcEl.style.borderColor = 'rgba(239,68,68,0.7)';
-      srcEl.placeholder = 'Add text or attach an image/video first';
-      return;
-    }
-    srcEl.style.borderColor = 'rgba(45,212,191,0.18)';
-
-    const keyRes = await chrome.storage.sync.get(['geminiApiKey']);
-    const apiKey = keyRes.geminiApiKey;
-    if (!apiKey) { prepBtn.textContent = '🔑 Add API key in Settings first'; prepBtn.disabled = false; return; }
-
-    prepBtn.textContent = '⏳ Writing script…'; prepBtn.disabled = true;
-
-    const durCfg = DURATIONS.find(d => d.key === selDur) || DURATIONS[1];
-    const trkCfg = TRACKS.find(t => t.key === selTrack) || TRACKS[1];
-
-    // Step 1 — Script generation (multimodal if attachments present)
-    let rawScript = '';
-    try {
-      const videoFileNames = [...new Set(attachments.filter(a => a.videoFile).map(a => a.videoFile))];
-      const hasImages      = attachments.some(a => a.type === 'image');
-      const fmtLabel       = FORMATS.find(f => f.key === selFormat)?.label || selFormat;
-
-      // Augment system prompt with media context so Gemini understands what it's seeing
-      let mediaCtx = '';
-      if (videoFileNames.length) {
-        mediaCtx = `\n\nIMPORTANT: The user has attached frames captured from a video file named "${videoFileNames[0]}". You are seeing multiple frames that show what happens throughout the video. Analyze the video content from these frames and write the ${fmtLabel} script ABOUT this video — describe what's shown, explain the concepts, walk through what's happening step by step as appropriate for the format.`;
-      } else if (hasImages) {
-        mediaCtx = `\n\nIMPORTANT: The user has attached images. Analyze the image content and write the script ABOUT what is shown in these images.`;
-      }
-      const sysP = bcSysPrompt(selFormat, durCfg.exchanges) + mediaCtx;
-
-      const contentParts = [];
-      for (const a of attachments) {
-        if (a.data) contentParts.push({ inlineData: { mimeType: a.mimeType, data: a.data } });
-      }
-
-      // Build user text — for video, make intent explicit
-      let userText;
-      if (videoFileNames.length) {
-        userText = `Video file: "${videoFileNames[0]}"\n\nCreate a ${fmtLabel} broadcast about the content shown in these video frames.${src && src !== `Video: "${videoFileNames[0]}"` ? `\n\nExtra context: ${src.slice(0, 2000)}` : ''}`;
-      } else if (src) {
-        userText = `SOURCE MATERIAL:\n${src.slice(0, 4500)}`;
-      } else {
-        userText = `Create a ${fmtLabel} broadcast about the content shown in the attached images.`;
-      }
-      contentParts.push({ text: userText });
-
-      const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: sysP }] },
-            contents: [{ role: 'user', parts: contentParts }]
-          }),
-          signal: AbortSignal.timeout(40000)
-        }
-      );
-      const d = await resp.json();
-      rawScript = d?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    } catch (e) {
-      prepBtn.textContent = '❌ Script failed — try again'; prepBtn.disabled = false; return;
-    }
-
-    script = bcParseScript(rawScript);
-    if (!script.length) { prepBtn.textContent = '❌ No script parsed — try again'; prepBtn.disabled = false; return; }
-
-    bcRenderScript();
-    inputSec.style.display = 'none'; scriptSec.style.display = 'block';
-    statusEl.textContent = trkCfg.prompt ? 'Generating voices & music…' : 'Generating voices…';
-    broadBtn.textContent = '⏳ Preparing…';
-    broadBtn.style.opacity = '0.45'; broadBtn.style.pointerEvents = 'none';
-
-    // Step 2 — Audio in parallel
-    bcCleanupUrls();
-    const ttsStyle = bcTtsStyle(selFormat);
-    const jobs = [
-      bcGenMusic(trkCfg.prompt, apiKey),
-      ...script.map(l => bcGenLine(l.text, SPEAKERS[l.speaker]?.voice || 'Zephyr', ttsStyle, apiKey))
+  
+  studio.querySelector('.studio-surprise-btn').addEventListener('click', () => {
+    const rGenre = genres[Math.floor(Math.random() * genres.length)];
+    const rMood = moods[Math.floor(Math.random() * moods.length)];
+    const rTempo = tempos[Math.floor(Math.random() * tempos.length)];
+    
+    const surpriseTopics = [
+      'dancing under the stars on a warm summer night',
+      'a journey through a neon-lit city at midnight',
+      'finding courage to chase your dreams',
+      'memories of childhood and growing up',
+      'the feeling of freedom on an open road',
+      'falling in love unexpectedly',
+      'overcoming challenges and rising stronger',
+      'a party that never ends',
+      'nature and the beauty of the ocean',
+      'missing someone far away'
     ];
-    const results = await Promise.all(jobs);
-    bgUrl = results[0];
-    if (bgUrl) blobUrls.push(bgUrl);
-    script.forEach((l, i) => { l.url = results[i + 1]; if (l.url) blobUrls.push(l.url); });
-
-    const voiceOk = script.filter(l => l.url).length;
-    statusEl.textContent = bgUrl
-      ? `Ready — ${voiceOk}/${script.length} voices + music ✓`
-      : `Ready — ${voiceOk}/${script.length} voices`;
-    broadBtn.textContent = '▶ Start Broadcast';
-    broadBtn.style.opacity = '1'; broadBtn.style.pointerEvents = 'auto';
-    prepBtn.textContent = '🎙️ Generate Broadcast'; prepBtn.disabled = false;
-  });
-
-  // ── Start Broadcast ───────────────────────────────────────────
-  broadBtn.addEventListener('click', async () => {
-    if (isPlaying || !script.length) return;
-    isPlaying = true; stopReq = false;
-    broadBtn.style.display = 'none'; stopBtn.style.display = '';
-    liveBadge.style.display = 'flex'; dlBtn.style.display = 'none';
-    statusEl.textContent = 'On air…';
-
-    if (bgUrl) {
-      bgAudio = new Audio(bgUrl);
-      bgAudio.loop = true;
-      bgAudio.volume = parseInt(volSlider.value) / 100;
-      bgAudio.play().catch(() => {});
-    }
-
-    for (let i = 0; i < script.length; i++) {
-      if (stopReq) break;
-      bcHighlight(i);
-      const url = script[i].url;
-      if (url) {
-        await new Promise(res => {
-          if (stopReq) { res(); return; }
-          const a = new Audio(url);
-          let done = false;
-          const finish = () => { if (done) return; done = true; clearInterval(wdog); res(); };
-          const wdog = setInterval(() => { if (stopReq) { a.pause(); finish(); } }, 80);
-          a.onended = finish; a.onerror = finish;
-          a.play().catch(finish);
-        });
-      } else {
-        await new Promise(r => setTimeout(r, 400));
-      }
-    }
-
-    if (!stopReq) {
-      bcStop();
-      statusEl.textContent = '🎙️ Broadcast complete!';
-      dlBtn.style.display = '';
-    }
-  });
-
-  // ── Download Episode ──────────────────────────────────────────
-  function bcAudioBufToWav(buf) {
-    const numCh = buf.numberOfChannels, sr = buf.sampleRate, frames = buf.length, bps = 2;
-    const dataLen = frames * numCh * bps;
-    const ab = new ArrayBuffer(44 + dataLen); const dv = new DataView(ab);
-    const ws = (o, v) => { for (let i = 0; i < v.length; i++) dv.setUint8(o + i, v.charCodeAt(i)); };
-    ws(0,'RIFF'); dv.setUint32(4, 36 + dataLen, true);
-    ws(8,'WAVE'); ws(12,'fmt ');
-    dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,numCh,true);
-    dv.setUint32(24,sr,true); dv.setUint32(28,sr*numCh*bps,true);
-    dv.setUint16(32,numCh*bps,true); dv.setUint16(34,16,true);
-    ws(36,'data'); dv.setUint32(40,dataLen,true);
-    let off = 44;
-    for (let i = 0; i < frames; i++) {
-      for (let ch = 0; ch < numCh; ch++) {
-        const s = Math.max(-1, Math.min(1, buf.getChannelData(ch)[i]));
-        dv.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true); off += 2;
-      }
-    }
-    return ab;
-  }
-
-  dlBtn.addEventListener('click', async () => {
-    dlBtn.textContent = '⏳ Mixing…'; dlBtn.style.pointerEvents = 'none';
-    try {
-      const tmpCtx = new AudioContext();
-      const voiceBuffers = [];
-      const GAP = 0.4;
-      for (const line of script) {
-        if (line.url) {
-          const ab = await fetch(line.url).then(r => r.arrayBuffer());
-          voiceBuffers.push(await tmpCtx.decodeAudioData(ab));
-        } else { voiceBuffers.push(null); }
-      }
-      let musicBuffer = null;
-      if (bgUrl) {
-        const ab = await fetch(bgUrl).then(r => r.arrayBuffer());
-        musicBuffer = await tmpCtx.decodeAudioData(ab);
-      }
-      await tmpCtx.close();
-
-      let totalDur = 0;
-      for (const b of voiceBuffers) totalDur += b ? b.duration : GAP;
-      totalDur = Math.max(totalDur, 1);
-
-      const SR = 44100;
-      const offCtx = new OfflineAudioContext(2, Math.ceil(SR * totalDur), SR);
-      let t = 0;
-      for (const vb of voiceBuffers) {
-        if (vb) {
-          const src = offCtx.createBufferSource();
-          src.buffer = vb; src.connect(offCtx.destination);
-          src.start(t); t += vb.duration;
-        } else { t += GAP; }
-      }
-      if (musicBuffer) {
-        const gain = offCtx.createGain();
-        gain.gain.value = parseInt(volSlider.value) / 100;
-        gain.connect(offCtx.destination);
-        let mt = 0;
-        while (mt < totalDur) {
-          const src = offCtx.createBufferSource();
-          src.buffer = musicBuffer; src.connect(gain);
-          src.start(mt); mt += musicBuffer.duration;
-        }
-      }
-
-      const rendered = await offCtx.startRendering();
-      const wav = bcAudioBufToWav(rendered);
-      const blob = new Blob([wav], { type: 'audio/wav' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const fmtLabel = FORMATS.find(f => f.key === selFormat)?.label.replace(/[^\w]/g, '') || 'broadcast';
-      a.href = url; a.download = `broadcast-${fmtLabel}.wav`; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 8000);
-      dlBtn.textContent = '✓ Downloaded!';
-    } catch (e) {
-      dlBtn.textContent = '❌ Mix failed — try again';
-    } finally {
-      setTimeout(() => { dlBtn.textContent = '⬇️ Download Episode'; dlBtn.style.pointerEvents = 'auto'; }, 3000);
-    }
+    const rTopic = surpriseTopics[Math.floor(Math.random() * surpriseTopics.length)];
+    
+    selectedGenre = rGenre.name;
+    selectedMood = rMood.name;
+    selectedTempo = rTempo.name;
+    
+    studio.querySelectorAll('.genre-chip').forEach(c => {
+      const match = c.dataset.value === rGenre.name;
+      c.style.background = match ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.04)';
+      c.style.borderColor = match ? 'rgba(0,255,136,0.4)' : 'rgba(255,255,255,0.1)';
+      c.style.color = match ? '#00ff88' : '#ccd6e0';
+      c.style.transform = match ? 'scale(1.05)' : '';
+    });
+    studio.querySelectorAll('.mood-chip').forEach(c => {
+      const match = c.dataset.value === rMood.name;
+      c.style.background = match ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.04)';
+      c.style.borderColor = match ? 'rgba(0,255,136,0.4)' : 'rgba(255,255,255,0.1)';
+      c.style.color = match ? '#00ff88' : '#ccd6e0';
+      c.style.transform = match ? 'scale(1.05)' : '';
+    });
+    studio.querySelectorAll('.tempo-chip').forEach(c => {
+      const match = c.dataset.value === rTempo.name;
+      c.style.background = match ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.04)';
+      c.style.borderColor = match ? 'rgba(0,255,136,0.4)' : 'rgba(255,255,255,0.1)';
+      c.style.color = match ? '#00ff88' : '#ccd6e0';
+      c.style.transform = match ? 'scale(1.05)' : '';
+    });
+    
+    studio.querySelector('.studio-topic').value = rTopic;
+    updatePreview();
+    
+    studio.querySelector('.studio-surprise-btn').textContent = '🎲 Again!';
   });
 }
 
@@ -7030,7 +6082,7 @@ async function initializeChat() {
     }
 
     const fallback = DEFAULT_MAGIC_BUTTONS.find(b => b.isFallback) || DEFAULT_MAGIC_BUTTONS[0];
-    let autoPrompt = fallback?.prompt || 'Analyze this page and tell me what you see.';
+    let autoPrompt = fallback.prompt;
     if (ctx.selectedText) {
       autoPrompt += `\n\nSelected text: ${ctx.selectedText.substring(0, 3000)}`;
     }
@@ -8164,6 +7216,10 @@ async function handleSend() {
           return 'Create an original, professional instrumental piece with a clear structure: intro, development, climax, and outro. Choose the best genre, instruments, and tempo automatically. Make it polished and complete.';
         }
         const input = raw.trim();
+        // Already a detailed prompt — just wrap it
+        if (input.length > 40) {
+          return `Create a song: ${input}. Give it a clear musical structure with an intro, development, and outro. Make it sound professional and polished.`;
+        }
         const lower = input.toLowerCase();
         const genreMap = [
           ['jazz',      'jazz featuring piano, upright bass, and brushed drums'],
@@ -8231,54 +7287,31 @@ async function handleSend() {
         return p;
       }
 
-      const musicModels = [MODELS.lyria3Pro, MODELS.ttsFallback];
+      const musicModels = [MODELS.lyria3, modeConfig.model, MODELS.lyria3Pro, MODELS.ttsFallback];
       let audioData = null;
       let audioError = '';
       let audioSucceeded = false;
       const MAX_RETRIES_PER_MODEL = 3;
       const RETRY_DELAY_MS = 1800;
 
-      // Lyria is text-only — it does NOT accept image inputs (hangs/times out).
-      // If the user has a screenshot loaded, first ask Gemini Vision to describe
-      // the visual mood/scene in words, then weave that into the music prompt.
-      let imageSceneDescription = '';
-      if (currentImages.length > 0) {
-        try {
-          const [meta0, b640] = currentImages[0].split(',');
-          const mime0 = meta0.match(/:(.*?);/)?.[1] || 'image/png';
-          const visionResp = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                contents: [{ role: 'user', parts: [
-                  { inlineData: { mimeType: mime0, data: b640 } },
-                  { text: 'Describe the mood, atmosphere, colors, emotions, and setting of this image in 2-3 sentences. Focus on what makes it feel a certain way — joyful, tense, peaceful, etc. This description will guide a music generation AI.' }
-                ]}]
-              }),
-              signal: AbortSignal.timeout(15000)
-            }
-          );
-          if (visionResp.ok) {
-            const vd = await visionResp.json().catch(() => ({}));
-            imageSceneDescription = vd.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          }
-        } catch (_) {}
-      }
-
       modelLoop: for (const audioModel of musicModels) {
         const isLyria = audioModel.includes('lyria');
 
         let bodyPayload;
         if (isLyria) {
-          // Build a single text prompt — Lyria is text-only, no image support.
-          let musicPromptText = buildMusicPrompt(prompt);
-          if (imageSceneDescription) {
-            musicPromptText = `Visual inspiration: ${imageSceneDescription}\n\nMusic brief: ${musicPromptText}`;
+          const contentParts = [];
+          if (currentImages.length > 0) {
+            for (const img of currentImages) {
+              const [meta, b64] = img.split(',');
+              const mime = meta.match(/:(.*?);/)?.[1] || 'image/png';
+              contentParts.push({ inlineData: { mimeType: mime, data: b64 } });
+            }
+            contentParts.push({ text: prompt || 'Create music that captures the mood, atmosphere, and emotion of this image. Make it a complete, polished musical piece.' });
+          } else {
+            contentParts.push({ text: buildMusicPrompt(prompt) });
           }
           bodyPayload = {
-            contents: [{ role: 'user', parts: [{ text: musicPromptText }] }],
+            contents: [{ role: 'user', parts: contentParts }],
             generationConfig: { responseModalities: ['AUDIO'] }
           };
         } else {
@@ -8381,28 +7414,6 @@ async function handleSend() {
         }
         if (part.inlineData && part.inlineData.mimeType?.startsWith('audio') && part.inlineData.data?.length > 5000) {
           hasAudio = true;
-          // Store the raw blob in a global so Video Studio can pick it up as
-          // the Audio Master Clock reference and Lyria audio overlay source.
-          try {
-            const rawBytes = Uint8Array.from(atob(part.inlineData.data), c => c.charCodeAt(0));
-            const mimeType = (part.inlineData.mimeType || '').toLowerCase();
-            let lyriaBlob;
-            if (!mimeType || mimeType.includes('pcm') || mimeType.startsWith('audio/l16') || mimeType.startsWith('audio/l-16')) {
-              const sr = 24000, ch = 1, bps = 16;
-              const hdr = new ArrayBuffer(44); const dv = new DataView(hdr);
-              const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
-              ws(0,'RIFF'); dv.setUint32(4, 36 + rawBytes.byteLength, true); ws(8,'WAVE'); ws(12,'fmt ');
-              dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,ch,true);
-              dv.setUint32(24,sr,true); dv.setUint32(28,sr*ch*bps/8,true);
-              dv.setUint16(32,ch*bps/8,true); dv.setUint16(34,bps,true);
-              ws(36,'data'); dv.setUint32(40,rawBytes.byteLength,true);
-              lyriaBlob = new Blob([hdr, rawBytes], { type: 'audio/wav' });
-            } else {
-              lyriaBlob = new Blob([rawBytes], { type: part.inlineData.mimeType });
-            }
-            window._snapToAI_lyriaBlob = lyriaBlob;
-            console.log(`[SnapToAI] Lyria track stored (${(lyriaBlob.size / 1024).toFixed(0)} KB) — Video Studio will auto-sync clip count and overlay this track`);
-          } catch (_) {}
           const audioSrc = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
           const audioId = 'audio-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
           htmlContent += `<div id="wrap-${audioId}" style="margin:10px 0;">
