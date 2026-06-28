@@ -1414,10 +1414,10 @@ function showVideoStudio(thread) {
         </label>
         <div class="studio-stylize-wrap" style="margin-top:8px;margin-left:24px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#8899aa;">
-            <input type="checkbox" class="studio-stylize-photo" style="accent-color:#8ab4f8;" checked>
-            <span>✨ Stylize photo first (helps with safety filters)</span>
+            <input type="checkbox" class="studio-stylize-photo" style="accent-color:#8ab4f8;">
+            <span>✨ Stylize photo (Pixar / Anime etc.) — turn on if Veo blocks your photo</span>
           </label>
-          <div class="stylize-style-selector" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+          <div class="stylize-style-selector" style="display:none;flex-wrap:wrap;gap:4px;margin-top:6px;">
             <button class="stylize-btn selected" data-style="pixar" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.5);background:rgba(138,180,248,0.15);color:#8ab4f8;font-size:12px;font-weight:600;cursor:pointer;">Pixar 3D</button>
             <button class="stylize-btn" data-style="anime" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Anime</button>
             <button class="stylize-btn" data-style="cartoon" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Cartoon</button>
@@ -1572,9 +1572,16 @@ function showVideoStudio(thread) {
 
   const useScreenshotCb = studio.querySelector('.studio-use-screenshot');
   const stylizeWrap = studio.querySelector('.studio-stylize-wrap');
+  const stylizeCbEl = studio.querySelector('.studio-stylize-photo');
+  const stylizeSelector = studio.querySelector('.stylize-style-selector');
   if (useScreenshotCb && stylizeWrap) {
     useScreenshotCb.addEventListener('change', () => {
       stylizeWrap.style.display = useScreenshotCb.checked ? 'block' : 'none';
+    });
+  }
+  if (stylizeCbEl && stylizeSelector) {
+    stylizeCbEl.addEventListener('change', () => {
+      stylizeSelector.style.display = stylizeCbEl.checked ? 'flex' : 'none';
     });
   }
 
@@ -2414,9 +2421,9 @@ async function generateOneVeoClip(clipIdx, ctx) {
       // Strip the image on the retry so text-only generation can proceed.
       if (result.status === 'no_uri' && clipIdx === 0 && includeImage && sourceImageForClip0) {
         noUriFallbackImageStripped = true;
-        if (statusEl) { statusEl.textContent = `⚠ no_uri — retrying without image`; statusEl.style.color = '#ffd700'; }
+        if (statusEl) { statusEl.textContent = `⚠ Photo blocked by Veo — retrying without image`; statusEl.style.color = '#ffd700'; }
         const completed = await cancellableWait(10, ctx, (s) => {
-          if (text) text.textContent = `Clip ${clipNum}/${clipCount} — safety filter, retrying text-only in ${s}s...`;
+          if (text) text.textContent = `Clip ${clipNum}/${clipCount} — Veo blocked the photo (safety filter). Retrying text-only in ${s}s… Tip: enable "Stylize photo" to avoid this.`;
         });
         if (!completed) { finalStatus = 'user_stopped_poststart_skipped'; break; }
         continue;
