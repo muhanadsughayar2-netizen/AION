@@ -67,18 +67,13 @@ function isRequestLocked() { return isRequestInProgress; }
 
 function getPaidModeEstimate(mode, clipCount = 1, durationSeconds = 8) {
   if (mode === 'video') {
-    // Real Veo pricing (Google AI Studio, per second of generated video):
-    //   Veo 3.1 Lite preview ........ ~$0.10/s
-    //   Veo 3.1 Fast / Veo 3 Fast ... ~$0.40/s
-    //   Veo 3 / Veo 3.1 (full) ...... ~$0.75/s
-    // We show a $0.10–$0.40/s range (covers Lite + Fast, the default models).
+    // Veo 3.1 Lite (default model) = $0.10 per second
     const totalSeconds = clipCount * durationSeconds;
-    const low  = (totalSeconds * 0.10).toFixed(2);
-    const high = (totalSeconds * 0.40).toFixed(2);
+    const total = (totalSeconds * 0.10).toFixed(2);
     return {
-      label: `${clipCount} clip${clipCount > 1 ? 's' : ''} × ${durationSeconds}s = ${totalSeconds}s`,
-      cost: `~$${low}–$${high}`,
-      note: 'Veo Lite/Fast — ~$0.10–$0.40 per second'
+      label: `${totalSeconds}s × $0.10/sec = $${total}`,
+      cost: `$${total}`,
+      note: '$0.10 per second (Veo Lite)'
     };
   }
   if (mode === 'music') {
@@ -223,7 +218,7 @@ async function confirmPaidGeneration(mode, details) {
         };
 
     const spendLine = details?.cost
-      ? `Estimated cost: ${details.cost}${details?.label ? ` (${details.label})` : ''}.`
+      ? `${details.cost}${details?.label ? ` — ${details.label}` : ''}`
       : '';
 
     titleEl.textContent = preset.title;
