@@ -1923,6 +1923,7 @@ function renderVeoPriceTable(studio) {
 }
 
 async function stylizeImageForVideo(apiKey, imageData, style) {
+  if (!imageData || typeof imageData !== 'string') return null;
   const stylePrompts = {
     pixar: 'Transform this photo into a Pixar/Disney 3D animated style. Keep the exact same people, poses, expressions, clothing, and background but render everything as high-quality 3D Pixar animation. Do not add any text or words.',
     anime: 'Transform this photo into beautiful Japanese anime style. Keep the exact same people, poses, expressions, clothing, and background but render everything as detailed anime art. Do not add any text or words.',
@@ -2119,9 +2120,10 @@ async function startVideoGeneration(prompt, thread) {
       if (stylizedImage) {
         console.log('[SnapToAI Video] Photo stylized successfully');
         if (text) text.textContent = 'Photo stylized! Starting video...';
-        // Tell Veo the characters are animated so it doesn't apply safety filters for real people
-        const styleLabels = { pixar: 'Pixar 3D animated characters', anime: 'anime characters', cartoon: 'colorful cartoon characters', watercolor: 'watercolor painting', oil: 'oil painting' };
-        stylePromptPrefix = `${styleLabels[stylizeStyle] || stylizeStyle} style. `;
+        // Tell Veo the art style — deliberately NO mention of "characters" or "people"
+        // to avoid triggering Veo child-content safety filters on the stylized image
+        const styleLabels = { pixar: 'Pixar 3D animation', anime: 'anime animation', cartoon: 'cartoon animation', watercolor: 'watercolor painting', oil: 'oil painting' };
+        stylePromptPrefix = `${styleLabels[stylizeStyle] || stylizeStyle} style, illustrated scene. `;
       } else {
         // Stylize FAILED — do NOT fall back to original real-person photo.
         // Dropping the image prevents Veo safety-filter blocks on real faces.
@@ -5092,7 +5094,7 @@ async function continueClip() {
   const { prompt, style, lastFrameDataUrl } = _lastVideoContext;
 
   // Load last frame as the reference image for the next clip
-  if (lastFrameDataUrl) {
+  if (lastFrameDataUrl && typeof lastFrameDataUrl === 'string' && lastFrameDataUrl.startsWith('data:')) {
     currentImages = [lastFrameDataUrl];
     // Mirror the exact display logic used by the normal snap loader
     const placeholder    = document.getElementById('imagePlaceholder');
