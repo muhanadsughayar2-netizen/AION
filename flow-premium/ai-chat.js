@@ -5085,30 +5085,40 @@ let _lastVideoContext = null; // { prompt, style, videoUrl, lastFrameDataUrl }
 async function captureFrameFromVideoElement(videoEl) {
   if (!videoEl) return null;
   try {
-    // Wait for video to have frame data
-    if (videoEl.readyState < 2) {
-      await new Promise((res, rej) => {
-        const t = setTimeout(() => rej(new Error('timeout')), 12000);
-        videoEl.addEventListener('loadeddata', () => { clearTimeout(t); res(); }, { once: true });
-        videoEl.onerror = () => { clearTimeout(t); rej(new Error('video error')); };
+    // Kick off decoding — necessary for off-screen elements
+    if (videoEl.paused) videoEl.load();
+
+    // Wait for enough data to seek. Listen to loadedmetadata OR loadeddata,
+    // whichever fires first. If neither fires in time, fall through and try
+    // to draw anyway — Chrome sometimes has data without firing the event.
+    if (videoEl.readyState < 1) {
+      await new Promise(res => {
+        const t = setTimeout(res, 15000); // fall through, not reject
+        const done = () => { clearTimeout(t); res(); };
+        videoEl.addEventListener('loadedmetadata', done, { once: true });
+        videoEl.addEventListener('loadeddata', done, { once: true });
+        videoEl.addEventListener('canplay', done, { once: true });
+        videoEl.onerror = done; // also fall through on error
       });
     }
+
     const duration = (isFinite(videoEl.duration) && videoEl.duration > 0) ? videoEl.duration : 8;
     // Try 3 frames near the end and pick the brightest (avoids fade-to-black last frame)
     const offsets = [0.6, 0.35, 0.12].map(o => Math.max(0, duration - o));
     let bestDataUrl = null, bestBrightness = -1;
     for (const seekTo of offsets) {
       await new Promise(res => {
-        const guard = setTimeout(res, 3000);
+        const guard = setTimeout(res, 4000);
         videoEl.addEventListener('seeked', () => { clearTimeout(guard); res(); }, { once: true });
         videoEl.currentTime = seekTo;
       });
-      // Wait for the new frame to actually paint before drawing to canvas
+      // Wait for the new frame to paint
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
       const w = videoEl.videoWidth || 1280, h = videoEl.videoHeight || 720;
+      if (!w || !h) continue; // no frame data yet, skip
       const c = document.createElement('canvas'); c.width = w; c.height = h;
       c.getContext('2d').drawImage(videoEl, 0, 0, w, h);
-      // Quick brightness check on a 32×32 sample to reject black frames
+      // Quick brightness check on a 32×32 centre sample to reject black frames
       const sample = c.getContext('2d').getImageData(w >> 1, h >> 1, 32, 32);
       let bright = 0;
       for (let i = 0; i < sample.data.length; i += 4)
@@ -5299,17 +5309,24 @@ function showVideoResult(bubble, videoUrl, thread) {
         const blob = await resp.blob();
         const blobUrl = URL.createObjectURL(blob);
 
-        // Hidden video element with blob URL — same-origin, canvas-safe
+        // Off-screen video element with blob URL — same-origin, canvas-safe.
+        // Must have real dimensions + opacity (not visibility:hidden) so
+        // Chrome actually decodes the video and fires loadedmetadata/canplay.
         const captureVid = document.createElement('video');
         captureVid.muted = true;
         captureVid.preload = 'auto';
+        captureVid.playsInline = true;
         captureVid.src = blobUrl;
-        captureVid.style.cssText = 'position:fixed;left:-9999px;width:1px;height:1px;visibility:hidden;pointer-events:none;';
+        captureVid.style.cssText = 'position:fixed;left:-9999px;top:0;width:320px;height:180px;opacity:0.01;pointer-events:none;z-index:-1;';
         document.body.appendChild(captureVid);
 
-        const frameDataUrl = await captureFrameFromVideoElement(captureVid);
-        document.body.removeChild(captureVid);
-        URL.revokeObjectURL(blobUrl);
+        let frameDataUrl = null;
+        try {
+          frameDataUrl = await captureFrameFromVideoElement(captureVid);
+        } finally {
+          if (document.body.contains(captureVid)) document.body.removeChild(captureVid);
+          URL.revokeObjectURL(blobUrl);
+        }
 
         if (frameDataUrl && _lastVideoContext) {
           _lastVideoContext.lastFrameDataUrl = frameDataUrl;
@@ -5344,12 +5361,16 @@ function showVideoResult(bubble, videoUrl, thread) {
           const captureVid = document.createElement('video');
           captureVid.muted = true;
           captureVid.preload = 'auto';
+          captureVid.playsInline = true;
           captureVid.src = blobUrl;
-          captureVid.style.cssText = 'position:fixed;left:-9999px;width:1px;height:1px;visibility:hidden;pointer-events:none;';
+          captureVid.style.cssText = 'position:fixed;left:-9999px;top:0;width:320px;height:180px;opacity:0.01;pointer-events:none;z-index:-1;';
           document.body.appendChild(captureVid);
-          _lastVideoContext.lastFrameDataUrl = await captureFrameFromVideoElement(captureVid);
-          document.body.removeChild(captureVid);
-          URL.revokeObjectURL(blobUrl);
+          try {
+            _lastVideoContext.lastFrameDataUrl = await captureFrameFromVideoElement(captureVid);
+          } finally {
+            if (document.body.contains(captureVid)) document.body.removeChild(captureVid);
+            URL.revokeObjectURL(blobUrl);
+          }
         }
       } catch (_) {}
     }
