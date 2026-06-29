@@ -5097,12 +5097,18 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
                 resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
                 data = await resp.json();
                 if (resp.ok && data.name) {
-                  // Re-enter the poll loop with the new operation
+                  // Re-enter the poll loop with the new operation — update bar each tick
                   const operationName2 = data.name;
                   const pollUrl2b = `https://generativelanguage.googleapis.com/v1beta/${operationName2}?key=${apiKey}`;
                   let retryDone = false;
                   for (let _r = 0; _r < 60 && !retryDone; _r++) {
                     await new Promise(r => setTimeout(r, _r < 6 ? 5000 : 15000));
+                    // Keep the progress bar moving so it doesn't look frozen
+                    const fillEl3 = progressBubble.querySelector('.video-progress-fill');
+                    const text3   = progressBubble.querySelector('.video-progress-text');
+                    const rPct = Math.min((_r + 1) * 5, 90);
+                    if (fillEl3) fillEl3.style.width = `${rPct}%`;
+                    if (text3) text3.textContent = `🔄 Retrying (style-only)… ${rPct}%`;
                     try {
                       const rr = await fetchWithTimeout(pollUrl2b, { timeoutMs: 20000 });
                       if (!rr.ok) continue;
