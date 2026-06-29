@@ -5128,12 +5128,18 @@ async function continueClip() {
   if (!currentAiMode || AI_MODES[currentAiMode]?.type !== 'gemini-video') {
     const videoModeBtn = document.querySelector('[data-mode="video"]');
     if (videoModeBtn) videoModeBtn.click();
-    await new Promise(r => setTimeout(r, 150));
+    await new Promise(r => setTimeout(r, 200));
   }
 
-  // Ensure Snap toggle is on
-  const snapCb = document.getElementById('vsbUseSnap');
-  if (snapCb && !snapCb.checked) snapCb.click();
+  // Ensure Snap toggle is on — must show the label first (it is hidden when
+  // no images are loaded, so .click() on a hidden element is unreliable).
+  const snapLabel = document.getElementById('vsbSnapLabel');
+  const snapCb    = document.getElementById('vsbUseSnap');
+  if (snapLabel) snapLabel.style.display = 'flex';
+  if (snapCb && !snapCb.checked) {
+    snapCb.checked = true;
+    snapCb.dispatchEvent(new Event('change', { bubbles: true }));
+  }
 
   // Restore previous style pill so the new clip looks continuous
   if (style) {
@@ -5245,23 +5251,53 @@ function showVideoResult(bubble, videoUrl, thread) {
     await continueClip();
   });
 
-  // ── Capture last frame silently in background ──────────────────
+  // ── Capture last frame directly from the DOM video element ─────
+  // Do NOT re-fetch the URL — the video is already downloaded and playing.
+  // DOM capture is instant, CORS-safe, and works even after the signed URL expires.
   if (_lastVideoContext) {
     _lastVideoContext.videoUrl = videoUrl;
-    (async () => {
-      try {
-        const frameDataUrl = await extractLastFrame(videoUrl);
-        if (frameDataUrl && _lastVideoContext) {
-          _lastVideoContext.lastFrameDataUrl = frameDataUrl;
-          // Show a subtle indicator that continuation is ready
-          const contBtn = bubble.querySelector('.video-continue-btn');
-          if (contBtn) {
-            contBtn.style.borderColor = 'rgba(99,202,183,0.7)';
-            contBtn.style.background = 'rgba(99,202,183,0.22)';
+    const videoEl = bubble.querySelector('video');
+    if (videoEl) {
+      const captureFrame = () => {
+        try {
+          const w = videoEl.videoWidth || 480;
+          const h = videoEl.videoHeight || 270;
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(videoEl, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+          if (dataUrl && dataUrl.startsWith('data:image') && _lastVideoContext) {
+            _lastVideoContext.lastFrameDataUrl = dataUrl;
+            console.log(`[SnapToAI Video] Last frame captured from DOM (${w}x${h})`);
+            const contBtn = bubble.querySelector('.video-continue-btn');
+            if (contBtn) {
+              contBtn.textContent = '▶ Continue Clip ✓';
+              contBtn.style.borderColor = 'rgba(99,202,183,0.8)';
+              contBtn.style.background = 'rgba(99,202,183,0.25)';
+            }
           }
+        } catch (e) {
+          console.log('[SnapToAI Video] DOM frame capture failed:', e.message);
         }
-      } catch (_) {}
-    })();
+      };
+
+      // Seek to last frame once metadata is loaded
+      const seekAndCapture = () => {
+        if (videoEl.duration && isFinite(videoEl.duration)) {
+          videoEl.addEventListener('seeked', captureFrame, { once: true });
+          videoEl.currentTime = Math.max(0, videoEl.duration - 0.15);
+        } else {
+          // duration unknown — capture current frame as-is
+          captureFrame();
+        }
+      };
+
+      if (videoEl.readyState >= 1 && videoEl.duration && isFinite(videoEl.duration)) {
+        seekAndCapture();
+      } else {
+        videoEl.addEventListener('loadedmetadata', seekAndCapture, { once: true });
+      }
+    }
   }
 
   thread.scrollTop = thread.scrollHeight;
