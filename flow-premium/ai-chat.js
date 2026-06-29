@@ -5080,6 +5080,79 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
 // ── Video continuation context ─────────────────────────────────────────────
 let _lastVideoContext = null; // { prompt, style, videoUrl, lastFrameDataUrl }
 
+// Capture a frame directly from an already-decoded <video> element in the DOM.
+// Much more reliable than re-fetching a Google signed URL that may have expired.
+async function captureFrameFromVideoElement(videoEl) {
+  if (!videoEl) return null;
+  try {
+    // Wait for video to have frame data
+    if (videoEl.readyState < 2) {
+      await new Promise((res, rej) => {
+        const t = setTimeout(() => rej(new Error('timeout')), 12000);
+        videoEl.addEventListener('loadeddata', () => { clearTimeout(t); res(); }, { once: true });
+        videoEl.onerror = () => { clearTimeout(t); rej(new Error('video error')); };
+      });
+    }
+    const duration = (isFinite(videoEl.duration) && videoEl.duration > 0) ? videoEl.duration : 8;
+    // Try 3 frames near the end and pick the brightest (avoids fade-to-black last frame)
+    const offsets = [0.6, 0.35, 0.12].map(o => Math.max(0, duration - o));
+    let bestDataUrl = null, bestBrightness = -1;
+    for (const seekTo of offsets) {
+      await new Promise(res => {
+        const guard = setTimeout(res, 3000);
+        videoEl.addEventListener('seeked', () => { clearTimeout(guard); res(); }, { once: true });
+        videoEl.currentTime = seekTo;
+      });
+      // Wait for the new frame to actually paint before drawing to canvas
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const w = videoEl.videoWidth || 1280, h = videoEl.videoHeight || 720;
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(videoEl, 0, 0, w, h);
+      // Quick brightness check on a 32×32 sample to reject black frames
+      const sample = c.getContext('2d').getImageData(w >> 1, h >> 1, 32, 32);
+      let bright = 0;
+      for (let i = 0; i < sample.data.length; i += 4)
+        bright += sample.data[i] + sample.data[i+1] + sample.data[i+2];
+      if (bright > bestBrightness) { bestBrightness = bright; bestDataUrl = c.toDataURL('image/jpeg', 0.92); }
+    }
+    return bestDataUrl;
+  } catch (e) {
+    console.warn('[Continue] captureFrameFromVideoElement failed:', e?.message);
+    return null;
+  }
+}
+
+// Ask Gemini flash to write a cinematic continuation prompt that preserves
+// the visual style, camera angle, subjects, music rhythm and audio mood.
+async function generateSeamlessContinuationPrompt(originalPrompt, apiKey) {
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`;
+    const instruction = `You are a cinematic AI director chaining 8-second Veo video clips into a seamless movie.
+
+PREVIOUS CLIP PROMPT:
+"${originalPrompt}"
+
+Write the NEXT clip prompt (under 75 words, no explanations, no quotes) that:
+• Starts mid-action so it picks up exactly where the previous clip ended — same subjects, same location, same camera framing
+• Preserves the exact visual style, lighting, color grade, and mood from the previous clip
+• Explicitly references the audio continuity: if the previous clip had music, name the rhythm, beat, or instrument and say it "continues seamlessly". If no music was mentioned, add gentle ambient audio continuity
+• Shows a natural next moment (slight camera move OR subject action) — do NOT reintroduce or reset the scene
+• Output ONLY the video prompt text. Nothing else.`;
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: instruction }] }],
+        generationConfig: { temperature: 0.65, maxOutputTokens: 150 }
+      })
+    });
+    const data = await resp.json();
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function continueClip() {
   if (!_lastVideoContext) return;
   const { prompt, style, lastFrameDataUrl } = _lastVideoContext;
@@ -5105,7 +5178,7 @@ async function continueClip() {
   const snapCb = document.getElementById('vsbUseSnap');
   if (snapCb && !snapCb.checked) snapCb.click();
 
-  // Restore previous style pill so the new clip looks continuous
+  // Restore previous style pill so new clip looks continuous
   if (style) {
     const styleBtn = document.querySelector(`.vsb-style[data-style="${style}"]`);
     if (styleBtn) {
@@ -5116,18 +5189,30 @@ async function continueClip() {
     }
   }
 
-  // Build a smart continuation seed in the chat input
+  // Auto-generate the seamless continuation prompt via Gemini
   const ci = document.getElementById('chatInput');
+  if (ci) { ci.value = '⏳ Writing next scene…'; ci.disabled = true; }
+
+  let contPrompt = null;
+  try {
+    const keyData = await chrome.storage.sync.get(['geminiApiKey']);
+    if (keyData.geminiApiKey && prompt) {
+      contPrompt = await generateSeamlessContinuationPrompt(prompt, keyData.geminiApiKey);
+    }
+  } catch (_) {}
+
+  const fallback = prompt
+    ? `Continue seamlessly: ${prompt.slice(0, 90)} — same camera angle, same subjects, music rhythm continues from previous beat without interruption.`
+    : 'Continue from last frame — same mood, same beat, same visual style. Camera continues its motion.';
+
   if (ci) {
-    const seed = prompt ? `Continue the scene: ${prompt.slice(0, 120)}` : 'Continue from the last frame — same mood, same style';
-    ci.value = seed;
-    ci.placeholder = 'Describe what happens next, or press Send to continue the scene…';
+    ci.disabled = false;
+    ci.value = contPrompt || fallback;
+    ci.placeholder = 'Edit the continuation or press Send…';
     ci.focus();
-    // Highlight so user can easily replace
     try { ci.select(); } catch {}
   }
 
-  // Scroll into view
   const thread = document.getElementById('chatThread');
   if (thread) thread.scrollTop = thread.scrollHeight;
 }
@@ -5196,17 +5281,42 @@ function showVideoResult(bubble, videoUrl, thread) {
     }
   });
 
-  // ── Continue Clip button ───────────────────────────────────────
+  // ── Capture last frame from the already-decoded video element ─────
+  // Do this from the in-DOM <video> — avoids re-fetching a Google signed
+  // URL that may have already expired.
+  if (_lastVideoContext) {
+    _lastVideoContext.videoUrl = videoUrl;
+    const vidEl = bubble.querySelector('video');
+    (async () => {
+      try {
+        const frameDataUrl = await captureFrameFromVideoElement(vidEl);
+        if (frameDataUrl && _lastVideoContext) {
+          _lastVideoContext.lastFrameDataUrl = frameDataUrl;
+          // Brighten the button to signal it's ready
+          const contBtn = bubble.querySelector('.video-continue-btn');
+          if (contBtn) {
+            contBtn.style.borderColor = 'rgba(99,202,183,0.7)';
+            contBtn.style.background = 'rgba(99,202,183,0.22)';
+            contBtn.title = 'Last frame captured — click to continue from here';
+          }
+        }
+      } catch (_) {}
+    })();
+  }
+
+  // ── Continue Clip button ────────────────────────────────────────
   bubble.querySelector('.video-continue-btn')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
     if (!_lastVideoContext) return;
 
-    // If we don't have the last frame yet, capture it now (shows spinner)
+    // If background capture isn't done yet, try from the video element now
     if (!_lastVideoContext.lastFrameDataUrl) {
       btn.textContent = '⏳ Capturing last frame…';
       btn.disabled = true;
       try {
-        _lastVideoContext.lastFrameDataUrl = await extractLastFrame(videoUrl);
+        _lastVideoContext.lastFrameDataUrl = await captureFrameFromVideoElement(
+          bubble.querySelector('video')
+        );
       } catch (_) {}
       btn.disabled = false;
       btn.textContent = '▶ Continue Clip';
@@ -5214,25 +5324,6 @@ function showVideoResult(bubble, videoUrl, thread) {
 
     await continueClip();
   });
-
-  // ── Capture last frame silently in background ──────────────────
-  if (_lastVideoContext) {
-    _lastVideoContext.videoUrl = videoUrl;
-    (async () => {
-      try {
-        const frameDataUrl = await extractLastFrame(videoUrl);
-        if (frameDataUrl && _lastVideoContext) {
-          _lastVideoContext.lastFrameDataUrl = frameDataUrl;
-          // Show a subtle indicator that continuation is ready
-          const contBtn = bubble.querySelector('.video-continue-btn');
-          if (contBtn) {
-            contBtn.style.borderColor = 'rgba(99,202,183,0.7)';
-            contBtn.style.background = 'rgba(99,202,183,0.22)';
-          }
-        }
-      } catch (_) {}
-    })();
-  }
 
   thread.scrollTop = thread.scrollHeight;
   addBubbleActions(bubble, 'Generated video');
