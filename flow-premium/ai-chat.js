@@ -5077,6 +5077,61 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
   localTimer = setTimeout(tick, FAST_POLL_MS);
 }
 
+// ── Video continuation context ─────────────────────────────────────────────
+let _lastVideoContext = null; // { prompt, style, videoUrl, lastFrameDataUrl }
+
+async function continueClip() {
+  if (!_lastVideoContext) return;
+  const { prompt, style, lastFrameDataUrl } = _lastVideoContext;
+
+  // Load last frame as the reference image for the next clip
+  if (lastFrameDataUrl) {
+    currentImages = [lastFrameDataUrl];
+    const previewImg = document.getElementById('previewImage');
+    const screenshotSec = document.getElementById('screenshotSection');
+    if (previewImg) previewImg.src = lastFrameDataUrl;
+    if (screenshotSec) screenshotSec.style.display = 'block';
+  }
+
+  // Switch to Video mode if not already there
+  const currentModeConfig = currentMode && MODE_CONFIGS?.[currentMode];
+  if (!currentModeConfig || currentModeConfig.type !== 'gemini-video') {
+    const videoModeBtn = document.querySelector('[data-mode="video"]');
+    if (videoModeBtn) videoModeBtn.click();
+    await new Promise(r => setTimeout(r, 150));
+  }
+
+  // Ensure Snap toggle is on
+  const snapCb = document.getElementById('vsbUseSnap');
+  if (snapCb && !snapCb.checked) snapCb.click();
+
+  // Restore previous style pill so the new clip looks continuous
+  if (style) {
+    const styleBtn = document.querySelector(`.vsb-style[data-style="${style}"]`);
+    if (styleBtn) {
+      document.querySelectorAll('.vsb-style').forEach(b => b.classList.remove('vsb-active'));
+      styleBtn.classList.add('vsb-active');
+      _vsbStylizeStyle = style;
+      try { chrome.storage.local.set({ _videoStylizeStyle: style }); } catch {}
+    }
+  }
+
+  // Build a smart continuation seed in the chat input
+  const ci = document.getElementById('chatInput');
+  if (ci) {
+    const seed = prompt ? `Continue the scene: ${prompt.slice(0, 120)}` : 'Continue from the last frame — same mood, same style';
+    ci.value = seed;
+    ci.placeholder = 'Describe what happens next, or press Send to continue the scene…';
+    ci.focus();
+    // Highlight so user can easily replace
+    try { ci.select(); } catch {}
+  }
+
+  // Scroll into view
+  const thread = document.getElementById('chatThread');
+  if (thread) thread.scrollTop = thread.scrollHeight;
+}
+
 function showVideoResult(bubble, videoUrl, thread) {
   bubble.innerHTML = `
     <div style="margin:8px 0;">
@@ -5087,6 +5142,7 @@ function showVideoResult(bubble, videoUrl, thread) {
       <video controls autoplay muted playsinline style="width:100%;max-width:480px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);" src="${videoUrl}"></video>
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="video-save-btn" style="background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.3);color:#ffa500;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">💾 Save Video</button>
+        <button class="video-continue-btn" style="background:rgba(99,202,183,0.15);border:1px solid rgba(99,202,183,0.4);color:#63cab7;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">▶ Continue Clip</button>
         <button class="video-use-build-btn" style="background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.4);color:#ffa032;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">📌 Use in Build</button>
       </div>
     </div>
@@ -5139,6 +5195,44 @@ function showVideoResult(bubble, videoUrl, thread) {
       setTimeout(() => { btn.textContent = '📌 Use in Build'; }, 2000);
     }
   });
+
+  // ── Continue Clip button ───────────────────────────────────────
+  bubble.querySelector('.video-continue-btn')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    if (!_lastVideoContext) return;
+
+    // If we don't have the last frame yet, capture it now (shows spinner)
+    if (!_lastVideoContext.lastFrameDataUrl) {
+      btn.textContent = '⏳ Capturing last frame…';
+      btn.disabled = true;
+      try {
+        _lastVideoContext.lastFrameDataUrl = await extractLastFrame(videoUrl);
+      } catch (_) {}
+      btn.disabled = false;
+      btn.textContent = '▶ Continue Clip';
+    }
+
+    await continueClip();
+  });
+
+  // ── Capture last frame silently in background ──────────────────
+  if (_lastVideoContext) {
+    _lastVideoContext.videoUrl = videoUrl;
+    (async () => {
+      try {
+        const frameDataUrl = await extractLastFrame(videoUrl);
+        if (frameDataUrl && _lastVideoContext) {
+          _lastVideoContext.lastFrameDataUrl = frameDataUrl;
+          // Show a subtle indicator that continuation is ready
+          const contBtn = bubble.querySelector('.video-continue-btn');
+          if (contBtn) {
+            contBtn.style.borderColor = 'rgba(99,202,183,0.7)';
+            contBtn.style.background = 'rgba(99,202,183,0.22)';
+          }
+        }
+      } catch (_) {}
+    })();
+  }
 
   thread.scrollTop = thread.scrollHeight;
   addBubbleActions(bubble, 'Generated video');
@@ -7940,6 +8034,13 @@ async function handleSend() {
         return;
       }
       removeLoading();
+      // Save context for "Continue Clip" — last frame + prompt + style captured after generation
+      _lastVideoContext = {
+        prompt,
+        style: typeof _vsbStylizeStyle !== 'undefined' ? _vsbStylizeStyle : 'pixar',
+        videoUrl: null,
+        lastFrameDataUrl: null
+      };
       await startVideoGeneration(prompt, thread);
       conversationHistory.push({ role: 'user', text: prompt });
       conversationHistory.push({ role: 'model', text: '[Video generation started]' });
