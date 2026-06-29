@@ -1413,32 +1413,13 @@ let _bsbSelDur = '3';
 let _bsbSelTrack = 'lofi';
 let _bsbAttachments = [];
 
-// Render attach chips into any .bsb-attach-list element (called from fileInput handler)
-function _bsbRefreshChips(listEl) {
-  if (!listEl) return;
-  listEl.innerHTML = '';
-  const imgs  = _bsbAttachments.filter(a => a.type === 'image');
-  const vids  = [...new Set(_bsbAttachments.filter(a => a.videoFile).map(a => a.videoFile))];
-  const files = _bsbAttachments.filter(a => a.type === 'file');
-  const mk = (text, color, onClick) => {
-    const chip = document.createElement('div');
-    chip.textContent = text;
-    chip.style.cssText = `padding:3px 8px;border-radius:12px;background:${color}11;border:1px solid ${color}44;font-size:10px;color:${color};cursor:pointer;white-space:nowrap;`;
-    chip.onclick = onClick;
-    listEl.appendChild(chip);
-  };
-  if (imgs.length)  mk(`📷 ${imgs.length}`,  '#2dd4bf', () => { _bsbAttachments = _bsbAttachments.filter(a => a.type !== 'image'); _bsbRefreshChips(listEl); });
-  vids.forEach(vf => mk(`🎬 ${vf.slice(0,10)}`, '#a78bfa', () => { _bsbAttachments = _bsbAttachments.filter(a => a.videoFile !== vf); _bsbRefreshChips(listEl); }));
-  files.forEach(f  => mk(`📄 ${f.name.slice(0,8)}`, '#fbbf24', () => { _bsbAttachments.splice(_bsbAttachments.indexOf(f), 1); _bsbRefreshChips(listEl); }));
-}
-
 function initBroadcastSubBar() {
   if (_broadcastSubBarInited) return;
   _broadcastSubBarInited = true;
   const bar = document.getElementById('broadcastSubBar');
   if (!bar) return;
 
-  // Auto-load queued snaps into broadcast attachments
+  // Auto-load snaps from queue
   (async () => {
     try {
       let snaps = [];
@@ -1454,9 +1435,37 @@ function initBroadcastSubBar() {
         const mime = (raw.match(/^data:([^;]+);/) || [])[1] || 'image/png';
         if (b64) _bsbAttachments.push({ type: 'image', name: `Snap ${i+1}`, mimeType: mime, data: b64, snapId: `snap_${i}` });
       });
-      if (_bsbAttachments.length) _bsbRefreshChips(bar.querySelector('.bsb-attach-list'));
+      if (_bsbAttachments.length) bsbRenderAttachList();
     } catch (_) {}
   })();
+
+  function bsbRenderAttachList() {
+    const list = bar.querySelector('.bsb-attach-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const imgs  = _bsbAttachments.filter(a => a.type === 'image');
+    const vids  = [...new Set(_bsbAttachments.filter(a => a.videoFile).map(a => a.videoFile))];
+    const files = _bsbAttachments.filter(a => a.type === 'file');
+    if (imgs.length) {
+      const chip = Object.assign(document.createElement('div'), { textContent: `📷 ${imgs.length}` });
+      chip.style.cssText = 'padding:3px 8px;border-radius:12px;background:rgba(45,212,191,0.1);border:1px solid rgba(45,212,191,0.25);font-size:10px;color:#2dd4bf;cursor:pointer;white-space:nowrap;';
+      chip.title = 'Click to remove images';
+      chip.onclick = () => { _bsbAttachments = _bsbAttachments.filter(a => a.type !== 'image'); bsbRenderAttachList(); };
+      list.appendChild(chip);
+    }
+    vids.forEach(vf => {
+      const chip = Object.assign(document.createElement('div'), { textContent: `🎬 ${vf.length > 12 ? vf.slice(0,10)+'…' : vf}` });
+      chip.style.cssText = 'padding:3px 8px;border-radius:12px;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.25);font-size:10px;color:#a78bfa;cursor:pointer;white-space:nowrap;';
+      chip.onclick = () => { _bsbAttachments = _bsbAttachments.filter(a => a.videoFile !== vf); bsbRenderAttachList(); };
+      list.appendChild(chip);
+    });
+    files.forEach(f => {
+      const chip = Object.assign(document.createElement('div'), { textContent: `📄 ${f.name.length > 10 ? f.name.slice(0,8)+'…' : f.name}` });
+      chip.style.cssText = 'padding:3px 8px;border-radius:12px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);font-size:10px;color:#fbbf24;cursor:pointer;white-space:nowrap;';
+      chip.onclick = () => { const i = _bsbAttachments.indexOf(f); if (i > -1) _bsbAttachments.splice(i, 1); bsbRenderAttachList(); };
+      list.appendChild(chip);
+    });
+  }
 
   bar.querySelectorAll('.bsb-fmt').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1489,8 +1498,116 @@ function initBroadcastSubBar() {
     });
   });
 
-  // Attachments come through the main 📎 pin button — see fileInput handler below.
-  // Broadcast is triggered by the main Send button — see sendMessage() intercept below.
+  const imgInput  = bar.querySelector('.bsb-img-input');
+  const vidInput  = bar.querySelector('.bsb-vid-input');
+  const fileInput = bar.querySelector('.bsb-file-input');
+
+  bar.querySelector('.bsb-attach-img').addEventListener('click', () => imgInput.click());
+  bar.querySelector('.bsb-attach-vid').addEventListener('click', () => vidInput.click());
+  bar.querySelector('.bsb-attach-file').addEventListener('click', () => fileInput.click());
+
+  imgInput.addEventListener('change', () => {
+    Array.from(imgInput.files).slice(0, 20).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        _bsbAttachments.push({ type: 'image', name: file.name, mimeType: file.type, data: ev.target.result.split(',')[1] });
+        bsbRenderAttachList();
+      };
+      reader.readAsDataURL(file);
+    });
+    imgInput.value = '';
+  });
+
+  vidInput.addEventListener('change', () => {
+    const file = vidInput.files[0]; if (!file) return;
+    const url = URL.createObjectURL(file);
+    const vid = document.createElement('video');
+    vid.src = url; vid.muted = true; vid.preload = 'auto';
+    let extractionStarted = false;
+    const doExtract = (dur) => {
+      if (extractionStarted) return;
+      const safeD = (isFinite(dur) && dur > 0) ? dur : 60;
+      const count = Math.min(25, Math.max(10, Math.ceil(safeD / 3)));
+      extractionStarted = true;
+      const times = Array.from({ length: count }, (_, i) => {
+        if (i === 0) return 0.1;
+        if (i === count - 1) return Math.max(safeD - 0.1, 0.2);
+        return (safeD / (count - 1)) * i;
+      });
+      const frames = [];
+      const captureOne = (t) => new Promise(resolve => {
+        let done = false;
+        const finish = () => {
+          if (done) return; done = true;
+          vid.removeEventListener('seeked', finish); clearTimeout(guard);
+          const w = Math.min(vid.videoWidth || 640, 640), h = Math.min(vid.videoHeight || 360, 360);
+          const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+          cv.getContext('2d').drawImage(vid, 0, 0, w, h);
+          frames.push(cv.toDataURL('image/jpeg', 0.75).split(',')[1]);
+          resolve();
+        };
+        const guard = setTimeout(finish, 3000);
+        vid.addEventListener('seeked', finish);
+        vid.currentTime = t;
+      });
+      (async () => {
+        for (const t of times) await captureOne(t);
+        URL.revokeObjectURL(url);
+        _bsbAttachments = _bsbAttachments.filter(a => !(a.type === 'video-frame' && a.videoFile === file.name));
+        frames.forEach((b64, fi) => {
+          _bsbAttachments.push({ type: 'video-frame', name: `${file.name} frame ${fi+1}/${frames.length}`, videoFile: file.name, mimeType: 'image/jpeg', data: b64 });
+        });
+        const ci = document.getElementById('chatInput');
+        if (ci && !ci.value.trim()) ci.value = `Video: "${file.name}"`;
+        bsbRenderAttachList();
+      })();
+    };
+    vid.onloadedmetadata = () => {
+      if (isFinite(vid.duration) && vid.duration > 0) { doExtract(vid.duration); }
+      else {
+        const fd = () => { vid.removeEventListener('seeked', fd); doExtract(isFinite(vid.duration) ? vid.duration : vid.currentTime); };
+        vid.addEventListener('seeked', fd); vid.currentTime = 1e10;
+      }
+    };
+    vid.onerror = () => URL.revokeObjectURL(url);
+    vid.load(); vidInput.value = '';
+  });
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0]; if (!file) return;
+    const isText = /\.(txt|md|csv|json|html)$/i.test(file.name) || file.type.startsWith('text/');
+    if (isText) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const ci = document.getElementById('chatInput');
+        if (ci) ci.value += (ci.value ? '\n\n' : '') + ev.target.result;
+      };
+      reader.readAsText(file);
+    } else {
+      _bsbAttachments.push({ type: 'file', name: file.name, mimeType: file.type, data: null });
+      bsbRenderAttachList();
+    }
+    fileInput.value = '';
+  });
+
+  const genBtn = document.getElementById('bsbGenBtn');
+  if (genBtn) {
+    genBtn.addEventListener('click', () => {
+      const thread = document.getElementById('chatThread');
+      if (!thread) return;
+      const ci = document.getElementById('chatInput');
+      showBroadcastCard(thread, {
+        hidePicker: true,
+        selFormat: _bsbSelFormat,
+        selDur: _bsbSelDur,
+        selTrack: _bsbSelTrack,
+        attachments: [..._bsbAttachments],
+        srcText: ci ? ci.value.trim() : '',
+        autoStart: true
+      });
+      thread.scrollTop = thread.scrollHeight;
+    });
+  }
 }
 
 function showModeSubBar(mode) {
@@ -7692,30 +7809,7 @@ async function handleSend() {
   const sendBtn = document.getElementById('sendBtn');
   const thread = document.getElementById('chatThread');
   let prompt = input.value.trim();
-
-  // ── Broadcast mode intercept ──────────────────────────────────────────────
-  // When the Broadcast sub-bar is visible, the Send button triggers broadcast
-  // generation instead of a regular chat message.
-  if (typeof currentMode !== 'undefined' && currentMode === 'broadcast' &&
-      document.getElementById('broadcastSubBar')?.style.display !== 'none') {
-    if (!prompt && _bsbAttachments.length === 0) return;
-    if (thread) {
-      showBroadcastCard(thread, {
-        hidePicker: true,
-        selFormat: _bsbSelFormat,
-        selDur: _bsbSelDur,
-        selTrack: _bsbSelTrack,
-        attachments: [..._bsbAttachments],
-        srcText: prompt,
-        autoStart: true
-      });
-      thread.scrollTop = thread.scrollHeight;
-    }
-    input.value = '';
-    return;
-  }
-  // ─────────────────────────────────────────────────────────────────────────
-
+  
   // Allow send if files are attached even with no text typed
   if (!prompt && filesQueue.length === 0) return;
   if (!prompt) prompt = 'Analyze this image.';
@@ -11308,76 +11402,6 @@ const MAX_FILES = 20;
 
 document.getElementById('fileInput').addEventListener('change', (e) => {
   const files = Array.from(e.target.files);
-
-  // When Broadcast sub-bar is visible, route attachments into _bsbAttachments
-  // instead of (or in addition to) the normal filesQueue.
-  if (typeof currentMode !== 'undefined' && currentMode === 'broadcast' &&
-      document.getElementById('broadcastSubBar')?.style.display !== 'none') {
-    files.forEach(file => {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = ev => {
-          _bsbAttachments.push({ type: 'image', name: file.name, mimeType: file.type, data: ev.target.result.split(',')[1] });
-          // Re-render the chip list in the sub-bar
-          const list = document.querySelector('#broadcastSubBar .bsb-attach-list');
-          if (list) _bsbRefreshChips(list);
-        };
-        reader.readAsDataURL(file);
-      } else if (file.type.startsWith('video/')) {
-        // Extract frames for broadcast context
-        const url = URL.createObjectURL(file);
-        const vid = document.createElement('video');
-        vid.src = url; vid.muted = true; vid.preload = 'metadata';
-        vid.onloadedmetadata = () => {
-          const safeD = isFinite(vid.duration) && vid.duration > 0 ? vid.duration : 60;
-          const count = Math.min(15, Math.max(8, Math.ceil(safeD / 4)));
-          const times = Array.from({ length: count }, (_, i) =>
-            i === 0 ? 0.1 : i === count - 1 ? Math.max(safeD - 0.1, 0.2) : (safeD / (count - 1)) * i);
-          let fi = 0;
-          const frames = [];
-          const next = () => {
-            if (fi >= times.length) {
-              URL.revokeObjectURL(url);
-              _bsbAttachments = _bsbAttachments.filter(a => !(a.videoFile === file.name));
-              frames.forEach((b64, idx) => _bsbAttachments.push({ type: 'video-frame', name: `${file.name} f${idx+1}`, videoFile: file.name, mimeType: 'image/jpeg', data: b64 }));
-              const list = document.querySelector('#broadcastSubBar .bsb-attach-list');
-              if (list) _bsbRefreshChips(list);
-              return;
-            }
-            vid.currentTime = times[fi++];
-          };
-          vid.addEventListener('seeked', () => {
-            const w = Math.min(vid.videoWidth || 640, 640), h = Math.min(vid.videoHeight || 360, 360);
-            const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-            cv.getContext('2d').drawImage(vid, 0, 0, w, h);
-            frames.push(cv.toDataURL('image/jpeg', 0.7).split(',')[1]);
-            next();
-          });
-          vid.onerror = () => URL.revokeObjectURL(url);
-          next();
-        };
-        vid.load();
-      } else {
-        // Text/PDF — paste content into chatInput
-        const isText = /\.(txt|md|csv|json|html)$/i.test(file.name) || file.type.startsWith('text/');
-        if (isText) {
-          const reader = new FileReader();
-          reader.onload = ev => {
-            const ci = document.getElementById('chatInput');
-            if (ci) ci.value += (ci.value ? '\n\n' : '') + ev.target.result;
-          };
-          reader.readAsText(file);
-        } else {
-          _bsbAttachments.push({ type: 'file', name: file.name, mimeType: file.type, data: null });
-          const list = document.querySelector('#broadcastSubBar .bsb-attach-list');
-          if (list) _bsbRefreshChips(list);
-        }
-      }
-    });
-    e.target.value = '';
-    return; // Don't also push to the normal filesQueue when in broadcast mode
-  }
-
   const slotsAvailable = MAX_FILES - filesQueue.length;
   if (files.length > slotsAvailable) {
     addBubble(`Can only attach ${slotsAvailable} more file(s). Maximum is ${MAX_FILES}.`, 'error');

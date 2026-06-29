@@ -1208,28 +1208,28 @@
     .magic-add-btn:active { transform: scale(0.97); }
     
     /* Magic Modal - Glassmorphism Style (matches payment modal) */
-    .magic-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+    .magic-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
     .magic-modal.open { display: flex; }
-    .magic-modal-content { background: #1e2130; border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; width: 88%; max-width: 290px; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column; animation: slideUp 0.2s ease; box-shadow: 0 8px 28px rgba(0,0,0,0.6); }
-    @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    .magic-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
-    .magic-modal-header span { font-size: 12px; font-weight: 600; color: #e8eaed !important; -webkit-text-fill-color: #e8eaed !important; background: none !important; -webkit-background-clip: unset !important; }
-    .magic-close { background: none; border: none; color: #666; font-size: 14px; cursor: pointer; line-height: 1; padding: 2px 4px; }
+    .magic-modal-content { background: linear-gradient(135deg, var(--st-bg-app-2) 0%, var(--st-bg-card) 100%); border: 1px solid rgba(0, 255, 255, 0.3); border-radius: 16px; width: 90%; max-width: 340px; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column; animation: slideUp 0.3s ease; box-shadow: 0 0 40px rgba(0, 255, 255, 0.2); }
+    @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .magic-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid rgba(0, 255, 255, 0.15); flex-shrink: 0; }
+    .magic-modal-header span { font-size: 18px; font-weight: 700; background: linear-gradient(90deg, #00ffff, #ff00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .magic-close { background: none; border: none; color: #888; font-size: 18px; cursor: pointer; }
     .magic-modal-body { 
-      padding: 12px; 
+      padding: 20px; 
       flex: 1;
       overflow-y: auto;
       min-height: 0;
     }
-    .magic-field { margin-bottom: 10px; }
-    .magic-field label { display: block; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-    .magic-field input, .magic-field textarea { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 7px; padding: 7px 9px; color: #e8eaed; font-size: 12px; resize: none; box-sizing: border-box; }
-    .magic-field input:focus, .magic-field textarea:focus { outline: none; border-color: rgba(139,92,246,0.6); }
-    .char-count { display: block; text-align: right; font-size: 9px; color: #555; margin-top: 3px; }
-    .emoji-picker { display: flex; flex-wrap: wrap; gap: 5px; padding: 4px 0; }
-    .emoji-option { font-size: 9px; font-family: inherit; cursor: pointer; padding: 4px 8px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.04); transition: all 0.15s; white-space: nowrap; }
-    .emoji-option:hover { background: rgba(255,255,255,0.1); color: #fff; }
-    .emoji-option.selected { background: rgba(139,92,246,0.25); border-color: rgba(139,92,246,0.6); color: #c4b5fd; }
+    .magic-field { margin-bottom: 16px; }
+    .magic-field label { display: block; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; margin-bottom: 6px; }
+    .magic-field input, .magic-field textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px 12px; color: white; font-size: 13px; resize: none; box-sizing: border-box; }
+    .magic-field input:focus, .magic-field textarea:focus { outline: none; border-color: #8b5cf6; }
+    .char-count { display: block; text-align: right; font-size: 10px; color: #666; margin-top: 4px; }
+    .emoji-picker { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0; }
+    .emoji-option { font-size: 20px; cursor: pointer; padding: 6px; border-radius: 8px; transition: all 0.2s; }
+    .emoji-option:hover { background: rgba(255,255,255,0.1); }
+    .emoji-option.selected { background: rgba(139,92,246,0.3); box-shadow: 0 0 0 2px #8b5cf6; }
     .magic-templates { margin-top: 12px; }
     .template-categories { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
     .template-cat { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 5px 12px; color: #888; font-size: 11px; cursor: pointer; transition: all 0.2s; }
@@ -1255,9 +1255,9 @@
     .template-req-name { font-size: 12px; font-weight: 600; color: #e2e8f0; }
     .template-req-hint { font-size: 10px; color: #64748b; margin-top: 2px; }
     .template-req-source { font-size: 9px; color: #8b5cf6; margin-top: 3px; font-style: italic; }
-    .magic-modal-footer { padding: 10px 12px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
-    .magic-save-btn { width: 100%; background: #6d4fc2; border: none; border-radius: 7px; padding: 8px; color: white; font-size: 12px; font-weight: 600; cursor: pointer; }
-    .magic-save-btn:hover { background: #7c5fd6; }
+    .magic-modal-footer { padding: 16px 20px; border-top: 1px solid rgba(0, 255, 255, 0.15); flex-shrink: 0; }
+    .magic-save-btn { width: 100%; background: linear-gradient(90deg, #8b5cf6, #ec4899); border: none; border-radius: 12px; padding: 14px; color: white; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); }
+    .magic-save-btn:hover { transform: scale(1.02); box-shadow: 0 0 25px rgba(139,92,246,0.6); }
     
     /* MAGIC CARD - Beautiful Results */
     .magic-card {
@@ -1583,22 +1583,36 @@
             <span style="font-size:10px; color:rgba(255,255,255,0.28); white-space:nowrap; flex-shrink:0;">Format</span>
             <button class="vsb-pill bsb-fmt bsb-active" data-fmt="talkshow">🎙️ Talk Show</button>
             <button class="vsb-pill bsb-fmt" data-fmt="tutorial">📚 Tutorial</button>
-            <button class="vsb-pill bsb-fmt" data-fmt="solotutorial">📱 Solo</button>
-            <div style="width:1px;height:14px;background:rgba(255,255,255,0.1);margin:0 3px;flex-shrink:0;"></div>
+            <button class="vsb-pill bsb-fmt" data-fmt="solotutorial" style="color:#2dd4bf;">📱 Solo</button>
+            <button class="vsb-pill bsb-fmt" data-fmt="appdemo">🚀 App Demo</button>
+            <button class="vsb-pill bsb-fmt" data-fmt="presentation">📊 Present</button>
+            <button class="vsb-pill bsb-fmt" data-fmt="narrator">🎬 Narrator</button>
+            <button class="vsb-pill bsb-fmt" data-fmt="trailer" style="color:#eab308;">🎥 Trailer</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:3px; flex-wrap:wrap;">
             <span style="font-size:10px; color:rgba(255,255,255,0.28); white-space:nowrap; flex-shrink:0;">Len</span>
             <button class="vsb-pill bsb-dur" data-dur="1">1m</button>
             <button class="vsb-pill bsb-dur bsb-active" data-dur="3">3m</button>
             <button class="vsb-pill bsb-dur" data-dur="5">5m</button>
             <button class="vsb-pill bsb-dur" data-dur="10">10m</button>
-          </div>
-          <div style="display:flex; align-items:center; gap:3px; flex-wrap:wrap;">
+            <div style="width:1px;height:14px;background:rgba(255,255,255,0.1);margin:0 3px;flex-shrink:0;"></div>
             <span style="font-size:12px; flex-shrink:0;">🎵</span>
-            <button class="vsb-pill bsb-trk" data-trk="none">Off</button>
-            <button class="vsb-pill bsb-trk bsb-active" data-trk="lofi">Lo-fi</button>
-            <button class="vsb-pill bsb-trk" data-trk="cinematic">Film</button>
-            <button class="vsb-pill bsb-trk" data-trk="news">News</button>
-            <button class="vsb-pill bsb-trk" data-trk="upbeat">Upbeat</button>
-            <div class="bsb-attach-list" style="display:flex; gap:4px; align-items:center; flex-wrap:wrap; margin-left:4px;"></div>
+            <button class="vsb-pill bsb-trk" data-trk="none">🚫</button>
+            <button class="vsb-pill bsb-trk bsb-active" data-trk="lofi">☁️ Lo-fi</button>
+            <button class="vsb-pill bsb-trk" data-trk="cinematic">🎬 Film</button>
+            <button class="vsb-pill bsb-trk" data-trk="news">📰 News</button>
+            <button class="vsb-pill bsb-trk" data-trk="upbeat">🎸 Upbeat</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+            <button class="vsb-pill bsb-attach-img" title="Attach images">📷</button>
+            <button class="vsb-pill bsb-attach-vid" title="Attach video">🎬</button>
+            <button class="vsb-pill bsb-attach-file" title="Attach text file">📄</button>
+            <input type="file" class="bsb-img-input" accept="image/*" multiple style="display:none;">
+            <input type="file" class="bsb-vid-input" accept="video/*" style="display:none;">
+            <input type="file" class="bsb-file-input" accept=".txt,.md,.csv,.json,.pdf" style="display:none;">
+            <div class="bsb-attach-list" style="display:contents; gap:4px; align-items:center;"></div>
+            <div style="flex:1;"></div>
+            <button id="bsbGenBtn" style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#2dd4bf,#7c3aed);border:none;color:#fff;border-radius:20px;padding:5px 13px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">🎙️ Generate</button>
           </div>
         </div>
         <style>
@@ -1769,44 +1783,46 @@
     }
   </style>
 
-  <!-- Magic Button Creator Modal -->
+  <!-- Magic Button Creator Modal - Simple Version -->
   <div id="magicModal" class="magic-modal">
-    <div class="magic-modal-content">
+    <div class="magic-modal-content" style="max-width: 360px; max-height: none;">
       <div class="magic-modal-header">
-        <span>Create Agent</span>
+        <span style="-webkit-text-fill-color: #fff;">⚡ Create Magic Agent</span>
         <button class="magic-close" id="closeMagicModal" aria-label="Close modal">✕</button>
       </div>
-      <div class="magic-modal-body">
+      <div class="magic-modal-body" style="max-height: none; overflow: visible;">
         <div class="magic-field">
           <label>Name</label>
           <input type="text" id="magicName" placeholder="e.g., Price Check" maxlength="12">
         </div>
         <div class="magic-field">
-          <label>Style</label>
+          <label>Icon</label>
           <div class="emoji-picker" id="emojiPicker">
-            <span class="emoji-option selected" data-emoji="✨">General</span>
-            <span class="emoji-option" data-emoji="🔍">Search</span>
-            <span class="emoji-option" data-emoji="💰">Finance</span>
-            <span class="emoji-option" data-emoji="📊">Data</span>
-            <span class="emoji-option" data-emoji="💡">Ideas</span>
-            <span class="emoji-option" data-emoji="🎯">Goals</span>
-            <span class="emoji-option" data-emoji="🛒">Shop</span>
-            <span class="emoji-option" data-emoji="🚀">Launch</span>
+            <span class="emoji-option" data-emoji="🔍">🔍</span>
+            <span class="emoji-option" data-emoji="💰">💰</span>
+            <span class="emoji-option" data-emoji="📊">📊</span>
+            <span class="emoji-option" data-emoji="📈">📈</span>
+            <span class="emoji-option" data-emoji="💡">💡</span>
+            <span class="emoji-option" data-emoji="⚡">⚡</span>
+            <span class="emoji-option" data-emoji="🎯">🎯</span>
+            <span class="emoji-option" data-emoji="🛒">🛒</span>
+            <span class="emoji-option selected" data-emoji="✨">✨</span>
+            <span class="emoji-option" data-emoji="🚀">🚀</span>
           </div>
           <input type="hidden" id="selectedEmoji" value="✨">
         </div>
         <div class="magic-field">
           <label>What should this do?</label>
-          <textarea id="magicPrompt" placeholder="Describe what you want this agent to do..." rows="5" maxlength="6000"></textarea>
-          <span class="char-count"><span id="promptCount">0</span>/6000</span>
+          <textarea id="magicPrompt" placeholder="Tell the AI what to analyze. Be specific about what you want it to look for and how to respond..." rows="6" maxlength="3000"></textarea>
+          <span class="char-count"><span id="promptCount">0</span>/3000</span>
         </div>
         <div class="magic-field">
-          <label>Hint text</label>
+          <label>When clicked, box says (Hint)</label>
           <input type="text" id="magicHint" placeholder="e.g., Snap anything to understand it..." maxlength="60">
         </div>
       </div>
       <div class="magic-modal-footer">
-        <button class="magic-save-btn" id="saveMagicBtn">Create</button>
+        <button class="magic-save-btn" id="saveMagicBtn">⚡ Create</button>
       </div>
     </div>
   </div>
