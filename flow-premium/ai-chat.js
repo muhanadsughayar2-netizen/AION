@@ -1606,25 +1606,16 @@ function initBroadcastSubBar() {
 }
 
 function showModeSubBar(mode) {
-  const videoBar     = document.getElementById('videoSubBar');
-  const broadcastBar = document.getElementById('broadcastSubBar');
-  if (videoBar) {
-    videoBar.style.display = mode === 'video' ? 'flex' : 'none';
-    if (mode === 'video') {
-      initVideoSubBar();
-      const hasSnaps = typeof currentImages !== 'undefined' && currentImages.length > 0;
-      const snapLabel = document.getElementById('vsbSnapLabel');
-      const snapCb    = document.getElementById('vsbUseSnap');
-      const stylizeRow = document.getElementById('vsbStylizeRow');
-      if (snapLabel) snapLabel.style.display = hasSnaps ? 'flex' : 'none';
-      if (stylizeRow && snapCb) stylizeRow.style.display = (hasSnaps && snapCb.checked) ? 'flex' : 'none';
-      if (hasSnaps && snapCb?.checked) {
-        try { chrome.storage.local.set({ _videoStylizeStyle: _vsbStylizeStyle }); } catch {}
-      } else {
-        try { chrome.storage.local.remove('_videoStylizeStyle'); } catch {}
-      }
-    }
+  // Video mode: restore the original studio card in the thread (not sub-bar)
+  const videoBar = document.getElementById('videoSubBar');
+  if (videoBar) videoBar.style.display = 'none'; // always hidden — card in thread handles video
+
+  if (mode === 'video') {
+    const thread = document.getElementById('chatThread');
+    if (thread) showVideoStudio(thread);
   }
+
+  const broadcastBar = document.getElementById('broadcastSubBar');
   if (broadcastBar) {
     broadcastBar.style.display = mode === 'broadcast' ? 'flex' : 'none';
     if (mode === 'broadcast') initBroadcastSubBar();
