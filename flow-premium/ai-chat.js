@@ -1941,12 +1941,16 @@ async function stylizeImageForVideo(apiKey, imageData, style) {
 
   const models = MODELS.imageChain;
   let lastError = '';
+  const STYLIZE_TIMEOUT_MS = 25000; // 25s per model — never hang the video pipeline
 
   for (const model of models) {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), STYLIZE_TIMEOUT_MS);
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const resp = await fetch(url, {
         method: 'POST',
+        signal: ac.signal,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{
@@ -1955,11 +1959,10 @@ async function stylizeImageForVideo(apiKey, imageData, style) {
               { inlineData: { mimeType: mimeType, data: cleanB64 } }
             ]
           }],
-          generationConfig: {
-            responseModalities: ['TEXT', 'IMAGE']
-          }
+          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
         })
       });
+      clearTimeout(timer);
 
       if (!resp.ok) {
         lastError = `${model}: ${resp.status}`;
@@ -1970,13 +1973,13 @@ async function stylizeImageForVideo(apiKey, imageData, style) {
       const parts = data.candidates?.[0]?.content?.parts || [];
       for (const part of parts) {
         if (part.inlineData?.data) {
-          const styledMime = part.inlineData.mimeType || 'image/png';
-          return { base64: part.inlineData.data, mimeType: styledMime };
+          return { base64: part.inlineData.data, mimeType: part.inlineData.mimeType || 'image/png' };
         }
       }
       lastError = `${model}: no image in response`;
     } catch (e) {
-      lastError = `${model}: ${e.message}`;
+      clearTimeout(timer);
+      lastError = e.name === 'AbortError' ? `${model}: timeout (${STYLIZE_TIMEOUT_MS / 1000}s)` : `${model}: ${e.message}`;
     }
   }
 
