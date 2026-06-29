@@ -5681,32 +5681,46 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
     const vid = document.createElement('video');
     vid.src = url; vid.muted = true; vid.preload = 'auto';
 
-    const startFrameExtraction = (dur) => {
-      // 1 frame per 5s for long videos, 1 per 3s for short, max 25
-      const interval = dur > 30 ? 5 : 3;
-      const count = Math.min(25, Math.max(2, Math.ceil(dur / interval)));
-      const times = Array.from({ length: count }, (_, i) =>
-        i === 0 ? 0.1 : i === count - 1 ? Math.max(dur - 0.5, 0.1) : (dur / (count - 1)) * i
-      );
-      const frames = [];
+    // ── Frame extraction: works for both normal videos and Chrome MediaRecorder
+    // webm files (which often have duration=Infinity in their metadata).
+    let extractionStarted = false;
 
-      // Sequential Promise-based seeking — prevents onseeked firing multiple times
-      const seekAndCapture = (t) => new Promise(resolve => {
-        const onSeeked = () => {
-          vid.removeEventListener('seeked', onSeeked);
-          const canvas = document.createElement('canvas');
-          canvas.width  = Math.min(vid.videoWidth  || 640, 640);
-          canvas.height = Math.min(vid.videoHeight || 360, 360);
-          canvas.getContext('2d').drawImage(vid, 0, 0, canvas.width, canvas.height);
-          frames.push(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
+    const doExtract = (dur) => {
+      if (extractionStarted) return;
+      extractionStarted = true;
+
+      const safeD = (isFinite(dur) && dur > 0) ? dur : 60;
+      // Always extract at least 10 frames; 1 per 3s up to 25 max
+      const count = Math.min(25, Math.max(10, Math.ceil(safeD / 3)));
+      const times = Array.from({ length: count }, (_, i) => {
+        if (i === 0) return 0.5;
+        if (i === count - 1) return Math.max(safeD - 0.5, 1);
+        return (safeD / (count - 1)) * i;
+      });
+
+      const frames = [];
+      const captureOne = (t) => new Promise(resolve => {
+        let done = false;
+        const finish = () => {
+          if (done) return; done = true;
+          vid.removeEventListener('seeked', finish);
+          clearTimeout(guard);
+          const w = Math.min(vid.videoWidth  || 640, 640);
+          const h = Math.min(vid.videoHeight || 360, 360);
+          const cv = document.createElement('canvas');
+          cv.width = w; cv.height = h;
+          cv.getContext('2d').drawImage(vid, 0, 0, w, h);
+          frames.push(cv.toDataURL('image/jpeg', 0.75).split(',')[1]);
           resolve();
         };
-        vid.addEventListener('seeked', onSeeked);
+        // 3-second timeout per frame in case seeked never fires
+        const guard = setTimeout(finish, 3000);
+        vid.addEventListener('seeked', finish);
         vid.currentTime = t;
       });
 
       (async () => {
-        for (const t of times) await seekAndCapture(t);
+        for (const t of times) await captureOne(t);
         URL.revokeObjectURL(url);
         attachments = attachments.filter(a => !(a.type === 'video-frame' && a.videoFile === file.name));
         frames.forEach((b64, fi) => {
@@ -5717,20 +5731,19 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
       })();
     };
 
+    // ondurationchange fires when the browser figures out the real duration
+    // (often after loadedmetadata for MediaRecorder webm files)
+    vid.ondurationchange = () => {
+      if (isFinite(vid.duration) && vid.duration > 0) doExtract(vid.duration);
+    };
+
     vid.onloadedmetadata = () => {
       if (isFinite(vid.duration) && vid.duration > 0) {
-        // Duration known — extract immediately
-        startFrameExtraction(vid.duration);
+        doExtract(vid.duration);
       } else {
-        // Chrome MediaRecorder webm files often lack duration metadata.
-        // Seek past the end — browser clamps to the real last frame,
-        // and vid.currentTime then reveals the actual duration.
-        const onSeeked = () => {
-          vid.removeEventListener('seeked', onSeeked);
-          const actualDur = vid.currentTime > 0 ? vid.currentTime : 60;
-          startFrameExtraction(actualDur);
-        };
-        vid.addEventListener('seeked', onSeeked);
+        // Duration is Infinity — seek past end so Chrome reveals the real length
+        const onS = () => { vid.removeEventListener('seeked', onS); doExtract(vid.currentTime || 60); };
+        vid.addEventListener('seeked', onS);
         vid.currentTime = 1e10;
       }
     };
