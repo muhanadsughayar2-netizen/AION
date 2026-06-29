@@ -2104,6 +2104,9 @@ async function startVideoGeneration(prompt, thread) {
   thread.scrollTop = thread.scrollHeight;
 
   let stylizedImage = null;
+  let shouldIncludeImage = includeImage;
+  let stylePromptPrefix = '';
+
   if (includeImage) {
     // Read from storage (set by pill clicks) OR fall back to the JS variable
     // so stylize always fires when Snap is checked, even without a pill click.
@@ -2121,17 +2124,26 @@ async function startVideoGeneration(prompt, thread) {
       if (stylizedImage) {
         console.log('[SnapToAI Video] Photo stylized successfully');
         if (text) text.textContent = 'Photo stylized! Starting video...';
+        // Tell Veo the characters are animated so it doesn't apply safety filters for real people
+        const styleLabels = { pixar: 'Pixar 3D animated characters', anime: 'anime characters', cartoon: 'colorful cartoon characters', watercolor: 'watercolor painting', oil: 'oil painting' };
+        stylePromptPrefix = `${styleLabels[stylizeStyle] || stylizeStyle} style. `;
       } else {
-        console.log('[SnapToAI Video] Stylize failed, using original image');
-        if (text) text.textContent = 'Stylize failed, using original photo...';
+        // Stylize FAILED — do NOT fall back to original real-person photo.
+        // Dropping the image prevents Veo safety-filter blocks on real faces.
+        console.log('[SnapToAI Video] Stylize failed — skipping image to avoid safety filter');
+        if (text) text.textContent = 'Stylize unavailable — generating without photo (safe mode)';
+        shouldIncludeImage = false;
       }
     }
   }
 
+  // Prepend style context to prompt so Veo generates animated content, not live-action
+  const effectivePrompt = stylePromptPrefix ? stylePromptPrefix + prompt : prompt;
+
   if (clipCount === 1) {
-    await generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage, selectedAspectRatio);
+    await generateSingleClip(effectivePrompt, apiKey, modelName, shouldIncludeImage, progressBubble, thread, stylizedImage, selectedAspectRatio);
   } else {
-    await generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes, selectedAspectRatio);
+    await generateMultiClip(effectivePrompt, apiKey, modelName, shouldIncludeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes, selectedAspectRatio);
   }
 }
 
@@ -5087,9 +5099,15 @@ async function continueClip() {
   // Load last frame as the reference image for the next clip
   if (lastFrameDataUrl) {
     currentImages = [lastFrameDataUrl];
-    const previewImg = document.getElementById('previewImage');
-    const screenshotSec = document.getElementById('screenshotSection');
-    if (previewImg) previewImg.src = lastFrameDataUrl;
+    // Mirror the exact display logic used by the normal snap loader
+    const placeholder    = document.getElementById('imagePlaceholder');
+    const previewImg     = document.getElementById('previewImage');
+    const screenshotSec  = document.getElementById('screenshotSection');
+    const previewContainer = document.querySelector('.image-preview');
+    // Remove any multi-image grid so single-image view takes over
+    if (previewContainer) { const g = previewContainer.querySelector('#multiImageGrid'); if (g) g.remove(); }
+    if (placeholder)   placeholder.style.display = 'none';
+    if (previewImg)  { previewImg.src = lastFrameDataUrl; previewImg.style.display = 'block'; }
     if (screenshotSec) screenshotSec.style.display = 'block';
   }
 
