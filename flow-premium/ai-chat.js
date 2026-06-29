@@ -1361,7 +1361,7 @@ function initVideoSubBar() {
   if (!bar) return;
 
   // Sync globals to match what the HTML marks as active by default
-  selectedVideoDuration = 5;
+  selectedVideoDuration = 8;
   // selectedCreativity already defaults to 'balanced' which matches the HTML default
 
   bar.querySelectorAll('.vsb-creat').forEach(btn => {
@@ -2105,8 +2105,11 @@ async function startVideoGeneration(prompt, thread) {
 
   let stylizedImage = null;
   if (includeImage) {
+    // Read from storage (set by pill clicks) OR fall back to the JS variable
+    // so stylize always fires when Snap is checked, even without a pill click.
     const styleData = await chrome.storage.local.get('_videoStylizeStyle');
-    const stylizeStyle = styleData._videoStylizeStyle;
+    const stylizeStyle = styleData._videoStylizeStyle ||
+      (typeof _vsbStylizeStyle !== 'undefined' ? _vsbStylizeStyle : 'pixar');
     chrome.storage.local.remove('_videoStylizeStyle');
 
     if (stylizeStyle && currentImages[0]) {
