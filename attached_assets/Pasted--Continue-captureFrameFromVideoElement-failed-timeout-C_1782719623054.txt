@@ -1,0 +1,2008 @@
+[Continue] captureFrameFromVideoElement failed: timeout
+Context
+ai-chat.html?count=1
+Stack Trace
+ai-chat.js:5120 (captureFrameFromVideoElement)
+...
+4621
+4622
+4623
+4624
+4625
+4626
+4627
+4628
+4629
+4630
+4631
+4632
+4633
+4634
+4635
+4636
+4637
+4638
+4639
+4640
+4641
+4642
+4643
+4644
+4645
+4646
+4647
+4648
+4649
+4650
+4651
+4652
+4653
+4654
+4655
+4656
+4657
+4658
+4659
+4660
+4661
+4662
+4663
+4664
+4665
+4666
+4667
+4668
+4669
+4670
+4671
+4672
+4673
+4674
+4675
+4676
+4677
+4678
+4679
+4680
+4681
+4682
+4683
+4684
+4685
+4686
+4687
+4688
+4689
+4690
+4691
+4692
+4693
+4694
+4695
+4696
+4697
+4698
+4699
+4700
+4701
+4702
+4703
+4704
+4705
+4706
+4707
+4708
+4709
+4710
+4711
+4712
+4713
+4714
+4715
+4716
+4717
+4718
+4719
+4720
+4721
+4722
+4723
+4724
+4725
+4726
+4727
+4728
+4729
+4730
+4731
+4732
+4733
+4734
+4735
+4736
+4737
+4738
+4739
+4740
+4741
+4742
+4743
+4744
+4745
+4746
+4747
+4748
+4749
+4750
+4751
+4752
+4753
+4754
+4755
+4756
+4757
+4758
+4759
+4760
+4761
+4762
+4763
+4764
+4765
+4766
+4767
+4768
+4769
+4770
+4771
+4772
+4773
+4774
+4775
+4776
+4777
+4778
+4779
+4780
+4781
+4782
+4783
+4784
+4785
+4786
+4787
+4788
+4789
+4790
+4791
+4792
+4793
+4794
+4795
+4796
+4797
+4798
+4799
+4800
+4801
+4802
+4803
+4804
+4805
+4806
+4807
+4808
+4809
+4810
+4811
+4812
+4813
+4814
+4815
+4816
+4817
+4818
+4819
+4820
+4821
+4822
+4823
+4824
+4825
+4826
+4827
+4828
+4829
+4830
+4831
+4832
+4833
+4834
+4835
+4836
+4837
+4838
+4839
+4840
+4841
+4842
+4843
+4844
+4845
+4846
+4847
+4848
+4849
+4850
+4851
+4852
+4853
+4854
+4855
+4856
+4857
+4858
+4859
+4860
+4861
+4862
+4863
+4864
+4865
+4866
+4867
+4868
+4869
+4870
+4871
+4872
+4873
+4874
+4875
+4876
+4877
+4878
+4879
+4880
+4881
+4882
+4883
+4884
+4885
+4886
+4887
+4888
+4889
+4890
+4891
+4892
+4893
+4894
+4895
+4896
+4897
+4898
+4899
+4900
+4901
+4902
+4903
+4904
+4905
+4906
+4907
+4908
+4909
+4910
+4911
+4912
+4913
+4914
+4915
+4916
+4917
+4918
+4919
+4920
+4921
+4922
+4923
+4924
+4925
+4926
+4927
+4928
+4929
+4930
+4931
+4932
+4933
+4934
+4935
+4936
+4937
+4938
+4939
+4940
+4941
+4942
+4943
+4944
+4945
+4946
+4947
+4948
+4949
+4950
+4951
+4952
+4953
+4954
+4955
+4956
+4957
+4958
+4959
+4960
+4961
+4962
+4963
+4964
+4965
+4966
+4967
+4968
+4969
+4970
+4971
+4972
+4973
+4974
+4975
+4976
+4977
+4978
+4979
+4980
+4981
+4982
+4983
+4984
+4985
+4986
+4987
+4988
+4989
+4990
+4991
+4992
+4993
+4994
+4995
+4996
+4997
+4998
+4999
+5000
+5001
+5002
+5003
+5004
+5005
+5006
+5007
+5008
+5009
+5010
+5011
+5012
+5013
+5014
+5015
+5016
+5017
+5018
+5019
+5020
+5021
+5022
+5023
+5024
+5025
+5026
+5027
+5028
+5029
+5030
+5031
+5032
+5033
+5034
+5035
+5036
+5037
+5038
+5039
+5040
+5041
+5042
+5043
+5044
+5045
+5046
+5047
+5048
+5049
+5050
+5051
+5052
+5053
+5054
+5055
+5056
+5057
+5058
+5059
+5060
+5061
+5062
+5063
+5064
+5065
+5066
+5067
+5068
+5069
+5070
+5071
+5072
+5073
+5074
+5075
+5076
+5077
+5078
+5079
+5080
+5081
+5082
+5083
+5084
+5085
+5086
+5087
+5088
+5089
+5090
+5091
+5092
+5093
+5094
+5095
+5096
+5097
+5098
+5099
+5100
+5101
+5102
+5103
+5104
+5105
+5106
+5107
+5108
+5109
+5110
+5111
+5112
+5113
+5114
+5115
+5116
+5117
+5118
+5119
+5120
+5121
+5122
+5123
+5124
+5125
+5126
+5127
+5128
+5129
+5130
+5131
+5132
+5133
+5134
+5135
+5136
+5137
+5138
+5139
+5140
+5141
+5142
+5143
+5144
+5145
+5146
+5147
+5148
+5149
+5150
+5151
+5152
+5153
+5154
+5155
+5156
+5157
+5158
+5159
+5160
+5161
+5162
+5163
+5164
+5165
+5166
+5167
+5168
+5169
+5170
+5171
+5172
+5173
+5174
+5175
+5176
+5177
+5178
+5179
+5180
+5181
+5182
+5183
+5184
+5185
+5186
+5187
+5188
+5189
+5190
+5191
+5192
+5193
+5194
+5195
+5196
+5197
+5198
+5199
+5200
+5201
+5202
+5203
+5204
+5205
+5206
+5207
+5208
+5209
+5210
+5211
+5212
+5213
+5214
+5215
+5216
+5217
+5218
+5219
+5220
+5221
+5222
+5223
+5224
+5225
+5226
+5227
+5228
+5229
+5230
+5231
+5232
+5233
+5234
+5235
+5236
+5237
+5238
+5239
+5240
+5241
+5242
+5243
+5244
+5245
+5246
+5247
+5248
+5249
+5250
+5251
+5252
+5253
+5254
+5255
+5256
+5257
+5258
+5259
+5260
+5261
+5262
+5263
+5264
+5265
+5266
+5267
+5268
+5269
+5270
+5271
+5272
+5273
+5274
+5275
+5276
+5277
+5278
+5279
+5280
+5281
+5282
+5283
+5284
+5285
+5286
+5287
+5288
+5289
+5290
+5291
+5292
+5293
+5294
+5295
+5296
+5297
+5298
+5299
+5300
+5301
+5302
+5303
+5304
+5305
+5306
+5307
+5308
+5309
+5310
+5311
+5312
+5313
+5314
+5315
+5316
+5317
+5318
+5319
+5320
+5321
+5322
+5323
+5324
+5325
+5326
+5327
+5328
+5329
+5330
+5331
+5332
+5333
+5334
+5335
+5336
+5337
+5338
+5339
+5340
+5341
+5342
+5343
+5344
+5345
+5346
+5347
+5348
+5349
+5350
+5351
+5352
+5353
+5354
+5355
+5356
+5357
+5358
+5359
+5360
+5361
+5362
+5363
+5364
+5365
+5366
+5367
+5368
+5369
+5370
+5371
+5372
+5373
+5374
+5375
+5376
+5377
+5378
+5379
+5380
+5381
+5382
+5383
+5384
+5385
+5386
+5387
+5388
+5389
+5390
+5391
+5392
+5393
+5394
+5395
+5396
+5397
+5398
+5399
+5400
+5401
+5402
+5403
+5404
+5405
+5406
+5407
+5408
+5409
+5410
+5411
+5412
+5413
+5414
+5415
+5416
+5417
+5418
+5419
+5420
+5421
+5422
+5423
+5424
+5425
+5426
+5427
+5428
+5429
+5430
+5431
+5432
+5433
+5434
+5435
+5436
+5437
+5438
+5439
+5440
+5441
+5442
+5443
+5444
+5445
+5446
+5447
+5448
+5449
+5450
+5451
+5452
+5453
+5454
+5455
+5456
+5457
+5458
+5459
+5460
+5461
+5462
+5463
+5464
+5465
+5466
+5467
+5468
+5469
+5470
+5471
+5472
+5473
+5474
+5475
+5476
+5477
+5478
+5479
+5480
+5481
+5482
+5483
+5484
+5485
+5486
+5487
+5488
+5489
+5490
+5491
+5492
+5493
+5494
+5495
+5496
+5497
+5498
+5499
+5500
+5501
+5502
+5503
+5504
+5505
+5506
+5507
+5508
+5509
+5510
+5511
+5512
+5513
+5514
+5515
+5516
+5517
+5518
+5519
+5520
+5521
+5522
+5523
+5524
+5525
+5526
+5527
+5528
+5529
+5530
+5531
+5532
+5533
+5534
+5535
+5536
+5537
+5538
+5539
+5540
+5541
+5542
+5543
+5544
+5545
+5546
+5547
+5548
+5549
+5550
+5551
+5552
+5553
+5554
+5555
+5556
+5557
+5558
+5559
+5560
+5561
+5562
+5563
+5564
+5565
+5566
+5567
+5568
+5569
+5570
+5571
+5572
+5573
+5574
+5575
+5576
+5577
+5578
+5579
+5580
+5581
+5582
+5583
+5584
+5585
+5586
+5587
+5588
+5589
+5590
+5591
+5592
+5593
+5594
+5595
+5596
+5597
+5598
+5599
+5600
+5601
+5602
+5603
+5604
+5605
+5606
+5607
+5608
+5609
+5610
+5611
+5612
+5613
+5614
+5615
+5616
+5617
+5618
+5619
+...
+<4620 lines not shown>
+        const src = audioCtx.createMediaElementSource(videos[0]);
+        const g = audioCtx.createGain();
+        g.gain.value = 1;
+        src.connect(g);
+        g.connect(audioDest);
+        sources.push(src);
+        gains.push(g);
+      } catch (e) {
+        console.log('[SnapToAI Video] Audio connect failed on clip 1:', e.message);
+        sources.push(null);
+        gains.push(null);
+      }
+    }
+
+    const FPS = 30;
+    const videoStream = canvas.captureStream(FPS);
+    const combined = new MediaStream();
+    videoStream.getVideoTracks().forEach(t => combined.addTrack(t));
+    audioDest.stream.getAudioTracks().forEach(t => combined.addTrack(t));
+    console.log(`[SnapToAI Video] combined stream: ${combined.getVideoTracks().length}v + ${combined.getAudioTracks().length}a tracks`);
+
+    const codecCandidates = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm'
+    ];
+    let chosenMime = '';
+    for (const m of codecCandidates) {
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) {
+        chosenMime = m;
+        break;
+      }
+    }
+    // 8 Mbps video + 192 kbps audio. Previous default (~2.5 Mbps) is what
+    // made recorded output look soft compared to the 1080p MP4 source clips.
+    const recorderOpts = { videoBitsPerSecond: 8_000_000, audioBitsPerSecond: 192_000 };
+    if (chosenMime) recorderOpts.mimeType = chosenMime;
+    const recorder = new MediaRecorder(combined, recorderOpts);
+    console.log(`[SnapToAI Video] MediaRecorder mime=${chosenMime || '(default)'} @ 8Mbps`);
+    const chunks = [];
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+    // Hard 5s deadline on onstop firing. Chrome's MediaRecorder occasionally
+    // never emits 'stop' under load (GPU pressure, tab backgrounded mid-stop,
+    // codec edge cases) — without this fallback the whole stitch would hang
+    // until the outer 30-120s STITCH_TIMEOUT_MS, which feels like a freeze
+    // to the user. With the fallback we just use whatever chunks we have.
+    const recordingDone = new Promise(resolve => {
+      let settled = false;
+      const settle = () => { if (!settled) { settled = true; resolve(); } };
+      recorder.onstop = settle;
+      setTimeout(() => {
+        if (!settled) console.log('[SnapToAI Video] recorder.onstop timeout — force-finalizing with current chunks');
+        settle();
+      }, 5000);
+    });
+
+    // Paint clip 0's first frame BEFORE the recorder starts, so the output
+    // doesn't begin with a black gap.
+    try { ctx2d.drawImage(videos[0], 0, 0, canvasW, canvasH); } catch (_) {}
+
+    // timeslice=250ms so chunks flush regularly. A single giant final chunk
+    // sometimes shows up as a corrupt/0-byte file in Chrome.
+    recorder.start(250);
+
+    // ---- 5. Sequential playback. All metadata is preloaded so the only
+    // per-clip awaits are v.play() (resolves in <50ms) and the draw promise.
+    // Audio is connected just-in-time per clip and disconnected before the
+    // next clip's source attaches, so audioDest only ever has ONE active
+    // source feeding it — no glitching, no ducking, no overlap.
+    // Track wall-clock recording duration so we can repair the WebM EBML
+    // Duration field after recorder.stop() — Chrome's MediaRecorder never
+    // writes it, which is what makes the downloaded file hang on playback.
+    const recordStartMs = performance.now();
+    try {
+      for (let i = 0; i < videos.length; i++) {
+        if (stitchCtx && (stitchCtx.userStopped || stitchCtx.aborted)) throw new Error('User stopped');
+        const v = videos[i];
+
+        // Connect this clip's audio (clip 0 was already connected above).
+        if (i > 0) {
+          try {
+            const src = audioCtx.createMediaElementSource(v);
+            const g = audioCtx.createGain();
+            g.gain.value = 1;
+            src.connect(g);
+            g.connect(audioDest);
+            sources.push(src);
+            gains.push(g);
+          } catch (e) {
+            console.log(`[SnapToAI Video] Audio connect skipped on clip ${i+1}:`, e.message);
+            sources.push(null);
+            gains.push(null);
+          }
+        }
+
+        // Hard 3s deadline on v.play() — normally resolves in <50ms, but
+        // some Chrome builds leave the promise pending forever after a tab
+        // throttle / GPU hiccup. The watchdog inside the draw loop will
+        // still bail the clip if it can't actually play, so all we lose by
+        // continuing here is a few ms.
+        try {
+          await Promise.race([
+            v.play(),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('play() timeout 3s')), 3000))
+          ]);
+        } catch (e) {
+          console.log(`[SnapToAI Video] play() rejected on clip ${i+1}:`, e.message);
+        }
+
+        const dur = (v.duration && isFinite(v.duration) && v.duration > 0) ? v.duration : 8;
+
+        // Draw loop: ONE rAF chain (foreground) + a 200ms setInterval that
+        // ONLY runs when rAF has stalled (tab hidden, throttled, etc).
+        // Architect flagged that the previous version had setInterval calling
+        // tick() AND tick() scheduling rAF, so every 100ms a NEW persistent
+        // rAF chain was spawned → over an 8s clip dozens of concurrent draw
+        // loops piled up, blowing CPU and triggering false stalls. Here we
+        // gate with `rafPending` and `lastTickTs` so exactly one loop is
+        // active at a time.
+        // Per-clip hard ceiling at dur*1.5+3s in case `ended` never fires
+        // (some short Veo clips don't emit the event reliably) — without
+        // this the whole stitch would hang until the global 120s timeout.
+        await new Promise((resolveClip) => {
+          let stopped = false;
+          let interval = null;
+          let rafPending = false;
+          let lastTickTs = performance.now();
+          let lastProgressTs = performance.now();
+          let lastTime = -1;
+          const clipDeadline = performance.now() + (dur * 1500) + 3000;
+          const done = () => {
+            if (stopped) return;
+            stopped = true;
+            if (interval) { clearInterval(interval); interval = null; }
+            resolveClip();
+          };
+          v.onended = done;
+          const drawAndCheck = () => {
+            if (stopped) return false;
+            if ((stitchCtx && stitchCtx.userStopped) || (stitchCtx && stitchCtx.aborted)) { done(); return false; }
+            try { ctx2d.drawImage(v, 0, 0, canvasW, canvasH); } catch (_) {}
+            const now = performance.now();
+            lastTickTs = now;
+            if (v.currentTime !== lastTime) { lastTime = v.currentTime; lastProgressTs = now; }
+            // currentTime hasn't advanced for 2.5s AND we've been playing for
+            // over 1s → element is stuck. Bail out of this clip.
+            const stalled = (now - lastProgressTs > 2500) && (now - recordStartMs > 1000);
+            if (v.ended || (v.currentTime >= dur - 0.02) || stalled || now > clipDeadline) {
+              if (stalled) console.log(`[SnapToAI Video] Clip ${i+1} stalled at ${v.currentTime.toFixed(2)}s — advancing`);
+              done(); return false;
+            }
+            return true;
+          };
+          const rafTick = () => {
+            rafPending = false;
+            if (!drawAndCheck()) return;
+            if (typeof requestAnimationFrame === 'function') {
+              rafPending = true;
+              requestAnimationFrame(rafTick);
+            }
+          };
+          // Backstop: only nudges drawAndCheck if rAF has gone silent for
+          // 200ms+ (tab hidden, browser throttling). Does NOT spawn a new
+          // rAF chain — that's what caused the fan-out bug.
+          interval = setInterval(() => {
+            if (stopped) return;
+            if (performance.now() - lastTickTs < 200) return;
+            drawAndCheck();
+          }, 200);
+          if (typeof requestAnimationFrame === 'function') {
+            rafPending = true;
+            requestAnimationFrame(rafTick);
+          } else {
+            // No rAF (very rare) — fall back to interval-only at higher rate.
+            clearInterval(interval);
+            interval = setInterval(() => { if (!drawAndCheck()) return; }, 33);
+          }
+        });
+
+        // Disconnect THIS clip's audio so the destination is silent for the
+        // microsecond gap before the next clip's audio attaches.
+        try { gains[i] && gains[i].disconnect(); } catch (_) {}
+        try { sources[i] && sources[i].disconnect(); } catch (_) {}
+        try { v.pause(); } catch (_) {}
+      }
+
+      // Hold the last frame for ~150ms so the recorder's tail chunks have
+      // content to flush (avoids ending on a black gap).
+      await new Promise(r => setTimeout(r, 150));
+    } finally {
+      for (const v of videos) {
+        try { v.pause(); } catch (_) {}
+        try { v.removeAttribute('src'); v.load(); } catch (_) {}
+        if (v && v.parentNode) {
+          try { v.parentNode.removeChild(v); } catch (_) {}
+        }
+      }
+      for (const u of blobUrls) {
+        try { URL.revokeObjectURL(u); } catch (_) {}
+      }
+      try { recorder.stop(); } catch (_) {}
+      await recordingDone;
+      // Don't let audioCtx.close() hang the user (rare Chrome bug under load).
+      try {
+        await Promise.race([
+          audioCtx.close(),
+          new Promise(r => setTimeout(r, 2000))
+        ]);
+      } catch (_) {}
+      // Drop references to the raw clip blobs so GC can reclaim them —
+      // architect flagged this as a memory leak across retry sessions.
+      blobs.length = 0;
+    }
+
+    // Wall-clock duration of the recorded segment — used to back-fill the
+    // missing Duration in the WebM EBML header so the downloaded file is
+    // seekable (without this, players hang on playback / show duration N/A).
+    const recordedMs = Math.max(1, performance.now() - recordStartMs);
+    // Guard: if stitch was aborted/stopped while recording was finishing,
+    // don't create a URL that will never be surfaced — avoids a permanent leak.
+    if (stitchCtx && (stitchCtx.aborted || stitchCtx.userStopped)) throw new Error('User stopped');
+    const rawBlob = new Blob(chunks, { type: chosenMime || 'video/webm' });
+    const fixedBlob = await fixWebmDuration(rawBlob, recordedMs);
+    console.log(`[SnapToAI Video] WebM duration repair: ${recordedMs.toFixed(0)}ms · raw=${rawBlob.size}B · fixed=${fixedBlob.size}B`);
+    return URL.createObjectURL(fixedBlob);
+  })();
+
+  try {
+    return await Promise.race([stitchPromise, timeoutPromise]);
+  } finally {
+    if (timeoutHandle) clearTimeout(timeoutHandle);
+  }
+}
+
+function showStitchedVideoResult(bubble, stitchedUrl, clipUrls, thread) {
+  const totalDur = selectedVideoDuration * clipUrls.length;
+  bubble.innerHTML = `
+    <div style="margin:8px 0;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:18px;">🎬</span>
+        <span style="font-size:13px;font-weight:600;color:#ffa500;">Video ready! (${totalDur}s — ${clipUrls.length} clips stitched)</span>
+      </div>
+      <video controls autoplay muted playsinline style="width:100%;max-width:480px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);" src="${stitchedUrl}"></video>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="video-save-btn" style="background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.3);color:#ffa500;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;">💾 Save Combined</button>
+        <button class="video-save-clips-btn" style="background:rgba(0,200,136,0.1);border:1px solid rgba(0,200,136,0.3);color:#00cc88;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;">📥 Save Individual Clips</button>
+      </div>
+    </div>
+  `;
+
+  bubble.querySelector('.video-save-btn')?.addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.href = stitchedUrl;
+    a.download = 'snaptoai-video-combined.webm';
+    a.click();
+  });
+
+  bubble.querySelector('.video-save-clips-btn')?.addEventListener('click', () => {
+    clipUrls.forEach((url, i) => {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `snaptoai-clip-${i + 1}.mp4`;
+      a.click();
+    });
+  });
+
+  thread.scrollTop = thread.scrollHeight;
+  addBubbleActions(bubble, 'Generated stitched video');
+}
+
+function showMultiClipFallback(bubble, clipUrls, thread) {
+  let clipsHtml = clipUrls.map((url, i) => `
+    <div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:600;color:#cdd6e0;margin-bottom:6px;">🎬 Clip ${i + 1} of ${clipUrls.length}</div>
+      <video controls muted playsinline style="width:100%;max-width:480px;border-radius:10px;display:block;" src="${url}"></video>
+    </div>
+  `).join('');
+
+  // Task #36: Make the fallback unmistakably clear when stitching couldn't
+  // join the clips. The previous tiny gray "Auto-stitch wasn't possible"
+  // text made users (correctly) think the whole feature broke. The new
+  // banner reassures them that every clip rendered successfully and
+  // gives them a single obvious download button.
+  bubble.innerHTML = `
+    <div style="margin:8px 0;">
+      <div style="background:linear-gradient(135deg,rgba(0,200,136,0.15),rgba(0,200,136,0.05));border:1px solid rgba(0,200,136,0.4);border-radius:12px;padding:14px 16px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <span style="font-size:22px;">✅</span>
+          <span style="font-size:15px;font-weight:700;color:#00cc88;">Your ${clipUrls.length} clips are ready — play or download below</span>
+        </div>
+        <div style="font-size:13px;color:#cdd6e0;line-height:1.55;">
+          Each clip is a separate file at full quality. You can play them right here, download them all with one click, or join them in any video editor (iMovie, CapCut, Premiere, etc.) to make one combined movie.
+        </div>
+        <div style="margin-top:12px;">
+          <button class="video-save-clips-btn" style="background:#00cc88;border:none;color:#0b1118;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📥 Download all clips</button>
+        </div>
+      </div>
+      ${clipsHtml}
+    </div>
+  `;
+
+  bubble.querySelector('.video-save-clips-btn')?.addEventListener('click', () => {
+    clipUrls.forEach((url, i) => {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `snaptoai-clip-${i + 1}.mp4`;
+      a.click();
+    });
+  });
+
+  thread.scrollTop = thread.scrollHeight;
+  addBubbleActions(bubble, 'Generated video clips');
+}
+
+async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
+  // Cancel any prior single-clip poll (timer + in-flight fetch) before starting.
+  if (activeVideoPollTimer) { clearTimeout(activeVideoPollTimer); activeVideoPollTimer = null; }
+  if (pollVideoStatus._abort) { pollVideoStatus._abort.abort(); }
+  // Per-invocation AbortController so a stale in-flight fetch from a prior call
+  // can be cancelled even if it slipped past the clearTimeout above.
+  const abortCtrl = new AbortController();
+  pollVideoStatus._abort = abortCtrl;
+
+  let stopped = false;
+  let localTimer = null;
+
+  let pollCount = 0;
+  const maxPolls = 40;
+  const FAST_POLL_MS = 5000;
+  const SLOW_POLL_MS = 15000;
+  const FAST_POLL_COUNT = 6;
+  const nextDelay = () => (pollCount < FAST_POLL_COUNT ? FAST_POLL_MS : SLOW_POLL_MS);
+
+  const tick = async () => {
+    if (stopped || abortCtrl.signal.aborted) return;
+    pollCount++;
+
+    if (pollCount > maxPolls) {
+      stopped = true;
+      localTimer = null;
+      progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">⏰</span> Video generation timed out. Please try again.</div>`;
+      return;
+    }
+
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/${operationId}?key=${apiKey}`;
+      const resp = await fetchWithTimeout(url, { signal: abortCtrl.signal, timeoutMs: 20000 });
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        const errMsg = data.error?.message || `Status check failed (${resp.status})`;
+        if (resp.status === 429) {
+          const text = progressBubble.querySelector('.video-progress-text');
+          if (text) text.textContent = 'Rate limit — retrying shortly...';
+          localTimer = setTimeout(tick, nextDelay());
+          return;
+        }
+        stopped = true;
+        localTimer = null;
+        const errLower = errMsg.toLowerCase();
+        if (isBillingError(resp.status, errMsg)) {
+          progressBubble.innerHTML = buildUnlockCard('video');
+        } else if (errLower.includes('quota') || errLower.includes('rate') || errLower.includes('exceeded') || errLower.includes('resource')) {
+          progressBubble.innerHTML = buildVeoRateLimitCard('');
+        } else {
+          progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${errMsg}</div>`;
+        }
+        return;
+      }
+
+      if (!data.done) {
+        const pct = data.metadata?.percentComplete || Math.min(pollCount * 5, 90);
+        const fill = progressBubble.querySelector('.video-progress-fill');
+        const text = progressBubble.querySelector('.video-progress-text');
+        if (fill) fill.style.width = `${pct}%`;
+        if (text) text.textContent = `Rendering... ${pct}%`;
+        localTimer = setTimeout(tick, nextDelay());
+      } else {
+        stopped = true;
+        localTimer = null;
+
+        console.log('[SnapToAI Video] Done response:', JSON.stringify(data).substring(0, 1000));
+
+        if (data.error) {
+          const errMsg = data.error.message || 'Video generation failed.';
+          const errLower2 = errMsg.toLowerCase();
+          if (isBillingError(data.error.code || 0, errMsg)) {
+            progressBubble.innerHTML = buildUnlockCard('video');
+          } else if (errLower2.includes('quota') || errLower2.includes('rate') || errLower2.includes('exceeded') || errLower2.includes('resource') || data.error.code === 429) {
+            progressBubble.innerHTML = buildVeoRateLimitCard('');
+          } else {
+            progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> ${errMsg}</div>`;
+          }
+          return;
+        }
+
+        const _extractUri = (d) => {
+          const gvr2 = d.response?.generateVideoResponse;
+          if (gvr2?.generatedSamples?.[0]?.video?.uri) return gvr2.generatedSamples[0].video.uri;
+          if (gvr2?.generatedSamples?.[0]?.uri)        return gvr2.generatedSamples[0].uri;
+          if (d.response?.videos?.[0]?.uri)            return d.response.videos[0].uri;
+          if (d.response?.videos?.[0]?.video?.uri)     return d.response.videos[0].video.uri;
+          if (d.response?.generatedSamples?.[0]?.video?.uri) return d.response.generatedSamples[0].video.uri;
+          if (d.response?.generatedSamples?.[0]?.uri)  return d.response.generatedSamples[0].uri;
+          if (d.predictions?.[0]?.video?.uri)          return d.predictions[0].video.uri;
+          if (d.predictions?.[0]?.uri)                 return d.predictions[0].uri;
+          if (d.response?.predictions?.[0]?.video?.uri) return d.response.predictions[0].video.uri;
+          if (d.response?.predictions?.[0]?.uri)       return d.response.predictions[0].uri;
+          const s = JSON.stringify(d);
+          const m = s.match(/"uri"\s*:\s*"(https?:\/\/[^"]+\.mp4[^"]*)"/);
+          if (m) return m[1];
+          return '';
+        };
+
+        let videoUri = _extractUri(data);
+
+        if (!videoUri) {
+          const pollUrl2 = `https://generativelanguage.googleapis.com/v1beta/${operationId}?key=${apiKey}`;
+          for (let _a = 1; _a <= 5 && !videoUri; _a++) {
+            if (abortCtrl.signal.aborted) break; // newer generation started — stop immediately
+            await new Promise(r => setTimeout(r, _a <= 2 ? 3000 : 5000));
+            if (abortCtrl.signal.aborted) break;
+            try {
+              const r2 = await fetchWithTimeout(pollUrl2, { signal: abortCtrl.signal, timeoutMs: 20000 });
+              if (!r2.ok) continue;
+              const d2 = await r2.json().catch(() => ({}));
+              if (!d2.done) continue;
+              if (d2.error) break;
+              console.log(`[SnapToAI Video] single no_uri re-poll ${_a}:`, JSON.stringify(d2).substring(0, 400));
+              videoUri = _extractUri(d2);
+            } catch (_) { if (_.name === 'AbortError') break; }
+          }
+        }
+
+        if (!videoUri) {
+          console.log('[SnapToAI Video] no URI after re-polls:', JSON.stringify(data.response || data).substring(0, 300));
+          const filtered = data.response?.generateVideoResponse?.raiMediaFilteredReasons;
+          if (filtered && filtered.length > 0) {
+            progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">🛡️</span> Video was blocked by safety filters. Try a different prompt.</div>`;
+          } else {
+            progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> Video generation completed but no video was returned. Try rephrasing your description.</div>`;
+          }
+          return;
+        }
+
+        const authedUrl = `${videoUri}${videoUri.includes('?') ? '&' : '?'}key=${apiKey}`;
+        showVideoResult(progressBubble, authedUrl, thread);
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') return; // cancelled by a newer poll — stop silently
+      console.log(`[SnapToAI Video] Poll error:`, err.message);
+      localTimer = setTimeout(tick, nextDelay());
+    }
+  };
+  localTimer = setTimeout(tick, FAST_POLL_MS);
+}
+
+// ── Video continuation context ─────────────────────────────────────────────
+let _lastVideoContext = null; // { prompt, style, videoUrl, lastFrameDataUrl }
+
+// Capture a frame directly from an already-decoded <video> element in the DOM.
+// Much more reliable than re-fetching a Google signed URL that may have expired.
+async function captureFrameFromVideoElement(videoEl) {
+  if (!videoEl) return null;
+  try {
+    // Wait for video to have frame data
+    if (videoEl.readyState < 2) {
+      await new Promise((res, rej) => {
+        const t = setTimeout(() => rej(new Error('timeout')), 12000);
+        videoEl.addEventListener('loadeddata', () => { clearTimeout(t); res(); }, { once: true });
+        videoEl.onerror = () => { clearTimeout(t); rej(new Error('video error')); };
+      });
+    }
+    const duration = (isFinite(videoEl.duration) && videoEl.duration > 0) ? videoEl.duration : 8;
+    // Try 3 frames near the end and pick the brightest (avoids fade-to-black last frame)
+    const offsets = [0.6, 0.35, 0.12].map(o => Math.max(0, duration - o));
+    let bestDataUrl = null, bestBrightness = -1;
+    for (const seekTo of offsets) {
+      await new Promise(res => {
+        const guard = setTimeout(res, 3000);
+        videoEl.addEventListener('seeked', () => { clearTimeout(guard); res(); }, { once: true });
+        videoEl.currentTime = seekTo;
+      });
+      // Wait for the new frame to actually paint before drawing to canvas
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const w = videoEl.videoWidth || 1280, h = videoEl.videoHeight || 720;
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(videoEl, 0, 0, w, h);
+      // Quick brightness check on a 32×32 sample to reject black frames
+      const sample = c.getContext('2d').getImageData(w >> 1, h >> 1, 32, 32);
+      let bright = 0;
+      for (let i = 0; i < sample.data.length; i += 4)
+        bright += sample.data[i] + sample.data[i+1] + sample.data[i+2];
+      if (bright > bestBrightness) { bestBrightness = bright; bestDataUrl = c.toDataURL('image/jpeg', 0.92); }
+    }
+    return bestDataUrl;
+  } catch (e) {
+    console.warn('[Continue] captureFrameFromVideoElement failed:', e?.message);
+    return null;
+  }
+}
+
+// Ask Gemini flash to write a cinematic continuation prompt that preserves
+// the visual style, camera angle, subjects, music rhythm and audio mood.
+async function generateSeamlessContinuationPrompt(originalPrompt, apiKey) {
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`;
+    const instruction = `You are a cinematic AI director chaining 8-second Veo video clips into a seamless movie.
+
+PREVIOUS CLIP PROMPT:
+"${originalPrompt}"
+
+Write the NEXT clip prompt (under 75 words, no explanations, no quotes) that:
+• Starts mid-action so it picks up exactly where the previous clip ended — same subjects, same location, same camera framing
+• Preserves the exact visual style, lighting, color grade, and mood from the previous clip
+• Explicitly references the audio continuity: if the previous clip had music, name the rhythm, beat, or instrument and say it "continues seamlessly". If no music was mentioned, add gentle ambient audio continuity
+• Shows a natural next moment (slight camera move OR subject action) — do NOT reintroduce or reset the scene
+• Output ONLY the video prompt text. Nothing else.`;
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: instruction }] }],
+        generationConfig: { temperature: 0.65, maxOutputTokens: 150 }
+      })
+    });
+    const data = await resp.json();
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function continueClip() {
+  if (!_lastVideoContext) return;
+  const { prompt, style, lastFrameDataUrl } = _lastVideoContext;
+
+  // Load last frame as the reference image for the next clip
+  if (lastFrameDataUrl) {
+    currentImages = [lastFrameDataUrl];
+    const previewImg = document.getElementById('previewImage');
+    const screenshotSec = document.getElementById('screenshotSection');
+    if (previewImg) previewImg.src = lastFrameDataUrl;
+    if (screenshotSec) screenshotSec.style.display = 'block';
+  }
+
+  // Switch to Video mode if not already there
+  const currentModeConfig = currentMode && MODE_CONFIGS?.[currentMode];
+  if (!currentModeConfig || currentModeConfig.type !== 'gemini-video') {
+    const videoModeBtn = document.querySelector('[data-mode="video"]');
+    if (videoModeBtn) videoModeBtn.click();
+    await new Promise(r => setTimeout(r, 150));
+  }
+
+  // Ensure Snap toggle is on
+  const snapCb = document.getElementById('vsbUseSnap');
+  if (snapCb && !snapCb.checked) snapCb.click();
+
+  // Restore previous style pill so new clip looks continuous
+  if (style) {
+    const styleBtn = document.querySelector(`.vsb-style[data-style="${style}"]`);
+    if (styleBtn) {
+      document.querySelectorAll('.vsb-style').forEach(b => b.classList.remove('vsb-active'));
+      styleBtn.classList.add('vsb-active');
+      _vsbStylizeStyle = style;
+      try { chrome.storage.local.set({ _videoStylizeStyle: style }); } catch {}
+    }
+  }
+
+  // Auto-generate the seamless continuation prompt via Gemini
+  const ci = document.getElementById('chatInput');
+  if (ci) { ci.value = '⏳ Writing next scene…'; ci.disabled = true; }
+
+  let contPrompt = null;
+  try {
+    const keyData = await chrome.storage.sync.get(['geminiApiKey']);
+    if (keyData.geminiApiKey && prompt) {
+      contPrompt = await generateSeamlessContinuationPrompt(prompt, keyData.geminiApiKey);
+    }
+  } catch (_) {}
+
+  const fallback = prompt
+    ? `Continue seamlessly: ${prompt.slice(0, 90)} — same camera angle, same subjects, music rhythm continues from previous beat without interruption.`
+    : 'Continue from last frame — same mood, same beat, same visual style. Camera continues its motion.';
+
+  if (ci) {
+    ci.disabled = false;
+    ci.value = contPrompt || fallback;
+    ci.placeholder = 'Edit the continuation or press Send…';
+    ci.focus();
+    try { ci.select(); } catch {}
+  }
+
+  const thread = document.getElementById('chatThread');
+  if (thread) thread.scrollTop = thread.scrollHeight;
+}
+
+function showVideoResult(bubble, videoUrl, thread) {
+  bubble.innerHTML = `
+    <div style="margin:8px 0;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:18px;">🎬</span>
+        <span style="font-size:13px;font-weight:600;color:#ffa500;">Video ready!</span>
+      </div>
+      <video controls autoplay muted playsinline style="width:100%;max-width:480px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);" src="${videoUrl}"></video>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="video-save-btn" style="background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.3);color:#ffa500;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">💾 Save Video</button>
+        <button class="video-continue-btn" style="background:rgba(99,202,183,0.15);border:1px solid rgba(99,202,183,0.4);color:#63cab7;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">▶ Continue Clip</button>
+        <button class="video-use-build-btn" style="background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.4);color:#ffa032;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">📌 Use in Build</button>
+      </div>
+    </div>
+  `;
+
+  bubble.querySelector('.video-save-btn')?.addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.href = videoUrl;
+    a.download = 'snaptoai-video.mp4';
+    a.click();
+  });
+
+  bubble.querySelector('.video-use-build-btn')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.textContent = '⏳ Preparing…';
+    btn.disabled = true;
+    try {
+      const resp = await fetch(videoUrl);
+      const blob = await resp.blob();
+      const mimeType = blob.type || 'video/webm';
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result.split(',')[1];
+        setStagedMedia('video', mimeType, base64, 'Video');
+        // Auto-enable Build Mode so the staged video is actually used
+        if (!buildModeEnabled) {
+          buildModeEnabled = true;
+          const buildBtn = document.getElementById('buildToggleBtn');
+          if (buildBtn) {
+            buildBtn.classList.add('tool-btn-active');
+            buildBtn.title = 'Build Mode ON — AI will generate full HTML/CSS/JS apps with live preview';
+          }
+        }
+        btn.textContent = '✅ Staged for Build!';
+        btn.style.background = 'rgba(0,200,136,0.2)';
+        btn.style.borderColor = 'rgba(0,200,136,0.5)';
+        btn.style.color = '#00cc88';
+        btn.disabled = false;
+        setTimeout(() => {
+          btn.textContent = '📌 Use in Build';
+          btn.style.background = 'rgba(255,160,50,0.15)';
+          btn.style.borderColor = 'rgba(255,160,50,0.4)';
+          btn.style.color = '#ffa032';
+        }, 2000);
+      };
+      reader.readAsDataURL(blob);
+    } catch (err) {
+      btn.textContent = '❌ Failed';
+      btn.disabled = false;
+      setTimeout(() => { btn.textContent = '📌 Use in Build'; }, 2000);
+    }
+  });
+
+  // ── Capture last frame from the already-decoded video element ─────
+  // Do this from the in-DOM <video> — avoids re-fetching a Google signed
+  // URL that may have already expired.
+  if (_lastVideoContext) {
+    _lastVideoContext.videoUrl = videoUrl;
+    const vidEl = bubble.querySelector('video');
+    (async () => {
+      try {
+        const frameDataUrl = await captureFrameFromVideoElement(vidEl);
+        if (frameDataUrl && _lastVideoContext) {
+          _lastVideoContext.lastFrameDataUrl = frameDataUrl;
+          // Brighten the button to signal it's ready
+          const contBtn = bubble.querySelector('.video-continue-btn');
+          if (contBtn) {
+            contBtn.style.borderColor = 'rgba(99,202,183,0.7)';
+            contBtn.style.background = 'rgba(99,202,183,0.22)';
+            contBtn.title = 'Last frame captured — click to continue from here';
+          }
+        }
+      } catch (_) {}
+    })();
+  }
+
+  // ── Continue Clip button ────────────────────────────────────────
+  bubble.querySelector('.video-continue-btn')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    if (!_lastVideoContext) return;
+
+    // If background capture isn't done yet, try from the video element now
+    if (!_lastVideoContext.lastFrameDataUrl) {
+      btn.textContent = '⏳ Capturing last frame…';
+      btn.disabled = true;
+      try {
+        _lastVideoContext.lastFrameDataUrl = await captureFrameFromVideoElement(
+          bubble.querySelector('video')
+        );
+      } catch (_) {}
+      btn.disabled = false;
+      btn.textContent = '▶ Continue Clip';
+    }
+
+    await continueClip();
+  });
+
+  thread.scrollTop = thread.scrollHeight;
+  addBubbleActions(bubble, 'Generated video');
+}
+
+function showSongStudio(thread) {
+  const existing = thread.querySelector('.song-studio');
+  if (existing) existing.remove();
+  
+  const studio = document.createElement('div');
+  studio.className = 'chat-bubble ai song-studio';
+  studio.style.cssText = 'padding: 0; margin: 8px 0; background: transparent; border: none; max-width: 100%; width: 100%;';
+  
+  const genres = [
+    { emoji: '🎸', name: 'Rock' },
+    { emoji: '🎷', name: 'Jazz' },
+    { emoji: '🌴', name: 'Reggae' },
+    { emoji: '🎹', name: 'Classical' },
+    { emoji: '🎤', name: 'Pop' },
+    { emoji: '🎵', name: 'R&B' },
+    { emoji: '🔥', name: 'Hip Hop' },
+    { emoji: '💃', name: 'Latin' },
+    { emoji: '🤠', name: 'Country' },
+    { emoji: '⚡', name: 'EDM' },
+    { emoji: '🎶', name: 'Lo-Fi' },
+    { emoji: '🌙', name: 'Blues' },
+    { emoji: '🎻', name: 'Folk' },
+    { emoji: '💀', name: 'Metal' },
+    { emoji: '🌸', name: 'K-Pop' },
+    { emoji: '🕌', name: 'Afrobeat' },
+    { emoji: '🎺', name: 'Funk' },
+    { emoji: '✨', name: 'Indie' },
+    { emoji: '🌊', name: 'Ambient' },
+    { emoji: '🎧', name: 'Trap' }
+  ];
+  
+  const moods = [
+    { emoji: '😊', name: 'Happy' },
+    { emoji: '😢', name: 'Sad' },
+    { emoji: '⚡', name: 'Energetic' },
+    { emoji: '😌', name: 'Chill' },
+    { emoji: '❤️', name: 'Romantic' },
+    { emoji: '🏔️', name: 'Epic' },
+    { emoji: '🌑', name: 'Dark' },
+    { emoji: '🕺', name: 'Funky' },
+    { emoji: '🌅', name: 'Nostalgic' },
+    { emoji: '💪', name: 'Powerful' },
+    { emoji: '🌿', name: 'Peaceful' },
+    { emoji: '🎉', name: 'Party' }
+  ];
+  
+  const tempos = [
+    { emoji: '🐢', name: 'Slow' },
+    { emoji: '🚶', name: 'Medium' },
+    { emoji: '🏃', name: 'Fast' },
+    { emoji: '🚀', name: 'Very Fast' }
+  ];
+  
+  const chipStyle = `display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer;transition:all 0.2s;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#ccd6e0;margin:3px;user-select:none;`;
+  const chipActiveStyle = `background:rgba(0,255,136,0.15);border-color:rgba(0,255,136,0.4);color:#00ff88;`;
+  const sectionTitleStyle = `font-size:13px;font-weight:600;color:#00ff88;margin:12px 0 8px 0;`;
+  const sectionSubStyle = `font-size:11px;color:#667788;margin:-4px 0 6px 0;`;
+  
+  studio.innerHTML = `
+    <div style="background:linear-gradient(135deg, rgba(0,255,136,0.06), rgba(0,200,100,0.03));border:1px solid rgba(0,255,136,0.12);border-radius:16px;padding:20px;backdrop-filter:blur(10px);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+        <span style="font-size:24px;">🎵</span>
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#e8eef4;">Song Studio</div>
+          <div style="font-size:11px;color:#667788;">Create your perfect song in 3 steps</div>
+        </div>
+      </div>
+
+
+      ${currentImages.length > 0 ? `
+      <div style="background:linear-gradient(135deg, rgba(255,170,0,0.08), rgba(255,100,0,0.04));border:1px solid rgba(255,170,0,0.2);border-radius:12px;padding:14px;margin:10px 0;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="font-size:18px;">📸→🎵</span>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#ffaa00;">Image to Music</div>
+            <div style="font-size:10px;color:#889900;">You have ${currentImages.length} screenshot${currentImages.length > 1 ? 's' : ''} loaded — turn ${currentImages.length > 1 ? 'them' : 'it'} into music!</div>
+          </div>
+        </div>
+        <textarea class="img2music-desc" placeholder="Describe the music you want...&#10;&#10;e.g. Acoustic guitar, soft and peaceful&#10;e.g. Epic orchestral with drums&#10;e.g. Lo-fi hip hop, rainy day vibes" style="width:100%;box-sizing:border-box;min-height:70px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,170,0,0.2);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;margin-bottom:10px;line-height:1.4;"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <button class="img2music-happy" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.08);color:#00ff88;font-size:11px;cursor:pointer;">😊 Happy</button>
+          <button class="img2music-chill" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(0,217,255,0.3);background:rgba(0,217,255,0.08);color:#00d9ff;font-size:11px;cursor:pointer;">😌 Chill</button>
+          <button class="img2music-epic" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,107,237,0.3);background:rgba(255,107,237,0.08);color:#ff6bed;font-size:11px;cursor:pointer;">🏔️ Epic</button>
+          <button class="img2music-dark" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#aabbcc;font-size:11px;cursor:pointer;">🌑 Dark</button>
+          <button class="img2music-romantic" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(255,100,100,0.3);background:rgba(255,100,100,0.08);color:#ff6464;font-size:11px;cursor:pointer;">💕 Romantic</button>
+          <button class="img2music-mysterious" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(138,100,255,0.3);background:rgba(138,100,255,0.08);color:#8a64ff;font-size:11px;cursor:pointer;">🔮 Mysterious</button>
+        </div>
+        <button class="img2music-go" style="width:100%;padding:10px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffaa00,#ff8800);color:#000;font-size:13px;font-weight:700;cursor:pointer;">🎵 Create Music From Image</button>
+      </div>
+      ` : ''}
+      
+      <div style="${sectionTitleStyle}">Step 1: Pick a Genre</div>
+      <div style="${sectionSubStyle}">Choose your style</div>
+      <div class="studio-genres" style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${genres.map(g => `<div class="studio-chip genre-chip" data-value="${g.name}" style="${chipStyle}"><span>${g.emoji}</span><span>${g.name}</span></div>`).join('')}
+      </div>
+      
+      <div style="${sectionTitleStyle}">Step 2: Set the Mood</div>
+      <div style="${sectionSubStyle}">How should it feel?</div>
+      <div class="studio-moods" style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${moods.map(m => `<div class="studio-chip mood-chip" data-value="${m.name}" style="${chipStyle}"><span>${m.emoji}</span><span>${m.name}</span></div>`).join('')}
+      </div>
+      
+      <div style="${sectionTitleStyle}">Step 3: Choose Tempo</div>
+      <div class="studio-tempos" style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${tempos.map(t => `<div class="studio-chip tempo-chip" data-value="${t.name}" style="${chipStyle}"><span>${t.emoji}</span><span>${t.name}</span></div>`).join('')}
+      </div>
+      
+      <div style="${sectionTitleStyle}">What's the Song About?</div>
+      <div style="${sectionSubStyle}">Describe your song idea (optional)</div>
+      <textarea class="studio-topic" placeholder="e.g. A summer road trip with friends, falling in love on a rainy day, celebrating a victory..." style="width:100%;box-sizing:border-box;min-height:60px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;"></textarea>
+      
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button class="studio-create-btn" style="flex:1;padding:12px 20px;border-radius:12px;border:none;background:linear-gradient(135deg,#00ff88,#00cc6a);color:#000;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;opacity:0.4;pointer-events:none;">🎵 Create Song</button>
+        <button class="studio-surprise-btn" style="padding:12px 16px;border-radius:12px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.08);color:#00ff88;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;">🎲 Surprise Me</button>
+      </div>
+      
+      <div class="studio-preview" style="margin-top:10px;padding:8px 12px;background:rgba(0,0,0,0.2);border-radius:8px;font-size:11px;color:#556677;display:none;">
+        <span style="color:#00ff88;">Preview:</span> <span class="preview-text"></span>
+      </div>
+    </div>
+  `;
+  
+  thread.appendChild(studio);
+  
+  const img2musicChips = {
+    'happy': 'Happy, upbeat, bright and energetic',
+    'chill': 'Calm, relaxing, smooth and ambient',
+    'epic': 'Epic, powerful, cinematic and orchestral',
+    'dark': 'Dark, mysterious, deep and atmospheric',
+    'romantic': 'Romantic, warm, gentle and emotional',
+    'mysterious': 'Mysterious, ethereal, haunting and enchanting'
+  };
+  
+  const img2musicDesc = studio.querySelector('.img2music-desc');
+  
+  Object.keys(img2musicChips).forEach(mood => {
+    const btn = studio.querySelector(`.img2music-${mood}`);
+    if (btn && img2musicDesc) {
+      btn.addEventListener('click', () => {
+        const current = img2musicDesc.value.trim();
+        if (current) {
+          img2musicDesc.value = current + ', ' + img2musicChips[mood].toLowerCase();
+        } else {
+          img2musicDesc.value = img2musicChips[mood];
+        }
+        btn.style.background = btn.style.background.includes('0.08') ? btn.style.borderColor.replace('0.3', '0.15') : btn.style.background;
+        btn.style.opacity = '0.5';
+      });
+    }
+  });
+  
+  const img2musicGoBtn = studio.querySelector('.img2music-go');
+  if (img2musicGoBtn) {
+    img2musicGoBtn.addEventListener('click', () => {
+      const userNotes = img2musicDesc ? img2musicDesc.value.trim() : '';
+      let prompt = 'Create music inspired by this image.';
+      if (userNotes) {
+        prompt = `Create music inspired by this image. Style notes: ${userNotes}. Make it a complete, polished musical piece.`;
+      } else {
+        prompt = 'Create music that perfectly captures the mood, atmosphere, emotion, and colors of this image. Choose the best genre, tempo, and instruments automatically. Make it a complete, polished musical piece.';
+      }
+      const inputEl = document.getElementById('chatInput');
+      if (inputEl) {
+        inputEl.value = prompt;
+        const sendBtn = document.getElementById('sendBtn');
+        if (sendBtn) sendBtn.click();
+      }
+      studio.style.opacity = '0.5';
+      studio.style.pointerEvents = 'none';
+    });
+  }
+  
+  let selectedGenre = null;
+  let selectedMood = null;
+  let selectedTempo = null;
+  
+  function updatePreview() {
+    const preview = studio.querySelector('.studio-preview');
+    const previewText = studio.querySelector('.preview-text');
+    const createBtn = studio.querySelector('.studio-create-btn');
+    const topic = studio.querySelector('.studio-topic').value.trim();
+    
+    if (selectedGenre) {
+      const parts = [];
+      if (selectedMood) parts.push(`${selectedMood.toLowerCase()}`);
+      parts.push(`${selectedGenre.toLowerCase()} song`);
+      if (selectedTempo) parts.push(`at a ${selectedTempo.toLowerCase()} tempo`);
+      if (topic) parts.push(`about ${topic}`);
+      
+      previewText.textContent = parts.join(' ');
+      preview.style.display = 'block';
+      createBtn.style.opacity = '1';
+      createBtn.style.pointerEvents = 'auto';
+    } else {
+      preview.style.display = 'none';
+      createBtn.style.opacity = '0.4';
+      createBtn.style.pointerEvents = 'none';
+    }
+  }
+  
+  function handleChipClick(container, chipClass, callback) {
+    studio.querySelectorAll(`.${chipClass}`).forEach(chip => {
+      chip.addEventListener('click', () => {
+        const wasActive = chip.style.background.includes('rgba(0, 255, 136');
+        studio.querySelectorAll(`.${chipClass}`).forEach(c => {
+          c.style.background = 'rgba(255,255,255,0.04)';
+          c.style.borderColor = 'rgba(255,255,255,0.1)';
+          c.style.color = '#ccd6e0';
+          c.style.transform = '';
+        });
+        if (!wasActive) {
+          chip.style.background = 'rgba(0,255,136,0.15)';
+          chip.style.borderColor = 'rgba(0,255,136,0.4)';
+          chip.style.color = '#00ff88';
+          chip.style.transform = 'scale(1.05)';
+          callback(chip.dataset.value);
+        } else {
+          callback(null);
+        }
+        updatePreview();
+      });
+      
+      chip.addEventListener('mouseenter', () => {
+        if (!chip.style.background.includes('rgba(0, 255, 136')) {
+          chip.style.background = 'rgba(255,255,255,0.08)';
+        }
+      });
+      chip.addEventListener('mouseleave', () => {
+        if (!chip.style.background.includes('rgba(0, 255, 136')) {
+          chip.style.background = 'rgba(255,255,255,0.04)';
+        }
+      });
+    });
+  }
+  
+  handleChipClick(studio, 'genre-chip', v => { selectedGenre = v; });
+  handleChipClick(studio, 'mood-chip', v => { selectedMood = v; });
+  handleChipClick(studio, 'tempo-chip', v => { selectedTempo = v; });
+  
+  studio.querySelector('.studio-topic').addEventListener('input', updatePreview);
+  
+  studio.querySelector('.studio-create-btn').addEventListener('click', () => {
+    if (!selectedGenre) return;
+    
+    const topic = studio.querySelector('.studio-topic').value.trim();
+    let prompt = `Create a ${selectedGenre.toLowerCase()} song`;
+    if (selectedMood) prompt += ` with a ${selectedMood.toLowerCase()} mood`;
+    if (selectedTempo) prompt += ` at a ${selectedTempo.toLowerCase()} tempo`;
+    if (topic) prompt += `. The song is about: ${topic}`;
+    prompt += `. Make it sound professional and polished with clear structure (intro, verse, chorus, verse, chorus, outro).`;
+    
+    const inputEl = document.getElementById('chatInput');
+    if (inputEl) {
+      inputEl.value = prompt;
+      const sendBtn = document.getElementById('sendBtn');
+      if (sendBtn) sendBtn.click();
+    }
+    
+    studio.style.opacity = '0.5';
+    studio.style.pointerEvents = 'none';
+  });
+  
+  studio.querySelector('.studio-surprise-btn').addEventListener('click', () => {
+    const rGenre = genres[Math.floor(Math.random() * genres.length)];
+    const rMood = moods[Math.floor(Math.random() * moods.length)];
+    const rTempo = tempos[Math.floor(Math.random() * tempos.length)];
+    
+    const surpriseTopics = [
+      'dancing under the stars on a warm summer night',
+      'a journey through a neon-lit city at midnight',
+      'finding courage to chase your dreams',
+      'memories of childhood and growing up',
+      'the feeling of freedom on an open road',
+      'falling in love unexpectedly',
+      'overcoming challenges and rising stronger',
+      'a party that never ends',
+      'nature and the beauty of the ocean',
+      'missing someone far away'
+    ];
+    const rTopic = surpriseTopics[Math.floor(Math.random() * surpriseTopics.length)];
+    
+    selectedGenre = rGenre.name;
+    selectedMood = rMood.name;
+    selectedTempo = rTempo.name;
+    
+    studio.querySelectorAll('.genre-chip').forEach(c => {
+      const match = c.dataset.value === rGenre.name;
+<6573 lines not shown>
+Uncaught (in promise) ReferenceError: currentMode is not defined
