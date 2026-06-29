@@ -1489,27 +1489,8 @@ function initBroadcastSubBar() {
     });
   });
 
-  // Attachments come through the main 📎 pin button — see fileInput handler below
-  // which pushes to _bsbAttachments when broadcast mode is active.
-
-  const genBtn = document.getElementById('bsbGenBtn');
-  if (genBtn) {
-    genBtn.addEventListener('click', () => {
-      const thread = document.getElementById('chatThread');
-      if (!thread) return;
-      const ci = document.getElementById('chatInput');
-      showBroadcastCard(thread, {
-        hidePicker: true,
-        selFormat: _bsbSelFormat,
-        selDur: _bsbSelDur,
-        selTrack: _bsbSelTrack,
-        attachments: [..._bsbAttachments],
-        srcText: ci ? ci.value.trim() : '',
-        autoStart: true
-      });
-      thread.scrollTop = thread.scrollHeight;
-    });
-  }
+  // Attachments come through the main 📎 pin button — see fileInput handler below.
+  // Broadcast is triggered by the main Send button — see sendMessage() intercept below.
 }
 
 function showModeSubBar(mode) {
@@ -7711,7 +7692,30 @@ async function handleSend() {
   const sendBtn = document.getElementById('sendBtn');
   const thread = document.getElementById('chatThread');
   let prompt = input.value.trim();
-  
+
+  // ── Broadcast mode intercept ──────────────────────────────────────────────
+  // When the Broadcast sub-bar is visible, the Send button triggers broadcast
+  // generation instead of a regular chat message.
+  if (typeof currentMode !== 'undefined' && currentMode === 'broadcast' &&
+      document.getElementById('broadcastSubBar')?.style.display !== 'none') {
+    if (!prompt && _bsbAttachments.length === 0) return;
+    if (thread) {
+      showBroadcastCard(thread, {
+        hidePicker: true,
+        selFormat: _bsbSelFormat,
+        selDur: _bsbSelDur,
+        selTrack: _bsbSelTrack,
+        attachments: [..._bsbAttachments],
+        srcText: prompt,
+        autoStart: true
+      });
+      thread.scrollTop = thread.scrollHeight;
+    }
+    input.value = '';
+    return;
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   // Allow send if files are attached even with no text typed
   if (!prompt && filesQueue.length === 0) return;
   if (!prompt) prompt = 'Analyze this image.';
