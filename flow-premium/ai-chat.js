@@ -67,13 +67,18 @@ function isRequestLocked() { return isRequestInProgress; }
 
 function getPaidModeEstimate(mode, clipCount = 1, durationSeconds = 8) {
   if (mode === 'video') {
-    // Veo 3.1 Lite (default model) = $0.10 per second
+    // Real Veo pricing (Google AI Studio, per second of generated video):
+    //   Veo 3.1 Lite preview ........ ~$0.10/s
+    //   Veo 3.1 Fast / Veo 3 Fast ... ~$0.40/s
+    //   Veo 3 / Veo 3.1 (full) ...... ~$0.75/s
+    // We show a $0.10–$0.40/s range (covers Lite + Fast, the default models).
     const totalSeconds = clipCount * durationSeconds;
-    const total = (totalSeconds * 0.10).toFixed(2);
+    const low  = (totalSeconds * 0.10).toFixed(2);
+    const high = (totalSeconds * 0.40).toFixed(2);
     return {
-      label: `${totalSeconds}s × $0.10/sec = $${total}`,
-      cost: `$${total}`,
-      note: '$0.10 per second (Veo Lite)'
+      label: `${clipCount} clip${clipCount > 1 ? 's' : ''} × ${durationSeconds}s = ${totalSeconds}s`,
+      cost: `~$${low}–$${high}`,
+      note: 'Veo Lite/Fast — ~$0.10–$0.40 per second'
     };
   }
   if (mode === 'music') {
@@ -218,7 +223,7 @@ async function confirmPaidGeneration(mode, details) {
         };
 
     const spendLine = details?.cost
-      ? `${details.cost}${details?.label ? ` — ${details.label}` : ''}`
+      ? `Estimated cost: ${details.cost}${details?.label ? ` (${details.label})` : ''}.`
       : '';
 
     titleEl.textContent = preset.title;
@@ -1347,7 +1352,7 @@ try {
 
 // ── Mode sub-bars ─────────────────────────────────────────────────────────
 let _videoSubBarInited = false;
-let _vsbStylizeStyle = 'pixar'; // matches HTML vsb-active default (Pixar 3D pill)
+let _vsbStylizeStyle = 'pixar';
 
 function initVideoSubBar() {
   if (_videoSubBarInited) return;
@@ -1606,16 +1611,25 @@ function initBroadcastSubBar() {
 }
 
 function showModeSubBar(mode) {
-  // Video mode: restore the original studio card in the thread (not sub-bar)
-  const videoBar = document.getElementById('videoSubBar');
-  if (videoBar) videoBar.style.display = 'none'; // always hidden — card in thread handles video
-
-  if (mode === 'video') {
-    const thread = document.getElementById('chatThread');
-    if (thread) showVideoStudio(thread);
-  }
-
+  const videoBar     = document.getElementById('videoSubBar');
   const broadcastBar = document.getElementById('broadcastSubBar');
+  if (videoBar) {
+    videoBar.style.display = mode === 'video' ? 'flex' : 'none';
+    if (mode === 'video') {
+      initVideoSubBar();
+      const hasSnaps = typeof currentImages !== 'undefined' && currentImages.length > 0;
+      const snapLabel = document.getElementById('vsbSnapLabel');
+      const snapCb    = document.getElementById('vsbUseSnap');
+      const stylizeRow = document.getElementById('vsbStylizeRow');
+      if (snapLabel) snapLabel.style.display = hasSnaps ? 'flex' : 'none';
+      if (stylizeRow && snapCb) stylizeRow.style.display = (hasSnaps && snapCb.checked) ? 'flex' : 'none';
+      if (hasSnaps && snapCb?.checked) {
+        try { chrome.storage.local.set({ _videoStylizeStyle: _vsbStylizeStyle }); } catch {}
+      } else {
+        try { chrome.storage.local.remove('_videoStylizeStyle'); } catch {}
+      }
+    }
+  }
   if (broadcastBar) {
     broadcastBar.style.display = mode === 'broadcast' ? 'flex' : 'none';
     if (mode === 'broadcast') initBroadcastSubBar();
@@ -1914,7 +1928,6 @@ function renderVeoPriceTable(studio) {
 }
 
 async function stylizeImageForVideo(apiKey, imageData, style) {
-  if (!imageData || typeof imageData !== 'string') return null;
   const stylePrompts = {
     pixar: 'Transform this photo into a Pixar/Disney 3D animated style. Keep the exact same people, poses, expressions, clothing, and background but render everything as high-quality 3D Pixar animation. Do not add any text or words.',
     anime: 'Transform this photo into beautiful Japanese anime style. Keep the exact same people, poses, expressions, clothing, and background but render everything as detailed anime art. Do not add any text or words.',
@@ -1932,16 +1945,12 @@ async function stylizeImageForVideo(apiKey, imageData, style) {
 
   const models = MODELS.imageChain;
   let lastError = '';
-  const STYLIZE_TIMEOUT_MS = 25000; // 25s per model — never hang the video pipeline
 
   for (const model of models) {
-    const ac = new AbortController();
-    const timer = setTimeout(() => ac.abort(), STYLIZE_TIMEOUT_MS);
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const resp = await fetch(url, {
         method: 'POST',
-        signal: ac.signal,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{
@@ -1950,10 +1959,11 @@ async function stylizeImageForVideo(apiKey, imageData, style) {
               { inlineData: { mimeType: mimeType, data: cleanB64 } }
             ]
           }],
-          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+          generationConfig: {
+            responseModalities: ['TEXT', 'IMAGE']
+          }
         })
       });
-      clearTimeout(timer);
 
       if (!resp.ok) {
         lastError = `${model}: ${resp.status}`;
@@ -1964,13 +1974,13 @@ async function stylizeImageForVideo(apiKey, imageData, style) {
       const parts = data.candidates?.[0]?.content?.parts || [];
       for (const part of parts) {
         if (part.inlineData?.data) {
-          return { base64: part.inlineData.data, mimeType: part.inlineData.mimeType || 'image/png' };
+          const styledMime = part.inlineData.mimeType || 'image/png';
+          return { base64: part.inlineData.data, mimeType: styledMime };
         }
       }
       lastError = `${model}: no image in response`;
     } catch (e) {
-      clearTimeout(timer);
-      lastError = e.name === 'AbortError' ? `${model}: timeout (${STYLIZE_TIMEOUT_MS / 1000}s)` : `${model}: ${e.message}`;
+      lastError = `${model}: ${e.message}`;
     }
   }
 
@@ -2094,9 +2104,6 @@ async function startVideoGeneration(prompt, thread) {
   thread.scrollTop = thread.scrollHeight;
 
   let stylizedImage = null;
-  let shouldIncludeImage = includeImage;
-  let stylePromptPrefix = '';
-
   if (includeImage) {
     // Read from storage (set by pill clicks) OR fall back to the JS variable
     // so stylize always fires when Snap is checked, even without a pill click.
@@ -2114,27 +2121,17 @@ async function startVideoGeneration(prompt, thread) {
       if (stylizedImage) {
         console.log('[SnapToAI Video] Photo stylized successfully');
         if (text) text.textContent = 'Photo stylized! Starting video...';
-        // Tell Veo the art style — deliberately NO mention of "characters" or "people"
-        // to avoid triggering Veo child-content safety filters on the stylized image
-        const styleLabels = { pixar: 'Pixar 3D animation', anime: 'anime animation', cartoon: 'cartoon animation', watercolor: 'watercolor painting', oil: 'oil painting' };
-        stylePromptPrefix = `${styleLabels[stylizeStyle] || stylizeStyle} style, illustrated scene. `;
       } else {
-        // Stylize FAILED — do NOT fall back to original real-person photo.
-        // Dropping the image prevents Veo safety-filter blocks on real faces.
-        console.log('[SnapToAI Video] Stylize failed — skipping image to avoid safety filter');
-        if (text) text.textContent = 'Stylize unavailable — generating without photo (safe mode)';
-        shouldIncludeImage = false;
+        console.log('[SnapToAI Video] Stylize failed, using original image');
+        if (text) text.textContent = 'Stylize failed, using original photo...';
       }
     }
   }
 
-  // Prepend style context to prompt so Veo generates animated content, not live-action
-  const effectivePrompt = stylePromptPrefix ? stylePromptPrefix + prompt : prompt;
-
   if (clipCount === 1) {
-    await generateSingleClip(effectivePrompt, apiKey, modelName, shouldIncludeImage, progressBubble, thread, stylizedImage, selectedAspectRatio);
+    await generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage, selectedAspectRatio);
   } else {
-    await generateMultiClip(effectivePrompt, apiKey, modelName, shouldIncludeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes, selectedAspectRatio);
+    await generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes, selectedAspectRatio);
   }
 }
 
@@ -2223,22 +2220,6 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
           data = await resp.json();
         } catch (epErr) {
           console.log('[SnapToAI Video] enhancePrompt-stripped retry threw:', epErr.message);
-        }
-      }
-    }
-
-    // If Veo rejects because this model doesn't support image input, retry without image
-    if (!resp.ok && requestBody.instances[0].image) {
-      const errLower = (data?.error?.message || '').toLowerCase();
-      const imageUnsupported = errLower.includes('image') || errLower.includes('feature') || errLower.includes('not support') || errLower.includes('unsupport');
-      if (imageUnsupported) {
-        console.log('[SnapToAI Video] Model rejected image — retrying without image');
-        delete requestBody.instances[0].image;
-        try {
-          resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
-          data = await resp.json();
-        } catch (imgErr) {
-          console.log('[SnapToAI Video] image-stripped retry threw:', imgErr.message);
         }
       }
     }
@@ -5077,50 +5058,7 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
           console.log('[SnapToAI Video] no URI after re-polls:', JSON.stringify(data.response || data).substring(0, 300));
           const filtered = data.response?.generateVideoResponse?.raiMediaFilteredReasons;
           if (filtered && filtered.length > 0) {
-            // Safety filter blocked the image-conditioned request.
-            // Auto-retry WITHOUT the reference image — text-only Pixar/style
-            // prompts are never blocked, so the user still gets their video.
-            if (requestBody.instances[0].image) {
-              const text2 = progressBubble.querySelector('.video-progress-text');
-              if (text2) text2.textContent = '🔄 Image blocked by safety filter — retrying without photo…';
-              const fillEl2 = progressBubble.querySelector('.video-progress-fill');
-              if (fillEl2) fillEl2.style.width = '5%';
-              console.log('[SnapToAI Video] Safety block — retrying without image');
-              delete requestBody.instances[0].image;
-              try {
-                resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
-                data = await resp.json();
-                if (resp.ok && data.name) {
-                  // Re-enter the poll loop with the new operation — update bar each tick
-                  const operationName2 = data.name;
-                  const pollUrl2b = `https://generativelanguage.googleapis.com/v1beta/${operationName2}?key=${apiKey}`;
-                  let retryDone = false;
-                  for (let _r = 0; _r < 60 && !retryDone; _r++) {
-                    await new Promise(r => setTimeout(r, _r < 6 ? 5000 : 15000));
-                    // Keep the progress bar moving so it doesn't look frozen
-                    const fillEl3 = progressBubble.querySelector('.video-progress-fill');
-                    const text3   = progressBubble.querySelector('.video-progress-text');
-                    const rPct = Math.min((_r + 1) * 5, 90);
-                    if (fillEl3) fillEl3.style.width = `${rPct}%`;
-                    if (text3) text3.textContent = `🔄 Retrying (style-only)… ${rPct}%`;
-                    try {
-                      const rr = await fetchWithTimeout(pollUrl2b, { timeoutMs: 20000 });
-                      if (!rr.ok) continue;
-                      const rd = await rr.json().catch(() => ({}));
-                      if (!rd.done) continue;
-                      const retryUri = _extractUri(rd);
-                      if (retryUri) {
-                        const authedRetry = `${retryUri}${retryUri.includes('?') ? '&' : '?'}key=${apiKey}`;
-                        showVideoResult(progressBubble, authedRetry, thread);
-                        retryDone = true;
-                      } else { break; }
-                    } catch (_) {}
-                  }
-                  if (retryDone) return;
-                }
-              } catch (_) {}
-            }
-            progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">🛡️</span> Video was blocked by safety filters. Try a different prompt or use a non-animated style.</div>`;
+            progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">🛡️</span> Video was blocked by safety filters. Try a different prompt.</div>`;
           } else {
             progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> Video generation completed but no video was returned. Try rephrasing your description.</div>`;
           }
@@ -5147,36 +5085,25 @@ async function continueClip() {
   const { prompt, style, lastFrameDataUrl } = _lastVideoContext;
 
   // Load last frame as the reference image for the next clip
-  if (lastFrameDataUrl && typeof lastFrameDataUrl === 'string' && lastFrameDataUrl.startsWith('data:')) {
+  if (lastFrameDataUrl) {
     currentImages = [lastFrameDataUrl];
-    // Mirror the exact display logic used by the normal snap loader
-    const placeholder    = document.getElementById('imagePlaceholder');
-    const previewImg     = document.getElementById('previewImage');
-    const screenshotSec  = document.getElementById('screenshotSection');
-    const previewContainer = document.querySelector('.image-preview');
-    // Remove any multi-image grid so single-image view takes over
-    if (previewContainer) { const g = previewContainer.querySelector('#multiImageGrid'); if (g) g.remove(); }
-    if (placeholder)   placeholder.style.display = 'none';
-    if (previewImg)  { previewImg.src = lastFrameDataUrl; previewImg.style.display = 'block'; }
+    const previewImg = document.getElementById('previewImage');
+    const screenshotSec = document.getElementById('screenshotSection');
+    if (previewImg) previewImg.src = lastFrameDataUrl;
     if (screenshotSec) screenshotSec.style.display = 'block';
   }
 
   // Switch to Video mode if not already there
-  if (!currentAiMode || AI_MODES[currentAiMode]?.type !== 'gemini-video') {
+  const currentModeConfig = currentMode && MODE_CONFIGS?.[currentMode];
+  if (!currentModeConfig || currentModeConfig.type !== 'gemini-video') {
     const videoModeBtn = document.querySelector('[data-mode="video"]');
     if (videoModeBtn) videoModeBtn.click();
-    await new Promise(r => setTimeout(r, 200));
+    await new Promise(r => setTimeout(r, 150));
   }
 
-  // Ensure Snap toggle is on — must show the label first (it is hidden when
-  // no images are loaded, so .click() on a hidden element is unreliable).
-  const snapLabel = document.getElementById('vsbSnapLabel');
-  const snapCb    = document.getElementById('vsbUseSnap');
-  if (snapLabel) snapLabel.style.display = 'flex';
-  if (snapCb && !snapCb.checked) {
-    snapCb.checked = true;
-    snapCb.dispatchEvent(new Event('change', { bubbles: true }));
-  }
+  // Ensure Snap toggle is on
+  const snapCb = document.getElementById('vsbUseSnap');
+  if (snapCb && !snapCb.checked) snapCb.click();
 
   // Restore previous style pill so the new clip looks continuous
   if (style) {
@@ -5288,53 +5215,23 @@ function showVideoResult(bubble, videoUrl, thread) {
     await continueClip();
   });
 
-  // ── Capture last frame directly from the DOM video element ─────
-  // Do NOT re-fetch the URL — the video is already downloaded and playing.
-  // DOM capture is instant, CORS-safe, and works even after the signed URL expires.
+  // ── Capture last frame silently in background ──────────────────
   if (_lastVideoContext) {
     _lastVideoContext.videoUrl = videoUrl;
-    const videoEl = bubble.querySelector('video');
-    if (videoEl) {
-      const captureFrame = () => {
-        try {
-          const w = videoEl.videoWidth || 480;
-          const h = videoEl.videoHeight || 270;
-          const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(videoEl, 0, 0, w, h);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
-          if (dataUrl && dataUrl.startsWith('data:image') && _lastVideoContext) {
-            _lastVideoContext.lastFrameDataUrl = dataUrl;
-            console.log(`[SnapToAI Video] Last frame captured from DOM (${w}x${h})`);
-            const contBtn = bubble.querySelector('.video-continue-btn');
-            if (contBtn) {
-              contBtn.textContent = '▶ Continue Clip ✓';
-              contBtn.style.borderColor = 'rgba(99,202,183,0.8)';
-              contBtn.style.background = 'rgba(99,202,183,0.25)';
-            }
+    (async () => {
+      try {
+        const frameDataUrl = await extractLastFrame(videoUrl);
+        if (frameDataUrl && _lastVideoContext) {
+          _lastVideoContext.lastFrameDataUrl = frameDataUrl;
+          // Show a subtle indicator that continuation is ready
+          const contBtn = bubble.querySelector('.video-continue-btn');
+          if (contBtn) {
+            contBtn.style.borderColor = 'rgba(99,202,183,0.7)';
+            contBtn.style.background = 'rgba(99,202,183,0.22)';
           }
-        } catch (e) {
-          console.log('[SnapToAI Video] DOM frame capture failed:', e.message);
         }
-      };
-
-      // Seek to last frame once metadata is loaded
-      const seekAndCapture = () => {
-        if (videoEl.duration && isFinite(videoEl.duration)) {
-          videoEl.addEventListener('seeked', captureFrame, { once: true });
-          videoEl.currentTime = Math.max(0, videoEl.duration - 0.15);
-        } else {
-          // duration unknown — capture current frame as-is
-          captureFrame();
-        }
-      };
-
-      if (videoEl.readyState >= 1 && videoEl.duration && isFinite(videoEl.duration)) {
-        seekAndCapture();
-      } else {
-        videoEl.addEventListener('loadedmetadata', seekAndCapture, { once: true });
-      }
-    }
+      } catch (_) {}
+    })();
   }
 
   thread.scrollTop = thread.scrollHeight;
