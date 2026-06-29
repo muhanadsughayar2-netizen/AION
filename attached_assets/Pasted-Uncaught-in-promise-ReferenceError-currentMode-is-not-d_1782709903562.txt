@@ -1,0 +1,1285 @@
+Uncaught (in promise) ReferenceError: currentMode is not defined
+Context
+ai-chat.html?count=1
+Stack Trace
+ai-chat.js:5097 (anonymous function)
+...
+4598
+4599
+4600
+4601
+4602
+4603
+4604
+4605
+4606
+4607
+4608
+4609
+4610
+4611
+4612
+4613
+4614
+4615
+4616
+4617
+4618
+4619
+4620
+4621
+4622
+4623
+4624
+4625
+4626
+4627
+4628
+4629
+4630
+4631
+4632
+4633
+4634
+4635
+4636
+4637
+4638
+4639
+4640
+4641
+4642
+4643
+4644
+4645
+4646
+4647
+4648
+4649
+4650
+4651
+4652
+4653
+4654
+4655
+4656
+4657
+4658
+4659
+4660
+4661
+4662
+4663
+4664
+4665
+4666
+4667
+4668
+4669
+4670
+4671
+4672
+4673
+4674
+4675
+4676
+4677
+4678
+4679
+4680
+4681
+4682
+4683
+4684
+4685
+4686
+4687
+4688
+4689
+4690
+4691
+4692
+4693
+4694
+4695
+4696
+4697
+4698
+4699
+4700
+4701
+4702
+4703
+4704
+4705
+4706
+4707
+4708
+4709
+4710
+4711
+4712
+4713
+4714
+4715
+4716
+4717
+4718
+4719
+4720
+4721
+4722
+4723
+4724
+4725
+4726
+4727
+4728
+4729
+4730
+4731
+4732
+4733
+4734
+4735
+4736
+4737
+4738
+4739
+4740
+4741
+4742
+4743
+4744
+4745
+4746
+4747
+4748
+4749
+4750
+4751
+4752
+4753
+4754
+4755
+4756
+4757
+4758
+4759
+4760
+4761
+4762
+4763
+4764
+4765
+4766
+4767
+4768
+4769
+4770
+4771
+4772
+4773
+4774
+4775
+4776
+4777
+4778
+4779
+4780
+4781
+4782
+4783
+4784
+4785
+4786
+4787
+4788
+4789
+4790
+4791
+4792
+4793
+4794
+4795
+4796
+4797
+4798
+4799
+4800
+4801
+4802
+4803
+4804
+4805
+4806
+4807
+4808
+4809
+4810
+4811
+4812
+4813
+4814
+4815
+4816
+4817
+4818
+4819
+4820
+4821
+4822
+4823
+4824
+4825
+4826
+4827
+4828
+4829
+4830
+4831
+4832
+4833
+4834
+4835
+4836
+4837
+4838
+4839
+4840
+4841
+4842
+4843
+4844
+4845
+4846
+4847
+4848
+4849
+4850
+4851
+4852
+4853
+4854
+4855
+4856
+4857
+4858
+4859
+4860
+4861
+4862
+4863
+4864
+4865
+4866
+4867
+4868
+4869
+4870
+4871
+4872
+4873
+4874
+4875
+4876
+4877
+4878
+4879
+4880
+4881
+4882
+4883
+4884
+4885
+4886
+4887
+4888
+4889
+4890
+4891
+4892
+4893
+4894
+4895
+4896
+4897
+4898
+4899
+4900
+4901
+4902
+4903
+4904
+4905
+4906
+4907
+4908
+4909
+4910
+4911
+4912
+4913
+4914
+4915
+4916
+4917
+4918
+4919
+4920
+4921
+4922
+4923
+4924
+4925
+4926
+4927
+4928
+4929
+4930
+4931
+4932
+4933
+4934
+4935
+4936
+4937
+4938
+4939
+4940
+4941
+4942
+4943
+4944
+4945
+4946
+4947
+4948
+4949
+4950
+4951
+4952
+4953
+4954
+4955
+4956
+4957
+4958
+4959
+4960
+4961
+4962
+4963
+4964
+4965
+4966
+4967
+4968
+4969
+4970
+4971
+4972
+4973
+4974
+4975
+4976
+4977
+4978
+4979
+4980
+4981
+4982
+4983
+4984
+4985
+4986
+4987
+4988
+4989
+4990
+4991
+4992
+4993
+4994
+4995
+4996
+4997
+4998
+4999
+5000
+5001
+5002
+5003
+5004
+5005
+5006
+5007
+5008
+5009
+5010
+5011
+5012
+5013
+5014
+5015
+5016
+5017
+5018
+5019
+5020
+5021
+5022
+5023
+5024
+5025
+5026
+5027
+5028
+5029
+5030
+5031
+5032
+5033
+5034
+5035
+5036
+5037
+5038
+5039
+5040
+5041
+5042
+5043
+5044
+5045
+5046
+5047
+5048
+5049
+5050
+5051
+5052
+5053
+5054
+5055
+5056
+5057
+5058
+5059
+5060
+5061
+5062
+5063
+5064
+5065
+5066
+5067
+5068
+5069
+5070
+5071
+5072
+5073
+5074
+5075
+5076
+5077
+5078
+5079
+5080
+5081
+5082
+5083
+5084
+5085
+5086
+5087
+5088
+5089
+5090
+5091
+5092
+5093
+5094
+5095
+5096
+5097
+5098
+5099
+5100
+5101
+5102
+5103
+5104
+5105
+5106
+5107
+5108
+5109
+5110
+5111
+5112
+5113
+5114
+5115
+5116
+5117
+5118
+5119
+5120
+5121
+5122
+5123
+5124
+5125
+5126
+5127
+5128
+5129
+5130
+5131
+5132
+5133
+5134
+5135
+5136
+5137
+5138
+5139
+5140
+5141
+5142
+5143
+5144
+5145
+5146
+5147
+5148
+5149
+5150
+5151
+5152
+5153
+5154
+5155
+5156
+5157
+5158
+5159
+5160
+5161
+5162
+5163
+5164
+5165
+5166
+5167
+5168
+5169
+5170
+5171
+5172
+5173
+5174
+5175
+5176
+5177
+5178
+5179
+5180
+5181
+5182
+5183
+5184
+5185
+5186
+5187
+5188
+5189
+5190
+5191
+5192
+5193
+5194
+5195
+5196
+5197
+5198
+5199
+5200
+5201
+5202
+5203
+5204
+5205
+5206
+5207
+5208
+5209
+5210
+5211
+5212
+5213
+5214
+5215
+5216
+5217
+5218
+5219
+5220
+5221
+5222
+5223
+5224
+5225
+5226
+5227
+5228
+5229
+5230
+5231
+5232
+5233
+5234
+5235
+5236
+5237
+5238
+5239
+5240
+5241
+5242
+5243
+5244
+5245
+5246
+5247
+5248
+5249
+5250
+5251
+5252
+5253
+5254
+5255
+5256
+5257
+5258
+5259
+5260
+5261
+5262
+5263
+5264
+5265
+5266
+5267
+5268
+5269
+5270
+5271
+5272
+5273
+5274
+5275
+5276
+5277
+5278
+5279
+5280
+5281
+5282
+5283
+5284
+5285
+5286
+5287
+5288
+5289
+5290
+5291
+5292
+5293
+5294
+5295
+5296
+5297
+5298
+5299
+5300
+5301
+5302
+5303
+5304
+5305
+5306
+5307
+5308
+5309
+5310
+5311
+5312
+5313
+5314
+5315
+5316
+5317
+5318
+5319
+5320
+5321
+5322
+5323
+5324
+5325
+5326
+5327
+5328
+5329
+5330
+5331
+5332
+5333
+5334
+5335
+5336
+5337
+5338
+5339
+5340
+5341
+5342
+5343
+5344
+5345
+5346
+5347
+5348
+5349
+5350
+5351
+5352
+5353
+5354
+5355
+5356
+5357
+5358
+5359
+5360
+5361
+5362
+5363
+5364
+5365
+5366
+5367
+5368
+5369
+5370
+5371
+5372
+5373
+5374
+5375
+5376
+5377
+5378
+5379
+5380
+5381
+5382
+5383
+5384
+5385
+5386
+5387
+5388
+5389
+5390
+5391
+5392
+5393
+5394
+5395
+5396
+5397
+5398
+5399
+5400
+5401
+5402
+5403
+5404
+5405
+5406
+5407
+5408
+5409
+5410
+5411
+5412
+5413
+5414
+5415
+5416
+5417
+5418
+5419
+5420
+5421
+5422
+5423
+5424
+5425
+5426
+5427
+5428
+5429
+5430
+5431
+5432
+5433
+5434
+5435
+5436
+5437
+5438
+5439
+5440
+5441
+5442
+5443
+5444
+5445
+5446
+5447
+5448
+5449
+5450
+5451
+5452
+5453
+5454
+5455
+5456
+5457
+5458
+5459
+5460
+5461
+5462
+5463
+5464
+5465
+5466
+5467
+5468
+5469
+5470
+5471
+5472
+5473
+5474
+5475
+5476
+5477
+5478
+5479
+5480
+5481
+5482
+5483
+5484
+5485
+5486
+5487
+5488
+5489
+5490
+5491
+5492
+5493
+5494
+5495
+5496
+5497
+5498
+5499
+5500
+5501
+5502
+5503
+5504
+5505
+5506
+5507
+5508
+5509
+5510
+5511
+5512
+5513
+5514
+5515
+5516
+5517
+5518
+5519
+5520
+5521
+5522
+5523
+5524
+5525
+5526
+5527
+5528
+5529
+5530
+5531
+5532
+5533
+5534
+5535
+5536
+5537
+5538
+5539
+5540
+5541
+5542
+5543
+5544
+5545
+5546
+5547
+5548
+5549
+5550
+5551
+5552
+5553
+5554
+5555
+5556
+5557
+5558
+5559
+5560
+5561
+5562
+5563
+5564
+5565
+5566
+5567
+5568
+5569
+5570
+5571
+5572
+5573
+5574
+5575
+5576
+5577
+5578
+5579
+5580
+5581
+5582
+5583
+5584
+5585
+5586
+5587
+5588
+5589
+5590
+5591
+5592
+5593
+5594
+5595
+5596
+...
+<4597 lines not shown>
+    //   b) connect clip 0's MediaElementSource to the destination FIRST so
+    //      audioDest.stream actually has an audio track (architect flagged
+    //      that an empty MediaStreamDestination has no tracks at construction
+    //      in some Chrome builds — connecting a source guarantees the track
+    //      exists before MediaRecorder reads the stream layout)
+    //   c) build the combined MediaStream (canvas video track + audioDest
+    //      audio track) — track count is now stable
+    //   d) draw clip 0's first frame BEFORE recorder.start() so the output
+    //      doesn't begin with ~100ms of black
+    //   e) start the recorder and the playback loop
+    const canvas = document.createElement('canvas');
+    canvas.width = canvasW;
+    canvas.height = canvasH;
+    const ctx2d = canvas.getContext('2d', { alpha: false, desynchronized: true });
+
+    const audioCtx = new AudioContext();
+    try { await audioCtx.resume(); } catch (_) {}
+    const audioDest = audioCtx.createMediaStreamDestination();
+
+    // Connect clip 0's audio NOW so audioDest has a live track when the
+    // recorder is constructed.
+    {
+      try {
+        const src = audioCtx.createMediaElementSource(videos[0]);
+        const g = audioCtx.createGain();
+        g.gain.value = 1;
+        src.connect(g);
+        g.connect(audioDest);
+        sources.push(src);
+        gains.push(g);
+      } catch (e) {
+        console.log('[SnapToAI Video] Audio connect failed on clip 1:', e.message);
+        sources.push(null);
+        gains.push(null);
+      }
+    }
+
+    const FPS = 30;
+    const videoStream = canvas.captureStream(FPS);
+    const combined = new MediaStream();
+    videoStream.getVideoTracks().forEach(t => combined.addTrack(t));
+    audioDest.stream.getAudioTracks().forEach(t => combined.addTrack(t));
+    console.log(`[SnapToAI Video] combined stream: ${combined.getVideoTracks().length}v + ${combined.getAudioTracks().length}a tracks`);
+
+    const codecCandidates = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm'
+    ];
+    let chosenMime = '';
+    for (const m of codecCandidates) {
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) {
+        chosenMime = m;
+        break;
+      }
+    }
+    // 8 Mbps video + 192 kbps audio. Previous default (~2.5 Mbps) is what
+    // made recorded output look soft compared to the 1080p MP4 source clips.
+    const recorderOpts = { videoBitsPerSecond: 8_000_000, audioBitsPerSecond: 192_000 };
+    if (chosenMime) recorderOpts.mimeType = chosenMime;
+    const recorder = new MediaRecorder(combined, recorderOpts);
+    console.log(`[SnapToAI Video] MediaRecorder mime=${chosenMime || '(default)'} @ 8Mbps`);
+    const chunks = [];
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+    // Hard 5s deadline on onstop firing. Chrome's MediaRecorder occasionally
+    // never emits 'stop' under load (GPU pressure, tab backgrounded mid-stop,
+    // codec edge cases) — without this fallback the whole stitch would hang
+    // until the outer 30-120s STITCH_TIMEOUT_MS, which feels like a freeze
+    // to the user. With the fallback we just use whatever chunks we have.
+    const recordingDone = new Promise(resolve => {
+      let settled = false;
+      const settle = () => { if (!settled) { settled = true; resolve(); } };
+      recorder.onstop = settle;
+      setTimeout(() => {
+        if (!settled) console.log('[SnapToAI Video] recorder.onstop timeout — force-finalizing with current chunks');
+        settle();
+      }, 5000);
+    });
+
+    // Paint clip 0's first frame BEFORE the recorder starts, so the output
+    // doesn't begin with a black gap.
+    try { ctx2d.drawImage(videos[0], 0, 0, canvasW, canvasH); } catch (_) {}
+
+    // timeslice=250ms so chunks flush regularly. A single giant final chunk
+    // sometimes shows up as a corrupt/0-byte file in Chrome.
+    recorder.start(250);
+
+    // ---- 5. Sequential playback. All metadata is preloaded so the only
+    // per-clip awaits are v.play() (resolves in <50ms) and the draw promise.
+    // Audio is connected just-in-time per clip and disconnected before the
+    // next clip's source attaches, so audioDest only ever has ONE active
+    // source feeding it — no glitching, no ducking, no overlap.
+    // Track wall-clock recording duration so we can repair the WebM EBML
+    // Duration field after recorder.stop() — Chrome's MediaRecorder never
+    // writes it, which is what makes the downloaded file hang on playback.
+    const recordStartMs = performance.now();
+    try {
+      for (let i = 0; i < videos.length; i++) {
+        if (stitchCtx && (stitchCtx.userStopped || stitchCtx.aborted)) throw new Error('User stopped');
+        const v = videos[i];
+
+        // Connect this clip's audio (clip 0 was already connected above).
+        if (i > 0) {
+          try {
+            const src = audioCtx.createMediaElementSource(v);
+            const g = audioCtx.createGain();
+            g.gain.value = 1;
+            src.connect(g);
+            g.connect(audioDest);
+            sources.push(src);
+            gains.push(g);
+          } catch (e) {
+            console.log(`[SnapToAI Video] Audio connect skipped on clip ${i+1}:`, e.message);
+            sources.push(null);
+            gains.push(null);
+          }
+        }
+
+        // Hard 3s deadline on v.play() — normally resolves in <50ms, but
+        // some Chrome builds leave the promise pending forever after a tab
+        // throttle / GPU hiccup. The watchdog inside the draw loop will
+        // still bail the clip if it can't actually play, so all we lose by
+        // continuing here is a few ms.
+        try {
+          await Promise.race([
+            v.play(),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('play() timeout 3s')), 3000))
+          ]);
+        } catch (e) {
+          console.log(`[SnapToAI Video] play() rejected on clip ${i+1}:`, e.message);
+        }
+
+        const dur = (v.duration && isFinite(v.duration) && v.duration > 0) ? v.duration : 8;
+
+        // Draw loop: ONE rAF chain (foreground) + a 200ms setInterval that
+        // ONLY runs when rAF has stalled (tab hidden, throttled, etc).
+        // Architect flagged that the previous version had setInterval calling
+        // tick() AND tick() scheduling rAF, so every 100ms a NEW persistent
+        // rAF chain was spawned → over an 8s clip dozens of concurrent draw
+        // loops piled up, blowing CPU and triggering false stalls. Here we
+        // gate with `rafPending` and `lastTickTs` so exactly one loop is
+        // active at a time.
+        // Per-clip hard ceiling at dur*1.5+3s in case `ended` never fires
+        // (some short Veo clips don't emit the event reliably) — without
+        // this the whole stitch would hang until the global 120s timeout.
+        await new Promise((resolveClip) => {
+          let stopped = false;
+          let interval = null;
+          let rafPending = false;
+          let lastTickTs = performance.now();
+          let lastProgressTs = performance.now();
+          let lastTime = -1;
+          const clipDeadline = performance.now() + (dur * 1500) + 3000;
+          const done = () => {
+            if (stopped) return;
+            stopped = true;
+            if (interval) { clearInterval(interval); interval = null; }
+            resolveClip();
+          };
+          v.onended = done;
+          const drawAndCheck = () => {
+            if (stopped) return false;
+            if ((stitchCtx && stitchCtx.userStopped) || (stitchCtx && stitchCtx.aborted)) { done(); return false; }
+            try { ctx2d.drawImage(v, 0, 0, canvasW, canvasH); } catch (_) {}
+            const now = performance.now();
+            lastTickTs = now;
+            if (v.currentTime !== lastTime) { lastTime = v.currentTime; lastProgressTs = now; }
+            // currentTime hasn't advanced for 2.5s AND we've been playing for
+            // over 1s → element is stuck. Bail out of this clip.
+            const stalled = (now - lastProgressTs > 2500) && (now - recordStartMs > 1000);
+            if (v.ended || (v.currentTime >= dur - 0.02) || stalled || now > clipDeadline) {
+              if (stalled) console.log(`[SnapToAI Video] Clip ${i+1} stalled at ${v.currentTime.toFixed(2)}s — advancing`);
+              done(); return false;
+            }
+            return true;
+          };
+          const rafTick = () => {
+            rafPending = false;
+            if (!drawAndCheck()) return;
+            if (typeof requestAnimationFrame === 'function') {
+              rafPending = true;
+              requestAnimationFrame(rafTick);
+            }
+          };
+          // Backstop: only nudges drawAndCheck if rAF has gone silent for
+          // 200ms+ (tab hidden, browser throttling). Does NOT spawn a new
+          // rAF chain — that's what caused the fan-out bug.
+          interval = setInterval(() => {
+            if (stopped) return;
+            if (performance.now() - lastTickTs < 200) return;
+            drawAndCheck();
+          }, 200);
+          if (typeof requestAnimationFrame === 'function') {
+            rafPending = true;
+            requestAnimationFrame(rafTick);
+          } else {
+            // No rAF (very rare) — fall back to interval-only at higher rate.
+            clearInterval(interval);
+            interval = setInterval(() => { if (!drawAndCheck()) return; }, 33);
+          }
+        });
+
+        // Disconnect THIS clip's audio so the destination is silent for the
+        // microsecond gap before the next clip's audio attaches.
+        try { gains[i] && gains[i].disconnect(); } catch (_) {}
+        try { sources[i] && sources[i].disconnect(); } catch (_) {}
+        try { v.pause(); } catch (_) {}
+      }
+
+      // Hold the last frame for ~150ms so the recorder's tail chunks have
+      // content to flush (avoids ending on a black gap).
+      await new Promise(r => setTimeout(r, 150));
+    } finally {
+      for (const v of videos) {
+        try { v.pause(); } catch (_) {}
+        try { v.removeAttribute('src'); v.load(); } catch (_) {}
+        if (v && v.parentNode) {
+          try { v.parentNode.removeChild(v); } catch (_) {}
+        }
+      }
+      for (const u of blobUrls) {
+        try { URL.revokeObjectURL(u); } catch (_) {}
+      }
+      try { recorder.stop(); } catch (_) {}
+      await recordingDone;
+      // Don't let audioCtx.close() hang the user (rare Chrome bug under load).
+      try {
+        await Promise.race([
+          audioCtx.close(),
+          new Promise(r => setTimeout(r, 2000))
+        ]);
+      } catch (_) {}
+      // Drop references to the raw clip blobs so GC can reclaim them —
+      // architect flagged this as a memory leak across retry sessions.
+      blobs.length = 0;
+    }
+
+    // Wall-clock duration of the recorded segment — used to back-fill the
+    // missing Duration in the WebM EBML header so the downloaded file is
+    // seekable (without this, players hang on playback / show duration N/A).
+    const recordedMs = Math.max(1, performance.now() - recordStartMs);
+    // Guard: if stitch was aborted/stopped while recording was finishing,
+    // don't create a URL that will never be surfaced — avoids a permanent leak.
+    if (stitchCtx && (stitchCtx.aborted || stitchCtx.userStopped)) throw new Error('User stopped');
+    const rawBlob = new Blob(chunks, { type: chosenMime || 'video/webm' });
+    const fixedBlob = await fixWebmDuration(rawBlob, recordedMs);
+    console.log(`[SnapToAI Video] WebM duration repair: ${recordedMs.toFixed(0)}ms · raw=${rawBlob.size}B · fixed=${fixedBlob.size}B`);
+    return URL.createObjectURL(fixedBlob);
+  })();
+
+  try {
+    return await Promise.race([stitchPromise, timeoutPromise]);
+  } finally {
+    if (timeoutHandle) clearTimeout(timeoutHandle);
+  }
+}
+
+function showStitchedVideoResult(bubble, stitchedUrl, clipUrls, thread) {
+  const totalDur = selectedVideoDuration * clipUrls.length;
+  bubble.innerHTML = `
+    <div style="margin:8px 0;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:18px;">🎬</span>
+        <span style="font-size:13px;font-weight:600;color:#ffa500;">Video ready! (${totalDur}s — ${clipUrls.length} clips stitched)</span>
+      </div>
+      <video controls autoplay muted playsinline style="width:100%;max-width:480px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);" src="${stitchedUrl}"></video>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="video-save-btn" style="background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.3);color:#ffa500;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;">💾 Save Combined</button>
+        <button class="video-save-clips-btn" style="background:rgba(0,200,136,0.1);border:1px solid rgba(0,200,136,0.3);color:#00cc88;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;">📥 Save Individual Clips</button>
+      </div>
+    </div>
+  `;
+
+  bubble.querySelector('.video-save-btn')?.addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.href = stitchedUrl;

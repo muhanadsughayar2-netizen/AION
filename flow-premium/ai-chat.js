@@ -5107,8 +5107,7 @@ async function continueClip() {
   }
 
   // Switch to Video mode if not already there
-  const currentModeConfig = currentMode && MODE_CONFIGS?.[currentMode];
-  if (!currentModeConfig || currentModeConfig.type !== 'gemini-video') {
+  if (!currentAiMode || AI_MODES[currentAiMode]?.type !== 'gemini-video') {
     const videoModeBtn = document.querySelector('[data-mode="video"]');
     if (videoModeBtn) videoModeBtn.click();
     await new Promise(r => setTimeout(r, 150));
