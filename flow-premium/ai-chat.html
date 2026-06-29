@@ -770,13 +770,13 @@
       position: relative;
       display: flex;
       align-items: center;
-      gap: 5px;
-      padding: 8px 16px;
+      gap: 4px;
+      padding: 5px 11px 5px 9px;
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 20px;
       color: #667788;
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 500;
       cursor: pointer;
       white-space: nowrap;
@@ -784,6 +784,8 @@
       flex-shrink: 0;
       overflow: hidden;
       transform: scale(1);
+      line-height: 1;
+      letter-spacing: 0.2px;
     }
     .mode-btn::before {
       content: '';
@@ -836,6 +838,7 @@
     }
     .mode-btn .mode-emoji {
       display: inline-block;
+      font-size: 12px;
       transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .mode-btn.active .mode-emoji { transform: scale(1.2); }
@@ -923,18 +926,18 @@
     
     .chat-input {
       flex: 1;
-      padding: 14px 16px;
+      padding: 10px 14px;
       background: var(--st-bg-elevated);
       border: 1px solid rgba(66, 133, 244, 0.3);
       border-radius: 14px;
       color: #fff;
-      font-size: 15px;
+      font-size: 14px;
       font-family: inherit;
       outline: none;
       transition: border-color 0.2s;
       resize: none;
-      height: 90px;
-      min-height: 90px;
+      height: 52px;
+      min-height: 52px;
       max-height: 200px;
       overflow-y: auto;
       line-height: 1.5;
@@ -950,7 +953,7 @@
     }
     
     .send-btn {
-      padding: 16px 28px;
+      padding: 12px 22px;
       background: #4285F4;
       border: none;
       border-radius: 12px;
@@ -1179,10 +1182,10 @@
     /* AI Disclaimer */
     .ai-disclaimer {
       text-align: center;
-      padding: 6px 16px 0;
+      padding: 5px 16px;
       background: transparent;
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.85);
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
       font-weight: 400;
     }
     .magic-add-btn { display: inline-flex; align-items: center; gap: 5px; padding: 8px 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; color: #667788; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all 0.25s ease; }
@@ -1468,12 +1471,17 @@
         <button class="tip-dismiss" id="dismissTip" title="Dismiss">✕</button>
       </div>
 
-      <div id="modeBar" style="display: flex; gap: 6px; padding: 7px 10px; background: rgba(66,133,244,0.04); border-bottom: 1px solid rgba(255,255,255,0.07); overflow-x: auto; scrollbar-width: none;">
+      <div id="modeBar" style="display: flex; gap: 5px; padding: 6px 10px; background: rgba(66,133,244,0.04); border-bottom: 1px solid rgba(255,255,255,0.07); overflow-x: auto; scrollbar-width: none; align-items: center;">
         <button class="mode-btn active" data-mode="vision" title="Analyze screenshots & text"><span class="mode-emoji">🔍</span> Vision</button>
         <button class="mode-btn" data-mode="image" id="imageModeBtn" title="Generate images from text"><span class="mode-emoji">✨</span> Image</button>
         <button class="mode-btn" data-mode="music" id="musicModeBtn" title="Create music clips"><span class="mode-emoji">🎵</span> Music</button>
         <button class="mode-btn" data-mode="video" id="videoModeBtn" title="Generate videos from prompts or screenshots"><span class="mode-emoji">🎬</span> Video</button>
         <button class="mode-btn" data-mode="broadcast" id="broadcastModeBtn" title="Multi-voice AI broadcast from any content"><span class="mode-emoji">🎙️</span> Broadcast</button>
+        <div style="flex:1;"></div>
+        <button class="mode-btn" id="addMagicBtn" title="Create a custom AI agent">✦ Magic Agents</button>
+        <button class="mode-btn" id="clearBtn" title="Clear chat" style="color:#778899;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>Clear
+        </button>
       </div>
       <div class="input-area">
         <input type="file" id="fileInput" accept="image/*,video/webm,video/mp4,video/*,audio/*,.mp3,.wav,.ogg,.pdf,.txt,.md,.json,.csv" multiple hidden>
@@ -1638,18 +1646,13 @@
         </div>
         <iframe id="livePreview" src="sandbox.html" allow="fullscreen; autoplay; encrypted-media; picture-in-picture" style="width:100%;height:200px;border:none;display:none;background:#07070a;"></iframe>
       </div>
-      <div class="ai-disclaimer">Gemini can make mistakes, so double-check it</div>
-      
       <div id="agentStatusBar" style="display:none; align-items:center; gap:6px; padding:5px 14px; background:rgba(255,255,255,0.04); border-top:1px solid rgba(255,255,255,0.07); font-size:12px; font-weight:500;"></div>
-      <div class="magic-buttons" id="magicButtons" style="padding: 8px 12px; min-height: 40px;"></div>
-      <div class="footer-actions">
-        <button class="magic-add-btn" id="openAgentsBtn">Agents</button>
-        <button class="magic-add-btn" id="addMagicBtn">+ Magic Agents</button>
+      <div class="magic-buttons" id="magicButtons" style="padding: 6px 12px; min-height: 0;"></div>
+      <div class="footer-actions" style="padding: 6px 14px; gap: 8px;">
+        <button class="magic-add-btn" id="openAgentsBtn" style="display:none;">Agents</button>
         <button class="verdict-btn" id="verdictBtn" style="display:none !important;">⚖️ The Verdict</button>
-        <button class="action-btn" id="clearBtn">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>Clear
-        </button>
       </div>
+      <div class="ai-disclaimer">Gemini can make mistakes, so double-check it</div>
     </div>
   </div>
   
