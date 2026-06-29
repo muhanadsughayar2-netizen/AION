@@ -932,8 +932,8 @@ const AI_MODES = {
   'broadcast': {
     model: MODELS.chat,
     type: 'gemini',
-    placeholder: 'Broadcast Studio is ready — use the card below…',
-    welcome: '🎙️ Broadcast Studio — turn any content into a multi-voice AI broadcast. Talk show, tutorial, app demo, presentation, or narrator.'
+    placeholder: 'Type your show topic here, then click 🎙️ Generate below…',
+    welcome: '🎙️ Broadcast Studio — type your topic above, pick a format below, then click Generate.'
   }
 };
 
@@ -6533,7 +6533,21 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
 
   // ── Auto-start from sub-bar (hidePicker mode) ─────────────────
   if (options.autoStart) {
-    if (options.srcText && srcEl) srcEl.value = options.srcText;
+    // Use typed topic, or fall back to a format-based default so generation
+    // always works even when the user left chatInput blank.
+    const FORMAT_DEFAULTS = {
+      talkshow:     'An engaging talk show with lively expert discussion',
+      tutorial:     'A clear step-by-step tutorial on a practical skill',
+      solotutorial: 'A solo walkthrough tutorial with helpful tips',
+      appdemo:      'An app demo showcasing the key features and benefits',
+      presentation: 'A compelling presentation on an interesting topic',
+      narrator:     'A narrated documentary segment with rich storytelling',
+      trailer:      'An exciting trailer that builds anticipation',
+    };
+    const resolvedSrc = options.srcText ||
+      FORMAT_DEFAULTS[selFormat] ||
+      'An engaging broadcast episode';
+    if (srcEl) srcEl.value = resolvedSrc;
     if (attachments.length) bcRenderAttachments();
     setTimeout(() => prepBtn?.click(), 200);
   }
