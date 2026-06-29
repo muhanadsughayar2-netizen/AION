@@ -1554,13 +1554,16 @@ function showVideoStudio(thread) {
     'A spaceship launching into a star-filled sky with engine trails'
   ];
 
-  studio.querySelector('.studio-surprise-btn').addEventListener('click', () => {
-    const idea = surpriseIdeas[Math.floor(Math.random() * surpriseIdeas.length)];
-    descInput.value = idea;
-    createBtn.style.opacity = '1';
-    createBtn.style.pointerEvents = 'auto';
-    studio.querySelector('.studio-surprise-btn').textContent = '🎲 Another!';
-  });
+  const surpriseBtn = studio.querySelector('.studio-surprise-btn');
+  if (surpriseBtn) {
+    surpriseBtn.addEventListener('click', () => {
+      const idea = surpriseIdeas[Math.floor(Math.random() * surpriseIdeas.length)];
+      descInput.value = idea;
+      createBtn.style.opacity = '1';
+      createBtn.style.pointerEvents = 'auto';
+      surpriseBtn.textContent = '🎲 Another!';
+    });
+  }
 }
 
 async function loadAvailableVeoModels(studio) {
