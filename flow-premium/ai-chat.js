@@ -961,6 +961,24 @@ const MODEL_NAMES = {
   'video': { name: 'Veo', sub: '', color: '#EA4335' }
 };
 
+const MODE_LABEL_META = {
+  'vision':    { emoji: '🔍', label: 'Vision mode',    bg: 'rgba(66,133,244,0.10)',   border: 'rgba(66,133,244,0.22)',   color: 'rgba(100,160,255,0.55)' },
+  'image':     { emoji: '✨', label: 'Image mode',     bg: 'rgba(251,188,5,0.08)',    border: 'rgba(251,188,5,0.22)',    color: 'rgba(251,188,5,0.55)' },
+  'music':     { emoji: '🎵', label: 'Music mode',     bg: 'rgba(52,168,83,0.08)',    border: 'rgba(52,168,83,0.22)',    color: 'rgba(52,168,83,0.55)' },
+  'video':     { emoji: '🎬', label: 'Video mode',     bg: 'rgba(234,67,53,0.08)',    border: 'rgba(234,67,53,0.22)',    color: 'rgba(234,67,53,0.55)' },
+  'broadcast': { emoji: '🎙️', label: 'Broadcast',      bg: 'rgba(45,212,191,0.08)',   border: 'rgba(45,212,191,0.22)',   color: 'rgba(45,212,191,0.55)' },
+};
+
+function updateModeLabel(mode) {
+  const el = document.getElementById('modeLabel');
+  if (!el) return;
+  const m = MODE_LABEL_META[mode] || MODE_LABEL_META['vision'];
+  el.textContent = m.emoji + ' ' + m.label;
+  el.style.background = m.bg;
+  el.style.borderColor = m.border;
+  el.style.color = m.color;
+}
+
 function updateModelHeader(mode) {
   const logo = document.getElementById('modelLogo');
   if (!logo) return;
@@ -1085,16 +1103,10 @@ function initModeButtons() {
         }, 200);
       }
       
+      updateModeLabel(mode);
+
       const thread = document.getElementById('chatThread');
       if (thread) {
-        const notice = document.createElement('div');
-        notice.className = 'chat-bubble ai mode-switch-notice';
-        notice.style.cssText = 'font-size: 14px; padding: 10px 16px; border-left: 3px solid; margin: 4px 0;';
-        const borderColors = { 'vision': '#4285F4', 'image': '#8ab4f8', 'music': '#8ab4f8', 'video': '#8ab4f8', 'broadcast': '#2dd4bf' };
-        notice.style.borderLeftColor = borderColors[mode] || '#4285F4';
-        notice.textContent = cfg.welcome;
-        thread.appendChild(notice);
-        
         if (mode === 'video') {
           showVideoStudio(thread);
         }
@@ -1124,6 +1136,7 @@ function initModeButtons() {
       if (inputEl) inputEl.placeholder = AI_MODES[mode].placeholder;
       if (modeBar) modeBar.style.background = MODE_COLORS[mode] || MODE_COLORS['vision'];
       updateModelHeader(mode);
+      updateModeLabel(mode);
       // Show agent tools only for vision on initial load
       const toolBtnGroupInit = document.querySelector('.tool-btn-group');
       if (toolBtnGroupInit) toolBtnGroupInit.style.display = mode === 'vision' ? 'flex' : 'none';
@@ -9833,7 +9846,11 @@ async function clearChat() {
   currentChatId = _generateChatId();
 
   const thread = document.getElementById('chatThread');
-  thread.innerHTML = '<div class="welcome-message">I\'m your AI partner. Ask me anything about this image!</div>';
+  thread.innerHTML = '';
+  const lbl = document.createElement('span');
+  lbl.id = 'modeLabel';
+  thread.appendChild(lbl);
+  updateModeLabel(currentAiMode);
   conversationHistory = [];
   saveChatHistoryToLocal();
 
@@ -9944,7 +9961,7 @@ async function deleteNamedChat(id) {
       currentChatId = _generateChatId();
       conversationHistory = [];
       const thread = document.getElementById('chatThread');
-      if (thread) thread.innerHTML = '<div class="welcome-message">I\'m your AI partner. Ask me anything about this image!</div>';
+      if (thread) { thread.innerHTML = ''; const lbl2 = document.createElement('span'); lbl2.id = 'modeLabel'; thread.appendChild(lbl2); updateModeLabel(currentAiMode); }
     }
     openHistoryPanel();
   } catch (e) {}
