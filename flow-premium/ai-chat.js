@@ -5469,6 +5469,30 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
   let attachments = [];
   let script    = [];
   let bgUrl     = null;
+
+  // ── Auto-load snaps from the queue into broadcast attachments ──
+  (async () => {
+    try {
+      let snaps = [];
+      // Try IndexedDB first (primary storage for large images)
+      try { snaps = await loadImagesFromIndexedDB(); } catch (_) {}
+      // Fallback to session storage
+      if (!snaps.length) {
+        const ses = await chrome.storage.session.get(['selectedSnaps', 'selectedSnap']);
+        snaps = ses.selectedSnaps || (ses.selectedSnap ? [ses.selectedSnap] : []);
+      }
+      if (!snaps.length) return;
+      snaps.slice(0, 20).forEach((dataUrl, i) => {
+        const raw = typeof dataUrl === 'string' ? dataUrl : '';
+        const comma = raw.indexOf(',');
+        const b64 = comma >= 0 ? raw.slice(comma + 1) : raw;
+        const mime = (raw.match(/^data:([^;]+);/) || [])[1] || 'image/png';
+        if (b64) attachments.push({ type: 'image', name: `Snap ${i + 1}`, mimeType: mime, data: b64, snapId: `snap_${i}` });
+      });
+      if (attachments.length) bcRenderAttachments();
+    } catch (_) {}
+  })();
+
   let bgAudio   = null;
   let isPlaying = false;
   let stopReq   = false;
@@ -5664,7 +5688,7 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
   card.querySelector('.bc-attach-file').addEventListener('click', () => fileInput.click());
 
   imgInput.addEventListener('change', () => {
-    Array.from(imgInput.files).slice(0, 3).forEach(file => {
+    Array.from(imgInput.files).slice(0, 20).forEach(file => {
       const reader = new FileReader();
       reader.onload = ev => {
         attachments.push({ type: 'image', name: file.name, mimeType: file.type, data: ev.target.result.split(',')[1] });
@@ -5681,20 +5705,17 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
     const vid = document.createElement('video');
     vid.src = url; vid.muted = true; vid.preload = 'auto';
 
-    // ── Frame extraction: works for both normal videos and Chrome MediaRecorder
-    // webm files (which often have duration=Infinity in their metadata).
     let extractionStarted = false;
 
     const doExtract = (dur) => {
       if (extractionStarted) return;
+      const safeD = (isFinite(dur) && dur > 0) ? dur : 60;
+      const count = Math.min(25, Math.max(10, Math.ceil(safeD / 3)));
       extractionStarted = true;
 
-      const safeD = (isFinite(dur) && dur > 0) ? dur : 60;
-      // Always extract at least 10 frames; 1 per 3s up to 25 max
-      const count = Math.min(25, Math.max(10, Math.ceil(safeD / 3)));
       const times = Array.from({ length: count }, (_, i) => {
-        if (i === 0) return 0.5;
-        if (i === count - 1) return Math.max(safeD - 0.5, 1);
+        if (i === 0) return 0.1;
+        if (i === count - 1) return Math.max(safeD - 0.1, 0.2);
         return (safeD / (count - 1)) * i;
       });
 
@@ -5702,10 +5723,11 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
       const captureOne = (t) => new Promise(resolve => {
         let done = false;
         const finish = () => {
-          if (done) return; done = true;
+          if (done) return;
+          done = true;
           vid.removeEventListener('seeked', finish);
           clearTimeout(guard);
-          const w = Math.min(vid.videoWidth  || 640, 640);
+          const w = Math.min(vid.videoWidth || 640, 640);
           const h = Math.min(vid.videoHeight || 360, 360);
           const cv = document.createElement('canvas');
           cv.width = w; cv.height = h;
@@ -5713,7 +5735,6 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
           frames.push(cv.toDataURL('image/jpeg', 0.75).split(',')[1]);
           resolve();
         };
-        // 3-second timeout per frame in case seeked never fires
         const guard = setTimeout(finish, 3000);
         vid.addEventListener('seeked', finish);
         vid.currentTime = t;
@@ -5731,19 +5752,15 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
       })();
     };
 
-    // ondurationchange fires when the browser figures out the real duration
-    // (often after loadedmetadata for MediaRecorder webm files)
-    vid.ondurationchange = () => {
-      if (isFinite(vid.duration) && vid.duration > 0) doExtract(vid.duration);
-    };
-
     vid.onloadedmetadata = () => {
       if (isFinite(vid.duration) && vid.duration > 0) {
         doExtract(vid.duration);
       } else {
-        // Duration is Infinity — seek past end so Chrome reveals the real length
-        const onS = () => { vid.removeEventListener('seeked', onS); doExtract(vid.currentTime || 60); };
-        vid.addEventListener('seeked', onS);
+        const findDuration = () => {
+          vid.removeEventListener('seeked', findDuration);
+          doExtract(isFinite(vid.duration) ? vid.duration : vid.currentTime);
+        };
+        vid.addEventListener('seeked', findDuration);
         vid.currentTime = 1e10;
       }
     };
