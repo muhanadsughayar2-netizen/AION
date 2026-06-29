@@ -1347,7 +1347,7 @@ try {
 
 // ── Mode sub-bars ─────────────────────────────────────────────────────────
 let _videoSubBarInited = false;
-let _vsbStylizeStyle = ''; // '' = Original (no stylize); matches HTML vsb-active default
+let _vsbStylizeStyle = 'pixar'; // matches HTML vsb-active default (Pixar 3D pill)
 
 function initVideoSubBar() {
   if (_videoSubBarInited) return;
@@ -1925,11 +1925,11 @@ function renderVeoPriceTable(studio) {
 async function stylizeImageForVideo(apiKey, imageData, style) {
   if (!imageData || typeof imageData !== 'string') return null;
   const stylePrompts = {
-    pixar: 'Redraw this scene as a Pixar CGI animated movie frame. All subjects become fully 3D-rendered cartoon characters with large expressive eyes, smooth plastic skin, exaggerated proportions, and bright studio lighting — unmistakably artificial animation, NOT a real photo. Preserve the composition, poses, clothing colors, and setting. No text or logos.',
-    anime: 'Redraw this scene as a Japanese anime illustration. All subjects become hand-drawn anime characters with large sparkling eyes, stylized hair, clean ink outlines, and flat cel-shading — clearly 2D animated art, NOT a real photo. Preserve the composition, outfit colors, and setting. No text or logos.',
-    cartoon: 'Redraw this scene as a vibrant Western cartoon like a modern animated series. All subjects become simplified cartoon characters with bold outlines, flat bright colors, and exaggerated features — clearly illustrated animation, NOT a real photo. Preserve the composition and setting. No text or logos.',
-    watercolor: 'Repaint this scene as a loose, dreamy watercolor illustration. Soft bleeding colors, visible brushstrokes, and white paper texture replace all photographic detail — clearly painted art, NOT a photo. Preserve the composition and color palette. No text or logos.',
-    oil: 'Repaint this scene as a classical oil painting on canvas. Rich impasto brushstrokes, dramatic chiaroscuro lighting, and matte pigment texture replace all photographic detail — clearly fine art, NOT a photo. Preserve the composition. No text or logos.'
+    pixar: 'Transform this photo into a Pixar/Disney 3D animated style. Keep the exact same people, poses, expressions, clothing, and background but render everything as high-quality 3D Pixar animation. Do not add any text or words.',
+    anime: 'Transform this photo into beautiful Japanese anime style. Keep the exact same people, poses, expressions, clothing, and background but render everything as detailed anime art. Do not add any text or words.',
+    cartoon: 'Transform this photo into a fun colorful cartoon style like a modern animated movie. Keep the exact same people, poses, expressions, clothing, and background. Do not add any text or words.',
+    watercolor: 'Transform this photo into a beautiful watercolor painting. Keep the exact same people, poses, expressions, clothing, and background but render as soft watercolor art. Do not add any text or words.',
+    oil: 'Transform this photo into a classic oil painting style. Keep the exact same people, poses, expressions, clothing, and background but render as rich oil painting art. Do not add any text or words.'
   };
 
   const cleanB64 = imageData.includes(',') ? imageData.split(',')[1] : imageData;
