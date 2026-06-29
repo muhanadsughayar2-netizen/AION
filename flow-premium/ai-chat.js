@@ -1104,21 +1104,10 @@ function initModeButtons() {
       }
       
       updateModeLabel(mode);
+      showModeSubBar(mode);
 
       const thread = document.getElementById('chatThread');
-      if (thread) {
-        if (mode === 'video') {
-          showVideoStudio(thread);
-        }
-
-        // Music uses the chat input directly — no studio card needed
-
-        if (mode === 'broadcast') {
-          showBroadcastCard(thread);
-        }
-        
-        thread.scrollTop = thread.scrollHeight;
-      }
+      if (thread) thread.scrollTop = thread.scrollHeight;
       
       if (inputEl) inputEl.focus();
     });
@@ -1360,6 +1349,288 @@ try {
     if (v && CREATIVITY_LEVELS[v]) selectedCreativity = v;
   });
 } catch {}
+
+// ── Mode sub-bars ─────────────────────────────────────────────────────────
+let _videoSubBarInited = false;
+let _vsbStylizeStyle = 'pixar';
+
+function initVideoSubBar() {
+  if (_videoSubBarInited) return;
+  _videoSubBarInited = true;
+  const bar = document.getElementById('videoSubBar');
+  if (!bar) return;
+
+  bar.querySelectorAll('.vsb-creat').forEach(btn => {
+    btn.addEventListener('click', () => {
+      bar.querySelectorAll('.vsb-creat').forEach(b => b.classList.remove('vsb-active'));
+      btn.classList.add('vsb-active');
+      selectedCreativity = btn.dataset.creat;
+      try { chrome.storage.local.set({ snaptoai_creativity: selectedCreativity }); } catch {}
+    });
+  });
+
+  bar.querySelectorAll('.vsb-dur').forEach(btn => {
+    btn.addEventListener('click', () => {
+      bar.querySelectorAll('.vsb-dur').forEach(b => b.classList.remove('vsb-active'));
+      btn.classList.add('vsb-active');
+      selectedVideoDuration = parseInt(btn.dataset.dur);
+    });
+  });
+
+  const snapCb = document.getElementById('vsbUseSnap');
+  const stylizeRow = document.getElementById('vsbStylizeRow');
+  if (snapCb && stylizeRow) {
+    snapCb.addEventListener('change', () => {
+      stylizeRow.style.display = snapCb.checked ? 'flex' : 'none';
+      if (snapCb.checked) {
+        try { chrome.storage.local.set({ _videoStylizeStyle: _vsbStylizeStyle }); } catch {}
+      } else {
+        try { chrome.storage.local.remove('_videoStylizeStyle'); } catch {}
+      }
+    });
+  }
+
+  bar.querySelectorAll('.vsb-style').forEach(btn => {
+    btn.addEventListener('click', () => {
+      bar.querySelectorAll('.vsb-style').forEach(b => b.classList.remove('vsb-active'));
+      btn.classList.add('vsb-active');
+      _vsbStylizeStyle = btn.dataset.style;
+      const snapCb = document.getElementById('vsbUseSnap');
+      if (snapCb?.checked) {
+        try { chrome.storage.local.set({ _videoStylizeStyle: _vsbStylizeStyle }); } catch {}
+      }
+    });
+  });
+}
+
+let _broadcastSubBarInited = false;
+let _bsbSelFormat = 'talkshow';
+let _bsbSelDur = '3';
+let _bsbSelTrack = 'lofi';
+let _bsbAttachments = [];
+
+function initBroadcastSubBar() {
+  if (_broadcastSubBarInited) return;
+  _broadcastSubBarInited = true;
+  const bar = document.getElementById('broadcastSubBar');
+  if (!bar) return;
+
+  // Auto-load snaps from queue
+  (async () => {
+    try {
+      let snaps = [];
+      try { snaps = await loadImagesFromIndexedDB(); } catch (_) {}
+      if (!snaps.length) {
+        const ses = await chrome.storage.session.get(['selectedSnaps', 'selectedSnap']);
+        snaps = ses.selectedSnaps || (ses.selectedSnap ? [ses.selectedSnap] : []);
+      }
+      snaps.slice(0, 20).forEach((dataUrl, i) => {
+        const raw = typeof dataUrl === 'string' ? dataUrl : '';
+        const comma = raw.indexOf(',');
+        const b64 = comma >= 0 ? raw.slice(comma + 1) : raw;
+        const mime = (raw.match(/^data:([^;]+);/) || [])[1] || 'image/png';
+        if (b64) _bsbAttachments.push({ type: 'image', name: `Snap ${i+1}`, mimeType: mime, data: b64, snapId: `snap_${i}` });
+      });
+      if (_bsbAttachments.length) bsbRenderAttachList();
+    } catch (_) {}
+  })();
+
+  function bsbRenderAttachList() {
+    const list = bar.querySelector('.bsb-attach-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const imgs  = _bsbAttachments.filter(a => a.type === 'image');
+    const vids  = [...new Set(_bsbAttachments.filter(a => a.videoFile).map(a => a.videoFile))];
+    const files = _bsbAttachments.filter(a => a.type === 'file');
+    if (imgs.length) {
+      const chip = Object.assign(document.createElement('div'), { textContent: `📷 ${imgs.length}` });
+      chip.style.cssText = 'padding:3px 8px;border-radius:12px;background:rgba(45,212,191,0.1);border:1px solid rgba(45,212,191,0.25);font-size:10px;color:#2dd4bf;cursor:pointer;white-space:nowrap;';
+      chip.title = 'Click to remove images';
+      chip.onclick = () => { _bsbAttachments = _bsbAttachments.filter(a => a.type !== 'image'); bsbRenderAttachList(); };
+      list.appendChild(chip);
+    }
+    vids.forEach(vf => {
+      const chip = Object.assign(document.createElement('div'), { textContent: `🎬 ${vf.length > 12 ? vf.slice(0,10)+'…' : vf}` });
+      chip.style.cssText = 'padding:3px 8px;border-radius:12px;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.25);font-size:10px;color:#a78bfa;cursor:pointer;white-space:nowrap;';
+      chip.onclick = () => { _bsbAttachments = _bsbAttachments.filter(a => a.videoFile !== vf); bsbRenderAttachList(); };
+      list.appendChild(chip);
+    });
+    files.forEach(f => {
+      const chip = Object.assign(document.createElement('div'), { textContent: `📄 ${f.name.length > 10 ? f.name.slice(0,8)+'…' : f.name}` });
+      chip.style.cssText = 'padding:3px 8px;border-radius:12px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);font-size:10px;color:#fbbf24;cursor:pointer;white-space:nowrap;';
+      chip.onclick = () => { const i = _bsbAttachments.indexOf(f); if (i > -1) _bsbAttachments.splice(i, 1); bsbRenderAttachList(); };
+      list.appendChild(chip);
+    });
+  }
+
+  bar.querySelectorAll('.bsb-fmt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      bar.querySelectorAll('.bsb-fmt').forEach(b => { b.classList.remove('bsb-active'); b.style.color = ''; });
+      btn.classList.add('bsb-active');
+      _bsbSelFormat = btn.dataset.fmt;
+      if (_bsbSelFormat === 'trailer') {
+        btn.style.color = '#fde047';
+        bar.querySelector('.bsb-trk[data-trk="cinematic"]')?.click();
+      } else if (_bsbSelFormat === 'solotutorial') {
+        btn.style.color = '#5eead4';
+        bar.querySelector('.bsb-trk[data-trk="upbeat"]')?.click();
+      }
+    });
+  });
+
+  bar.querySelectorAll('.bsb-dur').forEach(btn => {
+    btn.addEventListener('click', () => {
+      bar.querySelectorAll('.bsb-dur').forEach(b => b.classList.remove('bsb-active'));
+      btn.classList.add('bsb-active');
+      _bsbSelDur = btn.dataset.dur;
+    });
+  });
+
+  bar.querySelectorAll('.bsb-trk').forEach(btn => {
+    btn.addEventListener('click', () => {
+      bar.querySelectorAll('.bsb-trk').forEach(b => b.classList.remove('bsb-active'));
+      btn.classList.add('bsb-active');
+      _bsbSelTrack = btn.dataset.trk;
+    });
+  });
+
+  const imgInput  = bar.querySelector('.bsb-img-input');
+  const vidInput  = bar.querySelector('.bsb-vid-input');
+  const fileInput = bar.querySelector('.bsb-file-input');
+
+  bar.querySelector('.bsb-attach-img').addEventListener('click', () => imgInput.click());
+  bar.querySelector('.bsb-attach-vid').addEventListener('click', () => vidInput.click());
+  bar.querySelector('.bsb-attach-file').addEventListener('click', () => fileInput.click());
+
+  imgInput.addEventListener('change', () => {
+    Array.from(imgInput.files).slice(0, 20).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        _bsbAttachments.push({ type: 'image', name: file.name, mimeType: file.type, data: ev.target.result.split(',')[1] });
+        bsbRenderAttachList();
+      };
+      reader.readAsDataURL(file);
+    });
+    imgInput.value = '';
+  });
+
+  vidInput.addEventListener('change', () => {
+    const file = vidInput.files[0]; if (!file) return;
+    const url = URL.createObjectURL(file);
+    const vid = document.createElement('video');
+    vid.src = url; vid.muted = true; vid.preload = 'auto';
+    let extractionStarted = false;
+    const doExtract = (dur) => {
+      if (extractionStarted) return;
+      const safeD = (isFinite(dur) && dur > 0) ? dur : 60;
+      const count = Math.min(25, Math.max(10, Math.ceil(safeD / 3)));
+      extractionStarted = true;
+      const times = Array.from({ length: count }, (_, i) => {
+        if (i === 0) return 0.1;
+        if (i === count - 1) return Math.max(safeD - 0.1, 0.2);
+        return (safeD / (count - 1)) * i;
+      });
+      const frames = [];
+      const captureOne = (t) => new Promise(resolve => {
+        let done = false;
+        const finish = () => {
+          if (done) return; done = true;
+          vid.removeEventListener('seeked', finish); clearTimeout(guard);
+          const w = Math.min(vid.videoWidth || 640, 640), h = Math.min(vid.videoHeight || 360, 360);
+          const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+          cv.getContext('2d').drawImage(vid, 0, 0, w, h);
+          frames.push(cv.toDataURL('image/jpeg', 0.75).split(',')[1]);
+          resolve();
+        };
+        const guard = setTimeout(finish, 3000);
+        vid.addEventListener('seeked', finish);
+        vid.currentTime = t;
+      });
+      (async () => {
+        for (const t of times) await captureOne(t);
+        URL.revokeObjectURL(url);
+        _bsbAttachments = _bsbAttachments.filter(a => !(a.type === 'video-frame' && a.videoFile === file.name));
+        frames.forEach((b64, fi) => {
+          _bsbAttachments.push({ type: 'video-frame', name: `${file.name} frame ${fi+1}/${frames.length}`, videoFile: file.name, mimeType: 'image/jpeg', data: b64 });
+        });
+        const ci = document.getElementById('chatInput');
+        if (ci && !ci.value.trim()) ci.value = `Video: "${file.name}"`;
+        bsbRenderAttachList();
+      })();
+    };
+    vid.onloadedmetadata = () => {
+      if (isFinite(vid.duration) && vid.duration > 0) { doExtract(vid.duration); }
+      else {
+        const fd = () => { vid.removeEventListener('seeked', fd); doExtract(isFinite(vid.duration) ? vid.duration : vid.currentTime); };
+        vid.addEventListener('seeked', fd); vid.currentTime = 1e10;
+      }
+    };
+    vid.onerror = () => URL.revokeObjectURL(url);
+    vid.load(); vidInput.value = '';
+  });
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0]; if (!file) return;
+    const isText = /\.(txt|md|csv|json|html)$/i.test(file.name) || file.type.startsWith('text/');
+    if (isText) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const ci = document.getElementById('chatInput');
+        if (ci) ci.value += (ci.value ? '\n\n' : '') + ev.target.result;
+      };
+      reader.readAsText(file);
+    } else {
+      _bsbAttachments.push({ type: 'file', name: file.name, mimeType: file.type, data: null });
+      bsbRenderAttachList();
+    }
+    fileInput.value = '';
+  });
+
+  const genBtn = document.getElementById('bsbGenBtn');
+  if (genBtn) {
+    genBtn.addEventListener('click', () => {
+      const thread = document.getElementById('chatThread');
+      if (!thread) return;
+      const ci = document.getElementById('chatInput');
+      showBroadcastCard(thread, {
+        hidePicker: true,
+        selFormat: _bsbSelFormat,
+        selDur: _bsbSelDur,
+        selTrack: _bsbSelTrack,
+        attachments: [..._bsbAttachments],
+        srcText: ci ? ci.value.trim() : '',
+        autoStart: true
+      });
+      thread.scrollTop = thread.scrollHeight;
+    });
+  }
+}
+
+function showModeSubBar(mode) {
+  const videoBar     = document.getElementById('videoSubBar');
+  const broadcastBar = document.getElementById('broadcastSubBar');
+  if (videoBar) {
+    videoBar.style.display = mode === 'video' ? 'flex' : 'none';
+    if (mode === 'video') {
+      initVideoSubBar();
+      const hasSnaps = typeof currentImages !== 'undefined' && currentImages.length > 0;
+      const snapLabel = document.getElementById('vsbSnapLabel');
+      const snapCb    = document.getElementById('vsbUseSnap');
+      const stylizeRow = document.getElementById('vsbStylizeRow');
+      if (snapLabel) snapLabel.style.display = hasSnaps ? 'flex' : 'none';
+      if (stylizeRow && snapCb) stylizeRow.style.display = (hasSnaps && snapCb.checked) ? 'flex' : 'none';
+      if (hasSnaps && snapCb?.checked) {
+        try { chrome.storage.local.set({ _videoStylizeStyle: _vsbStylizeStyle }); } catch {}
+      } else {
+        try { chrome.storage.local.remove('_videoStylizeStyle'); } catch {}
+      }
+    }
+  }
+  if (broadcastBar) {
+    broadcastBar.style.display = mode === 'broadcast' ? 'flex' : 'none';
+    if (mode === 'broadcast') initBroadcastSubBar();
+  }
+}
 
 function showVideoStudio(thread) {
   const existing = thread.querySelector('.video-studio');
@@ -5184,7 +5455,7 @@ function showSongStudio(thread) {
 // Formats: Talk Show / Tutorial / App Demo / Presentation / Narrator
 // Triggered when the user enters Broadcast mode.
 // ─────────────────────────────────────────────────────────────────────────────
-function showBroadcastCard(thread) {
+function showBroadcastCard(thread, options = {}) {
   const existing = thread.querySelector('.broadcast-card');
   if (existing) existing.remove();
 
@@ -5383,7 +5654,7 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
     <div style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);font-size:10px;color:#f97316;">⚡ <b>Fenrir</b>&nbsp;<span style="opacity:0.5;">Creative</span></div>
   </div>
 
-  <div class="bc-input-sec">
+  <div class="bc-input-sec" ${options.hidePicker ? 'style="display:none;"' : ''}>
     <div style="margin-bottom:10px;">
       <div style="font-size:9.5px;color:#667788;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em;">Format</div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;">
@@ -5459,10 +5730,10 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
   thread.appendChild(card);
 
   // ── State ─────────────────────────────────────────────────────
-  let selFormat = 'talkshow';
-  let selDur    = '3';
-  let selTrack  = 'lofi';
-  let attachments = [];
+  let selFormat   = options.selFormat || 'talkshow';
+  let selDur      = options.selDur    || '3';
+  let selTrack    = options.selTrack  || 'lofi';
+  let attachments = options.attachments ? [...options.attachments] : [];
   let script    = [];
   let bgUrl     = null;
 
@@ -6066,6 +6337,13 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
       setTimeout(() => { dlBtn.textContent = '⬇️ Download Episode'; dlBtn.style.pointerEvents = 'auto'; }, 3000);
     }
   });
+
+  // ── Auto-start from sub-bar (hidePicker mode) ─────────────────
+  if (options.autoStart) {
+    if (options.srcText && srcEl) srcEl.value = options.srcText;
+    if (attachments.length) bcRenderAttachments();
+    setTimeout(() => prepBtn?.click(), 200);
+  }
 }
 
 

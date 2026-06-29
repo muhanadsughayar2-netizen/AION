@@ -1555,6 +1555,72 @@
             <option value="Umbriel">🎙 Umbriel — Easy-going</option>
           </select>
         </div>
+        <!-- ── Video mode sub-bar ────────────────────────────────── -->
+        <div id="videoSubBar" style="display:none; flex-direction:column; gap:4px; padding:4px 0 2px; width:100%;">
+          <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+            <span style="font-size:10px; color:rgba(255,255,255,0.28); white-space:nowrap; flex-shrink:0;">Style</span>
+            <button class="vsb-pill vsb-creat" data-creat="literal">Literal</button>
+            <button class="vsb-pill vsb-creat vsb-active" data-creat="balanced">Balanced</button>
+            <button class="vsb-pill vsb-creat" data-creat="cinematic">Cinematic</button>
+            <div style="width:1px;height:14px;background:rgba(255,255,255,0.1);margin:0 3px;flex-shrink:0;"></div>
+            <button class="vsb-pill vsb-dur vsb-active" data-dur="5">5s</button>
+            <button class="vsb-pill vsb-dur" data-dur="8">8s</button>
+            <div style="flex:1;"></div>
+            <label id="vsbSnapLabel" style="display:none; align-items:center; gap:4px; font-size:10px; color:rgba(255,255,255,0.4); cursor:pointer; white-space:nowrap; flex-shrink:0;">
+              <input type="checkbox" id="vsbUseSnap" style="accent-color:#8ab4f8; width:11px; height:11px;" checked> 📸 Snap
+            </label>
+          </div>
+          <div id="vsbStylizeRow" style="display:none; align-items:center; gap:4px; flex-wrap:wrap; padding-left:40px;">
+            <button class="vsb-pill vsb-style vsb-active" data-style="pixar">Pixar 3D</button>
+            <button class="vsb-pill vsb-style" data-style="anime">Anime</button>
+            <button class="vsb-pill vsb-style" data-style="cartoon">Cartoon</button>
+            <button class="vsb-pill vsb-style" data-style="watercolor">Watercolor</button>
+            <button class="vsb-pill vsb-style" data-style="oil">Oil Paint</button>
+          </div>
+        </div>
+        <!-- ── Broadcast mode sub-bar ─────────────────────────────── -->
+        <div id="broadcastSubBar" style="display:none; flex-direction:column; gap:4px; padding:4px 0 2px; width:100%;">
+          <div style="display:flex; align-items:center; gap:3px; flex-wrap:wrap;">
+            <span style="font-size:10px; color:rgba(255,255,255,0.28); white-space:nowrap; flex-shrink:0;">Format</span>
+            <button class="vsb-pill bsb-fmt bsb-active" data-fmt="talkshow">🎙️ Talk Show</button>
+            <button class="vsb-pill bsb-fmt" data-fmt="tutorial">📚 Tutorial</button>
+            <button class="vsb-pill bsb-fmt" data-fmt="solotutorial" style="color:#2dd4bf;">📱 Solo</button>
+            <button class="vsb-pill bsb-fmt" data-fmt="appdemo">🚀 App Demo</button>
+            <button class="vsb-pill bsb-fmt" data-fmt="presentation">📊 Present</button>
+            <button class="vsb-pill bsb-fmt" data-fmt="narrator">🎬 Narrator</button>
+            <button class="vsb-pill bsb-fmt" data-fmt="trailer" style="color:#eab308;">🎥 Trailer</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:3px; flex-wrap:wrap;">
+            <span style="font-size:10px; color:rgba(255,255,255,0.28); white-space:nowrap; flex-shrink:0;">Len</span>
+            <button class="vsb-pill bsb-dur" data-dur="1">1m</button>
+            <button class="vsb-pill bsb-dur bsb-active" data-dur="3">3m</button>
+            <button class="vsb-pill bsb-dur" data-dur="5">5m</button>
+            <button class="vsb-pill bsb-dur" data-dur="10">10m</button>
+            <div style="width:1px;height:14px;background:rgba(255,255,255,0.1);margin:0 3px;flex-shrink:0;"></div>
+            <span style="font-size:12px; flex-shrink:0;">🎵</span>
+            <button class="vsb-pill bsb-trk" data-trk="none">🚫</button>
+            <button class="vsb-pill bsb-trk bsb-active" data-trk="lofi">☁️ Lo-fi</button>
+            <button class="vsb-pill bsb-trk" data-trk="cinematic">🎬 Film</button>
+            <button class="vsb-pill bsb-trk" data-trk="news">📰 News</button>
+            <button class="vsb-pill bsb-trk" data-trk="upbeat">🎸 Upbeat</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+            <button class="vsb-pill bsb-attach-img" title="Attach images">📷</button>
+            <button class="vsb-pill bsb-attach-vid" title="Attach video">🎬</button>
+            <button class="vsb-pill bsb-attach-file" title="Attach text file">📄</button>
+            <input type="file" class="bsb-img-input" accept="image/*" multiple style="display:none;">
+            <input type="file" class="bsb-vid-input" accept="video/*" style="display:none;">
+            <input type="file" class="bsb-file-input" accept=".txt,.md,.csv,.json,.pdf" style="display:none;">
+            <div class="bsb-attach-list" style="display:contents; gap:4px; align-items:center;"></div>
+            <div style="flex:1;"></div>
+            <button id="bsbGenBtn" style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#2dd4bf,#7c3aed);border:none;color:#fff;border-radius:20px;padding:5px 13px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">🎙️ Generate</button>
+          </div>
+        </div>
+        <style>
+          .vsb-pill { display:inline-flex; align-items:center; gap:3px; padding:4px 10px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.4); font-size:11px; font-weight:500; cursor:pointer; white-space:nowrap; transition:all 0.15s; flex-shrink:0; }
+          .vsb-pill.vsb-active, .vsb-pill.bsb-active { background:rgba(138,180,248,0.15); border-color:rgba(138,180,248,0.4); color:#8ab4f8; }
+          .vsb-pill:hover { background:rgba(255,255,255,0.09); color:rgba(255,255,255,0.7); }
+        </style>
       </div>
       <style>
         .tool-btn-group {
