@@ -5167,11 +5167,10 @@ async function continueClip() {
   }
 
   // Switch to Video mode if not already there
-  const currentModeConfig = currentMode && MODE_CONFIGS?.[currentMode];
-  if (!currentModeConfig || currentModeConfig.type !== 'gemini-video') {
-    const videoModeBtn = document.querySelector('[data-mode="video"]');
+  if (currentAiMode !== 'video') {
+    const videoModeBtn = document.querySelector('.mode-btn[data-mode="video"]');
     if (videoModeBtn) videoModeBtn.click();
-    await new Promise(r => setTimeout(r, 150));
+    await new Promise(r => setTimeout(r, 300));
   }
 
   // Ensure Snap toggle is on
@@ -5208,13 +5207,19 @@ async function continueClip() {
   if (ci) {
     ci.disabled = false;
     ci.value = contPrompt || fallback;
-    ci.placeholder = 'Edit the continuation or press Send…';
+    ci.placeholder = 'Generating continuation…';
     ci.focus();
-    try { ci.select(); } catch {}
   }
 
   const thread = document.getElementById('chatThread');
   if (thread) thread.scrollTop = thread.scrollHeight;
+
+  // Auto-submit so the continuation generates immediately.
+  // User doesn't have to press Send manually.
+  const sendBtn = document.getElementById('sendBtn');
+  if (sendBtn && !sendBtn.disabled) {
+    setTimeout(() => sendBtn.click(), 80);
+  }
 }
 
 function showVideoResult(bubble, videoUrl, thread) {
@@ -5281,26 +5286,43 @@ function showVideoResult(bubble, videoUrl, thread) {
     }
   });
 
-  // ── Capture last frame from the already-decoded video element ─────
-  // Do this from the in-DOM <video> — avoids re-fetching a Google signed
-  // URL that may have already expired.
+  // ── Capture last frame via blob URL (avoids cross-origin canvas block) ─
+  // Veo URLs are Google CDN (cross-origin). drawImage on a cross-origin
+  // <video> throws SecurityError. Fix: fetch the video as a blob, create
+  // a local blob URL (same-origin), capture frame from that.
   if (_lastVideoContext) {
     _lastVideoContext.videoUrl = videoUrl;
-    const vidEl = bubble.querySelector('video');
     (async () => {
       try {
-        const frameDataUrl = await captureFrameFromVideoElement(vidEl);
+        const resp = await fetch(videoUrl);
+        if (!resp.ok) throw new Error(`fetch ${resp.status}`);
+        const blob = await resp.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        // Hidden video element with blob URL — same-origin, canvas-safe
+        const captureVid = document.createElement('video');
+        captureVid.muted = true;
+        captureVid.preload = 'auto';
+        captureVid.src = blobUrl;
+        captureVid.style.cssText = 'position:fixed;left:-9999px;width:1px;height:1px;visibility:hidden;pointer-events:none;';
+        document.body.appendChild(captureVid);
+
+        const frameDataUrl = await captureFrameFromVideoElement(captureVid);
+        document.body.removeChild(captureVid);
+        URL.revokeObjectURL(blobUrl);
+
         if (frameDataUrl && _lastVideoContext) {
           _lastVideoContext.lastFrameDataUrl = frameDataUrl;
-          // Brighten the button to signal it's ready
           const contBtn = bubble.querySelector('.video-continue-btn');
           if (contBtn) {
             contBtn.style.borderColor = 'rgba(99,202,183,0.7)';
-            contBtn.style.background = 'rgba(99,202,183,0.22)';
-            contBtn.title = 'Last frame captured — click to continue from here';
+            contBtn.style.background = 'rgba(99,202,183,0.25)';
+            contBtn.title = 'Last frame locked — click to continue from here';
           }
         }
-      } catch (_) {}
+      } catch (e) {
+        console.warn('[Continue] blob frame capture failed:', e?.message);
+      }
     })();
   }
 
@@ -5309,19 +5331,31 @@ function showVideoResult(bubble, videoUrl, thread) {
     const btn = e.currentTarget;
     if (!_lastVideoContext) return;
 
-    // If background capture isn't done yet, try from the video element now
-    if (!_lastVideoContext.lastFrameDataUrl) {
-      btn.textContent = '⏳ Capturing last frame…';
-      btn.disabled = true;
+    btn.textContent = '⏳ Preparing continuation…';
+    btn.disabled = true;
+
+    // If background capture still pending, try fetching the blob now
+    if (!_lastVideoContext.lastFrameDataUrl && _lastVideoContext.videoUrl) {
       try {
-        _lastVideoContext.lastFrameDataUrl = await captureFrameFromVideoElement(
-          bubble.querySelector('video')
-        );
+        const resp = await fetch(_lastVideoContext.videoUrl);
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          const captureVid = document.createElement('video');
+          captureVid.muted = true;
+          captureVid.preload = 'auto';
+          captureVid.src = blobUrl;
+          captureVid.style.cssText = 'position:fixed;left:-9999px;width:1px;height:1px;visibility:hidden;pointer-events:none;';
+          document.body.appendChild(captureVid);
+          _lastVideoContext.lastFrameDataUrl = await captureFrameFromVideoElement(captureVid);
+          document.body.removeChild(captureVid);
+          URL.revokeObjectURL(blobUrl);
+        }
       } catch (_) {}
-      btn.disabled = false;
-      btn.textContent = '▶ Continue Clip';
     }
 
+    btn.disabled = false;
+    btn.textContent = '▶ Continue Clip';
     await continueClip();
   });
 
