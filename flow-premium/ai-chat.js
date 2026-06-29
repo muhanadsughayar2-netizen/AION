@@ -1360,6 +1360,10 @@ function initVideoSubBar() {
   const bar = document.getElementById('videoSubBar');
   if (!bar) return;
 
+  // Sync globals to match what the HTML marks as active by default
+  selectedVideoDuration = 5;
+  // selectedCreativity already defaults to 'balanced' which matches the HTML default
+
   bar.querySelectorAll('.vsb-creat').forEach(btn => {
     btn.addEventListener('click', () => {
       bar.querySelectorAll('.vsb-creat').forEach(b => b.classList.remove('vsb-active'));
@@ -1993,7 +1997,8 @@ async function startVideoGeneration(prompt, thread) {
     return;
   }
 
-  const useScreenshot = document.querySelector('.studio-use-screenshot');
+  // Try old studio card checkbox first; fall back to the sub-bar snap toggle
+  const useScreenshot = document.querySelector('.studio-use-screenshot') || document.getElementById('vsbUseSnap');
   const includeImage = useScreenshot && useScreenshot.checked && typeof currentImages !== 'undefined' && currentImages.length > 0;
 
   const modelName = selectedVeoModel || MODELS.veoFallback;
