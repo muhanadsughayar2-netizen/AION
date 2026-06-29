@@ -5083,7 +5083,44 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
           console.log('[SnapToAI Video] no URI after re-polls:', JSON.stringify(data.response || data).substring(0, 300));
           const filtered = data.response?.generateVideoResponse?.raiMediaFilteredReasons;
           if (filtered && filtered.length > 0) {
-            progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">🛡️</span> Video was blocked by safety filters. Try a different prompt.</div>`;
+            // Safety filter blocked the image-conditioned request.
+            // Auto-retry WITHOUT the reference image — text-only Pixar/style
+            // prompts are never blocked, so the user still gets their video.
+            if (requestBody.instances[0].image) {
+              const text2 = progressBubble.querySelector('.video-progress-text');
+              if (text2) text2.textContent = '🔄 Image blocked by safety filter — retrying without photo…';
+              const fillEl2 = progressBubble.querySelector('.video-progress-fill');
+              if (fillEl2) fillEl2.style.width = '5%';
+              console.log('[SnapToAI Video] Safety block — retrying without image');
+              delete requestBody.instances[0].image;
+              try {
+                resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
+                data = await resp.json();
+                if (resp.ok && data.name) {
+                  // Re-enter the poll loop with the new operation
+                  const operationName2 = data.name;
+                  const pollUrl2b = `https://generativelanguage.googleapis.com/v1beta/${operationName2}?key=${apiKey}`;
+                  let retryDone = false;
+                  for (let _r = 0; _r < 60 && !retryDone; _r++) {
+                    await new Promise(r => setTimeout(r, _r < 6 ? 5000 : 15000));
+                    try {
+                      const rr = await fetchWithTimeout(pollUrl2b, { timeoutMs: 20000 });
+                      if (!rr.ok) continue;
+                      const rd = await rr.json().catch(() => ({}));
+                      if (!rd.done) continue;
+                      const retryUri = _extractUri(rd);
+                      if (retryUri) {
+                        const authedRetry = `${retryUri}${retryUri.includes('?') ? '&' : '?'}key=${apiKey}`;
+                        showVideoResult(progressBubble, authedRetry, thread);
+                        retryDone = true;
+                      } else { break; }
+                    } catch (_) {}
+                  }
+                  if (retryDone) return;
+                }
+              } catch (_) {}
+            }
+            progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">🛡️</span> Video was blocked by safety filters. Try a different prompt or use a non-animated style.</div>`;
           } else {
             progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> Video generation completed but no video was returned. Try rephrasing your description.</div>`;
           }
