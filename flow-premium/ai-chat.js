@@ -703,8 +703,9 @@ async function detectKeyTierVerbose(apiKey) {
         });
     });
 
-    // Hard cap: never hang longer than 6s no matter what
-    setTimeout(() => finish({ tier: 'free', invalid: false }), 6000);
+    // Hard cap: never hang longer than 10s. If a paid user had a network blip,
+    // the caller should fall back to the cached tier rather than this default.
+    setTimeout(() => finish({ tier: 'free', invalid: false }), 10000);
   });
 }
 

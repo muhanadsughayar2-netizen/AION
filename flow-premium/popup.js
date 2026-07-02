@@ -3758,10 +3758,17 @@ async function loadGeminiKey() {
     const result = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel']);
     console.log('[SnapToAI] Loaded Gemini key:', result.geminiApiKey ? 'exists' : 'none');
     if (result.geminiApiKey) {
-      if (geminiKeyInput) geminiKeyInput.value = result.geminiApiKey;
+      if (geminiKeyInput) {
+        geminiKeyInput.value = result.geminiApiKey;
+        // Show the key in plain text so the user can see their saved key.
+        // They can click "Hide" to mask it again.
+        geminiKeyInput.type = 'text';
+        const toggleBtn = document.getElementById('toggleKeyVisibility');
+        if (toggleBtn) { toggleBtn.textContent = 'Hide'; toggleBtn.setAttribute('aria-label', 'Hide API key'); }
+      }
       if (geminiStatus) geminiStatus.style.display = 'flex';
     } else {
-      if (geminiKeyInput) geminiKeyInput.value = '';
+      if (geminiKeyInput) { geminiKeyInput.value = ''; geminiKeyInput.type = 'password'; }
       if (geminiStatus) geminiStatus.style.display = 'none';
     }
     const modelSelect = document.getElementById('geminiModelSelect');
@@ -3826,7 +3833,7 @@ async function _popupIsOwnerKey(apiKey) {
   } catch (e) { console.warn('[SnapToAI] Owner-key fingerprint check failed:', e?.message || e); return false; }
 }
 
-async function _popupDetectTier(apiKey) {
+async function _popupDetectTier(apiKey, cachedTier) {
   if (await _popupIsOwnerKey(apiKey)) return { tier: 'free', invalid: false };
   // Run all probes in PARALLEL (not sequential) so the total wait is bounded by
   // the slowest single probe (~5s) instead of the sum of all probes (~60s+).
@@ -3874,8 +3881,9 @@ async function _popupDetectTier(apiKey) {
         });
     });
 
-    // Hard cap: never hang longer than 6s no matter what
-    setTimeout(() => finish({ tier: 'free', invalid: false }), 6000);
+    // Hard cap: never hang longer than 10s. If a paid user had a network blip,
+    // fall back to their previous cached tier rather than stripping access.
+    setTimeout(() => finish({ tier: cachedTier === 'prepaid' ? 'prepaid' : 'free', invalid: false }), 10000);
   });
 }
 
@@ -3956,9 +3964,19 @@ async function saveGeminiKey() {
     geminiSaveBtn.textContent = 'Verifying…';
   }
 
+  // If this exact key is already cached as 'prepaid' and the cache is < 7 days
+  // old, skip the probe entirely — a network timeout can't strip paid access.
   let result;
   try {
-    result = await _popupDetectTier(key);
+    const cached = await chrome.storage.local.get(['snaptoai_key_tier', 'snaptoai_key_tier_key', 'snaptoai_key_tier_ts']);
+    const cacheAge = Date.now() - (cached.snaptoai_key_tier_ts || 0);
+    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+    if (cached.snaptoai_key_tier_key === key && cached.snaptoai_key_tier === 'prepaid' && cacheAge < SEVEN_DAYS) {
+      console.log('[SnapToAI] Key already cached as prepaid — skipping probe');
+      result = { tier: 'prepaid', invalid: false };
+    } else {
+      result = await _popupDetectTier(key, cached.snaptoai_key_tier_key === key ? cached.snaptoai_key_tier : null);
+    }
   } catch (e) {
     console.log('[SnapToAI] Tier probe crashed, defaulting to free:', e);
     result = { tier: 'free', invalid: false };
